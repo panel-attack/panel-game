@@ -33,16 +33,22 @@ How you supply your panel images. If no value is given, "single" is assumed.
 ### single
 
 Supplying your panel images in single files, image by image, e.g.:
-- panel11.png
+- panel101.png
 - panel12.png
 - panel13.png
 - panel14.png
 - panel15.png
 - panel16.png
 - panel17.png
+- panel18.png
+- panel19.png
+- panel110.png
 
-would constitute 7 images for color 1.  
-The images for color 2 would be called panel21, panel22 and so on.
+would constitute 10 images for color 1:  
+- the first digit is for the color
+- the remaining digits are for the numbering of the panels
+- you may use leading 0s, e.g. panel101.png instead of panel11.png
+- you may not have any gaps in your numbering
 
 ### sheet
 
