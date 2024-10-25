@@ -227,18 +227,15 @@ function Panels:loadSingles()
       return string.match(f, "panel" .. color .. "%d+%.")
     end)
 
-    local indexes = tableUtils.map(files, function(f)
-      f = fileUtils.getFileNameWithoutExtension(f)
-      return tonumber(f:sub(7))
-    end)
+    local indexToFile = {}
 
-    -- default sort for indexes will be based on the original return value of the directory scan
-    -- and that will order by string, not by number so we need to resort first
-    -- to assure that indexes[#indexes] is really the highest index
-    table.sort(indexes)
+    for i = 1, #files do
+      local f = fileUtils.getFileNameWithoutExtension(files[i])
+      indexToFile[tonumber(f:sub(7))] = f
+    end
 
-    for i = 1, math.max(indexes[#indexes] or 7, 7) do
-      images[color][i] = load_panel_img(self.path, fileUtils.getFileNameWithoutExtension("panel" .. color .. i))
+    for i = 1, math.max(#indexToFile or 7, 7) do
+      images[color][i] = load_panel_img(self.path, indexToFile[i] or ("panel" .. color .. i))
       self.size = math.max(images[color][i]:getWidth(), self.size) -- for scaling
     end
   end
