@@ -25,6 +25,10 @@ function LevelSlider:onDrag(x, y)
   self:setValueFromPos(x)
 end
 
+function LevelSlider:onRelease(x, y, holdTimer)
+  self:setValueFromPos(x)
+end
+
 function LevelSlider:drawSelf()
   for i, level_img in ipairs(themes[config.theme].images.IMG_levels) do
     local img = i <= self.value and level_img or
