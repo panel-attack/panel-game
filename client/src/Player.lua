@@ -337,18 +337,18 @@ function Player:updateWithMenuState(menuState)
   end
 
   self:setWantsRanked(menuState.wantsRanked)
-  if menuState.panelId then
-    -- panelId may be absent in some messages due to a server bug
-    self:setPanels(menuState.panelId)
-  end
+  self:setPanels(menuState.panelId)
 
   self:setLevel(menuState.level)
   self:setInputMethod(menuState.inputMethod)
 
-  if menuState.wantsReady then
+  -- these are both simply not sent by the server for some messages so make sure they are there
+  if menuState.wantsReady ~= nil then
     self:setWantsReady(menuState.wantsReady)
   end
-  self:setLoaded(menuState.hasLoaded)
+  if menuState.hasLoaded ~= nil then
+    self:setLoaded(menuState.hasLoaded)
+  end
   self:setReady(menuState.ready)
 end
 

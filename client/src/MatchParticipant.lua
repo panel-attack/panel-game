@@ -145,11 +145,8 @@ function MatchParticipant:onMatchEnded()
    if self.human then
     self:setWantsReady(false)
    end
-   if self.isLocal then
-     -- if they're local, refresh the character in case they use a bundle / random
-     self:refreshCharacter()
-     self:refreshStage()
-   end
+  self:refreshCharacter()
+  self:refreshStage()
 end
 
 function MatchParticipant:isHuman()
