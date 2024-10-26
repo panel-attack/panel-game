@@ -12,7 +12,7 @@ JamesVanBoxtel - ongoing maintenance and improvements to the game, including hig
 
 Shosoul - ongoing maintenance and improvements, especially server side and networking. Training mode, telegraph, discord rich presence, server database.
 
-Endaris - ongoing maintenance and improvements. Clear puzzles, per-combo SFX, client-side performance optimizations, engine and project refactoring, documentation, UI rework, github integration.
+Endaris - ongoing maintenance and improvements. Clear puzzles, per-combo SFX, client-side performance optimizations, engine and project refactoring, documentation, UI rework, github integration, extended replay support.
 
 Sankyr - gameloop rework, input rework, UI rework
 
@@ -86,6 +86,7 @@ Bbforky, Vyce, foxyman, Blinzer - Advice and helping come up with the ranking sy
 CardsOfTheHeart - advice with improving timings of things like stop time and shake time.  
 Myself086 - figuring out how shock block spawning is supposed to work, among other things about the game.  
 orangetriangle - finding several engine bug repros  
+PDR_Lava - continuous testing of canary builds
 
 
 The League of Puzzle Speedrunners <http://discord.puzzlegeneral.com> - many of our players heard about us there, and they provided restreaming of some of our Tournaments  
