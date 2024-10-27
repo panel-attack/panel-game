@@ -88,10 +88,17 @@ function inputManager:keyReleased(key, scancode)
 end
 
 function inputManager:joystickPressed(joystick, button)
-  self.allKeys.isDown[joystickManager:getJoystickButtonName(joystick, button)] = KEY_CHANGE.DETECTED
+  if not joystickManager.devices[joystick:getID()] then
+    love.joystickadded(joystick)
+  end
+  local key = joystickManager:getJoystickButtonName(joystick, button)
+  self.allKeys.isDown[key] = KEY_CHANGE.DETECTED
 end
 
 function inputManager:joystickReleased(joystick, button)
+  if not joystickManager.devices[joystick:getID()] then
+    love.joystickadded(joystick)
+  end
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isUp[key] = KEY_CHANGE.DETECTED
 end
