@@ -47,7 +47,7 @@ function OptionsMenu:loadScreens()
   menus.aboutCharacters = self:loadInfoScreen(save.read_txt_file("docs/characters.md"))
   menus.aboutStages = self:loadInfoScreen(save.read_txt_file("docs/stages.md"))
   menus.aboutPanels = self:loadInfoScreen(save.read_txt_file("docs/panels.md"))
-  menus.aboutAttackFiles = self:loadInfoScreen(save.read_txt_file("docs/training.md"))
+  menus.aboutAttackFiles = self:loadInfoScreen(save.read_txt_file("docs/training.txt"))
   menus.installingMods = self:loadInfoScreen(save.read_txt_file("docs/installMods.md"))
 
   return menus
