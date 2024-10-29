@@ -21,6 +21,8 @@ local ChallengeMode =
     self.gameScene = Game1pChallenge
 
     self:addPlayer(GAME.localPlayer)
+    GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
+
     self.player = ChallengeModePlayer(#self.players + 1)
     self.player.settings.difficulty = difficulty
     self:addPlayer(self.player)
