@@ -1,5 +1,6 @@
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
+require("common.lib.util")
 
 -- clears information relating to state, matches and various stuff
 -- a true argument must be supplied to clear the chaining flag as well
@@ -431,7 +432,7 @@ matchedState.enterHoverState = function(panel)
   panel.chaining = true
   panel.propagatesChaining = true
   if not panel.frameTimes.GARBAGE_HOVER then
-    logger.info("Trying to set garbage hover on a panel not having garbage hover"
+    error("Trying to set garbage hover on a panel not having garbage hover"
       .. "\n" .. table_to_string(panel))
   end
   panel.timer = panel.frameTimes.GARBAGE_HOVER
