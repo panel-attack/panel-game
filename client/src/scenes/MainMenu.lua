@@ -135,9 +135,32 @@ function MainMenu:createMainMenu()
   return menu
 end
 
+local nextUpdate = 900
+local checked = false
+local interval = 900
+local updateAvailable = false
+function MainMenu:checkForUpdates()
+  if GAME.updater then
+    if not updateAvailable and GAME.timer > nextUpdate then
+      checked = false
+      nextUpdate = nextUpdate + interval
+      if GAME.updater.activeReleaseStream.name == GAME.updater.activeVersion.releaseStream.name then
+        GAME.updater:getAvailableVersions(GAME.updater.activeReleaseStream)
+      end
+    end
+    GAME.updater:update()
+    if not checked and GAME.updater.state == GAME_UPDATER_STATES.idle then
+      checked = true
+      updateAvailable = GAME.updater:updateAvailable(GAME.updater.activeReleaseStream)
+    end
+  end
+end
+
 function MainMenu:update(dt)
   GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
+
+  self:checkForUpdates()
 end
 
 function MainMenu:draw()
@@ -152,13 +175,16 @@ function MainMenu:draw()
     infoYPosition = infoYPosition - fontHeight
   end
 
-  -- if GAME_UPDATER_GAME_VERSION then
-  --   GraphicsUtil.printf("PA Version: " .. GAME_UPDATER_GAME_VERSION, -5, infoYPosition, consts.CANVAS_WIDTH, "right")
-  --   infoYPosition = infoYPosition - fontHeight
-  --   if has_game_update then
-  --     panels[config.panels]:drawPanelFrame(1, "normal", 1262, 685)
-  --   end
-  -- end
+  if GAME.updater then
+    local version
+    if updateAvailable then
+      version = "New " .. GAME.updater.activeReleaseStream.name .. " version available! Restart the game to download!"
+    else
+      version = "PA Version: " .. GAME.updater.activeReleaseStream.name .. " " .. GAME.updater.activeVersion.version
+    end
+    GraphicsUtil.printf(version, -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+    infoYPosition = infoYPosition - fontHeight
+  end
 end
 
 return MainMenu
