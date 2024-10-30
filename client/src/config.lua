@@ -240,6 +240,12 @@ config = {
           if type(read_data.windowHeight) == "number" then
             configTable.windowHeight = read_data.windowHeight
           end
+          if type(read_data.windowX) == "number" then
+            configTable.windowX = read_data.windowX
+          end
+          if type(read_data.windowY) == "number" then
+            configTable.windowY = read_data.windowY
+          end
           if type(read_data.borderless) == "boolean" then
             configTable.borderless = read_data.borderless
           end

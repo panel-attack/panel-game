@@ -128,7 +128,6 @@ function handleShortcuts()
   elseif input.isPressed["Alt"] then
     if input.allKeys.isDown["return"] then
       love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
-      config.fullscreen = love.window.getFullscreen()
       input.isDown = {}
     elseif input.allKeys.isDown["1"] then
       modifyWinCounts(1)

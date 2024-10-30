@@ -28,24 +28,24 @@ end
 function love.load(args)
   love.keyboard.setTextInput(false)
 
-  love.graphics.setDefaultFilter("linear", "linear")
-  if config.maximizeOnStartup and not love.window.isMaximized() then
-    love.window.maximize()
-  end
-
-  -- there is a bug on windows that causes the game to start like it was borderless
+  -- there is a bug on windows that causes the game to start with a size equal to the desktop causing the window handle to be offscreen
   -- check for that and restore the window if that's the case:
-  local dWidth, desktopHeight = love.window.getDesktopDimensions()
-  local x, y = love.window.getPosition()
+  local x, y, displayIndex = love.window.getPosition()
+  local desktopWidth, desktopHeight = love.window.getDesktopDimensions(displayIndex)
   local w, windowHeight, flags = love.window.getMode()
 
-  if not flags.fullscreen and not flags.borderless then
-    if y == 0 and windowHeight == desktopHeight then
+  if not flags.fullscreen and not flags.borderless and love.system.getOS() ~= "Android" then
+    if y == 0 and windowHeight >= desktopHeight then
       if love.window.isMaximized() then
         love.window.restore()
       end
-      love.window.updateMode(w, windowHeight - 30, flags)
-      love.window.setPosition(x, 30)
+      local offset = math.ceil(desktopHeight / 32)
+      love.window.updateMode(desktopWidth, desktopHeight - offset, flags)
+      love.window.setPosition(x, offset, displayIndex)
+    end
+
+    if config.maximizeOnStartup and not love.window.isMaximized() then
+      love.window.maximize()
     end
   end
 
@@ -126,17 +126,24 @@ function love.quit()
     GAME.netClient:logout()
   end
   love.audio.stop()
-  if love.window.getFullscreen() then
+  config.fullscreen = love.window.getFullscreen()
+  local x, y, displayIndex = love.window.getPosition()
+  config.displayIndex = displayIndex
+  if config.fullscreen then
     _, _, config.display = love.window.getPosition()
+    config.fullscreen = true
+    -- don't save the other values so the settings from previous windowed mode usage are preserved
   else
-    config.windowX, config.windowY, config.display = love.window.getPosition()
-    config.windowX = math.max(config.windowX, 0)
-    config.windowY = math.max(config.windowY, 30) --don't let 'y' be zero, or the title bar will not be visible on next launch.
+    config.windowX = math.max(x, 0)
+    config.windowY = math.max(y, 0)
+    if config.windowY == 0 then
+      --don't let 'y' be zero, or the title bar will not be visible on next launch.
+      config.windowY = 30
+    end
+    config.windowWidth, config.windowHeight, _ = love.window.getMode()
+    config.maximizeOnStartup = love.window.isMaximized()
   end
 
-  config.windowWidth, config.windowHeight, _ = love.window.getMode( )
-  config.maximizeOnStartup = love.window.isMaximized()
-  config.fullscreen = love.window.getFullscreen()
   write_conf_file()
   pcall(love.filesystem.write, "debug.log", table.concat(logger.messages, "\n"))
 end
