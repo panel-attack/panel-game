@@ -248,11 +248,15 @@ function love.errorhandler(msg)
   end
 
   love.graphics.reset()
-  love.graphics.setFont(GraphicsUtil.getGlobalFontWithSize(GraphicsUtil.fontSize + 4))
-  GraphicsUtil.setColor(1, 1, 1)
+  local s, font = pcall(GraphicsUtil.getGlobalFontWithSize, GraphicsUtil.fontSize + 4)
+  if s then
+    love.graphics.setFont(font)
+  else
+    love.graphics.setNewFont(16)
+  end
+  love.graphics.setColor(1, 1, 1)
   love.graphics.origin()
 
-  local scale = 1
   if GAME then
     local success, canvasScale = pcall(GAME.newCanvasSnappedScale, GAME)
     if success then
