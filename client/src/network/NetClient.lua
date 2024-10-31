@@ -250,6 +250,7 @@ end
 
 -- starts to spectate a 2p vs online match
 local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
+  resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(spectateRequestGrantedMessage)
   self.room = GAME.battleRoom
   if GAME.battleRoom.match then
