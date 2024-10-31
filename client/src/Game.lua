@@ -24,6 +24,7 @@ local StartUp = require("client.src.scenes.StartUp")
 local SoundController = require("client.src.music.SoundController")
 require("client.src.BattleRoom")
 local prof = require("common.lib.jprof.jprof")
+local tableUtils = require("common.lib.tableUtils")
 
 local RichPresence = require("client.lib.rich_presence.RichPresence")
 
@@ -128,6 +129,32 @@ local function detectHardwareProblems()
   end
 end
 
+function Game:cleanupOldVersions()
+  if self.updater then
+    local activeReleaseStream = self.updater.activeReleaseStream
+    self.updater:getAvailableVersions(activeReleaseStream)
+    while self.updater.state ~= GAME_UPDATER_STATES.idle do
+      self.updater:update()
+      coroutine.yield("Cleaning up old versions")
+    end
+    if activeReleaseStream.availableVersions and #activeReleaseStream.availableVersions > 0 then
+      local toBeCleared = {}
+      for _, installedVersionInfo in pairs(activeReleaseStream.installedVersions) do
+        if not tableUtils.first(activeReleaseStream.availableVersions, function(availableVersionInfo)
+          return availableVersionInfo.version == installedVersionInfo.version
+        end) then
+          toBeCleared[#toBeCleared+1] = installedVersionInfo
+        end
+      end
+
+      for i, versionInfo in ipairs(toBeCleared) do
+        pcall(self.updater.removeInstalledVersion, self.updater, versionInfo)
+        coroutine.yield("Cleaning up old versions")
+      end
+    end
+  end
+end
+
 function Game:setupRoutine()
   -- loading various assets into the game
   coroutine.yield("Loading localization...")
@@ -137,21 +164,21 @@ function Game:setupRoutine()
   detectHardwareProblems()
 
   fileUtils.copyFile("docs/puzzles.txt", "puzzles/README.txt")
-  
+
   coroutine.yield(loc("ld_theme"))
   theme_init()
   self.theme = themes[config.theme]
-  
+
   -- stages and panels before characters since they are part of their loading!
   coroutine.yield(loc("ld_stages"))
   StageLoader.initStages()
-  
+
   coroutine.yield(loc("ld_panels"))
   panels_init()
-  
+
   coroutine.yield(loc("ld_characters"))
   CharacterLoader.initCharacters()
-  
+
   coroutine.yield(loc("ld_analytics"))
   analytics.init()
 
@@ -159,7 +186,7 @@ function Game:setupRoutine()
 
   self:createDirectoriesIfNeeded()
 
-  self:checkForUpdates()
+  self:cleanupOldVersions()
   -- Run all unit tests now that we have everything loaded
   if TESTS_ENABLED then
     self:runUnitTests()
@@ -222,13 +249,6 @@ function Game:createDirectoriesIfNeeded()
   if love.system.getOS() ~= "OS X" then
     fileUtils.recursiveRemoveFiles(".", ".DS_Store")
   end
-end
-
-function Game:checkForUpdates()
-  -- --check for game updates
-  -- if self.updater and self.updater.check_update_ingame then
-  --   wait_game_update = self.updater:async_download_latest_version()
-  -- end
 end
 
 function Game:runUnitTests()
