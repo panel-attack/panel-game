@@ -98,9 +98,9 @@ local dt = 0
 local mem = 0
 local prevMem = 0
 function CustomRun.innerRun()
-  local shouldQuit = CustomRun.processEvents()
+  local shouldQuit, restartArg = CustomRun.processEvents()
   if shouldQuit then
-    return shouldQuit
+    return shouldQuit, restartArg
   end
   mem = collectgarbage("count")
   prof.push("frame")

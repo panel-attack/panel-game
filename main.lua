@@ -10,6 +10,7 @@ local RunTimeGraph = require("client.src.RunTimeGraph")
 local CustomRun = require("client.src.CustomRun")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.jprof.jprof")
+require("common.lib.util")
 
 local Game = require("client.src.Game")
 -- move to load once global dependencies have been resolved
@@ -253,8 +254,10 @@ function love.errorhandler(msg)
 
   local scale = 1
   if GAME then
-    scale = GAME:newCanvasSnappedScale()
-    love.graphics.scale(scale, scale)
+    local success, canvasScale = pcall(GAME.newCanvasSnappedScale, GAME)
+    if success then
+      love.graphics.scale(canvasScale)
+    end
   end
 
   local function draw()
