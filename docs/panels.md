@@ -274,4 +274,5 @@ One sheet for each panel color:
 - panel-7.png for the seventh color normally only used in puzzles
 - panel-8.png for metal/shock panels
 
-All sheets should be the same size, feature the same amount of rows and have the same amount of frames in each row.
+All sheets have to be the same size, feature the same amount of rows and should have the same amount of frames in each row.  
+The bottom most row of the sheet **must** be used in the configuration, otherwise the panels will render incorrectly.

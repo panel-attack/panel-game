@@ -154,14 +154,20 @@ function Panels:loadSheets()
     self.sheets[color] = load_panel_img(self.path, "panel-" .. color)
     assert(self.sheets[color], "Failed to load sheet for color " .. color .. " on panel set " .. self.id)
   end
+  local maxRowUsed = 0
   self.sheetConfig = self.animationConfig
   for animationState, config in pairs(self.sheetConfig) do
     if not config.durationPerFrame then
       config.durationPerFrame = 2
     end
-    config.totalFrames =
-        config.frames * config.durationPerFrame
+    config.totalFrames = config.frames * config.durationPerFrame
+    maxRowUsed = math.max(maxRowUsed, config.row)
+    if not config.row or config.row <= 0 then
+      error("Animation state " .. animationState .. " of panel set " .. self.id .. " specifies an invalid row")
+    end
   end
+
+  self.size = self.sheets[1]:getHeight() / maxRowUsed
 end
 
 -- 
