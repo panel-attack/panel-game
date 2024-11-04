@@ -1,0 +1,22 @@
+# may be used to create fused builds with love-build
+dist
+build.lua
+# may be used to create fused builds with makelove
+makelove.toml
+# directories added by the IDE
+.vscode
+# files generated from running the server locally
+csprng_seed.txt
+GameResults.csv
+PADatabase.sqlite3
+players.txt
+leaderboard.csv
+ftp
+# for developing and debugging updater related features you may want to drop these in
+updater
+releaseStreams.json
+# add files and directories you wish to ignore here
+
+
+# your gitignore is personal
+.gitignore

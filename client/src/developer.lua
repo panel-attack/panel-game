@@ -11,9 +11,10 @@ for _, value in pairs(arg) do
   if value == "test" then
     TESTS_ENABLED = 1
   elseif value == "debug" then
-    DEBUG_ENABLED = 1
-    require "lldebugger"
-    lldebugger.start()
+    if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
+      require("lldebugger").start()
+      DEBUG_ENABLED = 1
+    end
   elseif value == "profileFrameTimes" then
     enableProfiler()
 
