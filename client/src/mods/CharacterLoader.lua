@@ -76,14 +76,12 @@ function CharacterLoader.initCharacters()
   characters_ids = {} -- holds all characters ids
   characters_ids_for_current_theme = {} -- holds characters ids for the current theme, those characters will appear in the lobby
   characters_ids_by_display_names = {} -- holds keys to array of character ids holding that name
+
+  -- load bundled assets first so they are not ignored in favor of user mods
+  CharacterLoader.addCharactersFromDirectoryRecursively("client/assets/default_data/characters")
+  -- load user mods
   CharacterLoader.addCharactersFromDirectoryRecursively("characters")
   CharacterLoader.fillCharactersIds()
-
-  if #characters_ids == 0 then
-    fileUtils.recursiveCopy("client/assets/default_data/characters", "characters")
-    CharacterLoader.addCharactersFromDirectoryRecursively("characters")
-    CharacterLoader.fillCharactersIds()
-  end
 
   if love.filesystem.getInfo(themes[config.theme].path .. "/characters.txt") then
     for line in love.filesystem.lines(themes[config.theme].path .. "/characters.txt") do

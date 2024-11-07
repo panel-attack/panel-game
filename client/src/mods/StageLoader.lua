@@ -76,14 +76,11 @@ function StageLoader.initStages()
   stages_ids_for_current_theme = {} -- holds stages ids for the current theme, those stages will appear in the selection
   default_stage = nil
 
+  -- load bundled assets first so they are not ignored in favor of user mods
+  add_stages_from_dir_rec("client/assets/default_data/stages")
+  -- load user mods
   add_stages_from_dir_rec("stages")
   fill_stages_ids()
-
-  if #stages_ids == 0 then
-    fileUtils.recursiveCopy("client/assets/default_data/stages", "stages")
-    add_stages_from_dir_rec("stages")
-    fill_stages_ids()
-  end
 
   if love.filesystem.getInfo(themes[config.theme].path .. "/stages.txt") then
     for line in love.filesystem.lines(themes[config.theme].path .. "/stages.txt") do
