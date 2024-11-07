@@ -8,11 +8,11 @@ panel-attack
   Copyright (C) 2011 Robert Burke
   Copyright (C) 2023-24 The Panel Attack Contributors
 
-themes/Panel Attack Modern/music/main.ogg
+client/assets/themes/Panel Attack Modern/music/main.ogg
   License: CC BY-SA 4.0
   Copyright (C) 2024 Andrew Anderson - "A2Z"
 
-themes/
+client/assets/themes/
   License: CC BY-SA 4.0
   Copyright (C) 2023-24 The Panel Attack Contributors
 
