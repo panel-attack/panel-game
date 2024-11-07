@@ -37,17 +37,17 @@ We aren't lawyers but to our current understanding there are potential problems 
 
 Additionally Panel Attack is a project in the spirit of free open source software and no asset added to the project should make future users and contributors liable to consequences from using assets with unclear license status.  
 
-Thus, in order to protect the project and its contributors, all new assets must be licensed under the [CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/) or other CC licenses. Excluded are CC licenses using the ND (no derivatives) clause as we feel this restriction to be too limiting for the nature of the project.
+Thus, in order to protect the project and its contributors, all new assets must be licensed under the [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/) or a more permissive license of irrevocable nature. We do not accept CC licenses using the ND (no derivatives) clause as we feel this restriction to be too limiting for the nature of the project.
 
 ## Technicalities
 
 Please ensure the following requirements are met for submitting pull requests containing assets:
-- All assets are mentioned by filepath and name in the repository's license file with the correct license and copyright holder
+- All assets are mentioned by file path and name in the repository's license file with the correct license and copyright holder
 - All assets additionally have the license and copyright notice stored in their metadata
   - If the copyright holder provided a link to their web presence, it has to be included in the metadata as well
   - For music only:
     - Music should additionally include a title and artist in the respective metadata fields
-    - If music was created specifically for use in Panel Attack the metadata should also contain link to the Panel Attack website
+    - If music was created specifically for use in Panel Attack it would be appreciated if the metadata also contained a link to the Panel Attack website
 
 Project files with the purpose to facilitate the creation of future derivatives are to be submitted to the [panel-attack/panel-attack-resources](https://github.com/panel-attack/panel-attack-resources) repository.
 
