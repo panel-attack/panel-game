@@ -184,6 +184,14 @@ function MainMenu:draw()
     end
     GraphicsUtil.printf(version, -5, infoYPosition, consts.CANVAS_WIDTH, "right")
     infoYPosition = infoYPosition - fontHeight
+
+    if GAME.updater.version.major < 1 then
+      GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+      infoYPosition = infoYPosition - fontHeight
+    elseif GAME.updater.version.major == 1 and GAME.updater.version.minor < 1 then
+      GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+      infoYPosition = infoYPosition - fontHeight
+    end
   end
 end
 
