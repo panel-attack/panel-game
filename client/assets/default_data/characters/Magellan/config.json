@@ -1,0 +1,10 @@
+{
+"name": "Magellan",
+"id": "PA_Magellan_Test",
+"version": 2,
+"popfx_style": "burst",
+"chain_style":"per_chain",
+"combo_style":"per_combo",
+"music_style": "dynamic",
+"stage": "panel-attack-magellan-day"
+}

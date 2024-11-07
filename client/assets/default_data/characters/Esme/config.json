@@ -1,0 +1,10 @@
+{
+  "name": "Esme",
+  "id": "PA_Esme",
+  "version": 2,
+  "popfx_burstRotate": true,
+  "popfx_style": "fadeburst",
+  "chain_style": "per_chain",
+  "combo_style": "per_combo",
+  "music_style": "dynamic"
+}
