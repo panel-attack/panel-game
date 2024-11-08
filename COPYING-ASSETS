@@ -134,15 +134,15 @@ themes/Panel Attack Modern/sfx/move
 themes/Panel Attack Modern/sfx/notification
 themes/Panel Attack Modern/sfx/swap
 themes/Panel Attack Modern/sfx/thud_#
-  These have been licensed for embedding in Panel Attack releases according to the EULA from the Unity Asset Store and a license has been purchased under this URL
+  These have been licensed for embedding in Panel Attack releases according to the EULA from the Unity Asset Store and a license has been purchased via this URL:
   https://assetstore.unity.com/packages/audio/sound-fx/interface-and-item-sounds-89646
-  You can absolutely not use them for any other purpose than embedding in Panel Attack.
+  You cannot use them for any other purpose than embedding in Panel Attack.
 
   Additionally the situation on these is a bit unclear. The EULA suggests that it might be required for each developer to acquire their own license to work with the assets.
   However, the licensor of the assets, Cafofo Music, went completely missing and many of their asset packs have been taken down, presumably for copyright infringement.
-  Unlike most other asset packs from this seller however, according to our insight this pack is still available for download for the person who originally purchased these indicating it was not flagged for copyright and the mediator (Unity) considers these assets as lawfully acquired as otherwise continuing to host them would be an infringement itself.
-  The conclusion is that we cannot obtain new licenses by fault of the licensor putting the use of these assets into a bit of a legal limbo.
-  Accordingly these assets should be replaced as soon as convenient.
+  Unlike most other asset packs from this seller however, according to our insight this pack is still available for download for the anyone who originally purchased it. This indicates that it was not flagged for copyright and the mediator (Unity) considers these assets as lawfully acquired as otherwise continuing to host them would be an infringement itself.
+  The conclusion is that we cannot obtain new licenses by fault of the licensor but the already acquired license is valid.
+  Accordingly these assets should be replaced as soon as convenient or once the licensor becomes available again, maintainers shall obtain additional licenses, whichever is first.
 
 Characters
 ==========
