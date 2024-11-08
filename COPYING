@@ -1,19 +1,12 @@
 Licensing information
 =====================
 
-Unless specified otherwise below, all code and assets in this project stand under the license for panel-attack.
+Unless specified otherwise below, all code in this project stands under the license for panel-attack.
+For asset licenses please check COPYING-ASSETS
 
 panel-attack
   License: zlib
   Copyright (C) 2011 Robert Burke
-  Copyright (C) 2023-24 The Panel Attack Contributors
-
-client/assets/themes/Panel Attack Modern/music/main.ogg
-  License: CC BY-SA 4.0
-  Copyright (C) 2024 Andrew Anderson - "A2Z"
-
-client/assets/themes/
-  License: CC BY-SA 4.0
   Copyright (C) 2023-24 The Panel Attack Contributors
 
 batteries/manual_gc

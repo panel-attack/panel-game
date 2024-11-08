@@ -1,0 +1,158 @@
+Notation
+========
+
+This file details the copyright status of its asset files and if available the related license the artwork has been made available for use.  
+For brevity, all file paths are to be assumed to be located within the client/assets/ directory.
+For brevity, individual contributions may be subsumed under the title "The Panel Attack Contributors" in some cases. This does not affect the copyright status, all the rights belong to the respective creator.
+For brevity, directories may be addressed directly if the copyright and license status can be summarized for its contents. If a file is addressed by more than one entry, the most specific one applies. Copyright and license notice do not apply for non-artworks in directories addressed as such (e.g. configuration files).
+For brevity, multiple entries may be made in succession to indicate the same creator and license status.
+For brevity, notation may use common wildcards to indicate ownership and license for similarly named groups of files.
+For brevity, some keywords are used that encompass groups of file that form a cohesive whole when put together in the game.
+For brevity, names used in this file may address files by name only, meaning without both file extension (e.g. ".png") and scale indicator (e.g. "@2x")
+Panel Attack attempts to use metadata in all of its assets under version control to indicate copyright status beyond this textual representation.
+If metadata information of an asset version controlled in this repository contradicts this document, please assume a mistake has happened, open an issue and err on the side of caution regarding use.
+If an asset is not tracked by this file and has no metadata information, similarly assume that all rights are reserved. In some cases a file may not be tracked because its content is not considered copyrightable by nature (e.g. zero_music.ogg)
+
+Keywords
+========
+
+The "Garbage" keyword addresses the following files located on the same directory level:
+filler1
+filler2
+face
+face2
+doubleface
+pop
+flash
+top
+bot
+left
+right
+topleft
+botleft
+topright
+botright
+
+The "Character SFX" keyword addresses audio files with the following names located on the same directory level:
+chain*
+combo*
+shock*
+garbage_match*
+garbage_land*
+selection*
+win*
+lose*
+taunt_up*
+taunt_down*
+
+The "Character Music" and "Stage Music" keywords address audio files with the following names located on the same directory level:
+normal_music
+normal_music_start
+danger_music
+danger_music_start
+
+Licenses
+========
+
+CC BY-SA 4.0
+  To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/
+CC BY-NC-SA 4.0
+  To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Files
+=====
+
+Theme
+=====
+
+themes/Panel Attack Modern/music/main.ogg
+  Copyright (C) 2024 Andrew Anderson - "A2Z"
+  License: CC BY-SA 4.0
+
+themes/
+  Copyright (C) 2023-24 The Panel Attack Contributors
+  All rights reserved
+
+Characters
+==========
+
+characters/__default/telegraph
+  Copyright (C) 2024 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+characters/__default
+  Copyright (C) 2023-24 The Panel Attack Contributors
+  All rights reserved
+
+
+
+default_data/characters/Esme/icon
+default_data/characters/Esme/portrait
+  Copyright (C) 2022 Gaster
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/telegraph
+  Copyright (C) 2024 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/Garbage
+default_data/characters/Esme/burst
+default_data/characters/Esme/fade
+  Copyright (C) 2024 JamBox
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/Character SFX
+  Copyright (C) Erin Culpepper
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/Character Music
+  Copyright (C) Hunter van Brocklin
+  License: CC BY-NC-SA 4.0
+
+
+
+default_data/characters/Magellan/icon
+default_data/characters/Magellan/portrait
+  Copyright (C) 2022 Gaster
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/telegraph
+  Copyright (C) 2024 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/Garbage
+default_data/characters/Magellan/burst
+  Copyright (C) 2024 JamBox
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/Character SFX
+  Copyright (C) Harry Dyer
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/Character Music
+  Copyright (C) Hunter van Brocklin
+  License: CC BY-NC-SA 4.0
+
+
+Stages
+======
+
+default_data/stages/Magellan Day
+default_data/stages/Magellan Night
+  Copyright (C) Hali
+  All rights reserved
+
+Panels
+======
+
+panels/__default
+default_data/Panels HD - Basic
+  Copyright (C) Mizuno
+  All rights reserved
+
+default_data/panels/Panel Attack
+  Creator currently not known to the maintainer(s) of this document
+  Assume all rights to be reserved
+
+
+
