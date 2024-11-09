@@ -170,12 +170,10 @@ themes/Panel Attack Modern/2
 themes/Panel Attack Modern/3
 themes/Panel Attack Modern/APM
 themes/Panel Attack Modern/bug
-themes/Panel Attack Modern/burst
 themes/Panel Attack Modern/casual
 themes/Panel Attack Modern/cursor1
 themes/Panel Attack Modern/cursor2
 themes/Panel Attack Modern/CursorCount
-themes/Panel Attack Modern/fade
 themes/Panel Attack Modern/GPM
 themes/Panel Attack Modern/healthbar*
 themes/Panel Attack Modern/level*
@@ -238,6 +236,10 @@ characters/__default/telegraph/
   Copyright (C) 2024 JamBox, Ace of Arrows
   License: CC BY-SA 4.0
 
+characters/__default/burst
+characters/__default/fade
+  Copyright (C) 2024 JamBox
+  License: CC BY-SA 4.0
 
 
 default_data/characters/Esme/icon

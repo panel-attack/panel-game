@@ -370,9 +370,6 @@ function Theme:loadIngameGraphics()
 
   self.images.pause = self:load_theme_img("pause")
 
-  self.images.burst = self:load_theme_img("burst")
-  self.images.fade = self:load_theme_img("fade")
-
   --play field frames, plus the wall at the bottom.
   self.images.frames = {}
   self.images.walls = {}

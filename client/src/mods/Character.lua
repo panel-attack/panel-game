@@ -252,13 +252,9 @@ function Character.graphics_init(self, full, yields)
   for _, image_name in ipairs(character_images) do
     self.images[image_name] = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. image_name)
     if not self.images[image_name] and defaulted_images[image_name] and not self:is_bundle() then
-      if image_name == "burst" or image_name == "fade" then
-        self.images[image_name] = themes[config.theme].images[image_name]
-      else
-        self.images[image_name] = default_character.images[image_name]
-        if not self.images[image_name] then
-          error("Could not find default character image")
-        end
+      self.images[image_name] = default_character.images[image_name]
+      if not self.images[image_name] then
+        error("Could not find default character image")
       end
     end
     if yields then
