@@ -9,7 +9,8 @@ For brevity, multiple entries may be made in succession to indicate the same cre
 For brevity, notation may use common wildcards to indicate ownership and license for similarly named groups of files.
 For brevity, some keywords are used that encompass groups of file that form a cohesive whole when put together in the game.
 For brevity, names used in this file may address files by name only, meaning without both file extension (e.g. ".png") and scale indicator (e.g. "@2x")
-Panel Attack attempts to use metadata in all of its assets under version control to indicate copyright status beyond this textual representation.
+
+Panel Attack attempts to use metadata in all of its assets under version control to indicate copyright status beyond this textual representation, especially those with a CC license.
 If metadata information of an asset version controlled in this repository contradicts this document, please assume a mistake has happened, open an issue and err on the side of caution regarding use.
 If an asset is not tracked by this file and has no metadata information, similarly assume that all rights are reserved. In some cases a file may not be tracked because its content is not considered copyrightable by nature e.g. themes/Panel Attack Modern/transparent.png
 
@@ -206,6 +207,15 @@ themes/Panel Attack Modern/pixel_font_blue
 themes/Panel Attack Modern/leagues
   Copyright (C) 2022 Illhark
   https://zynima.net/
+
+themes/Panel Attack Modern/background/main
+themes/Panel Attack Modern/background/readme
+themes/Panel Attack Modern/background/select_screen
+  Copyright (C) 2023 Mizuno
+
+themes/Panel Attack Modern/background/title
+  This is a simple combination of two different artworks by Mizuno and Solitaire, done by Endaris.
+
 
 themes/Panel Attack Modern/sfx/countdown
 themes/Panel Attack Modern/sfx/fanfare#
