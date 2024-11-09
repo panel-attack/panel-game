@@ -88,10 +88,12 @@ function StartUp:checkIfMigrationIsPossible()
       logger.debug("Trying to mount old install under " .. path)
 
       if not love.filesystem.mountFullPath(path, "oldInstall") then
-        -- if we couldn't mound that directory, that means there is no old install
+        -- if we couldn't mount that directory, that means there is no old install
         logger.debug("No old install found")
       else
-        return path
+        if love.filesystem.exists("oldInstall/conf.json") then
+          return path
+        end
       end
     end
   end
