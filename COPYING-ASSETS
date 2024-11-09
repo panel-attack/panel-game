@@ -1,10 +1,10 @@
 Notation
 ========
 
-This file details the copyright status of its asset files and if available the related license the artwork has been made available for use.  
+This file details the copyright status of its asset files and if available the related license the artwork has been made available to use under.  
 For brevity, all file paths are to be assumed to be located within the client/assets/ directory.
-For brevity, individual contributions may be subsumed under the title "The Panel Attack Contributors" in some cases. This does not affect the copyright status, all the rights belong to the respective creator.
-For brevity, directories may be addressed directly if the copyright and license status can be summarized for its contents. If a file is addressed by more than one entry, the most specific one applies. Copyright and license notice do not apply for non-artworks in directories addressed as such (e.g. configuration files).
+For brevity, individual contributions may be subsumed under the title "The Panel Attack Contributors" in some case if a creator does not wish their name to be listed. This does not affect the copyright status, all the rights belong to the respective creator.
+For brevity, directories may be addressed directly if the copyright and license status can be summarized for all of its contents. If a file is addressed by more than one entry, the most specific one applies. Copyright and license notice do not apply for non-artworks in directories addressed as such (e.g. configuration files, code).
 For brevity, multiple entries may be made in succession to indicate the same creator and license status.
 For brevity, notation may use common wildcards to indicate ownership and license for similarly named groups of files.
 For brevity, some keywords are used that encompass groups of file that form a cohesive whole when put together in the game.
@@ -121,7 +121,6 @@ themes/Panel Attack Modern/sfx/menu_validate
 
 themes/Panel Attack Modern/leagues
   Copyright (C) 2022 Illhark
-  All rights reserved
   https://zynima.net/
 
 themes/Panel Attack Modern/sfx/countdown
@@ -150,10 +149,6 @@ Characters
 characters/__default/telegraph/
   Copyright (C) 2024 JamBox, Ace of Arrows
   License: CC BY-SA 4.0
-
-characters/__default/
-  Copyright (C) 2023-24 The Panel Attack Contributors
-  All rights reserved
 
 
 
@@ -188,6 +183,9 @@ default_data/characters/Magellan/portrait
   Copyright (C) 2022 Gaster
   License: CC BY-SA 4.0
 
+default_data/characters/Magellan/telegraph/attack
+  Copyright (C) Hali
+
 default_data/characters/Magellan/telegraph/
   Copyright (C) 2024 JamBox, Ace of Arrows
   License: CC BY-SA 4.0
@@ -213,18 +211,15 @@ Stages
 default_data/stages/Magellan Day/
 default_data/stages/Magellan Night/
   Copyright (C) Hali
-  All rights reserved
 
 Panels
 ======
 
 panels/__default/
   Copyright (C) Mizuno
-  All rights reserved
 
 default_data/panels/Panel Attack/
-  Creator currently not known to the maintainer(s) of this document
-  Assume all rights to be reserved
-
+  Created by April93 in 2019, waived copyright
+  Public Domain
 
 
