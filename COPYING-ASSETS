@@ -114,10 +114,10 @@ themes/Panel Attack Modern/wins
   Copyright (C) 2022-24 JamBox
   License: CC BY-SA 4.0
 
-themes/Panel Attack Modern/sfx/menu_cancel
-themes/Panel Attack Modern/sfx/menu_validate
-  Copyright (C) 2022 JamBox, kornflakes
-  License: CC BY-SA 4.0
+themes/Panel Attack Modern/pixel_font_blue
+  This was generated using the Robtronika font that is available under the SIL Open Font License, Version 1.1
+  https://ggbot.itch.io/robtronika-font
+  You can also find a copy of that license in COPYING
 
 themes/Panel Attack Modern/leagues
   Copyright (C) 2022 Illhark
@@ -128,7 +128,9 @@ themes/Panel Attack Modern/sfx/fanfare#
 themes/Panel Attack Modern/sfx/gameover
 themes/Panel Attack Modern/sfx/go
 themes/Panel Attack Modern/sfx/land
+themes/Panel Attack Modern/sfx/menu_cancel
 themes/Panel Attack Modern/sfx/menu_move
+themes/Panel Attack Modern/sfx/menu_validate
 themes/Panel Attack Modern/sfx/move
 themes/Panel Attack Modern/sfx/notification
 themes/Panel Attack Modern/sfx/swap

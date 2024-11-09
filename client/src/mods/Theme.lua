@@ -327,12 +327,8 @@ function Theme:loadSelectionGraphics()
 
   local pixelFontCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&?!%*."
   local pixelFontBlueAtlas = self:load_theme_img("pixel_font_blue")
-  local pixelFontGreyAtlas = self:load_theme_img("pixel_font_grey")
-  local pixelFontYellowAtlas = self:load_theme_img("pixel_font_yellow")
 
   self.fontMaps.pixelFontBlue = GraphicsUtil.createPixelFontMap(pixelFontCharacters, pixelFontBlueAtlas)
-  self.fontMaps.pixelFontGrey = GraphicsUtil.createPixelFontMap(pixelFontCharacters, pixelFontGreyAtlas)
-  self.fontMaps.pixelFontYellow = GraphicsUtil.createPixelFontMap(pixelFontCharacters, pixelFontYellowAtlas)
 
   self.images.IMG_random_stage = self:load_theme_img("random_stage")
   self.images.IMG_random_character = self:load_theme_img("random_character")

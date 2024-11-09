@@ -129,7 +129,7 @@ The image will get scaled down to fit the screen while maintaining aspect ratio 
 ### Fonts
 
 `pixel_font_blue.png` is a sprite atlas for a font that is used for displaying 1P records in menus and character selection.  
-While `pixel_font_grey` and `pixel_font_yellow` can also be specified, they currently don't get used by the game.
+It does not have to be blue but the name is kept for backwards compatibility with older themes
 
 ### Character selection
 
