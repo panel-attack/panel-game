@@ -113,14 +113,9 @@ function panels_init()
   panels = {} -- holds all panels, all of them will be fully loaded
   panels_ids = {} -- holds all panels ids
 
+  add_panels_from_dir_rec("client/assets/panels/__default")
+  add_panels_from_dir_rec("client/assets/default_data/panels")
   add_panels_from_dir_rec("panels")
-
-  if #panels_ids == 0 or (config and not config.defaultPanelsCopied) then
-    fileUtils.recursiveCopy("client/assets/panels/__default", "panels/pacci")
-    fileUtils.recursiveCopy("client/assets/default_data/panels", "panels")
-    config.defaultPanelsCopied = true
-    add_panels_from_dir_rec("panels")
-  end
 
   -- fix config panel set if it's missing
   if not config.panels or not panels[config.panels] then
