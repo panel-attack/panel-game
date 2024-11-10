@@ -41,8 +41,8 @@ config = {
     name                          = "",
     -- Volume settings
     master_volume                 = 50,
-    SFX_volume                    = 100,
-    music_volume                  = 100,
+    SFX_volume                    = 50,
+    music_volume                  = 50,
     -- Debug mode flag
     debug_mode                    = false,
     debugShowServers              = false,

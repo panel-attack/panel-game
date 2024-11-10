@@ -1,0 +1,342 @@
+Notation
+========
+
+This file details the copyright status of its asset files and if available the related license the artwork has been made available to use under.  
+Individual contributions may be subsumed under the title "The Panel Attack Contributors" if a creator does not wish for their name to be listed. This does not affect the rights of the creator nor transfers any rights to other Panel Attack contributors.
+For brevity, all file paths are to be assumed to be located within the client/assets/ directory.
+For brevity, directories may be addressed directly if the copyright and license status can be summarized for all of its contents. If a file is addressed by more than one entry, the most specific one applies. Copyright and license notice do not apply for non-artworks in directories addressed as such (e.g. configuration files, code).
+For brevity, multiple entries may be made in succession to indicate the same creator and license status.
+For brevity, notation may use common wildcards to indicate ownership and license for similarly named groups of files.
+For brevity, some keywords are used that encompass groups of file that form a cohesive whole when put together in the game.
+For brevity, names used in this file may address files by name only, meaning without both file extension (e.g. ".png") and scale indicator (e.g. "@2x")
+
+Panel Attack attempts to use metadata in all of its assets under version control to indicate copyright status beyond this textual representation, especially those with a CC license.
+If metadata information of an asset version controlled in this repository contradicts this document, please assume a mistake has happened, open an issue and err on the side of caution regarding use.
+If an asset is not tracked by this file and has no metadata information, similarly assume that all rights are reserved. In some cases a file may not be tracked because its content is not considered copyrightable by nature e.g. themes/Panel Attack Modern/transparent.png
+
+Keywords
+========
+
+The "Garbage" keyword addresses the following image files located on the same directory level:
+filler1
+filler2
+face
+face2
+doubleface
+pop
+flash
+top
+bot
+left
+right
+topleft
+botleft
+topright
+botright
+
+The "Character SFX" keyword addresses audio files with the following names located on the same directory level:
+chain*
+combo*
+shock*
+garbage_match*
+garbage_land*
+selection*
+win*
+lose*
+taunt_up*
+taunt_down*
+
+The "Character Music" and "Stage Music" keywords address audio files with the following names located on the same directory level:
+normal_music
+normal_music_start
+danger_music
+danger_music_start
+
+License text
+============
+
+CC BY-SA 4.0
+  To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/
+
+CC BY-NC-SA 4.0
+  To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/
+
+SIL OPEN FONT LICENSE
+  Version 1.1 - 26 February 2007
+  PREAMBLE
+
+  The goals of the Open Font License (OFL) are to stimulate worldwide
+  development of collaborative font projects, to support the font creation
+  efforts of academic and linguistic communities, and to provide a free and
+  open framework in which fonts may be shared and improved in partnership
+  with others.
+
+  The OFL allows the licensed fonts to be used, studied, modified and
+  redistributed freely as long as they are not sold by themselves. The
+  fonts, including any derivative works, can be bundled, embedded,
+  redistributed and/or sold with any software provided that any reserved
+  names are not used by derivative works. The fonts and derivatives,
+  however, cannot be released under any other type of license. The
+  requirement for fonts to remain under this license does not apply
+  to any document created using the fonts or their derivatives.
+  DEFINITIONS
+
+  "Font Software" refers to the set of files released by the Copyright
+  Holder(s) under this license and clearly marked as such. This may
+  include source files, build scripts and documentation.
+
+  "Reserved Font Name" refers to any names specified as such after the
+  copyright statement(s).
+
+  "Original Version" refers to the collection of Font Software components as
+  distributed by the Copyright Holder(s).
+
+  "Modified Version" refers to any derivative made by adding to, deleting,
+  or substituting — in part or in whole — any of the components of the
+  Original Version, by changing formats or by porting the Font Software to a
+  new environment.
+
+  "Author" refers to any designer, engineer, programmer, technical
+  writer or other person who contributed to the Font Software.
+  PERMISSION & CONDITIONS
+
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of the Font Software, to use, study, copy, merge, embed, modify,
+  redistribute, and sell modified and unmodified copies of the Font
+  Software, subject to the following conditions:
+
+  1) Neither the Font Software nor any of its individual components,
+  in Original or Modified Versions, may be sold by itself.
+
+  2) Original or Modified Versions of the Font Software may be bundled,
+  redistributed and/or sold with any software, provided that each copy
+  contains the above copyright notice and this license. These can be
+  included either as stand-alone text files, human-readable headers or
+  in the appropriate machine-readable metadata fields within text or
+  binary files as long as those fields can be easily viewed by the user.
+
+  3) No Modified Version of the Font Software may use the Reserved Font
+  Name(s) unless explicit written permission is granted by the corresponding
+  Copyright Holder. This restriction only applies to the primary font name as
+  presented to the users.
+
+  4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+  Software shall not be used to promote, endorse or advertise any
+  Modified Version, except to acknowledge the contribution(s) of the
+  Copyright Holder(s) and the Author(s) or with their explicit written
+  permission.
+
+  5) The Font Software, modified or unmodified, in part or in whole,
+  must be distributed entirely under this license, and must not be
+  distributed under any other license. The requirement for fonts to
+  remain under this license does not apply to any document created
+  using the Font Software.
+  TERMINATION
+
+  This license becomes null and void if any of the above conditions are
+  not met.
+  DISCLAIMER
+
+  THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+  OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+  COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+  DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+  OTHER DEALINGS IN THE FONT SOFTWARE.
+
+Files
+=====
+
+Theme
+=====
+
+themes/Panel Attack Modern/music/main.ogg
+  Copyright (C) 2024 Andrew Anderson - "A2Z"
+  License: CC BY-SA 4.0
+
+themes/Panel Attack Modern/sfx/pop*
+  Copyright (C) 2022-23 kornflakes
+  License: CC BY-SA 4.0
+
+themes/Panel Attack Modern/background/bg_overlay*
+themes/Panel Attack Modern/combo/
+themes/Panel Attack Modern/chain/
+themes/Panel Attack Modern/frame/
+themes/Panel Attack Modern/level/
+themes/Panel Attack Modern/1
+themes/Panel Attack Modern/2
+themes/Panel Attack Modern/3
+themes/Panel Attack Modern/APM
+themes/Panel Attack Modern/bug
+themes/Panel Attack Modern/casual
+themes/Panel Attack Modern/cursor1
+themes/Panel Attack Modern/cursor2
+themes/Panel Attack Modern/CursorCount
+themes/Panel Attack Modern/GPM
+themes/Panel Attack Modern/healthbar*
+themes/Panel Attack Modern/level*
+themes/Panel Attack Modern/loading
+themes/Panel Attack Modern/moves
+themes/Panel Attack Modern/multibar*
+themes/Panel Attack Modern/numbers*
+themes/Panel Attack Modern/p1*
+themes/Panel Attack Modern/p2*
+themes/Panel Attack Modern/pause
+themes/Panel Attack Modern/random_character
+themes/Panel Attack Modern/random_stage
+themes/Panel Attack Modern/ranked
+themes/Panel Attack Modern/rating_#P
+themes/Panel Attack Modern/ready
+themes/Panel Attack Modern/score_#P
+themes/Panel Attack Modern/speed_#P
+themes/Panel Attack Modern/super
+themes/Panel Attack Modern/swap
+themes/Panel Attack Modern/time
+themes/Panel Attack Modern/time_numbers
+themes/Panel Attack Modern/wins
+  Copyright (C) 2022-24 JamBox
+  License: CC BY-SA 4.0
+
+themes/Panel Attack Modern/pixel_font_blue
+  This was generated using the Robtronika font that is available under the SIL Open Font License, Version 1.1
+  https://ggbot.itch.io/robtronika-font
+
+themes/Panel Attack Modern/leagues
+  Copyright (C) 2022 Illhark
+  https://zynima.net/
+
+themes/Panel Attack Modern/background/main
+themes/Panel Attack Modern/background/readme
+themes/Panel Attack Modern/background/select_screen
+  Copyright (C) 2023 Mizuno
+
+themes/Panel Attack Modern/background/title
+  This is a simple combination of two different artworks by Mizuno and Solitaire, done by Endaris.
+
+
+themes/Panel Attack Modern/sfx/countdown
+themes/Panel Attack Modern/sfx/fanfare#
+themes/Panel Attack Modern/sfx/gameover
+themes/Panel Attack Modern/sfx/go
+themes/Panel Attack Modern/sfx/land
+themes/Panel Attack Modern/sfx/menu_cancel
+themes/Panel Attack Modern/sfx/menu_move
+themes/Panel Attack Modern/sfx/menu_validate
+themes/Panel Attack Modern/sfx/move
+themes/Panel Attack Modern/sfx/notification
+themes/Panel Attack Modern/sfx/swap
+themes/Panel Attack Modern/sfx/thud_#
+  These have been licensed for embedding in Panel Attack releases according to the EULA from the Unity Asset Store and a license has been purchased via this URL:
+  https://assetstore.unity.com/packages/audio/sound-fx/interface-and-item-sounds-89646
+  You cannot use them for any other purpose than embedding in Panel Attack.
+
+  Additionally the situation on these is a bit unclear. The EULA suggests that it might be required for each developer to acquire their own license to work with the assets.
+  However, the licensor of the assets, Cafofo Music, went completely missing and many of their asset packs have been taken down, presumably for copyright infringement.
+  Unlike most other asset packs from this seller however, according to our insight this pack is still available for download for the anyone who originally purchased it. This indicates that it was not flagged for copyright and the mediator (Unity) considers these assets as lawfully acquired as otherwise continuing to host them would be an infringement itself.
+  The conclusion is that we cannot obtain new licenses by fault of the licensor but the already acquired license is valid.
+  Accordingly these assets should be replaced as soon as convenient or once the licensor becomes available again, maintainers shall obtain additional licenses, whichever is first.
+
+Characters
+==========
+
+characters/__default/telegraph/
+  Copyright (C) 2024 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+characters/__default/burst
+characters/__default/fade
+  Copyright (C) 2024 JamBox
+  License: CC BY-SA 4.0
+
+
+default_data/characters/Esme/icon
+default_data/characters/Esme/portrait
+  Copyright (C) 2022 Gaster
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/telegraph/
+  Copyright (C) 2024 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/Garbage
+default_data/characters/Esme/burst
+default_data/characters/Esme/fade
+  Copyright (C) 2024 JamBox
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/Character SFX
+  Copyright (C) Erin Culpepper
+  License: CC BY-SA 4.0
+
+default_data/characters/Esme/Character Music
+  Copyright (C) Hunter van Brocklin
+  License: CC BY-NC-SA 4.0
+  https://h-v-b.bandcamp.com
+
+
+
+default_data/characters/Magellan/icon
+default_data/characters/Magellan/portrait
+  Copyright (C) 2022 Gaster
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/telegraph/attack
+  Copyright (C) Hali
+
+default_data/characters/Magellan/telegraph/
+  Copyright (C) 2024 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/Garbage
+default_data/characters/Magellan/burst
+  Copyright (C) 2024 JamBox
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/Character SFX
+  Copyright (C) Harry Dyer
+  License: CC BY-SA 4.0
+
+default_data/characters/Magellan/Character Music
+  Copyright (C) Hunter van Brocklin
+  License: CC BY-NC-SA 4.0
+  https://h-v-b.bandcamp.com
+
+
+Stages
+======
+
+default_data/stages/Magellan Day/
+default_data/stages/Magellan Night/
+  Copyright (C) Hali
+
+Panels
+======
+
+panels/__default/
+  Copyright (C) Mizuno
+
+default_data/panels/Panel Attack/
+  Created by April93 in 2019, waived copyright
+  Public Domain
+
+
+Fonts
+=====
+
+fonts/jp.ttf
+  Apple Computer Osaka-UI
+  Copyright © 1990-1999 Apple Computer, Inc.
+  No formal license, usage according to the embedding permission
+
+fonts/Oswald-Light.ttf
+  Copyright (C) 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)
+  License: SIL OPEN FONT LICENSE
+
+fonts/th.otf
+  Noto Sans Thai PA font
+  License: SIL OPEN FONT LICENSE
+  Copyright 2022 The Noto Project Authors (https://github.com/notofonts/thai)
+  This software has been altered for Panel Attack to use an ascent of 800 and a descent of -200.

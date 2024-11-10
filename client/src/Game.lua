@@ -155,6 +155,52 @@ function Game:cleanupOldVersions()
   end
 end
 
+-- this function writes configuration files to control updater behaviour on the next startup
+function Game:writeReleaseStreamDefinition()
+  if self.updater then
+    local releaseStreamDefinition =
+    {
+      releaseStreams =
+      {
+        {
+          name = "stable",
+          versioningType = "timestamp",
+          serverEndPoint = {
+            type = "filesystem",
+            url = "https://panelattack.com/downloads/updates/stable",
+            prefix = "panel-"
+          }
+        },
+        {
+          name = "beta",
+          versioningType = "timestamp",
+          serverEndPoint = {
+            type = "filesystem",
+            url = "https://panelattack.com/downloads/updates/beta",
+            prefix = "panel-beta-"
+          }
+        },
+      },
+      default = "stable"
+    }
+
+    -- this will only start to be active on next startup
+    love.filesystem.write("releaseStreams.json", json.encode(releaseStreamDefinition))
+
+    -- this is for the assumption that a release stream is being retired
+    -- comment in / out as fit depending on release
+    local retiredReleaseNames = {"canary"}
+
+    if tableUtils.contains(retiredReleaseNames, self.updater.activeReleaseStream.name) then
+      local launchDefinition =
+      {
+        activeReleaseStream = releaseStreamDefinition.default
+      }
+      love.filesystem.write("updater/launch.json", json.encode(launchDefinition))
+    end
+  end
+end
+
 function Game:setupRoutine()
   -- loading various assets into the game
   coroutine.yield("Loading localization...")
@@ -187,6 +233,7 @@ function Game:setupRoutine()
   self:createDirectoriesIfNeeded()
 
   self:cleanupOldVersions()
+  self:writeReleaseStreamDefinition()
   -- Run all unit tests now that we have everything loaded
   if TESTS_ENABLED then
     self:runUnitTests()

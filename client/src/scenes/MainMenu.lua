@@ -180,7 +180,7 @@ function MainMenu:draw()
     if updateAvailable then
       version = "New " .. GAME.updater.activeReleaseStream.name .. " version available! Restart the game to download!"
     else
-      version = "PA Version: " .. GAME.updater.activeReleaseStream.name .. " " .. GAME.updater.activeVersion.version
+      version = "PA Version: " .. GAME.updater.activeReleaseStream.name .. " " .. (GAME.updater.activeVersion and GAME.updater.activeVersion.version or "dev")
     end
     GraphicsUtil.printf(version, -5, infoYPosition, consts.CANVAS_WIDTH, "right")
     infoYPosition = infoYPosition - fontHeight
