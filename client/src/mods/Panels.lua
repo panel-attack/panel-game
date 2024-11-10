@@ -113,7 +113,14 @@ function panels_init()
   panels = {} -- holds all panels, all of them will be fully loaded
   panels_ids = {} -- holds all panels ids
 
-  add_panels_from_dir_rec("client/assets/panels/__default")
+  -- add default panel set
+  local defaultPanels = Panels("client/assets/panels/__default", "__default")
+  local success = defaultPanels:json_init()
+
+  if success then
+      panels[defaultPanels.id] = defaultPanels
+      panels_ids[#panels_ids + 1] = defaultPanels.id
+  end
   add_panels_from_dir_rec("client/assets/default_data/panels")
   add_panels_from_dir_rec("panels")
 
