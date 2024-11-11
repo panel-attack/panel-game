@@ -142,7 +142,9 @@ function GameBase:load(sceneParams)
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
       self.match:togglePause()
-      SoundController:playMusic(self.musicSource.stageTrack)
+      if self.musicSource and self.musicSource.stageTrack then
+        SoundController:playMusic(self.musicSource.stageTrack)
+      end
       self:initializeFrameInfo()
     end),
     MenuItem.createButtonMenuItem("back", nil, true, function()
