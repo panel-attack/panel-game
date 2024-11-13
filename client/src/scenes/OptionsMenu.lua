@@ -481,7 +481,7 @@ function OptionsMenu:loadSoundMenu()
     },
     values = {"stage", "often_stage", "either", "often_characters", "characters"},
     selectedIndex = musicFrequencyIndexMap[config.use_music_from],
-    onChange = function(group, value)
+    onChange = function(value)
       GAME.theme:playMoveSfx()
       config.use_music_from = value
     end
