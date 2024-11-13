@@ -95,7 +95,7 @@ function ReplayGame:runGame()
   elseif input:isPressedWithRepeat("MenuLeft") then
     self.playbackSpeedIndex = util.bound(1, self.playbackSpeedIndex - 1, #self.playbackSpeeds)
     playbackSpeed = self.playbackSpeeds[self.playbackSpeedIndex]
-  elseif input.isDown["Swap2"] then
+  elseif input.isDown["Swap2"] or input.allkeys.isDown["escape"] then
     if self.match.isPaused then
       self.match:abort()
       GAME.navigationStack:pop()
