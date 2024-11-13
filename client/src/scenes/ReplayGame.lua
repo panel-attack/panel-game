@@ -102,7 +102,7 @@ function ReplayGame:runGame()
     else
       self:togglePause()
     end
-  elseif input.isDown["MenuPause"] then
+  elseif input.isDown["Start"] then
     self:togglePause()
   end
 end

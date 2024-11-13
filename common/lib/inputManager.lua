@@ -50,17 +50,16 @@ local currentDt
 -- map of menu key names (used in inputManager.isDown/Up/Pressed & isPressedWithRepeat)
 -- and a tuple of {list of reserved keys, configured game key}
 local menuReservedKeysMap = {
-  MenuUp = {{"up"}, "Up"},
-  MenuDown = {{"down"}, "Down"},
-  MenuLeft = {{"left"}, "Left"},
-  MenuRight = {{"right"}, "Right"},
-  MenuEsc = {{"escape", "x"}, "Swap2"},
-  MenuNextPage = {{"pageup"}, "Raise1"},
-  MenuPrevPage = {{"pagedown"}, "Raise2"},
-  MenuBack = {{"backspace"}, ""},
-  MenuSelect = {{"return", "kpenter", "z"}, "Swap1"},
-  MenuPause = {{"return", "kpenter"}, "Start"},
-  FrameAdvance = {{"\\"}, "TauntUp"}
+  MenuUp = {{"up"}, {"Up"}},
+  MenuDown = {{"down"}, {"Down"}},
+  MenuLeft = {{"left"}, {"Left"}},
+  MenuRight = {{"right"}, {"Right"}},
+  MenuEsc = {{"escape", "x"}, {"Swap2"}},
+  MenuNextPage = {{"pageup"}, {"Raise1"}},
+  MenuPrevPage = {{"pagedown"}, {"Raise2"}},
+  MenuBack = {{"backspace"}, {}},
+  MenuSelect = {{"return", "kpenter", "z"}, {"Swap1", "Start"}},
+  FrameAdvance = {{"\\"}, {"TauntUp"}}
 }
 
 -- useful alternate representations of the above information
@@ -75,8 +74,10 @@ for menuKeyName, keys in pairs(menuReservedKeysMap) do
   end
 end
 
-for menuKeyName, keyName in pairs(menuReservedKeysMap) do
-  keyNameToMenuKeys[keyName[2]] = menuKeyName
+for menuKeyName, keyNames in pairs(menuReservedKeysMap) do
+  for i, keyName in ipairs(keyNames[2]) do
+    keyNameToMenuKeys[keyName] = menuKeyName
+  end
 end
 
 function inputManager:keyPressed(key, scancode, isrepeat)

@@ -171,9 +171,18 @@ function GameBase:load(sceneParams)
   self:initializeFrameInfo()
 end
 
+local function playerPressingStart(match)
+  for _, player in ipairs(match.players) do
+    if player.inputConfiguration and player.inputConfiguration.isDown["Start"] then
+      return true
+    end
+  end
+  return false
+end
+
 function GameBase:handlePause()
   if not self.match.isPaused then
-    if self.match.supportsPause and (input.isDown["MenuPause"] or input.allKeys.isDown["escape"] or (not GAME.focused and not self.match.isPaused)) then
+    if self.match.supportsPause and (playerPressingStart(self.match) or input.allKeys.isDown["escape"] or (not GAME.focused and not self.match.isPaused)) then
       self.match:togglePause()
       self.pauseMenu:setVisibility(true)
 
