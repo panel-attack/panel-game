@@ -1,5 +1,5 @@
 You can also find this file with prettier formatting at 
-https://github.com/panel-attack/panel-attack/blob/beta/docs/installMods.md  
+https://github.com/panel-attack/panel-game/blob/beta/docs/installMods.md  
 A video explanation is available at https://youtu.be/_SA1UeLwnSE
 
 # How to install a mod
@@ -103,7 +103,7 @@ There are two possibilities:
 
 ### Download them again
 
-You can find all default assets of Panel Attack in the default_data folder at https://github.com/panel-attack/panel-attack/tree/beta/  
+You can find all default assets of Panel Attack at https://github.com/panel-attack/panel-game/tree/beta/client/assets/
 You can download the Panel Attack source code including the default mods from there any time and reinstall them via the instructions in this document.
 
 ### Let Panel Attack reinstall them

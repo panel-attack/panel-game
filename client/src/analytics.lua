@@ -104,7 +104,7 @@ function maxChainReached(data)
   return maxChain
 end
 
--- this is a function that exists to address issue https://github.com/panel-attack/panel-attack/issues/609
+-- this is a function that exists to address issue https://github.com/panel-attack/panel-game/issues/190
 -- analytics - per standard - increment the values on number indices such as used_combos[4] = used_combos[4] + 1
 -- for unknown reasons, at some point in time, some combos started to get saved as string values - and they are loaded every time on analytics.init
 -- the json library we use does not support string and integer keys on the same table and only saves the entries with a string key to analytics.json

@@ -119,7 +119,7 @@ vi ~/.config/fish/config.fish
 
 Checkout the panel attack repository
 ```
-git clone https://github.com/panel-attack/panel-attack.git
+git clone https://github.com/panel-attack/panel-game.git
 ```
 
 go into that directory

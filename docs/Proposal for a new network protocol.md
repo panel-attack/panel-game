@@ -68,14 +68,14 @@ Name changes should be verifiable against the server directly rather than on log
 
 ### Offer 1p modes as parallel play
 
-https://github.com/panel-attack/panel-attack/issues/688  
+https://github.com/panel-attack/panel-game/issues/231  
 
 Accomodating different game modes in server rooms allows the game mode to be selected.  
 Any remaining items would be relativly trivial to implement.
 
 ### Time Attack vs
 
-https://github.com/panel-attack/panel-attack/issues/587  
+https://github.com/panel-attack/panel-game/issues/146  
 
 Accurate level data being sent enables classic mode selection on the client.  
 Accomodating different game modes in server rooms allows the game mode to be selected.  
@@ -83,7 +83,7 @@ Any remaining items would be relatively trivial to implement once those two are 
 
 ### More than 2 players vs
 
-https://github.com/panel-attack/panel-attack/issues/254  
+https://github.com/panel-attack/panel-game/issues/59  
 
 Still not trivial but an extendable network protocol that already accomodates n players with inputs and states being identifiable by public player id would still cover a substantial amount of work for this feature.
 

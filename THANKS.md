@@ -34,7 +34,7 @@ Other Panel Attack developers:
 - KattKit - center leaderboard display on local player
 
 
-This list is likely to be out of date. A comprehensive list of code contributors can be found at https://github.com/panel-attack/panel-attack/graphs/contributors.
+This list is likely to be out of date. A comprehensive list of code contributors can be found at https://github.com/panel-attack/panel-game/graphs/contributors.
 
 
 # Third Party Contributors

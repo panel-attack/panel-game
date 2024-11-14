@@ -1,5 +1,5 @@
 You can also find this file with prettier formatting at 
-https://github.com/panel-attack/panel-attack/blob/beta/docs/themes.md  
+https://github.com/panel-attack/panel-game/blob/beta/docs/themes.md  
 
 This README consists of 2 parts.  
 In part 1 some general thoughts on theme creation are discussed.  
@@ -15,7 +15,7 @@ Various files in fact do not have a specific size or aspect ratio but merely a c
 Due to this, it is required for theme assets that you specify in the configuration how a graphic should be scaled.  
 If no configuration is given, standard values from the default theme will be used.  
 You can find the default configuration at  
-https://github.com/panel-attack/panel-attack/blob/beta/themes/Panel%20Attack%20Modern/config.json  
+https://github.com/panel-attack/panel-game/blob/beta/client/assets/themes/Panel%20Attack%20Modern/config.json  
 
 You can use the Ctrl+Shift+Alt+T shortcut to reload your theme configuration and graphics in the game.
 

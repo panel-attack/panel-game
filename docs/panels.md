@@ -1,4 +1,4 @@
-You can also find this file with prettier formatting at https://github.com/panel-attack/panel-attack/blob/beta/docs/panels.md  
+You can also find this file with prettier formatting at https://github.com/panel-attack/panel-game/blob/beta/docs/panels.md  
 
 Adding/modding panels: step by step instructions (Windows example):
 

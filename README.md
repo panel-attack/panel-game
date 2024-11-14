@@ -13,7 +13,7 @@ Simply pick the newest workflow run, scroll down and select the artifact suitabl
 
 Clone a copy of the repository  
 ```
-git clone https://github.com/panel-attack/panel-attack.git
+git clone https://github.com/panel-attack/panel-game.git
 ```  
 We recommend using [GitHub Desktop](https://desktop.github.com) as it manages login for you and makes working with git easier.
   
@@ -47,7 +47,7 @@ Panel Attack currently has 3 release streams that see updates at varying rates.
 
 #### canary release
 Cutting edge build, automatically generated with every push to beta.  
-Available via https://github.com/panel-attack/panel-attack/releases.
+Available via https://github.com/panel-attack/panel-game/releases.
 
 #### beta release
 beta release, a bit more tested than canary.
