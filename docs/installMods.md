@@ -99,21 +99,3 @@ Directories and files that start with two underscores (__) will be ignored.
 
 So all you need to do to disable a character or stage is to rename its folder.  
 You can also hide single replay, puzzle and training files by renaming them and adding __ in front.
-
-## How to get the default mods back
-
-You might have deleted the default mods that came with the game at some point and want to get them back. But how?  
-There are two possibilities:  
-  1. Download them again
-  2. Let Panel Attack reinstall them
-
-### Download them again
-
-You can find all default assets of Panel Attack at https://github.com/panel-attack/panel-game/tree/beta/client/assets/
-You can download the Panel Attack source code including the default mods from there any time and reinstall them via the instructions in this document.
-
-### Let Panel Attack reinstall them
-
-Panel Attack cannot function properly if you have no panels, no character or no stage available.  
-For that reason it will always install the default characters again on start-up if no mods are available at all.  
-That means to get the default characters/stages/panels back, you can simply temporarily disable all your installed mods by renaming them and then start Panel Attack.
