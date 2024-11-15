@@ -80,8 +80,6 @@ local Game = class(
     self.last_y = 0
     self.input_delta = 0.0
 
-    -- misc
-    self.rich_presence = RichPresence()
     -- time in seconds, can be used by other elements to track the passing of time beyond dt
     self.timer = love.timer.getTime()
   end
