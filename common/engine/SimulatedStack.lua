@@ -292,7 +292,7 @@ end
 
 function SimulatedStack:drawMultibar()
   if self.health then
-    self:drawAbsoluteMultibar(0, 0)
+    self:drawAbsoluteMultibar(0, 0, 0)
   end
 end
 
