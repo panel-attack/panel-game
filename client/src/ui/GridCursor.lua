@@ -13,9 +13,9 @@ local GridCursor = class(function(self, options)
   directsFocus(self)
 
   self.target = options.grid
+  self.hAlign = "top"
+  self.vAlign = "left"
   self.translateSubGrids = options.translateSubGrids or false
-  self.activeArea = options.activeArea or {x1 = 1, y1 = 1, x2 = self.target.gridWidth, y2 = self.target.gridHeight}
-  self.selectedGridPos = options.startPosition or {x = 1, y = 1}
 
   self.player = options.player
   self.player.cursor = self
@@ -25,7 +25,11 @@ local GridCursor = class(function(self, options)
   self.quads.left = love.graphics.newQuad(0, 0, self.imageWidth / 2, self.imageHeight, self.imageWidth, self.imageHeight)
   self.quads.right = love.graphics.newQuad(self.imageWidth / 2, 0, self.imageWidth / 2, self.imageHeight, self.imageWidth, self.imageHeight)
 
-  self.imageScale = self.target.unitSize / self.imageHeight
+  if self.target then
+    self.selectedGridPos = options.startPosition or {x = 1, y = 1}
+    self.activeArea = options.activeArea or {x1 = 1, y1 = 1, x2 = self.target.gridWidth, y2 = self.target.gridHeight}
+    self.imageScale = self.target.unitSize / self.imageHeight
+  end
 
   self.blinkFrequency = options.blinkFrequency or 8
   self.rapidBlinking = options.rapidBlinking or false
@@ -36,9 +40,17 @@ end, UiElement)
 
 GridCursor.directions = {up = {x = 0, y = -1}, down = {x = 0, y = 1}, left = {x = -1, y = 0}, right = {x = 1, y = 0}}
 
+function GridCursor:setTarget(grid, activeArea)
+  self.target = grid
+  if self.target then
+    self.activeArea = activeArea or {x1 = 1, y1 = 1, x2 = self.target.gridWidth, y2 = self.target.gridHeight}
+  end
+end
+
 function GridCursor:updatePosition(x, y)
   self.selectedGridPos.x = x
   self.selectedGridPos.y = y
+  self:onMove()
 end
 
 function GridCursor:getElementAt(y, x)
@@ -107,69 +119,90 @@ function GridCursor:move(direction)
   end
 end
 
+function GridCursor:onMove()
+
+end
+
 function GridCursor:setRapidBlinking(rapid)
   self.rapidBlinking = rapid
 end
 
 function GridCursor:drawSelf()
-  self.drawClock = self.drawClock + 1
-  local cursorFrame
-  local drawThisFrame
-  if self.rapidBlinking then
-    cursorFrame = 1
-    drawThisFrame  = (math.floor(self.drawClock / self.blinkFrequency) + self.player.playerNumber) % 2 + 1 == self.player.playerNumber
-  else
-    cursorFrame = (math.floor(self.drawClock / 8) + self.player.playerNumber) % 2 + 1
-    drawThisFrame = true
-  end
+  if self.target then
+    self.drawClock = self.drawClock + 1
+    local cursorFrame
+    local drawThisFrame
+    if self.rapidBlinking then
+      cursorFrame = 1
+      drawThisFrame  = (math.floor(self.drawClock / self.blinkFrequency) + (self.player.playerNumber or 1)) % 2 + 1 == (self.player.playerNumber or 1)
+    else
+      cursorFrame = (math.floor(self.drawClock / 8) + (self.player.playerNumber or 1)) % 2 + 1
+      drawThisFrame = true
+    end
 
-  local image = self.frameImages[cursorFrame]
-  local element = self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
-  local x, y = element:getScreenPos()
-  if drawThisFrame then
-    GraphicsUtil.drawQuad(image, self.quads.left, x - 7, y - 7, 0, self.imageScale, self.imageScale)
-    GraphicsUtil.drawQuad(image, self.quads.right, x + element.width + 7 - self.imageWidth * self.imageScale / 2, y - 7, 0, self.imageScale, self.imageScale)
+    local image = self.frameImages[cursorFrame]
+    local element = self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
+    local topLevelElement = self.target:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
+    local x, y
+    if element == topLevelElement then
+      x = (element.gridOriginX - 1) * self.target.unitSize
+      y = (element.gridOriginY - 1) * self.target.unitSize
+    else
+      -- we're in a subgrid!
+      x = (topLevelElement.gridOriginX + element.gridOriginX - 2) * self.target.unitSize
+      y = (topLevelElement.gridOriginY + element.gridOriginY - 2) * self.target.unitSize
+    end
+    if drawThisFrame then
+      GraphicsUtil.drawQuad(image, self.quads.left, x, y, 0, self.imageScale, self.imageScale)
+      GraphicsUtil.drawQuad(image, self.quads.right, x + element.width + self.target.unitMargin * 2 - self.imageWidth * self.imageScale / 2, y, 0, self.imageScale, self.imageScale)
+    end
   end
 end
 
 function GridCursor:receiveInputs(inputs, dt)
-  if self.focused then
-    self.focused:receiveInputs(inputs, dt, self.player)
-  elseif inputs.isDown.Swap2 then
-    self:escapeCallback()
-  elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    GAME.theme:playMoveSfx()
-    self:move(GridCursor.directions.left)
-  elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    GAME.theme:playMoveSfx()
-    self:move(GridCursor.directions.right)
-  elseif inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    GAME.theme:playMoveSfx()
-    self:move(GridCursor.directions.up)
-  elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    GAME.theme:playMoveSfx()
-    self:move(GridCursor.directions.down)
-  elseif inputs.isDown.Swap1 or inputs.isDown.Start then
-    local element = self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
-    if element.onSelect then
-      GAME.theme:playValidationSfx()
-      self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x):onSelect(self)
-    else
-      GAME.theme:playCancelSfx()
-    end
-  elseif inputs.isDown.Raise1 then
-    if self.raise1Callback then
-      self:raise1Callback()
-    end
-  elseif inputs.isDown.Raise2 then
-    if self.raise2Callback then
-      self:raise2Callback()
+  if self.target then
+    if self.focused then
+      self.focused:receiveInputs(inputs, dt, self.player)
+    elseif inputs.isDown.Swap2 then
+      self:escapeCallback()
+    elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      GAME.theme:playMoveSfx()
+      self:move(GridCursor.directions.left)
+    elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      GAME.theme:playMoveSfx()
+      self:move(GridCursor.directions.right)
+    elseif inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      GAME.theme:playMoveSfx()
+      self:move(GridCursor.directions.up)
+    elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      GAME.theme:playMoveSfx()
+      self:move(GridCursor.directions.down)
+    elseif inputs.isDown.Swap1 or inputs.isDown.Start then
+      local element = self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
+      if element.onSelect then
+        GAME.theme:playValidationSfx()
+        self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x):onSelect(self)
+      else
+        GAME.theme:playCancelSfx()
+      end
+    elseif inputs.isDown.Raise1 then
+      if self.raise1Callback then
+        self:raise1Callback()
+      end
+    elseif inputs.isDown.Raise2 then
+      if self.raise2Callback then
+        self:raise2Callback()
+      end
     end
   end
 end
 
 function GridCursor:escapeCallback()
   error("Need to implement a callback for escape")
+end
+
+function GridCursor:onDetach()
+  self:setTarget()
 end
 
 return GridCursor

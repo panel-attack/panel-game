@@ -11,18 +11,6 @@ NAME_LENGTH_LIMIT = 16
 
 themes = {} -- initialized in theme.lua
 
-characters = {} -- initialized in character.lua
-characters_ids = {} -- initialized in character.lua
-characters_ids_for_current_theme = {} -- initialized in character.lua
-characters_ids_by_display_names = {} -- initialized in character.lua
-
-stages = {} -- initialized in stage.lua
-stages_ids = {} -- initialized in stage.lua
-stages_ids_for_current_theme = {} -- initialized in stage.lua
-
-panels = {} -- initialized in panels.lua
-panels_ids = {} -- initialized in panels.lua
-
 -- sfx play
 SFX_Fanfare_Play = 0
 SFX_GarbageThud_Play = 0

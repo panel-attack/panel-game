@@ -300,7 +300,7 @@ function StackBase:stackCanvasWidth()
 end
 
 function StackBase:drawCanvas()
-  love.graphics.setCanvas(GAME.globalCanvas)
+  love.graphics.setCanvas({GAME.globalCanvas, stencil = true})
   love.graphics.setBlendMode("alpha", "premultiplied")
   love.graphics.draw(self.canvas, self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale)
   love.graphics.setBlendMode("alpha", "alphamultiply")

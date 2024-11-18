@@ -132,6 +132,11 @@ function Stage:getSubMods()
   for _, id in ipairs(self.sub_stages) do
     m[#m + 1] = stages[id]
   end
+  return m
+end
+
+function Stage:enable(enable)
+  require("client.src.mods.StageLoader").enable(self, enable)
 end
 
 function Stage.loadDefaultStage()
@@ -158,12 +163,12 @@ function Stage.graphics_init(self, full, yields)
 end
 
 -- bundles without stage thumbnail display up to 4 thumbnails of their substages
-function Stage:createThumbnail()
+function Stage:createBundleThumbnail()
   local canvas = love.graphics.newCanvas(2 * 80, 2 * 45)
   canvas:renderTo(function()
     for i, substageId in ipairs(self.sub_stages) do
-      if i <= 4 then
-        local stage = stages[substageId]
+      if i <= 4 and (stages[substageId] or (allStages[substageId] and #self:getSubMods() == 0)) then
+        local stage = allStages[substageId]
         local x = 0
         local y = 0
         if i % 2 == 0 then
@@ -196,6 +201,7 @@ end
 
 -- initializes stage music
 function Stage.sound_init(self, full, yields)
+  self.hasMusic = fileUtils.soundFileExists("normal_music", self.path)
   if self:is_bundle() then
     return
   end

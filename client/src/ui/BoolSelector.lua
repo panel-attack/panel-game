@@ -47,4 +47,20 @@ function BoolSelector:drawSelf()
   GraphicsUtil.resetAlignment()
 end
 
+function BoolSelector:getTouchedElement(x, y)
+  if self.isVisible and self.isEnabled and self:inBounds(x, y) then
+    local touchedElement
+    for i = 1, #self.children do
+      touchedElement = self.children[i]:getTouchedElement(x, y)
+      if touchedElement then
+        return touchedElement
+      end
+    end
+
+    if self:isTouchable() then
+      return self
+    end
+  end
+end
+
 return BoolSelector

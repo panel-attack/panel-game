@@ -388,7 +388,7 @@ end
 
 function Game:draw()
   -- Setting the canvas means everything we draw is drawn to the canvas instead of the screen
-  love.graphics.setCanvas(self.globalCanvas)
+  love.graphics.setCanvas({self.globalCanvas, stencil = true})
   love.graphics.setBackgroundColor(unpack(self.backgroundColor))
   love.graphics.clear()
 

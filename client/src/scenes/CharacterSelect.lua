@@ -462,7 +462,7 @@ function CharacterSelect:createCursor(grid, player)
       cursor:updatePosition(9, 6)
     end
   end
-  self.uiRoot:addChild(cursor)
+  grid:addChild(cursor)
 
   return cursor
 end
