@@ -40,10 +40,11 @@ end, UiElement)
 
 GridCursor.directions = {up = {x = 0, y = -1}, down = {x = 0, y = 1}, left = {x = -1, y = 0}, right = {x = 1, y = 0}}
 
-function GridCursor:setTarget(grid, activeArea)
+function GridCursor:setTarget(grid, startPosition, activeArea)
   self.target = grid
   if self.target then
     self.activeArea = activeArea or {x1 = 1, y1 = 1, x2 = self.target.gridWidth, y2 = self.target.gridHeight}
+    self.selectedGridPos = startPosition or {x = 1, y = 1}
   end
 end
 

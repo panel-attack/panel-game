@@ -65,7 +65,7 @@ function ModManagement:load()
       self.uiRoot:addChild(self.characterHeadLine)
       self.scrollContainer:addChild(self.characterGrid)
       self.characterGrid:addChild(self.cursor)
-      self.cursor:setTarget(self.characterGrid)
+      self.cursor:setTarget(self.characterGrid, {x = 9, y = 1})
       self.receiveMode = "Grid"
     end
   )
@@ -77,7 +77,7 @@ function ModManagement:load()
       self.uiRoot:addChild(self.stageHeadLine)
       self.scrollContainer:addChild(self.stageGrid)
       self.stageGrid:addChild(self.cursor)
-      self.cursor:setTarget(self.stageGrid)
+      self.cursor:setTarget(self.stageGrid, {x = 9, y = 1})
       self.receiveMode = "Grid"
     end
   )
@@ -138,7 +138,7 @@ function ModManagement:loadStageGrid()
   local stageGrid = Grid({
     unitSize = gridUnitSize,
     gridWidth = gridWidth,
-    gridHeight = #characterIds - 1, -- cannot disable random character as it's the fallback of fallbacks
+    gridHeight = #stageIds - 1, -- cannot disable random stage as it's the fallback of fallbacks
     unitMargin = gridMargin,
     hAlign = "center",
     vAlign = "top"
@@ -147,7 +147,7 @@ function ModManagement:loadStageGrid()
   for index, stageId in ipairs(stageIds) do
     if stageId ~= consts.RANDOM_STAGE_SPECIAL_VALUE then
       local stage = allStages[stageId]
-      local icon = ImageContainer({drawBorders = true, image = stage.images.thumbnail, hFill = true, vFill = true})
+      local icon = ImageContainer({drawBorders = true, image = stage.images.thumbnail, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
       local enableSelector = BoolSelector({startValue = not not stages[stage.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
       enableSelector.onSelect = function(self, cursor)
         if inputs.isDown["Swap1"] then
@@ -179,7 +179,7 @@ function ModManagement:loadStageGrid()
       stageGrid:createElementAt(2, index, 3, 1, "name", name)
       stageGrid:createElementAt(3*columnWidth - 1, index, columnWidth, 1, "hasMusic", hasMusicLabel)
       stageGrid:createElementAt(4*columnWidth - 1, index, columnWidth, 1, "subModCount", bundleIndicator)
-      --characterGrid:createElementAt(5*columnWidth - 1, index, columnWidth, 1, "toggleVisibility", visibilitySelector)
+      --stageGrid:createElementAt(5*columnWidth - 1, index, columnWidth, 1, "toggleVisibility", visibilitySelector)
       stageGrid:createElementAt(5*columnWidth - 1, index, columnWidth, 1, "toggleEnable", enableSelector)
     end
   end
