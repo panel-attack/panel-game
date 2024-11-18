@@ -6,15 +6,15 @@ local fileUtils = require("client.src.FileUtils")
 
 local StageLoader = {}
 
--- adds stages from the path given
-local function add_stages_from_dir_rec(path)
+-- recursively adds stages from the path given to the passed stages table
+function StageLoader.addStagesFromDirectoryRecursively(path, stages)
   local lfs = love.filesystem
   local raw_dir_list = fileUtils.getFilteredDirectoryItems(path)
   for i, v in ipairs(raw_dir_list) do
     local current_path = path .. "/" .. v
     if lfs.getInfo(current_path) and lfs.getInfo(current_path).type == "directory" then
       -- call recursively: facade folder
-      add_stages_from_dir_rec(current_path)
+      StageLoader.addStagesFromDirectoryRecursively(current_path)
 
       -- init stage: 'real' folder
       local stage = Stage(current_path, v)
@@ -25,62 +25,109 @@ local function add_stages_from_dir_rec(path)
           logger.trace(current_path .. " has been ignored since a stage with this id has already been found")
         else
           stages[stage.id] = stage
-          stages_ids[#stages_ids + 1] = stage.id
         end
       end
     end
   end
+
+  return stages
 end
 
--- get stage bundles
-local function fill_stages_ids()
-  -- check validity of bundle stages
-  local invalid_stages = {}
-  local copy_of_stages_ids = shallowcpy(stages_ids)
-  stages_ids = {} -- clean up
-  for _, stage_id in ipairs(copy_of_stages_ids) do
-    local stage = stages[stage_id]
-    if #stage.sub_stages > 0 then -- bundle stage (needs to be filtered if invalid)
-      local copy_of_sub_stages = shallowcpy(stage.sub_stages)
-      stage.sub_stages = {}
-      for _, sub_stage in ipairs(copy_of_sub_stages) do
-        if stages[sub_stage] and #stages[sub_stage].sub_stages == 0 then -- inner bundles are prohibited
-          stage.sub_stages[#stage.sub_stages + 1] = sub_stage
-          logger.trace(stage.id .. " has " .. sub_stage .. " as part of its substages.")
-        end
-      end
+-- Iterates through the stages table and adds the ids of all valid mods to a new stageIds table
+-- returns: 
+--   stageIds table
+--   table of invalid stage bundles
+function StageLoader.fillStageIds(stages)
+  local invalid = {}
+  local stageIds = {}
 
-      if #stage.sub_stages < 2 then
-        invalid_stages[#invalid_stages + 1] = stage_id -- stage is invalid
-        logger.warn(stage.id .. " (bundle) is being ignored since it's invalid!")
-      else
-        stages_ids[#stages_ids + 1] = stage_id
+  for stageId, stage in pairs(stages) do
+    -- bundle stage (needs to be filtered if invalid)
+    if stage:is_bundle() then
+      if StageLoader.validateBundle(stage) then
+        stageIds[#stageIds + 1] = stageId
         logger.debug(stage.id .. " (bundle) has been added to the stage list!")
+      else
+        invalid[#invalid + 1] = stageId -- stage is invalid
+        logger.warn(stage.id .. " (bundle) is being ignored since it's invalid!")
       end
-    else -- normal stage
-      stages_ids[#stages_ids + 1] = stage_id
+    else
+      -- normal stage
+      stageIds[#stageIds + 1] = stageId
       logger.debug(stage.id .. " has been added to the stage list!")
     end
   end
 
-  -- stages are removed outside of the loop since erasing while iterating isn't working
-  for _, invalid_stage in pairs(invalid_stages) do
-    stages[invalid_stage] = nil
+  -- for consistency while manual sorting is not possible
+  table.sort(stageIds, function(a, b)
+    return stages[a].path < stages[b].path
+  end)
+
+  return stageIds, invalid
+end
+
+function StageLoader.validateBundle(stage)
+  for i = #stage.sub_stages, 1, -1 do
+    local subStage = allStages[stage.sub_stages[i]]
+    if subStage and #subStage.sub_stages == 0 then -- inner bundles are prohibited
+      logger.trace(stage.id .. " has " .. subStage.id .. " as part of its sub stages.")
+    else
+      logger.warn(stage.sub_stages[i] .. " is not a valid sub stage of " .. stage.id .. " because it does not  exist or has own sub stages.")
+      table.remove(stage.sub_stages, i)
+    end
   end
+
+  return #stage.sub_stages >= 2
+end
+
+-- all stages are default enabled until they're actively disabled upon which they are added to this blacklist
+function StageLoader.loadBlacklist()
+  local blacklist = {}
+  if love.filesystem.getInfo("stages/blacklist.txt", "file") then
+    for line in love.filesystem.lines("stages/blacklist.txt") do
+      blacklist[#blacklist+1] = line
+    end
+  end
+  return blacklist
+end
+
+function StageLoader.enable(stage, enable)
+  if enable and not stages[stage.id] then
+    local i = tableUtils.indexOf(StageLoader.blacklist, stage.id)
+    table.remove(StageLoader.blacklist, i)
+    stages[stage.id] = stage
+    stages_ids_for_current_theme[#stages_ids_for_current_theme+1] = stage.id
+  elseif not enable and stages[stage.id] then
+    local i = tableUtils.indexOf(stages_ids_for_current_theme, stage.id)
+    table.remove(stages_ids_for_current_theme, i)
+    StageLoader.blacklist[#StageLoader.blacklist+1] = stage.id
+    stages[stage.id] = nil
+  end
+  love.filesystem.write("stages/blacklist.txt", table.concat(StageLoader.blacklist, "\n"))
 end
 
 -- initializes the stage class
 function StageLoader.initStages()
-  stages = {} -- holds all stages, most of them will not be fully loaded
-  stages_ids = {} -- holds all stages ids
+  allStages = {} -- holds all stages, most of them will not be fully loaded
   stages_ids_for_current_theme = {} -- holds stages ids for the current theme, those stages will appear in the selection
-  default_stage = nil
 
   -- load bundled assets first so they are not ignored in favor of user mods
-  add_stages_from_dir_rec("client/assets/default_data/stages")
+  StageLoader.addStagesFromDirectoryRecursively("client/assets/default_data/stages", allStages)
   -- load user mods
-  add_stages_from_dir_rec("stages")
-  fill_stages_ids()
+  StageLoader.addStagesFromDirectoryRecursively("stages", allStages)
+  stageIds = StageLoader.fillStageIds(allStages)
+  stages = shallowcpy(allStages)
+  StageLoader.blacklist = StageLoader.loadBlacklist()
+  for _, stageId in ipairs(StageLoader.blacklist) do
+    -- blacklisted characters are removed from stages
+    -- but we keep them in allStages/stageIds for reference
+    stages[stageId] = nil
+  end
+
+  if tableUtils.length(stages) == 0 then
+    -- fallback for configurations in which all stages have been disabled
+    stages = shallowcpy(allStages)
+  end
 
   if love.filesystem.getInfo(themes[config.theme].path .. "/stages.txt") then
     for line in love.filesystem.lines(themes[config.theme].path .. "/stages.txt") do
@@ -91,16 +138,16 @@ function StageLoader.initStages()
       end
     end
   else
-    for _, stage_id in ipairs(stages_ids) do
-      if stages[stage_id].is_visible then
-        stages_ids_for_current_theme[#stages_ids_for_current_theme + 1] = stage_id
+    for _, stageId in ipairs(stageIds) do
+      if stages[stageId] and stages[stageId].is_visible then
+        stages_ids_for_current_theme[#stages_ids_for_current_theme + 1] = stageId
       end
     end
   end
 
-  -- all stages case
   if #stages_ids_for_current_theme == 0 then
-    stages_ids_for_current_theme = shallowcpy(stages_ids)
+    -- fallback in case there were no stages left
+    stages_ids_for_current_theme = shallowcpy(stageIds)
   end
 
   -- fix config stage if it's missing
@@ -111,10 +158,10 @@ function StageLoader.initStages()
   Stage.loadDefaultStage()
 
   local randomStage = Stage.getRandomStage()
-  stages_ids[#stages_ids+1] = randomStage.id
+  stageIds[#stageIds+1] = randomStage.id
   stages[randomStage.id] = randomStage
 
-  for _, stage in pairs(stages) do
+  for _, stage in pairs(allStages) do
     stage:preload()
   end
 
@@ -127,7 +174,7 @@ function StageLoader.loadBundleThumbnails()
   for _, stage in pairs(stages) do
     if not stage.images.thumbnail then
       if stage:is_bundle() then
-        stage.images.thumbnail = stage:createThumbnail()
+        stage.images.thumbnail = stage:createBundleThumbnail()
       else
         error("Can't find a thumbnail for stage " .. stage.id)
       end

@@ -51,6 +51,8 @@ function PuzzleGame:customRun()
     stack.clock = 0
     stack.game_stopwatch = 0
     stack.game_stopwatch_running = false
+    stack.chain_counter = 0
+    stack.analytic = AnalyticsInstance(stack.is_local)
 
     self.match.clock = 0
     self.match:setCountdown(puzzle.doCountdown)

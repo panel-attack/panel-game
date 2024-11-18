@@ -39,6 +39,10 @@ function Mod:getSubMods()
   end
 end
 
+function Mod:enable(enable)
+  error("All mods need to implement a disable function")
+end
+
 function Mod:register(user)
   self.users[user] = true
 end

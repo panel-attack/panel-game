@@ -80,8 +80,6 @@ local Game = class(
     self.last_y = 0
     self.input_delta = 0.0
 
-    -- misc
-    self.rich_presence = RichPresence()
     -- time in seconds, can be used by other elements to track the passing of time beyond dt
     self.timer = love.timer.getTime()
   end
@@ -143,7 +141,10 @@ function Game:cleanupOldVersions()
         if not tableUtils.first(activeReleaseStream.availableVersions, function(availableVersionInfo)
           return availableVersionInfo.version == installedVersionInfo.version
         end) then
-          toBeCleared[#toBeCleared+1] = installedVersionInfo
+          -- double check we're not trying to remove the very file that is mounted right now
+          if not string.find(love.filesystem.getRequirePath(), installedVersionInfo.path, 1, true) then
+            toBeCleared[#toBeCleared+1] = installedVersionInfo
+          end
         end
       end
 
@@ -387,7 +388,7 @@ end
 
 function Game:draw()
   -- Setting the canvas means everything we draw is drawn to the canvas instead of the screen
-  love.graphics.setCanvas(self.globalCanvas)
+  love.graphics.setCanvas({self.globalCanvas, stencil = true})
   love.graphics.setBackgroundColor(unpack(self.backgroundColor))
   love.graphics.clear()
 

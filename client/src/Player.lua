@@ -205,9 +205,9 @@ end
 function Player:setPuzzleSet(puzzleSet)
   if puzzleSet ~= self.settings.puzzleSet then
     self.settings.puzzleSet = puzzleSet
-    self.settings.puzzleIndex = 1
     self:emitSignal("puzzleSetChanged", puzzleSet)
   end
+  self.settings.puzzleIndex = 1
 end
 
 function Player:setPuzzleIndex(puzzleIndex)

@@ -176,7 +176,19 @@ function Character.getRandomCharacter()
 end
 
 function Character.is_bundle(self)
-  return #self.sub_characters > 1
+  return #self.sub_characters > 0
+end
+
+function Character:getSubMods()
+  local m = {}
+  for _, id in ipairs(self.sub_characters) do
+    m[#m + 1] = characters[id]
+  end
+  return m
+end
+
+function Character:enable(enable)
+  require("client.src.mods.CharacterLoader").enable(self, enable)
 end
 
 function Character:canSuperSelect()
@@ -304,12 +316,13 @@ function Character.graphics_init(self, full, yields)
 end
 
 -- bundles without stage icon display up to 4 icons of their substages
-function Character:createIcon()
+function Character:createBundleIcon()
   local canvas = love.graphics.newCanvas(2 * 168, 2 * 168)
   canvas:renderTo(function()
     for i, subcharacterId in ipairs(self.sub_characters) do
-      if i <= 4 then
-        local character = characters[subcharacterId]
+      -- only draw up to 4 and only draw sub mods that are actually there unless there are none
+      if i <= 4 and (characters[subcharacterId] or (allCharacters[subcharacterId] and #self:getSubMods() == 0)) then
+        local character = allCharacters[subcharacterId]
         local x = 0
         local y = 0
         if i % 2 == 0 then
@@ -371,6 +384,8 @@ function Character.sound_init(self, full, yields)
   end
 
   -- music
+
+  self.hasMusic = fileUtils.soundFileExists("normal_music", self.path)
   local character_musics = full and other_musics or basic_musics
   for _, music in ipairs(character_musics) do
     self.musics[music] = fileUtils.loadSoundFromSupportExtensions(self.path .. "/" .. music, true)

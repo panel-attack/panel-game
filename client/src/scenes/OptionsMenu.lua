@@ -19,6 +19,7 @@ local UiElement = require("client.src.ui.UIElement")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ScrollText = require("client.src.ui.ScrollText")
 local util = require("common.lib.util")
+local ModManagement = require("client.src.scenes.ModManagement")
 
 -- @module optionsMenu
 -- Scene for the options menu
@@ -124,8 +125,8 @@ function OptionsMenu:getSystemInfo()
   sysInfo[#sysInfo + 1] = {name = "Panel Attack Engine Version", value = consts.ENGINE_VERSION}
   sysInfo[#sysInfo + 1] = {name = "Panel Attack Release Version", value = GAME.updater and tostring(GAME.updater.activeVersion.version) or nil}
   sysInfo[#sysInfo + 1] = {name = "Save Data Directory Path", value = love.filesystem.getSaveDirectory()}
-  sysInfo[#sysInfo + 1] = {name = "Characters [Enabled/Total]", value = #characters_ids_for_current_theme .. "/" .. #characters_ids}
-  sysInfo[#sysInfo + 1] = {name = "Stages [Enabled/Total]", value = #stages_ids_for_current_theme .. "/" .. #stages_ids}
+  sysInfo[#sysInfo + 1] = {name = "Characters [Visible/Enabled]", value = #characters_ids_for_current_theme .. "/" .. tableUtils.length(characters)}
+  sysInfo[#sysInfo + 1] = {name = "Stages [Visible/Enabled]", value = #stages_ids_for_current_theme .. "/" .. tableUtils.length(stages)}
   sysInfo[#sysInfo + 1] = {name = "Total Panel Sets", value = #panels_ids}
   sysInfo[#sysInfo + 1] = {name = "Total Themes", value = #themeIds}
 
@@ -203,6 +204,10 @@ function OptionsMenu:loadBaseMenu()
           GAME.theme:playValidationSfx()
           self:switchToScreen("modifyUserIdMenu")
         end),
+      MenuItem.createButtonMenuItem("Manage Mods", nil, false, function()
+        GAME.theme:playValidationSfx()
+        GAME.navigationStack:push(ModManagement())
+      end),
       MenuItem.createButtonMenuItem("back", nil, nil, self.exit)
     }
 

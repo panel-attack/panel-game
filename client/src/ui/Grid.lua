@@ -11,6 +11,7 @@ local Grid = class(function(self, options)
   self.width = self.gridWidth * self.unitSize
   self.height = self.gridHeight * self.unitSize
   self.grid = {}
+  self.cursors = {}
   for row = 1, options.gridHeight do
     self.grid[row] = {}
     -- for col = 1, options.gridWidth do

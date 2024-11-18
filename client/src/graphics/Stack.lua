@@ -607,7 +607,7 @@ function Stack:drawMultibar()
 
   if self.theme.multibar_is_absolute then
     -- absolute multibar is *only* supported for v3 themes
-    self:drawAbsoluteMultibar(stop_time, shake_time)
+    self:drawAbsoluteMultibar(stop_time, shake_time, self.pre_stop_time)
   else
     self:drawRelativeMultibar(stop_time, shake_time)
   end

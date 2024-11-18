@@ -1,7 +1,7 @@
 {
   "name": "Magellan",
   "id": "PA_Magellan",
-  "version": 2,
+  "version": 3,
   "popfx_burstRotate": true,
   "popfx_style": "fadeburst",
   "chain_style": "per_chain",
