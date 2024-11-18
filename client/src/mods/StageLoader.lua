@@ -14,7 +14,7 @@ function StageLoader.addStagesFromDirectoryRecursively(path, stages)
     local current_path = path .. "/" .. v
     if lfs.getInfo(current_path) and lfs.getInfo(current_path).type == "directory" then
       -- call recursively: facade folder
-      StageLoader.addStagesFromDirectoryRecursively(current_path)
+      StageLoader.addStagesFromDirectoryRecursively(current_path, stages)
 
       -- init stage: 'real' folder
       local stage = Stage(current_path, v)
