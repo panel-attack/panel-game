@@ -13,6 +13,7 @@ local consts = require("common.engine.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local Menu = require("client.src.ui.Menu")
 local MenuItem = require("client.src.ui.MenuItem")
+local SoundController = require("client.src.music.SoundController")
 
 local ModManagement = class(function(self, options)
   self.keepMusic = true
@@ -66,9 +67,9 @@ function ModManagement:load()
   end
 
   self.cursor.escapeCallback = function(cursor)
-    self.headLine:detach()
     self.stackPanel:remove(self.scrollContainer)
     self.scrollContainer = nil
+    self.stackPanel:detach()
     cursor:setTarget()
     GAME.theme:playCancelSfx()
     self.receiveMode = "Menu"
@@ -167,7 +168,13 @@ function ModManagement:loadStageGrid()
         if inputs.isDown["Swap1"] then
           self:setValue(not self.value)
           stage:enable(self.value)
-          if not self.value and stage.id == config.stage then
+          if tableUtils.length(visibleStages) == 0 then
+            SoundController:stopSfx(GAME.theme.sounds.menu_validate)
+            GAME.theme:playCancelSfx()
+            self:setValue(not self.value)
+            stage:enable(self.value)
+          end
+          if not self.value and stage.id == config.stage and #visibleStages > 0 then
             GAME.localPlayer:setStage(stages[consts.RANDOM_STAGE_SPECIAL_VALUE])
           end
         end
@@ -240,7 +247,13 @@ function ModManagement:loadCharacterGrid()
         if inputs.isDown["Swap1"] then
           self:setValue(not self.value)
           character:enable(self.value)
-          if not self.value and character.id == config.character then
+          if tableUtils.length(visibleCharacters) == 0 then
+            SoundController:stopSfx(GAME.theme.sounds.menu_validate)
+            GAME.theme:playCancelSfx()
+            self:setValue(not self.value)
+            character:enable(self.value)
+          end
+          if not self.value and character.id == config.character and #visibleCharacters > 0 then
             GAME.localPlayer:setCharacter(characters[consts.RANDOM_CHARACTER_SPECIAL_VALUE])
           end
         end

@@ -208,11 +208,6 @@ function ModLoader.disableBlacklisted(modType, unfiltered)
     unfiltered[modId] = nil
   end
 
-  if tableUtils.length(unfiltered) == 0 then
-    -- fallback for configurations in which all mods have been disabled
-    unfiltered = shallowcpy(unfiltered)
-  end
-
   return unfiltered
 end
 
@@ -263,6 +258,10 @@ function ModLoader.initMods(modType)
   local all = ModLoader.loadAllMods(modType)
   local ids = ModLoader.fillModIdList(modType, all)
   local filtered = ModLoader.disableBlacklisted(modType, shallowcpy(all))
+  if tableUtils.length(filtered) == 0 then
+    -- fallback for configurations in which all mods have been disabled
+    filtered = shallowcpy(all)
+  end
   local visible = ModLoader.filterToVisible(modType, filtered, ids)
 
   modType.loadDefaultMod()
