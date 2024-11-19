@@ -107,7 +107,7 @@ function GameBase:loadAssets(match)
     match.stageId = StageLoader.fullyResolveStageSelection(match.stageId)
   end
   local stage = stages[match.stageId]
-  if stage.fully_loaded then
+  if stage.fullyLoaded then
     logger.debug("Match stage " .. stage.id .. " already fully loaded in GameBase:load()")
     stage:register(match)
   else

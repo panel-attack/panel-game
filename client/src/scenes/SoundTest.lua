@@ -30,12 +30,12 @@ local menuValidateSound
 local function playMusic(source, id, musicType)
   local musicSource
   if source == "character" then
-    if not characters[id].fully_loaded and not characters[id].musics[musicType] then
+    if not characters[id].fullyLoaded and not characters[id].musics[musicType] then
       characters[id]:sound_init(true, false)
     end
     musicSource = characters[id]
   elseif source == "stage" then
-    if not stages[id].fully_loaded and not stages[id].musics[musicType] then
+    if not stages[id].fullyLoaded and not stages[id].musics[musicType] then
       stages[id]:sound_init(true, false)
     end
     musicSource = stages[id]

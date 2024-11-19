@@ -250,7 +250,7 @@ local super_select_pixelcode = [[
 function CharacterSelect:getCharacterButtons()
   local characterButtons = {}
 
-  for i = 0, #characters_ids_for_current_theme do
+  for i = 0, #visibleCharacters do
     local characterButton = Button({
       hFill = true,
       vFill = true,
@@ -258,9 +258,9 @@ function CharacterSelect:getCharacterButtons()
 
     local character
     if i == 0 then
-      character = Character.getRandomCharacter()
+      character = Character.getRandom()
     else
-      character = characters[characters_ids_for_current_theme[i]]
+      character = characters[visibleCharacters[i]]
     end
 
     characterButton.characterId = character.id

@@ -66,6 +66,10 @@ Panels =
   end
 )
 
+Panels.TYPE = "panels"
+-- name of the top level save directory for mods of this type
+Panels.SAVE_DIR = "panels"
+
 function Panels:json_init()
   local read_data = fileUtils.readJsonFile(self.path .. "/config.json")
   if read_data then

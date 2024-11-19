@@ -125,8 +125,8 @@ function OptionsMenu:getSystemInfo()
   sysInfo[#sysInfo + 1] = {name = "Panel Attack Engine Version", value = consts.ENGINE_VERSION}
   sysInfo[#sysInfo + 1] = {name = "Panel Attack Release Version", value = GAME.updater and tostring(GAME.updater.activeVersion.version) or nil}
   sysInfo[#sysInfo + 1] = {name = "Save Data Directory Path", value = love.filesystem.getSaveDirectory()}
-  sysInfo[#sysInfo + 1] = {name = "Characters [Visible/Enabled]", value = #characters_ids_for_current_theme .. "/" .. tableUtils.length(characters)}
-  sysInfo[#sysInfo + 1] = {name = "Stages [Visible/Enabled]", value = #stages_ids_for_current_theme .. "/" .. tableUtils.length(stages)}
+  sysInfo[#sysInfo + 1] = {name = "Characters [Visible/Enabled]", value = #visibleCharacters .. "/" .. tableUtils.length(characters)}
+  sysInfo[#sysInfo + 1] = {name = "Stages [Visible/Enabled]", value = #visibleStages .. "/" .. tableUtils.length(stages)}
   sysInfo[#sysInfo + 1] = {name = "Total Panel Sets", value = #panels_ids}
   sysInfo[#sysInfo + 1] = {name = "Total Themes", value = #themeIds}
 

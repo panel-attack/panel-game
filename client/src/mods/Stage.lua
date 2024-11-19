@@ -31,17 +31,17 @@ local Stage =
     s.path = full_path -- string | path to the stage folder content
     s.id = folder_name -- string | id of the stage, specified in config.json
     s.display_name = s.id -- string | display name of the stage
-    s.sub_stages = {} -- string | either empty or with two elements at least; holds the sub stages IDs for bundle stages
     s.images = {} -- images 
     s.musics = {} -- music
-    s.fully_loaded = false
-    s.is_visible = true
     s.music_style = "normal"
     s.stageTrack = nil
-    s.TYPE = "stage"
   end,
   Mod
 )
+
+Stage.TYPE = "stage"
+-- name of the top level save directory for mods of this type
+Stage.SAVE_DIR = "stages"
 
 function Stage.json_init(self)
   local read_data = fileUtils.readJsonFile(self.path .. "/config.json")
@@ -52,7 +52,7 @@ function Stage.json_init(self)
 
       -- sub ids for bundles
       if read_data.sub_ids and type(read_data.sub_ids) == "table" then
-        self.sub_stages = read_data.sub_ids
+        self.subIds = read_data.sub_ids
       end
 
       -- display name
@@ -61,9 +61,9 @@ function Stage.json_init(self)
       end
       -- is visible
       if read_data.visible ~= nil and type(read_data.visible) == "boolean" then
-        self.is_visible = read_data.visible
+        self.isVisible = read_data.visible
       elseif read_data.visible and type(read_data.visible) == "string" then
-        self.is_visible = read_data.visible == "true"
+        self.isVisible = read_data.visible == "true"
       end
 
       --music style
@@ -89,7 +89,7 @@ end
 function Stage.load(self, instant)
   self:graphics_init(true, (not instant))
   self:sound_init(true, (not instant))
-  self.fully_loaded = true
+  self.fullyLoaded = true
   logger.debug("loaded stage " .. self.id)
 end
 
@@ -98,7 +98,7 @@ function Stage.unload(self)
   logger.debug("unloading stage " .. self.id)
   self:graphics_uninit()
   self:sound_uninit()
-  self.fully_loaded = false
+  self.fullyLoaded = false
   logger.debug("unloaded stage " .. self.id)
 end
 
@@ -124,22 +124,31 @@ end
 
 -- whether or not a stage is part of a bundle or not
 function Stage.is_bundle(self)
-  return #self.sub_stages > 1
+  return #self.subIds > 1
 end
 
 function Stage:getSubMods()
   local m = {}
-  for _, id in ipairs(self.sub_stages) do
+  for _, id in ipairs(self.subIds) do
     m[#m + 1] = stages[id]
   end
   return m
 end
 
 function Stage:enable(enable)
-  require("client.src.mods.StageLoader").enable(self, enable)
+  if enable and not stages[self.id] then
+    stages[self.id] = self
+    visibleStages[#visibleStages+1] = self.id
+  elseif not enable and stages[self.id] then
+    local i = tableUtils.indexOf(visibleStages, self.id)
+    table.remove(visibleStages, i)
+    stages[self.id] = nil
+  end
+
+  require("client.src.mods.ModLoader").updateBlacklist(self, enable)
 end
 
-function Stage.loadDefaultStage()
+function Stage.loadDefaultMod()
   default_stage = Stage("client/assets/stages/__default", "__default")
   default_stage:preload()
   default_stage:load(true)
@@ -166,7 +175,7 @@ end
 function Stage:createBundleThumbnail()
   local canvas = love.graphics.newCanvas(2 * 80, 2 * 45)
   canvas:renderTo(function()
-    for i, substageId in ipairs(self.sub_stages) do
+    for i, substageId in ipairs(self.subIds) do
       if i <= 4 and (stages[substageId] or (allStages[substageId] and #self:getSubMods() == 0)) then
         local stage = allStages[substageId]
         local x = 0
@@ -270,18 +279,20 @@ function Stage:validate()
   end
 end
 
-local function loadRandomStage()
+local function loadRandomStage(visibleStages)
   local randomStage = Stage("stages/__default", consts.RANDOM_STAGE_SPECIAL_VALUE)
   randomStage.images["thumbnail"] = themes[config.theme].images.IMG_random_stage
   randomStage.display_name = "random"
-  randomStage.sub_stages = stages_ids_for_current_theme
+  randomStage.subIds = visibleStages
   randomStage.preload = function() end
   return randomStage
 end
 
-function Stage.getRandomStage()
+function Stage.getRandom(visibleStages)
   if not randomStage then
-    randomStage = loadRandomStage()
+    randomStage = loadRandomStage(visibleStages)
+  elseif visibleStages then
+    randomStage.subIds = visibleStages
   end
 
   return randomStage

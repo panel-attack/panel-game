@@ -28,7 +28,7 @@ local function unloadMod(modController, mod)
   local subMods = mod:getSubMods()
   if subMods then
     for _, subMod in ipairs(subMods) do
-      if subMod.fully_loaded and #subMod.users == 0 then
+      if subMod.fullyLoaded and #subMod.users == 0 then
         -- we need to crosscheck:
         -- if multiple players have picked different bundles that have an intersection in subMods,
         --  we don't want to unload the mod in use by both bundles just because one got unselected

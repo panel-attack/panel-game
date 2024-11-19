@@ -45,6 +45,10 @@ Theme =
   end
 )
 
+Theme.TYPE = "theme"
+-- name of the top level save directory for mods of this type
+Theme.SAVE_DIR = "themes"
+
 -- Returns a list of keys and their type allowed in theme config files
 function Theme:configurableKeys() 
   local result = {}

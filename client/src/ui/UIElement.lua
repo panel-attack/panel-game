@@ -45,9 +45,11 @@ local UIElement = class(
 )
 
 function UIElement:addChild(uiElement)
-  self.children[#self.children + 1] = uiElement
-  uiElement.parent = self
-  uiElement:resize()
+  if uiElement.parent ~= self then
+    self.children[#self.children + 1] = uiElement
+    uiElement.parent = self
+    uiElement:resize()
+  end
 end
 
 function UIElement:resize()

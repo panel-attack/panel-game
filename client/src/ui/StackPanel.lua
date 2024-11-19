@@ -14,10 +14,10 @@ local StackPanel = class(function(stackPanel, options)
   -- pixelsTaken tracks how many pixels are already taken in the direction the StackPanel propagates towards
   stackPanel.pixelsTaken = 0
   -- a stack panel does not have a size limit it's alignment dimension grows with its content
-
-  stackPanel.TYPE = "StackPanel"
 end,
 UiElement)
+
+StackPanel.TYPE = "StackPanel"
 
 function StackPanel:applyStackPanelSettings(uiElement)
   if self.alignment == "left" then

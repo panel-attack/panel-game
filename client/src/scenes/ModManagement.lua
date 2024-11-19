@@ -24,18 +24,32 @@ Scene)
 ModManagement.name = "ModManagement"
 
 function ModManagement:load()
-  self.stageHeadLine = self:loadStageGridHeader()
+  self.stackPanel = StackPanel(
+    {
+      alignment = "top",
+      width = 600,
+      hAlign = "center",
+      vAlign = "top",
+      x = 0,
+      y = 49,
+    }
+  )
+
+  self.headerLabel = Label({
+    text = "placeholder",
+    hAlign = "center",
+    fontSize = 16,
+  })
+
+  self.headLine = self:loadGridHeader()
+
+  self.stackPanel:addElement(self.headerLabel)
+  self.stackPanel:addElement(self.headLine)
+
   self.stageGrid = self:loadStageGrid()
-  self.characterHeadLine = self:loadCharacterGridHeader()
   self.characterGrid = self:loadCharacterGrid()
 
-  self.scrollContainer = ScrollContainer({
-    width = 800,
-    height = 550,
-    hAlign = "center",
-    vAlign = "top",
-    y = 100
-  })
+  self.scrollContainer = nil
 
   self.cursor = GridCursor({
     grid = self.characterGrid,
@@ -46,14 +60,15 @@ function ModManagement:load()
 
   self.cursor.onMove = function(c)
     local newOffset = c.target.unitSize * (c.selectedGridPos.y - 1)
-    self.scrollContainer:keepVisible(-newOffset, c.target.unitSize)
+    if self.scrollContainer then
+      self.scrollContainer:keepVisible(-newOffset, c.target.unitSize)
+    end
   end
 
   self.cursor.escapeCallback = function(cursor)
-    self.stageHeadLine:detach()
-    self.characterHeadLine:detach()
-    cursor.target:detach()
-    cursor:detach()
+    self.headLine:detach()
+    self.scrollContainer:detach()
+    cursor:setTarget()
     GAME.theme:playCancelSfx()
     self.receiveMode = "Menu"
   end
@@ -62,9 +77,14 @@ function ModManagement:load()
     "characters", nil, true,
     function(button, inputs)
       GAME.theme:playValidationSfx()
-      self.uiRoot:addChild(self.characterHeadLine)
+      if self.scrollContainer then
+        self.stackPanel:remove(self.scrollContainer)
+      end
+      self.headerLabel:setText("characters")
+      self.scrollContainer = self:newScrollContainer()
       self.scrollContainer:addChild(self.characterGrid)
-      self.characterGrid:addChild(self.cursor)
+      self.stackPanel:addElement(self.scrollContainer)
+      self.uiRoot:addChild(self.stackPanel)
       self.cursor:setTarget(self.characterGrid, {x = 9, y = 1})
       self.receiveMode = "Grid"
     end
@@ -74,9 +94,14 @@ function ModManagement:load()
     "stages", nil, true,
     function(button, inputs)
       GAME.theme:playValidationSfx()
-      self.uiRoot:addChild(self.stageHeadLine)
+      if self.scrollContainer then
+        self.stackPanel:remove(self.scrollContainer)
+      end
+      self.headerLabel:setText("stages")
+      self.scrollContainer = self:newScrollContainer()
       self.scrollContainer:addChild(self.stageGrid)
-      self.stageGrid:addChild(self.cursor)
+      self.stackPanel:addElement(self.scrollContainer)
+      self.uiRoot:addChild(self.stackPanel)
       self.cursor:setTarget(self.stageGrid, {x = 9, y = 1})
       self.receiveMode = "Grid"
     end
@@ -105,34 +130,22 @@ function ModManagement:load()
   })
 
   self.uiRoot:addChild(self.menu)
-  self.uiRoot:addChild(self.scrollContainer)
+end
+
+function ModManagement:newScrollContainer()
+  return ScrollContainer({
+    width = 800,
+    height = 550,
+    hAlign = "center",
+    vAlign = "top",
+  })
 end
 
 local gridUnitSize = 50
 local gridWidth = 10
 local gridMargin = 4
 local columnWidth = 2
-local headerY = 50
-
-function ModManagement:loadStageGridHeader()
-  local headLine = Grid({
-    unitSize = gridUnitSize,
-    gridWidth = gridWidth,
-    gridHeight = 1,
-    unitMargin = gridMargin,
-    hAlign = "center",
-    vAlign = "top",
-    y = headerY,
-  })
-  headLine:createElementAt(1, 1, 1, 1, "thumbnail", Label({text = "Thumbnail", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(2, 1, 3, 1, "name", Label({text = "Name", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(3*columnWidth - 1, 1, columnWidth, 1, "music", Label({text = "Music", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(4*columnWidth - 1, 1, columnWidth, 1, "subMods", Label({text = "Sub mods", hAlign = "center", vAlign = "center"}))
-  --headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "visible", Label({text = "Visible", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "enabled", Label({text = "Enabled", hAlign = "center", vAlign = "center"}))
-
-  return headLine
-end
+local headerY = 90
 
 function ModManagement:loadStageGrid()
   local stageGrid = Grid({
@@ -158,7 +171,7 @@ function ModManagement:loadStageGrid()
           end
         end
       end
-      local visibilitySelector = BoolSelector({startValue = stage.is_visible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local visibilitySelector = BoolSelector({startValue = stage.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
       visibilitySelector.onSelect = function(self, cursor)
         if inputs.isDown["Swap1"] then
           self:setValue(not self.value)
@@ -167,8 +180,8 @@ function ModManagement:loadStageGrid()
       local name = Label({text = stage.display_name, translate = false, hAlign = "center", vAlign = "center"})
       local hasMusicLabel = Label({text = tostring(stage.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})
       local subCount = 0
-      if #stage.sub_stages > 0 then
-        for _, c in ipairs(stage.sub_stages) do
+      if #stage.subIds > 0 then
+        for _, c in ipairs(stage.subIds) do
           if allStages[c] then
             subCount = subCount + 1
           end
@@ -187,7 +200,7 @@ function ModManagement:loadStageGrid()
   return stageGrid
 end
 
-function ModManagement:loadCharacterGridHeader()
+function ModManagement:loadGridHeader()
   local headLine = Grid({
     unitSize = gridUnitSize,
     gridWidth = gridWidth,
@@ -231,7 +244,7 @@ function ModManagement:loadCharacterGrid()
           end
         end
       end
-      local visibilitySelector = BoolSelector({startValue = character.is_visible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local visibilitySelector = BoolSelector({startValue = character.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
       visibilitySelector.onSelect = function(self, cursor)
         if inputs.isDown["Swap1"] then
           self:setValue(not self.value)
@@ -240,8 +253,8 @@ function ModManagement:loadCharacterGrid()
       local displayName = Label({text = character.display_name, translate = false, hAlign = "center", vAlign = "center"})
       local hasMusicLabel = Label({text = tostring(character.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})
       local subCount = 0
-      if #character.sub_characters > 0 then
-        for _, c in ipairs(character.sub_characters) do
+      if #character.subIds > 0 then
+        for _, c in ipairs(character.subIds) do
           if allCharacters[c] then
             subCount = subCount + 1
           end

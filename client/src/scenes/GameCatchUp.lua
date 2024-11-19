@@ -29,7 +29,7 @@ local GameCatchUp = class(function(self, sceneParams)
 
   for _, player in ipairs(self.match.players) do
     local character = characters[player.settings.characterId]
-    if not character.fully_loaded then
+    if not character.fullyLoaded then
       state = states.loadingMods
       logger.debug("triggering character load from catchup transition for mod " .. character.id)
       ModController:loadModFor(character, player)
@@ -37,7 +37,7 @@ local GameCatchUp = class(function(self, sceneParams)
   end
 
   local stage = stages[self.match.stageId]
-  if not stage.fully_loaded then
+  if not stage.fullyLoaded then
     state = states.loadingMods
     logger.debug("triggering stage load from catchup transition for mod " .. stage.id)
     ModController:loadModFor(stage, match)
@@ -54,7 +54,7 @@ local function modLoadValidation(match)
   for i, stack in ipairs(match.stacks) do
     local character = characters[stack.character]
     logger.debug("Stack " .. i .. " uses character " .. character.id)
-    logger.debug("Character " .. character.id .. " is fully loaded: " .. tostring(character.fully_loaded))
+    logger.debug("Character " .. character.id .. " is fully loaded: " .. tostring(character.fullyLoaded))
     logger.debug("Character " .. character.id .. " has a portrait loaded: " .. tostring(character.images.portrait ~= nil))
   end
 end

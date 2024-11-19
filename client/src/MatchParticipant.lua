@@ -80,7 +80,7 @@ function MatchParticipant:refreshStage()
   self.settings.stageId = StageLoader.resolveBundle(self.settings.selectedStageId)
   if currentId ~= self.settings.stageId then
     self:emitSignal("stageIdChanged", self.settings.stageId)
-    if not stages[self.settings.stageId].fully_loaded then
+    if not stages[self.settings.stageId].fullyLoaded then
       logger.debug("Loading stage " .. self.settings.stageId .. " as part of refreshStage for player " .. self.name)
       ModController:loadModFor(stages[self.settings.stageId], self)
       if self.isLocal then
@@ -108,7 +108,7 @@ function MatchParticipant:refreshCharacter()
   self.settings.characterId = CharacterLoader.resolveBundle(self.settings.selectedCharacterId)
   if currentId ~= self.settings.characterId then
     self:emitSignal("characterIdChanged", self.settings.characterId)
-    if not characters[self.settings.characterId].fully_loaded then
+    if not characters[self.settings.characterId].fullyLoaded then
       logger.debug("Loading character " .. self.settings.characterId .. " as part of refreshCharacter for player " .. self.name)
       ModController:loadModFor(characters[self.settings.characterId], self)
       if self.isLocal then

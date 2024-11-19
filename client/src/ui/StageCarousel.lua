@@ -23,12 +23,12 @@ function StageCarousel:createPassenger(id, image, text)
 end
 
 function StageCarousel:loadCurrentStages()
-  for i = 0, #stages_ids_for_current_theme do
+  for i = 0, #visibleStages do
     local stage
     if i == 0 then
-      stage = Stage.getRandomStage()
+      stage = Stage.getRandom()
     else
-      stage = stages[stages_ids_for_current_theme[i]]
+      stage = stages[visibleStages[i]]
     end
 
     if not stage.images.thumbnail then

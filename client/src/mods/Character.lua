@@ -29,13 +29,10 @@ local Character =
     self.display_name = self.id -- string | display name of the stage
     self.stage = nil -- string | stage that get selected upon doing the super selection of that character
     self.panels = nil -- string | panels that get selected upon doing the super selection of that character
-    self.sub_characters = {} -- stringS | either empty or with two elements at least; holds the sub characters IDs for bundle characters
     self.images = {}
     self.sounds = {}
     self.musics = {}
     self.flag = nil -- string | flag to be displayed in the select screen
-    self.fully_loaded = false
-    self.is_visible = true
     self.chain_style = chainStyle.classic
     self.combo_style = comboStyle.classic
     self.popfx_style = "burst"
@@ -45,10 +42,13 @@ local Character =
     self.music_style = "normal"
     self.stageTrack = nil
     self.files = tableUtils.map(love.filesystem.getDirectoryItems(self.path), function(file) return fileUtils.getFileNameWithoutExtension(file) end)
-    self.TYPE = "character"
   end,
   Mod
 )
+
+Character.TYPE = "character"
+-- name of the top level save directory for mods of this type
+Character.SAVE_DIR = "characters"
 
 function Character.json_init(self)
   local read_data = fileUtils.readJsonFile(self.path .. "/config.json")
@@ -59,7 +59,7 @@ function Character.json_init(self)
 
       -- sub ids for bundles
       if read_data.sub_ids and type(read_data.sub_ids) == "table" then
-        self.sub_characters = read_data.sub_ids
+        self.subIds = read_data.sub_ids
       end
       -- display name
       if read_data.name and type(read_data.name) == "string" then
@@ -67,9 +67,9 @@ function Character.json_init(self)
       end
       -- is visible
       if read_data.visible ~= nil and type(read_data.visible) == "boolean" then
-        self.is_visible = read_data.visible
+        self.isVisible = read_data.visible
       elseif read_data.visible and type(read_data.visible) == "string" then
-        self.is_visible = read_data.visible == "true"
+        self.isVisible = read_data.visible == "true"
       end
 
       -- chain_style
@@ -123,7 +123,7 @@ function Character.json_init(self)
 
       return true
     end
-end
+  end
 
   return false
 end
@@ -138,7 +138,7 @@ end
 function Character.load(self, instant)
   self:graphics_init(true, (not instant))
   self:sound_init(true, (not instant))
-  self.fully_loaded = true
+  self.fullyLoaded = true
   logger.debug("loaded character " .. self.id)
 end
 
@@ -147,48 +147,59 @@ function Character.unload(self)
   logger.debug("unloading character " .. self.id)
   self:graphics_uninit()
   self:sound_uninit()
-  self.fully_loaded = false
+  self.fullyLoaded = false
   logger.debug("unloaded character " .. self.id)
 end
 
-function Character.loadDefaultCharacter()
+function Character.loadDefaultMod()
   default_character = Character("client/assets/characters/__default", "__default")
   default_character:preload()
   default_character:load(true)
 end
 
-local function loadRandomCharacter()
+local function loadRandomCharacter(visibleCharacters)
   local randomCharacter = Character("characters/__default", consts.RANDOM_CHARACTER_SPECIAL_VALUE)
   randomCharacter.images["icon"] = themes[config.theme].images.IMG_random_character
   randomCharacter.sounds["selection"] = {}
   randomCharacter.display_name = "random"
-  randomCharacter.sub_characters = characters_ids_for_current_theme
+  randomCharacter.subIds = visibleCharacters
   randomCharacter.preload = function() end
   return randomCharacter
 end
 
-function Character.getRandomCharacter()
+function Character.getRandom(visibleCharacters)
   if not randomCharacter then
-    randomCharacter = loadRandomCharacter()
+    randomCharacter = loadRandomCharacter(visibleCharacters)
+  elseif visibleCharacters then
+    randomCharacter.subIds = visibleCharacters
   end
 
   return randomCharacter
 end
 
 function Character.is_bundle(self)
-  return #self.sub_characters > 0
+  return #self.subIds > 0
 end
 
 function Character:getSubMods()
   local m = {}
-  for _, id in ipairs(self.sub_characters) do
+  for _, id in ipairs(self.subIds) do
     m[#m + 1] = characters[id]
   end
   return m
 end
 
 function Character:enable(enable)
-  require("client.src.mods.CharacterLoader").enable(self, enable)
+  if enable and not characters[self.id] then
+    characters[self.id] = self
+    visibleCharacters[#visibleCharacters+1] = self.id
+  elseif not enable and characters[self.id] then
+    local i = tableUtils.indexOf(visibleCharacters, self.id)
+    table.remove(visibleCharacters, i)
+    characters[self.id] = nil
+  end
+
+  require("client.src.mods.ModLoader").updateBlacklist(self, enable)
 end
 
 function Character:canSuperSelect()
@@ -247,7 +258,7 @@ local defaulted_images = {
 
 -- for reloading the graphics if the window was resized
 function characters_reload_graphics()
-  local characterIds = shallowcpy(characters_ids_for_current_theme)
+  local characterIds = shallowcpy(visibleCharacters)
   for i = 1, #characterIds do
     local character = characterIds[i]
     local fullLoad = false
@@ -319,7 +330,7 @@ end
 function Character:createBundleIcon()
   local canvas = love.graphics.newCanvas(2 * 168, 2 * 168)
   canvas:renderTo(function()
-    for i, subcharacterId in ipairs(self.sub_characters) do
+    for i, subcharacterId in ipairs(self.subIds) do
       -- only draw up to 4 and only draw sub mods that are actually there unless there are none
       if i <= 4 and (characters[subcharacterId] or (allCharacters[subcharacterId] and #self:getSubMods() == 0)) then
         local character = allCharacters[subcharacterId]
