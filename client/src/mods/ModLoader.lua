@@ -98,7 +98,7 @@ function ModLoader.addModTypeFromDirectoryRecursively(path, modTypeConstructor, 
       -- call recursively: facade folder
       ModLoader.addModTypeFromDirectoryRecursively(current_path, modTypeConstructor, modsById)
 
-      -- init stage: 'real' folder
+      -- init mod: 'real' folder
       local mod = modTypeConstructor(current_path, v)
       local success = mod:json_init()
 
@@ -117,7 +117,7 @@ end
 -- returns: 
 --   modIds table
 --   table of invalid mod bundles
-function ModLoader.fillModIdList(modsById)
+function ModLoader.fillModIdList(modType, modsById)
   local invalid = {}
   local modIds = {}
 
@@ -126,15 +126,15 @@ function ModLoader.fillModIdList(modsById)
     if mod:is_bundle() then
       if ModLoader.validateBundle(modsById, mod) then
         modIds[#modIds + 1] = modId
-        logger.debug(mod.id .. " (bundle) has been added to the character list!")
+        logger.debug(mod.id .. " (bundle) has been added to the " .. modType.TYPE .. " list!")
       else
         invalid[#invalid + 1] = modId -- mod is invalid
         logger.warn(mod.id .. " (bundle) is being ignored since it's invalid!")
       end
     else
-      -- normal character
+      -- non-bundle mod
       modIds[#modIds + 1] = modId
-      logger.debug(mod.id .. " has been added to the character list!")
+      logger.debug(mod.id .. " has been added to the " .. modType.TYPE .. " list!")
     end
   end
 
@@ -148,11 +148,11 @@ end
 
 function ModLoader.validateBundle(modsById, mod)
   for i = #mod.subIds, 1, -1 do
-    local subCharacter = modsById[mod.subIds[i]]
-    if subCharacter and #subCharacter.subIds == 0 then -- inner bundles are prohibited
-      logger.trace(mod.id .. " has " .. subCharacter.id .. " as part of its subcharacters.")
+    local subMod = modsById[mod.subIds[i]]
+    if subMod and #subMod.subIds == 0 then -- inner bundles are prohibited
+      logger.trace(mod.id .. " has " .. subMod.id .. " as part of its sub " .. mod.TYPE .. "s.")
     else
-      logger.warn(mod.subIds[i] .. " is not a valid sub character of " .. mod.id .. " because it does not  exist or has own sub characters.")
+      logger.warn(mod.subIds[i] .. " is not a valid sub " .. mod.TYPE .. " of " .. mod.id .. " because it does not exist or has own sub " .. mod.TYPE .. "s.")
       table.remove(mod.subIds, i)
     end
   end
@@ -202,27 +202,29 @@ end
 
 function ModLoader.disableBlacklisted(modType, unfiltered)
   local blackList = ModLoader.loadBlacklist(modType)
-  for _, stageId in ipairs(blackList) do
-    -- blacklisted characters are removed from the filtered output
-    unfiltered[stageId] = nil
+  for _, modId in ipairs(blackList) do
+    -- blacklisted mods are removed from the filtered output
+    logger.debug("Removing blacklisted " .. modType.TYPE .. " " .. modId .. " from the " .. modType.TYPE .. " selection")
+    unfiltered[modId] = nil
   end
 
   if tableUtils.length(unfiltered) == 0 then
-    -- fallback for configurations in which all stages have been disabled
+    -- fallback for configurations in which all mods have been disabled
     unfiltered = shallowcpy(unfiltered)
   end
 
   return unfiltered
 end
 
-function ModLoader.filterToVisible(filtered, ids)
-  -- holds stages ids for the current theme, those stages will appear in the selection
+function ModLoader.filterToVisible(modType, filtered, ids)
+  -- holds mod ids for the current theme, those mods will appear in the selection
   local visible = {}
+  local path = themes[config.theme].path .. "/" .. modType.SAVE_DIR .. ".txt"
 
-  if love.filesystem.getInfo(themes[config.theme].path .. "/stages.txt") then
-    for line in love.filesystem.lines(themes[config.theme].path .. "/stages.txt") do
+  if love.filesystem.getInfo(path, "file") then
+    for line in love.filesystem.lines(path) do
       line = trim(line) -- remove whitespace
-      -- found at least a valid stage in a stages.txt file
+      -- found at least a valid mod in a $(modtype.TYPE).txt file
       if filtered[line] then
         visible[#visible + 1] = line
       end
@@ -236,7 +238,7 @@ function ModLoader.filterToVisible(filtered, ids)
   end
 
   if #visible == 0 then
-    -- fallback in case there were no stages left
+    -- fallback in case there were no visible mods left
     visible = shallowcpy(ids)
   end
 
@@ -244,7 +246,7 @@ function ModLoader.filterToVisible(filtered, ids)
 end
 
 -- fix config if it's missing or does not exist
-function ModLoader.fixConfigStage(modType, filtered, visible)
+function ModLoader.fixConfigMod(modType, filtered, visible)
   if not config[modType.TYPE] or not filtered[config[modType.TYPE]] then
     -- it's legal to pick a bundle here, no need to go further
     config[modType.TYPE] = tableUtils.getRandomElement(visible)
@@ -259,9 +261,9 @@ end
 --   all mods that are supposed to be visible
 function ModLoader.initMods(modType)
   local all = ModLoader.loadAllMods(modType)
-  local ids = ModLoader.fillModIdList(all)
+  local ids = ModLoader.fillModIdList(modType, all)
   local filtered = ModLoader.disableBlacklisted(modType, shallowcpy(all))
-  local visible = ModLoader.filterToVisible(filtered, ids)
+  local visible = ModLoader.filterToVisible(modType, filtered, ids)
 
   modType.loadDefaultMod()
 
@@ -269,7 +271,7 @@ function ModLoader.initMods(modType)
   ids[#ids+1] = random.id
   filtered[random.id] = random
 
-  ModLoader.fixConfigStage(modType, filtered, visible)
+  ModLoader.fixConfigMod(modType, filtered, visible)
 
   for _, mod in pairs(all) do
     mod:preload()

@@ -67,7 +67,8 @@ function ModManagement:load()
 
   self.cursor.escapeCallback = function(cursor)
     self.headLine:detach()
-    self.scrollContainer:detach()
+    self.stackPanel:remove(self.scrollContainer)
+    self.scrollContainer = nil
     cursor:setTarget()
     GAME.theme:playCancelSfx()
     self.receiveMode = "Menu"
