@@ -39,6 +39,18 @@ function fileUtils.copyFile(source, destination)
   return success, err
 end
 
+-- returns only the last directory specifier from a path specified with "/" notation
+function fileUtils.getDirectoryName(directoryPath)
+  local len = string.len(directoryPath)
+  local reversed = string.reverse(directoryPath)
+  local index, stop, _ = string.find(reversed, "/")
+  if index then
+    return string.sub(directoryPath, len - index + 1, len)
+  else
+    return directoryPath
+  end
+end
+
 -- copies a file from the given source to the given destination
 function fileUtils.recursiveCopy(source, destination, yields)
   local lfs = love.filesystem
@@ -88,6 +100,9 @@ function fileUtils.recursiveRemoveFiles(folder, targetName)
   end
 end
 
+-- tries to open a file and decode it using the project's json library
+-- returns nil if an error occured
+-- returns the decoded json in the form of a lua table otherwise
 function fileUtils.readJsonFile(file)
   if not love.filesystem.getInfo(file, "file") then
     logger.debug("No file at specified path " .. file)
@@ -135,6 +150,8 @@ function fileUtils.findSound(sound_name, dirs_to_check, streamed)
   return nil
 end
 
+-- returns true if a soundfile with the given name and a valid extension exists at the given path
+-- false otherwise
 function fileUtils.soundFileExists(soundName, path)
   for _, extension in pairs(SUPPORTED_SOUND_FORMATS) do
     if love.filesystem.exists(path .. "/" .. soundName .. extension) then
@@ -145,6 +162,7 @@ function fileUtils.soundFileExists(soundName, path)
   return false
 end
 
+-- encodes a texture in the given format and writes it to the relative filePath in the saveDirectory
 function fileUtils.saveTextureToFile(texture, filePath, format)
   local imageData = love.graphics.readbackTexture(texture)
   local data = imageData:encode(format)
