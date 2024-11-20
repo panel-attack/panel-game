@@ -36,7 +36,11 @@ local function unloadMod(modController, mod)
         --  and that would be ugly in a different way
         if tableUtils.trueForAll(modController.users, function(user)
             local m = user[mod.TYPE]
-            return m == subMod or not tableUtils.contains(m:getSubMods(), function(sm) return sm.id == subMod.id end)
+            if m then
+              return m == subMod or not tableUtils.contains(m:getSubMods(), function(sm) return sm.id == subMod.id end)
+            else
+
+            end
           end) then
           subMod:unload()
         end
