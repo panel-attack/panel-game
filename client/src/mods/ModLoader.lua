@@ -200,15 +200,33 @@ function ModLoader.loadAllMods(modType)
   return all
 end
 
+-- returns a shallow copy of the unfiltered mod list that had all blacklisted mods removed
+-- bundles that became invalid by virtue of their submods being blacklisted are removed too
 function ModLoader.disableBlacklisted(modType, unfiltered)
+  local filtered = shallowcpy(unfiltered)
   local blackList = ModLoader.loadBlacklist(modType)
   for _, modId in ipairs(blackList) do
     -- blacklisted mods are removed from the filtered output
     logger.debug("Removing blacklisted " .. modType.TYPE .. " " .. modId .. " from the " .. modType.TYPE .. " selection")
-    unfiltered[modId] = nil
+    filtered[modId] = nil
   end
 
-  return unfiltered
+  -- if any bundles became invalid by having all of its submods disabled, we need to remove those too
+  for modId, mod in pairs(filtered) do
+    if mod:is_bundle() then
+      if tableUtils.trueForAll(mod.subIds, function(subId) return (filtered[subId] == nil) end) then
+        logger.info("Disabling " .. modId .. " because all its sub mods have been disabled")
+        filtered[modId] = nil
+      end
+    end
+  end
+
+  if tableUtils.length(filtered) == 0 then
+    -- fallback for configurations in which all mods have been disabled
+    filtered = shallowcpy(unfiltered)
+  end
+
+  return filtered
 end
 
 function ModLoader.filterToVisible(modType, filtered, ids)
@@ -257,11 +275,7 @@ end
 function ModLoader.initMods(modType)
   local all = ModLoader.loadAllMods(modType)
   local ids = ModLoader.fillModIdList(modType, all)
-  local filtered = ModLoader.disableBlacklisted(modType, shallowcpy(all))
-  if tableUtils.length(filtered) == 0 then
-    -- fallback for configurations in which all mods have been disabled
-    filtered = shallowcpy(all)
-  end
+  local filtered = ModLoader.disableBlacklisted(modType, all)
   local visible = ModLoader.filterToVisible(modType, filtered, ids)
 
   modType.loadDefaultMod()

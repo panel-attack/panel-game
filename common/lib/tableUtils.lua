@@ -105,11 +105,11 @@ function tableUtils.appendIfNotExists(tab, element)
 end
 
 -- Randomly grabs a value from the table 
-function tableUtils.getRandomElement(tab) 
+function tableUtils.getRandomElement(tab)
   if #tab > 0 then
     return tab[math.random(#tab)]
   else
-    -- pairs already returns in an arbitrary order but I'm not sure if it's truly random
+    -- pairs already returns in an arbitrary order but while it is arbitrary it is absolutely not random
     local rolledIndex = math.random(tableUtils.length(tab))
     local index = 0
     for _, value in pairs(tab) do

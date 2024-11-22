@@ -38,7 +38,8 @@ end
 
 function CharacterLoader.resolveBundle(characterId)
   while characters[characterId]:is_bundle() do
-    characterId = tableUtils.getRandomElement(characters[characterId].subIds)
+    local subMods = characters[characterId]:getSubMods()
+    characterId = tableUtils.getRandomElement(subMods).id
   end
 
   return characterId

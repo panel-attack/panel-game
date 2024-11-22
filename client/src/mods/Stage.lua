@@ -130,7 +130,9 @@ end
 function Stage:getSubMods()
   local m = {}
   for _, id in ipairs(self.subIds) do
-    m[#m + 1] = stages[id]
+    if stages[id] then
+      m[#m + 1] = stages[id]
+    end
   end
   return m
 end
@@ -285,6 +287,7 @@ local function loadRandomStage(visibleStages)
   randomStage.display_name = "random"
   randomStage.subIds = visibleStages
   randomStage.preload = function() end
+  randomStage.load = function() end
   return randomStage
 end
 

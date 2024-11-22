@@ -38,7 +38,8 @@ end
 
 function StageLoader.resolveBundle(stageId)
   while stages[stageId]:is_bundle() do
-    stageId = tableUtils.getRandomElement(stages[stageId].subIds)
+    local subMods = stages[stageId]:getSubMods()
+    stageId = tableUtils.getRandomElement(subMods).id
   end
 
   return stageId

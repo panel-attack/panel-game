@@ -27,27 +27,43 @@ local function unloadMod(modController, mod)
   mod:unload()
   local subMods = mod:getSubMods()
   if subMods then
+    logger.warn("Technically we should never reach here because actually selected mods cannot be bundles")
     for _, subMod in ipairs(subMods) do
-      if subMod.fullyLoaded and #subMod.users == 0 then
+      if subMod.fullyLoaded and tableUtils.length(subMod.users) == 0 then
         -- we need to crosscheck:
         -- if multiple players have picked different bundles that have an intersection in subMods,
         --  we don't want to unload the mod in use by both bundles just because one got unselected
         --  this is a bit ugly but the alternative would be to allow users to track more than one mod per type
         --  and that would be ugly in a different way
-        if tableUtils.trueForAll(modController.users, function(user)
+        if tableUtils.trueForAny(modController.users, function(user)
+          logger.debug("Reached the submod bundle crosscheck for mod " .. mod.id)
             local m = user[mod.TYPE]
-            if m then
-              return m == subMod or not tableUtils.contains(m:getSubMods(), function(sm) return sm.id == subMod.id end)
+            if not m then
+              return false
             else
-
+              if m == subMod then
+                logger.warn("Found a user using a mod that was about to be disabled as part of submod disable routine")
+                return true
+              elseif tableUtils.contains(m:getSubMods(), subMod) then
+                -- this is the main case we check for
+                logger.debug("Found a user that may still reroll into this character as part of their separate bundle")
+                return true
+              else
+                return false
+              end
             end
-          end) then
+          end)
+        then
+          -- don't unload it cause someone still uses it
+        else
+          logger.debug("Unloading submod " .. subMod.id)
           subMod:unload()
         end
       end
     end
   end
 end
+
 local function clearModForUser(modController, user, type)
   if modController.users[user] then
     local previousMod = modController.users[user][type]

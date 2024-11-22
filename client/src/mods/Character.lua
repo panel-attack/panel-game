@@ -184,7 +184,9 @@ end
 function Character:getSubMods()
   local m = {}
   for _, id in ipairs(self.subIds) do
-    m[#m + 1] = characters[id]
+    if characters[id] then
+      m[#m + 1] = characters[id]
+    end
   end
   return m
 end
@@ -330,10 +332,10 @@ end
 function Character:createBundleIcon()
   local canvas = love.graphics.newCanvas(2 * 168, 2 * 168)
   canvas:renderTo(function()
-    for i, subcharacterId in ipairs(self.subIds) do
+    for i, subCharacterId in ipairs(self.subIds) do
       -- only draw up to 4 and only draw sub mods that are actually there unless there are none
-      if i <= 4 and (characters[subcharacterId] or (allCharacters[subcharacterId] and #self:getSubMods() == 0)) then
-        local character = allCharacters[subcharacterId]
+      if i <= 4 and (characters[subCharacterId] or (allCharacters[subCharacterId] and #self:getSubMods() == 0)) then
+        local character = allCharacters[subCharacterId]
         local x = 0
         local y = 0
         if i % 2 == 0 then
