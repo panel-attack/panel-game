@@ -399,7 +399,7 @@ end
 
 function NetClient:challengePlayer(name)
   if not self.lobbyData.sentRequests[name] then
-    self.tcpClient:sendRequest(ClientMessages.challengePlayer(name))
+    self.tcpClient:sendRequest(ClientMessages.challengePlayer(config.name, name))
     self.lobbyData.sentRequests[name] = true
     self:emitSignal("lobbyStateUpdate", self.lobbyData)
   end
@@ -407,7 +407,7 @@ end
 
 function NetClient:requestSpectate(roomNumber)
   if not self.pendingResponses.spectateResponse then
-    self.pendingResponses.spectateResponse = self.tcpClient:sendRequest(ClientMessages.requestSpectate(roomNumber))
+    self.pendingResponses.spectateResponse = self.tcpClient:sendRequest(config.name, ClientMessages.requestSpectate(roomNumber))
   end
 end
 

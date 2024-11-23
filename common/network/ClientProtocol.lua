@@ -8,33 +8,23 @@ local ClientMessages = {}
 -- login related requests
 -------------------------
 
-function ClientMessages.requestLogin(userId)
+function ClientMessages.requestLogin(userId, name, level, inputMethod, panels, bundleCharacter, character, bundleStage, stage, wantsRanked, saveReplaysPublicly)
   local loginRequestMessage =
   {
     login_request = true,
     user_id = userId,
     engine_version = consts.ENGINE_VERSION,
-    name = config.name,
-    level = config.level,
-    inputMethod = config.inputMethod or "controller",
-    panels_dir = config.panels,
-    character = config.character,
-    stage = config.stage,
-    ranked = config.ranked,
-    save_replays_publicly = config.save_replays_publicly
+    name = name,
+    level = level,
+    inputMethod = inputMethod or "controller",
+    panels_dir = panels,
+    character_is_random = bundleCharacter,
+    character = character,
+    stage_is_random = bundleStage,
+    stage = stage,
+    ranked = wantsRanked,
+    save_replays_publicly = saveReplaysPublicly
   }
-
-  if config.character then
-    if characters[config.character] and characters[config.character]:is_bundle() then
-      loginRequestMessage.character_is_random = config.character
-    end
-  end
-
-  if config.stage then
-    if stages[config.stage] and stages[config.stage]:is_bundle() then
-      loginRequestMessage.stage_is_random = config.stage
-    end
-  end
 
   return {
     messageType = msgTypes.jsonMessage,
@@ -65,13 +55,13 @@ end
 -------------------------
 
 -- players are challenged by their current name on the server
-function ClientMessages.challengePlayer(name)
+function ClientMessages.challengePlayer(senderName, receiverName)
   local playerChallengeMessage =
   {
     game_request =
     {
-      sender = config.name,
-      receiver = name
+      sender = senderName,
+      receiver = receiverName
     }
   }
 
@@ -81,12 +71,12 @@ function ClientMessages.challengePlayer(name)
   }
 end
 
-function ClientMessages.requestSpectate(roomNumber)
+function ClientMessages.requestSpectate(spectatorName, roomNumber)
   local spectateRequestMessage =
   {
     spectate_request =
     {
-      sender = config.name,
+      sender = spectatorName,
       roomNumber = roomNumber
     }
   }
