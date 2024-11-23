@@ -407,7 +407,7 @@ end
 
 function NetClient:requestSpectate(roomNumber)
   if not self.pendingResponses.spectateResponse then
-    self.pendingResponses.spectateResponse = self.tcpClient:sendRequest(config.name, ClientMessages.requestSpectate(roomNumber))
+    self.pendingResponses.spectateResponse = self.tcpClient:sendRequest(ClientMessages.requestSpectate(config.name, roomNumber))
   end
 end
 
