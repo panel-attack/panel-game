@@ -120,7 +120,7 @@ function ReplayBrowser:load()
   end
 
   state = "browser"
-  updateBrowsingPath()
+  updateBrowsingPath(current_path)
 end
 
 function ReplayBrowser:update()
