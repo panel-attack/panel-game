@@ -283,11 +283,16 @@ end
 
 local function loadRandomStage(visibleStages)
   local randomStage = Stage("stages/__default", consts.RANDOM_STAGE_SPECIAL_VALUE)
-  randomStage.images["thumbnail"] = themes[config.theme].images.IMG_random_stage
+  randomStage.images.thumbnail = themes[config.theme].images.IMG_random_stage
   randomStage.display_name = "random"
   randomStage.subIds = visibleStages
+  -- we need to shadow some stage functions to correct load behaviour for the random stage
   randomStage.preload = function() end
   randomStage.load = function() end
+  randomStage.unload = function() end
+  randomStage.graphics_init = function(stage, full, yields)
+    stage.images.thumbnail = themes[config.theme].images.IMG_random_stage
+  end
   return randomStage
 end
 

@@ -163,7 +163,13 @@ local function loadRandomCharacter(visibleCharacters)
   randomCharacter.sounds["selection"] = {}
   randomCharacter.display_name = "random"
   randomCharacter.subIds = visibleCharacters
+  -- we need to shadow some character functions to correct load behaviour for the random character
   randomCharacter.preload = function() end
+  randomCharacter.load = function() end
+  randomCharacter.unload = function() end
+  randomCharacter.graphics_init = function(character, full, yields)
+    character.images.icon = themes[config.theme].images.IMG_random_character
+  end
   return randomCharacter
 end
 
