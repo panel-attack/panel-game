@@ -137,7 +137,10 @@ function AttackEngine.run(self)
               garbage.rowEarned = math.random(1, 11)
               garbage.colEarned = math.random(1, 6)
               maxCombo = garbage.width + 1 -- TODO: Handle combos SFX greather than 7
-              self.outgoingGarbage:push(garbage)
+              -- if the attack engine garbage is pushed by ref, the garbage queue would modify the reference
+              -- which could also alter the chain flag in case of fake chains
+              -- so make sure to deepcpy combos before sending
+              self.outgoingGarbage:push(deepcpy(garbage))
             end
             hasMetal = garbage.isMetal or hasMetal
           end
