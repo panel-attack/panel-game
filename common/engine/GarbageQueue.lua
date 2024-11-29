@@ -223,13 +223,13 @@ end
 --   for regular chaining you're NOT supposed to use this function
 --   use GarbageQueue:addChainLink and GarbageQueue:finalizeCurrentChain instead
 function GarbageQueue:push(garbage)
-  logger.debug("pushing garbage " .. table_to_string(garbage))
+  --logger.debug("pushing garbage " .. table_to_string(garbage))
   correctChainingFlag(self, garbage)
   self.stagedGarbage[#self.stagedGarbage+1] = garbage
   self.history[#self.history+1] = garbage
 
   orderGarbage(self.stagedGarbage, self.treatMetalAsCombo)
-  logger.debug(self:toString())
+  --logger.debug(self:toString())
 end
 
 -- accepts multiple pieces of garbage in an array
@@ -243,7 +243,7 @@ end
 --   for regular chaining you're NOT supposed to use this function
 --   use GarbageQueue:addChainLink and GarbageQueue:finalizeCurrentChain instead
 function GarbageQueue:pushTable(garbageArray)
-  logger.debug("pushing garbage table with " .. #garbageArray .. " entries")
+  --logger.debug("pushing garbage table with " .. #garbageArray .. " entries")
   if garbageArray then
     for _, garbage in ipairs(garbageArray) do
       self:push(garbage)
@@ -258,8 +258,8 @@ end
 function GarbageQueue:pop()
   -- default value for table.remove is the length, so the last index
   local garbage = table.remove(self.stagedGarbage)
-  logger.debug("popping garbage piece\n" .. table_to_string(garbage))
-  logger.debug("remaining staged garbage\n" .. self:toString())
+  --logger.debug("popping garbage piece\n" .. table_to_string(garbage))
+  --logger.debug("remaining staged garbage\n" .. self:toString())
   return garbage
 end
 
@@ -376,7 +376,7 @@ function GarbageQueue:getGarbageIndex(garbage)
 end
 
 function GarbageQueue:finalizeCurrentChain(clock)
-  logger.debug("Finalizing chain at " .. clock)
+  --logger.debug("Finalizing chain at " .. clock)
   self.currentChain.finalized = true
   self.currentChain.finalizedClock = clock
   self.currentChain = nil
