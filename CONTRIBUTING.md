@@ -13,7 +13,7 @@ Try to follow the following code guidelines when contributing:
 - Follow the formatting guidelines below
 - Constants should be local to a file / scope unless they need to be shared everywhere
 - Avoid the use of shortlived tables and consider pooling if you can't
-- No use of luajit's ffi module
+- Avoid use of luajit's ffi module; jit is disabled on our weakest platform, making ffi extremely slow
 
 Pull requests are to be pulled against the `beta` branch.  
 

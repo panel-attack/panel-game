@@ -2,14 +2,14 @@
 This version seeks to be more brief and on-point for people familiar with lua/love and the game itself (as a player).  
 
 The codebase combines code used for the client and the server. Code used by both or that is anticipated to be used by both is located in the `common` folder.  
-Although not yet a reality, the goal is for files in the common folder to have no references to files in the server/client folders respectively. The only exception to this should be test cases that may use client I/O to load replays, puzzles and configurations as test data.
+Although not yet a reality, the goal is for files in the common folder to have no references to files in the server/client folders. The only exception to this are tests that may use love's and the client's I/O to load replays, puzzles and configurations as test data.
 
 The server has a separate documentation so this document mainly deals with the client architecture.
 
 A `Scene` is the overarching concept of a thing that manages what you see on a screen, what you hear on a screen and how you can interact with that screen.  
 `Scene`s are managed by a `NavigationStack` via pop, push and pull operations with only the top-most `Scene` being active.
 
-To play games, a `BattleRoom` is created in which a bunch of `Player`s can modify their settings and eventually all ready up.
+To play games, a `BattleRoom` is created in which a number of `Player`s can modify their settings and eventually all ready up.
 Based on the settings of the `BattleRoom` itself, a `Match` is created which in turn creates `Stack`s based on the settings of the `Player`s, forming a hierarchic architecture in which the components further down the bottom ideally know nothing of the elements above.  
 `BattleRoom`, `Player`, `Match` and `Stack` are the key points with `Player` and `Stack` both having base classes `MatchPartipant` and `StackBase` that define the interface for `BattleRoom` and `Match` to use them.  
 This concept extends to replays where generally the settings of `Match` and `Player`s are saved on top of the inputs.
@@ -19,9 +19,10 @@ This is a subjective and informal take by Endaris.
 
 ## Understanding Lua and Love
 In general following the sheepolution tutorial up to maybe chapter 12 is a decent idea:
-https://sheepolution.com/learn/book/contents  
-There is also a video format but I didn't watch it so I can't vouch for its quality.  
-Text is better for learning and backreferencing.
+
+https://sheepolution.com/learn/book/contents
+
+There is also a video format but it is not as good and not maintained so use the text format.  
 
 ### Understanding Lua
 If you already know some programming, you can skim some parts if you are familiar with the concepts from other languages:
@@ -37,7 +38,8 @@ You definitely want to read up very closely on:
 Still read the tutorial, I'll just make some additions that I personally consider interesting to know about.
 A table is an array and dictionary at once and is the monolithic data type on which basically all of Lua is built.  
 Functions in a "class" in Lua are ultimately just regular fields on a table that happen to contain a function.  
-This means that functions can be freely overwritten on individual tables - whether that is a good idea or not is questionable but it is possible and in some cases extraordinarily useful.
+This means that functions can be freely overwritten on individual tables - whether that is a good idea or not is questionable but it is possible and in some cases extraordinarily useful.  
+Tables are the primary way in which memory is allocated and the use of tables is to be scrutinized to some degree to keep the garbage collector happy.
 
 
 ### Understanding Love
@@ -59,7 +61,7 @@ end
 
 love.run is a function with a standard implementation. Panel Attack overwrites this function with a similar but for diagnosis and garbage collection purposes modified function inside of the file `CustomRun`.  
 Studying either that or https://love2d.org/wiki/love.run is a great idea to get a general understanding of how the loop works.  
-In the case of Panel Attack, unlike in the default version, the loop is inherently locked to a certain frame rate, ordinarily 60 FPS.
+In the case of Panel Attack, unlike in the default version, the loop is inherently locked to a certain frame rate, ordinarily 60 FPS.  
 
 #### The callbacks
 
@@ -79,8 +81,10 @@ Overall it is relatively easy to guess what a love function does if you see it i
 ## Game start
 
 Distribution and development setup differs a bit.  
-Panel Attack uses an auto updater that fetches updates from panelattack.com and then reinitializes itself by mounting the actual game in its place. It leaves behind a `GAME_UPDATER` global that offers functions to check for updates or restart with a different release stream.  
-You can find the current updater at https://github.com/Endaris/panel-attack-updater with documentation.
+In distribution Panel Attack uses an updater that fetches updates from panelattack.com and then reinitializes itself by mounting the actual game in its place. The game may then try to require the updater on its own that offers functions to check for updates or restart with a different release stream.  
+The exact startup mechanism differs a bit based on the system due to specific issues, see https://github.com/love2d/love/issues/2122.
+
+You can find the current updater at https://github.com/panel-attack/panel-updater with its own documentation.
 
 ## Broad Client Structure 
 
@@ -164,20 +168,24 @@ Ideally the network part of them will be performed by a dedicated network client
 ### client/src/graphics/Stack.lua
 This file contains entirely draw functions for the `Stack` besides the one defined in `common/engine/StackBase.lua`.
 
-### Telegraph.lua and GarbageQueue.lua
-These are strongly coupled classes that act as an intermediary between `Stack`s to transmit attacks from one `Stack` to another.  
-They're currently performing much more calls to `deepcpy` than strictly necessary to do their job and a refactoring is in order once enough tests have been written to verify the behaviour of a new implementation.
+### GarbageQueue.lua
+The garbage queue defines the how garbage is treated when being sent from a stack as well as when being sent to a stack.  
+Garbage queues act as the primary mechanism for Stacks to indirectly interact with other Stacks by having the governing Match transfer garbage from one Stack's outgoing garbage queue to another Stack's incoming garbage queue.
+
+There is a dedicated document for explaining the workings of the garbage queue in the engine folder.
+
+### client/src/graphics/Telegraph.lua
+The telegraph is the visual representation of a Stack's outgoing garbage queue. It is only present if the Stack also has a target for its garbage.
 
 ### SimulatedStack.lua
-
 A fake stack based on `StackBase` that can sport an AttackEngine and/or a HealthEngine to mimic a player without actually dealing with any of the complexity a fully fledged CPU player would require.  
 Includes graphics functions.
 
 ### Match.lua
 A match creates and runs the stacks, holding and applying the concrete game settings that aren't on `Stack`.  
 As the controlling entity, the match is supposed to control all behaviours that involve more than one stack, such as changing music, playing countdown, determining whether a stack needs to save rollback copies or determining a winner.  
-There are still some interactions inside of `Stack` that I would rather see on `Match`, such as sending garbage from the telegraph to another stack, applying rollback or determining if shock panels should be in the game via a different avenue than levelData itself.
-The match will continue running stacks until either only one is left or until or done, depending on the given conditions for winning the match (see section about GameModes).
+There are still some interactions inside of `Stack` that I would rather see on `Match`, such as determining if shock panels should be in the game via a different avenue than levelData itself.
+The match will continue running stacks until either only one is left or until or done, depending on the given conditions for winning the match (see section below about GameModes).
 
 ### client/src/graphics/match_graphics.lua
 Graphics for rendering the match  
@@ -224,6 +232,8 @@ Second LAST_ALIVE is evaluated. Both player 1 and 2 finished in a winning state 
 Finally TIME is evaluated, player 2 has a lower clock time than player 1 so they are determined winner.  
 In the future each condition should also act as a tiebreaker so that player 3 would be determined to beat player 4 because they win in the score win condition.
 
+Besides the LAST_ALIVE they're not in use so the existing implementations may actually not work.
+
 #### Stack behaviours
 Stack possesses certain behaviour flags under its `behaviours` table that can toggle major functions.  
 Currently available toggles are  
@@ -262,14 +272,16 @@ All scenes have an `uiRoot` that is traversed by the touch handler through `UIEl
 For general menu design, UIElements should be used.  
 There is a lot to say about UIElements and nothing at the same time.  
 There are some generic UIElements with very basic functionality such as Button, Label, Slider, Stepper.  
-There are some UIElements for layouting such as Grid or StackPanel.  
+There are some UIElements for layouting such as Grid, StackPanel or ScrollContainer.  
 There are some rather specific UIElements for certain purposes such as LevelSlider, StageCarousel or MultiPlayerSelectionWrapper.  
+You may find some of these to be rather unfit for the general purposes their names imply and some are in need of a rewrite.
+
 Via UIElement the composite tree supports the use of alignments and horizontal and vertical fill flags to automatically position and size a UIElement relative to its parent.  
 For example to have an element centered within its parent you would choose `hAlign = "center"`, `vAlign = "center"`, `x = 0`, `y = 0`.
 Note that this comes with some limitations, e.g. if your top level element does not specify a width and the child wants to horizontally fill its parent, this won't work, even if children of the child have a size they would want to fill out. Meaning to say, the top level element in a tree needs sane settings for x, y, width, height and may not use any of the align/fill settings.  
 This is realised on `Scene`s by having a standard `uiRoot` which is just a basic UIElement with canvas size that provides a container to add all other UIElements to.
 
-If you can, don't use `Menu` for now, a menu redesign is planned and it will very likely die with it.  
+If you can, don't use `Menu` for now, a menu redesign is planned and it will likely die with it.  
 
 #### Internal working
 
@@ -291,14 +303,16 @@ If you add new localization entries please make sure to **always** add them at t
 The default assets can be found in the `client/assets folder`.  
 `client/assets/default_data` contains mods that ship with the game while the other directories contain fallbacks for user mods that don't provide certain assets.
 Each graphic asset type has its own file for managing the loading process in `client/src/mods`:  
-`Character.lua`, `Panels.lua`, `Stages.lua` and `Theme.lua` with characters and stages having a dedicated `CharacterLoader.lua` and `StageLoader.lua` to lazy load new assets on the fly. Panels and themes don't need this as panels always get loaded fully due to their small size and only a single theme can be loaded at a time.  
+`Character.lua`, `Panels.lua`, `Stages.lua` and `Theme.lua`.
+Loading of characters and stages is described in the next section. Panels always get loaded fully due to their small size and only a single theme can be fully loaded at a time.  
 For characters, panels and stages, a table with id by index and a table with the actual mod by id is created for global access.  
 
 ### Mod loading
 PA has a (still experimental) `ModController` component that tries to automatically load balance the loaded mods.  
 `ModController:loadModFor` is a function that lazy loads a mod for a certain user (this can be a player or match) and holds a table with mods that have been loaded.  
 Additionally each mod also holds by who it is loaded via weak tables.  
-The `ModController` tries to unload any mod not associated with a certain user during its updates, keeping asset use low.
+The `ModController` tries to unload any mod not associated with a certain user during its updates, keeping asset use low.  
+By matches and players asserting proper claims via `loadModFor`, it is ensured that mods are not released while they are still in use.
 
 ## Utilities
 
@@ -393,14 +407,10 @@ See README in server folder
 The network folder primarily hosts files that deal with network on the client side.  
 This may include network components of classes that are not primarily network oriented.  
 
-### ClientProtocol.lua
-
-Presents getters for all messages the client may proactively send to the server
-
 ### ServerMessages.lua
 
 Provides sanitization in format for messages the server may send to the client.  
-Along with ClientProtocol.lua this serves as an extra level of abstraction so that the client internals don't have to match whatever the server sends and vice versa.
+Along with ClientProtocol.lua this serves as an extra level of abstraction so that the client internals don't have to match whatever the server sends.
 
 ### LoginRoutine.lua
 
@@ -421,6 +431,13 @@ Where all the network magic actually happens. Uses luasocket.
 ### MessageListener
 
 Listen to one specific server message on the TcpClient's incoming message queue.
+
+## common/network
+
+### ClientProtocol.lua
+
+Presents getters for all messages the client may proactively send to the server.  
+This is supposed to be the API for the client to communicate with the server with no client dependencies.
 
 ### NetworkProtocol
 
