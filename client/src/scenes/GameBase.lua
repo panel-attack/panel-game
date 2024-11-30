@@ -30,7 +30,7 @@ local GameBase = class(
     self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
     self.maxDisplayTime = -1 -- the maximum amount of seconds the game over screen will be displayed for, -1 means no max time
     self.gameOverStartTime = nil -- timestamp for when game over screen was first displayed
-    self.fadeOutSongOnGameOver = true
+    self.fadeOutMusicOnGameOver = true
 
     self.frameInfo = {
       frameCount = nil,
@@ -204,7 +204,7 @@ function GameBase:setupGameOver()
   self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
   self.maxDisplayTime = -1
 
-  if self.fadeOutSongOnGameOver then
+  if self.fadeOutMusicOnGameOver then
     SoundController:fadeOutActiveTrack(3)
   end
 

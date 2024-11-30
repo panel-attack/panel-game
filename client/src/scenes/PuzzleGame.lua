@@ -12,7 +12,7 @@ local PuzzleGame = class(
     -- we cache the player's input configuration here
     self.inputConfiguration = nil
     self.keepMusic = true
-    self.fadeOutSongOnGameOver = false
+    self.fadeOutMusicOnGameOver = false
 
     self:load(sceneParams)
   end,
