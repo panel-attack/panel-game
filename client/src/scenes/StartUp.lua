@@ -72,6 +72,11 @@ function StartUp:draw()
 end
 
 function StartUp:checkIfMigrationIsPossible()
+  local loveMajor = love.getVersion()
+  if loveMajor < 12 then
+    return false
+  end
+
   local os = love.system.getOS()
   if os == "Linux" or os == "OS X" then
     if not love.filesystem.exists("conf.json") then
@@ -111,6 +116,8 @@ function StartUp:migrate()
       y = config.windowY,
       fullscreen = config.fullscreen,
       borderless = config.borderless,
+      display = config.display,
+      -- for love 12
       displayindex = config.display,
       resizable = true,
     })

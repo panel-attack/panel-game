@@ -343,4 +343,12 @@ function GraphicsUtil.resetAlignment()
   love.graphics.pop()
 end
 
+local loveMajor = love.getVersion()
+
+if loveMajor == 12 then
+  GraphicsUtil.newText = love.graphics.newTextBatch
+else
+  GraphicsUtil.newText = love.graphics.newText
+end
+
 return GraphicsUtil

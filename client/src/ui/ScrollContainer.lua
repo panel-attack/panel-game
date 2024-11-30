@@ -85,12 +85,19 @@ function ScrollContainer:onRelease(x, y, duration)
   end
 end
 
+
 function ScrollContainer:draw()
   if self.isVisible then
     -- make a stencil according to width/height
-    love.graphics.setStencilMode("draw", 1)
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-    love.graphics.setStencilMode("test", 1)
+    local stencilFunction = function()
+      love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    end
+    love.graphics.stencil(stencilFunction, "replace", 1)
+    love.graphics.setStencilTest("greater", 0)
+    -- for the future, the love 12 variant
+    --love.graphics.setStencilMode("draw", 1)
+    --love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    --love.graphics.setStencilMode("test", 1)
 
     love.graphics.push("transform")
     -- do an extra translate to account for the scroll offset
@@ -104,7 +111,8 @@ function ScrollContainer:draw()
     self:drawChildren()
     love.graphics.pop()
     -- clean up the stencil
-    love.graphics.setStencilMode()
+    --love.graphics.setStencilMode()
+    love.graphics.setStencilTest()
   end
 end
 

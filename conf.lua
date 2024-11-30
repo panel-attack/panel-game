@@ -14,6 +14,7 @@ function love.conf(t)
   t.accelerometerjoystick = false     -- Enable the accelerometer on iOS and Android by exposing it as a Joystick (boolean)
   t.externalstorage = true
   t.gammacorrect = false              -- Enable gamma-correct rendering, when supported by the system (boolean)
+  -- for love 12
   t.highdpi = true                  -- Enable high-dpi mode for the window on a Retina display (boolean)
 
 
@@ -34,10 +35,13 @@ function love.conf(t)
   t.window.msaa = 0                        -- The number of samples to use with multi-sampled antialiasing (number)
   t.window.depth = nil                     -- The number of bits per sample in the depth buffer
   t.window.stencil = nil                   -- The number of bits per sample in the stencil buffer
-  t.window.displayindex = config.display        -- Index of the monitor to show the window in (number)
   t.window.usedpiscale = false             -- Enable automatic DPI scaling when highdpi is set to true as well (boolean)
   t.window.x = config.windowX              -- The x-coordinate of the window's position in the specified display (number)
   t.window.y = config.windowY              -- The y-coordinate of the window's position in the specified display (number)
+  t.window.highdpi = true
+  t.window.display = config.display
+  -- t.window.display has been renamed in love 12
+  t.window.displayindex = config.display        -- Index of the monitor to show the window in (number)
 
   t.modules.audio = true              -- Enable the audio module (boolean)
   t.modules.data = true               -- Enable the data module (boolean)

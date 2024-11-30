@@ -146,7 +146,24 @@ function fileUtils.soundFileExists(soundName, path)
 end
 
 function fileUtils.saveTextureToFile(texture, filePath, format)
-  local imageData = love.graphics.readbackTexture(texture)
+  local loveMajor = love.getVersion()
+
+  local imageData
+  if loveMajor == 12 then
+    imageData = love.graphics.readbackTexture(texture)
+  else
+    if texture:typeOf("Canvas") then
+      imageData = texture:newImageData()
+    else
+      local canvas = love.graphics.newCanvas(texture:getDimensions())
+      local currentCanvas = love.graphics.getCanvas()
+      love.graphics.setCanvas(canvas)
+      love.graphics.draw(texture)
+      love.graphics.setCanvas(currentCanvas)
+      imageData = canvas:newImageData()
+    end
+  end
+
   local data = imageData:encode(format)
   love.filesystem.write(filePath .. "." .. format, data)
 end
