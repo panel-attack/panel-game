@@ -195,7 +195,7 @@ function MainMenu:draw()
       showUpdaterUpdateWarning = true
     elseif GAME.updater.version.major == 1 and GAME.updater.version.minor < 2 then
       local _, _, vendor, _ = love.graphics.getRendererInfo( )
-      local systemIsAffected = true--love.system.getOS() == "Windows" and (vendor == "ATI Technologies Inc." or vendor == "AMD")
+      local systemIsAffected = (love.system.getOS() == "Windows" and (vendor == "ATI Technologies Inc." or vendor == "AMD"))
       -- only contains a startup fix for the related systems so everyone else shouldn't have to update
       if systemIsAffected then
         showUpdaterUpdateWarning = true
