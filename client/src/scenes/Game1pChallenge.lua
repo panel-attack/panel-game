@@ -3,7 +3,6 @@ local Replay = require("common.engine.Replay")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapScene")
 
@@ -43,8 +42,8 @@ function Game1pChallenge:startNextScene()
   end
 end
 
-function Game1pChallenge:pauseChanged()
-  if self.match.isPaused then
+function Game1pChallenge:pauseChanged(match)
+  if match.isPaused then
     self.timeSplitElement.isVisible = false
   else
     self.timeSplitElement.isVisible = true
