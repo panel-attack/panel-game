@@ -137,7 +137,7 @@ end
 
 function fileUtils.soundFileExists(soundName, path)
   for _, extension in pairs(SUPPORTED_SOUND_FORMATS) do
-    if love.filesystem.exists(path .. "/" .. soundName .. extension) then
+    if love.filesystem.getInfo(path .. "/" .. soundName .. extension, "file") then
       return true
     end
   end
