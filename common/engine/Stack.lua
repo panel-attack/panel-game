@@ -74,7 +74,7 @@ Stack =
 
     local inputMethod = arguments.inputMethod or "controller" --"touch" or "controller"
     local player_number = arguments.player_number or which
-  
+
     local character = arguments.character or config.character
     local theme = arguments.theme or themes[config.theme]
     s.allowAdjacentColors = arguments.allowAdjacentColors
@@ -222,7 +222,7 @@ Stack =
     s.cur_col = 3 -- the column the left half of the cursor's on
     s.queuedSwapColumn = 0 -- the left column of the two columns to swap or 0 if no swap queued
     s.queuedSwapRow = 0 -- the row of the queued swap or 0 if no swap queued
-    s.top_cur_row = s.height + (s.puzzle and 0 or -1)
+    s.top_cur_row = s.height - 1
 
     s.poppedPanelIndex = s.poppedPanelIndex or 1
     s.panels_cleared = s.panels_cleared or 0
@@ -584,6 +584,8 @@ function Stack.set_puzzle_state(self, puzzle)
   puzzle.stack = puzzle:fillMissingPanelsInPuzzleString(self.width, self.height)
 
   self.puzzle = puzzle
+  -- by default row 12 is initially blocked so unblock it for puzzles
+  self.top_cur_row = self.height
   self:setPanelsForPuzzleString(puzzle.stack)
   self.do_countdown = puzzle.doCountdown or false
   self.puzzle.remaining_moves = puzzle.moves
