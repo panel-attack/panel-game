@@ -391,8 +391,6 @@ end
 
 function GameBase:drawEndGameText()
   if self.match.ended then
-    local gameOverPosition = themes[config.theme].gameover_text_Pos
-    local font = GraphicsUtil.getGlobalFont()
 
     local winners = self.match:getWinners()
     local message = self.text
@@ -403,8 +401,19 @@ function GameBase:drawEndGameText()
         message = loc("ss_draw")
       end
     end
-    GraphicsUtil.print(message, gameOverPosition[1] - font:getWidth(message)/2, gameOverPosition[2])
-    GraphicsUtil.print(loc("continue_button"), gameOverPosition[1] - font:getWidth(loc("continue_button"))/2, gameOverPosition[2] + 20)
+
+    local gameOverPosition = themes[config.theme].gameover_text_Pos
+    local font = GraphicsUtil.getGlobalFont()
+    local padding = 4
+    local maxWidth = math.max(font:getWidth(message), font:getWidth(loc("continue_button")))
+    local height = font:getHeight() * 2 + 3*padding
+    local drawY = gameOverPosition[2]
+
+    -- Background
+    GraphicsUtil.drawRectangle("fill", gameOverPosition[1] - maxWidth/2 - padding, drawY, maxWidth + 2*padding, height, 0, 0, 0, 0.8)
+
+    GraphicsUtil.print(message, gameOverPosition[1] - font:getWidth(message)/2, drawY + padding)
+    GraphicsUtil.print(loc("continue_button"), gameOverPosition[1] - font:getWidth(loc("continue_button"))/2, drawY + padding + font:getHeight() + padding )
   end
 end
 

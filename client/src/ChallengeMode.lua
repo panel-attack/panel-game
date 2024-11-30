@@ -19,6 +19,7 @@ local ChallengeMode =
     self.continues = 0
     self.expendedTime = 0
     self.gameScene = Game1pChallenge
+    self.challengeComplete = false
 
     self:addPlayer(GAME.localPlayer)
     GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
@@ -164,6 +165,8 @@ function ChallengeMode:recordStageResult(winners, gameLength)
     else
       if self.stages[self.stageIndex + 1] then
         self:setStage(self.stageIndex + 1)
+      else 
+        self.challengeComplete = true
       end
     end
   elseif #winners == 2 then

@@ -7,8 +7,8 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapScene")
 
--- @module endlessGame
--- Scene for an endless mode instance of the game
+-- @module Game1pChallenge
+-- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
   self.nextScene = "CharacterSelectChallenge"
   self:load(sceneParams)
@@ -16,8 +16,7 @@ local Game1pChallenge = class(function(self, sceneParams)
   self.match:connectSignal("pauseChanged", self, self.pauseChanged)
   self.totalTimeQuads = {}
   self.stageIndex = GAME.battleRoom.stageIndex
-  self.stages = GAME.battleRoom.stages
-  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 320}, GAME.battleRoom)
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 280}, GAME.battleRoom, GAME.battleRoom.stageIndex)
   self.uiRoot:addChild(self.timeSplitElement)
 
 end, GameBase)
@@ -35,9 +34,11 @@ function Game1pChallenge:onMatchEnded(match)
 end
 
 function Game1pChallenge:startNextScene()
-  if self.stages[self.stageIndex + 1] == nil then
+  if GAME.battleRoom.challengeComplete then
+    -- We passed the last level, go to the recap.
     GAME.navigationStack:replace(ChallengeModeRecapScene({challengeMode = GAME.battleRoom}))
   else
+    -- Level is done, go back to ready screen.
     GAME.navigationStack:pop()
   end
 end
@@ -60,13 +61,13 @@ function Game1pChallenge:drawHUD()
     -- Background
     GraphicsUtil.drawRectangle("fill", drawX - width / 2, drawY, width, height, 0, 0, 0, 0.5)
 
-    drawY = 140
+    drawY = 110
     self:drawDifficultyName(drawX, drawY)
 
-    drawY = 220
+    drawY = drawY + 60
     self:drawStageInfo(drawX, drawY)
 
-    drawY = 280
+    drawY = drawY + 60
     self:drawContinueInfo(drawX, drawY)
 
     self.uiRoot:draw()
