@@ -28,7 +28,7 @@ end
 
 function TitleScreen:update(dt)
   self.backgroundImg:update(dt)
-  local keyPressed = tableUtils.trueForAny(input.isDown, function(key) return key end)
+  local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
   if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then
     GAME.theme:playValidationSfx()
     GAME.navigationStack:replace(MainMenu())
