@@ -218,12 +218,16 @@ function GameBase:runGameOver()
   self.match:run()
 
   -- if conditions are met, leave the game over screen
-  local keyPressed = (tableUtils.length(input.isDown) > 0) or (tableUtils.length(input.mouse.isDown) > 0)
+  local keyPressed = self:readyToProceedToNextScene()
 
   if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
     GAME.theme:playValidationSfx()
     self:startNextScene()
   end
+end
+
+function GameBase:readyToProceedToNextScene()
+  return (tableUtils.length(input.isDown) > 0) or (tableUtils.length(input.mouse.isDown) > 0)
 end
 
 function GameBase:startNextScene()

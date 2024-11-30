@@ -61,6 +61,10 @@ function PuzzleGame:customRun()
   end
 end
 
+function PuzzleGame:readyToProceedToNextScene()
+  return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
+end
+
 function PuzzleGame:startNextScene()
   if self.match.players[1].settings.puzzleIndex <= #self.match.players[1].settings.puzzleSet.puzzles then
     self.match.players[1]:setWantsReady(true)
