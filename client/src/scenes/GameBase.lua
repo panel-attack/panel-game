@@ -23,12 +23,14 @@ local GameBase = class(
     self.nextSceneParams = {}
 
     -- set in load
-    self.text = ""
+    self.text = nil
     self.keepMusic = false
     self.currentStage = config.stage
 
     self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
     self.maxDisplayTime = -1 -- the maximum amount of seconds the game over screen will be displayed for, -1 means no max time
+    self.gameOverStartTime = nil -- timestamp for when game over screen was first displayed
+    self.fadeOutSongOnGameOver = true
 
     self.frameInfo = {
       frameCount = nil,
@@ -196,25 +198,22 @@ function GameBase:handlePause()
   end
 end
 
-local gameOverStartTime = nil -- timestamp for when game over screen was first displayed
-
 function GameBase:setupGameOver()
-  gameOverStartTime = love.timer.getTime()
+  -- timestamp for when game over screen was first displayed
+  self.gameOverStartTime = love.timer.getTime()
   self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
   self.maxDisplayTime = -1
 
-  SoundController:fadeOutActiveTrack(3)
+  if self.fadeOutSongOnGameOver then
+    SoundController:fadeOutActiveTrack(3)
+  end
 
   self:customGameOverSetup()
 end
 
 function GameBase:runGameOver()
-  local font = GraphicsUtil.getGlobalFont()
-
-  GraphicsUtil.print(self.text, (consts.CANVAS_WIDTH - font:getWidth(self.text)) / 2, 10)
-  GraphicsUtil.print(loc("continue_button"), (consts.CANVAS_WIDTH - font:getWidth(loc("continue_button"))) / 2, 10 + 30)
   -- wait()
-  local displayTime = love.timer.getTime() - gameOverStartTime
+  local displayTime = love.timer.getTime() - self.gameOverStartTime
 
   self.match:run()
 
@@ -223,9 +222,12 @@ function GameBase:runGameOver()
 
   if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
     GAME.theme:playValidationSfx()
-    SFX_GameOver_Play = 0
-    GAME.navigationStack:pop()
+    self:startNextScene()
   end
+end
+
+function GameBase:startNextScene()
+  GAME.navigationStack:pop()
 end
 
 function GameBase:runGame(dt)
@@ -318,6 +320,7 @@ function GameBase:draw()
     prof.pop("Match:render")
     prof.push("GameBase:drawHUD")
     self:drawHUD()
+    self:drawEndGameText()
     prof.pop("GameBase:drawHUD")
     if self.customDraw then
       self:customDraw()
@@ -377,23 +380,31 @@ function GameBase:drawHUD()
         prof.pop("Stack:drawAnalyticData")
       end
     end
+
     if not config.debug_mode and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details
       GraphicsUtil.print(GAME.battleRoom.spectatorString, themes[config.theme].spectators_Pos[1], themes[config.theme].spectators_Pos[2])
     end
 
     self:drawCommunityMessage()
+  end
+end
 
-    if self.match.ended then
-      local winners = self.match:getWinners()
-      local pos = themes[config.theme].gameover_text_Pos
-      local message
+function GameBase:drawEndGameText()
+  if self.match.ended then
+    local gameOverPosition = themes[config.theme].gameover_text_Pos
+    local font = GraphicsUtil.getGlobalFont()
+
+    local winners = self.match:getWinners()
+    local message = self.text
+    if message == nil then
       if #winners == 1 then
         message = loc("ss_p_wins", winners[1].name)
       else
         message = loc("ss_draw")
       end
-      GraphicsUtil.printf(message, pos.x, pos.y, consts.CANVAS_WIDTH, "center")
     end
+    GraphicsUtil.print(message, gameOverPosition[1] - font:getWidth(message)/2, gameOverPosition[2])
+    GraphicsUtil.print(loc("continue_button"), gameOverPosition[1] - font:getWidth(loc("continue_button"))/2, gameOverPosition[2] + 20)
   end
 end
 

@@ -164,11 +164,6 @@ function ChallengeMode:recordStageResult(winners, gameLength)
     else
       if self.stages[self.stageIndex + 1] then
         self:setStage(self.stageIndex + 1)
-      else
-        -- completed!
-        local message = "Congratulations!\n You cleared " .. self.difficultyName .. " in " .. frames_to_time_string(self.expendedTime, true)
-        local transition = MessageTransition(GAME.timer, 7, message)
-        GAME.navigationStack:popToTop(transition)
       end
     end
   elseif #winners == 2 then

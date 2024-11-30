@@ -40,7 +40,6 @@ function CharacterSelectChallenge:loadUserInterface()
 
   panelHeight = self.ui.grid.unitSize - self.ui.grid.unitMargin * 2- self.ui.panelSelection.height
   stageWidth = self.ui.grid.unitSize * 1.5 - self.ui.grid.unitMargin * 2
-  rankedWidth = stageWidth
 
   self.ui.grid:createElementAt(9, 2, 1, 1, "readyButton", self.ui.readyButton)
   self.ui.grid:createElementAt(1, 3, characterGridWidth, characterGridHeight, "characterSelection", self.ui.characterGrid, true)

@@ -68,6 +68,7 @@ Match =
 
     Signal.turnIntoEmitter(self)
     self:createSignal("matchEnded")
+    self:createSignal("pauseChanged")
     self:createSignal("dangerMusicChanged")
     self:createSignal("countdownEnded")
   end
@@ -774,6 +775,7 @@ end
 
 function Match:togglePause()
   self.isPaused = not self.isPaused
+  self:emitSignal("pauseChanged", self)
 end
 
 -- returns true if the stack should run once more during the current match:run
