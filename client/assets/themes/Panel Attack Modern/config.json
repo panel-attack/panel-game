@@ -33,7 +33,7 @@
 "winLabel_Pos": [318, -246],
 "win_Scale": 0.75,
 "win_Pos": [260, -112],
-"gameover_text_Pos": [640, 620],
+"gameover_text_Pos": [640, 60],
 "healthbar_frame_Pos": [-51, -12],
 "healthbar_frame_Scale": 1,
 "healthbar_Pos": [-39, 68],

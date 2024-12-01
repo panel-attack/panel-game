@@ -9,6 +9,7 @@ local ModController = require("client.src.mods.ModController")
 
 local states = { loadingMods = 1, catchingUp = 2 }
 
+-- A scene showing a progress bar to indicate catching up to the current state of a match
 local GameCatchUp = class(function(self, sceneParams)
   self.vsScene = sceneParams
   self.match = self.vsScene.match

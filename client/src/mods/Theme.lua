@@ -236,7 +236,7 @@ function Theme:loadVersion3DefaultValues()
     self.winLabel_Pos = {318, -246}
     self.win_Scale = 0.75
     self.win_Pos = {260, -112}
-    self.gameover_text_Pos = {640, 620}
+    self.gameover_text_Pos = {640, 60}
     self.healthbar_frame_Pos = {-51, -12}
     self.healthbar_frame_Scale = 1
     self.healthbar_Pos = {-39, 68}

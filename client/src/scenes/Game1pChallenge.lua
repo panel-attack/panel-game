@@ -3,17 +3,21 @@ local Replay = require("common.engine.Replay")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
+local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapScene")
 
--- @module endlessGame
--- Scene for an endless mode instance of the game
+-- @module Game1pChallenge
+-- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
   self.nextScene = "CharacterSelectChallenge"
   self:load(sceneParams)
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
-  self.stageTimeQuads = {}
+  self.match:connectSignal("pauseChanged", self, self.pauseChanged)
   self.totalTimeQuads = {}
   self.stageIndex = GAME.battleRoom.stageIndex
-  self.stages = GAME.battleRoom.stages
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 280}, GAME.battleRoom, GAME.battleRoom.stageIndex)
+  self.uiRoot:addChild(self.timeSplitElement)
+
 end, GameBase)
 
 Game1pChallenge.name = "Game1pChallenge"
@@ -28,12 +32,22 @@ function Game1pChallenge:onMatchEnded(match)
   Replay.finalizeAndWriteReplay("Challenge Mode", extraFilename, match.replay)
 end
 
-function Game1pChallenge:draw()
-  if self.backgroundImage then
-    self.backgroundImage:draw()
+function Game1pChallenge:startNextScene()
+  if GAME.battleRoom.challengeComplete then
+    -- We passed the last level, go to the recap.
+    GAME.navigationStack:replace(ChallengeModeRecapScene({challengeMode = GAME.battleRoom}))
+  else
+    -- Level is done, go back to ready screen.
+    GAME.navigationStack:pop()
   end
-  self.match:render()
-  self:drawHUD()
+end
+
+function Game1pChallenge:pauseChanged(match)
+  if match.isPaused then
+    self.timeSplitElement.isVisible = false
+  else
+    self.timeSplitElement.isVisible = true
+  end
 end
 
 function Game1pChallenge:drawHUD()
@@ -46,17 +60,16 @@ function Game1pChallenge:drawHUD()
     -- Background
     GraphicsUtil.drawRectangle("fill", drawX - width / 2, drawY, width, height, 0, 0, 0, 0.5)
 
-    drawY = 140
+    drawY = 110
     self:drawDifficultyName(drawX, drawY)
 
-    drawY = 220
+    drawY = drawY + 60
     self:drawStageInfo(drawX, drawY)
 
-    drawY = 280
+    drawY = drawY + 60
     self:drawContinueInfo(drawX, drawY)
 
-    drawY = 320
-    self:drawTimeSplits(drawX, drawY)
+    self.uiRoot:draw()
 
     if not self.match.isPaused then
       for i, stack in ipairs(self.match.stacks) do
@@ -90,45 +103,6 @@ function Game1pChallenge:drawContinueInfo(drawX, drawY)
   local limit = 400
   GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
   GraphicsUtil.printf(GAME.battleRoom.continues, drawX - limit / 2, drawY + 20, limit, "center", nil, nil, 4)
-end
-
-function Game1pChallenge:drawTimeSplits(xPosition, yPosition)
-  local totalTime = 0
-
-  local yOffset = 30
-  local row = 0
-  local padding = 6
-
-  yPosition = yPosition + padding
-
-  for i = 1, self.stageIndex do
-    if self.stageTimeQuads[i] == nil then
-      self.stageTimeQuads[i] = {}
-    end
-    local time = self.stages[i].expendedTime
-    local currentStageTime = time
-    local isCurrentStage = i == self.stageIndex
-    if isCurrentStage and not self.match.ended then
-      currentStageTime = currentStageTime + (self.match.stacks[1].game_stopwatch or 0)
-    end
-    totalTime = totalTime + currentStageTime
-
-    if isCurrentStage then
-      GraphicsUtil.setColor(0.8, 0.8, 1, 1)
-    end
-    GraphicsUtil.draw_time(frames_to_time_string(currentStageTime, true), xPosition, yPosition + yOffset * row,
-                           themes[config.theme].time_Scale)
-    if isCurrentStage then
-      GraphicsUtil.setColor(1, 1, 1, 1)
-    end
-
-    row = row + 1
-  end
-
-  GraphicsUtil.setColor(1, 1, 0.8, 1)
-  GraphicsUtil.draw_time(frames_to_time_string(totalTime, true), xPosition, yPosition + yOffset * row,
-                         themes[config.theme].time_Scale)
-  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 return Game1pChallenge
