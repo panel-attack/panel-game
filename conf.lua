@@ -9,7 +9,16 @@ function love.conf(t)
 
   --t.identity = "" -- (already set above) -- The name of the save directory (string)
   t.appendidentity = false            -- Search files in source directory before save directory (boolean)
-  t.version = "11.5"                  -- The LÖVE version this game was made for (string)
+
+  local loveMajor = love.getVersion()
+  -- this version has wrappers to be compatible with either love 11 or 12
+  -- by adjusting to the actual version we avoid the pop-up informing the user about potential compatibility problems
+  if loveMajor >= 12 then
+    -- The LÖVE version this game was made for (string)
+    t.version = "12.0"
+  else
+    t.version = "11.5"
+  end
   t.console = false                   -- Attach a console (boolean, Windows only)
   t.accelerometerjoystick = false     -- Enable the accelerometer on iOS and Android by exposing it as a Joystick (boolean)
   t.externalstorage = true

@@ -149,9 +149,10 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   local loveMajor = love.getVersion()
 
   local imageData
-  if loveMajor == 12 then
+  if loveMajor >= 12 then
     imageData = love.graphics.readbackTexture(texture)
   else
+    -- this code branch is untested but the function is also not used in production at the moment
     if texture:typeOf("Canvas") then
       imageData = texture:newImageData()
     else

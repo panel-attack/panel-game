@@ -185,7 +185,7 @@ function CustomRun.run()
   if love.load then
     local loveMajor = love.getVersion()
 
-    if loveMajor == 12 then
+    if loveMajor >= 12 then
       love.load(love.parsedGameArguments, love.rawGameArguments)
     else
       love.load(love.arg.parseGameArguments(arg), arg)

@@ -116,8 +116,6 @@ function StartUp:migrate()
       y = config.windowY,
       fullscreen = config.fullscreen,
       borderless = config.borderless,
-      display = config.display,
-      -- for love 12
       displayindex = config.display,
       resizable = true,
     })

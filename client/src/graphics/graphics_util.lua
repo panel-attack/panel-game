@@ -345,7 +345,7 @@ end
 
 local loveMajor = love.getVersion()
 
-if loveMajor == 12 then
+if loveMajor >= 12 then
   GraphicsUtil.newText = love.graphics.newTextBatch
 else
   GraphicsUtil.newText = love.graphics.newText
