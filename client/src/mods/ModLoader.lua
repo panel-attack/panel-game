@@ -123,7 +123,7 @@ function ModLoader.fillModIdList(modType, modsById)
 
   for modId, mod in pairs(modsById) do
     -- bundle mod, needs to be filtered out if invalid
-    if mod:is_bundle() then
+    if mod:isBundle() then
       if ModLoader.validateBundle(modsById, mod) then
         modIds[#modIds + 1] = modId
         logger.debug(mod.id .. " (bundle) has been added to the " .. modType.TYPE .. " list!")
@@ -213,7 +213,7 @@ function ModLoader.disableBlacklisted(modType, unfiltered)
 
   -- if any bundles became invalid by having all of its submods disabled, we need to remove those too
   for modId, mod in pairs(filtered) do
-    if mod:is_bundle() then
+    if mod:isBundle() then
       if tableUtils.trueForAll(mod.subIds, function(subId) return (filtered[subId] == nil) end) then
         logger.info("Disabling " .. modId .. " because all its sub mods have been disabled")
         filtered[modId] = nil

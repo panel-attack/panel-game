@@ -122,11 +122,6 @@ function stages_reload_graphics()
   end
 end
 
--- whether or not a stage is part of a bundle or not
-function Stage.is_bundle(self)
-  return #self.subIds > 1
-end
-
 function Stage:getSubMods()
   local m = {}
   for _, id in ipairs(self.subIds) do
@@ -161,7 +156,7 @@ function Stage.graphics_init(self, full, yields)
   local stage_images = full and allImages or basic_images
   for _, image_name in ipairs(stage_images) do
     self.images[image_name] = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. image_name)
-    if not self.images[image_name] and defaulted_images[image_name] and not self:is_bundle() then
+    if not self.images[image_name] and defaulted_images[image_name] and not self:isBundle() then
       self.images[image_name] = default_stage.images[image_name]
       if not self.images[image_name] then
         error("Could not find default stage image")
@@ -213,7 +208,7 @@ end
 -- initializes stage music
 function Stage.sound_init(self, full, yields)
   self.hasMusic = fileUtils.soundFileExists("normal_music", self.path)
-  if self:is_bundle() then
+  if self:isBundle() then
     return
   end
   local stage_musics = full and other_musics or basic_musics
