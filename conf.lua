@@ -47,8 +47,6 @@ function love.conf(t)
   t.window.usedpiscale = false             -- Enable automatic DPI scaling when highdpi is set to true as well (boolean)
   t.window.x = config.windowX              -- The x-coordinate of the window's position in the specified display (number)
   t.window.y = config.windowY              -- The y-coordinate of the window's position in the specified display (number)
-  
-  -- t.window.display has been renamed in love 12
 
   t.modules.audio = true              -- Enable the audio module (boolean)
   t.modules.data = true               -- Enable the data module (boolean)
