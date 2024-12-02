@@ -601,7 +601,7 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
       room.ratings[player_number].league = self:get_league(room.ratings[player_number].new)
     end
   -- local message = ServerProtocol.updateRating(room.ratings[1], room.ratings[2])
-  -- room:sendJson(message)
+  -- room:broadcastJson(message)
   end
 end
 

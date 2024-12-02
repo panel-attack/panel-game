@@ -64,14 +64,14 @@ Player settings should only be sent when a challenge is issued to another player
 To sum up:  
 Players should be able to log in only with their name + id.  
 Players should be able to inform the client about what they are currently doing ingame.  
-Name changes should be verifiable against the server directly rather than on login.
+Name changes should be verifiable against the server directly rather than on login only.
 
 ### Offer 1p modes as parallel play
 
 https://github.com/panel-attack/panel-game/issues/231  
 
 Accomodating different game modes in server rooms allows the game mode to be selected.  
-Any remaining items would be relativly trivial to implement.
+Any remaining items would be relatively trivial to implement.
 
 ### Time Attack vs
 
@@ -104,7 +104,7 @@ Use case: Logging in on the ranked server after establishing a connection
     "loginRequest":
     {
         "userId": 123456789,
-        "name": "notDefaultName"
+        "name": "notDefaultName",
         "saveReplaysPublicly": true
     }
 }
@@ -195,9 +195,11 @@ Use case: Reconfigure your setting for whether replays should be saved publicly 
 
 ```Json
 {
-    "saveReplaysPublicly": true
+    "saveReplaysPublicly": 1
 }
 ```
+
+Need to enumerate for yes, yes without my name and no
 
 ### Online Players
 
@@ -215,43 +217,45 @@ Use case: Requesting online data about players (e.g. for a menu displaying all p
 
 ```Json
 {
-    // public player id as the key
-    "42424242": 
-    {
-        "name": "someName",
-        // possible activities: afk, idle, spectating, playing
-        "activity": "idle",
-        "rating": 1337
-    },
-    "53535353": 
-    {
-        "name": "someOtherName",
-        "activity": "playing",
-        "room": 34,
-        "rating": 0,
-        "placementMatchesPlayed": 14
-    },
-    "64646464": 
-    {
-        "name": "blablabla",
-        "activity": "playing",
-        "room": 34,
-        "rating": 1508
-    },
-    "75757575": 
-    {
-        "name": "someSpectator",
-        "activity": "spectating",
-        "rating": 2024,
-        "room": 34
-    },
-    "86868686": 
-    {
-        "name": "some1pModePlayer",
-        "activity": "playing",
-        "gameMode": "training",
-        "rating": 809
-    }
+    "playerList":
+    [
+        {
+            "playerId": 42424242,
+            "name": "someName",
+            // possible activities: afk, idle, spectating, playing
+            "activity": "idle",
+            "rating": 1337
+        },
+        {
+            "playerId": 53535353,
+            "name": "someOtherName",
+            "activity": "playing",
+            "room": 34,
+            "rating": 0,
+            "placementMatchesPlayed": 14
+        },
+        {
+            "playerId": 64646464,
+            "name": "blablabla",
+            "activity": "playing",
+            "room": 34,
+            "rating": 1508
+        },
+        {
+            "playerId": 75757575,
+            "name": "someSpectator",
+            "activity": "spectating",
+            "rating": 2024,
+            "room": 34
+        },
+        {
+            "playerId": 86868686,
+            "name": "some1pModePlayer",
+            "activity": "playing",
+            "gameMode": "training",
+            "rating": 809
+        }
+    ]
 }
 ```
 
@@ -271,47 +275,35 @@ Use case: Requesting online data about rooms (e.g. for a menu displaying all roo
 
 ```Json
 {
-    // room number as the key
-    "34":
-    {
-        "players":
+    "roomList":
+    [
         {
-            "53535353":
-            {
-                "name": "someOtherName",
-                "rating": 0,
-                "winCount": 7
-            },
-            "64646464":
-            {
-                "name": "blablabla",
-                "rating": 1508,
-                "winCount": 4
-            }
-        },
-        "spectators":
-        {
-            "75757575":
-            {
-                "name": "someSpectator",
-                "rating": 2024
-            }
+            "roomId": 34,
+            "players":
+            [
+                {
+                    "playerId": 53535353,
+                    "name": "someOtherName",
+                    "rating": 0,
+                    "winCount": 7
+                },
+                {
+                    "playerId": 64646464,
+                    "name": "blablabla",
+                    "rating": 1508,
+                    "winCount": 4
+                }
+            ],
+            "spectators":
+            [
+                {
+                    "playerId": 75757575,
+                    "name": "someSpectator",
+                    "rating": 2024
+                }
+            ]
         }
-    }
-}
-```
-
-### Update activity
-
-#### Client request
-
-```Json
-{
-    "updateActivity":
-    {
-        "activity": "playing",
-        "gameMode": "time"
-    }
+    ]
 }
 ```
 
@@ -337,12 +329,9 @@ Example: Player 42424242 challenges player 75757575.
 {
     "challengeSent":
     {
-        "player":
-        {
-            "id": 42424242,
-            "name": "someName",
-            "rating": 1337
-        }
+        "playerId": 42424242,
+        "name": "someName",
+        "rating": 1337
     }
 }
 ```
@@ -358,7 +347,7 @@ Example: Player 75757575 rejects the challenge by player 42424242.
 {
     "rejectChallenge":
     {
-        "id": 42424242
+        "playerId": 42424242
     }
 }
 ```
@@ -370,7 +359,7 @@ sending to 42424242
 {
     "challengeRejected":
     {
-        "id": 75757575
+        "playerId": 75757575
     }
 }
 ```
@@ -386,7 +375,7 @@ Example: Player 42424242 withdraws their challenge to player 75757575
 {
     "withdrawChallenge":
     {
-        "id": 75757575
+        "playerId": 75757575
     }
 }
 ```
@@ -397,7 +386,7 @@ Example: Player 42424242 withdraws their challenge to player 75757575
 {
     "challengeWithdrawn":
     {
-        "id": 42424242
+        "playerId": 42424242
     }
 }
 ```
@@ -407,11 +396,15 @@ Example: Player 42424242 withdraws their challenge to player 75757575
 Use case: Accepting another player's challenge.  
 Example: Player 75757575 accepts player 42424242's challenge.
 
+This can use the same API as for challenging players to deal with concurrency.  
+If 42424242 withdraws their challenge right before it is accepted, then that would still challenge them.
+Otherwise the server considers a mutual challenge to be a match.
+
 #### Client request
 
 ```Json
 {
-    "acceptChallenge":
+    "sendChallenge":
     {
         "playerId": 42424242
     }
@@ -433,9 +426,9 @@ Creates a room and adds the two players
             "playerCount": 2
         },
         "players": 
-        {
-            "42424242":
+        [
             {
+                "playerId": 42424242,
                 "name": "someName",
                 "rating":
                 {
@@ -446,8 +439,8 @@ Creates a room and adds the two players
                 },
                 "winCount": 0
             },
-            "75757575":
             {
+                "playerId": 75757575,
                 "name": "someSpectator",
                 "rating":
                 {
@@ -458,7 +451,7 @@ Creates a room and adds the two players
                 },
                 "winCount": 0
             }
-        }
+        ]
     }
 }
 ```
@@ -475,37 +468,34 @@ Example for player 42424242 here.
 
 ```Json
 {
-    "update":
+    "settings":
     {
-        "settings":
+        "character": "magellan",
+        "stage": "flying_airship",
+        "panels": "pacci",
+        "wantsRanked": false,
+        "level": 1,
+        "levelData": 
         {
-            "character": "magellan",
-            "stage": "flying_airship",
-            "panels": "pacci",
-            "wantsRanked": false,
-            "level": 1,
-            "levelData": 
-            {
-                "startingSpeed": 1,
-                "speedIncreaseMode": 1,
-                "shockFrequency": 12,
-                "shockCap": 21,
-                "colors": 5,
-                "maxHealth": 121,
-                "stop": {
-                    "formula": 1,
-                    "comboConstant": -20,
-                    "chainConstant": 80,
-                    "dangerConstant": 160,
-                    "coefficient": 20,
-                },
-                "frameConstants": {
-                    "HOVER": 12,
-                    "GARBAGE_HOVER": 41,
-                    "FLASH": 44,
-                    "FACE": 20,
-                    "POP": 9
-                }
+            "startingSpeed": 1,
+            "speedIncreaseMode": 1,
+            "shockFrequency": 12,
+            "shockCap": 21,
+            "colors": 5,
+            "maxHealth": 121,
+            "stop": {
+                "formula": 1,
+                "comboConstant": -20,
+                "chainConstant": 80,
+                "dangerConstant": 160,
+                "coefficient": 20,
+            },
+            "frameConstants": {
+                "HOVER": 12,
+                "GARBAGE_HOVER": 41,
+                "FLASH": 44,
+                "FACE": 20,
+                "POP": 9
             }
         }
     }
@@ -518,10 +508,161 @@ Sending the settings to player 75757575
 
 ```Json
 {
-    "update":
+    "playerUpdate": true,
+    "playerId": 42424242,
+    "settings":
     {
-        "42424242":
+        "character": "magellan",
+        "stage": "flying_airship",
+        "panels": "pacci",
+        "wantsRanked": false,
+        "level": 1,
+        "levelData": 
         {
+            "startingSpeed": 1,
+            "speedIncreaseMode": 1,
+            "shockFrequency": 12,
+            "shockCap": 21,
+            "colors": 5,
+            "maxHealth": 121,
+            "stop": {
+                "formula": 1,
+                "comboConstant": -20,
+                "chainConstant": 80,
+                "dangerConstant": 160,
+                "coefficient": 20,
+            },
+            "frameConstants": {
+                "HOVER": 12,
+                "GARBAGE_HOVER": 41,
+                "FLASH": 44,
+                "FACE": 20,
+                "POP": 9
+            }
+        }
+    }
+}
+```
+
+### Update cursor position
+
+In response to receiving the `createRoom` message, clients should directly send a first update with their current cursor positio to the server.  
+The message is sent again every time the cursor position changes.  
+For general use, I would say `settings` and `cursor` could also be updated in the same message, e.g. when selecting a character updates the character but also moves the cursor to the Ready button in the same step.
+
+#### Client request
+
+```Json
+{
+    "cursor": "Ready"
+}
+```
+
+#### Server forwarding
+
+```Json
+{
+    "playerUpdate": true,
+    "playerId": 42424242,
+    "cursor": "Ready"
+}
+```
+
+### Update ready+loaded state
+
+#### Client request
+
+```Json
+{
+    "state":
+    {
+        "wantsReady": true,
+        "loaded": true,
+        "ready": true
+    }
+}
+```
+
+#### Server forwarding
+
+```Json
+{
+    "playerUpdate": true,
+    "playerId": 42424242,
+    "state":
+    {
+        "wantsReady": true,
+        "loaded": true,
+        "ready": true
+    }
+}
+```
+
+### Update ranked status
+
+When players transmit their wantsRanked setting for the first time and upon changing it, the server sends a message about the current ranked status.  
+
+#### Server message
+
+```Json
+{
+    "roomUpdate": true,
+    "roomId": 34,
+    "ranked": false,
+    "rankedReason": ["someName doesn't want ranked","Colors don't match"]
+}
+```
+
+### Update game mode
+
+Players may choose in some manner to change the game mode. If all players in a room request the same game mode, it is changed.
+
+#### Client request
+
+```Json
+{
+    "changeGameMode":
+    {
+        "mode": "time"
+    }
+}
+```
+
+#### Server response
+
+When all players want the game mode to change, the server confirms with
+
+```Json
+{
+    "roomUpdate": true,
+    "roomId": 34,
+    "gameMode": "time"
+}
+```
+
+
+### Game start
+
+When both players are ready, the server sends a game start message.
+
+#### Server message
+
+```Json
+{
+    "roomUpdate": true,
+    "roomId": 34,
+    "gameStart":
+    {
+        "seed": 12356789,
+        "gameMode": "time",
+        "ranked": false,
+        "rankedReason": ["someName doesn't want ranked","Colors don't match"],
+        "selectedStage": "crashing_airship",
+    },
+    "players":
+    [
+        {
+            "playerId": 42424242,
             "settings":
             {
                 "character": "magellan",
@@ -553,209 +694,42 @@ Sending the settings to player 75757575
                     }
                 }
             }
-        }
-    }
-}
-```
-
-### Update cursor position
-
-In response to receiving the `createRoom` message, clients should directly send a first update with their current cursor positio to the server.  
-The message is sent again every time the cursor position changes.  
-For general use, I would say `settings` and `cursor` could also be updated in the same message, e.g. when selecting a character updates the character but also moves the cursor to the Ready button in the same step.
-
-#### Client request
-
-```Json
-{
-    "update":
-    {
-        "cursor": "Ready"
-    }
-}
-```
-
-#### Server forwarding
-
-```Json
-{
-    "update":
-    {
-        "42424242":
-        {
-            "cursor": "Ready"
-        }
-    }
-}
-```
-
-### Update ready+loaded state
-
-#### Client request
-
-```Json
-{
-    "update":
-    {
-        "wantsReady": true,
-        "loaded": true,
-        "ready": true
-    }
-}
-```
-
-#### Server forwarding
-
-```Json
-{
-    "update":
-    {
-        "42424242":
-        {
-            "wantsReady": true,
-            "loaded": true,
-            "ready": true
-        }
-    }
-}
-```
-
-### Update ranked status
-
-When players transmit their wantsRanked setting for the first time and upon changing it, the server sends a message about the current ranked status.  
-
-#### Server message
-
-```Json
-{
-    "update":
-    {
-        "ranked": false,
-        "rankedReason": ["someName doesn't want ranked","Colors don't match"]
-    }
-}
-```
-
-### Update game mode
-
-Players may choose in some manner to change the game mode. If all players in a room request the same game mode, it is changed.
-
-#### Client request
-
-```Json
-{
-    "changeGameMode":
-    {
-        "mode": "time"
-    }
-}
-```
-
-#### Server response
-
-When the all players want the game mode to change, the server confirms with
-
-```Json
-{
-    "update":
-    {
-        "gameMode": "time"
-    }
-}
-```
-
-
-### Game start
-
-When both players are ready, the server sends a game start message.
-
-#### Server message
-
-```Json
-{
-    "gameStart":
-    {
-        "roomSettings":
-        {
-            "seed": 12356789,
-            "gameMode": "time",
-            "ranked": false,
-            "rankedReason": ["someName doesn't want ranked","Colors don't match"],
-            "playerCount": 2,
-            "selectedStage": "crashing_airship",
         },
-        "players":
         {
-            "42424242":
+            "playerId": 75757575,
+            "settings":
             {
-                "settings":
+                "character": "megallan",
+                "stage": "crashing_airship",
+                "panels": "pacci",
+                "wantsRanked": true,
+                "level": 1,
+                "levelData": 
                 {
-                    "character": "magellan",
-                    "stage": "flying_airship",
-                    "panels": "pacci",
-                    "wantsRanked": false,
-                    "level": 1,
-                    "levelData": 
-                    {
-                        "startingSpeed": 1,
-                        "speedIncreaseMode": 1,
-                        "shockFrequency": 12,
-                        "shockCap": 21,
-                        "colors": 5,
-                        "maxHealth": 121,
-                        "stop": {
-                            "formula": 1,
-                            "comboConstant": -20,
-                            "chainConstant": 80,
-                            "dangerConstant": 160,
-                            "coefficient": 20,
-                        },
-                        "frameConstants": {
-                            "HOVER": 12,
-                            "GARBAGE_HOVER": 41,
-                            "FLASH": 44,
-                            "FACE": 20,
-                            "POP": 9
-                        }
-                    }
-                }
-            },
-            "75757575":
-            {
-                "settings":
-                {
-                    "character": "megallan",
-                    "stage": "crashing_airship",
-                    "panels": "pacci",
-                    "wantsRanked": true,
-                    "level": 1,
-                    "levelData": 
-                    {
-                        "startingSpeed": 1,
-                        "speedIncreaseMode": 1,
-                        "shockFrequency": 12,
-                        "shockCap": 21,
-                        "colors": 6,
-                        "maxHealth": 121,
-                        "stop": {
-                            "formula": 1,
-                            "comboConstant": -20,
-                            "chainConstant": 80,
-                            "dangerConstant": 160,
-                            "coefficient": 20,
-                        },
-                        "frameConstants": {
-                            "HOVER": 12,
-                            "GARBAGE_HOVER": 41,
-                            "FLASH": 44,
-                            "FACE": 20,
-                            "POP": 9
-                        }
+                    "startingSpeed": 1,
+                    "speedIncreaseMode": 1,
+                    "shockFrequency": 12,
+                    "shockCap": 21,
+                    "colors": 6,
+                    "maxHealth": 121,
+                    "stop": {
+                        "formula": 1,
+                        "comboConstant": -20,
+                        "chainConstant": 80,
+                        "dangerConstant": 160,
+                        "coefficient": 20,
+                    },
+                    "frameConstants": {
+                        "HOVER": 12,
+                        "GARBAGE_HOVER": 41,
+                        "FLASH": 44,
+                        "FACE": 20,
+                        "POP": 9
                     }
                 }
             }
         }
-    }
+    ]
 }
 ```
 
@@ -769,11 +743,10 @@ The clients report their game result to the server.
 {
     "reportGameResult":
     {
-        {
-            // records the placement per player in the room
-            "75757575": 1,
-            "42424242": 2
-        }
+        // records the placement per player in the room
+        // 1 wins, 2 loses
+        "75757575": 1,
+        "42424242": 2
     }
 }
 ```
@@ -784,34 +757,33 @@ After receiving the matching game results from the clients, the server updates t
 
 ```Json
 {
-    "update":
-    {
-        "players": 
+    "roomUpdate": true,
+    "roomId": 34,
+    "players": 
+    [
         {
-            "42424242":
+            "playerId": 42424242,
+            "rating":
             {
-                "rating":
-                {
-                    "league": "Silver",
-                    "new": 1337,
-                    "old": 1337,
-                    "difference": 0
-                },
-                "winCount": 0
+                "league": "Silver",
+                "new": 1337,
+                "old": 1337,
+                "difference": 0
             },
-            "75757575":
+            "winCount": 0
+        },
+        {
+            "playerId": 75757575,
+            "rating":
             {
-                "rating":
-                {
-                    "league": "Master",
-                    "new": 2024,
-                    "old": 2024,
-                    "difference": 0
-                },
-                "winCount": 1
-            }
+                "league": "Master",
+                "new": 2024,
+                "old": 2024,
+                "difference": 0
+            },
+            "winCount": 1
         }
-    }
+    ]
 }
 ```
 
@@ -847,9 +819,9 @@ Wishing to join a room via the room list.
             "playerCount": 2
         },
         "players":
-        {
-            "42424242":
+        [
             {
+                "playerId": 42424242,
                 "settings":
                 {
                     "character": "magellan",
@@ -890,8 +862,8 @@ Wishing to join a room via the room list.
                 },
                 "winCount": 0
             },
-            "75757575":
             {
+                "playerId": 75757575,
                 "settings":
                 {
                     "character": "megallan",
@@ -932,7 +904,7 @@ Wishing to join a room via the room list.
                 },
                 "winCount": 1
             }
-        }
+        ]
     }
 }
 ```
@@ -953,9 +925,9 @@ Wishing to join a room via the room list.
             "selectedStage": "crashing_airship"
         },
         "players":
-        {
-            "42424242":
+        [
             {
+                "playerId": 42424242,
                 "settings":
                 {
                     "character": "magellan",
@@ -997,8 +969,8 @@ Wishing to join a room via the room list.
                 "winCount": 0,
                 "inputs": "AAAAAAAAAAAAAAAAAA" // etc
             },
-            "75757575":
             {
+                "playerId": 75757575,
                 "settings":
                 {
                     "character": "megallan",
@@ -1040,7 +1012,7 @@ Wishing to join a room via the room list.
                 "winCount": 0,
                 "inputs": "AAAAAAAAAAAAAAAAAA" // etc
             }
-        }
+        ]
     }
 }
 ```
@@ -1049,17 +1021,16 @@ Wishing to join a room via the room list.
 
 ```Json
 {
-    "update":
-    {
-        "spectators":
+    "roomUpdate": true,
+    "roomId": 40,
+    "spectators":
+    [
         {
-            "96969696":
-            {
-                "name": "someOtherSpectator",
-                "rating": 0
-            }
+            "playerId": 96969696,
+            "name": "someOtherSpectator",
+            "rating": 0
         }
-    }
+    ]
 }
 ```
 
@@ -1087,8 +1058,8 @@ If the player is not in a room, create a room, register the requester as spectat
 {
     "spectateRequest":
     {
-        "player": 07070707,
-        "room": 40
+        "playerId": 07070707,
+        "roomId": 40
     }
 }
 ```
@@ -1107,9 +1078,9 @@ If the player is not in a room, create a room, register the requester as spectat
             "selectedStage": "airship_hangar"
         },
         "players":
-        {
-            "86868686":
+        [
             {
+                "playerId": 86868686,
                 "settings":
                 {
                     "character": "madam_q",
@@ -1142,7 +1113,7 @@ If the player is not in a room, create a room, register the requester as spectat
                 },
                 "inputs": "AAAAAAAAAAAAAAAAAA" // etc
             }
-        }
+        ]
     }
 }
 ```
@@ -1173,13 +1144,12 @@ If sender was spectating
 
 ```Json
 {
-    "update":
-    {
-        "spectators":
-        {
+    "roomUpdate": true,
+    "roomId": 40,
+    "spectators":
+    [
 
-        }
-    }
+    ]
 }
 ```
 
@@ -1189,10 +1159,9 @@ If the sender was a player, close the room
 
 ```Json
 {
-    "roomClosed":
-    {
-        "room": 40
-    }
+    "roomUpdate": true,
+    "roomId": 40,
+    "roomClosed": true
 }
 ```
 
@@ -1216,13 +1185,12 @@ and update the status for all players
 
 ```Json
 {
-    "75757575":
+    "playerInput": true,
+    "playerId": 75757575,
+    "taunt":
     {
-        "taunt":
-        {
-            "type": "up",
-            "sfxIndex": 1
-        }
+        "type": "up",
+        "sfxIndex": 1
     }
 }
 ```
@@ -1233,14 +1201,17 @@ Player 75757575 sends an idle input to the server
 
 #### Client request
 
-```Json
-{"A"}
+With an according network prefix:
+```
+A
 ```
 
 #### Server forwarding
 
-```Json
-{"75757575":"A"}
+With an according network prefix:
+
+```
+75757575:A
 ```
 
 ### Requesting a ping

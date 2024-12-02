@@ -58,7 +58,7 @@ end
 
 function Room:character_select()
   self:prepare_character_select()
-  self:sendJson(
+  self:broadcastJson(
     ServerProtocol.characterSelect(
       self.ratings[1],
       self.ratings[2],
@@ -134,7 +134,7 @@ function Room:add_spectator(new_spectator_connection)
   new_spectator_connection:sendJson(message)
   local spectatorList = self:spectator_names()
   logger.debug("sending spectator list: " .. json.encode(spectatorList))
-  self:sendJson(ServerProtocol.updateSpectators(spectatorList))
+  self:broadcastJson(ServerProtocol.updateSpectators(spectatorList))
 end
 
 function Room:spectator_names()
@@ -158,7 +158,7 @@ function Room:remove_spectator(connection)
   end
   local spectatorList = self:spectator_names()
   logger.debug("sending spectator list: " .. json.encode(spectatorList))
-  self:sendJson(ServerProtocol.updateSpectators(spectatorList))
+  self:broadcastJson(ServerProtocol.updateSpectators(spectatorList))
   return lobbyChanged
 end
 
@@ -190,7 +190,7 @@ function Room:sendJsonToSpectators(message)
   end
 end
 
-function Room:broadcastInput(sender, input)
+function Room:broadcastInput(input, sender)
   self.inputs[sender.player_number][#self.inputs[sender.player_number] + 1] = input
 
   local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, input)
@@ -207,11 +207,13 @@ function Room:broadcastInput(sender, input)
   end
 end
 
-function Room:sendJson(message)
-  if self.a then
+-- broadcasts the message to everyone in the room
+-- if an optional sender is specified, they are excluded from the broadcast
+function Room:broadcastJson(message, sender)
+  if self.a and self.a ~= sender then
     self.a:sendJson(message)
   end
-  if self.b then
+  if self.b and self.b ~= sender then
     self.b:sendJson(message)
   end
   self:sendJsonToSpectators(message)
@@ -335,9 +337,7 @@ function Room:resolve_game_outcome()
 
       if someone_scored then
         local message = ServerProtocol.winCounts(self.win_counts[1], self.win_counts[2])
-        self.a:sendJson(message)
-        self.b:sendJson(message)
-        self:sendJsonToSpectators(message)
+        self:broadcastJson(message)
       end
       return true
     end

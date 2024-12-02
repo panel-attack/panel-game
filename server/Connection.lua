@@ -190,7 +190,7 @@ function Connection:I(message)
     return
   end
 
-  self.room:broadcastInput(self, message)
+  self.room:broadcastInput(message, self)
 end
 
 -- Handle clientMessageTypes.acknowledgedPing
@@ -394,10 +394,8 @@ function Connection:handleSpectateRequest(message)
       self.state = "lobby"
     end
   end
-  if requestedRoom and requestedRoom:state() == "character select" then
-    logger.debug("adding " .. self.name .. " to room nr " .. message.spectate_request.roomNumber)
-    self.server:addSpectator(requestedRoom, self)
-  elseif requestedRoom and requestedRoom:state() == "playing" then
+  local roomState = requestedRoom:state()
+  if requestedRoom and (roomState == "character select" or roomState == "playing") then
     logger.debug("adding " .. self.name .. " to room nr " .. message.spectate_request.roomNumber)
     self.server:addSpectator(requestedRoom, self)
   else
@@ -413,7 +411,7 @@ function Connection:handleMenuStateMessage(message)
   logger.debug("about to check for rating_adjustment_approval for " .. self.name .. " and " .. self.opponent.name)
   if self.wants_ranked_match or self.opponent.wants_ranked_match then
     local ranked_match_approved, reasons = self.room:rating_adjustment_approved()
-    self.room:sendJson(ServerProtocol.updateRankedStatus(ranked_match_approved, reasons))
+    self.room:broadcastJson(ServerProtocol.updateRankedStatus(ranked_match_approved, reasons))
   end
 
   if self.ready and self.opponent.ready then
@@ -441,15 +439,13 @@ function Connection:handleMenuStateMessage(message)
     local settings = self:getSettings()
     settings.player_number = self.player_number
     local msg = ServerProtocol.menuState(settings)
-    self.opponent:sendJson(msg)
-    self.room:sendJsonToSpectators(msg)
+    self.room:broadcastJson(msg, self)
   end
 end
 
 function Connection:handleTaunt(message)
   local msg = ServerProtocol.taunt(self.player_number, message.type, message.index)
-  self.opponent:sendJson(msg)
-  self.room:sendJsonToSpectators(msg)
+  self.room:broadcastJson(msg, self)
 end
 
 function Connection:handleGameOverOutcome(message)
