@@ -25,7 +25,7 @@ local function testGetMessage(messageBuffer, expectedTypes, expectedMessages, is
 end
 
 -- Test we can send I and U unicode messages with part of the next message after
-testGetMessage("H048" .. NetworkProtocol.markedMessageForTypeAndBody("I", "Ā") .. "I", {"H", "I"}, {"047", "Ā"}, false)
+testGetMessage("H048" .. NetworkProtocol.markedMessageForTypeAndBody("I", "Ā") .. "I", {"H", "I"}, {"048", "Ā"}, false)
 testGetMessage("H" .. NetworkProtocol.markedMessageForTypeAndBody("U", "Ā") .. "U", {"H", "U"}, {"", "Ā"}, true)
 
 -- Test we can send a J and then H message

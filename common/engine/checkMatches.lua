@@ -323,7 +323,7 @@ function Stack:getConnectedGarbagePanels(matchingPanels)
     local panel = panelsToCheck:pop()
     -- avoid rechecking a panel already matched
     if not panel.matching then
-      if panel.isGarbage and panel.state == "normal" then
+      if panel.isGarbage and panel.state == "normal" and (panel.row - panel.y_offset) <= self.height then
         if (panel.metal and panel.matchesMetal) or (not panel.metal and panel.matchesGarbage) then
           -- if a panel is adjacent to a matching non-garbage panel or a matching garbage panel of the same type, 
           -- it should match too
