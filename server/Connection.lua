@@ -346,17 +346,41 @@ function Connection:canLogin(userID, name, IP_logging_in, engineVersion)
 end
 
 function Connection:updatePlayerSettings(playerSettings)
-  self.character = playerSettings.character
-  self.character_is_random = playerSettings.character_is_random
-  self.character_display_name = playerSettings.character_display_name
-  self.cursor = playerSettings.cursor -- nil when from login
-  self.inputMethod = (playerSettings.inputMethod or "controller") --one day we will require message to include input method, but it is not this day.
-  self.level = playerSettings.level
-  self.panels_dir = playerSettings.panels_dir
-  self.ready = playerSettings.ready -- nil when from login
-  self.stage = playerSettings.stage
-  self.stage_is_random = playerSettings.stage_is_random
-  self.wants_ranked_match = playerSettings.ranked
+  if playerSettings.character ~= nil then
+    self.character = playerSettings.character
+  end
+
+  if playerSettings.character_is_random ~= nil then
+    self.character_is_random = playerSettings.character_is_random
+  end
+  -- self.cursor = playerSettings.cursor -- nil when from login
+  if playerSettings.inputMethod ~= nil then
+    self.inputMethod = (playerSettings.inputMethod or "controller")
+  end
+
+  if playerSettings.level ~= nil then
+    self.level = playerSettings.level
+  end
+
+  if playerSettings.panels_dir ~= nil then
+    self.panels_dir = playerSettings.panels_dir
+  end
+
+  if playerSettings.ready ~= nil then
+    self.ready = playerSettings.ready -- nil when from login
+  end
+
+  if playerSettings.stage ~= nil then
+    self.stage = playerSettings.stage
+  end
+
+  if playerSettings.stage_is_random ~= nil then
+    self.stage_is_random = playerSettings.stage_is_random
+  end
+
+  if playerSettings.ranked ~= nil then
+    self.wants_ranked_match = playerSettings.ranked
+  end
 end
 
 function Connection:handleSpectateRequest(message)
