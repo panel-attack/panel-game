@@ -13,7 +13,7 @@ local messageEndMarker = "←J←"
 -- Prefix is what is put at the front of the message
 -- Then size data follows in normal single byte sequence.
 -- if size is nil then a variable utf8 byte sequence follows terminated by messageEndMarker
-NetworkProtocol.clientMessageTypes = { 
+NetworkProtocol.clientMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the client
   playerInput = {prefix="I", size=nil}, -- Player input (touch or controller) from the client
   acknowledgedPing = {prefix="E", size=1}, -- Respond back from the servers ping to confirm we are still connected
@@ -24,7 +24,7 @@ for _, value in pairs(NetworkProtocol.clientMessageTypes) do
   NetworkProtocol.clientPrefixToMessageType[value.prefix] = value
 end
 
-NetworkProtocol.serverMessageTypes = { 
+NetworkProtocol.serverMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the server
   opponentInput = {prefix="I", size=nil}, -- Player input (touch or controller) sent to the client about it's opponent
   secondOpponentInput = {prefix="U", size=nil}, -- Player input (touch or controller) sent to the client for player two if spectating
