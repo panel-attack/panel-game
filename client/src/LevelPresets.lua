@@ -258,7 +258,7 @@ modern[9] = {
     dangerCoefficient = 4,
   },
   frameConstants = {
-    HOVER = 3,
+    HOVER = 6,
     GARBAGE_HOVER = 7,
     FLASH = 30,
     FACE = 11,
