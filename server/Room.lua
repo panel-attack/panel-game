@@ -14,6 +14,8 @@ function(self, a, b, roomNumber, leaderboard, server)
   --TODO: it would be nice to call players a and b something more like self.players[1] and self.players[2]
   self.a = a --player a as a connection object
   self.b = b --player b as a connection object
+  self.a:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
+  self.b:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   self.server = server
   self.stage = nil -- stage for the game, randomly picked from both players
   self.name = a.name .. " vs " .. b.name
@@ -55,6 +57,40 @@ function(self, a, b, roomNumber, leaderboard, server)
   self.game_outcome_reports = {} -- mapping of what each player reports the outcome of the game
 end
 )
+
+function Room:onPlayerSettingsUpdate(player)
+  if self:state() == "character select" then
+    logger.debug("about to check for rating_adjustment_approval for " .. self.a.name .. " and " .. self.b.name)
+    if self.a.wants_ranked_match or self.b.wants_ranked_match then
+      local ranked_match_approved, reasons = self:rating_adjustment_approved()
+      self:broadcastJson(ServerProtocol.updateRankedStatus(ranked_match_approved, reasons))
+    end
+
+    if self.a.ready and self.b.ready then
+      self.inputs = {{},{}}
+      self.replay = {}
+      self.replay.vs = {
+        I = "",
+        in_buf = "",
+        P1_level = self.a.level,
+        P2_level = self.b.level,
+        P1_inputMethod = self.a.inputMethod,
+        P2_inputMethod = self.b.inputMethod,
+        P1_char = self.a.character,
+        P2_char = self.b.character,
+        ranked = self:rating_adjustment_approved(),
+        do_countdown = true
+      }
+
+      self.server:start_match(self.a, self.b)
+    else
+      local settings = player:getSettings()
+      settings.player_number = player.player_number
+      local msg = ServerProtocol.menuState(settings)
+      self.broadcastJson(msg, player)
+    end
+  end
+end
 
 function Room:character_select()
   self:prepare_character_select()
@@ -217,6 +253,17 @@ function Room:broadcastJson(message, sender)
     self.b:sendJson(message)
   end
   self:sendJsonToSpectators(message)
+end
+
+function Room:reportOutcome(player, outcome)
+  self.game_outcome_reports[player.player_number] = outcome
+  if self:resolve_game_outcome() then
+    logger.debug("\n*******************************")
+    logger.debug("***" .. self.a.name .. " " .. self.win_counts[1] .. " - " .. self.win_counts[2] .. " " .. self.b.name .. "***")
+    logger.debug("*******************************\n")
+    self.game_outcome_reports = {}
+    self:character_select()
+  end
 end
 
 function Room:resolve_game_outcome()

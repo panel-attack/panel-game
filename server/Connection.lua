@@ -7,6 +7,7 @@ local utf8 = require("common.lib.utf8Additions")
 local Player = require("server.Player")
 local ClientMessages = require("server.ClientMessages")
 local ServerProtocol = require("common.network.ServerProtocol")
+local Signal = require("common.lib.signal")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
 Connection =
@@ -41,6 +42,9 @@ Connection =
     self.stage = nil
     self.stage_is_random = nil
     self.wants_ranked_match = nil
+
+    Signal.turnIntoEmitter(self)
+    self:createSignal("settingsUpdated")
   end
 )
 
@@ -381,6 +385,8 @@ function Connection:updatePlayerSettings(playerSettings)
   if playerSettings.ranked ~= nil then
     self.wants_ranked_match = playerSettings.ranked
   end
+
+  self:emitSignal("settingsUpdated", self)
 end
 
 function Connection:handleSpectateRequest(message)
@@ -407,40 +413,6 @@ end
 function Connection:handleMenuStateMessage(message)
   local playerSettings = message.menu_state
   self:updatePlayerSettings(playerSettings)
-
-  logger.debug("about to check for rating_adjustment_approval for " .. self.name .. " and " .. self.opponent.name)
-  if self.wants_ranked_match or self.opponent.wants_ranked_match then
-    local ranked_match_approved, reasons = self.room:rating_adjustment_approved()
-    self.room:broadcastJson(ServerProtocol.updateRankedStatus(ranked_match_approved, reasons))
-  end
-
-  if self.ready and self.opponent.ready then
-    self.room.inputs = {{},{}}
-    self.room.replay = {}
-    self.room.replay.vs = {
-      I = "",
-      in_buf = "",
-      P1_level = self.room.a.level,
-      P2_level = self.room.b.level,
-      P1_inputMethod = self.room.a.inputMethod,
-      P2_inputMethod = self.room.b.inputMethod,
-      P1_char = self.room.a.character,
-      P2_char = self.room.b.character,
-      ranked = self.room:rating_adjustment_approved(),
-      do_countdown = true
-    }
-
-    if self.player_number == 1 then
-      self.server:start_match(self, self.opponent)
-    else
-      self.server:start_match(self.opponent, self)
-    end
-  else
-    local settings = self:getSettings()
-    settings.player_number = self.player_number
-    local msg = ServerProtocol.menuState(settings)
-    self.room:broadcastJson(msg, self)
-  end
 end
 
 function Connection:handleTaunt(message)
@@ -449,14 +421,7 @@ function Connection:handleTaunt(message)
 end
 
 function Connection:handleGameOverOutcome(message)
-  self.room.game_outcome_reports[self.player_number] = message.outcome
-  if self.room:resolve_game_outcome() then
-    logger.debug("\n*******************************")
-    logger.debug("***" .. self.room.a.name .. " " .. self.room.win_counts[1] .. " - " .. self.room.win_counts[2] .. " " .. self.room.b.name .. "***")
-    logger.debug("*******************************\n")
-    self.room.game_outcome_reports = {}
-    self.room:character_select()
-  end
+  self.room:reportOutcome(self, message.outcome)
 end
 
 function Connection:handlePlayerRequestedToLeaveRoom(message)
