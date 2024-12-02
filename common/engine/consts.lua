@@ -33,8 +33,8 @@ consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE = "046"
 consts.ENGINE_VERSIONS.TOUCH_COMPATIBLE = "047"
 consts.ENGINE_VERSIONS.LEVELDATA = "048"
 
-consts.ENGINE_VERSION = consts.ENGINE_VERSIONS.TOUCH_COMPATIBLE -- The current engine version
-consts.VERSION_MIN_VIEW = consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE -- The lowest version number that can be watched
+consts.ENGINE_VERSION = consts.ENGINE_VERSIONS.LEVELDATA -- The current engine version
+consts.VERSION_MIN_VIEW = consts.ENGINE_VERSIONS.LEVELDATA -- The lowest version number that can be watched
 
 consts.COUNTDOWN_CURSOR_SPEED = 4 --one move every this many frames
 consts.COUNTDOWN_START = 8
