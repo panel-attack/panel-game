@@ -26,11 +26,11 @@ end
 
 NetworkProtocol.serverMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the server
-  opponentInput = {prefix="I", size=nil}, -- Player input (touch or controller) sent to the client about it's opponent
-  secondOpponentInput = {prefix="U", size=nil}, -- Player input (touch or controller) sent to the client for player two if spectating
+  opponentInput = {prefix="I", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client about it's opponent
+  secondOpponentInput = {prefix="U", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client for player two if spectating
   versionCorrect = {prefix="H", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is allowed
   versionWrong = {prefix="N", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is not allowed
-  ping = {prefix="E", size=1} -- Sent to the client to confirm they are still connected
+  ping = {prefix="E", size=1, verbose = true} -- Sent to the client to confirm they are still connected
 }
 NetworkProtocol.serverPrefixToMessageType = {}
 for _, value in pairs(NetworkProtocol.serverMessageTypes) do

@@ -6,6 +6,7 @@ local time = os.time
 local utf8 = require("common.lib.utf8Additions")
 local Player = require("server.Player")
 local ClientMessages = require("server.ClientMessages")
+local ServerProtocol = require("common.network.ServerProtocol")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
 Connection =
@@ -43,6 +44,31 @@ Connection =
   end
 )
 
+function Connection:getSettings()
+  return ServerProtocol.toSettings(
+    self.ready,
+    self.level,
+    self.inputMethod,
+    self.stage,
+    self.stage_is_random,
+    self.character,
+    self.character_is_random,
+    self.panels_dir,
+    self.wants_ranked_match
+  )
+end
+
+function Connection:getDumbSettings(rating)
+  return ServerProtocol.toDumbSettings(
+    self.character,
+    self.level,
+    self.panels_dir,
+    self.player_number,
+    self.inputMethod,
+    rating
+  )
+end
+
 function Connection:menu_state()
   local state = {
     cursor = self.cursor,
@@ -61,33 +87,48 @@ function Connection:menu_state()
   --note: player_number here is the player_number of the connection as according to the server, not the "which" of any Stack
 end
 
-function Connection:send(stuff)
-  if type(stuff) == "table" then
-    local json = json.encode(stuff)
-    stuff = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.jsonMessage.prefix, json)
-    logger.debug("Connection " .. self.index .. " Sending JSON: " .. stuff)
-  else
-    if type(stuff) == "string" then
-      local type = stuff:sub(1, 1)
-      if type ~= nil and NetworkProtocol.isMessageTypeVerbose(type) == false then
-        logger.debug("Connection " .. self.index .. " sending " .. stuff)
-      end
+local function send(connection, message)
+  local retryCount = 0
+  local retryLimit = 5
+  local success, error
+
+  while not success and retryCount <= retryLimit do
+    success, error, lastSent = connection.socket:send(message)
+    if not success then
+      logger.debug("Connection.send failed with " .. error .. ". will retry...")
+      retryCount = retryCount + 1
     end
   end
-  local retry_count = 0
-  local times_to_retry = 5
-  local foo = {}
-  while not foo[1] and retry_count <= 5 do
-    foo = {self.socket:send(stuff)}
-    if not foo[1] then
-      logger.debug("Connection.send failed. will retry...")
-      retry_count = retry_count + 1
-    end
+  if not success then
+    logger.debug("Closing connection for " .. (connection.name or "nil") .. ". Connection.send failed after " .. retryLimit .. " retries were attempted")
+    connection:close()
   end
-  if not foo[1] then
-    logger.debug("Closing connection for " .. (self.name or "nil") .. ". Connection.send failed after " .. times_to_retry .. " retries were attempted")
-    self:close()
+end
+
+-- dedicated method for sending JSON messages
+function Connection:sendJson(messageInfo)
+  if messageInfo.messageType ~= NetworkProtocol.serverMessageTypes.jsonMessage then
+    logger.error("Trying to send a message of type " .. messageInfo.messageType.prefix .. " via sendJson")
   end
+
+  local json = json.encode(messageInfo.messageText)
+  logger.debug("Connection " .. self.index .. " Sending JSON: " .. json)
+  local message = NetworkProtocol.markedMessageForTypeAndBody(messageInfo.messageType.prefix, json)
+
+  send(self, message)
+end
+
+-- dedicated method for sending inputs and magic prefixes
+-- this function avoids overhead by not logging outside of failure and accepting the message directly
+function Connection:send(message)
+--   if type(message) == "string" then
+--     local type = message:sub(1, 1)
+--     if type ~= nil and NetworkProtocol.isMessageTypeVerbose(type) == false then
+--       logger.debug("Connection " .. self.index .. " sending " .. message)
+--     end
+--   end
+
+  send(self, message)
 end
 
 function Connection:leaveRoom()
@@ -98,7 +139,7 @@ function Connection:leaveRoom()
     logger.debug("Closing room for " .. (self.name or "nil") .. " because opponent disconnected.")
     self.server:closeRoom(self.room)
   end
-  self:send({leave_room = true})
+  self:sendJson(ServerProtocol.leaveRoom())
 end
 
 function Connection:setup_game()
@@ -148,17 +189,8 @@ function Connection:I(message)
   if self.room == nil then
     return
   end
-  local iMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, message)
-  self.opponent:send(iMessage)
 
-  local spectatorMessage = iMessage
-  if self.player_number == 1 then
-    spectatorMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix, message)
-    self.room.inputs[self.player_number][#self.room.inputs[self.player_number] + 1] = message
-  elseif self.player_number == 2 then
-    self.room.inputs[self.player_number][#self.room.inputs[self.player_number] + 1] = message
-  end
-  self.room:send_to_spectators(spectatorMessage)
+  self.room:broadcastInput(self, message)
 end
 
 -- Handle clientMessageTypes.acknowledgedPing
@@ -184,7 +216,7 @@ function Connection:J(message)
       self.server:propose_game(message.game_request.sender, message.game_request.receiver, message)
     end
   elseif message.leaderboard_request then
-    self:send({leaderboard_report = leaderboard:get_report(self)})
+    self:sendJson(ServerProtocol.sendLeaderboard(leaderboard:get_report(self)))
   elseif message.spectate_request then
     self:handleSpectateRequest(message)
   elseif self.state == "character select" and message.menu_state then
@@ -271,7 +303,7 @@ function Connection:login(user_id, name, IP_logging_in, port, engineVersion, pla
     end
 
     message.login_successful = true
-    self:send(message)
+    self:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name))
 
     logger.warn("Login from " .. name .. " with ip: " .. IP_logging_in .. " publicPlayerID: " .. self.player.publicPlayerID)
   end
@@ -357,25 +389,14 @@ function Connection:handleMenuStateMessage(message)
   logger.debug("about to check for rating_adjustment_approval for " .. self.name .. " and " .. self.opponent.name)
   if self.wants_ranked_match or self.opponent.wants_ranked_match then
     local ranked_match_approved, reasons = self.room:rating_adjustment_approved()
-    if ranked_match_approved then
-      if not reasons[1] then
-        reasons = nil
-      end
-      self.room:send({ranked_match_approved = true, caveats = reasons})
-    else
-      self.room:send({ranked_match_denied = true, reasons = reasons})
-    end
+    self.room:sendJson(ServerProtocol.updateRankedStatus(ranked_match_approved, reasons))
   end
 
   if self.ready and self.opponent.ready then
     self.room.inputs = {{},{}}
     self.room.replay = {}
     self.room.replay.vs = {
-      P = "",
-      O = "",
       I = "",
-      Q = "",
-      R = "",
       in_buf = "",
       P1_level = self.room.a.level,
       P2_level = self.room.b.level,
@@ -386,23 +407,25 @@ function Connection:handleMenuStateMessage(message)
       ranked = self.room:rating_adjustment_approved(),
       do_countdown = true
     }
+
     if self.player_number == 1 then
       self.server:start_match(self, self.opponent)
     else
       self.server:start_match(self.opponent, self)
     end
   else
-    self.opponent:send(message)
-    message.player_number = self.player_number
-    logger.debug("about to send match start to spectators of " .. (self.name or "nil") .. " and " .. (self.opponent.name or "nil"))
-    self.room:send_to_spectators(message) -- TODO: may need to include in the message who is sending the message
+    local settings = self:getSettings()
+    settings.player_number = self.player_number
+    local msg = ServerProtocol.menuState(settings)
+    self.opponent:sendJson(msg)
+    self.room:sendJsonToSpectators(msg)
   end
 end
 
 function Connection:handleTaunt(message)
-  message.player_number = self.player_number
-  self.opponent:send(message)
-  self.room:send_to_spectators(message)
+  local msg = ServerProtocol.taunt(self.player_number, message.type, message.index)
+  self.opponent:sendJson(msg)
+  self.room:sendJsonToSpectators(msg)
 end
 
 function Connection:handleGameOverOutcome(message)

@@ -1,6 +1,8 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local Replay = require("common.engine.Replay")
+local ServerProtocol = require("common.network.ServerProtocol")
+local NetworkProtocol = require("common.network.NetworkProtocol")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
@@ -56,14 +58,14 @@ end
 
 function Room:character_select()
   self:prepare_character_select()
-  self:send({
-    character_select = true,
-    create_room = true,
-    rating_updates = true,
-    ratings = self.ratings,
-    a_menu_state = self.a:menu_state(),
-    b_menu_state = self.b:menu_state()
-  })
+  self:sendJson(
+    ServerProtocol.characterSelect(
+      self.ratings[1],
+      self.ratings[2],
+      self.a:getSettings(),
+      self.b:getSettings()
+    )
+  )
 end
 
 function Room:prepare_character_select()
@@ -103,38 +105,36 @@ function Room:add_spectator(new_spectator_connection)
   new_spectator_connection.room = self
   self.spectators[#self.spectators + 1] = new_spectator_connection
   logger.debug(new_spectator_connection.name .. " joined " .. self.name .. " as a spectator")
-  local playerSettings = self.server:playerSettingFromTable(self.a)
-  local opponentSettings = self.server:playerSettingFromTable(self.b)
-  local msg = {
-    spectate_request_granted = true,
-    spectate_request_rejected = false,
-    room_number = self.roomNumber,
-    rating_updates = true,
-    ratings = self.ratings,
-    a_menu_state = self.a:menu_state(),
-    b_menu_state = self.b:menu_state(),
-    a_name = self.a.name,
-    b_name = self.b.name,
-    win_counts = self.win_counts,
-    match_start = replay_of_match_so_far ~= nil,
-    stage = self.stage,
-    replay_of_match_so_far = self.replay,
-    ranked = self:rating_adjustment_approved(),
-    player_settings = playerSettings,
-    opponent_settings = opponentSettings
-  }
-  if msg.replay_of_match_so_far ~= nil then
-    msg.replay_of_match_so_far.vs.in_buf = table.concat(self.inputs[1])
-    msg.replay_of_match_so_far.vs.I = table.concat(self.inputs[2])
-    if COMPRESS_SPECTATOR_REPLAYS_ENABLED then
-      msg.replay_of_match_so_far.vs.in_buf = Replay.compressInputString(msg.replay_of_match_so_far.vs.in_buf)
-      msg.replay_of_match_so_far.vs.I = Replay.compressInputString(msg.replay_of_match_so_far.vs.I)
+
+  if self.replay then
+    self.replay.vs.in_buf = table.concat(self.inputs[1])
+    self.replay.vs.I = table.concat(self.inputs[2])
+    if COMPRESS_REPLAYS_ENABLED then
+      self.replay.vs.in_buf = Replay.compressInputString(self.replay.vs.in_buf)
+      self.replay.vs.I = Replay.compressInputString(self.replay.vs.I)
     end
   end
-  new_spectator_connection:send(msg)
-  msg = {spectators = self:spectator_names()}
-  logger.debug("sending spectator list: " .. json.encode(msg))
-  self:send(msg)
+
+  local message = ServerProtocol.spectateRequestGranted(
+    self.roomNumber,
+    self.a:getSettings(),
+    self.b:getSettings(),
+    self.ratings[1],
+    self.ratings[2],
+    self.a.name,
+    self.b.name,
+    self.win_counts,
+    self.stage,
+    self.replay,
+    self.ranked,
+    self.a:getDumbSettings(),
+    self.b:getDumbSettings()
+  )
+
+  new_spectator_connection:sendJson(message)
+  local spectatorList = self:spectator_names()
+  logger.debug("sending spectator list: " .. json.encode(spectatorList))
+  self:sendJson(ServerProtocol.updateSpectators(spectatorList))
 end
 
 function Room:spectator_names()
@@ -156,9 +156,9 @@ function Room:remove_spectator(connection)
       lobbyChanged = true
     end
   end
-  local msg = {spectators = self:spectator_names()}
-  logger.debug("sending spectator list: " .. json.encode(msg))
-  self:send(msg)
+  local spectatorList = self:spectator_names()
+  logger.debug("sending spectator list: " .. json.encode(spectatorList))
+  self:sendJson(ServerProtocol.updateSpectators(spectatorList))
   return lobbyChanged
 end
 
@@ -179,25 +179,42 @@ function Room:close()
       v.state = "lobby"
     end
   end
-  self:send_to_spectators({leave_room = true})
+  self:sendJsonToSpectators(ServerProtocol.leaveRoom())
 end
 
-function Room:send_to_spectators(message)
+function Room:sendJsonToSpectators(message)
   for k, v in pairs(self.spectators) do
     if v then
-      v:send(message)
+      v:sendJson(message)
     end
   end
 end
 
-function Room:send(message)
+function Room:broadcastInput(sender, input)
+  self.inputs[sender.player_number][#self.inputs[sender.player_number] + 1] = input
+
+  local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, input)
+  sender.opponent:send(inputMessage)
+
+  if sender.player_number == 1 then
+    inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix, input)
+  end
+
+  for _, v in pairs(self.spectators) do
+    if v then
+      v:send(inputMessage)
+    end
+  end
+end
+
+function Room:sendJson(message)
   if self.a then
-    self.a:send(message)
+    self.a:sendJson(message)
   end
   if self.b then
-    self.b:send(message)
+    self.b:sendJson(message)
   end
-  self:send_to_spectators(message)
+  self:sendJsonToSpectators(message)
 end
 
 function Room:resolve_game_outcome()
@@ -317,10 +334,10 @@ function Room:resolve_game_outcome()
       end
 
       if someone_scored then
-        local msg = {win_counts = self.win_counts}
-        self.a:send(msg)
-        self.b:send(msg)
-        self:send_to_spectators(msg)
+        local message = ServerProtocol.winCounts(self.win_counts[1], self.win_counts[2])
+        self.a:sendJson(message)
+        self.b:sendJson(message)
+        self:sendJsonToSpectators(message)
       end
       return true
     end

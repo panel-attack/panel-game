@@ -1,14 +1,13 @@
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local msgTypes = NetworkProtocol.serverMessageTypes
-local consts = require("common.engine.consts")
 
-local ServerMessages = {}
+local ServerProtocol = {}
 
 -------------------------------------------------------------------
 -- Helper methods for converting to ServerProtocol table formats --
 -------------------------------------------------------------------
 
-function ServerMessages.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked)
+function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked)
   local settings = {
     cursor = "__Ready",
     stage = stage,
@@ -24,7 +23,8 @@ function ServerMessages.toSettings(ready, level, inputMethod, stage, selectedSta
   return settings
 end
 
-function ServerMessages.toDumbSettings(character, level, panels, playerNumber, inputMethod, rating)
+-- rating in this case is not the table returned from toRating but only the "new" value
+function ServerProtocol.toDumbSettings(character, level, panels, playerNumber, inputMethod, rating)
   local playerSettings =
   {
     character = character,
@@ -38,7 +38,7 @@ function ServerMessages.toDumbSettings(character, level, panels, playerNumber, i
   return playerSettings
 end
 
-function ServerMessages.toReplay(levelA, levelB, inputMethodA, inputMethodB, inputsA, inputsB, characterA, characterB, ranked)
+function ServerProtocol.toReplay(levelA, levelB, inputMethodA, inputMethodB, inputsA, inputsB, characterA, characterB, ranked)
   local replay =
   {
     do_countdown = true,
@@ -56,7 +56,7 @@ function ServerMessages.toReplay(levelA, levelB, inputMethodA, inputMethodB, inp
   return replay
 end
 
-function ServerMessages.toRating(oldRating, newRating, ratingDiff, league, placementProgress)
+function ServerProtocol.toRating(oldRating, newRating, ratingDiff, league, placementProgress)
   return
   {
     old = oldRating,
@@ -71,15 +71,35 @@ end
 -- Actual server messages --
 ----------------------------
 
-function ServerMessages.leaveRoom()
-  local leaveRoomMessage = {leave_room = true}
+function ServerProtocol.menuState(settings)
+  local menuStateMessage = {menu_state = settings}
+
   return {
     messageType = msgTypes.jsonMessage,
-    messageText = leaveRoomMessage,
+    messageText = menuStateMessage,
   }
 end
 
-function ServerMessages.spectateRequestGranted(roomNumber, settingsA, settingsB, ratingA, ratingB, nameA, nameB, winCounts, stage, replay, ranked, dumbSettingsA, dumbSettingsB)
+local leaveRoom = {
+  messageType = msgTypes.jsonMessage,
+  messageText = {leave_room = true},
+}
+function ServerProtocol.leaveRoom()
+  return leaveRoom
+end
+
+function ServerProtocol.sendLeaderboard(leaderboard)
+  local leaderboardReport = {
+    leaderboard_report = leaderboard
+  }
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = leaderboardReport,
+  }
+end
+
+function ServerProtocol.spectateRequestGranted(roomNumber, settingsA, settingsB, ratingA, ratingB, nameA, nameB, winCounts, stage, replay, ranked, dumbSettingsA, dumbSettingsB)
   local spectateRequestGrantedMessage =
   {
     spectate_request_granted = true,
@@ -106,7 +126,7 @@ function ServerMessages.spectateRequestGranted(roomNumber, settingsA, settingsB,
   }
 end
 
-function ServerMessages.createRoom(roomNumber, settingsA, settingsB, ratingA, ratingB, opponentName, opponentNumber)
+function ServerProtocol.createRoom(roomNumber, settingsA, settingsB, ratingA, ratingB, opponentName, opponentNumber)
   local createRoomMessage =
   {
     create_room = true,
@@ -126,7 +146,7 @@ function ServerMessages.createRoom(roomNumber, settingsA, settingsB, ratingA, ra
   }
 end
 
-function ServerMessages.startMatch(seed, ranked, stage, dumbSettingsRecipient, dumbSettingsOpponent)
+function ServerProtocol.startMatch(seed, ranked, stage, dumbSettingsRecipient, dumbSettingsOpponent)
   local startMatchMessage =
   {
     match_start = true,
@@ -143,7 +163,7 @@ function ServerMessages.startMatch(seed, ranked, stage, dumbSettingsRecipient, d
   }
 end
 
-function ServerMessages.lobbyState(unpaired, rooms, allPlayers)
+function ServerProtocol.lobbyState(unpaired, rooms, allPlayers)
   local lobbyStateMessage =
   {
     unpaired = unpaired,
@@ -157,7 +177,7 @@ function ServerMessages.lobbyState(unpaired, rooms, allPlayers)
   }
 end
 
-function ServerMessages.approveLogin(notice, newId, newName, oldName)
+function ServerProtocol.approveLogin(notice, newId, newName, oldName)
   local approveLoginMessage =
   {
     login_successful = true,
@@ -174,7 +194,7 @@ function ServerMessages.approveLogin(notice, newId, newName, oldName)
   }
 end
 
-function ServerMessages.denyLogin(reason, banDuration)
+function ServerProtocol.denyLogin(reason, banDuration)
   local denyLoginMessage =
   {
     login_denied = true,
@@ -188,7 +208,7 @@ function ServerMessages.denyLogin(reason, banDuration)
   }
 end
 
-function ServerMessages.winCounts(p1Wins, p2Wins)
+function ServerProtocol.winCounts(p1Wins, p2Wins)
   local winCountMessage =
   {
     win_counts = {p1Wins, p2Wins}
@@ -200,7 +220,7 @@ function ServerMessages.winCounts(p1Wins, p2Wins)
   }
 end
 
-function ServerMessages.characterSelect(ratingA, ratingB, settingsA, settingsB)
+function ServerProtocol.characterSelect(ratingA, ratingB, settingsA, settingsB)
   local characterSelectMessage =
   {
     character_select = true,
@@ -216,7 +236,7 @@ function ServerMessages.characterSelect(ratingA, ratingB, settingsA, settingsB)
   }
 end
 
-function ServerMessages.updateSpectators(spectators)
+function ServerProtocol.updateSpectators(spectators)
   local spectatorUpdateMessage =
   {
     spectators = spectators,
@@ -228,7 +248,7 @@ function ServerMessages.updateSpectators(spectators)
   }
 end
 
-function ServerMessages.updateRankedStatus(ranked, comments)
+function ServerProtocol.updateRankedStatus(ranked, comments)
   local rankedUpdateMessage =
   {
     reasons = comments,
@@ -246,7 +266,7 @@ function ServerMessages.updateRankedStatus(ranked, comments)
   }
 end
 
-function ServerMessages.taunt(playerNumber, type, index)
+function ServerProtocol.taunt(playerNumber, type, index)
   local tauntMessage = {
     taunt = true,
     type = type,
@@ -259,20 +279,29 @@ function ServerMessages.taunt(playerNumber, type, index)
   }
 end
 
-function ServerMessages.confirmVersionCompatibility()
+function ServerProtocol.sendChallenge(sender, receiver)
+  local challengeMessage = {
+    game_request =
+    {
+      sender = sender,
+      receiver = receiver,
+    }
+  }
   return {
-    messageType = msgTypes.versionCorrect
+    messageType = msgTypes.jsonMessage,
+    messageText = challengeMessage,
   }
 end
 
-function ServerMessages.rejectVersionCompatibility()
+function ServerProtocol.updateRating(ratingA, ratingB)
+  local ratingUpdate = {
+    rating_updates = true,
+    ratings = { ratingA, ratingB }
+  }
   return {
-    messageType = msgTypes.versionWrong
+    messageType = msgTypes.jsonMessage,
+    messageText = ratingUpdate,
   }
 end
 
-function ServerMessages.ping()
-
-end
-
-return ServerMessages
+return ServerProtocol
