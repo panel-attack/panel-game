@@ -5,6 +5,7 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
 local utf8 = require("common.lib.utf8Additions")
 local Player = require("server.Player")
+local ClientMessages = require("server.ClientMessages")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
 Connection =
@@ -168,9 +169,10 @@ end
 -- Handle clientMessageTypes.jsonMessage
 function Connection:J(message)
   message = json.decode(message)
+  message = ClientMessages.sanitizeMessage(message)
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
-  elseif self.state == "not_logged_in" then 
+  elseif self.state == "not_logged_in" then
     if message.login_request then
       local IP_logging_in, port = self.socket:getpeername()
       self:login(message.user_id, message.name, IP_logging_in, port, message.engine_version, message)
@@ -196,6 +198,8 @@ function Connection:J(message)
     self:handlePlayerRequestedToLeaveRoom(message)
   elseif (self.state == "spectating") and message.leave_room then
     self.server:removeSpectator(self.room, self)
+  elseif message.unknown then
+    self:close()
   end
 end
 

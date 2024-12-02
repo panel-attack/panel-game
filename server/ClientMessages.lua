@@ -5,6 +5,36 @@
 
 local ClientMessages = {}
 
+-- central sanitization function that picks a sanitization function based on the presence of key fields
+function ClientMessages.sanitizeMessage(clientMessage)
+  if clientMessage.login_request then
+    return ClientMessages.sanitizeLoginRequest(clientMessage)
+  elseif clientMessage.game_request then
+    return ClientMessages.sanitizeGameRequest(clientMessage)
+  elseif clientMessage.menu_state then
+    return ClientMessages.sanitizeMenuState(clientMessage)
+  elseif clientMessage.spectate_request then
+    return ClientMessages.sanitizeSpectateRequest(clientMessage)
+  elseif clientMessage.leaderboard_request then
+    return ClientMessages.sanitizeLeaderboardRequest(clientMessage)
+  elseif clientMessage.leave_room then
+    return ClientMessages.sanitizeLeaveRoom(clientMessage)
+  elseif clientMessage.taunt then
+    return ClientMessages.sanitizeTaunt(clientMessage)
+  elseif clientMessage.game_over then
+    return ClientMessages.sanitizeGameResult(clientMessage)
+  else
+    local errorMsg = "Received an unexpected message"
+    if clientMessage:len() > 10000 then
+      errorMsg = errorMsg .. " with " .. clientMessage:len() .. " characters"
+    else
+      errorMsg = errorMsg .. ":\n  " .. clientMessage
+    end
+    logger.error(errorMsg)
+    return { unknown = true}
+  end
+end
+
 function ClientMessages.sanitizeMenuState(playerSettings)
   local sanitized = {}
 
@@ -20,7 +50,7 @@ function ClientMessages.sanitizeMenuState(playerSettings)
   sanitized.stage_is_random = playerSettings.stage_is_random
   sanitized.wants_ranked_match = playerSettings.ranked
 
-  return sanitized
+  return {menu_state = sanitized}
 end
 
 function ClientMessages.sanitizeLoginRequest(loginRequest)
