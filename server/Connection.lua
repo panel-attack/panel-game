@@ -309,7 +309,7 @@ function Connection:canLogin(userID, name, IP_logging_in, engineVersion)
   return denyReason, playerBan
 end
 
-function Connection:updatePlayerSettings(playerSettings) 
+function Connection:updatePlayerSettings(playerSettings)
   self.character = playerSettings.character
   self.character_is_random = playerSettings.character_is_random
   self.character_display_name = playerSettings.character_display_name
