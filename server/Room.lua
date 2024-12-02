@@ -82,13 +82,81 @@ function Room:onPlayerSettingsUpdate(player)
         do_countdown = true
       }
 
-      self.server:start_match(self.a, self.b)
+      self.server:start_match(self)
     else
       local settings = player:getSettings()
       settings.player_number = player.player_number
       local msg = ServerProtocol.menuState(settings)
       self.broadcastJson(msg, player)
     end
+  end
+end
+
+function Room:start_match()
+  local a = self.a
+  local b = self.b
+
+  if (a.player_number ~= 1) then
+    logger.debug("players a and b need to be swapped.")
+    a, b = b, a
+    if (a.player_number == 1) then
+      logger.debug("Success, player a now has player_number 1.")
+    else
+      logger.error("ERROR: player a still doesn't have player_number 1.")
+    end
+  end
+
+  self.stage = math.random(1, 2) == 1 and a.stage or b.stage
+  self.replay.vs.seed = math.random(1,9999999)
+  self.replay.vs.P1_name = a.name
+  self.replay.vs.P2_name = b.name
+  self.replay.vs.P1_char = a.character
+  self.replay.vs.P2_char = b.character
+
+  local aRating, bRating
+  local room_is_ranked, reasons = self:rating_adjustment_approved()
+
+  if room_is_ranked then
+    self.replay.vs.ranked = true
+    if leaderboard.players[a.user_id] then
+      aRating = math.round(leaderboard.players[a.user_id].rating)
+    else
+      aRating = DEFAULT_RATING
+    end
+    if leaderboard.players[b.user_id] then
+      bRating = math.round(leaderboard.players[b.user_id].rating)
+    else
+      bRating = DEFAULT_RATING
+    end
+  end
+
+  local aDumbSettings = a:getDumbSettings(aRating)
+  local bDumbSettings = b:getDumbSettings(bRating)
+
+  local messageForA = ServerProtocol.startMatch(
+    self.replay.vs.seed,
+    room_is_ranked,
+    self.stage,
+    aDumbSettings,
+    bDumbSettings
+  )
+  a:sendJson(messageForA)
+  self:sendJsonToSpectators(messageForA)
+
+  local messageForB = ServerProtocol.startMatch(
+    self.replay.vs.seed,
+    room_is_ranked,
+    self.stage,
+    bDumbSettings,
+    aDumbSettings
+  )
+  b:sendJson(messageForB)
+
+  a:setup_game()
+  b:setup_game()
+
+  for _, v in pairs(self.spectators) do
+    v:setup_game()
   end
 end
 
