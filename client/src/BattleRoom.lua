@@ -98,7 +98,7 @@ function BattleRoom.createFromServerMessage(message)
       logger.debug("post transform:\n" .. table_to_string(replay))
       local match = Match.createFromReplay(replay, false)
       for i, player in ipairs(match.players) do
-        player:updateWithMenuState(message.players[i])
+        player:updateSettings(message.players[i])
       end
       -- need this to make sure both have the same player tables
       -- there's like one stupid reference to battleRoom in engine that breaks otherwise
@@ -111,7 +111,7 @@ function BattleRoom.createFromServerMessage(message)
       for i = 1, #message.players do
         local player = Player(message.players[i].name, message.players[i].playerNumber, false)
         battleRoom:addPlayer(player)
-        player:updateWithMenuState(message.players[i])
+        player:updateSettings(message.players[i])
       end
     end
     for i = 1, #battleRoom.players do
@@ -134,7 +134,7 @@ function BattleRoom.createFromServerMessage(message)
 
     local player2 = Player(message.players[2].name, -1, false)
     player2.playerNumber = message.players[2].playerNumber
-    player2:updateWithMenuState(message.players[2])
+    player2:updateSettings(message.players[2])
     player2:setRating(message.players[2].ratingInfo.new)
     player2:setLeague(message.players[2].ratingInfo.league)
     battleRoom:addPlayer(player2)

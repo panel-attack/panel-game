@@ -301,7 +301,7 @@ function Player.createFromReplayPlayer(replayPlayer, playerNumber)
   return player
 end
 
-function Player:updateWithMenuState(settings)
+function Player:updateSettings(settings)
   if settings.characterId ~= nil then
     if characters[settings.characterId] then
       -- if we have their character, use it
