@@ -55,8 +55,42 @@ function(self, a, b, roomNumber, leaderboard, server)
   }
 
   self.game_outcome_reports = {} -- mapping of what each player reports the outcome of the game
+
+  self.b.cursor = "__Ready"
+  self.a.cursor = "__Ready"
+
+  self.a.opponent = self.b
+  self.b.opponent = self.a
+
+  self:prepare_character_select()
+
+  local messageForA = ServerProtocol.createRoom(
+    self.roomNumber,
+    a:getSettings(),
+    b:getSettings(),
+    self.ratings[1],
+    self.ratings[2],
+    b.name,
+    2
+  )
+  a:sendJson(messageForA)
+
+  local messageForB = ServerProtocol.createRoom(
+    self.roomNumber,
+    a:getSettings(),
+    b:getSettings(),
+    self.ratings[1],
+    self.ratings[2],
+    a.name,
+    1
+  )
+  b:sendJson(messageForB)
 end
 )
+
+function Room:create()
+
+end
 
 function Room:onPlayerSettingsUpdate(player)
   if self:state() == "character select" then
@@ -82,7 +116,7 @@ function Room:onPlayerSettingsUpdate(player)
         do_countdown = true
       }
 
-      self.server:start_match(self)
+      self:start_match()
     else
       local settings = player:getSettings()
       settings.player_number = player.player_number

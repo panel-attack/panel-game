@@ -236,36 +236,6 @@ function Server:create_room(a, b)
   local new_room = Room(a, b, self.roomNumberIndex, leaderboard, self)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[new_room.roomNumber] = new_room
-
-  new_room.b.cursor = "__Ready"
-  new_room.a.cursor = "__Ready"
-
-  new_room.a.opponent = new_room.b
-  new_room.b.opponent = new_room.a
-
-  new_room:prepare_character_select()
-
-  local messageForA = ServerProtocol.createRoom(
-    new_room.roomNumber,
-    a:getSettings(),
-    b:getSettings(),
-    new_room.ratings[1],
-    new_room.ratings[2],
-    b.name,
-    2
-  )
-  a:sendJson(messageForA)
-
-  local messageForB = ServerProtocol.createRoom(
-    new_room.roomNumber,
-    a:getSettings(),
-    b:getSettings(),
-    new_room.ratings[1],
-    new_room.ratings[2],
-    a.name,
-    1
-  )
-  b:sendJson(messageForB)
 end
 
 function Server:roomNumberToRoom(roomNr)
