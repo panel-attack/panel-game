@@ -162,7 +162,9 @@ function Connection:close()
     logger.trace("about to close room for " .. (self.name or "nil") .. ".  Connection.close was called")
     self.server:closeRoom(self.room)
   elseif self.room then
-    self.server:removeSpectator(self.room, self)
+    if self.room:remove_spectator(self) then
+      self.server:setLobbyChanged()
+    end
   end
   self.server:clear_proposals(self.name)
   if self.opponent then
@@ -233,7 +235,9 @@ function Connection:J(message)
   elseif (self.state == "playing" or self.state == "character select") and message.leave_room then
     self:handlePlayerRequestedToLeaveRoom(message)
   elseif (self.state == "spectating") and message.leave_room then
-    self.server:removeSpectator(self.room, self)
+    if self.room:remove_spectator(self) then
+      self.server:setLobbyChanged()
+    end
   elseif message.unknown then
     self:close()
   end
@@ -394,7 +398,7 @@ function Connection:handleSpectateRequest(message)
   if self.state ~= "lobby" then
     if requestedRoom then
       logger.debug("removing " .. self.name .. " from room nr " .. message.spectate_request.roomNumber)
-      self.server:removeSpectator(requestedRoom, self)
+      self.room:remove_spectator(self)
     else
       logger.warn("could not find room to remove " .. self.name)
       self.state = "lobby"
@@ -403,7 +407,8 @@ function Connection:handleSpectateRequest(message)
   local roomState = requestedRoom:state()
   if requestedRoom and (roomState == "character select" or roomState == "playing") then
     logger.debug("adding " .. self.name .. " to room nr " .. message.spectate_request.roomNumber)
-    self.server:addSpectator(requestedRoom, self)
+    requestedRoom:add_spectator(self)
+    self.server:setLobbyChanged()
   else
     -- TODO: tell the client the join request failed, couldn't find the room.
     logger.warn("couldn't find room")

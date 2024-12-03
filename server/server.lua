@@ -137,7 +137,7 @@ function Server:importDatabase()
   self.database:commitTransaction() -- bulk commit every statement from the start of beginTransaction
 end
 
-local function addPublicPlayerData(players, playerName, player) 
+local function addPublicPlayerData(players, playerName, player)
   if not players or not player then
     return
   end
@@ -214,18 +214,6 @@ function Server:clear_proposals(name)
     end
     proposals[name] = nil
   end
-end
-
-function Server:playerSettingFromTable(data)
-  local playerSettings = {
-    character = data.character,
-    character_display_name = data.character_display_name,
-    level = data.level,
-    panels_dir = data.panels_dir,
-    player_number = data.player_number,
-    inputMethod = data.inputMethod
-  }
-  return playerSettings
 end
 
 -- a and be are connection objects
@@ -323,18 +311,6 @@ function Server:closeRoom(room)
     self.rooms[room.roomNumber] = nil
   end
 end
-
-function Server:addSpectator(room, connection)
-  room:add_spectator(connection)
-  self:setLobbyChanged()
-end
-
-function Server:removeSpectator(room, connection)
-  if room:remove_spectator(connection) then
-    self:setLobbyChanged()
-  end
-end
-
 
 function Server:calculate_rating_adjustment(Rc, Ro, Oa, k) -- -- print("calculating expected outcome for") -- print(players[player_number].name.." Ranking: "..leaderboard.players[players[player_number].user_id].rating)
   --[[ --Algorithm we are implementing, per community member Bbforky:
