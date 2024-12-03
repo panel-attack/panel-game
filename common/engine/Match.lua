@@ -13,6 +13,7 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local Replay = require("common.engine.Replay")
+local ReplayPlayer = require("common.engine.ReplayPlayer")
 local Signal = require("common.lib.signal")
 local SimulatedStack = require("common.engine.SimulatedStack")
 local Stack = require("common.engine.Stack")
@@ -548,7 +549,7 @@ function Match:start()
     end
   end
 
-  self.replay = Replay.createNewReplay(self)
+  self.replay = self:createNewReplay()
 end
 
 function Match:setStage(stageId)
@@ -593,6 +594,34 @@ function Match:hasLocalPlayer()
   end
 
   return false
+end
+
+function Match:createNewReplay()
+  local replay = Replay(self.engineVersion, self.seed, self.gameMode, self.puzzle)
+  replay:setStage(self.stage)
+  replay:setRanked(self.ranked)
+
+  for i, player in ipairs(self.players) do
+    local replayPlayer = ReplayPlayer(player.name, player.publicId, player.human)
+    replayPlayer:setWins(player.wins)
+    replayPlayer:setCharacterId(player.settings.characterId)
+    replayPlayer:setPanelId(player.settings.panelId)
+    replayPlayer:setLevelData(player.settings.levelData)
+    replayPlayer:setInputMethod(player.settings.inputMethod)
+    replayPlayer:setAllowAdjacentColors(player.stack.allowAdjacentColors)
+    replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
+    replayPlayer:setHealthSettings(player.settings.healthSettings)
+    -- these are display-only props, the true info is stored in levelData for either of them
+    if player.settings.style == GameModes.Styles.MODERN then
+      replayPlayer:setLevel(player.settings.level)
+    else
+      replayPlayer:setDifficulty(player.settings.difficulty)
+    end
+
+    replay:updatePlayer(i, replayPlayer)
+  end
+
+  return replay
 end
 
 function Match.createFromReplay(replay, supportsPause)

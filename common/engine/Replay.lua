@@ -43,36 +43,6 @@ function Replay:updatePlayer(i, replayPlayer)
   self.players[i] = replayPlayer
 end
 
-function Replay.createNewReplay(match)
-  local replay = Replay(match.engineVersion, match.seed, match.gameMode, match.puzzle)
-  replay:setStage(match.stage)
-  replay:setRanked(match.ranked)
-
-  for i, player in ipairs(match.players) do
-    local replayPlayer = ReplayPlayer(player.name, player.publicId, player.human)
-    replayPlayer:setWins(player.wins)
-    replayPlayer:setCharacterId(player.settings.characterId)
-    replayPlayer:setPanelId(player.settings.panelId)
-    replayPlayer:setLevelData(player.settings.levelData)
-    replayPlayer:setInputMethod(player.settings.inputMethod)
-    replayPlayer:setAllowAdjacentColors(player.stack.allowAdjacentColors)
-    replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
-    replayPlayer:setHealthSettings(player.settings.healthSettings)
-    -- these are display-only props, the true info is stored in levelData for either of them
-    if player.settings.style == GameModes.Styles.MODERN then
-      replayPlayer:setLevel(player.settings.level)
-    else
-      replayPlayer:setDifficulty(player.settings.difficulty)
-    end
-
-    replay:updatePlayer(i, replayPlayer)
-  end
-
-  match.replay = replay
-
-  return replay
-end
-
 function Replay.replayCanBeViewed(replay)
   if replay.engineVersion > consts.ENGINE_VERSION then
     -- replay is from a newer game version, we can't watch
