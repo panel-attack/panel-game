@@ -1,6 +1,7 @@
 local GameModes = require("common.engine.GameModes")
 local levelPresets = require("client.src.LevelPresets")
 local consts = require("common.engine.consts")
+local ReplayPlayer = require("common.engine.ReplayPlayer")
 
 local ReplayV1 = {}
 
@@ -53,7 +54,7 @@ function ReplayV1.transform(legacyReplay)
       -- not saved in v1
       panelId = config.panels,
       -- not saved for engine version v046
-      inputs = Replay.decompressInputString(v1r.in_buf),
+      inputs = ReplayPlayer.decompressInputString(v1r.in_buf),
     }
   }
 
@@ -95,7 +96,7 @@ function ReplayV1.transform(legacyReplay)
         panelId = config.panels,
         -- not saved for engine version v046
         inputMethod = v1r.P2_inputMethod or "controller",
-        inputs = Replay.decompressInputString(v1r.I),
+        inputs = ReplayPlayer.decompressInputString(v1r.I),
         level = v1r.P2_level,
         style = GameModes.Styles.MODERN,
         levelData = levelPresets.getModern(v1r.P2_level)

@@ -1,65 +1,76 @@
 local logger = require("common.lib.logger")
 local GameModes = require("common.engine.GameModes")
 local consts = require("common.engine.consts")
-local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
 require("common.lib.timezones")
 local tableUtils = require("common.lib.tableUtils")
+local ReplayPlayer = require("common.engine.ReplayPlayer")
 
 local REPLAY_VERSION = 2
 
 -- A replay is a particular recording of a play of the game. Temporarily this is just helper methods.
-Replay =
-class(
-    function(self)
-    end
-  )
+Replay = class(function(self, engineVersion, seed, gameMode, puzzle)
+    self.timestamp = to_UTC(os.time())
+    self.engineVersion = engineVersion
+    self.replayVersion = REPLAY_VERSION
+    self.seed = seed
+    -- the gameMode argument in the constructor expects the format specified in GameModes.lua
+    self.gameMode = {
+      stackInteraction = gameMode.stackInteraction,
+      winConditions = gameMode.winConditions or {},
+      gameOverConditions = gameMode.gameOverConditions,
+      timeLimit = gameMode.timeLimit,
+      doCountdown = gameMode.doCountdown or true,
+      puzzle = puzzle,
+    }
+    self.players = {}
+  end
+)
+
+Replay.TYPE = "Replay"
+
+function Replay:setRanked(ranked)
+  self.ranked = ranked
+end
+
+function Replay:setStage(stageId)
+  self.stageId = stageId
+end
+
+-- adds or updates a replay player at the specified index
+-- replayPlayer is a table as defined by the ReplayPlayer class
+function Replay:updatePlayer(i, replayPlayer)
+  self.players[i] = replayPlayer
+end
 
 function Replay.createNewReplay(match)
-  local result = {}
-  result.timestamp = to_UTC(os.time())
-  result.engineVersion = match.engineVersion
-  result.replayVersion = REPLAY_VERSION
-  result.seed = match.seed
-  result.ranked = match.ranked
-  result.stageId = match.stageId
-  result.gameMode = {
-    stackInteraction = match.stackInteraction,
-    winConditions = match.winConditions or {},
-    gameOverConditions = match.gameOverConditions,
-    timeLimit = match.timeLimit,
-    doCountdown = match.doCountdown or true,
-    puzzle = match.puzzle
-  }
+  local replay = Replay(match.engineVersion, match.seed, match.gameMode, match.puzzle)
+  replay:setStage(match.stage)
+  replay:setRanked(match.ranked)
 
-  result.players = {}
-  for i = 1, #match.players do
-    local player = match.players[i]
-    result.players[i] = {
-      name = player.name,
-      wins = player.wins,
-      publicId = player.publicId,
-      settings = {
-        characterId = player.settings.characterId,
-        panelId = player.settings.panelId,
-        levelData = player.settings.levelData,
-        inputMethod = player.settings.inputMethod,
-        allowAdjacentColors = player.stack.allowAdjacentColors,
-        attackEngineSettings = player.settings.attackEngineSettings,
-        healthSettings = player.settings.healthSettings,
-      },
-      human = player.human
-    }
+  for i, player in ipairs(match.players) do
+    local replayPlayer = ReplayPlayer(player.name, player.publicId, player.human)
+    replayPlayer:setWins(player.wins)
+    replayPlayer:setCharacterId(player.settings.characterId)
+    replayPlayer:setPanelId(player.settings.panelId)
+    replayPlayer:setLevelData(player.settings.levelData)
+    replayPlayer:setInputMethod(player.settings.inputMethod)
+    replayPlayer:setAllowAdjacentColors(player.stack.allowAdjacentColors)
+    replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
+    replayPlayer:setHealthSettings(player.settings.healthSettings)
+    -- these are display-only props, the true info is stored in levelData for either of them
     if player.settings.style == GameModes.Styles.MODERN then
-      result.players[i].settings.level = player.settings.level
+      replayPlayer:setLevel(player.settings.level)
     else
-      result.players[i].settings.difficulty = player.settings.difficulty
+      replayPlayer:setDifficulty(player.settings.difficulty)
     end
+
+    replay:updatePlayer(i, replayPlayer)
   end
 
-  match.replay = result
+  match.replay = replay
 
-  return result
+  return replay
 end
 
 function Replay.replayCanBeViewed(replay)
@@ -147,7 +158,7 @@ function Replay.finalizeReplay(match, replay)
     replay.stageId = match.stageId
     for i = 1, #match.players do
       if match.players[i].stack.confirmedInput then
-        replay.players[i].settings.inputs = Replay.compressInputString(table.concat(match.players[i].stack.confirmedInput))
+        replay.players[i].settings.inputs = ReplayPlayer.compressInputString(table.concat(match.players[i].stack.confirmedInput))
       end
     end
     replay.incomplete = match.aborted
@@ -171,117 +182,6 @@ function Replay.writeReplayFile(path, filename, replayJSON)
       love.filesystem.write(path .. "/" .. filename, replayJSON)
     end
   )
-end
-
--- Returns if the unicode codepoint (representative number) is either the left or right parenthesis
-local function codePointIsParenthesis(codePoint)
-  if codePoint >= 40 and codePoint <= 41 then
-    return true
-  end
-  return false
-end
-
--- Returns if the unicode codepoint (representative number) is a digit from 0-9
-local function codePointIsDigit(codePoint)
-  if codePoint >= 48 and codePoint <= 57 then
-    return true
-  end
-  return false
-end
-
-function Replay.compressInputString(inputs)
-  assert(inputs ~= nil, "string must be provided for compression")
-  assert(type(inputs) == "string", "input to be compressed must be a string")
-  if string.len(inputs) == 0 then
-    return inputs
-  end
-  
-  local compressedTable = {}
-  local function addToTable(codePoint, repeatCount)
-    local currentInput = utf8.char(codePoint)
-    -- write the input
-    if tonumber(currentInput) == nil then
-      compressedTable[#compressedTable+1] = currentInput .. repeatCount
-    else
-      local completeInput = "(" .. currentInput
-      for j = 2, repeatCount do
-        completeInput = completeInput .. currentInput
-      end
-      compressedTable[#compressedTable+1] = completeInput .. ")"
-    end
-  end
-
-  local previousCodePoint = nil
-  local repeatCount = 1
-  for p, codePoint in utf8.codes(inputs) do
-    if codePointIsDigit(codePoint) and codePointIsParenthesis(previousCodePoint) == true then
-      -- Detected a digit enclosed in parentheses in the inputs, the inputs are already compressed.
-      return inputs
-    end
-    if p > 1 then
-      if previousCodePoint ~= codePoint then
-        addToTable(previousCodePoint, repeatCount)
-        repeatCount = 1
-      else
-        repeatCount = repeatCount + 1
-      end
-    end
-    previousCodePoint = codePoint
-  end
-  -- add the final entry without having to check for table length in every iteration
-  addToTable(previousCodePoint, repeatCount)
-
-  return table.concat(compressedTable)
-end
-
-function Replay.decompressInputString(inputs)
-  local previousCodePoint = nil
-  local inputChunks = {}
-  local numberString = nil
-  local characterCodePoint = nil
-  -- Go through the characters one by one, saving character and then the number sequence and after passing it writing out that many characters
-  for p, codePoint in utf8.codes(inputs) do
-    if p > 1 then
-      if codePointIsDigit(codePoint) then 
-        local number = utf8.char(codePoint)
-        if numberString == nil then
-          characterCodePoint = previousCodePoint
-          numberString = ""
-        end
-        numberString = numberString .. number
-      else
-        if numberString ~= nil then
-          if codePointIsParenthesis(characterCodePoint) then
-            inputChunks[#inputChunks+1] = numberString
-          else
-            local character = utf8.char(characterCodePoint)
-            local repeatCount = tonumber(numberString)
-            inputChunks[#inputChunks+1] = string.rep(character, repeatCount)
-          end
-          numberString = nil
-        end
-        if previousCodePoint == codePoint then
-          -- Detected two consecutive letters or symbols in the inputs, the inputs are not compressed.
-          return inputs
-        else
-          -- Nothing to do yet
-        end
-      end
-    end
-    previousCodePoint = codePoint
-  end
-
-  local result
-  if numberString ~= nil then
-    local character = utf8.char(characterCodePoint)
-    local repeatCount = tonumber(numberString)
-    inputChunks[#inputChunks+1] = string.rep(character, repeatCount)
-    result = table.concat(inputChunks)
-  else
-    -- We never encountered a single number, this string wasn't compressed
-    result = inputs
-  end
-  return result
 end
 
 return Replay

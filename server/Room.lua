@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local Replay = require("common.engine.Replay")
+local ReplayPlayer = require("common.engine.ReplayPlayer")
 local ServerProtocol = require("common.network.ServerProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 
@@ -248,8 +249,8 @@ function Room:add_spectator(new_spectator_connection)
     self.replay.vs.in_buf = table.concat(self.inputs[1])
     self.replay.vs.I = table.concat(self.inputs[2])
     if COMPRESS_REPLAYS_ENABLED then
-      self.replay.vs.in_buf = Replay.compressInputString(self.replay.vs.in_buf)
-      self.replay.vs.I = Replay.compressInputString(self.replay.vs.I)
+      self.replay.vs.in_buf = ReplayPlayer.compressInputString(self.replay.vs.in_buf)
+      self.replay.vs.I = ReplayPlayer.compressInputString(self.replay.vs.I)
     end
   end
 
@@ -432,8 +433,8 @@ function Room:resolve_game_outcome()
         self.replay.vs.in_buf = table.concat(self.inputs[1])
         self.replay.vs.I = table.concat(self.inputs[2])
         if COMPRESS_REPLAYS_ENABLED then
-          self.replay.vs.in_buf = Replay.compressInputString(self.replay.vs.in_buf)
-          self.replay.vs.I = Replay.compressInputString(self.replay.vs.I)
+          self.replay.vs.in_buf = ReplayPlayer.compressInputString(self.replay.vs.in_buf)
+          self.replay.vs.I = ReplayPlayer.compressInputString(self.replay.vs.I)
           logger.debug("Compressed vs I/in_buf")
           logger.debug("saving compressed replay as " .. path .. sep .. filename)
         else
