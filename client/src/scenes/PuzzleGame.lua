@@ -14,8 +14,6 @@ local PuzzleGame = class(
     self.keepMusic = true
     self.fadeOutMusicOnGameOver = false
     self.saveReplay = false
-
-    self:load(sceneParams)
   end,
   GameBase
 )

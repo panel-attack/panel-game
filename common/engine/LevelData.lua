@@ -42,7 +42,7 @@ local LevelData = class(function(self)
     --formula 2: does not use coefficients
     -- coefficient = 20,
     --equivalent to coefficient in use but may be different in danger
-    -- dangerCoeffiecient = 20,
+    -- dangerCoefficient = 20,
   }
 
   -- the frameConstants table contains information relevant for panels physics
@@ -157,7 +157,7 @@ function LevelData:setStopCoefficient(coefficient)
 end
 
 function LevelData:setStopDangerCoefficient(dangerCoefficient)
-  self.stop.dangerCoeffiecient = dangerCoefficient
+  self.stop.dangerCoefficient = dangerCoefficient
   return self
 end
 

@@ -25,7 +25,6 @@ local VsSelfGame = require("client.src.scenes.VsSelfGame")
 local GameBase = require("client.src.scenes.GameBase")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 
-
 -- @module MainMenu
 -- Scene for the main menu
 local MainMenu = class(function(self, sceneParams)

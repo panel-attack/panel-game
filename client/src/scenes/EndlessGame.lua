@@ -8,7 +8,6 @@ local EndlessGame = class(
   function (self, sceneParams)
     self.nextScene = "EndlessMenu"
 
-    self:load(sceneParams)
     self.match:connectSignal("matchEnded", self, self.onMatchEnded)
   end,
   GameBase

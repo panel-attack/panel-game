@@ -597,7 +597,7 @@ function Match:hasLocalPlayer()
 end
 
 function Match:createNewReplay()
-  local replay = Replay(self.engineVersion, self.seed, self.gameMode, self.puzzle)
+  local replay = Replay(self.engineVersion, self.seed, self, self.puzzle)
   replay:setStage(self.stage)
   replay:setRanked(self.ranked)
 

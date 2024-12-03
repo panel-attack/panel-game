@@ -40,9 +40,13 @@ local GameBase = class(
       currentTime = nil,
       expectedFrameCount = nil
     }
+
+    self:load(sceneParams)
   end,
   Scene
 )
+
+GameBase.name = "GameBase"
 
 -- begin abstract functions
 

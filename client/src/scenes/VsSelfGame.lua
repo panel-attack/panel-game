@@ -7,7 +7,6 @@ local VsSelfGame = class(
   function (self, sceneParams)
     self.nextScene = "CharacterSelectVsSelf"
 
-    self:load(sceneParams)
     self.match:connectSignal("matchEnded", self, self.onMatchEnded)
   end,
   GameBase

@@ -11,7 +11,6 @@ local input = require("common.lib.inputManager")
 local PortraitGame = class(function(self, sceneParams)
   self.nextScene = sceneParams.nextScene
 
-  self:load(sceneParams)
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
 end,
 GameBase)
