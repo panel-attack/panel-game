@@ -1,5 +1,4 @@
 local GameBase = require("client.src.scenes.GameBase")
-local Replay = require("common.engine.Replay")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -21,16 +20,6 @@ local Game1pChallenge = class(function(self, sceneParams)
 end, GameBase)
 
 Game1pChallenge.name = "Game1pChallenge"
-
-function Game1pChallenge:onMatchEnded(match)
-  local extraFilename = "diff-" .. GAME.battleRoom.difficulty .. "-stage-" .. GAME.battleRoom.stageIndex
-  if match.replay.winnerIndex then
-    extraFilename = extraFilename .. "-P" .. match.replay.winnerIndex .. "wins"
-  else
-    extraFilename = extraFilename .. "-draw"
-  end
-  Replay.finalizeAndWriteReplay("Challenge Mode", extraFilename, match.replay)
-end
 
 function Game1pChallenge:startNextScene()
   if GAME.battleRoom.challengeComplete then

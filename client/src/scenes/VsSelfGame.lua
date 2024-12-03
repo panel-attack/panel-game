@@ -1,5 +1,4 @@
 local GameBase = require("client.src.scenes.GameBase")
-local Replay = require("common.engine.Replay")
 local class = require("common.lib.class")
 
 --@module endlessGame
@@ -19,7 +18,6 @@ VsSelfGame.name = "VsSelfGame"
 function VsSelfGame:onMatchEnded(match)
   local P1 = match.players[1].stack
   GAME.scores:saveVsSelfScoreForLevel(P1.analytic.data.sent_garbage_lines, P1.level)
-  Replay.finalizeAndWriteReplay("Vs Self", "vsSelf-L" .. P1.level, match.replay)
 end
 
 return VsSelfGame

@@ -13,6 +13,7 @@ local UpdatingImage = require("client.src.graphics.UpdatingImage")
 local prof = require("common.lib.jprof.jprof")
 local Menu = require("client.src.ui.Menu")
 local MenuItem = require("client.src.ui.MenuItem")
+local FileUtils = require("client.src.FileUtils")
 
 --@module GameBase
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
@@ -21,6 +22,7 @@ local GameBase = class(
     -- must be set in child class
     self.nextScene = nil
     self.nextSceneParams = {}
+    self.saveReplay = true
 
     -- set in load
     self.text = nil
@@ -426,6 +428,10 @@ function GameBase:genericOnMatchEnded(match)
   -- matches always sort players to have locals in front so if 1 isn't local, none is
   if match.players[1].isLocal then
     analytics.game_ends(match.players[1].stack.analytic)
+  end
+
+  if self.saveReplay then
+    FileUtils.saveReplay(match.replay)
   end
 end
 

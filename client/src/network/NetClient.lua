@@ -10,7 +10,7 @@ local Signal = require("common.lib.signal")
 local CharacterSelect2p = require("client.src.scenes.CharacterSelect2p")
 local SoundController = require("client.src.music.SoundController")
 local GameCatchUp = require("client.src.scenes.GameCatchUp")
-local Game2pVs = require("client.src.scenes.Game2pVs")
+local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
 
 
@@ -255,7 +255,7 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
   self.room = GAME.battleRoom
   if GAME.battleRoom.match then
     self.state = states.INGAME
-    local vsScene = Game2pVs({match = GAME.battleRoom.match})
+    local vsScene = GameBase({match = GAME.battleRoom.match})
     local catchUp = GameCatchUp(vsScene)
     -- need to push character select, otherwise the pop on match end will return to lobby
     -- directly add to the stack so it isn't getting displayed

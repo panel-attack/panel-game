@@ -43,6 +43,90 @@ function Replay:updatePlayer(i, replayPlayer)
   self.players[i] = replayPlayer
 end
 
+function Replay:generatePath(pathSeparator)
+  local now = os.date("*t", self.timestamp)
+  local sep = pathSeparator
+  local path = "replays" .. sep .. "v" .. self.engineVersion .. sep .. string.format("%04d" .. sep .. "%02d" .. sep .. "%02d", now.year, now.month, now.day)
+
+  if self.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
+    if self.gameMode.timeLimit then
+      path = path .. sep .. "Time Attack"
+    else
+      path = path .. sep .. "Endless"
+    end
+  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
+    path = path .. sep .. "Vs Self"
+  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+    path = path .. sep .. "Training"
+  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+    if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
+      path = path .. sep .. "Challenge Mode"
+    else
+      local names = {}
+      for i, player in ipairs(self.players) do
+        names[i] = player.name
+      end
+      -- sort player names alphabetically for folder name so we don't have a folder "a-vs-b" and also "b-vs-a"
+      table.sort(names)
+      path = path .. sep .. table.concat(names, "-vs-")
+    end
+  end
+
+  return path
+end
+
+function Replay:generateFileName()
+  local time = os.date("*t", self.timestamp)
+  local filename = "v" .. self.engineVersion .. "-"
+  filename = filename .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", time.year, time.month, time.day, time.hour, time.min, time.sec)
+
+  for _, player in ipairs(self.players) do
+    if player.human then
+      filename = filename .. "-" .. player.name
+      if player.settings.level then
+        filename = filename .. "-L" .. player.settings.level
+      elseif player.settings.difficulty then
+        filename = filename .. "-Spd" .. player.settings.levelData.startingSpeed
+        filename = filename .. "-Dif" .. player.settings.difficulty
+      end
+    else
+      filename = filename .. "-stage-" .. player.settings.difficulty .. "-" .. (player.settings.level or 0)
+    end
+  end
+
+  if self.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
+    if self.gameMode.timeLimit then
+      filename = filename .. "-timeattack"
+    else
+      filename = filename .. "-endless"
+    end
+  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
+    filename = filename .. "-vsSelf"
+  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+    filename = filename .. "-training"
+  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+    if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
+      filename = filename .. "-challenge"
+    else
+      filename = filename .. "-VS-" .. (self.ranked and "ranked" or "casual")
+    end
+
+    if not self.incomplete then
+      if self.winnerIndex then
+        filename = filename .. "-P" .. self.winnerIndex .. "wins"
+      else
+        filename = filename .. "-draw"
+      end
+    end
+  end
+
+  if self.incomplete then
+    filename = filename .. "-INCOMPLETE"
+  end
+
+  return filename
+end
+
 function Replay.replayCanBeViewed(replay)
   if replay.engineVersion > consts.ENGINE_VERSION then
     -- replay is from a newer game version, we can't watch
@@ -65,7 +149,7 @@ function Replay.load(jsonData)
     return false, nil
   else
     if not jsonData.engineVersion then
-      -- really really bold assumption; serverside replays haven't been tracking engineVersion ever
+      -- really really bold assumption; serverside replays haven't been tracking engineVersion until very late into v047
       jsonData.engineVersion = "046"
     end
     if not jsonData.replayVersion then
@@ -95,31 +179,6 @@ function Replay.addAnalyticsDataToReplay(match, replay)
   end
 
   return replay
-end
-
-function Replay.finalizeAndWriteReplay(extraPath, extraFilename, replay)
-  if replay.incomplete then
-    extraFilename = extraFilename .. "-INCOMPLETE"
-  end
-  local path, filename = Replay.finalReplayFilename(extraPath, extraFilename)
-  local replayJSON = json.encode(replay)
-  Replay.writeReplayFile(path, filename, replayJSON)
-end
-
-function Replay.finalReplayFilename(extraPath, extraFilename)
-  local now = os.date("*t", to_UTC(os.time()))
-  local sep = "/"
-  local path = "replays" .. sep .. "v" .. consts.ENGINE_VERSION .. sep .. string.format("%04d" .. sep .. "%02d" .. sep .. "%02d", now.year, now.month, now.day)
-  if extraPath then
-    path = path .. sep .. extraPath
-  end
-  local filename = "v" .. consts.ENGINE_VERSION .. "-" .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec)
-  if extraFilename then
-    filename = filename .. "-" .. extraFilename
-  end
-  filename = filename .. ".json"
-  logger.debug("saving replay as " .. path .. sep .. filename)
-  return path, filename
 end
 
 function Replay.finalizeReplay(match, replay)

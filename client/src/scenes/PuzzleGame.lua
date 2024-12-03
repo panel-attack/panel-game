@@ -13,6 +13,7 @@ local PuzzleGame = class(
     self.inputConfiguration = nil
     self.keepMusic = true
     self.fadeOutMusicOnGameOver = false
+    self.saveReplay = false
 
     self:load(sceneParams)
   end,

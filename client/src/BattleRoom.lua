@@ -11,7 +11,7 @@ local ModController = require("client.src.mods.ModController")
 local ModLoader = require("client.src.mods.ModLoader")
 local Match = require("common.engine.Match")
 require("client.src.graphics.match_graphics")
-local Game2pVs = require("client.src.scenes.Game2pVs")
+local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
 
@@ -51,7 +51,7 @@ function BattleRoom.createFromMatch(match)
   gameMode.winConditions = deepcpy(match.winConditions)
   gameMode.gameOverConditions = deepcpy(match.gameOverConditions)
 
-  local battleRoom = BattleRoom(gameMode, Game2pVs)
+  local battleRoom = BattleRoom(gameMode, GameBase)
 
   for i = 1, #match.players do
     battleRoom:addPlayer(match.players[i])
@@ -107,7 +107,7 @@ function BattleRoom.createFromServerMessage(message)
       battleRoom.mode.setupScene = gameMode.setupScene
       battleRoom.mode.richPresenceLabel = gameMode.richPresenceLabel
     else
-      battleRoom = BattleRoom(gameMode, Game2pVs)
+      battleRoom = BattleRoom(gameMode, GameBase)
       for i = 1, #message.players do
         local player = Player(message.players[i].name, message.players[i].playerNumber, false)
         battleRoom:addPlayer(player)
@@ -123,7 +123,7 @@ function BattleRoom.createFromServerMessage(message)
     end
     battleRoom.spectating = true
   else
-    battleRoom = BattleRoom(gameMode, Game2pVs)
+    battleRoom = BattleRoom(gameMode, GameBase)
     message = ServerMessages.sanitizeCreateRoom(message)
     -- player 1 is always the local player so that data can be ignored in favor of local data
     battleRoom:addPlayer(GAME.localPlayer)

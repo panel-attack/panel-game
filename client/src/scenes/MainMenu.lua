@@ -22,7 +22,7 @@ local DesignHelper = require("client.src.scenes.DesignHelper")
 local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local EndlessGame = require("client.src.scenes.EndlessGame")
 local VsSelfGame = require("client.src.scenes.VsSelfGame")
-local Game2pVs = require("client.src.scenes.Game2pVs")
+local GameBase = require("client.src.scenes.GameBase")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 
 
@@ -77,7 +77,7 @@ function MainMenu:createMainMenu()
       switchToScene(Lobby({serverIp = "panelattack.com"}))
     end),
     MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), Game2pVs)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
       if GAME.battleRoom then
         switchToScene(CharacterSelect2p())
       end

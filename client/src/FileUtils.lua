@@ -151,4 +151,16 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   love.filesystem.write(filePath .. "." .. format, data)
 end
 
+function fileUtils.saveReplay(replay)
+  local path = replay:generatePath("/")
+  local filename = replay:generateFileName()
+  local replayJson = json.encode(replay)
+  pcall(
+    function()
+      love.filesystem.createDirectory(path)
+      love.filesystem.write(path .. "/" .. filename, replayJson)
+    end
+  )
+end
+
 return fileUtils
