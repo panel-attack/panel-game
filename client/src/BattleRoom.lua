@@ -14,6 +14,7 @@ require("client.src.graphics.match_graphics")
 local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
+local consts = require("common.engine.consts")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
 BattleRoom = class(function(self, mode, gameScene)
@@ -95,6 +96,9 @@ function BattleRoom.createFromServerMessage(message)
         end
       end
       local replay = ReplayV1.transform(message.replay)
+      if not replay.engineVersion then
+        replay.engineVersion = consts.ENGINE_VERSION
+      end
       logger.debug("post transform:\n" .. table_to_string(replay))
       local match = Match.createFromReplay(replay, false)
       for i, player in ipairs(match.players) do
