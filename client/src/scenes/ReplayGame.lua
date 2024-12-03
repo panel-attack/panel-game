@@ -115,11 +115,6 @@ function ReplayGame:customDraw()
   GraphicsUtil.printf(playbackText, textPos[0], textPos[1], consts.CANVAS_WIDTH, "center", nil, 1, 10)
 end
 
-function ReplayGame:customGameOverSetup()
-  self.nextScene = "ReplayBrowser"
-  self.nextSceneParams = nil
-end
-
 function ReplayGame:drawHUD()
   for i, stack in ipairs(self.match.stacks) do
     if config.show_ingame_infos then

@@ -6,8 +6,6 @@ local GameModes = require("common.engine.GameModes")
 -- Scene for an time attack mode instance of the game
 local TimeAttackGame = class(
   function (self, sceneParams)
-    self.nextScene = "TimeAttackMenu"
-
     self.match:connectSignal("matchEnded", self, self.onMatchEnded)
   end,
   GameBase

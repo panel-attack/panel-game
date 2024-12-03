@@ -9,8 +9,6 @@ local Label = require("client.src.ui.Label")
 local input = require("common.lib.inputManager")
 
 local PortraitGame = class(function(self, sceneParams)
-  self.nextScene = sceneParams.nextScene
-
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
 end,
 GameBase)

@@ -5,8 +5,6 @@ local class = require("common.lib.class")
 -- Scene for an endless mode instance of the game
 local VsSelfGame = class(
   function (self, sceneParams)
-    self.nextScene = "CharacterSelectVsSelf"
-
     self.match:connectSignal("matchEnded", self, self.onMatchEnded)
   end,
   GameBase

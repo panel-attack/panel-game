@@ -6,8 +6,6 @@ local GameModes = require("common.engine.GameModes")
 -- Scene for an endless mode instance of the game
 local EndlessGame = class(
   function (self, sceneParams)
-    self.nextScene = "EndlessMenu"
-
     self.match:connectSignal("matchEnded", self, self.onMatchEnded)
   end,
   GameBase

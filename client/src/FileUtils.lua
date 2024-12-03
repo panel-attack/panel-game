@@ -155,6 +155,7 @@ function fileUtils.saveReplay(replay)
   local path = replay:generatePath("/")
   local filename = replay:generateFileName()
   local replayJson = json.encode(replay)
+  Replay.lastPath = path
   pcall(
     function()
       love.filesystem.createDirectory(path)

@@ -8,7 +8,6 @@ local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapSce
 -- @module Game1pChallenge
 -- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
-  self.nextScene = "CharacterSelectChallenge"
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
   self.match:connectSignal("pauseChanged", self, self.pauseChanged)
   self.totalTimeQuads = {}

@@ -19,9 +19,6 @@ local FileUtils = require("client.src.FileUtils")
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 local GameBase = class(
   function (self, sceneParams)
-    -- must be set in child class
-    self.nextScene = nil
-    self.nextSceneParams = {}
     self.saveReplay = true
 
     -- set in load

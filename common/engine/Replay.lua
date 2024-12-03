@@ -199,18 +199,4 @@ function Replay.finalizeReplay(match, replay)
   end
 end
 
--- writes a replay file of the given path and filename
-function Replay.writeReplayFile(path, filename, replayJSON)
-  assert(path ~= nil)
-  assert(filename ~= nil)
-  assert(replayJSON ~= nil)
-  Replay.lastPath = path
-  pcall(
-    function()
-      love.filesystem.createDirectory(path)
-      love.filesystem.write(path .. "/" .. filename, replayJSON)
-    end
-  )
-end
-
 return Replay
