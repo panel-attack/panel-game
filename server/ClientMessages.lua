@@ -2,6 +2,7 @@
 -- into the format used by the server's internals
 -- so that changes in the ClientProtocol only affect this abstraction layer and not server code
 -- and changes in server code likewise only affect this abstraction layer instead of the ClientProtocol
+local logger = require("common.lib.logger")
 
 local ClientMessages = {}
 
@@ -12,7 +13,7 @@ function ClientMessages.sanitizeMessage(clientMessage)
   elseif clientMessage.game_request then
     return ClientMessages.sanitizeGameRequest(clientMessage)
   elseif clientMessage.menu_state then
-    return ClientMessages.sanitizeMenuState(clientMessage)
+    return ClientMessages.sanitizeMenuState(clientMessage.menu_state)
   elseif clientMessage.spectate_request then
     return ClientMessages.sanitizeSpectateRequest(clientMessage)
   elseif clientMessage.leaderboard_request then
@@ -49,6 +50,8 @@ function ClientMessages.sanitizeMenuState(playerSettings)
   sanitized.stage = playerSettings.stage
   sanitized.stage_is_random = playerSettings.stage_is_random
   sanitized.wants_ranked_match = playerSettings.ranked
+  sanitized.loaded = playerSettings.loaded
+  sanitized.wants_ready = playerSettings.wants_ready
 
   return {menu_state = sanitized}
 end

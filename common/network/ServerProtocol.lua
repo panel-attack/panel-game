@@ -7,7 +7,7 @@ local ServerProtocol = {}
 -- Helper methods for converting to ServerProtocol table formats --
 -------------------------------------------------------------------
 
-function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked)
+function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked, wantsReady, loaded)
   local settings = {
     cursor = "__Ready",
     stage = stage,
@@ -18,7 +18,9 @@ function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedSta
     panels_dir = panels,
     level = level,
     ranked = wantsRanked,
-    inputMethod = inputMethod
+    inputMethod = inputMethod,
+    wants_ready = wantsReady,
+    loaded = loaded,
   }
   return settings
 end

@@ -8,6 +8,7 @@ local Player = require("server.Player")
 local ClientMessages = require("server.ClientMessages")
 local ServerProtocol = require("common.network.ServerProtocol")
 local Signal = require("common.lib.signal")
+local util = require("common.lib.util")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
 Connection =
@@ -38,6 +39,8 @@ Connection =
     self.inputMethod = "controller"
     self.level = nil
     self.panels_dir = nil
+    self.wantsReady = nil
+    self.loaded = nil
     self.ready = nil
     self.stage = nil
     self.stage_is_random = nil
@@ -58,7 +61,9 @@ function Connection:getSettings()
     self.character,
     self.character_is_random,
     self.panels_dir,
-    self.wants_ranked_match
+    self.wants_ranked_match,
+    self.wantsReady,
+    self.loaded
   )
 end
 
@@ -206,8 +211,10 @@ end
 
 -- Handle clientMessageTypes.jsonMessage
 function Connection:J(message)
+  -- logger.debug("Connection " .. self.index .. " Incoming JSON:\n" .. message)
   message = json.decode(message)
   message = ClientMessages.sanitizeMessage(message)
+  -- logger.debug("Post-sanitization:\n" .. table_to_string(message))
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
   elseif self.state == "not_logged_in" then
@@ -388,6 +395,14 @@ function Connection:updatePlayerSettings(playerSettings)
 
   if playerSettings.ranked ~= nil then
     self.wants_ranked_match = playerSettings.ranked
+  end
+
+  if playerSettings.wants_ready ~= nil then
+    self.wantsReady = playerSettings.wants_ready
+  end
+
+  if playerSettings.loaded ~= nil then
+    self.loaded = playerSettings.loaded
   end
 
   self:emitSignal("settingsUpdated", self)

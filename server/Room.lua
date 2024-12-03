@@ -122,7 +122,7 @@ function Room:onPlayerSettingsUpdate(player)
       local settings = player:getSettings()
       settings.player_number = player.player_number
       local msg = ServerProtocol.menuState(settings)
-      self.broadcastJson(msg, player)
+      self:broadcastJson(msg, player)
     end
   end
 end
@@ -130,6 +130,9 @@ end
 function Room:start_match()
   local a = self.a
   local b = self.b
+
+  a.wantsReady = false
+  b.wantsReady = false
 
   if (a.player_number ~= 1) then
     logger.debug("players a and b need to be swapped.")
