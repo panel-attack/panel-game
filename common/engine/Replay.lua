@@ -9,7 +9,7 @@ local ReplayPlayer = require("common.engine.ReplayPlayer")
 local REPLAY_VERSION = 2
 
 -- A replay is a particular recording of a play of the game. Temporarily this is just helper methods.
-Replay = class(function(self, engineVersion, seed, gameMode, puzzle)
+local Replay = class(function(self, engineVersion, seed, gameMode, puzzle)
     self.timestamp = to_UTC(os.time())
     self.engineVersion = engineVersion
     self.replayVersion = REPLAY_VERSION

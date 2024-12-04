@@ -186,34 +186,4 @@ function LevelData:setPop(pop)
   return self
 end
 
--- returns a data-only export fit for use in network
-function LevelData:export()
-  local data =
-  {
-    startingSpeed = self.startingSpeed,
-    speedIncreaseMode = self.speedIncreaseMode,
-    shockFrequency = self.shockFrequency,
-    shockCap = self.shockCap,
-    colors = self.colors,
-    maxHealth = self.maxHealth,
-    stop = {
-      formula = self.stop.formula,
-      comboConstant = self.stop.comboConstant,
-      chainConstant = self.stop.chainConstant,
-      dangerConstant = self.stop.dangerConstant,
-      coefficient = self.stop.coefficient,
-      dangerCoefficient = self.stop.dangerCoefficient,
-    },
-    frameConstants = {
-      HOVER = self.frameConstants.HOVER,
-      GARBAGE_HOVER = self.frameConstants.GARBAGE_HOVER,
-      FLASH = self.frameConstants.FLASH,
-      FACE = self.frameConstants.FACE,
-      POP = self.frameConstants.POP,
-    }
-  }
-
-  return data
-end
-
 return LevelData
