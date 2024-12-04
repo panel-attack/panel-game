@@ -7,7 +7,7 @@ local ServerProtocol = {}
 -- Helper methods for converting to ServerProtocol table formats --
 -------------------------------------------------------------------
 
-function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked, wantsReady, loaded)
+function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked, wantsReady, loaded, publicId)
   local settings = {
     cursor = "__Ready",
     stage = stage,
@@ -21,12 +21,13 @@ function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedSta
     inputMethod = inputMethod,
     wants_ready = wantsReady,
     loaded = loaded,
+    publicId = publicId,
   }
   return settings
 end
 
 -- rating in this case is not the table returned from toRating but only the "new" value
-function ServerProtocol.toDumbSettings(character, level, panels, playerNumber, inputMethod, rating)
+function ServerProtocol.toDumbSettings(character, level, panels, playerNumber, inputMethod, rating, publicId)
   local playerSettings =
   {
     character = character,
@@ -35,6 +36,7 @@ function ServerProtocol.toDumbSettings(character, level, panels, playerNumber, i
     player_number = playerNumber,
     inputMethod = inputMethod,
     rating = rating,
+    publicId = publicId,
   }
 
   return playerSettings
@@ -74,7 +76,10 @@ end
 ----------------------------
 
 function ServerProtocol.menuState(settings, playerNumber)
-  local menuStateMessage = {menu_state = settings, player_number = playerNumber}
+  local menuStateMessage = {
+    menu_state = settings,
+    player_number = playerNumber,
+  }
 
   return {
     messageType = msgTypes.jsonMessage,
@@ -179,7 +184,7 @@ function ServerProtocol.lobbyState(unpaired, rooms, allPlayers)
   }
 end
 
-function ServerProtocol.approveLogin(notice, newId, newName, oldName)
+function ServerProtocol.approveLogin(notice, newId, newName, oldName, publicId)
   local approveLoginMessage =
   {
     login_successful = true,
@@ -187,7 +192,8 @@ function ServerProtocol.approveLogin(notice, newId, newName, oldName)
     new_user_id = newId,
     new_name = newName,
     old_name = oldName,
-    name_changed = (newName ~= nil)
+    name_changed = (newName ~= nil),
+    publicId = publicId,
   }
 
   return {

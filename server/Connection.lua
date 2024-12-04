@@ -63,7 +63,8 @@ function Connection:getSettings()
     self.panels_dir,
     self.wants_ranked_match,
     self.wantsReady,
-    self.loaded
+    self.loaded,
+    self.player.publicPlayerID
   )
 end
 
@@ -74,7 +75,8 @@ function Connection:getDumbSettings(rating)
     self.panels_dir,
     self.player_number,
     self.inputMethod,
-    rating
+    rating,
+    self.player.publicPlayerID
   )
 end
 
@@ -348,7 +350,7 @@ function Connection:login(user_id, name, IP_logging_in, port, engineVersion, pla
     end
 
     message.login_successful = true
-    self:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name))
+    self:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name, self.player.publicPlayerID))
 
     logger.warn("Login from " .. name .. " with ip: " .. IP_logging_in .. " publicPlayerID: " .. self.player.publicPlayerID)
   end
