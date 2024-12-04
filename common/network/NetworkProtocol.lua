@@ -5,7 +5,8 @@ local NetworkProtocol = {}
 -- Version 001 was super legacy
 -- Version 002 we supported unicode JSON
 -- Version 003 we updated login requirements and started sending the network version
-NetworkProtocol.NETWORK_VERSION = "003"
+-- Version 004 server communicates replays in a new standardised format
+NetworkProtocol.NETWORK_VERSION = "004"
 
 local messageEndMarker = "←J←"
 
