@@ -53,7 +53,7 @@ function ClientMessages.sanitizeMenuState(playerSettings)
   sanitized.loaded = playerSettings.loaded
   sanitized.wants_ready = playerSettings.wants_ready
 
-  return {menu_state = sanitized}
+  return {playerSettings = sanitized}
 end
 
 function ClientMessages.sanitizeLoginRequest(loginRequest)

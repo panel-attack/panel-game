@@ -78,22 +78,52 @@ function Connection:getDumbSettings(rating)
   )
 end
 
-function Connection:menu_state()
-  local state = {
-    cursor = self.cursor,
-    stage = self.stage,
-    stage_is_random = self.stage_is_random,
-    ready = self.ready,
-    character = self.character,
-    character_is_random = self.character_is_random,
-    character_display_name = self.character_display_name,
-    panels_dir = self.panels_dir,
-    level = self.level,
-    ranked = self.wants_ranked_match,
-    inputMethod = self.inputMethod
-  }
-  return state
-  --note: player_number here is the player_number of the connection as according to the server, not the "which" of any Stack
+function Connection:updatePlayerSettings(playerSettings)
+  if playerSettings.character ~= nil then
+    self.character = playerSettings.character
+  end
+
+  if playerSettings.character_is_random ~= nil then
+    self.character_is_random = playerSettings.character_is_random
+  end
+  -- self.cursor = playerSettings.cursor -- nil when from login
+  if playerSettings.inputMethod ~= nil then
+    self.inputMethod = (playerSettings.inputMethod or "controller")
+  end
+
+  if playerSettings.level ~= nil then
+    self.level = playerSettings.level
+  end
+
+  if playerSettings.panels_dir ~= nil then
+    self.panels_dir = playerSettings.panels_dir
+  end
+
+  if playerSettings.ready ~= nil then
+    self.ready = playerSettings.ready -- nil when from login
+  end
+
+  if playerSettings.stage ~= nil then
+    self.stage = playerSettings.stage
+  end
+
+  if playerSettings.stage_is_random ~= nil then
+    self.stage_is_random = playerSettings.stage_is_random
+  end
+
+  if playerSettings.ranked ~= nil then
+    self.wants_ranked_match = playerSettings.ranked
+  end
+
+  if playerSettings.wants_ready ~= nil then
+    self.wantsReady = playerSettings.wants_ready
+  end
+
+  if playerSettings.loaded ~= nil then
+    self.loaded = playerSettings.loaded
+  end
+
+  self:emitSignal("settingsUpdated", self)
 end
 
 local function send(connection, message)
@@ -232,9 +262,9 @@ function Connection:J(message)
     self:sendJson(ServerProtocol.sendLeaderboard(leaderboard:get_report(self)))
   elseif message.spectate_request then
     self:handleSpectateRequest(message)
-  elseif self.state == "character select" and message.menu_state then
+  elseif self.state == "character select" and message.playerSettings then
     -- Note this also starts the game if everything is ready from both players character select settings
-    self:handleMenuStateMessage(message)
+    self:updatePlayerSettings(message.playerSettings)
   elseif self.state == "playing" and message.taunt then
     self:handleTaunt(message)
   elseif self.state == "playing" and message.game_over then
@@ -283,14 +313,14 @@ function Connection:login(user_id, name, IP_logging_in, port, engineVersion, pla
     if self.server.playerbase.players[user_id] ~= name then
       local oldName = self.server.playerbase.players[user_id]
       self.server:changeUsername(user_id, name)
-      
+
       logger.warn(user_id .. " changed name " .. oldName .. " to " .. name)
 
       message.name_changed = true
       message.old_name = oldName
       message.new_name = name
     end
-    
+
     self.name = name
     self.server.nameToConnectionIndex[name] = self.index
     self:updatePlayerSettings(playerSettings)
@@ -360,54 +390,6 @@ function Connection:canLogin(userID, name, IP_logging_in, engineVersion)
   return denyReason, playerBan
 end
 
-function Connection:updatePlayerSettings(playerSettings)
-  if playerSettings.character ~= nil then
-    self.character = playerSettings.character
-  end
-
-  if playerSettings.character_is_random ~= nil then
-    self.character_is_random = playerSettings.character_is_random
-  end
-  -- self.cursor = playerSettings.cursor -- nil when from login
-  if playerSettings.inputMethod ~= nil then
-    self.inputMethod = (playerSettings.inputMethod or "controller")
-  end
-
-  if playerSettings.level ~= nil then
-    self.level = playerSettings.level
-  end
-
-  if playerSettings.panels_dir ~= nil then
-    self.panels_dir = playerSettings.panels_dir
-  end
-
-  if playerSettings.ready ~= nil then
-    self.ready = playerSettings.ready -- nil when from login
-  end
-
-  if playerSettings.stage ~= nil then
-    self.stage = playerSettings.stage
-  end
-
-  if playerSettings.stage_is_random ~= nil then
-    self.stage_is_random = playerSettings.stage_is_random
-  end
-
-  if playerSettings.ranked ~= nil then
-    self.wants_ranked_match = playerSettings.ranked
-  end
-
-  if playerSettings.wants_ready ~= nil then
-    self.wantsReady = playerSettings.wants_ready
-  end
-
-  if playerSettings.loaded ~= nil then
-    self.loaded = playerSettings.loaded
-  end
-
-  self:emitSignal("settingsUpdated", self)
-end
-
 function Connection:handleSpectateRequest(message)
   local requestedRoom = self.server:roomNumberToRoom(message.spectate_request.roomNumber)
   if self.state ~= "lobby" then
@@ -428,11 +410,6 @@ function Connection:handleSpectateRequest(message)
     -- TODO: tell the client the join request failed, couldn't find the room.
     logger.warn("couldn't find room")
   end
-end
-
-function Connection:handleMenuStateMessage(message)
-  local playerSettings = message.menu_state
-  self:updatePlayerSettings(playerSettings)
 end
 
 function Connection:handleTaunt(message)
