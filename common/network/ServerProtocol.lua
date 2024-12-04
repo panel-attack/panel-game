@@ -7,7 +7,7 @@ local ServerProtocol = {}
 -- Helper methods for converting to ServerProtocol table formats --
 -------------------------------------------------------------------
 
-function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked, wantsReady, loaded, publicId)
+function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked, wantsReady, loaded, publicId, levelData)
   local settings = {
     cursor = "__Ready",
     stage = stage,
@@ -22,12 +22,13 @@ function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedSta
     wants_ready = wantsReady,
     loaded = loaded,
     publicId = publicId,
+    levelData = levelData,
   }
   return settings
 end
 
 -- rating in this case is not the table returned from toRating but only the "new" value
-function ServerProtocol.toDumbSettings(character, level, panels, playerNumber, inputMethod, rating, publicId)
+function ServerProtocol.toDumbSettings(character, level, panels, playerNumber, inputMethod, rating, publicId, levelData)
   local playerSettings =
   {
     character = character,
@@ -37,27 +38,10 @@ function ServerProtocol.toDumbSettings(character, level, panels, playerNumber, i
     inputMethod = inputMethod,
     rating = rating,
     publicId = publicId,
+    levelData = levelData
   }
 
   return playerSettings
-end
-
-function ServerProtocol.toReplay(levelA, levelB, inputMethodA, inputMethodB, inputsA, inputsB, characterA, characterB, ranked)
-  local replay =
-  {
-    do_countdown = true,
-    in_buf = inputsA or "",
-    I = inputsB or "",
-    P1_level = levelA,
-    P2_level = levelB,
-    P1_inputMethod = inputMethodA,
-    P2_inputMethod = inputMethodB,
-    P1_char = characterA,
-    P2_char = characterB,
-    ranked = ranked,
-  }
-
-  return replay
 end
 
 function ServerProtocol.toRating(oldRating, newRating, ratingDiff, league, placementProgress)

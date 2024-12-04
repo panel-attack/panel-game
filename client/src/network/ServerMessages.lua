@@ -146,6 +146,7 @@ function ServerMessages.toServerMenuState(player)
   menuState.ready = menuState.loaded and menuState.wants_ready
   menuState.inputMethod = player.settings.inputMethod
   menuState.cursor = "__Ready" -- play pretend
+  menuState.levelData = player.settings.levelData
 
   return menuState
 end

@@ -3,6 +3,7 @@
 -- so that changes in the ClientProtocol only affect this abstraction layer and not server code
 -- and changes in server code likewise only affect this abstraction layer instead of the ClientProtocol
 local logger = require("common.lib.logger")
+local LevelData = require("common.engine.LevelData")
 
 local ClientMessages = {}
 
@@ -52,6 +53,10 @@ function ClientMessages.sanitizeMenuState(playerSettings)
   sanitized.wants_ranked_match = playerSettings.ranked
   sanitized.loaded = playerSettings.loaded
   sanitized.wants_ready = playerSettings.wants_ready
+  if playerSettings.levelData and LevelData.validate(playerSettings.levelData) then
+    sanitized.levelData = playerSettings.levelData
+    setmetatable(sanitized.levelData, LevelData)
+  end
 
   return {playerSettings = sanitized}
 end

@@ -31,33 +31,33 @@ local LevelData = class(function(self)
     -- the formula used for calculating stop time
     -- formula = self.STOP_FORMULAS.MODERN,
     --formula 1 & 2: unconditional constant awarded for any combo while not topped out
-    -- comboConstant = -20,
+    comboConstant = nil,
     --formula 1: unconditional constant awarded for any chain while not topped and any combo while topped out
     --formula 2: unconditional constant awarded for any chain while not topped out
-    -- chainConstant = 80,
+    chainConstant = nil,
     --formula 1: unconditional constant awarded for any chain while topped out
     --formula 2: unconditional costant awarded for any combo or chain while topped out
-    -- dangerConstant = 160,
+    dangerConstant = nil,
     --formula 1: additional stoptime is provided upon meeting certain thresholds for chain length / combo size, both regular and topped out
     --formula 2: does not use coefficients
-    -- coefficient = 20,
+    coefficient = nil,
     --equivalent to coefficient in use but may be different in danger
-    -- dangerCoefficient = 20,
+    dangerCoefficient = nil,
   }
 
   -- the frameConstants table contains information relevant for panels physics
   self.frameConstants = {
     -- for how long a panel stays above an empty space before falling down
-    -- HOVER = 12,
+    HOVER = nil,
     -- for how long garbage panels are in hover state after popping
-    -- GARBAGE_HOVER = 41,
+    GARBAGE_HOVER = nil,
     -- for how long panels flash after being matched
-    -- FLASH = 44,
+    FLASH = nil,
     -- for how long panels show their matched face after completing the flash (before the pop timers of the panels start)
     -- this may not be directly referenced in favor of a MATCH constant that equals FLASH + FACE (the total time a panel stays in matched state)
-    -- FACE = 20,
+    FACE = nil,
     -- how long it takes for 1 panel of a match to pop (go from popping to popped)
-    -- POP = 9
+    POP = nil,
   }
 end)
 
@@ -184,6 +184,61 @@ end
 function LevelData:setPop(pop)
   self.frameConstants.POP = pop
   return self
+end
+
+function LevelData.validate(data)
+  if not data.startingSpeed or type(data.startingSpeed) ~= "number" then
+    return false
+  elseif data.startingSpeed < 0 or data.startingSpeed > 99 then
+    return false
+  elseif not data.speedIncreaseMode or type(data.speedIncreaseMode) ~= "number" then
+    return false
+  elseif data.speedIncreaseMode ~= LevelData.SPEED_INCREASE_MODES.TIME_INTERVAL and data.speedIncreaseMode ~= LevelData.SPEED_INCREASE_MODES.CLEARED_PANEL_COUNT then
+    return false
+  elseif not data.shockCap or type(data.shockCap) ~= "number" then
+    return false
+  elseif not data.shockFrequency or type(data.shockFrequency) ~= "number" then
+    return false
+  elseif not data.colors or type(data.colors) ~= "number" then
+    return false
+  elseif data.colors < 4 or data.colors > 7 then
+    return false
+  elseif not data.maxHealth or type(data.maxHealth) ~= "number" then
+    return false
+  elseif data.maxHealth < 1 then
+    return false
+  elseif not data.stop or type(data.stop) ~= "table" then
+    return false
+  elseif not data.stop.formula or type(data.stop.formula) ~= "number" then
+    return false
+  elseif data.stop.formula ~= LevelData.STOP_FORMULAS.CLASSIC and data.stop.formula ~= LevelData.STOP_FORMULAS.MODERN then
+    return false
+  elseif not data.stop.comboConstant or type(data.stop.comboConstant) ~= "number" then
+    return false
+  elseif not data.stop.chainConstant or type(data.stop.chainConstant) ~= "number" then
+    return false
+  elseif not data.stop.dangerConstant or type(data.stop.dangerConstant) ~= "number" then
+    return false
+  elseif not data.stop.coefficient or type(data.stop.coefficient) ~= "number" then
+    return false
+  elseif not data.stop.dangerCoefficient or type(data.stop.dangerCoefficient) ~= "number" then
+    return false
+  elseif not data.stop.comboConstant or type(data.stop.comboConstant) ~= "number" then
+    return false
+  elseif not data.frameConstants or type(data.frameConstants) ~= "table" then
+    return false
+  elseif not data.frameConstants.HOVER or type(data.frameConstants.HOVER) ~= "number" then
+    return false
+  -- GARBAGE_HOVER can be nil
+  elseif not data.frameConstants.FLASH or type(data.frameConstants.FLASH) ~= "number" then
+    return false
+  elseif not data.frameConstants.FACE or type(data.frameConstants.FACE) ~= "number" then
+    return false
+  elseif not data.frameConstants.POP or type(data.frameConstants.POP) ~= "number" then
+    return false
+  end
+
+  return true
 end
 
 return LevelData

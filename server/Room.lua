@@ -138,7 +138,11 @@ function Room:start_match()
     replayPlayer:setWins(self.win_counts[i])
     replayPlayer:setCharacterId(player.character)
     replayPlayer:setPanelId(player.panels_dir)
-    replayPlayer:setLevelData(LevelPresets.getModern(player.level))
+    if player.levelData then
+      replayPlayer:setLevelData(player.levelData)
+    else
+      replayPlayer:setLevelData(LevelPresets.getModern(player.level))
+    end
     replayPlayer:setInputMethod(player.inputMethod)
     -- TODO: pack the adjacent color setting with level data or send it with player settings
     -- this is not something for the server to decide, it should just take what it gets

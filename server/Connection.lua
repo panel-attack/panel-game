@@ -45,6 +45,7 @@ Connection =
     self.stage = nil
     self.stage_is_random = nil
     self.wants_ranked_match = nil
+    self.levelData = nil
 
     Signal.turnIntoEmitter(self)
     self:createSignal("settingsUpdated")
@@ -64,7 +65,8 @@ function Connection:getSettings()
     self.wants_ranked_match,
     self.wantsReady,
     self.loaded,
-    self.player.publicPlayerID
+    self.player.publicPlayerID,
+    self.levelData
   )
 end
 
@@ -76,7 +78,8 @@ function Connection:getDumbSettings(rating)
     self.player_number,
     self.inputMethod,
     rating,
-    self.player.publicPlayerID
+    self.player.publicPlayerID,
+    self.levelData
   )
 end
 
@@ -123,6 +126,10 @@ function Connection:updatePlayerSettings(playerSettings)
 
   if playerSettings.loaded ~= nil then
     self.loaded = playerSettings.loaded
+  end
+
+  if playerSettings.levelData ~= nil then
+    self.levelData = playerSettings.levelData
   end
 
   self:emitSignal("settingsUpdated", self)
