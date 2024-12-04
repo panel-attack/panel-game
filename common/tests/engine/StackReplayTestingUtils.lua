@@ -106,9 +106,9 @@ end
 function StackReplayTestingUtils:setupReplayWithPath(path)
   GAME.muteSound = true
 
-  local success, replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
+  local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
   local match = Match.createFromReplay(replay, false)
-  match:start(replay)
+  match:start()
   match:removeCanvases()
 
   assert(GAME ~= nil)

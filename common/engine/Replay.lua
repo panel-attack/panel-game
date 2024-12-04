@@ -6,6 +6,7 @@ require("common.lib.timezones")
 local tableUtils = require("common.lib.tableUtils")
 local ReplayPlayer = require("common.engine.ReplayPlayer")
 local LevelPresets = require("common.engine.LevelPresets")
+local LevelData = require("common.engine.LevelData")
 
 local REPLAY_VERSION = 2
 
@@ -243,6 +244,9 @@ function Replay.createFromV2Data(replayData)
     replayPlayer:setWins(player.wins)
     replayPlayer:setCharacterId(player.settings.characterId)
     replayPlayer:setPanelId(player.settings.panelId)
+    if LevelData.validate(player.settings.levelData) then
+      setmetatable(player.settings.levelData, LevelData)
+    end
     replayPlayer:setLevelData(player.settings.levelData)
     replayPlayer:setInputMethod(player.settings.inputMethod)
     replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
@@ -309,9 +313,9 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
 
   local p1 = ReplayPlayer(v1r.P1_name or "Player 1", -1, true)
   p1:setWins(v1r.P1_win_count or 0)
-  p1:setCharacter(v1r.P1_char)
+  p1:setCharacterId(v1r.P1_char)
   -- not saved in v1
-  p1:setPanels(config and config.panels or "pacci")
+  p1:setPanelId(config and config.panels or "pacci")
 
   if gameMode.playerCount == 2 then
     p1:setInputMethod(v1r.P1_inputMethod or "controller")
@@ -325,7 +329,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     p1:setLevel(v1r.P1_level)
     -- suffices because modern endless/timeattack never had replays
     p1:setAllowAdjacentColors(v1r.P1_level < 8)
-    p1.setLevelData(LevelPresets.getModern(v1r.P1_level))
+    p1:setLevelData(LevelPresets.getModern(v1r.P1_level))
   else
     p1:setDifficulty(v1r.difficulty)
     p1:setAllowAdjacentColors(true)
@@ -335,7 +339,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
       -- endless has 5 colors, the preset has 6 like time attack so fix it
       levelData:setColorCount(5)
     end
-    p1.setLevelData(levelData)
+    p1:setLevelData(levelData)
   end
 
   replay:updatePlayer(1, p1)
@@ -343,16 +347,16 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   if v1r.P2_char then
     local p2 = ReplayPlayer(v1r.P2_name, -2, true)
     p2:setWins(v1r.P2_win_count or 0)
-    p2:setCharacter(v1r.P2_char)
+    p2:setCharacterId(v1r.P2_char)
     -- not saved in v1
-    p2:setPanels(config and config.panels or "pacci")
+    p2:setPanelId(config and config.panels or "pacci")
     p2:setInputMethod(v1r.P2_inputMethod or "controller")
     p2:setInputs(ReplayPlayer.decompressInputString(v1r.I))
 
     -- presence of V2 means level and vs
     p2:setLevel(v1r.P2_level)
-    p1:setAllowAdjacentColors(v1r.P2_level < 8)
-    p1.setLevelData(LevelPresets.getModern(v1r.P2_level))
+    p2:setAllowAdjacentColors(v1r.P2_level < 8)
+    p2:setLevelData(LevelPresets.getModern(v1r.P2_level))
 
     replay:updatePlayer(2, p2)
   end

@@ -128,7 +128,7 @@ function LevelData:setMaxHealth(maxHealth)
 end
 
 function LevelData:setStopFormula(formula)
-  if formula ~= self.STOP_FORMULAS.MODERN and formula ~= self.STOP_FORMULAS.MODERN then
+  if formula ~= self.STOP_FORMULAS.MODERN and formula ~= self.STOP_FORMULAS.CLASSIC then
     logger.warn("Tried to set invalid stop formula " .. tostring(formula))
   else
     self.stop.formula = formula

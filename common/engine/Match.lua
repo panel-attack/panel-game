@@ -547,7 +547,9 @@ function Match:start()
     end
   end
 
-  self.replay = self:createNewReplay()
+  if not self.replay then
+    self.replay = self:createNewReplay()
+  end
 end
 
 function Match:setStage(stageId)
