@@ -241,10 +241,10 @@ end
 
 -- Handle clientMessageTypes.jsonMessage
 function Connection:J(message)
-  -- logger.debug("Connection " .. self.index .. " Incoming JSON:\n" .. message)
+  logger.debug("Connection " .. self.index .. " Incoming JSON:\n" .. message)
   message = json.decode(message)
   message = ClientMessages.sanitizeMessage(message)
-  -- logger.debug("Post-sanitization:\n" .. table_to_string(message))
+  --logger.debug("Post-sanitization:\n" .. table_to_string(message))
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
   elseif self.state == "not_logged_in" then

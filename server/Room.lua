@@ -104,8 +104,7 @@ function Room:onPlayerSettingsUpdate(player)
       self:start_match()
     else
       local settings = player:getSettings()
-      settings.player_number = player.player_number
-      local msg = ServerProtocol.menuState(settings)
+      local msg = ServerProtocol.menuState(settings, player.player_number)
       self:broadcastJson(msg, player)
     end
   end

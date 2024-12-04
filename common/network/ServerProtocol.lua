@@ -73,8 +73,8 @@ end
 -- Actual server messages --
 ----------------------------
 
-function ServerProtocol.menuState(settings)
-  local menuStateMessage = {menu_state = settings}
+function ServerProtocol.menuState(settings, playerNumber)
+  local menuStateMessage = {menu_state = settings, player_number = playerNumber}
 
   return {
     messageType = msgTypes.jsonMessage,
