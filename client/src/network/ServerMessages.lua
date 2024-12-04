@@ -1,5 +1,9 @@
--- this file is an attempt to sanitize the somewhat crazy messages the server sends during match setup
+-- this file forms an abstraction layer to translate the messages sent by the server to a format understood by the client
+-- the client should expect the formats specified common/network/ServerProtocol and other standardised interop formats
+-- e.g. Replay or LevelData
 local ServerMessages = {}
+
+local Replay = require("common.engine.Replay")
 
 function ServerMessages.sanitizeMenuState(menuState)
   --[[
@@ -281,11 +285,14 @@ function ServerMessages.sanitizeSpectatorJoin(message)
   end
   players[2].level = playerSettings[2].level
 
-  if message.replay_of_match_so_far then
-    players[1].name = message.replay_of_match_so_far.vs.P1_name
-    players[2].name = message.replay_of_match_so_far.vs.P2_name
-  end
+  local replay = message.replay_of_match_so_far
+  if replay then
+    replay = Replay.createFromTable(replay, false)
 
+    for i, p in ipairs(replay.players) do
+      players[i].name = p.name
+    end
+  end
 
   return{
     spectate_request_granted = true,
@@ -293,7 +300,7 @@ function ServerMessages.sanitizeSpectatorJoin(message)
     ranked = message.ranked,
     winCounts = message.win_counts,
     players = players,
-    replay = message.replay_of_match_so_far
+    replay = replay
   }
 end
 

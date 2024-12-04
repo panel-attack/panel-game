@@ -4,15 +4,17 @@ local ReplayPlayer = require("common.engine.ReplayPlayer")
 local ReplayV2 = {}
 
 function ReplayV2.transform(replay)
-  for i = 1, #replay.players do
-    if replay.players[i].settings.inputs then
-      replay.players[i].settings.inputs = ReplayPlayer.decompressInputString(replay.players[i].settings.inputs)
-    end
+  for i, player in ipairs(replay.players) do
+    if player.human then
+      if player.settings.inputs then
+        player.settings.inputs = ReplayPlayer.decompressInputString(player.settings.inputs)
+      end
 
-    if replay.players[i].settings.level then
-      replay.players[i].settings.style = GameModes.Styles.MODERN
-    else
-      replay.players[i].settings.style = GameModes.Styles.CLASSIC
+      if player.settings.level then
+        player.settings.style = GameModes.Styles.MODERN
+      else
+        player.settings.style = GameModes.Styles.CLASSIC
+      end
     end
   end
   return replay

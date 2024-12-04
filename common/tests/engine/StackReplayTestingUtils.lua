@@ -4,6 +4,7 @@ local Player = require("client.src.Player")
 local Match = require("common.engine.Match")
 local inputs = require("common.lib.inputManager")
 local fileUtils = require("client.src.FileUtils")
+local Replay = require("common.engine.Replay")
 
 local StackReplayTestingUtils = {}
 
@@ -105,7 +106,7 @@ end
 function StackReplayTestingUtils:setupReplayWithPath(path)
   GAME.muteSound = true
 
-  local success, replay = Replay.load(fileUtils.readJsonFile(path))
+  local success, replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
   local match = Match.createFromReplay(replay, false)
   match:start(replay)
   match:removeCanvases()

@@ -1,5 +1,5 @@
 local GameModes = require("common.engine.GameModes")
-local levelPresets = require("client.src.LevelPresets")
+local levelPresets = require("common.engine.LevelPresets")
 local consts = require("common.engine.consts")
 local ReplayPlayer = require("common.engine.ReplayPlayer")
 

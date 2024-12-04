@@ -6,7 +6,7 @@ local ServerProtocol = require("common.network.ServerProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local GameModes = require("common.engine.GameModes")
 -- heresy, remove once communication of levelData is established
-local LevelPresets = require("client.src.LevelPresets")
+local LevelPresets = require("common.engine.LevelPresets")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
@@ -91,10 +91,6 @@ function(self, a, b, roomNumber, leaderboard, server)
   b:sendJson(messageForB)
 end
 )
-
-function Room:create()
-
-end
 
 function Room:onPlayerSettingsUpdate(player)
   if self:state() == "character select" then

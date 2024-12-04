@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
-local LevelPresets = require("client.src.LevelPresets")
+local LevelPresets = require("common.engine.LevelPresets")
 local input = require("common.lib.inputManager")
 local MatchParticipant = require("client.src.MatchParticipant")
 local consts = require("common.engine.consts")
@@ -89,7 +89,11 @@ function Player:createStackFromSettings(match, which)
 
   args.levelData = self.settings.levelData
 
-  if match.isFromReplay and self.settings.allowAdjacentColors ~= nil then
+  -- the client Player does not currently allow management of allowAdjacentColors
+  -- so it is determined above by looking at match and player properties
+  -- but it is tracked in replays and set for player in createFromReplayPlayer
+  -- so if the match is from a loaded replay, use it
+  if match.replay and self.settings.allowAdjacentColors ~= nil then
     args.allowAdjacentColors = self.settings.allowAdjacentColors
   end
   args.inputMethod = self.settings.inputMethod
@@ -290,9 +294,13 @@ function Player.createFromReplayPlayer(replayPlayer, playerNumber)
   player:setCharacter(replayPlayer.settings.characterId)
   player:setInputMethod(replayPlayer.settings.inputMethod)
   -- style will be obsolete for replays with style-independent levelData
-  player:setStyle(replayPlayer.settings.style)
-  player:setLevel(replayPlayer.settings.level)
-  player:setDifficulty(replayPlayer.settings.difficulty)
+  if replayPlayer.settings.level then
+    player:setStyle(GameModes.Styles.MODERN)
+    player:setLevel(replayPlayer.settings.level)
+  else
+    player:setStyle(GameModes.Styles.CLASSIC)
+    player:setDifficulty(replayPlayer.settings.difficulty)
+  end
   -- no matter what style / level / difficulty is actually selected, levelData should have gotten preloaded correctly
   player:setLevelData(replayPlayer.settings.levelData)
   player.settings.allowAdjacentColors = replayPlayer.settings.allowAdjacentColors
