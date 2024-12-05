@@ -13,6 +13,7 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local Replay = require("common.engine.Replay")
+local ReplayPlayer = require("common.engine.ReplayPlayer")
 local Signal = require("common.lib.signal")
 local SimulatedStack = require("common.engine.SimulatedStack")
 local Stack = require("common.engine.Stack")
@@ -60,7 +61,6 @@ Match =
     self.createTime = love.timer.getTime()
     self.currentMusicIsDanger = false
     self.seed = math.random(1,9999999)
-    self.isFromReplay = false
     self.startTimestamp = os.time(os.date("*t"))
     self.isPaused = false
     self.renderDuringPause = false
@@ -344,7 +344,9 @@ function Match:updateFramesBehind(stack)
 end
 
 function Match:shouldSaveRollback(stack)
-  if self.isFromReplay then
+  if self.replay.completed then
+    -- assumption that if a replay is completed, we only run the match belonging to it for replays
+    -- in which case we want to be able to rewind
     return true
   end
 
@@ -368,9 +370,6 @@ end
 function Match:rollbackToFrame(stack, frame)
   if stack.rollbackCopies[frame] then
     if stack:rollbackToFrame(frame) then
-      if self.isFromReplay then
-        stack.lastRollbackFrame = -1
-      end
       return true
     end
   end
@@ -489,7 +488,7 @@ function Match:start()
     stack.do_countdown = self.doCountdown
 
     if self.replay then
-      if self.isFromReplay then
+      if self.replay.completed then
         -- watching a finished replay
         if player.human then
           stack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
@@ -548,7 +547,9 @@ function Match:start()
     end
   end
 
-  self.replay = Replay.createNewReplay(self)
+  if not self.replay then
+    self.replay = self:createNewReplay()
+  end
 end
 
 function Match:setStage(stageId)
@@ -595,6 +596,34 @@ function Match:hasLocalPlayer()
   return false
 end
 
+function Match:createNewReplay()
+  local replay = Replay(self.engineVersion, self.seed, self, self.puzzle)
+  replay:setStage(self.stage)
+  replay:setRanked(self.ranked)
+
+  for i, player in ipairs(self.players) do
+    local replayPlayer = ReplayPlayer(player.name, player.publicId, player.human)
+    replayPlayer:setWins(player.wins)
+    replayPlayer:setCharacterId(player.settings.characterId)
+    replayPlayer:setPanelId(player.settings.panelId)
+    replayPlayer:setLevelData(player.settings.levelData)
+    replayPlayer:setInputMethod(player.settings.inputMethod)
+    replayPlayer:setAllowAdjacentColors(player.stack.allowAdjacentColors)
+    replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
+    replayPlayer:setHealthSettings(player.settings.healthSettings)
+    -- these are display-only props, the true info is stored in levelData for either of them
+    if player.settings.style == GameModes.Styles.MODERN then
+      replayPlayer:setLevel(player.settings.level)
+    else
+      replayPlayer:setDifficulty(player.settings.difficulty)
+    end
+
+    replay:updatePlayer(i, replayPlayer)
+  end
+
+  return replay
+end
+
 function Match.createFromReplay(replay, supportsPause)
   local optionalArgs = {
     timeLimit = replay.gameMode.timeLimit,
@@ -621,12 +650,6 @@ function Match.createFromReplay(replay, supportsPause)
     optionalArgs
   )
 
-  -- match.isFromReplay mostly treats the match as if it runs an already finished replay
-  -- this is slightly incorrect cause the replay could also be from the server for spectating
-  -- as a result it could mess with rollback during spectating
-  -- on the other hand, if you experience rollback as the spectator it's almost certain the game will desync for the players
-  -- so it probably doesn't matter
-  match.isFromReplay = replay.loadedFromFile
   match:setSeed(replay.seed)
   match:setStage(replay.stageId)
   match.engineVersion = replay.engineVersion

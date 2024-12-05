@@ -4,16 +4,16 @@ local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local class = require("common.lib.class")
 local ServerMessages = require("client.src.network.ServerMessages")
-local ReplayV1 = require("common.engine.replayV1")
 local Signal = require("common.lib.signal")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local ModController = require("client.src.mods.ModController")
 local ModLoader = require("client.src.mods.ModLoader")
 local Match = require("common.engine.Match")
 require("client.src.graphics.match_graphics")
-local Game2pVs = require("client.src.scenes.Game2pVs")
+local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
+local consts = require("common.engine.consts")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
 BattleRoom = class(function(self, mode, gameScene)
@@ -51,7 +51,7 @@ function BattleRoom.createFromMatch(match)
   gameMode.winConditions = deepcpy(match.winConditions)
   gameMode.gameOverConditions = deepcpy(match.gameOverConditions)
 
-  local battleRoom = BattleRoom(gameMode, Game2pVs)
+  local battleRoom = BattleRoom(gameMode, GameBase)
 
   for i = 1, #match.players do
     battleRoom:addPlayer(match.players[i])
@@ -73,32 +73,14 @@ function BattleRoom.createFromServerMessage(message)
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
     message = ServerMessages.sanitizeSpectatorJoin(message)
-    for key, value in pairs(message) do
-      if key ~= "replay" then
-        if type(value) == "table" then
-          logger.debug(key .. ":" .. table_to_string(value))
-        else
-          logger.debug(key .. ":" .. tostring(value))
-        end
-      end
-    end
     if message.replay then
-      for key, value in pairs(message.replay.vs) do
-        if key ~= "I" and key ~= "in_buf" then
-          if key ~= "replay" then
-            if type(value) == "table" then
-              logger.debug(key .. ":" .. table_to_string(value))
-            else
-              logger.debug(key .. ":" .. tostring(value))
-            end
-          end
-        end
+      local replay = message.replay
+      if not replay.engineVersion then
+        replay.engineVersion = consts.ENGINE_VERSION
       end
-      local replay = ReplayV1.transform(message.replay)
-      logger.debug("post transform:\n" .. table_to_string(replay))
       local match = Match.createFromReplay(replay, false)
       for i, player in ipairs(match.players) do
-        player:updateWithMenuState(message.players[i])
+        player:updateSettings(message.players[i])
       end
       -- need this to make sure both have the same player tables
       -- there's like one stupid reference to battleRoom in engine that breaks otherwise
@@ -107,11 +89,11 @@ function BattleRoom.createFromServerMessage(message)
       battleRoom.mode.setupScene = gameMode.setupScene
       battleRoom.mode.richPresenceLabel = gameMode.richPresenceLabel
     else
-      battleRoom = BattleRoom(gameMode, Game2pVs)
+      battleRoom = BattleRoom(gameMode, GameBase)
       for i = 1, #message.players do
         local player = Player(message.players[i].name, message.players[i].playerNumber, false)
         battleRoom:addPlayer(player)
-        player:updateWithMenuState(message.players[i])
+        player:updateSettings(message.players[i])
       end
     end
     for i = 1, #battleRoom.players do
@@ -123,7 +105,7 @@ function BattleRoom.createFromServerMessage(message)
     end
     battleRoom.spectating = true
   else
-    battleRoom = BattleRoom(gameMode, Game2pVs)
+    battleRoom = BattleRoom(gameMode, GameBase)
     message = ServerMessages.sanitizeCreateRoom(message)
     -- player 1 is always the local player so that data can be ignored in favor of local data
     battleRoom:addPlayer(GAME.localPlayer)
@@ -134,7 +116,7 @@ function BattleRoom.createFromServerMessage(message)
 
     local player2 = Player(message.players[2].name, -1, false)
     player2.playerNumber = message.players[2].playerNumber
-    player2:updateWithMenuState(message.players[2])
+    player2:updateSettings(message.players[2])
     player2:setRating(message.players[2].ratingInfo.new)
     player2:setLeague(message.players[2].ratingInfo.league)
     battleRoom:addPlayer(player2)

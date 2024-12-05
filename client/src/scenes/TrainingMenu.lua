@@ -8,7 +8,7 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
 local GameModes = require("common.engine.GameModes")
-local Game1pTraining = require("client.src.scenes.Game1pTraining")
+local GameBase = require("client.src.scenes.GameBase")
 
 --@module TrainingMenu
 -- 
@@ -48,7 +48,7 @@ function TrainingMenu:goToCharacterSelect(value, width, height)
   if value == nil then
     value = createBasicTrainingMode("", width, height)
   end
-  GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TRAINING"), Game1pTraining)
+  GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TRAINING"), GameBase)
   if GAME.battleRoom then
     GAME.localPlayer:setAttackEngineSettings(value)
     GAME.navigationStack:push(CharacterSelectVsSelf())

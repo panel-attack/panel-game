@@ -255,6 +255,22 @@ Via `inputManager.lua`, there are inputs injected to the `Stack`'s `input_buffer
 `Stack.run` applies the input as part of `Stack.simulate` and advances its state by one frame.  
 If you read the comments for `Stack.simulate`, you may notice a suspicious absence of phase 1 and 2, mostly because they already got extracted into separate functions. There is still a good amount of extracting functions to be done, especially for SFX/Music.  
 
+### Replays and Interoperability
+
+common/engine defines some classes and functions that serve as interop between server and client.
+
+Currently these are:
+Replay, ReplayPlayer, LevelData and to a lesser degree GameModes.
+
+If client or server have further needs than these classes provide, they should generally aim to create their own components that do not inherit from these to guarantee that client and server internals can be edited and refactored without impacting networking.
+
+Besides these standard formats that are used in communication, both client and server implement an abstraction layer called ClientMessages or ServerMessages respectively whose sole responsibility it is to convert incoming messages to a format the recipient understands.
+
+The server's ClientMessages respectively convert messages sent via common/network/ClientProtocol while the client's ServerMessages do the same for messages as defined in common/network/ServerProtocol.
+
+Likewise these abstraction layers exist to remove the networking component from client/server internals to allow for easy and relatively worry-free refactoring.
+
+
 ## The user interface
 
 Effectively there are two big new things in the new user interface that comes with the scene refactor:
@@ -442,3 +458,8 @@ This is supposed to be the API for the client to communicate with the server wit
 ### NetworkProtocol
 
 Contract between client and server for message types and protocol version.
+
+### ServerProtocol.lua
+
+Presents getters for all json messages the server may send to the clients.  
+This is supposde to be the API for the server to communicate with the client with no server dependencies.

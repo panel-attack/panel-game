@@ -10,7 +10,7 @@ local Signal = require("common.lib.signal")
 local CharacterSelect2p = require("client.src.scenes.CharacterSelect2p")
 local SoundController = require("client.src.music.SoundController")
 local GameCatchUp = require("client.src.scenes.GameCatchUp")
-local Game2pVs = require("client.src.scenes.Game2pVs")
+local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
 
 
@@ -94,7 +94,7 @@ local function processCharacterSelectMessage(self, message)
           roomPlayer:setLeague(messagePlayer.ratingInfo.league)
         end
         if not roomPlayer.isLocal then
-          roomPlayer:updateWithMenuState(messagePlayer)
+          roomPlayer:updateSettings(messagePlayer)
         end
       end
     end
@@ -215,12 +215,12 @@ local function processMenuStateMessage(player, message)
   if message.player_number then
     -- only update if playernumber matches the player's
     if message.player_number == player.playerNumber then
-      player:updateWithMenuState(menuState)
+      player:updateSettings(menuState)
     else
       -- this update is for someone else
     end
   else
-    player:updateWithMenuState(menuState)
+    player:updateSettings(menuState)
   end
 end
 
@@ -255,7 +255,7 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
   self.room = GAME.battleRoom
   if GAME.battleRoom.match then
     self.state = states.INGAME
-    local vsScene = Game2pVs({match = GAME.battleRoom.match})
+    local vsScene = GameBase({match = GAME.battleRoom.match})
     local catchUp = GameCatchUp(vsScene)
     -- need to push character select, otherwise the pop on match end will return to lobby
     -- directly add to the stack so it isn't getting displayed
@@ -411,8 +411,8 @@ function NetClient:requestSpectate(roomNumber)
   end
 end
 
-local function sendMenuState(player)
-  GAME.netClient.tcpClient:sendRequest(ClientMessages.sendMenuState(ServerMessages.toServerMenuState(player)))
+local function sendPlayerSettings(player)
+  GAME.netClient.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
 function NetClient:registerPlayerUpdates(room)
@@ -420,19 +420,17 @@ function NetClient:registerPlayerUpdates(room)
   for _, player in ipairs(room.players) do
     if player.isLocal then
       -- seems a bit silly to subscribe a player to itself but it works and the player doesn't have to become part of the closure
-      player:connectSignal("selectedCharacterIdChanged", player, sendMenuState)
-      player:connectSignal("characterIdChanged", player, sendMenuState)
-      player:connectSignal("selectedStageIdChanged", player, sendMenuState)
-      player:connectSignal("stageIdChanged", player, sendMenuState)
-      player:connectSignal("panelIdChanged", player, sendMenuState)
-      player:connectSignal("wantsRankedChanged", player, sendMenuState)
-      player:connectSignal("wantsReadyChanged", player, sendMenuState)
-      player:connectSignal("difficultyChanged", player, sendMenuState)
-      player:connectSignal("startingSpeedChanged", player, sendMenuState)
-      player:connectSignal("levelChanged", player, sendMenuState)
-      player:connectSignal("colorCountChanged", player, sendMenuState)
-      player:connectSignal("inputMethodChanged", player, sendMenuState)
-      player:connectSignal("hasLoadedChanged", player, sendMenuState)
+      player:connectSignal("characterIdChanged", player, sendPlayerSettings)
+      player:connectSignal("stageIdChanged", player, sendPlayerSettings)
+      player:connectSignal("panelIdChanged", player, sendPlayerSettings)
+      player:connectSignal("wantsRankedChanged", player, sendPlayerSettings)
+      player:connectSignal("wantsReadyChanged", player, sendPlayerSettings)
+      player:connectSignal("difficultyChanged", player, sendPlayerSettings)
+      player:connectSignal("startingSpeedChanged", player, sendPlayerSettings)
+      player:connectSignal("levelChanged", player, sendPlayerSettings)
+      player:connectSignal("colorCountChanged", player, sendPlayerSettings)
+      player:connectSignal("inputMethodChanged", player, sendPlayerSettings)
+      player:connectSignal("hasLoadedChanged", player, sendPlayerSettings)
     else
       listener:subscribe(player, processMenuStateMessage)
     end

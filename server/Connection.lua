@@ -5,6 +5,10 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
 local utf8 = require("common.lib.utf8Additions")
 local Player = require("server.Player")
+local ClientMessages = require("server.ClientMessages")
+local ServerProtocol = require("common.network.ServerProtocol")
+local Signal = require("common.lib.signal")
+local util = require("common.lib.util")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
 Connection =
@@ -35,58 +39,144 @@ Connection =
     self.inputMethod = "controller"
     self.level = nil
     self.panels_dir = nil
+    self.wantsReady = nil
+    self.loaded = nil
     self.ready = nil
     self.stage = nil
     self.stage_is_random = nil
     self.wants_ranked_match = nil
+    self.levelData = nil
+
+    Signal.turnIntoEmitter(self)
+    self:createSignal("settingsUpdated")
   end
 )
 
-function Connection:menu_state()
-  local state = {
-    cursor = self.cursor,
-    stage = self.stage,
-    stage_is_random = self.stage_is_random,
-    ready = self.ready,
-    character = self.character,
-    character_is_random = self.character_is_random,
-    character_display_name = self.character_display_name,
-    panels_dir = self.panels_dir,
-    level = self.level,
-    ranked = self.wants_ranked_match,
-    inputMethod = self.inputMethod
-  }
-  return state
-  --note: player_number here is the player_number of the connection as according to the server, not the "which" of any Stack
+function Connection:getSettings()
+  return ServerProtocol.toSettings(
+    self.ready,
+    self.level,
+    self.inputMethod,
+    self.stage,
+    self.stage_is_random,
+    self.character,
+    self.character_is_random,
+    self.panels_dir,
+    self.wants_ranked_match,
+    self.wantsReady,
+    self.loaded,
+    self.player.publicPlayerID,
+    self.levelData
+  )
 end
 
-function Connection:send(stuff)
-  if type(stuff) == "table" then
-    local json = json.encode(stuff)
-    stuff = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.jsonMessage.prefix, json)
-    logger.debug("Connection " .. self.index .. " Sending JSON: " .. stuff)
-  else
-    if type(stuff) == "string" then
-      local type = stuff:sub(1, 1)
-      if type ~= nil and NetworkProtocol.isMessageTypeVerbose(type) == false then
-        logger.debug("Connection " .. self.index .. " sending " .. stuff)
-      end
+function Connection:getDumbSettings(rating)
+  return ServerProtocol.toDumbSettings(
+    self.character,
+    self.level,
+    self.panels_dir,
+    self.player_number,
+    self.inputMethod,
+    rating,
+    self.player.publicPlayerID,
+    self.levelData
+  )
+end
+
+function Connection:updatePlayerSettings(playerSettings)
+  if playerSettings.character ~= nil then
+    self.character = playerSettings.character
+  end
+
+  if playerSettings.character_is_random ~= nil then
+    self.character_is_random = playerSettings.character_is_random
+  end
+  -- self.cursor = playerSettings.cursor -- nil when from login
+  if playerSettings.inputMethod ~= nil then
+    self.inputMethod = (playerSettings.inputMethod or "controller")
+  end
+
+  if playerSettings.level ~= nil then
+    self.level = playerSettings.level
+  end
+
+  if playerSettings.panels_dir ~= nil then
+    self.panels_dir = playerSettings.panels_dir
+  end
+
+  if playerSettings.ready ~= nil then
+    self.ready = playerSettings.ready -- nil when from login
+  end
+
+  if playerSettings.stage ~= nil then
+    self.stage = playerSettings.stage
+  end
+
+  if playerSettings.stage_is_random ~= nil then
+    self.stage_is_random = playerSettings.stage_is_random
+  end
+
+  if playerSettings.ranked ~= nil then
+    self.wants_ranked_match = playerSettings.ranked
+  end
+
+  if playerSettings.wants_ready ~= nil then
+    self.wantsReady = playerSettings.wants_ready
+  end
+
+  if playerSettings.loaded ~= nil then
+    self.loaded = playerSettings.loaded
+  end
+
+  if playerSettings.levelData ~= nil then
+    self.levelData = playerSettings.levelData
+  end
+
+  self:emitSignal("settingsUpdated", self)
+end
+
+local function send(connection, message)
+  local retryCount = 0
+  local retryLimit = 5
+  local success, error
+
+  while not success and retryCount <= retryLimit do
+    success, error, lastSent = connection.socket:send(message)
+    if not success then
+      logger.debug("Connection.send failed with " .. error .. ". will retry...")
+      retryCount = retryCount + 1
     end
   end
-  local retry_count = 0
-  local times_to_retry = 5
-  local foo = {}
-  while not foo[1] and retry_count <= 5 do
-    foo = {self.socket:send(stuff)}
-    if not foo[1] then
-      logger.debug("Connection.send failed. will retry...")
-      retry_count = retry_count + 1
-    end
+  if not success then
+    logger.debug("Closing connection for " .. (connection.name or "nil") .. ". Connection.send failed after " .. retryLimit .. " retries were attempted")
+    connection:close()
   end
-  if not foo[1] then
-    logger.debug("Closing connection for " .. (self.name or "nil") .. ". Connection.send failed after " .. times_to_retry .. " retries were attempted")
-    self:close()
+end
+
+-- dedicated method for sending JSON messages
+function Connection:sendJson(messageInfo)
+  if messageInfo.messageType ~= NetworkProtocol.serverMessageTypes.jsonMessage then
+    logger.error("Trying to send a message of type " .. messageInfo.messageType.prefix .. " via sendJson")
   end
+
+  local json = json.encode(messageInfo.messageText)
+  logger.debug("Connection " .. self.index .. " Sending JSON: " .. json)
+  local message = NetworkProtocol.markedMessageForTypeAndBody(messageInfo.messageType.prefix, json)
+
+  send(self, message)
+end
+
+-- dedicated method for sending inputs and magic prefixes
+-- this function avoids overhead by not logging outside of failure and accepting the message directly
+function Connection:send(message)
+--   if type(message) == "string" then
+--     local type = message:sub(1, 1)
+--     if type ~= nil and NetworkProtocol.isMessageTypeVerbose(type) == false then
+--       logger.debug("Connection " .. self.index .. " sending " .. message)
+--     end
+--   end
+
+  send(self, message)
 end
 
 function Connection:leaveRoom()
@@ -97,7 +187,7 @@ function Connection:leaveRoom()
     logger.debug("Closing room for " .. (self.name or "nil") .. " because opponent disconnected.")
     self.server:closeRoom(self.room)
   end
-  self:send({leave_room = true})
+  self:sendJson(ServerProtocol.leaveRoom())
 end
 
 function Connection:setup_game()
@@ -116,7 +206,9 @@ function Connection:close()
     logger.trace("about to close room for " .. (self.name or "nil") .. ".  Connection.close was called")
     self.server:closeRoom(self.room)
   elseif self.room then
-    self.server:removeSpectator(self.room, self)
+    if self.room:remove_spectator(self) then
+      self.server:setLobbyChanged()
+    end
   end
   self.server:clear_proposals(self.name)
   if self.opponent then
@@ -147,17 +239,8 @@ function Connection:I(message)
   if self.room == nil then
     return
   end
-  local iMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, message)
-  self.opponent:send(iMessage)
 
-  local spectatorMessage = iMessage
-  if self.player_number == 1 then
-    spectatorMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix, message)
-    self.room.inputs[self.player_number][#self.room.inputs[self.player_number] + 1] = message
-  elseif self.player_number == 2 then
-    self.room.inputs[self.player_number][#self.room.inputs[self.player_number] + 1] = message
-  end
-  self.room:send_to_spectators(spectatorMessage)
+  self.room:broadcastInput(message, self)
 end
 
 -- Handle clientMessageTypes.acknowledgedPing
@@ -167,10 +250,13 @@ end
 
 -- Handle clientMessageTypes.jsonMessage
 function Connection:J(message)
+  logger.debug("Connection " .. self.index .. " Incoming JSON:\n" .. message)
   message = json.decode(message)
+  message = ClientMessages.sanitizeMessage(message)
+  --logger.debug("Post-sanitization:\n" .. table_to_string(message))
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
-  elseif self.state == "not_logged_in" then 
+  elseif self.state == "not_logged_in" then
     if message.login_request then
       local IP_logging_in, port = self.socket:getpeername()
       self:login(message.user_id, message.name, IP_logging_in, port, message.engine_version, message)
@@ -182,12 +268,12 @@ function Connection:J(message)
       self.server:propose_game(message.game_request.sender, message.game_request.receiver, message)
     end
   elseif message.leaderboard_request then
-    self:send({leaderboard_report = leaderboard:get_report(self)})
+    self:sendJson(ServerProtocol.sendLeaderboard(leaderboard:get_report(self)))
   elseif message.spectate_request then
     self:handleSpectateRequest(message)
-  elseif self.state == "character select" and message.menu_state then
+  elseif self.state == "character select" and message.playerSettings then
     -- Note this also starts the game if everything is ready from both players character select settings
-    self:handleMenuStateMessage(message)
+    self:updatePlayerSettings(message.playerSettings)
   elseif self.state == "playing" and message.taunt then
     self:handleTaunt(message)
   elseif self.state == "playing" and message.game_over then
@@ -195,7 +281,11 @@ function Connection:J(message)
   elseif (self.state == "playing" or self.state == "character select") and message.leave_room then
     self:handlePlayerRequestedToLeaveRoom(message)
   elseif (self.state == "spectating") and message.leave_room then
-    self.server:removeSpectator(self.room, self)
+    if self.room:remove_spectator(self) then
+      self.server:setLobbyChanged()
+    end
+  elseif message.unknown then
+    self:close()
   end
 end
 
@@ -232,14 +322,14 @@ function Connection:login(user_id, name, IP_logging_in, port, engineVersion, pla
     if self.server.playerbase.players[user_id] ~= name then
       local oldName = self.server.playerbase.players[user_id]
       self.server:changeUsername(user_id, name)
-      
+
       logger.warn(user_id .. " changed name " .. oldName .. " to " .. name)
 
       message.name_changed = true
       message.old_name = oldName
       message.new_name = name
     end
-    
+
     self.name = name
     self.server.nameToConnectionIndex[name] = self.index
     self:updatePlayerSettings(playerSettings)
@@ -267,7 +357,7 @@ function Connection:login(user_id, name, IP_logging_in, port, engineVersion, pla
     end
 
     message.login_successful = true
-    self:send(message)
+    self:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name, self.player.publicPlayerID))
 
     logger.warn("Login from " .. name .. " with ip: " .. IP_logging_in .. " publicPlayerID: " .. self.player.publicPlayerID)
   end
@@ -309,107 +399,35 @@ function Connection:canLogin(userID, name, IP_logging_in, engineVersion)
   return denyReason, playerBan
 end
 
-function Connection:updatePlayerSettings(playerSettings) 
-  self.character = playerSettings.character
-  self.character_is_random = playerSettings.character_is_random
-  self.character_display_name = playerSettings.character_display_name
-  self.cursor = playerSettings.cursor -- nil when from login
-  self.inputMethod = (playerSettings.inputMethod or "controller") --one day we will require message to include input method, but it is not this day.
-  self.level = playerSettings.level
-  self.panels_dir = playerSettings.panels_dir
-  self.ready = playerSettings.ready -- nil when from login
-  self.stage = playerSettings.stage
-  self.stage_is_random = playerSettings.stage_is_random
-  self.wants_ranked_match = playerSettings.ranked
-end
-
 function Connection:handleSpectateRequest(message)
   local requestedRoom = self.server:roomNumberToRoom(message.spectate_request.roomNumber)
   if self.state ~= "lobby" then
     if requestedRoom then
       logger.debug("removing " .. self.name .. " from room nr " .. message.spectate_request.roomNumber)
-      self.server:removeSpectator(requestedRoom, self)
+      self.room:remove_spectator(self)
     else
       logger.warn("could not find room to remove " .. self.name)
       self.state = "lobby"
     end
   end
-  if requestedRoom and requestedRoom:state() == "character select" then
+  local roomState = requestedRoom:state()
+  if requestedRoom and (roomState == "character select" or roomState == "playing") then
     logger.debug("adding " .. self.name .. " to room nr " .. message.spectate_request.roomNumber)
-    self.server:addSpectator(requestedRoom, self)
-  elseif requestedRoom and requestedRoom:state() == "playing" then
-    logger.debug("adding " .. self.name .. " to room nr " .. message.spectate_request.roomNumber)
-    self.server:addSpectator(requestedRoom, self)
+    requestedRoom:add_spectator(self)
+    self.server:setLobbyChanged()
   else
     -- TODO: tell the client the join request failed, couldn't find the room.
     logger.warn("couldn't find room")
   end
 end
 
-function Connection:handleMenuStateMessage(message)
-  local playerSettings = message.menu_state
-  self:updatePlayerSettings(playerSettings)
-
-  logger.debug("about to check for rating_adjustment_approval for " .. self.name .. " and " .. self.opponent.name)
-  if self.wants_ranked_match or self.opponent.wants_ranked_match then
-    local ranked_match_approved, reasons = self.room:rating_adjustment_approved()
-    if ranked_match_approved then
-      if not reasons[1] then
-        reasons = nil
-      end
-      self.room:send({ranked_match_approved = true, caveats = reasons})
-    else
-      self.room:send({ranked_match_denied = true, reasons = reasons})
-    end
-  end
-
-  if self.ready and self.opponent.ready then
-    self.room.inputs = {{},{}}
-    self.room.replay = {}
-    self.room.replay.vs = {
-      P = "",
-      O = "",
-      I = "",
-      Q = "",
-      R = "",
-      in_buf = "",
-      P1_level = self.room.a.level,
-      P2_level = self.room.b.level,
-      P1_inputMethod = self.room.a.inputMethod,
-      P2_inputMethod = self.room.b.inputMethod,
-      P1_char = self.room.a.character,
-      P2_char = self.room.b.character,
-      ranked = self.room:rating_adjustment_approved(),
-      do_countdown = true
-    }
-    if self.player_number == 1 then
-      self.server:start_match(self, self.opponent)
-    else
-      self.server:start_match(self.opponent, self)
-    end
-  else
-    self.opponent:send(message)
-    message.player_number = self.player_number
-    logger.debug("about to send match start to spectators of " .. (self.name or "nil") .. " and " .. (self.opponent.name or "nil"))
-    self.room:send_to_spectators(message) -- TODO: may need to include in the message who is sending the message
-  end
-end
-
 function Connection:handleTaunt(message)
-  message.player_number = self.player_number
-  self.opponent:send(message)
-  self.room:send_to_spectators(message)
+  local msg = ServerProtocol.taunt(self.player_number, message.type, message.index)
+  self.room:broadcastJson(msg, self)
 end
 
 function Connection:handleGameOverOutcome(message)
-  self.room.game_outcome_reports[self.player_number] = message.outcome
-  if self.room:resolve_game_outcome() then
-    logger.debug("\n*******************************")
-    logger.debug("***" .. self.room.a.name .. " " .. self.room.win_counts[1] .. " - " .. self.room.win_counts[2] .. " " .. self.room.b.name .. "***")
-    logger.debug("*******************************\n")
-    self.room.game_outcome_reports = {}
-    self.room:character_select()
-  end
+  self.room:reportOutcome(self, message.outcome)
 end
 
 function Connection:handlePlayerRequestedToLeaveRoom(message)

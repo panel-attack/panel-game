@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
-local LevelPresets = require("client.src.LevelPresets")
+local LevelPresets = require("common.engine.LevelPresets")
 local input = require("common.lib.inputManager")
 local MatchParticipant = require("client.src.MatchParticipant")
 local consts = require("common.engine.consts")
@@ -89,7 +89,11 @@ function Player:createStackFromSettings(match, which)
 
   args.levelData = self.settings.levelData
 
-  if match.isFromReplay and self.settings.allowAdjacentColors ~= nil then
+  -- the client Player does not currently allow management of allowAdjacentColors
+  -- so it is determined above by looking at match and player properties
+  -- but it is tracked in replays and set for player in createFromReplayPlayer
+  -- so if the match is from a loaded replay, use it
+  if match.replay and self.settings.allowAdjacentColors ~= nil then
     args.allowAdjacentColors = self.settings.allowAdjacentColors
   end
   args.inputMethod = self.settings.inputMethod
@@ -290,9 +294,13 @@ function Player.createFromReplayPlayer(replayPlayer, playerNumber)
   player:setCharacter(replayPlayer.settings.characterId)
   player:setInputMethod(replayPlayer.settings.inputMethod)
   -- style will be obsolete for replays with style-independent levelData
-  player:setStyle(replayPlayer.settings.style)
-  player:setLevel(replayPlayer.settings.level)
-  player:setDifficulty(replayPlayer.settings.difficulty)
+  if replayPlayer.settings.level then
+    player:setStyle(GameModes.Styles.MODERN)
+    player:setLevel(replayPlayer.settings.level)
+  else
+    player:setStyle(GameModes.Styles.CLASSIC)
+    player:setDifficulty(replayPlayer.settings.difficulty)
+  end
   -- no matter what style / level / difficulty is actually selected, levelData should have gotten preloaded correctly
   player:setLevelData(replayPlayer.settings.levelData)
   player.settings.allowAdjacentColors = replayPlayer.settings.allowAdjacentColors
@@ -301,55 +309,72 @@ function Player.createFromReplayPlayer(replayPlayer, playerNumber)
   return player
 end
 
-function Player:updateWithMenuState(menuState)
-  if characters[menuState.characterId] then
-    -- if we have their character, use it
-    self:setCharacter(menuState.characterId)
-    if characters[menuState.selectedCharacterId] then
-      -- picking their bundle for display is a bonus
-      self.settings.selectedCharacterId = menuState.selectedCharacterId
-      self:emitSignal("selectedCharacterIdChanged", self.settings.selectedCharacterId)
+function Player:updateSettings(settings)
+  if settings.characterId ~= nil then
+    if characters[settings.characterId] then
+      -- if we have their character, use it
+      self:setCharacter(settings.characterId)
+      if characters[settings.selectedCharacterId] then
+        -- picking their bundle for display is a bonus
+        self.settings.selectedCharacterId = settings.selectedCharacterId
+        self:emitSignal("selectedCharacterIdChanged", self.settings.selectedCharacterId)
+      end
+    elseif settings.selectedCharacterId and characters[settings.selectedCharacterId] then
+      -- if we don't have their character rolled from their bundle, but the bundle itself, use that
+      -- very unlikely tbh
+      self:setCharacter(settings.selectedCharacterId)
+    elseif self.settings.characterId == "" then
+      -- we don't have their character and we didn't roll them a random character yet
+      self:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
     end
-  elseif menuState.selectedCharacterId and characters[menuState.selectedCharacterId] then
-    -- if we don't have their character rolled from their bundle, but the bundle itself, use that
-    -- very unlikely tbh
-    self:setCharacter(menuState.selectedCharacterId)
-  elseif self.settings.characterId == "" then
-    -- we don't have their character and we didn't roll them a random character yet
-    self:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
   end
 
-  if stages[menuState.stageId] then
-    -- if we have their stage, use it
-    self:setStage(menuState.stageId)
-    if stages[menuState.selectedStageId] then
-      -- picking their bundle for display is a bonus
-      self.settings.selectedStageId = menuState.selectedStageId
-      self:emitSignal("selectedStageIdChanged", self.settings.selectedStageId)
+  if settings.stageId ~= nil then
+    if stages[settings.stageId] then
+      -- if we have their stage, use it
+      self:setStage(settings.stageId)
+      if stages[settings.selectedStageId] then
+        -- picking their bundle for display is a bonus
+        self.settings.selectedStageId = settings.selectedStageId
+        self:emitSignal("selectedStageIdChanged", self.settings.selectedStageId)
+      end
+    elseif settings.selectedStageId and stages[settings.selectedStageId] then
+      -- if we don't have their stage rolled from their bundle, but the bundle itself, use that
+      -- very unlikely tbh
+      self:setStage(settings.selectedStageId)
+    elseif self.settings.stageId == "" then
+      -- we don't have their stage and we didn't roll them a random stage yet
+      self:setStage(consts.RANDOM_STAGE_SPECIAL_VALUE)
     end
-  elseif menuState.selectedStageId and stages[menuState.selectedStageId] then
-    -- if we don't have their stage rolled from their bundle, but the bundle itself, use that
-    -- very unlikely tbh
-    self:setStage(menuState.selectedStageId)
-  elseif self.settings.stageId == "" then
-    -- we don't have their stage and we didn't roll them a random stage yet
-    self:setStage(consts.RANDOM_STAGE_SPECIAL_VALUE)
   end
 
-  self:setWantsRanked(menuState.wantsRanked)
-  self:setPanels(menuState.panelId)
+  if settings.wantsRanked ~= nil then
+    self:setWantsRanked(settings.wantsRanked)
+  end
 
-  self:setLevel(menuState.level)
-  self:setInputMethod(menuState.inputMethod)
+  if settings.panelId ~= nil then
+    self:setPanels(settings.panelId)
+  end
+
+  if settings.level ~= nil then
+    self:setLevel(settings.level)
+  end
+
+  if settings.inputMethod ~= nil then
+    self:setInputMethod(settings.inputMethod)
+  end
 
   -- these are both simply not sent by the server for some messages so make sure they are there
-  if menuState.wantsReady ~= nil then
-    self:setWantsReady(menuState.wantsReady)
+  if settings.wantsReady ~= nil then
+    self:setWantsReady(settings.wantsReady)
   end
-  if menuState.hasLoaded ~= nil then
-    self:setLoaded(menuState.hasLoaded)
+  if settings.hasLoaded ~= nil then
+    self:setLoaded(settings.hasLoaded)
   end
-  self:setReady(menuState.ready)
+
+  if settings.ready ~= nil then
+    self:setReady(settings.ready)
+  end
 end
 
 function Player:getInfo()

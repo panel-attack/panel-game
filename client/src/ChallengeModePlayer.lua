@@ -32,7 +32,7 @@ local function characterForStageNumber(stageNumber)
       end
       if currentCharacter ~= config.character then
         otherCharacters[#otherCharacters+1] = currentCharacter
-      end 
+      end
     end
   end
 
