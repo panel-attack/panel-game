@@ -49,6 +49,7 @@ function ServerMessages.sanitizeMenuState(menuState)
   sanitized.wantsReady = menuState.wants_ready
   sanitized.hasLoaded = menuState.loaded
   sanitized.ready = menuState.ready
+  sanitized.publicId = menuState.publicId
 
   -- ignoring cursor for now
   --sanitized.cursorPosCode = menuState.cursor
@@ -159,6 +160,7 @@ function ServerMessages.sanitizeSettings(settings)
     characterId = settings.character,
     panelId = settings.panels_dir,
     inputMethod = settings.inputMethod,
+    publicId = settings.publicId,
     sanitized = true
   }
 end

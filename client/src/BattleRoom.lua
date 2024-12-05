@@ -91,7 +91,7 @@ function BattleRoom.createFromServerMessage(message)
     else
       battleRoom = BattleRoom(gameMode, GameBase)
       for i = 1, #message.players do
-        local player = Player(message.players[i].name, message.players[i].playerNumber, false)
+        local player = Player(message.players[i].name, message.players[i].publicId or -i, false)
         battleRoom:addPlayer(player)
         player:updateSettings(message.players[i])
       end
@@ -114,7 +114,7 @@ function BattleRoom.createFromServerMessage(message)
     GAME.localPlayer:setRating(message.players[1].ratingInfo.new)
     GAME.localPlayer:setLeague(message.players[1].ratingInfo.league)
 
-    local player2 = Player(message.players[2].name, -1, false)
+    local player2 = Player(message.players[2].name, message.players[2].publicId or -2, false)
     player2.playerNumber = message.players[2].playerNumber
     player2:updateSettings(message.players[2])
     player2:setRating(message.players[2].ratingInfo.new)
@@ -242,14 +242,6 @@ function BattleRoom:createMatch()
   end
 
   return self.match
-end
-
--- creates a new Player based on their minimum information and adds them to the BattleRoom
-function BattleRoom:addNewPlayer(name, publicId, isLocal)
-  local player = Player(name, publicId, isLocal)
-  player.playerNumber = #self.players + 1
-  self:addPlayer(player)
-  return player
 end
 
 -- adds an existing Player to the BattleRoom

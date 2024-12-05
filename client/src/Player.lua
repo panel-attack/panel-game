@@ -267,8 +267,7 @@ function Player:unrestrictInputs()
 end
 
 function Player.getLocalPlayer()
-  local player = Player(config.name)
-  player.isLocal = true
+  local player = Player(config.name, -1, true)
 
   player:setDifficulty(config.endless_difficulty)
   player:setSpeed(config.endless_speed)
