@@ -22,5 +22,7 @@ ANY_ENGINE_VERSION_ENABLED = false -- The server will accept any engine version.
 ENGINE_VERSION = "047"
 MIN_LEVEL_FOR_RANKED = 1
 MAX_LEVEL_FOR_RANKED = 10
+MIN_COLORS_FOR_RANKED = 5
+MAX_COLORS_FOR_RANKED = 6
 SERVER_PORT = 49569 -- default: 49569
 SERVER_MODE = true -- global to know the server is running the process

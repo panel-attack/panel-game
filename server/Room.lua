@@ -7,6 +7,7 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local GameModes = require("common.engine.GameModes")
 -- heresy, remove once communication of levelData is established
 local LevelPresets = require("common.engine.LevelPresets")
+local util = require("common.lib.util")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
@@ -537,8 +538,19 @@ function Room:rating_adjustment_approved()
   if player_level_out_of_bounds_for_ranked then
     reasons[#reasons + 1] = "Only levels between " .. MIN_LEVEL_FOR_RANKED .. " and " .. MAX_LEVEL_FOR_RANKED .. " are allowed for ranked play."
   end
+  local playerColorsOutOfBoundsForRanked = false
+  for i, player in ipairs(players) do
+    if player.levelData.colorCount < MIN_COLORS_FOR_RANKED or player.levelData.colorCount > MAX_COLORS_FOR_RANKED then
+      playerColorsOutOfBoundsForRanked = true
+    end
+  end
+  if playerColorsOutOfBoundsForRanked then
+    reasons[#reasons + 1] = "Only color counts between " .. MIN_COLORS_FOR_RANKED .. " and " .. MAX_COLORS_FOR_RANKED .. " are allowed for ranked play."
+  end
   if players[1].level ~= players[2].level then
     reasons[#reasons + 1] = "Levels don't match"
+  elseif not deep_content_equal(players[1].levelData or LevelPresets.getModern(players[1].level), players[2].levelData or LevelPresets.getModern(players[2].level)) then
+    reasons[#reasons + 1] = "Level data doesn't match"
   end
   if players[1].inputMethod == "touch" or players[2].inputMethod == "touch" then
     reasons[#reasons + 1] = "Touch input is not currently allowed in ranked matches."
