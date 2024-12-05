@@ -244,17 +244,20 @@ function Replay.createFromV2Data(replayData)
     replayPlayer:setWins(player.wins)
     replayPlayer:setCharacterId(player.settings.characterId)
     replayPlayer:setPanelId(player.settings.panelId)
-    if LevelData.validate(player.settings.levelData) then
-      setmetatable(player.settings.levelData, LevelData)
+    if player.human then
+      if LevelData.validate(player.settings.levelData) then
+        setmetatable(player.settings.levelData, LevelData)
+        replayPlayer:setLevelData(player.settings.levelData)
+      end
+      replayPlayer:setInputMethod(player.settings.inputMethod)
+      replayPlayer:setInputs(ReplayPlayer.decompressInputString(player.settings.inputs))
+    else
+      replayPlayer:setHealthSettings(player.settings.healthSettings)
     end
-    replayPlayer:setLevelData(player.settings.levelData)
-    replayPlayer:setInputMethod(player.settings.inputMethod)
     replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
     replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
-    replayPlayer:setHealthSettings(player.settings.healthSettings)
     replayPlayer:setLevel(player.settings.level)
     replayPlayer:setDifficulty(player.settings.difficulty)
-    replayPlayer:setInputs(ReplayPlayer.decompressInputString(player.settings.inputs))
 
     replay:updatePlayer(i, replayPlayer)
   end

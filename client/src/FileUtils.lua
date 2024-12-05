@@ -1,4 +1,5 @@
 local logger = require("common.lib.logger")
+local Replay = require("common.engine.Replay")
 
 local PREFIX_OF_IGNORED_DIRECTORIES = "__"
 

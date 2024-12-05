@@ -28,7 +28,7 @@ end
 
 -- sets the levelData which is a LevelData object
 function ReplayPlayer:setLevelData(levelData)
-  if levelData.TYPE == "LevelData" then
+  if levelData and levelData.TYPE == "LevelData" then
     self.settings.levelData = levelData
   end
 end
