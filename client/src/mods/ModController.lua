@@ -26,7 +26,7 @@ local function unloadMod(modController, mod)
   ModLoader.cancelLoad(mod)
   mod:unload()
   local subMods = mod:getSubMods()
-  if subMods then
+  if #subMods > 0 then
     logger.warn("Technically we should never reach here because actually selected mods cannot be bundles")
     for _, subMod in ipairs(subMods) do
       if subMod.fullyLoaded and tableUtils.length(subMod.users) == 0 then

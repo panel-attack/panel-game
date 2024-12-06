@@ -10,8 +10,27 @@ local LevelData = require("common.engine.LevelData")
 
 local REPLAY_VERSION = 2
 
--- A replay is a particular recording of a play of the game. Temporarily this is just helper methods.
-local Replay = class(function(self, engineVersion, seed, gameMode, puzzle)
+---@class Replay
+---@field timestamp number The time the replay got created as a system dependent timestamp
+---@field engineVersion string The engine version the replay was generated with
+---@field replayVersion number Indicates the version of the replay's data format
+---@field seed number The seed to be used to for random functions
+---@field gameMode table Contains flags and fields determining the overall Match settings
+---@field players ReplayPlayer[] The players that are/were part of the Match
+---@field ranked boolean? If the match counted towards the ladder
+---@field stageId string? The stage that was picked for the match on the machine saving the replay
+---@field duration number? How long the game took in frames
+---@field incomplete boolean? If the match was finished by an abort
+---@field completed boolean? If the match that is represented by the replay has already finished
+---@field winnerIndex number? index of players that won the match; nil if incomplete or the match concluded with a tie
+---@field winnerId number? publicId of the player that won the match; negative if unknown; nil if incomplete or the match concluded with a tie
+---@field gameId number? The identifier for the game on the server it was played on
+
+-- A replay is a data recording of a Match
+---@class Replay
+---@overload fun(engineVersion: string, seed: number, gameMode: table, puzzle: table?): Replay
+local Replay = class(
+function(self, engineVersion, seed, gameMode, puzzle)
     self.timestamp = to_UTC(os.time())
     self.engineVersion = engineVersion
     self.replayVersion = REPLAY_VERSION
@@ -244,17 +263,20 @@ function Replay.createFromV2Data(replayData)
     replayPlayer:setWins(player.wins)
     replayPlayer:setCharacterId(player.settings.characterId)
     replayPlayer:setPanelId(player.settings.panelId)
-    if LevelData.validate(player.settings.levelData) then
-      setmetatable(player.settings.levelData, LevelData)
+    if player.human then
+      if LevelData.validate(player.settings.levelData) then
+        setmetatable(player.settings.levelData, LevelData)
+        replayPlayer:setLevelData(player.settings.levelData)
+      end
+      replayPlayer:setInputMethod(player.settings.inputMethod)
+      replayPlayer:setInputs(ReplayPlayer.decompressInputString(player.settings.inputs))
+    else
+      replayPlayer:setHealthSettings(player.settings.healthSettings)
     end
-    replayPlayer:setLevelData(player.settings.levelData)
-    replayPlayer:setInputMethod(player.settings.inputMethod)
     replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
     replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
-    replayPlayer:setHealthSettings(player.settings.healthSettings)
     replayPlayer:setLevel(player.settings.level)
     replayPlayer:setDifficulty(player.settings.difficulty)
-    replayPlayer:setInputs(ReplayPlayer.decompressInputString(player.settings.inputs))
 
     replay:updatePlayer(i, replayPlayer)
   end

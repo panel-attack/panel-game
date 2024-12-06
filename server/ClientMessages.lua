@@ -25,12 +25,15 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeTaunt(clientMessage)
   elseif clientMessage.game_over then
     return ClientMessages.sanitizeGameResult(clientMessage)
+  elseif clientMessage.logout then
+    return clientMessage
   else
     local errorMsg = "Received an unexpected message"
-    if clientMessage:len() > 10000 then
-      errorMsg = errorMsg .. " with " .. clientMessage:len() .. " characters"
+    local messageJson = json.encode(clientMessage)
+    if messageJson and type(messageJson) == "string" and messageJson:len() > 10000 then
+      errorMsg = errorMsg .. " with " .. messageJson:len() .. " characters"
     else
-      errorMsg = errorMsg .. ":\n  " .. clientMessage
+      errorMsg = errorMsg .. ":\n  " .. tostring(messageJson)
     end
     logger.error(errorMsg)
     return { unknown = true}

@@ -23,6 +23,7 @@ local Player = class(function(self, name, publicId, isLocal)
     level = 1,
     difficulty = 1,
     speed = 1,
+    ---@type LevelData
     levelData = LevelPresets.getModern(1),
     style = GameModes.Styles.MODERN,
     characterId = "",
@@ -87,6 +88,7 @@ function Player:createStackFromSettings(match, which)
     args.allowAdjacentColors = true
   end
 
+  ---@type LevelData
   args.levelData = self.settings.levelData
 
   -- the client Player does not currently allow management of allowAdjacentColors
@@ -145,6 +147,7 @@ function Player:setDifficulty(difficulty)
   end
 end
 
+---@param levelData LevelData
 function Player:setLevelData(levelData)
   self.settings.levelData = levelData
   self:setColorCount(levelData.colors)

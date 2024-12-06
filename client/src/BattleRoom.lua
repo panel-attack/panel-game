@@ -75,9 +75,9 @@ function BattleRoom.createFromServerMessage(message)
     message = ServerMessages.sanitizeSpectatorJoin(message)
     if message.replay then
       local replay = message.replay
-      if not replay.engineVersion then
-        replay.engineVersion = consts.ENGINE_VERSION
-      end
+      -- if the server message lacks ENGINE_VERSION, the standard replay sanitization may conservatively guess v046
+      -- but since we're online and successfully connected we KNOW it has to be our engine version
+      replay.engineVersion = consts.ENGINE_VERSION
       local match = Match.createFromReplay(replay, false)
       for i, player in ipairs(match.players) do
         player:updateSettings(message.players[i])

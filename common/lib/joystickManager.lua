@@ -1,7 +1,6 @@
 local tableUtils = require("common.lib.tableUtils")
 local logger = require("common.lib.logger")
 
---@module joystickManager
 local joystickManager = {
   guidToName = {},
 

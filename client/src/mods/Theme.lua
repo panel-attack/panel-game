@@ -825,6 +825,9 @@ function theme_init()
   themes[consts.DEFAULT_THEME_DIRECTORY] = Theme(Theme.defaultThemeDirectoryPath, consts.DEFAULT_THEME_DIRECTORY)
 
   themes[config.theme]:load()
+  if themes[config.theme].font then
+    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size)
+  end
 end
 
 function Theme:playCancelSfx()

@@ -4,6 +4,7 @@ if love then
   -- love comes with luasocket
   socket = require("socket")
 else
+---@diagnostic disable-next-line: different-requires
   socket = require("common.lib.socket")
 end
 

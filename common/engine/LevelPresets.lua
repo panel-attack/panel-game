@@ -1,6 +1,7 @@
 -- this file documents presets for level data
 local LevelData = require("common.engine.LevelData")
 
+---@type LevelData[]
 local modern = {}
 modern[1] = LevelData()
 modern[1] :setStartingSpeed(1)
@@ -187,7 +188,7 @@ modern[10]:setStartingSpeed(32)
           :setStopChainConstant(56)
           :setStopDangerConstant(88)
           :setStopCoefficient(2)
-          :setStopDangerCoefficient(4)
+          :setStopDangerCoefficient(2)
           :setHover(6)
           :setGarbageHover(4)
           :setFlash(28)
@@ -213,6 +214,7 @@ modern[11]:setStartingSpeed(45)
           :setFace(8)
           :setPop(6)
 
+---@type (table<number | string, LevelData>)
 local classic = {}
 classic[1] = LevelData()
 classic[1]:setStartingSpeed(1)
@@ -290,7 +292,8 @@ classic.ex = classic[4]
 
 local LevelPresets = {}
 
--- returns a deepcopy of the modern preset
+---@param level number
+---@return LevelData # a deepcopy of the modern preset
 function LevelPresets.getModern(level)
   assert(modern[level], "trying to load inexistent level preset" .. level)
   return deepcpy(modern[level])
@@ -298,6 +301,8 @@ end
 
 LevelPresets.modernPresetCount = #modern
 
+---@param difficulty number | string the difficulty expressed as index 1 2 3 4 or easy normal hard ex 
+---@return LevelData # a deepcopy of the classic preset
 function LevelPresets.getClassic(difficulty)
   assert(classic[difficulty], "trying to load inexistent difficulty preset" .. difficulty)
   return deepcpy(classic[difficulty])

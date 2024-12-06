@@ -10,8 +10,6 @@ local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
 local GameModes = require("common.engine.GameModes")
 local GameBase = require("client.src.scenes.GameBase")
 
---@module TrainingMenu
--- 
 local TrainingMenu = class(
   function (self, sceneParams)
     self.backgroundImg = themes[config.theme].images.bg_main

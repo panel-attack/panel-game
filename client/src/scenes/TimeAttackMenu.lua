@@ -5,7 +5,6 @@ local Grid = require("client.src.ui.Grid")
 local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionWrapper")
 local Label = require("client.src.ui.Label")
 
---@module timeAttackMenu
 -- Scene for the time attack game setup menu
 local TimeAttackMenu = class(
   function(self, sceneParams)

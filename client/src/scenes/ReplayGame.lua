@@ -6,7 +6,6 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.jprof.jprof")
 
---@module replayGame
 local ReplayGame = class(
   function (self, sceneParams)
     self.frameAdvance = false

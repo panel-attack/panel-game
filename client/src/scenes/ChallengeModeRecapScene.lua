@@ -9,7 +9,6 @@ local tableUtils = require("common.lib.tableUtils")
 local util = require("common.lib.util")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 
--- @module ChallengeModeRecapScene
 -- Gives a summary of the recently completed challenge mode game
 local ChallengeModeRecapScene = class(function(self, sceneParams)
   self.backgroundImg = themes[config.theme].images.bg_main

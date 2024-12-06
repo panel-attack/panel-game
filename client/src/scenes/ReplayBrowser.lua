@@ -7,7 +7,6 @@ local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
 
---@module replayBrowser
 local ReplayBrowser = class(
   function (self, sceneParams)
     self.keepMusic = true
