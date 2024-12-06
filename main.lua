@@ -10,6 +10,7 @@ local RunTimeGraph = require("client.src.RunTimeGraph")
 local CustomRun = require("client.src.CustomRun")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.jprof.jprof")
+local Replay = require("common.engine.Replay")
 require("common.lib.util")
 
 local Game = require("client.src.Game")
@@ -26,7 +27,7 @@ end
 
 -- Called at the beginning to load the game
 -- Either called directly or from auto_updater
-function love.load(args)
+function love.load(args, rawArgs)
   love.keyboard.setTextInput(false)
 
   -- there is a bug on windows that causes the game to start with a size equal to the desktop causing the window handle to be offscreen
@@ -159,6 +160,7 @@ function love.errorhandler(msg)
     return
   end
 
+---@diagnostic disable-next-line: undefined-field
   if not love.graphics.isCreated() or not love.window.isOpen() then
     local success, status = pcall(love.window.setMode, 800, 600)
     if not success or not status then

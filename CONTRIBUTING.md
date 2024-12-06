@@ -4,21 +4,30 @@ The best place to coordinate contributions is through the issue tracker and the 
 
 If you have an idea, please reach out in the #pa-development channel of the discord or on github to make sure others agree and coordinate.  
 
-Try to follow the following code guidelines when contributing:
-- Separate functionality into separate files that only interact with each other as much as needed
-- Avoid globals
-- Make smaller methods
-- Don’t duplicate code, break it into smaller reusable chunks and use that in both spots
-- Writing tests for how the code should work is extremely beneficial
+Please follow the following code guidelines when contributing:
+
+- Keep the code maintainable and clean
+- Annotate new classes and table structures for use with the [Lua Language Server](https://luals.github.io/wiki/annotations/)  
+`table` as a monolithic type for data structures makes it very difficult for IDEs to power common functions like "Go To Definition", "Find All References" or "Rename Symbol" if there are no annotations to provide guidance.
+- Make sure the testLauncher successfully completes all tests
+  - if sensible for your contribution, please consider adding a unit or integration test  
+  depending on the topic we may not accept a PR without
 - Follow the formatting guidelines below
-- Constants should be local to a file / scope unless they need to be shared everywhere
-- Avoid the use of shortlived tables and consider pooling if you can't
-- Avoid use of luajit's ffi module; jit is disabled on our weakest platform, making ffi extremely slow
+
+Additionally we ask that you avoid use of LuaJIT's ffi module. LuaJIT is disabled on Android, our weakest platform, making ffi extremely slow there.
+
+Finally, some more guidelines apply for code that runs in the gameplay loop:
+
+- Be mindful of performance  
+In particular avoid the use of shortlived tables to not overwhelm the garbage collector
+- Gameplay graphics have to be able to derive their state from the game state at any time and cannot rely on being updated  
+This is to ensure that graphics remain functional and consistent with rollback and rewind
 
 Pull requests are to be pulled against the `beta` branch.  
 
 ## Formatting Guidelines
 
+- Use `""` for strings and `''` to escape quotation marks
 - Constants should be `ALL_CAPS_WITH_UNDERSCORES_BETWEEN_WORDS`
 - Class names start with a capital like `BattleRoom`
 - All other names use `camelCase`

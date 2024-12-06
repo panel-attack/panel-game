@@ -3,7 +3,6 @@ local Replay = require("common.engine.Replay")
 
 local PREFIX_OF_IGNORED_DIRECTORIES = "__"
 
---@module FileUtils
 -- Collection of functions for file operations
 local fileUtils = {}
 

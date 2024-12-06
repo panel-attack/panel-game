@@ -5,7 +5,29 @@
 local class = require("common.lib.class")
 local utf8 = require("common.lib.utf8Additions")
 
-local ReplayPlayer = class(function(self, name, publicId, human)
+---@class ReplayPlayer
+---@field name string The name of the player
+---@field publicId number The publicId of the player; negative numbers indicate unknown or anonymous
+---@field human boolean Whether the player is/was human
+---@field wins number How many wins the player had in the set prior to the game
+---@field settings ReplayPlayerSettings
+
+---@class ReplayPlayerSettings Specifies settings of the player that change between replays
+---@field characterId string?
+---@field panelId string?
+---@field levelData LevelData?
+---@field inputMethod string?
+---@field inputs string?
+---@field allowAdjacentColors boolean?
+---@field level (number | nil)
+---@field difficulty (number | nil)
+---@field attackEngineSettings table?
+---@field healthSettings table?
+
+---@class ReplayPlayer
+---@overload fun(name: string, publicId: number, human: boolean): ReplayPlayer
+local ReplayPlayer = class(
+function(self, name, publicId, human)
   self.name = name
   self.publicId = publicId
   self.human = human
@@ -26,9 +48,10 @@ function ReplayPlayer:setPanelId(panelId)
   self.settings.panelId = panelId
 end
 
--- sets the levelData which is a LevelData object
+---@param levelData LevelData
 function ReplayPlayer:setLevelData(levelData)
   if levelData and levelData.TYPE == "LevelData" then
+    ---@type LevelData
     self.settings.levelData = levelData
   end
 end

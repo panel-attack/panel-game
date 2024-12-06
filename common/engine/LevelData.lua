@@ -7,6 +7,22 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 
+---@class LevelData
+---@field startingSpeed number The speed the stack should start at
+---@field speedIncreaseMode SPEED_INCREASE_MODE The manner in which speed increases throughout the game
+---@field shockFrequency number How many blocks need to be cleared to queue the next shock panel for panel generation
+---@field shockCap number How many shock panels can be queued at maximum; 0 disables shock blocks
+---@field colors number How many colors are used for panel generation
+---@field maxHealth number Unconditional invincibility frames that run out while topped out with no other type of invincibility frames available
+---@field stop table<string, number> Dictionary of number values used to award stop time
+---@field frameConstants table<string, number> Dictionary of number values used to determine panel physics 
+
+---@class LevelData
+---@overload fun(): LevelData
+---normally declaring @type in addition to @class isn't necessary
+---we do it here because as an interop format, LevelData is assigned as the metatable in some places
+---and LuaLS flags that because it somehow cannot believe LevelData is a table without this declaration
+---@type LevelData
 local LevelData = class(function(self)
   -- the initial speed upon match start
   -- defines how many frames it takes to rise one row via the Stack's SPEED_TO_RISE_TIME table
@@ -66,21 +82,26 @@ LevelData.TYPE = "LevelData"
 -- the mechanism through which speed increases throughout the game
 --   mode 1: in constant time intervals
 --   mode 2: depending on how many panels were cleared according to the Stack's PANELS_TO_NEXT_SPEED table
+---@enum SPEED_INCREASE_MODE
 LevelData.SPEED_INCREASE_MODES = {
   TIME_INTERVAL = 1,
   CLEARED_PANEL_COUNT = 2,
 }
 
 -- represents the two different ways the Stack may calculate stop time
+---@enum STOP_FORMULA
 LevelData.STOP_FORMULAS = {
   MODERN = 1,
   CLASSIC = 2,
 }
 
+---@return boolean # if the LevelData is suitable for a Stack that receives garbage
 function LevelData:isGarbageCompatible()
   return self.frameConstants.GARBAGE_HOVER ~= nil
 end
 
+---@param speedIncreaseMode SPEED_INCREASE_MODE
+---@return self LevelData the modified LevelData (same object the function was called on)
 function LevelData:setSpeedIncreaseMode(speedIncreaseMode)
   if speedIncreaseMode ~= self.SPEED_INCREASE_MODES.TIME_INTERVAL and speedIncreaseMode ~= self.SPEED_INCREASE_MODES.CLEARED_PANEL_COUNT then
     logger.warn("Tried to set invalid speedIncreaseMode " .. tostring(speedIncreaseMode))
@@ -90,6 +111,7 @@ function LevelData:setSpeedIncreaseMode(speedIncreaseMode)
   return self
 end
 
+---@param startingSpeed number the starting speed to use for the stack
 function LevelData:setStartingSpeed(startingSpeed)
   if startingSpeed < 0 or startingSpeed > 99 then
     logger.warn("Tried to set invalid starting speed " .. tostring(startingSpeed))
@@ -127,6 +149,7 @@ function LevelData:setMaxHealth(maxHealth)
   return self
 end
 
+---@param formula STOP_FORMULA
 function LevelData:setStopFormula(formula)
   if formula ~= self.STOP_FORMULAS.MODERN and formula ~= self.STOP_FORMULAS.CLASSIC then
     logger.warn("Tried to set invalid stop formula " .. tostring(formula))

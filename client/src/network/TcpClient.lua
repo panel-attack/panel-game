@@ -1,4 +1,7 @@
 local logger = require("common.lib.logger")
+-- socket is bundled with love so the client requires love's socket
+-- and the server requires the socket from common/lib
+---@diagnostic disable-next-line: different-requires
 local socket = require("socket")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local ClientMessages = require("common.network.ClientProtocol")

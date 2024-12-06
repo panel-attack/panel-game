@@ -1,7 +1,6 @@
 local GameBase = require("client.src.scenes.GameBase")
 local class = require("common.lib.class")
 
---@module endlessGame
 -- Scene for an endless mode instance of the game
 local VsSelfGame = class(
   function (self, sceneParams)

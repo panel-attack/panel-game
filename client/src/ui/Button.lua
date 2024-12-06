@@ -3,7 +3,6 @@ local UIElement = require("client.src.ui.UIElement")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("common.lib.inputManager")
 
---@module Button
 local Button = class(
   function(self, options)
     self.backgroundColor = options.backgroundColor or {.3, .3, .3, .7}

@@ -6,7 +6,6 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local MainMenu = require("client.src.scenes.MainMenu")
 
---@module titleScreen
 -- The title screen scene
 local TitleScreen = class(
   function (self, sceneParams)

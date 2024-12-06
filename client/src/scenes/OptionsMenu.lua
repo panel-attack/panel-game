@@ -21,7 +21,6 @@ local ScrollText = require("client.src.ui.ScrollText")
 local util = require("common.lib.util")
 local ModManagement = require("client.src.scenes.ModManagement")
 
--- @module optionsMenu
 -- Scene for the options menu
 local OptionsMenu = class(function(self, sceneParams)
   self.music = "main"

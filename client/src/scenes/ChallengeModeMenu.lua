@@ -7,8 +7,6 @@ local Label = require("client.src.ui.Label")
 local Stepper = require("client.src.ui.Stepper")
 local CharacterSelectChallenge = require("client.src.scenes.CharacterSelectChallenge")
 
---@module ChallengeModeMenu
--- 
 local ChallengeModeMenu = class(
   function (self, sceneParams)
     self.backgroundImg = themes[config.theme].images.bg_main

@@ -5,7 +5,6 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapScene")
 
--- @module Game1pChallenge
 -- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)

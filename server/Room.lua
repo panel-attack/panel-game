@@ -409,14 +409,14 @@ function Room:resolve_game_outcome()
     --outcome is the player number of the winner, or 0 for a tie
     if self.a.save_replays_publicly ~= "not at all" and self.b.save_replays_publicly ~= "not at all" then
       if self.a.save_replays_publicly == "anonymously" then
-        self.replay.players[1] = "anonymous"
+        self.replay.players[1].name = "anonymous"
         if self.replay.players[1].publicId == self.replay.winnerId then
           self.replay.winnerId = -1
         end
         self.replay.players[1].publicId = -1
       end
       if self.b.save_replays_publicly == "anonymously" then
-        self.replay.players[2] = "anonymous"
+        self.replay.players[2].name = "anonymous"
         if self.replay.players[2].publicId == self.replay.winnerId then
           self.replay.winnerId = -2
         end

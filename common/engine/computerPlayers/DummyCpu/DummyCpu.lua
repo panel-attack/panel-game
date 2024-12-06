@@ -1,3 +1,5 @@
+local class = require("common.lib.class")
+
 local dummyConfig = { ['DummyConfig'] = { Log = 4 } }
 
 DummyCpu = class(function(self, stack)

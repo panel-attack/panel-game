@@ -1,3 +1,6 @@
+-- socket is bundled with love so the client requires love's socket
+-- and the server requires the socket from common/lib
+---@diagnostic disable-next-line: different-requires
 local socket = require("common.lib.socket")
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
