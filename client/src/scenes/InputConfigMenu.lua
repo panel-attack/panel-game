@@ -9,7 +9,6 @@ local joystickManager = require("common.lib.joystickManager")
 local util = require("common.lib.util")
 local class = require("common.lib.class")
 
---@module inputConfigMenu
 -- Scene for configuring input
 local InputConfigMenu = class(
   function (self, sceneParams)

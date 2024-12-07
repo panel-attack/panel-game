@@ -3,7 +3,7 @@ local class = require("common.lib.class")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
 local GameModes = require("common.engine.GameModes")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
-local levelPresets = require("client.src.LevelPresets")
+local levelPresets = require("common.engine.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
 require("client.src.BattleRoom")
 
@@ -215,6 +215,7 @@ function ChallengeMode:setStage(index)
   local stageSettings = self.stages[self.stageIndex]
   self.player.settings.attackEngineSettings = stageSettings.attackSettings
   self.player.settings.healthSettings = stageSettings.healthSettings
+  self.player.level = index
   if stageSettings.characterId then
     self.player:setCharacter(stageSettings.characterId)
   else

@@ -3,7 +3,6 @@ local UiElement = require("client.src.ui.UIElement")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
---@module Scene
 -- Base class for a container representing a single screen of PanelAttack.
 -- Each scene should have a field called <Scene>.name = <Scene> (for identification in errors and debugging)
 -- Each scene must add its UiElements as children to its uiRoot property

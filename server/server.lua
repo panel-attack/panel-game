@@ -1,7 +1,11 @@
+-- socket is bundled with love so the client requires love's socket
+-- and the server requires the socket from common/lib
+---@diagnostic disable-next-line: different-requires
 local socket = require("common.lib.socket")
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local NetworkProtocol = require("common.network.NetworkProtocol")
+local ServerProtocol = require("common.network.ServerProtocol")
 json = require("common.lib.dkjson")
 require("common.lib.mathExtensions")
 require("common.lib.util")
@@ -136,7 +140,7 @@ function Server:importDatabase()
   self.database:commitTransaction() -- bulk commit every statement from the start of beginTransaction
 end
 
-local function addPublicPlayerData(players, playerName, player) 
+local function addPublicPlayerData(players, playerName, player)
   if not players or not player then
     return
   end
@@ -194,7 +198,7 @@ function Server:propose_game(senderName, receiverName, message)
         self:create_room(senderConnection, receiverConnection)
       end
     else
-      receiverConnection:send(message)
+      receiverConnection:sendJson(ServerProtocol.sendChallenge(senderName, receiverName))
       local prop = {[senderName] = true}
       proposals[senderName][receiverName] = prop
       proposals[receiverName][senderName] = prop
@@ -215,18 +219,6 @@ function Server:clear_proposals(name)
   end
 end
 
-function Server:playerSettingFromTable(data)
-  local playerSettings = {
-    character = data.character,
-    character_display_name = data.character_display_name,
-    level = data.level,
-    panels_dir = data.panels_dir,
-    player_number = data.player_number,
-    inputMethod = data.inputMethod
-  }
-  return playerSettings
-end
-
 -- a and be are connection objects
 function Server:create_room(a, b)
   self:setLobbyChanged()
@@ -235,89 +227,6 @@ function Server:create_room(a, b)
   local new_room = Room(a, b, self.roomNumberIndex, leaderboard, self)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[new_room.roomNumber] = new_room
-  local a_msg, b_msg = {create_room = true}, {create_room = true}
-  a_msg.room_number = new_room.roomNumber
-  b_msg.room_number = new_room.roomNumber
-  a_msg.your_player_number = 1
-  a_msg.op_player_number = 2
-  a_msg.opponent = new_room.b.name
-  b_msg.opponent = new_room.a.name
-  new_room.b.cursor = "__Ready"
-  new_room.a.cursor = "__Ready"
-  b_msg.your_player_number = 2
-  b_msg.op_player_number = 1
-  a_msg.a_menu_state = new_room.a:menu_state()
-  a_msg.b_menu_state = new_room.b:menu_state()
-  b_msg.b_menu_state = new_room.b:menu_state()
-  b_msg.a_menu_state = new_room.a:menu_state()
-  new_room.a.opponent = new_room.b
-  new_room.b.opponent = new_room.a
-
-  new_room:prepare_character_select()
-  a_msg.ratings = new_room.ratings
-  b_msg.ratings = new_room.ratings
-  a_msg.rating_updates = true
-  b_msg.rating_updates = true
-
-  new_room.a:send(a_msg)
-  new_room.b:send(b_msg)
-end
-
-function Server:start_match(a, b)
-  if (a.player_number ~= 1) then
-    logger.debug("players a and b need to be swapped.")
-    a, b = b, a
-    if (a.player_number == 1) then
-      logger.debug("Success, player a now has player_number 1.")
-    else
-      logger.error("ERROR: player a still doesn't have player_number 1.")
-    end
-  end
-
-  a.room.stage = math.random(1, 2) == 1 and a.stage or b.stage
-  local playerSettings = self:playerSettingFromTable(a)
-  local opponentSettings = self:playerSettingFromTable(b)
-  local msg = {
-    match_start = true,
-    ranked = false,
-    stage = a.room.stage,
-    player_settings = playerSettings,
-    opponent_settings = opponentSettings
-  }
-  local room_is_ranked, reasons = a.room:rating_adjustment_approved()
-  if room_is_ranked then
-    a.room.replay.vs.ranked = true
-    msg.ranked = true
-    if leaderboard.players[a.user_id] then
-      msg.player_settings.rating = math.round(leaderboard.players[a.user_id].rating)
-    else
-      msg.player_settings.rating = DEFAULT_RATING
-    end
-    if leaderboard.players[b.user_id] then
-      msg.opponent_settings.rating = math.round(leaderboard.players[b.user_id].rating)
-    else
-      msg.opponent_settings.rating = DEFAULT_RATING
-    end
-  end
-  a.room.replay.vs.seed = math.random(1,9999999)
-  msg.seed = a.room.replay.vs.seed
-  a.room.replay.vs.P1_name = a.name
-  a.room.replay.vs.P2_name = b.name
-  a.room.replay.vs.P1_char = a.character
-  a.room.replay.vs.P2_char = b.character
-  a:send(msg)
-  a.room:send_to_spectators(msg)
-  msg.player_settings, msg.opponent_settings = msg.opponent_settings, msg.player_settings
-  b:send(msg)
-  self:setLobbyChanged()
-  a:setup_game()
-  b:setup_game()
-  if not a.room then
-    logger.error("ERROR: In start_match, Player A " .. (a.name or "nil") .. " doesn't have a room\nCannot run setup_game() for spectators!")
-  end
-  for k, v in pairs(a.room.spectators) do
-    v:setup_game()
-  end
 end
 
 function Server:roomNumberToRoom(roomNr)
@@ -363,7 +272,7 @@ end
 
 function Server:denyLogin(connection, reason, ban)
   assert(ban == nil or reason == nil)
-  local message = {login_denied = true, reason = reason }
+  local banDuration
   if ban then
     local banRemainingString = "Ban Remaining: "
     local secondsRemaining = (ban.completionTime - os.time())
@@ -389,14 +298,14 @@ function Server:denyLogin(connection, reason, ban)
     if detailCount < 2 then
       banRemainingString = banRemainingString .. math.floor(secondsRemaining) .. " seconds "
     end
-    message.reason = ban.reason
-    message.ban_duration = banRemainingString
+    reason = ban.reason
+    banDuration = banRemainingString
 
     self.database:playerBanSeen(ban.banID)
     logger.warn("Login denied because of ban: " .. ban.reason)
   end
 
-  connection:send(message)
+  connection:sendJson(ServerProtocol.denyLogin(reason, banDuration))
 end
 
 function Server:closeRoom(room)
@@ -405,18 +314,6 @@ function Server:closeRoom(room)
     self.rooms[room.roomNumber] = nil
   end
 end
-
-function Server:addSpectator(room, connection)
-  room:add_spectator(connection)
-  self:setLobbyChanged()
-end
-
-function Server:removeSpectator(room, connection)
-  if room:remove_spectator(connection) then
-    self:setLobbyChanged()
-  end
-end
-
 
 function Server:calculate_rating_adjustment(Rc, Ro, Oa, k) -- -- print("calculating expected outcome for") -- print(players[player_number].name.." Ranking: "..leaderboard.players[players[player_number].user_id].rating)
   --[[ --Algorithm we are implementing, per community member Bbforky:
@@ -584,8 +481,8 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
       end
       room.ratings[player_number].league = self:get_league(room.ratings[player_number].new)
     end
-  -- msg = {rating_updates=true, ratings=room.ratings, placement_match_progress=placement_match_progress}
-  -- room:send(msg)
+  -- local message = ServerProtocol.updateRating(room.ratings[1], room.ratings[2])
+  -- room:broadcastJson(message)
   end
 end
 
@@ -741,7 +638,7 @@ function Server:pingConnections(currentTime)
     end
   end
 end
-  
+
 -- Flush the log so we can see new info periodically. The default caches for huge amounts of time.
 function Server:flushLogs(currentTime)
   if currentTime - self.lastFlushTime > 60 then
@@ -756,9 +653,11 @@ end
 
 function Server:broadCastLobbyIfChanged()
   if self.lobbyChanged then
+    local lobbyState = self:lobby_state()
+    local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
     for _, connection in pairs(self.connections) do
       if connection.state == "lobby" then
-        connection:send(self:lobby_state())
+        connection:sendJson(message)
       end
     end
     self.lobbyChanged = false

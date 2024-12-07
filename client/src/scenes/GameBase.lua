@@ -13,19 +13,20 @@ local UpdatingImage = require("client.src.graphics.UpdatingImage")
 local prof = require("common.lib.jprof.jprof")
 local Menu = require("client.src.ui.Menu")
 local MenuItem = require("client.src.ui.MenuItem")
+local FileUtils = require("client.src.FileUtils")
 
---@module GameBase
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 local GameBase = class(
   function (self, sceneParams)
-    -- must be set in child class
-    self.nextScene = nil
-    self.nextSceneParams = {}
+    self.saveReplay = true
 
     -- set in load
     self.text = nil
     self.keepMusic = false
     self.currentStage = config.stage
+    self.pauseState = {
+      musicWasPlaying = false
+    }
 
     self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
     self.maxDisplayTime = -1 -- the maximum amount of seconds the game over screen will be displayed for, -1 means no max time
@@ -38,9 +39,13 @@ local GameBase = class(
       currentTime = nil,
       expectedFrameCount = nil
     }
+
+    self:load(sceneParams)
   end,
   Scene
 )
+
+GameBase.name = "GameBase"
 
 -- begin abstract functions
 
@@ -144,7 +149,7 @@ function GameBase:load(sceneParams)
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
       self.match:togglePause()
-      if self.musicSource and self.musicSource.stageTrack then
+      if self.musicSource and self.musicSource.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.musicSource.stageTrack)
       end
       self:initializeFrameInfo()
@@ -188,7 +193,8 @@ function GameBase:handlePause()
       self.match:togglePause()
       self.pauseMenu:setVisibility(true)
 
-      if self.musicSource then
+      if self.musicSource and self.musicSource.stageTrack then
+        self.pauseState.musicWasPlaying = self.musicSource.stageTrack:isPlaying()
         SoundController:pauseMusic()
       end
       GAME.theme:playValidationSfx()
@@ -426,6 +432,10 @@ function GameBase:genericOnMatchEnded(match)
   -- matches always sort players to have locals in front so if 1 isn't local, none is
   if match.players[1].isLocal then
     analytics.game_ends(match.players[1].stack.analytic)
+  end
+
+  if self.saveReplay then
+    FileUtils.saveReplay(match.replay)
   end
 end
 

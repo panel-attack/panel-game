@@ -2,6 +2,7 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
+local LevelData = require("common.engine.LevelData")
 require("table.clear")
 
 -- score lookup tables
@@ -480,30 +481,30 @@ function Stack:calculateStopTime(comboSize, toppedOut, isChain, chainCounter)
   local stop = self.levelData.stop
   if comboSize > 3 or isChain then
     if toppedOut and isChain then
-      if stop.formula == 1 then
+      if stop.formula == LevelData.STOP_FORMULAS.MODERN then
         local length = (chainCounter > 4) and 6 or chainCounter
         stopTime = stop.dangerConstant + (length - 1) * stop.dangerCoefficient
-      elseif stop.formula == 2 then
+      elseif stop.formula == LevelData.STOP_FORMULAS.CLASSIC then
         stopTime = stop.dangerConstant
       end
     elseif toppedOut then
-      if stop.formula == 1 then
+      if stop.formula == LevelData.STOP_FORMULAS.MODERN then
         local length = (comboSize < 9) and 2 or 3
         stopTime = stop.coefficient * length + stop.chainConstant
-      elseif stop.formula == 2 then
+      elseif stop.formula == LevelData.STOP_FORMULAS.CLASSIC then
         stopTime = stop.dangerConstant
       end
     elseif isChain then
-      if stop.formula == 1 then
+      if stop.formula == LevelData.STOP_FORMULAS.MODERN then
         local length = math.min(chainCounter, 13)
         stopTime = stop.coefficient * length + stop.chainConstant
-      elseif stop.formula == 2 then
+      elseif stop.formula == LevelData.STOP_FORMULAS.CLASSIC then
         stopTime = stop.chainConstant
       end
     else
-      if stop.formula == 1 then
+      if stop.formula == LevelData.STOP_FORMULAS.MODERN then
         stopTime = stop.coefficient * comboSize + stop.comboConstant
-      elseif stop.formula == 2 then
+      elseif stop.formula == LevelData.STOP_FORMULAS.CLASSIC then
         stopTime = stop.comboConstant
       end
     end

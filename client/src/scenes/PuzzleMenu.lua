@@ -8,7 +8,6 @@ local LevelSlider = require("client.src.ui.LevelSlider")
 local Label = require("client.src.ui.Label")
 local class = require("common.lib.class")
 
---@module puzzleMenu
 -- Scene for the puzzle selection menu
 local PuzzleMenu = class(
   function (self, sceneParams)

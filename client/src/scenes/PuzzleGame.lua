@@ -5,7 +5,6 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 
---@module puzzleGame
 -- Scene for a puzzle mode instance of the game
 local PuzzleGame = class(
   function (self, sceneParams)
@@ -13,8 +12,7 @@ local PuzzleGame = class(
     self.inputConfiguration = nil
     self.keepMusic = true
     self.fadeOutMusicOnGameOver = false
-
-    self:load(sceneParams)
+    self.saveReplay = false
   end,
   GameBase
 )

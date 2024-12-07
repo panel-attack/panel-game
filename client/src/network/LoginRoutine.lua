@@ -85,6 +85,9 @@ local function login(tcpClient, ip, port)
             if value.server_notice then
               result.message = result.message .. "\n" value.server_notice:gsub("\\n", "\n")
             end
+            if value.publicId then
+              GAME.localPlayer.publicId = value.publicId
+            end
 
             return result
           else --if result.login_denied then

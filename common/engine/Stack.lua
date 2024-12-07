@@ -17,6 +17,7 @@ local class = require("common.lib.class")
 local Panel = require("common.engine.Panel")
 local GarbageQueue = require("common.engine.GarbageQueue")
 local prof = require("common.lib.jprof.jprof")
+local LevelData = require("common.engine.LevelData")
 
 -- Stuff defined in this file:
 --  . the data structures that store the configuration of
@@ -106,7 +107,7 @@ Stack =
     s.level = level
     s.levelData = levelData
     s.speed = s.levelData.startingSpeed
-    if s.levelData.speedIncreaseMode == 1 then
+    if s.levelData.speedIncreaseMode == LevelData.SPEED_INCREASE_MODES.TIME_INTERVAL then
       -- mode 1: increase speed based on fixed intervals
       s.nextSpeedIncreaseClock = DT_SPEED_INCREASE
     else

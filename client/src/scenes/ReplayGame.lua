@@ -6,14 +6,12 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.jprof.jprof")
 
---@module replayGame
 local ReplayGame = class(
   function (self, sceneParams)
     self.frameAdvance = false
     self.playbackSpeeds = {-1, 0, 0.5, 1, 2, 3, 4, 8, 16}
     self.playbackSpeedIndex = 4
-  
-    self:load(sceneParams)
+    self.saveReplay = false
   end,
   GameBase
 )
@@ -114,11 +112,6 @@ function ReplayGame:customDraw()
   local textPos = themes[config.theme].gameover_text_Pos
   local playbackText = self.playbackSpeeds[self.playbackSpeedIndex] .. "x"
   GraphicsUtil.printf(playbackText, textPos[0], textPos[1], consts.CANVAS_WIDTH, "center", nil, 1, 10)
-end
-
-function ReplayGame:customGameOverSetup()
-  self.nextScene = "ReplayBrowser"
-  self.nextSceneParams = nil
 end
 
 function ReplayGame:drawHUD()

@@ -2,7 +2,7 @@ require("client.src.save")
 local Match = require("common.engine.Match")
 local GameModes = require("common.engine.GameModes")
 local Player = require("client.src.Player")
-local LevelPresets = require("client.src.LevelPresets")
+local LevelPresets = require("common.engine.LevelPresets")
 local inputs = require("common.lib.inputManager")
 
 local GarbageQueueTestingUtils = {}

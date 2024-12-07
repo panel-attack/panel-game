@@ -3,7 +3,6 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local uniqueId = 0
 
---@module UIElement
 -- base class for all UI elements
 -- takes in a options table for setting default values
 -- all valid base options are defined in the constructor

@@ -1,16 +1,12 @@
 local GameBase = require("client.src.scenes.GameBase")
-local Replay = require("common.engine.Replay")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapScene")
 
--- @module Game1pChallenge
 -- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
-  self.nextScene = "CharacterSelectChallenge"
-  self:load(sceneParams)
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
   self.match:connectSignal("pauseChanged", self, self.pauseChanged)
   self.totalTimeQuads = {}
@@ -21,16 +17,6 @@ local Game1pChallenge = class(function(self, sceneParams)
 end, GameBase)
 
 Game1pChallenge.name = "Game1pChallenge"
-
-function Game1pChallenge:onMatchEnded(match)
-  local extraFilename = "diff-" .. GAME.battleRoom.difficulty .. "-stage-" .. GAME.battleRoom.stageIndex
-  if match.replay.winnerIndex then
-    extraFilename = extraFilename .. "-P" .. match.replay.winnerIndex .. "wins"
-  else
-    extraFilename = extraFilename .. "-draw"
-  end
-  Replay.finalizeAndWriteReplay("Challenge Mode", extraFilename, match.replay)
-end
 
 function Game1pChallenge:startNextScene()
   if GAME.battleRoom.challengeComplete then

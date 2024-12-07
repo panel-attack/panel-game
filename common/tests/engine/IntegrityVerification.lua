@@ -26,8 +26,8 @@ function verifier.bulkVerifyReplays(replayPath, outputPath)
       if verifier.versionOverride then
         replayTable.engineVersion = verifier.versionOverride
       end
-      local success, replay = Replay.load(replayTable)
-      if not success then
+      local replay = Replay.createFromTable(replayTable, true)
+      if not replay then
         -- not sure, probably error or use a separate dir in the output path?
       else
         -- we can only really make statements about replays that finished running

@@ -61,7 +61,7 @@ local OnePlayerEndless = {
 
 local OnePlayerTraining = {
   style = Styles.MODERN,
-  gameScene = "Game1pTraining",
+  gameScene = "GameBase",
   setupScene = "CharacterSelectVsSelf",
   richPresenceLabel = "Training", -- loc("mm_1_training"),
 
@@ -106,7 +106,7 @@ local OnePlayerChallenge = {
 
 local TwoPlayerVersus = {
   style = Styles.MODERN,
-  gameScene = "Game2pVs",
+  gameScene = "GameBase",
   setupScene = "CharacterSelect2p",
   richPresenceLabel = "2p versus", -- loc("mm_2_vs"),
 
