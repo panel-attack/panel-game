@@ -149,6 +149,8 @@ Stack =
     -- used for giving a unique identifier to each new garbage block
     s.garbageCreatedCount = 0
     s.garbageLandedThisFrame = {}
+    -- tracks the highest id of garbage matched so far; used for resolving edge cases when matching offscreen garbage
+    s.highestGarbageIdMatched = 0
     -- The number of individual panels created on this stack
     -- used for giving new panels their own unique identifier
     s.panelsCreatedCount = 0
@@ -441,6 +443,7 @@ function Stack.rollbackCopy(source, other)
   other.panels_cleared = source.panels_cleared
   other.danger_timer = source.danger_timer
   other.game_over_clock = source.game_over_clock
+  other.highestGarbageIdMatched = source.highestGarbageIdMatched
   prof.pop("rollback copy the rest")
   prof.push("rollback copy analytics")
   other.analytic = deepcpy(source.analytic)
@@ -1306,6 +1309,8 @@ function Stack.simulate(self)
           self.stop_time = 0
         end
       elseif not self.manual_raise_yet then
+        self.manual_raise = false
+      elseif self:has_falling_garbage() then
         self.manual_raise = false
       end
     -- if the stack is rise locked when you press the raise button,

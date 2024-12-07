@@ -324,7 +324,26 @@ function Stack:getConnectedGarbagePanels(matchingPanels)
     local panel = panelsToCheck:pop()
     -- avoid rechecking a panel already matched
     if not panel.matching then
-      if panel.isGarbage and panel.state == "normal" then
+      if panel.isGarbage and panel.state == "normal"
+      -- we only want to match garbage that is either fully or partially on-screen OR has been on-screen before
+      -- example: chain garbage several rows high lands in row 12; by visuals/shake it is clear that it is more than 1 row high
+      --   it gets matched, lowest row converts, everything normal until here
+      --   if the player manages to make a garbage chain without the chain garbage falling a row it should get matched off-screen
+      --   that is because the player KNOWS from the previous match the chain is still there
+      -- on the other hand it is also possible to get garbage in row 13 that have contact with a match without ever being seen before:
+      -- if garbage spawns in row 13 one frame before the panels in row 11 get elevated to row 12, the garbage "lands" in row 13, becoming matchable
+      -- if a match is generated, the match would produce unexpected panels falling with 0 pop time which is unexpected
+      --   because there has been no indication the garbage is there
+      -- to conclude:
+      -- we only want to match the garbage if it either has at least its lowest row on screen OR had been matched by the stack previously
+      -- the first part of this condition returns true if any row of the garbage is on-screen
+      -- the second part returns true if the garbage was on-screen before due to garbageId only getting generated on spawn
+      --   which means there are no higher garbageIds than our offscreen garbage
+      --   at the end of this function, self.highestGarbageIdMatched is set to the highest garbageId that was matched
+      --   so if the garbage was a repeat match from a chain that got forced off-screen through matching, it will return true and match again
+      --  by checking <= it should also take care of training type garbage shapes
+      --   where you could possibly push more than 1 piece of narrow high garbage offscreen
+      and ((panel.row - panel.y_offset) <= self.height or panel.garbageId <= self.highestGarbageIdMatched) then
         if (panel.metal and panel.matchesMetal) or (not panel.metal and panel.matchesGarbage) then
           -- if a panel is adjacent to a matching non-garbage panel or a matching garbage panel of the same type, 
           -- it should match too
@@ -357,6 +376,13 @@ function Stack:getConnectedGarbagePanels(matchingPanels)
     end
     -- repeat until we can no longer add new panels to the queue because all adjacent panels to our matching ones
     -- are either matching already or non-garbage panels or garbage panels of the other type
+  end
+
+  -- update the highest garbageId matched so far for the stack
+  for i, garbagePanel in ipairs(garbagePanels) do
+    if garbagePanel.garbageId > self.highestGarbageIdMatched then
+      self.highestGarbageIdMatched = garbagePanel.garbageId
+    end
   end
 
   return garbagePanels
@@ -587,7 +613,11 @@ function Stack:updateScoreWithChain()
 end
 
 function Stack:clearChainingFlags()
-  for row = 1, self.height do
+  -- offscreen garbage clearing into chaining panels is support for chains
+  -- but as it is chain garbage, the panelgen will prevent any extra RNG garbage chains from occuring beyond self.height + 1
+  -- that is because panels in row 13 cannot be swapped by the player to line up with a panel above
+  -- which in turn makes the maximum row to encounter chaining panels that may need to be cleared self.height + 2
+  for row = 1, math.min(#self.panels, self.height + 2) do
     for column = 1, self.width do
       local panel = self.panels[row][column]
       -- if a chaining panel wasn't matched but was eligible, we have to remove its chain flag
