@@ -6,8 +6,6 @@ local UIElement = require("client.src.ui.UIElement")
 local inputFieldManager = require("client.src.ui.inputFieldManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
-
---@module InputField
 local InputField = class(
   function(self, options)
     self.placeholderText = GraphicsUtil.newText(love.graphics.getFont(), options.placeholder) or GraphicsUtil.newText(love.graphics.getFont(), "Input Field")

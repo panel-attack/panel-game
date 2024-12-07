@@ -14,7 +14,7 @@ local function testModBundleSelection()
     p1:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
     assert(p1.settings.characterId ~= consts.RANDOM_CHARACTER_SPECIAL_VALUE,
     "the actual stage coming out of the random bundle should never be the random bundle itself")
-    assert(not characters[p1.settings.characterId]:is_bundle(),
+    assert(not characters[p1.settings.characterId]:isBundle(),
     "the actual stage coming out of the random bundle should never be another bundle")
   end
 

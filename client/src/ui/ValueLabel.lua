@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+-- Draws the text of a current model value on screen
 local ValueLabel = class(function(self, options)
   assert(options.valueFunction, "Value labels need a function to poll the value!")
   self.valueFunction = options.valueFunction

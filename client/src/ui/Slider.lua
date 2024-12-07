@@ -5,7 +5,6 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local handleRadius = 7.5
 
---@module Slider
 local Slider = class(
   function(self, options)
     self.min = options.min or 1

@@ -117,7 +117,7 @@ function ClientMessages.reportLocalGameResult(outcome)
   }
 end
 
-function ClientMessages.sendMenuState(menuState)
+function ClientMessages.sendPlayerSettings(menuState)
   local menuStateMessage = {menu_state = menuState}
   return {
     messageType = msgTypes.jsonMessage,

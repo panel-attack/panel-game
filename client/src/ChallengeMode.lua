@@ -3,7 +3,7 @@ local class = require("common.lib.class")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
 local GameModes = require("common.engine.GameModes")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
-local levelPresets = require("client.src.LevelPresets")
+local levelPresets = require("common.engine.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
 require("client.src.BattleRoom")
 
@@ -19,6 +19,7 @@ local ChallengeMode =
     self.continues = 0
     self.expendedTime = 0
     self.gameScene = Game1pChallenge
+    self.challengeComplete = false
 
     self:addPlayer(GAME.localPlayer)
     GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
@@ -164,11 +165,8 @@ function ChallengeMode:recordStageResult(winners, gameLength)
     else
       if self.stages[self.stageIndex + 1] then
         self:setStage(self.stageIndex + 1)
-      else
-        -- completed!
-        local message = "Congratulations!\n You cleared " .. self.difficultyName .. " in " .. frames_to_time_string(self.expendedTime, true)
-        local transition = MessageTransition(GAME.timer, 7, message)
-        GAME.navigationStack:popToTop(transition)
+      else 
+        self.challengeComplete = true
       end
     end
   elseif #winners == 2 then
@@ -217,6 +215,7 @@ function ChallengeMode:setStage(index)
   local stageSettings = self.stages[self.stageIndex]
   self.player.settings.attackEngineSettings = stageSettings.attackSettings
   self.player.settings.healthSettings = stageSettings.healthSettings
+  self.player.level = index
   if stageSettings.characterId then
     self.player:setCharacter(stageSettings.characterId)
   else

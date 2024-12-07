@@ -108,7 +108,7 @@ function Character.json_init(self)
       end
 
       -- associated stage
-      if read_data.stage and type(read_data.stage) == "string" and stages[read_data.stage] and not stages[read_data.stage]:is_bundle() then
+      if read_data.stage and type(read_data.stage) == "string" and stages[read_data.stage] and not stages[read_data.stage]:isBundle() then
         self.stage = read_data.stage
       end
       -- associated panel
@@ -181,10 +181,6 @@ function Character.getRandom(visibleCharacters)
   end
 
   return randomCharacter
-end
-
-function Character.is_bundle(self)
-  return #self.subIds > 0
 end
 
 function Character:getSubMods()
@@ -282,7 +278,7 @@ function Character.graphics_init(self, full, yields)
   local character_images = full and all_images or basic_images
   for _, image_name in ipairs(character_images) do
     self.images[image_name] = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. image_name)
-    if not self.images[image_name] and defaulted_images[image_name] and not self:is_bundle() then
+    if not self.images[image_name] and defaulted_images[image_name] and not self:isBundle() then
       self.images[image_name] = default_character.images[image_name]
       if not self.images[image_name] then
         error("Could not find default character image")
@@ -416,7 +412,7 @@ function Character.sound_init(self, full, yields)
       else
         self.musics[music]:setLooping(false)
       end
-    elseif not self.musics[music] and defaulted_musics[music] and not self:is_bundle() then
+    elseif not self.musics[music] and defaulted_musics[music] and not self:isBundle() then
       self.musics[music] = default_character.musics[music] or themes[config.theme].zero_sound
     end
 

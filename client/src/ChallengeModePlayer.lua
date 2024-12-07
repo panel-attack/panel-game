@@ -19,7 +19,7 @@ local function characterForStageNumber(stageNumber)
   -- Get all other characters than the player character
   local otherCharacters = {}
   for _, currentCharacter in ipairs(visibleCharacters) do
-    if currentCharacter ~= config.character and characters[currentCharacter]:is_bundle() == false then
+    if currentCharacter ~= config.character and characters[currentCharacter]:isBundle() == false then
       otherCharacters[#otherCharacters+1] = currentCharacter
     end
   end
@@ -27,12 +27,12 @@ local function characterForStageNumber(stageNumber)
   -- If we couldn't find any characters, try sub characters as a last resort
   if #otherCharacters == 0 then
     for _, currentCharacter in ipairs(visibleCharacters) do
-      if characters[currentCharacter]:is_bundle() == true then
+      if characters[currentCharacter]:isBundle() == true then
         currentCharacter = characters[currentCharacter].subIds[1]
       end
       if currentCharacter ~= config.character then
         otherCharacters[#otherCharacters+1] = currentCharacter
-      end 
+      end
     end
   end
 

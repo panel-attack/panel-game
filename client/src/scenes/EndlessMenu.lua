@@ -8,7 +8,6 @@ local Stepper = require("client.src.ui.Stepper")
 local Slider = require("client.src.ui.Slider")
 local canBeFocused = require("client.src.ui.Focusable")
 
---@module endlessMenu
 -- Scene for the endless game setup menu
 local EndlessMenu = class(
   function(self, sceneParams)

@@ -9,7 +9,6 @@ local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
---@module soundTest
 -- Scene for the sound test
 local SoundTest = class(
   function (self, sceneParams)
@@ -213,7 +212,7 @@ function SoundTest:load()
 
   -- disable the menu_validate sound and keep a copy of it to restore later
   menuValidateSound = themes[config.theme].sounds.menu_validate
-  themes[config.theme].sounds.menu_validate = zero_sound
+  themes[config.theme].sounds.menu_validate = themes[config.theme].zero_sound
 
   GraphicsUtil.print(loc("op_music_load"), unpack(themes[config.theme].main_menu_screen_pos))
 end

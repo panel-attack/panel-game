@@ -2,7 +2,7 @@ local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local fileUtils = require("client.src.FileUtils")
-local levelPresets = require("client.src.LevelPresets")
+local levelPresets = require("common.engine.LevelPresets")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ImageContainer = require("client.src.ui.ImageContainer")
 local Music = require("client.src.music.Music")
@@ -236,7 +236,7 @@ function Theme:loadVersion3DefaultValues()
     self.winLabel_Pos = {318, -246}
     self.win_Scale = 0.75
     self.win_Pos = {260, -112}
-    self.gameover_text_Pos = {640, 620}
+    self.gameover_text_Pos = {640, 60}
     self.healthbar_frame_Pos = {-51, -12}
     self.healthbar_frame_Scale = 1
     self.healthbar_Pos = {-39, 68}
@@ -825,6 +825,9 @@ function theme_init()
   themes[consts.DEFAULT_THEME_DIRECTORY] = Theme(Theme.defaultThemeDirectoryPath, consts.DEFAULT_THEME_DIRECTORY)
 
   themes[config.theme]:load()
+  if themes[config.theme].font then
+    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size)
+  end
 end
 
 function Theme:playCancelSfx()

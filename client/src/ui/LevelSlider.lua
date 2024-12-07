@@ -3,7 +3,6 @@ local Slider = require("client.src.ui.Slider")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
---@module LevelSlider
 local LevelSlider = class(
   function(self, options)
     self.min = 1

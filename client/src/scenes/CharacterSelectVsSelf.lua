@@ -3,7 +3,6 @@ local class = require("common.lib.class")
 local Grid = require("client.src.ui.Grid")
 local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionWrapper")
 
---@module CharacterSelectVsSelf
 -- The character select screen scene
 local CharacterSelectVsSelf = class(
   function (self, sceneParams)

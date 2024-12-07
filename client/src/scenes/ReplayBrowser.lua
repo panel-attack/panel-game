@@ -7,7 +7,6 @@ local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
 
---@module replayBrowser
 local ReplayBrowser = class(
   function (self, sceneParams)
     self.keepMusic = true
@@ -98,11 +97,11 @@ local function selectMenuItem()
     if file_info then
       if file_info.type == "file" then
         filename = selection
-        local success, replay = Replay.load(fileUtils.readJsonFile(selection))
-        if success then
+        local replay = Replay.createFromTable(fileUtils.readJsonFile(selection), true)
+        if replay then
           selectedReplay = replay
         end
-        return success
+        return not not replay
       elseif file_info.type == "directory" then
         updateBrowsingPath(current_path .. path_contents[cursor_pos] .. "/")
       else

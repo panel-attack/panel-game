@@ -4,8 +4,6 @@ local Grid = require("client.src.ui.Grid")
 local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionWrapper")
 local Label = require("client.src.ui.Label")
 
---@module CharacterSelect2p
--- 
 local CharacterSelect2p = class(
   function (self, sceneParams)
   end,

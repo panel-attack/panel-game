@@ -18,7 +18,7 @@ function CharacterLoader.loadBundleIcons()
   -- there is no guarantee the subcharacters had been loaded previously so do it after everything got preloaded
   for _, character in pairs(allCharacters) do
     if not character.images.icon then
-      if character:is_bundle() then
+      if character:isBundle() then
         character.images.icon = character:createBundleIcon()
       else
         error("Can't find a icon for character " .. character.id)
@@ -37,7 +37,7 @@ function CharacterLoader.resolveCharacterSelection(characterId)
 end
 
 function CharacterLoader.resolveBundle(characterId)
-  while characters[characterId]:is_bundle() do
+  while characters[characterId]:isBundle() do
     local subMods = characters[characterId]:getSubMods()
     characterId = tableUtils.getRandomElement(subMods).id
   end

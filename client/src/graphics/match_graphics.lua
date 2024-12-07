@@ -196,6 +196,7 @@ function Match:draw_pause()
 
     GraphicsUtil.draw(image, x, y, 0, scale, scale, xOffset, yOffset)
   end
-  GraphicsUtil.printf(loc("pause"), 0, 330, consts.CANVAS_WIDTH, "center", nil, 1, 10)
-  GraphicsUtil.printf(loc("pl_pause_help"), 0, 360, consts.CANVAS_WIDTH, "center", nil, 1)
+  local y = 260
+  GraphicsUtil.printf(loc("pause"), 0, y, consts.CANVAS_WIDTH, "center", nil, 1, 10)
+  GraphicsUtil.printf(loc("pl_pause_help"), 0, y + 30, consts.CANVAS_WIDTH, "center", nil, 1)
 end

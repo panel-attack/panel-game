@@ -9,7 +9,6 @@ local NetClient = require("client.src.network.NetClient")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local Leaderboard = require("client.src.ui.Leaderboard")
 
--- @module Lobby
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
 local Lobby = class(function(self, sceneParams)
   self.music = "main"

@@ -24,7 +24,6 @@ local Character = require("client.src.mods.Character")
 local Slider = require("client.src.ui.Slider")
 local Carousel = require("client.src.ui.Carousel")
 
--- @module CharacterSelect
 -- The character select screen scene
 local CharacterSelect = class(function(self)
   self.backgroundImg = themes[config.theme].images.bg_select_screen

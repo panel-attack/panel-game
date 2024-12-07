@@ -3,7 +3,6 @@ local joystickManager = require("common.lib.joystickManager")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 
--- @module inputManager 
 -- table containing the set of keys in various states 
 -- base structure: 
 --   isDown: table of {key: true} pairs if the key was pressed in the current frame 

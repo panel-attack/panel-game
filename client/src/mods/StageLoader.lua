@@ -18,7 +18,7 @@ function StageLoader.loadBundleThumbnails()
   -- there is no guarantee the substages had been loaded previously so do it after everything got preloaded
   for _, stage in pairs(allStages) do
     if not stage.images.thumbnail then
-      if stage:is_bundle() then
+      if stage:isBundle() then
         stage.images.thumbnail = stage:createBundleThumbnail()
       else
         error("Can't find a thumbnail for stage " .. stage.id)
@@ -37,7 +37,7 @@ function StageLoader.resolveStageSelection(stageId)
 end
 
 function StageLoader.resolveBundle(stageId)
-  while stages[stageId]:is_bundle() do
+  while stages[stageId]:isBundle() do
     local subMods = stages[stageId]:getSubMods()
     stageId = tableUtils.getRandomElement(subMods).id
   end

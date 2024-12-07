@@ -32,7 +32,6 @@ local function setState(self, i)
   self.onChange(self.value)
 end
 
---@module Stepper
 -- UIElement representing a scrolling list of options
 local Stepper = class(
   function(self, options)

@@ -1,5 +1,6 @@
 require("common.engine.computerPlayers.DummyCpu.DummyCpu")
 local logger = require("common.lib.logger")
+local class = require("common.lib.class")
 
 CPUConfig = class(function(self, actualConfig)
   self.log = actualConfig["log"]

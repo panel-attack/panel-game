@@ -36,12 +36,12 @@ function Mod:unload()
   error("All mods need to implement an unload function")
 end
 
-function Mod:is_bundle()
-  error("All mods need to implement an is_bundle function")
+function Mod.isBundle(self)
+  return #self.subIds > 0
 end
 
 function Mod:getSubMods()
-  if self:is_bundle() then
+  if self:isBundle() then
     error("All mods that support bundles need to implement a getSubMods function, even if it just returns nil")
   end
 end

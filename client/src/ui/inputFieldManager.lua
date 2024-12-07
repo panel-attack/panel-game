@@ -1,7 +1,6 @@
 local input = require("common.lib.inputManager")
 
---@module inputFieldManager
--- recieves love events and passes them to the correct button object
+-- receives love events and passes them to the correct inputField object
 local inputFieldManager = {
   inputFields = {},
   selectedInputField = nil

@@ -1,4 +1,3 @@
--- @module tableUtils 
 -- A collection of table utilility functions 
 local tableUtils = {} 
  

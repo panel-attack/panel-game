@@ -5,7 +5,8 @@ local NetworkProtocol = {}
 -- Version 001 was super legacy
 -- Version 002 we supported unicode JSON
 -- Version 003 we updated login requirements and started sending the network version
-NetworkProtocol.NETWORK_VERSION = "003"
+-- Version 004 server communicates replays in a new standardised format
+NetworkProtocol.NETWORK_VERSION = "004"
 
 local messageEndMarker = "←J←"
 
@@ -13,7 +14,7 @@ local messageEndMarker = "←J←"
 -- Prefix is what is put at the front of the message
 -- Then size data follows in normal single byte sequence.
 -- if size is nil then a variable utf8 byte sequence follows terminated by messageEndMarker
-NetworkProtocol.clientMessageTypes = { 
+NetworkProtocol.clientMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the client
   playerInput = {prefix="I", size=nil}, -- Player input (touch or controller) from the client
   acknowledgedPing = {prefix="E", size=1}, -- Respond back from the servers ping to confirm we are still connected
@@ -24,13 +25,13 @@ for _, value in pairs(NetworkProtocol.clientMessageTypes) do
   NetworkProtocol.clientPrefixToMessageType[value.prefix] = value
 end
 
-NetworkProtocol.serverMessageTypes = { 
+NetworkProtocol.serverMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the server
-  opponentInput = {prefix="I", size=nil}, -- Player input (touch or controller) sent to the client about it's opponent
-  secondOpponentInput = {prefix="U", size=nil}, -- Player input (touch or controller) sent to the client for player two if spectating
+  opponentInput = {prefix="I", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client about it's opponent
+  secondOpponentInput = {prefix="U", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client for player two if spectating
   versionCorrect = {prefix="H", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is allowed
   versionWrong = {prefix="N", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is not allowed
-  ping = {prefix="E", size=1} -- Sent to the client to confirm they are still connected
+  ping = {prefix="E", size=1, verbose = true} -- Sent to the client to confirm they are still connected
 }
 NetworkProtocol.serverPrefixToMessageType = {}
 for _, value in pairs(NetworkProtocol.serverMessageTypes) do

@@ -6,7 +6,6 @@ local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
 local TextButton = require("client.src.ui.TextButton")
 
---@module setNameMenu
 -- Scene for setting the username
 local SetNameMenu = class(
   function (self, sceneParams)

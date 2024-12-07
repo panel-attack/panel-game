@@ -13,22 +13,25 @@ local UpdatingImage = require("client.src.graphics.UpdatingImage")
 local prof = require("common.lib.jprof.jprof")
 local Menu = require("client.src.ui.Menu")
 local MenuItem = require("client.src.ui.MenuItem")
+local FileUtils = require("client.src.FileUtils")
 
---@module GameBase
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 local GameBase = class(
   function (self, sceneParams)
-    -- must be set in child class
-    self.nextScene = nil
-    self.nextSceneParams = {}
+    self.saveReplay = true
 
     -- set in load
-    self.text = ""
+    self.text = nil
     self.keepMusic = false
     self.currentStage = config.stage
+    self.pauseState = {
+      musicWasPlaying = false
+    }
 
     self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
     self.maxDisplayTime = -1 -- the maximum amount of seconds the game over screen will be displayed for, -1 means no max time
+    self.gameOverStartTime = nil -- timestamp for when game over screen was first displayed
+    self.fadeOutMusicOnGameOver = true
 
     self.frameInfo = {
       frameCount = nil,
@@ -36,9 +39,13 @@ local GameBase = class(
       currentTime = nil,
       expectedFrameCount = nil
     }
+
+    self:load(sceneParams)
   end,
   Scene
 )
+
+GameBase.name = "GameBase"
 
 -- begin abstract functions
 
@@ -142,7 +149,7 @@ function GameBase:load(sceneParams)
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
       self.match:togglePause()
-      if self.musicSource and self.musicSource.stageTrack then
+      if self.musicSource and self.musicSource.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.musicSource.stageTrack)
       end
       self:initializeFrameInfo()
@@ -186,7 +193,8 @@ function GameBase:handlePause()
       self.match:togglePause()
       self.pauseMenu:setVisibility(true)
 
-      if self.musicSource then
+      if self.musicSource and self.musicSource.stageTrack then
+        self.pauseState.musicWasPlaying = self.musicSource.stageTrack:isPlaying()
         SoundController:pauseMusic()
       end
       GAME.theme:playValidationSfx()
@@ -196,36 +204,40 @@ function GameBase:handlePause()
   end
 end
 
-local gameOverStartTime = nil -- timestamp for when game over screen was first displayed
-
 function GameBase:setupGameOver()
-  gameOverStartTime = love.timer.getTime()
+  -- timestamp for when game over screen was first displayed
+  self.gameOverStartTime = love.timer.getTime()
   self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
   self.maxDisplayTime = -1
 
-  SoundController:fadeOutActiveTrack(3)
+  if self.fadeOutMusicOnGameOver then
+    SoundController:fadeOutActiveTrack(3)
+  end
 
   self:customGameOverSetup()
 end
 
 function GameBase:runGameOver()
-  local font = GraphicsUtil.getGlobalFont()
-
-  GraphicsUtil.print(self.text, (consts.CANVAS_WIDTH - font:getWidth(self.text)) / 2, 10)
-  GraphicsUtil.print(loc("continue_button"), (consts.CANVAS_WIDTH - font:getWidth(loc("continue_button"))) / 2, 10 + 30)
   -- wait()
-  local displayTime = love.timer.getTime() - gameOverStartTime
+  local displayTime = love.timer.getTime() - self.gameOverStartTime
 
   self.match:run()
 
   -- if conditions are met, leave the game over screen
-  local keyPressed = (tableUtils.length(input.isDown) > 0) or (tableUtils.length(input.mouse.isDown) > 0)
+  local keyPressed = self:readyToProceedToNextScene()
 
   if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
     GAME.theme:playValidationSfx()
-    SFX_GameOver_Play = 0
-    GAME.navigationStack:pop()
+    self:startNextScene()
   end
+end
+
+function GameBase:readyToProceedToNextScene()
+  return (tableUtils.length(input.isDown) > 0) or (tableUtils.length(input.mouse.isDown) > 0)
+end
+
+function GameBase:startNextScene()
+  GAME.navigationStack:pop()
 end
 
 function GameBase:runGame(dt)
@@ -318,6 +330,7 @@ function GameBase:draw()
     prof.pop("Match:render")
     prof.push("GameBase:drawHUD")
     self:drawHUD()
+    self:drawEndGameText()
     prof.pop("GameBase:drawHUD")
     if self.customDraw then
       self:customDraw()
@@ -377,23 +390,40 @@ function GameBase:drawHUD()
         prof.pop("Stack:drawAnalyticData")
       end
     end
+
     if not config.debug_mode and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details
       GraphicsUtil.print(GAME.battleRoom.spectatorString, themes[config.theme].spectators_Pos[1], themes[config.theme].spectators_Pos[2])
     end
 
     self:drawCommunityMessage()
+  end
+end
 
-    if self.match.ended then
-      local winners = self.match:getWinners()
-      local pos = themes[config.theme].gameover_text_Pos
-      local message
+function GameBase:drawEndGameText()
+  if self.match.ended then
+
+    local winners = self.match:getWinners()
+    local message = self.text
+    if message == nil then
       if #winners == 1 then
         message = loc("ss_p_wins", winners[1].name)
       else
         message = loc("ss_draw")
       end
-      GraphicsUtil.printf(message, pos.x, pos.y, consts.CANVAS_WIDTH, "center")
     end
+
+    local gameOverPosition = themes[config.theme].gameover_text_Pos
+    local font = GraphicsUtil.getGlobalFont()
+    local padding = 4
+    local maxWidth = math.max(font:getWidth(message), font:getWidth(loc("continue_button")))
+    local height = font:getHeight() * 2 + 3*padding
+    local drawY = gameOverPosition[2]
+
+    -- Background
+    GraphicsUtil.drawRectangle("fill", gameOverPosition[1] - maxWidth/2 - padding, drawY, maxWidth + 2*padding, height, 0, 0, 0, 0.8)
+
+    GraphicsUtil.print(message, gameOverPosition[1] - font:getWidth(message)/2, drawY + padding)
+    GraphicsUtil.print(loc("continue_button"), gameOverPosition[1] - font:getWidth(loc("continue_button"))/2, drawY + padding + font:getHeight() + padding )
   end
 end
 
@@ -402,6 +432,10 @@ function GameBase:genericOnMatchEnded(match)
   -- matches always sort players to have locals in front so if 1 isn't local, none is
   if match.players[1].isLocal then
     analytics.game_ends(match.players[1].stack.analytic)
+  end
+
+  if self.saveReplay then
+    FileUtils.saveReplay(match.replay)
   end
 end
 

@@ -17,6 +17,7 @@ WindowSizeTester.name = "WindowSizeTester"
 
 function WindowSizeTester:load()
   self.originalResize = love.resize
+---@diagnostic disable-next-line: duplicate-set-field
   love.resize = function(newWidth, newHeight)
     self.originalResize(newWidth, newHeight)
     self:onResize()
@@ -67,7 +68,7 @@ function WindowSizeTester:load()
       local _, height, flags = love.window.getMode()
       if not flags.fullscreen then
         love.window.restore()
-        love.window.updateMode(slider.value, height)
+        love.window.updateMode(slider.value, height, {})
         self:onResize()
       else
         -- in case the updateMode is made invalid by fullscreen/maximize, set the values back
@@ -85,7 +86,7 @@ function WindowSizeTester:load()
       local width, height, flags = love.window.getMode()
       if not flags.fullscreen then
         love.window.restore()
-        love.window.updateMode(width, slider.value)
+        love.window.updateMode(width, slider.value, {})
         self:onResize()
       else
         -- in case the updateMode is made invalid by fullscreen/maximize, set the values back
