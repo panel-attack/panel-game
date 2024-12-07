@@ -117,8 +117,8 @@ function Connection:updatePlayerSettings(playerSettings)
     self.stage_is_random = playerSettings.stage_is_random
   end
 
-  if playerSettings.ranked ~= nil then
-    self.wants_ranked_match = playerSettings.ranked
+  if playerSettings.wants_ranked_match ~= nil then
+    self.wants_ranked_match = playerSettings.wants_ranked_match
   end
 
   if playerSettings.wants_ready ~= nil then
