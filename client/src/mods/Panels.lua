@@ -207,18 +207,18 @@ local function validateSingleFilesAgainstConfig(imagesByColorAndIndex, animation
   local configIndexes = {}
   local problems = {}
 
-  for animationState, config in pairs(animationConfig) do
+  for _, config in pairs(animationConfig) do
     for i = 1, #config.frames do
       -- the indexes of the images used for the config are saved here, mark as being in use
       configIndexes[config.frames[i]] = true
     end
   end
 
-  for i = 1, 8 do
-    local imagesByIndex = imagesByColorAndIndex[i]
+  for color = 1, 8 do
+    local imagesByIndex = imagesByColorAndIndex[color]
     for index, _ in pairs(configIndexes) do
       if not imagesByIndex[index] then
-        problems[#problems+1] = "Failed to find image with index " .. index .. " for color " .. i
+        problems[#problems+1] = "Failed to find image with index " .. index .. " for color " .. color
       end
     end
   end
@@ -236,19 +236,33 @@ function Panels:loadSingles()
     images[color] = {}
 
     local files = tableUtils.filter(panelFiles, function(f)
-      return string.match(f, "panel" .. color .. "%d+%.")
+      local start, finish = string.find(f, "panel" .. color .. "%d+%.")
+      local lastDotIndex = string.find(f, "%.")
+      -- only add them if they aren't pre- or postfixed in some way
+      return  start == 1 and finish == lastDotIndex
     end)
 
     local indexToFile = {}
 
+    local maxIndex = 0
     for i = 1, #files do
-      local f = fileUtils.getFileNameWithoutExtension(files[i])
-      indexToFile[tonumber(f:sub(7))] = f
+      local file = fileUtils.getFileNameWithoutExtension(files[i])
+      local index = tonumber(file:sub(7))
+      if index then
+        maxIndex = math.max(maxIndex, index)
+        indexToFile[index] = file
+      end
     end
 
-    for i = 1, math.max(#indexToFile or 7, 7) do
-      images[color][i] = load_panel_img(self.path, indexToFile[i] or ("panel" .. color .. i))
-      self.size = math.max(images[color][i]:getWidth(), self.size) -- for scaling
+    -- always go to at least 7 because the default single config uses 7 panels
+    -- and likewise there are fallbacks up to panel 7
+    for i = 1, math.max(maxIndex, 7) do
+      if indexToFile[i] or i <= 7 then
+        images[color][i] = load_panel_img(self.path, indexToFile[i] or ("panel" .. color .. i))
+        if images[color][i] then
+          self.size = math.max(images[color][i]:getWidth(), self.size) -- for scaling
+        end
+      end
     end
   end
 
