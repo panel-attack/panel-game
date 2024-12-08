@@ -43,8 +43,17 @@ function Slider:onDrag(x, y)
   self.valueText:set(self.value)
 end
 
+-- sliders should still set the value when released to a certain degree outside of its touch bounds
+function Slider:inReleaseBounds(x, y)
+  local screenX, screenY = self:getScreenPos()
+  return x > (screenX - self.width * 1.5)
+     and x < (screenX + self.width * 2.5)
+     and y > (screenY - self.height * 1.5)
+     and y < (screenY + self.height * 2.5)
+end
+
 function Slider:onRelease(x, y)
-  if self:inBounds(x, y) then
+  if self:inReleaseBounds(x, y) then
     self.value = nil
     self:setValueFromPos(x)
   else
