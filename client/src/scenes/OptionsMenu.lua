@@ -376,9 +376,10 @@ function OptionsMenu:loadGraphicsMenu()
     slider.maxText:set(slider.max / 100)
     slider.valueText:set(slider.value / 100)
     slider.setValue = function(s, value)
-      if value ~= s.value then
-        s.value = util.bound(s.min, value, s.max)
-        s.valueText:set(s.value / 100)
+      local changed = value ~= s.value
+      s.value = util.bound(s.min, value, s.max)
+      s.valueText:set(s.value / 100)
+      if changed then
         s:onValueChange()
       end
     end
@@ -389,12 +390,17 @@ function OptionsMenu:loadGraphicsMenu()
         s:setValue(s.value + 10)
       end
     end
-    local function touchDrag(s, x, y)
+    local function drag(s, x, y)
       local screenX, screenY = s:getScreenPos()
       s.valueText:set((math.floor((x - screenX) / s.tickLength) + s.min) / 100)
     end
-    slider.onTouch = touchDrag
-    slider.onDrag = touchDrag
+    local function touch(s, x, y)
+      s.preTouchValue = s.value
+      drag(s, x, y)
+    end
+
+    slider.onTouch = touch
+    slider.onDrag = drag
     return slider
   end
 
