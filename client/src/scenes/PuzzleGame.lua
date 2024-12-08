@@ -8,8 +8,6 @@ local consts = require("common.engine.consts")
 -- Scene for a puzzle mode instance of the game
 local PuzzleGame = class(
   function (self, sceneParams)
-    -- we cache the player's input configuration here
-    self.inputConfiguration = nil
     self.keepMusic = true
     self.fadeOutMusicOnGameOver = false
     self.saveReplay = false
@@ -20,6 +18,7 @@ local PuzzleGame = class(
 PuzzleGame.name = "PuzzleGame"
 
 function PuzzleGame:customLoad(sceneParams)
+  -- we cache the player's input configuration here so that only inputs from this config can start the next puzzle
   self.inputConfiguration = self.match.players[1].inputConfiguration
   self.puzzleSet = self.match.players[1].settings.puzzleSet
   self.puzzleIndex = self.match.players[1].settings.puzzleIndex
