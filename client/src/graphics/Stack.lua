@@ -511,9 +511,11 @@ function Stack.render(self)
     return
   end
 
+  prof.push("Z1")
   self:setCanvas()
   self:drawCharacter()
-
+  prof.pop("Z1")
+  prof.push("Z2")
   local garbageImages
   local shockGarbageImages
   -- functionally, the garbage target being the source of the images for garbage landing on this stack is possible but not a given
@@ -528,24 +530,31 @@ function Stack.render(self)
   end
 
   local shakeOffset = self:currentShakeOffset() / self.gfxScale
+  prof.pop("Z2")
 
   self:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
-
+  prof.push("Z3")
   self:drawFrame()
   self:drawWall(shakeOffset, self.height)
   -- Draw the cursor
   if self:game_ended() == false then
     self:render_cursor(shakeOffset)
   end
-
+  prof.pop("Z3")
+  prof.push("Z4")
   self:drawCountdown()
   self:drawCanvas()
+  prof.pop("Z4")
 
+  prof.push("Z5")
   self:drawPopEffects()
   self:drawCards()
+  prof.pop("Z5")
 
+  prof.push("Z6")
   self:drawDebugPanels(shakeOffset)
   self:drawDebug()
+  prof.pop("Z6")
   prof.pop("Stack:render")
 end
 

@@ -3,6 +3,7 @@ local tableUtils = require("common.lib.tableUtils")
 local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
 local LevelData = require("common.engine.LevelData")
+local prof = require("common.lib.jprof.jprof")
 require("table.clear")
 
 -- score lookup tables
@@ -110,10 +111,13 @@ function Stack:checkMatches()
     return
   end
 
+  prof.push("Z1")
   local matchingPanels = self:getMatchingPanels()
   local comboSize = #matchingPanels
+  prof.pop("Z1")
 
   if comboSize > 0 then
+    prof.push("Z2")
     local frameConstants = self.levelData.frameConstants
     local metalCount = getMetalCount(matchingPanels)
     local isChainLink = isNewChainLink(matchingPanels)
@@ -122,9 +126,15 @@ function Stack:checkMatches()
     end
     -- interrupt any ongoing manual raise
     self.manual_raise = false
+    prof.pop("Z2")
 
+    prof.push("Z3")
     local attackGfxOrigin = self:applyMatchToPanels(matchingPanels, isChainLink, comboSize)
+    prof.pop("Z3")
+    prof.push("Z4")
     local garbagePanels = self:getConnectedGarbagePanels(matchingPanels)
+    prof.pop("Z4")
+    prof.push("Z5")
     logger.debug("Matched " .. comboSize .. " panels, clearing " .. #garbagePanels .. " panels of garbage")
     local garbagePanelCountOnScreen = 0
     if #garbagePanels > 0 then
@@ -132,7 +142,9 @@ function Stack:checkMatches()
       local garbageMatchTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
       self:matchGarbagePanels(garbagePanels, garbageMatchTime, isChainLink, garbagePanelCountOnScreen)
     end
+    prof.pop("Z5")
 
+    prof.push("Z6")
     local preStopTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
     self.pre_stop_time = math.max(self.pre_stop_time, preStopTime)
     self:awardStopTime(isChainLink, comboSize)
@@ -141,13 +153,18 @@ function Stack:checkMatches()
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)
       self:queueAttackSoundEffect(isChainLink, self.chain_counter, comboSize, metalCount)
     end
+    prof.pop("Z6")
 
+    prof.push("Z7")
     self.analytic:register_destroyed_panels(comboSize)
     self:updateScoreWithBonus(comboSize)
     self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
+    prof.pop("Z7")
   end
 
+  prof.push("clear chaining flags")
   self:clearChainingFlags()
+  prof.pop("clear chaining flags")
 end
 
 local candidatePanels = table.new(144, 0)

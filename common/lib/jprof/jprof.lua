@@ -23,7 +23,7 @@ local profiler = {}
 -- the memory consumption we determine using collectgarbage("count"))
 -- since no allocations/deallocations are triggered by them anymore
 local zoneStack = table.new(16, 0)
-local profData = table.new(10, 0)
+local profData = table.new(10000000, 0)
 local netBuffer = nil
 local profEnabled = true
 -- profMem keeps track of the amount of memory allocated by prof.push/prof.pop

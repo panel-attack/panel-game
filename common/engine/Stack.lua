@@ -1319,7 +1319,7 @@ function Stack.simulate(self)
   end
   prof.pop("active raise")
 
-  prof.push("chain update")
+  -- prof.push("chain update")
   -- if at the end of the routine there are no chain panels, the chain ends.
   if self.chain_counter ~= 0 and not self:hasChainingPanels() then
     if self:canPlaySfx() then
@@ -1333,7 +1333,7 @@ function Stack.simulate(self)
       self.outgoingGarbage:finalizeCurrentChain(self.clock)
     end
   end
-  prof.pop("chain update")
+  -- prof.pop("chain update")
 
   if (self.score > 99999) then
     self.score = 99999
@@ -1358,7 +1358,7 @@ function Stack.simulate(self)
   self:remove_extra_rows()
   prof.pop("remove_extra_rows")
 
-  prof.push("double-check panels_in_top_row")
+  -- prof.push("double-check panels_in_top_row")
   --double-check panels_in_top_row
 
   self.panels_in_top_row = false
@@ -1368,9 +1368,9 @@ function Stack.simulate(self)
       self.panels_in_top_row = true
     end
   end
-  prof.pop("double-check panels_in_top_row")
+  -- prof.pop("double-check panels_in_top_row")
 
-  prof.push("doublecheck panels above top row")
+  -- prof.push("doublecheck panels above top row")
   -- If any panels (dangerous or not) are in rows above the top row, garbage should not fall.
   for row_idx = self.height + 1, #self.panels do
     for col_idx = 1, self.width do
@@ -1379,7 +1379,7 @@ function Stack.simulate(self)
       end
     end
   end
-  prof.pop("doublecheck panels above top row")
+  -- prof.pop("doublecheck panels above top row")
 
 
   prof.push("pop from incoming garbage q")
@@ -1469,13 +1469,13 @@ function Stack.simulate(self)
   end
   prof.pop("stack sfx")
 
-  prof.push("update times")
+  --prof.push("update times")
   self.clock = self.clock + 1
 
   if self.game_stopwatch_running and (not self.match.gameOverClock or self.clock <= self.match.gameOverClock) then
     self.game_stopwatch = (self.game_stopwatch or -1) + 1
   end
-  prof.pop("update times")
+  --prof.pop("update times")
 
   prof.push("update popfx")
   self:update_popfxs()
