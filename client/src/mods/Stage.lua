@@ -104,20 +104,22 @@ end
 
 -- for reloading the graphics if the window was resized
 function stages_reload_graphics()
-  -- lazy load everything
-  for _, stage in pairs(stages) do
-    stage:graphics_init(false, false)
-  end
-  require("client.src.mods.StageLoader").loadBundleThumbnails()
+  if stages then
+    -- lazy load everything
+    for _, stage in pairs(stages) do
+      stage:graphics_init(false, false)
+    end
+    require("client.src.mods.StageLoader").loadBundleThumbnails()
 
-  -- reload the current stage graphics immediately
-  local match = GAME.battleRoom and GAME.battleRoom.match
-  if match and match.stageId then
-    if stages[match.stageId] then
-      stages[match.stageId]:graphics_init(true, false)
-      -- for reasons, this is not drawn directly from the stage but from background image
-      -- so override this while in a match
-      GAME.backgroundImage = UpdatingImage(stages[match.stageId].images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+    -- reload the current stage graphics immediately
+    local match = GAME.battleRoom and GAME.battleRoom.match
+    if match and match.stageId then
+      if stages[match.stageId] then
+        stages[match.stageId]:graphics_init(true, false)
+        -- for reasons, this is not drawn directly from the stage but from background image
+        -- so override this while in a match
+        GAME.backgroundImage = UpdatingImage(stages[match.stageId].images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+      end
     end
   end
 end

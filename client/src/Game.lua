@@ -617,7 +617,7 @@ function Game:refreshCanvasAndImagesForNewScale()
   panels_init()
   -- Reload characters to get the new resolution assets
   characters_reload_graphics()
-  
+
   -- Reload loc to get the new font
   self.setLanguage(config.language_code)
 end

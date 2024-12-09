@@ -262,16 +262,18 @@ local defaulted_images = {
 
 -- for reloading the graphics if the window was resized
 function characters_reload_graphics()
-  local characterIds = shallowcpy(visibleCharacters)
-  for i = 1, #characterIds do
-    local character = characterIds[i]
-    local fullLoad = false
-    if character == config.character or GAME.battleRoom and GAME.battleRoom.match and ((GAME.battleRoom.match.stacks[1] and character == GAME.battleRoom.match.stacks[1].character) or (GAME.battleRoom.match.stacks[2] and character == GAME.battleRoom.match.stacks[2].character)) then
-      fullLoad = true
+  if visibleCharacters then
+    local characterIds = shallowcpy(visibleCharacters)
+    for i = 1, #characterIds do
+      local character = characterIds[i]
+      local fullLoad = false
+      if character == config.character or GAME.battleRoom and GAME.battleRoom.match and ((GAME.battleRoom.match.stacks[1] and character == GAME.battleRoom.match.stacks[1].character) or (GAME.battleRoom.match.stacks[2] and character == GAME.battleRoom.match.stacks[2].character)) then
+        fullLoad = true
+      end
+      characters[character]:graphics_init(fullLoad, false)
     end
-    characters[character]:graphics_init(fullLoad, false)
+    require("client.src.mods.CharacterLoader").loadBundleIcons()
   end
-  require("client.src.mods.CharacterLoader").loadBundleIcons()
 end
 
 function Character.graphics_init(self, full, yields)
