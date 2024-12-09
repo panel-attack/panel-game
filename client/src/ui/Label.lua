@@ -55,10 +55,10 @@ function Label:setText(text, replacementTable, translate)
 
   if self.translate then
     -- always need a new text cause the font might have changed
-    self.drawable = love.graphics.newTextBatch(self.font, loc(self.text, unpack(self.replacementTable)))
+    self.drawable = GraphicsUtil.newText(self.font, loc(self.text, unpack(self.replacementTable)))
   else
     if not self.drawable then
-      self.drawable = love.graphics.newTextBatch(self.font, self.text)
+      self.drawable = GraphicsUtil.newText(self.font, self.text)
     end
   end
 
@@ -108,7 +108,7 @@ function Label:refreshLocalization()
       self.font = GraphicsUtil.getGlobalFont()
     end
     -- always need a new text cause the font might have changed
-    self.drawable = love.graphics.newTextBatch(self.font, loc(self.text, unpack(self.replacementTable)))
+    self.drawable = GraphicsUtil.newText(self.font, loc(self.text, unpack(self.replacementTable)))
     self.width, self.height = self.drawable:getDimensions()
   end
 end
