@@ -232,7 +232,7 @@ end
 
 -- creates a Replay from the table t which contains the deserialized data representation of a replay from network or file
 -- use the completed flag to indicate whether the replay is done (functionally equivalent to being loaded from file at this time)
--- the completed flag is ignored if the replay data itself already indicates its completeness
+--   or whether it is in progress (functionally equivalent to getting the replay sent on joining a match as a spectator)
 function Replay.createFromTable(t, completed)
   local replay
   if not t then
@@ -244,7 +244,7 @@ function Replay.createFromTable(t, completed)
     elseif tonumber(t.replayVersion) == 2 then
       replay = Replay.createFromV2Data(t)
     end
-    if completed ~= nil and replay.completed == nil then
+    if completed ~= nil then
       replay.completed = completed
     end
   end
