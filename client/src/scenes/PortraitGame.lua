@@ -7,9 +7,9 @@ local PixelFontLabel = require("client.src.ui.PixelFontLabel")
 local TextButton = require("client.src.ui.TextButton")
 local Label = require("client.src.ui.Label")
 local input = require("common.lib.inputManager")
+local tableUtils = require("common.lib.tableUtils")
 
 local PortraitGame = class(function(self, sceneParams)
-  self.match:connectSignal("matchEnded", self, self.onMatchEnded)
 end,
 GameBase)
 
@@ -58,58 +58,7 @@ function PortraitGame:customLoad()
   })
   self.uiRoot:addChild(self.uiRoot.timer)
 
-  -- recreate the global canvas in portrait dimensions
-  GAME.globalCanvas = love.graphics.newCanvas(consts.CANVAS_HEIGHT, consts.CANVAS_WIDTH, {dpiscale=GAME:newCanvasSnappedScale()})
-
-  local width, height, _ = love.window.getMode()
-  if love.system.getOS() == "Android" then
-    -- flip the window dimensions to portrait
-    love.window.updateMode(height, width, {})
-    love.window.setFullscreen(true)
-  elseif DEBUG_ENABLED then
-    GAME:updateCanvasPositionAndScale(width, height)
-  end
-
-  for _, player in ipairs(self.match.players) do
-    if player.isLocal and player.human and player.settings.inputMethod == "touch" then
-      -- recreate the stack canvas to use a higher instead of the usual 3
-      -- force center it
-      local stack = player.stack
-      stack.gfxScale = 5
-      stack.canvas = love.graphics.newCanvas(104 * stack.gfxScale, 204 * stack.gfxScale, {dpiscale = GAME:newCanvasSnappedScale()})
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack.canvas:getWidth() / 2) / stack.gfxScale
-      stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack.canvas:getHeight()) / stack.gfxScale
-      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
-      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
-      stack.origin_x = stack.frameOriginX / stack.gfxScale
-
-      -- create a raise button that interacts with the touch controller
-      local raiseButton = TextButton({label = Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack.canvas:getHeight() / 2})
-      raiseButton.onTouch = function(button, x, y)
-        button.backgroundColor[4] = 1
-        stack.touchInputController.touchingRaise = true
-      end
-      raiseButton.onDrag = function(button, x, y)
-        stack.touchInputController.touchingRaise = button:inBounds(x, y)
-      end
-      raiseButton.onRelease = function(button, x, y, timeHeld)
-        button.backgroundColor[4] = 0.7
-        stack.touchInputController.touchingRaise = false
-      end
-      raiseButton.width = 70
-      self.uiRoot.raiseButton = raiseButton
-      self.uiRoot:addChild(raiseButton)
-    else
-      local stack = player.stack
-      stack.gfxScale = 1
-      stack.canvas = love.graphics.newCanvas(104 * stack.gfxScale, 204 * stack.gfxScale, {dpiscale = GAME:newCanvasSnappedScale()})
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack.canvas:getWidth()) - 12
-      stack.frameOriginY = 10
-      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
-      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
-      stack.origin_x = stack.frameOriginX / stack.gfxScale
-    end
-  end
+  self:flipToPortrait()
 end
 
 function PortraitGame:drawBar(stack, image, quad, themePositionOffset, height, yOffset, rotate, scale)
@@ -243,18 +192,71 @@ function PortraitGame:draw()
   self.uiRoot:draw()
 end
 
-function PortraitGame:onMatchEnded(match)
+function PortraitGame:flipToPortrait()
+  -- recreate the global canvas in portrait dimensions
+  GAME.globalCanvas = love.graphics.newCanvas(consts.CANVAS_HEIGHT, consts.CANVAS_WIDTH, {dpiscale=GAME:newCanvasSnappedScale()})
+
+  local width, height, _ = love.window.getMode()
+  if love.system.getOS() == "Android" or DEBUG_ENABLED then
+    -- flip the window dimensions to portrait
+    love.window.updateMode(height, width, {})
+    love.window.setFullscreen(true)
+    GAME:updateCanvasPositionAndScale(width, height)
+  end
+
+  for _, player in ipairs(self.match.players) do
+    if player.isLocal and player.human and player.settings.inputMethod == "touch" then
+      -- recreate the stack canvas to use a higher instead of the usual 3
+      -- force center it
+      local stack = player.stack
+      stack.gfxScale = 5
+      stack.canvas = love.graphics.newCanvas(104 * stack.gfxScale, 204 * stack.gfxScale, {dpiscale = GAME:newCanvasSnappedScale()})
+      stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack.canvas:getWidth() / 2) / stack.gfxScale
+      stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack.canvas:getHeight()) / stack.gfxScale
+      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
+      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
+      stack.origin_x = stack.frameOriginX / stack.gfxScale
+
+      -- create a raise button that interacts with the touch controller
+      local raiseButton = TextButton({label = Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack.canvas:getHeight() / 2})
+      raiseButton.onTouch = function(button, x, y)
+        button.backgroundColor[4] = 1
+        stack.touchInputController.touchingRaise = true
+      end
+      raiseButton.onDrag = function(button, x, y)
+        stack.touchInputController.touchingRaise = button:inBounds(x, y)
+      end
+      raiseButton.onRelease = function(button, x, y, timeHeld)
+        button.backgroundColor[4] = 0.7
+        stack.touchInputController.touchingRaise = false
+      end
+      raiseButton.width = 70
+      self.uiRoot.raiseButton = raiseButton
+      self.uiRoot:addChild(raiseButton)
+    else
+      local stack = player.stack
+      stack.gfxScale = 1
+      stack.canvas = love.graphics.newCanvas(104 * stack.gfxScale, 204 * stack.gfxScale, {dpiscale = GAME:newCanvasSnappedScale()})
+      stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack.canvas:getWidth()) - 12
+      stack.frameOriginY = 10
+      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
+      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
+      stack.origin_x = stack.frameOriginX / stack.gfxScale
+    end
+  end
+end
+
+function PortraitGame:returnToLandscape()
   -- recreate the global canvas in landscape dimensions
   GAME.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=GAME:newCanvasSnappedScale()})
   -- flip the window dimensions to landscape
   local width, height, _ = love.window.getMode()
-  if love.system.getOS() == "Android" then
+  if love.system.getOS() == "Android" or DEBUG_ENABLED then
     love.window.updateMode(height, width, {})
     love.window.setFullscreen(false)
-  elseif DEBUG_ENABLED then
     GAME:updateCanvasPositionAndScale(width, height)
   end
-  for _, player in ipairs(match.players) do
+  for _, player in ipairs(self.match.players) do
     if player.isLocal and player.human and player.settings.inputMethod == "touch" then
       -- recreate the stack canvas to use gfxScale of 3
       player.stack.gfxScale = 3
@@ -265,6 +267,11 @@ end
 
 function PortraitGame:customRun()
   self.uiRoot.timer:setText(getTimer(self.match))
+end
+
+function PortraitGame:startNextScene()
+  self:returnToLandscape()
+  GAME.navigationStack:pop()
 end
 
 return PortraitGame
