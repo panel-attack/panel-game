@@ -128,9 +128,7 @@ function Stack:checkMatches()
     self.manual_raise = false
     prof.pop("Z2")
 
-    prof.push("Z3")
     local attackGfxOrigin = self:applyMatchToPanels(matchingPanels, isChainLink, comboSize)
-    prof.pop("Z3")
     prof.push("Z4")
     local garbagePanels = self:getConnectedGarbagePanels(matchingPanels)
     prof.pop("Z4")
