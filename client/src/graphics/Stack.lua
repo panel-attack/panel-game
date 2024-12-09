@@ -417,7 +417,7 @@ function Stack:drawDebug()
       GraphicsUtil.print(inputs_to_print, x, y + 195)
     end
 
-    local drawX = self.frameOriginX + self:stackCanvasWidth() / 2
+    local drawX = self.frameOriginX + self:canvasWidth() / 2
     local drawY = 10
     local padding = 14
 
@@ -511,10 +511,12 @@ function Stack.render(self)
     return
   end
 
-  prof.push("Z1")
+  prof.push("setCanvas")
   self:setCanvas()
+  prof.pop("setCanvas")
+  prof.push("drawCharacter")
   self:drawCharacter()
-  prof.pop("Z1")
+  prof.pop("drawCharacter")
   prof.push("Z2")
   local garbageImages
   local shockGarbageImages
@@ -544,6 +546,7 @@ function Stack.render(self)
   prof.push("Z4")
   self:drawCountdown()
   self:drawCanvas()
+
   prof.pop("Z4")
 
   prof.push("Z5")

@@ -63,7 +63,7 @@ function Telegraph:telegraphRenderXPosition(receiver, index)
 
   local result = receiver.frameOriginX
   if receiver.mirror_x == 1 then
-    result = result + receiver:stackCanvasWidth() / receiver.gfxScale + increment
+    result = result + receiver:canvasWidth() / receiver.gfxScale + increment
   end
 
   if index > MAX_DISPLAY_ITEMS then

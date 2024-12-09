@@ -36,8 +36,12 @@ local StackBase = class(function(self, args)
 
   -- graphics
   -- also relevant for the touch input controller method besides general drawing
+  self.baseWidth = 104
+  self.baseHeight = 204
   self.gfxScale = 3
-  self.canvas = love.graphics.newCanvas(104 * self.gfxScale, 204 * self.gfxScale, {dpiscale = GAME:newCanvasSnappedScale()})
+  -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
+  -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
+  self.canvas = true
   self.portraitFade = config.portrait_darkness / 100 -- will be set back to 0 if count down happens
   self.healthQuad = GraphicsUtil:newRecycledQuad(0, 0, themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight(), themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight())
 end)
@@ -202,7 +206,7 @@ function StackBase:moveForRenderIndex(renderIndex)
       self.multiplication = 1
     end
     local centerX = (GAME.globalCanvas:getWidth() / 2)
-    local stackWidth = self:stackCanvasWidth()
+    local stackWidth = self:canvasWidth()
     local innerStackXMovement = 100
     local outerStackXMovement = stackWidth + innerStackXMovement
     self.panelOriginXOffset = 4
@@ -223,9 +227,10 @@ function StackBase:moveForRenderIndex(renderIndex)
 end
 
 function StackBase:setCanvas()
-  love.graphics.setCanvas(self.canvas)
-  -- we want a transparent background
-  love.graphics.clear(0, 0, 0, 0)
+  -- this used to be a canvas instead but turns out switching between canvas can be quite the overhead
+  love.graphics.setScissor(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale, self.baseWidth * self.gfxScale, self.baseHeight * self.gfxScale)
+  love.graphics.push("transform")
+  love.graphics.translate(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale)
 end
 
 function StackBase:drawCharacter()
@@ -252,8 +257,8 @@ function StackBase:drawFrame()
   local frameImage = themes[config.theme].images.frames[self.which]
 
   if frameImage then
-    local scaleX = self.canvas:getWidth() / frameImage:getWidth()
-    local scaleY = self.canvas:getHeight() / frameImage:getHeight()
+    local scaleX = self:canvasWidth() / frameImage:getWidth()
+    local scaleY = self:canvasHeight() / frameImage:getHeight()
     GraphicsUtil.draw(frameImage, 0, 0, 0, scaleX, scaleY)
   end
 end
@@ -291,19 +296,17 @@ function StackBase:drawCountdown()
   end
 end
 
-function StackBase:stackCanvasWidth()
-  local stackCanvasWidth = 0
-  if self.canvas then
-    stackCanvasWidth = math.floor(self.canvas:getWidth())
-  end
-  return stackCanvasWidth
+function StackBase:canvasWidth()
+  return self.baseWidth * self.gfxScale
+end
+
+function StackBase:canvasHeight()
+  return self.baseHeight * self.gfxScale
 end
 
 function StackBase:drawCanvas()
-  love.graphics.setCanvas({GAME.globalCanvas, stencil = true})
-  love.graphics.setBlendMode("alpha", "premultiplied")
-  love.graphics.draw(self.canvas, self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale)
-  love.graphics.setBlendMode("alpha", "alphamultiply")
+  love.graphics.pop()
+  love.graphics.setScissor()
 end
 
 function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)

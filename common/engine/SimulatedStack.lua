@@ -115,7 +115,7 @@ end
 
 function SimulatedStack:drawDebug()
   if config.debug_mode then
-    local drawX = self.frameOriginX + self:stackCanvasWidth() / 2
+    local drawX = self.frameOriginX + self:canvasWidth() / 2
     local drawY = 10
     local padding = 14
 
@@ -140,11 +140,11 @@ end
 
 function SimulatedStack:renderStackHeight()
   local percentage = self.healthEngine:getTopOutPercentage()
-  local xScale = (self:stackCanvasWidth() - 8) / themes[config.theme].images.IMG_multibar_shake_bar:getWidth()
-  local yScale = (self.canvas:getHeight() - 4) / themes[config.theme].images.IMG_multibar_shake_bar:getHeight() * percentage
+  local xScale = (self:canvasWidth() - 8) / themes[config.theme].images.IMG_multibar_shake_bar:getWidth()
+  local yScale = (self:canvasHeight() - 4) / themes[config.theme].images.IMG_multibar_shake_bar:getHeight() * percentage
 
   GraphicsUtil.setColor(1, 1, 1, 0.6)
-  GraphicsUtil.drawQuad(themes[config.theme].images.IMG_multibar_shake_bar, self.stackHeightQuad, 4, self.canvas:getHeight(), 0, xScale,
+  GraphicsUtil.drawQuad(themes[config.theme].images.IMG_multibar_shake_bar, self.stackHeightQuad, 4, self:canvasHeight(), 0, xScale,
                      -yScale)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
@@ -245,7 +245,7 @@ function SimulatedStack:setGarbageTarget(garbageTarget)
     assert(garbageTarget.frameOriginX ~= nil)
     assert(garbageTarget.frameOriginY ~= nil)
     assert(garbageTarget.mirror_x ~= nil)
-    assert(garbageTarget.stackCanvasWidth ~= nil)
+    assert(garbageTarget.canvasWidth ~= nil)
     assert(garbageTarget.incomingGarbage ~= nil)
   end
   self.garbageTarget = garbageTarget

@@ -206,13 +206,13 @@ function PortraitGame:flipToPortrait()
 
   for _, player in ipairs(self.match.players) do
     if player.isLocal and player.human and player.settings.inputMethod == "touch" then
-      -- recreate the stack canvas to use a higher instead of the usual 3
-      -- force center it
+      -- modify the stack to use a higher gfxScale instead of the usual 3
       local stack = player.stack
       stack.gfxScale = 5
-      stack.canvas = love.graphics.newCanvas(104 * stack.gfxScale, 204 * stack.gfxScale, {dpiscale = GAME:newCanvasSnappedScale()})
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack.canvas:getWidth() / 2) / stack.gfxScale
-      stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack.canvas:getHeight()) / stack.gfxScale
+      -- force center it horizontally
+      stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2) / stack.gfxScale
+      -- and anchor at the bottom
+      stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack:canvasHeight()) / stack.gfxScale
       stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
       stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
       stack.origin_x = stack.frameOriginX / stack.gfxScale
@@ -258,9 +258,7 @@ function PortraitGame:returnToLandscape()
   end
   for _, player in ipairs(self.match.players) do
     if player.isLocal and player.human and player.settings.inputMethod == "touch" then
-      -- recreate the stack canvas to use gfxScale of 3
       player.stack.gfxScale = 3
-      player.stack.canvas = love.graphics.newCanvas(104 * 3, 204 * 3, {dpiscale = GAME:newCanvasSnappedScale()})
     end
   end
 end

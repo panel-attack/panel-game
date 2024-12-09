@@ -43,7 +43,7 @@ function CustomRun.sleep()
   -- and only while not profiling for memory allocations
   if not PROFILE_MEMORY and GAME and GAME.battleRoom and GAME.battleRoom.match and GAME.focused and not GAME.battleRoom.match.isPaused then
     local manualGcTime = math.max(0.001, idleTime * config.activeGarbageCollectionPercent)
-    prof.push("manual gc", tostring(manualGcTime * 1000) .. "ms")
+    prof.push("manual gc")--, tostring(manualGcTime * 1000) .. "ms")
     -- Spend as much time as necessary collecting garbage, but at least 0.1ms
     -- manualGc itself has a ceiling at which it will stop
     manualGc(manualGcTime)
@@ -62,7 +62,7 @@ function CustomRun.sleep()
   -- that means it is never shorter and usually slightly longer
   if idleTime > 0.001 then
     local sleepTime = idleTime - 0.0005
-    prof.push("sleep", sleepTime * 1000 .. "ms")
+    prof.push("sleep")--, sleepTime * 1000 .. "ms")
     love.timer.sleep(sleepTime)
     prof.pop("sleep")
   end

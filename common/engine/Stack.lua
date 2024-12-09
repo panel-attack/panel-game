@@ -557,7 +557,7 @@ end
 -- frameOriginX
 -- frameOriginY
 -- mirror_x
--- stackCanvasWidth
+-- canvasWidth
 function Stack.setGarbageTarget(self, newGarbageTarget)
   if newGarbageTarget ~= nil then
     -- the abstract notion of a garbage target
@@ -565,7 +565,7 @@ function Stack.setGarbageTarget(self, newGarbageTarget)
     assert(newGarbageTarget.frameOriginX ~= nil)
     assert(newGarbageTarget.frameOriginY ~= nil)
     assert(newGarbageTarget.mirror_x ~= nil)
-    assert(newGarbageTarget.stackCanvasWidth ~= nil)
+    assert(newGarbageTarget.canvasWidth ~= nil)
     assert(newGarbageTarget.incomingGarbage ~= nil)
   end
   self.garbageTarget = newGarbageTarget
