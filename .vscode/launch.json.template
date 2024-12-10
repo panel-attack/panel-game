@@ -21,7 +21,7 @@
           //, "updaterTest"
 
           // profiler options - you can only use one at a time as the memory profiler stops the automatic GC but the frame time profiler does not
-          // for profiling it may be wise to increase the initial size of profData in jprof so that it is less likely for size increases of the event table done by lua impact performance
+          // the profiler itself preallocates a lot of memory to reduce the odds of it causing spikes in frame time / memory alloc on its own
           //,"profileFrameTimes"
           //,"profileMemory"
         ]
