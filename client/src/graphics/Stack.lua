@@ -511,7 +511,7 @@ function Stack.render(self)
     return
   end
 
-  self:setCanvas()
+  self:setDrawArea()
   self:drawCharacter()
   local garbageImages
   local shockGarbageImages
@@ -536,7 +536,7 @@ function Stack.render(self)
     self:render_cursor(shakeOffset)
   end
   self:drawCountdown()
-  self:drawCanvas()
+  self:resetDrawArea()
 
   self:drawPopEffects()
   self:drawCards()

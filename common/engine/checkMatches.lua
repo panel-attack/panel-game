@@ -111,16 +111,11 @@ function Stack:checkMatches()
     return
   end
 
-  prof.push("matchingPanels2")
-  local matchingPanels, matches = self:getMatchingPanels2()
-  prof.pop("matchingPanels2")
-  prof.push("matchingPanels")
-  local reference = self:getMatchingPanels()
-  prof.pop("matchingPanels")
+  --local reference = self:getMatchingPanels2()
+  local matchingPanels = self:getMatchingPanels()
   local comboSize = #matchingPanels
 
   if comboSize > 0 then
-    prof.push("Z2")
     local frameConstants = self.levelData.frameConstants
     local metalCount = getMetalCount(matchingPanels)
     local isChainLink = isNewChainLink(matchingPanels)
@@ -129,16 +124,10 @@ function Stack:checkMatches()
     end
     -- interrupt any ongoing manual raise
     self.manual_raise = false
-    prof.pop("Z2")
 
     local attackGfxOrigin = self:applyMatchToPanels(matchingPanels, isChainLink, comboSize)
-    prof.push("getConnectedGarbagePanels2")
     local garbagePanels = self:getConnectedGarbagePanels2(matchingPanels)
-    prof.pop("getConnectedGarbagePanels2")
-    prof.push("getConnectedGarbagePanels")
-    local reference = self:getConnectedGarbagePanels(matchingPanels)
-    prof.pop("getConnectedGarbagePanels")
-    prof.push("Z5")
+    --local reference = self:getConnectedGarbagePanels(matchingPanels)
     local garbagePanelCountOnScreen = 0
     if garbagePanels then
       logger.debug("Matched " .. comboSize .. " panels, clearing " .. #garbagePanels .. " panels of garbage")
@@ -146,9 +135,7 @@ function Stack:checkMatches()
       local garbageMatchTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
       self:matchGarbagePanels(garbagePanels, garbageMatchTime, isChainLink, garbagePanelCountOnScreen)
     end
-    prof.pop("Z5")
 
-    prof.push("Z6")
     local preStopTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
     self.pre_stop_time = math.max(self.pre_stop_time, preStopTime)
     self:awardStopTime(isChainLink, comboSize)
@@ -157,23 +144,24 @@ function Stack:checkMatches()
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)
       self:queueAttackSoundEffect(isChainLink, self.chain_counter, comboSize, metalCount)
     end
-    prof.pop("Z6")
 
-    prof.push("Z7")
     self.analytic:register_destroyed_panels(comboSize)
     self:updateScoreWithBonus(comboSize)
     self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
-    prof.pop("Z7")
   end
 
-  prof.push("clear chaining flags")
   self:clearChainingFlags()
-  prof.pop("clear chaining flags")
 end
 
-local candidatePanels = table.new(144, 0)
-local verticallyConnected = table.new(12, 0)
-local horizontallyConnected = table.new(6, 0)
+-- getMatchingPanels2 is a reference implementation
+-- It is not in use as it is only as fast when jit compiled and slightly slower when not jit compiled in comparison to getMatchingPanels.
+-- It is kept around in case we want to try and adopt the meta idea described inside the function.
+-- As the new implementation of getConnectedGarbagePanels has proven to be consistently fast,
+--  I haven't felt a need to convert the initial panel to garbage match to also use AABB
+--  as given the potentially low amount of panels matched each frames it is probably overkill
+-- I want to note I don't really get why it is slower as it avoids some double checking 
+
+local candidatePanels2 = table.new(144, 0)
 
 -- gets all panels on the current stack that should match
 ---@return Panel[] matchingPanels all matchingPanels without duplicates
@@ -183,13 +171,13 @@ function Stack:getMatchingPanels2()
   local matchingPanels = {}
   local panels = self.panels
   --local matches = {}
-  table.clear(candidatePanels)
+  table.clear(candidatePanels2)
 
   for row = 1, self.height do
     for col = 1, self.width do
       local panel = panels[row][col]
       if panel.stateChanged and canMatch(panel) then
-        candidatePanels[#candidatePanels + 1] = panel
+        candidatePanels2[#candidatePanels2 + 1] = panel
       end
     end
   end
@@ -213,14 +201,14 @@ function Stack:getMatchingPanels2()
   ]]
 
 
-  for _, candidatePanel in ipairs(candidatePanels) do
+  local p
+  for _, candidatePanel in ipairs(candidatePanels2) do
     -- check vertical match
     local color = candidatePanel.color
     local cRow = candidatePanel.row
     local cCol = candidatePanel.column
-    local p
 
-    if not candidatePanel.matching or (candidatePanel.matching % 2) > 0 then
+    if candidatePanel.matching == nil or (candidatePanel.matching % 2) > 0 then
       local up = 0
       local down = 0
 
@@ -259,7 +247,7 @@ function Stack:getMatchingPanels2()
     end
 
 
-    if not candidatePanel.matching or candidatePanel.matching < 2 then
+    if not candidatePanel.matching == nil or candidatePanel.matching < 2 then
       local left = 0
       local right = 0
 
@@ -296,6 +284,14 @@ function Stack:getMatchingPanels2()
         --matches[#matches + 1] = match
       end
     end
+
+    -- TBD:
+    -- if a candidatePanel was found to NOT match mark it with false
+    -- that way we can make a distinction between nil == not checked and false == definitely not matching
+    -- and define more early exits by abandoning a vertical/horizontal check for another panel of the same color early
+    -- if candidatePanel.matching == nil then
+    --   candidatePanel.matching = false
+    -- end
   end
 
   for i = 1, #matchingPanels do
@@ -307,6 +303,10 @@ function Stack:getMatchingPanels2()
 
   return matchingPanels--, matches
 end
+
+local candidatePanels = table.new(144, 0)
+local verticallyConnected = table.new(12, 0)
+local horizontallyConnected = table.new(6, 0)
 
 -- returns a table of panels that are forming matches on this frame
 function Stack:getMatchingPanels()
@@ -422,6 +422,18 @@ function Stack:applyMatchToPanels(matchingPanels, isChain, comboSize)
   return firstCellToPop
 end
 
+---@class AABBGarbage
+---@field metal boolean
+---@field top integer
+---@field left integer
+---@field bottom integer
+---@field right integer
+
+---@param a AABBGarbage
+---@param b AABBGarbage
+---@return boolean # if a would match b (or vice versa) if it was matched
+--- true if they are both (not) metal and are adjacent to each other,
+--- false otherwise
 local function matchOnContact(a, b)
   if a.metal == b.metal then
     if a.top == b.bottom - 1 or a.bottom == b.top + 1 then
@@ -440,19 +452,21 @@ local function matchOnContact(a, b)
   end
 end
 
+---@param matchingPanels Panel[] non-garbage panels that are matching this frame
+---@return Panel[]? matchingGarbagePanels garbage panels that got matched by the matchingPanels; nil if none were matched
 function Stack:getConnectedGarbagePanels2(matchingPanels)
   -- array of all garbageIds on the stack
   local garbageIds = {}
   -- records an enum state per garbageId
   local idGarbage = {}
-  -- defines the surface of the garbage for easier access
+  ---@type AABBGarbage[]
   local garbagePieces = {}
 
   for row = 1, #self.panels do
     for col = 1, self.width do
       panel = self.panels[row][col]
       if panel.isGarbage and panel.state == "normal" and not idGarbage[panel.garbageId]
-            -- we only want to match garbage that is either fully or partially on-screen OR has been on-screen before
+      -- we only want to match garbage that is either fully or partially on-screen OR has been on-screen before
       -- example: chain garbage several rows high lands in row 12; by visuals/shake it is clear that it is more than 1 row high
       --   it gets matched, lowest row converts, everything normal until here
       --   if the player manages to make a garbage chain without the chain garbage falling a row it should get matched off-screen
@@ -530,7 +544,6 @@ function Stack:getConnectedGarbagePanels2(matchingPanels)
         for j = 1, #garbageIds do
           if j < i then
             -- this collision was already checked for i, just steal it!
-            -- to be profiled if this is actually faster cause the check might be quite cheap
             matching[garbageIds[j]] = garbageMatching[garbageIds[j]][garbageIds[i]]
           elseif i ~= j then
             local b = garbagePieces[j]

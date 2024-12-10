@@ -128,12 +128,12 @@ function SimulatedStack:drawDebug()
 end
 
 function SimulatedStack:render()
-  self:setCanvas()
+  self:setDrawArea()
   self:drawCharacter()
   self:renderStackHeight()
   self:drawFrame()
   self:drawWall(0, 12)
-  self:drawCanvas()
+  self:resetDrawArea()
 
   self:drawDebug()
 end

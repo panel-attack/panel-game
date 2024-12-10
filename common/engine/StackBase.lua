@@ -226,11 +226,21 @@ function StackBase:moveForRenderIndex(renderIndex)
     self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
 end
 
-function StackBase:setCanvas()
-  -- this used to be a canvas instead but turns out switching between canvas can be quite the overhead
+-- to be used in conjunction with resetDrawArea
+-- sets the draw area for the Stack by defining an area outside of which all draws are cut off
+--   and translating following draws to be relative to the top left origin of the area
+function StackBase:setDrawArea()
+  -- this used to be a canvas instead but turns out switching between canvases can be quite the overhead
   love.graphics.setScissor(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale, self.baseWidth * self.gfxScale, self.baseHeight * self.gfxScale)
   love.graphics.push("transform")
   love.graphics.translate(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale)
+end
+
+-- to be used in conjunction with setDrawArea
+-- resets the draw area and removes the translation
+function StackBase:resetDrawArea()
+  love.graphics.pop()
+  love.graphics.setScissor()
 end
 
 function StackBase:drawCharacter()
@@ -302,11 +312,6 @@ end
 
 function StackBase:canvasHeight()
   return self.baseHeight * self.gfxScale
-end
-
-function StackBase:drawCanvas()
-  love.graphics.pop()
-  love.graphics.setScissor()
 end
 
 function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)

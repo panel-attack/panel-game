@@ -4,7 +4,7 @@ local function enableProfiler()
   PROF_CAPTURE = true
   -- we want to optimize in a way that our weakest platforms benefit
   -- on our weakest platform (android), jit is default disabled
-  --jit.off()
+  jit.off()
 end
 
 for _, value in pairs(arg) do
