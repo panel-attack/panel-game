@@ -9,13 +9,23 @@ function love.conf(t)
 
   --t.identity = "" -- (already set above) -- The name of the save directory (string)
   t.appendidentity = false            -- Search files in source directory before save directory (boolean)
-  t.version = "12.0"                  -- The LÖVE version this game was made for (string)
+
+  local loveMajor = love.getVersion()
+  -- this version has wrappers to be compatible with either love 11 or 12
+  -- by adjusting to the actual version we avoid the pop-up informing the user about potential compatibility problems
+  if loveMajor >= 12 then
+    t.version = "12.0"                -- The LÖVE version this game was made for (string)
+    t.highdpi = true                  -- Enable high-dpi mode for the window on a Retina display (boolean)
+    t.window.displayindex = config.display        -- Index of the monitor to show the window in (number)
+  else
+    t.version = "11.5"
+    t.window.highdpi = true
+    t.window.display = config.display
+  end
   t.console = false                   -- Attach a console (boolean, Windows only)
   t.accelerometerjoystick = false     -- Enable the accelerometer on iOS and Android by exposing it as a Joystick (boolean)
   t.externalstorage = true
   t.gammacorrect = false              -- Enable gamma-correct rendering, when supported by the system (boolean)
-  t.highdpi = true                  -- Enable high-dpi mode for the window on a Retina display (boolean)
-
 
   t.audio.mic = false                 -- Request and use microphone capabilities in Android (boolean)
   t.audio.mixwithsystem = false       -- Keep background music playing when opening LOVE (boolean, iOS and Android only)
@@ -34,7 +44,6 @@ function love.conf(t)
   t.window.msaa = 0                        -- The number of samples to use with multi-sampled antialiasing (number)
   t.window.depth = nil                     -- The number of bits per sample in the depth buffer
   t.window.stencil = nil                   -- The number of bits per sample in the stencil buffer
-  t.window.displayindex = config.display        -- Index of the monitor to show the window in (number)
   t.window.usedpiscale = false             -- Enable automatic DPI scaling when highdpi is set to true as well (boolean)
   t.window.x = config.windowX              -- The x-coordinate of the window's position in the specified display (number)
   t.window.y = config.windowY              -- The y-coordinate of the window's position in the specified display (number)

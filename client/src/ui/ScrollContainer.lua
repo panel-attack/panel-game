@@ -85,12 +85,23 @@ function ScrollContainer:onRelease(x, y, duration)
   end
 end
 
+local loveMajor = love.getVersion()
+
 function ScrollContainer:draw()
   if self.isVisible then
     -- make a stencil according to width/height
-    love.graphics.setStencilMode("draw", 1)
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-    love.graphics.setStencilMode("test", 1)
+    if loveMajor >= 12 then
+      love.graphics.setStencilMode("draw", 1)
+      love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+      love.graphics.setStencilMode("test", 1)
+    else
+      -- the scrollcontainer props could theoretically change every frame so we need to recreate the closure every time
+      local stencilFunction = function()
+        love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+      end
+      love.graphics.stencil(stencilFunction, "replace", 1)
+      love.graphics.setStencilTest("greater", 0)
+    end
 
     love.graphics.push("transform")
     -- do an extra translate to account for the scroll offset
@@ -104,7 +115,11 @@ function ScrollContainer:draw()
     self:drawChildren()
     love.graphics.pop()
     -- clean up the stencil
-    love.graphics.setStencilMode()
+    if loveMajor >= 12 then
+      love.graphics.setStencilMode()
+    else
+      love.graphics.setStencilTest()
+    end
   end
 end
 

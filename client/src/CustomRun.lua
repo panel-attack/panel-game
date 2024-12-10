@@ -181,10 +181,20 @@ end
 -- We have broken it up into calling a inner function so we can change the inner function in the game love file to override behavior
 -- If you change this function also change DefaultLoveRunFunction's equivalent method
 function CustomRun.run()
-  if love.load then love.load(love.parsedGameArguments, love.rawGameArguments) end
+  if love.load then
+    local loveMajor = love.getVersion()
+
+    if loveMajor >= 12 then
+      love.load(love.parsedGameArguments, love.rawGameArguments)
+    else
+      love.load(love.arg.parseGameArguments(arg), arg)
+    end
+  end
 
 	-- We don't want the first frame's dt to include time taken by love.load.
-	if love.timer then love.timer.step() end
+	if love.timer then
+    love.timer.step()
+  end
 
   dt = 0
 
