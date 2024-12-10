@@ -1,17 +1,39 @@
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+---@class UiElement
+---@field x number relative x offset to the parent element (canvas if no parent)
+---@field y number relative y offset to the parent element (canvas if no parent)
+---@field width number width of the element for the sake of resizing children and touch hitboxes
+---@field height number height of the element for the sake of resizing children and touch hitboxes
+---@field hAlign string "left", "center", "right", determines the horizontal alignment relative to the parent
+---@field vAlign string "top", "center", "bottom", determines the vertical alignment relative to the parent
+---@field hFill boolean if the element's width should fill out the entire parent's width
+---@field vFill boolean if the element's height should fill out the entire parent's height
+---@field isVisible boolean if the element is currently visible for rendering (also disables touch interaction)
+---@field isEnabled boolean if the element is currently eligible for touch interaction
+---@field parent UiElement the element's parent it is getting position relative to via its properties
+---@field children UiElement[] the element's children that get positioned relative to it
+---@field id integer unique identifier of the element
+---@field onTouch function? touch callback for when the element is being touched
+---@field onDrag function? touch callback for when the mouse touching the element is dragged across the screen
+---@field onRelease function? touch callback for when the mouse touching the element is released
+---@field onHold function? touch callback for when a touch is held on the element for a longer duration
+
 local uniqueId = 0
 
 -- base class for all UI elements
 -- takes in a options table for setting default values
 -- all valid base options are defined in the constructor
+---@class UiElement
+---@overload fun(options: table): UiElement
 local UIElement = class(
+  ---@param self UiElement
   function(self, options)
     -- local position relative to parent (or global pos if parent is nil)
     self.x = options.x or 0
     self.y = options.y or 0
-    
+
     -- ui dimensions
     self.width = options.width or 0
     self.height = options.height or 0
@@ -25,12 +47,12 @@ local UIElement = class(
     self.hFill = options.hFill or false
     -- vFill true sets the height to the size of the parent
     self.vFill = options.vFill or false
-    
+
     -- whether the ui element is visible
     self.isVisible = options.isVisible or options.isVisible == nil and true
     -- whether the ui element recieves events
     self.isEnabled = options.isEnabled or options.isEnabled == nil and true
-    
+
     -- the parent element, position is relative to it
     self.parent = options.parent
     -- list of children elements
@@ -38,10 +60,10 @@ local UIElement = class(
 
     self.id = uniqueId
     uniqueId = uniqueId + 1
-    
-    self.TYPE = "UIElement"
   end
 )
+
+UIElement.TYPE = "UIElement"
 
 function UIElement:addChild(uiElement)
   if uiElement.parent ~= self then

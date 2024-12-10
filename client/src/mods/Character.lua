@@ -15,35 +15,61 @@ local DynamicStageTrack = require("client.src.music.DynamicStageTrack")
 local RelayStageTrack = require("client.src.music.RelayStageTrack")
 local Mod = require("client.src.mods.Mod")
 
+---@type Character
 local default_character = nil -- holds default assets fallbacks
+---@type Character
 local randomCharacter = nil -- acts as the bundle character for all theme characters
 
+---@enum ChainStyle
 local chainStyle = {classic = 0, per_chain = 1}
+---@enum ComboStyle
 local comboStyle = {classic = 0, per_combo = 1}
 
-local Character =
-  class(
-  function(self, full_path, folder_name)
-    self.path = full_path -- string | path to the character folder content
-    self.id = folder_name -- string | id of the character, specified in config.json
-    self.display_name = self.id -- string | display name of the stage
-    self.stage = nil -- string | stage that get selected upon doing the super selection of that character
-    self.panels = nil -- string | panels that get selected upon doing the super selection of that character
-    self.images = {}
-    self.sounds = {}
-    self.musics = {}
-    self.flag = nil -- string | flag to be displayed in the select screen
-    self.chain_style = chainStyle.classic
-    self.combo_style = comboStyle.classic
-    self.popfx_style = "burst"
-    self.popfx_burstRotate = false
-    self.popfx_burstScale = 1
-    self.popfx_fadeScale = 1
-    self.music_style = "normal"
-    self.stageTrack = nil
-    self.files = tableUtils.map(love.filesystem.getDirectoryItems(self.path), function(file) return fileUtils.getFileNameWithoutExtension(file) end)
-  end,
-  Mod
+---@class Character:Mod
+---@field display_name string Name for display in selection menus
+---@field stage string? Id of a stage for super select
+---@field panels string? Id of a panel set for super select
+---@field images table<string, love.Image> graphical assets of the character
+---@field telegraph_garbage_images userdata[][] graphical assets for telegraph display
+---@field sounds table<string, love.Source | table<integer, love.Source>> sound effect assets of the character
+---@field musics table<string, love.Source> music assets of the character
+---@field hasMusic boolean? if the character has any music
+---@field flag string? flag to be displayed in selection menus
+---@field chain_style ChainStyle defines a pattern in which SFX are used for chain events
+---@field combo_style ComboStyle defines a pattern in which SFX are used for combo events
+---@field popfx_style string defines a style in which attacks and pops are accompanied by select graphic assets
+---@field popfx_burstRotate boolean configuration option for the PopFxStyle
+---@field popfx_burstScale number scale factor for certain graphic assets displayed for the PopFxStyle
+---@field popfx_fadeScale number scale factor for certain graphic assets displayed for the PopFxStyle
+---@field music_style string defines the behaviour for music when switching between normal and danger
+---@field stageTrack StageTrack? the StageTrack constructed from the character's music assets
+---@field files string[] array of files in the mod's directory
+
+---@class Character
+---@overload fun(full_path: string, folder_name: string): Character
+local Character = class(
+---@param self Character
+function(self, full_path, folder_name)
+  self.path = full_path
+  self.id = folder_name
+  self.display_name = self.id
+  self.stage = nil
+  self.panels = nil
+  self.images = {}
+  self.sounds = {}
+  self.musics = {}
+  self.flag = nil
+  self.chain_style = chainStyle.classic
+  self.combo_style = comboStyle.classic
+  self.popfx_style = "burst"
+  self.popfx_burstRotate = false
+  self.popfx_burstScale = 1
+  self.popfx_fadeScale = 1
+  self.music_style = "normal"
+  self.stageTrack = nil
+  self.files = tableUtils.map(love.filesystem.getDirectoryItems(self.path), function(file) return fileUtils.getFileNameWithoutExtension(file) end)
+end,
+Mod
 )
 
 Character.TYPE = "character"

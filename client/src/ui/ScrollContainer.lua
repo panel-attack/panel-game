@@ -2,21 +2,33 @@ local UiElement = require("client.src.ui.UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 
-local ScrollContainer = class(function(self, options)
+---@class ScrollContainer : UiElement
+---@field scrollOrientation string "vertical" or "horizontal"
+---@field scrollOffset number by how many pixels the children are translated in the orientation
+---@field maxScrollOffset number maximum allowed value for scrollOffset the object will bound to
+
+---@class ScrollContainer
+---@overload fun(options: table): ScrollContainer
+local ScrollContainer = class(
+---@param self ScrollContainer
+function(self, options)
   self.scrollOrientation = "vertical" or options.scrollOrientation
-  self.scrollStepSize = options.scrollStepSize
   self.scrollOffset = 0
   self.maxScrollOffset = 0
   self.TYPE = "ScrollContainer"
 end,
 UiElement)
 
--- 
+-- bounds the scrollOffset of the container to the desired value between 0 and -maxScrollOffset
+---@param value number desired scrollOffset value
 function ScrollContainer:setScrollOffset(value)
   self.scrollOffset = util.bound(-self.maxScrollOffset, value, 0)
 end
 
 -- update the scroll offset so the element with passed scroll offset + size remains visible
+-- usually we want a cursor type of object to call this on move to automatically advance the scrollContainer
+---@param offset number the offset of the element to be kept visible
+---@param size number the size of the element to be kept visible
 function ScrollContainer:keepVisible(offset, size)
   -- with increasing negative value we scroll further down/right
   local refSize
@@ -143,6 +155,7 @@ function ScrollContainer:getTouchedChildElement(x, y)
   end
 end
 
+-- adds the uiElement and updates the maxScrollOffset if the addition extends the sensible scroll area 
 function ScrollContainer:addChild(uiElement)
   UiElement.addChild(self, uiElement)
   if self.scrollOrientation == "vertical" then

@@ -1924,6 +1924,10 @@ function Stack:getAttackPatternData()
 end
 
 -- creates a new panel at the specified row+column and adds it to the Stack's panels table
+---@param self table
+---@param row integer
+---@param column integer
+---@return Panel panel New Panel at the specified row+column that has been added to the Stack's panels table and subscribed to for signals
 function Stack.createPanelAt(self, row, column)
   self.panelsCreatedCount = self.panelsCreatedCount + 1
   local panel = Panel(self.panelsCreatedCount, row, column, self.levelData.frameConstants)
@@ -1934,6 +1938,7 @@ function Stack.createPanelAt(self, row, column)
   return panel
 end
 
+---@param panel Panel
 function Stack.onPop(self, panel)
   if panel.isGarbage then
     if config.popfx == true then
@@ -1969,12 +1974,14 @@ function Stack.onPop(self, panel)
   end
 end
 
+---@param panel Panel
 function Stack.onPopped(self, panel)
   if self.panels_to_speedup then
     self.panels_to_speedup = self.panels_to_speedup - 1
   end
 end
 
+---@param panel Panel
 function Stack.onLand(self, panel)
   if panel.isGarbage then
     self:onGarbageLand(panel)
@@ -1985,6 +1992,7 @@ function Stack.onLand(self, panel)
   end
 end
 
+---@param panel Panel
 function Stack.onGarbageLand(self, panel)
   if panel.shake_time
     -- only parts of the garbage that are on the visible board can be considered for shake

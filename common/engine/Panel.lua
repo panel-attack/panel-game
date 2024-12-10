@@ -2,8 +2,55 @@ local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 require("common.lib.util")
 
+---@class Panel
+---@field id integer unique identifier of the panel (unique per stack)
+---@field row integer current row of the panel on the grid
+---@field column integer current column of the panel on the grid
+---@field frameTimes table<string, integer> holds values determining the physics for this panel
+---@field state string string representation of the panel's state
+---@field stateChanged boolean indicates whether the state of the panel changed on the previous update or via other outside influence (e.g. swap)
+--- used for culling checks against panels, primarily matchability
+---@field color integer panel color encoded as its index
+---@field timer integer holds the remaining frames in the current state; 0 in frames that are not finite or of undefined duration
+---@field matching boolean flag is reset each frame; if the panel has been matched on this frame
+---@field matchesMetal boolean flag is reset each frame; if true, the matched panel will match adjacent metal garbage panels
+---@field matchesGarbage boolean flag is reset each frame; if true, the matched panel will match adjacent non-metal garbage panels
+---@field propagatesFalling boolean if the panel should immediately pass the falling state to panels above instead of having them hover first
+---@field chaining boolean? if the panel will cause a chain when matched in this moment
+---@field propagatesChaining boolean panels are updated bottom to top
+--- panels will check if this is set on the panel below to update their chaining state in combination with their own state
+---@field matchAnyway boolean a flag to determine if a hovering panel can be matched or not despite hovering panels normally being unmatchable
+--- PA always checks matches and then updates everything at once; the flag exists to compensate for the order of actions to keep some hovering panels matchable on their first frame
+--- if we first updated swapping panels, then checked matches and then updated all panels it might be possible to get rid of this flag; debatable if that is desirable
+---@field isGarbage boolean? if the panel is acting as garbage
+---@field garbageId integer? the unique id of the piece of garbage the panel belongs to (unique per stack)
+---@field metal boolean? if the panel is acting as shock garbage
+---@field x_offset integer? index of the garbage panel relative to the left edge of the garbage; the left-most panels have the index 0
+---@field y_offset integer? index of the garbage panel relative to the bottom edge of the garbage; the bottom-most panels have the index 0
+---@field width integer? the total width of the garbage block this panel is part of
+---@field height integer? the total height of the garbage block this panel is part of
+---@field initial_time integer? total time for a garbage panel to go from being matched to converting into a non-garbage panel
+---@field pop_time integer? after how many frames a matched garbage panel should change its appearance
+---@field pop_index integer? index of the panel in the sequence formed of all garbage panels in the match scheduled to be garbage popping
+---@field shake_time integer? how many frames of invincibility the garbage panel grants upon making contact with non-garbage panels on the screen for the first time
+--- all panels in a garbage block have the same shake_time
+---@field combo_size integer? size of the regular match the panel is part of; size compared against index determines the pop timing; also used for determining popFX size
+---@field combo_index integer? pop index among panels in the regular match; index compared against size determines the pop timing
+---@field chain_index integer? number of the chain link if this panel got matched as part of a chain (I think)
+---@field isSwappingFromLeft boolean? a direction indicator so we can check if swaps are possible with currently swapping panels and their surroundings
+---@field dont_swap boolean? if a panel is not supposed to be swappable for arcane reasons it gets flagged down with this
+--- in the future this should probably get axed
+--- in about all scenarios swapping is forbidden cause a panel should hover after completing its swap
+--- or something like that...maybe we could check "queuedHover" instead?
+---@field queuedHover boolean? if a panel is swapping while the panel below finishes its popped state
+--- then this panel should be forced to hover after and the panels above as well
+--- indicated by this bool for itself and the panels above
+---@field fell_from_garbage integer? Animation timer for "bounce" after falling from garbage.
+
 -- clears information relating to state, matches and various stuff
 -- a true argument must be supplied to clear the chaining flag as well
+---@param panel Panel
+---@param clearChaining boolean? if the panel's chaining flag should be cleared
 local function clear_flags(panel, clearChaining)
   -- determines what can happen with this panel
   -- or what will happen with it if nothing else happens with it
@@ -56,6 +103,9 @@ local function clear_flags(panel, clearChaining)
 end
 
 -- Sets all variables to the default settings
+---@param panel Panel
+---@param clearChaining boolean? if the panel's chaining flag should be cleared
+---@param clearColor boolean? if the panel's color should be cleared to 0
 local function clear(panel, clearChaining, clearColor)
   -- color 0 is an empty panel.
   -- colors 1-7 are normal colors, 8 is [!], 9 is garbage.
@@ -102,33 +152,45 @@ local function clear(panel, clearChaining, clearColor)
   clear_flags(panel, clearChaining)
 end
 
+-- meta comment for class annotation below:
+-- while Panel inheriting from Signal is not technically true, in fact all panels emit signals so effectively it is
+-- it also COULD be made to derive from Signal so it's not a lie either and might even be sensible for performance
+-- I'm not sure if there are better ways to represent this kind of mixin, spamming the Union type Panel | Signal everywhere felt dumb
 
--- Represents an individual panel in the stack
-Panel =
-class(
-  function(p, id, row, column, frameTimes)
-    clear(p, true, true)
-    p.id = id
-    p.row = row
-    p.column = column
-    p.frameTimes = frameTimes
-    Signal.turnIntoEmitter(p)
-    p:createSignal("pop")
-    p:createSignal("popped")
-    p:createSignal("land")
-  end
+-- Represents an individual panel in a stack
+---@class Panel: Signal
+---@overload fun(id: integer, row: integer, column: integer, frameTimes: table<string, integer>): Panel
+Panel = class(
+---@param p Panel
+function(p, id, row, column, frameTimes)
+  clear(p, true, true)
+  p.id = id
+  p.row = row
+  p.column = column
+  p.frameTimes = frameTimes
+  Signal.turnIntoEmitter(p)
+  p:createSignal("pop")
+  p:createSignal("popped")
+  p:createSignal("land")
+end
 )
 
+---@param panel Panel
 function Panel.__tostring(panel)
   return "row:"..panel.row..",col:"..panel.column..",color:"..panel.color..",state:"..panel.state..",timer:"..panel.timer
 end
 
--- for external access
+-- wrapper of local clear for external access
+---@param self Panel
+---@param clearChaining boolean? if the panel's chaining flag should be cleared
+---@param clearColor boolean? if the panel's color should be cleared to 0
 function Panel:clear(clearChaining, clearColor)
   clear(self, clearChaining, clearColor)
 end
 
 -- convenience function for getting panel in the row below if there is one
+---@param panel Panel
+---@param panels Panel[][]
 local function getPanelBelow(panel, panels)
   -- by definition, there is a row 0 that always has dimmed state panels
   -- dimmed state panels never use this function so we can omit the sanity check for performance
@@ -139,7 +201,9 @@ local function getPanelBelow(panel, panels)
   -- end
 end
 
--- returns true if there are "stable" panels below that keep it from falling down
+---@param panel Panel
+---@param panels Panel[][]
+---@return boolean # if there are "stable" panels below panel that keep it from falling down
 local function supportedFromBelow(panel, panels)
   if panel.row <= 1 then
     return true
@@ -172,6 +236,8 @@ local function supportedFromBelow(panel, panels)
 end
 
 -- switches the panel with the panel below and refreshes its state/flags
+---@param panel Panel
+---@param panels Panel[][]
 local function fall(panel, panels)
   local panelBelow = getPanelBelow(panel, panels)
   Panel.switch(panel, panelBelow, panels)
@@ -189,6 +255,7 @@ local function fall(panel, panels)
 end
 
 -- makes the panel enter landing state and informs the stack about the event depending on whether it's garbage or not
+---@param panel Panel
 local function land(panel)
   panel:emitSignal("land", panel)
   if panel.isGarbage then
@@ -205,14 +272,17 @@ local function land(panel)
   panel.stateChanged = true
 end
 
--- decrements the panels timer by 1 if it's above 0
+-- decrements the panel's timer by 1 if it's above 0
+---@param panel Panel
 local function decrementTimer(panel)
   if panel.timer > 0 then
     panel.timer = panel.timer - 1
   end
 end
 
--- dedicated setter to troubleshoot timers constantly being overwritten by engine
+-- dedicated setter to troubleshoot timers being overwritten outside of Panel:update
+---@param self Panel
+---@param frames integer new value for timer
 function Panel.setTimer(self, frames)
   self.timer = frames
 end
@@ -232,6 +302,8 @@ local landingState = {}
 local dimmedState = {}
 local deadState = {}
 
+---@param panel Panel
+---@param panels Panel[][]
 normalState.update = function(panel, panels)
   if panel.isGarbage then
     if not supportedFromBelow(panel, panels) then
@@ -293,6 +365,10 @@ normalState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panelBelow Panel
+---@param hoverTime integer
+---@param panels Panel[][]
 normalState.enterHoverState = function(panel, panelBelow, hoverTime, panels)
   clear_flags(panel, false)
   panel.state = "hovering"
@@ -327,6 +403,8 @@ normalState.enterHoverState = function(panel, panelBelow, hoverTime, panels)
   panel.stateChanged = true
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 swappingState.update = function(panel, panels)
   decrementTimer(panel)
   if panel.timer == 0 then
@@ -336,6 +414,7 @@ swappingState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
 local function swappingStateFinishSwap(panel)
   panel.state = "normal"
   panel.dont_swap = nil
@@ -343,6 +422,8 @@ local function swappingStateFinishSwap(panel)
   panel.stateChanged = true
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 swappingState.changeState = function(panel, panels)
 
   local panelBelow = getPanelBelow(panel, panels)
@@ -364,6 +445,8 @@ end
 
 -- if a panel exits popped state while there is swapping panel above, 
 -- the panels above the swapping panel should still get chaining state and start to hover immediately
+---@param panel Panel
+---@param panels Panel[][]
 swappingState.propagateChaining = function(panel, panels)
   local panelBelow = getPanelBelow(panel, panels)
 
@@ -374,6 +457,8 @@ swappingState.propagateChaining = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panelBelow Panel
 swappingState.enterHoverState = function(panel, panelBelow)
   clear_flags(panel, false)
   panel.state = "hovering"
@@ -393,6 +478,8 @@ swappingState.enterHoverState = function(panel, panelBelow)
   panel.stateChanged = true
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 matchedState.update = function(panel, panels)
   decrementTimer(panel)
 
@@ -406,6 +493,8 @@ matchedState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 matchedState.changeState = function(panel, panels)
   if panel.isGarbage then
     if panel.y_offset == -1 then
@@ -425,6 +514,7 @@ matchedState.changeState = function(panel, panels)
   end
 end
 
+---@param panel Panel
 matchedState.enterHoverState = function(panel)
   -- this is the hover enter after garbage match that converts the garbage panel into a regular panel
   -- clear resets its garbage flag to false, turning it into a normal panel!
@@ -441,6 +531,8 @@ matchedState.enterHoverState = function(panel)
   panel.stateChanged = true
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 poppingState.update = function(panel, panels)
   decrementTimer(panel)
   if panel.timer == 0 then
@@ -448,6 +540,8 @@ poppingState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 poppingState.changeState = function(panel, panels)
   panel:emitSignal("pop", panel)
   -- If it is the last panel to pop, it has to skip popped state
@@ -460,6 +554,8 @@ poppingState.changeState = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 poppedState.update = function(panel, panels)
   decrementTimer(panel)
   if panel.timer == 0 then
@@ -467,6 +563,8 @@ poppedState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panels nil
 poppedState.changeState = function(panel, panels)
   -- It's time for this panel
   -- to be gone forever :'(
@@ -477,6 +575,8 @@ poppedState.changeState = function(panel, panels)
   panel.stateChanged = true
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 hoverState.update = function(panel, panels)
   decrementTimer(panel)
   if panel.matchAnyway then
@@ -491,6 +591,8 @@ hoverState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 hoverState.changeState = function(panel, panels)
   local panelBelow = getPanelBelow(panel, panels)
 
@@ -511,6 +613,8 @@ hoverState.changeState = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 fallingState.update = function(panel, panels)
   if panel.row == 1 then
     -- if it's on the bottom row, it should surely land
@@ -538,6 +642,8 @@ fallingState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
+---@param panelBelow Panel
 fallingState.enterHoverState = function(panel, panelBelow)
   clear_flags(panel, false)
   panel.state = "hovering"
@@ -549,6 +655,8 @@ fallingState.enterHoverState = function(panel, panelBelow)
   panel.timer = panelBelow.timer
 end
 
+---@param panel Panel
+---@param panels Panel[][]
 landingState.update = function(panel, panels)
   normalState.update(panel, panels)
 
@@ -560,6 +668,7 @@ landingState.update = function(panel, panels)
   end
 end
 
+---@param panel Panel
 landingState.changeState = function(panel)
   panel.state = "normal"
   panel.stateChanged = true
@@ -567,12 +676,15 @@ end
 
 -- while these dimmedState functions should be correct, they are currently unused
 -- new row generation and turning row 0 into row 1 is still handled by the stack as of now
+---@param panel Panel
+---@param panels nil
 dimmedState.update = function(panel, panels)
   if panel.row >= 1 then
     dimmedState.changeState(panel)
   end
 end
 
+---@param panel Panel
 dimmedState.changeState = function(panel)
   panel.state = "normal"
   panel.stateChanged = true
@@ -582,11 +694,11 @@ deadState.update = function(panel, panels)
   -- dead is dead
 end
 
--- returns false if this panel can be swapped
--- true if it can not be swapped
+---@param self Panel
+---@return boolean # if the panel can be swapped
 function Panel.canSwap(self)
   -- the panel was flagged as unswappable inside of the swap function
-  -- this flag should honestly go die and the connected checks should be part of the canSwap func if possible
+  -- this flag should honestly go die and the connected checks should be part of the Stack's canSwap func if possible
   if self.dont_swap then
     return false
   -- can't swap garbage panels or even garbage to start with
@@ -605,7 +717,7 @@ function Panel.canSwap(self)
   end
 end
 
--- returns a table with panel color indices (used for puzzle color randomization)
+---@return integer[] regularColorsArray table with non-shock panel color indices used in common presets
 function Panel.regularColorsArray()
   return {
     1, -- hearts
@@ -618,14 +730,14 @@ function Panel.regularColorsArray()
   -- Note see the methods below for square, shock, and colorless
 end
 
--- returns a table with panel color indices (for puzzle color randomization)
+---@return integer[] extendedRegularColorsArray table with all non-shock panel color indices
 function Panel.extendedRegularColorsArray()
   local result = Panel.regularColorsArray()
   result[#result + 1] = 7 -- squares
   return result
 end
 
--- returns a table with panel color indices
+---@return integer[] allColorArray table with all possible color indices, including shock and colorless
 function Panel.allPossibleColorsArray()
   local result = Panel.extendedRegularColorsArray()
   result[#result + 1] = 8 -- shock
@@ -634,6 +746,8 @@ function Panel.allPossibleColorsArray()
 end
 
 -- updates the panel for this frame based on its state and its surroundings
+---@param self Panel
+---@param panels Panel[][]
 function Panel.update(self, panels)
   -- reset all flags that only count for 1 frame to alert panels above of special behavior
   self.stateChanged = false
@@ -670,6 +784,8 @@ function Panel.update(self, panels)
 end
 
 -- sets all necessary information to make the panel start swapping
+---@param self Panel the panel getting swapped
+---@param isSwappingFromLeft boolean if the panel starts on the left side of the swap
 function Panel.startSwap(self, isSwappingFromLeft)
   local chaining = self.chaining
   clear_flags(self)
@@ -688,6 +804,9 @@ end
 -- a switch is NOT a swap
 -- a switch is the universal act of switching the positions of 2 adjacent panels on the board
 -- this may be used for falling and also swapping interactions as a surefire way to update both panels
+---@param panel1 Panel
+---@param panel2 Panel
+---@param panels Panel[][]
 function Panel.switch(panel1, panel2, panels)
   -- confirm the panel positions are up to date
   assert(panel1.id == panels[panel1.row][panel1.column].id)
@@ -713,6 +832,7 @@ end
 
 -- function used by the stack to determine whether there are panels in a row (read: the top row)
 -- name is pretty misleading but I don't have a good idea rn
+---@param self Panel
 function Panel.dangerous(self)
   if self.isGarbage then
     return self.state ~= "falling"
@@ -727,6 +847,9 @@ end
 -- comboSize: used for popFX and calculation of timers related to popping/popped state
 --
 -- garbagePanels have to process by row due to color generation and have their extra logic in checkMatches
+---@param isChainLink boolean if the match the panel is part of contributes to a chain
+---@param comboIndex integer the pop index within the panels of the match
+---@param comboSize integer how many panels were part of the match
 function Panel:match(isChainLink, comboIndex, comboSize)
   self.state = "matched"
   -- +1 because match always occurs before the timer decrements on the frame

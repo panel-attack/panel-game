@@ -8,9 +8,22 @@ local function playSource(source)
   musicThread:start(source)
 end
 
+---@class Music
+---@operator call:Music
+---@field package main love.Source looping source of the music
+---@field package start love.Source? start source of the music
+---@field package currentSource love.Source? source of the music that is currently being played
+---@field package mainStartTime number? the time at which the main source is supposed to replace the start source
+---@field package paused boolean if the music is currently paused
 
 -- construct a music object with a looping `main` music and an optional `start` played as the intro
-local Music = class(function(music, main, start)
+---@class Music
+---@overload fun(main: love.Source, start: love.Source): Music
+local Music = class(
+---@param music Music
+---@param main love.Source
+---@param start love.Source
+function(music, main, start)
   assert(main, "Music needs at least a main audio source!")
   music.main = main
   main:setLooping(true)
@@ -20,6 +33,7 @@ local Music = class(function(music, main, start)
   music.paused = false
 end)
 
+-- starts playing the music if it was not already playing
 function Music:play()
   if not self.currentSource then
     if self.start then
@@ -39,10 +53,12 @@ function Music:play()
   self.paused = false
 end
 
+---@return boolean? # if the music is currently playing
 function Music:isPlaying()
   return self.currentSource and self.currentSource:isPlaying()
 end
 
+-- stops the music and resets it (whether it was playing or not)
 function Music:stop()
   self.currentSource = nil
   self.mainStartTime = nil
@@ -53,6 +69,7 @@ function Music:stop()
   end
 end
 
+-- pauses the music
 function Music:pause()
   self.paused = true
   if self.currentSource then
@@ -60,10 +77,12 @@ function Music:pause()
   end
 end
 
+---@return boolean # if the music is currently paused
 function Music:isPaused()
   return self.paused
 end
 
+---@param volume number sets the volume of the source to a specific number
 function Music:setVolume(volume)
   if self.start then
     self.start:setVolume(volume)
@@ -71,18 +90,23 @@ function Music:setVolume(volume)
   self.main:setVolume(volume)
 end
 
+---@return number volume
 function Music:getVolume()
   return self.main:getVolume()
 end
 
+---@param loop boolean
 function Music:setLooping(loop)
   self.main:setLooping(loop)
 end
 
+---@return boolean if the main music is currently looping
 function Music:isLooping()
   return self.main:isLooping()
 end
 
+-- update the music to advance the timer
+-- this is important to try and (roughly) get the transition from start to main right
 function Music:update()
   if not self.paused then
     if self.start and self.currentSource == self.start then

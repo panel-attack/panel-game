@@ -1,6 +1,18 @@
 local class = require("common.lib.class")
 
-local StageTrack = class(function(stageTrack, normalMusic, dangerMusic)
+---@class StageTrack
+---@field normalMusic Music
+---@field dangerMusic Music?
+---@field currentMusic Music? holds the reference to the music currently being played (normal or danger)
+---@field state string a human readable representation of which music currentMusic currently holds
+
+---@class StageTrack
+---@overload fun(normalMusic: Music, dangerMusic: Music?): StageTrack
+local StageTrack = class(
+---@param stageTrack StageTrack
+---@param normalMusic Music
+---@param dangerMusic Music?
+function(stageTrack, normalMusic, dangerMusic)
   assert(normalMusic, "A stage track needs at least a normal music!")
   stageTrack.normalMusic = normalMusic
   stageTrack.dangerMusic = dangerMusic

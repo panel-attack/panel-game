@@ -1,9 +1,19 @@
 local class = require("common.lib.class")
 local StageTrack = require("client.src.music.StageTrack")
 
+---@class DynamicStageTrack : StageTrack
+---@field crossfadeTimer integer amount of frames to transition between normal and danger music
+---@field volume number the overall music volume of the track; used to calculate the crossfade volumes between musics
+
 local CROSSFADE_DURATION = 60
 
-local DynamicStageTrack = class(function(stageTrack, normalMusic, dangerMusic)
+---@class DynamicStageTrack
+---@overload fun(normalMusic: Music, dangerMusic: Music): DynamicStageTrack
+local DynamicStageTrack = class(
+---@param stageTrack DynamicStageTrack
+---@param normalMusic Music
+---@param dangerMusic Music
+function(stageTrack, normalMusic, dangerMusic)
   assert(dangerMusic, "Dynamic tracks need danger music!")
   stageTrack.crossfadeTimer = 0
   stageTrack.volume = config.music_volume

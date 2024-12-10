@@ -8,6 +8,9 @@ end
 
 local classMetaTable = {__call = newTable}
 
+---@param init function function called on new objects of the class after the metatables have been applied
+---@param parent any? parent class that has its own constructor called before init
+---@return table classTable table acting as metatable for the class and acting as the constructor; uses the parent as its metatable
 local class = function(init, parent)
   local classTable = {}
   -- class table acts as the metatable for new tables
