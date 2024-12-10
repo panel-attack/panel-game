@@ -417,7 +417,7 @@ function Stack:drawDebug()
       GraphicsUtil.print(inputs_to_print, x, y + 195)
     end
 
-    local drawX = self.frameOriginX + self:stackCanvasWidth() / 2
+    local drawX = self.frameOriginX + self:canvasWidth() / 2
     local drawY = 10
     local padding = 14
 
@@ -511,9 +511,8 @@ function Stack.render(self)
     return
   end
 
-  self:setCanvas()
+  self:setDrawArea()
   self:drawCharacter()
-
   local garbageImages
   local shockGarbageImages
   -- functionally, the garbage target being the source of the images for garbage landing on this stack is possible but not a given
@@ -530,16 +529,14 @@ function Stack.render(self)
   local shakeOffset = self:currentShakeOffset() / self.gfxScale
 
   self:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
-
   self:drawFrame()
   self:drawWall(shakeOffset, self.height)
   -- Draw the cursor
   if self:game_ended() == false then
     self:render_cursor(shakeOffset)
   end
-
   self:drawCountdown()
-  self:drawCanvas()
+  self:resetDrawArea()
 
   self:drawPopEffects()
   self:drawCards()

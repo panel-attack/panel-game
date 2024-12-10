@@ -71,7 +71,7 @@ function AttackEngine:addAttackPatternsFromTable(attackPatternsTable)
 end
 
 function AttackEngine:setGarbageTarget(garbageTarget)
-  assert(garbageTarget.stackCanvasWidth ~= nil)
+  assert(garbageTarget.canvasWidth ~= nil)
   assert(garbageTarget.mirror_x ~= nil)
   assert(garbageTarget.panelOriginX ~= nil)
   assert(garbageTarget.panelOriginY ~= nil)
