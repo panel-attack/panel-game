@@ -145,7 +145,6 @@ function Stack:checkMatches()
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)
     end
 
-    self.analytic:register_destroyed_panels(comboSize)
     self:updateScoreWithBonus(comboSize)
   end
 
@@ -793,7 +792,6 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
-    self.analytic:registerShock()
   end
 
   local combo_pieces = COMBO_GARBAGE[comboSize]

@@ -15,9 +15,13 @@ local ClientStack = class(function(self, args)
   assert(args.which)
   assert(args.is_local ~= nil)
   assert(args.character)
-  self.which = args.which
+
+  self.which = args.which or 1
+  -- player number according to the multiplayer server, for game outcome reporting 
+  self.player_number = args.player_number or self.which
   self.is_local = args.is_local
   self.character = args.character
+  self.theme = args.theme or themes[config.theme]
 
   -- graphics
   -- also relevant for the touch input controller method besides general drawing
@@ -29,6 +33,8 @@ local ClientStack = class(function(self, args)
   self.canvas = true
   self.portraitFade = config.portrait_darkness / 100 -- will be set back to 0 if count down happens
   self.healthQuad = GraphicsUtil:newRecycledQuad(0, 0, themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight(), themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight())
+
+  self:moveForRenderIndex(self.which)
 end)
 
 -- Provides the X origin to draw an element of the stack
@@ -161,7 +167,7 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   end
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
-  
+
   local limit = consts.CANVAS_WIDTH - x
   local alignment = "left"
   if themes[config.theme]:offsetsAreFixed() then

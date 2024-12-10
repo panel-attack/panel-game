@@ -14,6 +14,7 @@ local floor, min, max = math.floor, math.min, math.max
 local PlayerStack = class(
 function(self, args)
   local s = self
+  args.which = self.which
 
   self.engine = EngineStack(args)
   self.engine:connectSignal("panelLanded", self, self.onPanelLand)
@@ -23,16 +24,15 @@ function(self, args)
   self.engine:connectSignal("chainEnded", self, self.onChainEnded)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
 
-  local theme = args.theme or themes[config.theme]
-  self.theme = theme
-  self.character = args.character
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
-    s.panels_dir = config.panels
+    self.panels_dir = config.panels
   end
-  local which = args.which or 1
-  s.which = which
+
   self.drawsAnalytics = true
+  -- level and difficulty only for icon display and score saving, all actual data is in levelData
+  self.difficulty = args.difficulty
+  self.level = args.level
 
   self.inputMethod = args.inputMethod or "controller"
   if self.inputMethod == "touch" then
@@ -42,20 +42,24 @@ function(self, args)
   self.card_q = Queue()
   self.pop_q = Queue()
 
-  s.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_prestop_bar:getWidth(), s.theme.images.IMG_multibar_prestop_bar:getHeight(), s.theme.images.IMG_multibar_prestop_bar:getWidth(), s.theme.images.IMG_multibar_prestop_bar:getHeight())
-  s.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight(), s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight())
-  s.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight(), s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight())
-  s.multiBarFrameCount = s:calculateMultibarFrameCount()
+  self.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight(), self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight())
+  self.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight(), self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight())
+  self.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight(), self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight())
+  self.multiBarFrameCount = self:calculateMultibarFrameCount()
 
 
   -- sfx
   -- index used for picking a pop sound
-  s.poppedPanelIndex = 1
-  s.lastPopLevelPlayed = s.lastPopLevelPlayed or 1
-  s.lastPopIndexPlayed = s.lastPopIndexPlayed or 1
-  s.combo_chain_play = nil
-  s.sfx_land = false
-  s.sfx_garbage_thud = 0
+  self.poppedPanelIndex = 1
+  self.lastPopLevelPlayed = 1
+  self.lastPopIndexPlayed = 1
+  self.combo_chain_play = nil
+  self.sfx_land = false
+  self.sfx_garbage_thud = 0
+
+  self.taunt_up = nil -- will hold an index
+  self.taunt_down = nil -- will hold an index
+  self.taunt_queue = Queue()
 end,
 ClientStack)
 
@@ -68,6 +72,12 @@ function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, combo
   self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   if isChainLink or comboSize > 3 or metalCount > 0 then
     self:queueAttackSoundEffect(isChainLink, self.chain_counter, comboSize, metalCount)
+  end
+
+  self.engine.analytic:register_destroyed_panels(comboSize)
+
+  for i = 3, metalCount do
+    self.engine.analytic:registerShock()
   end
 end
 
@@ -167,6 +177,7 @@ function PlayerStack:onPanelsSwapped()
   if self:canPlaySfx() then
     SFX_Swap_Play = 1
   end
+  self.engine.analytic:register_swap()
 end
 
 function PlayerStack:onGarbageMatched(panelCount, onScreenCount)
@@ -1297,8 +1308,8 @@ end
 ----------------------------------------------------------------
 
 function PlayerStack:queueAttackSoundEffect(isChainLink, chainSize, comboSize, metalCount)
-  if self.engine:canPlaySfx() then
-    self.engine.combo_chain_play = PlayerStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
+  if self:canPlaySfx() then
+    self.combo_chain_play = PlayerStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
   end
 end
 
@@ -1397,6 +1408,19 @@ function PlayerStack:playSfx()
   prof.pop("stack sfx")
 end
 
+local MAX_TAUNT_PER_10_SEC = 4
+
+function PlayerStack:can_taunt()
+  return self.taunt_queue:len() < MAX_TAUNT_PER_10_SEC or self.taunt_queue:peek() + 10 < love.timer.getTime()
+end
+
+function PlayerStack:taunt(taunt_type)
+  while self.taunt_queue:len() >= MAX_TAUNT_PER_10_SEC do
+    self.taunt_queue:pop()
+  end
+  self.taunt_queue:push(love.timer.getTime())
+end
+
 function PlayerStack:processTaunts()
   prof.push("taunt")
   -- TAUNTING
@@ -1415,7 +1439,7 @@ function PlayerStack:processTaunts()
 end
 
 function PlayerStack:canPlaySfx()
-  -- this should be superfluous because there is no code being run that would play sfx
+  -- this should be superfluous because there is no code being run that would send signals causing SFX
   -- if self:game_ended() then
   --   return false
   -- end

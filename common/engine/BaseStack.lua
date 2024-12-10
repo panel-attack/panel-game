@@ -3,6 +3,8 @@ local Signal = require("common.lib.signal")
 
 local BaseStack = class(
 function(self, args)
+  self.which = args.which or 1
+  self.is_local = args.is_local
 
   -- basics
   self.framesBehindArray = {}

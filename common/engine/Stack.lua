@@ -59,21 +59,16 @@ Stack =
   class(
   function(s, arguments)
     assert(arguments.match ~= nil)
-    local match = arguments.match
     assert(arguments.is_local ~= nil)
-    local is_local = arguments.is_local
-    -- level or difficulty should be set
     assert(arguments.levelData ~= nil)
-    local levelData = arguments.levelData
-    -- level and difficulty only for icon display and score saving, all actual data is in levelData
-    local level = arguments.level
-    local difficulty = arguments.difficulty
+
+    s.which = arguments.which or 1
+    s.is_local = arguments.is_local
+    s.match = match
 
     s.gameOverConditions = arguments.gameOverConditions or {GameModes.GameOverConditions.NEGATIVE_HEALTH}
     s.gameWinConditions = arguments.gameWinConditions or {}
-
-    local inputMethod = arguments.inputMethod or "controller" --"touch" or "controller"
-
+    s.levelData = arguments.levelData
     s.allowAdjacentColors = arguments.allowAdjacentColors
 
     -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
@@ -81,16 +76,10 @@ Stack =
     s.behaviours.passiveRaise = true
     s.behaviours.allowManualRaise = true
 
-    s.match = match
-    s.is_local = is_local
-
     if not s.puzzle then
       s.do_first_row = true
     end
 
-    s.difficulty = difficulty
-    s.level = level
-    s.levelData = levelData
     s.speed = s.levelData.startingSpeed
     if s.levelData.speedIncreaseMode == LevelData.SPEED_INCREASE_MODES.TIME_INTERVAL then
       -- mode 1: increase speed based on fixed intervals
@@ -116,10 +105,8 @@ Stack =
     -- This increases by 1 wrapping every time garbage drops.
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
-    s.inputMethod = inputMethod
-    if s.inputMethod == "touch" then
-      s.touchInputController = TouchInputController(s)
-    end
+    -- specifies according to which branch inputs should be interpreted, "touch" or "controller"
+    s.inputMethod = arguments.inputMethod
 
     s.panel_buffer = ""
     s.gpanel_buffer = ""
@@ -147,7 +134,6 @@ Stack =
         s:createPanelAt(i, j)
       end
     end
-    s:moveForRenderIndex(s.which)
 
     s.game_stopwatch_running = true -- set to false if countdown starts
     s.max_runs_per_frame = 3
@@ -193,10 +179,6 @@ Stack =
     s.swap_1 = false -- attempt to initiate a swap on this frame
     s.swap_2 = false
 
-    s.taunt_up = nil -- will hold an index
-    s.taunt_down = nil -- will hold an index
-    s.taunt_queue = Queue()
-
     -- number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
     s.cur_wait_time = consts.DEFAULT_INPUT_REPEAT_DELAY
     s.cur_timer = 0 -- number of ticks for which a new direction's been pressed
@@ -209,10 +191,6 @@ Stack =
 
     s.panels_cleared = s.panels_cleared or 0
     s.metal_panels_queued = s.metal_panels_queued or 0
-
-    s.which = arguments.which or 1
-    -- player number according to the multiplayer server, for game outcome reporting 
-    s.player_number = arguments.player_number or s.which
 
     s.prev_shake_time = 0
     s.shake_time = 0
@@ -409,6 +387,8 @@ function Stack.rollbackCopy(source, other)
   other.game_over_clock = source.game_over_clock
   other.highestGarbageIdMatched = source.highestGarbageIdMatched
   prof.pop("rollback copy the rest")
+  -- TODO: Move analytic to PlayerStack / Implement a non-memory intensive rollback mechanism
+  -- see https://github.com/panel-attack/panel-game/issues/493
   prof.push("rollback copy analytics")
   other.analytic = deepcpy(source.analytic)
   prof.pop("rollback copy analytics")
@@ -513,19 +493,6 @@ function Stack.deleteRollbackCopy(self, frame)
     self.rollbackCopyPool[#self.rollbackCopyPool + 1] = self.rollbackCopies[frame]
     self.rollbackCopies[frame] = nil
   end
-end
-
-local MAX_TAUNT_PER_10_SEC = 4
-
-function Stack.can_taunt(self)
-  return self.taunt_queue:len() < MAX_TAUNT_PER_10_SEC or self.taunt_queue:peek() + 10 < love.timer.getTime()
-end
-
-function Stack.taunt(self, taunt_type)
-  while self.taunt_queue:len() >= MAX_TAUNT_PER_10_SEC do
-    self.taunt_queue:pop()
-  end
-  self.taunt_queue:push(love.timer.getTime())
 end
 
 function Stack.set_puzzle_state(self, puzzle)
@@ -712,6 +679,10 @@ function Stack.starting_state(self, n)
   end
 end
 
+-- relatively sure this is unused because do_first_row is always nilled by either
+--   starting_state (directly above) or
+--   PuzzleGame overwriting the prop with false
+-- commented out the single use for now
 function Stack.prep_first_row(self)
   if self.do_first_row then
     self.do_first_row = nil
@@ -1001,7 +972,7 @@ end
 -- One run of the engine routine.
 function Stack.simulate(self)
   prof.push("simulate 1")
-  self:prep_first_row()
+  -- self:prep_first_row()
   local panels = self.panels
   local swapped_this_frame = nil
   table.clear(self.garbageLandedThisFrame)
@@ -1139,7 +1110,6 @@ function Stack.simulate(self)
       local canSwap = self:canSwap(self.cur_row, self.cur_col)
       if canSwap then
         self:setQueuedSwapPosition(self.cur_col, self.cur_row)
-        self.analytic:register_swap()
       end
       self.swap_1 = false
       self.swap_2 = false
