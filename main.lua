@@ -10,7 +10,7 @@ local RunTimeGraph = require("client.src.RunTimeGraph")
 local CustomRun = require("client.src.CustomRun")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.jprof.jprof")
-local Replay = require("common.engine.Replay")
+local Replay = require("common.data.Replay")
 require("common.lib.util")
 
 local Game = require("client.src.Game")

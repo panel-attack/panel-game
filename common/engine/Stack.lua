@@ -17,7 +17,7 @@ local class = require("common.lib.class")
 local Panel = require("common.engine.Panel")
 local GarbageQueue = require("common.engine.GarbageQueue")
 local prof = require("common.lib.jprof.jprof")
-local LevelData = require("common.engine.LevelData")
+local LevelData = require("common.data.LevelData")
 
 -- Stuff defined in this file:
 --  . the data structures that store the configuration of

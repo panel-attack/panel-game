@@ -1,9 +1,9 @@
 local tableUtils = require("common.lib.tableUtils")
 local consts = require("common.engine.consts")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
-local Replay = require("common.engine.Replay")
+local Replay = require("common.data.Replay")
 local GameModes = require("common.engine.GameModes")
-local ReplayPlayer = require("common.engine.ReplayPlayer")
+local ReplayPlayer = require("common.data.ReplayPlayer")
 
 
 local function endlessSaveTest()

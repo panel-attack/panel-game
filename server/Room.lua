@@ -1,12 +1,12 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
-local Replay = require("common.engine.Replay")
-local ReplayPlayer = require("common.engine.ReplayPlayer")
+local Replay = require("common.data.Replay")
+local ReplayPlayer = require("common.data.ReplayPlayer")
 local ServerProtocol = require("common.network.ServerProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local GameModes = require("common.engine.GameModes")
 -- heresy, remove once communication of levelData is established
-local LevelPresets = require("common.engine.LevelPresets")
+local LevelPresets = require("common.data.LevelPresets")
 local util = require("common.lib.util")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")

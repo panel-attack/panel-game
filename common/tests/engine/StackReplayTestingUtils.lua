@@ -4,7 +4,7 @@ local Player = require("client.src.Player")
 local Match = require("common.engine.Match")
 local inputs = require("common.lib.inputManager")
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.engine.Replay")
+local Replay = require("common.data.Replay")
 
 local StackReplayTestingUtils = {}
 

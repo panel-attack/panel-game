@@ -9,7 +9,7 @@ local ClientMessages = require("server.ClientMessages")
 local ServerProtocol = require("common.network.ServerProtocol")
 local Signal = require("common.lib.signal")
 local util = require("common.lib.util")
-local LevelPresets = require("common.engine.LevelPresets")
+local LevelPresets = require("common.data.LevelPresets")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
 Connection =

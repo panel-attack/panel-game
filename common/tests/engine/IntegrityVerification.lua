@@ -2,7 +2,7 @@
 -- all  replays that do not finish correctly with the current engine are copied into a separate directory
 
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.engine.Replay")
+local Replay = require("common.data.Replay")
 local Match = require("common.engine.Match")
 local tableUtils = require("common.lib.tableUtils")
 

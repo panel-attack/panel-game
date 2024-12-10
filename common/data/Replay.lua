@@ -4,9 +4,9 @@ local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 require("common.lib.timezones")
 local tableUtils = require("common.lib.tableUtils")
-local ReplayPlayer = require("common.engine.ReplayPlayer")
-local LevelPresets = require("common.engine.LevelPresets")
-local LevelData = require("common.engine.LevelData")
+local ReplayPlayer = require("common.data.ReplayPlayer")
+local LevelPresets = require("common.data.LevelPresets")
+local LevelData = require("common.data.LevelData")
 
 local REPLAY_VERSION = 2
 

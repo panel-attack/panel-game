@@ -3,7 +3,7 @@
 -- e.g. Replay or LevelData
 local ServerMessages = {}
 
-local Replay = require("common.engine.Replay")
+local Replay = require("common.data.Replay")
 
 function ServerMessages.sanitizeMenuState(menuState)
   --[[
