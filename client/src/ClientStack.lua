@@ -11,28 +11,13 @@ local function drawGfxScaled(stack, img, x, y, rot, xScale, yScale)
   GraphicsUtil.draw(img, x * stack.gfxScale, y * stack.gfxScale, rot, xScale * stack.gfxScale, yScale * stack.gfxScale)
 end
 
-local StackBase = class(function(self, args)
+local ClientStack = class(function(self, args)
   assert(args.which)
   assert(args.is_local ~= nil)
   assert(args.character)
   self.which = args.which
   self.is_local = args.is_local
   self.character = args.character
-
-  -- basics
-  self.framesBehindArray = {}
-  self.framesBehind = 0
-  self.clock = 0
-  self.game_over_clock = -1 -- the exact clock frame the player lost, -1 while alive
-  Signal.turnIntoEmitter(self)
-  self:createSignal("dangerMusicChanged")
-
-
-  -- rollback
-  self.rollbackCopies = {}
-  self.rollbackCopyPool = Queue()
-  self.rollbackCount = 0
-  self.lastRollbackFrame = -1 -- the last frame we had to rollback from
 
   -- graphics
   -- also relevant for the touch input controller method besides general drawing
@@ -48,7 +33,7 @@ end)
 
 -- Provides the X origin to draw an element of the stack
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
-function StackBase:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   assert(cameFromLegacyScoreOffset ~= nil)
   assert(legacyOffsetIsAlreadyScaled ~= nil)
   local x = 546
@@ -66,7 +51,7 @@ end
 
 -- Provides the Y origin to draw an element of the stack
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
-function StackBase:elementOriginY(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginY(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   assert(cameFromLegacyScoreOffset ~= nil)
   assert(legacyOffsetIsAlreadyScaled ~= nil)
   local y = 208
@@ -83,7 +68,7 @@ end
 -- themePositionOffset - the theme offset array
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
 -- legacyOffsetIsAlreadyScaled - set to true if the offset used to be already scaled in legacy themes
-function StackBase:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   if legacyOffsetIsAlreadyScaled == nil then
     legacyOffsetIsAlreadyScaled = false
   end
@@ -101,7 +86,7 @@ end
 -- Provides the Y position to draw an element of the stack, shifted by the given offset and mirroring
 -- themePositionOffset - the theme offset array
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
-function StackBase:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   if legacyOffsetIsAlreadyScaled == nil then
     legacyOffsetIsAlreadyScaled = false
   end
@@ -118,7 +103,7 @@ end
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
 -- width - width of the drawable
 -- percentWidthShift - the percent of the width you want shifted left
-function StackBase:labelOriginXWithOffset(themePositionOffset, scale, cameFromLegacyScoreOffset, width, percentWidthShift, legacyOffsetIsAlreadyScaled)
+function ClientStack:labelOriginXWithOffset(themePositionOffset, scale, cameFromLegacyScoreOffset, width, percentWidthShift, legacyOffsetIsAlreadyScaled)
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
 
   if percentWidthShift > 0 then
@@ -128,7 +113,7 @@ function StackBase:labelOriginXWithOffset(themePositionOffset, scale, cameFromLe
   return x
 end
 
-function StackBase:drawLabel(drawable, themePositionOffset, scale, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:drawLabel(drawable, themePositionOffset, scale, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
@@ -147,7 +132,7 @@ function StackBase:drawLabel(drawable, themePositionOffset, scale, cameFromLegac
   GraphicsUtil.draw(drawable, x, y, 0, scale, scale)
 end
 
-function StackBase:drawBar(image, quad, themePositionOffset, height, yOffset, rotate, scale)
+function ClientStack:drawBar(image, quad, themePositionOffset, height, yOffset, rotate, scale)
   local imageWidth, imageHeight = image:getDimensions()
   local barYScale = height / imageHeight
   local quadY = 0
@@ -161,7 +146,7 @@ function StackBase:drawBar(image, quad, themePositionOffset, height, yOffset, ro
   GraphicsUtil.drawQuad(image, quad, x, y - height - yOffset, rotate, scale, scale * barYScale, 0, 0, self.mirror_x)
 end
 
-function StackBase:drawNumber(number, themePositionOffset, scale, cameFromLegacyScoreOffset)
+function ClientStack:drawNumber(number, themePositionOffset, scale, cameFromLegacyScoreOffset)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
@@ -170,7 +155,7 @@ function StackBase:drawNumber(number, themePositionOffset, scale, cameFromLegacy
   GraphicsUtil.drawPixelFont(number, themes[config.theme].fontMaps.numbers[self.which], x, y, scale, scale, "center", 0)
 end
 
-function StackBase:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
+function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
@@ -196,7 +181,7 @@ function StackBase:drawString(string, themePositionOffset, cameFromLegacyScoreOf
 end
 
 -- Positions the stack draw position for the given player
-function StackBase:moveForRenderIndex(renderIndex)
+function ClientStack:moveForRenderIndex(renderIndex)
     -- Position of elements should ideally be on even coordinates to avoid non pixel alignment
     if renderIndex == 1 then
       self.mirror_x = 1
@@ -229,7 +214,7 @@ end
 -- to be used in conjunction with resetDrawArea
 -- sets the draw area for the Stack by defining an area outside of which all draws are cut off
 --   and translating following draws to be relative to the top left origin of the area
-function StackBase:setDrawArea()
+function ClientStack:setDrawArea()
   -- this used to be a canvas instead but turns out switching between canvases can be quite the overhead
   love.graphics.setScissor(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale, self.baseWidth * self.gfxScale, self.baseHeight * self.gfxScale)
   love.graphics.push("transform")
@@ -238,12 +223,12 @@ end
 
 -- to be used in conjunction with setDrawArea
 -- resets the draw area and removes the translation
-function StackBase:resetDrawArea()
+function ClientStack:resetDrawArea()
   love.graphics.pop()
   love.graphics.setScissor()
 end
 
-function StackBase:drawCharacter()
+function ClientStack:drawCharacter()
   -- Update portrait fade if needed
   if self.do_countdown then
     -- self.portraitFade starts at 0 (no fade)
@@ -263,7 +248,7 @@ function StackBase:drawCharacter()
   characters[self.character]:drawPortrait(self.which, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
 end
 
-function StackBase:drawFrame()
+function ClientStack:drawFrame()
   local frameImage = themes[config.theme].images.frames[self.which]
 
   if frameImage then
@@ -273,7 +258,7 @@ function StackBase:drawFrame()
   end
 end
 
-function StackBase:drawWall(displacement, rowCount)
+function ClientStack:drawWall(displacement, rowCount)
   local wallImage = themes[config.theme].images.walls[self.which]
 
   if wallImage then
@@ -284,7 +269,7 @@ function StackBase:drawWall(displacement, rowCount)
   end
 end
 
-function StackBase:drawCountdown()
+function ClientStack:drawCountdown()
   if self.do_countdown and self.countdown_timer and self.countdown_timer > 0 then
     local ready_x = 16
     local initial_ready_y = 4
@@ -306,15 +291,15 @@ function StackBase:drawCountdown()
   end
 end
 
-function StackBase:canvasWidth()
+function ClientStack:canvasWidth()
   return self.baseWidth * self.gfxScale
 end
 
-function StackBase:canvasHeight()
+function ClientStack:canvasHeight()
   return self.baseHeight * self.gfxScale
 end
 
-function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
+function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   local framePos = themes[config.theme].healthbar_frame_Pos
   local barPos = themes[config.theme].multibar_Pos
   local overtimePos = themes[config.theme].multibar_LeftoverTime_Pos
@@ -368,12 +353,12 @@ function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   end
 end
 
-function StackBase:drawPlayerName()
+function ClientStack:drawPlayerName()
   local username = (self.player.name or "")
   self:drawString(username, themes[config.theme].name_Pos, true, themes[config.theme].name_Font_Size)
 end
 
-function StackBase:drawWinCount()
+function ClientStack:drawWinCount()
   self:drawLabel(themes[config.theme].images.IMG_wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, true)
   self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, true)
 end
@@ -382,44 +367,14 @@ end
 ------ abstract functions ------
 --------------------------------
 
-function StackBase:receiveGarbage(frameToReceive, garbageArray)
-  error("did not implement receiveGarbage")
-end
 
-function StackBase:saveForRollback()
-  error("did not implement saveForRollback")
-end
 
-function StackBase:rollbackToFrame(frame)
-  error("did not implement rollbackToFrame")
-end
-
-function StackBase:starting_state()
-  error("did not implement starting_state")
-end
-
-function StackBase:deinit()
+function ClientStack:deinit()
   error("did not implement deinit")
 end
 
-function StackBase:render()
+function ClientStack:render()
   error("did not implement render")
 end
 
-function StackBase:game_ended()
-  error("did not implement game_ended")
-end
-
-function StackBase:shouldRun()
-  error("did not implement shouldRun")
-end
-
-function StackBase:run()
-  error("did not implement run")
-end
-
-function StackBase:runGameOver()
-  error("did not implement runGameOver")
-end
-
-return StackBase
+return ClientStack

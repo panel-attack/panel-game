@@ -1,3 +1,5 @@
+local ClientStack = require("client.src.ClientStack")
+local class = require("common.lib.class")
 require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local TouchDataEncoding = require("common.engine.TouchDataEncoding")
@@ -5,6 +7,29 @@ local consts = require("common.engine.consts")
 local prof = require("common.lib.jprof.jprof")
 
 local floor = math.floor
+
+local PlayerStack = class(
+function(self, args)
+  local s = self
+
+  self.character = args.character
+  self.panels_dir = args.panels_dir
+  self.drawsAnalytics = true
+
+  self.inputMethod = args.inputMethod or "controller"
+  if self.inputMethod == "touch" then
+    self.touchInputController = TouchInputController(self)
+  end
+
+  self.card_q = Queue()
+  self.pop_q = Queue()
+
+  s.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_prestop_bar:getWidth(), s.theme.images.IMG_multibar_prestop_bar:getHeight(), s.theme.images.IMG_multibar_prestop_bar:getWidth(), s.theme.images.IMG_multibar_prestop_bar:getHeight())
+  s.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight(), s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight())
+  s.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight(), s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight())
+  s.multiBarFrameCount = s:calculateMultibarFrameCount()
+end,
+ClientStack)
 
 -- The popping particle animation. First number is how far the particles go, second is which frame to show from the spritesheet
 local POPFX_BURST_ANIMATION = {{1, 1}, {4, 1}, {7, 1}, {8, 1}, {9, 1}, {9, 1},
@@ -964,3 +989,5 @@ function Stack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
   panelSet:drawBatch()
   prof.pop("Stack:drawPanels")
 end
+
+return PlayerStack

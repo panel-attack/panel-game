@@ -13,6 +13,7 @@ local utf8 = require("common.lib.utf8Additions")
 local GameModes = require("common.engine.GameModes")
 local PanelGenerator = require("common.engine.PanelGenerator")
 local StackBase = require("common.engine.StackBase")
+local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local Panel = require("common.engine.Panel")
 local GarbageQueue = require("common.engine.GarbageQueue")
@@ -264,7 +265,7 @@ Stack =
     s.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight(), s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight())
     s.multiBarFrameCount = s:calculateMultibarFrameCount()
   end,
-  StackBase
+  BaseStack
 )
 
 -- calculates at how many frames the stack's multibar tops out
