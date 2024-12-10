@@ -347,7 +347,7 @@ function Match:shouldSaveRollback(stack)
   if self.replay.completed then
     -- assumption that if a replay is completed, we only run the match belonging to it for replays
     -- in which case we want to be able to rewind
-    return false
+    return true
   end
 
   -- rollback needs to happen if any sender is more than the garbage delay behind is

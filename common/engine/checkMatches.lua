@@ -111,10 +111,13 @@ function Stack:checkMatches()
     return
   end
 
-  prof.push("Z1")
-  local matchingPanels = self:getMatchingPanels()
+  prof.push("matchingPanels2")
+  local matchingPanels, matches = self:getMatchingPanels2()
+  prof.pop("matchingPanels2")
+  prof.push("matchingPanels")
+  local reference = self:getMatchingPanels()
+  prof.pop("matchingPanels")
   local comboSize = #matchingPanels
-  prof.pop("Z1")
 
   if comboSize > 0 then
     prof.push("Z2")
@@ -129,13 +132,16 @@ function Stack:checkMatches()
     prof.pop("Z2")
 
     local attackGfxOrigin = self:applyMatchToPanels(matchingPanels, isChainLink, comboSize)
-    prof.push("Z4")
-    local garbagePanels = self:getConnectedGarbagePanels(matchingPanels)
-    prof.pop("Z4")
+    prof.push("getConnectedGarbagePanels2")
+    local garbagePanels = self:getConnectedGarbagePanels2(matchingPanels)
+    prof.pop("getConnectedGarbagePanels2")
+    prof.push("getConnectedGarbagePanels")
+    local reference = self:getConnectedGarbagePanels(matchingPanels)
+    prof.pop("getConnectedGarbagePanels")
     prof.push("Z5")
-    logger.debug("Matched " .. comboSize .. " panels, clearing " .. #garbagePanels .. " panels of garbage")
     local garbagePanelCountOnScreen = 0
-    if #garbagePanels > 0 then
+    if garbagePanels then
+      logger.debug("Matched " .. comboSize .. " panels, clearing " .. #garbagePanels .. " panels of garbage")
       garbagePanelCountOnScreen = getOnScreenCount(self.height, garbagePanels)
       local garbageMatchTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
       self:matchGarbagePanels(garbagePanels, garbageMatchTime, isChainLink, garbagePanelCountOnScreen)
@@ -166,11 +172,145 @@ function Stack:checkMatches()
 end
 
 local candidatePanels = table.new(144, 0)
-local verticallyConnected = table.new(11, 0)
-local horizontallyConnected = table.new(5, 0)
+local verticallyConnected = table.new(12, 0)
+local horizontallyConnected = table.new(6, 0)
+
+-- gets all panels on the current stack that should match
+---@return Panel[] matchingPanels all matchingPanels without duplicates
+-----@return Panel[][] matches all individual matches in an array
+-----panels in horizontal matches are listed left to right, panels in vertical matches are listed top to bottom
+function Stack:getMatchingPanels2()
+  local matchingPanels = {}
+  local panels = self.panels
+  --local matches = {}
+  table.clear(candidatePanels)
+
+  for row = 1, self.height do
+    for col = 1, self.width do
+      local panel = panels[row][col]
+      if panel.stateChanged and canMatch(panel) then
+        candidatePanels[#candidatePanels + 1] = panel
+      end
+    end
+  end
+
+  --[[
+  idea:
+  check the candidate panels for equal counts up and down and left and right
+  up+down or left+right >=2 equals a match, the candidatePanel is the third
+  to avoid doubles / double checks encode the matching flag whether the panel was matched horizontally or vertically:
+  if matching vertically assign 1
+  if matching horizontally assign 2
+  if matching both vertically and horizontally assign 3
+  this way a panel that got marked 1 for a vertical match by another panel does not need to recheck for vertical matches
+  that also means we don't need to worry about adding duplicate matches into the matches table
+
+  meta idea:
+  we want this function to return individual matches rather than a list of matching panels
+  reasoning is that it makes it easier to check for connected garbage because only the box shape without diagonals needs to be checked around each match
+  maybe it's unnecessary though and just iterating + distance check is enough because of the finite amount of matched panels
+  (or at least I imagine it would already be better than the current flood fill)
+  ]]
+
+
+  for _, candidatePanel in ipairs(candidatePanels) do
+    -- check vertical match
+    local color = candidatePanel.color
+    local cRow = candidatePanel.row
+    local cCol = candidatePanel.column
+    local p
+
+    if not candidatePanel.matching or (candidatePanel.matching % 2) > 0 then
+      local up = 0
+      local down = 0
+
+      for row = cRow + 1, self.height do
+        p = panels[row][cCol]
+        if p.color == color and canMatch(p) then
+          up = up + 1
+        else
+          break
+        end
+      end
+
+      for row = cRow - 1, 1, -1 do
+        p = panels[row][cCol]
+        if p.color == color and canMatch(p) then
+          down = down + 1
+        else
+          break
+        end
+      end
+
+      if up + down >= 2 then
+        --local match = {}
+        for row = cRow - down, cRow + up do
+          local panel = panels[row][cCol]
+          --match[#match+1] = panel
+          if not panel.matching then
+            panel.matching = 1
+            matchingPanels[#matchingPanels+1] = panel
+          elseif panel.matching == 2 then
+            panel.matching = 3
+          end
+        end
+        --matches[#matches + 1] = match
+      end
+    end
+
+
+    if not candidatePanel.matching or candidatePanel.matching < 2 then
+      local left = 0
+      local right = 0
+
+      for col = cCol + 1, self.width do
+        p = panels[cRow][col]
+        if p.color == color and canMatch(p) then
+          right = right + 1
+        else
+          break
+        end
+      end
+
+      for col = cCol - 1, 1, -1 do
+        p = panels[cRow][col]
+        if p.color == color and canMatch(p) then
+          left = left + 1
+        else
+          break
+        end
+      end
+
+      if left + right >= 2 then
+        --local match = {}
+        for col = cCol - left, cCol + right do
+          local panel = panels[cRow][col]
+          --match[#match+1] = panel
+          if not panel.matching then
+            panel.matching = 2
+            matchingPanels[#matchingPanels+1] = panel
+          elseif panel.matching == 1 then
+            panel.matching = 3
+          end
+        end
+        --matches[#matches + 1] = match
+      end
+    end
+  end
+
+  for i = 1, #matchingPanels do
+    if matchingPanels[i].state == "hovering" then
+      -- hovering panels that match can never chain (see Panel.matchAnyway for an explanation)
+      matchingPanels[i].chaining = nil
+    end
+  end
+
+  return matchingPanels--, matches
+end
 
 -- returns a table of panels that are forming matches on this frame
 function Stack:getMatchingPanels()
+  table.clear(candidatePanels)
   local matchingPanels = {}
   local panels = self.panels
 
@@ -252,8 +392,6 @@ function Stack:getMatchingPanels()
     table.clear(horizontallyConnected)
   end
 
-  table.clear(candidatePanels)
-
   for i = 1, #matchingPanels do
     if matchingPanels[i].state == "hovering" then
       -- hovering panels that match can never chain (see Panel.matchAnyway for an explanation)
@@ -282,6 +420,162 @@ function Stack:applyMatchToPanels(matchingPanels, isChain, comboSize)
   local firstCellToPop = {row = matchingPanels[1].row, column = matchingPanels[1].column}
 
   return firstCellToPop
+end
+
+local function matchOnContact(a, b)
+  if a.metal == b.metal then
+    if a.top == b.bottom - 1 or a.bottom == b.top + 1 then
+      -- the matching panel could be vertically touching from below or above
+      -- verify vertical contact
+        return  (a.left <= b.right and b.left <= a.left) or (b.left <= a.right and a.left <= b.left)
+    elseif a.right == b.left - 1 or a.left == b.right + 1 then
+      -- the matching panel could be touching horizontally
+      -- verify horizontal contact
+      return (a.top <= b.bottom and b.top <= a.top) or (b.top <= a.bottom and a.top <= b.top)
+    else
+      return false
+    end
+  else
+    return false
+  end
+end
+
+function Stack:getConnectedGarbagePanels2(matchingPanels)
+  -- array of all garbageIds on the stack
+  local garbageIds = {}
+  -- records an enum state per garbageId
+  local idGarbage = {}
+  -- defines the surface of the garbage for easier access
+  local garbagePieces = {}
+
+  for row = 1, #self.panels do
+    for col = 1, self.width do
+      panel = self.panels[row][col]
+      if panel.isGarbage and panel.state == "normal" and not idGarbage[panel.garbageId]
+            -- we only want to match garbage that is either fully or partially on-screen OR has been on-screen before
+      -- example: chain garbage several rows high lands in row 12; by visuals/shake it is clear that it is more than 1 row high
+      --   it gets matched, lowest row converts, everything normal until here
+      --   if the player manages to make a garbage chain without the chain garbage falling a row it should get matched off-screen
+      --   that is because the player KNOWS from the previous match the chain is still there
+      -- on the other hand it is also possible to get garbage in row 13 that have contact with a match without ever being seen before:
+      -- if garbage spawns in row 13 one frame before the panels in row 11 get elevated to row 12, the garbage "lands" in row 13, becoming matchable
+      -- if a match is generated, the match would produce unexpected panels falling with 0 pop time which is unexpected
+      --   because there has been no indication the garbage is there
+      -- to conclude:
+      -- we only want to match the garbage if it either has at least its lowest row on screen OR had been matched by the stack previously
+      -- the first part of this condition returns true if any row of the garbage is on-screen
+      -- the second part returns true if the garbage was on-screen before due to garbageId only getting generated on spawn
+      --   which means there are no higher garbageIds than our offscreen garbage
+      --   at the end of this function, self.highestGarbageIdMatched is set to the highest garbageId that was matched
+      --   so if the garbage was a repeat match from a chain that got forced off-screen through matching, it will return true and match again
+      --  by checking <= it should also take care of training type garbage shapes
+      --   where you could possibly push more than 1 piece of narrow high garbage offscreen
+      and ((panel.row - panel.y_offset) <= self.height or panel.garbageId <= self.highestGarbageIdMatched) then
+        garbageIds[#garbageIds+1] = panel.garbageId
+        idGarbage[panel.garbageId] = 1
+        garbagePieces[#garbagePieces+1] =
+        {
+          left = panel.column - panel.x_offset,
+          right = panel.column - panel.x_offset + panel.width - 1,
+          top = panel.row - panel.y_offset + panel.height - 1,
+          bottom = panel.row - panel.y_offset,
+          metal = panel.metal
+        }
+      end
+    end
+  end
+
+  if #garbageIds > 0 then
+    local matchedIds = {}
+    local matchedById = {}
+
+    for i, garbageId in ipairs(garbageIds) do
+      local garbage = garbagePieces[i]
+      for j, matchingPanel in ipairs(matchingPanels) do
+        if matchingPanel.row == garbage.bottom - 1 or matchingPanel.row == garbage.top + 1 then
+          -- the matching panel could be vertically touching from below or above
+          -- verify horizontal contact
+          if matchingPanel.column >= garbage.left and matchingPanel.column <= garbage.right then
+            -- it's a match!!
+            matchedIds[#matchedIds+1] = garbageId
+            matchedById[garbageId] = true
+          end
+        elseif matchingPanel.column == garbage.left - 1 or matchingPanel.column == garbage.right + 1 then
+          -- matchingPanel.row >= bottomRow and matchingPanel.row <= topRow
+          -- the matching panel is horizontally touching from the left or right
+          -- verify horizontal contact
+          if matchingPanel.row >= garbage.bottom and matchingPanel.row <= garbage.top then
+            -- it's a match!!
+            matchedIds[#matchedIds+1] = garbageId
+            matchedById[garbageId] = true
+          end
+        end
+      end
+    end
+
+    -- early exit in case no garbage was hit
+    if #matchedIds > 0 then
+      -- defines singular panels
+      local garbagePanels = {}
+      local garbageMatching = {}
+
+      -- all garbageIds that were matched by non-garbage panels are gathered in matched / matchedById
+      -- now we need to tag all garbage in contact with the matched garbage
+      -- as garbage touched by our matched garbage will likewise touch other garbage 
+      --  we want to know for each piece of garbage to which other piece of garbage it would propagate matched state
+      -- so create a reference table for each piece of garbage
+      for i = 1, #garbageIds do
+        local a = garbagePieces[i]
+        local matching = {}
+        for j = 1, #garbageIds do
+          if j < i then
+            -- this collision was already checked for i, just steal it!
+            -- to be profiled if this is actually faster cause the check might be quite cheap
+            matching[garbageIds[j]] = garbageMatching[garbageIds[j]][garbageIds[i]]
+          elseif i ~= j then
+            local b = garbagePieces[j]
+            matching[garbageIds[j]] = matchOnContact(a, b)
+          end
+        end
+        garbageMatching[garbageIds[i]] = matching
+      end
+
+      -- and then use that reference to add pieces referenced by the matched pieces in a self-extending loop until no more can be found
+      local i = 1
+      local j = #matchedIds
+      while i <= j do
+        matchedById[matchedIds[i]] = true
+        for garbageId, matching in pairs(garbageMatching[matchedIds[i]]) do
+          if matching and not matchedById[garbageId] then
+            matchedIds[#matchedIds + 1] = garbageId
+            matchedById[garbageId] = true
+            j = j + 1
+          end
+        end
+        i = i + 1
+      end
+
+      -- and then just iterate according to the bounding boxes of each piece of garbage
+      for k, garbageId in ipairs(garbageIds) do
+        if matchedById[garbageId] then
+          local piece = garbagePieces[k]
+          for row = piece.bottom, piece.top do
+            for col = piece.left, piece.right do
+              garbagePanels[#garbagePanels+1] = self.panels[row][col]
+            end
+          end
+        end
+      end
+
+      -- finally update the highest garbageId matched so far for the stack
+      table.sort(matchedIds)
+      if matchedIds[#matchedIds] > self.highestGarbageIdMatched then
+        self.highestGarbageIdMatched = matchedIds[#matchedIds]
+      end
+
+      return garbagePanels
+    end
+  end
 end
 
 -- returns an integer indexed table of all garbage panels that are connected to the matching panels
