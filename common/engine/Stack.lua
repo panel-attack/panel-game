@@ -58,12 +58,10 @@ local PANELS_TO_NEXT_SPEED =
 Stack =
   class(
   function(s, arguments)
-    local which = arguments.which or 1
     assert(arguments.match ~= nil)
     local match = arguments.match
     assert(arguments.is_local ~= nil)
     local is_local = arguments.is_local
-    local panels_dir = arguments.panels_dir or config.panels
     -- level or difficulty should be set
     assert(arguments.levelData ~= nil)
     local levelData = arguments.levelData
@@ -75,10 +73,7 @@ Stack =
     s.gameWinConditions = arguments.gameWinConditions or {}
 
     local inputMethod = arguments.inputMethod or "controller" --"touch" or "controller"
-    local player_number = arguments.player_number or which
 
-    local character = arguments.character or config.character
-    local theme = arguments.theme or themes[config.theme]
     s.allowAdjacentColors = arguments.allowAdjacentColors
 
     -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
@@ -87,20 +82,9 @@ Stack =
     s.behaviours.allowManualRaise = true
 
     s.match = match
-    s.character = character
-    s.theme = theme
-    s.panels_dir = panels_dir
     s.is_local = is_local
 
-    s.drawsAnalytics = true
-
-    if not panels[panels_dir] then
-      s.panels_dir = config.panels
-    end
-
-    if s.puzzle then
-      s.drawsAnalytics = false
-    else
+    if not s.puzzle then
       s.do_first_row = true
     end
 
@@ -132,11 +116,6 @@ Stack =
     -- This increases by 1 wrapping every time garbage drops.
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
-    -- the stack pushes the garbage it produces into this queue
-    s.outgoingGarbage = GarbageQueue()
-    -- after completing the inTransit delay garbage sits in this queue ready to be popped as soon as the stack allows it
-    s.incomingGarbage = GarbageQueue()
-    
     s.inputMethod = inputMethod
     if s.inputMethod == "touch" then
       s.touchInputController = TouchInputController(s)
@@ -228,21 +207,12 @@ Stack =
     s.queuedSwapRow = 0 -- the row of the queued swap or 0 if no swap queued
     s.top_cur_row = s.height - 1
 
-    s.poppedPanelIndex = s.poppedPanelIndex or 1
     s.panels_cleared = s.panels_cleared or 0
     s.metal_panels_queued = s.metal_panels_queued or 0
-    s.lastPopLevelPlayed = s.lastPopLevelPlayed or 1
-    s.lastPopIndexPlayed = s.lastPopIndexPlayed or 1
-    s.combo_chain_play = nil
-    s.sfx_land = false
-    s.sfx_garbage_thud = 0
 
-    s.card_q = Queue()
-
-    s.pop_q = Queue()
-
-    s.which = which
-    s.player_number = player_number --player number according to the multiplayer server, for game outcome reporting
+    s.which = arguments.which or 1
+    -- player number according to the multiplayer server, for game outcome reporting 
+    s.player_number = arguments.player_number or s.which
 
     s.prev_shake_time = 0
     s.shake_time = 0
@@ -260,10 +230,13 @@ Stack =
 
     s.warningsTriggered = {}
 
-    s.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_prestop_bar:getWidth(), s.theme.images.IMG_multibar_prestop_bar:getHeight(), s.theme.images.IMG_multibar_prestop_bar:getWidth(), s.theme.images.IMG_multibar_prestop_bar:getHeight())
-    s.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight(), s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight())
-    s.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight(), s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight())
-    s.multiBarFrameCount = s:calculateMultibarFrameCount()
+    s:createSignal("matched")
+    s:createSignal("panelPop")
+    s:createSignal("panelLanded")
+    s:createSignal("cursorMoved")
+    s:createSignal("chainEnded")
+    s:createSignal("panelsSwapped")
+    s:createSignal("garbageMatched")
   end,
   BaseStack
 )
@@ -298,16 +271,6 @@ function Stack:calculateMultibarFrameCount()
 
   --return minFrameCount + preStopFrameCount
   return math.max(240, minFrameCount)
-end
-
--- Should be called prior to clearing the stack.
--- Consider recycling any memory that might leave around a lot of garbage.
--- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.
-function Stack:deinit()
-  GraphicsUtil:releaseQuad(self.healthQuad)
-  GraphicsUtil:releaseQuad(self.multi_prestopQuad)
-  GraphicsUtil:releaseQuad(self.multi_stopQuad)
-  GraphicsUtil:releaseQuad(self.multi_shakeQuad)
 end
 
 function Stack.divergenceString(stackToTest)
@@ -550,26 +513,6 @@ function Stack.deleteRollbackCopy(self, frame)
     self.rollbackCopyPool[#self.rollbackCopyPool + 1] = self.rollbackCopies[frame]
     self.rollbackCopies[frame] = nil
   end
-end
-
--- Target must be able to take calls of
--- receiveGarbage(frameToReceive, garbageList)
--- and provide
--- frameOriginX
--- frameOriginY
--- mirror_x
--- canvasWidth
-function Stack.setGarbageTarget(self, newGarbageTarget)
-  if newGarbageTarget ~= nil then
-    -- the abstract notion of a garbage target
-    -- in reality the target will be a stack of course but this is the interface so to speak
-    assert(newGarbageTarget.frameOriginX ~= nil)
-    assert(newGarbageTarget.frameOriginY ~= nil)
-    assert(newGarbageTarget.mirror_x ~= nil)
-    assert(newGarbageTarget.canvasWidth ~= nil)
-    assert(newGarbageTarget.incomingGarbage ~= nil)
-  end
-  self.garbageTarget = newGarbageTarget
 end
 
 local MAX_TAUNT_PER_10_SEC = 4
@@ -930,65 +873,6 @@ function Stack.receiveConfirmedInput(self, input)
   --logger.debug("Player " .. self.which .. " got new input. Total length: " .. #self.confirmedInput)
 end
 
--- Enqueue a card animation
-function Stack.enqueue_card(self, chain, x, y, n)
-  if self.canvas == nil or self.play_to_end then
-    return
-  end
-
-  local card_burstAtlas = nil
-  local card_burstParticle = nil
-  if config.popfx == true then
-    if characters[self.character].popfx_style == "burst" or characters[self.character].popfx_style == "fadeburst" then
-      card_burstAtlas = characters[self.character].images["burst"]
-      local card_burstFrameDimension = card_burstAtlas:getWidth() / 9
-      card_burstParticle = GraphicsUtil:newRecycledQuad(card_burstFrameDimension, 0, card_burstFrameDimension, card_burstFrameDimension, card_burstAtlas:getDimensions())
-    end
-  end
-  self.card_q:push({frame = 1, chain = chain, x = x, y = y, n = n, burstAtlas = card_burstAtlas, burstParticle = card_burstParticle})
-end
-
--- Enqueue a pop animation
-function Stack.enqueue_popfx(self, x, y, popsize)
-  if self.canvas == nil or self.play_to_end then
-    return
-  end
-
-  local burstAtlas = nil
-  local burstFrameDimension = nil
-  local burstParticle = nil
-  local bigParticle = nil
-  local fadeAtlas = nil
-  local fadeFrameDimension = nil
-  local fadeParticle = nil
-  if characters[self.character].images["burst"] then
-    burstAtlas = characters[self.character].images["burst"]
-    burstFrameDimension = burstAtlas:getWidth() / 9
-    burstParticle = GraphicsUtil:newRecycledQuad(burstFrameDimension, 0, burstFrameDimension, burstFrameDimension, burstAtlas:getDimensions())
-    bigParticle = GraphicsUtil:newRecycledQuad(0, 0, burstFrameDimension, burstFrameDimension, burstAtlas:getDimensions())
-  end
-  if characters[self.character].images["fade"] then
-    fadeAtlas = characters[self.character].images["fade"]
-    fadeFrameDimension = fadeAtlas:getWidth() / 9
-    fadeParticle = GraphicsUtil:newRecycledQuad(fadeFrameDimension, 0, fadeFrameDimension, fadeFrameDimension, fadeAtlas:getDimensions())
-  end
-  self.pop_q:push(
-    {
-      frame = 1,
-      burstAtlas = burstAtlas,
-      burstFrameDimension = burstFrameDimension,
-      burstParticle = burstParticle,
-      fadeAtlas = fadeAtlas,
-      fadeFrameDimension = fadeFrameDimension,
-      fadeParticle = fadeParticle,
-      bigParticle = bigParticle,
-      popsize = popsize,
-      x = x,
-      y = y
-    }
-  )
-end
-
 local d_col = {up = 0, down = 0, left = -1, right = 1}
 local d_row = {up = 1, down = -1, left = 0, right = 0}
 
@@ -1229,22 +1113,14 @@ function Stack.simulate(self)
 
   prof.push("cursor movement")
   -- CURSOR MOVEMENT
-  local playMoveSounds = true -- set this to false to disable move sounds for debugging
   if self.inputMethod == "touch" then
       --with touch, cursor movement happen at stack:control time
   else
     if self.cur_dir and (self.cur_timer == 0 or self.cur_timer == self.cur_wait_time) and self.cursorLock == nil then
-      local prev_row = self.cur_row
-      local prev_col = self.cur_col
+      local previousRow = self.cur_row
+      local previousCol = self.cur_col
       self:moveCursorInDirection(self.cur_dir)
-      if (playMoveSounds and (self.cur_timer == 0 or self.cur_timer == self.cur_wait_time) and (self.cur_row ~= prev_row or self.cur_col ~= prev_col)) then
-        if self:canPlaySfx() then
-          SFX_Cur_Move_Play = 1
-        end
-        if self.cur_timer ~= self.cur_wait_time then
-          self.analytic:register_move()
-        end
-      end
+      self:emitSignal("cursorMoved", previousRow, previousCol)
     else
       self.cur_row = util.bound(1, self.cur_row, self.top_cur_row)
     end
@@ -1254,21 +1130,6 @@ function Stack.simulate(self)
     self.cur_timer = self.cur_timer + 1
   end
   prof.pop("cursor movement")
-
-  prof.push("taunt")
-  -- TAUNTING
-  if self:canPlaySfx() then
-    if self.taunt_up ~= nil then
-      characters[self.character]:playTauntUpSfx(self.taunt_up)
-      self:taunt("taunt_up")
-      self.taunt_up = nil
-    elseif self.taunt_down ~= nil then
-      characters[self.character]:playTauntDownSfx(self.taunt_down)
-      self:taunt("taunt_down")
-      self.taunt_down = nil
-    end
-  end
-  prof.pop("taunt")
 
   prof.push("new swap")
   -- Queue Swapping
@@ -1323,10 +1184,7 @@ function Stack.simulate(self)
   prof.push("chain update")
   -- if at the end of the routine there are no chain panels, the chain ends.
   if self.chain_counter ~= 0 and not self:hasChainingPanels() then
-    if self:canPlaySfx() then
-      SFX_Fanfare_Play = self.chain_counter
-    end
-    self.analytic:register_chain(self.chain_counter)
+    self:emitSignal("chainEnded", self.chain_counter)
     self.chain_counter = 0
 
     if self.outgoingGarbage then
@@ -1391,85 +1249,6 @@ function Stack.simulate(self)
   end
   prof.pop("pop from incoming garbage q")
 
-  prof.push("stack sfx")
-  -- Update Sound FX
-  if self:canPlaySfx() then
-    if SFX_Swap_Play == 1 then
-      SoundController:playSfx(themes[config.theme].sounds.swap)
-      SFX_Swap_Play = 0
-    end
-    if SFX_Cur_Move_Play == 1 then
-      -- I have no idea why this makes a distinction for vs, like what?
-      if not (self.match.stackInteraction ~= GameModes.StackInteractions.NONE and themes[config.theme].sounds.swap:isPlaying()) and not self.do_countdown then
-        SoundController:playSfx(themes[config.theme].sounds.cur_move)
-      end
-      SFX_Cur_Move_Play = 0
-    end
-    if self.sfx_land then
-      SoundController:playSfx(themes[config.theme].sounds.land)
-      self.sfx_land = false
-    end
-    if self.combo_chain_play then
-      -- stop ongoing landing sound
-      SoundController:stopSfx(themes[config.theme].sounds.land)
-      -- and cancel it because an attack is performed on the exact same frame (takes priority)
-      self.sfx_land = false
-      SoundController:stopSfx(themes[config.theme].sounds.pops[self.lastPopLevelPlayed][self.lastPopIndexPlayed])
-      characters[self.character]:playAttackSfx(self.combo_chain_play)
-      self.combo_chain_play = nil
-    end
-    if SFX_garbage_match_play then
-      characters[self.character]:playGarbageMatchSfx()
-      SFX_garbage_match_play = nil
-    end
-    if SFX_Fanfare_Play == 0 then
-      --do nothing
-    elseif SFX_Fanfare_Play >= 6 then
-      SoundController:playSfx(themes[config.theme].sounds.fanfare3)
-    elseif SFX_Fanfare_Play >= 5 then
-      SoundController:playSfx(themes[config.theme].sounds.fanfare2)
-    elseif SFX_Fanfare_Play >= 4 then
-      SoundController:playSfx(themes[config.theme].sounds.fanfare1)
-    end
-    SFX_Fanfare_Play = 0
-    if self.sfx_garbage_thud >= 1 and self.sfx_garbage_thud <= 3 then
-      local interrupted_thud = nil
-      for i = 1, 3 do
-        if themes[config.theme].sounds.garbage_thud[i]:isPlaying() and self.shake_time > self.prev_shake_time then
-          SoundController:stopSfx(themes[config.theme].sounds.garbage_thud[i])
-          interrupted_thud = i
-        end
-      end
-      if interrupted_thud and interrupted_thud > self.sfx_garbage_thud then
-        SoundController:playSfx(themes[config.theme].sounds.garbage_thud[interrupted_thud])
-      else
-        SoundController:playSfx(themes[config.theme].sounds.garbage_thud[self.sfx_garbage_thud])
-      end
-      if interrupted_thud == nil then
-        characters[self.character]:playGarbageLandSfx()
-      end
-      self.sfx_garbage_thud = 0
-    end
-    if SFX_Pop_Play or SFX_Garbage_Pop_Play then
-      local popLevel = min(max(self.chain_counter, 1), 4)
-      local popIndex = 1
-      if SFX_Garbage_Pop_Play then
-        popIndex = min(SFX_Garbage_Pop_Play + self.poppedPanelIndex, 10)
-      else
-        popIndex = min(self.poppedPanelIndex, 10)
-      end
-      --stop the previous pop sound
-      SoundController:stopSfx(themes[config.theme].sounds.pops[self.lastPopLevelPlayed][self.lastPopIndexPlayed])
-      --play the appropriate pop sound
-      SoundController:playSfx(themes[config.theme].sounds.pops[popLevel][popIndex])
-      self.lastPopLevelPlayed = popLevel
-      self.lastPopIndexPlayed = popIndex
-      SFX_Pop_Play = nil
-      SFX_Garbage_Pop_Play = nil
-    end
-  end
-  prof.pop("stack sfx")
-
   prof.push("update times")
   self.clock = self.clock + 1
 
@@ -1477,14 +1256,6 @@ function Stack.simulate(self)
     self.game_stopwatch = (self.game_stopwatch or -1) + 1
   end
   prof.pop("update times")
-
-  prof.push("update popfx")
-  self:update_popfxs()
-  prof.pop("update popfx")
-  prof.push("update cards")
-  self:update_cards()
-  prof.pop("update cards")
-
 end
 
 function Stack:runGameOver()
@@ -1558,25 +1329,6 @@ function Stack.behindRollback(self)
   return false
 end
 
-function Stack:canPlaySfx()
-  -- this should be superfluous because there is no code being run that would play sfx
-  -- if self:game_ended() then
-  --   return false
-  -- end
-
-  -- If we are still catching up from rollback don't play sounds again
-  if self:behindRollback() then
-    return false
-  end
-
-  -- this is catchup mode, don't play sfx during this
-  if self.play_to_end then
-    return false
-  end
-
-  return true
-end
-
 -- Returns true if the stack is simulated past the end of the match.
 function Stack:game_ended()
   if self.game_over_clock > 0 then
@@ -1598,32 +1350,9 @@ function Stack.setGameOver(self)
     return
   end
 
-  SoundController:playSfx(themes[config.theme].sounds.game_over)
-
   self.game_over_clock = self.clock
 
-  if self.canvas then
-    local popsize = "small"
-    local panels = self.panels
-    for row = 1, #panels do
-      for col = 1, self.width do
-        local panel = panels[row][col]
-        panel.state = "dead"
-        if row == #panels then
-          self:enqueue_popfx(col, row, popsize)
-        end
-      end
-    end
-  end
-end
-
--- Randomly returns a win sound if the character has one
-function Stack.pick_win_sfx(self)
-  if #characters[self.character].sounds.win ~= 0 then
-    return characters[self.character].sounds.win[math.random(#characters[self.character].sounds.win)]
-  else
-    return themes[config.theme].sounds.fanfare1 -- TODO add a default win sound
-  end
+  self:emitSignal("gameOver", self)
 end
 
 -- returns true if the panel in row/column can be swapped with the panel to its right (column + 1)
@@ -1672,9 +1401,7 @@ function Stack:swap(row, col)
   rightPanel:startSwap(false)
   Panel.switch(leftPanel, rightPanel, panels)
 
-  if self:canPlaySfx() then
-    SFX_Swap_Play = 1
-  end
+  self:emitSignal("panelsSwapped")
 
   -- If you're swapping a panel into a position
   -- above an empty space or above a falling piece
@@ -1941,26 +1668,7 @@ end
 
 ---@param panel Panel
 function Stack.onPop(self, panel)
-  if panel.isGarbage then
-    if config.popfx == true then
-      self:enqueue_popfx(panel.column, panel.row, self.popSizeThisFrame)
-    end
-    if self:canPlaySfx() then
-      SFX_Garbage_Pop_Play = panel.pop_index
-    end
-  else
-    if config.popfx == true then
-      if (panel.combo_size > 6) or self.chain_counter > 1 then
-        self.popSizeThisFrame = "normal"
-      end
-      if self.chain_counter > 2 then
-        self.popSizeThisFrame = "big"
-      end
-      if self.chain_counter > 3 then
-        self.popSizeThisFrame = "giant"
-      end
-      self:enqueue_popfx(panel.column, panel.row, self.popSizeThisFrame)
-    end
+  if not panel.isGarbage then
     self.score = self.score + 10
 
     self.panels_cleared = self.panels_cleared + 1
@@ -1968,11 +1676,9 @@ function Stack.onPop(self, panel)
         and self.panels_cleared % self.levelData.shockFrequency == 0 then
           self.metal_panels_queued = min(self.metal_panels_queued + 1, self.levelData.shockCap)
     end
-    if self:canPlaySfx() then
-      SFX_Pop_Play = 1
-    end
-    self.poppedPanelIndex = panel.combo_index
   end
+
+  self:emitSignal("onPop", panel)
 end
 
 ---@param panel Panel
@@ -1984,12 +1690,11 @@ end
 
 ---@param panel Panel
 function Stack.onLand(self, panel)
+  -- need to emit signal before onGarbageLand because the panel is altered by onGarbageLand
+  self:emitSignal("onLand", panel)
+
   if panel.isGarbage then
     self:onGarbageLand(panel)
-  else
-    if panel.state == "falling" and self:canPlaySfx() then
-      self.sfx_land = true
-    end
   end
 end
 
@@ -2000,13 +1705,6 @@ function Stack.onGarbageLand(self, panel)
     and panel.row <= self.height then
     --runtime optimization to not repeatedly update shaketime for the same piece of garbage
     if not tableUtils.contains(self.garbageLandedThisFrame, panel.garbageId) then
-      if self:canPlaySfx() then
-        if panel.height > 3 then
-          self.sfx_garbage_thud = 3
-        else
-          self.sfx_garbage_thud = panel.height
-        end
-      end
       self.shake_time_on_frame = max(self.shake_time_on_frame, panel.shake_time, self.peak_shake_time or 0)
       --a smaller garbage block landing should renew the largest of the previous blocks' shake times since our shake time was last zero.
       self.peak_shake_time = max(self.shake_time_on_frame, self.peak_shake_time or 0)
@@ -2087,7 +1785,6 @@ end
 function Stack:getInfo()
   local info = {}
   info.playerNumber = self.which
-  info.character = self.character
   info.inputMethod = self.inputMethod
   info.rollbackCount = self.rollbackCount
   if self.rollbackCopies then

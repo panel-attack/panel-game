@@ -5,15 +5,33 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local TouchDataEncoding = require("common.engine.TouchDataEncoding")
 local consts = require("common.engine.consts")
 local prof = require("common.lib.jprof.jprof")
+local EngineStack = require("common.engine.Stack")
+local tableUtils = require("common.lib.tableUtils")
+local GameModes = require("common.engine.GameModes")
 
-local floor = math.floor
+local floor, min, max = math.floor, math.min, math.max
 
 local PlayerStack = class(
 function(self, args)
   local s = self
 
+  self.engine = EngineStack(args)
+  self.engine:connectSignal("panelLanded", self, self.onPanelLand)
+  self.engine:connectSignal("panelPop", self, self.onPanelPop)
+  self.engine:connectSignal("matched", self, self.onEngineMatched)
+  self.engine:connectSignal("cursorMoved", self, self.onCursorMoved)
+  self.engine:connectSignal("chainEnded", self, self.onChainEnded)
+  self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
+
+  local theme = args.theme or themes[config.theme]
+  self.theme = theme
   self.character = args.character
   self.panels_dir = args.panels_dir
+  if not self.panels_dir or not panels[self.panels_dir] then
+    s.panels_dir = config.panels
+  end
+  local which = args.which or 1
+  s.which = which
   self.drawsAnalytics = true
 
   self.inputMethod = args.inputMethod or "controller"
@@ -28,8 +46,207 @@ function(self, args)
   s.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight(), s.theme.images.IMG_multibar_stop_bar:getWidth(), s.theme.images.IMG_multibar_stop_bar:getHeight())
   s.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight(), s.theme.images.IMG_multibar_shake_bar:getWidth(), s.theme.images.IMG_multibar_shake_bar:getHeight())
   s.multiBarFrameCount = s:calculateMultibarFrameCount()
+
+
+  -- sfx
+  -- index used for picking a pop sound
+  s.poppedPanelIndex = 1
+  s.lastPopLevelPlayed = s.lastPopLevelPlayed or 1
+  s.lastPopIndexPlayed = s.lastPopIndexPlayed or 1
+  s.combo_chain_play = nil
+  s.sfx_land = false
+  s.sfx_garbage_thud = 0
 end,
 ClientStack)
+
+
+-------------------------------------------
+--- Callbacks from engine subscriptions ---
+-------------------------------------------
+
+function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, comboSize, metalCount, garbagePanelCount)
+  self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
+  if isChainLink or comboSize > 3 or metalCount > 0 then
+    self:queueAttackSoundEffect(isChainLink, self.chain_counter, comboSize, metalCount)
+  end
+end
+
+function PlayerStack:onGameOver(engine)
+  SoundController:playSfx(themes[config.theme].sounds.game_over)
+
+  if self.canvas then
+    local popsize = "small"
+    local panels = engine.panels
+    for row = 1, #panels do
+      for col = 1, engine.width do
+        local panel = panels[row][col]
+        panel.state = "dead"
+        if row == #panels then
+          self:enqueue_popfx(col, row, popsize)
+        end
+      end
+    end
+  end
+end
+
+---@param panel Panel
+function PlayerStack:onPanelPop(panel)
+  if panel.isGarbage then
+    if config.popfx == true then
+      self:enqueue_popfx(panel.column, panel.row, self.popSizeThisFrame)
+    end
+    if self:canPlaySfx() then
+      SFX_Garbage_Pop_Play = panel.pop_index
+    end
+  else
+    if config.popfx == true then
+      if (panel.combo_size > 6) or self.chain_counter > 1 then
+        self.popSizeThisFrame = "normal"
+      end
+      if self.chain_counter > 2 then
+        self.popSizeThisFrame = "big"
+      end
+      if self.chain_counter > 3 then
+        self.popSizeThisFrame = "giant"
+      end
+      self:enqueue_popfx(panel.column, panel.row, self.popSizeThisFrame)
+    end
+
+    if self:canPlaySfx() then
+      SFX_Pop_Play = 1
+    end
+    self.poppedPanelIndex = panel.combo_index
+  end
+end
+
+---@param panel Panel
+function PlayerStack:onPanelLand(panel)
+  if panel.isGarbage then
+    if panel.shake_time
+    -- only parts of the garbage that are on the visible board can be considered for shake
+    and panel.row <= self.engine.height then
+    --runtime optimization to not repeatedly update shaketime for the same piece of garbage
+    if not tableUtils.contains(self.engine.garbageLandedThisFrame, panel.garbageId) then
+      if self:canPlaySfx() then
+        if panel.height > 3 then
+          self.sfx_garbage_thud = 3
+        else
+          self.sfx_garbage_thud = panel.height
+        end
+      end
+    end
+  end
+  else
+    if panel.state == "falling" and self:canPlaySfx() then
+      self.sfx_land = true
+    end
+  end
+end
+
+function PlayerStack:onCursorMoved(previousRow, previousCol)
+  local playMoveSounds = true -- set this to false to disable move sounds for debugging
+  local engine = self.engine
+  if (playMoveSounds and (engine.cur_timer == 0 or engine.cur_timer == engine.cur_wait_time) and (engine.cur_row ~= previousRow or engine.cur_col ~= previousCol)) then
+    if self:canPlaySfx() then
+      SFX_Cur_Move_Play = 1
+    end
+    if engine.cur_timer ~= engine.cur_wait_time then
+      engine.analytic:register_move()
+    end
+  end
+end
+
+function PlayerStack:onChainEnded(chainCounter)
+  if self:canPlaySfx() then
+    SFX_Fanfare_Play = chainCounter
+  end
+  self.engine.analytic:register_chain(chainCounter)
+end
+
+function PlayerStack:onPanelsSwapped()
+  if self:canPlaySfx() then
+    SFX_Swap_Play = 1
+  end
+end
+
+function PlayerStack:onGarbageMatched(panelCount, onScreenCount)
+  if self:canPlaySfx() then
+    SFX_garbage_match_play = true
+  end
+end
+
+--------------------------------------------------------------------------
+--- Wrappers around the engine Stack so this can be plugged into Match ---
+--------------------------------------------------------------------------
+
+function PlayerStack:receiveGarbage(frameToReceive, garbageArray)
+  self.engine:receiveGarbage(frameToReceive, garbageArray)
+end
+
+function PlayerStack:saveForRollback()
+  self.engine:saveForRollback()
+end
+
+function PlayerStack:rollbackToFrame(frame)
+  self.engine:rollbackToFrame(frame)
+end
+
+function PlayerStack:rewindToFrame(frame)
+  self.engine:rewindToFrame(frame)
+end
+
+function PlayerStack:starting_state()
+  self.engine:starting_state()
+end
+
+---@return boolean
+function PlayerStack:game_ended()
+  return self.engine:game_ended()
+end
+
+---@param runsSoFar integer How many runs the stack has done this frame
+---@return boolean
+function PlayerStack:shouldRun(runsSoFar)
+  return self.engine:shouldRun(runsSoFar)
+end
+
+function PlayerStack:run()
+  self.engine:run()
+
+  self:processTaunts()
+
+  self:playSfx()
+
+  prof.push("update popfx")
+  self:update_popfxs()
+  prof.pop("update popfx")
+  prof.push("update cards")
+  self:update_cards()
+  prof.pop("update cards")
+end
+
+function PlayerStack:runGameOver()
+  self:update_popfxs()
+  self:update_cards()
+end
+
+---------------------------------------------
+--- Overwrites for parent class functions ---
+---------------------------------------------
+
+-- Should be called prior to clearing the stack.
+-- Consider recycling any memory that might leave around a lot of garbage.
+-- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.
+function PlayerStack:deinit()
+  GraphicsUtil:releaseQuad(self.healthQuad)
+  GraphicsUtil:releaseQuad(self.multi_prestopQuad)
+  GraphicsUtil:releaseQuad(self.multi_stopQuad)
+  GraphicsUtil:releaseQuad(self.multi_shakeQuad)
+end
+
+---------------------
+------ Graphics -----
+---------------------
 
 -- The popping particle animation. First number is how far the particles go, second is which frame to show from the spritesheet
 local POPFX_BURST_ANIMATION = {{1, 1}, {4, 1}, {7, 1}, {8, 1}, {9, 1}, {9, 1},
@@ -93,7 +310,7 @@ end
 
 local shakeOffsetData = calculateShakeData()
 
-function Stack:currentShakeOffset()
+function PlayerStack:currentShakeOffset()
   return self:shakeOffsetForShakeFrames(self.shake_time, self.prev_shake_time)
 end
 
@@ -110,7 +327,7 @@ local function privateShakeOffsetForShakeFrames(frames, shakeIntensity, gfxScale
   return result
 end
 
-function Stack:shakeOffsetForShakeFrames(frames, previousShakeTime, shakeIntensity)
+function PlayerStack:shakeOffsetForShakeFrames(frames, previousShakeTime, shakeIntensity)
 
   if shakeIntensity == nil then
     shakeIntensity = config.shakeIntensity
@@ -126,8 +343,40 @@ function Stack:shakeOffsetForShakeFrames(frames, previousShakeTime, shakeIntensi
   return result
 end
 
+function PlayerStack:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
+  if comboSize > 3 and isChainLink then
+    -- we did a combo AND a chain; cards should not overlap so offset the chain card to one row above the combo card
+    self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
+    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row + 1, self.chain_counter)
+  elseif comboSize > 3 then
+    -- only a combo
+    self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
+  elseif isChainLink then
+    -- only a chain
+    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row, self.chain_counter)
+  end
+end
+
+-- Enqueue a card animation
+function PlayerStack.enqueue_card(self, chain, x, y, n)
+  if self.canvas == nil or self.engine.play_to_end then
+    return
+  end
+
+  local card_burstAtlas = nil
+  local card_burstParticle = nil
+  if config.popfx == true then
+    if characters[self.character].popfx_style == "burst" or characters[self.character].popfx_style == "fadeburst" then
+      card_burstAtlas = characters[self.character].images["burst"]
+      local card_burstFrameDimension = card_burstAtlas:getWidth() / 9
+      card_burstParticle = GraphicsUtil:newRecycledQuad(card_burstFrameDimension, 0, card_burstFrameDimension, card_burstFrameDimension, card_burstAtlas:getDimensions())
+    end
+  end
+  self.card_q:push({frame = 1, chain = chain, x = x, y = y, n = n, burstAtlas = card_burstAtlas, burstParticle = card_burstParticle})
+end
+
 -- Update all the card frames used for doing the card animation
-function Stack.update_cards(self)
+function PlayerStack.update_cards(self)
   if self.canvas == nil then
     return
   end
@@ -149,7 +398,7 @@ function Stack.update_cards(self)
 end
 
 -- Render the card animations used to show "bursts" when a combo or chain happens
-function Stack.drawCards(self)
+function PlayerStack.drawCards(self)
   for i = self.card_q.first, self.card_q.last do
     local card = self.card_q[i]
     if consts.CARD_ANIMATION[card.frame] then
@@ -180,7 +429,7 @@ function Stack.drawCards(self)
   end
 end
 
-function Stack:opacityForFrame(frame, startFadeFrame, maxFadeFrame)
+function PlayerStack:opacityForFrame(frame, startFadeFrame, maxFadeFrame)
   local opacity = 1
   if frame >= startFadeFrame then
     local currentFrame = frame - startFadeFrame
@@ -192,8 +441,49 @@ function Stack:opacityForFrame(frame, startFadeFrame, maxFadeFrame)
   return opacity
 end
 
+-- Enqueue a pop animation
+function PlayerStack.enqueue_popfx(self, x, y, popsize)
+  if self.canvas == nil or self.engine.play_to_end then
+    return
+  end
+
+  local burstAtlas = nil
+  local burstFrameDimension = nil
+  local burstParticle = nil
+  local bigParticle = nil
+  local fadeAtlas = nil
+  local fadeFrameDimension = nil
+  local fadeParticle = nil
+  if characters[self.character].images["burst"] then
+    burstAtlas = characters[self.character].images["burst"]
+    burstFrameDimension = burstAtlas:getWidth() / 9
+    burstParticle = GraphicsUtil:newRecycledQuad(burstFrameDimension, 0, burstFrameDimension, burstFrameDimension, burstAtlas:getDimensions())
+    bigParticle = GraphicsUtil:newRecycledQuad(0, 0, burstFrameDimension, burstFrameDimension, burstAtlas:getDimensions())
+  end
+  if characters[self.character].images["fade"] then
+    fadeAtlas = characters[self.character].images["fade"]
+    fadeFrameDimension = fadeAtlas:getWidth() / 9
+    fadeParticle = GraphicsUtil:newRecycledQuad(fadeFrameDimension, 0, fadeFrameDimension, fadeFrameDimension, fadeAtlas:getDimensions())
+  end
+  self.pop_q:push(
+    {
+      frame = 1,
+      burstAtlas = burstAtlas,
+      burstFrameDimension = burstFrameDimension,
+      burstParticle = burstParticle,
+      fadeAtlas = fadeAtlas,
+      fadeFrameDimension = fadeFrameDimension,
+      fadeParticle = fadeParticle,
+      bigParticle = bigParticle,
+      popsize = popsize,
+      x = x,
+      y = y
+    }
+  )
+end
+
 -- Update all the pop animations
-function Stack.update_popfxs(self)
+function PlayerStack.update_popfxs(self)
   if self.canvas == nil then
     return
   end
@@ -227,7 +517,7 @@ function Stack.update_popfxs(self)
 end
 
 -- Draw the pop animations that happen when matches are made
-function Stack.drawPopEffects(self)
+function PlayerStack.drawPopEffects(self)
   local panelSize = 16
   for i = self.pop_q.first, self.pop_q.last do
     local popfx = self.pop_q[i]
@@ -264,7 +554,7 @@ function Stack.drawPopEffects(self)
 end
 
 -- Draws the group of bursts effects that come out of the panel after it matches
-function Stack:drawPopEffectsBurstGroup(popfx, drawX, drawY, panelSize)
+function PlayerStack:drawPopEffectsBurstGroup(popfx, drawX, drawY, panelSize)
   self:drawPopEffectsBurstPiece("TopLeft", popfx, drawX, drawY, panelSize)
   self:drawPopEffectsBurstPiece("TopRight", popfx, drawX, drawY, panelSize)
   self:drawPopEffectsBurstPiece("BottomLeft", popfx, drawX, drawY, panelSize)
@@ -282,7 +572,7 @@ function Stack:drawPopEffectsBurstGroup(popfx, drawX, drawY, panelSize)
 end
 
 -- Draws a particular instance of the bursts effects that come out of the panel after it matches
-function Stack:drawPopEffectsBurstPiece(direction, popfx, drawX, drawY, panelSize)
+function PlayerStack:drawPopEffectsBurstPiece(direction, popfx, drawX, drawY, panelSize)
 
   local burstDistance = POPFX_BURST_ANIMATION[popfx.frame][1]
   local shouldRotate = characters[self.character].popfx_burstRotate
@@ -348,7 +638,7 @@ function Stack:drawPopEffectsBurstPiece(direction, popfx, drawX, drawY, panelSiz
 end
 
 -- Draws the group of burst effects that rotate a combo or chain card
-function Stack:drawRotatingCardBurstEffectGroup(card, drawX, drawY)
+function PlayerStack:drawRotatingCardBurstEffectGroup(card, drawX, drawY)
   local burstFrameDimension = card.burstAtlas:getWidth() / 9
 
   local radius = -37.6 * math.log(card.frame) + 132.81
@@ -376,7 +666,7 @@ function Stack:drawRotatingCardBurstEffectGroup(card, drawX, drawY)
 end
 
 -- Draws a burst partical with the given parameters
-function Stack:drawPopBurstParticle(atlas, quad, frameIndex, atlasDimension, drawX, drawY, panelSize, rotation)
+function PlayerStack:drawPopBurstParticle(atlas, quad, frameIndex, atlasDimension, drawX, drawY, panelSize, rotation)
   
   local burstScale = characters[self.character].popfx_burstScale
   local burstFrameScale = (panelSize / atlasDimension) * burstScale
@@ -387,27 +677,29 @@ function Stack:drawPopBurstParticle(atlas, quad, frameIndex, atlasDimension, dra
   drawQuadGfxScaled(self, atlas, quad, drawX, drawY, rotation, burstFrameScale, burstFrameScale, burstOrigin, burstOrigin)
 end
 
-function Stack:drawDebug()
+function PlayerStack:drawDebug()
   if config.debug_mode then
+    local engine = self.engine
+
     local x = self.origin_x + 480
     local y = self.frameOriginY + 160
 
-    if self.danger then
+    if engine.danger then
       GraphicsUtil.print("danger", x, y + 135)
     end
-    if self.danger_music then
+    if engine.danger_music then
       GraphicsUtil.print("danger music", x, y + 150)
     end
 
-    GraphicsUtil.print(loc("pl_cleared", (self.panels_cleared or 0)), x, y + 165)
-    GraphicsUtil.print(loc("pl_metal", (self.metal_panels_queued or 0)), x, y + 180)
+    GraphicsUtil.print(loc("pl_cleared", (engine.panels_cleared or 0)), x, y + 165)
+    GraphicsUtil.print(loc("pl_metal", (engine.metal_panels_queued or 0)), x, y + 180)
 
-    local input = self.confirmedInput[self.clock]
+    local input = engine.confirmedInput[engine.clock]
 
-    if input or self.taunt_up or self.taunt_down then
+    if input or engine.taunt_up or engine.taunt_down then
       local iraise, iswap, iup, idown, ileft, iright
-      if self.inputMethod == "touch" then
-        iraise, _, _ = TouchDataEncoding.latinStringToTouchData(input, self.width)
+      if engine.inputMethod == "touch" then
+        iraise, _, _ = TouchDataEncoding.latinStringToTouchData(input, engine.width)
       else
         iraise, iswap, iup, idown, ileft, iright = unpack(base64decode[input])
       end
@@ -430,14 +722,14 @@ function Stack:drawDebug()
       if iright then
         inputs_to_print = inputs_to_print .. "\nright"
       end
-      if self.taunt_down then
+      if engine.taunt_down then
         inputs_to_print = inputs_to_print .. "\ntaunt_down"
       end
-      if self.taunt_up then
+      if engine.taunt_up then
         inputs_to_print = inputs_to_print .. "\ntaunt_up"
       end
-      if self.inputMethod == "touch" then
-        inputs_to_print = inputs_to_print .. self.touchInputController:debugString()
+      if engine.inputMethod == "touch" then
+        inputs_to_print = inputs_to_print .. engine.touchInputController:debugString()
       end
       GraphicsUtil.print(inputs_to_print, x, y + 195)
     end
@@ -447,34 +739,34 @@ function Stack:drawDebug()
     local padding = 14
 
     GraphicsUtil.drawRectangle("fill", drawX - 5, drawY - 5, 1000, 100, 0, 0, 0, 0.5)
-    GraphicsUtil.printf("Clock " .. self.clock, drawX, drawY)
+    GraphicsUtil.printf("Clock " .. engine.clock, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("Confirmed " .. #self.confirmedInput, drawX, drawY)
+    GraphicsUtil.printf("Confirmed " .. #engine.confirmedInput, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("input_buffer " .. #self.input_buffer, drawX, drawY)
+    GraphicsUtil.printf("input_buffer " .. #engine.input_buffer, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("rollbackCount " .. self.rollbackCount, drawX, drawY)
+    GraphicsUtil.printf("rollbackCount " .. engine.rollbackCount, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("game_over_clock " .. (self.game_over_clock or 0), drawX, drawY)
+    GraphicsUtil.printf("game_over_clock " .. (engine.game_over_clock or 0), drawX, drawY)
 
     drawY = drawY + padding
-      GraphicsUtil.printf("has chain panels " .. tostring(self:hasChainingPanels()), drawX, drawY)
+      GraphicsUtil.printf("has chain panels " .. tostring(engine:hasChainingPanels()), drawX, drawY)
 
     drawY = drawY + padding
-      GraphicsUtil.printf("has active panels " .. tostring(self:hasActivePanels()), drawX, drawY)
+      GraphicsUtil.printf("has active panels " .. tostring(engine:hasActivePanels()), drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("riselock " .. tostring(self.rise_lock), drawX, drawY)
+    GraphicsUtil.printf("riselock " .. tostring(engine.rise_lock), drawX, drawY)
 
     -- drawY = drawY + padding
     -- GraphicsUtil.printf("P" .. stack.which .." Panels: " .. stack.panel_buffer, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("P" .. self.which .." Ended?: " .. tostring(self:game_ended()), drawX, drawY)
+    GraphicsUtil.printf("P" .. engine.which .." Ended?: " .. tostring(engine:game_ended()), drawX, drawY)
 
     -- drawY = drawY + padding
     -- GraphicsUtil.printf("P" .. stack.which .." attacks: " .. #stack.telegraph.attacks, drawX, drawY)
@@ -484,53 +776,54 @@ function Stack:drawDebug()
   end
 end
 
-function Stack:drawDebugPanels(shakeOffset)
+function PlayerStack:drawDebugPanels(shakeOffset)
   if not config.debug_mode then
     return
   end
 
+  local engine = self.engine
   local mouseX, mouseY = GAME:transform_coordinates(love.mouse.getPosition())
 
-    for row = 0, math.min(self.height + 1, #self.panels) do
-      for col = 1, self.width do
-        local panel = self.panels[row][col]
-        local draw_x = (self.panelOriginX + (col - 1) * 16) * self.gfxScale
-        local draw_y = (self.panelOriginY + (11 - (row)) * 16 + self.displacement - shakeOffset) * self.gfxScale
+  for row = 0, math.min(engine.height + 1, #engine.panels) do
+    for col = 1, engine.width do
+      local panel = engine.panels[row][col]
+      local draw_x = (self.panelOriginX + (col - 1) * 16) * self.gfxScale
+      local draw_y = (self.panelOriginY + (11 - (row)) * 16 + engine.displacement - shakeOffset) * self.gfxScale
 
-        -- Require hovering over a stack to show details
-        if mouseX >= self.panelOriginX * self.gfxScale and mouseX <= (self.panelOriginX + self.width * 16) * self.gfxScale then
-          if not (panel.color == 0 and panel.state == "normal") then
-            GraphicsUtil.print(panel.state, draw_x, draw_y)
-            if panel.matchAnyway then
-              GraphicsUtil.print(tostring(panel.matchAnyway), draw_x, draw_y + 10)
-              if panel.debug_tag then
-                GraphicsUtil.print(tostring(panel.debug_tag), draw_x, draw_y + 20)
-              end
-            end
-            if panel.chaining then
-              GraphicsUtil.print("chaining", draw_x, draw_y + 30)
+      -- Require hovering over a stack to show details
+      if mouseX >= self.panelOriginX * self.gfxScale and mouseX <= (self.panelOriginX + engine.width * 16) * self.gfxScale then
+        if not (panel.color == 0 and panel.state == "normal") then
+          GraphicsUtil.print(panel.state, draw_x, draw_y)
+          if panel.matchAnyway then
+            GraphicsUtil.print(tostring(panel.matchAnyway), draw_x, draw_y + 10)
+            if panel.debug_tag then
+              GraphicsUtil.print(tostring(panel.debug_tag), draw_x, draw_y + 20)
             end
           end
-        end
-
-        if mouseX >= draw_x and mouseX < draw_x + 16 * self.gfxScale and mouseY >= draw_y and mouseY < draw_y + 16 * self.gfxScale then
-          local str = loc("pl_panel_info", row, col)
-          for k, v in pairsSortedByKeys(panel) do
-            str = str .. "\n" .. k .. ": " .. tostring(v)
+          if panel.chaining then
+            GraphicsUtil.print("chaining", draw_x, draw_y + 30)
           end
-
-          local drawX = 30
-          local drawY = 10
-
-          GraphicsUtil.drawRectangle("fill", drawX - 5, drawY - 5, 100, 100, 0, 0, 0, 0.5)
-          GraphicsUtil.printf(str, drawX, drawY)
         end
       end
+
+      if mouseX >= draw_x and mouseX < draw_x + 16 * self.gfxScale and mouseY >= draw_y and mouseY < draw_y + 16 * self.gfxScale then
+        local str = loc("pl_panel_info", row, col)
+        for k, v in pairsSortedByKeys(panel) do
+          str = str .. "\n" .. k .. ": " .. tostring(v)
+        end
+
+        local drawX = 30
+        local drawY = 10
+
+        GraphicsUtil.drawRectangle("fill", drawX - 5, drawY - 5, 100, 100, 0, 0, 0, 0.5)
+        GraphicsUtil.printf(str, drawX, drawY)
+      end
     end
+  end
 end
 
 -- Renders the player's stack on screen
-function Stack.render(self)
+function PlayerStack.render(self)
   prof.push("Stack:render")
   if self.canvas == nil then
     return
@@ -571,7 +864,7 @@ function Stack.render(self)
   prof.pop("Stack:render")
 end
 
-function Stack:drawRating()
+function PlayerStack:drawRating()
   local rating
   if self.player.rating and tonumber(self.player.rating) then
     rating = self.player.rating
@@ -586,16 +879,17 @@ function Stack:drawRating()
 end
 
 -- Draw the stacks cursor
-function Stack:render_cursor(shake)
-  if self.inputMethod == "touch" then
-    if self.cur_row == 0 and self.cur_col == 0 then
+function PlayerStack:render_cursor(shake)
+  local engine = self.engine
+  if engine.inputMethod == "touch" then
+    if engine.cur_row == 0 and engine.cur_col == 0 then
       --no panel is touched, let's not draw the cursor
       return
     end
   end
 
-  if self.countdown_timer then
-    if self.clock % 2 ~= 0 then
+  if engine.countdown_timer then
+    if engine.clock % 2 ~= 0 then
       -- for some reason we want the cursor to blink during countdown
       return
     end
@@ -606,51 +900,53 @@ function Stack:render_cursor(shake)
   local panelWidth = 16
   local scale_x = desiredCursorWidth / cursor.image:getWidth()
   local scale_y = 24 / cursor.image:getHeight()
-  local xPosition = (self.cur_col - 1) * panelWidth
+  local xPosition = (engine.cur_col - 1) * panelWidth
 
   if self.inputMethod == "touch" then
-    drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[1], xPosition, (11 - (self.cur_row)) * panelWidth + self.displacement - shake, 0, scale_x, scale_y)
-    drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[2], xPosition + 12, (11 - (self.cur_row)) * panelWidth + self.displacement - shake, 0, scale_x, scale_y)
+    drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[1], xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
+    drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[2], xPosition + 12, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   else
-    drawGfxScaled(self, cursor.image, xPosition, (11 - (self.cur_row)) * panelWidth + self.displacement - shake, 0, scale_x, scale_y)
+    drawGfxScaled(self, cursor.image, xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   end
 end
 
 -- Draw the stop time and healthbars
-function Stack:drawMultibar()
-  local stop_time = self.stop_time
-  local shake_time = self.shake_time
+function PlayerStack:drawMultibar()
+  local engine = self.engine
+  local stop_time = engine.stop_time
+  local shake_time = engine.shake_time
 
   -- before the first move, display the stop time from the puzzle, not the stack
-  if self.puzzle and self.puzzle.puzzleType == "clear" and self.puzzle.moves == self.puzzle.remaining_moves then
-    stop_time = self.puzzle.stop_time
-    shake_time = self.puzzle.shake_time
+  if engine.puzzle and engine.puzzle.puzzleType == "clear" and engine.puzzle.moves == engine.puzzle.remaining_moves then
+    stop_time = engine.puzzle.stop_time
+    shake_time = engine.puzzle.shake_time
   end
 
   if self.theme.multibar_is_absolute then
     -- absolute multibar is *only* supported for v3 themes
-    self:drawAbsoluteMultibar(stop_time, shake_time, self.pre_stop_time)
+    self:drawAbsoluteMultibar(stop_time, shake_time, engine.pre_stop_time)
   else
     self:drawRelativeMultibar(stop_time, shake_time)
   end
 end
 
-function Stack:drawRelativeMultibar(stop_time, shake_time)
+function PlayerStack:drawRelativeMultibar(stop_time, shake_time)
+  local engine = self.engine
   self:drawLabel(self.theme.images.healthbarFrames.relative[self.which], self.theme.healthbar_frame_Pos, self.theme.healthbar_frame_Scale)
 
   -- Healthbar
-  local healthbar = self.health * (self.theme.images.IMG_healthbar:getHeight() / self.levelData.maxHealth)
+  local healthbar = engine.health * (self.theme.images.IMG_healthbar:getHeight() / engine.levelData.maxHealth)
   self.healthQuad:setViewport(0, self.theme.images.IMG_healthbar:getHeight() - healthbar, self.theme.images.IMG_healthbar:getWidth(), healthbar)
   local x = self:elementOriginXWithOffset(self.theme.healthbar_Pos, false) / self.gfxScale
   local y = self:elementOriginYWithOffset(self.theme.healthbar_Pos, false) + (self.theme.images.IMG_healthbar:getHeight() - healthbar) / self.gfxScale
   drawQuadGfxScaled(self, self.theme.images.IMG_healthbar, self.healthQuad, x, y, self.theme.healthbar_Rotate, self.theme.healthbar_Scale, self.theme.healthbar_Scale, 0, 0, self.multiplication)
 
   -- Prestop bar
-  if self.pre_stop_time == 0 or self.maxPrestop == nil then
+  if engine.pre_stop_time == 0 or self.maxPrestop == nil then
     self.maxPrestop = 0
   end
-  if self.pre_stop_time > self.maxPrestop then
-    self.maxPrestop = self.pre_stop_time
+  if engine.pre_stop_time > self.maxPrestop then
+    self.maxPrestop = engine.pre_stop_time
   end
 
   -- Stop bar
@@ -664,14 +960,14 @@ function Stack:drawRelativeMultibar(stop_time, shake_time)
   -- Shake bar
 
   local multi_shake_bar, multi_stop_bar, multi_prestop_bar = 0, 0, 0
-  if self.peak_shake_time > 0 and shake_time >= self.pre_stop_time + stop_time then
-    multi_shake_bar = shake_time * (self.theme.images.IMG_multibar_shake_bar:getHeight() / self.peak_shake_time) * 3
+  if engine.peak_shake_time > 0 and shake_time >= engine.pre_stop_time + stop_time then
+    multi_shake_bar = shake_time * (self.theme.images.IMG_multibar_shake_bar:getHeight() / engine.peak_shake_time) * 3
   end
-  if self.maxStop > 0 and shake_time < self.pre_stop_time + stop_time then
+  if self.maxStop > 0 and shake_time < engine.pre_stop_time + stop_time then
     multi_stop_bar = stop_time * (self.theme.images.IMG_multibar_stop_bar:getHeight() / self.maxStop) * 1.5
   end
-  if self.maxPrestop > 0 and shake_time < self.pre_stop_time + stop_time then
-    multi_prestop_bar = self.pre_stop_time * (self.theme.images.IMG_multibar_prestop_bar:getHeight() / self.maxPrestop) * 1.5
+  if self.maxPrestop > 0 and shake_time < engine.pre_stop_time + stop_time then
+    multi_prestop_bar = engine.pre_stop_time * (self.theme.images.IMG_multibar_prestop_bar:getHeight() / self.maxPrestop) * 1.5
   end
   self.multi_shakeQuad:setViewport(0, self.theme.images.IMG_multibar_shake_bar:getHeight() - multi_shake_bar, self.theme.images.IMG_multibar_shake_bar:getWidth(), multi_shake_bar)
   self.multi_stopQuad:setViewport(0, self.theme.images.IMG_multibar_stop_bar:getHeight() - multi_stop_bar, self.theme.images.IMG_multibar_stop_bar:getWidth(), multi_stop_bar)
@@ -693,17 +989,17 @@ function Stack:drawRelativeMultibar(stop_time, shake_time)
   end
 end
 
-function Stack:drawScore()
+function PlayerStack:drawScore()
   self:drawLabel(self.theme.images["IMG_score_" .. self.which .. "P"], self.theme.scoreLabel_Pos, self.theme.scoreLabel_Scale)
-  self:drawNumber(self.score, self.theme.score_Pos, self.theme.score_Scale)
+  self:drawNumber(self.engine.score, self.theme.score_Pos, self.theme.score_Scale)
 end
 
-function Stack:drawSpeed()
+function PlayerStack:drawSpeed()
   self:drawLabel(self.theme.images["IMG_speed_" .. self.which .. "P"], self.theme.speedLabel_Pos, self.theme.speedLabel_Scale)
-  self:drawNumber(self.speed, self.theme.speed_Pos, self.theme.speed_Scale)
+  self:drawNumber(self.engine.speed, self.theme.speed_Pos, self.theme.speed_Scale)
 end
 
-function Stack:drawLevel()
+function PlayerStack:drawLevel()
   if self.level then
     self:drawLabel(self.theme.images["IMG_level_" .. self.which .. "P"], self.theme.levelLabel_Pos, self.theme.levelLabel_Scale)
 
@@ -714,12 +1010,12 @@ function Stack:drawLevel()
   end
 end
 
-function Stack:drawAnalyticData()
+function PlayerStack:drawAnalyticData()
   if not config.enable_analytics or not self.drawsAnalytics then
     return
   end
 
-  local analytic = self.analytic
+  local analytic = self.engine.analytic
   local backgroundPadding = 18
   local paddingToAnalytics = 16
   local width = 160
@@ -760,9 +1056,9 @@ function Stack:drawAnalyticData()
   y = y + nextIconIncrement
 
   -- GPM
-  if analytic.lastGPM == 0 or math.fmod(self.clock, 60) < self.max_runs_per_frame then
-    if self.clock > 0 and (analytic.data.sent_garbage_lines > 0) then
-      analytic.lastGPM = analytic:getRoundedGPM(self.clock)
+  if analytic.lastGPM == 0 or math.fmod(self.engine.clock, 60) < self.engine.max_runs_per_frame then
+    if self.engine.clock > 0 and (analytic.data.sent_garbage_lines > 0) then
+      analytic.lastGPM = analytic:getRoundedGPM(self.engine.clock)
     end
   end
   icon_width, icon_height = self.theme.images.IMG_gpm:getDimensions()
@@ -788,9 +1084,9 @@ function Stack:drawAnalyticData()
   y = y + nextIconIncrement
 
   -- APM
-  if analytic.lastAPM == 0 or math.fmod(self.clock, 60) < self.max_runs_per_frame then
-    if self.clock > 0 and (analytic.data.swap_count + analytic.data.move_count > 0) then
-      local actionsPerMinute = (analytic.data.swap_count + analytic.data.move_count) / (self.clock / 60 / 60)
+  if analytic.lastAPM == 0 or math.fmod(self.engine.clock, 60) < self.engine.max_runs_per_frame then
+    if self.engine.clock > 0 and (analytic.data.swap_count + analytic.data.move_count > 0) then
+      local actionsPerMinute = (analytic.data.swap_count + analytic.data.move_count) / (self.engine.clock / 60 / 60)
       analytic.lastAPM = string.format("%0.0f", math.round(actionsPerMinute, 0))
     end
   end
@@ -846,13 +1142,13 @@ function Stack:drawAnalyticData()
   GraphicsUtil.setFont(GraphicsUtil.getGlobalFont())
 end
 
-function Stack:drawMoveCount()
+function PlayerStack:drawMoveCount()
   -- draw outside of stack's frame canvas
-  if self.puzzle then
+  if self.engine.puzzle then
     self:drawLabel(themes[config.theme].images.IMG_moves, themes[config.theme].moveLabel_Pos, themes[config.theme].moveLabel_Scale, false, true)
-    local moveNumber = math.abs(self.puzzle.remaining_moves)
-    if self.puzzle.puzzleType == "moves" then
-      moveNumber = self.puzzle.remaining_moves
+    local moveNumber = math.abs(self.engine.puzzle.remaining_moves)
+    if self.engine.puzzle.puzzleType == "moves" then
+      moveNumber = self.engine.puzzle.remaining_moves
     end
     self:drawNumber(moveNumber, themes[config.theme].move_Pos, themes[config.theme].move_Scale, true)
   end
@@ -864,7 +1160,11 @@ local function shouldFlashForFrame(frame)
   return frame % (flashFrames * 2) < flashFrames
 end
 
-function Stack:drawGarbageBlock(bottomRightPanel, draw_x, draw_y, garbageImages)
+---@param bottomRightPanel Panel
+---@param draw_x number
+---@param draw_y number
+---@param garbageImages table<string, love.Texture>
+function PlayerStack:drawGarbageBlock(bottomRightPanel, draw_x, draw_y, garbageImages)
   local imgs = garbageImages
   local panel = bottomRightPanel
   local height, width = panel.height, panel.width
@@ -909,7 +1209,7 @@ function Stack:drawGarbageBlock(bottomRightPanel, draw_x, draw_y, garbageImages)
   drawGfxScaled(self, imgs.botright, draw_x + 8, draw_y + 13, 0, 8 / corner_w, 3 / corner_h)
 end
 
-function Stack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
+function PlayerStack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
   prof.push("Stack:drawPanels")
   local panelSet = panels[self.panels_dir]
   panelSet:prepareDraw()
@@ -919,11 +1219,11 @@ function Stack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
   local metalr_w, metalr_h = shockGarbageImages.right:getDimensions()
 
   -- Draw all the panels
-  for row = 0, self.height do
-    for col = self.width, 1, -1 do
-      local panel = self.panels[row][col]
+  for row = 0, self.engine.height do
+    for col = self.engine.width, 1, -1 do
+      local panel = self.engine.panels[row][col]
       local draw_x = 4 + (col - 1) * 16
-      local draw_y = 4 + (11 - (row)) * 16 + self.displacement - shakeOffset
+      local draw_y = 4 + (11 - (row)) * 16 + self.engine.displacement - shakeOffset
       if panel.color ~= 0 and panel.state ~= "popped" then
         if panel.isGarbage then
 
@@ -946,7 +1246,7 @@ function Stack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
 
           if panel.state == "matched" then
             local flash_time = panel.initial_time - panel.timer
-            if flash_time >= self.levelData.frameConstants.FLASH then
+            if flash_time >= self.engine.levelData.frameConstants.FLASH then
               if panel.timer > panel.pop_time then
                 if panel.metal then
                   drawGfxScaled(self, shockGarbageImages.left, draw_x, draw_y, 0, 8 / metall_w, 16 / metall_h)
@@ -980,7 +1280,7 @@ function Stack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
             end
           end
         else
-          panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale, self.danger_col, self.danger_timer)
+          panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale, self.engine.danger_col, self.engine.danger_timer)
         end
       end
     end
@@ -988,6 +1288,170 @@ function Stack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
 
   panelSet:drawBatch()
   prof.pop("Stack:drawPanels")
+end
+
+
+----------------------------------------------------------------
+--- Functions to be converted to PlayerStack use over engine ---
+---   this will primarily consist of SFX related functions   ---
+----------------------------------------------------------------
+
+function PlayerStack:queueAttackSoundEffect(isChainLink, chainSize, comboSize, metalCount)
+  if self.engine:canPlaySfx() then
+    self.engine.combo_chain_play = PlayerStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
+  end
+end
+
+function PlayerStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
+  if metalCount > 0 then
+    -- override SFX with shock sound
+    return {type = consts.ATTACK_TYPE.shock, size = metalCount}
+  elseif isChainLink then
+    return {type = consts.ATTACK_TYPE.chain, size = chainSize}
+  elseif comboSize > 3 then
+    return {type = consts.ATTACK_TYPE.combo, size = comboSize}
+  end
+  return nil
+end
+
+function PlayerStack:playSfx()
+  prof.push("stack sfx")
+  -- Update Sound FX
+  if self:canPlaySfx() then
+    if SFX_Swap_Play == 1 then
+      SoundController:playSfx(themes[config.theme].sounds.swap)
+      SFX_Swap_Play = 0
+    end
+    if SFX_Cur_Move_Play == 1 then
+      -- I have no idea why this makes a distinction for vs, like what?
+      -- On scouring historical chats it seems like cursor move sounds did not play during swap sounds ONLY in vs in TA
+      -- people suspected a lack in sound channels in TA; might just be sensible to overall keep the amount of SFX low
+      if not (self.match.stackInteraction ~= GameModes.StackInteractions.NONE and themes[config.theme].sounds.swap:isPlaying()) and not self.do_countdown then
+        SoundController:playSfx(themes[config.theme].sounds.cur_move)
+      end
+      SFX_Cur_Move_Play = 0
+    end
+    if self.sfx_land then
+      SoundController:playSfx(themes[config.theme].sounds.land)
+      self.sfx_land = false
+    end
+    if self.combo_chain_play then
+      -- stop ongoing landing sound
+      SoundController:stopSfx(themes[config.theme].sounds.land)
+      -- and cancel it because an attack is performed on the exact same frame (takes priority)
+      self.sfx_land = false
+      SoundController:stopSfx(themes[config.theme].sounds.pops[self.lastPopLevelPlayed][self.lastPopIndexPlayed])
+      characters[self.character]:playAttackSfx(self.combo_chain_play)
+      self.combo_chain_play = nil
+    end
+    if SFX_garbage_match_play then
+      characters[self.character]:playGarbageMatchSfx()
+      SFX_garbage_match_play = nil
+    end
+    if SFX_Fanfare_Play == 0 then
+      --do nothing
+    elseif SFX_Fanfare_Play >= 6 then
+      SoundController:playSfx(themes[config.theme].sounds.fanfare3)
+    elseif SFX_Fanfare_Play >= 5 then
+      SoundController:playSfx(themes[config.theme].sounds.fanfare2)
+    elseif SFX_Fanfare_Play >= 4 then
+      SoundController:playSfx(themes[config.theme].sounds.fanfare1)
+    end
+    SFX_Fanfare_Play = 0
+    if self.sfx_garbage_thud >= 1 and self.sfx_garbage_thud <= 3 then
+      local interrupted_thud = nil
+      for i = 1, 3 do
+        if themes[config.theme].sounds.garbage_thud[i]:isPlaying() and self.shake_time > self.prev_shake_time then
+          SoundController:stopSfx(themes[config.theme].sounds.garbage_thud[i])
+          interrupted_thud = i
+        end
+      end
+      if interrupted_thud and interrupted_thud > self.sfx_garbage_thud then
+        SoundController:playSfx(themes[config.theme].sounds.garbage_thud[interrupted_thud])
+      else
+        SoundController:playSfx(themes[config.theme].sounds.garbage_thud[self.sfx_garbage_thud])
+      end
+      if interrupted_thud == nil then
+        characters[self.character]:playGarbageLandSfx()
+      end
+      self.sfx_garbage_thud = 0
+    end
+    if SFX_Pop_Play or SFX_Garbage_Pop_Play then
+      local popLevel = min(max(self.chain_counter, 1), 4)
+      local popIndex = 1
+      if SFX_Garbage_Pop_Play then
+        popIndex = min(SFX_Garbage_Pop_Play + self.poppedPanelIndex, 10)
+      else
+        popIndex = min(self.poppedPanelIndex, 10)
+      end
+      --stop the previous pop sound
+      SoundController:stopSfx(themes[config.theme].sounds.pops[self.lastPopLevelPlayed][self.lastPopIndexPlayed])
+      --play the appropriate pop sound
+      SoundController:playSfx(themes[config.theme].sounds.pops[popLevel][popIndex])
+      self.lastPopLevelPlayed = popLevel
+      self.lastPopIndexPlayed = popIndex
+      SFX_Pop_Play = nil
+      SFX_Garbage_Pop_Play = nil
+    end
+  end
+  prof.pop("stack sfx")
+end
+
+function PlayerStack:processTaunts()
+  prof.push("taunt")
+  -- TAUNTING
+  if self:canPlaySfx() then
+    if self.taunt_up ~= nil then
+      characters[self.character]:playTauntUpSfx(self.taunt_up)
+      self:taunt("taunt_up")
+      self.taunt_up = nil
+    elseif self.taunt_down ~= nil then
+      characters[self.character]:playTauntDownSfx(self.taunt_down)
+      self:taunt("taunt_down")
+      self.taunt_down = nil
+    end
+  end
+  prof.pop("taunt")
+end
+
+function PlayerStack:canPlaySfx()
+  -- this should be superfluous because there is no code being run that would play sfx
+  -- if self:game_ended() then
+  --   return false
+  -- end
+
+  -- If we are still catching up from rollback don't play sounds again
+  if self.engine:behindRollback() then
+    return false
+  end
+
+  -- this is catchup mode, don't play sfx during this
+  if self.engine.play_to_end then
+    return false
+  end
+
+  return true
+end
+
+
+-- Target must be able to take calls of
+-- receiveGarbage(frameToReceive, garbageList)
+-- and provide
+-- frameOriginX
+-- frameOriginY
+-- mirror_x
+-- canvasWidth
+function PlayerStack.setGarbageTarget(self, newGarbageTarget)
+  if newGarbageTarget ~= nil then
+    -- the abstract notion of a garbage target
+    -- in reality the target will be a stack of course but this is the interface so to speak
+    assert(newGarbageTarget.frameOriginX ~= nil)
+    assert(newGarbageTarget.frameOriginY ~= nil)
+    assert(newGarbageTarget.mirror_x ~= nil)
+    assert(newGarbageTarget.canvasWidth ~= nil)
+    assert(newGarbageTarget.incomingGarbage ~= nil)
+  end
+  self.garbageTarget = newGarbageTarget
 end
 
 return PlayerStack

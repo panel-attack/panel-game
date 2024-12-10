@@ -5,7 +5,7 @@ local input = require("common.lib.inputManager")
 local MatchParticipant = require("client.src.MatchParticipant")
 local consts = require("common.engine.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
-local Stack = require("common.engine.Stack")
+local PlayerStack = require("client.src.PlayerStack")
 local logger = require("common.lib.logger")
 require("client.src.graphics.Stack")
 
@@ -101,7 +101,7 @@ function Player:createStackFromSettings(match, which)
   args.inputMethod = self.settings.inputMethod
   args.gameOverConditions = match.gameOverConditions
 
-  self.stack = Stack(args)
+  self.stack = PlayerStack(args)
   -- so the stack can draw player information
   self.stack.player = self
 

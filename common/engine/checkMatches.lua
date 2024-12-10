@@ -139,15 +139,14 @@ function Stack:checkMatches()
     local preStopTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
     self.pre_stop_time = math.max(self.pre_stop_time, preStopTime)
     self:awardStopTime(isChainLink, comboSize)
+    self:emitSignal("matched", self, attackGfxOrigin, isChainLink, comboSize, metalCount, #garbagePanels)
 
     if isChainLink or comboSize > 3 or metalCount > 0 then
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)
-      self:queueAttackSoundEffect(isChainLink, self.chain_counter, comboSize, metalCount)
     end
 
     self.analytic:register_destroyed_panels(comboSize)
     self:updateScoreWithBonus(comboSize)
-    self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   end
 
   self:clearChainingFlags()
@@ -713,10 +712,8 @@ end
 function Stack:matchGarbagePanels(garbagePanels, garbageMatchTime, isChain, onScreenCount)
   garbagePanels = sortByPopOrder(garbagePanels, true)
 
-  if self:canPlaySfx() then
-    SFX_garbage_match_play = true
-  end
-  
+  self:emitSignal("garbageMatched", #garbagePanels, onScreenCount)
+
   for i = 1, #garbagePanels do
     local panel = garbagePanels[i]
     panel.y_offset = panel.y_offset - 1
@@ -865,38 +862,6 @@ function Stack:awardStopTime(isChain, comboSize)
   local stopTime = self:calculateStopTime(comboSize, self.panels_in_top_row, isChain, self.chain_counter)
   if stopTime > self.stop_time then
     self.stop_time = stopTime
-  end
-end
-
-function Stack:queueAttackSoundEffect(isChainLink, chainSize, comboSize, metalCount)
-  if self:canPlaySfx() then
-    self.combo_chain_play = Stack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
-  end
-end
-
-function Stack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
-  if metalCount > 0 then
-    -- override SFX with shock sound
-    return {type = consts.ATTACK_TYPE.shock, size = metalCount}
-  elseif isChainLink then
-    return {type = consts.ATTACK_TYPE.chain, size = chainSize}
-  elseif comboSize > 3 then
-    return {type = consts.ATTACK_TYPE.combo, size = comboSize}
-  end
-  return nil
-end
-
-function Stack:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
-  if comboSize > 3 and isChainLink then
-    -- we did a combo AND a chain; cards should not overlap so offset the chain card to one row above the combo card
-    self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
-    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row + 1, self.chain_counter)
-  elseif comboSize > 3 then
-    -- only a combo
-    self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
-  elseif isChainLink then
-    -- only a chain
-    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row, self.chain_counter)
   end
 end
 

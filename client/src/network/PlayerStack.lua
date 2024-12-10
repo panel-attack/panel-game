@@ -1,8 +1,9 @@
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local TouchDataEncoding = require("common.engine.TouchDataEncoding")
 local ClientMessages = require("common.network.ClientProtocol")
+local PlayerStack = require("client.src.PlayerStack")
 
-function Stack.handle_input_taunt(self)
+function PlayerStack.handle_input_taunt(self)
   if self.inputMethod ~= "touch" then
     local input = self.player.inputConfiguration
     if input.isDown["TauntUp"] and self:can_taunt() and #characters[self.character].sounds.taunt_up > 0 then
@@ -16,12 +17,12 @@ function Stack.handle_input_taunt(self)
 end
 
 local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
-function Stack.idleInput(self) 
+function PlayerStack.idleInput(self) 
   return (self.inputMethod == "touch" and touchIdleInput) or base64encode[1]
 end
 
-function Stack.send_controls(self)
-  if self.is_local and GAME.netClient:isConnected() and #self.confirmedInput > 0 and self.garbageTarget and #self.garbageTarget.confirmedInput == 0 then
+function PlayerStack.send_controls(self)
+  if self.is_local and GAME.netClient:isConnected() and #self.engine.confirmedInput > 0 and self.garbageTarget and #self.garbageTarget.engine.confirmedInput == 0 then
     -- Send 1 frame at clock time 0 then wait till we get our first input from the other player.
     -- This will cause a player that got the start message earlier than the other player to wait for the other player just once.
     -- print("self.confirmedInput="..(self.confirmedInput or "nil"))
