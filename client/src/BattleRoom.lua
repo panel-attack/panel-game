@@ -543,7 +543,7 @@ function BattleRoom:onMatchEnded(match)
     else
       -- local player could pause and leave
       -- -> back to select screen, battleRoom stays intact
-      GAME.navigationStack:pop()
+      -- each scene handles the pop individually
     end
 
     -- other aborts come via network and are directly handled in response to the network message (or lack thereof)

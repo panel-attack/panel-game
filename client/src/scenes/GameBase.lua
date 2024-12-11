@@ -157,6 +157,7 @@ function GameBase:load(sceneParams)
     MenuItem.createButtonMenuItem("back", nil, true, function()
       GAME.theme:playCancelSfx()
       self.match:abort()
+      self:startNextScene()
     end),
   }
 

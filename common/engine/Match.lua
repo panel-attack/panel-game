@@ -116,10 +116,24 @@ function Match:getWinners()
       local winCon = self.winConditions[i]
       for j = 1, #potentialWinners do
         local potentialWinner = potentialWinners[j]
-
         -- now we check for this player whether they meet the current winCondition
         if winCon == GameModes.WinConditions.LAST_ALIVE then
-          if potentialWinner.stack.game_over_clock <= 0 then
+          local hasHighestGameOverClock = true
+          if potentialWinner.stack.game_over_clock > 0 then
+            for k = 1, #potentialWinners do
+              if k ~= j then
+                if potentialWinners[k].stack.game_over_clock < 0 then
+                  hasHighestGameOverClock = false
+                elseif potentialWinner.stack.game_over_clock < potentialWinners[k].stack.game_over_clock then
+                  hasHighestGameOverClock = false
+                  break
+                end
+              end
+            end
+          else
+            -- negative game over clock means the player never actually died
+          end
+          if hasHighestGameOverClock then
             table.insert(metCondition, potentialWinner)
           end
         elseif winCon == GameModes.WinConditions.SCORE then
@@ -158,6 +172,7 @@ function Match:getWinners()
           -- should rethink these when looking at puzzle vs (if ever)
         end
       end
+
       if #metCondition == 1 then
         potentialWinners = metCondition
         -- only one winner, we're done
@@ -167,6 +182,7 @@ function Match:getWinners()
         potentialWinners = metCondition
       elseif #metCondition == 0 then
         -- none met the condition, keep going with the current set of potential winners
+        -- and see if another winCondition may break the tie
       end
     end
     winners = potentialWinners

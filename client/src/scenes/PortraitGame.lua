@@ -200,7 +200,6 @@ function PortraitGame:flipToPortrait()
   if love.system.getOS() == "Android" or DEBUG_ENABLED then
     -- flip the window dimensions to portrait
     love.window.updateMode(height, width, {})
-    love.window.setFullscreen(true)
     GAME:updateCanvasPositionAndScale(width, height)
   end
 
@@ -218,7 +217,7 @@ function PortraitGame:flipToPortrait()
       stack.origin_x = stack.frameOriginX / stack.gfxScale
 
       -- create a raise button that interacts with the touch controller
-      local raiseButton = TextButton({label = Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack.canvas:getHeight() / 2})
+      local raiseButton = TextButton({label = Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
         stack.touchInputController.touchingRaise = true
@@ -253,7 +252,6 @@ function PortraitGame:returnToLandscape()
   local width, height, _ = love.window.getMode()
   if love.system.getOS() == "Android" or DEBUG_ENABLED then
     love.window.updateMode(height, width, {})
-    love.window.setFullscreen(false)
     GAME:updateCanvasPositionAndScale(width, height)
   end
   for _, player in ipairs(self.match.players) do
