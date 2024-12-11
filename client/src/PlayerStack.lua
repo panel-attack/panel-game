@@ -26,9 +26,11 @@ function(self, args)
   self.engine:connectSignal("cursorMoved", self, self.onCursorMoved)
   self.engine:connectSignal("chainEnded", self, self.onChainEnded)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
+  self.engine:connectSignal("gameOver", self, self.onGameOver)
 
   -- need this to properly pass as a stack for creating replays
-  self.allowAdjacentColors = args.allowAdjacentColors
+  self.allowAdjacentColors = self.engine.allowAdjacentColors
+  self.clock = self.engine.clock
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -262,10 +264,16 @@ end
 
 function PlayerStack:rollbackToFrame(frame)
   self.engine:rollbackToFrame(frame)
+  -- to fool Match without having to wrap everything into getters
+  self.clock = self.engine.clock
+  self.game_stopwatch = self.engine.game_stopwatch
 end
 
 function PlayerStack:rewindToFrame(frame)
   self.engine:rewindToFrame(frame)
+  -- to fool Match without having to wrap everything into getters
+  self.clock = self.engine.clock
+  self.game_stopwatch = self.engine.game_stopwatch
 end
 
 function PlayerStack:starting_state()
@@ -330,6 +338,21 @@ end
 
 function PlayerStack:getConfirmedInputCount()
   return self.engine:getConfirmedInputCount()
+end
+
+---@return integer
+function PlayerStack:getOldestFinishedGarbageTransitTime()
+  return self.engine:getOldestFinishedGarbageTransitTime()
+end
+
+---@param clock integer
+function PlayerStack:getReadyGarbageAt(clock)
+  return self.engine:getReadyGarbageAt(clock)
+end
+
+---@param matchClock integer
+function PlayerStack:updateFramesBehind(matchClock)
+  self.engine:updateFramesBehind(matchClock)
 end
 
 ---------------------------------------------
@@ -1429,7 +1452,7 @@ function PlayerStack:playSfx()
       -- I have no idea why this makes a distinction for vs, like what?
       -- On scouring historical chats it seems like cursor move sounds did not play during swap sounds ONLY in vs in TA
       -- people suspected a lack in sound channels in TA; might just be sensible to overall keep the amount of SFX low
-      if not (self.match.stackInteraction ~= GameModes.StackInteractions.NONE and themes[config.theme].sounds.swap:isPlaying()) and not self.do_countdown then
+      if not (self.engine.match.stackInteraction ~= GameModes.StackInteractions.NONE and themes[config.theme].sounds.swap:isPlaying()) and not self.engine.do_countdown then
         SoundController:playSfx(themes[config.theme].sounds.cur_move)
       end
       SFX_Cur_Move_Play = 0
@@ -1480,7 +1503,7 @@ function PlayerStack:playSfx()
       self.sfx_garbage_thud = 0
     end
     if SFX_Pop_Play or SFX_Garbage_Pop_Play then
-      local popLevel = min(max(self.chain_counter, 1), 4)
+      local popLevel = min(max(self.engine.chain_counter, 1), 4)
       local popIndex = 1
       if SFX_Garbage_Pop_Play then
         popIndex = min(SFX_Garbage_Pop_Play + self.poppedPanelIndex, 10)

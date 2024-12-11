@@ -30,6 +30,22 @@ function(self, args)
   self.lastRollbackFrame = -1 -- the last frame we had to rollback from
 end)
 
+function BaseStack:updateFramesBehind(matchClock)
+  local framesBehind = matchClock - self.clock
+  self.framesBehindArray[matchClock] = framesBehind
+  self.framesBehind = framesBehind
+end
+
+---@return integer
+function BaseStack:getOldestFinishedGarbageTransitTime()
+  return self.outgoingGarbage:getOldestFinishedTransitTime()
+end
+
+---@param clock integer
+function BaseStack:getReadyGarbageAt(clock)
+  return self.outgoingGarbage:popFinishedTransitsAt(clock)
+end
+
 function BaseStack:receiveGarbage(garbageDelivery)
   self.incomingGarbage:pushTable(garbageDelivery)
 end

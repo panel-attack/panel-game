@@ -272,7 +272,7 @@ function Match:run()
     -- Since the stacks can affect each other, don't save rollback until after all have run
     for i, stack in ipairs(self.stacks) do
       if checkRun[i] then
-        self:updateFramesBehind(stack)
+        stack:updateFramesBehind(self.clock)
         if self:shouldSaveRollback(stack) then
           stack:saveForRollback()
         end
@@ -308,7 +308,7 @@ function Match:pushGarbageTo(stack)
   -- check if anyone wants to push garbage into the stack's queue
   for _, st in ipairs(self.stacks) do
     if st.garbageTarget == stack then
-      local oldestTransitTime = st.outgoingGarbage:getOldestFinishedTransitTime()
+      local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
       if oldestTransitTime then
         if stack.clock > oldestTransitTime then
           -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
@@ -320,7 +320,7 @@ function Match:pushGarbageTo(stack)
             self:abort()
           end
         end
-        local garbageDelivery = st.outgoingGarbage:popFinishedTransitsAt(stack.clock)
+        local garbageDelivery = st:getReadyGarbageAt(stack.clock)
         if garbageDelivery then
           logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
           stack:receiveGarbage(garbageDelivery)
@@ -334,12 +334,6 @@ function Match:runGameOver()
   for _, stack in ipairs(self.stacks) do
     stack:runGameOver()
   end
-end
-
-function Match:updateFramesBehind(stack)
-  local framesBehind = self.clock - stack.clock
-  stack.framesBehindArray[self.clock] = framesBehind
-  stack.framesBehind = framesBehind
 end
 
 function Match:shouldSaveRollback(stack)

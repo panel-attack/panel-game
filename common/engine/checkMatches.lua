@@ -126,7 +126,7 @@ function Stack:checkMatches()
     local preStopTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
     self.pre_stop_time = math.max(self.pre_stop_time, preStopTime)
     self:awardStopTime(isChainLink, comboSize)
-    self:emitSignal("matched", self, attackGfxOrigin, isChainLink, comboSize, metalCount, #garbagePanels)
+    self:emitSignal("matched", self, attackGfxOrigin, isChainLink, comboSize, metalCount, garbagePanels and #garbagePanels or 0)
 
     if isChainLink or comboSize > 3 or metalCount > 0 then
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)

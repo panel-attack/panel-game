@@ -39,6 +39,9 @@ function Signal.createSignal(t, signalName)
 end
 
 function Signal.emitSignal(emitter, signalName, ...)
+  if not emitter.signalSubscriptions[signalName] then
+    error("Trying to emit unknown signal " .. signalName)
+  end
   for subscriber, array in pairs(emitter.signalSubscriptions[signalName]) do
     for _, callback in ipairs(array) do
       callback(subscriber, ...)

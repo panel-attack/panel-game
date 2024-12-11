@@ -1413,7 +1413,7 @@ function Stack:tryDropGarbage()
   end
 
   local garbage = self.incomingGarbage:pop()
-  logger.debug(string.format("%d Dropping garbage on player %d - height %d  width %d  %s", self.clock, self.player_number, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
+  logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.clock, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
 
   self:dropGarbage(garbage.width, garbage.height, garbage.isMetal)
 
@@ -1611,7 +1611,7 @@ function Stack.onPop(self, panel)
     end
   end
 
-  self:emitSignal("onPop", panel)
+  self:emitSignal("panelPop", panel)
 end
 
 ---@param panel Panel
@@ -1624,7 +1624,7 @@ end
 ---@param panel Panel
 function Stack.onLand(self, panel)
   -- need to emit signal before onGarbageLand because the panel is altered by onGarbageLand
-  self:emitSignal("onLand", panel)
+  self:emitSignal("panelLanded", panel)
 
   if panel.isGarbage then
     self:onGarbageLand(panel)
