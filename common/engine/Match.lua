@@ -23,11 +23,11 @@ local prof = require("common.lib.jprof.jprof")
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 Match =
   class(
-  function(self, players, doCountdown, stackInteraction, winConditions, gameOverConditions, supportsPause, optionalArgs)
+  function(self, stacks, doCountdown, stackInteraction, winConditions, gameOverConditions, supportsPause, optionalArgs)
     self.spectators = {}
     self.spectatorString = ""
-    self.players = {}
-    self.stacks = {}
+    self.stacks = stacks
+    self.garbageTargets = {}
     self.engineVersion = consts.ENGINE_VERSION
 
     assert(doCountdown ~= nil)
@@ -50,10 +50,6 @@ Match =
       self.ranked = optionalArgs.ranked
     end
 
-    -- match needs its own table so it can sort players with impunity
-    for i = 1, #players do
-      self:addPlayer(players[i])
-    end
 
     GAME.droppedFrames = 0
     self.timeSpentRunning = 0
@@ -73,19 +69,6 @@ Match =
     self:createSignal("countdownEnded")
   end
 )
-
--- Should be called prior to clearing the match.
--- Consider recycling any memory that might leave around a lot of garbage.
--- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.
-function Match:deinit()
-  for i = 1, #self.stacks do
-    self.stacks[i]:deinit()
-  end
-end
-
-function Match:addPlayer(player)
-  self.players[#self.players+1] = player
-end
 
 -- returns the players that won the match in a table
 -- returns a single winner if there was a clear winner
@@ -421,19 +404,6 @@ function Match:updateClock()
   end
 end
 
-function Match:getWinningPlayerCharacter()
-  local character = consts.RANDOM_CHARACTER_SPECIAL_VALUE
-  local maxWins = -1
-  for i = 1, #self.players do
-    if self.players[i].wins > maxWins then
-      character = self.players[i].stack.character
-      maxWins = self.players[i].wins
-    end
-  end
-
-  return characters[character]
-end
-
 function Match:playCountdownSfx()
   if self.doCountdown then
     if self.clock < 200 then
@@ -477,27 +447,13 @@ function Match:getInfo()
 end
 
 function Match:start()
-  -- battle room may add the players in any order
-  -- match has to make sure the local player ends up as P1 (left side)
-  -- if both are local or both are not, order by playerNumber
-  table.sort(self.players, function(a, b)
-    if a.isLocal == b.isLocal then
-      return a.playerNumber < b.playerNumber
-    else
-      return a.isLocal
-    end
-  end)
-
-  for i, player in ipairs(self.players) do
-    local stack = player:createStackFromSettings(self, i)
-    stack:connectSignal("dangerMusicChanged", self, self.updateDangerMusic)
-    self.stacks[#self.stacks + 1] = stack
+  for i, stack in ipairs(self.stacks) do
     stack:setCountdown(self.doCountdown)
 
     if self.replay then
       if self.replay.completed then
         -- watching a finished replay
-        if player.human then
+        if stack.human then
           stack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
         end
         stack:setMaxRunsPerFrame(1)
@@ -510,35 +466,37 @@ function Match:start()
 
     if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
       local attackEngineHost = SimulatedStack({which = #self.stacks + 1, is_local = true, character = CharacterLoader.fullyResolveCharacterSelection()})
-      attackEngineHost:addAttackEngine(player.settings.attackEngineSettings)
+      attackEngineHost:addAttackEngine(stack.settings.attackEngineSettings)
       attackEngineHost:setGarbageTarget(stack)
       self.stacks[#self.stacks+1] = attackEngineHost
     end
+
+    self.garbageTargets[i] = {}
   end
 
   if self.stackInteraction == GameModes.StackInteractions.SELF then
-    for i = 1, #self.players do
-      self.players[i].stack:setGarbageTarget(self.players[i].stack)
+    for i, stack in ipairs(self.stacks) do
+      table.insert(self.garbageTargets[i], stack)
     end
   elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
-    for i = 1, #self.players do
-      for j = 1, #self.players do
+    for i = 1, #self.stacks do
+      for j = 1, #self.stacks do
         if i ~= j then
           -- once we have more than 2P in a single mode, setGarbageTarget needs to put these into an array
           -- or we rework it anyway for team play
-          self.players[i].stack:setGarbageTarget(self.players[j].stack)
+          table.insert(self.garbageTargets[i], self.stacks[j])
         end
       end
     end
   end
 
-  for i, player in ipairs(self.players) do
-    if player.settings.puzzleSet then
+  for i, stack in ipairs(self.stacks) do
+    if false then
       -- puzzles are currently set directly on the player's stack
     else
-      player.stack:starting_state()
+      stack:starting_state()
       -- always need clock 0 as a base for rollback
-      player.stack:saveForRollback()
+      stack:saveForRollback()
     end
   end
 
@@ -557,19 +515,6 @@ function Match:start()
   if not self.replay then
     self.replay = self:createNewReplay()
   end
-end
-
-function Match:setStage(stageId)
-  logger.debug("Setting match stage id to " .. (stageId or ""))
-  if stageId then
-    -- we got one from the server
-    self.stageId = StageLoader.fullyResolveStageSelection(stageId)
-  elseif #self.players == 1 then
-    self.stageId = StageLoader.resolveBundle(self.players[1].settings.selectedStageId)
-  else
-    self.stageId = StageLoader.fullyResolveStageSelection()
-  end
-  ModController:loadModFor(stages[self.stageId], self)
 end
 
 function Match:generateSeed()
@@ -592,38 +537,19 @@ function Match:setSeed(seed)
   end
 end
 
--- if there is no local player that means the client is either spectating (or watching a replay)
-function Match:hasLocalPlayer()
-  for _, player in ipairs(self.players) do
-    if player.isLocal then
-      return true
-    end
-  end
-
-  return false
-end
-
 function Match:createNewReplay()
   local replay = Replay(self.engineVersion, self.seed, self, self.puzzle)
-  replay:setStage(self.stage)
-  replay:setRanked(self.ranked)
 
-  for i, player in ipairs(self.players) do
-    local replayPlayer = ReplayPlayer(player.name, player.publicId, player.human)
-    replayPlayer:setWins(player.wins)
-    replayPlayer:setCharacterId(player.settings.characterId)
-    replayPlayer:setPanelId(player.settings.panelId)
-    replayPlayer:setLevelData(player.settings.levelData)
-    replayPlayer:setInputMethod(player.settings.inputMethod)
-    replayPlayer:setAllowAdjacentColors(player.stack.allowAdjacentColors)
-    replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
-    replayPlayer:setHealthSettings(player.settings.healthSettings)
-    -- these are display-only props, the true info is stored in levelData for either of them
-    if player.settings.style == GameModes.Styles.MODERN then
-      replayPlayer:setLevel(player.settings.level)
-    else
-      replayPlayer:setDifficulty(player.settings.difficulty)
-    end
+  for i, stack in ipairs(self.stacks) do
+    local replayPlayer = ReplayPlayer("Player " .. i, -i, stack.human)
+    --replayPlayer:setWins(player.wins)
+    --replayPlayer:setCharacterId(player.settings.characterId)
+    --replayPlayer:setPanelId(player.settings.panelId)
+    replayPlayer:setLevelData(stack.levelData)
+    replayPlayer:setInputMethod(stack.inputMethod)
+    replayPlayer:setAllowAdjacentColors(stack.stack.allowAdjacentColors)
+    replayPlayer:setAttackEngineSettings(stack.attackEngineSettings)
+    replayPlayer:setHealthSettings(stack.healthSettings)
 
     replay:updatePlayer(i, replayPlayer)
   end
@@ -637,18 +563,19 @@ function Match.createFromReplay(replay, supportsPause)
     puzzle = replay.gameMode.puzzle,
   }
 
-  local players = {}
+  local stacks = {}
 
   for i = 1, #replay.players do
     if replay.players[i].human then
-      players[i] = Player.createFromReplayPlayer(replay.players[i], i)
+      --TODO: source args from replay data
+      stacks[i] = Stack({})
     else
-      players[i] = ChallengeModePlayer.createFromReplayPlayer(replay.players[i], i)
+      stacks[i] = SimulatedStack({})
     end
   end
 
   local match = Match(
-    players,
+    stacks,
     replay.gameMode.doCountdown,
     replay.gameMode.stackInteraction,
     replay.gameMode.winConditions,
@@ -658,7 +585,6 @@ function Match.createFromReplay(replay, supportsPause)
   )
 
   match:setSeed(replay.seed)
-  match:setStage(replay.stageId)
   match.engineVersion = replay.engineVersion
   match.replay = replay
 

@@ -9,6 +9,8 @@ local EngineStack = require("common.engine.Stack")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local TouchInputController = require("common.engine.TouchInputController")
+local Signal = require("common.lib.signal")
+local logger = require("common.lib.logger")
 
 local floor, min, max = math.floor, math.min, math.max
 
@@ -28,6 +30,7 @@ function(self, args)
   self.engine:connectSignal("chainEnded", self, self.onChainEnded)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
   self.engine:connectSignal("gameOver", self, self.onGameOver)
+  self.engine:connectSignal("newRow", self, self.onNewRow)
 
   -- need this to properly pass as a stack for creating replays
   self.allowAdjacentColors = self.engine.allowAdjacentColors
@@ -70,6 +73,9 @@ function(self, args)
   self.taunt_up = nil -- will hold an index
   self.taunt_down = nil -- will hold an index
   self.taunt_queue = Queue()
+
+  Signal.turnIntoEmitter(self)
+  self:createSignal("dangerMusicChanged")
 end,
 ClientStack)
 
@@ -253,6 +259,8 @@ function PlayerStack:onNewRow(engine)
   if self.inputMethod == "touch" then
     self.touchInputController:stackIsCreatingNewRow()
   end
+
+  -- I suppose this is where we could add +1 to score for manual raising if we could still discern whether it was manual or not
 end
 
 --------------------------------------------------------------------------
@@ -301,6 +309,7 @@ end
 
 function PlayerStack:run()
   self.popSizeThisFrame = "small"
+  self:updateDangerMusic()
 
   self.engine:run()
 
@@ -1633,6 +1642,51 @@ function PlayerStack:calculateMultibarFrameCount()
 
   --return minFrameCount + preStopFrameCount
   return math.max(240, minFrameCount)
+end
+
+function PlayerStack:updateDangerMusic()
+  local dangerMusic = self:shouldPlayDangerMusic()
+  if dangerMusic ~= self.danger_music then
+    self.danger_music = dangerMusic
+    self:emitSignal("dangerMusicChanged", self)
+  end
+end
+
+-- determine whether to play danger music
+-- Changed this to play danger when something in top 3 rows
+-- and to play normal music when nothing in top 3 or 4 rows
+function PlayerStack:shouldPlayDangerMusic()
+  if not self.danger_music then
+    -- currently playing normal music
+    for row = self.engine.height - 2, self.engine.height do
+      local panelRow = self.engine.panels[row]
+      for column = 1, self.engine.width do
+        if panelRow[column].color ~= 0 and panelRow[column].state ~= "falling" or panelRow[column]:dangerous() then
+          if self.engine.shake_time > 0 then
+            return false
+          else
+            return true
+          end
+        end
+      end
+    end
+  else
+    --currently playing danger
+    local minRowForDangerMusic = self.engine.height - 2
+    if config.danger_music_changeback_delay then
+      minRowForDangerMusic = self.engine.height - 3
+    end
+    for row = minRowForDangerMusic, self.engine.height do
+      local panelRow = self.engine.panels[row]
+      for column = 1, self.engine.width do
+        if panelRow[column].color ~= 0 then
+          return true
+        end
+      end
+    end
+  end
+
+  return false
 end
 
 return PlayerStack

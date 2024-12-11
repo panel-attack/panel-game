@@ -111,8 +111,6 @@ local PANELS_TO_NEXT_SPEED =
 ---@field panels_in_top_row boolean If there are panels in the top row of the stack; pre-condition for losing under the NEGATIVE_HEALTH game over condition
 ---@field max_runs_per_frame integer How many times Stack:run() may be called within a single Match:run; used to keep stacks synchronous in various scenarios
 ---@field danger boolean panels in the top row (danger); unlike panels_in_top_row I think this does not indicate a top out in all cases
----@field danger_music boolean if the stack is in a state where danger music should be played; this has its own rules and might be obsolete as it is also communicated via signal
---- ; should be moved to PlayerStack or removed
 ---@field n_active_panels integer How many panels are "active" on this frame; active panels prevent the stack from rising
 ---@field n_prev_active_panels integer How many panels were "active" on the previous frame; previous active panels prevent the stack from rising
 ---@field manual_raise boolean if true the stack is currently being manually raised; kept true until the raise has been completed
@@ -233,7 +231,6 @@ Stack = class(
 
     s.panels_in_top_row = false
     s.danger = s.danger or false
-    s.danger_music = s.danger_music or false -- changes music state
 
     s.n_active_panels = 0
     s.n_prev_active_panels = 0
@@ -919,56 +916,6 @@ function Stack.updateDangerBounce(self)
   end
 end
 
-function Stack:updateDangerMusic()
-  local dangerMusic = self:shouldPlayDangerMusic()
-  if dangerMusic ~= self.danger_music then
-    self.danger_music = dangerMusic
-    self:emitSignal("dangerMusicChanged", self)
-  end
-end
-
--- determine whether to play danger music
--- Changed this to play danger when something in top 3 rows
--- and to play normal music when nothing in top 3 or 4 rows
-function Stack:shouldPlayDangerMusic()
-  if not self.danger_music then
-    -- currently playing normal music
-    for row = self.height - 2, self.height do
-      local panelRow = self.panels[row]
-      for column = 1, self.width do
-        if panelRow[column].color ~= 0 and panelRow[column].state ~= "falling" or panelRow[column]:dangerous() then
-          if self.shake_time > 0 then
-            return false
-          else
-            return true
-          end
-        end
-      end
-    end
-  else
-    --currently playing danger
-    local minRowForDangerMusic = self.height - 2
-    if config.danger_music_changeback_delay then
-      minRowForDangerMusic = self.height - 3
-    end
-    for row = minRowForDangerMusic, self.height do
-      local panelRow = self.panels[row]
-      if panelRow ~= nil and type(panelRow) == "table" then
-        for column = 1, self.width do
-          if panelRow[column].color ~= 0 then
-            return true
-          end
-        end
-      elseif self.warningsTriggered["Panels Invalid"] == nil then
-        logger.warn("Panels have invalid data in them, please tell your local developer." .. dump(panels, true))
-        self.warningsTriggered["Panels Invalid"] = true
-      end
-    end
-  end
-
-  return false
-end
-
 function Stack.updatePanels(self)
   if self.do_countdown then
     return
@@ -1025,7 +972,6 @@ function Stack.simulate(self)
   prof.push("simulate danger updates")
   self.panels_in_top_row = self:hasPanelsInTopRow()
   self:updateDangerBounce()
-  self:updateDangerMusic()
   prof.pop("simulate danger updates")
 
   prof.push("new row stuff")
@@ -1542,7 +1488,6 @@ end
 
 -- Adds a new row to the play field
 function Stack.new_row(self)
-  self:emitSignal("newRow", self)
   local panels = self.panels
   -- move cursor up
   if self.cur_row ~= 0 then
@@ -1616,6 +1561,7 @@ function Stack.new_row(self)
   end
   self.panel_buffer = string.sub(self.panel_buffer, 7)
   self.displacement = 16
+  self:emitSignal("newRow", self)
 end
 
 function Stack:getAttackPatternData()

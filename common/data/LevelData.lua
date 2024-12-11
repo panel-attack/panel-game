@@ -8,21 +8,17 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 
 ---@class LevelData
----@field startingSpeed number The speed the stack should start at
+---@field startingSpeed integer The speed the stack should start at
 ---@field speedIncreaseMode SPEED_INCREASE_MODE The manner in which speed increases throughout the game
----@field shockFrequency number How many blocks need to be cleared to queue the next shock panel for panel generation
----@field shockCap number How many shock panels can be queued at maximum; 0 disables shock blocks
----@field colors number How many colors are used for panel generation
----@field maxHealth number Unconditional invincibility frames that run out while topped out with no other type of invincibility frames available
----@field stop table<string, number> Dictionary of number values used to award stop time
----@field frameConstants table<string, number> Dictionary of number values used to determine panel physics 
+---@field shockFrequency integer How many blocks need to be cleared to queue the next shock panel for panel generation
+---@field shockCap integer How many shock panels can be queued at maximum; 0 disables shock blocks
+---@field colors integer How many colors are used for panel generation
+---@field maxHealth integer Unconditional invincibility frames that run out while topped out with no other type of invincibility frames available
+---@field stop table<string, integer> Dictionary of number values used to award stop time
+---@field frameConstants table<string, integer> Dictionary of number values used to determine panel physics 
 
 ---@class LevelData
 ---@overload fun(): LevelData
----normally declaring @type in addition to @class isn't necessary
----we do it here because as an interop format, LevelData is assigned as the metatable in some places
----and LuaLS flags that because it somehow cannot believe LevelData is a table without this declaration
----@type LevelData
 local LevelData = class(function(self)
   -- the initial speed upon match start
   -- defines how many frames it takes to rise one row via the Stack's SPEED_TO_RISE_TIME table
