@@ -316,7 +316,7 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   local multiBarMaxHeight = 589 * (self.gfxScale / 3) * themes[config.theme].multibar_Scale
   local bottomOffset = 0
 
-  local healthHeight = (self.health / multiBarFrameCount) * multiBarMaxHeight
+  local healthHeight = (self.engine.health / multiBarFrameCount) * multiBarMaxHeight
   healthHeight = math.min(healthHeight, multiBarMaxHeight)
   self:drawBar(themes[config.theme].images.IMG_healthbar, self.healthQuad, barPos, healthHeight, 0, 0, themes[config.theme].multibar_Scale)
 
@@ -333,17 +333,17 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   else
     -- stop/prestop are only drawn if greater than shake
     if stop_time > 0 then
-      stopHeight = math.min(stop_time, multiBarFrameCount - self.health) / multiBarFrameCount * multiBarMaxHeight
+      stopHeight = math.min(stop_time, multiBarFrameCount - self.engine.health) / multiBarFrameCount * multiBarMaxHeight
       self:drawBar(themes[config.theme].images.IMG_multibar_stop_bar, self.multi_stopQuad, barPos, stopHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
 
       bottomOffset = bottomOffset + stopHeight
     end
 
-    local totalInvincibility = self.health + stop_time + pre_stop_time
+    local totalInvincibility = self.engine.health + stop_time + pre_stop_time
     local remainingSeconds = 0
     if totalInvincibility > multiBarFrameCount then
       -- total invincibility exceeds what the multibar can display -> fill only the remaining space with prestop
-      preStopHeight = (1 - (self.health + stop_time) / multiBarFrameCount) * multiBarMaxHeight
+      preStopHeight = (1 - (self.engine.health + stop_time) / multiBarFrameCount) * multiBarMaxHeight
       remainingSeconds = (totalInvincibility - multiBarFrameCount) / 60
     else
       preStopHeight = pre_stop_time / multiBarFrameCount * multiBarMaxHeight

@@ -8,6 +8,7 @@ local prof = require("common.lib.jprof.jprof")
 local EngineStack = require("common.engine.Stack")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
+local TouchInputController = require("common.engine.TouchInputController")
 
 local floor, min, max = math.floor, math.min, math.max
 
@@ -31,6 +32,7 @@ function(self, args)
   -- need this to properly pass as a stack for creating replays
   self.allowAdjacentColors = self.engine.allowAdjacentColors
   self.clock = self.engine.clock
+  self.game_over_clock = -1
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -44,7 +46,7 @@ function(self, args)
 
   self.inputMethod = args.inputMethod or "controller"
   if self.inputMethod == "touch" then
-    self.touchInputController = TouchInputController(self)
+    self.touchInputController = TouchInputController(self.engine)
   end
 
   self.card_q = Queue()
@@ -171,13 +173,13 @@ function PlayerStack:onPanelPop(panel)
     self.engine.score = self.engine.score + 10
 
     if config.popfx == true then
-      if (panel.combo_size > 6) or self.chain_counter > 1 then
+      if (panel.combo_size > 6) or self.engine.chain_counter > 1 then
         self.popSizeThisFrame = "normal"
       end
-      if self.chain_counter > 2 then
+      if self.engine.chain_counter > 2 then
         self.popSizeThisFrame = "big"
       end
-      if self.chain_counter > 3 then
+      if self.engine.chain_counter > 3 then
         self.popSizeThisFrame = "giant"
       end
       self:enqueue_popfx(panel.column, panel.row, self.popSizeThisFrame)
@@ -481,13 +483,13 @@ function PlayerStack:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   if comboSize > 3 and isChainLink then
     -- we did a combo AND a chain; cards should not overlap so offset the chain card to one row above the combo card
     self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
-    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row + 1, self.chain_counter)
+    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row + 1, self.engine.chain_counter)
   elseif comboSize > 3 then
     -- only a combo
     self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
   elseif isChainLink then
     -- only a chain
-    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row, self.chain_counter)
+    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row, self.engine.chain_counter)
   end
 end
 
@@ -537,7 +539,7 @@ function PlayerStack.drawCards(self)
     local card = self.card_q[i]
     if consts.CARD_ANIMATION[card.frame] then
       local draw_x = (self.panelOriginX) + (card.x - 1) * 16
-      local draw_y = (self.panelOriginY) + (11 - card.y) * 16 + self.displacement - consts.CARD_ANIMATION[card.frame]
+      local draw_y = (self.panelOriginY) + (11 - card.y) * 16 + self.engine.displacement - consts.CARD_ANIMATION[card.frame]
       -- Draw burst around card
       if card.burstAtlas and card.frame then
         GraphicsUtil.setColor(1, 1, 1, self:opacityForFrame(card.frame, 1, 22))
@@ -656,7 +658,7 @@ function PlayerStack.drawPopEffects(self)
   for i = self.pop_q.first, self.pop_q.last do
     local popfx = self.pop_q[i]
     local drawX = (self.panelOriginX) + (popfx.x - 1) * panelSize
-    local drawY = (self.panelOriginY) + (self.height - 1 - popfx.y) * panelSize + self.displacement
+    local drawY = (self.panelOriginY) + (self.engine.height - 1 - popfx.y) * panelSize + self.engine.displacement
 
     GraphicsUtil.setColor(1, 1, 1, self:opacityForFrame(popfx.frame, 1, 8))
 
