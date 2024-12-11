@@ -63,7 +63,9 @@ function PuzzleGame:readyToProceedToNextScene()
 end
 
 function PuzzleGame:startNextScene()
-  if self.match.players[1].settings.puzzleIndex <= #self.match.players[1].settings.puzzleSet.puzzles then
+  if self.match.aborted then
+    GAME.navigationStack:pop()
+  elseif self.match.players[1].settings.puzzleIndex <= #self.match.players[1].settings.puzzleSet.puzzles then
     self.match.players[1]:setWantsReady(true)
   else
     GAME.navigationStack:pop()

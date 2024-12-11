@@ -200,7 +200,6 @@ function PortraitGame:flipToPortrait()
   if love.system.getOS() == "Android" or DEBUG_ENABLED then
     -- flip the window dimensions to portrait
     love.window.updateMode(height, width, {})
-    love.window.setFullscreen(true)
     GAME:updateCanvasPositionAndScale(width, height)
   end
 
@@ -253,7 +252,6 @@ function PortraitGame:returnToLandscape()
   local width, height, _ = love.window.getMode()
   if love.system.getOS() == "Android" or DEBUG_ENABLED then
     love.window.updateMode(height, width, {})
-    love.window.setFullscreen(false)
     GAME:updateCanvasPositionAndScale(width, height)
   end
   for _, player in ipairs(self.match.players) do
