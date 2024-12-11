@@ -15,6 +15,7 @@ local class = require("common.lib.class")
 local Panel = require("common.engine.Panel")
 local prof = require("common.lib.jprof.jprof")
 local LevelData = require("common.data.LevelData")
+table.clear = require("table.clear")
 
 -- Stuff defined in this file:
 --  . the data structures that store the configuration of
@@ -50,9 +51,107 @@ local PANELS_TO_NEXT_SPEED =
   45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
   45, 45, 45, 45, 45, 45, 45, 45, math.huge}
 
+
+---@class Stack : BaseStack
+---@field width integer How many columns of panels the stack has
+---@field height integer How many rows of panels the stack has
+---@field match table Reference to the match this stack is part of; goal to remove this reference
+---@field gameOverConditions table Array of enumerated values signifying ways of going game over
+---@field gameWinConditions table Array of enumerated values signifying ways of ending the game without going game over
+---@field levelData LevelData
+---@field allowAdjacentColors boolean if the panel generator is allowed to put panels of the same color next to each other (horizontally only)
+---@field behaviours table<string, boolean> a table of toggleable physics behaviours; currently mainly around raise
+---@field do_first_row boolean? if the stack still needs to initiate its starting board
+---@field speed integer Index for accessing the table for the rise_timer, thus indirectly determining how quickly the stack rises
+---@field nextSpeedIncreaseClock integer? at which clock time the speed is going to increase the next time; only relevant if the levelData's speedIncreaseMode is 1
+---@field panels_to_speedup integer? how many more panels have to be cleared for speed to increase on the next frame; only relevant if the levelData's speedIncreaseMode is 2
+---@field health integer Depletes by 1 every time the stack would try to passively raise while topped out \n
+--- Reaching 0 typically means game over (depends on the gameOverConditions)
+---@field garbageSizeDropColumnMaps integer[][] Which columns each size garbage is allowed to fall in; also defining the repeating sequence. \n
+--- This is typically constant but maybe some day we would allow different ones \n
+--- for different game modes or need to change it based on board width.
+---@field currentGarbageDropColumnIndexes integer[] The current index of the above table we are currently using for the drop column. \n
+--- This increases by 1 wrapping every time garbage drops.
+---@field panel_buffer string alphanumeric string containing a buffer of panels to rise from below; string characters indicate possible metal positions \n
+--- will get periodically extended as it gets consumed
+---@field gpanel_buffer string numeric string containing a buffer of panels for garbage to turn into upon matching \n
+--- will get periodically extended as it gets consumed
+---@field inputMethod string "controller" or "touch", determines how inputs are interpreted internally
+---@field input_buffer string[] Inputs that haven't been processed yet
+---@field confirmedInput string[] All inputs the player has input so far (or ever)
+---@field input_state string The input for the current frame
+---@field package garbageCreatedCount integer The number of individual garbage blocks created on this stack \n
+--- used for giving a unique identifier to each new garbage block
+---@field garbageLandedThisFrame integer[] Cache for garbage ids that had panels landing this frame; cleared every frame
+---@field highestGarbageIdMatched integer tracks the highest id of garbage matched so far; used for resolving edge cases when matching offscreen garbage
+---@field package panelsCreatedCount integer The number of individual panels created on this stack; used for giving new panels their own unique identifier
+---@field panels Panel[][] 2 dimensional table for containing all panels \n
+--- panel[i] gets the row where i is the index of the row with 1 being the most bottom row that is in play (not dimmed) \n
+--- panel[i][j] gets the panel at row i where j is the column index counting from left to right starting from 1 \n
+--- the update order for panels is bottom to top and left to right as well
+---@field game_stopwatch_running boolean set to false if countdown starts
+---@field displacement integer This variable indicates how far below the top of the play area the top row of panels actually is. \n
+--- This variable being decremented causes the stack to rise. \n
+--- During the automatic rising routine, if this variable is 0, it's reset to 15, all the panels are moved up one row, and a new row is generated at the bottom. \n
+--- Only when the displacement is 0 are all 12 rows "in play."
+---@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column. \n
+--- ; should be moved to PlayerStack
+---@field danger_timer integer Decides the bounce frame while the column is in danger, increments and stops according to certain rules
+--- ; should be moved to PlayerStack
+---@field rise_timer integer When this value reaches 0, the stack will rise a pixel (or differently said, displacement decreases by 1) \n
+--- Resets to varying values according to the Stack's speed
+---@field rise_lock boolean If the stack is rise locked, it won't rise until it is unlocked.
+---@field has_risen boolean set to true once the stack rises once during the game; I think this is only to prevent the stack from creating a new row right at the start?
+---@field pre_stop_time integer Invincibility frames representing the longest remaining pop duration of all current matches (both regular and garbage). Depletes by 1 each frame.
+---@field stop_time integer Invincibility frames earned by performing chains and combos. Does not deplete while there is pre_stop. Depletes by 1 each frame otherwise. Resets to 0 on manual raise.
+---@field score integer points incrementing on chain, combo, match, pop and manual raise according to certain rules
+--- ; should be moved to PlayerStack but is "rollback relevant"
+---@field chain_counter integer Number of the current chain links starting from 2; relevant for scoring and stop_time \n
+--- resets to 0 on chain end and sends garbage according to length
+---@field panels_in_top_row boolean If there are panels in the top row of the stack; pre-condition for losing under the NEGATIVE_HEALTH game over condition
+---@field max_runs_per_frame integer How many times Stack:run() may be called within a single Match:run; used to keep stacks synchronous in various scenarios
+---@field danger boolean panels in the top row (danger); unlike panels_in_top_row I think this does not indicate a top out in all cases
+---@field danger_music boolean if the stack is in a state where danger music should be played; this has its own rules and might be obsolete as it is also communicated via signal
+--- ; should be moved to PlayerStack or removed
+---@field n_active_panels integer How many panels are "active" on this frame; active panels prevent the stack from rising
+---@field n_prev_active_panels integer How many panels were "active" on the previous frame; previous active panels prevent the stack from rising
+---@field manual_raise boolean if true the stack is currently being manually raised; kept true until the raise has been completed
+---@field manual_raise_yet boolean if not set, no actual raising has been done yet since manual raise button was pressed \n
+--- if a raise is interrupted by rise_lock and the stack has already risen (meaning this is true), manual_raise will stay true and the stack will attempt to raise again even after the raise had been let go \n
+--- conversely if the rise_lock happened from the start and the manual_raise never achieved a single tick of displacement of raise, this being false leads to manual_raise being set to false again, effectively cancelling the raise
+---@field prevent_manual_raise boolean if set to true it prevents raises initiating another raise; mostly to prevent manual_raise_yet from being overwritten so it can do its cryptic work \n
+--- this set of fields can really do with a rework
+---@field swap_1 boolean if there was an attempt to initiate a swap via swap1 on this frame
+---@field swap_2 boolean if there was an attempt to initiate a swap via swap2 on this frame
+---@field cur_wait_time integer DAS delay: number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
+---@field cur_timer integer number of ticks the current movement key has been held
+---@field cur_dir string? direction of the current movement key
+---@field cur_row integer row the cursor is on
+---@field cur_col integer column the cursor is on
+---@field queuedSwapRow integer row in which a swap for next frame has been queued
+---@field queuedSwapColumn integer column of the left (or in case of touch the "target") panel for which a swap has been queued for next frame
+---@field top_cur_row integer the maximum row index the cursor is allowed to go at the moment
+---@field panels_cleared integer How many panels have been cleared on the stack so far; relevant for the occurence of shock panels
+---@field metal_panels_queued integer How many shock panels are currently queued up
+---@field prev_shake_time integer How many frames of shake time we had last frame; by comparing with the new shake_time it can be determined whether there should be a thud SFX or other things
+---@field shake_time integer Invincibility frames earned by a previously off-screen garbage panel transitioning from falling to normal state. Not cumulative. Depletes by 1 each frame.
+---@field shake_time_on_frame integer The shake time that would have been earned by falling panels this frame. Overwrites shake_time if greater.
+---@field peak_shake_time integer Records the maximum shake time obtained for the current stretch of uninterrupted shake time. \n
+--- Any additional shake time gained before shake depletes to 0 will reset shake_time back to this value. Set to 0 when shake_time reaches 0.
+---@field analytic table
+--- should be moved to PlayerStack
+---@field panelGenCount integer How many times the panel_buffer was extended; relevant to keep PRNG deterministic for replays
+---@field garbageGenCount integer How many times the gpanel_buffer was extended; relevant to keep PRNG deterministic for replays
+---@field warningsTriggered table ancient ancient, probably remove
+---@field puzzle table? Optional puzzle
+---@field game_stopwatch integer? Clock time minus time that swaps were blocked
+
+
 -- Represents the full panel stack for one player
-Stack =
-  class(
+---@class Stack : Signal
+---@overload fun(arguments: table): Stack
+Stack = class(
+---@param s Stack
   function(s, arguments)
     assert(arguments.match ~= nil)
     assert(arguments.levelData ~= nil)
@@ -83,9 +182,6 @@ Stack =
 
     s.health = s.levelData.maxHealth
 
-    -- Which columns each size garbage is allowed to fall in.
-    -- This is typically constant but maybe some day we would allow different ones 
-    -- for different game modes or need to change it based on board width.
     s.garbageSizeDropColumnMaps = {
       {1, 2, 3, 4, 5, 6},
       {1, 3, 5,},
@@ -94,31 +190,19 @@ Stack =
       {1, 2},
       {1}
     }
-    -- The current index of the above table we are currently using for the drop column.
-    -- This increases by 1 wrapping every time garbage drops.
+
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
-    -- specifies according to which branch inputs should be interpreted, "touch" or "controller"
-    -- inputs are supplied by a non-engine object
     s.inputMethod = arguments.inputMethod
 
     s.panel_buffer = ""
     s.gpanel_buffer = ""
-    s.input_buffer = {} -- Inputs that haven't been processed yet
-    s.confirmedInput = {} -- All inputs the player has input ever
-    -- The number of individual garbage blocks created on this stack
-    -- used for giving a unique identifier to each new garbage block
+    s.input_buffer = {}
+    s.confirmedInput = {}
     s.garbageCreatedCount = 0
     s.garbageLandedThisFrame = {}
-    -- tracks the highest id of garbage matched so far; used for resolving edge cases when matching offscreen garbage
     s.highestGarbageIdMatched = 0
-    -- The number of individual panels created on this stack
-    -- used for giving new panels their own unique identifier
     s.panelsCreatedCount = 0
-    -- 2 dimensional table for containing all panels
-    -- panel[i] gets the row where i is the index of the row with 1 being the most bottom row that is in play (not dimmed)
-    -- panel[i][j] gets the panel at row i where j is the column index counting from left to right starting from 1
-    -- the update order for panels is bottom to top and left to right as well
     s.panels = {}
     s.width = 6
     s.height = 12
@@ -129,46 +213,34 @@ Stack =
       end
     end
 
-    s.game_stopwatch_running = true -- set to false if countdown starts
+    s.game_stopwatch_running = true
     s.max_runs_per_frame = 3
 
     s.displacement = 16
-    -- This variable indicates how far below the top of the play
-    -- area the top row of panels actually is.
-    -- This variable being decremented causes the stack to rise.
-    -- During the automatic rising routine, if this variable is 0,
-    -- it's reset to 15, all the panels are moved up one row,
-    -- and a new row is generated at the bottom.
-    -- Only when the displacement is 0 are all 12 rows "in play."
 
     s.danger_col = {false, false, false, false, false, false}
-    -- set true if this column is near the top
-    s.danger_timer = 0 -- decides bounce frame when in danger
+    s.danger_timer = 0
 
-    s.rise_timer = 1 -- When this value reaches 0, the stack will rise a pixel
-    s.rise_lock = false -- If the stack is rise locked, it won't rise until it is
-    -- unlocked.
-    s.has_risen = false -- set once the stack rises once during the game
+    s.rise_timer = consts.SPEED_TO_RISE_TIME[s.speed]
+    s.rise_lock = false
+    s.has_risen = false
 
     s.stop_time = 0
     s.pre_stop_time = 0
 
     s.score = 0
-    s.chain_counter = 0 -- how high is the current chain (starts at 2)
+    s.chain_counter = 0
 
-    s.panels_in_top_row = false -- boolean, for losing the game
-    s.danger = s.danger or false -- boolean, panels in the top row (danger)
+    s.panels_in_top_row = false
+    s.danger = s.danger or false
     s.danger_music = s.danger_music or false -- changes music state
 
     s.n_active_panels = 0
     s.n_prev_active_panels = 0
 
-    s.rise_timer = consts.SPEED_TO_RISE_TIME[s.speed]
-
     -- Player input stuff:
-    s.manual_raise = false -- set until raising is completed
-    s.manual_raise_yet = false -- if not set, no actual raising's been done yet
-    -- since manual raise button was pressed
+    s.manual_raise = false
+    s.manual_raise_yet = false
     s.prevent_manual_raise = false
     s.swap_1 = false -- attempt to initiate a swap on this frame
     s.swap_2 = false
@@ -192,10 +264,6 @@ Stack =
     s.peak_shake_time = 0
 
     s.analytic = AnalyticsInstance(s.is_local)
-    -- the target you are sending attacks to
-    -- implicitly also the stack that sends attacks to you
-    -- TODO: remove this coupling
-    s.garbageTarget = nil
 
     s.panelGenCount = 0
     s.garbageGenCount = 0
@@ -209,6 +277,7 @@ Stack =
     s:createSignal("chainEnded")
     s:createSignal("panelsSwapped")
     s:createSignal("garbageMatched")
+    s:createSignal("newRow")
   end,
   BaseStack
 )
@@ -317,7 +386,6 @@ function Stack.rollbackCopy(source, other)
   other.clock = source.clock
   other.game_stopwatch = source.game_stopwatch
   other.game_stopwatch_running = source.game_stopwatch_running
-  other.prev_rise_lock = source.prev_rise_lock
   other.rise_lock = source.rise_lock
   other.top_cur_row = source.top_cur_row
   other.displacement = source.displacement
@@ -504,7 +572,7 @@ function Stack.setPanelsForPuzzleString(self, puzzleString)
   local garbageStartRow = nil
   local garbageStartColumn = nil
   local isMetal = false
-  local connectedGarbagePanels = nil
+  local connectedGarbagePanels = {}
   local rowCount = string.len(puzzleString) / 6
   -- chunk the aprilstack into rows
   -- it is necessary to go bottom up because garbage block panels contain the offset relative to their bottom left corner
@@ -782,6 +850,11 @@ function Stack.run(self)
   prof.pop("Stack:run")
 end
 
+local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
+function Stack.idleInput(self)
+  return (self.inputMethod == "touch" and touchIdleInput) or base64encode[1]
+end
+
 -- Grabs input from the buffer of inputs or from the controller and sends out to the network if needed.
 function Stack.setupInput(self)
   self.input_state = nil
@@ -902,7 +975,6 @@ function Stack.updatePanels(self)
   end
 
   self.shake_time_on_frame = 0
-  self.popSizeThisFrame = "small"
   for row = 1, #self.panels do
     for col = 1, self.width do
       local panel = self.panels[row][col]
@@ -929,7 +1001,7 @@ function Stack.shouldDropGarbage(self)
       -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
       -- and because of that hack, we need to do another hack here and allow n-height combo garbage
       -- but only if the player is targetted by a detached attackengine
-      return garbage.height > 1 and self.match.attackEngines[self.player] ~= nil
+      return garbage.height > 1 and self.match.attackEngines[self.which] ~= nil
     end
   end
 end
@@ -1194,8 +1266,6 @@ function Stack.simulate(self)
 end
 
 function Stack:runGameOver()
-  self:update_popfxs()
-  self:update_cards()
 end
 
 function Stack:runCountDownIfNeeded()
@@ -1472,6 +1542,7 @@ end
 
 -- Adds a new row to the play field
 function Stack.new_row(self)
+  self:emitSignal("newRow", self)
   local panels = self.panels
   -- move cursor up
   if self.cur_row ~= 0 then
@@ -1479,9 +1550,6 @@ function Stack.new_row(self)
   end
   if self.queuedSwapRow > 0 then
     self.queuedSwapRow = self.queuedSwapRow + 1
-  end
-  if self.inputMethod == "touch" then
-    self.touchInputController:stackIsCreatingNewRow()
   end
 
   -- create new row at the top
@@ -1525,6 +1593,7 @@ function Stack.new_row(self)
 
   for col = 1, self.width do
     local panel = panels[0][col]
+    ---@type string | integer
     local this_panel_color = string.sub(self.panel_buffer, col, col)
     --a capital letter for the place where the first shock block should spawn (if earned), and a lower case letter is where a second should spawn (if earned).  (color 8 is metal)
     if tonumber(this_panel_color) then
@@ -1696,7 +1765,7 @@ function Stack.getActivePanelCount(self)
 end
 
 function Stack.updateRiseLock(self)
-  self.prev_rise_lock = self.rise_lock
+  local previousRiseLock = self.rise_lock
   if self.do_countdown then
     self.rise_lock = true
   elseif self:swapQueued()then
@@ -1710,7 +1779,7 @@ function Stack.updateRiseLock(self)
   end
 
   -- prevent manual raise is set true when manually raising
-  if self.prev_rise_lock and not self.rise_lock then
+  if previousRiseLock and not self.rise_lock then
     self.prevent_manual_raise = false
   end
 end
@@ -1874,7 +1943,7 @@ end
 
 ---@return integer
 function Stack:getConfirmedInputCount()
-  return #self.confirmedInputs
+  return #self.confirmedInput
 end
 
 return Stack

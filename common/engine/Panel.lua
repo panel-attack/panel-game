@@ -12,7 +12,7 @@ require("common.lib.util")
 --- used for culling checks against panels, primarily matchability
 ---@field color integer panel color encoded as its index
 ---@field timer integer holds the remaining frames in the current state; 0 in frames that are not finite or of undefined duration
----@field matching boolean flag is reset each frame; if the panel has been matched on this frame
+---@field matching boolean | integer flag is reset each frame; non-nil/false if the panel has been matched on this frame
 ---@field matchesMetal boolean flag is reset each frame; if true, the matched panel will match adjacent metal garbage panels
 ---@field matchesGarbage boolean flag is reset each frame; if true, the matched panel will match adjacent non-metal garbage panels
 ---@field propagatesFalling boolean if the panel should immediately pass the falling state to panels above instead of having them hover first

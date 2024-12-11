@@ -2,7 +2,24 @@ local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GarbageQueue = require("common.engine.GarbageQueue")
 
+---@class BaseStack
+---@field which integer identifier of the Stack within the Match
+---@field is_local boolean effectively if the Stack is receiving its inputs via local input
+---@field framesBehindArray integer[] Records how far behind the stack was at each match clock time
+---@field framesBehind integer How far behind the stack is at the current Match clock time
+---@field clock integer how many times run has been called
+---@field game_over_clock integer What the clock time was when the Stack went game over
+---@field outgoingGarbage GarbageQueue
+---@field incomingGarbage GarbageQueue
+---@field rollbackCopies table
+---@field rollbackCopyPool Queue
+---@field rollbackCount integer How many times the stack has been rolled back
+---@field lastRollbackFrame integer the clock time before the Stack was last rolled back \n
+--- -1 if it has not been rolled back yet
+
+---@class BaseStack : Signal
 local BaseStack = class(
+---@param self BaseStack
 function(self, args)
   assert(args.is_local ~= nil)
   self.which = args.which or 1

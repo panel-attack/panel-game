@@ -4,7 +4,8 @@ local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
 local LevelData = require("common.data.LevelData")
 local prof = require("common.lib.jprof.jprof")
-require("table.clear")
+table.clear = require("table.clear")
+table.new = require("table.new")
 
 local COMBO_GARBAGE = {{}, {}, {},
                   --  +4      +5     +6

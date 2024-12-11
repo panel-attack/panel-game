@@ -85,7 +85,7 @@ function Match:drawCommunityMessage()
 end
 
 local function isRollbackActive(stack)
-  return stack.framesBehind > GARBAGE_DELAY_LAND_TIME
+  return stack.engine.framesBehind > GARBAGE_DELAY_LAND_TIME
 end
 
 function Match:render()
@@ -97,7 +97,7 @@ function Match:render()
     local drawY = 23
     for i = 1, #self.stacks do
       local stack = self.stacks[i]
-      GraphicsUtil.print("P" .. stack.which .." Average Latency: " .. stack.framesBehind, 1, drawY)
+      GraphicsUtil.print("P" .. stack.which .." Average Latency: " .. stack.engine.framesBehind, 1, drawY)
       drawY = drawY + 11
     end
 
@@ -111,7 +111,7 @@ function Match:render()
         GraphicsUtil.draw(themes[config.theme].images.IMG_bug, x, y, 0, iconSize / icon_width, iconSize / icon_height)
       end
     else
-      if tableUtils.trueForAny(self.stacks, function(s) return s.framesBehind > MAX_LAG * 0.75 end) then
+      if tableUtils.trueForAny(self.stacks, function(stack) return stack.engine.framesBehind > MAX_LAG * 0.75 end) then
         -- let the spectator know the game is about to die
         local iconSize = 60
         local icon_width, icon_height = themes[config.theme].images.IMG_bug:getDimensions()

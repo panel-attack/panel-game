@@ -247,6 +247,12 @@ function PlayerStack:onGarbageMatched(panelCount, onScreenCount)
   end
 end
 
+function PlayerStack:onNewRow(engine)
+  if self.inputMethod == "touch" then
+    self.touchInputController:stackIsCreatingNewRow()
+  end
+end
+
 --------------------------------------------------------------------------
 --- Wrappers around the engine Stack so this can be plugged into Match ---
 ---      without Match being none the wiser it's not a real Stack      ---
@@ -292,6 +298,8 @@ function PlayerStack:shouldRun(runsSoFar)
 end
 
 function PlayerStack:run()
+  self.popSizeThisFrame = "small"
+
   self.engine:run()
 
   self:processTaunts()
@@ -437,7 +445,7 @@ end
 local shakeOffsetData = calculateShakeData()
 
 function PlayerStack:currentShakeOffset()
-  return self:shakeOffsetForShakeFrames(self.shake_time, self.prev_shake_time)
+  return self:shakeOffsetForShakeFrames(self.engine.shake_time, self.engine.prev_shake_time)
 end
 
 local function privateShakeOffsetForShakeFrames(frames, shakeIntensity, gfxScale)
@@ -974,7 +982,7 @@ function PlayerStack.render(self)
 
   self:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
   self:drawFrame()
-  self:drawWall(shakeOffset, self.height)
+  self:drawWall(shakeOffset, self.engine.height)
   -- Draw the cursor
   if self:game_ended() == false then
     self:render_cursor(shakeOffset)

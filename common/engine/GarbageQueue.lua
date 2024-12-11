@@ -6,6 +6,9 @@ require("table.clear")
 require("table.new")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 
+---@class GarbageQueue
+
+
 -- +1 to compensate for a compensation someone made
 -- the original thought was probably that the attack animation should only start on the frame AFTER the garbage gets queued
 -- so all garbage got queued for a clock time 1 frame later than  the actual frame it was earned
@@ -75,7 +78,13 @@ local function orderGarbage(garbageQueue, treatMetalAsCombo)
 end
 
 -- Holds garbage in a queue and follows a specific order for which types should be popped out first.
-GarbageQueue = class(function(self, allowIllegalStuff, treatMetalAsCombo)
+---@class GarbageQueue
+---@overload fun(allowIllegalStuff: boolean?, treatMetalAsCombo: boolean?): GarbageQueue
+GarbageQueue = class(
+---@type self GarbageQueue
+function(self, allowIllegalStuff, treatMetalAsCombo)
+  ---@class GarbageQueue
+  self = self
   -- holds all garbage in the staging phase in a continously integer indexed array
   -- garbage is reordered from lowest to highest priority every frame
   self.stagedGarbage = {}
