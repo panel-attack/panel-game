@@ -1,6 +1,4 @@
-local NetworkProtocol = require("common.network.NetworkProtocol")
-local TouchDataEncoding = require("common.engine.TouchDataEncoding")
-local ClientMessages = require("common.network.ClientProtocol")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local PlayerStack = require("client.src.PlayerStack")
 
 function PlayerStack.handle_input_taunt(self)
@@ -17,7 +15,7 @@ function PlayerStack.handle_input_taunt(self)
 end
 
 local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
-function PlayerStack.idleInput(self) 
+function PlayerStack.idleInput(self)
   return (self.inputMethod == "touch" and touchIdleInput) or base64encode[1]
 end
 
@@ -35,11 +33,11 @@ function PlayerStack.send_controls(self)
   if self.inputMethod == "controller" then
     local input = self.player.inputConfiguration
     to_send = base64encode[
-      ((input.isDown["Raise1"] or input.isDown["Raise2"] or input.isPressed["Raise1"] or input.isPressed["Raise2"]) and 32 or 0) + 
-      ((input.isDown["Swap1"] or input.isDown["Swap2"]) and 16 or 0) + 
-      ((input.isDown["Up"] or input.isPressed["Up"]) and 8 or 0) + 
-      ((input.isDown["Down"] or input.isPressed["Down"]) and 4 or 0) + 
-      ((input.isDown["Left"] or input.isPressed["Left"]) and 2 or 0) + 
+      ((input.isDown["Raise1"] or input.isDown["Raise2"] or input.isPressed["Raise1"] or input.isPressed["Raise2"]) and 32 or 0) +
+      ((input.isDown["Swap1"] or input.isDown["Swap2"]) and 16 or 0) +
+      ((input.isDown["Up"] or input.isPressed["Up"]) and 8 or 0) +
+      ((input.isDown["Down"] or input.isPressed["Down"]) and 4 or 0) +
+      ((input.isDown["Left"] or input.isPressed["Left"]) and 2 or 0) +
       ((input.isDown["Right"] or input.isPressed["Right"]) and 1 or 0) + 1
     ]
   elseif self.inputMethod == "touch" then
@@ -49,5 +47,5 @@ function PlayerStack.send_controls(self)
 
   self:handle_input_taunt()
 
-  self:receiveConfirmedInput(to_send)
+  self.engine:receiveConfirmedInput(to_send)
 end

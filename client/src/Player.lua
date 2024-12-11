@@ -6,8 +6,8 @@ local MatchParticipant = require("client.src.MatchParticipant")
 local consts = require("common.engine.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local PlayerStack = require("client.src.PlayerStack")
+require("client.src.network.PlayerStack")
 local logger = require("common.lib.logger")
-require("client.src.graphics.Stack")
 
 -- A player is mostly a data representation of a Panel Attack player
 -- It holds data pertaining to their online status (like name, public id)
@@ -101,9 +101,9 @@ function Player:createStackFromSettings(match, which)
   args.inputMethod = self.settings.inputMethod
   args.gameOverConditions = match.gameOverConditions
 
+  args.player = self
+
   self.stack = PlayerStack(args)
-  -- so the stack can draw player information
-  self.stack.player = self
 
   return self.stack
 end

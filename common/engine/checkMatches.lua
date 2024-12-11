@@ -6,19 +6,6 @@ local LevelData = require("common.data.LevelData")
 local prof = require("common.lib.jprof.jprof")
 require("table.clear")
 
--- score lookup tables
-local SCORE_COMBO_PdP64 = {} --size 40
-local SCORE_COMBO_TA = {  0,    0,    0,   20,   30,
-                         50,   60,   70,   80,  100,
-                        140,  170,  210,  250,  290,
-                        340,  390,  440,  490,  550,
-                        610,  680,  750,  820,  900,
-                        980, 1060, 1150, 1240, 1330, [0]=0}
-
-local SCORE_CHAIN_TA = {  0,   50,   80,  150,  300,
-                        400,  500,  700,  900, 1100,
-                       1300, 1500, 1800, [0]=0}
-
 local COMBO_GARBAGE = {{}, {}, {},
                   --  +4      +5     +6
                       {3},     {4},   {5},
@@ -144,8 +131,6 @@ function Stack:checkMatches()
     if isChainLink or comboSize > 3 or metalCount > 0 then
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)
     end
-
-    self:updateScoreWithBonus(comboSize)
   end
 
   self:clearChainingFlags()
@@ -860,40 +845,6 @@ function Stack:awardStopTime(isChain, comboSize)
   local stopTime = self:calculateStopTime(comboSize, self.panels_in_top_row, isChain, self.chain_counter)
   if stopTime > self.stop_time then
     self.stop_time = stopTime
-  end
-end
-
--- awards bonus score for chains/combos
--- always call after the logic for incrementing the chain counter
-function Stack:updateScoreWithBonus(comboSize)
-  -- don't check isChain for this!
-  -- needs to be outside of chaining to reproduce matches during a chain giving the same score as the chain link
-  self:updateScoreWithChain()
-
-  self:updateScoreWithCombo(comboSize)
-end
-
-function Stack:updateScoreWithCombo(comboSize)
-  if comboSize > 3 then
-    if (score_mode == consts.SCOREMODE_TA) then
-      self.score = self.score + SCORE_COMBO_TA[math.min(30, comboSize)]
-    elseif (score_mode == consts.SCOREMODE_PDP64) then
-      if (comboSize < 41) then
-        self.score = self.score + SCORE_COMBO_PdP64[comboSize]
-      else
-        self.score = self.score + 20400 + ((comboSize - 40) * 800)
-      end
-    end
-  end
-end
-
-function Stack:updateScoreWithChain()
-  local chain_bonus = self.chain_counter
-  if (score_mode == consts.SCOREMODE_TA) then
-    if (self.chain_counter > 13) then
-      chain_bonus = 0
-    end
-    self.score = self.score + SCORE_CHAIN_TA[chain_bonus]
   end
 end
 

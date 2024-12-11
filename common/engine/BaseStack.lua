@@ -1,8 +1,10 @@
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
+local GarbageQueue = require("common.engine.GarbageQueue")
 
 local BaseStack = class(
 function(self, args)
+  assert(args.is_local ~= nil)
   self.which = args.which or 1
   self.is_local = args.is_local
 
@@ -28,8 +30,8 @@ function(self, args)
   self.lastRollbackFrame = -1 -- the last frame we had to rollback from
 end)
 
-function BaseStack:receiveGarbage(frameToReceive, garbageArray)
-  error("did not implement receiveGarbage")
+function BaseStack:receiveGarbage(garbageDelivery)
+  self.incomingGarbage:pushTable(garbageDelivery)
 end
 
 function BaseStack:saveForRollback()

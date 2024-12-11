@@ -2,7 +2,7 @@ local ClientStack = require("client.src.ClientStack")
 local class = require("common.lib.class")
 require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local TouchDataEncoding = require("common.engine.TouchDataEncoding")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local consts = require("common.engine.consts")
 local prof = require("common.lib.jprof.jprof")
 local EngineStack = require("common.engine.Stack")
@@ -11,9 +11,12 @@ local GameModes = require("common.engine.GameModes")
 
 local floor, min, max = math.floor, math.min, math.max
 
+-- A client side stack that wraps an engine Stack
+-- engine functionality is masked by wrapping the relevant functions and fields Match interfaces with
+-- not elegant but the primary purpose is to get Stack clean first; Match should eventually follow and then it can get revisited
 local PlayerStack = class(
 function(self, args)
-  local s = self
+  self.player = args.player
   args.which = self.which
 
   self.engine = EngineStack(args)
@@ -23,6 +26,9 @@ function(self, args)
   self.engine:connectSignal("cursorMoved", self, self.onCursorMoved)
   self.engine:connectSignal("chainEnded", self, self.onChainEnded)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
+
+  -- need this to properly pass as a stack for creating replays
+  self.allowAdjacentColors = args.allowAdjacentColors
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -68,6 +74,53 @@ ClientStack)
 --- Callbacks from engine subscriptions ---
 -------------------------------------------
 
+-- score lookup tables
+local SCORE_COMBO_PdP64 = {} --size 40
+local SCORE_COMBO_TA = {  0,    0,    0,   20,   30,
+                         50,   60,   70,   80,  100,
+                        140,  170,  210,  250,  290,
+                        340,  390,  440,  490,  550,
+                        610,  680,  750,  820,  900,
+                        980, 1060, 1150, 1240, 1330, [0]=0}
+
+local SCORE_CHAIN_TA = {  0,   50,   80,  150,  300,
+                        400,  500,  700,  900, 1100,
+                       1300, 1500, 1800, [0]=0}
+
+-- awards bonus score for chains/combos
+-- always call after the logic for incrementing the chain counter
+function PlayerStack:updateScoreWithBonus(comboSize)
+  -- don't check isChain for this!
+  -- needs to be outside of chaining to reproduce matches during a chain giving the same score as the chain link
+  self:updateScoreWithChain()
+
+  self:updateScoreWithCombo(comboSize)
+end
+
+function PlayerStack:updateScoreWithCombo(comboSize)
+  if comboSize > 3 then
+    if (score_mode == consts.SCOREMODE_TA) then
+      self.engine.score = self.engine.score + SCORE_COMBO_TA[math.min(30, comboSize)]
+    elseif (score_mode == consts.SCOREMODE_PDP64) then
+      if (comboSize < 41) then
+        self.engine.score = self.engine.score + SCORE_COMBO_PdP64[comboSize]
+      else
+        self.engine.score = self.engine.score + 20400 + ((comboSize - 40) * 800)
+      end
+    end
+  end
+end
+
+function PlayerStack:updateScoreWithChain()
+  local chain_bonus = self.engine.chain_counter
+  if (score_mode == consts.SCOREMODE_TA) then
+    if (chain_bonus > 13) then
+      chain_bonus = 0
+    end
+    self.engine.score = self.engine.score + SCORE_CHAIN_TA[chain_bonus]
+  end
+end
+
 function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, comboSize, metalCount, garbagePanelCount)
   self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   if isChainLink or comboSize > 3 or metalCount > 0 then
@@ -79,6 +132,8 @@ function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, combo
   for i = 3, metalCount do
     self.engine.analytic:registerShock()
   end
+
+  self:updateScoreWithBonus(comboSize)
 end
 
 function PlayerStack:onGameOver(engine)
@@ -97,6 +152,8 @@ function PlayerStack:onGameOver(engine)
       end
     end
   end
+
+  self.game_over_clock = self.engine.game_over_clock
 end
 
 ---@param panel Panel
@@ -109,6 +166,8 @@ function PlayerStack:onPanelPop(panel)
       SFX_Garbage_Pop_Play = panel.pop_index
     end
   else
+    self.engine.score = self.engine.score + 10
+
     if config.popfx == true then
       if (panel.combo_size > 6) or self.chain_counter > 1 then
         self.popSizeThisFrame = "normal"
@@ -188,10 +247,13 @@ end
 
 --------------------------------------------------------------------------
 --- Wrappers around the engine Stack so this can be plugged into Match ---
+---      without Match being none the wiser it's not a real Stack      ---
+---  Maybe not the best idea but I don't want to pull apart Match too  ---
+---                          (at least for now)                        ---
 --------------------------------------------------------------------------
 
-function PlayerStack:receiveGarbage(frameToReceive, garbageArray)
-  self.engine:receiveGarbage(frameToReceive, garbageArray)
+function PlayerStack:receiveGarbage(garbageDelivery)
+  self.engine:receiveGarbage(garbageDelivery)
 end
 
 function PlayerStack:saveForRollback()
@@ -234,11 +296,40 @@ function PlayerStack:run()
   prof.push("update cards")
   self:update_cards()
   prof.pop("update cards")
+
+  -- to fool Match without having to wrap everything into getters
+  self.clock = self.engine.clock
+  self.game_stopwatch = self.engine.game_stopwatch
 end
 
 function PlayerStack:runGameOver()
   self:update_popfxs()
   self:update_cards()
+end
+
+function PlayerStack:connectSignal(signalName, subscriber, callback)
+  self.engine:connectSignal(signalName, subscriber, callback)
+end
+
+function PlayerStack:receiveConfirmedInput(inputs)
+  self.engine:receiveConfirmedInput(inputs)
+end
+
+---@param doCountdown boolean if the stack should have a countdown at the beginning
+function PlayerStack:setCountdown(doCountdown)
+  self.engine:setCountdown(doCountdown)
+end
+
+function PlayerStack:enableCatchup(enable)
+  self.engine:enableCatchup(enable)
+end
+
+function PlayerStack:setMaxRunsPerFrame(maxRunsPerFrame)
+  self.engine:setMaxRunsPerFrame(maxRunsPerFrame)
+end
+
+function PlayerStack:getConfirmedInputCount()
+  return self.engine:getConfirmedInputCount()
 end
 
 ---------------------------------------------
@@ -258,6 +349,7 @@ end
 ---------------------
 ------ Graphics -----
 ---------------------
+
 
 -- The popping particle animation. First number is how far the particles go, second is which frame to show from the spritesheet
 local POPFX_BURST_ANIMATION = {{1, 1}, {4, 1}, {7, 1}, {8, 1}, {9, 1}, {9, 1},
@@ -1473,9 +1565,41 @@ function PlayerStack.setGarbageTarget(self, newGarbageTarget)
     assert(newGarbageTarget.frameOriginY ~= nil)
     assert(newGarbageTarget.mirror_x ~= nil)
     assert(newGarbageTarget.canvasWidth ~= nil)
-    assert(newGarbageTarget.incomingGarbage ~= nil)
+    assert(newGarbageTarget.receiveGarbage ~= nil)
   end
   self.garbageTarget = newGarbageTarget
+end
+
+-- calculates at how many frames the stack's multibar tops out
+function PlayerStack:calculateMultibarFrameCount()
+  -- the multibar needs a realistic height that can encompass the sum of health and a realistic maximum stop time
+  local maxStop = 0
+
+  -- for a realistic max stop, let's only compare obtainable stop while topped out - while not topped out, stop doesn't matter after all
+  -- x5 chain while topped out (bonus stop from extra chain links is capped at x5)
+  maxStop = math.max(maxStop, self.engine:calculateStopTime(3, true, true, 5))
+
+  -- while topped out, stop from combos is capped at 10 combo
+  maxStop = math.max(maxStop, self.engine:calculateStopTime(10, true, false))
+
+  -- if we wanted to include stop in non-topped out states:
+  -- combo stop is linear with combosize but +27 is a reasonable cutoff (garbage cap for combos)
+  -- maxStop = math.max(maxStop, self:calculateStopTime(27, false, false))
+  -- ...but this would produce insanely high values on low levels
+
+  -- bonus stop from extra chain links caps out at x13
+  -- maxStop = math.max(maxStop, self:calculateStopTime(3, false, true, 13))
+  -- this too produces insanely high values on low levels
+
+  -- prestop does not need to be represented fully as there is visual representation via popping panels
+  -- we want a fair but not overly large buffer relative to human time perception to represent prestop in maxstop scenarios
+  -- this is a first idea going from 2s prestop on 10 to nearly 4s prestop on 1
+  --local preStopFrameCount = 30 + (10 - self.level) * 5
+
+  local minFrameCount = maxStop + self.engine.levelData.maxHealth --+ preStopFrameCount
+
+  --return minFrameCount + preStopFrameCount
+  return math.max(240, minFrameCount)
 end
 
 return PlayerStack

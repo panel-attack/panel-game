@@ -523,6 +523,7 @@ function BattleRoom:onMatchEnded(match)
     if #winners == 1 then
       -- increment win count on winning player if there is only one
       winners[1]:incrementWinCount()
+      characters[winners[1].stack.character]:playWinSfx()
     end
     if self.online and match:hasLocalPlayer() then
       GAME.netClient:reportLocalGameResult(winners)

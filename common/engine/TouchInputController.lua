@@ -1,5 +1,5 @@
 local logger = require("common.lib.logger")
-local TouchDataEncoding = require("common.engine.TouchDataEncoding")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local util = require("common.lib.util")
 local consts = require("common.engine.consts")
 local class = require("common.lib.class")

@@ -1,6 +1,6 @@
 local logger = require("common.lib.logger")
 local Health = require("common.engine.Health")
-local StackBase = require("common.engine.StackBase")
+local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local AttackEngine = require("common.engine.AttackEngine")
@@ -23,7 +23,7 @@ SimulatedStack = class(function(self, arguments)
   self.difficultyQuads = {}
   -- somehow bad things happen if this is called in the base class constructor instead
   self:moveForRenderIndex(self.which)
-end, StackBase)
+end, BaseStack)
 
 -- adds an attack engine to the simulated opponent
 function SimulatedStack:addAttackEngine(attackSettings, shouldPlayAttackSfx)

@@ -128,7 +128,7 @@ function Match:getWinners()
             if k ~= j then
               -- only if someone else has a higher score than me do I lose
               -- makes sure to cover score ties
-              if potentialWinner.stack.score < potentialWinners[k].stack.score then
+              if potentialWinner.stack.engine.score < potentialWinners[k].stack.engine.score then
                 hasHighestScore = false
                 break
               end
@@ -143,7 +143,7 @@ function Match:getWinners()
           local hasLowestTime = true
           for k = 1, #potentialWinners do
             if k ~= j then
-              if #potentialWinner.stack.confirmedInput < #potentialWinners[k].stack.confirmedInput then
+              if #potentialWinner.stack:getConfirmedInputCount() < #potentialWinners[k].stack:getConfirmedInputCount() then
                 hasLowestTime = false
                 break
               end
@@ -287,7 +287,7 @@ function Match:run()
   -- for i = 1, #self.players do
   --   local stack = self.players[i].stack
   --   if stack and stack.is_local not stack:game_ended() then
-  --     assert(#stack.input_buffer == 0, "Local games should always simulate all inputs")
+  --     assert(#stack.engine.input_buffer == 0, "Local games should always simulate all inputs")
   --   end
   -- end
   if self:hasEnded() then
@@ -317,14 +317,13 @@ function Match:pushGarbageTo(stack)
           --  which may even include another rollback
           if not self:rollbackToFrame(stack, oldestTransitTime) then
             -- if we can't rollback, it's a desync
-            st.tooFarBehindError = true
             self:abort()
           end
         end
         local garbageDelivery = st.outgoingGarbage:popFinishedTransitsAt(stack.clock)
         if garbageDelivery then
           logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
-          stack.incomingGarbage:pushTable(garbageDelivery)
+          stack:receiveGarbage(garbageDelivery)
         end
       end
     end
@@ -368,10 +367,8 @@ end
 -- return true if successful
 -- return false if not
 function Match:rollbackToFrame(stack, frame)
-  if stack.rollbackCopies[frame] then
-    if stack:rollbackToFrame(frame) then
-      return true
-    end
+  if stack:rollbackToFrame(frame) then
+    return true
   end
 
   return false
@@ -485,7 +482,7 @@ function Match:start()
     local stack = player:createStackFromSettings(self, i)
     stack:connectSignal("dangerMusicChanged", self, self.updateDangerMusic)
     self.stacks[#self.stacks + 1] = stack
-    stack.do_countdown = self.doCountdown
+    stack:setCountdown(self.doCountdown)
 
     if self.replay then
       if self.replay.completed then
@@ -493,11 +490,11 @@ function Match:start()
         if player.human then
           stack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
         end
-        stack.max_runs_per_frame = 1
+        stack:setMaxRunsPerFrame(1)
       elseif not self:hasLocalPlayer() and self.replay.players[i].settings.inputs then
         -- catching up to a match in progress
         stack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
-        stack.play_to_end = true
+        stack:enableCatchup(true)
       end
     end
 
@@ -730,13 +727,6 @@ function Match:handleMatchEnd()
 
   if self.aborted then
     self.winners = {}
-  else
-    local winners = self:getWinners()
-    -- determine result
-    -- play win sfx
-    for i = 1, #winners do
-      characters[winners[i].stack.character]:playWinSfx()
-    end
   end
 
   -- this prepares everything about the replay except the save location
@@ -749,7 +739,6 @@ end
 function Match:isIrrecoverablyDesynced()
   for _, stack in ipairs(self.stacks) do
     if stack.garbageTarget and stack.clock + MAX_LAG < stack.garbageTarget.clock then
-      stack.tooFarBehindError = true
       return true
     end
   end

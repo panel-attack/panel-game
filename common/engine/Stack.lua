@@ -1,10 +1,8 @@
--- TODO: move render focused components to client
-local analytics = require("client.src.analytics")
-local GraphicsUtil = require("client.src.graphics.graphics_util")
+-- TODO: move analytics to PlayerStack
+require("client.src.analytics")
 
 require("common.lib.stringExtensions")
-local TouchDataEncoding = require("common.engine.TouchDataEncoding")
-local TouchInputController = require("common.engine.TouchInputController")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
@@ -12,11 +10,9 @@ local util = require("common.lib.util")
 local utf8 = require("common.lib.utf8Additions")
 local GameModes = require("common.engine.GameModes")
 local PanelGenerator = require("common.engine.PanelGenerator")
-local StackBase = require("common.engine.StackBase")
 local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local Panel = require("common.engine.Panel")
-local GarbageQueue = require("common.engine.GarbageQueue")
 local prof = require("common.lib.jprof.jprof")
 local LevelData = require("common.data.LevelData")
 
@@ -59,13 +55,10 @@ Stack =
   class(
   function(s, arguments)
     assert(arguments.match ~= nil)
-    assert(arguments.is_local ~= nil)
     assert(arguments.levelData ~= nil)
+    assert(arguments.allowAdjacentColors ~= nil)
 
-    s.which = arguments.which or 1
-    s.is_local = arguments.is_local
-    s.match = match
-
+    s.match = arguments.match
     s.gameOverConditions = arguments.gameOverConditions or {GameModes.GameOverConditions.NEGATIVE_HEALTH}
     s.gameWinConditions = arguments.gameWinConditions or {}
     s.levelData = arguments.levelData
@@ -106,6 +99,7 @@ Stack =
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
     -- specifies according to which branch inputs should be interpreted, "touch" or "controller"
+    -- inputs are supplied by a non-engine object
     s.inputMethod = arguments.inputMethod
 
     s.panel_buffer = ""
@@ -159,7 +153,7 @@ Stack =
     s.stop_time = 0
     s.pre_stop_time = 0
 
-    s.score = 0 -- der skore
+    s.score = 0
     s.chain_counter = 0 -- how high is the current chain (starts at 2)
 
     s.panels_in_top_row = false -- boolean, for losing the game
@@ -219,37 +213,8 @@ Stack =
   BaseStack
 )
 
--- calculates at how many frames the stack's multibar tops out
-function Stack:calculateMultibarFrameCount()
-  -- the multibar needs a realistic height that can encompass the sum of health and a realistic maximum stop time
-  local maxStop = 0
-
-  -- for a realistic max stop, let's only compare obtainable stop while topped out - while not topped out, stop doesn't matter after all
-  -- x5 chain while topped out (bonus stop from extra chain links is capped at x5)
-  maxStop = math.max(maxStop, self:calculateStopTime(3, true, true, 5))
-
-  -- while topped out, stop from combos is capped at 10 combo
-  maxStop = math.max(maxStop, self:calculateStopTime(10, true, false))
-
-  -- if we wanted to include stop in non-topped out states:
-  -- combo stop is linear with combosize but +27 is a reasonable cutoff (garbage cap for combos)
-  -- maxStop = math.max(maxStop, self:calculateStopTime(27, false, false))
-  -- ...but this would produce insanely high values on low levels
-
-  -- bonus stop from extra chain links caps out at x13
-  -- maxStop = math.max(maxStop, self:calculateStopTime(3, false, true, 13))
-  -- this too produces insanely high values on low levels
-
-  -- prestop does not need to be represented fully as there is visual representation via popping panels
-  -- we want a fair but not overly large buffer relative to human time perception to represent prestop in maxstop scenarios
-  -- this is a first idea going from 2s prestop on 10 to nearly 4s prestop on 1
-  --local preStopFrameCount = 30 + (10 - self.level) * 5
-
-  local minFrameCount = maxStop + self.levelData.maxHealth --+ preStopFrameCount
-
-  --return minFrameCount + preStopFrameCount
-  return math.max(240, minFrameCount)
-end
+-- as they are very extensive, all functions immediately related to finding matches are grouped in the following file:
+require("common.engine.checkMatches")
 
 function Stack.divergenceString(stackToTest)
   local result = ""
@@ -1639,8 +1604,6 @@ end
 ---@param panel Panel
 function Stack.onPop(self, panel)
   if not panel.isGarbage then
-    self.score = self.score + 10
-
     self.panels_cleared = self.panels_cleared + 1
     if self.match.stackInteraction ~= GameModes.StackInteractions.NONE
         and self.panels_cleared % self.levelData.shockFrequency == 0 then
@@ -1896,10 +1859,22 @@ function Stack:disablePassiveRaise()
   self.behaviours.passiveRaise = false
 end
 
--- other parts of stack
-require("common.engine.checkMatches")
--- TODO: does this stay on client or not?
-require("client.src.network.Stack")
+function Stack:setCountdown(doCountdown)
+  self.do_countdown = doCountdown
+end
 
+function Stack:enableCatchup(enable)
+  self.play_to_end = enable
+end
+
+---@param maxRunsPerFrame integer
+function Stack:setMaxRunsPerFrame(maxRunsPerFrame)
+  self.max_runs_per_frame = maxRunsPerFrame
+end
+
+---@return integer
+function Stack:getConfirmedInputCount()
+  return #self.confirmedInputs
+end
 
 return Stack
