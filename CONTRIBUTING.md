@@ -75,27 +75,7 @@ function myClass.someFunction(someArg)
 end
 ```
 
-Consider adding this to your workspace settings:
-```Json
-"Lua.runtime.version": "LuaJIT",
-"Lua.diagnostics.globals": [
-    "love",
-    "jit",
-    "lldebugger",
-    "config",
-],
-"Lua.diagnostics.disable": [
-      "deprecated",
-      "lowercase-global",
-      "luadoc-miss-module-name",
-  ],
-  "Lua.diagnostics.ignoredFiles": "Disable",
-  "Lua.workspace.ignoreDir": [
-      ".vscode",
-      "testLauncher.lua",
-      "verificationLauncher.lua"
-  ]
-```
+You can find a `settings.json.template` with suggested workspace settings that help with annotations and filtering out some files and "problems" LuaLS would flag otherwise.
 
 ## Formatting Guidelines
 
