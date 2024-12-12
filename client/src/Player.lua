@@ -8,6 +8,9 @@ local CharacterLoader = require("client.src.mods.CharacterLoader")
 local PlayerStack = require("client.src.PlayerStack")
 require("client.src.network.PlayerStack")
 local logger = require("common.lib.logger")
+--require("common.data.LevelData")
+local LevelData = require("common.data.LevelData")
+-- ---@module 'common.data.LevelData'
 
 -- A player is mostly a data representation of a Panel Attack player
 -- It holds data pertaining to their online status (like name, public id)

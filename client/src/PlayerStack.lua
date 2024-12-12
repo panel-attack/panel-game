@@ -11,14 +11,25 @@ local GameModes = require("common.engine.GameModes")
 local TouchInputController = require("common.engine.TouchInputController")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
+---@module common.data.LevelData
 
 local floor, min, max = math.floor, math.min, math.max
+
+---@class PlayerStack : ClientStack, Signal
+---@field engine Stack
+---@field garbageTarget PlayerStack
+---@field panels_dir string the id of the panel set id used for its shock garbage images
+---@field poppedPanelIndex integer
 
 -- A client side stack that wraps an engine Stack
 -- engine functionality is masked by wrapping the relevant functions and fields Match interfaces with
 -- not elegant but the primary purpose is to get Stack clean first; Match should eventually follow and then it can get revisited
+---@class PlayerStack
+---@overload fun(args: table): PlayerStack
 local PlayerStack = class(
 function(self, args)
+  ---@class PlayerStack
+  self = self
   self.player = args.player
   args.which = self.which
 
@@ -55,11 +66,7 @@ function(self, args)
   self.card_q = Queue()
   self.pop_q = Queue()
 
-  self.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight(), self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight())
-  self.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight(), self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight())
-  self.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight(), self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight())
   self.multiBarFrameCount = self:calculateMultibarFrameCount()
-
 
   -- sfx
   -- index used for picking a pop sound
@@ -134,7 +141,7 @@ end
 function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, comboSize, metalCount, garbagePanelCount)
   self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   if isChainLink or comboSize > 3 or metalCount > 0 then
-    self:queueAttackSoundEffect(isChainLink, self.chain_counter, comboSize, metalCount)
+    self:queueAttackSoundEffect(isChainLink, engine.chain_counter, comboSize, metalCount)
   end
 
   self.engine.analytic:register_destroyed_panels(comboSize)
@@ -832,7 +839,7 @@ function PlayerStack:drawDebug()
     if engine.danger then
       GraphicsUtil.print("danger", x, y + 135)
     end
-    if engine.danger_music then
+    if self.danger_music then
       GraphicsUtil.print("danger music", x, y + 150)
     end
 
@@ -841,7 +848,7 @@ function PlayerStack:drawDebug()
 
     local input = engine.confirmedInput[engine.clock]
 
-    if input or engine.taunt_up or engine.taunt_down then
+    if input or self.taunt_up or self.taunt_down then
       local iraise, iswap, iup, idown, ileft, iright
       if engine.inputMethod == "touch" then
         iraise, _, _ = TouchDataEncoding.latinStringToTouchData(input, engine.width)
@@ -867,14 +874,14 @@ function PlayerStack:drawDebug()
       if iright then
         inputs_to_print = inputs_to_print .. "\nright"
       end
-      if engine.taunt_down then
+      if self.taunt_down then
         inputs_to_print = inputs_to_print .. "\ntaunt_down"
       end
-      if engine.taunt_up then
+      if self.taunt_up then
         inputs_to_print = inputs_to_print .. "\ntaunt_up"
       end
       if engine.inputMethod == "touch" then
-        inputs_to_print = inputs_to_print .. engine.touchInputController:debugString()
+        inputs_to_print = inputs_to_print .. self.touchInputController:debugString()
       end
       GraphicsUtil.print(inputs_to_print, x, y + 195)
     end
@@ -1506,7 +1513,7 @@ function PlayerStack:playSfx()
     if self.sfx_garbage_thud >= 1 and self.sfx_garbage_thud <= 3 then
       local interrupted_thud = nil
       for i = 1, 3 do
-        if themes[config.theme].sounds.garbage_thud[i]:isPlaying() and self.shake_time > self.prev_shake_time then
+        if themes[config.theme].sounds.garbage_thud[i]:isPlaying() and self.engine.shake_time > self.engine.prev_shake_time then
           SoundController:stopSfx(themes[config.theme].sounds.garbage_thud[i])
           interrupted_thud = i
         end

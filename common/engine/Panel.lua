@@ -46,6 +46,7 @@ require("common.lib.util")
 --- then this panel should be forced to hover after and the panels above as well
 --- indicated by this bool for itself and the panels above
 ---@field fell_from_garbage integer? Animation timer for "bounce" after falling from garbage.
+---@field debug_tag string? Non-functional field, may be set for debugging purposes
 
 -- clears information relating to state, matches and various stuff
 -- a true argument must be supplied to clear the chaining flag as well

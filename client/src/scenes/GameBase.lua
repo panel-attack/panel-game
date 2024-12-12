@@ -126,6 +126,7 @@ end
 function GameBase:initializeFrameInfo()
   self.frameInfo.startTime = nil
   self.frameInfo.frameCount = 0
+  GAME.droppedFrames = 0
 end
 
 function GameBase:load(sceneParams)

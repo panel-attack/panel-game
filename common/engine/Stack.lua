@@ -457,6 +457,8 @@ local function internalRollbackToFrame(stack, frame)
   return false
 end
 
+---@param frame integer the frame to rollback to if possible
+---@return boolean success if rolling back succeeded
 function Stack.rollbackToFrame(self, frame)
   local currentFrame = self.clock
 
@@ -478,6 +480,8 @@ function Stack.rollbackToFrame(self, frame)
   return false
 end
 
+---@param frame integer the frame to rewind to if possible
+---@return boolean success if rewinding succeeded
 function Stack:rewindToFrame(frame)
   if internalRollbackToFrame(self, frame) then
     if self.incomingGarbage then

@@ -9,13 +9,16 @@ local GarbageQueue = require("common.engine.GarbageQueue")
 ---@field framesBehind integer How far behind the stack is at the current Match clock time
 ---@field clock integer how many times run has been called
 ---@field game_over_clock integer What the clock time was when the Stack went game over
+---@field do_countdown boolean if the stack is performing a countdown at the start of the match
+---@field countdown_timer boolean? ephemeral timer used for tracking countdown progress at the start of the game
 ---@field outgoingGarbage GarbageQueue
 ---@field incomingGarbage GarbageQueue
 ---@field rollbackCopies table
 ---@field rollbackCopyPool Queue
 ---@field rollbackCount integer How many times the stack has been rolled back
 ---@field lastRollbackFrame integer the clock time before the Stack was last rolled back \n
---- -1 if it has not been rolled back yet
+---@field health integer Reaching 0 typically means game over (depends on the gameOverConditions)
+--- -1 if it has not been rolled back yet (or should not run back to its pre-rollback frame)
 
 ---@class BaseStack : Signal
 local BaseStack = class(
@@ -31,7 +34,6 @@ function(self, args)
   self.clock = 0
   self.game_over_clock = -1 -- the exact clock frame the stack lost, -1 while alive
   Signal.turnIntoEmitter(self)
-  self:createSignal("dangerMusicChanged")
   self:createSignal("gameOver")
 
   -- the stack pushes the garbage it produces into this queue
@@ -71,10 +73,14 @@ function BaseStack:saveForRollback()
   error("did not implement saveForRollback")
 end
 
+---@param frame integer the frame to rollback to if possible
+---@return boolean success if rolling back succeeded
 function BaseStack:rollbackToFrame(frame)
   error("did not implement rollbackToFrame")
 end
 
+---@param frame integer the frame to rewind to if possible
+---@return boolean success if rewinding succeeded
 function BaseStack:rewindToFrame(frame)
   error("did not implement rewindToFrame")
 end
@@ -83,10 +89,12 @@ function BaseStack:starting_state()
   error("did not implement starting_state")
 end
 
+---@return boolean
 function BaseStack:game_ended()
   error("did not implement game_ended")
 end
 
+---@return boolean
 function BaseStack:shouldRun()
   error("did not implement shouldRun")
 end

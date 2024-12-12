@@ -11,7 +11,32 @@ local function drawGfxScaled(stack, img, x, y, rot, xScale, yScale)
   GraphicsUtil.draw(img, x * stack.gfxScale, y * stack.gfxScale, rot, xScale * stack.gfxScale, yScale * stack.gfxScale)
 end
 
-local ClientStack = class(function(self, args)
+---The base class for a client side wrapper around an engine stack
+---Supports general properties for positioning and drawing
+---@class ClientStack
+---@field which integer determines the position of the stack like an index but also serves as an id within the match
+---@field is_local boolean if the Stack gets its inputs live from the local client or not
+---@field character string the id of the character to use for drawing
+---@field theme table the theme to determine offsets via theme for multibar and other properties
+---@field baseWidth integer
+---@field baseHeight integer
+---@field gfxScale number scale factor for the entire Stack, default: 3
+---@field canvas boolean if the stack is supposed to be drawn
+---@field portraitFade number inverse opacity of the character portrait
+---@field engine BaseStack the engine actually running the physics
+---@field multiBarFrameCount integer at how many frames the BaseStack's multibar tops out
+---@field player MatchParticipant
+---@field healthQuad love.Quad
+---@field multi_prestopQuad love.Quad
+---@field multi_stopQuad love.Quad
+---@field multi_shakeQuad love.Quad
+
+---@class ClientStack
+local ClientStack = class(
+function(self, args)
+  ---@class ClientStack
+  self = self
+
   assert(args.which)
   assert(args.is_local ~= nil)
   assert(args.character)
@@ -33,6 +58,9 @@ local ClientStack = class(function(self, args)
   self.canvas = true
   self.portraitFade = config.portrait_darkness / 100 -- will be set back to 0 if count down happens
   self.healthQuad = GraphicsUtil:newRecycledQuad(0, 0, themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight(), themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight())
+  self.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight(), self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight())
+  self.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight(), self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight())
+  self.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight(), self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight())
 
   self:moveForRenderIndex(self.which)
 end)
@@ -236,16 +264,16 @@ end
 
 function ClientStack:drawCharacter()
   -- Update portrait fade if needed
-  if self.do_countdown then
+  if self.engine.do_countdown then
     -- self.portraitFade starts at 0 (no fade)
-    if self.clock and self.clock > 0 then
+    if self.engine.clock and self.engine.clock > 0 then
       local desiredFade = config.portrait_darkness / 100
       local startFrame = 50
       local fadeDuration = 30
-      if self.clock <= 50 then
+      if self.engine.clock <= 50 then
         self.portraitFade = 0
-      elseif self.clock > 50 and self.clock <= startFrame + fadeDuration then
-        local percent = (self.clock - startFrame) / fadeDuration
+      elseif self.engine.clock > 50 and self.engine.clock <= startFrame + fadeDuration then
+        local percent = (self.engine.clock - startFrame) / fadeDuration
         self.portraitFade = desiredFade * percent
       end
     end
@@ -276,20 +304,20 @@ function ClientStack:drawWall(displacement, rowCount)
 end
 
 function ClientStack:drawCountdown()
-  if self.do_countdown and self.countdown_timer and self.countdown_timer > 0 then
+  if self.engine.do_countdown and self.engine.countdown_timer and self.engine.countdown_timer > 0 then
     local ready_x = 16
     local initial_ready_y = 4
     local ready_y_drop_speed = 6
-    local ready_y = initial_ready_y + (math.min(8, self.clock) - 1) * ready_y_drop_speed
+    local ready_y = initial_ready_y + (math.min(8, self.engine.clock) - 1) * ready_y_drop_speed
     local countdown_x = 44
     local countdown_y = 68
-    if self.clock <= 8 then
+    if self.engine.clock <= 8 then
       drawGfxScaled(self, themes[config.theme].images.IMG_ready, ready_x, ready_y)
-    elseif self.clock >= 9 and self.countdown_timer and self.countdown_timer > 0 then
-      if self.countdown_timer >= 100 then
+    elseif self.engine.clock >= 9 and self.engine.countdown_timer and self.engine.countdown_timer > 0 then
+      if self.engine.countdown_timer >= 100 then
         drawGfxScaled(self, themes[config.theme].images.IMG_ready, ready_x, ready_y)
       end
-      local IMG_number_to_draw = themes[config.theme].images.IMG_numbers[math.ceil(self.countdown_timer / 60)]
+      local IMG_number_to_draw = themes[config.theme].images.IMG_numbers[math.ceil(self.engine.countdown_timer / 60)]
       if IMG_number_to_draw then
         drawGfxScaled(self, IMG_number_to_draw, countdown_x, countdown_y)
       end

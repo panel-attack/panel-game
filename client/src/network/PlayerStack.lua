@@ -19,7 +19,7 @@ function PlayerStack.idleInput(self)
   return (self.inputMethod == "touch" and touchIdleInput) or base64encode[1]
 end
 
-function PlayerStack.send_controls(self)
+function PlayerStack:send_controls()
   if self.is_local and GAME.netClient:isConnected() and #self.engine.confirmedInput > 0 and self.garbageTarget and #self.garbageTarget.engine.confirmedInput == 0 then
     -- Send 1 frame at clock time 0 then wait till we get our first input from the other player.
     -- This will cause a player that got the start message earlier than the other player to wait for the other player just once.

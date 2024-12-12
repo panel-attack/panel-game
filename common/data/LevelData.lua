@@ -19,6 +19,10 @@ local logger = require("common.lib.logger")
 
 ---@class LevelData
 ---@overload fun(): LevelData
+---normally declaring @type in addition to @class isn't necessary
+---we do it here because as an interop format, LevelData is assigned as the metatable in some places
+---and LuaLS flags that because it somehow cannot believe LevelData is a table without this declaration
+---@type LevelData
 local LevelData = class(function(self)
   -- the initial speed upon match start
   -- defines how many frames it takes to rise one row via the Stack's SPEED_TO_RISE_TIME table

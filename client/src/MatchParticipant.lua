@@ -6,8 +6,30 @@ local CharacterLoader = require("client.src.mods.CharacterLoader")
 local StageLoader = require("client.src.mods.StageLoader")
 local ModController = require("client.src.mods.ModController")
 
+---A set of settings that are modifiable by participants prior to starting a match
+---@class ParticipantSettings
+---@field selectedCharacterId string id of the selected (bundle) character
+---@field characterId string id of the actually used character
+---@field selectedStageId string id of the selected (bundle) stage
+---@field stageId string id of the actually used stage
+---@field panelId string id of the panelSet used to source shock garbage images
+---@field wantsReady boolean
+
+---@class MatchParticipant
+---@field name string the name of the participant for display
+---@field wins integer number of wins gained within the room
+---@field modifiedWins integer number of wins to be added to wins for display
+---@field winrate number percentage of wins relative to matches played in the room (without ties I think)
+---@field expectedWinrate number percentage of wins the participant is expected to get based on ladder ratings
+---@field settings ParticipantSettings
+---@field hasLoaded boolean if all assets needed for this participant have been loaded
+---@field ready boolean if the participant is ready to start the game (wants to and actually is)
+---@field human boolean if the participant is a human
+
 -- a match participant represents the minimum spec for a what constitutes a "player" in a battleRoom / match
-local MatchParticipant = class(function(self)
+---@class MatchParticipant
+local MatchParticipant = class(
+function(self)
   self.name = "participant"
   self.wins = 0
   self.modifiedWins = 0
