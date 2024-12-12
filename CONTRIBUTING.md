@@ -29,9 +29,8 @@ Pull requests are to be pulled against the `beta` branch.
 If you just go by what you see you will probably not go wrong but a bit of a breakdown why and how we use annotations.
 
 `table` as a monolithic type for data structures makes it very difficult for IDEs to power common functions like "Go To Definition", "Find All References" or "Rename Symbol" in Lua if there are no annotations to provide guidance.  
-Without annotations they literally do not work most of the time or only within file scope, inviting use of dangerous editor features like Ctrl+Shift+H for renames that easily go wrong. On the less dangerous side you just take way too long with workspace search to find what you were looking, making it difficult to work with the project if you don't already know where everything is.
 
-The primary goal of annotating in Panel Attack is to facilitate navigation and IDE hints not to create documentation (but you may of course also do that).
+The primary goal of annotating in Panel Attack is to facilitate navigation and IDE hints not to create documentation.
 
 The lack of proper support for generics in combination with the custom class implementation makes it highly impractical to use annotations for anything generic and in most scenarios also anything scope related so don't worry about any of the scoping tags.
 
@@ -47,7 +46,7 @@ Be pragmatic and don't get too ambitious with annotations being "correct" as lon
   - in particular you may want to "inherit" from Signal or other behaviour mix-ins so its functions do not get flagged as unknown
 - Annotate function parameters with @param and possible return values with @return 
 - Use `\n` and a new line starting with `---` to linebreak comments for annotations
-- Use @module
+- Use @module to "require" a file if a class definition is not recognized
 
 Example:
 
@@ -74,6 +73,28 @@ end)
 ---@return boolean
 function myClass.someFunction(someArg)
 end
+```
+
+Consider adding this to your workspace settings:
+```Json
+"Lua.runtime.version": "LuaJIT",
+"Lua.diagnostics.globals": [
+    "love",
+    "jit",
+    "lldebugger",
+    "config",
+],
+"Lua.diagnostics.disable": [
+      "deprecated",
+      "lowercase-global",
+      "luadoc-miss-module-name",
+  ],
+  "Lua.diagnostics.ignoredFiles": "Disable",
+  "Lua.workspace.ignoreDir": [
+      ".vscode",
+      "testLauncher.lua",
+      "verificationLauncher.lua"
+  ]
 ```
 
 ## Formatting Guidelines

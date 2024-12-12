@@ -11,7 +11,7 @@ local GameModes = require("common.engine.GameModes")
 local TouchInputController = require("common.engine.TouchInputController")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
----@module common.data.LevelData
+---@module "common.data.LevelData"
 
 local floor, min, max = math.floor, math.min, math.max
 
