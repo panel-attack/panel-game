@@ -35,7 +35,7 @@ local tests = {
   "common.tests.engine.StackRollbackReplayTests",
   "client.tests.QueueTests",
   "client.tests.ServerQueueTests",
-  --"client.tests.StackGraphicsTests",
+  "client.tests.StackGraphicsTests",
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
   "server.tests.ConnectionTests",

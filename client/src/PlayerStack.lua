@@ -777,7 +777,7 @@ function PlayerStack:drawDebug()
     local x = self.origin_x + 480
     local y = self.frameOriginY + 160
 
-    if engine.danger then
+    if self.danger then
       GraphicsUtil.print("danger", x, y + 135)
     end
     if self.danger_music then

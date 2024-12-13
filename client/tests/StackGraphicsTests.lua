@@ -19,6 +19,7 @@ local legacyScoreY = 208
 local currentTheme = themes[config.theme]
 
 local function setTheme(theme)
+  theme:load()
   themes[config.theme] = theme
 end
 
@@ -35,6 +36,7 @@ local function createEndlessClientMatch(playerCount, theme)
     player.isLocal = false
     player:setLevel(10)
     player:setStyle(GameModes.Styles.MODERN)
+    player.playerNumber = i
 
     --player:restrictInputs(inputs.inputConfigurations[i])
     players[#players+1] = player
@@ -52,9 +54,9 @@ local function createEndlessClientMatch(playerCount, theme)
   return clientMatch
 end
 
-local v1Theme = Theme("V1Test")
+local v1Theme = Theme("client/tests/ThemeTestData/V1Test", "V1Test")
 assert(v1Theme ~= nil)
-local defaultTheme = Theme(consts.DEFAULT_THEME_DIRECTORY)
+local defaultTheme = Theme(Theme.defaultThemeDirectoryPath, consts.DEFAULT_THEME_DIRECTORY)
 assert(defaultTheme ~= nil)
 
 -- ORIGIN TESTING
@@ -95,7 +97,8 @@ local function testNewThemeStackGraphics()
   local stack = match.stacks[1]
 
   assert(match ~= nil)
-  assert(stack.origin_x == 184)
+  -- disabled because we no longer use origin x to draw that in modern theme versions
+  --assert(stack.origin_x == 184)
   assert(stack:elementOriginX(false, false) == stack.origin_x * stack.gfxScale)
   assert(stack:elementOriginY(false, false) == stack.panelOriginY * stack.gfxScale)
   assert(stack:elementOriginX(true, false) == stack.origin_x * stack.gfxScale)
@@ -110,7 +113,8 @@ local function testNewThemeStackGraphicsPlayer2()
   local stack = match.stacks[2]
 
   assert(match ~= nil)
-  assert(stack.origin_x * stack.gfxScale == 728)
+  -- disabled because we no longer use origin x to draw that in modern theme versions
+  --assert(stack.origin_x * stack.gfxScale == 728)
   assert(stack:elementOriginX(false, false) == stack.origin_x * stack.gfxScale)
   assert(stack:elementOriginY(false, false) == stack.panelOriginY * stack.gfxScale)
   assert(stack:elementOriginX(true, false) == stack.origin_x * stack.gfxScale)
@@ -315,7 +319,7 @@ local function testShakeOffsetReduction()
   assert(stack:shakeOffsetForShakeFrames(64, 0, 0.5) == 4)
   assert(stack:shakeOffsetForShakeFrames(63, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(62, 0, 0.5) == 0)
-  
+
   assert(stack:shakeOffsetForShakeFrames(12, 0, 0.5) == 0)
   assert(stack:shakeOffsetForShakeFrames(11, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(10, 0, 0.5) == 2)
@@ -352,7 +356,7 @@ local function testShakeOffsetMassiveReduction()
   assert(stack:shakeOffsetForShakeFrames(64, 0, 0.25) == 2)
   assert(stack:shakeOffsetForShakeFrames(63, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(62, 0, 0.25) == 0)
-  
+
   assert(stack:shakeOffsetForShakeFrames(12, 0, 0.25) == 0)
   assert(stack:shakeOffsetForShakeFrames(11, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(10, 0, 0.25) == 1)
