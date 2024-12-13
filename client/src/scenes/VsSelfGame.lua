@@ -13,7 +13,7 @@ VsSelfGame.name = "VsSelfGame"
 
 function VsSelfGame:onMatchEnded(match)
   local P1 = match.players[1].stack
-  GAME.scores:saveVsSelfScoreForLevel(P1.engine.analytic.data.sent_garbage_lines, P1.level)
+  GAME.scores:saveVsSelfScoreForLevel(P1.analytic.data.sent_garbage_lines, P1.level)
 end
 
 return VsSelfGame

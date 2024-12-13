@@ -11,6 +11,7 @@ local utf8 = require("common.lib.utf8Additions")
 ---@field human boolean Whether the player is/was human
 ---@field wins number How many wins the player had in the set prior to the game
 ---@field settings ReplayPlayerSettings
+---@field analytics table?
 
 ---@class ReplayPlayerSettings Specifies settings of the player that change between replays
 ---@field characterId string?

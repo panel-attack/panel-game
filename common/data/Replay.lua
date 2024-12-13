@@ -191,24 +191,6 @@ function Replay.replayCanBeViewed(replay)
   end
 end
 
-function Replay.addAnalyticsDataToReplay(match, replay)
-  replay:setDuration(match.clock)
-
-  for i = 1, #match.players do
-    if match.players[i].human then
-      local stack = match.players[i].stack
-      local playerTable = replay.players[i]
-      playerTable.analytics = stack.analytic.data
-      playerTable.analytics.score = stack.score
-      if match.room_ratings and match.room_ratings[i] then
-        playerTable.analytics.rating = match.room_ratings[i]
-      end
-    end
-  end
-
-  return replay
-end
-
 function Replay.finalizeReplay(match, replay)
   if not replay.completed then
     for i = 1, #match.stacks do

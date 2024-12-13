@@ -33,6 +33,7 @@ local MatchParticipant = require("client.src.MatchParticipant")
 ---@field online boolean? if the players in the match are remote
 ---@field spectators string[] list of spectators in an online game
 ---@field spectatorString string newLine concatenated version of spectators for display
+---@field winners Player[]
 
 ---@class ClientMatch : Signal
 ---@overload fun(players: MatchParticipant[], doCountdown: boolean, stackInteraction: integer, winConditions: integer[], gameOverConditions: integer[], supportsPause: boolean, optionalArgs: table?): ClientMatch
@@ -111,7 +112,7 @@ function ClientMatch:run()
   if self.match:hasEnded() then
     self.match:handleMatchEnd()
     -- this prepares everything about the replay except the save location
-    self:finalizeReplay(self.replay)
+    self:finalizeReplay()
     -- execute callbacks
     self:emitSignal("matchEnded", self)
   end
@@ -256,11 +257,11 @@ function ClientMatch:rewindToFrame(frame)
   self.match:rewindToFrame(frame)
 end
 
----@param replay Replay
 ---@return Replay
-function ClientMatch:finalizeReplay(replay)
-  if not replay.completed then
-    replay = Replay.addAnalyticsDataToReplay(match, replay)
+function ClientMatch:finalizeReplay()
+  if not self.replay.completed then
+    replay = self.replay
+    replay:setDuration(self.match.clock)
     replay:setStage(self.stageId)
     replay:setRanked(self.ranked)
 
@@ -279,6 +280,12 @@ function ClientMatch:finalizeReplay(replay)
         replayPlayer:setLevel(player.settings.level)
       else
         replayPlayer:setDifficulty(player.settings.difficulty)
+      end
+
+      if player.stack.analytic then
+        replayPlayer.analytics = player.stack.analytic.data
+        replayPlayer.analytics.score = player.stack.score
+        replayPlayer.analytics.rating = player.rating
       end
     end
 
@@ -583,6 +590,25 @@ function ClientMatch:draw_pause()
   local y = 260
   GraphicsUtil.printf(loc("pause"), 0, y, consts.CANVAS_WIDTH, "center", nil, 1, 10)
   GraphicsUtil.printf(loc("pl_pause_help"), 0, y + 30, consts.CANVAS_WIDTH, "center", nil, 1)
+end
+
+function ClientMatch:getWinners()
+  if not self.winners and self.match:hasEnded() then
+    local winningStacks = self.match:getWinners()
+    local winners = {}
+    for i, stack in ipairs(winningStacks) do
+      for j, player in ipairs(self.players) do
+        if player.stack == stack then
+          winners[#winners+1] = player
+          break
+        end
+      end
+    end
+    self.winners = winners
+    return self.winners
+  else
+    return self.winners
+  end
 end
 
 return ClientMatch
