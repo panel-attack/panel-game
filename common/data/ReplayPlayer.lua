@@ -25,7 +25,7 @@ local utf8 = require("common.lib.utf8Additions")
 ---@field healthSettings table?
 
 ---@class ReplayPlayer
----@overload fun(name: string, publicId: number, human: boolean): ReplayPlayer
+---@overload fun(name: string, publicId: number, human: boolean?): ReplayPlayer
 local ReplayPlayer = class(
 function(self, name, publicId, human)
   self.name = name

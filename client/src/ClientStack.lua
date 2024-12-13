@@ -401,7 +401,9 @@ end
 ------ abstract functions ------
 --------------------------------
 
-
+function ClientStack:runGameOver()
+  error("did not implement runGameOver")
+end
 
 function ClientStack:deinit()
   error("did not implement deinit")

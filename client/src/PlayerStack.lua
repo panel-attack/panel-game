@@ -11,6 +11,7 @@ local GameModes = require("common.engine.GameModes")
 local TouchInputController = require("common.engine.TouchInputController")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
+require("client.src.analytics")
 ---@module "common.data.LevelData"
 
 local floor, min, max = math.floor, math.min, math.max
@@ -20,6 +21,10 @@ local floor, min, max = math.floor, math.min, math.max
 ---@field garbageTarget PlayerStack
 ---@field panels_dir string the id of the panel set id used for its shock garbage images
 ---@field poppedPanelIndex integer
+---@field danger boolean panels in the top row (danger); unlike panels_in_top_row I think this does not indicate a top out in all cases
+---@field danger_timer integer Decides the bounce frame while the column is in danger, increments and stops according to certain rules
+---@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column. \n
+---@field analytic table
 
 -- A client side stack that wraps an engine Stack
 -- engine functionality is masked by wrapping the relevant functions and fields Match interfaces with
@@ -32,6 +37,7 @@ function(self, args)
   self = self
   self.player = args.player
   args.which = self.which
+  self.stackInteraction = args.stackInteraction
 
   self.engine = EngineStack(args)
   self.engine:connectSignal("panelLanded", self, self.onPanelLand)
@@ -42,18 +48,17 @@ function(self, args)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
   self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("newRow", self, self.onNewRow)
-
-  -- need this to properly pass as a stack for creating replays
-  self.allowAdjacentColors = self.engine.allowAdjacentColors
-  self.clock = self.engine.clock
-  self.game_over_clock = -1
+  self.engine:connectSignal("finishedRun", self, self.onRun)
+  self.engine:connectSignal("rollback", self, self.onRollback)
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
     self.panels_dir = config.panels
   end
 
+  self.analytic = AnalyticsInstance(self.is_local)
   self.drawsAnalytics = true
+
   -- level and difficulty only for icon display and score saving, all actual data is in levelData
   self.difficulty = args.difficulty
   self.level = args.level
@@ -65,6 +70,9 @@ function(self, args)
 
   self.card_q = Queue()
   self.pop_q = Queue()
+
+  self.danger_col = {false, false, false, false, false, false}
+  self.danger_timer = 0
 
   self.multiBarFrameCount = self:calculateMultibarFrameCount()
 
@@ -91,66 +99,17 @@ ClientStack)
 --- Callbacks from engine subscriptions ---
 -------------------------------------------
 
--- score lookup tables
-local SCORE_COMBO_PdP64 = {} --size 40
-local SCORE_COMBO_TA = {  0,    0,    0,   20,   30,
-                         50,   60,   70,   80,  100,
-                        140,  170,  210,  250,  290,
-                        340,  390,  440,  490,  550,
-                        610,  680,  750,  820,  900,
-                        980, 1060, 1150, 1240, 1330, [0]=0}
-
-local SCORE_CHAIN_TA = {  0,   50,   80,  150,  300,
-                        400,  500,  700,  900, 1100,
-                       1300, 1500, 1800, [0]=0}
-
--- awards bonus score for chains/combos
--- always call after the logic for incrementing the chain counter
-function PlayerStack:updateScoreWithBonus(comboSize)
-  -- don't check isChain for this!
-  -- needs to be outside of chaining to reproduce matches during a chain giving the same score as the chain link
-  self:updateScoreWithChain()
-
-  self:updateScoreWithCombo(comboSize)
-end
-
-function PlayerStack:updateScoreWithCombo(comboSize)
-  if comboSize > 3 then
-    if (score_mode == consts.SCOREMODE_TA) then
-      self.engine.score = self.engine.score + SCORE_COMBO_TA[math.min(30, comboSize)]
-    elseif (score_mode == consts.SCOREMODE_PDP64) then
-      if (comboSize < 41) then
-        self.engine.score = self.engine.score + SCORE_COMBO_PdP64[comboSize]
-      else
-        self.engine.score = self.engine.score + 20400 + ((comboSize - 40) * 800)
-      end
-    end
-  end
-end
-
-function PlayerStack:updateScoreWithChain()
-  local chain_bonus = self.engine.chain_counter
-  if (score_mode == consts.SCOREMODE_TA) then
-    if (chain_bonus > 13) then
-      chain_bonus = 0
-    end
-    self.engine.score = self.engine.score + SCORE_CHAIN_TA[chain_bonus]
-  end
-end
-
 function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, comboSize, metalCount, garbagePanelCount)
   self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   if isChainLink or comboSize > 3 or metalCount > 0 then
     self:queueAttackSoundEffect(isChainLink, engine.chain_counter, comboSize, metalCount)
   end
 
-  self.engine.analytic:register_destroyed_panels(comboSize)
+  self.analytic:register_destroyed_panels(comboSize)
 
   for i = 3, metalCount do
-    self.engine.analytic:registerShock()
+    self.analytic:registerShock()
   end
-
-  self:updateScoreWithBonus(comboSize)
 end
 
 function PlayerStack:onGameOver(engine)
@@ -183,8 +142,6 @@ function PlayerStack:onPanelPop(panel)
       SFX_Garbage_Pop_Play = panel.pop_index
     end
   else
-    self.engine.score = self.engine.score + 10
-
     if config.popfx == true then
       if (panel.combo_size > 6) or self.engine.chain_counter > 1 then
         self.popSizeThisFrame = "normal"
@@ -237,7 +194,7 @@ function PlayerStack:onCursorMoved(previousRow, previousCol)
       SFX_Cur_Move_Play = 1
     end
     if engine.cur_timer ~= engine.cur_wait_time then
-      engine.analytic:register_move()
+      self.analytic:register_move()
     end
   end
 end
@@ -246,14 +203,14 @@ function PlayerStack:onChainEnded(chainCounter)
   if self:canPlaySfx() then
     SFX_Fanfare_Play = chainCounter
   end
-  self.engine.analytic:register_chain(chainCounter)
+  self.analytic:register_chain(chainCounter)
 end
 
 function PlayerStack:onPanelsSwapped()
   if self:canPlaySfx() then
     SFX_Swap_Play = 1
   end
-  self.engine.analytic:register_swap()
+  self.analytic:register_swap()
 end
 
 function PlayerStack:onGarbageMatched(panelCount, onScreenCount)
@@ -270,6 +227,19 @@ function PlayerStack:onNewRow(engine)
   -- I suppose this is where we could add +1 to score for manual raising if we could still discern whether it was manual or not
 end
 
+function PlayerStack:onRollback(engine)
+  -- other.danger_timer = source.danger_timer
+  -- TODO: Implement a non-memory intensive rollback mechanism
+  -- see https://github.com/panel-attack/panel-game/issues/493
+  -- prof.push("rollback copy analytics")
+  -- other.analytic = deepcpy(source.analytic)
+  -- prof.pop("rollback copy analytics"
+
+  -- to fool Match without having to wrap everything into getters
+  self.clock = self.engine.clock
+  self.game_stopwatch = self.engine.game_stopwatch
+end
+
 --------------------------------------------------------------------------
 --- Wrappers around the engine Stack so this can be plugged into Match ---
 ---      without Match being none the wiser it's not a real Stack      ---
@@ -277,30 +247,8 @@ end
 ---                          (at least for now)                        ---
 --------------------------------------------------------------------------
 
-function PlayerStack:receiveGarbage(garbageDelivery)
-  self.engine:receiveGarbage(garbageDelivery)
-end
-
-function PlayerStack:saveForRollback()
-  self.engine:saveForRollback()
-end
-
-function PlayerStack:rollbackToFrame(frame)
-  self.engine:rollbackToFrame(frame)
-  -- to fool Match without having to wrap everything into getters
-  self.clock = self.engine.clock
-  self.game_stopwatch = self.engine.game_stopwatch
-end
-
 function PlayerStack:rewindToFrame(frame)
   self.engine:rewindToFrame(frame)
-  -- to fool Match without having to wrap everything into getters
-  self.clock = self.engine.clock
-  self.game_stopwatch = self.engine.game_stopwatch
-end
-
-function PlayerStack:starting_state()
-  self.engine:starting_state()
 end
 
 ---@return boolean
@@ -308,18 +256,8 @@ function PlayerStack:game_ended()
   return self.engine:game_ended()
 end
 
----@param runsSoFar integer How many runs the stack has done this frame
----@return boolean
-function PlayerStack:shouldRun(runsSoFar)
-  return self.engine:shouldRun(runsSoFar)
-end
-
-function PlayerStack:run()
-  self.popSizeThisFrame = "small"
-  self:updateDangerMusic()
-
-  self.engine:run()
-
+--- callback for operations to run after each single run of the engine Stack
+function PlayerStack:onRun()
   self:processTaunts()
 
   self:playSfx()
@@ -331,9 +269,11 @@ function PlayerStack:run()
   self:update_cards()
   prof.pop("update cards")
 
-  -- to fool Match without having to wrap everything into getters
-  self.clock = self.engine.clock
-  self.game_stopwatch = self.engine.game_stopwatch
+  -- these were previously at the start of Stack:run
+  -- so by putting them at the end, order is restored
+  self.popSizeThisFrame = "small"
+  self:updateDangerBounce()
+  self:updateDangerMusic()
 end
 
 function PlayerStack:runGameOver()
@@ -1047,7 +987,7 @@ function PlayerStack:render_cursor(shake)
     end
   end
 
-  local cursor = self.theme.images.cursor[(floor(self.clock / 16) % 2) + 1]
+  local cursor = self.theme.images.cursor[(floor(self.engine.clock / 16) % 2) + 1]
   local desiredCursorWidth = 40
   local panelWidth = 16
   local scale_x = desiredCursorWidth / cursor.image:getWidth()
@@ -1167,7 +1107,7 @@ function PlayerStack:drawAnalyticData()
     return
   end
 
-  local analytic = self.engine.analytic
+  local analytic = self.analytic
   local backgroundPadding = 18
   local paddingToAnalytics = 16
   local width = 160
@@ -1432,7 +1372,7 @@ function PlayerStack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
             end
           end
         else
-          panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale, self.engine.danger_col, self.engine.danger_timer)
+          panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale, self.danger_col, self.danger_timer)
         end
       end
     end
@@ -1478,7 +1418,7 @@ function PlayerStack:playSfx()
       -- I have no idea why this makes a distinction for vs, like what?
       -- On scouring historical chats it seems like cursor move sounds did not play during swap sounds ONLY in vs in TA
       -- people suspected a lack in sound channels in TA; might just be sensible to overall keep the amount of SFX low
-      if not (self.engine.match.stackInteraction ~= GameModes.StackInteractions.NONE and themes[config.theme].sounds.swap:isPlaying()) and not self.engine.do_countdown then
+      if not (self.stackInteraction ~= GameModes.StackInteractions.NONE and themes[config.theme].sounds.swap:isPlaying()) and not self.engine.do_countdown then
         SoundController:playSfx(themes[config.theme].sounds.cur_move)
       end
       SFX_Cur_Move_Play = 0
@@ -1695,5 +1635,40 @@ function PlayerStack:shouldPlayDangerMusic()
 
   return false
 end
+
+function PlayerStack:getAttackPatternData()
+  local data, state = self.engine:getAttackPatternData()
+  if data then
+    data.disableQueueLimit = self.player.human
+    data.extraInfo.playerName = self.player.name
+    data.extraInfo.gpm = self.analytic:getRoundedGPM(self.engine.clock) or 0
+  end
+
+  return data, state
+end
+
+function PlayerStack.updateDangerBounce(self)
+  -- calculate which columns should bounce
+    self.danger = false
+    local panelRow = self.engine.panels[self.engine.height - 1]
+    for idx = 1, self.engine.width do
+      if panelRow[idx]:dangerous() then
+        self.danger = true
+        self.danger_col[idx] = true
+      else
+        self.danger_col[idx] = false
+      end
+    end
+    if self.danger then
+      if self.engine.panels_in_top_row and self.engine.speed ~= 0 and not self.engine.puzzle then
+        -- Player has topped out, panels hold the "flattened" frame
+        self.danger_timer = 0
+      elseif self.engine.stop_time == 0 then
+        self.danger_timer = self.danger_timer + 1
+      end
+    else
+      self.danger_timer = 0
+    end
+  end
 
 return PlayerStack

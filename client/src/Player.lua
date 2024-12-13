@@ -73,7 +73,6 @@ function Player:createStackFromSettings(match, which)
   local args = {}
   args.which = which
   args.player_number = self.playerNumber
-  args.match = match
   args.is_local = self.isLocal
   args.panels_dir = self.settings.panelId
   args.character = self.settings.characterId
@@ -100,7 +99,9 @@ function Player:createStackFromSettings(match, which)
     args.allowAdjacentColors = self.settings.allowAdjacentColors
   end
   args.inputMethod = self.settings.inputMethod
+  args.stackInteraction = match.stackInteraction
   args.gameOverConditions = match.gameOverConditions
+  args.seed = match.seed
 
   args.player = self
 

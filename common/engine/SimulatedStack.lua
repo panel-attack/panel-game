@@ -4,6 +4,7 @@ local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local AttackEngine = require("common.engine.AttackEngine")
+local ReplayPlayer = require("common.data.ReplayPlayer")
 
 -- TODO move graphics related functionality to client
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -70,10 +71,6 @@ function SimulatedStack:run()
   end
 
   self.clock = self.clock + 1
-end
-
-function SimulatedStack:runGameOver()
-  -- currently nothing, could add kickstart a fancy animation in setGameOver later that is ran to conclusion here
 end
 
 function SimulatedStack:setGameOver()
@@ -304,6 +301,23 @@ function SimulatedStack:deinit()
   for _, quad in ipairs(self.difficultyQuads) do
     GraphicsUtil:releaseQuad(quad)
   end
+end
+
+function SimulatedStack:toReplayPlayer()
+  local replayPlayer = ReplayPlayer("Player " .. self.which, - self.which)
+
+  replayPlayer:setAttackEngineSettings(self.attackEngineSettings)
+  replayPlayer:setHealthSettings(self.healthSettings)
+
+  return replayPlayer
+end
+
+---@param replayPlayer ReplayPlayer
+---@param replay Replay
+---@return SimulatedStack
+function SimulatedStack.createFromReplayPlayer(replayPlayer, replay)
+-- TODO
+  return SimulatedStack({})
 end
 
 return SimulatedStack

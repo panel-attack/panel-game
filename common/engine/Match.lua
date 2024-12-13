@@ -226,22 +226,20 @@ end
 function Match:run()
   local startTime = love.timer.getTime()
 
-  local checkRun = {}
+  local runs = {}
 
   for i, _ in ipairs(self.stacks) do
-    checkRun[i] = true
+    runs[i] = 0
   end
 
   local runsSoFar = 0
-  while tableUtils.contains(checkRun, true) do
+  while tableUtils.contains(runs, runsSoFar) do
     for i, stack in ipairs(self.stacks) do
       if stack and self:shouldRun(stack, runsSoFar) then
         self:pushGarbageTo(stack)
         stack:run()
 
-        checkRun[i] = true
-      else
-        checkRun[i] = false
+        runs[i] = runs[i] + 1
       end
     end
 
@@ -249,7 +247,7 @@ function Match:run()
 
     -- Since the stacks can affect each other, don't save rollback until after all have run
     for i, stack in ipairs(self.stacks) do
-      if checkRun[i] then
+      if runs[i] > runsSoFar then
         stack:updateFramesBehind(self.clock)
         if self:shouldSaveRollback(stack) then
           stack:saveForRollback()
@@ -265,7 +263,7 @@ function Match:run()
   -- for i = 1, #self.players do
   --   local stack = self.players[i].stack
   --   if stack and stack.is_local not stack:game_ended() then
-  --     assert(#stack.engine.input_buffer == 0, "Local games should always simulate all inputs")
+  --     assert(#stack.input_buffer == 0, "Local games should always simulate all inputs")
   --   end
   -- end
 
@@ -274,7 +272,7 @@ function Match:run()
   self.timeSpentRunning = self.timeSpentRunning + timeDifference
   self.maxTimeSpentRunning = math.max(self.maxTimeSpentRunning, timeDifference)
 
-  return runsSoFar
+  return runs
 end
 
 function Match:pushGarbageTo(stack)
@@ -301,31 +299,23 @@ function Match:pushGarbageTo(stack)
   end
 end
 
-function Match:runGameOver()
-  for _, stack in ipairs(self.stacks) do
-    stack:runGameOver()
-  end
-end
-
 function Match:shouldSaveRollback(stack)
-  if self.replay.completed then
-    -- assumption that if a replay is completed, we only run the match belonging to it for replays
-    -- in which case we want to be able to rewind
+  if self.alwaysSaveRollbacks then
     return true
-  end
-
-  -- rollback needs to happen if any sender is more than the garbage delay behind the stack
-  for senderIndex, targetList in ipairs(self.garbageTargets) do
-    for _, target in ipairs(targetList) do
-      if target == stack then
-        if self.stacks[senderIndex].clock + GARBAGE_DELAY_LAND_TIME <= stack.clock then
-          return true
+  else
+    -- rollback needs to happen if any sender is more than the garbage delay behind the stack
+    for senderIndex, targetList in ipairs(self.garbageTargets) do
+      for _, target in ipairs(targetList) do
+        if target == stack then
+          if self.stacks[senderIndex].clock + GARBAGE_DELAY_LAND_TIME <= stack.clock then
+            return true
+          end
         end
       end
     end
-  end
 
-  return false
+    return false
+  end
 end
 
 -- attempt to rollback the specified stack to the specified frame
@@ -380,8 +370,14 @@ function Match:getInfo()
 end
 
 function Match:start()
+  local allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(self.stacks, function(stack) return stack.allowAdjacentColors end)
+  local shockEnabled = (self.stackInteraction ~= GameModes.StackInteractions.NONE)
+
   for i, stack in ipairs(self.stacks) do
     stack:setCountdown(self.doCountdown)
+    stack:setAllowAdjacentColorsOnStartingBoard(allowAdjacentColorsOnStartingBoard)
+    stack:enableShockPanels(shockEnabled)
+    stack.seed = self.seed
     self.garbageTargets[i] = {}
     self.garbageSources[stack] = {}
   end
@@ -413,29 +409,20 @@ function Match:start()
       stack:saveForRollback()
     end
   end
-
-  if not self.replay then
-    self.replay = self:createNewReplay()
-  end
 end
 
-
+---@param seed integer?
 function Match:setSeed(seed)
-  self.seed = seed
+  if seed then
+    self.seed = seed
+  end
 end
 
 function Match:createNewReplay()
   local replay = Replay(self.engineVersion, self.seed, self, self.puzzle)
 
   for i, stack in ipairs(self.stacks) do
-    local replayPlayer = ReplayPlayer("Player " .. i, -i)
-    replayPlayer:setLevelData(stack.levelData)
-    replayPlayer:setInputMethod(stack.inputMethod)
-    replayPlayer:setAllowAdjacentColors(stack.allowAdjacentColors)
-    replayPlayer:setAttackEngineSettings(stack.attackEngineSettings)
-    replayPlayer:setHealthSettings(stack.healthSettings)
-
-    replay:updatePlayer(i, replayPlayer)
+    replay:updatePlayer(i, stack:toReplayPlayer())
   end
 
   return replay
@@ -451,10 +438,9 @@ function Match.createFromReplay(replay)
 
   for i = 1, #replay.players do
     if replay.players[i].human then
-      --TODO: source args from replay data
-      stacks[i] = Stack({})
+      stacks[i] = Stack.createFromReplayPlayer(replay.players[i], replay)
     else
-      stacks[i] = SimulatedStack({})
+      stacks[i] = SimulatedStack.createFromReplayPlayer(replay.players[i], replay)
     end
   end
 
@@ -491,6 +477,7 @@ function Match:hasEnded()
   end
 
   local aliveCount = 0
+  -- dead is more like done as the stack could also have ended by fulfilling a win condition
   local deadCount = 0
   for i = 1, #self.stacks do
     if self.stacks[i]:game_ended() then
@@ -546,10 +533,9 @@ function Match:handleMatchEnd()
 
   if self.aborted then
     self.winners = {}
+  else
+    self.winners = self:getWinners()
   end
-
-  -- this prepares everything about the replay except the save location
-  Replay.finalizeReplay(self, self.replay)
 end
 
 function Match:isIrrecoverablyDesynced()
@@ -637,6 +623,18 @@ end
 
 function Match:setCountdown(doCountdown)
   self.doCountdown = doCountdown
+end
+
+function Match:setAlwaysSaveRollbacks(save)
+  self.alwaysSaveRollbacks = save
+end
+
+---@param engineVersion string
+function Match:setEngineVersion(engineVersion)
+  self.engineVersion = engineVersion
+  for i, stack in ipairs(self.stacks) do
+    stack.engineVersion = engineVersion
+  end
 end
 
 return Match

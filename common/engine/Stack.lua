@@ -1,6 +1,3 @@
--- TODO: move analytics to PlayerStack
-require("client.src.analytics")
-
 require("common.lib.stringExtensions")
 local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local consts = require("common.engine.consts")
@@ -16,6 +13,7 @@ local Panel = require("common.engine.Panel")
 local prof = require("common.lib.jprof.jprof")
 local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
+local ReplayPlayer = require("common.data.ReplayPlayer")
 
 -- Stuff defined in this file:
 --  . the data structures that store the configuration of
@@ -55,11 +53,14 @@ local PANELS_TO_NEXT_SPEED =
 ---@class Stack : BaseStack
 ---@field width integer How many columns of panels the stack has
 ---@field height integer How many rows of panels the stack has
----@field match table Reference to the match this stack is part of; goal to remove this reference
+---@field engineVersion string
+---@field seed integer
 ---@field gameOverConditions table Array of enumerated values signifying ways of going game over
 ---@field gameWinConditions table Array of enumerated values signifying ways of ending the game without going game over
 ---@field levelData LevelData
 ---@field allowAdjacentColors boolean if the panel generator is allowed to put panels of the same color next to each other (horizontally only)
+---@field allowAdjacentColorsOnStartingBoard boolean if the panel generator is allowed to put panels of the same color next to each other on the starting board
+---@field shockEnabled boolean whether shock panels may be queued
 ---@field behaviours table<string, boolean> a table of toggleable physics behaviours; currently mainly around raise
 ---@field do_first_row boolean? if the stack still needs to initiate its starting board
 ---@field speed integer Index for accessing the table for the rise_timer, thus indirectly determining how quickly the stack rises
@@ -94,10 +95,6 @@ local PANELS_TO_NEXT_SPEED =
 --- This variable being decremented causes the stack to rise. \n
 --- During the automatic rising routine, if this variable is 0, it's reset to 15, all the panels are moved up one row, and a new row is generated at the bottom. \n
 --- Only when the displacement is 0 are all 12 rows "in play."
----@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column. \n
---- ; should be moved to PlayerStack
----@field danger_timer integer Decides the bounce frame while the column is in danger, increments and stops according to certain rules
---- ; should be moved to PlayerStack
 ---@field rise_timer integer When this value reaches 0, the stack will rise a pixel (or differently said, displacement decreases by 1) \n
 --- Resets to varying values according to the Stack's speed
 ---@field rise_lock boolean If the stack is rise locked, it won't rise until it is unlocked.
@@ -105,12 +102,10 @@ local PANELS_TO_NEXT_SPEED =
 ---@field pre_stop_time integer Invincibility frames representing the longest remaining pop duration of all current matches (both regular and garbage). Depletes by 1 each frame.
 ---@field stop_time integer Invincibility frames earned by performing chains and combos. Does not deplete while there is pre_stop. Depletes by 1 each frame otherwise. Resets to 0 on manual raise.
 ---@field score integer points incrementing on chain, combo, match, pop and manual raise according to certain rules
---- ; should be moved to PlayerStack but is "rollback relevant"
 ---@field chain_counter integer Number of the current chain links starting from 2; relevant for scoring and stop_time \n
 --- resets to 0 on chain end and sends garbage according to length
 ---@field panels_in_top_row boolean If there are panels in the top row of the stack; pre-condition for losing under the NEGATIVE_HEALTH game over condition
 ---@field max_runs_per_frame integer How many times Stack:run() may be called within a single Match:run; used to keep stacks synchronous in various scenarios
----@field danger boolean panels in the top row (danger); unlike panels_in_top_row I think this does not indicate a top out in all cases
 ---@field n_active_panels integer How many panels are "active" on this frame; active panels prevent the stack from rising
 ---@field n_prev_active_panels integer How many panels were "active" on the previous frame; previous active panels prevent the stack from rising
 ---@field manual_raise boolean if true the stack is currently being manually raised; kept true until the raise has been completed
@@ -136,8 +131,6 @@ local PANELS_TO_NEXT_SPEED =
 ---@field shake_time_on_frame integer The shake time that would have been earned by falling panels this frame. Overwrites shake_time if greater.
 ---@field peak_shake_time integer Records the maximum shake time obtained for the current stretch of uninterrupted shake time. \n
 --- Any additional shake time gained before shake depletes to 0 will reset shake_time back to this value. Set to 0 when shake_time reaches 0.
----@field analytic table
---- should be moved to PlayerStack
 ---@field panelGenCount integer How many times the panel_buffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbageGenCount integer How many times the gpanel_buffer was extended; relevant to keep PRNG deterministic for replays
 ---@field warningsTriggered table ancient ancient, probably remove
@@ -151,15 +144,15 @@ local PANELS_TO_NEXT_SPEED =
 Stack = class(
 ---@param s Stack
   function(s, arguments)
-    assert(arguments.match ~= nil)
     assert(arguments.levelData ~= nil)
     assert(arguments.allowAdjacentColors ~= nil)
 
-    s.match = arguments.match
     s.gameOverConditions = arguments.gameOverConditions or {GameModes.GameOverConditions.NEGATIVE_HEALTH}
     s.gameWinConditions = arguments.gameWinConditions or {}
+    s.engineVersion = arguments.engineVersion
     s.levelData = arguments.levelData
     s.allowAdjacentColors = arguments.allowAdjacentColors
+    s.seed = arguments.seed
 
     -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
     s.behaviours = {}
@@ -216,9 +209,6 @@ Stack = class(
 
     s.displacement = 16
 
-    s.danger_col = {false, false, false, false, false, false}
-    s.danger_timer = 0
-
     s.rise_timer = consts.SPEED_TO_RISE_TIME[s.speed]
     s.rise_lock = false
     s.has_risen = false
@@ -230,7 +220,6 @@ Stack = class(
     s.chain_counter = 0
 
     s.panels_in_top_row = false
-    s.danger = s.danger or false
 
     s.n_active_panels = 0
     s.n_prev_active_panels = 0
@@ -259,8 +248,6 @@ Stack = class(
     s.shake_time = 0
     s.shake_time_on_frame = 0
     s.peak_shake_time = 0
-
-    s.analytic = AnalyticsInstance(s.is_local)
 
     s.panelGenCount = 0
     s.garbageGenCount = 0
@@ -413,15 +400,9 @@ function Stack.rollbackCopy(source, other)
   other.has_risen = source.has_risen
   other.metal_panels_queued = source.metal_panels_queued
   other.panels_cleared = source.panels_cleared
-  other.danger_timer = source.danger_timer
   other.game_over_clock = source.game_over_clock
   other.highestGarbageIdMatched = source.highestGarbageIdMatched
   prof.pop("rollback copy the rest")
-  -- TODO: Move analytic to PlayerStack / Implement a non-memory intensive rollback mechanism
-  -- see https://github.com/panel-attack/panel-game/issues/493
-  prof.push("rollback copy analytics")
-  other.analytic = deepcpy(source.analytic)
-  prof.pop("rollback copy analytics")
 
   return other
 end
@@ -474,6 +455,7 @@ function Stack.rollbackToFrame(self, frame)
     self.rollbackCount = self.rollbackCount + 1
     -- match will try to fast forward this stack to that frame
     self.lastRollbackFrame = currentFrame
+    self:emitSignal("rollback", self)
     return true
   end
 
@@ -829,9 +811,6 @@ end
 
 -- Runs one step of the stack.
 function Stack.run(self)
-  if self.match.isPaused then
-    return
-  end
   prof.push("Stack:run")
 
   if self.is_local == false then
@@ -849,6 +828,7 @@ function Stack.run(self)
   self:simulate()
   prof.pop("Stack:simulate")
   prof.pop("Stack:run")
+  self:emitSignal("finishedRun")
 end
 
 local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
@@ -896,30 +876,6 @@ function Stack.hasPanelsInTopRow(self)
   return false
 end
 
-function Stack.updateDangerBounce(self)
--- calculate which columns should bounce
-  self.danger = false
-  local panelRow = self.panels[self.height - 1]
-  for idx = 1, self.width do
-    if panelRow[idx]:dangerous() then
-      self.danger = true
-      self.danger_col[idx] = true
-    else
-      self.danger_col[idx] = false
-    end
-  end
-  if self.danger then
-    if self.panels_in_top_row and self.speed ~= 0 and not self.puzzle then
-      -- Player has topped out, panels hold the "flattened" frame
-      self.danger_timer = 0
-    elseif self.stop_time == 0 then
-      self.danger_timer = self.danger_timer + 1
-    end
-  else
-    self.danger_timer = 0
-  end
-end
-
 function Stack.updatePanels(self)
   if self.do_countdown then
     return
@@ -948,11 +904,11 @@ function Stack.shouldDropGarbage(self)
       -- drop chain garbage higher than 1 row immediately
       return garbage.height > 1
     else
+      print("I actually reached the cursed code path?")
       -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
       -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
       -- and because of that hack, we need to do another hack here and allow n-height combo garbage
-      -- but only if the player is targetted by a detached attackengine
-      return garbage.height > 1 and self.match.attackEngines[self.which] ~= nil
+      return garbage.height > 1
     end
   end
 end
@@ -975,7 +931,6 @@ function Stack.simulate(self)
 
   prof.push("simulate danger updates")
   self.panels_in_top_row = self:hasPanelsInTopRow()
-  self:updateDangerBounce()
   prof.pop("simulate danger updates")
 
   prof.push("new row stuff")
@@ -1209,13 +1164,10 @@ function Stack.simulate(self)
   prof.push("update times")
   self.clock = self.clock + 1
 
-  if self.game_stopwatch_running and (not self.match.gameOverClock or self.clock <= self.match.gameOverClock) then
+  if self.game_stopwatch_running then
     self.game_stopwatch = (self.game_stopwatch or -1) + 1
   end
   prof.pop("update times")
-end
-
-function Stack:runGameOver()
 end
 
 function Stack:runCountDownIfNeeded()
@@ -1224,7 +1176,7 @@ function Stack:runCountDownIfNeeded()
     self.rise_lock = true
     if self.clock == 0 then
       self.animatingCursorDuringCountdown = true
-      if self.match.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
+      if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
         self.cursorLock = true
       end
       self.cur_row = self.height
@@ -1253,7 +1205,7 @@ function Stack:runCountDownIfNeeded()
           end
         end
       elseif countDownFrame == 6 * consts.COUNTDOWN_CURSOR_SPEED + 1 then
-        if self.match.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
+        if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
           self.cursorLock = nil
         end
       end
@@ -1572,8 +1524,6 @@ function Stack:getAttackPatternData()
   local data = {}
   data.attackPatterns = {}
   data.extraInfo = {}
-  data.extraInfo.playerName = self.player.name
-  data.extraInfo.gpm = self.analytic:getRoundedGPM(self.clock) or 0
   data.extraInfo.matchLength = " "
   if self.game_stopwatch and tonumber(self.game_stopwatch) then
     data.extraInfo.matchLength = frames_to_time_string(self.game_stopwatch)
@@ -1584,7 +1534,6 @@ function Stack:getAttackPatternData()
   data.mergeComboMetalQueue = false
   data.delayBeforeStart = 0
   data.delayBeforeRepeat = 91
-  data.disableQueueLimit = self.player.human
   local defaultEndTime = 70
 
   for _, garbage in ipairs(self.outgoingGarbage.history) do
@@ -1623,9 +1572,10 @@ end
 ---@param panel Panel
 function Stack.onPop(self, panel)
   if not panel.isGarbage then
+    self.score = self.score + 10
+
     self.panels_cleared = self.panels_cleared + 1
-    if self.match.stackInteraction ~= GameModes.StackInteractions.NONE
-        and self.panels_cleared % self.levelData.shockFrequency == 0 then
+    if self.shockEnabled and self.panels_cleared % self.levelData.shockFrequency == 0 then
           self.metal_panels_queued = min(self.metal_panels_queued + 1, self.levelData.shockCap)
     end
   end
@@ -1749,7 +1699,7 @@ function Stack:getInfo()
 end
 
 function Stack:makePanels()
-  PanelGenerator:setSeed(self.match.seed + self.panelGenCount)
+  PanelGenerator:setSeed(self.seed + self.panelGenCount)
   local ret
   if self.panel_buffer == "" then
     ret = self:makeStartingBoardPanels()
@@ -1764,7 +1714,7 @@ function Stack:makePanels()
 end
 
 function Stack:makeStartingBoardPanels()
-  local allowAdjacentColors = tableUtils.trueForAll(self.match.players, function(player) return player.stack.allowAdjacentColors end)
+  local allowAdjacentColors = self.allowAdjacentColorsOnStartingBoard
 
   local ret = PanelGenerator.privateGeneratePanels(7, self.width, self.levelData.colors, self.panel_buffer, not allowAdjacentColors)
   -- technically there can never be metal on the starting board but we need to call it to advance the RNG (compatibility)
@@ -1794,6 +1744,10 @@ function Stack:makeStartingBoardPanels()
   return ret
 end
 
+local function isCompletedChain(garbage)
+  return garbage.isChain and garbage.finalized
+end
+
 function Stack:checkGameOver()
   if self.game_over_clock <= 0 then
     for _, gameOverCondition in ipairs(self.gameOverConditions) do
@@ -1808,11 +1762,12 @@ function Stack:checkGameOver()
           return true
         end
       elseif gameOverCondition == GameModes.GameOverConditions.CHAIN_DROPPED then
-        if #self.analytic.data.reached_chains == 0 and self.analytic.data.destroyed_panels > 0 then
+        -- not sure if these actually work after removing analytics
+        if not tableUtils.first(self.outgoingGarbage.history, isCompletedChain) and self.panels_cleared > 3 then
           -- We finished matching but never made a chain -> fail
           return true
         end
-        if #self.analytic.data.reached_chains > 0 and not self:hasChainingPanels() then
+        if tableUtils.first(self.outgoingGarbage.history, isCompletedChain) and not self:hasChainingPanels() then
           -- We achieved a chain, finished chaining, but haven't won yet -> fail
           return true
         end
@@ -1844,11 +1799,6 @@ function Stack:checkGameWin()
         return true
       end
     end
-  end
-
-  -- match is over and we didn't die so clearly we won
-  if self.match.ended and self.game_over_clock <= 0 then
-    return true
   end
 
   return false
@@ -1894,6 +1844,42 @@ end
 ---@return integer
 function Stack:getConfirmedInputCount()
   return #self.confirmedInput
+end
+
+---@return ReplayPlayer
+function Stack:toReplayPlayer()
+  local replayPlayer = ReplayPlayer("Player " .. self.which, - self.which)
+  replayPlayer:setLevelData(self.levelData)
+  replayPlayer:setInputMethod(self.inputMethod)
+  replayPlayer:setAllowAdjacentColors(self.allowAdjacentColors)
+
+  return replayPlayer
+end
+
+---@param replayPlayer ReplayPlayer
+---@param replay Replay
+---@return Stack
+function Stack.createFromReplayPlayer(replayPlayer, replay)
+  local args = {
+    engineVersion = replay.engineVersion,
+    gameOverConditions = replay.gameMode.gameOverConditions,
+    gameWinConditions = replay.gameMode.gameWinConditions,
+    allowAdjacentColors = replayPlayer.settings.allowAdjacentColors,
+    levelData = replayPlayer.settings.levelData,
+    is_local = false,
+    which = tableUtils.indexOf(replay.players, replayPlayer)
+  }
+  return Stack(args)
+end
+
+---@param allow boolean
+function Stack:setAllowAdjacentColorsOnStartingBoard(allow)
+  self.allowAdjacentColorsOnStartingBoard = allow
+end
+
+---@param enable boolean
+function Stack:enableShockPanels(enable)
+  self.shockEnabled = enable
 end
 
 return Stack

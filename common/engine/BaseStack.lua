@@ -35,6 +35,8 @@ function(self, args)
   self.game_over_clock = -1 -- the exact clock frame the stack lost, -1 while alive
   Signal.turnIntoEmitter(self)
   self:createSignal("gameOver")
+  self:createSignal("finishedRun")
+  self:createSignal("rollback")
 
   -- the stack pushes the garbage it produces into this queue
   self.outgoingGarbage = GarbageQueue()

@@ -1,4 +1,5 @@
 local TouchDataEncoding = require("common.data.TouchDataEncoding")
+---@class PlayerStack
 local PlayerStack = require("client.src.PlayerStack")
 
 function PlayerStack.handle_input_taunt(self)

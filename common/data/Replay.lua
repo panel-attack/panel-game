@@ -198,8 +198,8 @@ function Replay.addAnalyticsDataToReplay(match, replay)
     if match.players[i].human then
       local stack = match.players[i].stack
       local playerTable = replay.players[i]
-      playerTable.analytics = stack.engine.analytic.data
-      playerTable.analytics.score = stack.engine.score
+      playerTable.analytics = stack.analytic.data
+      playerTable.analytics.score = stack.score
       if match.room_ratings and match.room_ratings[i] then
         playerTable.analytics.rating = match.room_ratings[i]
       end
@@ -211,11 +211,9 @@ end
 
 function Replay.finalizeReplay(match, replay)
   if not replay.completed then
-    replay = Replay.addAnalyticsDataToReplay(match, replay)
-    replay:setStage(match.stageId)
-    for i = 1, #match.players do
-      if match.players[i].stack.confirmedInput then
-        replay.players[i].settings.inputs = ReplayPlayer.compressInputString(table.concat(match.players[i].stack.confirmedInput))
+    for i = 1, #match.stacks do
+      if match.stacks[i].confirmedInput then
+        replay.players[i].settings.inputs = ReplayPlayer.compressInputString(table.concat(match.stacks[i].confirmedInput))
       end
     end
 
@@ -223,7 +221,7 @@ function Replay.finalizeReplay(match, replay)
     if match.aborted then
       replay:setOutcome()
     elseif #match.winners == 1 then
-      replay:setOutcome(tableUtils.indexOf(match.players, match.winners[1]))
+      replay:setOutcome(tableUtils.indexOf(match.stacks, match.winners[1]))
     elseif #match.winners > 1 then
       replay:setOutcome(0)
     end

@@ -30,7 +30,7 @@ If you just go by what you see you will probably not go wrong but a bit of a bre
 
 `table` as a monolithic type for data structures makes it very difficult for IDEs to power common functions like "Go To Definition", "Find All References" or "Rename Symbol" in Lua if there are no annotations to provide guidance.  
 
-The primary goal of annotating in Panel Attack is to facilitate navigation and IDE hints not to create documentation.
+The primary goal of annotating in Panel Attack is to facilitate navigation and IDE hints, not to create documentation.
 
 The lack of proper support for generics in combination with the custom class implementation makes it highly impractical to use annotations for anything generic and in most scenarios also anything scope related so don't worry about any of the scoping tags.
 

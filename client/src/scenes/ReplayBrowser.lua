@@ -6,6 +6,7 @@ local Replay = require("common.data.Replay")
 local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
+local ClientMatch = require("client.src.ClientMatch")
 
 local ReplayBrowser = class(
   function (self, sceneParams)
@@ -157,7 +158,7 @@ function ReplayBrowser:update()
     end
     if input.isDown["MenuSelect"] and Replay.replayCanBeViewed(selectedReplay) then
       GAME.theme:playValidationSfx()
-      local match = Match.createFromReplay(selectedReplay, false)
+      local match = ClientMatch.createFromReplay(selectedReplay, false)
       match.renderDuringPause = true
       match:start()
       GAME.navigationStack:push(ReplayGame({match = match}))
