@@ -7,6 +7,22 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 
+---@class StopData
+---@field formula STOP_FORMULA
+---@field comboConstant integer
+---@field chainConstant integer
+---@field dangerConstant integer
+---@field coefficient integer
+---@field dangerCoefficient integer
+
+---@class FrameData
+---@field HOVER integer
+---@field GARBAGE_HOVER integer
+---@field FLASH integer
+---@field FACE integer
+---@field POP integer
+
+
 ---@class LevelData
 ---@field startingSpeed integer The speed the stack should start at
 ---@field speedIncreaseMode SPEED_INCREASE_MODE The manner in which speed increases throughout the game
@@ -14,8 +30,8 @@ local logger = require("common.lib.logger")
 ---@field shockCap integer How many shock panels can be queued at maximum; 0 disables shock blocks
 ---@field colors integer How many colors are used for panel generation
 ---@field maxHealth integer Unconditional invincibility frames that run out while topped out with no other type of invincibility frames available
----@field stop table<string, integer> Dictionary of number values used to award stop time
----@field frameConstants table<string, integer> Dictionary of number values used to determine panel physics 
+---@field stop StopData Dictionary of number values used to award stop time
+---@field frameConstants FrameData Dictionary of number values used to determine panel physics 
 
 ---@class LevelData
 ---@overload fun(): LevelData
@@ -23,7 +39,8 @@ local logger = require("common.lib.logger")
 ---we do it here because as an interop format, LevelData is assigned as the metatable in some places
 ---and LuaLS flags that because it somehow cannot believe LevelData is a table without this declaration
 ---@type LevelData
-local LevelData = class(function(self)
+local LevelData = class(
+function(self)
   -- the initial speed upon match start
   -- defines how many frames it takes to rise one row via the Stack's SPEED_TO_RISE_TIME table
   -- values are only valid within the range of indexes of SPEED_TO_RISE_TIME (so 1 - 99)
@@ -45,7 +62,7 @@ local LevelData = class(function(self)
   -- the stop table contains constants for calculating the awarded stop time from chains and combos
   self.stop = {
     -- the formula used for calculating stop time
-    -- formula = self.STOP_FORMULAS.MODERN,
+    formula = nil, --self.STOP_FORMULAS.MODERN,
     --formula 1 & 2: unconditional constant awarded for any combo while not topped out
     comboConstant = nil,
     --formula 1: unconditional constant awarded for any chain while not topped and any combo while topped out
@@ -94,6 +111,29 @@ LevelData.STOP_FORMULAS = {
   MODERN = 1,
   CLASSIC = 2,
 }
+
+---@param a LevelData
+---@param b LevelData
+---@return boolean
+function LevelData.__eq(a, b)
+  return a.colors == b.colors and
+         a.maxHealth == b.maxHealth and
+         a.startingSpeed == b.startingSpeed and
+         a.speedIncreaseMode == b.speedIncreaseMode and
+         a.shockFrequency == b.shockFrequency and
+         a.shockCap == b.shockCap and
+         a.stop.formula == b.stop.formula and
+         a.stop.comboConstant == b.stop.comboConstant and
+         a.stop.chainConstant == b.stop.chainConstant and
+         a.stop.dangerConstant == b.stop.dangerConstant and
+         a.stop.coefficient == b.stop.coefficient and
+         a.stop.dangerCoefficient == b.stop.dangerCoefficient and
+         a.frameConstants.HOVER == b.frameConstants.HOVER and
+         a.frameConstants.GARBAGE_HOVER == b.frameConstants.GARBAGE_HOVER and
+         a.frameConstants.FLASH == b.frameConstants.FLASH and
+         a.frameConstants.FACE == b.frameConstants.FACE and
+         a.frameConstants.POP == b.frameConstants.POP
+end
 
 ---@return boolean # if the LevelData is suitable for a Stack that receives garbage
 function LevelData:isGarbageCompatible()

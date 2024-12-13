@@ -5,6 +5,9 @@ local Match = require("common.engine.Match")
 local inputs = require("common.lib.inputManager")
 local fileUtils = require("client.src.FileUtils")
 local Replay = require("common.data.Replay")
+local LevelPresets = require("common.data.LevelPresets")
+local Stack = require("common.engine.Stack")
+require("common.engine.checkMatches")
 
 local StackReplayTestingUtils = {}
 
@@ -13,55 +16,58 @@ function StackReplayTestingUtils:simulateReplayWithPath(path)
   return self:fullySimulateMatch(match)
 end
 
-function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, wantsCanvas, playerCount, theme)
+function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, playerCount)
   local endless = GameModes.getPreset("ONE_PLAYER_ENDLESS")
-  local players = {}
   if playerCount == nil then
     playerCount = 1
   end
+  local stacks = {}
   for i = 1, playerCount do
-    local player = Player.getLocalPlayer()
-    player.isLocal = false
-    if speed then
-      player:setSpeed(speed)
-    end
-    if difficulty then
-      player:setDifficulty(difficulty)
-    end
+    local args = {
+      which = i,
+      stackInteraction = endless.stackInteraction,
+      gameOverConditions = endless.gameOverConditions,
+      is_local = false,
+      allowAdjacentColors = true
+    }
+
     if level then
-      player:setLevel(level)
-      player:setStyle(GameModes.Styles.MODERN)
+      args.levelData = LevelPresets.getModern(level)
     else
-      player:setStyle(GameModes.Styles.CLASSIC)
+      args.levelData = LevelPresets.getClassic(difficulty)
+      args.levelData.startingSpeed = speed
     end
-    --player:restrictInputs(inputs.inputConfigurations[i])
-    players[#players+1] = player
+    stacks[i] = Stack(args)
   end
 
-  local match = Match(players, endless.doCountdown, endless.stackInteraction, endless.winConditions, endless.gameOverConditions, false)
+  local match = Match(stacks, endless.doCountdown, endless.stackInteraction, endless.winConditions, endless.gameOverConditions)
   match:setSeed(1)
   match:start()
-  if not wantsCanvas then
-    match:removeCanvases()
-  end
-  for i = 1, #match.players do
-    match.players[i].stack.max_runs_per_frame = 1
+
+  for i = 1, #match.stacks do
+    match.stacks[i]:setMaxRunsPerFrame(1)
   end
 
   return match
 end
 
 function StackReplayTestingUtils.createSinglePlayerMatch(gameMode)
-  local players = { Player.getLocalPlayer() }
-  players[1].isLocal = false
+  local args = {
+    which = 1,
+    stackInteraction = gameMode.stackInteraction,
+    gameOverConditions = gameMode.gameOverConditions,
+    is_local = false,
+    levelData = LevelPresets.getModern(5),
+    allowAdjacentColors = true,
+  }
+  local stacks = { Stack(args) }
 
-  local match = Match(players, gameMode.doCountdown, gameMode.stackInteraction, gameMode.winConditions, gameMode.gameOverConditions, false)
+  local match = Match(stacks, gameMode.doCountdown, gameMode.stackInteraction, gameMode.winConditions, gameMode.gameOverConditions)
   match:setSeed(1)
   match:start()
-  match:removeCanvases()
 
-  for i = 1, #match.players do
-    match.players[i].stack.max_runs_per_frame = 1
+  for i = 1, #match.stacks do
+    match.stacks[i]:setMaxRunsPerFrame(1)
   end
 
   return match
@@ -107,9 +113,12 @@ function StackReplayTestingUtils:setupReplayWithPath(path)
   GAME.muteSound = true
 
   local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
-  local match = Match.createFromReplay(replay, false)
+  local match = Match.createFromReplay(replay)
   match:start()
-  match:removeCanvases()
+  -- we want to be able to stop with precision so cap the number of runs
+  for i, stack in ipairs(match.stacks) do
+    stack:setMaxRunsPerFrame(1)
+  end
 
   assert(GAME ~= nil)
   assert(match ~= nil)
@@ -119,14 +128,7 @@ function StackReplayTestingUtils:setupReplayWithPath(path)
 end
 
 function StackReplayTestingUtils:cleanup(match)
-  for _, player in ipairs(match.players) do
-    if player.human and player.playerNumber and player.inputConfiguration then
-      player:unrestrictInputs()
-    end
-  end
-  if match then
-    match:deinit()
-  end
+
 end
 
 return StackReplayTestingUtils

@@ -3,9 +3,9 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local Replay = require("common.data.Replay")
-local ReplayPlayer = require("common.data.ReplayPlayer")
 local SimulatedStack = require("common.engine.SimulatedStack")
 local Stack = require("common.engine.Stack")
+require("common.engine.checkMatches")
 local consts = require("common.engine.consts")
 
 ---@class Match
@@ -28,38 +28,38 @@ local consts = require("common.engine.consts")
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
-Match =
-  class(
-  function(self, stacks, doCountdown, stackInteraction, winConditions, gameOverConditions, optionalArgs)
-    self.stacks = stacks
-    self.garbageTargets = {}
-    self.garbageSources = {}
-    self.engineVersion = consts.ENGINE_VERSION
+---@overload fun(stacks: Stack[], doCountdown: boolean, stackInteraction: StackInteractions, winConditions: MatchWinConditions[], gameOverCondition: GameOverConditions[], optionalArgs: table?): Match
+local Match = class(
+function(self, stacks, doCountdown, stackInteraction, winConditions, gameOverConditions, optionalArgs)
+  self.stacks = stacks
+  self.garbageTargets = {}
+  self.garbageSources = {}
+  self.engineVersion = consts.ENGINE_VERSION
 
-    assert(doCountdown ~= nil)
-    assert(stackInteraction)
-    assert(winConditions)
-    assert(gameOverConditions)
-    self.doCountdown = doCountdown
-    self.stackInteraction = stackInteraction
-    self.winConditions = winConditions
-    self.gameOverConditions = gameOverConditions
-    if tableUtils.contains(gameOverConditions, GameModes.GameOverConditions.TIME_OUT) then
-      assert(optionalArgs.timeLimit)
-      self.timeLimit = optionalArgs.timeLimit
-    end
-    if optionalArgs then
-      -- debatable if these couldn't be player settings instead
-      self.puzzle = optionalArgs.puzzle
-    end
-
-    self.timeSpentRunning = 0
-    self.maxTimeSpentRunning = 0
-    self.createTime = love.timer.getTime()
-    self.seed = math.random(1,9999999)
-    self.startTimestamp = os.time(os.date("*t"))
-    self.clock = 0
+  assert(doCountdown ~= nil)
+  assert(stackInteraction)
+  assert(winConditions)
+  assert(gameOverConditions)
+  self.doCountdown = doCountdown
+  self.stackInteraction = stackInteraction
+  self.winConditions = winConditions
+  self.gameOverConditions = gameOverConditions
+  if tableUtils.contains(gameOverConditions, GameModes.GameOverConditions.TIME_OUT) then
+    assert(optionalArgs.timeLimit)
+    self.timeLimit = optionalArgs.timeLimit
   end
+  if optionalArgs then
+    -- debatable if these couldn't be player settings instead
+    self.puzzle = optionalArgs.puzzle
+  end
+
+  self.timeSpentRunning = 0
+  self.maxTimeSpentRunning = 0
+  self.createTime = love.timer.getTime()
+  self.seed = math.random(1,9999999)
+  self.startTimestamp = os.time(os.date("*t"))
+  self.clock = 0
+end
 )
 
 -- returns the players that won the match in a table
@@ -382,6 +382,10 @@ function Match:start()
     self.garbageSources[stack] = {}
   end
 
+  -- TODO:
+  -- Match should still handle to create SimulatedStacks for StackInteractions.ATTACK_ENGINE
+  -- move that back from ClientMatch
+
   if self.stackInteraction == GameModes.StackInteractions.SELF then
     for i, stack in ipairs(self.stacks) do
       table.insert(self.garbageTargets[i], stack)
@@ -418,6 +422,7 @@ function Match:setSeed(seed)
   end
 end
 
+---@return Replay
 function Match:createNewReplay()
   local replay = Replay(self.engineVersion, self.seed, self, self.puzzle)
 
@@ -428,6 +433,8 @@ function Match:createNewReplay()
   return replay
 end
 
+---@param replay Replay
+---@return Match
 function Match.createFromReplay(replay)
   local optionalArgs = {
     timeLimit = replay.gameMode.timeLimit,
@@ -455,7 +462,7 @@ function Match.createFromReplay(replay)
 
   match:setSeed(replay.seed)
   match.engineVersion = replay.engineVersion
-  match.replay = replay
+  match:setAlwaysSaveRollbacks(replay.completed)
 
   return match
 end

@@ -8,8 +8,7 @@ local Signal = require("common.lib.signal")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local ModController = require("client.src.mods.ModController")
 local ModLoader = require("client.src.mods.ModLoader")
-local Match = require("common.engine.Match")
-require("client.src.graphics.match_graphics")
+local ClientMatch = require("client.src.ClientMatch")
 local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
@@ -78,7 +77,7 @@ function BattleRoom.createFromServerMessage(message)
       -- if the server message lacks ENGINE_VERSION, the standard replay sanitization may conservatively guess v046
       -- but since we're online and successfully connected we KNOW it has to be our engine version
       replay.engineVersion = consts.ENGINE_VERSION
-      local match = Match.createFromReplay(replay, false)
+      local match = ClientMatch.createFromReplay(replay, false)
       for i, player in ipairs(match.players) do
         player:updateSettings(message.players[i])
       end
@@ -86,7 +85,6 @@ function BattleRoom.createFromServerMessage(message)
       -- there's like one stupid reference to battleRoom in engine that breaks otherwise
       battleRoom = BattleRoom.createFromMatch(match)
       battleRoom.mode.gameScene = gameMode.gameScene
-      battleRoom.mode.setupScene = gameMode.setupScene
       battleRoom.mode.richPresenceLabel = gameMode.richPresenceLabel
     else
       battleRoom = BattleRoom(gameMode, GameBase)
@@ -225,7 +223,7 @@ function BattleRoom:createMatch()
   local supportsPause = not self.online or #self.players == 1
   local optionalArgs = { timeLimit = self.mode.timeLimit , ranked = self.ranked}
 
-  self.match = Match(
+  self.match = ClientMatch(
     self.players,
     self.mode.doCountdown,
     self.mode.stackInteraction,
@@ -512,7 +510,7 @@ function BattleRoom:shutdown()
   self = nil
 end
 
--- a callback function that is getting registered to the Match:onMatchEnded signal
+-- a callback function that is getting registered to the ClientMatch's matchEnded signal
 -- may get unregistered from the match in case of abortion
 function BattleRoom:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1

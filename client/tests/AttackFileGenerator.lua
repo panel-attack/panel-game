@@ -2,6 +2,7 @@ local logger = require("common.lib.logger")
 local separator = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 local fileUtils = require("client.src.FileUtils")
 local Replay = require("common.data.Replay")
+local Match = require("common.engine.Match")
 
 -- Helper debug functions for analyzing a set of replays and outputting attack files from them.
 

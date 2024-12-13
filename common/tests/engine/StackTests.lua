@@ -62,7 +62,7 @@ basicSwapTest()
 
 local function moveAfterCountdownV46Test()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
-  match.engineVersion = consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE
+  match:setEngineVersion(consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE)
   local stack = match.stacks[1]
   stack.do_countdown = true
   assert(characters ~= nil, "no characters")

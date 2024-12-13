@@ -4,6 +4,8 @@ local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
 local LevelData = require("common.data.LevelData")
 local prof = require("common.lib.jprof.jprof")
+---@class Stack
+local Stack = require("common.engine.Stack")
 table.clear = require("table.clear")
 table.new = require("table.new")
 
@@ -145,6 +147,8 @@ function Stack:checkMatches()
     if isChainLink or comboSize > 3 or metalCount > 0 then
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)
     end
+
+    self:updateScoreWithBonus(comboSize)
   end
 
   self:clearChainingFlags()
@@ -164,6 +168,7 @@ local candidatePanels2 = table.new(144, 0)
 ---@return Panel[] matchingPanels all matchingPanels without duplicates
 -----@return Panel[][] matches all individual matches in an array
 -----panels in horizontal matches are listed left to right, panels in vertical matches are listed top to bottom
+---@deprecated
 function Stack:getMatchingPanels2()
   local matchingPanels = {}
   local panels = self.panels
@@ -590,6 +595,8 @@ end
 
 -- returns an integer indexed table of all garbage panels that are connected to the matching panels
 -- effectively a more optimized version of the past flood queue approach
+-- this is a lot slower than getConnectedGarbagePanels2 so only use it to verify changes have the same outcome
+---@deprecated
 function Stack:getConnectedGarbagePanels(matchingPanels)
   local garbagePanels = {}
   local panelsToCheck = Queue()

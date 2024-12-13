@@ -1,7 +1,7 @@
 local PanelGenerator = require("common.engine.PanelGenerator")
 local GameModes = require("common.engine.GameModes")
-local Match = require("common.engine.Match")
-local Player = require("client.src.Player")
+local Stack = require("common.engine.Stack")
+local LevelPresets = require("common.data.LevelPresets")
 
 local function testPanelGenForGarbage1()
   PanelGenerator:setSeed(1)
@@ -59,17 +59,39 @@ end
 
 testPanelGenForRegularBoard2()
 
-local function testStackStartingBoard1()
-  local battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"))
-  local player = battleRoom.players[1]
-  player:setSpeed(1)
-  player:setDifficulty(1)
-  player:setStyle(GameModes.Styles.CLASSIC)
-  -- endless easy deviates by 1 color from time attack easy
-  player:setColorCount(5)
+local function createStack(gameMode, difficulty, level, colorCount, seed)
+  local args = {
+    which = 1,
+    is_local = false,
+    stackInteraction = gameMode.stackInteraction,
+    gameOverConditions = gameMode.gameOverConditions,
+    inputMethod = "controller",
+    seed = seed
+  }
+  if gameMode.stackInteraction == GameModes.StackInteractions.NONE or not level then
+    args.allowAdjacentColors = true
+  else
+    args.allowAdjacentColors = level < 8
+  end
 
-  local stack = player:createStackFromSettings(battleRoom:createMatch(), 1)
-  stack.match:setSeed(7)
+  if level then
+    args.levelData = LevelPresets.getModern(level)
+  else
+    args.levelData = LevelPresets.getClassic(difficulty)
+    args.levelData:setColorCount(colorCount)
+  end
+
+  return Stack(args)
+end
+
+local function testStackStartingBoard1()
+  local seed = 7
+  local difficulty = "easy"
+  -- endless easy deviates by 1 color from time attack easy which is the default easy preset
+  local colorCount = 5
+  local stack = createStack(GameModes.getPreset("ONE_PLAYER_ENDLESS"), difficulty, nil, colorCount, seed)
+  stack:setAllowAdjacentColorsOnStartingBoard(true)
+
   stack.panel_buffer = stack:makePanels()
   assert(stack.panel_buffer == "0400000bC00201240a0D3305e32E114D535d21aD12")
   -- simulate the first row being applied properly
@@ -82,13 +104,11 @@ testStackStartingBoard1()
 
 
 local function testStackStartingBoard2()
-  local battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
-  local player = battleRoom.players[1]
-  player:setStyle(GameModes.Styles.MODERN)
-  player:setLevel(10)
+  local seed = 8
+  local level = 10
+  local stack = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  stack:setAllowAdjacentColorsOnStartingBoard(false)
 
-  local stack = player:createStackFromSettings(battleRoom:createMatch(), 1)
-  stack.match:setSeed(8)
   -- expected starting 7 rows (unprocessed):    312132464356316131624643241456614364463521
   -- expected starting 7 rows (shock assigned): c12A324643EfCa6131624Fd32D145f614Cf446c52A
   -- expected starting 7 rows (cut down):       0000004043E0C06130604Fd320145f614Cf446c52A
@@ -110,14 +130,11 @@ end
 testStackStartingBoard2()
 
 local function testStackStartingBoard3()
-  local battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
-  local player = battleRoom.players[1]
-  player:setStyle(GameModes.Styles.MODERN)
-  player:setLevel(10)
-
-  local stack = player:createStackFromSettings(battleRoom:createMatch(), 1)
   -- this seed tests for a certain bug that occured when the first character was a possible metal location for generating the starting board
-  stack.match:setSeed(351545)
+  local seed = 351545
+  local level = 10
+  local stack = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  stack:setAllowAdjacentColorsOnStartingBoard(false)
   stack.panel_buffer = stack:makePanels()
   assert(stack.panel_buffer == "c0D000505000D0f4005F310115D21e3d23F4e6462A")
 end
@@ -125,13 +142,12 @@ end
 testStackStartingBoard3()
 
 local function testStackStartingBoard4()
-  local battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
-  local p1 = battleRoom.players[1]
-  p1:setLevel(8)
-
-  local stack = p1:createStackFromSettings(battleRoom:createMatch(), 1)
   -- this seed tests for a certain bug that occured when a starting board row had no shock assignments left:
-  stack.match:setSeed(4530333)
+  local seed = 4530333
+  local level = 8
+  local stack = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  stack:setAllowAdjacentColorsOnStartingBoard(false)
+
   stack.panel_buffer = stack:makePanels()
   -- the second line is 430000 which is a number and therefore gets its shock panels reassigned again on the first run of makePanels (thus advancing rng)
   assert(stack.panel_buffer == "C00000430000Be405154A03dbC401352cE321E12e1")

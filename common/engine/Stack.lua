@@ -141,7 +141,7 @@ local PANELS_TO_NEXT_SPEED =
 -- Represents the full panel stack for one player
 ---@class Stack : Signal
 ---@overload fun(arguments: table): Stack
-Stack = class(
+local Stack = class(
 ---@param s Stack
   function(s, arguments)
     assert(arguments.levelData ~= nil)
@@ -265,9 +265,6 @@ Stack = class(
   end,
   BaseStack
 )
-
--- as they are very extensive, all functions immediately related to finding matches are grouped in the following file:
-require("common.engine.checkMatches")
 
 function Stack.divergenceString(stackToTest)
   local result = ""
@@ -1762,7 +1759,7 @@ function Stack:checkGameOver()
           return true
         end
       elseif gameOverCondition == GameModes.GameOverConditions.CHAIN_DROPPED then
-        -- not sure if these actually work after removing analytics
+        -- not sure if these actually work as intended after removing analytics
         if not tableUtils.first(self.outgoingGarbage.history, isCompletedChain) and self.panels_cleared > 3 then
           -- We finished matching but never made a chain -> fail
           return true
@@ -1867,9 +1864,14 @@ function Stack.createFromReplayPlayer(replayPlayer, replay)
     allowAdjacentColors = replayPlayer.settings.allowAdjacentColors,
     levelData = replayPlayer.settings.levelData,
     is_local = false,
-    which = tableUtils.indexOf(replay.players, replayPlayer)
+    which = tableUtils.indexOf(replay.players, replayPlayer),
+    seed = replay.seed,
+    inputMethod = replayPlayer.settings.inputMethod,
   }
-  return Stack(args)
+
+  local stack = Stack(args)
+  stack:receiveConfirmedInput(replayPlayer.settings.inputs)
+  return stack
 end
 
 ---@param allow boolean

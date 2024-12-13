@@ -35,7 +35,7 @@ local MatchParticipant = require("client.src.MatchParticipant")
 ---@field spectatorString string newLine concatenated version of spectators for display
 
 ---@class ClientMatch : Signal
----@overload fun(players: MatchParticipant[], doCountdown: boolean, stackInteraction: integer, winConditions: integer[], gameOverConditions: integer[], supportsPause: boolean, optionalArgs: table): ClientMatch
+---@overload fun(players: MatchParticipant[], doCountdown: boolean, stackInteraction: integer, winConditions: integer[], gameOverConditions: integer[], supportsPause: boolean, optionalArgs: table?): ClientMatch
 local ClientMatch = class(
 function(self, players, doCountdown, stackInteraction, winConditions, gameOverConditions, supportsPause, optionalArgs)
   assert(doCountdown ~= nil)

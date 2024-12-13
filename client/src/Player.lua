@@ -15,7 +15,11 @@ local logger = require("common.lib.logger")
 -- It holds data pertaining to their client status (like character, stage, panels, level etc)
 -- Player implements a lot of setters that emit signals on changes, allowing other components to be notified about the changes by connecting a function to it
 -- Due to this, unless for a good reason, all properties on Player should be set using the setters
-local Player = class(function(self, name, publicId, isLocal)
+---@class Player : MatchParticipant, Signal
+local Player = class(
+function(self, name, publicId, isLocal)
+  ---@class Player
+  self = self
   self.name = name
   self.settings = {
     -- these need to all be initialized so subscription works
@@ -268,6 +272,7 @@ function Player:unrestrictInputs()
   end
 end
 
+---@return Player
 function Player.getLocalPlayer()
   local player = Player(config.name, -1, true)
 

@@ -220,10 +220,13 @@ function Replay.finalizeReplay(match, replay)
     -- abort is functionally equivalent to #match.winners == 0
     if match.aborted then
       replay:setOutcome()
-    elseif #match.winners == 1 then
-      replay:setOutcome(tableUtils.indexOf(match.stacks, match.winners[1]))
-    elseif #match.winners > 1 then
-      replay:setOutcome(0)
+    else
+      local winners = match:getWinners()
+      if #winners == 1 then
+        replay:setOutcome(tableUtils.indexOf(match.stacks, match.winners[1]))
+      elseif #winners > 1 then
+        replay:setOutcome(0)
+      end
     end
   end
 end

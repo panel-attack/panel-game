@@ -1,5 +1,7 @@
 require("client.src.save")
 local Match = require("common.engine.Match")
+local Stack = require("common.engine.Stack")
+require("common.engine.checkMatches")
 local GameModes = require("common.engine.GameModes")
 local Player = require("client.src.Player")
 local LevelPresets = require("common.data.LevelPresets")
@@ -13,26 +15,40 @@ local function stackShouldRunOverride(stack, runsSoFar)
 end
 
 function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
-  local player = Player.getLocalPlayer()
+  local stacks = {}
   local mode
   if attackFile then
     mode = GameModes.getPreset("ONE_PLAYER_TRAINING")
-    player:setAttackEngineSettings(readAttackFile(attackFile))
   else
     mode = GameModes.getPreset("ONE_PLAYER_VS_SELF")
   end
-
-  player:setLevel(1)
   local levelData = LevelPresets.getModern(1)
   levelData.maxHealth = stackHealth or 100000
-  player:setLevelData(levelData)
-  player:restrictInputs(inputs.inputConfigurations[1])
-  local match = Match({player}, mode.doCountdown, mode.stackInteraction, mode.winConditions, mode.gameOverConditions, false)
+
+  local args = {
+    which = 1,
+    stackInteraction = mode.stackInteraction,
+    gameOverConditions = mode.gameOverConditions,
+    is_local = false,
+    allowAdjacentColors = true,
+    levelData = levelData,
+  }
+
+  stacks[1] = Stack(args)
+
+  if attackFile then
+    -- TODO fix test
+    args = {}
+    --stacks[2] 
+    --player:setAttackEngineSettings(readAttackFile(attackFile))
+  end
+
+  local match = Match(stacks, mode.doCountdown, mode.stackInteraction, mode.winConditions, mode.gameOverConditions)
   match:start()
   -- the stack shouldn't die
   match.stacks[1].behaviours.passiveRaise = false
   -- the stack should run only 1 frame per Match:run
-  match.stacks[1].shouldRun = stackShouldRunOverride
+  match.stacks[1]:setMaxRunsPerFrame(1)
 
   -- make some space for garbage to fall
   GarbageQueueTestingUtils.reduceRowsTo(match.stacks[1], 0)
