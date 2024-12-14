@@ -624,7 +624,7 @@ end
 
 function Stack.setPanelsForPuzzleString(self, puzzleString)
   local panels = self.panels
-  local garbageId = 0
+
   local garbageStartRow = nil
   local garbageStartColumn = nil
   local isMetal = false
@@ -648,13 +648,16 @@ function Stack.setPanelsForPuzzleString(self, puzzleString)
               garbageStartRow = row
               garbageStartColumn = column
               connectedGarbagePanels = {}
+              -- use the stack prop to avoid collisions in garbage id
+              self.garbageCreatedCount = self.garbageCreatedCount + 1
               if color == "}" then
                 isMetal = true
+              else
+                isMetal = false
               end
             end
             local panel = self:createPanelAt(row, column)
-            panel.garbageId = garbageId
-            garbageId = garbageId + 1
+            panel.garbageId = self.garbageCreatedCount
             panel.isGarbage = true
             panel.color = 9
             panel.y_offset = row - garbageStartRow
@@ -676,7 +679,7 @@ function Stack.setPanelsForPuzzleString(self, puzzleString)
                 connectedGarbagePanels[i].height = height
                 connectedGarbagePanels[i].width = width
                 connectedGarbagePanels[i].shake_time = shake_time
-                connectedGarbagePanels[i].garbageId = garbageId
+                connectedGarbagePanels[i].garbageId = self.garbageCreatedCount
                 -- panels are already in the main table and they should already be updated by reference
               end
               garbageStartRow = nil

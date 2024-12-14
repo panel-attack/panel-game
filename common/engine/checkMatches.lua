@@ -493,7 +493,7 @@ function Stack:getConnectedGarbagePanels2(matchingPanels)
           right = panel.column - panel.x_offset + panel.width - 1,
           top = panel.row - panel.y_offset + panel.height - 1,
           bottom = panel.row - panel.y_offset,
-          metal = panel.metal
+          metal = not not panel.metal
         }
       end
     end
