@@ -168,6 +168,9 @@ function CharacterSelect:createReadyButton()
       player = GAME.localPlayer
     end
     player:setWantsReady(not player.settings.wantsReady)
+    if player.cursor then
+      player.cursor:trap(player.settings.wantsReady)
+    end
   end
   readyButton.onSelect = readyButton.onClick
 
@@ -456,6 +459,7 @@ function CharacterSelect:createCursor(grid, player)
     if cursor.selectedGridPos.x == 9 and cursor.selectedGridPos.y == 6 then
       self:leave()
     elseif player.settings.wantsReady then
+      player.cursor:trap(false)
       player:setWantsReady(false)
     else
       cursor:updatePosition(9, 6)
