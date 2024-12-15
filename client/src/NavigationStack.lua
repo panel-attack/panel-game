@@ -9,28 +9,6 @@ local NavigationStack = {
   callback = nil,
 }
 
-local sceneMusicLabels = { "title_screen", "main", "select_screen" }
--- tries to apply the passed music with respect to the current theme's available musics
-local function applyMusic(music)
-  if music and tableUtils.contains(sceneMusicLabels, music) then
-    if GAME.theme.stageTracks[music] then
-      SoundController:playMusic(GAME.theme.stageTracks[music])
-      return true
-    end
-  end
-  return false
-end
-
-local function applySceneMusic(scene)
-  if not applyMusic(scene.music) then
-    if not applyMusic(scene.fallbackMusic) then
-      if not scene.keepMusic then
-        SoundController:stopMusic()
-      end
-    end
-  end
-end
-
 function NavigationStack:push(newScene, transition)
   local activeScene = self.scenes[#self.scenes]
   if not transition then
@@ -172,7 +150,7 @@ function NavigationStack:update(dt)
 
     if self.transition.progress >= 1 then
       self.transition = nil
-      applySceneMusic(self.scenes[#self.scenes])
+      self.scenes[#self.scenes]:applyMusic()
       if self.callback then
         self.callback()
         self.callback = nil

@@ -508,6 +508,7 @@ function OptionsMenu:loadSoundMenu()
     MenuItem.createSliderMenuItem("op_vol_music", nil, nil, createConfigSlider("music_volume", 0, 100, function()
         SoundController:applyConfigVolumes()
       end)),
+      MenuItem.createToggleButtonGroupMenuItem("op_menu_music", nil, nil, createToggleButtonGroup("enableMenuMusic", function() self:applyMusic() end)),
       MenuItem.createStepperMenuItem("op_use_music_from", nil, nil, musicFrequencyStepper),
       MenuItem.createToggleButtonGroupMenuItem("op_music_delay", nil, nil, createToggleButtonGroup("danger_music_changeback_delay")),
     MenuItem.createButtonMenuItem("mm_music_test", nil, nil, function()
