@@ -34,6 +34,7 @@ local GridCursor = class(function(self, options)
 
   self.blinkFrequency = options.blinkFrequency or 8
   self.rapidBlinking = options.rapidBlinking or false
+  self.trapped = false
   self.drawClock = 0
 
   self.TYPE = "GridCursor"
@@ -56,9 +57,15 @@ function GridCursor:setTarget(grid, startPosition, activeArea)
 end
 
 function GridCursor:updatePosition(x, y)
+  local moved = (x ~= self.selectedGridPos.x or y ~= self.selectedGridPos.y)
   self.selectedGridPos.x = x
   self.selectedGridPos.y = y
-  self:onMove()
+  if moved then
+    GAME.theme:playMoveSfx()
+  else
+    GAME.theme:playCancelSfx()
+  end
+  self:onMove(moved)
 end
 
 function GridCursor:getElementAt(y, x)
@@ -89,7 +96,7 @@ function GridCursor:move(direction)
       newX = wrap(self.activeArea.x1, newX + direction.x, self.activeArea.x2)
       nextGridElement = self:getElementAt(self.selectedGridPos.y, newX)
       if self.selectedGridPos.x == newX then
-        -- if we get here that means we're looping in an empty character row
+        -- if we get here that means we're looping in an empty column
         -- accept placeholders so the cursor can get back into legal area
         acceptPlaceholders = true
         newX = wrap(self.activeArea.x1, newX + direction.x, self.activeArea.x2)
@@ -97,7 +104,8 @@ function GridCursor:move(direction)
       end
     end
     if nextGridElement == selectedGridElement then
-      -- this must be the only UiElement in this row, abort here
+      -- this must be the only UiElement in this column, abort here
+      self:updatePosition(self.selectedGridPos.x, self.selectedGridPos.y)
     else
       -- new UiElement was found!
       self:updatePosition(newX, self.selectedGridPos.y)
@@ -110,7 +118,7 @@ function GridCursor:move(direction)
       newY = wrap(self.activeArea.y1, newY + direction.y, self.activeArea.y2)
       nextGridElement = self:getElementAt(newY,self.selectedGridPos.x)
       if self.selectedGridPos.y == newY then
-        -- if we get here that means we're looping in an empty character row
+        -- if we get here that means we're looping in an empty column
         -- accept placeholders so the cursor can get back into legal area
         acceptPlaceholders = true
         newY = wrap(self.activeArea.y1, newY + direction.y, self.activeArea.y2)
@@ -120,6 +128,7 @@ function GridCursor:move(direction)
     end
     if nextGridElement == selectedGridElement then
       -- this must be the only UiElement in this row, abort here
+      self:updatePosition(self.selectedGridPos.x, self.selectedGridPos.y)
     else
       -- new UiElement was found!
       self:updatePosition(self.selectedGridPos.x, newY)
@@ -127,7 +136,7 @@ function GridCursor:move(direction)
   end
 end
 
-function GridCursor:onMove()
+function GridCursor:onMove(moved)
 
 end
 
@@ -174,16 +183,12 @@ function GridCursor:receiveInputs(inputs, dt)
     elseif inputs.isDown.Swap2 then
       self:escapeCallback()
     elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      GAME.theme:playMoveSfx()
       self:move(GridCursor.directions.left)
     elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      GAME.theme:playMoveSfx()
       self:move(GridCursor.directions.right)
     elseif inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      GAME.theme:playMoveSfx()
       self:move(GridCursor.directions.up)
     elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      GAME.theme:playMoveSfx()
       self:move(GridCursor.directions.down)
     elseif inputs.isDown.Swap1 or inputs.isDown.Start then
       local element = self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
@@ -212,6 +217,18 @@ end
 function GridCursor:onDetach()
   if self.target then
     self:setTarget()
+  end
+end
+
+function GridCursor:trap(trap)
+  if not self.trapped and trap then
+    self.untrappedActiveArea = self.activeArea
+    self.activeArea =  {x1 = self.selectedGridPos.x, y1 = self.selectedGridPos.y,
+                        x2 = self.selectedGridPos.x, y2 = self.selectedGridPos.y}
+    self.trapped = true
+  elseif self.trapped and not trap then
+    self.activeArea = self.untrappedActiveArea
+    self.trapped = false
   end
 end
 

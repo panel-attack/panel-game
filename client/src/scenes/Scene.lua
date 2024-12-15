@@ -2,6 +2,8 @@ local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local tableUtils = require("common.lib.tableUtils")
+local SoundController = require("client.src.music.SoundController")
 
 -- Base class for a container representing a single screen of PanelAttack.
 -- Each scene should have a field called <Scene>.name = <Scene> (for identification in errors and debugging)
@@ -23,6 +25,28 @@ local Scene = class(
     self.keepMusic = false
   end
 )
+
+local sceneMusicLabels = { "title_screen", "main", "select_screen" }
+-- tries to apply the passed music with respect to the current theme's available musics
+local function applyMusic(music)
+  if music and tableUtils.contains(sceneMusicLabels, music) then
+    if GAME.theme.stageTracks[music] and config.enableMenuMusic then
+      SoundController:playMusic(GAME.theme.stageTracks[music])
+      return true
+    end
+  end
+  return false
+end
+
+function Scene:applyMusic()
+  if not applyMusic(self.music) then
+    if not applyMusic(self.fallbackMusic) then
+      if not self.keepMusic then
+        SoundController:stopMusic()
+      end
+    end
+  end
+end
 
 -- abstract functions to be implemented per scene
 

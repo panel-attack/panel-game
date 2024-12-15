@@ -461,6 +461,9 @@ function CharacterSelect:createCursor(grid, player)
       cursor:updatePosition(9, 6)
     end
   end
+
+  player:connectSignal("wantsReadyChanged", cursor, cursor.trap)
+
   grid:addChild(cursor)
 
   return cursor
@@ -842,6 +845,7 @@ function CharacterSelect:createSpeedSlider(player, height, min)
     value = player.settings.speed,
     onValueChange = function(slider)
       player:setSpeed(slider.value)
+      GAME.theme:playMoveSfx()
     end,
     hAlign = "center",
     vAlign = "center",
@@ -855,6 +859,7 @@ function CharacterSelect:createSpeedSlider(player, height, min)
   Focusable(uiElement)
   uiElement.speedSlider = speedSlider
   uiElement.speedSlider.yieldFocus = function()
+    GAME.theme:playValidationSfx()
     uiElement:yieldFocus()
   end
   uiElement:addChild(speedSlider)
@@ -883,6 +888,7 @@ function CharacterSelect:createDifficultyCarousel(player, height)
 
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
     player:setDifficulty(selectedPassenger.id)
+    GAME.theme:playMoveSfx()
     self:refresh()
   end
 
