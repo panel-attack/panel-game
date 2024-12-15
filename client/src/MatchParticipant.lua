@@ -25,9 +25,11 @@ local ModController = require("client.src.mods.ModController")
 ---@field hasLoaded boolean if all assets needed for this participant have been loaded
 ---@field ready boolean if the participant is ready to start the game (wants to and actually is)
 ---@field human boolean if the participant is a human
+---@field isLocal boolean if the participant is controlled by a local player
 
 -- a match participant represents the minimum spec for a what constitutes a "player" in a battleRoom / match
----@class MatchParticipant
+---@class MatchParticipant : Signal
+---@overload fun(): MatchParticipant
 local MatchParticipant = class(
 function(self)
   self.name = "participant"

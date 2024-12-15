@@ -33,7 +33,7 @@ local MatchParticipant = require("client.src.MatchParticipant")
 ---@field online boolean? if the players in the match are remote
 ---@field spectators string[] list of spectators in an online game
 ---@field spectatorString string newLine concatenated version of spectators for display
----@field winners Player[]
+---@field winners MatchParticipant[]
 
 ---@class ClientMatch : Signal
 ---@overload fun(players: MatchParticipant[], doCountdown: boolean, stackInteraction: integer, winConditions: integer[], gameOverConditions: integer[], supportsPause: boolean, optionalArgs: table?): ClientMatch
@@ -113,6 +113,7 @@ function ClientMatch:run()
     self.match:handleMatchEnd()
     -- this prepares everything about the replay except the save location
     self:finalizeReplay()
+    self.ended = true
     -- execute callbacks
     self:emitSignal("matchEnded", self)
   end
@@ -598,7 +599,7 @@ function ClientMatch:getWinners()
     local winners = {}
     for i, stack in ipairs(winningStacks) do
       for j, player in ipairs(self.players) do
-        if player.stack == stack then
+        if player.stack.engine == stack then
           winners[#winners+1] = player
           break
         end
