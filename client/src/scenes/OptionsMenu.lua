@@ -347,7 +347,7 @@ function OptionsMenu:loadGraphicsMenu()
       GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size)
       self:updateMenuLanguage()
       self.backgroundImage = themes[config.theme].images.bg_main
-      SoundController:playMusic(themes[config.theme].stageTracks.main)
+      self:applyMusic()
     end
   })
 

@@ -536,3 +536,4 @@ username_blank_warning,shown in user name input when nothing is entered,Username
 op_shakeIntensity,Option for the intensity of the shake animation,Shake Animation Intensity,,,,,Stärke der Aufprallanimation
 op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,,,,,Performance/Stromverbrauch
 pause_resume,Label for the resume button in the pause menu,Resume,,,,Continuar,Fortsetzen,,
+op_menu_music,Label for toggling menu music,Menu Music,,,,,Menü Musik,,
