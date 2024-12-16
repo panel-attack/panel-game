@@ -5,8 +5,9 @@ local Queue = require("common.lib.Queue")
 require("table.clear")
 require("table.new")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
+local Signal = require("common.lib.signal")
 
----@class GarbageQueue
+---@class GarbageQueue : Signal
 
 
 -- +1 to compensate for a compensation someone made
@@ -108,6 +109,11 @@ function(self, allowIllegalStuff, treatMetalAsCombo)
   -- seems like the rollback method of Stack counts differently
   -- so keep one extra copy to not run out of copies when rewinding stacks in replays
   self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
+
+  Signal.turnIntoEmitter(self)
+  self:createSignal("garbagePushed")
+  self:createSignal("newChainLink")
+  self:createSignal("chainEnded")
 end)
 
 function GarbageQueue:rollbackCopy(frame)
@@ -238,6 +244,7 @@ function GarbageQueue:push(garbage)
   self.history[#self.history+1] = garbage
 
   orderGarbage(self.stagedGarbage, self.treatMetalAsCombo)
+  self:emitSignal("garbagePushed", garbage)
   --logger.debug(self:toString())
 end
 
@@ -365,6 +372,7 @@ function GarbageQueue:addChainLink(frameEarned, row, column)
     }
     self.currentChain.linkTimes[#self.currentChain.linkTimes+1] = frameEarned
   end
+  self:emitSignal("newChainLink", self.currentChain)
 end
 
 -- returns the index of the first garbage block matching the requested type and size, or where it would go if it was in the Garbage_Queue.
@@ -388,6 +396,7 @@ function GarbageQueue:finalizeCurrentChain(clock)
   --logger.debug("Finalizing chain at " .. clock)
   self.currentChain.finalized = true
   self.currentChain.finalizedClock = clock
+  self:emitSignal("chainEnded", self.currentChain)
   self.currentChain = nil
 end
 

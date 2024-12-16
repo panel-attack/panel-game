@@ -77,7 +77,7 @@ function AttackEngine:setGarbageTarget(garbageTarget)
   assert(garbageTarget.panelOriginY ~= nil)
   assert(garbageTarget.incomingGarbage ~= nil)
 
-  self.garbageTarget = garbageTarget
+  self.garbageTarget = garbageTarget.engine
   self.garbageTarget.incomingGarbage.illegalStuffIsAllowed = true
   self.garbageTarget.incomingGarbage.treatMetalAsCombo = self.treatMetalAsCombo
 end
@@ -100,7 +100,9 @@ function AttackEngine.addEndChainPattern(self, start, repeatDelay)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
 end
 
+local garbageList = {}
 function AttackEngine.run(self)
+  table.clear(garbageList)
   assert(self.garbageTarget, "No target set on attack engine")
 
   local highestStartTime = self.attackPatterns[#self.attackPatterns].startTime
