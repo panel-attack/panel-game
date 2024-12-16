@@ -21,7 +21,7 @@ local ReplayPlayer = require("common.data.ReplayPlayer")
 --  . the main game routine
 --    (rising, timers, falling, cursor movement, swapping, landing)
 --  . the matches-checking routine
-local min, pairs, deepcpy = math.min, pairs, deepcpy
+local min, pairs = math.min, pairs
 local max = math.max
 
 local GARBAGE_SIZE_TO_SHAKE_FRAMES = {
@@ -258,7 +258,6 @@ local Stack = class(
     s:createSignal("panelPop")
     s:createSignal("panelLanded")
     s:createSignal("cursorMoved")
-    s:createSignal("chainEnded")
     s:createSignal("panelsSwapped")
     s:createSignal("garbageMatched")
     s:createSignal("newRow")
@@ -904,10 +903,11 @@ function Stack.shouldDropGarbage(self)
       -- drop chain garbage higher than 1 row immediately
       return garbage.height > 1
     else
-      print("I actually reached the cursed code path?")
       -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
       -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
       -- and because of that hack, we need to do another hack here and allow n-height combo garbage
+      -- technically garbage should get fixed garbageQueue side though so we should not reach here
+      print("I actually reached the cursed code path?")
       return garbage.height > 1
     end
   end
@@ -1096,7 +1096,6 @@ function Stack.simulate(self)
   prof.push("chain update")
   -- if at the end of the routine there are no chain panels, the chain ends.
   if self.chain_counter ~= 0 and not self:hasChainingPanels() then
-    self:emitSignal("chainEnded", self.chain_counter)
     self.chain_counter = 0
 
     if self.outgoingGarbage then

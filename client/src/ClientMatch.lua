@@ -14,12 +14,13 @@ local Replay = require("common.data.Replay")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Telegraph = require("client.src.graphics.Telegraph")
 local MatchParticipant = require("client.src.MatchParticipant")
+local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 
 ---@class ClientMatch
 ---@field players table[]
 ---@field stacks PlayerStack[]
 ---@field match Match
----@field replay Replay?
+---@field replay Replay
 ---@field doCountdown boolean if a countdown is performed at the start of the match
 ---@field stackInteraction integer how the stacks in the match interact with each other
 ---@field winConditions integer[] enumerated conditions to determine a winner between multiple stacks
@@ -146,7 +147,7 @@ function ClientMatch:start()
     engineStacks[#engineStacks+1] = stack.engine
 
     if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-      local attackEngineHost = SimulatedStack({which = #engineStacks + 1, is_local = true, character = CharacterLoader.fullyResolveCharacterSelection()})
+      local attackEngineHost = ChallengeModePlayerStack({which = #engineStacks + 1, is_local = true, character = CharacterLoader.fullyResolveCharacterSelection()})
       attackEngineHost:addAttackEngine(stack.settings.attackEngineSettings)
       attackEngineHost:setGarbageTarget(stack)
       engineStacks[#engineStacks+1] = attackEngineHost
@@ -258,8 +259,9 @@ function ClientMatch:rewindToFrame(frame)
   self.match:rewindToFrame(frame)
 end
 
----@return Replay
+---@return Replay?
 function ClientMatch:finalizeReplay()
+  local replay
   if not self.replay.completed then
     replay = self.replay
     replay:setDuration(self.match.clock)

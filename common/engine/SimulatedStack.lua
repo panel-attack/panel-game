@@ -62,6 +62,8 @@ function SimulatedStack:run()
   end
 
   self.clock = self.clock + 1
+
+  self:emitSignal("finishedRun")
 end
 
 function SimulatedStack:setGameOver()

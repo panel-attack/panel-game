@@ -23,6 +23,40 @@ function(self, args)
 end,
 ClientStack)
 
+function ChallengeModePlayerStack:onGarbagePushed(garbage)
+  -- TODO: Handle combos SFX greather than 7
+  local maxCombo = garbage.width + 1
+  local chainCounter = garbage.height + 1
+  local metalCount = 0
+  if garbage.isMetal then
+    metalCount = 3
+  end
+  local newComboChainInfo = self.attackSoundInfoForMatch(chainCounter > 0, chainCounter, maxCombo, metalCount)
+  if newComboChainInfo and self.character then
+      -- TODO:
+      -- Instead of playing the SFX directly, cache it on the stack
+      --   then decide what to play in onRun based on all the garbage we got this frame
+    self.character:playAttackSfx(newComboChainInfo)
+  end
+end
+
+function ChallengeModePlayerStack:onNewChainLink(chainGarbage)
+  local chainCounter = #chainGarbage.linkTimes + 1
+  local newComboChainInfo = self.attackSoundInfoForMatch(true, chainCounter, 3, 0)
+  if newComboChainInfo and self.character then
+    -- TODO:
+    -- Instead of playing the SFX directly, cache it on the stack
+    --   then decide what to play in onRun based on all the garbage we got this frame
+    self.character:playAttackSfx(newComboChainInfo)
+  end
+end
+
+function ChallengeModePlayerStack:onChainEnded(chainGarbage)
+  if self:canPlaySfx() then
+    SFX_Fanfare_Play = #chainGarbage.linkTimes + 1
+  end
+end
+
 function ChallengeModePlayerStack:render()
   self:setDrawArea()
   self:drawCharacter()
@@ -51,11 +85,11 @@ function ChallengeModePlayerStack:setGarbageTarget(garbageTarget)
     assert(garbageTarget.frameOriginY ~= nil)
     assert(garbageTarget.mirror_x ~= nil)
     assert(garbageTarget.canvasWidth ~= nil)
-    assert(garbageTarget.incomingGarbage ~= nil)
   end
   self.garbageTarget = garbageTarget
-  if self.attackEngine then
-    self.attackEngine:setGarbageTarget(garbageTarget)
+  if self.engine.attackEngine then
+    -- the target needs to match the settings about shock garbage being sorted with 
+    self.engine.attackEngine:setGarbageTarget(garbageTarget)
   end
 end
 

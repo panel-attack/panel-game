@@ -45,12 +45,15 @@ function(self, args)
   self.engine:connectSignal("panelPop", self, self.onPanelPop)
   self.engine:connectSignal("matched", self, self.onEngineMatched)
   self.engine:connectSignal("cursorMoved", self, self.onCursorMoved)
-  self.engine:connectSignal("chainEnded", self, self.onChainEnded)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
   self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("newRow", self, self.onNewRow)
   self.engine:connectSignal("finishedRun", self, self.onRun)
   self.engine:connectSignal("rollback", self, self.onRollback)
+  -- currently unused
+  --self.engine.outgoingGarbage:connectSignal("garbagePushed", self, self.onGarbagePushed)
+  --self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
+  self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -200,11 +203,19 @@ function PlayerStack:onCursorMoved(previousRow, previousCol)
   end
 end
 
-function PlayerStack:onChainEnded(chainCounter)
+function PlayerStack:onGarbagePushed(garbage)
+  -- unused but we might want to hook in here for combo cards / attack animation at some point
+end
+
+function PlayerStack:onNewChainLink(chainGarbage)
+  -- unused but we might want to hook in here for chain cards / attack animation at some point
+end
+
+function PlayerStack:onChainEnded(chainGarbage)
   if self:canPlaySfx() then
-    SFX_Fanfare_Play = chainCounter
+    SFX_Fanfare_Play = #chainGarbage.linkTimes + 1
   end
-  self.analytic:register_chain(chainCounter)
+  self.analytic:register_chain(chainGarbage.linkTimes + 1)
 end
 
 function PlayerStack:onPanelsSwapped()
@@ -1391,20 +1402,8 @@ end
 
 function PlayerStack:queueAttackSoundEffect(isChainLink, chainSize, comboSize, metalCount)
   if self:canPlaySfx() then
-    self.combo_chain_play = PlayerStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
+    self.combo_chain_play = self.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
   end
-end
-
-function PlayerStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
-  if metalCount > 0 then
-    -- override SFX with shock sound
-    return {type = consts.ATTACK_TYPE.shock, size = metalCount}
-  elseif isChainLink then
-    return {type = consts.ATTACK_TYPE.chain, size = chainSize}
-  elseif comboSize > 3 then
-    return {type = consts.ATTACK_TYPE.combo, size = comboSize}
-  end
-  return nil
 end
 
 function PlayerStack:playSfx()

@@ -16,7 +16,7 @@ AttackPattern =
 -- An attack engine sends attacks based on a set of rules.
 local AttackEngine =
   class(
-  function(self, attackSettings, character)
+  function(self, attackSettings)
     -- The number of frames before the first attack starts. Note if this is changed after attack patterns are added their times won't be updated.
     self.delayBeforeStart = attackSettings.delayBeforeStart or 0
 
@@ -42,9 +42,6 @@ local AttackEngine =
     self.clock = 0
 
     self.outgoingGarbage = GarbageQueue(true, self.treatMetalAsCombo)
-
-    -- a character table (not id) to send sfx, should be nil if no sfx should play
-    self.character = character
   end
 )
 
@@ -71,10 +68,6 @@ function AttackEngine:addAttackPatternsFromTable(attackPatternsTable)
 end
 
 function AttackEngine:setGarbageTarget(garbageTarget)
-  assert(garbageTarget.canvasWidth ~= nil)
-  assert(garbageTarget.mirror_x ~= nil)
-  assert(garbageTarget.panelOriginX ~= nil)
-  assert(garbageTarget.panelOriginY ~= nil)
   assert(garbageTarget.incomingGarbage ~= nil)
 
   self.garbageTarget = garbageTarget.engine
@@ -112,9 +105,6 @@ function AttackEngine.run(self)
     highestStartTime = math.max(self.attackPatterns[i].startTime, highestStartTime)
   end
 
-  local maxChain = 0
-  local maxCombo = 0
-  local hasMetal = false
   local totalAttackTimeBeforeRepeat = self.delayBeforeRepeat + highestStartTime - self.delayBeforeStart
   if self.disableQueueLimit or self.garbageTarget.incomingGarbage:len() <= 72 then
     for i = 1, #self.attackPatterns do
@@ -131,20 +121,17 @@ function AttackEngine.run(self)
             local garbage = self.attackPatterns[i].garbage
             if garbage.isChain then
               self.outgoingGarbage:addChainLink(self.clock, math.random(1, 11), math.random(1, 6))
-              local chainCounter = garbage.height + 1
-              maxChain = math.max(chainCounter, maxChain)
             else
               garbage.frameEarned = self.clock
               -- we need a coordinate for the origin of the attack animation
               garbage.rowEarned = math.random(1, 11)
               garbage.colEarned = math.random(1, 6)
-              maxCombo = garbage.width + 1 -- TODO: Handle combos SFX greather than 7
+              maxCombo = garbage.width + 1
               -- if the attack engine garbage is pushed by ref, the garbage queue would modify the reference
               -- which could also alter the chain flag in case of fake chains
               -- so make sure to deepcpy combos before sending
               self.outgoingGarbage:push(deepcpy(garbage))
             end
-            hasMetal = garbage.isMetal or hasMetal
           end
         end
       end
@@ -156,15 +143,6 @@ function AttackEngine.run(self)
   if garbageDelivery then
     logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
     self.garbageTarget.incomingGarbage:pushTable(garbageDelivery)
-  end
-
-  local metalCount = 0
-  if hasMetal then
-    metalCount = 3
-  end
-  local newComboChainInfo = Stack.attackSoundInfoForMatch(maxChain > 0, maxChain, maxCombo, metalCount)
-  if newComboChainInfo and self.character then
-    self.character:playAttackSfx(newComboChainInfo)
   end
 
   self.clock = self.clock + 1

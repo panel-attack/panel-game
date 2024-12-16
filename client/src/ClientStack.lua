@@ -397,6 +397,18 @@ function ClientStack:drawWinCount()
   self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, true)
 end
 
+function ClientStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
+  if metalCount > 0 then
+    -- override SFX with shock sound
+    return {type = consts.ATTACK_TYPE.shock, size = metalCount}
+  elseif isChainLink then
+    return {type = consts.ATTACK_TYPE.chain, size = chainSize}
+  elseif comboSize > 3 then
+    return {type = consts.ATTACK_TYPE.combo, size = comboSize}
+  end
+  return nil
+end
+
 --------------------------------
 ------ abstract functions ------
 --------------------------------
