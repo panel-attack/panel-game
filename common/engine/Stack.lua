@@ -1523,7 +1523,9 @@ function Stack.new_row(self)
   end
   self.panel_buffer = string.sub(self.panel_buffer, 7)
   self.displacement = 16
-  self.touchInputController:stackIsCreatingNewRow()
+  if self.inputMethod == "touch" and self.touchInputController then
+    self.touchInputController:stackIsCreatingNewRow()
+  end
   self:emitSignal("newRow", self)
 end
 

@@ -112,12 +112,16 @@ function ClientMatch:run()
 
   if self.engine:hasEnded() then
     self.engine:handleMatchEnd()
-    -- this prepares everything about the replay except the save location
-    self:finalizeReplay()
-    self.ended = true
-    -- execute callbacks
-    self:emitSignal("matchEnded", self)
+    self:handleMatchEnd()
   end
+end
+
+function ClientMatch:handleMatchEnd()
+  self.ended = true
+  -- this prepares everything about the replay except the save location
+  self:finalizeReplay()
+  -- execute callbacks
+  self:emitSignal("matchEnded", self)
 end
 
 function ClientMatch:runGameOver()
@@ -236,7 +240,7 @@ end
 
 function ClientMatch:abort()
   self.engine:abort()
-  self:emitSignal("matchEnded", self)
+  self:handleMatchEnd()
 end
 
 function ClientMatch:getWinningPlayerCharacter()
