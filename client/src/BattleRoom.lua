@@ -13,6 +13,7 @@ local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
 local consts = require("common.engine.consts")
+local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
 BattleRoom = class(function(self, mode, gameScene)
@@ -145,8 +146,10 @@ function BattleRoom.createLocalFromGameMode(gameMode, gameScene)
   end
 
   if gameMode.style ~= GameModes.Styles.CHOOSE then
-    for i = 1, #battleRoom.players do
-      battleRoom.players[i]:setStyle(gameMode.style)
+    for i, player in ipairs(battleRoom.players) do
+      if player.human then
+        battleRoom.players[i]:setStyle(gameMode.style)
+      end
     end
   end
 

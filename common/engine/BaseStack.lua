@@ -19,6 +19,7 @@ local GarbageQueue = require("common.engine.GarbageQueue")
 ---@field lastRollbackFrame integer the clock time before the Stack was last rolled back \n
 ---@field health integer Reaching 0 typically means game over (depends on the gameOverConditions)
 --- -1 if it has not been rolled back yet (or should not run back to its pre-rollback frame)
+---@field play_to_end boolean?
 
 ---@class BaseStack : Signal
 local BaseStack = class(
@@ -69,6 +70,10 @@ end
 
 function BaseStack:receiveGarbage(garbageDelivery)
   self.incomingGarbage:pushTable(garbageDelivery)
+end
+
+function BaseStack:setCountdown(doCountdown)
+  self.do_countdown = doCountdown
 end
 
 function BaseStack:saveForRollback()

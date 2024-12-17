@@ -215,7 +215,7 @@ function PlayerStack:onChainEnded(chainGarbage)
   if self:canPlaySfx() then
     SFX_Fanfare_Play = #chainGarbage.linkTimes + 1
   end
-  self.analytic:register_chain(chainGarbage.linkTimes + 1)
+  self.analytic:register_chain(#chainGarbage.linkTimes + 1)
 end
 
 function PlayerStack:onPanelsSwapped()
@@ -299,11 +299,6 @@ end
 
 function PlayerStack:receiveConfirmedInput(inputs)
   self.engine:receiveConfirmedInput(inputs)
-end
-
----@param doCountdown boolean if the stack should have a countdown at the beginning
-function PlayerStack:setCountdown(doCountdown)
-  self.engine:setCountdown(doCountdown)
 end
 
 function PlayerStack:enableCatchup(enable)

@@ -375,9 +375,11 @@ function Match:start()
 
   for i, stack in ipairs(self.stacks) do
     stack:setCountdown(self.doCountdown)
-    stack:setAllowAdjacentColorsOnStartingBoard(allowAdjacentColorsOnStartingBoard)
-    stack:enableShockPanels(shockEnabled)
-    stack.seed = self.seed
+    if stack.TYPE == "Stack" then
+      stack:setAllowAdjacentColorsOnStartingBoard(allowAdjacentColorsOnStartingBoard)
+      stack:enableShockPanels(shockEnabled)
+      stack.seed = self.seed
+    end
     self.garbageTargets[i] = {}
     self.garbageSources[stack] = {}
   end

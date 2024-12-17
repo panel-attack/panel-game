@@ -14,6 +14,7 @@ local prof = require("common.lib.jprof.jprof")
 local Menu = require("client.src.ui.Menu")
 local MenuItem = require("client.src.ui.MenuItem")
 local FileUtils = require("client.src.FileUtils")
+local ClientStack = require("client.src.ClientStack")
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 local GameBase = class(
@@ -276,12 +277,12 @@ function GameBase:musicCanChange()
   end
 
   -- someone is still catching up
-  if tableUtils.trueForAny(self.match.stacks, Stack.isCatchingUp) then
+  if tableUtils.trueForAny(self.match.stacks, ClientStack.isCatchingUp) then
     return false
   end
 
   -- music waits until countdown is over
-  if self.match.doCountdown and self.match.clock < (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
+  if self.match.engine.doCountdown and self.match.engine.clock < (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
     return false
   end
 

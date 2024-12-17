@@ -19,7 +19,7 @@ local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 ---@class ClientMatch
 ---@field players table[]
 ---@field stacks PlayerStack[]
----@field match Match
+---@field engine Match
 ---@field replay Replay
 ---@field doCountdown boolean if a countdown is performed at the start of the match
 ---@field stackInteraction integer how the stacks in the match interact with each other
@@ -81,7 +81,7 @@ end)
 local countdownEnd = consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
 
 function ClientMatch:run()
-  if self.isPaused or self.match:hasEnded() then
+  if self.isPaused or self.engine:hasEnded() then
     self:runGameOver()
     return
   end
@@ -95,23 +95,23 @@ function ClientMatch:run()
     end
   end
 
-  self.match:run()
+  self.engine:run()
 
-  if self.panicTickStartTime and self.panicTickStartTime == self.match.clock then
+  if self.panicTickStartTime and self.panicTickStartTime == self.engine.clock then
     self:updateDangerMusic()
   end
 
-  if self.doCountdown and self.match.clock == countdownEnd then
+  if self.doCountdown and self.engine.clock == countdownEnd then
     self:emitSignal("countdownEnded")
-  elseif not self.doCountdown and self.match.clock == consts.COUNTDOWN_START then
+  elseif not self.doCountdown and self.engine.clock == consts.COUNTDOWN_START then
     self:emitSignal("countdownEnded")
   end
 
   self:playCountdownSfx()
   self:playTimeLimitDepletingSfx()
 
-  if self.match:hasEnded() then
-    self.match:handleMatchEnd()
+  if self.engine:hasEnded() then
+    self.engine:handleMatchEnd()
     -- this prepares everything about the replay except the save location
     self:finalizeReplay()
     self.ended = true
@@ -146,13 +146,6 @@ function ClientMatch:start()
     self.stacks[i] = stack
     engineStacks[#engineStacks+1] = stack.engine
 
-    if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-      local attackEngineHost = ChallengeModePlayerStack({which = #engineStacks + 1, is_local = true, character = CharacterLoader.fullyResolveCharacterSelection()})
-      attackEngineHost:addAttackEngine(stack.settings.attackEngineSettings)
-      attackEngineHost:setGarbageTarget(stack)
-      engineStacks[#engineStacks+1] = attackEngineHost
-    end
-
     if self.replay then
       if self.replay.completed then
         -- watching a finished replay
@@ -168,28 +161,42 @@ function ClientMatch:start()
     end
   end
 
-  self.match = Match(engineStacks, self.doCountdown, self.stackInteraction, self.winConditions, self.gameOverConditions,
-                     {timeLimit = self.timeLimit, puzzle = self.puzzle})
-  self.match:setSeed(self.seed)
-  self.match:start()
+  if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+    for i, player in ipairs(self.players) do
+      local attackEngineHost = ChallengeModePlayerStack({
+        which = #engineStacks + 1,
+        is_local = true,
+        character = CharacterLoader.fullyResolveCharacterSelection(),
+        attackSettings = player.settings.attackEngineSettings
+      })
+      attackEngineHost:setGarbageTarget(player.stack)
+      engineStacks[#engineStacks+1] = attackEngineHost.engine
+      self.stacks[attackEngineHost.which] = attackEngineHost
+    end
+  end
 
-  if self.match.timeLimit then
+  self.engine = Match(engineStacks, self.doCountdown, self.stackInteraction, self.winConditions, self.gameOverConditions,
+                     {timeLimit = self.timeLimit, puzzle = self.puzzle})
+  self.engine:setSeed(self.seed)
+  self.engine:start()
+
+  if self.engine.timeLimit then
     self.panicTicksPlayed = {}
     for i = 1, 15 do
       self.panicTicksPlayed[i] = false
     end
 
-    self.panicTickStartTime = (self.match.timeLimit - 15) * 60
-    if self.match.doCountdown then
+    self.panicTickStartTime = (self.engine.timeLimit - 15) * 60
+    if self.engine.doCountdown then
       self.panicTickStartTime = self.panicTickStartTime + consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
     end
   end
 
   if not self.replay then
-    self.replay = self.match:createNewReplay()
+    self.replay = self.engine:createNewReplay()
   else
-    self.match:setAlwaysSaveRollbacks(self.replay.completed)
-    self.match:setEngineVersion(self.replay.engineVersion)
+    self.engine:setAlwaysSaveRollbacks(self.replay.completed)
+    self.engine:setEngineVersion(self.replay.engineVersion)
   end
 end
 
@@ -228,7 +235,7 @@ function ClientMatch:setStage(stageId)
 end
 
 function ClientMatch:abort()
-  self.match:abort()
+  self.engine:abort()
   self:emitSignal("matchEnded", self)
 end
 
@@ -252,11 +259,11 @@ end
 
 ---@param doCountdown boolean if the match should have a countdown before physics start
 function ClientMatch:setCountdown(doCountdown)
-  self.match:setCountdown(doCountdown)
+  self.engine:setCountdown(doCountdown)
 end
 
 function ClientMatch:rewindToFrame(frame)
-  self.match:rewindToFrame(frame)
+  self.engine:rewindToFrame(frame)
 end
 
 ---@return Replay?
@@ -264,35 +271,49 @@ function ClientMatch:finalizeReplay()
   local replay
   if not self.replay.completed then
     replay = self.replay
-    replay:setDuration(self.match.clock)
+    replay:setDuration(self.engine.clock)
     replay:setStage(self.stageId)
     replay:setRanked(self.ranked)
 
     for i, replayPlayer in ipairs(replay.players) do
       local player = self.players[i]
 
-      replayPlayer.name = player.name
-      replayPlayer.publicId = player.publicId
-      replayPlayer.human = player.human
+      -- attackEngines may get their own "player" in replays even though they don't have one for the Match
+      -- in these cases the attackEngine data is saved with the targeted player so let's not duplicate the data
+      -- reasoning is that replays have no way to record yet who is actually targeting who
+      -- for Training mode this implicit relationship is recorded by having the attack settings on the player targeted by them
+      if player then
+        replayPlayer.name = player.name
+        replayPlayer.publicId = player.publicId
+        replayPlayer.human = player.human
 
-      replayPlayer:setWins(player.wins)
-      replayPlayer:setCharacterId(player.characterId)
-      replayPlayer:setPanelId(player.panelId)
-      -- these are display-only props, the true info is stored in levelData for either of them
-      if player.settings.style == GameModes.Styles.MODERN then
-        replayPlayer:setLevel(player.settings.level)
-      else
-        replayPlayer:setDifficulty(player.settings.difficulty)
-      end
+        replayPlayer:setWins(player.wins)
+        replayPlayer:setCharacterId(player.characterId)
+        replayPlayer:setPanelId(player.panelId)
+        replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
+        -- these are display-only props, the true info is stored in levelData for either of them
+        if player.TYPE == "Player" then
+          if player.settings.style == GameModes.Styles.MODERN then
+            replayPlayer:setLevel(player.settings.level)
+          else
+            replayPlayer:setDifficulty(player.settings.difficulty)
+          end
+        else
+          -- this is a challengeModePlayer, difficulty and level may encode challenge mode difficulty and stage respectively
+          replayPlayer:setDifficulty(player.settings.difficulty)
+          replayPlayer:setLevel(player.settings.level)
+          replayPlayer:setHealthSettings(player.settings.healthSettings)
+        end
 
-      if player.stack.analytic then
-        replayPlayer.analytics = player.stack.analytic.data
-        replayPlayer.analytics.score = player.stack.score
-        replayPlayer.analytics.rating = player.rating
+        if player.stack.analytic then
+          replayPlayer.analytics = player.stack.analytic.data
+          replayPlayer.analytics.score = player.stack.score
+          replayPlayer.analytics.rating = player.rating
+        end
       end
     end
 
-    Replay.finalizeReplay(self.match, self.replay)
+    Replay.finalizeReplay(self.engine, self.replay)
   end
 
   return replay
@@ -335,10 +356,10 @@ function ClientMatch.createFromReplay(replay, supportsPause)
 end
 
 function ClientMatch:playCountdownSfx()
-  if self.match.doCountdown then
-    if self.match.clock < 200 then
-      if (self.match.clock - consts.COUNTDOWN_START) % 60 == 0 then
-        if self.match.clock == countdownEnd then
+  if self.engine.doCountdown then
+    if self.engine.clock < 200 then
+      if (self.engine.clock - consts.COUNTDOWN_START) % 60 == 0 then
+        if self.engine.clock == countdownEnd then
           SoundController:playSfx(themes[config.theme].sounds.go)
         else
           SoundController:playSfx(themes[config.theme].sounds.countdown)
@@ -349,10 +370,10 @@ function ClientMatch:playCountdownSfx()
 end
 
 function ClientMatch:playTimeLimitDepletingSfx()
-  if self.match.timeLimit then
+  if self.engine.timeLimit then
     -- have to account for countdown
-    if self.match.clock >= self.panicTickStartTime then
-      local tickIndex = math.ceil((self.match.clock - self.panicTickStartTime) / 60)
+    if self.engine.clock >= self.panicTickStartTime then
+      local tickIndex = math.ceil((self.engine.clock - self.panicTickStartTime) / 60)
       if self.panicTicksPlayed[tickIndex] == false then
         SoundController:playSfx(themes[config.theme].sounds.countdown)
         self.panicTicksPlayed[tickIndex] = true
@@ -363,7 +384,7 @@ end
 
 function ClientMatch:updateDangerMusic()
   local dangerMusic
-  if self.panicTickStartTime == nil or self.match.clock < self.panicTickStartTime then
+  if self.panicTickStartTime == nil or self.engine.clock < self.panicTickStartTime then
     dangerMusic = tableUtils.trueForAny(self.stacks, function(s) return s.danger_music end)
   else
     dangerMusic = true
@@ -453,7 +474,7 @@ function ClientMatch:drawTimer()
       end
     end
 
-    local timeString = frames_to_time_string(frames, self.match.ended)
+    local timeString = frames_to_time_string(frames, self.engine.ended)
 
     self:drawMatchLabel(themes[config.theme].images.IMG_time, themes[config.theme].timeLabel_Pos, themes[config.theme].timeLabel_Scale)
     self:drawMatchTime(timeString, themes[config.theme].time_Pos, themes[config.theme].time_Scale)
@@ -529,20 +550,20 @@ function ClientMatch:render()
     -- GraphicsUtil.printf("Total Time " .. totalTime * 1000, drawX, drawY)
 
     drawY = drawY + padding
-    local totalTime = love.timer.getTime() - self.match.createTime
-    local timePercent = math.round(self.match.timeSpentRunning / totalTime, 5)
+    local totalTime = love.timer.getTime() - self.engine.createTime
+    local timePercent = math.round(self.engine.timeSpentRunning / totalTime, 5)
     GraphicsUtil.printf("Time Percent Running Match: " .. timePercent, drawX, drawY)
 
     drawY = drawY + padding
-    local maxTime = math.round(self.match.maxTimeSpentRunning, 5)
+    local maxTime = math.round(self.engine.maxTimeSpentRunning, 5)
     GraphicsUtil.printf("Max Stack Update: " .. maxTime, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("Seed " .. self.match.seed, drawX, drawY)
+    GraphicsUtil.printf("Seed " .. self.engine.seed, drawX, drawY)
 
-    if self.match.gameOverClock and self.match.gameOverClock > 0 then
+    if self.engine.gameOverClock and self.engine.gameOverClock > 0 then
       drawY = drawY + padding
-      GraphicsUtil.printf("gameOverClock " .. self.match.gameOverClock, drawX, drawY)
+      GraphicsUtil.printf("gameOverClock " .. self.engine.gameOverClock, drawX, drawY)
     end
   end
 
@@ -596,8 +617,8 @@ function ClientMatch:draw_pause()
 end
 
 function ClientMatch:getWinners()
-  if not self.winners and self.match:hasEnded() then
-    local winningStacks = self.match:getWinners()
+  if not self.winners and self.engine:hasEnded() then
+    local winningStacks = self.engine:getWinners()
     local winners = {}
     for i, stack in ipairs(winningStacks) do
       for j, player in ipairs(self.players) do

@@ -63,13 +63,14 @@ function(self, name, publicId, isLocal)
   self:createSignal("levelChanged")
   self:createSignal("levelDataChanged")
   self:createSignal("inputMethodChanged")
-  self:createSignal("attackEngineSettingsChanged")
   self:createSignal("puzzleSetChanged")
   self:createSignal("ratingChanged")
   self:createSignal("leagueChanged")
   self:createSignal("wantsRankedChanged")
 end,
 MatchParticipant)
+
+Player.TYPE = "Player"
 
 -- creates a stack for the given match according to the player's settings and returns it
 -- the stack is also saved as a reference on player
@@ -242,13 +243,6 @@ function Player:setLeague(league)
   if self.league ~= league then
     self.league = league
     self:emitSignal("leagueChanged", league)
-  end
-end
-
-function Player:setAttackEngineSettings(attackEngineSettings)
-  if attackEngineSettings ~= self.settings.attackEngineSettings then
-    self.settings.attackEngineSettings = attackEngineSettings
-    self:emitSignal("attackEngineSettingsChanged", attackEngineSettings)
   end
 end
 

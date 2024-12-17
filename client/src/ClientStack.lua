@@ -409,6 +409,15 @@ function ClientStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, 
   return nil
 end
 
+---@param doCountdown boolean if the stack should have a countdown at the beginning
+function ClientStack:setCountdown(doCountdown)
+  self.engine:setCountdown(doCountdown)
+end
+
+function ClientStack:isCatchingUp()
+  return self.engine.play_to_end
+end
+
 --------------------------------
 ------ abstract functions ------
 --------------------------------

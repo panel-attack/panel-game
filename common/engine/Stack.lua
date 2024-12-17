@@ -265,6 +265,8 @@ local Stack = class(
   BaseStack
 )
 
+Stack.TYPE = "Stack"
+
 function Stack.divergenceString(stackToTest)
   local result = ""
 
@@ -1819,16 +1821,8 @@ function Stack:shakeFramesForGarbageSize(width, height)
   end
 end
 
-function Stack:isCatchingUp()
-  return self.play_to_end
-end
-
 function Stack:disablePassiveRaise()
   self.behaviours.passiveRaise = false
-end
-
-function Stack:setCountdown(doCountdown)
-  self.do_countdown = doCountdown
 end
 
 function Stack:enableCatchup(enable)

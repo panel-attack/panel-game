@@ -14,6 +14,7 @@ local ModController = require("client.src.mods.ModController")
 ---@field stageId string id of the actually used stage
 ---@field panelId string id of the panelSet used to source shock garbage images
 ---@field wantsReady boolean
+---@field attackEngineSettings table
 
 ---@class MatchParticipant
 ---@field name string the name of the participant for display
@@ -59,6 +60,7 @@ function(self)
   self:createSignal("wantsReadyChanged")
   self:createSignal("readyChanged")
   self:createSignal("hasLoadedChanged")
+  self:createSignal("attackEngineSettingsChanged")
 end)
 
 -- returns the count of wins modified by the `modifiedWins` property
@@ -160,6 +162,16 @@ function MatchParticipant:setLoaded(hasLoaded)
   if hasLoaded ~= self.hasLoaded then
     self.hasLoaded = hasLoaded
     self:emitSignal("hasLoadedChanged", hasLoaded)
+  end
+end
+
+-- duality of attackEngineSettings:
+-- In local play / replays the player sending the attacks should be setup as a separate player because it is its own stack
+-- In online play it could be important for each player to have their own settings so that on Match:start a fitting player/stack can get generated
+function MatchParticipant:setAttackEngineSettings(attackEngineSettings)
+  if attackEngineSettings ~= self.settings.attackEngineSettings then
+    self.settings.attackEngineSettings = attackEngineSettings
+    self:emitSignal("attackEngineSettingsChanged", attackEngineSettings)
   end
 end
 

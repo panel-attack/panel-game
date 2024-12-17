@@ -14,18 +14,19 @@ local ReplayPlayer = require("common.data.ReplayPlayer")
 local SimulatedStack = class(
 function(self, args)
   self.max_runs_per_frame = 1
+
+  if args.attackSettings then
+    self:addAttackEngine(args.attackSettings)
+  end
+  if args.healthSettings then
+    self:addHealth(args.healthSettings)
+  end
 end,
 BaseStack)
 
 -- adds an attack engine to the simulated opponent
-function SimulatedStack:addAttackEngine(attackSettings, shouldPlayAttackSfx)
-  if shouldPlayAttackSfx then
-    self.attackEngine = AttackEngine(attackSettings, characters[self.character])
-  else
-    self.attackEngine = AttackEngine(attackSettings)
-  end
-
-  self.outgoingGarbage = self.attackEngine.outgoingGarbage
+function SimulatedStack:addAttackEngine(attackSettings)
+  self.attackEngine = AttackEngine(attackSettings, self.outgoingGarbage)
 
   return self.attackEngine
 end
@@ -41,8 +42,12 @@ function SimulatedStack:run()
     self.attackEngine:run()
   end
 
+  self.outgoingGarbage:processStagedGarbageForClock(self.clock)
+
   if self.do_countdown and self.countdown_timer > 0 then
-    self.healthEngine.clock = self.clock
+    if self.healthEngine then
+      self.healthEngine.clock = self.clock
+    end
     if self.clock >= consts.COUNTDOWN_START then
       self.countdown_timer = self.countdown_timer - 1
     end

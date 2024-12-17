@@ -2,6 +2,12 @@ local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 
 -- A pattern for sending garbage
+---@class AttackPattern
+---@field width integer
+---@field height integer
+---@field startTime integer
+---@field endsChain boolean
+---@field garbage table
 AttackPattern =
   class(
   function(self, width, height, startTime, metal, chain, endsChain)
@@ -14,34 +20,40 @@ AttackPattern =
 )
 
 -- An attack engine sends attacks based on a set of rules.
+---@class AttackEngine
+---@field delayBeforeStart integer How many frame the AttackEngine waits before running. \n
+--- Note if this is changed after attack patterns are added their times won't be updated.
+---@field delayBeforeRepeat integer How many frames the AttackEngine waits after a full run before starting over
+---@field disableQueueLimit boolean Attack patterns that put out a crazy amount of garbage can slow down the game, so by default we don't queue more than 72 attacks \n
+--- This flag can be optionally set to disable that.
+---@field treatMetalAsCombo boolean whether the metal garbage is treated the same as combo garbage (aka they can mix)
+---@field attackPatterns AttackPattern[] The array of AttackPattern objects this engine will run through.
+---@field attackSettings table The format for serializing AttackPattern information
+---@field clock integer  The clock to control the continuity of the sending process
+---@field outgoingGarbage GarbageQueue The garbage queue attacks are added to
 local AttackEngine =
   class(
-  function(self, attackSettings)
-    -- The number of frames before the first attack starts. Note if this is changed after attack patterns are added their times won't be updated.
+  function(self, attackSettings, garbageQueue)
     self.delayBeforeStart = attackSettings.delayBeforeStart or 0
-
-    -- The number of frames at the end until the whole attack engine repeats.
     self.delayBeforeRepeat = attackSettings.delayBeforeRepeat or 0
-
-    -- Attack patterns that put out a crazy amount of garbage can slow down the game, so by default we don't queue more than 72 attacks
-    -- This flag can be optionally set to disable that.
     self.disableQueueLimit = attackSettings.disableQueueLimit or false
 
-    -- whether the metal garbage is treated the same as combo garbage (aka they can mix)
     -- mergeComboMetalQueue is a reference to an old implementation in which different garbage types
     --  were organised in different queues
-    --  we're stuck with the name because it is found in config data
+    --  we're stuck with the name because it is found in serialized data
     self.treatMetalAsCombo = attackSettings.mergeComboMetalQueue or false
 
-    -- The table of AttackPattern objects this engine will run through.
     self.attackPatterns = {}
     self:addAttackPatternsFromTable(attackSettings.attackPatterns)
     self.attackSettings = attackSettings
 
-    -- the clock to control the continuity of the sending process
     self.clock = 0
 
-    self.outgoingGarbage = GarbageQueue(true, self.treatMetalAsCombo)
+    self.outgoingGarbage = garbageQueue
+    -- to ensure correct behaviour according to the pattern definition
+    -- the garbage queue must be modified to match the attack settings
+    self.outgoingGarbage.treatMetalAsCombo = self.treatMetalAsCombo
+    self.outgoingGarbage.illegalStuffIsAllowed = true
   end
 )
 
@@ -68,8 +80,6 @@ function AttackEngine:addAttackPatternsFromTable(attackPatternsTable)
 end
 
 function AttackEngine:setGarbageTarget(garbageTarget)
-  assert(garbageTarget.incomingGarbage ~= nil)
-
   self.garbageTarget = garbageTarget.engine
   self.garbageTarget.incomingGarbage.illegalStuffIsAllowed = true
   self.garbageTarget.incomingGarbage.treatMetalAsCombo = self.treatMetalAsCombo
