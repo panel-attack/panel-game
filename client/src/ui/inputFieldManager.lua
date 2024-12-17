@@ -1,4 +1,4 @@
-local input = require("client.src.inputManager)
+local input = require("client.src.inputManager")
 
 -- receives love events and passes them to the correct inputField object
 local inputFieldManager = {

@@ -1,5 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
-local input = require("client.src.inputManager)
+local input = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local fileUtils = require("client.src.FileUtils")
 local Replay = require("common.data.Replay")

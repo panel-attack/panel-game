@@ -1,4 +1,4 @@
-local input = require("client.src.inputManager)
+local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local inputFieldManager = require("client.src.ui.inputFieldManager")
 

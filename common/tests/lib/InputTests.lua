@@ -1,5 +1,5 @@
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
-local input = require("client.src.inputManager)
+local input = require("client.src.inputManager")
 
 local processEvents = function()
   if love.event then

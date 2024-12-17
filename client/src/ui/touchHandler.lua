@@ -1,4 +1,4 @@
-local input = require("client.src.inputManager)
+local input = require("client.src.inputManager")
 -- handles all touch interactions
 -- all elements that implement touch interactions must register themselves with the touch handler on construction
 

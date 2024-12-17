@@ -6,7 +6,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local PixelFontLabel = require("client.src.ui.PixelFontLabel")
 local TextButton = require("client.src.ui.TextButton")
 local Label = require("client.src.ui.Label")
-local input = require("client.src.inputManager)
+local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 
 local PortraitGame = class(function(self, sceneParams)
