@@ -786,40 +786,6 @@ function Stack:getGarbagePanelRow()
   return garbagePanelRow
 end
 
--- awards bonus score for chains/combos
--- always call after the logic for incrementing the chain counter
-function Stack:updateScoreWithBonus(comboSize)
-  -- don't check isChain for this!
-  -- needs to be outside of chaining to reproduce matches during a chain giving the same score as the chain link
-  self:updateScoreWithChain()
-
-  self:updateScoreWithCombo(comboSize)
-end
-
-function Stack:updateScoreWithCombo(comboSize)
-  if comboSize > 3 then
-    if (score_mode == consts.SCOREMODE_TA) then
-      self.score = self.score + SCORE_COMBO_TA[math.min(30, comboSize)]
-    elseif (score_mode == consts.SCOREMODE_PDP64) then
-      if (comboSize < 41) then
-        self.score = self.score + SCORE_COMBO_PdP64[comboSize]
-      else
-        self.score = self.score + 20400 + ((comboSize - 40) * 800)
-      end
-    end
-  end
-end
-
-function Stack:updateScoreWithChain()
-  local chain_bonus = self.chain_counter
-  if (score_mode == consts.SCOREMODE_TA) then
-    if (chain_bonus > 13) then
-      chain_bonus = 0
-    end
-    self.score = self.score + SCORE_CHAIN_TA[chain_bonus]
-  end
-end
-
 function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
   logger.debug("P" .. self.which .. "@" .. self.clock .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
   for i = 3, metalCount do
@@ -900,6 +866,40 @@ function Stack:awardStopTime(isChain, comboSize)
   local stopTime = self:calculateStopTime(comboSize, self.panels_in_top_row, isChain, self.chain_counter)
   if stopTime > self.stop_time then
     self.stop_time = stopTime
+  end
+end
+
+-- awards bonus score for chains/combos
+-- always call after the logic for incrementing the chain counter
+function Stack:updateScoreWithBonus(comboSize)
+  -- don't check isChain for this!
+  -- needs to be outside of chaining to reproduce matches during a chain giving the same score as the chain link
+  self:updateScoreWithChain()
+
+  self:updateScoreWithCombo(comboSize)
+end
+
+function Stack:updateScoreWithCombo(comboSize)
+  if comboSize > 3 then
+    if (score_mode == consts.SCOREMODE_TA) then
+      self.score = self.score + SCORE_COMBO_TA[math.min(30, comboSize)]
+    elseif (score_mode == consts.SCOREMODE_PDP64) then
+      if (comboSize < 41) then
+        self.score = self.score + SCORE_COMBO_PdP64[comboSize]
+      else
+        self.score = self.score + 20400 + ((comboSize - 40) * 800)
+      end
+    end
+  end
+end
+
+function Stack:updateScoreWithChain()
+  local chain_bonus = self.chain_counter
+  if (score_mode == consts.SCOREMODE_TA) then
+    if (chain_bonus > 13) then
+      chain_bonus = 0
+    end
+    self.score = self.score + SCORE_CHAIN_TA[chain_bonus]
   end
 end
 
