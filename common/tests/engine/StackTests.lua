@@ -2,7 +2,6 @@ local consts = require("common.engine.consts")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 local GameModes = require("common.engine.GameModes")
 local Puzzle = require("common.engine.Puzzle")
-local Player = require("client.src.Player")
 
 local function puzzleTest()
   -- to stop rising

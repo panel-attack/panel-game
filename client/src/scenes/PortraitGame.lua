@@ -78,8 +78,8 @@ end
 -- when using the stack function, the multibar ends up somewhere
 -- so just force absolute multibar with a somewhat fixed draw
 function PortraitGame:drawMultibar(stack)
-  local stop_time = stack.stop_time
-  local shake_time = stack.shake_time
+  local stop_time = stack.engine.stop_time
+  local shake_time = stack.engine.shake_time
 
   -- before the first move, display the stop time from the puzzle, not the stack
   if stack.puzzle and stack.puzzle.puzzleType == "clear" and stack.puzzle.moves == stack.puzzle.remaining_moves then
@@ -105,7 +105,7 @@ function PortraitGame:drawMultibar(stack)
   local bottomOffset = 0
 
   scale = themes[config.theme].multibar_Scale
-  local healthHeight = (stack.health / multiBarFrameCount) * multiBarMaxHeight
+  local healthHeight = (stack.engine.health / multiBarFrameCount) * multiBarMaxHeight
   self:drawBar(stack, themes[config.theme].images.IMG_healthbar, stack.healthQuad, barPos, healthHeight, 0, 0, scale)
 
   bottomOffset = healthHeight
@@ -113,7 +113,7 @@ function PortraitGame:drawMultibar(stack)
   local stopHeight = 0
   local preStopHeight = 0
 
-  if shake_time > 0 and shake_time > (stop_time + stack.pre_stop_time) then
+  if shake_time > 0 and shake_time > (stop_time + stack.engine.pre_stop_time) then
     -- shake is only drawn if it is greater than prestop + stop
     -- shake is always guaranteed to fit
     local shakeHeight = (shake_time / multiBarFrameCount) * multiBarMaxHeight
@@ -121,20 +121,20 @@ function PortraitGame:drawMultibar(stack)
   else
     -- stop/prestop are only drawn if greater than shake
     if stop_time > 0 then
-      stopHeight = math.min(stop_time, multiBarFrameCount - stack.health) / multiBarFrameCount * multiBarMaxHeight
+      stopHeight = math.min(stop_time, multiBarFrameCount - stack.engine.health) / multiBarFrameCount * multiBarMaxHeight
       self:drawBar(stack, themes[config.theme].images.IMG_multibar_stop_bar, stack.multi_stopQuad, barPos, stopHeight, bottomOffset, 0, scale)
 
       bottomOffset = bottomOffset + stopHeight
     end
-    if stack.pre_stop_time and stack.pre_stop_time > 0 then
-      local totalInvincibility = stack.health + stack.stop_time + stack.pre_stop_time
+    if stack.engine.pre_stop_time and stack.engine.pre_stop_time > 0 then
+      local totalInvincibility = stack.engine.health + stack.engine.stop_time + stack.engine.pre_stop_time
       local remainingSeconds = 0
       if totalInvincibility > multiBarFrameCount then
         -- total invincibility exceeds what the multibar can display -> fill only the remaining space with prestop
-        preStopHeight = (1 - (stack.health + stop_time) / multiBarFrameCount) * multiBarMaxHeight
+        preStopHeight = (1 - (stack.engine.health + stop_time) / multiBarFrameCount) * multiBarMaxHeight
         remainingSeconds = (totalInvincibility - multiBarFrameCount) / 60
       else
-        preStopHeight = stack.pre_stop_time / multiBarFrameCount * multiBarMaxHeight
+        preStopHeight = stack.engine.pre_stop_time / multiBarFrameCount * multiBarMaxHeight
       end
 
       self:drawBar(stack, themes[config.theme].images.IMG_multibar_prestop_bar, stack.multi_prestopQuad, barPos, preStopHeight, bottomOffset, 0, scale)
@@ -164,7 +164,7 @@ function PortraitGame:draw()
     for _, stack in ipairs(self.match.stacks) do
       stack:render()
       -- don't render stacks that only have an attack engine
-      if stack.is_local and stack.player.human and stack.inputMethod == "touch" then
+      if stack.engine.is_local and stack.player.human and stack.inputMethod == "touch" then
         self:drawMultibar(stack)
       end
 
@@ -221,14 +221,14 @@ function PortraitGame:flipToPortrait()
       local raiseButton = TextButton({label = Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
-        stack.touchInputController.touchingRaise = true
+        stack.engine.touchInputController.touchingRaise = true
       end
       raiseButton.onDrag = function(button, x, y)
-        stack.touchInputController.touchingRaise = button:inBounds(x, y)
+        stack.engine.touchInputController.touchingRaise = button:inBounds(x, y)
       end
       raiseButton.onRelease = function(button, x, y, timeHeld)
         button.backgroundColor[4] = 0.7
-        stack.touchInputController.touchingRaise = false
+        stack.engine.touchInputController.touchingRaise = false
       end
       raiseButton.width = 70
       self.uiRoot.raiseButton = raiseButton
@@ -236,8 +236,8 @@ function PortraitGame:flipToPortrait()
     else
       local stack = player.stack
       stack.gfxScale = 1
-      stack.canvas = love.graphics.newCanvas(104 * stack.gfxScale, 204 * stack.gfxScale, {dpiscale = GAME:newCanvasSnappedScale()})
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack.canvas:getWidth()) - 12
+      stack.canvas = true
+      stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
       stack.frameOriginY = 10
       stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
       stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset

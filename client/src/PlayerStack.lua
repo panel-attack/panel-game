@@ -232,11 +232,7 @@ function PlayerStack:onGarbageMatched(panelCount, onScreenCount)
 end
 
 function PlayerStack:onNewRow(engine)
-  if self.inputMethod == "touch" then
-    self.touchInputController:stackIsCreatingNewRow()
-  end
 
-  -- I suppose this is where we could add +1 to score for manual raising if we could still discern whether it was manual or not
 end
 
 function PlayerStack:onRollback(engine)

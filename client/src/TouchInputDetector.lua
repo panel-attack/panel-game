@@ -1,5 +1,5 @@
 local logger = require("common.lib.logger")
-local TouchDataEncoding = require("common.engine.TouchDataEncoding")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local class = require("common.lib.class")
 
 -- An object that manages touches on the screen and translates them to swaps on a stack
@@ -68,7 +68,7 @@ function TouchInputDetector:encodedCharacterForCurrentTouchInput()
 
   local cursorRow, cursorColumn = self.touchInputController:handleTouch(self.touchedCell, self.previousTouchedCell)
 
-  local result = TouchDataEncoding.touchDataToLatinString(shouldRaise, cursorRow, cursorColumn, self.stack.width)
+  local result = TouchDataEncoding.touchDataToLatinString(shouldRaise, cursorRow, cursorColumn, self.width)
   return result
 end
 

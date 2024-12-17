@@ -1,6 +1,5 @@
 local logger = require("common.lib.logger")
 local GameModes = require("common.engine.GameModes")
-local Player = require("client.src.Player")
 local Match = require("common.engine.Match")
 local inputs = require("common.lib.inputManager")
 local fileUtils = require("client.src.FileUtils")
