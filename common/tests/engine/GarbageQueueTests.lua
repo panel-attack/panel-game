@@ -27,4 +27,4 @@ local function testComboQueueing1()
   StackReplayTestingUtils:cleanup(match)
 end
 
---testComboQueueing1()
+testComboQueueing1()
