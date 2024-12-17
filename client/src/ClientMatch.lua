@@ -467,8 +467,8 @@ function ClientMatch:drawTimer()
   else
     local frames = 0
     local stack = self.stacks[1]
-    if stack ~= nil and stack.game_stopwatch ~= nil and tonumber(stack.game_stopwatch) ~= nil then
-      frames = stack.game_stopwatch
+    if stack ~= nil and stack.engine.game_stopwatch ~= nil and tonumber(stack.engine.game_stopwatch) ~= nil then
+      frames = stack.engine.game_stopwatch
     end
 
     if self.timeLimit then

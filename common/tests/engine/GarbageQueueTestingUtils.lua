@@ -3,9 +3,7 @@ local Match = require("common.engine.Match")
 local Stack = require("common.engine.Stack")
 require("common.engine.checkMatches")
 local GameModes = require("common.engine.GameModes")
-local Player = require("client.src.Player")
 local LevelPresets = require("common.data.LevelPresets")
-local inputs = require("common.lib.inputManager")
 
 local GarbageQueueTestingUtils = {}
 

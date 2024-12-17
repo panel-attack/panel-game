@@ -1,7 +1,7 @@
 local logger = require("common.lib.logger")
 require("common.lib.mathExtensions")
 local utf8 = require("common.lib.utf8Additions")
-local inputManager = require("common.lib.inputManager")
+local inputManager = require("client.src.inputManager)
 require("client.src.globals")
 local touchHandler = require("client.src.ui.touchHandler")
 local inputFieldManager = require("client.src.ui.inputFieldManager")

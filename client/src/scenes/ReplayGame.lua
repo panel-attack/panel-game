@@ -1,5 +1,5 @@
 local GameBase = require("client.src.scenes.GameBase")
-local input = require("common.lib.inputManager")
+local input = require("client.src.inputManager)
 local consts = require("common.engine.consts")
 local util = require("common.lib.util")
 local class = require("common.lib.class")

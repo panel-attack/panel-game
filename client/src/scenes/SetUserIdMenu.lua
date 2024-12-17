@@ -1,6 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local InputField = require("client.src.ui.InputField")
-local input = require("common.lib.inputManager")
+local input = require("client.src.inputManager)
 local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
