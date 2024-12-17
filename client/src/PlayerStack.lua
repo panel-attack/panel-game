@@ -88,6 +88,12 @@ function(self, args)
   self.combo_chain_play = nil
   self.sfx_land = false
   self.sfx_garbage_thud = 0
+  self.sfxSwap = false
+  self.sfxCursorMove = false
+  self.sfxGarbageMatch = false
+  self.sfxFanfare = 0
+  self.sfxPop = true
+  self.sfxGarbagePop = 0
 
   self.taunt_up = nil -- will hold an index
   self.taunt_down = nil -- will hold an index
@@ -143,7 +149,7 @@ function PlayerStack:onPanelPop(panel)
       self:enqueue_popfx(panel.column, panel.row, self.popSizeThisFrame)
     end
     if self:canPlaySfx() then
-      SFX_Garbage_Pop_Play = panel.pop_index
+      self.sfxGarbagePop = panel.pop_index
     end
   else
     if config.popfx == true then
@@ -160,7 +166,7 @@ function PlayerStack:onPanelPop(panel)
     end
 
     if self:canPlaySfx() then
-      SFX_Pop_Play = 1
+      self.sfxPop = true
     end
     self.poppedPanelIndex = panel.combo_index
   end
@@ -195,7 +201,7 @@ function PlayerStack:onCursorMoved(previousRow, previousCol)
   local engine = self.engine
   if (playMoveSounds and (engine.cur_timer == 0 or engine.cur_timer == engine.cur_wait_time) and (engine.cur_row ~= previousRow or engine.cur_col ~= previousCol)) then
     if self:canPlaySfx() then
-      SFX_Cur_Move_Play = 1
+      self.sfxCursorMove = true
     end
     if engine.cur_timer ~= engine.cur_wait_time then
       self.analytic:register_move()
@@ -213,21 +219,21 @@ end
 
 function PlayerStack:onChainEnded(chainGarbage)
   if self:canPlaySfx() then
-    SFX_Fanfare_Play = #chainGarbage.linkTimes + 1
+    self.sfxFanfare = #chainGarbage.linkTimes + 1
   end
   self.analytic:register_chain(#chainGarbage.linkTimes + 1)
 end
 
 function PlayerStack:onPanelsSwapped()
   if self:canPlaySfx() then
-    SFX_Swap_Play = 1
+    self.sfxSwap = true
   end
   self.analytic:register_swap()
 end
 
 function PlayerStack:onGarbageMatched(panelCount, onScreenCount)
   if self:canPlaySfx() then
-    SFX_garbage_match_play = true
+    self.sfxGarbageMatch = true
   end
 end
 
@@ -1401,18 +1407,18 @@ function PlayerStack:playSfx()
   prof.push("stack sfx")
   -- Update Sound FX
   if self:canPlaySfx() then
-    if SFX_Swap_Play == 1 then
+    if self.sfxSwap then
       SoundController:playSfx(themes[config.theme].sounds.swap)
-      SFX_Swap_Play = 0
+      self.sfxSwap = false
     end
-    if SFX_Cur_Move_Play == 1 then
+    if self.sfxCursorMove then
       -- I have no idea why this makes a distinction for vs, like what?
       -- On scouring historical chats it seems like cursor move sounds did not play during swap sounds ONLY in vs in TA
       -- people suspected a lack in sound channels in TA; might just be sensible to overall keep the amount of SFX low
       if not (self.stackInteraction ~= GameModes.StackInteractions.NONE and themes[config.theme].sounds.swap:isPlaying()) and not self.engine.do_countdown then
         SoundController:playSfx(themes[config.theme].sounds.cur_move)
       end
-      SFX_Cur_Move_Play = 0
+      self.sfxCursorMove = false
     end
     if self.sfx_land then
       SoundController:playSfx(themes[config.theme].sounds.land)
@@ -1427,20 +1433,20 @@ function PlayerStack:playSfx()
       characters[self.character]:playAttackSfx(self.combo_chain_play)
       self.combo_chain_play = nil
     end
-    if SFX_garbage_match_play then
+    if self.sfxGarbageMatch then
       characters[self.character]:playGarbageMatchSfx()
-      SFX_garbage_match_play = nil
+      self.sfxGarbageMatch = false
     end
-    if SFX_Fanfare_Play == 0 then
+    if self.sfxFanfare == 0 then
       --do nothing
-    elseif SFX_Fanfare_Play >= 6 then
+    elseif self.sfxFanfare >= 6 then
       SoundController:playSfx(themes[config.theme].sounds.fanfare3)
-    elseif SFX_Fanfare_Play >= 5 then
+    elseif self.sfxFanfare >= 5 then
       SoundController:playSfx(themes[config.theme].sounds.fanfare2)
-    elseif SFX_Fanfare_Play >= 4 then
+    elseif self.sfxFanfare >= 4 then
       SoundController:playSfx(themes[config.theme].sounds.fanfare1)
     end
-    SFX_Fanfare_Play = 0
+    self.sfxFanfare = 0
     if self.sfx_garbage_thud >= 1 and self.sfx_garbage_thud <= 3 then
       local interrupted_thud = nil
       for i = 1, 3 do
@@ -1459,11 +1465,11 @@ function PlayerStack:playSfx()
       end
       self.sfx_garbage_thud = 0
     end
-    if SFX_Pop_Play or SFX_Garbage_Pop_Play then
+    if self.sfxPop or self.sfxGarbagePop then
       local popLevel = min(max(self.engine.chain_counter, 1), 4)
       local popIndex = 1
-      if SFX_Garbage_Pop_Play then
-        popIndex = min(SFX_Garbage_Pop_Play + self.poppedPanelIndex, 10)
+      if self.sfxGarbagePop then
+        popIndex = min(self.sfxGarbagePop + self.poppedPanelIndex, 10)
       else
         popIndex = min(self.poppedPanelIndex, 10)
       end
@@ -1473,8 +1479,8 @@ function PlayerStack:playSfx()
       SoundController:playSfx(themes[config.theme].sounds.pops[popLevel][popIndex])
       self.lastPopLevelPlayed = popLevel
       self.lastPopIndexPlayed = popIndex
-      SFX_Pop_Play = nil
-      SFX_Garbage_Pop_Play = nil
+      self.sfxPop = false
+      self.sfxGarbagePop = 0
     end
   end
   prof.pop("stack sfx")

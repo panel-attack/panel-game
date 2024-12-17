@@ -11,8 +11,4 @@ NAME_LENGTH_LIMIT = 16
 
 themes = {} -- initialized in theme.lua
 
--- sfx play
-SFX_Fanfare_Play = 0
-SFX_GarbageThud_Play = 0
-
 THEME_DIRECTORY_PATH = "themes/"

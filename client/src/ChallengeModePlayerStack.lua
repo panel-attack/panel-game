@@ -10,6 +10,7 @@ function(self, args)
   self.multiBarFrameCount = 240
   -- needed for sending shock garbage
   self.panels_dir = config.panels
+  self.sfxFanfare = 0
 
   self.difficultyQuads = {}
 
@@ -53,7 +54,17 @@ end
 
 function ChallengeModePlayerStack:onChainEnded(chainGarbage)
   if self:canPlaySfx() then
-    SFX_Fanfare_Play = #chainGarbage.linkTimes + 1
+    self.sfxFanfare = #chainGarbage.linkTimes + 1
+    if self.sfxFanfare == 0 then
+      --do nothing
+    elseif self.sfxFanfare >= 6 then
+      SoundController:playSfx(themes[config.theme].sounds.fanfare3)
+    elseif self.sfxFanfare >= 5 then
+      SoundController:playSfx(themes[config.theme].sounds.fanfare2)
+    elseif self.sfxFanfare >= 4 then
+      SoundController:playSfx(themes[config.theme].sounds.fanfare1)
+    end
+    self.sfxFanfare = 0
   end
 end
 
