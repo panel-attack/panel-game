@@ -467,8 +467,8 @@ function PlayerStack.enqueue_card(self, chain, x, y, n)
   local card_burstAtlas = nil
   local card_burstParticle = nil
   if config.popfx == true then
-    if characters[self.character].popfx_style == "burst" or characters[self.character].popfx_style == "fadeburst" then
-      card_burstAtlas = characters[self.character].images["burst"]
+    if self.character.popfx_style == "burst" or self.character.popfx_style == "fadeburst" then
+      card_burstAtlas = self.character.images["burst"]
       local card_burstFrameDimension = card_burstAtlas:getWidth() / 9
       card_burstParticle = GraphicsUtil:newRecycledQuad(card_burstFrameDimension, 0, card_burstFrameDimension, card_burstFrameDimension, card_burstAtlas:getDimensions())
     end
@@ -555,14 +555,14 @@ function PlayerStack.enqueue_popfx(self, x, y, popsize)
   local fadeAtlas = nil
   local fadeFrameDimension = nil
   local fadeParticle = nil
-  if characters[self.character].images["burst"] then
-    burstAtlas = characters[self.character].images["burst"]
+  if self.character.images["burst"] then
+    burstAtlas = self.character.images["burst"]
     burstFrameDimension = burstAtlas:getWidth() / 9
     burstParticle = GraphicsUtil:newRecycledQuad(burstFrameDimension, 0, burstFrameDimension, burstFrameDimension, burstAtlas:getDimensions())
     bigParticle = GraphicsUtil:newRecycledQuad(0, 0, burstFrameDimension, burstFrameDimension, burstAtlas:getDimensions())
   end
-  if characters[self.character].images["fade"] then
-    fadeAtlas = characters[self.character].images["fade"]
+  if self.character.images["fade"] then
+    fadeAtlas = self.character.images["fade"]
     fadeFrameDimension = fadeAtlas:getWidth() / 9
     fadeParticle = GraphicsUtil:newRecycledQuad(fadeFrameDimension, 0, fadeFrameDimension, fadeFrameDimension, fadeAtlas:getDimensions())
   end
@@ -591,22 +591,22 @@ function PlayerStack.update_popfxs(self)
 
   for i = self.pop_q.first, self.pop_q.last do
     local popfx = self.pop_q[i]
-    if characters[self.character].popfx_style == "burst" or characters[self.character].popfx_style == "fadeburst" then
+    if self.character.popfx_style == "burst" or self.character.popfx_style == "fadeburst" then
       popfx_animation = POPFX_BURST_ANIMATION
     end
-    if characters[self.character].popfx_style == "fade" then
+    if self.character.popfx_style == "fade" then
       popfx_animation = POPFX_FADE_ANIMATION
     end
     if POPFX_BURST_ANIMATION[popfx.frame] then
       popfx.frame = popfx.frame + 1
       if (POPFX_BURST_ANIMATION[popfx.frame] == nil) then
-        if characters[self.character].images["burst"] then
+        if self.character.images["burst"] then
           GraphicsUtil:releaseQuad(popfx.burstParticle)
         end
-        if characters[self.character].images["fade"] then
+        if self.character.images["fade"] then
           GraphicsUtil:releaseQuad(popfx.fadeParticle)
         end
-        if characters[self.character].images["burst"] then
+        if self.character.images["burst"] then
           GraphicsUtil:releaseQuad(popfx.bigParticle)
         end
         self.pop_q:pop()
@@ -627,20 +627,20 @@ function PlayerStack.drawPopEffects(self)
 
     GraphicsUtil.setColor(1, 1, 1, self:opacityForFrame(popfx.frame, 1, 8))
 
-    if characters[self.character].popfx_style == "burst" or characters[self.character].popfx_style == "fadeburst" then
-      if characters[self.character].images["burst"] then
+    if self.character.popfx_style == "burst" or self.character.popfx_style == "fadeburst" then
+      if self.character.images["burst"] then
         if POPFX_BURST_ANIMATION[popfx.frame] then
           self:drawPopEffectsBurstGroup(popfx, drawX, drawY, panelSize)
         end
       end
     end
 
-    if characters[self.character].popfx_style == "fade" or characters[self.character].popfx_style == "fadeburst" then
-      if characters[self.character].images["fade"] then
+    if self.character.popfx_style == "fade" or self.character.popfx_style == "fadeburst" then
+      if self.character.images["fade"] then
         local fadeFrame = POPFX_FADE_ANIMATION[popfx.frame]
         if (fadeFrame ~= nil) then
           local fadeSize = 32
-          local fadeScale = characters[self.character].popfx_fadeScale
+          local fadeScale = self.character.popfx_fadeScale
           local fadeParticle_atlas = popfx.fadeAtlas
           local fadeParticle = popfx.fadeParticle
           local fadeFrameDimension = popfx.fadeFrameDimension
@@ -676,7 +676,7 @@ end
 function PlayerStack:drawPopEffectsBurstPiece(direction, popfx, drawX, drawY, panelSize)
 
   local burstDistance = POPFX_BURST_ANIMATION[popfx.frame][1]
-  local shouldRotate = characters[self.character].popfx_burstRotate
+  local shouldRotate = self.character.popfx_burstRotate
   local x = drawX
   local y = drawY
   local rotation = 0
@@ -758,7 +758,7 @@ function PlayerStack:drawRotatingCardBurstEffectGroup(card, drawX, drawY)
     local x = drawX + panelSize / 2 + xOffset
     local y = drawY + panelSize / 2 + yOffset
     local rotation = 0
-    if characters[self.character].popfx_burstRotate then
+    if self.character.popfx_burstRotate then
       rotation = totalRadians
     end
     
@@ -769,7 +769,7 @@ end
 -- Draws a burst partical with the given parameters
 function PlayerStack:drawPopBurstParticle(atlas, quad, frameIndex, atlasDimension, drawX, drawY, panelSize, rotation)
   
-  local burstScale = characters[self.character].popfx_burstScale
+  local burstScale = self.character.popfx_burstScale
   local burstFrameScale = (panelSize / atlasDimension) * burstScale
   local burstOrigin = (atlasDimension * burstScale) / 2
 
@@ -938,7 +938,7 @@ function PlayerStack.render(self)
   -- there is technically no guarantee that the target we're sending towards is also sending to us
   -- at the moment however this is the case so let's take it for granted until then
   if not self.garbageTarget then
-    garbageImages = characters[self.character].images
+    garbageImages = self.character.images
     shockGarbageImages = panels[self.panels_dir].images.metals
   else
     garbageImages = characters[self.garbageTarget.character].images
@@ -1150,8 +1150,8 @@ function PlayerStack:drawAnalyticData()
 
 
   -- Garbage sent
-  icon_width, icon_height = characters[self.character].images.face:getDimensions()
-  GraphicsUtil.draw(characters[self.character].images.face, x, y, 0, iconSize / icon_width, iconSize / icon_height)
+  icon_width, icon_height = self.character.images.face:getDimensions()
+  GraphicsUtil.draw(self.character.images.face, x, y, 0, iconSize / icon_width, iconSize / icon_height)
   GraphicsUtil.printf(analytic.data.sent_garbage_lines, x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
 
   y = y + nextIconIncrement
@@ -1430,11 +1430,11 @@ function PlayerStack:playSfx()
       -- and cancel it because an attack is performed on the exact same frame (takes priority)
       self.sfx_land = false
       SoundController:stopSfx(themes[config.theme].sounds.pops[self.lastPopLevelPlayed][self.lastPopIndexPlayed])
-      characters[self.character]:playAttackSfx(self.combo_chain_play)
+      self.character:playAttackSfx(self.combo_chain_play)
       self.combo_chain_play = nil
     end
     if self.sfxGarbageMatch then
-      characters[self.character]:playGarbageMatchSfx()
+      self.character:playGarbageMatchSfx()
       self.sfxGarbageMatch = false
     end
     if self.sfxFanfare == 0 then
@@ -1461,14 +1461,14 @@ function PlayerStack:playSfx()
         SoundController:playSfx(themes[config.theme].sounds.garbage_thud[self.sfx_garbage_thud])
       end
       if interrupted_thud == nil then
-        characters[self.character]:playGarbageLandSfx()
+        self.character:playGarbageLandSfx()
       end
       self.sfx_garbage_thud = 0
     end
-    if self.sfxPop or self.sfxGarbagePop then
+    if self.sfxPop or self.sfxGarbagePop > 0 then
       local popLevel = min(max(self.engine.chain_counter, 1), 4)
       local popIndex = 1
-      if self.sfxGarbagePop then
+      if self.sfxGarbagePop > 0 then
         popIndex = min(self.sfxGarbagePop + self.poppedPanelIndex, 10)
       else
         popIndex = min(self.poppedPanelIndex, 10)
@@ -1504,11 +1504,11 @@ function PlayerStack:processTaunts()
   -- TAUNTING
   if self:canPlaySfx() then
     if self.taunt_up ~= nil then
-      characters[self.character]:playTauntUpSfx(self.taunt_up)
+      self.character:playTauntUpSfx(self.taunt_up)
       self:taunt("taunt_up")
       self.taunt_up = nil
     elseif self.taunt_down ~= nil then
-      characters[self.character]:playTauntDownSfx(self.taunt_down)
+      self.character:playTauntDownSfx(self.taunt_down)
       self:taunt("taunt_down")
       self.taunt_down = nil
     end

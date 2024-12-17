@@ -1234,14 +1234,6 @@ function Stack:moveCursorInDirection(directionString)
   self.cur_col = util.bound(1, self.cur_col + d_col[directionString], self.width - 1)
 end
 
-function Stack.behindRollback(self)
-  if self.lastRollbackFrame > self.clock then
-    return true
-  end
-
-  return false
-end
-
 -- Returns true if the stack is simulated past the end of the match.
 function Stack:game_ended()
   if self.game_over_clock > 0 then

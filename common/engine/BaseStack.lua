@@ -80,6 +80,14 @@ function BaseStack:setCountdown(doCountdown)
   self.do_countdown = doCountdown
 end
 
+function BaseStack.behindRollback(self)
+  if self.lastRollbackFrame > self.clock then
+    return true
+  end
+
+  return false
+end
+
 function BaseStack:saveForRollback()
   error("did not implement saveForRollback")
 end

@@ -138,7 +138,7 @@ function Replay:generateFileName()
         filename = filename .. "-Spd" .. player.settings.levelData.startingSpeed
         filename = filename .. "-Dif" .. player.settings.difficulty
       end
-    else
+    elseif player.settings.difficulty then
       filename = filename .. "-stage-" .. player.settings.difficulty .. "-" .. (player.settings.level or 0)
     end
   end

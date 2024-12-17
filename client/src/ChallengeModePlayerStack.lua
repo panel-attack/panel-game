@@ -6,6 +6,11 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ChallengeModePlayerStack = class(
 function(self, args)
   self.engine = SimulatedStack(args)
+  self.engine.outgoingGarbage:connectSignal("garbagePushed", self, self.onGarbagePushed)
+  self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
+  self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
+
+  self.enableSfx = not self.engine.attackEngine.disableQueueLimit
 
   self.multiBarFrameCount = 240
   -- needed for sending shock garbage
@@ -33,7 +38,7 @@ function ChallengeModePlayerStack:onGarbagePushed(garbage)
     metalCount = 3
   end
   local newComboChainInfo = self.attackSoundInfoForMatch(chainCounter > 0, chainCounter, maxCombo, metalCount)
-  if newComboChainInfo and self.character then
+  if newComboChainInfo and self:canPlaySfx() then
       -- TODO:
       -- Instead of playing the SFX directly, cache it on the stack
       --   then decide what to play in onRun based on all the garbage we got this frame
@@ -44,7 +49,7 @@ end
 function ChallengeModePlayerStack:onNewChainLink(chainGarbage)
   local chainCounter = #chainGarbage.linkTimes + 1
   local newComboChainInfo = self.attackSoundInfoForMatch(true, chainCounter, 3, 0)
-  if newComboChainInfo and self.character then
+  if newComboChainInfo and self:canPlaySfx() then
     -- TODO:
     -- Instead of playing the SFX directly, cache it on the stack
     --   then decide what to play in onRun based on all the garbage we got this frame
@@ -66,6 +71,24 @@ function ChallengeModePlayerStack:onChainEnded(chainGarbage)
     end
     self.sfxFanfare = 0
   end
+end
+
+function ChallengeModePlayerStack:canPlaySfx()
+   -- If we are still catching up from rollback don't play sounds again
+   if self.engine:behindRollback() then
+    return false
+  end
+
+  -- this is catchup mode, don't play sfx during this
+  if self.engine.play_to_end then
+    return false
+  end
+
+  if not self.character or not self.enableSfx then
+    return false
+  end
+
+  return true
 end
 
 function ChallengeModePlayerStack:render()
@@ -162,6 +185,9 @@ function ChallengeModePlayerStack:deinit()
   for _, quad in ipairs(self.difficultyQuads) do
     GraphicsUtil:releaseQuad(quad)
   end
+end
+
+function ChallengeModePlayerStack:runGameOver()
 end
 
 return ChallengeModePlayerStack

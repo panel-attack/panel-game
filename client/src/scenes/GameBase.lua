@@ -104,10 +104,9 @@ end
 -- unlike regular asset load, this function connects the used assets to the match so they cannot be unloaded
 function GameBase:loadAssets(match)
   for i, stack in ipairs(match.stacks) do
-    local character = characters[stack.character]
-    logger.debug("Force loading character " .. character.id .. " as part of GameBase:load")
-    ModController:loadModFor(character, stack, true)
-    character:register(match)
+    logger.debug("Force loading character " .. stack.character.id .. " as part of GameBase:load")
+    ModController:loadModFor(stack.character, stack, true)
+    stack.character:register(match)
   end
 
   if not match.stageId then

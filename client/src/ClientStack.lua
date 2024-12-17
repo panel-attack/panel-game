@@ -16,7 +16,7 @@ end
 ---@class ClientStack
 ---@field which integer determines the position of the stack like an index but also serves as an id within the match
 ---@field is_local boolean if the Stack gets its inputs live from the local client or not
----@field character string the id of the character to use for drawing
+---@field character Character the character to use for drawing and sounds
 ---@field theme table the theme to determine offsets via theme for multibar and other properties
 ---@field baseWidth integer
 ---@field baseHeight integer
@@ -45,7 +45,7 @@ function(self, args)
   -- player number according to the multiplayer server, for game outcome reporting 
   self.player_number = args.player_number or self.which
   self.is_local = args.is_local
-  self.character = args.character
+  self.character = characters[args.character]
   self.theme = args.theme or themes[config.theme]
 
   -- graphics
@@ -279,7 +279,7 @@ function ClientStack:drawCharacter()
     end
   end
 
-  characters[self.character]:drawPortrait(self.which, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
+  self.character:drawPortrait(self.which, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
 end
 
 function ClientStack:drawFrame()
