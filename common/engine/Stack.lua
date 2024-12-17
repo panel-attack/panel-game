@@ -14,6 +14,7 @@ local prof = require("common.lib.jprof.jprof")
 local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
 local ReplayPlayer = require("common.data.ReplayPlayer")
+local TouchInputController = require("common.engine.TouchInputController")
 
 -- Stuff defined in this file:
 --  . the data structures that store the configuration of
@@ -78,6 +79,7 @@ local PANELS_TO_NEXT_SPEED =
 ---@field gpanel_buffer string numeric string containing a buffer of panels for garbage to turn into upon matching \n
 --- will get periodically extended as it gets consumed
 ---@field inputMethod string "controller" or "touch", determines how inputs are interpreted internally
+---@field touchInputController table
 ---@field input_buffer string[] Inputs that haven't been processed yet
 ---@field confirmedInput string[] All inputs the player has input so far (or ever)
 ---@field input_state string The input for the current frame
@@ -185,6 +187,9 @@ local Stack = class(
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
     s.inputMethod = arguments.inputMethod
+    if s.inputMethod == "touch" then
+      s.touchInputController = TouchInputController(self.engine)
+    end
 
     s.panel_buffer = ""
     s.gpanel_buffer = ""
@@ -717,7 +722,7 @@ function Stack.controls(self)
     local cursorColumn, cursorRow
     raise, cursorRow, cursorColumn = TouchDataEncoding.latinStringToTouchData(sdata, self.width)
     local canSetCursor = true
-    if self.do_countdown then      
+    if self.do_countdown then
       if self.animatingCursorDuringCountdown then
         canSetCursor = false
       end

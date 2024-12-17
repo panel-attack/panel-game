@@ -42,7 +42,7 @@ function PlayerStack:send_controls()
       ((input.isDown["Right"] or input.isPressed["Right"]) and 1 or 0) + 1
     ]
   elseif self.inputMethod == "touch" then
-    to_send = self.touchInputController:encodedCharacterForCurrentTouchInput()
+    to_send = self.touchInputDetector:encodedCharacterForCurrentTouchInput()
   end
   GAME.netClient:sendInput(to_send)
 

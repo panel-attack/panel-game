@@ -9,7 +9,7 @@ local EngineStack = require("common.engine.Stack")
 require("common.engine.checkMatches")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
-local TouchInputController = require("common.engine.TouchInputController")
+local TouchInputDetector = require("client.src.TouchInputDetector")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 require("client.src.analytics")
@@ -69,7 +69,7 @@ function(self, args)
 
   self.inputMethod = args.inputMethod or "controller"
   if self.inputMethod == "touch" then
-    self.touchInputController = TouchInputController(self.engine)
+    self.touchInputDetector = TouchInputDetector(self)
   end
 
   self.card_q = Queue()
