@@ -69,13 +69,13 @@ function GameCatchUp:update(dt)
 
   self.timePassed = self.timePassed + dt
 
-  if not self.match.stacks[1].play_to_end then
+  if not self.match.stacks[1].engine.play_to_end then
     modLoadValidation(self.match)
     self.progress = 1
     SoundController:applyConfigVolumes()
     GAME.navigationStack:replace(self.vsScene, nil, self.callback)
   else
-    self.progress = self.match.stacks[1].clock / #self.match.stacks[1].confirmedInput
+    self.progress = self.match.stacks[1].engine.clock / #self.match.stacks[1].engine.confirmedInput
   end
   local t = love.timer.getTime()
   -- convert the nil check into a bool
@@ -83,7 +83,7 @@ function GameCatchUp:update(dt)
   for _, stack in ipairs(self.match.stacks) do
     if shouldCatchUp then
       break
-    elseif stack.play_to_end then
+    elseif stack.engine.play_to_end then
       shouldCatchUp = true
     end
   end
@@ -106,7 +106,7 @@ function GameCatchUp:draw()
   GraphicsUtil.setColor(1, 1, 1, 1)
   GraphicsUtil.drawRectangle("line", consts.CANVAS_WIDTH / 4 - 5, consts.CANVAS_HEIGHT / 2 - 25, consts.CANVAS_WIDTH / 2 + 10, 50)
   GraphicsUtil.drawRectangle("fill", consts.CANVAS_WIDTH / 4, consts.CANVAS_HEIGHT / 2 - 20, consts.CANVAS_WIDTH / 2 * self.progress, 40)
-  GraphicsUtil.printf("Catching up: " .. match.stacks[1].clock .. " out of " .. #match.stacks[1].confirmedInput .. " frames", 0, 500, consts.CANVAS_WIDTH, "center")
+  GraphicsUtil.printf("Catching up: " .. match.engine.clock .. " out of " .. #match.stacks[1].engine.confirmedInput .. " frames", 0, 500, consts.CANVAS_WIDTH, "center")
 end
 
 return GameCatchUp

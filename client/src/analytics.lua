@@ -28,7 +28,7 @@ AnalyticsInstance =
   function(self, save_to_overall)
     self.save_to_overall = save_to_overall -- whether this data should count towards the overall
     self.data = create_blank_data()
-    
+
     -- temporary
     self.lastGPM = 0
     self.lastAPM = 0

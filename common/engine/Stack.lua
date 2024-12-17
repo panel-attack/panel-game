@@ -1833,10 +1833,6 @@ function Stack:disablePassiveRaise()
   self.behaviours.passiveRaise = false
 end
 
-function Stack:enableCatchup(enable)
-  self.play_to_end = enable
-end
-
 ---@param maxRunsPerFrame integer
 function Stack:setMaxRunsPerFrame(maxRunsPerFrame)
   self.max_runs_per_frame = maxRunsPerFrame

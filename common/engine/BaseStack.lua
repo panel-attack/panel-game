@@ -52,6 +52,10 @@ function(self, args)
   self.lastRollbackFrame = -1 -- the last frame we had to rollback from
 end)
 
+function BaseStack:enableCatchup(enable)
+  self.play_to_end = enable
+end
+
 function BaseStack:updateFramesBehind(matchClock)
   local framesBehind = matchClock - self.clock
   self.framesBehindArray[matchClock] = framesBehind
