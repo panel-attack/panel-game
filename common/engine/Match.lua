@@ -429,7 +429,14 @@ function Match:createNewReplay()
   local replay = Replay(self.engineVersion, self.seed, self, self.puzzle)
 
   for i, stack in ipairs(self.stacks) do
-    replay:updatePlayer(i, stack:toReplayPlayer())
+    if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+      -- only add the non-attack engines as the settings remain on the player
+      if stack.TYPE == "Stack" then
+        replay:updatePlayer(i, stack:toReplayPlayer())
+      end
+    else
+      replay:updatePlayer(i, stack:toReplayPlayer())
+    end
   end
 
   return replay

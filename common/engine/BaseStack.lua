@@ -37,7 +37,8 @@ function(self, args)
   Signal.turnIntoEmitter(self)
   self:createSignal("gameOver")
   self:createSignal("finishedRun")
-  self:createSignal("rollback")
+  self:createSignal("rollbackPerformed")
+  self:createSignal("rollbackSaved")
 
   -- the stack pushes the garbage it produces into this queue
   self.outgoingGarbage = GarbageQueue()

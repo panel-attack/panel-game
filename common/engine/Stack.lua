@@ -458,7 +458,7 @@ function Stack.rollbackToFrame(self, frame)
     self.rollbackCount = self.rollbackCount + 1
     -- match will try to fast forward this stack to that frame
     self.lastRollbackFrame = currentFrame
-    self:emitSignal("rollback", self)
+    self:emitSignal("rollbackPerformed", self)
     return true
   end
 
@@ -505,6 +505,7 @@ function Stack.saveForRollback(self)
   self:deleteRollbackCopy(deleteFrame)
   prof.pop("delete rollback copy")
   prof.pop("Stack:saveForRollback")
+  self:emitSignal("rollbackSaved", self.clock)
 end
 
 function Stack.deleteRollbackCopy(self, frame)

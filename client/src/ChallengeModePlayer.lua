@@ -41,7 +41,7 @@ local function characterForStageNumber(stageNumber)
 end
 
 function ChallengeModePlayer:createStackFromSettings(match, which)
-  assert(self.settings.healthSettings and self.settings.attackEngineSettings)
+  assert(self.settings.healthSettings or self.settings.attackEngineSettings)
   local simulatedStack = SimulatedStack({which = which, character = self.settings.characterId, is_local = true})
   simulatedStack:addAttackEngine(self.settings.attackEngineSettings, true)
   simulatedStack:addHealth(self.settings.healthSettings)

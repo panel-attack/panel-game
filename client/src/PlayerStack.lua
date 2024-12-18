@@ -49,7 +49,8 @@ function(self, args)
   self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("newRow", self, self.onNewRow)
   self.engine:connectSignal("finishedRun", self, self.onRun)
-  self.engine:connectSignal("rollback", self, self.onRollback)
+  self.engine:connectSignal("rollbackPerformed", self, self.onRollback)
+  self.engine:connectSignal("rollbackSaved", self, self.onRollbackSaved)
   -- currently unused
   --self.engine.outgoingGarbage:connectSignal("garbagePushed", self, self.onGarbagePushed)
   --self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
@@ -243,31 +244,18 @@ end
 
 function PlayerStack:onRollback(engine)
   -- other.danger_timer = source.danger_timer
-  -- TODO: Implement a non-memory intensive rollback mechanism
-  -- see https://github.com/panel-attack/panel-game/issues/493
-  -- prof.push("rollback copy analytics")
-  -- other.analytic = deepcpy(source.analytic)
-  -- prof.pop("rollback copy analytics"
 
   -- to fool Match without having to wrap everything into getters
-  self.clock = self.engine.clock
-  self.game_stopwatch = self.engine.game_stopwatch
+  self.clock = engine.clock
+  self.game_stopwatch = engine.game_stopwatch
+
+  prof.push("rollback copy analytics")
+  self.analytic:rollbackToFrame(self.clock)
+  prof.pop("rollback copy analytics")
 end
 
---------------------------------------------------------------------------
---- Wrappers around the engine Stack so this can be plugged into Match ---
----      without Match being none the wiser it's not a real Stack      ---
----  Maybe not the best idea but I don't want to pull apart Match too  ---
----                          (at least for now)                        ---
---------------------------------------------------------------------------
-
-function PlayerStack:rewindToFrame(frame)
-  self.engine:rewindToFrame(frame)
-end
-
----@return boolean
-function PlayerStack:game_ended()
-  return self.engine:game_ended()
+function PlayerStack:onRollbackSaved(frame)
+  self.analytic:saveRollbackCopy(frame)
 end
 
 --- callback for operations to run after each single run of the engine Stack
@@ -290,13 +278,22 @@ function PlayerStack:onRun()
   self:updateDangerMusic()
 end
 
+------------------------------------------------------------------------
+--- Wrappers around the engine Stack to access engine info in scenes ---
+------------------------------------------------------------------------
+
+function PlayerStack:rewindToFrame(frame)
+  self.engine:rewindToFrame(frame)
+end
+
+---@return boolean
+function PlayerStack:game_ended()
+  return self.engine:game_ended()
+end
+
 function PlayerStack:runGameOver()
   self:update_popfxs()
   self:update_cards()
-end
-
-function PlayerStack:connectSignal(signalName, subscriber, callback)
-  self.engine:connectSignal(signalName, subscriber, callback)
 end
 
 function PlayerStack:receiveConfirmedInput(inputs)
@@ -309,25 +306,6 @@ end
 
 function PlayerStack:setMaxRunsPerFrame(maxRunsPerFrame)
   self.engine:setMaxRunsPerFrame(maxRunsPerFrame)
-end
-
-function PlayerStack:getConfirmedInputCount()
-  return self.engine:getConfirmedInputCount()
-end
-
----@return integer
-function PlayerStack:getOldestFinishedGarbageTransitTime()
-  return self.engine:getOldestFinishedGarbageTransitTime()
-end
-
----@param clock integer
-function PlayerStack:getReadyGarbageAt(clock)
-  return self.engine:getReadyGarbageAt(clock)
-end
-
----@param matchClock integer
-function PlayerStack:updateFramesBehind(matchClock)
-  self.engine:updateFramesBehind(matchClock)
 end
 
 ---------------------------------------------
