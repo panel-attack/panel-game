@@ -384,10 +384,6 @@ function Match:start()
     self.garbageSources[stack] = {}
   end
 
-  -- TODO:
-  -- Match should still handle to create SimulatedStacks for StackInteractions.ATTACK_ENGINE
-  -- move that back from ClientMatch
-
   if self.stackInteraction == GameModes.StackInteractions.SELF then
     for i, stack in ipairs(self.stacks) do
       table.insert(self.garbageTargets[i], stack)

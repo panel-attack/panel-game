@@ -184,6 +184,26 @@ function ClientMatch:start()
   self.engine:setSeed(self.seed)
   self.engine:start()
 
+  -- outgoing garbage is already correctly directed by Match
+  -- but the relationship is indirect between engine stacks to reduce coupling
+  -- for rendering telegraph, it helps to explicitly know where garbage is being sent
+  -- match already tracks garbage directions as n to n to theoretically support more than 2 players
+  -- (there are some other pieces missing still to actually support that)
+  -- here on client side we can simply acknowledge that only up to 2 players per match are supported
+  if self.stackInteraction == GameModes.StackInteractions.SELF then
+    for i, stack in ipairs(self.stacks) do
+        stack:setGarbageTarget(stack)
+    end
+  elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
+    for i, stack1 in ipairs(self.stacks) do
+      for j, stack2 in ipairs(self.stacks) do
+        if i ~= j then
+          stack1:setGarbageTarget(stack2)
+        end
+      end
+    end
+  end
+
   if self.engine.timeLimit then
     self.panicTicksPlayed = {}
     for i = 1, 15 do

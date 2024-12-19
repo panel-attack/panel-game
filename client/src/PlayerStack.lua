@@ -255,7 +255,7 @@ function PlayerStack:onRollback(engine)
 end
 
 function PlayerStack:onRollbackSaved(frame)
-  self.analytic:saveRollbackCopy(frame)
+  self.analytic:saveForRollback(frame)
 end
 
 --- callback for operations to run after each single run of the engine Stack
@@ -919,7 +919,7 @@ function PlayerStack.render(self)
     garbageImages = self.character.images
     shockGarbageImages = panels[self.panels_dir].images.metals
   else
-    garbageImages = characters[self.garbageTarget.character].images
+    garbageImages = self.garbageTarget.character.images
     shockGarbageImages = panels[self.garbageTarget.panels_dir].images.metals
   end
 
@@ -1529,7 +1529,6 @@ function PlayerStack.setGarbageTarget(self, newGarbageTarget)
     assert(newGarbageTarget.frameOriginY ~= nil)
     assert(newGarbageTarget.mirror_x ~= nil)
     assert(newGarbageTarget.canvasWidth ~= nil)
-    assert(newGarbageTarget.receiveGarbage ~= nil)
   end
   self.garbageTarget = newGarbageTarget
 end
