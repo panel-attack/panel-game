@@ -53,7 +53,7 @@ function ReplayGame:runGame()
         self.match:run()
       end
     elseif playbackSpeed < 0 then
-      self.match:rewindToFrame(self.match.clock + playbackSpeed)
+      self.match:rewindToFrame(self.match.engine.clock + playbackSpeed)
     elseif playbackSpeed < 1 then
       local inverse = math.round(1 / playbackSpeed, 0)
       if tick % inverse == 0 then
@@ -66,7 +66,7 @@ function ReplayGame:runGame()
       if playbackSpeed > 0 then
         self.match:run()
       elseif playbackSpeed < 0 then
-        self.match:rewindToFrame(self.match.clock - 1)
+        self.match:rewindToFrame(self.match.engine.clock - 1)
       end
       self.frameAdvance = false
       self.match.isPaused = true

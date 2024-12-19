@@ -1135,7 +1135,8 @@ function PlayerStack:drawAnalyticData()
   y = y + nextIconIncrement
 
   -- GPM
-  if analytic.lastGPM == 0 or math.fmod(self.engine.clock, 60) < self.engine.max_runs_per_frame then
+  -- we don't want to refresh analytics display every frame to prevent rapid flickering, only once per second
+  if self.engine.clock > self.engine.lastRollbackFrame and self.engine.clock % 60 == 0 then
     if self.engine.clock > 0 and (analytic.data.sent_garbage_lines > 0) then
       analytic.lastGPM = analytic:getRoundedGPM(self.engine.clock)
     end
@@ -1163,7 +1164,8 @@ function PlayerStack:drawAnalyticData()
   y = y + nextIconIncrement
 
   -- APM
-  if analytic.lastAPM == 0 or math.fmod(self.engine.clock, 60) < self.engine.max_runs_per_frame then
+  -- we don't want to refresh analytics display every frame to prevent rapid flickering, only once per second
+  if self.engine.clock > self.engine.lastRollbackFrame and self.engine.clock % 60 == 0 then
     if self.engine.clock > 0 and (analytic.data.swap_count + analytic.data.move_count > 0) then
       local actionsPerMinute = (analytic.data.swap_count + analytic.data.move_count) / (self.engine.clock / 60 / 60)
       analytic.lastAPM = string.format("%0.0f", math.round(actionsPerMinute, 0))

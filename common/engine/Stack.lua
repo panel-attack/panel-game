@@ -477,6 +477,7 @@ function Stack:rewindToFrame(frame)
       self.outgoingGarbage:rewindToFrame(frame)
     end
 
+    self:emitSignal("rollbackPerformed", self)
     return true
   end
 
