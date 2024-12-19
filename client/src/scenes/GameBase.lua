@@ -93,9 +93,20 @@ function GameBase:pickMusicSource()
   local preferredMusicSourceType = self:getPreferredMusicSourceType()
 
   if not stageHasMusic and not characterHasMusic then
-    return nil
-  elseif (preferredMusicSourceType == "stage" and stageHasMusic) or not characterHasMusic then
-    return self.stage
+    -- fallback to default stage music if possible
+    if GAME.theme.defaultStage and GAME.theme.defaultStage.hasMusic then
+      return GAME.theme.defaultStage
+    else
+      return nil
+    end
+  elseif preferredMusicSourceType == "stage" or not characterHasMusic then
+    if stageHasMusic then
+      return self.stage
+    elseif GAME.theme.defaultStage and GAME.theme.defaultStage.hasMusic then
+      return GAME.theme.defaultStage
+    else
+      return nil
+    end
   else --if preferredMusicSourceType == "characters" and characterHasMusic then
     return character
   end
