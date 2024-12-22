@@ -165,7 +165,7 @@ function ChallengeMode:recordStageResult(winners, gameLength)
     else
       if self.stages[self.stageIndex + 1] then
         self:setStage(self.stageIndex + 1)
-      else 
+      else
         self.challengeComplete = true
       end
     end
@@ -185,9 +185,9 @@ function ChallengeMode:onMatchEnded(match)
   -- an abort is always the responsibility of the local player in challenge mode
   -- so always record the result, even if it may have been an abort
   local gameTime = 0
-  local stack = match.stacks[1]
-  if stack ~= nil and stack.game_stopwatch then
-    gameTime = stack.game_stopwatch
+  local stackEngine = match.stacks[1].engine
+  if stackEngine ~= nil and stackEngine.game_stopwatch then
+    gameTime = stackEngine.game_stopwatch
   end
   self:recordStageResult(winners, gameTime)
 

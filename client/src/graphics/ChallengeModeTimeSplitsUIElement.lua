@@ -25,7 +25,7 @@ function ChallengeModeTimeSplitsUIElement:drawTimeSplits()
     local currentStageTime = time
     local isCurrentStage = (self.currentStageIndex and i == self.currentStageIndex)
     if isCurrentStage and self.challengeMode.match and not self.challengeMode.match.ended then
-      currentStageTime = currentStageTime + (self.challengeMode.match.stacks[1].game_stopwatch or 0)
+      currentStageTime = currentStageTime + (self.challengeMode.match.stacks[1].engine.game_stopwatch or 0)
     end
     totalTime = totalTime + currentStageTime
 

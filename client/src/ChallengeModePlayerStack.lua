@@ -179,7 +179,7 @@ function ChallengeModePlayerStack:drawLevel()
 end
 
 function ChallengeModePlayerStack:drawMultibar()
-  if self.health then
+  if self.engine.healthEngine then
     self:drawAbsoluteMultibar(0, 0, 0)
   end
 end
