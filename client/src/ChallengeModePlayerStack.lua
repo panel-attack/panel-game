@@ -9,13 +9,16 @@ function(self, args)
   self.engine.outgoingGarbage:connectSignal("garbagePushed", self, self.onGarbagePushed)
   self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
+  self.engine:connectSignal("finishedRun", self, self.onRun)
 
   self.enableSfx = not self.engine.attackEngine.disableQueueLimit
 
   self.multiBarFrameCount = 240
   -- needed for sending shock garbage
   self.panels_dir = config.panels
-  self.sfxFanfare = 0
+  self.sfxCombo = 0
+  self.sfxChain = 0
+  self.sfxMetal = 0
 
   self.difficultyQuads = {}
 
@@ -31,46 +34,50 @@ ClientStack)
 
 function ChallengeModePlayerStack:onGarbagePushed(garbage)
   -- TODO: Handle combos SFX greather than 7
-  local maxCombo = garbage.width + 1
-  local chainCounter = garbage.height + 1
-  local metalCount = 0
-  if garbage.isMetal then
-    metalCount = 3
+  self.sfxCombo = garbage.width + 1
+  if self.sfxChain == 0 then
+    self.sfxChain = garbage.height + 1
   end
-  local newComboChainInfo = self.attackSoundInfoForMatch(chainCounter > 0, chainCounter, maxCombo, metalCount)
-  if newComboChainInfo and self:canPlaySfx() then
-      -- TODO:
-      -- Instead of playing the SFX directly, cache it on the stack
-      --   then decide what to play in onRun based on all the garbage we got this frame
-    self.character:playAttackSfx(newComboChainInfo)
+
+  if garbage.isMetal then
+    if self.sfxMetal == 0 then
+      self.sfxMetal = 3
+    else
+      self.sfxMetal = self.sfxMetal + 1
+    end
   end
 end
 
 function ChallengeModePlayerStack:onNewChainLink(chainGarbage)
-  local chainCounter = #chainGarbage.linkTimes + 1
-  local newComboChainInfo = self.attackSoundInfoForMatch(true, chainCounter, 3, 0)
-  if newComboChainInfo and self:canPlaySfx() then
-    -- TODO:
-    -- Instead of playing the SFX directly, cache it on the stack
-    --   then decide what to play in onRun based on all the garbage we got this frame
-    self.character:playAttackSfx(newComboChainInfo)
-  end
+  self.sfxChain = #chainGarbage.linkTimes + 1
 end
 
 function ChallengeModePlayerStack:onChainEnded(chainGarbage)
   if self:canPlaySfx() then
-    self.sfxFanfare = #chainGarbage.linkTimes + 1
-    if self.sfxFanfare == 0 then
+    local sfxFanfare = #chainGarbage.linkTimes + 1
+    if sfxFanfare == 0 then
       --do nothing
-    elseif self.sfxFanfare >= 6 then
+    elseif sfxFanfare >= 6 then
       SoundController:playSfx(themes[config.theme].sounds.fanfare3)
-    elseif self.sfxFanfare >= 5 then
+    elseif sfxFanfare >= 5 then
       SoundController:playSfx(themes[config.theme].sounds.fanfare2)
-    elseif self.sfxFanfare >= 4 then
+    elseif sfxFanfare >= 4 then
       SoundController:playSfx(themes[config.theme].sounds.fanfare1)
     end
-    self.sfxFanfare = 0
   end
+end
+
+function ChallengeModePlayerStack:onRun()
+  if self:canPlaySfx() then
+    local newComboChainInfo = self.attackSoundInfoForMatch(self.sfxChain > 0, self.sfxChain, self.sfxCombo, self.sfxMetal)
+    if newComboChainInfo then
+      self.character:playAttackSfx(newComboChainInfo)
+    end
+  end
+
+  self.sfxCombo = 0
+  self.sfxChain = 0
+  self.sfxMetal = 0
 end
 
 function ChallengeModePlayerStack:canPlaySfx()
