@@ -268,6 +268,11 @@ function BattleRoom:updateLoadingState()
   if self.allAssetsLoaded ~= fullyLoaded then
     self.allAssetsLoaded = fullyLoaded
     self:emitSignal("allAssetsLoadedChanged", self.allAssetsLoaded)
+    if self.allAssetsLoaded then
+      -- force a collect of assets that may have gotten unloaded as part of the modloader
+      collectgarbage("collect")
+      collectgarbage("collect")
+    end
   end
 
   if not self.allAssetsLoaded then
