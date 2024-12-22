@@ -30,6 +30,7 @@ end
 ---@field multi_prestopQuad love.Quad
 ---@field multi_stopQuad love.Quad
 ---@field multi_shakeQuad love.Quad
+---@field danger_music boolean
 
 ---@class ClientStack
 local ClientStack = class(
@@ -63,6 +64,11 @@ function(self, args)
   self.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight(), self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight())
 
   self:moveForRenderIndex(self.which)
+
+  self.danger_music = false
+
+  Signal.turnIntoEmitter(self)
+  self:createSignal("dangerMusicChanged")
 end)
 
 -- Provides the X origin to draw an element of the stack

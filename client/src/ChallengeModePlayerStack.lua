@@ -78,6 +78,20 @@ function ChallengeModePlayerStack:onRun()
   self.sfxCombo = 0
   self.sfxChain = 0
   self.sfxMetal = 0
+
+  if self.engine.healthEngine then
+    if self.danger_music then
+      if self.engine.healthEngine.currentLines < self.engine.healthEngine.height then
+        self.danger_music = false
+        self:emitSignal("dangerMusicChanged", self)
+      end
+    else
+      if self.engine.healthEngine.currentLines > self.engine.healthEngine.height then
+        self.danger_music = true
+        self:emitSignal("dangerMusicChanged", self)
+      end
+    end
+  end
 end
 
 function ChallengeModePlayerStack:canPlaySfx()
@@ -110,7 +124,7 @@ function ChallengeModePlayerStack:render()
 end
 
 function ChallengeModePlayerStack:renderStackHeight()
-  local percentage = self.healthEngine:getTopOutPercentage()
+  local percentage = self.engine.healthEngine:getTopOutPercentage()
   local xScale = (self:canvasWidth() - 8) / themes[config.theme].images.IMG_multibar_shake_bar:getWidth()
   local yScale = (self:canvasHeight() - 4) / themes[config.theme].images.IMG_multibar_shake_bar:getHeight() * percentage
 
@@ -140,10 +154,10 @@ function ChallengeModePlayerStack:drawScore()
 end
 
 function ChallengeModePlayerStack:drawSpeed()
-  if self.healthEngine then
+  if self.engine.healthEngine then
     self:drawLabel(themes[config.theme].images["IMG_speed_" .. self.which .. "P"], themes[config.theme].speedLabel_Pos,
                    themes[config.theme].speedLabel_Scale)
-    self:drawNumber(self.healthEngine.currentRiseSpeed, themes[config.theme].speed_Pos, themes[config.theme].speed_Scale)
+    self:drawNumber(self.engine.healthEngine.currentRiseSpeed, themes[config.theme].speed_Pos, themes[config.theme].speed_Scale)
   end
 end
 

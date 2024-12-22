@@ -1,7 +1,7 @@
 local MatchParticipant = require("client.src.MatchParticipant")
 local class = require("common.lib.class")
-local SimulatedStack = require("common.engine.SimulatedStack")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
+local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 
 local ChallengeModePlayer = class(function(self, playerNumber)
   self.name = "Challenger"
@@ -42,13 +42,18 @@ end
 
 function ChallengeModePlayer:createStackFromSettings(match, which)
   assert(self.settings.healthSettings or self.settings.attackEngineSettings)
-  local simulatedStack = SimulatedStack({which = which, character = self.settings.characterId, is_local = true})
-  simulatedStack:addAttackEngine(self.settings.attackEngineSettings, true)
-  simulatedStack:addHealth(self.settings.healthSettings)
-  self.stack = simulatedStack
-  simulatedStack.player = self
+  local stack = ChallengeModePlayerStack({
+    which = which,
+    character = self.settings.characterId,
+    is_local = true,
+    attackSettings = self.settings.attackEngineSettings,
+    healthSettings = self.settings.healthSettings,
+  })
 
-  return simulatedStack
+  self.stack = stack
+  stack.player = self
+
+  return stack
 end
 
 function ChallengeModePlayer:setCharacterForStage(stageNumber)

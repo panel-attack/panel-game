@@ -10,7 +10,6 @@ require("common.engine.checkMatches")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local TouchInputDetector = require("client.src.TouchInputDetector")
-local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 require("client.src.analytics")
 ---@module "common.data.LevelData"
@@ -99,9 +98,6 @@ function(self, args)
   self.taunt_up = nil -- will hold an index
   self.taunt_down = nil -- will hold an index
   self.taunt_queue = Queue()
-
-  Signal.turnIntoEmitter(self)
-  self:createSignal("dangerMusicChanged")
 end,
 ClientStack)
 
