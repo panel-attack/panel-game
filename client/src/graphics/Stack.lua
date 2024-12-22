@@ -839,32 +839,32 @@ local function shouldFlashForFrame(frame)
   return frame % (flashFrames * 2) < flashFrames
 end
 
--- bottomRightPanel is the bottom right panel object
--- draw_x is the position of the bottom left panel
--- draw_y is the position of the bottom left panel
--- garbageImages is the garbage images to use
-function Stack:drawGarbageBlock(bottomRightPanel, draw_x, draw_y, garbageImages)
+---@param bottomRightPanel Panel the bottom right panel of the garbage block we want to draw
+---@param drawX integer the position of the bottom left panel
+---@param drawY integer the position of the bottom left panel
+---@param garbageImages table<string, love.Texture> the garbage images to use
+function Stack:drawGarbageBlock(bottomRightPanel, drawX, drawY, garbageImages)
   local imgs = garbageImages
   local panel = bottomRightPanel
   local panelSize = 16
-  local halfPanelSize = 8
+  local halfPanelSize = panelSize / 2
   local garbageHeight, garbageWidth = panel.height, panel.width
-  local left_x = draw_x - (garbageWidth - 1) * panelSize
-  local top_y = draw_y - (garbageHeight - 1) * panelSize
+  local leftX = drawX - (garbageWidth - 1) * panelSize
+  local topY = drawY - (garbageHeight - 1) * panelSize
   local cornerWidth = halfPanelSize
   local cornerHeight = 3
-  local use_1 = ((garbageHeight - (garbageHeight % 2)) / 2) % 2 == 0
+  local useFiller1 = ((garbageHeight - (garbageHeight % 2)) / 2) % 2 == 0
   local filler_w, filler_h = imgs.filler1:getDimensions()
   for i = 0, garbageHeight - 1 do
     for j = 0, garbageWidth - 2 do
       local filler
-      if (use_1 or garbageHeight < 3) then
+      if (useFiller1 or garbageHeight < 3) then
         filler = imgs.filler1
       else
         filler = imgs.filler2
       end
-      drawGfxScaled(self, filler, draw_x - panelSize * j - halfPanelSize, top_y + panelSize * i, 0, panelSize / filler_w, panelSize / filler_h)
-      use_1 = not use_1
+      drawGfxScaled(self, filler, drawX - panelSize * j - halfPanelSize, topY + panelSize * i, 0, panelSize / filler_w, panelSize / filler_h)
+      useFiller1 = not useFiller1
     end
   end
   if garbageHeight % 2 == 1 then
@@ -875,22 +875,22 @@ function Stack:drawGarbageBlock(bottomRightPanel, draw_x, draw_y, garbageImages)
       face = imgs.face
     end
     local face_w, face_h = face:getDimensions()
-    drawGfxScaled(self, face, draw_x - halfPanelSize * (garbageWidth - 1), top_y + panelSize * ((garbageHeight - 1) / 2), 0, panelSize / face_w, panelSize / face_h)
+    drawGfxScaled(self, face, drawX - halfPanelSize * (garbageWidth - 1), topY + panelSize * ((garbageHeight - 1) / 2), 0, panelSize / face_w, panelSize / face_h)
   else
     local face_w, face_h = imgs.doubleface:getDimensions()
-    drawGfxScaled(self, imgs.doubleface, draw_x - halfPanelSize * (garbageWidth - 1), top_y + panelSize * ((garbageHeight - 2) / 2), 0, panelSize / face_w, 32 / face_h)
+    drawGfxScaled(self, imgs.doubleface, drawX - halfPanelSize * (garbageWidth - 1), topY + panelSize * ((garbageHeight - 2) / 2), 0, panelSize / face_w, 32 / face_h)
   end
   local corner_w, corner_h = imgs.topleft:getDimensions()
   local lr_w, lr_h = imgs.left:getDimensions()
   local topbottom_w, topbottom_h = imgs.top:getDimensions()
-  drawGfxScaled(self, imgs.left, left_x, top_y + cornerHeight, 0, halfPanelSize / lr_w, (1 / lr_h) * (garbageHeight * panelSize - (cornerHeight*2)))
-  drawGfxScaled(self, imgs.right, draw_x + halfPanelSize, top_y + cornerHeight, 0, halfPanelSize / lr_w, (1 / lr_h) * (garbageHeight * panelSize - (cornerHeight*2)))
-  drawGfxScaled(self, imgs.top, left_x + cornerWidth, top_y, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), 2 / topbottom_h)
-  drawGfxScaled(self, imgs.bot, left_x + cornerWidth, draw_y + panelSize - 2, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), 2 / topbottom_h)
-  drawGfxScaled(self, imgs.topleft, left_x, top_y, 0, cornerWidth / corner_w, cornerHeight / corner_h)
-  drawGfxScaled(self, imgs.topright, draw_x + halfPanelSize, top_y, 0, cornerWidth / corner_w, cornerHeight / corner_h)
-  drawGfxScaled(self, imgs.botleft, left_x, draw_y + panelSize - 3, 0, cornerWidth / corner_w, cornerHeight / corner_h)
-  drawGfxScaled(self, imgs.botright, draw_x + halfPanelSize, draw_y + panelSize - 3, 0, cornerWidth / corner_w, cornerHeight / corner_h)
+  drawGfxScaled(self, imgs.left, leftX, topY + cornerHeight, 0, halfPanelSize / lr_w, (1 / lr_h) * (garbageHeight * panelSize - (cornerHeight*2)))
+  drawGfxScaled(self, imgs.right, drawX + halfPanelSize, topY + cornerHeight, 0, halfPanelSize / lr_w, (1 / lr_h) * (garbageHeight * panelSize - (cornerHeight*2)))
+  drawGfxScaled(self, imgs.top, leftX + cornerWidth, topY, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), 2 / topbottom_h)
+  drawGfxScaled(self, imgs.bot, leftX + cornerWidth, drawY + panelSize - 2, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), 2 / topbottom_h)
+  drawGfxScaled(self, imgs.topleft, leftX, topY, 0, cornerWidth / corner_w, cornerHeight / corner_h)
+  drawGfxScaled(self, imgs.topright, drawX + halfPanelSize, topY, 0, cornerWidth / corner_w, cornerHeight / corner_h)
+  drawGfxScaled(self, imgs.botleft, leftX, drawY + panelSize - 3, 0, cornerWidth / corner_w, cornerHeight / corner_h)
+  drawGfxScaled(self, imgs.botright, drawX + halfPanelSize, drawY + panelSize - 3, 0, cornerWidth / corner_w, cornerHeight / corner_h)
 end
 
 function Stack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
