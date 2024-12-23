@@ -315,8 +315,8 @@ function ClientMatch:finalizeReplay()
         replayPlayer.human = player.human
 
         replayPlayer:setWins(player.wins)
-        replayPlayer:setCharacterId(player.characterId)
-        replayPlayer:setPanelId(player.panelId)
+        replayPlayer:setCharacterId(player.settings.characterId)
+        replayPlayer:setPanelId(player.settings.panelId)
         replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
         -- these are display-only props, the true info is stored in levelData for either of them
         if player.TYPE == "Player" then

@@ -215,7 +215,7 @@ function ChallengeMode:setStage(index)
   local stageSettings = self.stages[self.stageIndex]
   self.player:setAttackEngineSettings(stageSettings.attackSettings)
   self.player.settings.healthSettings = stageSettings.healthSettings
-  self.player.level = index
+  self.player.settings.level = index
   if stageSettings.characterId then
     self.player:setCharacter(stageSettings.characterId)
   else
