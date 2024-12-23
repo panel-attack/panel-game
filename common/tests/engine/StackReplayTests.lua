@@ -2,6 +2,7 @@ local consts = require("common.engine.consts")
 local tableUtils = require("common.lib.tableUtils")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 local GameModes = require("common.engine.GameModes")
+local ReplayPlayer = require("common.data.ReplayPlayer")
 local logger = require("common.lib.logger")
 local LevelPresets = require("common.data.LevelPresets")
 
@@ -378,6 +379,48 @@ local function fallingWhileHoverBeginsDoesNotChain()
   StackReplayTestingUtils:cleanup(match)
 end
 
+local function platformTest(waitFrames, useMatchSide)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"), "controller", LevelPresets.getModern(10))
+  local puzzle = Puzzle("chain", false, 0, "3000994339949999994999999999999999999999999999999999", 60, 0)
+  local stack = match.stacks[1]
+  stack:set_puzzle_state(puzzle)
+
+  assert(stack.panels[8][3].color == 4, "wrong color")
+  assert(stack.panels[8][4].color == 3, "wrong color")
+
+  local compressedInputs = "C1A1Q1" -- Move left, make the vertical match
+  if useMatchSide then
+    compressedInputs = compressedInputs .. "B1A" .. waitFrames -- move right
+  else
+    compressedInputs = compressedInputs .. "A1A" .. waitFrames -- stay still, platform from the far side
+  end
+  compressedInputs = compressedInputs .. "Q1A80" -- do the platform, and wait for the chain
+
+  local fullInputs = ReplayPlayer.decompressInputString(compressedInputs)
+  stack:receiveConfirmedInput(fullInputs) -- make the clear and then do the platform
+  assert(#match.stacks[1].input_buffer > 0)
+  StackReplayTestingUtils:fullySimulateMatch(match)
+  assert(match.stacks[1].clock == 134)
+  assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 1)
+  StackReplayTestingUtils:cleanup(match)
+end
+
+local function platformFirstFrameTest()
+  platformTest(66, true)
+end
+
+local function platformLastFrameTest()
+  platformTest(68, true)
+end
+
+local function platformFirstFrameFarSideTest()
+  platformTest(66, false)
+end
+
+local function platformLastFrameFarSideTest()
+  platformTest(68, false)
+end
+
 logger.info("running basicTimeAttackTest")
 test(basicTimeAttackTest)
 
@@ -425,3 +468,15 @@ test(matchMetalAndGarbageClearsAllMetalTest)
 
 logger.info("running fallingWhileHoverBeginsDoesNotChain")
 test(fallingWhileHoverBeginsDoesNotChain)
+
+logger.info("running platformTest")
+test(platformFirstFrameTest)
+
+logger.info("running platformTest")
+test(platformLastFrameTest)
+
+logger.info("running platformFirstFrameFarSideTest")
+test(platformFirstFrameFarSideTest)
+
+logger.info("running platformLastFrameFarSideTest")
+test(platformLastFrameFarSideTest)
