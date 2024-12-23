@@ -3,7 +3,7 @@ local class = require("common.lib.class")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
 local GameModes = require("common.engine.GameModes")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
-local levelPresets = require("common.engine.LevelPresets")
+local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
 require("client.src.BattleRoom")
 
@@ -165,7 +165,7 @@ function ChallengeMode:recordStageResult(winners, gameLength)
     else
       if self.stages[self.stageIndex + 1] then
         self:setStage(self.stageIndex + 1)
-      else 
+      else
         self.challengeComplete = true
       end
     end
@@ -185,9 +185,9 @@ function ChallengeMode:onMatchEnded(match)
   -- an abort is always the responsibility of the local player in challenge mode
   -- so always record the result, even if it may have been an abort
   local gameTime = 0
-  local stack = match.stacks[1]
-  if stack ~= nil and stack.game_stopwatch then
-    gameTime = stack.game_stopwatch
+  local stackEngine = match.stacks[1].engine
+  if stackEngine ~= nil and stackEngine.game_stopwatch then
+    gameTime = stackEngine.game_stopwatch
   end
   self:recordStageResult(winners, gameTime)
 
@@ -213,9 +213,9 @@ function ChallengeMode:setStage(index)
   GAME.localPlayer:setLevel(self.stages[index].playerLevel)
 
   local stageSettings = self.stages[self.stageIndex]
-  self.player.settings.attackEngineSettings = stageSettings.attackSettings
+  self.player:setAttackEngineSettings(stageSettings.attackSettings)
   self.player.settings.healthSettings = stageSettings.healthSettings
-  self.player.level = index
+  self.player.settings.level = index
   if stageSettings.characterId then
     self.player:setCharacter(stageSettings.characterId)
   else

@@ -2,9 +2,12 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
-local LevelData = require("common.engine.LevelData")
+local LevelData = require("common.data.LevelData")
 local prof = require("common.lib.jprof.jprof")
-require("table.clear")
+---@class Stack
+local Stack = require("common.engine.Stack")
+table.clear = require("table.clear")
+table.new = require("table.new")
 
 -- score lookup tables
 local SCORE_COMBO_PdP64 = {} --size 40
@@ -139,15 +142,13 @@ function Stack:checkMatches()
     local preStopTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (comboSize + garbagePanelCountOnScreen)
     self.pre_stop_time = math.max(self.pre_stop_time, preStopTime)
     self:awardStopTime(isChainLink, comboSize)
+    self:emitSignal("matched", self, attackGfxOrigin, isChainLink, comboSize, metalCount, garbagePanels and #garbagePanels or 0)
 
     if isChainLink or comboSize > 3 or metalCount > 0 then
       self:pushGarbage(attackGfxOrigin, isChainLink, comboSize, metalCount)
-      self:queueAttackSoundEffect(isChainLink, self.chain_counter, comboSize, metalCount)
     end
 
-    self.analytic:register_destroyed_panels(comboSize)
     self:updateScoreWithBonus(comboSize)
-    self:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   end
 
   self:clearChainingFlags()
@@ -167,6 +168,7 @@ local candidatePanels2 = table.new(144, 0)
 ---@return Panel[] matchingPanels all matchingPanels without duplicates
 -----@return Panel[][] matches all individual matches in an array
 -----panels in horizontal matches are listed left to right, panels in vertical matches are listed top to bottom
+---@deprecated
 function Stack:getMatchingPanels2()
   local matchingPanels = {}
   local panels = self.panels
@@ -593,6 +595,8 @@ end
 
 -- returns an integer indexed table of all garbage panels that are connected to the matching panels
 -- effectively a more optimized version of the past flood queue approach
+-- this is a lot slower than getConnectedGarbagePanels2 so only use it to verify changes have the same outcome
+---@deprecated
 function Stack:getConnectedGarbagePanels(matchingPanels)
   local garbagePanels = {}
   local panelsToCheck = Queue()
@@ -713,10 +717,8 @@ end
 function Stack:matchGarbagePanels(garbagePanels, garbageMatchTime, isChain, onScreenCount)
   garbagePanels = sortByPopOrder(garbagePanels, true)
 
-  if self:canPlaySfx() then
-    SFX_garbage_match_play = true
-  end
-  
+  self:emitSignal("garbageMatched", #garbagePanels, onScreenCount)
+
   for i = 1, #garbagePanels do
     local panel = garbagePanels[i]
     panel.y_offset = panel.y_offset - 1
@@ -754,7 +756,7 @@ function Stack:convertGarbagePanels(isChain)
 end
 
 function Stack:refillGarbagePanelBuffer()
-  PanelGenerator:setSeed(self.match.seed + self.garbageGenCount)
+  PanelGenerator:setSeed(self.seed + self.garbageGenCount)
   -- privateGeneratePanels already appends to the existing self.gpanel_buffer
   local garbagePanels = PanelGenerator.privateGeneratePanels(20, self.width, self.levelData.colors, self.gpanel_buffer, not self.allowAdjacentColors)
   -- and then we append that result to the remaining buffer
@@ -796,7 +798,6 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
-    self.analytic:registerShock()
   end
 
   local combo_pieces = COMBO_GARBAGE[comboSize]
@@ -868,38 +869,6 @@ function Stack:awardStopTime(isChain, comboSize)
   end
 end
 
-function Stack:queueAttackSoundEffect(isChainLink, chainSize, comboSize, metalCount)
-  if self:canPlaySfx() then
-    self.combo_chain_play = Stack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
-  end
-end
-
-function Stack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
-  if metalCount > 0 then
-    -- override SFX with shock sound
-    return {type = consts.ATTACK_TYPE.shock, size = metalCount}
-  elseif isChainLink then
-    return {type = consts.ATTACK_TYPE.chain, size = chainSize}
-  elseif comboSize > 3 then
-    return {type = consts.ATTACK_TYPE.combo, size = comboSize}
-  end
-  return nil
-end
-
-function Stack:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
-  if comboSize > 3 and isChainLink then
-    -- we did a combo AND a chain; cards should not overlap so offset the chain card to one row above the combo card
-    self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
-    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row + 1, self.chain_counter)
-  elseif comboSize > 3 then
-    -- only a combo
-    self:enqueue_card(false, attackGfxOrigin.column, attackGfxOrigin.row, comboSize)
-  elseif isChainLink then
-    -- only a chain
-    self:enqueue_card(true, attackGfxOrigin.column, attackGfxOrigin.row, self.chain_counter)
-  end
-end
-
 -- awards bonus score for chains/combos
 -- always call after the logic for incrementing the chain counter
 function Stack:updateScoreWithBonus(comboSize)
@@ -927,7 +896,7 @@ end
 function Stack:updateScoreWithChain()
   local chain_bonus = self.chain_counter
   if (score_mode == consts.SCOREMODE_TA) then
-    if (self.chain_counter > 13) then
+    if (chain_bonus > 13) then
       chain_bonus = 0
     end
     self.score = self.score + SCORE_CHAIN_TA[chain_bonus]

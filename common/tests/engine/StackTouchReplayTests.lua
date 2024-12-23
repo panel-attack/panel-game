@@ -2,6 +2,7 @@ local consts = require("common.engine.consts")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
+local LevelPresets = require("common.data.LevelPresets")
 
 local testReplayFolder = "common/tests/engine/replays/"
 
@@ -54,10 +55,15 @@ local function simpleTouchTest()
   assert(tableUtils.length(match.winConditions) == 0)
   assert(match.seed == 2521746)
   assert(match.stacks[1].game_over_clock == 4347)
-  assert(match.stacks[1].difficulty == 1)
+  -- previously this was comparing difficulty == 1
+  -- difficulty was converted to levelData[1] but it turned out endless/time attack used different color counts on 1
+  -- so for the preset, the time attack value got picked which means every time we want to do endless, color count needs to be overwritten
+  local endlessRef = LevelPresets.getClassic(1)
+  endlessRef:setColorCount(5)
+  assert(match.stacks[1].levelData == endlessRef)
   assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 1)
   assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return not g.isChain end) == 3)
-  assert(match.stacks[1].analytic.data.destroyed_panels == 31)
+  assert(match.stacks[1].panels_cleared == 31)
   StackReplayTestingUtils:cleanup(match)
 end
 

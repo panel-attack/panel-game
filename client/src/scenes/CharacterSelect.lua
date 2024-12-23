@@ -1,5 +1,5 @@
 local consts = require("common.engine.consts")
-local input = require("common.lib.inputManager")
+local input = require("client.src.inputManager")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")

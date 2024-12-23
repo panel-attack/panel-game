@@ -1,7 +1,9 @@
-require("client.src.graphics.Stack")
+local PlayerStack = require("client.src.PlayerStack")
+local ClientMatch = require("client.src.ClientMatch")
+local GameModes = require("common.engine.GameModes")
+local Player = require("client.src.Player")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
-require("common.engine.Stack")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 
 local Theme = require("client.src.mods.Theme")
@@ -17,19 +19,51 @@ local legacyScoreY = 208
 local currentTheme = themes[config.theme]
 
 local function setTheme(theme)
+  theme:load()
   themes[config.theme] = theme
 end
 
-local v1Theme = Theme("V1Test")
+---@param playerCount integer
+---@param theme table?
+local function createEndlessClientMatch(playerCount, theme)
+  local endless = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+  local players = {}
+  if playerCount == nil then
+    playerCount = 1
+  end
+  for i = 1, playerCount do
+    local player = Player.getLocalPlayer()
+    player.isLocal = false
+    player:setLevel(10)
+    player:setStyle(GameModes.Styles.MODERN)
+    player.playerNumber = i
+
+    --player:restrictInputs(inputs.inputConfigurations[i])
+    players[#players+1] = player
+  end
+
+  local clientMatch = ClientMatch(players, true, endless.stackInteraction, endless.winConditions, endless.gameOverConditions, false)
+  clientMatch:start()
+
+  if theme then
+    for i, stack in ipairs(clientMatch.stacks) do
+      stack.theme = theme
+    end
+  end
+
+  return clientMatch
+end
+
+local v1Theme = Theme("client/tests/ThemeTestData/V1Test", "V1Test")
 assert(v1Theme ~= nil)
-local defaultTheme = Theme(consts.DEFAULT_THEME_DIRECTORY)
+local defaultTheme = Theme(Theme.defaultThemeDirectoryPath, consts.DEFAULT_THEME_DIRECTORY)
 assert(defaultTheme ~= nil)
 
 -- ORIGIN TESTING
 
 local function testOriginalThemeStackGraphics()
   setTheme(v1Theme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 1)
+  local match = createEndlessClientMatch(1)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
@@ -44,7 +78,7 @@ end
 
 local function testOriginalThemeStackGraphicsPlayer2()
   setTheme(v1Theme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2)
+  local match = createEndlessClientMatch(2)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
@@ -59,11 +93,12 @@ end
 
 local function testNewThemeStackGraphics()
   setTheme(defaultTheme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 1)
+  local match = createEndlessClientMatch(1)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
-  assert(stack.origin_x == 184)
+  -- disabled because we no longer use origin x to draw that in modern theme versions
+  --assert(stack.origin_x == 184)
   assert(stack:elementOriginX(false, false) == stack.origin_x * stack.gfxScale)
   assert(stack:elementOriginY(false, false) == stack.panelOriginY * stack.gfxScale)
   assert(stack:elementOriginX(true, false) == stack.origin_x * stack.gfxScale)
@@ -74,11 +109,12 @@ test(testNewThemeStackGraphics)
 
 local function testNewThemeStackGraphicsPlayer2()
   setTheme(defaultTheme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2)
+  local match = createEndlessClientMatch(2)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
-  assert(stack.origin_x * stack.gfxScale == 728)
+  -- disabled because we no longer use origin x to draw that in modern theme versions
+  --assert(stack.origin_x * stack.gfxScale == 728)
   assert(stack:elementOriginX(false, false) == stack.origin_x * stack.gfxScale)
   assert(stack:elementOriginY(false, false) == stack.panelOriginY * stack.gfxScale)
   assert(stack:elementOriginX(true, false) == stack.origin_x * stack.gfxScale)
@@ -91,7 +127,7 @@ test(testNewThemeStackGraphicsPlayer2)
 
 local function testOriginalThemeOffset()
   setTheme(v1Theme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 1)
+  local match = createEndlessClientMatch(1)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
@@ -111,7 +147,7 @@ end
 
 local function testOriginalThemeOffsetPlayer2()
   setTheme(v1Theme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2)
+  local match = createEndlessClientMatch(2)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
@@ -131,7 +167,7 @@ end
 
 local function testNewThemeOffset()
   setTheme(defaultTheme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 1)
+  local match = createEndlessClientMatch(1)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
@@ -151,7 +187,7 @@ test(testNewThemeOffset)
 
 local function testNewThemeOffsetPlayer2()
   setTheme(defaultTheme)
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2)
+  local match = createEndlessClientMatch(2)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
@@ -172,7 +208,7 @@ test(testNewThemeOffsetPlayer2)
 setTheme(currentTheme)
 
 local function testShakeOffsetLargeGarbage()
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2, defaultTheme)
+  local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
 
@@ -257,7 +293,7 @@ local function testShakeOffsetLargeGarbage()
   assert(stack:shakeOffsetForShakeFrames(4, 0, 1) == 1)
   assert(stack:shakeOffsetForShakeFrames(3, 0, 1) == 2)
   assert(stack:shakeOffsetForShakeFrames(2, 0, 1) == 1)
-  assert(stack:shakeOffsetForShakeFrames(1, 0, 1) == 1)  
+  assert(stack:shakeOffsetForShakeFrames(1, 0, 1) == 1)
   assert(stack:shakeOffsetForShakeFrames(0, 0, 1) == 0)
 end
 
@@ -265,7 +301,7 @@ test(testShakeOffsetLargeGarbage)
 
 -- Tests that having reduction properly reduces and rounds
 local function testShakeOffsetReduction()
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2, defaultTheme)
+  local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.5) == 1)
@@ -283,7 +319,7 @@ local function testShakeOffsetReduction()
   assert(stack:shakeOffsetForShakeFrames(64, 0, 0.5) == 4)
   assert(stack:shakeOffsetForShakeFrames(63, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(62, 0, 0.5) == 0)
-  
+
   assert(stack:shakeOffsetForShakeFrames(12, 0, 0.5) == 0)
   assert(stack:shakeOffsetForShakeFrames(11, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(10, 0, 0.5) == 2)
@@ -295,14 +331,14 @@ local function testShakeOffsetReduction()
   assert(stack:shakeOffsetForShakeFrames(4, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(3, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(2, 0, 0.5) == 1)
-  assert(stack:shakeOffsetForShakeFrames(1, 0, 0.5) == 1)  
+  assert(stack:shakeOffsetForShakeFrames(1, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(0, 0, 0.5) == 0)
 end
 
 test(testShakeOffsetReduction)
 
 local function testShakeOffsetMassiveReduction()
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2, defaultTheme)
+  local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.25) == 1)
@@ -320,7 +356,7 @@ local function testShakeOffsetMassiveReduction()
   assert(stack:shakeOffsetForShakeFrames(64, 0, 0.25) == 2)
   assert(stack:shakeOffsetForShakeFrames(63, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(62, 0, 0.25) == 0)
-  
+
   assert(stack:shakeOffsetForShakeFrames(12, 0, 0.25) == 0)
   assert(stack:shakeOffsetForShakeFrames(11, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(10, 0, 0.25) == 1)
@@ -332,21 +368,21 @@ local function testShakeOffsetMassiveReduction()
   assert(stack:shakeOffsetForShakeFrames(4, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(3, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(2, 0, 0.25) == 1)
-  assert(stack:shakeOffsetForShakeFrames(1, 0, 0.25) == 1)  
+  assert(stack:shakeOffsetForShakeFrames(1, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(0, 0, 0.25) == 0)
 end
 
 test(testShakeOffsetMassiveReduction)
 
 local function testShakeInterpolate()
-  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10, true, 2, defaultTheme)
+  local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
   assert(stack:shakeOffsetForShakeFrames(70, 0, 1) == 30)
   assert(stack:shakeOffsetForShakeFrames(16, 0, 1) == 8)
   assert(stack:shakeOffsetForShakeFrames(70, 16, 1) == 19)
   assert(stack:shakeOffsetForShakeFrames(2, 0, 1) == 1)
-  assert(stack:shakeOffsetForShakeFrames(1, 0, 1) == 1)  
+  assert(stack:shakeOffsetForShakeFrames(1, 0, 1) == 1)
   assert(stack:shakeOffsetForShakeFrames(2, 1, 1) == 1)
 end
 

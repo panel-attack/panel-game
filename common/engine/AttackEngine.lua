@@ -2,6 +2,12 @@ local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 
 -- A pattern for sending garbage
+---@class AttackPattern
+---@field width integer
+---@field height integer
+---@field startTime integer
+---@field endsChain boolean
+---@field garbage table
 AttackPattern =
   class(
   function(self, width, height, startTime, metal, chain, endsChain)
@@ -14,37 +20,40 @@ AttackPattern =
 )
 
 -- An attack engine sends attacks based on a set of rules.
+---@class AttackEngine
+---@field delayBeforeStart integer How many frame the AttackEngine waits before running. \n
+--- Note if this is changed after attack patterns are added their times won't be updated.
+---@field delayBeforeRepeat integer How many frames the AttackEngine waits after a full run before starting over
+---@field disableQueueLimit boolean Attack patterns that put out a crazy amount of garbage can slow down the game, so by default we don't queue more than 72 attacks \n
+--- This flag can be optionally set to disable that.
+---@field treatMetalAsCombo boolean whether the metal garbage is treated the same as combo garbage (aka they can mix)
+---@field attackPatterns AttackPattern[] The array of AttackPattern objects this engine will run through.
+---@field attackSettings table The format for serializing AttackPattern information
+---@field clock integer  The clock to control the continuity of the sending process
+---@field outgoingGarbage GarbageQueue The garbage queue attacks are added to
 local AttackEngine =
   class(
-  function(self, attackSettings, character)
-    -- The number of frames before the first attack starts. Note if this is changed after attack patterns are added their times won't be updated.
+  function(self, attackSettings, garbageQueue)
     self.delayBeforeStart = attackSettings.delayBeforeStart or 0
-
-    -- The number of frames at the end until the whole attack engine repeats.
     self.delayBeforeRepeat = attackSettings.delayBeforeRepeat or 0
-
-    -- Attack patterns that put out a crazy amount of garbage can slow down the game, so by default we don't queue more than 72 attacks
-    -- This flag can be optionally set to disable that.
     self.disableQueueLimit = attackSettings.disableQueueLimit or false
 
-    -- whether the metal garbage is treated the same as combo garbage (aka they can mix)
     -- mergeComboMetalQueue is a reference to an old implementation in which different garbage types
     --  were organised in different queues
-    --  we're stuck with the name because it is found in config data
+    --  we're stuck with the name because it is found in serialized data
     self.treatMetalAsCombo = attackSettings.mergeComboMetalQueue or false
 
-    -- The table of AttackPattern objects this engine will run through.
     self.attackPatterns = {}
     self:addAttackPatternsFromTable(attackSettings.attackPatterns)
     self.attackSettings = attackSettings
 
-    -- the clock to control the continuity of the sending process
     self.clock = 0
 
-    self.outgoingGarbage = GarbageQueue(true, self.treatMetalAsCombo)
-
-    -- a character table (not id) to send sfx, should be nil if no sfx should play
-    self.character = character
+    self.outgoingGarbage = garbageQueue
+    -- to ensure correct behaviour according to the pattern definition
+    -- the garbage queue must be modified to match the attack settings
+    self.outgoingGarbage.treatMetalAsCombo = self.treatMetalAsCombo
+    self.outgoingGarbage.illegalStuffIsAllowed = true
   end
 )
 
@@ -71,13 +80,7 @@ function AttackEngine:addAttackPatternsFromTable(attackPatternsTable)
 end
 
 function AttackEngine:setGarbageTarget(garbageTarget)
-  assert(garbageTarget.canvasWidth ~= nil)
-  assert(garbageTarget.mirror_x ~= nil)
-  assert(garbageTarget.panelOriginX ~= nil)
-  assert(garbageTarget.panelOriginY ~= nil)
-  assert(garbageTarget.incomingGarbage ~= nil)
-
-  self.garbageTarget = garbageTarget
+  self.garbageTarget = garbageTarget.engine
   self.garbageTarget.incomingGarbage.illegalStuffIsAllowed = true
   self.garbageTarget.incomingGarbage.treatMetalAsCombo = self.treatMetalAsCombo
 end
@@ -100,7 +103,9 @@ function AttackEngine.addEndChainPattern(self, start, repeatDelay)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
 end
 
+local garbageList = {}
 function AttackEngine.run(self)
+  table.clear(garbageList)
   assert(self.garbageTarget, "No target set on attack engine")
 
   local highestStartTime = self.attackPatterns[#self.attackPatterns].startTime
@@ -110,9 +115,6 @@ function AttackEngine.run(self)
     highestStartTime = math.max(self.attackPatterns[i].startTime, highestStartTime)
   end
 
-  local maxChain = 0
-  local maxCombo = 0
-  local hasMetal = false
   local totalAttackTimeBeforeRepeat = self.delayBeforeRepeat + highestStartTime - self.delayBeforeStart
   if self.disableQueueLimit or self.garbageTarget.incomingGarbage:len() <= 72 then
     for i = 1, #self.attackPatterns do
@@ -129,40 +131,21 @@ function AttackEngine.run(self)
             local garbage = self.attackPatterns[i].garbage
             if garbage.isChain then
               self.outgoingGarbage:addChainLink(self.clock, math.random(1, 11), math.random(1, 6))
-              local chainCounter = garbage.height + 1
-              maxChain = math.max(chainCounter, maxChain)
             else
               garbage.frameEarned = self.clock
               -- we need a coordinate for the origin of the attack animation
               garbage.rowEarned = math.random(1, 11)
               garbage.colEarned = math.random(1, 6)
-              maxCombo = garbage.width + 1 -- TODO: Handle combos SFX greather than 7
+              maxCombo = garbage.width + 1
               -- if the attack engine garbage is pushed by ref, the garbage queue would modify the reference
               -- which could also alter the chain flag in case of fake chains
               -- so make sure to deepcpy combos before sending
               self.outgoingGarbage:push(deepcpy(garbage))
             end
-            hasMetal = garbage.isMetal or hasMetal
           end
         end
       end
     end
-  end
-
-  self.outgoingGarbage:processStagedGarbageForClock(self.clock)
-  local garbageDelivery = self.outgoingGarbage:popFinishedTransitsAt(self.clock)
-  if garbageDelivery then
-    logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
-    self.garbageTarget.incomingGarbage:pushTable(garbageDelivery)
-  end
-
-  local metalCount = 0
-  if hasMetal then
-    metalCount = 3
-  end
-  local newComboChainInfo = Stack.attackSoundInfoForMatch(maxChain > 0, maxChain, maxCombo, metalCount)
-  if newComboChainInfo and self.character then
-    self.character:playAttackSfx(newComboChainInfo)
   end
 
   self.clock = self.clock + 1

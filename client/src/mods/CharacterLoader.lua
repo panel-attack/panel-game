@@ -8,7 +8,15 @@ local CharacterLoader = {}
 
 -- (re)Initializes the characters globals with data
 function CharacterLoader.initCharacters()
-  allCharacters, characterIds, characters, visibleCharacters = ModLoader.initMods(Character)
+  local all, ids, filtered, visible = ModLoader.initMods(Character)
+  ---@type table<string, Character>
+  allCharacters = all
+  ---@type string[]
+  characterIds = ids
+  ---@type table<string, Character>
+  characters = filtered
+  ---@type string[]
+  visibleCharacters = visible
 
   CharacterLoader.loadBundleIcons()
 end

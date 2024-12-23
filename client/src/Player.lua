@@ -1,20 +1,25 @@
 local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
-local LevelPresets = require("common.engine.LevelPresets")
-local input = require("common.lib.inputManager")
+local LevelPresets = require("common.data.LevelPresets")
+local input = require("client.src.inputManager")
 local MatchParticipant = require("client.src.MatchParticipant")
 local consts = require("common.engine.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
-local Stack = require("common.engine.Stack")
+local PlayerStack = require("client.src.PlayerStack")
+require("client.src.network.PlayerStack")
 local logger = require("common.lib.logger")
-require("client.src.graphics.Stack")
+---@module "common.data.LevelData"
 
 -- A player is mostly a data representation of a Panel Attack player
 -- It holds data pertaining to their online status (like name, public id)
 -- It holds data pertaining to their client status (like character, stage, panels, level etc)
 -- Player implements a lot of setters that emit signals on changes, allowing other components to be notified about the changes by connecting a function to it
 -- Due to this, unless for a good reason, all properties on Player should be set using the setters
-local Player = class(function(self, name, publicId, isLocal)
+---@class Player : MatchParticipant, Signal
+local Player = class(
+function(self, name, publicId, isLocal)
+  ---@class Player
+  self = self
   self.name = name
   self.settings = {
     -- these need to all be initialized so subscription works
@@ -58,7 +63,6 @@ local Player = class(function(self, name, publicId, isLocal)
   self:createSignal("levelChanged")
   self:createSignal("levelDataChanged")
   self:createSignal("inputMethodChanged")
-  self:createSignal("attackEngineSettingsChanged")
   self:createSignal("puzzleSetChanged")
   self:createSignal("ratingChanged")
   self:createSignal("leagueChanged")
@@ -66,13 +70,14 @@ local Player = class(function(self, name, publicId, isLocal)
 end,
 MatchParticipant)
 
+Player.TYPE = "Player"
+
 -- creates a stack for the given match according to the player's settings and returns it
 -- the stack is also saved as a reference on player
 function Player:createStackFromSettings(match, which)
   local args = {}
   args.which = which
   args.player_number = self.playerNumber
-  args.match = match
   args.is_local = self.isLocal
   args.panels_dir = self.settings.panelId
   args.character = self.settings.characterId
@@ -99,11 +104,13 @@ function Player:createStackFromSettings(match, which)
     args.allowAdjacentColors = self.settings.allowAdjacentColors
   end
   args.inputMethod = self.settings.inputMethod
+  args.stackInteraction = match.stackInteraction
   args.gameOverConditions = match.gameOverConditions
+  args.seed = match.seed
 
-  self.stack = Stack(args)
-  -- so the stack can draw player information
-  self.stack.player = self
+  args.player = self
+
+  self.stack = PlayerStack(args)
 
   return self.stack
 end
@@ -239,13 +246,6 @@ function Player:setLeague(league)
   end
 end
 
-function Player:setAttackEngineSettings(attackEngineSettings)
-  if attackEngineSettings ~= self.settings.attackEngineSettings then
-    self.settings.attackEngineSettings = attackEngineSettings
-    self:emitSignal("attackEngineSettingsChanged", attackEngineSettings)
-  end
-end
-
 function Player:restrictInputs(inputConfiguration)
   if self.inputConfiguration and self.inputConfiguration ~= inputConfiguration then
     error("Player " .. self.playerNumber .. " is trying to claim a second input configuration")
@@ -266,6 +266,7 @@ function Player:unrestrictInputs()
   end
 end
 
+---@return Player
 function Player.getLocalPlayer()
   local player = Player(config.name, -1, true)
 

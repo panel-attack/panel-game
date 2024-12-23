@@ -1,9 +1,20 @@
 local MatchParticipant = require("client.src.MatchParticipant")
 local class = require("common.lib.class")
-local SimulatedStack = require("common.engine.SimulatedStack")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
+local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 
-local ChallengeModePlayer = class(function(self, playerNumber)
+---@class ChallengeModePlayerSettings : ParticipantSettings
+---@field attackEngineSettings table
+---@field healthSettings table
+---@field difficulty integer the overall difficulty of the selected challenge mode this player is used in
+---@field level integer the current stage within the challenge mode difficulty
+
+---@class ChallengeModePlayer : MatchParticipant
+---@field usedCharacterIds string[] array of character ids that have already been used during the life time of the player
+---@field settings ChallengeModePlayerSettings
+
+local ChallengeModePlayer = class(
+function(self, playerNumber)
   self.name = "Challenger"
   self.playerNumber = playerNumber
   self.isLocal = true
@@ -41,14 +52,19 @@ local function characterForStageNumber(stageNumber)
 end
 
 function ChallengeModePlayer:createStackFromSettings(match, which)
-  assert(self.settings.healthSettings and self.settings.attackEngineSettings)
-  local simulatedStack = SimulatedStack({which = which, character = self.settings.characterId, is_local = true})
-  simulatedStack:addAttackEngine(self.settings.attackEngineSettings, true)
-  simulatedStack:addHealth(self.settings.healthSettings)
-  self.stack = simulatedStack
-  simulatedStack.player = self
+  assert(self.settings.healthSettings or self.settings.attackEngineSettings)
+  local stack = ChallengeModePlayerStack({
+    which = which,
+    character = self.settings.characterId,
+    is_local = true,
+    attackSettings = self.settings.attackEngineSettings,
+    healthSettings = self.settings.healthSettings,
+  })
 
-  return simulatedStack
+  self.stack = stack
+  stack.player = self
+
+  return stack
 end
 
 function ChallengeModePlayer:setCharacterForStage(stageNumber)
@@ -58,7 +74,7 @@ end
 -- challenge mode players are always ready
 function ChallengeModePlayer:setWantsReady(wantsReady)
   self.settings.wantsReady = true
-  self:wantsReadyChanged(true)
+  self:emitSignal("wantsReadyChanged", true)
 end
 
 function ChallengeModePlayer.createFromReplayPlayer(replayPlayer, playerNumber)

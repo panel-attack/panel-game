@@ -1,11 +1,12 @@
 local Scene = require("client.src.scenes.Scene")
-local input = require("common.lib.inputManager")
+local input = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.engine.Replay")
+local Replay = require("common.data.Replay")
 local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
+local ClientMatch = require("client.src.ClientMatch")
 
 local ReplayBrowser = class(
   function (self, sceneParams)
@@ -157,7 +158,7 @@ function ReplayBrowser:update()
     end
     if input.isDown["MenuSelect"] and Replay.replayCanBeViewed(selectedReplay) then
       GAME.theme:playValidationSfx()
-      local match = Match.createFromReplay(selectedReplay, false)
+      local match = ClientMatch.createFromReplay(selectedReplay, false)
       match.renderDuringPause = true
       match:start()
       GAME.navigationStack:push(ReplayGame({match = match}))
@@ -177,7 +178,7 @@ function ReplayBrowser:draw()
     if Replay.replayCanBeViewed(selectedReplay) == false then
       GraphicsUtil.print(loc("rp_browser_wrong_version"), menu_x - 150, menu_y - 80 + menu_h)
     end
-    
+
     GraphicsUtil.print(loc("rp_browser_info_header"), menu_x + 170, menu_y - 40)
     GraphicsUtil.print(filename, menu_x - 150, menu_y - 40 + menu_h)
 
@@ -187,6 +188,8 @@ function ReplayBrowser:draw()
     else
       if selectedReplay.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
         modeText = loc("rp_browser_info_1p_vs")
+      elseif selectedReplay.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+        modeText = loc("mm_1_training")
       elseif selectedReplay.gameMode.puzzle then
         modeText = loc("rp_browser_info_puzzle")
       elseif selectedReplay.gameMode.timeLimit then
@@ -198,19 +201,24 @@ function ReplayBrowser:draw()
     GraphicsUtil.print(modeText, menu_x + 220, menu_y + 20)
 
     local offsetX = 0
-    for i = 1, #selectedReplay.players do
+    for i, player in ipairs(selectedReplay.players) do
       GraphicsUtil.print(loc("rp_browser_info_" .. i .. "p"), menu_x + offsetX, menu_y + 50)
-      GraphicsUtil.print(loc("rp_browser_info_name", selectedReplay.players[i].name or ("Player " .. i)), menu_x + offsetX, menu_y + 65)
-      GraphicsUtil.print(loc("rp_browser_info_character", selectedReplay.players[i].settings.characterId or ""), menu_x + offsetX, menu_y + 80)
-      if selectedReplay.players[i].human then
-        if selectedReplay.players[i].settings.level then
-          GraphicsUtil.print(loc("rp_browser_info_level", selectedReplay.players[i].settings.level), menu_x + offsetX, menu_y + 95)
+      GraphicsUtil.print(loc("rp_browser_info_name", player.name or ("Player " .. i)), menu_x + offsetX, menu_y + 65)
+      GraphicsUtil.print(loc("rp_browser_info_character", player.settings.characterId or ""), menu_x + offsetX, menu_y + 80)
+      if player.human then
+        if player.settings.level then
+          GraphicsUtil.print(loc("rp_browser_info_level", player.settings.level), menu_x + offsetX, menu_y + 95)
         else
-          GraphicsUtil.print(loc("rp_browser_info_speed", selectedReplay.players[i].settings.levelData.startingSpeed), menu_x + offsetX, menu_y + 95)
-          GraphicsUtil.print(loc("rp_browser_info_difficulty", selectedReplay.players[i].settings.difficulty), menu_x + offsetX, menu_y + 110)
+          GraphicsUtil.print(loc("rp_browser_info_speed", player.settings.levelData.startingSpeed), menu_x + offsetX, menu_y + 95)
+          GraphicsUtil.print(loc("rp_browser_info_difficulty", player.settings.difficulty), menu_x + offsetX, menu_y + 110)
         end
       else
-
+        if player.settings.difficulty then
+          GraphicsUtil.print(loc("challenge_difficulty_" .. player.settings.difficulty), menu_x + offsetX, menu_y + 95)
+        end
+        if player.settings.level then
+          GraphicsUtil.print(loc("stage") .. " " .. player.settings.level, menu_x + offsetX, menu_y + 110)
+        end
       end
       offsetX = offsetX + 300
     end

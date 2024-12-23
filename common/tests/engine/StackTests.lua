@@ -2,7 +2,6 @@ local consts = require("common.engine.consts")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 local GameModes = require("common.engine.GameModes")
 local Puzzle = require("common.engine.Puzzle")
-local Player = require("client.src.Player")
 
 local function puzzleTest()
   -- to stop rising
@@ -62,7 +61,7 @@ basicSwapTest()
 
 local function moveAfterCountdownV46Test()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
-  match.engineVersion = consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE
+  match:setEngineVersion(consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE)
   local stack = match.stacks[1]
   stack.do_countdown = true
   assert(characters ~= nil, "no characters")

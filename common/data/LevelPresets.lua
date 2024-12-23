@@ -1,5 +1,5 @@
 -- this file documents presets for level data
-local LevelData = require("common.engine.LevelData")
+local LevelData = require("common.data.LevelData")
 
 ---@type LevelData[]
 local modern = {}

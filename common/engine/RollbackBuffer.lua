@@ -3,6 +3,11 @@ require("table.new")
 
 -- A specialized class that implements something like a ring buffer to facilitate the (memory) management of rollback copies
 -- Precisely the goal is that components using rollback don't have to worry about pool management and deletion of stale copies
+---@class RollbackBuffer
+---@field size integer How many frames of rollback can be stored before the oldest is overwritten
+---@field buffer table[] holds the copies
+---@field frames integer[] tracks which frame number each buffer index refers to
+---@field currentIndex integer The index of the next buffer entry to save to
 local RollbackBuffer = class(function(ring, size)
   ring.size = size
   ring.buffer = table.new(size, 0)

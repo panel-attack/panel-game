@@ -3,7 +3,7 @@ local Scene = require("client.src.scenes.Scene")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local logger = require("common.lib.logger")
 local analytics = require("client.src.analytics")
-local input = require("common.lib.inputManager")
+local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local consts = require("common.engine.consts")
 local StageLoader = require("client.src.mods.StageLoader")
@@ -14,6 +14,7 @@ local prof = require("common.lib.jprof.jprof")
 local Menu = require("client.src.ui.Menu")
 local MenuItem = require("client.src.ui.MenuItem")
 local FileUtils = require("client.src.FileUtils")
+local ClientStack = require("client.src.ClientStack")
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 local GameBase = class(
@@ -114,10 +115,9 @@ end
 -- unlike regular asset load, this function connects the used assets to the match so they cannot be unloaded
 function GameBase:loadAssets(match)
   for i, stack in ipairs(match.stacks) do
-    local character = characters[stack.character]
-    logger.debug("Force loading character " .. character.id .. " as part of GameBase:load")
-    ModController:loadModFor(character, stack, true)
-    character:register(match)
+    logger.debug("Force loading character " .. stack.character.id .. " as part of GameBase:load")
+    ModController:loadModFor(stack.character, stack, true)
+    stack.character:register(match)
   end
 
   if not match.stageId then
@@ -137,6 +137,7 @@ end
 function GameBase:initializeFrameInfo()
   self.frameInfo.startTime = nil
   self.frameInfo.frameCount = 0
+  GAME.droppedFrames = 0
 end
 
 function GameBase:load(sceneParams)
@@ -286,12 +287,12 @@ function GameBase:musicCanChange()
   end
 
   -- someone is still catching up
-  if tableUtils.trueForAny(self.match.stacks, Stack.isCatchingUp) then
+  if tableUtils.trueForAny(self.match.stacks, ClientStack.isCatchingUp) then
     return false
   end
 
   -- music waits until countdown is over
-  if self.match.doCountdown and self.match.clock < (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
+  if self.match.engine.doCountdown and self.match.engine.clock < (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
     return false
   end
 
@@ -417,7 +418,9 @@ function GameBase:drawEndGameText()
     local winners = self.match:getWinners()
     local message = self.text
     if message == nil then
-      if #winners == 1 then
+      if #self.match.players == 1 then
+        message = loc("pl_gameover")
+      elseif #winners == 1 then
         message = loc("ss_p_wins", winners[1].name)
       else
         message = loc("ss_draw")
