@@ -7,8 +7,7 @@ If you have an idea, please reach out in the #pa-development channel of the disc
 Please follow the following code guidelines when contributing:
 
 - Keep the code maintainable and clean
-- Annotate new classes and table structures for use with the [Lua Language Server](https://luals.github.io/wiki/annotations/)  
-`table` as a monolithic type for data structures makes it very difficult for IDEs to power common functions like "Go To Definition", "Find All References" or "Rename Symbol" if there are no annotations to provide guidance.
+- Annotate new classes and table structures for use with the [Lua Language Server](https://luals.github.io/wiki/annotations/)
 - Make sure the testLauncher successfully completes all tests
   - if sensible for your contribution, please consider adding a unit or integration test  
   depending on the topic we may not accept a PR without
@@ -25,15 +24,70 @@ This is to ensure that graphics remain functional and consistent with rollback a
 
 Pull requests are to be pulled against the `beta` branch.  
 
+## Annotation guidelines
+
+If you just go by what you see you will probably not go wrong but a bit of a breakdown why and how we use annotations.
+
+`table` as a monolithic type for data structures makes it very difficult for IDEs to power common functions like "Go To Definition", "Find All References" or "Rename Symbol" in Lua if there are no annotations to provide guidance.  
+
+The primary goal of annotating in Panel Attack is to facilitate navigation and IDE hints, not to create documentation.
+
+The lack of proper support for generics in combination with the custom class implementation makes it highly impractical to use annotations for anything generic and in most scenarios also anything scope related so don't worry about any of the scoping tags.
+
+Be pragmatic and don't get too ambitious with annotations being "correct" as long as they serve their purpose. We want to keep annotations simple enough.
+
+- Use @class to define metatables for object construction made with `class`
+- Use @class to define non-trivial non-class data structures used between different classes
+- Use @field to define the type of class fields and try to describe them
+  - love types are available as `love.LoveType`, e.g. `love.Quad` when the object would yield `Quad` as the result of `object:type()`.
+  - A lazy solution is to "redefine" the `self` table in a constructor and tag it as a class.
+    As this makes LuaLS infer the types from the assignments it is less accurate however so it should mostly be done to plug temporary holes.
+- The inheritance feature of the @class annotation does not need to reflect the real inheritance
+  - in particular you may want to "inherit" from Signal or other behaviour mix-ins so its functions do not get flagged as unknown
+- Annotate function parameters with @param and possible return values with @return 
+- Use `\n` and a new line starting with `---` to linebreak comments for annotations
+- Use @module to "require" a file if a class definition is not recognized
+- If love functions get flagged for missing arguments you can go to the implementation on the love.Type to mark the params as optional
+
+Example:
+
+```Lua
+---@class MyClass
+---@field someField string
+---@field otherField string some fields aren't set in the constructor \n
+--- so defining them at the start of file can help a lot
+
+---@class MyClass to capture the functions defined on the metatable
+---@overload fun(args: table): myClass so that constructed objects automatically have the type
+local myClass = class(
+---@type self myClass this is highly optional but can be useful if you inherit from an existing class
+function(self, args)
+  ---@class MyClass 
+  self = self
+  -- this gets captured only if the two lines above happen
+  -- can be good to get a partial class definition quickly
+  self.someField = args.whatever
+end)
+
+-- the function gets captured because the local myClass has been tagged as class
+---@param someArg string description
+---@return boolean
+function myClass.someFunction(someArg)
+end
+```
+
+You can find a `settings.json.template` with suggested workspace settings that help with annotations and filtering out some files and "problems" LuaLS would flag otherwise.
+
 ## Formatting Guidelines
 
 - Use `""` for strings and `''` to escape quotation marks
 - Constants should be `ALL_CAPS_WITH_UNDERSCORES_BETWEEN_WORDS`
 - Class names start with a capital like `BattleRoom`
 - All other names use `camelCase`
+- Class functions taking `self` as an argument should use `:` notation
 - You should set your editor to use 2 spaces of identation. (not tabs)
 - Avoid lines longer than 140 characters
-- All control flow like if and functions should be on multiple lines, not condensed into a single line. Putting it all on a single line can make it harder to follow the flow.
+- All control flow like `if` and functions should be on multiple lines, not condensed into a single line. Putting it all on a single line can make it harder to follow the flow.
 
 For those using VSCode we recommend using this [styling extension](https://marketplace.visualstudio.com/items?itemName=Koihik.vscode-lua-format) with the configuration file in the repository named VsCodeStyleConfig.lua-format
 

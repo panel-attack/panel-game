@@ -14,7 +14,7 @@ local function panelNumberToRowAndCol(num, width)
   end
   local row = math.floor((num - 1) / width) + 1
   local column =  num - ((row - 1) * width)
-    
+
   return row, column
 end
 

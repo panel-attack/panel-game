@@ -1,7 +1,7 @@
 local class = require("common.lib.class")
 local UIElement = require("client.src.ui.UIElement")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local input = require("common.lib.inputManager")
+local input = require("client.src.inputManager")
 
 local Button = class(
   function(self, options)

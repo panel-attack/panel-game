@@ -1,4 +1,4 @@
-local inputManager = require("common.lib.inputManager")
+local inputManager = require("client.src.inputManager")
 local fileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
 local Puzzle = require("common.engine.Puzzle")

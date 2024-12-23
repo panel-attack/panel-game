@@ -19,8 +19,9 @@ CustomRun.runMetrics.presentMemAlloc = 0
 
 CustomRun.runTimeGraph = nil
 
-local maxLeftOverTime = CustomRun.FRAME_RATE / 4
-leftover_time = maxLeftOverTime
+local maxLeftOverTime = CustomRun.FRAME_RATE / 2
+local desiredLeftOverTime = CustomRun.FRAME_RATE / 4
+leftover_time = desiredLeftOverTime
 
 -- Sleeps just the right amount of time to make our next update step be one frame long.
 -- If we have leftover time that hasn't been run yet, it will sleep less to catchup.
@@ -28,8 +29,8 @@ function CustomRun.sleep()
   local targetDelay = CustomRun.FRAME_RATE
   -- We want leftover time to be above 0 but less than a quarter frame.
   -- If it goes above that, only wait enough to get it down to that.
-  if leftover_time > maxLeftOverTime then
-    targetDelay = targetDelay - (leftover_time - maxLeftOverTime)
+  if leftover_time > desiredLeftOverTime then
+    targetDelay = targetDelay - (leftover_time - desiredLeftOverTime)
     targetDelay = math.max(targetDelay, 0)
   end
 
@@ -113,7 +114,7 @@ function CustomRun.innerRun()
     dt = love.timer.step()
     CustomRun.runMetrics.dt = dt
 
-    leftover_time = (leftover_time - CustomRun.FRAME_RATE + dt) % CustomRun.FRAME_RATE
+    leftover_time = (leftover_time - CustomRun.FRAME_RATE + dt) % maxLeftOverTime
   end
 
   -- Call update and draw

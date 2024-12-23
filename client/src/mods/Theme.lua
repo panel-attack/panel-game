@@ -2,7 +2,7 @@ local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local fileUtils = require("client.src.FileUtils")
-local levelPresets = require("common.engine.LevelPresets")
+local levelPresets = require("common.data.LevelPresets")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ImageContainer = require("client.src.ui.ImageContainer")
 local Music = require("client.src.music.Music")
@@ -785,6 +785,32 @@ function Theme:comboImage(comboAmount)
   return cardImage
 end
 
+function Theme:defaultModInit()
+  self:loadDefaultStage()
+end
+
+function Theme:loadDefaultStage()
+  local stagePath = self.path .. "/default/stage"
+  local defaultStage
+  if love.filesystem.getInfo(stagePath, "directory") then
+    defaultStage = require("client.src.mods.Stage")(stagePath, "__default")
+    -- we don't want to do a full json init but we need to find out the music style of the default stage
+    local read_data = fileUtils.readJsonFile(defaultStage.path .. "/config.json")
+    if read_data and read_data.music_style and type(read_data.music_style) == "string" then
+      defaultStage.music_style = read_data.music_style
+    end
+    defaultStage:preload()
+    defaultStage:load(true)
+  elseif self.id ~= consts.DEFAULT_THEME_DIRECTORY then
+    defaultStage = themes[consts.DEFAULT_THEME_DIRECTORY]:loadDefaultStage()
+  else
+    error("No default stage available")
+  end
+
+  self.defaultStage = defaultStage
+  return defaultStage
+end
+
 -- loads a theme into the game
 function Theme:load()
   logger.debug("loading theme " .. self.name)
@@ -792,6 +818,7 @@ function Theme:load()
   self:graphics_init(true)
   self:sound_init(true)
   self:final_init()
+  self:defaultModInit()
   self.fullyLoaded = true
   logger.debug("loaded theme " .. self.name)
 end

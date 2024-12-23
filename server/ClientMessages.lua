@@ -3,7 +3,7 @@
 -- so that changes in the ClientProtocol only affect this abstraction layer and not server code
 -- and changes in server code likewise only affect this abstraction layer instead of the ClientProtocol
 local logger = require("common.lib.logger")
-local LevelData = require("common.engine.LevelData")
+local LevelData = require("common.data.LevelData")
 
 local ClientMessages = {}
 

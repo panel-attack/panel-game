@@ -22,7 +22,6 @@ local basic_musics = {}
 local other_musics = {"normal_music", "danger_music", "normal_music_start", "danger_music_start"}
 local defaulted_musics = {} -- those musics will be defaulted if missing
 
-local default_stage = nil -- holds default assets fallbacks
 local randomStage = nil -- acts as the bundle stage for all theme stages
 
 local Stage =
@@ -148,9 +147,7 @@ function Stage:enable(enable)
 end
 
 function Stage.loadDefaultMod()
-  default_stage = Stage("client/assets/stages/__default", "__default")
-  default_stage:preload()
-  default_stage:load(true)
+  themes[config.theme]:loadDefaultStage()
 end
 
 -- initalizes stage graphics
@@ -159,7 +156,7 @@ function Stage.graphics_init(self, full, yields)
   for _, image_name in ipairs(stage_images) do
     self.images[image_name] = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. image_name)
     if not self.images[image_name] and defaulted_images[image_name] and not self:isBundle() then
-      self.images[image_name] = default_stage.images[image_name]
+      self.images[image_name] = themes[config.theme].defaultStage.images[image_name]
       if not self.images[image_name] then
         error("Could not find default stage image")
       end
@@ -225,7 +222,7 @@ function Stage.sound_init(self, full, yields)
         self.musics[music]:setLooping(false)
       end
     elseif not self.musics[music] and defaulted_musics[music] then
-      self.musics[music] = default_stage.musics[music] or themes[config.theme].zero_sound
+      self.musics[music] = themes[config.theme].zero_sound
     end
 
     if yields then

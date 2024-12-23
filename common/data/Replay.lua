@@ -4,9 +4,9 @@ local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 require("common.lib.timezones")
 local tableUtils = require("common.lib.tableUtils")
-local ReplayPlayer = require("common.engine.ReplayPlayer")
-local LevelPresets = require("common.engine.LevelPresets")
-local LevelData = require("common.engine.LevelData")
+local ReplayPlayer = require("common.data.ReplayPlayer")
+local LevelPresets = require("common.data.LevelPresets")
+local LevelData = require("common.data.LevelData")
 
 local REPLAY_VERSION = 2
 
@@ -75,8 +75,12 @@ function Replay:setOutcome(outcome)
       self.winnerIndex = nil
       self.winnerId = nil
     else
-      self.winnerIndex = outcome
-      self.winnerId = self.players[outcome].publicId
+      -- because attack engines are currently being saved with the player, the winning stack may not have a replayPlayer
+      -- this will be sensible to change in the future once e.g. "Arcade" mode is available but until then it wasn't deemed worthwhile to bump replay version
+      if self.players[outcome] then
+        self.winnerIndex = outcome
+        self.winnerId = self.players[outcome].publicId
+      end
     end
   end
   self.completed = true
@@ -138,7 +142,7 @@ function Replay:generateFileName()
         filename = filename .. "-Spd" .. player.settings.levelData.startingSpeed
         filename = filename .. "-Dif" .. player.settings.difficulty
       end
-    else
+    elseif player.settings.difficulty then
       filename = filename .. "-stage-" .. player.settings.difficulty .. "-" .. (player.settings.level or 0)
     end
   end
@@ -161,10 +165,12 @@ function Replay:generateFileName()
     end
 
     if not self.incomplete then
-      if self.winnerIndex then
-        filename = filename .. "-P" .. self.winnerIndex .. "wins"
-      else
-        filename = filename .. "-draw"
+      if self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+        if self.winnerIndex then
+          filename = filename .. "-P" .. self.winnerIndex .. "wins"
+        else
+          filename = filename .. "-draw"
+        end
       end
     end
   end
@@ -191,41 +197,24 @@ function Replay.replayCanBeViewed(replay)
   end
 end
 
-function Replay.addAnalyticsDataToReplay(match, replay)
-  replay:setDuration(match.clock)
-
-  for i = 1, #match.players do
-    if match.players[i].human then
-      local stack = match.players[i].stack
-      local playerTable = replay.players[i]
-      playerTable.analytics = stack.analytic.data
-      playerTable.analytics.score = stack.score
-      if match.room_ratings and match.room_ratings[i] then
-        playerTable.analytics.rating = match.room_ratings[i]
-      end
-    end
-  end
-
-  return replay
-end
-
 function Replay.finalizeReplay(match, replay)
   if not replay.completed then
-    replay = Replay.addAnalyticsDataToReplay(match, replay)
-    replay:setStage(match.stageId)
-    for i = 1, #match.players do
-      if match.players[i].stack.confirmedInput then
-        replay.players[i].settings.inputs = ReplayPlayer.compressInputString(table.concat(match.players[i].stack.confirmedInput))
+    for i = 1, #match.stacks do
+      if match.stacks[i].confirmedInput then
+        replay.players[i].settings.inputs = ReplayPlayer.compressInputString(table.concat(match.stacks[i].confirmedInput))
       end
     end
 
     -- abort is functionally equivalent to #match.winners == 0
     if match.aborted then
       replay:setOutcome()
-    elseif #match.winners == 1 then
-      replay:setOutcome(tableUtils.indexOf(match.players, match.winners[1]))
-    elseif #match.winners > 1 then
-      replay:setOutcome(0)
+    else
+      local winners = match:getWinners()
+      if #winners == 1 then
+        replay:setOutcome(tableUtils.indexOf(match.stacks, match.winners[1]))
+      elseif #winners > 1 then
+        replay:setOutcome(0)
+      end
     end
   end
 end

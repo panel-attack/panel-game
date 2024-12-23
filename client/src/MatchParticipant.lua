@@ -6,8 +6,33 @@ local CharacterLoader = require("client.src.mods.CharacterLoader")
 local StageLoader = require("client.src.mods.StageLoader")
 local ModController = require("client.src.mods.ModController")
 
+---A set of settings that are modifiable by participants prior to starting a match
+---@class ParticipantSettings
+---@field selectedCharacterId string id of the selected (bundle) character
+---@field characterId string id of the actually used character
+---@field selectedStageId string id of the selected (bundle) stage
+---@field stageId string id of the actually used stage
+---@field panelId string id of the panelSet used to source shock garbage images
+---@field wantsReady boolean
+---@field attackEngineSettings table
+
+---@class MatchParticipant
+---@field name string the name of the participant for display
+---@field wins integer number of wins gained within the room
+---@field modifiedWins integer number of wins to be added to wins for display
+---@field winrate number percentage of wins relative to matches played in the room (without ties I think)
+---@field expectedWinrate number percentage of wins the participant is expected to get based on ladder ratings
+---@field settings ParticipantSettings
+---@field hasLoaded boolean if all assets needed for this participant have been loaded
+---@field ready boolean if the participant is ready to start the game (wants to and actually is)
+---@field human boolean if the participant is a human
+---@field isLocal boolean if the participant is controlled by a local player
+
 -- a match participant represents the minimum spec for a what constitutes a "player" in a battleRoom / match
-local MatchParticipant = class(function(self)
+---@class MatchParticipant : Signal
+---@overload fun(): MatchParticipant
+local MatchParticipant = class(
+function(self)
   self.name = "participant"
   self.wins = 0
   self.modifiedWins = 0
@@ -35,6 +60,7 @@ local MatchParticipant = class(function(self)
   self:createSignal("wantsReadyChanged")
   self:createSignal("readyChanged")
   self:createSignal("hasLoadedChanged")
+  self:createSignal("attackEngineSettingsChanged")
 end)
 
 -- returns the count of wins modified by the `modifiedWins` property
@@ -136,6 +162,16 @@ function MatchParticipant:setLoaded(hasLoaded)
   if hasLoaded ~= self.hasLoaded then
     self.hasLoaded = hasLoaded
     self:emitSignal("hasLoadedChanged", hasLoaded)
+  end
+end
+
+-- duality of attackEngineSettings:
+-- In local play / replays the player sending the attacks should be setup as a separate player because it is its own stack
+-- In online play it could be important for each player to have their own settings so that on Match:start a fitting player/stack can get generated
+function MatchParticipant:setAttackEngineSettings(attackEngineSettings)
+  if attackEngineSettings ~= self.settings.attackEngineSettings then
+    self.settings.attackEngineSettings = attackEngineSettings
+    self:emitSignal("attackEngineSettingsChanged", attackEngineSettings)
   end
 end
 

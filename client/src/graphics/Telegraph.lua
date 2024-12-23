@@ -91,12 +91,12 @@ Telegraph.totalTimeAfterLoopToDestination = (Telegraph:attackAnimationEndFrame()
 -- TODO:
 -- animation seems to start 1 frame early and the loopy part does not spin quite as far outwards it seems
 function Telegraph:renderAttack(sender, receiver, frameEarned, telegraphIndex, rowOrigin, colOrigin)
-  local attackFrame = sender.clock - frameEarned
+  local attackFrame = sender.engine.clock - frameEarned
   if attackFrame < self:attackAnimationStartFrame() or attackFrame >= self:attackAnimationEndFrame() then
     return
   end
 
-  local character = characters[sender.character]
+  local character = sender.character
   local width, height = character.telegraph_garbage_images["attack"]:getDimensions()
   local attackScale = receiver.gfxScale * 16 / math.max(width, height) -- keep image ratio
 
@@ -148,9 +148,9 @@ function Telegraph:renderAttack(sender, receiver, frameEarned, telegraphIndex, r
 end
 
 function Telegraph:renderAttacks(sender, receiver)
-  for i = #sender.outgoingGarbage.stagedGarbage, 1, -1 do
-    local garbage = sender.outgoingGarbage.stagedGarbage[i]
-    local drawIndex = math.abs(i - #sender.outgoingGarbage.stagedGarbage)
+  for i = #sender.engine.outgoingGarbage.stagedGarbage, 1, -1 do
+    local garbage = sender.engine.outgoingGarbage.stagedGarbage[i]
+    local drawIndex = math.abs(i - #sender.engine.outgoingGarbage.stagedGarbage)
     if garbage.isChain and garbage.links then
       for frameEarned, location in pairs(garbage.links) do
         self:renderAttack(sender, receiver, frameEarned, drawIndex, location.rowEarned, location.colEarned)
@@ -165,7 +165,7 @@ local iconHeight = 16
 local iconWidth = 24
 
 function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIndex)
-  local character = characters[sender.character]
+  local character = sender.character
   local y = (receiver.frameOriginY - TELEGRAPH_HEIGHT - TELEGRAPH_PADDING) * receiver.gfxScale
   local x = self:telegraphRenderXPosition(receiver, telegraphIndex) * receiver.gfxScale
   local image
@@ -175,7 +175,7 @@ function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIn
         -- only display the icon for how many chain links the attack already finished
         local displayHeight = 0
         for frameEarned, _ in pairs(garbage.links) do
-          if sender.clock - frameEarned > self:attackAnimationEndFrame() then
+          if sender.engine.clock - frameEarned > self:attackAnimationEndFrame() then
             displayHeight = displayHeight + 1
           end
         end
@@ -188,7 +188,7 @@ function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIn
           image = character.telegraph_garbage_images[displayHeight][6]
         end
       else
-        if sender.clock - garbage.frameEarned < self:attackAnimationEndFrame() then
+        if sender.engine.clock - garbage.frameEarned < self:attackAnimationEndFrame() then
           -- if attacks are rendered, icon display is delayed until the attack animation finished
           return
         end
@@ -201,7 +201,7 @@ function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIn
     end
   else
     if config.renderAttacks then
-      if sender.clock - garbage.frameEarned < self:attackAnimationEndFrame() then
+      if sender.engine.clock - garbage.frameEarned < self:attackAnimationEndFrame() then
         -- if attacks are rendered, icon display is delayed until the attack animation finished
         return
       end
@@ -221,9 +221,9 @@ function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIn
 end
 
 function Telegraph:renderStagedGarbageIcons(sender, receiver)
-  local stagedGarbageCount = #sender.outgoingGarbage.stagedGarbage
+  local stagedGarbageCount = #sender.engine.outgoingGarbage.stagedGarbage
   for i = stagedGarbageCount, math.max(stagedGarbageCount - MAX_DISPLAY_ITEMS + 1, 1), -1 do
-    local garbage = sender.outgoingGarbage.stagedGarbage[i]
+    local garbage = sender.engine.outgoingGarbage.stagedGarbage[i]
     self:renderStageGarbageIcon(sender, receiver, garbage, math.abs(i - stagedGarbageCount))
   end
 end

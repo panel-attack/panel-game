@@ -140,6 +140,13 @@ end
 
 local maxQuadPool = 100
 -- Creates a new quad, recycling one if one exists in the pool to reduce memory.
+---@param x number
+---@param y number
+---@param width number
+---@param height number
+---@param sw number Reference width of the texture the quad is used with
+---@param sh number Reference height of the texture the quad is used with
+---@return love.Quad
 function GraphicsUtil:newRecycledQuad(x, y, width, height, sw, sh)
   local result = nil
   if #self.quadPool == 0 then

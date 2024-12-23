@@ -1,91 +1,66 @@
--- TODO: move asset loading related and client only required components into client
-local ModController = require("client.src.mods.ModController")
-local CharacterLoader = require("client.src.mods.CharacterLoader")
-local StageLoader = require("client.src.mods.StageLoader")
-local SoundController = require("client.src.music.SoundController")
--- Match should at most need the MatchParticipant properties rather than these;
--- TODO: move the related createFromReplay func
-local Player = require("client.src.Player")
-local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
-
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
-local Replay = require("common.engine.Replay")
-local ReplayPlayer = require("common.engine.ReplayPlayer")
-local Signal = require("common.lib.signal")
+local Replay = require("common.data.Replay")
 local SimulatedStack = require("common.engine.SimulatedStack")
 local Stack = require("common.engine.Stack")
+require("common.engine.checkMatches")
 local consts = require("common.engine.consts")
-local prof = require("common.lib.jprof.jprof")
+
+---@class Match
+---@field stacks table<integer, Stack> The stacks to run as part of the match
+---@field garbageTargets table<integer, table<integer, Stack>> assignments by index where each stack's garbage is directed
+---@field garbageSources table<Stack, table<integer, Stack>> assignments by index where each stack's incoming garbage comes from
+---@field engineVersion string
+---@field doCountdown boolean if a countdown is performed at the start of the match
+---@field stackInteraction integer how the stacks in the match interact with each other
+---@field winConditions integer[] enumerated conditions to determine a winner between multiple stacks
+---@field gameOverConditions integer[] enumerated conditions for Stacks to go game over
+---@field timeLimit integer? if the game automatically ends after a certain time
+---@field puzzle table
+---@field seed integer The seed to be used for PRNG
+---@field startTimestamp integer
+---@field createTime number
+---@field timeSpentRunning number
+---@field maxTimeSpentRunning number
+---@field clock integer
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
-Match =
-  class(
-  function(self, players, doCountdown, stackInteraction, winConditions, gameOverConditions, supportsPause, optionalArgs)
-    self.spectators = {}
-    self.spectatorString = ""
-    self.players = {}
-    self.stacks = {}
-    self.engineVersion = consts.ENGINE_VERSION
+---@class Match
+---@overload fun(stacks: Stack[], doCountdown: boolean, stackInteraction: StackInteractions, winConditions: MatchWinConditions[], gameOverCondition: GameOverConditions[], optionalArgs: table?): Match
+local Match = class(
+function(self, stacks, doCountdown, stackInteraction, winConditions, gameOverConditions, optionalArgs)
+  self.stacks = stacks
+  self.garbageTargets = {}
+  self.garbageSources = {}
+  self.engineVersion = consts.ENGINE_VERSION
 
-    assert(doCountdown ~= nil)
-    assert(stackInteraction)
-    assert(winConditions)
-    assert(gameOverConditions)
-    assert(supportsPause ~= nil)
-    self.doCountdown = doCountdown
-    self.stackInteraction = stackInteraction
-    self.winConditions = winConditions
-    self.gameOverConditions = gameOverConditions
-    if tableUtils.contains(gameOverConditions, GameModes.GameOverConditions.TIME_OUT) then
-      assert(optionalArgs.timeLimit)
-      self.timeLimit = optionalArgs.timeLimit
-    end
-    self.supportsPause = supportsPause
-    if optionalArgs then
-      -- debatable if these couldn't be player settings instead
-      self.puzzle = optionalArgs.puzzle
-      self.ranked = optionalArgs.ranked
-    end
-
-    -- match needs its own table so it can sort players with impunity
-    for i = 1, #players do
-      self:addPlayer(players[i])
-    end
-
-    GAME.droppedFrames = 0
-    self.timeSpentRunning = 0
-    self.maxTimeSpentRunning = 0
-    self.createTime = love.timer.getTime()
-    self.currentMusicIsDanger = false
-    self.seed = math.random(1,9999999)
-    self.startTimestamp = os.time(os.date("*t"))
-    self.isPaused = false
-    self.renderDuringPause = false
-    self.clock = 0
-
-    Signal.turnIntoEmitter(self)
-    self:createSignal("matchEnded")
-    self:createSignal("pauseChanged")
-    self:createSignal("dangerMusicChanged")
-    self:createSignal("countdownEnded")
+  assert(doCountdown ~= nil)
+  assert(stackInteraction)
+  assert(winConditions)
+  assert(gameOverConditions)
+  self.doCountdown = doCountdown
+  self.stackInteraction = stackInteraction
+  self.winConditions = winConditions
+  self.gameOverConditions = gameOverConditions
+  if tableUtils.contains(gameOverConditions, GameModes.GameOverConditions.TIME_OUT) then
+    assert(optionalArgs.timeLimit)
+    self.timeLimit = optionalArgs.timeLimit
   end
+  if optionalArgs then
+    -- debatable if these couldn't be player settings instead
+    self.puzzle = optionalArgs.puzzle
+  end
+
+  self.timeSpentRunning = 0
+  self.maxTimeSpentRunning = 0
+  self.createTime = love.timer.getTime()
+  self.seed = math.random(1,9999999)
+  self.startTimestamp = os.time(os.date("*t"))
+  self.clock = 0
+end
 )
-
--- Should be called prior to clearing the match.
--- Consider recycling any memory that might leave around a lot of garbage.
--- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.
-function Match:deinit()
-  for i = 1, #self.stacks do
-    self.stacks[i]:deinit()
-  end
-end
-
-function Match:addPlayer(player)
-  self.players[#self.players+1] = player
-end
 
 -- returns the players that won the match in a table
 -- returns a single winner if there was a clear winner
@@ -99,32 +74,32 @@ function Match:getWinners()
   end
 
   -- game over is handled on the stack level and results in stack:game_ended() = true
-  -- win conditions are in ORDER, meaning if player A met win condition 1 and player B met win condition 2, player A wins
-  -- while if both players meet win condition 1 and player B meets win condition 2, player B wins
+  -- win conditions are in ORDER, meaning if stack A met win condition 1 and stack B met win condition 2, stack A wins
+  -- while if both stacks meet win condition 1 and stack B meets win condition 2, stack B wins
 
   local winners = {}
-  if #self.players == 1 then
-    -- with only a single player, they always win I guess
-    winners[1] = self.players[1]
+  if #self.stacks == 1 then
+    -- with only a single stack, they always win I guess
+    winners[1] = self.stacks[1]
   else
     -- the winner is determined through process of elimination
-    -- for each win condition in sequence, all players not meeting that win condition are purged from potentialWinners
+    -- for each win condition in sequence, all stacks not meeting that win condition are purged from potentialWinners
     -- this happens until there is only 1 winner left or until there are no win conditions left to check which may result in a tie
-    local potentialWinners = shallowcpy(self.players)
+    local potentialWinners = shallowcpy(self.stacks)
     for i = 1, #self.winConditions do
       local metCondition = {}
       local winCon = self.winConditions[i]
       for j = 1, #potentialWinners do
         local potentialWinner = potentialWinners[j]
-        -- now we check for this player whether they meet the current winCondition
+        -- now we check for this stack whether they meet the current winCondition
         if winCon == GameModes.WinConditions.LAST_ALIVE then
           local hasHighestGameOverClock = true
-          if potentialWinner.stack.game_over_clock > 0 then
+          if potentialWinner.game_over_clock > 0 then
             for k = 1, #potentialWinners do
               if k ~= j then
-                if potentialWinners[k].stack.game_over_clock < 0 then
+                if potentialWinners[k].game_over_clock < 0 then
                   hasHighestGameOverClock = false
-                elseif potentialWinner.stack.game_over_clock < potentialWinners[k].stack.game_over_clock then
+                elseif potentialWinner.game_over_clock < potentialWinners[k].game_over_clock then
                   hasHighestGameOverClock = false
                   break
                 end
@@ -142,7 +117,7 @@ function Match:getWinners()
             if k ~= j then
               -- only if someone else has a higher score than me do I lose
               -- makes sure to cover score ties
-              if potentialWinner.stack.score < potentialWinners[k].stack.score then
+              if potentialWinner.engine.score < potentialWinners[k].engine.score then
                 hasHighestScore = false
                 break
               end
@@ -157,7 +132,7 @@ function Match:getWinners()
           local hasLowestTime = true
           for k = 1, #potentialWinners do
             if k ~= j then
-              if #potentialWinner.stack.confirmedInput < #potentialWinners[k].stack.confirmedInput then
+              if #potentialWinner:getConfirmedInputCount() < #potentialWinners[k]:getConfirmedInputCount() then
                 hasLowestTime = false
                 break
               end
@@ -249,37 +224,22 @@ function Match:debugCheckDivergence()
 end
 
 function Match:run()
-  if self.isPaused or self:hasEnded() then
-    self:runGameOver()
-    return
-  end
-
   local startTime = love.timer.getTime()
 
-  local checkRun = {}
+  local runs = {}
 
-  for i, stack in ipairs(self.stacks) do
-    checkRun[i] = true
-
-    -- if player.cpu then
-    --   player.cpu:run(stack)
-    -- end
-
-    if stack and stack.is_local and stack.send_controls and not stack:game_ended() --[[and not self.players[i].cpu]] then
-      stack:send_controls()
-    end
+  for i, _ in ipairs(self.stacks) do
+    runs[i] = 0
   end
 
   local runsSoFar = 0
-  while tableUtils.contains(checkRun, true) do
+  while tableUtils.contains(runs, runsSoFar) do
     for i, stack in ipairs(self.stacks) do
       if stack and self:shouldRun(stack, runsSoFar) then
         self:pushGarbageTo(stack)
         stack:run()
 
-        checkRun[i] = true
-      else
-        checkRun[i] = false
+        runs[i] = runs[i] + 1
       end
     end
 
@@ -287,8 +247,8 @@ function Match:run()
 
     -- Since the stacks can affect each other, don't save rollback until after all have run
     for i, stack in ipairs(self.stacks) do
-      if checkRun[i] then
-        self:updateFramesBehind(stack)
+      if runs[i] > runsSoFar then
+        stack:updateFramesBehind(self.clock)
         if self:shouldSaveRollback(stack) then
           stack:saveForRollback()
         end
@@ -306,88 +266,64 @@ function Match:run()
   --     assert(#stack.input_buffer == 0, "Local games should always simulate all inputs")
   --   end
   -- end
-  if self:hasEnded() then
-    prof.push("Match:handleMatchEnd")
-    self:handleMatchEnd()
-    prof.pop("Match:handleMatchEnd")
-  end
 
-  self:playCountdownSfx()
-  self:playTimeLimitDepletingSfx()
   local endTime = love.timer.getTime()
   local timeDifference = endTime - startTime
   self.timeSpentRunning = self.timeSpentRunning + timeDifference
   self.maxTimeSpentRunning = math.max(self.maxTimeSpentRunning, timeDifference)
+
+  return runs
 end
 
 function Match:pushGarbageTo(stack)
   -- check if anyone wants to push garbage into the stack's queue
-  for _, st in ipairs(self.stacks) do
-    if st.garbageTarget == stack then
-      local oldestTransitTime = st.outgoingGarbage:getOldestFinishedTransitTime()
-      if oldestTransitTime then
-        if stack.clock > oldestTransitTime then
-          -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
-          -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
-          --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
-          --  which may even include another rollback
-          if not self:rollbackToFrame(stack, oldestTransitTime) then
-            -- if we can't rollback, it's a desync
-            st.tooFarBehindError = true
-            self:abort()
-          end
+  for _, st in ipairs(self.garbageSources[stack]) do
+    local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
+    if oldestTransitTime then
+      if stack.clock > oldestTransitTime then
+        -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
+        -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
+        --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
+        --  which may even include another rollback
+        if not self:rollbackToFrame(stack, oldestTransitTime) then
+          -- if we can't rollback, it's a desync
+          self:abort()
         end
-        local garbageDelivery = st.outgoingGarbage:popFinishedTransitsAt(stack.clock)
-        if garbageDelivery then
-          logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
-          stack.incomingGarbage:pushTable(garbageDelivery)
-        end
+      end
+      local garbageDelivery = st:getReadyGarbageAt(stack.clock)
+      if garbageDelivery then
+        logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
+        stack:receiveGarbage(garbageDelivery)
       end
     end
   end
-end
-
-function Match:runGameOver()
-  for _, stack in ipairs(self.stacks) do
-    stack:runGameOver()
-  end
-end
-
-function Match:updateFramesBehind(stack)
-  local framesBehind = self.clock - stack.clock
-  stack.framesBehindArray[self.clock] = framesBehind
-  stack.framesBehind = framesBehind
 end
 
 function Match:shouldSaveRollback(stack)
-  if self.replay.completed then
-    -- assumption that if a replay is completed, we only run the match belonging to it for replays
-    -- in which case we want to be able to rewind
+  if self.alwaysSaveRollbacks then
     return true
-  end
-
-  -- rollback needs to happen if any sender is more than the garbage delay behind is
-  for i = 1, #self.stacks do
-    if self.stacks[i] ~= stack then
-      if self.stacks[i].garbageTarget == stack then
-        if self.stacks[i].clock + GARBAGE_DELAY_LAND_TIME <= stack.clock then
-          return true
+  else
+    -- rollback needs to happen if any sender is more than the garbage delay behind the stack
+    for senderIndex, targetList in ipairs(self.garbageTargets) do
+      for _, target in ipairs(targetList) do
+        if target == stack then
+          if self.stacks[senderIndex].clock + GARBAGE_DELAY_LAND_TIME <= stack.clock then
+            return true
+          end
         end
       end
     end
-  end
 
-  return false
+    return false
+  end
 end
 
 -- attempt to rollback the specified stack to the specified frame
 -- return true if successful
 -- return false if not
 function Match:rollbackToFrame(stack, frame)
-  if stack.rollbackCopies[frame] then
-    if stack:rollbackToFrame(frame) then
-      return true
-    end
+  if stack:rollbackToFrame(frame) then
+    return true
   end
 
   return false
@@ -409,63 +345,12 @@ function Match:rewindToFrame(frame)
   end
 end
 
-local countdownEnd = consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
 -- updates the match clock to the clock time of the player furthest into the game
 -- also triggers the danger music from time running out if a timeLimit was set
 function Match:updateClock()
-  for i = 1, #self.players do
-    if self.players[i].stack.clock > self.clock then
-      self.clock = self.players[i].stack.clock
-    end
-  end
-
-  if self.panicTickStartTime and self.panicTickStartTime == self.clock then
-    self:updateDangerMusic()
-  end
-
-  if self.doCountdown and self.clock == countdownEnd then
-    self:emitSignal("countdownEnded")
-  elseif not self.doCountdown and self.clock == consts.COUNTDOWN_START then
-    self:emitSignal("countdownEnded")
-  end
-end
-
-function Match:getWinningPlayerCharacter()
-  local character = consts.RANDOM_CHARACTER_SPECIAL_VALUE
-  local maxWins = -1
-  for i = 1, #self.players do
-    if self.players[i].wins > maxWins then
-      character = self.players[i].stack.character
-      maxWins = self.players[i].wins
-    end
-  end
-
-  return characters[character]
-end
-
-function Match:playCountdownSfx()
-  if self.doCountdown then
-    if self.clock < 200 then
-      if (self.clock - consts.COUNTDOWN_START) % 60 == 0 then
-        if self.clock == countdownEnd then
-          SoundController:playSfx(themes[config.theme].sounds.go)
-        else
-          SoundController:playSfx(themes[config.theme].sounds.countdown)
-        end
-      end
-    end
-  end
-end
-
-function Match:playTimeLimitDepletingSfx()
-  if self.timeLimit then
-    -- have to account for countdown
-    if self.clock >= self.panicTickStartTime then
-      local tickIndex = math.ceil((self.clock - self.panicTickStartTime) / 60)
-      if self.panicTicksPlayed[tickIndex] == false then
-        SoundController:playSfx(themes[config.theme].sounds.countdown)
-        self.panicTicksPlayed[tickIndex] = true
-      end
+  for i, stack in ipairs(self.stacks) do
+    if stack.clock > self.clock then
+      self.clock = stack.clock
     end
   end
 end
@@ -475,7 +360,6 @@ function Match:getInfo()
   info.stackInteraction = self.stackInteraction
   info.timeLimit = self.timeLimit or "none"
   info.doCountdown = tostring(self.doCountdown)
-  info.stage = self.stageId or "no stage"
   info.ended = self.ended
   info.stacks = {}
   for i, stack in ipairs(self.stacks) do
@@ -486,190 +370,115 @@ function Match:getInfo()
 end
 
 function Match:start()
-  -- battle room may add the players in any order
-  -- match has to make sure the local player ends up as P1 (left side)
-  -- if both are local or both are not, order by playerNumber
-  table.sort(self.players, function(a, b)
-    if a.isLocal == b.isLocal then
-      return a.playerNumber < b.playerNumber
-    else
-      return a.isLocal
-    end
-  end)
+  local allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(self.stacks, function(stack) return stack.allowAdjacentColors end)
+  local shockEnabled = (self.stackInteraction ~= GameModes.StackInteractions.NONE)
 
-  for i, player in ipairs(self.players) do
-    local stack = player:createStackFromSettings(self, i)
-    stack:connectSignal("dangerMusicChanged", self, self.updateDangerMusic)
-    self.stacks[#self.stacks + 1] = stack
-    stack.do_countdown = self.doCountdown
-
-    if self.replay then
-      if self.replay.completed then
-        -- watching a finished replay
-        if player.human then
-          stack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
-        end
-        stack.max_runs_per_frame = 1
-      elseif not self:hasLocalPlayer() and self.replay.players[i].settings.inputs then
-        -- catching up to a match in progress
-        stack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
-        stack.play_to_end = true
-      end
+  for i, stack in ipairs(self.stacks) do
+    stack:setCountdown(self.doCountdown)
+    if stack.TYPE == "Stack" then
+      stack:setAllowAdjacentColorsOnStartingBoard(allowAdjacentColorsOnStartingBoard)
+      stack:enableShockPanels(shockEnabled)
+      stack.seed = self.seed
     end
-
-    if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-      local attackEngineHost = SimulatedStack({which = #self.stacks + 1, is_local = true, character = CharacterLoader.fullyResolveCharacterSelection()})
-      attackEngineHost:addAttackEngine(player.settings.attackEngineSettings)
-      attackEngineHost:setGarbageTarget(stack)
-      self.stacks[#self.stacks+1] = attackEngineHost
-    end
+    self.garbageTargets[i] = {}
+    self.garbageSources[stack] = {}
   end
 
   if self.stackInteraction == GameModes.StackInteractions.SELF then
-    for i = 1, #self.players do
-      self.players[i].stack:setGarbageTarget(self.players[i].stack)
+    for i, stack in ipairs(self.stacks) do
+      table.insert(self.garbageTargets[i], stack)
+      table.insert(self.garbageSources[stack], stack)
     end
   elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
-    for i = 1, #self.players do
-      for j = 1, #self.players do
+    for i = 1, #self.stacks do
+      for j = 1, #self.stacks do
         if i ~= j then
-          -- once we have more than 2P in a single mode, setGarbageTarget needs to put these into an array
-          -- or we rework it anyway for team play
-          self.players[i].stack:setGarbageTarget(self.players[j].stack)
+          -- needs to be reworked for more than 2P in a single game
+          table.insert(self.garbageTargets[i], self.stacks[j])
+          table.insert(self.garbageSources[self.stacks[j]], self.stacks[i])
+        end
+      end
+    end
+  elseif self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+    for i, stack1 in ipairs(self.stacks) do
+      for j, stack2 in ipairs(self.stacks) do
+        if i ~= j then
+          -- needs to be reworked for more than 2P in a single game
+          if stack1.TYPE == "Stack" and stack2.TYPE == "SimulatedStack" then
+            table.insert(self.garbageTargets[j], self.stacks[i])
+            table.insert(self.garbageSources[self.stacks[i]], self.stacks[j])
+          end
         end
       end
     end
   end
 
-  for i, player in ipairs(self.players) do
-    if player.settings.puzzleSet then
+  for i, stack in ipairs(self.stacks) do
+    if false then
       -- puzzles are currently set directly on the player's stack
     else
-      player.stack:starting_state()
+      stack:starting_state()
       -- always need clock 0 as a base for rollback
-      player.stack:saveForRollback()
+      stack:saveForRollback()
     end
-  end
-
-  if self.timeLimit then
-    self.panicTicksPlayed = {}
-    for i = 1, 15 do
-      self.panicTicksPlayed[i] = false
-    end
-
-    self.panicTickStartTime = (self.timeLimit - 15) * 60
-    if self.doCountdown then
-      self.panicTickStartTime = self.panicTickStartTime + consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
-    end
-  end
-
-  if not self.replay then
-    self.replay = self:createNewReplay()
   end
 end
 
-function Match:setStage(stageId)
-  logger.debug("Setting match stage id to " .. (stageId or ""))
-  if stageId then
-    -- we got one from the server
-    self.stageId = StageLoader.fullyResolveStageSelection(stageId)
-  elseif #self.players == 1 then
-    self.stageId = StageLoader.resolveBundle(self.players[1].settings.selectedStageId)
-  else
-    self.stageId = StageLoader.fullyResolveStageSelection()
-  end
-  ModController:loadModFor(stages[self.stageId], self)
-end
-
-function Match:generateSeed()
-  local seed = 17
-  seed = seed * 37 + self.players[1].rating.new
-  seed = seed * 37 + self.players[2].rating.new
-  seed = seed * 37 + self.players[1].wins
-  seed = seed * 37 + self.players[2].wins
-
-  return seed
-end
-
+---@param seed integer?
 function Match:setSeed(seed)
   if seed then
     self.seed = seed
-  elseif self.online and #self.players > 1 then
-    self.seed = self:generateSeed()
-  else
-    -- Use the default random seed set up on match creation
   end
 end
 
--- if there is no local player that means the client is either spectating (or watching a replay)
-function Match:hasLocalPlayer()
-  for _, player in ipairs(self.players) do
-    if player.isLocal then
-      return true
-    end
-  end
-
-  return false
-end
-
+---@return Replay
 function Match:createNewReplay()
   local replay = Replay(self.engineVersion, self.seed, self, self.puzzle)
-  replay:setStage(self.stage)
-  replay:setRanked(self.ranked)
 
-  for i, player in ipairs(self.players) do
-    local replayPlayer = ReplayPlayer(player.name, player.publicId, player.human)
-    replayPlayer:setWins(player.wins)
-    replayPlayer:setCharacterId(player.settings.characterId)
-    replayPlayer:setPanelId(player.settings.panelId)
-    replayPlayer:setLevelData(player.settings.levelData)
-    replayPlayer:setInputMethod(player.settings.inputMethod)
-    replayPlayer:setAllowAdjacentColors(player.stack.allowAdjacentColors)
-    replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
-    replayPlayer:setHealthSettings(player.settings.healthSettings)
-    -- these are display-only props, the true info is stored in levelData for either of them
-    if player.settings.style == GameModes.Styles.MODERN then
-      replayPlayer:setLevel(player.settings.level)
+  for i, stack in ipairs(self.stacks) do
+    if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+      -- only add the non-attack engines as the settings remain on the player
+      if stack.TYPE == "Stack" then
+        replay:updatePlayer(i, stack:toReplayPlayer())
+      end
     else
-      replayPlayer:setDifficulty(player.settings.difficulty)
+      replay:updatePlayer(i, stack:toReplayPlayer())
     end
-
-    replay:updatePlayer(i, replayPlayer)
   end
 
   return replay
 end
 
-function Match.createFromReplay(replay, supportsPause)
+---@param replay Replay
+---@return Match
+function Match.createFromReplay(replay)
   local optionalArgs = {
     timeLimit = replay.gameMode.timeLimit,
     puzzle = replay.gameMode.puzzle,
   }
 
-  local players = {}
+  local stacks = {}
 
   for i = 1, #replay.players do
     if replay.players[i].human then
-      players[i] = Player.createFromReplayPlayer(replay.players[i], i)
+      stacks[i] = Stack.createFromReplayPlayer(replay.players[i], replay)
     else
-      players[i] = ChallengeModePlayer.createFromReplayPlayer(replay.players[i], i)
+      stacks[i] = SimulatedStack.createFromReplayPlayer(replay.players[i], replay)
     end
   end
 
   local match = Match(
-    players,
+    stacks,
     replay.gameMode.doCountdown,
     replay.gameMode.stackInteraction,
     replay.gameMode.winConditions,
     replay.gameMode.gameOverConditions,
-    supportsPause,
     optionalArgs
   )
 
   match:setSeed(replay.seed)
-  match:setStage(replay.stageId)
   match.engineVersion = replay.engineVersion
-  match.replay = replay
+  match:setAlwaysSaveRollbacks(replay.completed)
 
   return match
 end
@@ -691,6 +500,7 @@ function Match:hasEnded()
   end
 
   local aliveCount = 0
+  -- dead is more like done as the stack could also have ended by fulfilling a win condition
   local deadCount = 0
   for i = 1, #self.stacks do
     if self.stacks[i]:game_ended() then
@@ -747,26 +557,16 @@ function Match:handleMatchEnd()
   if self.aborted then
     self.winners = {}
   else
-    local winners = self:getWinners()
-    -- determine result
-    -- play win sfx
-    for i = 1, #winners do
-      characters[winners[i].stack.character]:playWinSfx()
-    end
+    self.winners = self:getWinners()
   end
-
-  -- this prepares everything about the replay except the save location
-  Replay.finalizeReplay(self, self.replay)
-
-  -- execute callbacks
-  self:emitSignal("matchEnded", self)
 end
 
 function Match:isIrrecoverablyDesynced()
-  for _, stack in ipairs(self.stacks) do
-    if stack.garbageTarget and stack.clock + MAX_LAG < stack.garbageTarget.clock then
-      stack.tooFarBehindError = true
-      return true
+  for target, sourceArray in pairs(self.garbageSources) do
+    for i, source in ipairs(sourceArray) do
+      if source.clock + MAX_LAG < target.clock then
+        return true
+      end
     end
   end
 
@@ -778,6 +578,8 @@ local checkGameEnded = function(stack)
   return stack:game_ended()
 end
 
+local TOTAL_COUNTDOWN_LENGTH = consts.COUNTDOWN_LENGTH + consts.COUNTDOWN_START
+
 function Match:checkAborted()
   -- the aborted flag may get set if the game is aborted through outside causes (usually network)
   -- this function checks if the match got aborted through inside causes (local player abort or local desync)
@@ -788,12 +590,24 @@ function Match:checkAborted()
       self.winners = {}
     elseif tableUtils.contains(self.winConditions, GameModes.WinConditions.LAST_ALIVE) then
       local alive = 0
-      for i = 1, #self.players do
-        if not self.players[i].stack:game_ended() then
+      for i = 1, #self.stacks do
+        if not self.stacks[i]:game_ended() then
           alive = alive + 1
         end
         -- if there is more than 1 alive with a last alive win condition, this must have been aborted
         if alive > 1 then
+          self.aborted = true
+          self.winners = {}
+          break
+        end
+      end
+    elseif tableUtils.contains(self.gameOverConditions, GameModes.GameOverConditions.TIME_OUT) then
+      local timeLimit = self.timeLimit
+      if self.doCountdown then
+        timeLimit = timeLimit + TOTAL_COUNTDOWN_LENGTH
+      end
+      for i, stack in ipairs(self.stacks) do
+        if not stack:game_ended() and stack.clock < timeLimit then
           self.aborted = true
           self.winners = {}
           break
@@ -810,11 +624,6 @@ function Match:checkAborted()
   end
 
   return self.aborted
-end
-
-function Match:togglePause()
-  self.isPaused = not self.isPaused
-  self:emitSignal("pauseChanged", self)
 end
 
 -- returns true if the stack should run once more during the current match:run
@@ -849,22 +658,20 @@ function Match:shouldRun(stack, runsSoFar)
   return stack:shouldRun(runsSoFar)
 end
 
-function Match:updateDangerMusic()
-  local dangerMusic
-  if self.panicTickStartTime == nil or self.clock < self.panicTickStartTime then
-    dangerMusic = tableUtils.trueForAny(self.stacks, function(s) return s.danger_music end)
-  else
-    dangerMusic = true
-  end
-
-  if dangerMusic ~= self.currentMusicIsDanger then
-    self:emitSignal("dangerMusicChanged", dangerMusic)
-    self.currentMusicIsDanger = dangerMusic
-  end
-end
-
 function Match:setCountdown(doCountdown)
   self.doCountdown = doCountdown
+end
+
+function Match:setAlwaysSaveRollbacks(save)
+  self.alwaysSaveRollbacks = save
+end
+
+---@param engineVersion string
+function Match:setEngineVersion(engineVersion)
+  self.engineVersion = engineVersion
+  for i, stack in ipairs(self.stacks) do
+    stack.engineVersion = engineVersion
+  end
 end
 
 return Match

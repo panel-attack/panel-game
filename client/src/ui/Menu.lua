@@ -2,7 +2,7 @@ local table = table
 
 local class = require("common.lib.class")
 local UIElement = require("client.src.ui.UIElement")
-local input = require("common.lib.inputManager")
+local input = require("client.src.inputManager")
 local Label = require("client.src.ui.Label")
 local directsFocus = require("client.src.ui.FocusDirector")
 

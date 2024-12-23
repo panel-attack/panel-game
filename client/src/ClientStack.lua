@@ -11,28 +11,50 @@ local function drawGfxScaled(stack, img, x, y, rot, xScale, yScale)
   GraphicsUtil.draw(img, x * stack.gfxScale, y * stack.gfxScale, rot, xScale * stack.gfxScale, yScale * stack.gfxScale)
 end
 
-local StackBase = class(function(self, args)
+---The base class for a client side wrapper around an engine stack
+---Supports general properties for positioning and drawing
+---@class ClientStack : Signal
+---@field which integer determines the position of the stack like an index but also serves as an id within the match
+---@field is_local boolean if the Stack gets its inputs live from the local client or not
+---@field character Character the character to use for drawing and sounds
+---@field theme table the theme to determine offsets via theme for multibar and other properties
+---@field panels_dir string id of the panel set to use for metal garbage assets and panels
+---@field baseWidth integer
+---@field baseHeight integer
+---@field gfxScale number scale factor for the entire Stack, default: 3
+---@field canvas boolean if the stack is supposed to be drawn
+---@field portraitFade number inverse opacity of the character portrait
+---@field engine BaseStack the engine actually running the physics
+---@field multiBarFrameCount integer at how many frames the BaseStack's multibar tops out
+---@field player MatchParticipant
+---@field healthQuad love.Quad
+---@field multi_prestopQuad love.Quad
+---@field multi_stopQuad love.Quad
+---@field multi_shakeQuad love.Quad
+---@field danger_music boolean
+---@field garbageSource ClientStack The stack the garbage assets are used from
+
+---@class ClientStack
+local ClientStack = class(
+function(self, args)
+  ---@class ClientStack
+  self = self
+
   assert(args.which)
   assert(args.is_local ~= nil)
   assert(args.character)
-  self.which = args.which
+
+  self.which = args.which or 1
+  -- player number according to the multiplayer server, for game outcome reporting 
+  self.player_number = args.player_number or self.which
   self.is_local = args.is_local
-  self.character = args.character
+  self.character = characters[args.character]
+  self.theme = args.theme or themes[config.theme]
 
-  -- basics
-  self.framesBehindArray = {}
-  self.framesBehind = 0
-  self.clock = 0
-  self.game_over_clock = -1 -- the exact clock frame the player lost, -1 while alive
-  Signal.turnIntoEmitter(self)
-  self:createSignal("dangerMusicChanged")
-
-
-  -- rollback
-  self.rollbackCopies = {}
-  self.rollbackCopyPool = Queue()
-  self.rollbackCount = 0
-  self.lastRollbackFrame = -1 -- the last frame we had to rollback from
+  self.panels_dir = args.panels_dir
+  if not self.panels_dir or not panels[self.panels_dir] then
+    self.panels_dir = config.panels
+  end
 
   -- graphics
   -- also relevant for the touch input controller method besides general drawing
@@ -44,11 +66,21 @@ local StackBase = class(function(self, args)
   self.canvas = true
   self.portraitFade = config.portrait_darkness / 100 -- will be set back to 0 if count down happens
   self.healthQuad = GraphicsUtil:newRecycledQuad(0, 0, themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight(), themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight())
+  self.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight(), self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight())
+  self.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight(), self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight())
+  self.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight(), self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight())
+
+  self:moveForRenderIndex(self.which)
+
+  self.danger_music = false
+
+  Signal.turnIntoEmitter(self)
+  self:createSignal("dangerMusicChanged")
 end)
 
 -- Provides the X origin to draw an element of the stack
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
-function StackBase:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   assert(cameFromLegacyScoreOffset ~= nil)
   assert(legacyOffsetIsAlreadyScaled ~= nil)
   local x = 546
@@ -66,7 +98,7 @@ end
 
 -- Provides the Y origin to draw an element of the stack
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
-function StackBase:elementOriginY(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginY(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   assert(cameFromLegacyScoreOffset ~= nil)
   assert(legacyOffsetIsAlreadyScaled ~= nil)
   local y = 208
@@ -83,7 +115,7 @@ end
 -- themePositionOffset - the theme offset array
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
 -- legacyOffsetIsAlreadyScaled - set to true if the offset used to be already scaled in legacy themes
-function StackBase:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   if legacyOffsetIsAlreadyScaled == nil then
     legacyOffsetIsAlreadyScaled = false
   end
@@ -101,7 +133,7 @@ end
 -- Provides the Y position to draw an element of the stack, shifted by the given offset and mirroring
 -- themePositionOffset - the theme offset array
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
-function StackBase:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   if legacyOffsetIsAlreadyScaled == nil then
     legacyOffsetIsAlreadyScaled = false
   end
@@ -118,7 +150,7 @@ end
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
 -- width - width of the drawable
 -- percentWidthShift - the percent of the width you want shifted left
-function StackBase:labelOriginXWithOffset(themePositionOffset, scale, cameFromLegacyScoreOffset, width, percentWidthShift, legacyOffsetIsAlreadyScaled)
+function ClientStack:labelOriginXWithOffset(themePositionOffset, scale, cameFromLegacyScoreOffset, width, percentWidthShift, legacyOffsetIsAlreadyScaled)
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
 
   if percentWidthShift > 0 then
@@ -128,7 +160,7 @@ function StackBase:labelOriginXWithOffset(themePositionOffset, scale, cameFromLe
   return x
 end
 
-function StackBase:drawLabel(drawable, themePositionOffset, scale, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
+function ClientStack:drawLabel(drawable, themePositionOffset, scale, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
@@ -147,7 +179,7 @@ function StackBase:drawLabel(drawable, themePositionOffset, scale, cameFromLegac
   GraphicsUtil.draw(drawable, x, y, 0, scale, scale)
 end
 
-function StackBase:drawBar(image, quad, themePositionOffset, height, yOffset, rotate, scale)
+function ClientStack:drawBar(image, quad, themePositionOffset, height, yOffset, rotate, scale)
   local imageWidth, imageHeight = image:getDimensions()
   local barYScale = height / imageHeight
   local quadY = 0
@@ -161,7 +193,7 @@ function StackBase:drawBar(image, quad, themePositionOffset, height, yOffset, ro
   GraphicsUtil.drawQuad(image, quad, x, y - height - yOffset, rotate, scale, scale * barYScale, 0, 0, self.mirror_x)
 end
 
-function StackBase:drawNumber(number, themePositionOffset, scale, cameFromLegacyScoreOffset)
+function ClientStack:drawNumber(number, themePositionOffset, scale, cameFromLegacyScoreOffset)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
@@ -170,13 +202,13 @@ function StackBase:drawNumber(number, themePositionOffset, scale, cameFromLegacy
   GraphicsUtil.drawPixelFont(number, themes[config.theme].fontMaps.numbers[self.which], x, y, scale, scale, "center", 0)
 end
 
-function StackBase:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
+function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
-  
+
   local limit = consts.CANVAS_WIDTH - x
   local alignment = "left"
   if themes[config.theme]:offsetsAreFixed() then
@@ -196,7 +228,7 @@ function StackBase:drawString(string, themePositionOffset, cameFromLegacyScoreOf
 end
 
 -- Positions the stack draw position for the given player
-function StackBase:moveForRenderIndex(renderIndex)
+function ClientStack:moveForRenderIndex(renderIndex)
     -- Position of elements should ideally be on even coordinates to avoid non pixel alignment
     if renderIndex == 1 then
       self.mirror_x = 1
@@ -229,7 +261,7 @@ end
 -- to be used in conjunction with resetDrawArea
 -- sets the draw area for the Stack by defining an area outside of which all draws are cut off
 --   and translating following draws to be relative to the top left origin of the area
-function StackBase:setDrawArea()
+function ClientStack:setDrawArea()
   -- this used to be a canvas instead but turns out switching between canvases can be quite the overhead
   love.graphics.setScissor(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale, self.baseWidth * self.gfxScale, self.baseHeight * self.gfxScale)
   love.graphics.push("transform")
@@ -238,32 +270,32 @@ end
 
 -- to be used in conjunction with setDrawArea
 -- resets the draw area and removes the translation
-function StackBase:resetDrawArea()
+function ClientStack:resetDrawArea()
   love.graphics.pop()
   love.graphics.setScissor()
 end
 
-function StackBase:drawCharacter()
+function ClientStack:drawCharacter()
   -- Update portrait fade if needed
-  if self.do_countdown then
+  if self.engine.do_countdown then
     -- self.portraitFade starts at 0 (no fade)
-    if self.clock and self.clock > 0 then
+    if self.engine.clock and self.engine.clock > 0 then
       local desiredFade = config.portrait_darkness / 100
       local startFrame = 50
       local fadeDuration = 30
-      if self.clock <= 50 then
+      if self.engine.clock <= 50 then
         self.portraitFade = 0
-      elseif self.clock > 50 and self.clock <= startFrame + fadeDuration then
-        local percent = (self.clock - startFrame) / fadeDuration
+      elseif self.engine.clock > 50 and self.engine.clock <= startFrame + fadeDuration then
+        local percent = (self.engine.clock - startFrame) / fadeDuration
         self.portraitFade = desiredFade * percent
       end
     end
   end
 
-  characters[self.character]:drawPortrait(self.which, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
+  self.character:drawPortrait(self.which, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
 end
 
-function StackBase:drawFrame()
+function ClientStack:drawFrame()
   local frameImage = themes[config.theme].images.frames[self.which]
 
   if frameImage then
@@ -273,7 +305,7 @@ function StackBase:drawFrame()
   end
 end
 
-function StackBase:drawWall(displacement, rowCount)
+function ClientStack:drawWall(displacement, rowCount)
   local wallImage = themes[config.theme].images.walls[self.which]
 
   if wallImage then
@@ -284,21 +316,21 @@ function StackBase:drawWall(displacement, rowCount)
   end
 end
 
-function StackBase:drawCountdown()
-  if self.do_countdown and self.countdown_timer and self.countdown_timer > 0 then
+function ClientStack:drawCountdown()
+  if self.engine.do_countdown and self.engine.countdown_timer and self.engine.countdown_timer > 0 then
     local ready_x = 16
     local initial_ready_y = 4
     local ready_y_drop_speed = 6
-    local ready_y = initial_ready_y + (math.min(8, self.clock) - 1) * ready_y_drop_speed
+    local ready_y = initial_ready_y + (math.min(8, self.engine.clock) - 1) * ready_y_drop_speed
     local countdown_x = 44
     local countdown_y = 68
-    if self.clock <= 8 then
+    if self.engine.clock <= 8 then
       drawGfxScaled(self, themes[config.theme].images.IMG_ready, ready_x, ready_y)
-    elseif self.clock >= 9 and self.countdown_timer and self.countdown_timer > 0 then
-      if self.countdown_timer >= 100 then
+    elseif self.engine.clock >= 9 and self.engine.countdown_timer and self.engine.countdown_timer > 0 then
+      if self.engine.countdown_timer >= 100 then
         drawGfxScaled(self, themes[config.theme].images.IMG_ready, ready_x, ready_y)
       end
-      local IMG_number_to_draw = themes[config.theme].images.IMG_numbers[math.ceil(self.countdown_timer / 60)]
+      local IMG_number_to_draw = themes[config.theme].images.IMG_numbers[math.ceil(self.engine.countdown_timer / 60)]
       if IMG_number_to_draw then
         drawGfxScaled(self, IMG_number_to_draw, countdown_x, countdown_y)
       end
@@ -306,15 +338,15 @@ function StackBase:drawCountdown()
   end
 end
 
-function StackBase:canvasWidth()
+function ClientStack:canvasWidth()
   return self.baseWidth * self.gfxScale
 end
 
-function StackBase:canvasHeight()
+function ClientStack:canvasHeight()
   return self.baseHeight * self.gfxScale
 end
 
-function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
+function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   local framePos = themes[config.theme].healthbar_frame_Pos
   local barPos = themes[config.theme].multibar_Pos
   local overtimePos = themes[config.theme].multibar_LeftoverTime_Pos
@@ -325,7 +357,7 @@ function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   local multiBarMaxHeight = 589 * (self.gfxScale / 3) * themes[config.theme].multibar_Scale
   local bottomOffset = 0
 
-  local healthHeight = (self.health / multiBarFrameCount) * multiBarMaxHeight
+  local healthHeight = (self.engine.health / multiBarFrameCount) * multiBarMaxHeight
   healthHeight = math.min(healthHeight, multiBarMaxHeight)
   self:drawBar(themes[config.theme].images.IMG_healthbar, self.healthQuad, barPos, healthHeight, 0, 0, themes[config.theme].multibar_Scale)
 
@@ -342,17 +374,17 @@ function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   else
     -- stop/prestop are only drawn if greater than shake
     if stop_time > 0 then
-      stopHeight = math.min(stop_time, multiBarFrameCount - self.health) / multiBarFrameCount * multiBarMaxHeight
+      stopHeight = math.min(stop_time, multiBarFrameCount - self.engine.health) / multiBarFrameCount * multiBarMaxHeight
       self:drawBar(themes[config.theme].images.IMG_multibar_stop_bar, self.multi_stopQuad, barPos, stopHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
 
       bottomOffset = bottomOffset + stopHeight
     end
 
-    local totalInvincibility = self.health + stop_time + pre_stop_time
+    local totalInvincibility = self.engine.health + stop_time + pre_stop_time
     local remainingSeconds = 0
     if totalInvincibility > multiBarFrameCount then
       -- total invincibility exceeds what the multibar can display -> fill only the remaining space with prestop
-      preStopHeight = (1 - (self.health + stop_time) / multiBarFrameCount) * multiBarMaxHeight
+      preStopHeight = (1 - (self.engine.health + stop_time) / multiBarFrameCount) * multiBarMaxHeight
       remainingSeconds = (totalInvincibility - multiBarFrameCount) / 60
     else
       preStopHeight = pre_stop_time / multiBarFrameCount * multiBarMaxHeight
@@ -368,58 +400,65 @@ function StackBase:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   end
 end
 
-function StackBase:drawPlayerName()
+function ClientStack:drawPlayerName()
   local username = (self.player.name or "")
   self:drawString(username, themes[config.theme].name_Pos, true, themes[config.theme].name_Font_Size)
 end
 
-function StackBase:drawWinCount()
+function ClientStack:drawWinCount()
   self:drawLabel(themes[config.theme].images.IMG_wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, true)
   self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, true)
+end
+
+function ClientStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
+  if metalCount > 0 then
+    -- override SFX with shock sound
+    return {type = consts.ATTACK_TYPE.shock, size = metalCount}
+  elseif isChainLink then
+    return {type = consts.ATTACK_TYPE.chain, size = chainSize}
+  elseif comboSize > 3 then
+    return {type = consts.ATTACK_TYPE.combo, size = comboSize}
+  end
+  return nil
+end
+
+---@param doCountdown boolean if the stack should have a countdown at the beginning
+function ClientStack:setCountdown(doCountdown)
+  self.engine:setCountdown(doCountdown)
+end
+
+function ClientStack:isCatchingUp()
+  return self.engine.play_to_end
+end
+
+---@param garbageSource ClientStack
+function ClientStack:setGarbageSource(garbageSource)
+  self.garbageSource = garbageSource
+end
+
+function ClientStack:setMaxRunsPerFrame(maxRunsPerFrame)
+  self.engine:setMaxRunsPerFrame(maxRunsPerFrame)
+end
+
+---@return boolean
+function ClientStack:game_ended()
+  return self.engine:game_ended()
 end
 
 --------------------------------
 ------ abstract functions ------
 --------------------------------
 
-function StackBase:receiveGarbage(frameToReceive, garbageArray)
-  error("did not implement receiveGarbage")
-end
-
-function StackBase:saveForRollback()
-  error("did not implement saveForRollback")
-end
-
-function StackBase:rollbackToFrame(frame)
-  error("did not implement rollbackToFrame")
-end
-
-function StackBase:starting_state()
-  error("did not implement starting_state")
-end
-
-function StackBase:deinit()
-  error("did not implement deinit")
-end
-
-function StackBase:render()
-  error("did not implement render")
-end
-
-function StackBase:game_ended()
-  error("did not implement game_ended")
-end
-
-function StackBase:shouldRun()
-  error("did not implement shouldRun")
-end
-
-function StackBase:run()
-  error("did not implement run")
-end
-
-function StackBase:runGameOver()
+function ClientStack:runGameOver()
   error("did not implement runGameOver")
 end
 
-return StackBase
+function ClientStack:deinit()
+  error("did not implement deinit")
+end
+
+function ClientStack:render()
+  error("did not implement render")
+end
+
+return ClientStack
