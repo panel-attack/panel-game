@@ -578,6 +578,8 @@ local checkGameEnded = function(stack)
   return stack:game_ended()
 end
 
+local TOTAL_COUNTDOWN_LENGTH = consts.COUNTDOWN_LENGTH + consts.COUNTDOWN_START
+
 function Match:checkAborted()
   -- the aborted flag may get set if the game is aborted through outside causes (usually network)
   -- this function checks if the match got aborted through inside causes (local player abort or local desync)
@@ -594,6 +596,18 @@ function Match:checkAborted()
         end
         -- if there is more than 1 alive with a last alive win condition, this must have been aborted
         if alive > 1 then
+          self.aborted = true
+          self.winners = {}
+          break
+        end
+      end
+    elseif tableUtils.contains(self.gameOverConditions, GameModes.GameOverConditions.TIME_OUT) then
+      local timeLimit = self.timeLimit
+      if self.doCountdown then
+        timeLimit = timeLimit + TOTAL_COUNTDOWN_LENGTH
+      end
+      for i, stack in ipairs(self.stacks) do
+        if not stack:game_ended() and stack.clock < timeLimit then
           self.aborted = true
           self.winners = {}
           break
