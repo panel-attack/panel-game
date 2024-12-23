@@ -49,14 +49,15 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
   return match
 end
 
-function StackReplayTestingUtils.createSinglePlayerMatch(gameMode)
+function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, inputMethod, levelData)
   local args = {
     which = 1,
     stackInteraction = gameMode.stackInteraction,
     gameOverConditions = gameMode.gameOverConditions,
     is_local = false,
-    levelData = LevelPresets.getModern(5),
+    levelData = levelData or LevelPresets.getModern(5),
     allowAdjacentColors = true,
+    inputMethod = inputMethod or "controller",
   }
   local stacks = { Stack(args) }
 
