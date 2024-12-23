@@ -53,7 +53,7 @@ GameCatchUp.name = "GameCatchUp"
 local function modLoadValidation(match)
   logger.debug("Match has caught up, switching to gameScene")
   for i, stack in ipairs(match.stacks) do
-    local character = characters[stack.character]
+    local character = stack.character
     logger.debug("Stack " .. i .. " uses character " .. character.id)
     logger.debug("Character " .. character.id .. " is fully loaded: " .. tostring(character.fullyLoaded))
     logger.debug("Character " .. character.id .. " has a portrait loaded: " .. tostring(character.images.portrait ~= nil))

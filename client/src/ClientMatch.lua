@@ -267,7 +267,7 @@ function ClientMatch:abort()
 end
 
 function ClientMatch:getWinningPlayerCharacter()
-  local character = consts.RANDOM_CHARACTER_SPECIAL_VALUE
+  local character = characters[consts.RANDOM_CHARACTER_SPECIAL_VALUE]
   local maxWins = -1
   for i = 1, #self.players do
     if self.players[i].wins > maxWins then
@@ -276,7 +276,7 @@ function ClientMatch:getWinningPlayerCharacter()
     end
   end
 
-  return characters[character]
+  return character
 end
 
 function ClientMatch:togglePause()
