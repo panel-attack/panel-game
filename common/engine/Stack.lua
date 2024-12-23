@@ -107,7 +107,6 @@ local PANELS_TO_NEXT_SPEED =
 ---@field chain_counter integer Number of the current chain links starting from 2; relevant for scoring and stop_time \n
 --- resets to 0 on chain end and sends garbage according to length
 ---@field panels_in_top_row boolean If there are panels in the top row of the stack; pre-condition for losing under the NEGATIVE_HEALTH game over condition
----@field max_runs_per_frame integer How many times Stack:run() may be called within a single Match:run; used to keep stacks synchronous in various scenarios
 ---@field n_active_panels integer How many panels are "active" on this frame; active panels prevent the stack from rising
 ---@field n_prev_active_panels integer How many panels were "active" on the previous frame; previous active panels prevent the stack from rising
 ---@field manual_raise boolean if true the stack is currently being manually raised; kept true until the raise has been completed
@@ -1825,11 +1824,6 @@ end
 
 function Stack:disablePassiveRaise()
   self.behaviours.passiveRaise = false
-end
-
----@param maxRunsPerFrame integer
-function Stack:setMaxRunsPerFrame(maxRunsPerFrame)
-  self.max_runs_per_frame = maxRunsPerFrame
 end
 
 ---@return integer

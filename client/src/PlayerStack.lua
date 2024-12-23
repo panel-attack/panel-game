@@ -302,10 +302,6 @@ function PlayerStack:enableCatchup(enable)
   self.engine:enableCatchup(enable)
 end
 
-function PlayerStack:setMaxRunsPerFrame(maxRunsPerFrame)
-  self.engine:setMaxRunsPerFrame(maxRunsPerFrame)
-end
-
 ---------------------------------------------
 --- Overwrites for parent class functions ---
 ---------------------------------------------

@@ -436,6 +436,10 @@ function ClientStack:setGarbageSource(garbageSource)
   self.garbageSource = garbageSource
 end
 
+function ClientStack:setMaxRunsPerFrame(maxRunsPerFrame)
+  self.engine:setMaxRunsPerFrame(maxRunsPerFrame)
+end
+
 --------------------------------
 ------ abstract functions ------
 --------------------------------

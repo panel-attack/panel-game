@@ -190,10 +190,10 @@ function ChallengeModePlayerStack:drawDebug()
     local padding = 14
 
     GraphicsUtil.drawRectangle("fill", drawX - 5, drawY - 5, 1000, 100, 0, 0, 0, 0.5)
-    GraphicsUtil.printf("Clock " .. self.clock, drawX, drawY)
+    GraphicsUtil.printf("Clock " .. self.engine.clock, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("P" .. self.which .. " Ended?: " .. tostring(self:game_ended()), drawX, drawY)
+    GraphicsUtil.printf("P" .. self.which .. " Ended?: " .. tostring(self.engine:game_ended()), drawX, drawY)
   end
 end
 

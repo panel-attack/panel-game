@@ -20,6 +20,7 @@ local GarbageQueue = require("common.engine.GarbageQueue")
 ---@field health integer Reaching 0 typically means game over (depends on the gameOverConditions)
 --- -1 if it has not been rolled back yet (or should not run back to its pre-rollback frame)
 ---@field play_to_end boolean?
+---@field max_runs_per_frame integer How many times run() may be called within a single Match:run; used to keep stacks synchronous in various scenarios
 
 ---@class BaseStack : Signal
 local BaseStack = class(
@@ -79,6 +80,11 @@ end
 
 function BaseStack:setCountdown(doCountdown)
   self.do_countdown = doCountdown
+end
+
+---@param maxRunsPerFrame integer
+function BaseStack:setMaxRunsPerFrame(maxRunsPerFrame)
+  self.max_runs_per_frame = maxRunsPerFrame
 end
 
 function BaseStack.behindRollback(self)
