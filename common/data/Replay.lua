@@ -75,10 +75,10 @@ function Replay:setOutcome(outcome)
       self.winnerIndex = nil
       self.winnerId = nil
     else
-      self.winnerIndex = outcome
       -- because attack engines are currently being saved with the player, the winning stack may not have a replayPlayer
       -- this will be sensible to change in the future once e.g. "Arcade" mode is available but until then it wasn't deemed worthwhile to bump replay version
       if self.players[outcome] then
+        self.winnerIndex = outcome
         self.winnerId = self.players[outcome].publicId
       end
     end
