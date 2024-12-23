@@ -54,7 +54,7 @@ function verifier.bulkVerifyReplays(replayPath, outputPath)
 end
 
 function verifier.verifyReplay(replay)
-  local match = Match.createFromReplay(replay, false)
+  local match = Match.createFromReplay(replay)
   match:start()
 
   -- the extra clock safeguards against getting stuck if for some reason the match fails to advance for multiple runs
@@ -72,16 +72,16 @@ function verifier.verifyReplay(replay)
   end
 
   if match.clock < replay.duration then
-    return false, tableUtils.indexOf(match.players, match.winners[1]), match.clock
+    return false, tableUtils.indexOf(match.stacks, match.winners[1]), match.clock
   end
 
-  if replay.winnerIndex and replay.winnerIndex ~= tableUtils.indexOf(match.players, match.winners[1]) then
-    return false, tableUtils.indexOf(match.players, match.winners[1]), match.clock
+  if replay.winnerIndex and replay.winnerIndex ~= tableUtils.indexOf(match.stacks, match.winners[1]) then
+    return false, tableUtils.indexOf(match.stacks, match.winners[1]), match.clock
   end
 
   -- is there another check necessary?
 
-  return true, tableUtils.indexOf(match.players, match.winners[1]), match.clock
+  return true, tableUtils.indexOf(match.stacks, match.winners[1]), match.clock
 end
 
 return verifier
