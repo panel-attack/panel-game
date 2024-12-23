@@ -448,7 +448,7 @@ end
 
 local function getDangerBounceProps(panelSet, panel, dangerTimer)
   local conf = panelSet.sheetConfig.danger
-  -- danger_timer counts down from 18 or 15 to 0, depending on what triggered it and then wrapping back to 18
+  -- dangerTimer counts up from 0 but top out and getting out of danger force it back to 0
   local frame = ceil(wrap(1, dangerTimer + 1 + floor((panel.column - 1) / 2), conf.durationPerFrame * conf.frames) / conf.durationPerFrame)
   return conf, frame
 end
@@ -571,7 +571,7 @@ function Panels:getDrawProps(panel, x, y, dangerCol, dangerTimer)
   end
 
   -- verify that the default frame we get from the new config and the old frame are the same
-  if self.animationConfig == DEFAULT_PANEL_ANIM and conf ~= self.sheetConfig.flash then
+  if DEBUG_ENABLED and self.animationConfig == DEFAULT_PANEL_ANIM and conf ~= self.sheetConfig.flash then
   -- flash in particular started on a different frame depending on level
   -- on levels with FLASH % 4 == 0 it would start with frame 5
   -- on levels with FLASH % 4 == 2 it would start with frame 1
