@@ -174,6 +174,7 @@ function ClientMatch:start()
         attackSettings = player.settings.attackEngineSettings
       })
       attackEngineHost:setGarbageTarget(player.stack)
+      player.stack:setGarbageSource(attackEngineHost)
       engineStacks[#engineStacks+1] = attackEngineHost.engine
       self.stacks[attackEngineHost.which] = attackEngineHost
     end
@@ -193,12 +194,14 @@ function ClientMatch:start()
   if self.stackInteraction == GameModes.StackInteractions.SELF then
     for i, stack in ipairs(self.stacks) do
         stack:setGarbageTarget(stack)
+        stack:setGarbageSource(stack)
     end
   elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
     for i, stack1 in ipairs(self.stacks) do
       for j, stack2 in ipairs(self.stacks) do
         if i ~= j then
           stack1:setGarbageTarget(stack2)
+          stack2:setGarbageSource(stack1)
         end
       end
     end

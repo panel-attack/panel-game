@@ -418,7 +418,9 @@ function GameBase:drawEndGameText()
     local winners = self.match:getWinners()
     local message = self.text
     if message == nil then
-      if #winners == 1 then
+      if #self.match.players == 1 then
+        message = loc("pl_gameover")
+      elseif #winners == 1 then
         message = loc("ss_p_wins", winners[1].name)
       else
         message = loc("ss_draw")

@@ -18,6 +18,7 @@ end
 ---@field is_local boolean if the Stack gets its inputs live from the local client or not
 ---@field character Character the character to use for drawing and sounds
 ---@field theme table the theme to determine offsets via theme for multibar and other properties
+---@field panels_dir string id of the panel set to use for metal garbage assets and panels
 ---@field baseWidth integer
 ---@field baseHeight integer
 ---@field gfxScale number scale factor for the entire Stack, default: 3
@@ -31,6 +32,7 @@ end
 ---@field multi_stopQuad love.Quad
 ---@field multi_shakeQuad love.Quad
 ---@field danger_music boolean
+---@field garbageSource ClientStack The stack the garbage assets are used from
 
 ---@class ClientStack
 local ClientStack = class(
@@ -48,6 +50,11 @@ function(self, args)
   self.is_local = args.is_local
   self.character = characters[args.character]
   self.theme = args.theme or themes[config.theme]
+
+  self.panels_dir = args.panels_dir
+  if not self.panels_dir or not panels[self.panels_dir] then
+    self.panels_dir = config.panels
+  end
 
   -- graphics
   -- also relevant for the touch input controller method besides general drawing
@@ -422,6 +429,11 @@ end
 
 function ClientStack:isCatchingUp()
   return self.engine.play_to_end
+end
+
+---@param garbageSource ClientStack
+function ClientStack:setGarbageSource(garbageSource)
+  self.garbageSource = garbageSource
 end
 
 --------------------------------

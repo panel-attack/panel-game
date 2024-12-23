@@ -76,7 +76,11 @@ function Replay:setOutcome(outcome)
       self.winnerId = nil
     else
       self.winnerIndex = outcome
-      self.winnerId = self.players[outcome].publicId
+      -- because attack engines are currently being saved with the player, the winning stack may not have a replayPlayer
+      -- this will be sensible to change in the future once e.g. "Arcade" mode is available but until then it wasn't deemed worthwhile to bump replay version
+      if self.players[outcome] then
+        self.winnerId = self.players[outcome].publicId
+      end
     end
   end
   self.completed = true
@@ -161,10 +165,12 @@ function Replay:generateFileName()
     end
 
     if not self.incomplete then
-      if self.winnerIndex then
-        filename = filename .. "-P" .. self.winnerIndex .. "wins"
-      else
-        filename = filename .. "-draw"
+      if self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+        if self.winnerIndex then
+          filename = filename .. "-P" .. self.winnerIndex .. "wins"
+        else
+          filename = filename .. "-draw"
+        end
       end
     end
   end

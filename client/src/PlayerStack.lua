@@ -55,11 +55,6 @@ function(self, args)
   --self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
 
-  self.panels_dir = args.panels_dir
-  if not self.panels_dir or not panels[self.panels_dir] then
-    self.panels_dir = config.panels
-  end
-
   self.analytic = AnalyticsInstance(self.is_local)
   self.drawsAnalytics = true
 
@@ -918,12 +913,12 @@ function PlayerStack.render(self)
   -- functionally, the garbage target being the source of the images for garbage landing on this stack is possible but not a given
   -- there is technically no guarantee that the target we're sending towards is also sending to us
   -- at the moment however this is the case so let's take it for granted until then
-  if not self.garbageTarget then
+  if not self.garbageSource then
     garbageImages = self.character.images
     shockGarbageImages = panels[self.panels_dir].images.metals
   else
-    garbageImages = self.garbageTarget.character.images
-    shockGarbageImages = panels[self.garbageTarget.panels_dir].images.metals
+    garbageImages = self.garbageSource.character.images
+    shockGarbageImages = panels[self.garbageSource.panels_dir].images.metals
   end
 
   local shakeOffset = self:currentShakeOffset() / self.gfxScale

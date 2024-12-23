@@ -14,8 +14,7 @@ function(self, args)
   self.enableSfx = not self.engine.attackEngine.disableQueueLimit
 
   self.multiBarFrameCount = 240
-  -- needed for sending shock garbage
-  self.panels_dir = config.panels
+
   self.sfxCombo = 0
   self.sfxChain = 0
   self.sfxMetal = 0
