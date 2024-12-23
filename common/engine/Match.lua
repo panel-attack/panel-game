@@ -393,10 +393,21 @@ function Match:start()
     for i = 1, #self.stacks do
       for j = 1, #self.stacks do
         if i ~= j then
-          -- once we have more than 2P in a single mode, setGarbageTarget needs to put these into an array
-          -- or we rework it anyway for team play
+          -- needs to be reworked for more than 2P in a single game
           table.insert(self.garbageTargets[i], self.stacks[j])
           table.insert(self.garbageSources[self.stacks[j]], self.stacks[i])
+        end
+      end
+    end
+  elseif self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+    for i, stack1 in ipairs(self.stacks) do
+      for j, stack2 in ipairs(self.stacks) do
+        if i ~= j then
+          -- needs to be reworked for more than 2P in a single game
+          if stack1.TYPE == "Stack" and stack2.TYPE == "SimulatedStack" then
+            table.insert(self.garbageTargets[j], self.stacks[i])
+            table.insert(self.garbageSources[self.stacks[i]], self.stacks[j])
+          end
         end
       end
     end

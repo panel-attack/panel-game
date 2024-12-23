@@ -24,6 +24,8 @@ function(self, args)
 end,
 BaseStack)
 
+SimulatedStack.TYPE = "SimulatedStack"
+
 -- adds an attack engine to the simulated opponent
 function SimulatedStack:addAttackEngine(attackSettings)
   self.attackEngine = AttackEngine(attackSettings, self.outgoingGarbage)

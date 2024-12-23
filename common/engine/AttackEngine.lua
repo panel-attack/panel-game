@@ -148,13 +148,6 @@ function AttackEngine.run(self)
     end
   end
 
-  self.outgoingGarbage:processStagedGarbageForClock(self.clock)
-  local garbageDelivery = self.outgoingGarbage:popFinishedTransitsAt(self.clock)
-  if garbageDelivery then
-    logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
-    self.garbageTarget.incomingGarbage:pushTable(garbageDelivery)
-  end
-
   self.clock = self.clock + 1
 end
 
