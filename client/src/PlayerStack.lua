@@ -284,11 +284,6 @@ function PlayerStack:rewindToFrame(frame)
   self.engine:rewindToFrame(frame)
 end
 
----@return boolean
-function PlayerStack:game_ended()
-  return self.engine:game_ended()
-end
-
 function PlayerStack:runGameOver()
   self:update_popfxs()
   self:update_cards()
@@ -802,7 +797,7 @@ function PlayerStack:drawDebug()
         inputs_to_print = inputs_to_print .. "\ntaunt_up"
       end
       if engine.inputMethod == "touch" then
-        inputs_to_print = inputs_to_print .. self.touchInputController:debugString()
+        inputs_to_print = inputs_to_print .. self.touchInputDetector:debugString()
       end
       GraphicsUtil.print(inputs_to_print, x, y + 195)
     end

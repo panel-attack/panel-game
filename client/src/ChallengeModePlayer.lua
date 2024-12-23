@@ -3,7 +3,18 @@ local class = require("common.lib.class")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 
-local ChallengeModePlayer = class(function(self, playerNumber)
+---@class ChallengeModePlayerSettings : ParticipantSettings
+---@field attackEngineSettings table
+---@field healthSettings table
+---@field difficulty integer the overall difficulty of the selected challenge mode this player is used in
+---@field level integer the current stage within the challenge mode difficulty
+
+---@class ChallengeModePlayer : MatchParticipant
+---@field usedCharacterIds string[] array of character ids that have already been used during the life time of the player
+---@field settings ChallengeModePlayerSettings
+
+local ChallengeModePlayer = class(
+function(self, playerNumber)
   self.name = "Challenger"
   self.playerNumber = playerNumber
   self.isLocal = true

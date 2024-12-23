@@ -111,6 +111,7 @@ function TouchInputDetector:debugString()
   inputs_to_print = inputs_to_print .. "\ntouchedCell:"..self.touchedCell.col..","..self.touchedCell.row
   inputs_to_print = inputs_to_print .. "\npreviousTouchedCell:"..self.previousTouchedCell.col..","..self.previousTouchedCell.row
   inputs_to_print = inputs_to_print .. "\ntouchingStack:"..(self.touchingStack and "true" or "false")
+  inputs_to_print = inputs_to_print .. "\n" .. self.touchInputController:debugString()
 
   return inputs_to_print
 end

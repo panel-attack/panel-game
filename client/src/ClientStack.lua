@@ -13,7 +13,7 @@ end
 
 ---The base class for a client side wrapper around an engine stack
 ---Supports general properties for positioning and drawing
----@class ClientStack
+---@class ClientStack : Signal
 ---@field which integer determines the position of the stack like an index but also serves as an id within the match
 ---@field is_local boolean if the Stack gets its inputs live from the local client or not
 ---@field character Character the character to use for drawing and sounds
@@ -438,6 +438,11 @@ end
 
 function ClientStack:setMaxRunsPerFrame(maxRunsPerFrame)
   self.engine:setMaxRunsPerFrame(maxRunsPerFrame)
+end
+
+---@return boolean
+function ClientStack:game_ended()
+  return self.engine:game_ended()
 end
 
 --------------------------------

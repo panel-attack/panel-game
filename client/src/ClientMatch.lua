@@ -18,7 +18,7 @@ local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 
 ---@class ClientMatch
 ---@field players table[]
----@field stacks PlayerStack[]
+---@field stacks (PlayerStack|ChallengeModePlayerStack)[]
 ---@field engine Match
 ---@field replay Replay
 ---@field doCountdown boolean if a countdown is performed at the start of the match
@@ -90,7 +90,8 @@ function ClientMatch:run()
     -- if stack.cpu then
     --   stack.cpu:run(stack)
     -- end
-    if stack and stack.is_local and stack.send_controls and not stack:game_ended() --[[and not stack.cpu]] then
+    if stack.is_local and stack.send_controls and not stack:game_ended() --[[and not stack.cpu]] then
+      ---@cast stack PlayerStack
       stack:send_controls()
     end
   end
@@ -597,7 +598,7 @@ function ClientMatch:render()
   if not self.isPaused or self.renderDuringPause then
     for _, stack in ipairs(self.stacks) do
       -- don't render stacks that only have an attack engine
-      if stack.player or stack.healthEngine then
+      if stack.player or stack.engine.healthEngine then
         stack:render()
       end
 

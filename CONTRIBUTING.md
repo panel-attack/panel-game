@@ -47,6 +47,7 @@ Be pragmatic and don't get too ambitious with annotations being "correct" as lon
 - Annotate function parameters with @param and possible return values with @return 
 - Use `\n` and a new line starting with `---` to linebreak comments for annotations
 - Use @module to "require" a file if a class definition is not recognized
+- If love functions get flagged for missing arguments you can go to the implementation on the love.Type to mark the params as optional
 
 Example:
 

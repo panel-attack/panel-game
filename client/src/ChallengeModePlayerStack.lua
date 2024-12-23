@@ -3,6 +3,19 @@ local ClientStack = require("client.src.ClientStack")
 local SimulatedStack = require("common.engine.SimulatedStack")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+---@class ChallengeModePlayerStack : ClientStack
+---@field engine SimulatedStack
+---@field enableSfx boolean
+---@field multiBarFrameCount integer
+---@field sfxCombo integer
+---@field sfxChain integer
+---@field sfxMetal integer
+---@field difficultyQuads love.Quad[]
+---@field stackHeightQuad love.Quad
+---@field player ChallengeModePlayer
+
+---@class ChallengeModePlayerStack
+---@overload fun(args: table): ChallengeModePlayerStack
 local ChallengeModePlayerStack = class(
 function(self, args)
   self.engine = SimulatedStack(args)
