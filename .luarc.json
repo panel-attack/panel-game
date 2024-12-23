@@ -1,16 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
     "runtime.version": "LuaJIT",
-    "diagnostics.globals": [
-        "love",
-        "jit",
-        "lldebugger",
-        "config"
-    ],
-    "workspace.checkThirdParty": false,
-    "workspace.library": [
-        "${3rd}/love2d/library"
-    ],
+
     "diagnostics.disable": [
         // some of our libraries are cross-compatible and get flagged
         "deprecated",
@@ -19,11 +10,29 @@
         // LuaCATS ---@module annotation causes a luadoc error but we don't use luadoc
         "luadoc-miss-module-name"
     ],
-    "diagnostics.ignoredFiles": "Disable",
+    "diagnostics.globals": [
+        "love",
+        "jit",
+        "lldebugger",
+        "config"
+    ],
+    "diagnostics.ignoredFiles": "Opened",
+
+    "hint.semicolon": "Disable",
+
+    "workspace.checkThirdParty": false,
     "workspace.ignoreDir": [
         ".vscode",
         // these would flag duplicate functions otherwise as they also define love callbacks
         "testLauncher.lua",
-        "verificationLauncher.lua"
+        "verificationLauncher.lua",
+        // may want to include this to debug updater features
+        "updater"
+    ],
+    "workspace.library": [
+        "${3rd}/love2d/library",
+        "common/lib/socket.lua",
+        "common/lib/dkjson.lua",
+        "common/lib/csprng.lua"
     ]
 }
