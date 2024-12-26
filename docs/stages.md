@@ -109,6 +109,12 @@ Commonly the stages in the sub_ids are made invisible by setting visible = false
 Defines which music style should be used.  
 Available options are "normal" and "dynamic".
 
+#### music_volume
+
+Defines a multiplier for the stage's music relative to the game volume.  
+The default multiplier is 1, meaning no change to music volume.  
+Values can be between 0 and 1.
+
 ##### normal
 
 The default option that is used if music_style is not specified in the configuration.  

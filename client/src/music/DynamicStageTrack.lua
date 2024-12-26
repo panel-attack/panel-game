@@ -8,12 +8,12 @@ local StageTrack = require("client.src.music.StageTrack")
 local CROSSFADE_DURATION = 60
 
 ---@class DynamicStageTrack
----@overload fun(normalMusic: Music, dangerMusic: Music): DynamicStageTrack
+---@overload fun(normalMusic: Music, dangerMusic: Music, volumeMultiplier: number?): DynamicStageTrack
 local DynamicStageTrack = class(
 ---@param stageTrack DynamicStageTrack
 ---@param normalMusic Music
 ---@param dangerMusic Music
-function(stageTrack, normalMusic, dangerMusic)
+function(stageTrack, normalMusic, dangerMusic, volumeMultiplier)
   assert(dangerMusic, "Dynamic tracks need danger music!")
   stageTrack.crossfadeTimer = 0
   stageTrack.volume = config.music_volume
@@ -81,11 +81,11 @@ function DynamicStageTrack:updateTrackVolumes()
   local percentage = self.crossfadeTimer / CROSSFADE_DURATION
 
   if self.state == "danger" then
-    self.dangerMusic:setVolume(self.volume * (1 - percentage))
-    self.normalMusic:setVolume(self.volume * percentage)
+    self.dangerMusic:setVolume(self.volume * (1 - percentage) * self.volumeMultiplier)
+    self.normalMusic:setVolume(self.volume * percentage * self.volumeMultiplier)
   else
-    self.dangerMusic:setVolume(self.volume * percentage)
-    self.normalMusic:setVolume(self.volume * (1 - percentage))
+    self.dangerMusic:setVolume(self.volume * percentage * self.volumeMultiplier)
+    self.normalMusic:setVolume(self.volume * (1 - percentage) * self.volumeMultiplier)
   end
 end
 

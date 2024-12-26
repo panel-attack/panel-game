@@ -33,6 +33,7 @@ local Stage =
     s.images = {} -- images 
     s.musics = {} -- music
     s.music_style = "normal"
+    s.music_volume = 1
     s.stageTrack = nil
   end,
   Mod
@@ -68,6 +69,10 @@ function Stage.json_init(self)
       --music style
       if read_data.music_style and type(read_data.music_style) == "string" then
         self.music_style = read_data.music_style
+      end
+
+      if read_data.music_volume and type(read_data.music_volume) == "number" then
+        self.music_volume = read_data.music_volume
       end
 
       return true
@@ -239,17 +244,17 @@ function Stage.sound_init(self, full, yields)
       dangerMusic = Music(self.musics.danger_music, self.musics.danger_music_start)
     end
     if self.music_style == "normal" then
-      self.stageTrack = StageTrack(normalMusic, dangerMusic)
+      self.stageTrack = StageTrack(normalMusic, dangerMusic, self.music_volume)
     elseif self.music_style == "dynamic" then
       if dangerMusic then
-        self.stageTrack = DynamicStageTrack(normalMusic, dangerMusic)
+        self.stageTrack = DynamicStageTrack(normalMusic, dangerMusic, self.music_volume)
       else
         -- DynamicStageTrack HAVE to have danger music
         -- default back to a regular stage track if there is none
-        self.stageTrack = StageTrack(normalMusic)
+        self.stageTrack = StageTrack(normalMusic, nil, self.music_volume)
       end
     elseif self.music_style == "relay" then
-      self.stageTrack = RelayStageTrack(normalMusic, dangerMusic)
+      self.stageTrack = RelayStageTrack(normalMusic, dangerMusic, self.music_volume)
     end
   end
 end

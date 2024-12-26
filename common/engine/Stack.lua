@@ -915,8 +915,12 @@ function Stack.shouldDropGarbage(self)
       -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
       -- and because of that hack, we need to do another hack here and allow n-height combo garbage
       -- technically garbage should get fixed garbageQueue side though so we should not reach here
-      print("I actually reached the cursed code path?")
-      return garbage.height > 1
+      if garbage.height > 1 then
+        logger.debug("Reached the cursed path")
+        return true
+      else
+        return false
+      end
     end
   end
 end

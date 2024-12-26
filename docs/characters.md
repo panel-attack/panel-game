@@ -211,6 +211,11 @@ Music will restart the normal/danger music track upon getting into/out of danger
 
 Normal music and danger music will maintain the same play time stamp and crossfade seamlessly.
 
+#### music_volume
+
+Defines a multiplier for the character's music relative to the game volume.  
+The default multiplier is 1, meaning no change to music volume.  
+Values can be between 0 and 1.
 
 #### chain_style
 

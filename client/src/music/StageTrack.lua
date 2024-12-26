@@ -1,23 +1,27 @@
 local class = require("common.lib.class")
+local util = require("common.lib.util")
 
 ---@class StageTrack
 ---@field normalMusic Music
 ---@field dangerMusic Music?
 ---@field currentMusic Music? holds the reference to the music currently being played (normal or danger)
 ---@field state string a human readable representation of which music currentMusic currently holds
+---@field volumeMultiplier number Multiplier for the StageTrack's setVolume function
 
 ---@class StageTrack
----@overload fun(normalMusic: Music, dangerMusic: Music?): StageTrack
+---@overload fun(normalMusic: Music, dangerMusic: Music?, volumeMultiplier: number?): StageTrack
 local StageTrack = class(
 ---@param stageTrack StageTrack
 ---@param normalMusic Music
 ---@param dangerMusic Music?
-function(stageTrack, normalMusic, dangerMusic)
+function(stageTrack, normalMusic, dangerMusic, volumeMultiplier)
   assert(normalMusic, "A stage track needs at least a normal music!")
   stageTrack.normalMusic = normalMusic
   stageTrack.dangerMusic = dangerMusic
   stageTrack.currentMusic = nil
   stageTrack.state = "normal"
+  volumeMultiplier = volumeMultiplier or 1
+  stageTrack.volumeMultiplier = util.bound(0, volumeMultiplier, 1)
 end)
 
 function StageTrack:changeMusic(useDangerMusic)
@@ -80,15 +84,21 @@ end
 
 -- sets the volume of the track in % relative to the configured music volume
 function StageTrack:setVolume(volume)
-  self.normalMusic:setVolume(volume)
+  self.normalMusic:setVolume(volume * self.volumeMultiplier)
   if self.dangerMusic then
-    self.dangerMusic:setVolume(volume)
+    self.dangerMusic:setVolume(volume * self.volumeMultiplier)
   end
 end
 
 -- returns the volume of the track in % relative to the configured music volume
 function StageTrack:getVolume()
   return self.normalMusic:getVolume()
+end
+
+---@param volumeMultiplier number between 0 and 1
+function StageTrack:setVolumeMultiplier(volumeMultiplier)
+  volumeMultiplier = volumeMultiplier or 1
+  self.volumeMultiplier = util.bound(0, volumeMultiplier, 1)
 end
 
 return StageTrack

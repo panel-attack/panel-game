@@ -42,6 +42,7 @@ local comboStyle = {classic = 0, per_combo = 1}
 ---@field popfx_burstScale number scale factor for certain graphic assets displayed for the PopFxStyle
 ---@field popfx_fadeScale number scale factor for certain graphic assets displayed for the PopFxStyle
 ---@field music_style string defines the behaviour for music when switching between normal and danger
+---@field music_volume number defines a multiplier to apply to the StageTrack
 ---@field stageTrack StageTrack? the StageTrack constructed from the character's music assets
 ---@field files string[] array of files in the mod's directory
 
@@ -66,6 +67,7 @@ function(self, full_path, folder_name)
   self.popfx_burstScale = 1
   self.popfx_fadeScale = 1
   self.music_style = "normal"
+  self.music_volume = 1
   self.stageTrack = nil
   self.files = tableUtils.map(love.filesystem.getDirectoryItems(self.path), function(file) return fileUtils.getFileNameWithoutExtension(file) end)
 end,
@@ -131,6 +133,10 @@ function Character.json_init(self)
       --music style
       if read_data.music_style and type(read_data.music_style) == "string" then
         self.music_style = read_data.music_style
+      end
+
+      if read_data.music_volume and type(read_data.music_volume) == "number" then
+        self.music_volume = read_data.music_volume
       end
 
       -- associated stage
@@ -458,17 +464,17 @@ function Character.sound_init(self, full, yields)
       dangerMusic = Music(self.musics.danger_music, self.musics.danger_music_start)
     end
     if self.music_style == "normal" then
-      self.stageTrack = StageTrack(normalMusic, dangerMusic)
+      self.stageTrack = StageTrack(normalMusic, dangerMusic, self.music_volume)
     elseif self.music_style == "dynamic" then
       if dangerMusic then
-        self.stageTrack = DynamicStageTrack(normalMusic, dangerMusic)
+        self.stageTrack = DynamicStageTrack(normalMusic, dangerMusic, self.music_volume)
       else
         -- DynamicStageTrack HAVE to have danger music
         -- default back to a regular stage track if there is none
-        self.stageTrack = StageTrack(normalMusic)
+        self.stageTrack = StageTrack(normalMusic, nil, self.music_volume)
       end
     elseif self.music_style == "relay" then
-      self.stageTrack = RelayStageTrack(normalMusic, dangerMusic)
+      self.stageTrack = RelayStageTrack(normalMusic, dangerMusic, self.music_volume)
     end
   end
 end
