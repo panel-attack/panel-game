@@ -87,7 +87,7 @@ function(self, args)
   self.sfxCursorMove = false
   self.sfxGarbageMatch = false
   self.sfxFanfare = 0
-  self.sfxPop = true
+  self.sfxPop = false
   self.sfxGarbagePop = 0
 
   self.taunt_up = nil -- will hold an index
