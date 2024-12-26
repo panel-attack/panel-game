@@ -134,7 +134,12 @@ function EndlessMenu:loadUserInterface()
 end
 
 function EndlessMenu:refresh()
-  local difficulty = GAME.battleRoom.players[1].settings.difficulty
+  local difficulty
+  if GAME.battleRoom then
+    difficulty = GAME.battleRoom.players[1].settings.difficulty
+  else
+    difficulty = GAME.localPlayer.settings.difficulty
+  end
   self.lastScore = GAME.scores:lastEndlessForLevel(difficulty)
   self.record = GAME.scores:recordEndlessForLevel(difficulty)
   self.ui.recordBox:setLastResult(self.lastScore)

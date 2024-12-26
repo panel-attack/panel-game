@@ -83,7 +83,13 @@ function CharacterSelectVsSelf:loadUserInterface()
 end
 
 function CharacterSelectVsSelf:refresh()
-  local level = GAME.battleRoom.players[1].settings.level
+  local level
+  if GAME.battleRoom then
+    level = GAME.battleRoom.players[1].settings.level
+  else
+    level = GAME.localPlayer.settings.level
+  end
+
   self.lastScore = GAME.scores:lastVsScoreForLevel(level)
   self.record = GAME.scores:recordVsScoreForLevel(level)
   self.ui.recordBox:setLastResult(self.lastScore)
