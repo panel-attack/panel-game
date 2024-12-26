@@ -1,6 +1,4 @@
 local DirectTransition = require("client.src.scenes.Transitions.DirectTransition")
-local SoundController = require("client.src.music.SoundController")
-local tableUtils = require("common.lib.tableUtils")
 local logger = require("common.lib.logger")
 
 local NavigationStack = {

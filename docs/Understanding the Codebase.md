@@ -2,7 +2,7 @@
 This version seeks to be more brief and on-point for people familiar with lua/love and the game itself (as a player).  
 
 The codebase combines code used for the client and the server. Code used by both or that is anticipated to be used by both is located in the `common` folder.  
-Although not yet a reality, the goal is for files in the common folder to have no references to files in the server/client folders. The only exception to this are tests that may use love's and the client's I/O to load replays, puzzles and configurations as test data.
+Files in the common folder should have no references to files in the server/client folders. The only exception to this are tests that may use I/O living in the client to load replays, puzzles and configurations as test data.
 
 The server has a separate documentation so this document mainly deals with the client architecture.
 
@@ -10,9 +10,8 @@ A `Scene` is the overarching concept of a thing that manages what you see on a s
 `Scene`s are managed by a `NavigationStack` via pop, push and pull operations with only the top-most `Scene` being active.
 
 To play games, a `BattleRoom` is created in which a number of `Player`s can modify their settings and eventually all ready up.
-Based on the settings of the `BattleRoom` itself, a `Match` is created which in turn creates `Stack`s based on the settings of the `Player`s, forming a hierarchic architecture in which the components further down the bottom ideally know nothing of the elements above.  
-`BattleRoom`, `Player`, `Match` and `Stack` are the key points with `Player` and `Stack` both having base classes `MatchPartipant` and `StackBase` that define the interface for `BattleRoom` and `Match` to use them.  
-This concept extends to replays where generally the settings of `Match` and `Player`s are saved on top of the inputs.
+Based on the settings of the `BattleRoom` itself, a `ClientMatch` is created which in turn creates `PlayerStack`s based on the settings of the `Player`s, forming a hierarchic architecture in which the components further down the bottom know nothing of the elements above.  
+`BattleRoom`, `Player`, `ClientMatch` and `PlayerStack` are the key points with `Player` and `PlayerStack` both having base classes `MatchPartipant` and `ClientStack` that define the interface for `BattleRoom` and `ClientMatch` to use them.  
 
 # Understanding the Panel Attack Codebase (the long version)
 This is a subjective and informal take by Endaris.
@@ -111,37 +110,39 @@ Game setup includes every menu that prepares a game and has players select their
 What is important to know is that all scenes belonging to these work with a `BattleRoom`.  
 
 #### BattleRoom
-The `BattleRoom` is the unified representation of game setup and the life cycle of a set of `Match`es. A `BattleRoom` may have one or more `MatchParticipant`s, it will always hold the constraints of the game mode the game is being set up for in its `mode` field and it generally governs everything about the experience of setting up and coordinating switches between setup scene and game scene to run a sequence of matches.  
-If online, the BattleRoom (further defined in `network/BattleRoom.lua`) handles sending and receiving of network messages to update `MatchParticipant` settings and is also responsible for starting the game once everyone is ready.  
+The `BattleRoom` is the unified representation of game setup and the life cycle of a set of `ClientMatch`es. A `BattleRoom` may have one or more `MatchParticipant`s, it will always hold the constraints of the game mode the game is being set up for in its `mode` field and it generally governs everything about the experience of setting up and coordinating switches between setup scene and game scene to run a sequence of matches.  
+If online, the BattleRoom attaches each player to the `NetClient` which handles sending and receiving of network messages to update `MatchParticipant` settings and is also responsible for starting the game once everyone is ready.  
 
 ##### ChallengeMode
 `ChallengeMode` inherits `BattleRoom` in order to control the life cycle of a set for its own purposes.  
 
 #### MatchParticipant
-The `MatchParticipant` represents the abstract concept of a participant in a `BattleRoom` that has a range of settings and can create a `Stack` or `SimulatedStack` with those settings.  
+The `MatchParticipant` represents the abstract concept of a participant in a `BattleRoom` that has a range of settings and can create a `PlayerStack` or `ChallengeModePlayerStack` with those settings.  
 Alongside these settings the `MatchParticipant` also tracks data such as their win count.  
 The `MatchParticipant` implements the outlines of an observer pattern to allow other objects to subscribe to updates on the settings of the `MatchParticipant`. 
 
 ##### Player
-A `Player` is the specialization of `MatchParticipant` that represents (human) players with the full set of settings to create an actual `Stack` driven by the engine.  
-They support a lot more settings and can be flagged as `isLocal = false` to mark them as remote players that get updated via the network component of `BattleRoom`. Respectively, local players will send changes of their settings to the server by having the network components subscribe to the `Player`'s settings, keeping the `Player` decoupled from all network activity.
+A `Player` is the specialization of `MatchParticipant` that represents (human) players with the full set of settings to create an actual `PlayerStack` that wraps a instance of the engine.  
+They support a lot more settings and can be flagged as `isLocal = false` to mark them as remote players that get updated via the `NetClient`. Respectively, local players will send changes of their settings to the server by having the network components subscribe to the `Player`'s settings, keeping the `Player` decoupled from all network activity.
 
 ##### ChallengeModePlayer
-A `ChallengeModePlayer` is the specialization of `MatchParticipant` that represents the opposing player in a `ChallengeMode` to create a `SimulatedStack` that is driven solely with an `AttackEngine` and a `Health` engine.  
-As they are mainly managed by the `ChallengeMode` itself they only implement the bare minimum to interface with `BattleRoom` and `Match`.
+A `ChallengeModePlayer` is the specialization of `MatchParticipant` that represents the opposing player in a `ChallengeMode` to create a `ChallengeModePlayerStack` that is driven solely with an `AttackEngine` and a `Health` engine.  
+As they are mainly managed by the `ChallengeMode` itself they only implement the bare minimum to interface with `BattleRoom` and `ClientMatch`.
 
 ### Ingame
-All actual ingame happening are operated on a `Match` that runs a certain number of `Stack`s or `SimulatedStack`s belonging to `MatchParticipant`s.  
-`Stack`, `SimulatedStack` and `Match` are oblivious to the existence of `BattleRoom` and for every single game a new `Match` and new `Stack`s/`SimulatedStack`s are being created - the `Match` based on the game mode and the `Stack`s/`SimulatedStack`s based on the settings of the `MatchParticipant`s.
+All actual ingame happening are operated on a `ClientMatch` that runs a certain number of `ClientStack`s belonging to `MatchParticipant`s.  
+`PlayerStack`, `ChallengeModePlayerStack` and `ClientMatch` are oblivious to the existence of `BattleRoom` and for every single game a new `ClientMatch` and new `ClientStack`s are being created - the `ClientMatch` based on the game mode and the `ClientStack`s based on the settings of the `MatchParticipant`s.
 
 ## The engine
 
 The engine is located in the `common/engine` directory.
 While currently only in use by the client, the goal is for the engine to become an independently versioned component that can be used by client and server alike, in the latter case for example to validate scores for online leaderboards.
-The bulk of the game physics lives inside the `Stack` class which is defined in `Stack.lua` and derives from the conceptual minimum `StackBase` a table needs to implement to be run by a `Match`.  
+The bulk of the game physics lives inside the `Stack` class which is defined in `Stack.lua` and derives from the conceptual minimum `BaseStack` a table needs to implement to be run by a `Match`.  
 
-The client extends engine classes like `Stack` and `Match` with graphics functions.  
-While the engine, in particular StackBase still holds some graphics functions, the eventual goal is for all graphics functions to move to client. This is so the server - that doesn't use love - can run the engine as well.
+The client wraps engine classes like `Stack` and `Match` with its own `PlayerStack` and `ClientMatch` classes and registers callbacks to a set of predefined signals to add graphics and sound functionality to the raw physics as well as the actual input mechanism.
+
+The goal is for the engine to be entirely pure and not using love so that the server can run the engine as well, e.g. for validating online Time Attack scores for a leaderboard.
+At the time of writing, the remaining dependencies on love are related to the PRNG and the timer only.
 
 ### Stack.lua
 `Stack.lua` contains the code for construction of `Stack`s, running them, performing rollback, creating new rows, various puzzle stuff and most of the physics that is not directly related to the behaviour of an individual `Panel`.  
@@ -161,12 +162,12 @@ Effectively it is just a small collection of `Stack` functions, isolated for bet
 ### PanelGenerator.lua
 In this file lives the Panel Generator which provides functions to generate panels for a certain seed via a pseudo random number generator and assign possible metal placements for these panels.
 
-### client/src/network/Stack.lua
-This small bit covers functions of Stack that have network activity such as taunt or sending inputs to an opponent.  
-Ideally the network part of them will be performed by a dedicated network client in the future so that `Stack` has no knowledge of network.
+### client/src/PlayerStack.lua
+The client-side wrapper for the engine `Stack`.
 
-### client/src/graphics/Stack.lua
-This file contains entirely draw functions for the `Stack` besides the one defined in `common/engine/StackBase.lua`.
+### client/src/network/PlayerStack.lua
+This small bit covers input-related functions of PlayerStack that have input activity such as taunt or sending inputs that - in case of online play - are also forwarded to an opponent.  
+Ideally the input and network parts should get separated at some point.
 
 ### GarbageQueue.lua
 The garbage queue defines the how garbage is treated when being sent from a stack as well as when being sent to a stack.  
@@ -178,17 +179,17 @@ There is a dedicated document for explaining the workings of the garbage queue i
 The telegraph is the visual representation of a Stack's outgoing garbage queue. It is only present if the Stack also has a target for its garbage.
 
 ### SimulatedStack.lua
-A fake stack based on `StackBase` that can sport an AttackEngine and/or a HealthEngine to mimic a player without actually dealing with any of the complexity a fully fledged CPU player would require.  
+A fake stack based on `BaseStack` that can sport an AttackEngine and/or a HealthEngine to mimic a player without actually dealing with any of the complexity a fully fledged CPU player would require.  
 Includes graphics functions.
 
 ### Match.lua
 A match creates and runs the stacks, holding and applying the concrete game settings that aren't on `Stack`.  
-As the controlling entity, the match is supposed to control all behaviours that involve more than one stack, such as changing music, playing countdown, determining whether a stack needs to save rollback copies or determining a winner.  
+As the controlling entity, the match is supposed to control all behaviours that involve more than one stack, such as determining whether a stack needs to save rollback copies or determining a winner.  
 There are still some interactions inside of `Stack` that I would rather see on `Match`, such as determining if shock panels should be in the game via a different avenue than levelData itself.
 The match will continue running stacks until either only one is left or until or done, depending on the given conditions for winning the match (see section below about GameModes).
 
-### client/src/graphics/match_graphics.lua
-Graphics for rendering the match  
+### client/src/ClientMatch.lua
+The client-side wrapper for the engine `Match`, providing graphics and sfx related functions on top of the raw physics work done by match.
 Some parts of rendering are instead taken care of by the scene running the Match and in the future it should ideally be most or all of it.
 
 ### GameModes.lua
@@ -203,6 +204,7 @@ The currently possible settings are
 - NONE, if garbage is not sent anywhere, nor is any received
 - VERSUS, if garbage is sent to another stack and received from another stack
 - SELF, if garbage is sent to yourself
+- ATTACK_ENGINE, if garbage is sent by an attack engine
 
 #### Game Win Conditions
 These define a set of zero or more conditions that cause a `Stack` to stop running as soon as one is met.  
@@ -248,19 +250,19 @@ As different puzzle types may have different needs for these (e.g. clear puzzles
 ### Summary
 
 As a short version for understanding "roughly" what is going on as part of a single player match:  
-Inside of a `BattleRoom`, after the `Player` has readied up a `Match` is being created and started.  
-In the start process, a `Stack` is being constructed via the constructor `Stack = class(... etc)` based on the `Player`'s settings.  
-Every frame, `Match.run()` is called on the game scene which in turn calls `run` on the `Stack`.  
+Inside of a `BattleRoom`, after the `Player` has readied up a `ClientMatch` is being created and started.  
+In the start process, a `PlayerStack` is being constructed via the constructor `PlayerStack = class(... etc)` based on the `Player`'s settings.  
+Every frame, `ClientMatch:run()` is called on the game scene which in turn runs the engine match and the `Stack`s.  
 Via `inputManager.lua`, there are inputs injected to the `Stack`'s `input_buffer` via `receiveConfirmedInput`.
 `Stack.run` applies the input as part of `Stack.simulate` and advances its state by one frame.  
-If you read the comments for `Stack.simulate`, you may notice a suspicious absence of phase 1 and 2, mostly because they already got extracted into separate functions. There is still a good amount of extracting functions to be done, especially for SFX/Music.  
+If you read the comments for `Stack.simulate`, you may notice a suspicious absence of phase 1 and 2, mostly because they already got extracted into separate functions.
 
 ### Replays and Interoperability
 
-common/engine defines some classes and functions that serve as interop between server and client.
+common/data defines some classes and functions that serve as interop between server and client.
 
 Currently these are:
-Replay, ReplayPlayer, LevelData and to a lesser degree GameModes.
+Replay, ReplayPlayer, LevelData, LevelPresets and TouchDataEncoding and (yet to be moved there) GameModes.
 
 If client or server have further needs than these classes provide, they should generally aim to create their own components that do not inherit from these to guarantee that client and server internals can be edited and refactored without impacting networking.
 
