@@ -410,12 +410,19 @@ function ClientMatch:playTimeLimitDepletingSfx()
   end
 end
 
+local function inDanger(stack)
+  return stack.danger_music
+end
 function ClientMatch:updateDangerMusic()
   local dangerMusic
-  if self.panicTickStartTime == nil or self.engine.clock < self.panicTickStartTime then
-    dangerMusic = tableUtils.trueForAny(self.stacks, function(s) return s.danger_music end)
+  if self.panicTickStartTime == nil then
+    dangerMusic = tableUtils.trueForAny(self.stacks, inDanger)
   else
-    dangerMusic = true
+    if self.engine.clock < self.panicTickStartTime then
+      dangerMusic = false
+    else
+      dangerMusic = true
+    end
   end
 
   if dangerMusic ~= self.currentMusicIsDanger then
