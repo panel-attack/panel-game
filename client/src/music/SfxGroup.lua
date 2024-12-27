@@ -38,13 +38,16 @@ function SfxGroup.getMatchingFiles(files, pattern, separator)
         return false
       else
         -- now check for actual exact matching:
-        local middlePart = file:sub(- goodExtension:len()):sub(1, stringLen)
+        -- first cut off the matching part
+        local middlePart = file:sub(stringLen + 1)
+        -- and then the extension
+        middlePart = middlePart:sub(1, - goodExtension:len() - 1)
         if middlePart:len() == 0 then
           -- this is just the exact pattern + file extension
           return true
         else
           local sepLen = separator:len()
-          if middlePart:sub(sepLen) ~= separator then
+          if middlePart:sub(1, sepLen) ~= separator then
             return false
           else
             local numberPart = middlePart:sub(sepLen + 1)
