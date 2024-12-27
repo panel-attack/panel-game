@@ -111,10 +111,10 @@ function fileUtils.readJsonFile(file)
   end
 end
 
-local SUPPORTED_SOUND_FORMATS = {".mp3", ".ogg", ".wav", ".it", ".flac"}
+fileUtils.SUPPORTED_SOUND_FORMATS = {".mp3", ".ogg", ".wav", ".it", ".flac"}
 --returns a source, or nil if it could not find a file
 function fileUtils.loadSoundFromSupportExtensions(path_and_filename, streamed)
-  for k, extension in ipairs(SUPPORTED_SOUND_FORMATS) do
+  for k, extension in ipairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
     if love.filesystem.getInfo(path_and_filename .. extension) then
       return love.audio.newSource(path_and_filename .. extension, streamed and "stream" or "static")
     end
@@ -136,7 +136,7 @@ function fileUtils.findSound(sound_name, dirs_to_check, streamed)
 end
 
 function fileUtils.soundFileExists(soundName, path)
-  for _, extension in pairs(SUPPORTED_SOUND_FORMATS) do
+  for _, extension in pairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
     if love.filesystem.getInfo(path .. "/" .. soundName .. extension, "file") then
       return true
     end
