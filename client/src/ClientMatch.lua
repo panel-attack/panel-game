@@ -335,7 +335,7 @@ function ClientMatch:finalizeReplay()
 
         if player.stack.analytic then
           replayPlayer.analytics = player.stack.analytic.data
-          replayPlayer.analytics.score = player.stack.score
+          replayPlayer.analytics.score = player.stack.engine.score
           replayPlayer.analytics.rating = player.rating
         end
       end
