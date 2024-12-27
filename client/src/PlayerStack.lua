@@ -1606,26 +1606,30 @@ end
 
 function PlayerStack.updateDangerBounce(self)
   -- calculate which columns should bounce
-    self.danger = false
-    local panelRow = self.engine.panels[self.engine.height - 1]
-    for idx = 1, self.engine.width do
-      if panelRow[idx]:dangerous() then
-        self.danger = true
-        self.danger_col[idx] = true
-      else
-        self.danger_col[idx] = false
-      end
-    end
-    if self.danger then
-      if self.engine.panels_in_top_row and self.engine.speed ~= 0 and not self.engine.puzzle then
-        -- Player has topped out, panels hold the "flattened" frame
-        self.danger_timer = 0
-      elseif self.engine.stop_time == 0 then
-        self.danger_timer = self.danger_timer + 1
-      end
+  self.danger = false
+  local panelRow = self.engine.panels[self.engine.height - 1]
+  for idx = 1, self.engine.width do
+    if panelRow[idx]:dangerous() then
+      self.danger = true
+      self.danger_col[idx] = true
     else
-      self.danger_timer = 0
+      self.danger_col[idx] = false
     end
   end
+  if self.danger then
+    if self.engine.panels_in_top_row and self.engine.speed ~= 0 and not self.engine.puzzle then
+      -- Player has topped out, panels hold the "flattened" frame
+      self.danger_timer = 0
+    elseif self.engine.stop_time == 0 then
+      self.danger_timer = self.danger_timer + 1
+    end
+  else
+    self.danger_timer = 0
+  end
+end
+
+function PlayerStack:setPuzzleState(puzzle)
+  self.engine:setPuzzleState(puzzle)
+end
 
 return PlayerStack

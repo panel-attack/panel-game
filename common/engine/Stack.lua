@@ -515,7 +515,7 @@ function Stack.deleteRollbackCopy(self, frame)
   end
 end
 
-function Stack.set_puzzle_state(self, puzzle)
+function Stack:setPuzzleState(puzzle)
   puzzle.stack = puzzle:fillMissingPanelsInPuzzleString(self.width, self.height)
 
   self.puzzle = puzzle
@@ -526,6 +526,7 @@ function Stack.set_puzzle_state(self, puzzle)
   self.puzzle.remaining_moves = puzzle.moves
   self.behaviours.allowManualRaise = false
   self.behaviours.passiveRaise = false
+  self.do_first_row = false
 
   if puzzle.moves > 0 then
     tableUtils.appendIfNotExists(self.gameOverConditions, GameModes.GameOverConditions.NO_MOVES_LEFT)

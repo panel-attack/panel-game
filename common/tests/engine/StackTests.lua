@@ -8,7 +8,7 @@ local function puzzleTest()
   local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
   local puzzle = Puzzle(nil, nil, 1, "011010")
   local stack = match.stacks[1]
-  stack:set_puzzle_state(puzzle)
+  stack:setPuzzleState(puzzle)
 
   assert(stack.panels[1][1].color == 0, "wrong color")
   assert(stack.panels[1][2].color == 1, "wrong color")
@@ -26,7 +26,7 @@ local function clearPuzzleTest()
   local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
   local puzzle = Puzzle("clear", false, 0, "[============================][====]246260[====]600016514213466313451511124242", 60, 0)
   local stack = match.stacks[1]
-  stack:set_puzzle_state(puzzle)
+  stack:setPuzzleState(puzzle)
 
   assert(stack.panels[1][1].color == 1, "wrong color")
   assert(stack.panels[1][2].color == 2, "wrong color")

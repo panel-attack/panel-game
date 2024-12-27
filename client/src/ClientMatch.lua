@@ -102,9 +102,9 @@ function ClientMatch:run()
     self:updateDangerMusic()
   end
 
-  if self.doCountdown and self.engine.clock == countdownEnd then
+  if self.engine.doCountdown and self.engine.clock == countdownEnd then
     self:emitSignal("countdownEnded")
-  elseif not self.doCountdown and self.engine.clock == consts.COUNTDOWN_START then
+  elseif not self.engine.doCountdown and self.engine.clock == consts.COUNTDOWN_START then
     self:emitSignal("countdownEnded")
   end
 

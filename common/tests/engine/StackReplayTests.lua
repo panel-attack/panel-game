@@ -383,7 +383,7 @@ local function platformTest(waitFrames, useMatchSide)
   local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"), "controller", LevelPresets.getModern(10))
   local puzzle = Puzzle("chain", false, 0, "3000994339949999994999999999999999999999999999999999", 60, 0)
   local stack = match.stacks[1]
-  stack:set_puzzle_state(puzzle)
+  stack:setPuzzleState(puzzle)
 
   assert(stack.panels[8][3].color == 4, "wrong color")
   assert(stack.panels[8][4].color == 3, "wrong color")

@@ -25,8 +25,7 @@ function PuzzleGame:customLoad(sceneParams)
   local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
   local isValid, validationError = puzzle:validate()
   if isValid then
-    self.match.players[1].stack:set_puzzle_state(puzzle)
-    self.match.players[1].stack.do_first_row = false
+    self.match.players[1].stack:setPuzzleState(puzzle)
     self.match:setCountdown(puzzle.doCountdown)
   else
     validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
@@ -43,7 +42,7 @@ function PuzzleGame:customRun()
     -- basically resetting the stack and match
     local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
     local stack = self.match.stacks[1]
-    stack:set_puzzle_state(puzzle)
+    stack:setPuzzleState(puzzle)
     stack.confirmedInput = {}
     stack.input_buffer = {}
     stack.clock = 0
@@ -63,7 +62,7 @@ function PuzzleGame:readyToProceedToNextScene()
 end
 
 function PuzzleGame:startNextScene()
-  if self.match.aborted then
+  if self.match.engine.aborted then
     GAME.navigationStack:pop()
   elseif self.match.players[1].settings.puzzleIndex <= #self.match.players[1].settings.puzzleSet.puzzles then
     self.match.players[1]:setWantsReady(true)
@@ -73,7 +72,7 @@ function PuzzleGame:startNextScene()
 end
 
 function PuzzleGame:customGameOverSetup()
-  if self.match.stacks[1].game_over_clock <= 0 and not self.match.aborted then -- puzzle has been solved successfully
+  if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
     self.match.players[1]:setPuzzleIndex(self.puzzleIndex + 1)
   else -- puzzle failed or manually reset
