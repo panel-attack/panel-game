@@ -732,7 +732,7 @@ function Character.playChainSfx(self, length)
 end
 
 function Character.playShockSfx(self, size)
-  if self.sounds.shock then
+  if #self.sounds.shock > 0 then
     if self.sounds.shock[size] then
       self.sounds.shock[size]:play()
     else
