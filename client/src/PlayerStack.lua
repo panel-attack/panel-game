@@ -112,6 +112,10 @@ function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, combo
   for i = 3, metalCount do
     self.analytic:registerShock()
   end
+
+  if garbagePanelCount > 0 then
+    self:onGarbageMatched(garbagePanelCount)
+  end
 end
 
 function PlayerStack:onGameOver(engine)
@@ -223,7 +227,7 @@ function PlayerStack:onPanelsSwapped()
   self.analytic:register_swap()
 end
 
-function PlayerStack:onGarbageMatched(panelCount, onScreenCount)
+function PlayerStack:onGarbageMatched(garbagePanelCount)
   if self:canPlaySfx() then
     self.sfxGarbageMatch = true
   end
