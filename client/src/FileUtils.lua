@@ -185,7 +185,7 @@ function fileUtils.saveReplay(replay)
   -- TODO: This is for legacy support of the replay browser only;
   -- as Replay is a common.data object, client should not use it to write client specific fields
   Replay.lastPath = path
-  fileUtils.writeJson(path .. "/" .. filename .. ".json", replay)
+  fileUtils.writeJson(path, filename .. ".json", replay)
 end
 
 ---@param files string[]
@@ -249,18 +249,18 @@ end
 
 ---@param path string
 ---@param data string
-function fileUtils.write(path, data)
+function fileUtils.write(path, filename, data)
   love.filesystem.createDirectory(path)
-  local success, message = love.filesystem.write(path, data)
+  local success, message = love.filesystem.write(path .. "/" .. filename, data)
   if not success then
     error("Failed to write to " .. path .. " : " .. message)
   end
 end
 
-function fileUtils.writeJson(path, tab)
+function fileUtils.writeJson(path, filename, tab)
   local encoded = json.encode(tab)
   ---@cast encoded string # json.encode always returns a string if not called with a second argument
-  fileUtils.write(path, encoded)
+  fileUtils.write(path, filename, encoded)
 end
 
 return fileUtils

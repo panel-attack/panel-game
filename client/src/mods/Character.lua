@@ -14,6 +14,8 @@ local StageTrack = require("client.src.music.StageTrack")
 local DynamicStageTrack = require("client.src.music.DynamicStageTrack")
 local RelayStageTrack = require("client.src.music.RelayStageTrack")
 local Mod = require("client.src.mods.Mod")
+local FileGroup = require("client.src.FileGroup")
+local SfxGroup = require("client.src.music.SfxGroup")
 
 ---@type Character
 local default_character = nil -- holds default assets fallbacks
@@ -559,13 +561,13 @@ function Character.reassignLegacySfx(self)
         self.sounds.chain[i] = nil
       end
     end
-    if #self.sounds.chain2_echo > 0 then
+    if self.sounds.chain2_echo then
       self.sounds.chain[6] = self.sounds.chain2_echo
       -- shouldn't show up in sound test any longer
       self.sounds.chain2_echo = nil
       maxIndex = 6
     end
-    if #self.sounds.chain_echo > 0 then
+    if self.sounds.chain_echo then
       self.sounds.chain[5] = self.sounds.chain_echo
       -- shouldn't show up in sound test any longer
       self.sounds.chain_echo = nil
@@ -602,49 +604,41 @@ local perSizeSfxStart = { chain = 2, combo = 4, shock = 3}
 function Character.loadSfx(self, name, yields)
   local sfx = {}
 
-  local stringLen = string.len(name)
-  local files = tableUtils.filter(self.files, function(file) return string.find(file, name, nil, true) end)
-
-  local maxIndex = -1
-  -- load sounds
-  for i = 1, #files do
-    stringLen = string.len(name)
-    local index = tonumber(string.match(files[i], "%d+", stringLen + 1))
-
-    -- for files with no suffix at all, index would be nil but they should go in sfx[1] instead
-    local targetIndex = 1
-    if index ~= nil then
-      -- otherwise use the index as normal
-      targetIndex = index
+  if not perSizeSfxStart[name] then
+    local fileGroup = FileGroup(self.path, name, fileUtils.SUPPORTED_SOUND_FORMATS)
+    if next(fileGroup.matchingFiles) then
+      return SfxGroup(fileGroup, 1)
+    else
+      return nil
     end
+  else
+    local stringLen = string.len(name)
+    local files = tableUtils.filter(self.files, function(file) return string.find(file, name, nil, true) end)
+
+    local maxIndex = -1
+    -- load sounds
+    for i = 1, #files do
+      stringLen = string.len(name)
+      local index = tonumber(string.match(files[i], "%d+", stringLen + 1))
+
+      -- for files with no suffix at all, index would be nil but they should go in sfx[1] instead
+      local targetIndex = 1
+      if index ~= nil then
+        -- otherwise use the index as normal
+        targetIndex = index
+      end
 
 
-    if perSizeSfxStart[name] then
       if sfx[targetIndex] == nil then
         sfx[targetIndex] = self:loadSubSfx(name, index)
       end
-    else
-      local sound = fileUtils.loadSoundFromSupportExtensions(self.path .. "/" .. files[i], false)
-      if sound ~= nil then
-        sfx[targetIndex] = sound
-      end
 
-      if yields then
-        coroutine.yield()
+      if sfx[targetIndex] then
+        maxIndex = math.max(maxIndex, targetIndex)
       end
     end
 
-    if sfx[targetIndex] then
-      maxIndex = math.max(maxIndex, targetIndex)
-    end
-  end
-
-  if perSizeSfxStart[name] then
     self:fillInMissingSounds(sfx, name, maxIndex)
-  else
-    -- #table may yield erroneous (too large) results for tables with gaps 
-    -- Character:playRandomSfx() relies on #table being accurate so we redo the table here if it has gaps
-    sfx = tableUtils.toContinuouslyIndexedTable(sfx)
   end
 
   assert(sfx ~= nil)
@@ -725,8 +719,8 @@ end
 -- sound playing / sound control
 
 function Character.playSelectionSfx(self)
-  if self.sounds.selection and #self.sounds.selection > 0 then
-    SoundController:playRandomSfx(self.sounds.selection)
+  if self.sounds.selection then
+    self.sounds.selection:play()
   else
     GAME.theme:playValidationSfx()
   end
@@ -809,41 +803,27 @@ function Character.playAttackSfx(self, attack)
 end
 
 function Character.playGarbageMatchSfx(self)
-  if self.sounds.garbage_match and #self.sounds.garbage_match ~= 0 then
-    SoundController:stopSfx(self.sounds.garbage_match)
-    SoundController:playRandomSfx(self.sounds.garbage_match)
+  if self.sounds.garbage_match then
+    self.sounds.garbage_match:play()
   end
 end
 
 function Character.playGarbageLandSfx(self)
-  if self.sounds.garbage_land and #self.sounds.garbage_land ~= 0 then
-    SoundController:stopSfx(self.sounds.garbage_land)
-    SoundController:playRandomSfx(self.sounds.garbage_land)
+  if self.sounds.garbage_land then
+    self.sounds.garbage_land:play()
   end
 end
 
 -- tauntUp is rolled externally in order to send the exact same taunt index to the enemy as plays locally
 function Character.playTauntUpSfx(self, tauntUp)
-  if self.sounds.taunt_up and #self.sounds.taunt_up ~= 0 then
-    SoundController:stopSfx(self.sounds.taunt_up)
-    -- self might be a replacement character with less taunts than the selected one so confirm the index first
-    if self.sounds.taunt_up[tauntUp] then
-      SoundController:playSfx(self.sounds.taunt_up[tauntUp])
-    else
-      SoundController:playRandomSfx(self.sounds.taunt_up, self.sounds.taunt_down)
-    end
+  if self.sounds.taunt_up then
+    self.sounds.taunt_up:play()
   end
 end
 
 function Character.playTauntDownSfx(self, tauntDown)
-  if self.sounds.taunt_down and #self.sounds.taunt_down ~= 0 then
-    SoundController:stopSfx(self.sounds.taunt_down)
-    -- self might be a replacement character with less taunts than the selected one so confirm the index first
-    if self.sounds.taunt_down[tauntDown] then
-      SoundController:playSfx(self.sounds.taunt_down[tauntDown])
-    else
-      SoundController:playRandomSfx(self.sounds.taunt_down, self.sounds.taunt_up)
-    end
+  if self.sounds.taunt_down then
+    self.sounds.taunt_down:play()
   end
 end
 
@@ -857,7 +837,11 @@ function Character.playTaunt(self, tauntType, index)
 end
 
 function Character:playWinSfx()
-  SoundController:playRandomSfx(self.sounds.win, themes[config.theme].sounds.fanfare1)
+  if self.sounds.win then
+    self.sounds.win:play()
+  else
+    themes[config.theme].sounds.fanfare1:play()
+  end
 end
 
 function Character.applyConfigVolume(self)

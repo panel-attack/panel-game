@@ -37,6 +37,8 @@ local files = {
   "panel00.png",
   "panel18.png.jpg",
   "panel109.jpag",
+  "garbage_match.ogg",
+  "garbage_match2.ogg",
 }
 
 local function testFileMatching(pattern, validExtensions, separator, controlGroup)
@@ -63,7 +65,7 @@ local function testFileMatching1()
   testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
 end
 
-local function testfileMatching2()
+local function testFileMatching2()
   local pattern = "chain2"
   local separator = "_"
   local expected = {
@@ -76,7 +78,7 @@ local function testfileMatching2()
   testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
 end
 
-local function testfileMatching3()
+local function testFileMatching3()
   local pattern = "panel1"
   local separator = ""
   local expected = {
@@ -87,6 +89,18 @@ local function testfileMatching3()
   testFileMatching(pattern, FileUtils.SUPPORTED_IMAGE_FORMATS, separator, expected)
 end
 
+local function testFileMatching4()
+  local pattern = "garbage_match"
+  local separator = ""
+  local expected = {
+    "garbage_match.ogg",
+    "garbage_match2.ogg"
+  }
+
+  testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
+end
+
 testFileMatching1()
-testfileMatching2()
-testfileMatching3()
+testFileMatching2()
+testFileMatching3()
+testFileMatching4()

@@ -50,6 +50,7 @@ end
 ---@field separator string the separator by which alternative copies separate their index, default ""
 ---@field matchingFiles string[] the files that got matched during the load process of the FileGroup
 ---@field indexedFiles string[] the files indexed by their suffix; only one file per index guaranteed
+---@overload fun(path: string, pattern: string, validExtensions: string[], separator: string?): FileGroup
 local FileGroup = class(
 function(self, path, pattern, validExtensions, separator)
   self.path = path

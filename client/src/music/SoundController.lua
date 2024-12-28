@@ -14,12 +14,12 @@ SoundController = {
 
 -- applies the sfx volume setting to the passed sfx which can be a table of sources or a source itself
 function SoundController:applySfxVolume(sfx)
-  if type(sfx) == "table" then
+  if (type(sfx) == "userdata" and sfx:typeOf("Source")) or sfx.TYPE == "SfxGroup" then
+    sfx:setVolume(config.SFX_volume / 100)
+  elseif type(sfx) == "table" then
     for _, v in pairs(sfx) do
       SoundController:applySfxVolume(v)
     end
-  elseif type(sfx) == "userdata" and sfx:typeOf("Source") then
-    sfx:setVolume(config.SFX_volume / 100)
   end
 end
 

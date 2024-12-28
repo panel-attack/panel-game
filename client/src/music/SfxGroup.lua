@@ -1,6 +1,5 @@
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
-local FileUtils = require("client.src.FileUtils")
 
 -- A group of SFX that belong together
 -- Only 1 SFX in the group may play at the same time
@@ -26,18 +25,26 @@ function(self, fileGroup, volumeMultiplier)
   end
 end)
 
+SfxGroup.TYPE = "SfxGroup"
+
 function SfxGroup:setVolume(volume)
   for _, source in ipairs(self.sources) do
     source:setVolume(volume * self.volumeMultiplier)
   end
 end
 
-function SfxGroup:play()
+---@param index integer? optionally specify an exact index you want to play if possible
+function SfxGroup:play(index)
   if self.lastPlaying then
     self.lastPlaying:stop()
   end
 
-  self.lastPlaying = self.sources[math.random(#self.sources)]
+  if index and self.sources[index] then
+    self.lastPlaying = self.sources[index]
+  else
+    self.lastPlaying = self.sources[math.random(#self.sources)]
+  end
+
   self.lastPlaying:play()
 end
 
