@@ -373,11 +373,11 @@ end
 function GameBase:drawHUD()
   if not self.match.isPaused then
     for i, stack in ipairs(self.match.stacks) do
-      if stack.puzzle then
+      if stack.engine.puzzle then
         stack:drawMoveCount()
       end
       if config.show_ingame_infos then
-        if not stack.puzzle then
+        if not stack.engine.puzzle then
           stack:drawScore()
           stack:drawSpeed()
         end

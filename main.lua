@@ -130,12 +130,8 @@ function love.quit()
   love.audio.stop()
   config.fullscreen = love.window.getFullscreen()
   local x, y, displayIndex = love.window.getPosition()
-  config.displayIndex = displayIndex
-  if config.fullscreen then
-    _, _, config.display = love.window.getPosition()
-    config.fullscreen = true
-    -- don't save the other values so the settings from previous windowed mode usage are preserved
-  else
+  config.display = displayIndex
+  if not config.fullscreen then
     config.windowX = math.max(x, 0)
     config.windowY = math.max(y, 0)
     if config.windowY == 0 then
@@ -144,6 +140,8 @@ function love.quit()
     end
     config.windowWidth, config.windowHeight, _ = love.window.getMode()
     config.maximizeOnStartup = love.window.isMaximized()
+  else
+    -- don't save the other values so the settings from previous windowed mode usage are preserved
   end
 
   write_conf_file()
