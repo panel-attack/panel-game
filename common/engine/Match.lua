@@ -25,6 +25,7 @@ local consts = require("common.engine.consts")
 ---@field timeSpentRunning number
 ---@field maxTimeSpentRunning number
 ---@field clock integer
+---@field ended boolean
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -59,6 +60,7 @@ function(self, stacks, doCountdown, stackInteraction, winConditions, gameOverCon
   self.seed = math.random(1,9999999)
   self.startTimestamp = os.time(os.date("*t"))
   self.clock = 0
+  self.ended = false
 end
 )
 

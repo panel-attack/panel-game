@@ -59,6 +59,7 @@ function ChallengeModePlayer:createStackFromSettings(match, which)
     is_local = true,
     attackSettings = self.settings.attackEngineSettings,
     healthSettings = self.settings.healthSettings,
+    match = match,
   })
 
   self.stack = stack

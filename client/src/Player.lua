@@ -107,6 +107,7 @@ function Player:createStackFromSettings(match, which)
   args.stackInteraction = match.stackInteraction
   args.gameOverConditions = match.gameOverConditions
   args.seed = match.seed
+  args.match = match
 
   args.player = self
 
