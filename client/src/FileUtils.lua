@@ -1,5 +1,6 @@
 local logger = require("common.lib.logger")
 local Replay = require("common.data.Replay")
+local tableUtils = require("common.lib.tableUtils")
 
 local PREFIX_OF_IGNORED_DIRECTORIES = "__"
 
@@ -180,6 +181,58 @@ function fileUtils.saveReplay(replay)
       love.filesystem.write(path .. "/" .. filename .. ".json", replayJson)
     end
   )
+end
+
+function fileUtils.getMatchingFiles(files, pattern, extensionList, separator)
+  local stringLen = string.len(pattern)
+  local matchedFiles = tableUtils.filter(files,
+  function(file)
+    local startIndex, endIndex = string.find(file, pattern, nil, true)
+    if not startIndex then
+      return false
+    elseif startIndex > 1 then
+      -- this means the name is prefixed with something else
+      return false
+    else
+      local goodExtension
+      -- this check is doubly good because it enforces lower case extensions even on windows
+      for i, extension in ipairs(extensionList) do
+        local length = extension:len()
+        if file:sub(-length) == extension then
+          goodExtension = extension
+          break
+        end
+      end
+      if not goodExtension then
+        return false
+      else
+        -- now check for actual exact matching:
+        -- first cut off the matching part
+        local middlePart = file:sub(stringLen + 1)
+        -- and then the extension
+        middlePart = middlePart:sub(1, - goodExtension:len() - 1)
+        if middlePart:len() == 0 then
+          -- this is just the exact pattern + file extension
+          return true
+        else
+          local sepLen = separator:len()
+          if middlePart:sub(1, sepLen) ~= separator then
+            return false
+          else
+            local numberPart = middlePart:sub(sepLen + 1)
+            if string.match(numberPart, "%d+") == numberPart and tonumber(numberPart) then
+              -- there are really only digits that form a number in the number part
+              return true
+            else
+              return false
+            end
+          end
+        end
+      end
+    end
+  end)
+
+  return matchedFiles
 end
 
 return fileUtils

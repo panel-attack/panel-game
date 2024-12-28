@@ -1,4 +1,3 @@
-local SfxGroup = require("client.src.music.SfxGroup")
 local FileUtils = require("client.src.FileUtils")
 local tableUtils = require("common.lib.tableUtils")
 
@@ -29,22 +28,11 @@ local files = {
   "chain22_2.ogg"
 }
 
-local matchingGroup1 = {
-  "chain2.ogg",
-  "chain3.wav",
-  "chain5.mp3",
-  "chain08.ogg"
-}
-
-local matchingGroup2 = {
-
-}
-
 local function testFileMatching(pattern, separator, controlGroup)
-  local matchingFiles = SfxGroup.getMatchingFiles(files, pattern, separator)
+  local matchingFiles = FileUtils.getMatchingFiles(files, pattern, separator)
 
   for _, matched in ipairs(matchingFiles) do
-    assert(tableUtils.contains(matchingGroup1, matched), "Unexpectedly matched " .. matched)
+    assert(tableUtils.contains(controlGroup, matched), "Unexpectedly matched " .. matched)
   end
   for _, control in ipairs(controlGroup) do
     assert(tableUtils.contains(matchingFiles, control), "Expected the matching files to also match " .. control)
