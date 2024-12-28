@@ -7,9 +7,14 @@ local PREFIX_OF_IGNORED_DIRECTORIES = "__"
 -- Collection of functions for file operations
 local fileUtils = {}
 
+fileUtils.SUPPORTED_IMAGE_FORMATS = {".png", ".jpg", ".jpeg"}
+fileUtils.SUPPORTED_SOUND_FORMATS = {".mp3", ".ogg", ".wav", ".it", ".flac"}
+
 -- returns the directory items with a default filter and an optional filetype filter
 -- by default, filters out everything starting with __ and Mac's .DS_Store file
 -- optionally the result can be filtered to return only "file" or "directory" items
+---@param path string
+---@param fileType ("file" | "directory")?
 function fileUtils.getFilteredDirectoryItems(path, fileType)
   local results = {}
 
@@ -89,6 +94,9 @@ function fileUtils.recursiveRemoveFiles(folder, targetName)
   end
 end
 
+-- returns the table for the deserialized json at the specified file path
+---@param file string
+---@return table? # nil if the file could not be read or deserialization failed
 function fileUtils.readJsonFile(file)
   if not love.filesystem.getInfo(file, "file") then
     logger.debug("No file at specified path " .. file)
@@ -106,13 +114,13 @@ function fileUtils.readJsonFile(file)
         logger.error("Error reading " .. file .. ":\n" .. errorMsg .. ":\n" .. fileContent)
         return nil
       else
+        ---@cast value table
         return value
       end
     end
   end
 end
 
-fileUtils.SUPPORTED_SOUND_FORMATS = {".mp3", ".ogg", ".wav", ".it", ".flac"}
 --returns a source, or nil if it could not find a file
 function fileUtils.loadSoundFromSupportExtensions(path_and_filename, streamed)
   for k, extension in ipairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
@@ -170,20 +178,23 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   love.filesystem.write(filePath .. "." .. format, data)
 end
 
+---@param replay Replay
 function fileUtils.saveReplay(replay)
   local path = replay:generatePath("/")
   local filename = replay:generateFileName()
-  local replayJson = json.encode(replay)
+  -- TODO: This is for legacy support of the replay browser only;
+  -- as Replay is a common.data object, client should not use it to write client specific fields
   Replay.lastPath = path
-  pcall(
-    function()
-      love.filesystem.createDirectory(path)
-      love.filesystem.write(path .. "/" .. filename .. ".json", replayJson)
-    end
-  )
+  fileUtils.writeJson(path .. "/" .. filename .. ".json", replay)
 end
 
-function fileUtils.getMatchingFiles(files, pattern, extensionList, separator)
+---@param files string[]
+---@param pattern string
+---@param validExtensions string[]
+---@param separator string?
+---@return string[] # files filtered down to only strings matching the specified pattern, separator and valid extension list
+function fileUtils.getMatchingFiles(files, pattern, validExtensions, separator)
+  separator = separator or ""
   local stringLen = string.len(pattern)
   local matchedFiles = tableUtils.filter(files,
   function(file)
@@ -196,7 +207,7 @@ function fileUtils.getMatchingFiles(files, pattern, extensionList, separator)
     else
       local goodExtension
       -- this check is doubly good because it enforces lower case extensions even on windows
-      for i, extension in ipairs(extensionList) do
+      for i, extension in ipairs(validExtensions) do
         local length = extension:len()
         if file:sub(-length) == extension then
           goodExtension = extension
@@ -220,6 +231,7 @@ function fileUtils.getMatchingFiles(files, pattern, extensionList, separator)
             return false
           else
             local numberPart = middlePart:sub(sepLen + 1)
+            -- we need to string.match on top of casting tonumber because of Lua accepting scientific notation strings as numbers
             if string.match(numberPart, "%d+") == numberPart and tonumber(numberPart) then
               -- there are really only digits that form a number in the number part
               return true
@@ -233,6 +245,22 @@ function fileUtils.getMatchingFiles(files, pattern, extensionList, separator)
   end)
 
   return matchedFiles
+end
+
+---@param path string
+---@param data string
+function fileUtils.write(path, data)
+  love.filesystem.createDirectory(path)
+  local success, message = love.filesystem.write(path, data)
+  if not success then
+    error("Failed to write to " .. path .. " : " .. message)
+  end
+end
+
+function fileUtils.writeJson(path, tab)
+  local encoded = json.encode(tab)
+  ---@cast encoded string # json.encode always returns a string if not called with a second argument
+  fileUtils.write(path, encoded)
 end
 
 return fileUtils

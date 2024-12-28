@@ -25,11 +25,22 @@ local files = {
   "chain2_04.ogg",
   "chain3_2.ogg",
   -- extra number before separator
-  "chain22_2.ogg"
+  "chain22_2.ogg",
+  "panel11.png",
+  "panel102.png",
+  "ppanel13.png",
+  "panel1_4.png",
+  "panel15.PNG",
+  "panel01_6.png",
+  "panel017.png",
+  "panel-2.png",
+  "panel00.png",
+  "panel18.png.jpg",
+  "panel109.jpag",
 }
 
-local function testFileMatching(pattern, separator, controlGroup)
-  local matchingFiles = FileUtils.getMatchingFiles(files, pattern, separator)
+local function testFileMatching(pattern, validExtensions, separator, controlGroup)
+  local matchingFiles = FileUtils.getMatchingFiles(files, pattern, validExtensions, separator)
 
   for _, matched in ipairs(matchingFiles) do
     assert(tableUtils.contains(controlGroup, matched), "Unexpectedly matched " .. matched)
@@ -49,7 +60,7 @@ local function testFileMatching1()
     "chain08.ogg",
   }
 
-  testFileMatching(pattern, separator, expected)
+  testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
 end
 
 local function testfileMatching2()
@@ -62,8 +73,20 @@ local function testfileMatching2()
     "chain2_04.ogg",
   }
 
-  testFileMatching(pattern, separator, expected)
+  testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
+end
+
+local function testfileMatching3()
+  local pattern = "panel1"
+  local separator = ""
+  local expected = {
+    "panel11.png",
+    "panel102.png",
+  }
+
+  testFileMatching(pattern, FileUtils.SUPPORTED_IMAGE_FORMATS, separator, expected)
 end
 
 testFileMatching1()
 testfileMatching2()
+testfileMatching3()

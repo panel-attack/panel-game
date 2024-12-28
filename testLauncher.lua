@@ -31,7 +31,7 @@ function love.load()
 end
 
 local tests = {
-  "client.tests.SfxGroupTests",
+  "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "common.tests.engine.StackRollbackReplayTests",
   "client.tests.QueueTests",
