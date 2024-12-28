@@ -33,7 +33,7 @@ local comboStyle = {classic = 0, per_combo = 1}
 ---@field panels string? Id of a panel set for super select
 ---@field images table<string, love.Image> graphical assets of the character
 ---@field telegraph_garbage_images userdata[][] graphical assets for telegraph display
----@field sounds table<string, love.Source | table<integer, love.Source>> sound effect assets of the character
+---@field sounds table<string, love.Source | table<integer, love.Source> | SfxGroup> sound effect assets of the character
 ---@field musics table<string, love.Source> music assets of the character
 ---@field hasMusic boolean? if the character has any music
 ---@field flag string? flag to be displayed in selection menus
