@@ -33,6 +33,7 @@ end
 ---@field multi_shakeQuad love.Quad
 ---@field danger_music boolean
 ---@field garbageSource ClientStack The stack the garbage assets are used from
+---@field match ClientMatch
 
 ---@class ClientStack
 local ClientStack = class(
@@ -43,6 +44,7 @@ function(self, args)
   assert(args.which)
   assert(args.is_local ~= nil)
   assert(args.character)
+  assert(args.match)
 
   self.which = args.which or 1
   -- player number according to the multiplayer server, for game outcome reporting 
@@ -50,6 +52,7 @@ function(self, args)
   self.is_local = args.is_local
   self.character = characters[args.character]
   self.theme = args.theme or themes[config.theme]
+  self.match = args.match
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -442,7 +445,12 @@ end
 
 ---@return boolean
 function ClientStack:game_ended()
-  return self.engine:game_ended()
+  if self.engine:game_ended() then
+    return true
+  else
+    -- for display we may also want to know if the match has ended
+    return self.match.engine.ended
+  end
 end
 
 --------------------------------
