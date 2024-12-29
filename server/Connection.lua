@@ -199,7 +199,7 @@ function Connection:setup_game()
 end
 
 function Connection:close()
-  logger.info("Closing connection to " .. self.name)
+  logger.info("Closing connection to " .. self.name and self.name or "noname")
   if self.state == "lobby" then
     self.server:setLobbyChanged()
   end
