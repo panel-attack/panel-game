@@ -1609,6 +1609,10 @@ function PlayerStack:getAttackPatternData()
 end
 
 function PlayerStack.updateDangerBounce(self)
+  if self.engine.puzzle then
+    return
+  end
+
   -- calculate which columns should bounce
   self.danger = false
   local panelRow = self.engine.panels[self.engine.height - 1]
