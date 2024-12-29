@@ -161,7 +161,7 @@ themes/Panel Attack Modern/sfx/pop*
   Copyright (C) 2022-23 kornflakes
   License: CC BY-SA 4.0
 
-themes/Panel Attack Modern/background/bg_overlay*
+themes/Panel Attack Modern/background/
 themes/Panel Attack Modern/combo/
 themes/Panel Attack Modern/chain/
 themes/Panel Attack Modern/frame/
@@ -207,15 +207,6 @@ themes/Panel Attack Modern/pixel_font_blue
 themes/Panel Attack Modern/leagues
   Copyright (C) 2022 Illhark
   https://zynima.net/
-
-themes/Panel Attack Modern/background/main
-themes/Panel Attack Modern/background/readme
-themes/Panel Attack Modern/background/select_screen
-  Copyright (C) 2023 Mizuno
-
-themes/Panel Attack Modern/background/title
-  This is a simple combination of two different artworks by Mizuno and Solitaire, done by Endaris.
-
 
 themes/Panel Attack Modern/sfx/countdown
 themes/Panel Attack Modern/sfx/fanfare#
