@@ -45,7 +45,6 @@ function ClientMessages.sanitizeMenuState(playerSettings)
 
   sanitized.character = playerSettings.character
   sanitized.character_is_random = playerSettings.character_is_random
-  sanitized.character_display_name = playerSettings.character_display_name
   sanitized.cursor = playerSettings.cursor -- nil when from login
   sanitized.inputMethod = (playerSettings.inputMethod or "controller") --one day we will require message to include input method, but it is not this day.
   sanitized.level = playerSettings.level

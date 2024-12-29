@@ -12,30 +12,52 @@ local util = require("common.lib.util")
 local LevelPresets = require("common.data.LevelPresets")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
-Connection =
+---@class Connection : Signal
+---@field index integer the unique identifier of the connection
+---@field socket TcpSocket the luasocket object
+---@field leftovers string remaining data from the socket that hasn't been processed yet
+---@field state ("not_logged_in" | "lobby" | "character select" | "playing" | "spectating" | "lobby") current state of the connection
+---@field room Room? the room object the connection currently is in
+---@field lastCommunicationTime integer timestamp when the last message was received; for dropping the connection if heartbeats aren't returned
+---@field player_number integer 0 if not a player in a room, 1 if player "a" in a room, 2 if player "b" in a room
+---@field user_id integer private user ID of the connection
+---@field server Server the server managing this connection
+---@field player ServerPlayer? the player object for this connection
+---@field opponent Connection? the opponents connection object
+---@field character string id of the specific character that was selected
+---@field character_is_random string? id of the character bundle that was selected; will match character if not a bundle
+---@field stage string id of the specific stage that was selected
+---@field stage_is_random string? id of the stage bundle that was selected; will match stage if not a bundle
+---@field panels_dir string id of the specific panel set that was selected
+---@field wants_ranked_match boolean
+---@field inputMethod ("controller" | "touch")
+---@field level integer display property for the level
+---@field levelData LevelData
+---@field wantsReady boolean
+---@field loaded boolean
+---@field ready boolean
+---@field cursor string?
+---@overload fun(socket: any, index: integer, server: table) : Connection
+local Connection =
   class(
   function(self, socket, index, server)
-    self.index = index -- the connection number
-    self.socket = socket -- the socket object
-    self.leftovers = "" -- remaining data from the socket that hasn't been processed yet
+    self.index = index
+    self.socket = socket
+    self.leftovers = ""
 
-    -- connections current state, whether they are logged in, playing, spectating etc.
-    -- "not_logged_in" -> "lobby" -> "character select" -> "playing" or "spectating" -> "lobby"
     self.state = "not_logged_in"
-    self.room = nil -- the room object the connection currently is in
+    self.room = nil
     self.lastCommunicationTime = time()
-    self.player_number = 0 -- 0 if not a player in a room, 1 if player "a" in a room, 2 if player "b" in a room
-    self.user_id = nil -- private user ID of the connection
-    self.wants_ranked_match = false
+    self.player_number = 0
+    self.user_id = nil
     self.server = server
-    self.player = nil -- the player object for this connection
-    self.opponent = nil -- the opponents connection object
+    self.player = nil
+    self.opponent = nil
     self.name = nil
 
     -- Player Settings
     self.character = nil
     self.character_is_random = nil
-    self.character_display_name = nil
     self.cursor = nil
     self.inputMethod = "controller"
     self.level = nil
@@ -45,7 +67,7 @@ Connection =
     self.ready = nil
     self.stage = nil
     self.stage_is_random = nil
-    self.wants_ranked_match = nil
+    self.wants_ranked_match = false
     self.levelData = nil
 
     Signal.turnIntoEmitter(self)
@@ -488,3 +510,5 @@ function Connection:processMessage(messageType, data)
     end
   end
 end
+
+return Connection

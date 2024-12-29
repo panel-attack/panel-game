@@ -3,6 +3,24 @@
 -- Author: Diego Nehab
 -----------------------------------------------------------------------------
 
+---@class TcpSocket
+---@field accept function
+---@field bind function
+---@field close function
+---@field connect function
+---@field getoption function
+---@field getpeername function
+---@field getsockname function
+---@field getstats function
+---@field gettimeout function
+---@field listen function
+---@field receive function
+---@field send function
+---@field setoption function
+---@field setstats function
+---@field settimeout function
+---@field shutdown function
+
 -----------------------------------------------------------------------------
 -- Declare module and import dependencies
 -----------------------------------------------------------------------------
@@ -24,6 +42,8 @@ function _M.connect6(address, port, laddress, lport)
     return socket.connect(address, port, laddress, lport, "inet6")
 end
 
+---@return TcpSocket?
+---@return string?
 function _M.bind(host, port, backlog)
     if host == "*" then host = "0.0.0.0" end
     local addrinfo, err = socket.dns.getaddrinfo(host);

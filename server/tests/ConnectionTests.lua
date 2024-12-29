@@ -1,5 +1,5 @@
 require("server.server_globals")
-require("server.Connection")
+local Connection = require("server.Connection")
 require("server.PlayerBase")
 
 local testServer = {}

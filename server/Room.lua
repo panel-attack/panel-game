@@ -13,22 +13,34 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 
 -- Object that represents a current session of play between two connections
 -- Players alternate between the character select state and playing, and spectators can join and leave
+---@class Room
+---@field a Connection player a as a connection object
+---@field b Connection player b as a connection object
+---@field server Server
+---@field name string
+---@field roomNumber integer
+---@field stage string? stage for the game, randomly picked from both players
+---@field spectators Connection[] array of spectator connection objects
+---@field win_counts integer[] win counts by player number
+---@field ratings table[] ratings by player number
+---@field game_outcome_reports integer[] game outcome reports by player number; transient, is cleared inbetween games
+---@overload fun(a: Connection, b: Connection, roomNumber: integer, leaderboard: table, server: Server): Room
 Room =
 class(
 function(self, a, b, roomNumber, leaderboard, server)
   --TODO: it would be nice to call players a and b something more like self.players[1] and self.players[2]
-  self.a = a --player a as a connection object
-  self.b = b --player b as a connection object
+  self.a = a --
+  self.b = b --
   self.a:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   self.b:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   self.server = server
-  self.stage = nil -- stage for the game, randomly picked from both players
+  self.stage = nil -- 
   self.name = a.name .. " vs " .. b.name
   self.roomNumber = roomNumber
   self.a.room = self
   self.b.room = self
-  self.spectators = {} -- array of spectator connection objects
-  self.win_counts = {} -- win counts by player number
+  self.spectators = {} -- 
+  self.win_counts = {} -- 
   self.win_counts[1] = 0
   self.win_counts[2] = 0
   local a_rating, b_rating

@@ -14,7 +14,7 @@ require("common.lib.csprng")
 require("server.stridx")
 require("server.server_globals")
 require("server.server_file_io")
-require("server.Connection")
+local Connection = require("server.Connection")
 require("server.Leaderboard")
 require("server.PlayerBase")
 require("server.Room")
@@ -23,20 +23,37 @@ local pairs = pairs
 local ipairs = ipairs
 local time = os.time
 
+---@alias privateUserId integer | string
+
 -- Represents the full server object.
 -- Currently we are transitioning variables into this, but to start we will use this to define API
+---@class Server
+---@field socket TcpSocket the master socket for accepting incoming client connections
+---@field database table the database object
+---@field connectionNumberIndex integer GLOBAL counter of the next available connection index
+---@field roomNumberIndex integer the next available room number
+---@field rooms Room[] mapping of room number to room
+---@field proposals table mapping of player name to a mapping of the players they have challenged
+---@field connections Connection[] mapping of connection number to connection
+---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
+---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
+---@field loaded_placement_matches table
+---@field lastProcessTime integer
+---@field lastFlushTime integer timestamp for when logs were last flushed to file
+---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
+---@field playerbase table
 Server =
   class(
   function(self, databaseParam)
-    self.connectionNumberIndex = 1 -- GLOBAL counter of the next available connection index
-    self.roomNumberIndex = 1 -- the next available room number
-    self.rooms = {} -- mapping of room number to room
-    self.proposals = {} -- mapping of player name to a mapping of the players they have challenged
-    self.connections = {} -- mapping of connection number to connection
-    self.nameToConnectionIndex = {} -- mapping of player names to their unique connectionNumberIndex
-    self.socketToConnectionIndex = {} -- mapping of sockets to their unique connectionNumberIndex
+    self.connectionNumberIndex = 1 -- 
+    self.roomNumberIndex = 1 -- 
+    self.rooms = {} -- 
+    self.proposals = {} -- 
+    self.connections = {} -- 
+    self.nameToConnectionIndex = {}
+    self.socketToConnectionIndex = {} -- 
     assert(databaseParam ~= nil)
-    self.database = databaseParam -- the database object
+    self.database = databaseParam -- 
     self.loaded_placement_matches = {
       incomplete = {},
       complete = {}
@@ -56,12 +73,12 @@ Server =
     read_players_file(self.playerbase)
     leaderboard = Leaderboard("leaderboard", self)
     read_leaderboard_file()
-      
+
     local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
     if isPlayerTableEmpty then
       self:importDatabase()
     end
-    
+
     logger.debug("leaderboard json:")
     logger.debug(json.encode(leaderboard.players))
     write_leaderboard_file()
@@ -180,13 +197,18 @@ function Server:lobby_state()
   return {unpaired = names, spectatable = spectatableRooms, players = players}
 end
 
-function Server:propose_game(senderName, receiverName, message)
+---@param senderName string
+---@param receiverName string
+function Server:propose_game(senderName, receiverName)
   logger.debug("propose game: " .. senderName .. " " .. receiverName)
-  local senderConnection, receiverConnection = self.nameToConnectionIndex[senderName], self.nameToConnectionIndex[receiverName]
+  local senderConnection = self.nameToConnectionIndex[senderName]
+  local receiverConnection = self.nameToConnectionIndex[receiverName]
   if senderConnection then
+---@diagnostic disable-next-line: cast-local-type
     senderConnection = self.connections[senderConnection]
   end
   if receiverConnection then
+---@diagnostic disable-next-line: cast-local-type
     receiverConnection = self.connections[receiverConnection]
   end
   local proposals = self.proposals
@@ -206,6 +228,7 @@ function Server:propose_game(senderName, receiverName, message)
   end
 end
 
+---@param name string
 function Server:clear_proposals(name)
   local proposals = self.proposals
   if proposals[name] then
@@ -219,7 +242,8 @@ function Server:clear_proposals(name)
   end
 end
 
--- a and be are connection objects
+---@param a Connection
+---@param b Connection
 function Server:create_room(a, b)
   self:setLobbyChanged()
   self:clear_proposals(a.name)
@@ -229,6 +253,8 @@ function Server:create_room(a, b)
   self.rooms[new_room.roomNumber] = new_room
 end
 
+---@param roomNr integer
+---@return Room? room
 function Server:roomNumberToRoom(roomNr)
   for k, v in pairs(self.rooms) do
     if self.rooms[k].roomNumber and self.rooms[k].roomNumber == roomNr then
@@ -237,6 +263,8 @@ function Server:roomNumberToRoom(roomNr)
   end
 end
 
+---@param name string
+---@return privateUserId
 function Server:createNewUser(name)
   local user_id = nil
   while not user_id or self.playerbase.players[user_id] do
@@ -256,20 +284,29 @@ function Server:changeUsername(privateUserID, username)
   self.database:updatePlayerUsername(privateUserID, username)
 end
 
+---@return privateUserId new_user_id
 function Server:generate_new_user_id()
   local new_user_id = cs_random()
   return tostring(new_user_id)
 end
 
 -- Checks if a logging in player is banned based off their IP.
+---@param ip string
+---@return boolean
 function Server:isPlayerBanned(ip)
   return self.database:isPlayerBanned(ip)
 end
 
+---@param ip string
+---@param reason string?
+---@param completionTime integer
 function Server:insertBan(ip, reason, completionTime)
   return self.database:insertBan(ip, reason, completionTime)
 end
 
+---@param connection Connection
+---@param reason string?
+---@param ban table?
 function Server:denyLogin(connection, reason, ban)
   assert(ban == nil or reason == nil)
   local banDuration
@@ -308,6 +345,7 @@ function Server:denyLogin(connection, reason, ban)
   connection:sendJson(ServerProtocol.denyLogin(reason, banDuration))
 end
 
+---@param room Room
 function Server:closeRoom(room)
   room:close()
   if self.rooms[room.roomNumber] then
@@ -340,6 +378,9 @@ function Server:calculate_rating_adjustment(Rc, Ro, Oa, k) -- -- print("calculat
   return Rn
 end
 
+---@param room Room
+---@param winning_player_number integer
+---@param gameID integer
 function Server:adjust_ratings(room, winning_player_number, gameID)
   logger.debug("Adjusting the rating of " .. room.a.name .. " and " .. room.b.name .. ". Player " .. winning_player_number .. " wins!")
   local players = {room.a, room.b}
@@ -486,6 +527,7 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
   end
 end
 
+---@param user_id privateUserId
 function Server:load_placement_matches(user_id)
   logger.debug("Requested loading placement matches for user_id:  " .. (user_id or "nil"))
   if not self.loaded_placement_matches.incomplete[user_id] then
@@ -504,6 +546,7 @@ function Server:load_placement_matches(user_id)
   end
 end
 
+---@param user_id privateUserId
 function Server:qualifies_for_placement(user_id)
   --local placement_match_win_ratio_requirement = .2
   self:load_placement_matches(user_id)
@@ -528,6 +571,7 @@ function Server:qualifies_for_placement(user_id)
   return true
 end
 
+---@param user_id privateUserId
 function Server:process_placement_matches(user_id)
   self:load_placement_matches(user_id)
   local placement_matches = self.loaded_placement_matches.incomplete[user_id]
@@ -559,6 +603,8 @@ function Server:process_placement_matches(user_id)
   move_user_placement_file_to_complete(user_id)
 end
 
+---@param rating number
+---@return string
 function Server:get_league(rating)
   if not rating then
     return leagues[1].league --("Newcomer")
@@ -582,7 +628,7 @@ function Server:update()
   local currentTime = time()
   if currentTime ~= self.lastProcessTime then
     self:pingConnections(currentTime)
-    
+
     self:flushLogs(currentTime)
 
     self.lastProcessTime = currentTime
