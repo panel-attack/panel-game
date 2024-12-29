@@ -149,7 +149,7 @@ local function send(connection, message)
     end
   end
   if not success then
-    logger.debug("Closing connection for " .. (connection.name or "nil") .. ". Connection.send failed after " .. retryLimit .. " retries were attempted")
+    logger.info("Closing connection for " .. (connection.name or "nil") .. ". Connection.send failed after " .. retryLimit .. " retries were attempted")
     connection:close()
   end
 end
@@ -199,7 +199,7 @@ function Connection:setup_game()
 end
 
 function Connection:close()
-  logger.debug("Closing connection to " .. self.index)
+  logger.info("Closing connection to " .. self.name)
   if self.state == "lobby" then
     self.server:setLobbyChanged()
   end
@@ -251,7 +251,6 @@ end
 
 -- Handle clientMessageTypes.jsonMessage
 function Connection:J(message)
-  logger.debug("Connection " .. self.index .. " Incoming JSON:\n" .. message)
   message = json.decode(message)
   message = ClientMessages.sanitizeMessage(message)
   --logger.debug("Post-sanitization:\n" .. table_to_string(message))
@@ -472,15 +471,20 @@ function Connection:data_received(data)
 end
 
 function Connection:processMessage(messageType, data)
-  if messageType ~= NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix then
-    logger.trace(self.index .. "- processing message:" .. messageType .. " data: " .. data)
-  end
+  -- if messageType ~= NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix then
+  --   logger.trace(self.index .. "- processing message:" .. messageType .. " data: " .. data)
+  -- end
   local status, error = pcall(
       function()
         self[messageType](self, data)
       end
     )
   if status == false and error and type(error) == "string" then
-    logger.error("pcall error results: " .. tostring(error))
+    logger.error("Incoming message from " .. self.name .. " in state " .. self.state .. " caused an error:\n" ..
+                 " pcall error results: " .. tostring(error) ..
+                 "\nMessage " .. messageType .. ":\n" .. data)
+    if self.room then
+      logger.error("Room state during error:\n" .. self.room:toString())
+    end
   end
 end

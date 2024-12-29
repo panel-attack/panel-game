@@ -115,6 +115,8 @@ function Room:start_match()
   local a = self.a
   local b = self.b
 
+  logger.info("Starting match for " .. self.roomNumber .. " " .. self.name)
+
   a.wantsReady = false
   b.wantsReady = false
 
@@ -313,6 +315,7 @@ function Room:remove_spectator(connection)
 end
 
 function Room:close()
+  logger.info("Closing room " .. self.roomNumber .. " " .. self.name)
   if self.a then
     self.a.player_number = 0
     self.a.state = "lobby"
@@ -575,4 +578,16 @@ function Room:rating_adjustment_approved()
     end
     return true, caveats
   end
+end
+
+function Room:toString()
+  local info = self.name
+  info = info .. "\nRoom number:" .. self.roomNumber
+  info = info .. "\nWin Counts" .. table_to_string(self.win_counts)
+  info = info .. "\n" .. self.a.name .. " settings:"
+  info = info .. "\n" .. table_to_string(self.a:getSettings())
+  info = info .. "\n" .. self.b.name .. " settings:"
+  info = info .. "\n" .. table_to_string(self.b:getSettings())
+
+  return info
 end

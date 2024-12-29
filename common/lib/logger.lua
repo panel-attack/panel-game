@@ -62,7 +62,9 @@ function direct_log(prefix, msg)
   -- %x - Date
   -- %X - Time
   local message = string.format("%s.%03d %s:%s", os.date("%x %X"), socket_millis, prefix, msg)
-  logger.messages[#logger.messages+1] = message
+  if not SERVER_MODE then
+    logger.messages[#logger.messages+1] = message
+  end
   print(message)
   -- note the space in the string below is on purpose
   if SERVER_MODE == nil and (prefix == "ERROR" or prefix == " WARN") then
@@ -70,4 +72,4 @@ function direct_log(prefix, msg)
   end
 end
 
-return logger;
+return logger
