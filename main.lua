@@ -146,6 +146,12 @@ function love.quit()
 
   write_conf_file()
   pcall(love.filesystem.write, "debug.log", table.concat(logger.messages, "\n"))
+
+  if GAME.updater then
+    while GAME.updater.state ~= GAME_UPDATER_STATES.idle do
+      GAME.updater:update()
+    end
+  end
 end
 
 function love.errorhandler(msg)
