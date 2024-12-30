@@ -421,13 +421,15 @@ local other_sfx = {
   "taunt_down"}
 local basic_musics = {}
 local other_musics = {"normal_music", "danger_music", "normal_music_start", "danger_music_start"}
-local defaulted_musics = {} -- those musics will be defaulted if missing
 
 function Character.sound_init(self, full, yields)
   -- SFX
   local character_sfx = full and other_sfx or basic_sfx
   for _, sfx in ipairs(character_sfx) do
-    self.sounds[sfx] = self:loadSfx(sfx, yields)
+    self.sounds[sfx] = self:loadSfx(sfx)
+    if yields and self.sounds[sfx] then
+      coroutine.yield()
+    end
   end
 
   if full then
@@ -448,7 +450,7 @@ function Character.sound_init(self, full, yields)
       else
         self.musics[music]:setLooping(false)
       end
-    elseif not self.musics[music] and defaulted_musics[music] and not self:isBundle() then
+    elseif not self.musics[music] and not self:isBundle() then
       self.musics[music] = default_character.musics[music] or themes[config.theme].zero_sound
     end
 
@@ -601,7 +603,7 @@ The level of sound loading is determined via "mayHaveSubSfx"
 
 local perSizeSfxStart = { chain = 2, combo = 4, shock = 3}
 
-function Character.loadSfx(self, name, yields)
+function Character.loadSfx(self, name)
   local sfx = {}
 
   if not perSizeSfxStart[name] then
@@ -634,7 +636,7 @@ function Character.loadSfx(self, name, yields)
         if index then
           searchName = searchName .. index
         end
-        local fileGroup = FileGroup(self.path, searchName, fileUtils.SUPPORTED_SOUND_FORMATS)
+        local fileGroup = FileGroup(self.path, searchName, fileUtils.SUPPORTED_SOUND_FORMATS, "_")
         if next(fileGroup.matchingFiles) then
           sfx[targetIndex] = SfxGroup(fileGroup, 1)
         end
