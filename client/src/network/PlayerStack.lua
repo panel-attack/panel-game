@@ -5,11 +5,11 @@ local PlayerStack = require("client.src.PlayerStack")
 function PlayerStack.handle_input_taunt(self)
   if self.inputMethod ~= "touch" then
     local input = self.player.inputConfiguration
-    if input.isDown["TauntUp"] and self:can_taunt() and #self.character.sounds.taunt_up > 0 then
-      self.taunt_up = math.random(#self.character.sounds.taunt_up)
+    if input.isDown["TauntUp"] and self:can_taunt() and self.character.sounds.taunt_up then
+      self.taunt_up = math.random(#self.character.sounds.taunt_up.sources)
       GAME.netClient:sendTauntUp(self.taunt_up)
-    elseif input.isDown["TauntDown"] and self:can_taunt() and #self.character.sounds.taunt_down > 0 then
-      self.taunt_down = math.random(#self.character.sounds.taunt_down)
+    elseif input.isDown["TauntDown"] and self:can_taunt() and self.character.sounds.taunt_down then
+      self.taunt_down = math.random(#self.character.sounds.taunt_down.sources)
       GAME.netClient:sendTauntDown(self.taunt_down)
     end
   end

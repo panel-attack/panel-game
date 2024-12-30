@@ -235,12 +235,7 @@ function Panels:loadSingles()
   for color = 1, 8 do
     images[color] = {}
 
-    local files = tableUtils.filter(panelFiles, function(f)
-      local start, finish = string.find(f, "panel" .. color .. "%d+%.")
-      local lastDotIndex = string.find(f, "%.")
-      -- only add them if they aren't pre- or postfixed in some way
-      return  start == 1 and finish == lastDotIndex
-    end)
+    local files = fileUtils.getMatchingFiles(panelFiles, "panel" .. color, fileUtils.SUPPORTED_IMAGE_FORMATS)
 
     local indexToFile = {}
 

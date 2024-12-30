@@ -1,5 +1,6 @@
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
+local FileUtils = require("client.src.FileUtils")
 
 -- Utility methods for drawing
 local GraphicsUtil = {
@@ -62,7 +63,7 @@ function GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extensi
       end
       return result
     end
-    
+
     logger.error("Error loading image: " .. fileName .. " Check it is valid and try resaving it in an image editor. If you are not the owner please get them to update it or download the latest version.")
     result = GraphicsUtil.privateLoadImageWithExtensionAndScale("themes/Panel Attack/transparent", ".png", 1)
     assert(result ~= next)
@@ -72,10 +73,9 @@ function GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extensi
   return nil
 end
 
+local supportedScales = {3, 2, 1}
 function GraphicsUtil.loadImageFromSupportedExtensions(pathAndName)
-  local supportedImageFormats = {".png", ".jpg", ".jpeg"}
-  local supportedScales = {3, 2, 1}
-  for _, extension in ipairs(supportedImageFormats) do
+  for _, extension in ipairs(FileUtils.SUPPORTED_IMAGE_FORMATS) do
     for _, scale in ipairs(supportedScales) do
       local image = GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extension, scale)
       if image then
