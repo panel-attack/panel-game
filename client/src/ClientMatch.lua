@@ -172,7 +172,8 @@ function ClientMatch:start()
         which = #engineStacks + 1,
         is_local = true,
         character = CharacterLoader.fullyResolveCharacterSelection(),
-        attackSettings = player.settings.attackEngineSettings
+        attackSettings = player.settings.attackEngineSettings,
+        match = self,
       })
       attackEngineHost:setGarbageTarget(player.stack)
       player.stack:setGarbageSource(attackEngineHost)
