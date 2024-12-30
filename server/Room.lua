@@ -24,25 +24,33 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 ---@field win_counts integer[] win counts by player number
 ---@field ratings table[] ratings by player number
 ---@field game_outcome_reports integer[] game outcome reports by player number; transient, is cleared inbetween games
+---@field matchCount integer
 ---@overload fun(a: Connection, b: Connection, roomNumber: integer, leaderboard: table, server: Server): Room
 Room =
 class(
+---@param self Room
+---@param a Connection
+---@param b Connection
+---@param roomNumber integer
+---@param leaderboard table
+---@param server Server
 function(self, a, b, roomNumber, leaderboard, server)
   --TODO: it would be nice to call players a and b something more like self.players[1] and self.players[2]
-  self.a = a --
-  self.b = b --
+  self.a = a
+  self.b = b
   self.a:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   self.b:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   self.server = server
-  self.stage = nil -- 
+  self.stage = nil
   self.name = a.name .. " vs " .. b.name
   self.roomNumber = roomNumber
-  self.a.room = self
-  self.b.room = self
-  self.spectators = {} -- 
-  self.win_counts = {} -- 
+  self.a:setRoom(self)
+  self.b:setRoom(self)
+  self.spectators = {}
+  self.win_counts = {}
   self.win_counts[1] = 0
   self.win_counts[2] = 0
+  self.matchCount = 0
   local a_rating, b_rating
   local a_placement_match_progress, b_placement_match_progress
 
@@ -71,7 +79,7 @@ function(self, a, b, roomNumber, leaderboard, server)
     {old = b_rating or 0, new = b_rating or 0, difference = 0, league = self.server:get_league(b_rating or 0), placement_match_progress = b_placement_match_progress}
   }
 
-  self.game_outcome_reports = {} -- mapping of what each player reports the outcome of the game
+  self.game_outcome_reports = {}
 
   self.b.cursor = "__Ready"
   self.a.cursor = "__Ready"
@@ -127,7 +135,8 @@ function Room:start_match()
   local a = self.a
   local b = self.b
 
-  logger.info("Starting match for " .. self.roomNumber .. " " .. self.name)
+  self.matchCount = self.matchCount + 1
+  logger.info("Starting match " .. self.matchCount .. " for " .. self.roomNumber .. " " .. self.name)
 
   a.wantsReady = false
   b.wantsReady = false
@@ -254,6 +263,7 @@ function Room:prepare_character_select()
   self.b.ready = false
 end
 
+---@return "character select"|"lobby"|"not_logged_in"|"playing"|"spectating"
 function Room:state()
   if self.a.state == "character select" then
     return "character select"
@@ -266,7 +276,7 @@ end
 
 function Room:add_spectator(new_spectator_connection)
   new_spectator_connection.state = "spectating"
-  new_spectator_connection.room = self
+  new_spectator_connection:setRoom(self)
   self.spectators[#self.spectators + 1] = new_spectator_connection
   logger.debug(new_spectator_connection.name .. " joined " .. self.name .. " as a spectator")
 
@@ -290,7 +300,7 @@ function Room:add_spectator(new_spectator_connection)
     self.win_counts,
     self.stage,
     self.replay,
-    self.ranked,
+    self.replay and self.replay.ranked or nil,
     self.a:getDumbSettings(),
     self.b:getDumbSettings()
   )
@@ -316,7 +326,7 @@ function Room:remove_spectator(connection)
       self.spectators[k].state = "lobby"
       logger.debug(connection.name .. " left " .. self.name .. " as a spectator")
       self.spectators[k] = nil
-      connection.room = nil
+      connection:setRoom()
       lobbyChanged = true
     end
   end
@@ -331,16 +341,16 @@ function Room:close()
   if self.a then
     self.a.player_number = 0
     self.a.state = "lobby"
-    self.a.room = nil
+    self.a:setRoom()
   end
   if self.b then
     self.b.player_number = 0
     self.b.state = "lobby"
-    self.b.room = nil
+    self.b:setRoom()
   end
   for k, v in pairs(self.spectators) do
     if v.room then
-      v.room = nil
+      v:setRoom()
       v.state = "lobby"
     end
   end
@@ -421,7 +431,7 @@ function Room:resolve_game_outcome()
       self.server.database:insertPlayerGameResult(self.b.user_id, gameID, self.replay.players[2].settings.level, 0)
     end
 
-    logger.debug("resolve_game_outcome says: " .. outcome)
+    logger.info(self.roomNumber .. " " .. self.name .. " match " .. self.matchCount .. " ended with outcome " .. outcome)
     --outcome is the player number of the winner, or 0 for a tie
     if self.a.save_replays_publicly ~= "not at all" and self.b.save_replays_publicly ~= "not at all" then
       if self.a.save_replays_publicly == "anonymously" then

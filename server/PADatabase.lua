@@ -187,15 +187,21 @@ function PADatabase.playerMessageSeen(self, messageID)
   end
   return true
 end
- 
+
+---@alias PlayerBan {banID: integer, reason: string, completionTime: integer}
+
 local insertBanStatement = assert(db:prepare("INSERT INTO PlayerBanList(ip, reason, completionTime) VALUES (?, ?, ?)"))
 -- Bans an IP address
-function PADatabase.insertBan(self, ip, reason, completionTime)
+---@param ip string
+---@param reason string
+---@param completionTime integer
+---@return PlayerBan?
+function PADatabase:insertBan(ip, reason, completionTime)
   insertBanStatement:bind_values(ip, reason, completionTime)
   insertBanStatement:step()
   if insertBanStatement:reset() ~= sqlite3.OK then
     logger.error(db:errmsg())
-    return false
+    return
   end
   return {banID = db:last_insert_rowid(), reason = reason, completionTime = completionTime}
 end
@@ -258,6 +264,7 @@ function PADatabase.getIDBans(self, publicPlayerID)
 end
 
 -- Checks if a logging in player is banned based off their IP.
+---@param ip string
 function PADatabase.isPlayerBanned(self, ip)
   -- all ids associated with the information given
   local publicPlayerIDs = {}

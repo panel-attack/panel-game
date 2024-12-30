@@ -45,15 +45,15 @@ local time = os.time
 Server =
   class(
   function(self, databaseParam)
-    self.connectionNumberIndex = 1 -- 
-    self.roomNumberIndex = 1 -- 
-    self.rooms = {} -- 
-    self.proposals = {} -- 
-    self.connections = {} -- 
+    self.connectionNumberIndex = 1
+    self.roomNumberIndex = 1
+    self.rooms = {}
+    self.proposals = {}
+    self.connections = {}
     self.nameToConnectionIndex = {}
-    self.socketToConnectionIndex = {} -- 
+    self.socketToConnectionIndex = {}
     assert(databaseParam ~= nil)
-    self.database = databaseParam -- 
+    self.database = databaseParam
     self.loaded_placement_matches = {
       incomplete = {},
       complete = {}
@@ -300,13 +300,14 @@ end
 ---@param ip string
 ---@param reason string?
 ---@param completionTime integer
+---@return PlayerBan?
 function Server:insertBan(ip, reason, completionTime)
   return self.database:insertBan(ip, reason, completionTime)
 end
 
 ---@param connection Connection
 ---@param reason string?
----@param ban table?
+---@param ban PlayerBan?
 function Server:denyLogin(connection, reason, ban)
   assert(ban == nil or reason == nil)
   local banDuration
