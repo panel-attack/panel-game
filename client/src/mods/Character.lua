@@ -45,6 +45,7 @@ local comboStyle = {classic = 0, per_combo = 1}
 ---@field popfx_fadeScale number scale factor for certain graphic assets displayed for the PopFxStyle
 ---@field music_style string defines the behaviour for music when switching between normal and danger
 ---@field music_volume number defines a multiplier to apply to the StageTrack
+---@field sfx_volume number defines a multiplier to apply to the character's SFX
 ---@field stageTrack StageTrack? the StageTrack constructed from the character's music assets
 ---@field files string[] array of files in the mod's directory
 
@@ -70,6 +71,7 @@ function(self, full_path, folder_name)
   self.popfx_fadeScale = 1
   self.music_style = "normal"
   self.music_volume = 1
+  self.sfx_volume = 1
   self.stageTrack = nil
   self.files = tableUtils.map(love.filesystem.getDirectoryItems(self.path), function(file) return fileUtils.getFileNameWithoutExtension(file) end)
 end,
@@ -139,6 +141,10 @@ function Character.json_init(self)
 
       if read_data.music_volume and type(read_data.music_volume) == "number" then
         self.music_volume = read_data.music_volume
+      end
+
+      if read_data.sfx_volume and type(read_data.sfx_volume) == "number" then
+        self.sfx_volume = read_data.sfx_volume
       end
 
       -- associated stage
@@ -427,8 +433,10 @@ function Character.sound_init(self, full, yields)
   local character_sfx = full and other_sfx or basic_sfx
   for _, sfx in ipairs(character_sfx) do
     self.sounds[sfx] = self:loadSfx(sfx)
-    if yields and self.sounds[sfx] then
-      coroutine.yield()
+    if self.sounds[sfx] then
+      if yields then
+        coroutine.yield()
+      end
     end
   end
 
@@ -590,30 +598,28 @@ Explanation for sound loading process
 
 Standard expected structure for sound files is as follows:
 self.sounds holds a dictionary with the keys in basic_sfx and other_sfx
-The values of that dictionary are tables that contain integer numbered sfx, e.g.
-self.sounds["combo"] = {}
-For some sfx types, sfx can possibly contain sub sfx. That is selected via randomization upon being played.
-For that reason each index in that table holds another table with possible sounds for that selection value:
-self.sounds["combo"][4] = { standardsfx, alternativesfx, alternativesfx2}
-self.sounds["combo"][5] = { standardsfx}
-For most sounds that aren't divided by size one level is omitted and they don't load the variations as subSfx:
-self.sounds["win"] = { win, win2, win3}
-The level of sound loading is determined via "mayHaveSubSfx"
+The values of that dictionary are SfxGroups that implement a subset of love.Source to interop with SoundController.
+self.sounds["win"] = SfxGroup
+For some sfx types, sfx can possibly contain sub sfx.
+To reflect that mechanic instead of an SfxGroup these sfx types will contain an array of SfxGroups
+self.sounds["combo"] = { nil, nil, SfxGroup, SfxGroup, SfxGroup}
+The level of sound loading is determined via the presence of the key in "perSizeSfxStart"
 ]]--
 
 local perSizeSfxStart = { chain = 2, combo = 4, shock = 3}
 
-function Character.loadSfx(self, name)
-  local sfx = {}
-
+---@param name string
+---@return SfxGroup | table<integer, SfxGroup> | nil
+function Character:loadSfx(name)
   if not perSizeSfxStart[name] then
     local fileGroup = FileGroup(self.path, name, fileUtils.SUPPORTED_SOUND_FORMATS)
     if next(fileGroup.matchingFiles) then
-      return SfxGroup(fileGroup, 1)
+      return SfxGroup(fileGroup, self.sfx_volume)
     else
       return nil
     end
   else
+    local sfx = {}
     local stringLen = string.len(name)
     local files = tableUtils.filter(self.files, function(file) return string.find(file, name, nil, true) end)
 
@@ -638,7 +644,7 @@ function Character.loadSfx(self, name)
         end
         local fileGroup = FileGroup(self.path, searchName, fileUtils.SUPPORTED_SOUND_FORMATS, "_")
         if next(fileGroup.matchingFiles) then
-          sfx[targetIndex] = SfxGroup(fileGroup, 1)
+          sfx[targetIndex] = SfxGroup(fileGroup, self.sfx_volume)
         end
       end
 
@@ -648,10 +654,8 @@ function Character.loadSfx(self, name)
     end
 
     self:fillInMissingSounds(sfx, name, maxIndex)
+    return sfx
   end
-
-  assert(sfx ~= nil)
-  return sfx
 end
 
 function Character.fillInMissingSounds(self, sfxTable,  name, maxIndex)

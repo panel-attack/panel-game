@@ -274,6 +274,13 @@ Example:
 While the combo size you may provide files for is not limited, combos above +27 will not send any more garbage, having no added value as a sound cue.
 
 
+##### sfx_volume
+
+Defines a multiplier for the character's SFX relative to the game volume.  
+The default multiplier is 1, meaning no change to SFX volume.  
+Values can be between 0 and 1.
+
+
 ### Display configuration
 
 Specifies how the character is displayed in character selection.
@@ -580,5 +587,5 @@ While a mod that varies case in filenames may work fine on Windows, it won't dis
 ## Character X is too loud/quiet!
 
 As mods are created by the community it is difficult to enforce a standard for volumes of music and SFX.  
-A general recommendation for volume of music and voice lines is to normalize the track and then reduce its volume by 6dB.  
-An option to adjust volume by character in Panel Attack itself does currently not exist.
+A general recommendation for volume of music and voice lines is to normalize the track.  
+Panel Attack does not allow making characters louder but they can be made more quiet via the `music_volume` and `sfx_volume` fields of the config.json.
