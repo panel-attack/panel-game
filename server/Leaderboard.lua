@@ -2,6 +2,17 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local database = require("server.PADatabase")
 
+local DEFAULT_RATING = 1500
+local RATING_SPREAD_MODIFIER = 400
+local PLACEMENT_MATCH_COUNT_REQUIREMENT = 30
+local ALLOWABLE_RATING_SPREAD_MULITPLIER = .9 --set this to a huge number like 100 if you want everyone to be able to play with anyone, regardless of rating gap
+local PLACEMENT_MATCH_K = 50
+local PLACEMENT_MATCHES_ENABLED = true
+local MIN_LEVEL_FOR_RANKED = 1
+local MAX_LEVEL_FOR_RANKED = 10
+local MIN_COLORS_FOR_RANKED = 5
+local MAX_COLORS_FOR_RANKED = 6
+
 local leagues = { {league="Newcomer",     min_rating = -1000},
             {league="Copper",       min_rating = 1},
             {league="Bronze",       min_rating = 1125},
@@ -17,6 +28,8 @@ logger.debug("Leagues")
 for k, v in ipairs(leagues) do
   logger.debug(v.league .. ":  " .. v.min_rating)
 end
+
+logger.debug("RATING_SPREAD_MODIFIER: " .. (RATING_SPREAD_MODIFIER or "nil"))
 
 ---@alias LeaderboardPlayer {user_id: privateUserId, user_name: string, rating: number, placement_done:boolean, placement_rating: number, ranked_games_played: integer, ranked_games_won: integer, last_login_time: integer}
 
