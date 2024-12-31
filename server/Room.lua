@@ -424,7 +424,7 @@ function Room:resolve_game_outcome()
         logger.trace("Player " .. i .. " scored")
         self.win_counts[i] = self.win_counts[i] + 1
         if shouldAdjustRatings then
-          self.server:adjust_ratings(self, i, gameID)
+          self.leaderboard:adjust_ratings(self, i, gameID)
         else
           logger.debug("Not adjusting ratings because: " .. reasons[1])
         end
@@ -473,92 +473,13 @@ function Room:saveReplay()
 end
 
 function Room:rating_adjustment_approved()
-  --returns whether both players in the room have game states such that rating adjustment should be approved
-  local players = self.players
-  local reasons = {}
-  local caveats = {}
-  local both_players_are_placed = nil
-
-  if PLACEMENT_MATCHES_ENABLED then
-    if leaderboard.players[players[1].userId] and leaderboard.players[players[1].userId].placement_done and leaderboard.players[players[2].userId] and leaderboard.players[players[2].userId].placement_done then
-      --both players are placed on the leaderboard.
-      both_players_are_placed = true
-    elseif not (leaderboard.players[players[1].userId] and leaderboard.players[players[1].userId].placement_done) and not (leaderboard.players[players[2].userId] and leaderboard.players[players[2].userId].placement_done) then
-      reasons[#reasons + 1] = "Neither player has finished enough placement matches against already ranked players"
-    end
-  else
-    both_players_are_placed = true
-  end
-  -- don't let players use the same account
-  if players[1].userId == players[2].userId then
-    reasons[#reasons + 1] = "Players cannot use the same account"
-  end
-
-  --don't let players too far apart in rating play ranked
-  local ratings = {}
-  for k, v in ipairs(players) do
-    if leaderboard.players[v.userId] then
-      if not leaderboard.players[v.userId].placement_done and leaderboard.players[v.userId].placement_rating then
-        ratings[k] = leaderboard.players[v.userId].placement_rating
-      elseif leaderboard.players[v.userId].rating and leaderboard.players[v.userId].rating ~= 0 then
-        ratings[k] = leaderboard.players[v.userId].rating
-      else
-        ratings[k] = DEFAULT_RATING
-      end
-    else
-      ratings[k] = DEFAULT_RATING
-    end
-  end
-  if math.abs(ratings[1] - ratings[2]) > RATING_SPREAD_MODIFIER * ALLOWABLE_RATING_SPREAD_MULITPLIER then
-    reasons[#reasons + 1] = "Players' ratings are too far apart"
-  end
-
-  local player_level_out_of_bounds_for_ranked = false
-  for i = 1, 2 do --we'll change 2 here when more players are allowed.
-    if (players[i].level < MIN_LEVEL_FOR_RANKED or players[i].level > MAX_LEVEL_FOR_RANKED) then
-      player_level_out_of_bounds_for_ranked = true
-    end
-  end
-  if player_level_out_of_bounds_for_ranked then
-    reasons[#reasons + 1] = "Only levels between " .. MIN_LEVEL_FOR_RANKED .. " and " .. MAX_LEVEL_FOR_RANKED .. " are allowed for ranked play."
-  end
-  -- local playerColorsOutOfBoundsForRanked = false
-  -- for i, player in ipairs(players) do
-  --   if player.levelData.colorCount < MIN_COLORS_FOR_RANKED or player.levelData.colorCount > MAX_COLORS_FOR_RANKED then
-  --     playerColorsOutOfBoundsForRanked = true
-  --   end
-  -- end
-  -- if playerColorsOutOfBoundsForRanked then
-  --   reasons[#reasons + 1] = "Only color counts between " .. MIN_COLORS_FOR_RANKED .. " and " .. MAX_COLORS_FOR_RANKED .. " are allowed for ranked play."
-  -- end
-  if players[1].level ~= players[2].level then
-    reasons[#reasons + 1] = "Levels don't match"
-  -- elseif not deep_content_equal(players[1].levelData or LevelPresets.getModern(players[1].level), players[2].levelData or LevelPresets.getModern(players[2].level)) then
-  --  reasons[#reasons + 1] = "Level data doesn't match"
-  end
-
-  for i, player in ipairs(players) do
-    if not deep_content_equal(player.levelData, LevelPresets.getModern(player.level)) then
-      reasons[#reasons + 1] = player.name .. " uses modified level data"
+  for i, player in ipairs(self.players) do
+    if not player.wants_ranked_match then
+      return false, {player.name .. " doesn't want ranked"}
     end
   end
 
-  if players[1].inputMethod == "touch" or players[2].inputMethod == "touch" then
-    reasons[#reasons + 1] = "Touch input is not currently allowed in ranked matches."
-  end
-  for player_number = 1, 2 do
-    if not players[player_number].wants_ranked_match then
-      reasons[#reasons + 1] = players[player_number].name .. " doesn't want ranked"
-    end
-  end
-  if reasons[1] then
-    return false, reasons
-  else
-    if PLACEMENT_MATCHES_ENABLED and not both_players_are_placed and ((leaderboard.players[players[1].userId] and leaderboard.players[players[1].userId].placement_done) or (leaderboard.players[players[2].userId] and leaderboard.players[players[2].userId].placement_done)) then
-      caveats[#caveats + 1] = "Note: Rating adjustments for these matches will be processed when the newcomer finishes placement."
-    end
-    return true, caveats
-  end
+  return self.leaderboard:rating_adjustment_approved(self.players)
 end
 
 function Room:toString()

@@ -163,6 +163,7 @@ function Player:send(message)
   self.connection:send(message)
 end
 
+---@return boolean
 function Player:isReady()
   return self.wantsReady and self.loaded and self.ready
 end
@@ -184,6 +185,11 @@ function Player:getDumbSettings(rating, playerNumber)
     self.publicPlayerID,
     self.levelData
   )
+end
+
+---@return boolean
+function Player:usesModifiedLevelData()
+  return not deep_content_equal(self.levelData, LevelPresets.getModern(self.level))
 end
 
 return Player
