@@ -248,7 +248,7 @@ function Server:create_room(a, b)
   self:setLobbyChanged()
   self:clear_proposals(a.name)
   self:clear_proposals(b.name)
-  local new_room = Room(a, b, self.roomNumberIndex, leaderboard, self)
+  local new_room = Room(self.roomNumberIndex, leaderboard, self, a, b)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[new_room.roomNumber] = new_room
 end
@@ -457,7 +457,7 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
           leaderboard.players[players[player_number].user_id].ranked_games_won = (leaderboard.players[players[player_number].user_id].ranked_games_won or 0) + 1
         end
 
-        local process_them, reason = self:qualifies_for_placement(players[player_number].user_id)
+        local process_them, reason = leaderboard:qualifies_for_placement(players[player_number].user_id)
         if process_them then
           local op_player_number = players[player_number].opponent.player_number
           logger.debug("op_player_number: " .. op_player_number)
@@ -545,31 +545,6 @@ function Server:load_placement_matches(user_id)
   else
     logger.debug("Didn't load placement matches from file. It is already loaded")
   end
-end
-
----@param user_id privateUserId
-function Server:qualifies_for_placement(user_id)
-  --local placement_match_win_ratio_requirement = .2
-  self:load_placement_matches(user_id)
-  local placement_matches_played = #self.loaded_placement_matches.incomplete[user_id]
-  if not PLACEMENT_MATCHES_ENABLED then
-    return false, ""
-  elseif (leaderboard.players[user_id] and leaderboard.players[user_id].placement_done) then
-    return false, "user is already placed"
-  elseif placement_matches_played < PLACEMENT_MATCH_COUNT_REQUIREMENT then
-    return false, placement_matches_played .. "/" .. PLACEMENT_MATCH_COUNT_REQUIREMENT .. " placement matches played."
-  -- else
-  -- local win_ratio
-  -- local win_count
-  -- for i=1,placement_matches_played do
-  -- win_count = win_count + self.loaded_placement_matches.incomplete[user_id][i].outcome
-  -- end
-  -- win_ratio = win_count / placement_matches_played
-  -- if win_ratio < placement_match_win_ratio_requirement then
-  -- return false, "placement win ratio is currently "..math.round(win_ratio*100).."%.  "..math.round(placement_match_win_ratio_requirement*100).."% is required for placement."
-  -- end
-  end
-  return true
 end
 
 ---@param user_id privateUserId

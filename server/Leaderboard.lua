@@ -2,6 +2,10 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 
 -- Object that represents players rankings and placement matches, along with login times
+---@class Leaderboard
+---@field name string
+---@field server Server
+---@field players table<string, table>
 Leaderboard =
   class(
   function(s, name, server)
@@ -78,4 +82,29 @@ function Leaderboard.update_timestamp(self, user_id)
   else
     logger.debug(user_id .. " is not on the leaderboard, so no timestamp will be assigned at this time.")
   end
+end
+
+---@param user_id privateUserId
+function Leaderboard:qualifies_for_placement(user_id)
+  --local placement_match_win_ratio_requirement = .2
+  self.server:load_placement_matches(user_id)
+  local placement_matches_played = #self.server.loaded_placement_matches.incomplete[user_id]
+  if not PLACEMENT_MATCHES_ENABLED then
+    return false, ""
+  elseif (leaderboard.players[user_id] and leaderboard.players[user_id].placement_done) then
+    return false, "user is already placed"
+  elseif placement_matches_played < PLACEMENT_MATCH_COUNT_REQUIREMENT then
+    return false, placement_matches_played .. "/" .. PLACEMENT_MATCH_COUNT_REQUIREMENT .. " placement matches played."
+  -- else
+  -- local win_ratio
+  -- local win_count
+  -- for i=1,placement_matches_played do
+  -- win_count = win_count + self.server.loaded_placement_matches.incomplete[user_id][i].outcome
+  -- end
+  -- win_ratio = win_count / placement_matches_played
+  -- if win_ratio < placement_match_win_ratio_requirement then
+  -- return false, "placement win ratio is currently "..math.round(win_ratio*100).."%.  "..math.round(placement_match_win_ratio_requirement*100).."% is required for placement."
+  -- end
+  end
+  return true
 end

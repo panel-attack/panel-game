@@ -24,20 +24,6 @@ local LevelPresets = require("common.data.LevelPresets")
 ---@field server Server the server managing this connection
 ---@field player ServerPlayer? the player object for this connection
 ---@field opponent Connection? the opponents connection object
----@field character string id of the specific character that was selected
----@field character_is_random string? id of the character bundle that was selected; will match character if not a bundle
----@field stage string id of the specific stage that was selected
----@field stage_is_random string? id of the stage bundle that was selected; will match stage if not a bundle
----@field panels_dir string id of the specific panel set that was selected
----@field wants_ranked_match boolean
----@field inputMethod ("controller" | "touch")
----@field level integer display property for the level
----@field levelData LevelData
----@field wantsReady boolean
----@field loaded boolean
----@field ready boolean
----@field cursor string?
----@field save_replays_publicly ("not at all" | "anonymously" | "with my name")
 ---@overload fun(socket: any, index: integer, server: table) : Connection
 local Connection = class(
 ---@param self Connection
@@ -58,21 +44,6 @@ local Connection = class(
     self.player = nil
     self.opponent = nil
     self.name = nil
-
-    -- Player Settings
-    self.character = nil
-    self.character_is_random = nil
-    self.cursor = nil
-    self.inputMethod = "controller"
-    self.level = nil
-    self.panels_dir = nil
-    self.wantsReady = nil
-    self.loaded = nil
-    self.ready = nil
-    self.stage = nil
-    self.stage_is_random = nil
-    self.wants_ranked_match = false
-    self.levelData = nil
 
     Signal.turnIntoEmitter(self)
     self:createSignal("settingsUpdated")
@@ -215,13 +186,6 @@ function Connection:leaveRoom()
     self.server:closeRoom(self.room)
   end
   self:sendJson(ServerProtocol.leaveRoom())
-end
-
-function Connection:setup_game()
-  if self.state ~= "spectating" then
-    self.state = "playing"
-  end
-  self.server:setLobbyChanged()
 end
 
 function Connection:close()
