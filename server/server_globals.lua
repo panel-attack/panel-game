@@ -1,13 +1,3 @@
-leagues = { {league="Newcomer",     min_rating = -1000},
-            {league="Copper",       min_rating = 1},
-            {league="Bronze",       min_rating = 1125},
-            {league="Silver",       min_rating = 1275},
-            {league="Gold",         min_rating = 1425},
-            {league="Platinum",     min_rating = 1575},
-            {league="Diamond",      min_rating = 1725},
-            {league="Master",       min_rating = 1875},
-            {league="Grandmaster",  min_rating = 2025}
-          }
 PLACEMENT_MATCH_COUNT_REQUIREMENT = 30
 DEFAULT_RATING = 1500
 RATING_SPREAD_MODIFIER = 400

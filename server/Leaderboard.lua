@@ -1,17 +1,42 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
+local database = require("server.PADatabase")
+
+local leagues = { {league="Newcomer",     min_rating = -1000},
+            {league="Copper",       min_rating = 1},
+            {league="Bronze",       min_rating = 1125},
+            {league="Silver",       min_rating = 1275},
+            {league="Gold",         min_rating = 1425},
+            {league="Platinum",     min_rating = 1575},
+            {league="Diamond",      min_rating = 1725},
+            {league="Master",       min_rating = 1875},
+            {league="Grandmaster",  min_rating = 2025}
+          }
+
+logger.debug("Leagues")
+for k, v in ipairs(leagues) do
+  logger.debug(v.league .. ":  " .. v.min_rating)
+end
+
+---@alias LeaderboardPlayer {user_id: privateUserId, user_name: string, rating: number, placement_done:boolean, placement_rating: number, ranked_games_played: integer, ranked_games_won: integer, last_login_time: integer}
 
 -- Object that represents players rankings and placement matches, along with login times
 ---@class Leaderboard
 ---@field name string
 ---@field server Server
----@field players table<string, table>
+---@field players table<string, LeaderboardPlayer>
+---@field loadedPlacementMatches {incomplete: table, complete: table}
+---@overload fun(name: string, server: Server): Leaderboard
 Leaderboard =
   class(
   function(s, name, server)
     s.name = name
     s.server = server
-    s.players = {} -- user_id -> user_id,user_name,rating,placement_done,placement_rating,ranked_games_played,ranked_games_won,last_login_time
+    s.players = {}
+    s.loadedPlacementMatches = {
+      incomplete = {},
+      complete = {}
+    }
   end
 )
 
@@ -84,14 +109,14 @@ function Leaderboard.update_timestamp(self, user_id)
   end
 end
 
----@param user_id privateUserId
-function Leaderboard:qualifies_for_placement(user_id)
+---@param userId privateUserId
+function Leaderboard:qualifies_for_placement(userId)
   --local placement_match_win_ratio_requirement = .2
-  self.server:load_placement_matches(user_id)
-  local placement_matches_played = #self.server.loaded_placement_matches.incomplete[user_id]
+  self:loadPlacementMatches(userId)
+  local placement_matches_played = #self.loadedPlacementMatches.incomplete[userId]
   if not PLACEMENT_MATCHES_ENABLED then
     return false, ""
-  elseif (leaderboard.players[user_id] and leaderboard.players[user_id].placement_done) then
+  elseif (leaderboard.players[userId] and leaderboard.players[userId].placement_done) then
     return false, "user is already placed"
   elseif placement_matches_played < PLACEMENT_MATCH_COUNT_REQUIREMENT then
     return false, placement_matches_played .. "/" .. PLACEMENT_MATCH_COUNT_REQUIREMENT .. " placement matches played."
@@ -99,7 +124,7 @@ function Leaderboard:qualifies_for_placement(user_id)
   -- local win_ratio
   -- local win_count
   -- for i=1,placement_matches_played do
-  -- win_count = win_count + self.server.loaded_placement_matches.incomplete[user_id][i].outcome
+  -- win_count = win_count + self.loadedPlacementMatches.incomplete[user_id][i].outcome
   -- end
   -- win_ratio = win_count / placement_matches_played
   -- if win_ratio < placement_match_win_ratio_requirement then
@@ -107,4 +132,68 @@ function Leaderboard:qualifies_for_placement(user_id)
   -- end
   end
   return true
+end
+
+---@param userId privateUserId
+function Leaderboard:loadPlacementMatches(userId)
+  logger.debug("Requested loading placement matches for user_id:  " .. (userId or "nil"))
+  if not self.loadedPlacementMatches.incomplete[userId] then
+    local read_success, matches = read_user_placement_match_file(userId)
+    if read_success then
+      self.loadedPlacementMatches.incomplete[userId] = matches or {}
+      logger.debug("loaded placement matches from file:")
+    else
+      self.loadedPlacementMatches.incomplete[userId] = {}
+      logger.debug("no pre-existing placement matches file, starting fresh")
+    end
+    logger.debug(tostring(self.loadedPlacementMatches.incomplete[userId]))
+    logger.debug(json.encode(self.loadedPlacementMatches.incomplete[userId]))
+  else
+    logger.debug("Didn't load placement matches from file. It is already loaded")
+  end
+end
+
+---@param player ServerPlayer
+---@return number? rating
+function Leaderboard:getRating(player)
+  if self.players[player.userId] and self.players[player.userId].rating then
+    return math.round(self.players[player.userId].rating or 0)
+  end
+end
+
+---@param player ServerPlayer
+---@return string?
+function Leaderboard:getPlacementProgress(player)
+  local qualifies, progress = self:qualifies_for_placement(player.userId)
+  if not (self.players[player.userId] and self.players[player.userId].placement_done) and not qualifies then
+    return progress
+  end
+end
+
+---@param player ServerPlayer
+---@param gameID integer
+function Leaderboard:addToLeaderboard(player, gameID)
+  if not self.players[player.userId] or not self.players[player.userId].rating then
+    self.players[player.userId] = {user_name = player.name, rating = DEFAULT_RATING}
+    logger.debug("Gave " .. self.players[player.userId].user_name .. " a new rating of " .. DEFAULT_RATING)
+    if not PLACEMENT_MATCHES_ENABLED then
+      self.players[player.userId].placement_done = true
+      database:insertPlayerELOChange(player.userId, DEFAULT_RATING, gameID)
+    end
+    write_leaderboard_file()
+  end
+end
+
+---@param rating number
+---@return string
+function Leaderboard:get_league(rating)
+  if not rating then
+    return leagues[1].league --("Newcomer")
+  end
+  for i = 1, #leagues do
+    if i == #leagues or leagues[i + 1].min_rating > rating then
+      return leagues[i].league
+    end
+  end
+  return "LeagueNotFound"
 end

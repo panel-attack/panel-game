@@ -26,6 +26,7 @@ local logger = require("common.lib.logger")
 ---@field save_replays_publicly ("not at all" | "anonymously" | "with my name")
 ---@field name string
 ---@field player_number integer?
+---@field opponent ServerPlayer to be removed
 ---@overload fun(privatePlayerID: privateUserId): ServerPlayer
 local Player = class(
 ---@param self ServerPlayer
@@ -135,6 +136,13 @@ function Player:setRoom(room)
   if not room then
     if self.room then
       logger.info("Clearing room " .. self.room.roomNumber .. " for connection " .. self.connection.index)
+      -- if there is no socket the room got closed because the player hard DCd so shouldn't update state in that case
+      if self.connection.socket then
+        self.opponent = nil
+        self.state = "lobby"
+        self.player_number = nil
+        self:sendJson(ServerProtocol.leaveRoom())
+      end
     end
   else
     if self.room then
@@ -145,22 +153,6 @@ function Player:setRoom(room)
   end
 
   self.room = room
-end
-
----@param leaderboard Leaderboard
----@return number?
-function Player:getRating(leaderboard)
-  if leaderboard.players[self.userId] and leaderboard.players[self.userId].rating then
-    return math.round(leaderboard.players[b.user_id].rating or 0)
-  end
-end
-
----@param leaderboard Leaderboard
-function Player:getPlacementProgress(leaderboard)
-  local qualifies, progress = leaderboard:qualifies_for_placement(b.user_id)
-  if not (leaderboard.players[self.userId] and leaderboard.players[self.userId].placement_done) and not qualifies then
-    return progress
-  end
 end
 
 function Player:sendJson(message)

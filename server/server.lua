@@ -37,7 +37,6 @@ local time = os.time
 ---@field connections Connection[] mapping of connection number to connection
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
----@field loaded_placement_matches table
 ---@field lastProcessTime integer
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
@@ -50,14 +49,11 @@ Server =
     self.rooms = {}
     self.proposals = {}
     self.connections = {}
+    self.players = {}
     self.nameToConnectionIndex = {}
     self.socketToConnectionIndex = {}
     assert(databaseParam ~= nil)
     self.database = databaseParam
-    self.loaded_placement_matches = {
-      incomplete = {},
-      complete = {}
-    }
     self.lastProcessTime = time()
     self.lastFlushTime = self.lastProcessTime
     self.lobbyChanged = false
@@ -82,10 +78,6 @@ Server =
     logger.debug("leaderboard json:")
     logger.debug(json.encode(leaderboard.players))
     write_leaderboard_file()
-    logger.debug("Leagues")
-    for k, v in ipairs(leagues) do
-      logger.debug(v.league .. ":  " .. v.min_rating)
-    end
     logger.debug(os.time())
     logger.debug("playerbase: " .. json.encode(self.playerbase.players))
     logger.debug("leaderboard report: " .. json.encode(leaderboard:get_report()))
@@ -189,10 +181,11 @@ function Server:lobby_state()
     end
   end
   local spectatableRooms = {}
-  for _, v in pairs(self.rooms) do
-    spectatableRooms[#spectatableRooms + 1] = {roomNumber = v.roomNumber, name = v.name, a = v.a.name, b = v.b.name, state = v:state()}
-    addPublicPlayerData(players, v.a.name, leaderboard.players[v.a.user_id])
-    addPublicPlayerData(players, v.b.name, leaderboard.players[v.b.user_id])
+  for _, room in pairs(self.rooms) do
+    spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, a = room.players[1].name, b = room.players[2].name, state = room:state()}
+    for i, player in ipairs(room.players) do
+      addPublicPlayerData(players, player.name, leaderboard.players[player.userId])
+    end
   end
   return {unpaired = names, spectatable = spectatableRooms, players = players}
 end
@@ -217,7 +210,7 @@ function Server:propose_game(senderName, receiverName)
     proposals[receiverName] = proposals[receiverName] or {}
     if proposals[senderName][receiverName] then
       if proposals[senderName][receiverName][receiverName] then
-        self:create_room(senderConnection, receiverConnection)
+        self:create_room(senderConnection.player, receiverConnection.player)
       end
     else
       receiverConnection:sendJson(ServerProtocol.sendChallenge(senderName, receiverName))
@@ -242,13 +235,14 @@ function Server:clear_proposals(name)
   end
 end
 
----@param a Connection
----@param b Connection
-function Server:create_room(a, b)
+---@param ... ServerPlayer
+function Server:create_room(...)
   self:setLobbyChanged()
-  self:clear_proposals(a.name)
-  self:clear_proposals(b.name)
-  local new_room = Room(self.roomNumberIndex, leaderboard, self, a, b)
+  local players = {...}
+  for _, player in ipairs(players) do
+    self:clear_proposals(player.name)
+  end
+  local new_room = Room(self.roomNumberIndex, leaderboard, self, players)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[new_room.roomNumber] = new_room
 end
@@ -352,6 +346,7 @@ function Server:closeRoom(room)
   if self.rooms[room.roomNumber] then
     self.rooms[room.roomNumber] = nil
   end
+  self:setLobbyChanged()
 end
 
 function Server:calculate_rating_adjustment(Rc, Ro, Oa, k) -- -- print("calculating expected outcome for") -- print(players[player_number].name.." Ranking: "..leaderboard.players[players[player_number].user_id].rating)
@@ -383,31 +378,23 @@ end
 ---@param winning_player_number integer
 ---@param gameID integer
 function Server:adjust_ratings(room, winning_player_number, gameID)
-  logger.debug("Adjusting the rating of " .. room.a.name .. " and " .. room.b.name .. ". Player " .. winning_player_number .. " wins!")
-  local players = {room.a, room.b}
+  logger.debug("Adjusting the rating of " .. room.players[1].name .. " and " .. room.players[2].name .. ". Player " .. winning_player_number .. " wins!")
+  local players = room.players
   local continue = true
   local placement_match_progress
   room.ratings = {}
-  for player_number = 1, 2 do
+  for _, player in ipairs(players) do
     --if they aren't on the leaderboard yet, give them the default rating
-    if not leaderboard.players[players[player_number].user_id] or not leaderboard.players[players[player_number].user_id].rating then
-      leaderboard.players[players[player_number].user_id] = {user_name = self.playerbase.players[players[player_number].user_id], rating = DEFAULT_RATING}
-      logger.debug("Gave " .. self.playerbase.players[players[player_number].user_id] .. " a new rating of " .. DEFAULT_RATING)
-      if not PLACEMENT_MATCHES_ENABLED then
-        leaderboard.players[players[player_number].user_id].placement_done = true
-        self.database:insertPlayerELOChange(players[player_number].user_id, DEFAULT_RATING, gameID)
-      end
-      write_leaderboard_file()
-    end
+    leaderboard:addToLeaderboard(player, gameID)
   end
   local placement_done = {}
   for player_number = 1, 2 do
-    placement_done[players[player_number].user_id] = leaderboard.players[players[player_number].user_id].placement_done
+    placement_done[players[player_number].userId] = leaderboard.players[players[player_number].userId].placement_done
   end
   for player_number = 1, 2 do
     local k, Oa  --max point change per match, actual outcome
     room.ratings[player_number] = {}
-    if placement_done[players[player_number].user_id] == true then
+    if placement_done[players[player_number].userId] == true then
       k = 10
     else
       k = 50
@@ -417,47 +404,47 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
     else
       Oa = 0
     end
-    if placement_done[players[player_number].user_id] then
-      if placement_done[players[player_number].opponent.user_id] then
+    if placement_done[players[player_number].userId] then
+      if placement_done[players[player_number].opponent.userId] then
         logger.debug("Player " .. player_number .. " played a non-placement ranked match.  Updating his rating now.")
-        room.ratings[player_number].new = self:calculate_rating_adjustment(leaderboard.players[players[player_number].user_id].rating, leaderboard.players[players[player_number].opponent.user_id].rating, Oa, k)
-        self.database:insertPlayerELOChange(players[player_number].user_id, room.ratings[player_number].new, gameID)
+        room.ratings[player_number].new = self:calculate_rating_adjustment(leaderboard.players[players[player_number].userId].rating, leaderboard.players[players[player_number].opponent.userId].rating, Oa, k)
+        self.database:insertPlayerELOChange(players[player_number].userId, room.ratings[player_number].new, gameID)
       else
         logger.debug("Player " .. player_number .. " played ranked against an unranked opponent.  We'll process this match when his opponent has finished placement")
-        room.ratings[player_number].placement_matches_played = leaderboard.players[players[player_number].user_id].ranked_games_played
-        room.ratings[player_number].new = math.round(leaderboard.players[players[player_number].user_id].rating)
-        room.ratings[player_number].old = math.round(leaderboard.players[players[player_number].user_id].rating)
+        room.ratings[player_number].placement_matches_played = leaderboard.players[players[player_number].userId].ranked_games_played
+        room.ratings[player_number].new = math.round(leaderboard.players[players[player_number].userId].rating)
+        room.ratings[player_number].old = math.round(leaderboard.players[players[player_number].userId].rating)
         room.ratings[player_number].difference = 0
       end
     else -- this player has not finished placement
-      if placement_done[players[player_number].opponent.user_id] then
+      if placement_done[players[player_number].opponent.userId] then
         logger.debug("Player " .. player_number .. " (unranked) just played a placement match against a ranked player.")
         logger.debug("Adding this match to the list of matches to be processed when player finishes placement")
-        self:load_placement_matches(players[player_number].user_id)
-        local pm_count = #self.loaded_placement_matches.incomplete[players[player_number].user_id]
+        leaderboard:loadPlacementMatches(players[player_number].userId)
+        local pm_count = #leaderboard.loadedPlacementMatches.incomplete[players[player_number].userId]
 
-        self.loaded_placement_matches.incomplete[players[player_number].user_id][pm_count + 1] = {
-          op_user_id = players[player_number].opponent.user_id,
-          op_name = self.playerbase.players[players[player_number].opponent.user_id],
-          op_rating = leaderboard.players[players[player_number].opponent.user_id].rating,
+        leaderboard.loadedPlacementMatches.incomplete[players[player_number].userId][pm_count + 1] = {
+          op_user_id = players[player_number].opponent.userId,
+          op_name = self.playerbase.players[players[player_number].opponent.userId],
+          op_rating = leaderboard.players[players[player_number].opponent.userId].rating,
           outcome = Oa
         }
         logger.debug("PRINTING PLACEMENT MATCHES FOR USER")
-        logger.debug(json.encode(self.loaded_placement_matches.incomplete[players[player_number].user_id]))
-        write_user_placement_match_file(players[player_number].user_id, self.loaded_placement_matches.incomplete[players[player_number].user_id])
+        logger.debug(json.encode(leaderboard.loadedPlacementMatches.incomplete[players[player_number].userId]))
+        write_user_placement_match_file(players[player_number].userId, leaderboard.loadedPlacementMatches.incomplete[players[player_number].userId])
 
         --adjust newcomer's placement_rating
-        if not leaderboard.players[players[player_number].user_id] then
-          leaderboard.players[players[player_number].user_id] = {}
+        if not leaderboard.players[players[player_number].userId] then
+          leaderboard.players[players[player_number].userId] = {}
         end
-        leaderboard.players[players[player_number].user_id].placement_rating = self:calculate_rating_adjustment(leaderboard.players[players[player_number].user_id].placement_rating or DEFAULT_RATING, leaderboard.players[players[player_number].opponent.user_id].rating, Oa, PLACEMENT_MATCH_K)
-        logger.debug("New newcomer rating: " .. leaderboard.players[players[player_number].user_id].placement_rating)
-        leaderboard.players[players[player_number].user_id].ranked_games_played = (leaderboard.players[players[player_number].user_id].ranked_games_played or 0) + 1
+        leaderboard.players[players[player_number].userId].placement_rating = self:calculate_rating_adjustment(leaderboard.players[players[player_number].userId].placement_rating or DEFAULT_RATING, leaderboard.players[players[player_number].opponent.userId].rating, Oa, PLACEMENT_MATCH_K)
+        logger.debug("New newcomer rating: " .. leaderboard.players[players[player_number].userId].placement_rating)
+        leaderboard.players[players[player_number].userId].ranked_games_played = (leaderboard.players[players[player_number].userId].ranked_games_played or 0) + 1
         if Oa == 1 then
-          leaderboard.players[players[player_number].user_id].ranked_games_won = (leaderboard.players[players[player_number].user_id].ranked_games_won or 0) + 1
+          leaderboard.players[players[player_number].userId].ranked_games_won = (leaderboard.players[players[player_number].userId].ranked_games_won or 0) + 1
         end
 
-        local process_them, reason = leaderboard:qualifies_for_placement(players[player_number].user_id)
+        local process_them, reason = leaderboard:qualifies_for_placement(players[player_number].userId)
         if process_them then
           local op_player_number = players[player_number].opponent.player_number
           logger.debug("op_player_number: " .. op_player_number)
@@ -465,18 +452,18 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
           if not room.ratings[op_player_number] then
             room.ratings[op_player_number] = {}
           end
-          room.ratings[op_player_number].old = math.round(leaderboard.players[players[op_player_number].user_id].rating)
-          self:process_placement_matches(players[player_number].user_id)
+          room.ratings[op_player_number].old = math.round(leaderboard.players[players[op_player_number].userId].rating)
+          self:process_placement_matches(players[player_number].userId)
 
-          room.ratings[player_number].new = math.round(leaderboard.players[players[player_number].user_id].rating)
+          room.ratings[player_number].new = math.round(leaderboard.players[players[player_number].userId].rating)
 
           room.ratings[player_number].difference = math.round(room.ratings[player_number].new - room.ratings[player_number].old)
-          room.ratings[player_number].league = self:get_league(room.ratings[player_number].new)
+          room.ratings[player_number].league = leaderboard:get_league(room.ratings[player_number].new)
 
-          room.ratings[op_player_number].new = math.round(leaderboard.players[players[op_player_number].user_id].rating)
+          room.ratings[op_player_number].new = math.round(leaderboard.players[players[op_player_number].userId].rating)
 
           room.ratings[op_player_number].difference = math.round(room.ratings[op_player_number].new - room.ratings[op_player_number].old)
-          room.ratings[op_player_number].league = self:get_league(room.ratings[player_number].new)
+          room.ratings[op_player_number].league = leaderboard:get_league(room.ratings[player_number].new)
           return
         else
           placement_match_progress = reason
@@ -502,18 +489,18 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
   if continue then
     --now that both new room.ratings have been calculated properly, actually update the leaderboard
     for player_number = 1, 2 do
-      logger.debug(self.playerbase.players[players[player_number].user_id])
-      logger.debug("Old rating:" .. leaderboard.players[players[player_number].user_id].rating)
-      room.ratings[player_number].old = leaderboard.players[players[player_number].user_id].rating
-      leaderboard.players[players[player_number].user_id].ranked_games_played = (leaderboard.players[players[player_number].user_id].ranked_games_played or 0) + 1
-      leaderboard:update(players[player_number].user_id, room.ratings[player_number].new)
-      logger.debug("New rating:" .. leaderboard.players[players[player_number].user_id].rating)
+      logger.debug(self.playerbase.players[players[player_number].userId])
+      logger.debug("Old rating:" .. leaderboard.players[players[player_number].userId].rating)
+      room.ratings[player_number].old = leaderboard.players[players[player_number].userId].rating
+      leaderboard.players[players[player_number].userId].ranked_games_played = (leaderboard.players[players[player_number].userId].ranked_games_played or 0) + 1
+      leaderboard:update(players[player_number].userId, room.ratings[player_number].new)
+      logger.debug("New rating:" .. leaderboard.players[players[player_number].userId].rating)
     end
     for player_number = 1, 2 do
       --round and calculate rating gain or loss (difference) to send to the clients
-      if placement_done[players[player_number].user_id] then
-        room.ratings[player_number].old = math.round(room.ratings[player_number].old or leaderboard.players[players[player_number].user_id].rating)
-        room.ratings[player_number].new = math.round(room.ratings[player_number].new or leaderboard.players[players[player_number].user_id].rating)
+      if placement_done[players[player_number].userId] then
+        room.ratings[player_number].old = math.round(room.ratings[player_number].old or leaderboard.players[players[player_number].userId].rating)
+        room.ratings[player_number].new = math.round(room.ratings[player_number].new or leaderboard.players[players[player_number].userId].rating)
         room.ratings[player_number].difference = room.ratings[player_number].new - room.ratings[player_number].old
       else
         room.ratings[player_number].old = 0
@@ -521,7 +508,7 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
         room.ratings[player_number].difference = 0
         room.ratings[player_number].placement_match_progress = placement_match_progress
       end
-      room.ratings[player_number].league = self:get_league(room.ratings[player_number].new)
+      room.ratings[player_number].league = leaderboard:get_league(room.ratings[player_number].new)
     end
   -- local message = ServerProtocol.updateRating(room.ratings[1], room.ratings[2])
   -- room:broadcastJson(message)
@@ -529,28 +516,9 @@ function Server:adjust_ratings(room, winning_player_number, gameID)
 end
 
 ---@param user_id privateUserId
-function Server:load_placement_matches(user_id)
-  logger.debug("Requested loading placement matches for user_id:  " .. (user_id or "nil"))
-  if not self.loaded_placement_matches.incomplete[user_id] then
-    local read_success, matches = read_user_placement_match_file(user_id)
-    if read_success then
-      self.loaded_placement_matches.incomplete[user_id] = matches or {}
-      logger.debug("loaded placement matches from file:")
-    else
-      self.loaded_placement_matches.incomplete[user_id] = {}
-      logger.debug("no pre-existing placement matches file, starting fresh")
-    end
-    logger.debug(tostring(self.loaded_placement_matches.incomplete[user_id]))
-    logger.debug(json.encode(self.loaded_placement_matches.incomplete[user_id]))
-  else
-    logger.debug("Didn't load placement matches from file. It is already loaded")
-  end
-end
-
----@param user_id privateUserId
 function Server:process_placement_matches(user_id)
-  self:load_placement_matches(user_id)
-  local placement_matches = self.loaded_placement_matches.incomplete[user_id]
+  leaderboard:loadPlacementMatches(user_id)
+  local placement_matches = leaderboard.loadedPlacementMatches.incomplete[user_id]
   if #placement_matches < 1 then
     logger.error("Failed to process placement matches because we couldn't find any")
     return
@@ -577,20 +545,6 @@ function Server:process_placement_matches(user_id)
   leaderboard.players[user_id].placement_done = true
   write_leaderboard_file()
   move_user_placement_file_to_complete(user_id)
-end
-
----@param rating number
----@return string
-function Server:get_league(rating)
-  if not rating then
-    return leagues[1].league --("Newcomer")
-  end
-  for i = 1, #leagues do
-    if i == #leagues or leagues[i + 1].min_rating > rating then
-      return leagues[i].league
-    end
-  end
-  return "LeagueNotFound"
 end
 
 function Server:update()

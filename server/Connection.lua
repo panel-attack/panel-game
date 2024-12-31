@@ -178,14 +178,10 @@ function Connection:send(message)
 end
 
 function Connection:leaveRoom()
-  self.opponent = nil
-  self.state = "lobby"
-  self.server:setLobbyChanged()
   if self.room then
     logger.debug("Closing room for " .. (self.name or "nil") .. " because opponent disconnected.")
     self.server:closeRoom(self.room)
   end
-  self:sendJson(ServerProtocol.leaveRoom())
 end
 
 function Connection:close()
@@ -193,24 +189,25 @@ function Connection:close()
   if self.state == "lobby" then
     self.server:setLobbyChanged()
   end
-  if self.room and (self.room.a.name == self.name or self.room.b.name == self.name) then
-    logger.trace("about to close room for " .. (self.name or "nil") .. ".  Connection.close was called")
-    self.server:closeRoom(self.room)
-  elseif self.room then
-    if self.room:remove_spectator(self) then
-      self.server:setLobbyChanged()
+  if self.room then
+    if tableUtils.trueForAny(self.room.players, function(p) return p.name == self.name end) then
+      logger.trace("about to close room for " .. (self.name or "nil") .. ".  Connection.close was called")
+      self.server:closeRoom(self.room)
+    else
+      if self.room:remove_spectator(self) then
+        self.server:setLobbyChanged()
+      end
     end
   end
   self.server:clear_proposals(self.name)
-  if self.opponent then
-    self.opponent:leaveRoom()
-  end
+
   if self.name then
     self.server.nameToConnectionIndex[self.name] = nil
   end
   self.server.socketToConnectionIndex[self.socket] = nil
   self.server.connections[self.index] = nil
   self.socket:close()
+  self.socket = nil
 end
 
 -- Handle NetworkProtocol.clientMessageTypes.versionCheck
@@ -231,7 +228,7 @@ function Connection:I(message)
     return
   end
 
-  self.room:broadcastInput(message, self)
+  self.room:broadcastInput(message, self.player)
 end
 
 -- Handle clientMessageTypes.acknowledgedPing
@@ -412,7 +409,7 @@ function Connection:handleSpectateRequest(message)
     local roomState = requestedRoom:state()
     if (roomState == "character select" or roomState == "playing") then
       logger.debug("adding " .. self.name .. " to room nr " .. message.spectate_request.roomNumber)
-      requestedRoom:add_spectator(self)
+      requestedRoom:add_spectator(self.player)
       self.server:setLobbyChanged()
     else
       logger.warn("tried to join room in invalid state " .. roomState)
@@ -494,23 +491,6 @@ function Connection:processMessage(messageType, data)
       logger.error("Room state during error:\n" .. self.room:toString())
     end
   end
-end
-
----@param room Room?
-function Connection:setRoom(room)
-  if not room then
-    if self.room then
-      logger.info("Clearing room " .. self.room.roomNumber .. " for connection " .. self.index)
-    end
-  else
-    if self.room then
-      logger.info("Switching connection " .. self.index .. " from room " .. self.room.roomNumber .. " to room " .. room.roomNumber)
-    else
-      logger.info("Setting room to " .. room.roomNumber .. " for connection " .. self.index)
-    end
-  end
-
-  self.room = room
 end
 
 return Connection

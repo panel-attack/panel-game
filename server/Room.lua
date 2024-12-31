@@ -27,16 +27,16 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 ---@field ratings table[] ratings by player number
 ---@field game_outcome_reports integer[] game outcome reports by player number; transient, is cleared inbetween games
 ---@field matchCount integer
----@overload fun(roomNumber: integer, leaderboard: table, server: Server, ...: Connection): Room
+---@overload fun(roomNumber: integer, leaderboard: table, server: Server, ...: ServerPlayer): Room
 Room =
 class(
 ---@param self Room
 ---@param roomNumber integer
 ---@param leaderboard table
 ---@param server Server
----@param ... ServerPlayer
-function(self, roomNumber, leaderboard, server, ...)
-  self.players = {...}
+---@param players ServerPlayer[]
+function(self, roomNumber, leaderboard, server, players)
+  self.players = players
   self.leaderboard = leaderboard
   self.server = server
   self.roomNumber = roomNumber
@@ -50,9 +50,9 @@ function(self, roomNumber, leaderboard, server, ...)
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
     player:setRoom(self)
     self.win_counts[i] = 0
-    local rating = player:getRating(self.leaderboard) or 0
-    local placementProgress = player:getPlacementProgress(self.leaderboard)
-    self.ratings[i] = {old = rating, new = rating, difference = 0, league = self.server:get_league(rating), placement_match_progress = placementProgress}
+    local rating = self.leaderboard:getRating(player) or 0
+    local placementProgress = self.leaderboard:getPlacementProgress(player)
+    self.ratings[i] = {old = rating, new = rating, difference = 0, league = self.leaderboard:get_league(rating), placement_match_progress = placementProgress}
     player.cursor = "__Ready"
     player.player_number = i
   end
@@ -283,9 +283,8 @@ end
 
 function Room:close()
   logger.info("Closing room " .. self.roomNumber .. " " .. self.name)
+
   for i, player in ipairs(self.players) do
-    player.player_number = nil
-    player.state = "lobby"
     player:setRoom()
   end
 
