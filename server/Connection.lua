@@ -4,19 +4,22 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
 local Queue = require("common.lib.Queue")
 
+---@alias InputProcessor { processInput: function }
+
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
 ---@class Connection
 ---@field index integer the unique identifier of the connection
 ---@field socket TcpSocket the luasocket object
 ---@field leftovers string remaining data from the socket that hasn't been processed yet
----@field loggedIn boolean 
+---@field loggedIn boolean if there exists a player owning this connection somewhere
 ---@field lastCommunicationTime integer timestamp when the last message was received; for dropping the connection if heartbeats aren't returned
 ---@field lastPingTime integer when the last ping was sent
----@field player ServerPlayer? the player object for this connection
 ---@field incomingMessageQueue Queue
 ---@field outgoingMessageQueue Queue
+---@field incomingInputQueue Queue
 ---@field sendRetryCount integer
 ---@field sendRetryLimit integer
+---@field inputProcessor InputProcessor?
 ---@overload fun(socket: any, index: integer) : Connection
 local Connection = class(
 ---@param self Connection
@@ -28,9 +31,9 @@ local Connection = class(
     self.leftovers = ""
     self.loggedIn = false
     self.lastCommunicationTime = time()
-    self.player = nil
     self.incomingMessageQueue = Queue()
     self.outgoingMessageQueue = Queue()
+    self.incomingInputQueue = Queue()
     self.sendRetryCount = 0
     self.sendRetryLimit = 5
   end
@@ -79,6 +82,7 @@ function Connection:close()
   self.loggedIn = false
   self.incomingMessageQueue:clear()
   self.outgoingMessageQueue:clear()
+  self.incomingInputQueue:clear()
   self.socket:close()
   self.socket = nil
 end
@@ -90,20 +94,6 @@ function Connection:H(version)
   else
     self:send(NetworkProtocol.serverMessageTypes.versionCorrect.prefix)
   end
-end
-
--- Handle NetworkProtocol.clientMessageTypes.playerInput
-function Connection:I(message)
-  if self.room == nil then
-    return
-  end
-
-  self.room:broadcastInput(message, self.player)
-end
-
--- Handle clientMessageTypes.acknowledgedPing
-function Connection:E(message)
-  -- Nothing to do here, the fact we got a message from the client updates the lastCommunicationTime
 end
 
 ---@return boolean
@@ -176,13 +166,7 @@ function Connection:data_received(data)
       -- when type is not nil, the others are most certainly not nil too
       ---@cast remaining string
       ---@cast message string
-      if type == "J" then
-        self.incomingMessageQueue:push(message)
-      else
-        --TODO: inputs cannot be routed like this in the future
-        -- maybe implement a way to set a target for inputs on the connection so it stays dumb
-        self:processMessage(type, message)
-      end
+      self:processMessage(type, message)
       self.leftovers = remaining
     else
       break
@@ -196,7 +180,15 @@ function Connection:processMessage(messageType, data)
   -- end
   local status, error = pcall(
       function()
-        self[messageType](self, data)
+        if messageType == "J" then
+          self.incomingMessageQueue:push(data)
+        elseif messageType == "I" then
+          self.incomingInputQueue:push(data)
+        elseif messageType == "H" then
+          self:H(data)
+        elseif messageType == "E" then
+          -- Nothing to do here, the fact we got a message from the client updates the lastCommunicationTime
+        end
       end
     )
   if status == false and error and type(error) == "string" then

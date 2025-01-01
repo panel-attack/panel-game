@@ -422,8 +422,9 @@ end
 
 function Server:processMessages()
   for index, connection in pairs(self.connections) do
-    if connection.incomingMessageQueue:len() > 0 then
+    if connection.incomingMessageQueue.last ~= -1 then
       local q = connection.incomingMessageQueue
+      local player = self.connectionToPlayer[connection]
       for i = q.first, q.last do
         local status, continue = pcall(function() return self:processMessage(q[i], connection) end)
         if status then
@@ -432,16 +433,30 @@ function Server:processMessages()
           end
         else
           local error = continue
-          local player = self.connectionToPlayer[connection]
-          logger.error("Incoming message from " .. player.name .. " in state " .. player.state .. " caused an error:\n" ..
-                 " pcall error results: " .. tostring(error) ..
-                 "\nJ-Message:\n" .. q[i])
-          if self.playerToRoom[player] then
-            logger.error("Room state during error:\n" .. self.playerToRoom[player]:toString())
+          if player then
+            logger.error("Incoming message from " .. player.name .. " in state " .. player.state .. " caused an error:\n" ..
+                   " pcall error results: " .. tostring(error) ..
+                   "\nJ-Message:\n" .. q[i])
+            if self.playerToRoom[player] then
+              logger.error("Room state during error:\n" .. self.playerToRoom[player]:toString())
+            end
+          else
+            logger.error("Incoming message from " .. connection.index .. " caused an error:\n" ..
+                   " pcall error results: " .. tostring(error) ..
+                   "\nJ-Message:\n" .. q[i])
           end
         end
       end
       q:clear()
+    end
+
+    if connection.incomingInputQueue.last ~= -1 then
+      local q = connection.incomingInputQueue
+      local player = self.connectionToPlayer[connection]
+      for i = q.first, q.last do
+        self.playerToRoom[player]:broadcastInput(q[i], player)
+      end
+      q:shallowClear()
     end
   end
 end
@@ -459,7 +474,7 @@ function Server:processMessage(message, connection)
     return false
   elseif not connection.loggedIn then
     if message.login_request then
-      local IP_logging_in, port = self.socket:getpeername()
+      local IP_logging_in, port = connection.socket:getpeername()
       return self:login(connection, message.user_id, message.name, IP_logging_in, port, message.engine_version, message)
     else
       self:closeConnection(connection)
@@ -507,6 +522,10 @@ function Server:processMessage(message, connection)
   return false
 end
 
+function Server:processInput(input, connection)
+  
+end
+
 function Server:handleErrorReport(errorReport)
   logger.warn("Received an error report.")
   if not write_error_report(errorReport) then
@@ -530,6 +549,7 @@ function Server:broadCastLobbyIfChanged()
   if self.lobbyChanged then
     local lobbyState = self:lobby_state()
     local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
+    logger.debug("Sending lobby state: \n" .. table_to_string(message.messageText))
     for _, connection in pairs(self.connections) do
       if self.connectionToPlayer[connection].state == "lobby" then
         connection:sendJson(message)
@@ -578,19 +598,17 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     end
 
     local player = Player(userId, connection, name)
+    assert(player.publicPlayerID ~= nil)
     player:updateSettings(playerSettings)
-    assert(connection.player.publicPlayerID ~= nil)
     self.nameToConnectionIndex[name] = connection.index
     self.connectionToPlayer[connection] = player
     self.nameToPlayer[name] = player
-    connection.loggedIn = true
-    connection.player = player
     leaderboard:update_timestamp(userId)
-    self.database:insertIPID(ipAddress, connection.player.publicPlayerID)
+    self.database:insertIPID(ipAddress, player.publicPlayerID)
     self:setLobbyChanged()
 
-    local serverNotices = self.database:getPlayerMessages(connection.player.publicPlayerID)
-    local serverUnseenBans = self.database:getPlayerUnseenBans(connection.player.publicPlayerID)
+    local serverNotices = self.database:getPlayerMessages(player.publicPlayerID)
+    local serverUnseenBans = self.database:getPlayerUnseenBans(player.publicPlayerID)
     if tableUtils.length(serverNotices) > 0 or tableUtils.length(serverUnseenBans) > 0 then
       local noticeString = ""
       for messageID, serverNotice in pairs(serverNotices) do
@@ -605,9 +623,9 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     end
 
     message.login_successful = true
-    connection:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name, connection.player.publicPlayerID))
+    connection:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name, player.publicPlayerID))
 
-    logger.warn(connection.index .. " Login from " .. name .. " with ip: " .. ipAddress .. " publicPlayerID: " .. connection.player.publicPlayerID)
+    logger.warn(connection.index .. " Login from " .. name .. " with ip: " .. ipAddress .. " publicPlayerID: " .. player.publicPlayerID)
     return true
   end
 end
@@ -687,7 +705,7 @@ end
 ---@param connection Connection
 function Server:closeConnection(connection)
   local player = self.connectionToPlayer[connection]
-  logger.info("Closing connection " .. connection.index .. " to " .. player and player.name or "noname")
+  logger.info("Closing connection " .. connection.index .. " to " .. (player and player.name or "noname"))
 
   self.socketToConnectionIndex[connection.socket] = nil
   self.connections[connection.index] = nil

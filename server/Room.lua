@@ -7,7 +7,6 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local GameModes = require("common.engine.GameModes")
 -- heresy, remove once communication of levelData is established
 local LevelPresets = require("common.data.LevelPresets")
-local util = require("common.lib.util")
 local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
 local database = require("server.PADatabase")

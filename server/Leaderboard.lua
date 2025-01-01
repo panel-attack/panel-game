@@ -60,7 +60,7 @@ function Leaderboard.update(self, user_id, new_rating, match_details)
   end
   if match_details and match_details ~= "" then
     for k, v in pairs(match_details) do
-      self.players[user_id].ranked_games_won = (self.players[user_id].games_won or 0) + v.outcome
+      self.players[user_id].ranked_games_won = (self.players[user_id].ranked_games_won or 0) + v.outcome
       self.players[user_id].ranked_games_played = (self.players[user_id].ranked_games_played or 0) + 1
     end
   end

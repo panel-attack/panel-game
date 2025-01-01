@@ -36,6 +36,7 @@ local Player = class(
 ---@param privatePlayerID privateUserId
 ---@param connection Connection
 function(self, privatePlayerID, connection, name)
+  connection.loggedIn = true
   self.userId = privatePlayerID
   self.connection = connection
   self.name = name or "noname"
