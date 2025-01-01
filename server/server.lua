@@ -21,6 +21,7 @@ local ClientMessages = require("server.ClientMessages")
 local utf8 = require("common.lib.utf8Additions")
 local tableUtils = require("common.lib.tableUtils")
 local Player = require("server.Player")
+local util = require("common.lib.util")
 
 local pairs = pairs
 local ipairs = ipairs
@@ -249,7 +250,7 @@ end
 function Server:create_room(...)
   self:setLobbyChanged()
   local players = {...}
-  local newRoom = Room(self.roomNumberIndex, leaderboard, players)
+  local newRoom = Room(self.roomNumberIndex, players, self.database, leaderboard)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.setLobbyChanged)
   self.roomNumberIndex = self.roomNumberIndex + 1
@@ -299,58 +300,17 @@ end
 
 -- Checks if a logging in player is banned based off their IP.
 ---@param ip string
----@return PlayerBan?
-function Server:isPlayerBanned(ip)
-  return self.database:isPlayerBanned(ip)
+---@return DB_Ban?
+function Server:getBanByIP(ip)
+  return self.database:getBanByIP(ip)
 end
 
 ---@param ip string
 ---@param reason string
 ---@param completionTime integer
----@return PlayerBan?
+---@return DB_Ban?
 function Server:insertBan(ip, reason, completionTime)
   return self.database:insertBan(ip, reason, completionTime)
-end
-
----@param connection Connection
----@param reason string?
----@param ban PlayerBan?
-function Server:denyLogin(connection, reason, ban)
-  assert(ban == nil or reason == nil)
-  local banDuration
-  if ban then
-    local banRemainingString = "Ban Remaining: "
-    local secondsRemaining = (ban.completionTime - os.time())
-    local secondsPerDay = 60 * 60 * 24
-    local secondsPerHour = 60 * 60
-    local secondsPerMin = 60
-    local detailCount = 0
-    if secondsRemaining > secondsPerDay then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining / secondsPerDay) .. " days "
-      secondsRemaining = (secondsRemaining % secondsPerDay)
-      detailCount = detailCount + 1
-    end
-    if secondsRemaining > secondsPerHour then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining / secondsPerHour) .. " hours "
-      secondsRemaining = (secondsRemaining % secondsPerHour)
-      detailCount = detailCount + 1
-    end
-    if detailCount < 2 and secondsRemaining > secondsPerMin then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining / secondsPerMin) .. " minutes "
-      secondsRemaining = (secondsRemaining % secondsPerMin)
-      detailCount = detailCount + 1
-    end
-    if detailCount < 2 then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining) .. " seconds "
-    end
-    reason = ban.reason
-    banDuration = banRemainingString
-
-    self.database:playerBanSeen(ban.banID)
-    logger.warn("Login denied because of ban: " .. ban.reason)
-  end
-
-  connection:sendJson(ServerProtocol.denyLogin(reason, banDuration))
 end
 
 ---@param room Room
@@ -568,10 +528,6 @@ function Server:processMessage(message, connection)
   return false
 end
 
-function Server:processInput(input, connection)
-  
-end
-
 function Server:handleErrorReport(errorReport)
   logger.warn("Received an error report.")
   if not write_error_report(errorReport) then
@@ -595,7 +551,6 @@ function Server:broadCastLobbyIfChanged()
   if self.lobbyChanged then
     local lobbyState = self:lobby_state()
     local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
-    logger.debug("Sending lobby state: \n" .. table_to_string(message.messageText))
     for _, connection in pairs(self.connections) do
       if self.connectionToPlayer[connection].state == "lobby" then
         connection:sendJson(message)
@@ -618,10 +573,24 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
 
   logger.debug("New login attempt:  " .. ipAddress .. ":" .. port)
 
-  local denyReason, playerBan = self:canLogin(userId, name, ipAddress, engineVersion)
+  local playerBan = self:getBanByIP(ipAddress)
+  if playerBan then
+    local secondsRemaining = (playerBan.completionTime - os.time())
 
-  if denyReason ~= nil or playerBan ~= nil then
-    self:denyLogin(connection, denyReason, playerBan)
+    reason = playerBan.reason
+    banDuration = "Ban Remaining: " .. util.toDayHourMinuteSecondString(secondsRemaining)
+
+    self.database:playerBanSeen(playerBan.banID)
+    logger.warn("Login denied because of ban: " .. playerBan.reason)
+    connection:sendJson(ServerProtocol.denyLogin(reason, banDuration))
+
+    return false
+  end
+
+  local loginApproved, denyReason = self:canLogin(userId, name, ipAddress, engineVersion)
+
+  if not loginApproved then
+    connection:sendJson(ServerProtocol.denyLogin(denyReason))
     return false
   else
     if userId == "need a new user id" then
@@ -633,7 +602,7 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
 
     local playerData = self.database:getPlayerFromPrivateID(userId)
     if not playerData then
-      self:denyLogin(connection, "Failed to assign public player ID, please try again", nil)
+      connection:sendJson(ServerProtocol.denyLogin("Failed to assign public player ID, please try again"))
       return false
     end
 
@@ -683,13 +652,11 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
   end
 end
 
----@return string? denyReason
----@return PlayerBan? playerBan
+---@return boolean loginApproved if the player can log in
+---@return string denyReason why the player cannot log in, nil if login was approved
 function Server:canLogin(userID, name, IP_logging_in, engineVersion)
-  local playerBan = self:isPlayerBanned(IP_logging_in)
   local denyReason = nil
-  if playerBan then
-  elseif engineVersion ~= ENGINE_VERSION and not ANY_ENGINE_VERSION_ENABLED then
+  if engineVersion ~= ENGINE_VERSION and not ANY_ENGINE_VERSION_ENABLED then
     denyReason = "Please update your game, server expects engine version: " .. ENGINE_VERSION
   elseif not name or name == "" then
     denyReason = "Name cannot be blank"
@@ -709,7 +676,8 @@ function Server:canLogin(userID, name, IP_logging_in, engineVersion)
       logger.warn("Login failure: Player tried to create a new user with an already taken name: " .. name)
     end
   elseif not self.playerbase.players[userID] then
-    playerBan = self:insertBan(IP_logging_in, "The user ID provided was not found on this server", os.time() + 60)
+    denyReason = "The user ID provided was not found on this server"
+    playerBan = self:insertBan(IP_logging_in, denyReason, os.time() + 60)
     logger.warn("Login failure: " .. name .. " specified an invalid user ID")
   elseif self.playerbase.players[userID] ~= name and self.playerbase:nameTaken(userID, name) then
     denyReason = "That player name is already taken"
@@ -718,7 +686,11 @@ function Server:canLogin(userID, name, IP_logging_in, engineVersion)
     denyReason = "Cannot login with the same name twice"
   end
 
-  return denyReason, playerBan
+  if denyReason then
+    return false, denyReason
+  else
+    return true, ""
+  end
 end
 
 ---@param message table

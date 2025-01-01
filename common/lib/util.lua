@@ -291,4 +291,34 @@ function util.addToCPath(path)
   end
 end
 
+---@param seconds integer
+---@return string
+function util.toDayHourMinuteSecondString(seconds)
+  local secondsPerDay = 60 * 60 * 24
+  local secondsPerHour = 60 * 60
+  local secondsPerMin = 60
+  local detailCount = 0
+  local s = ""
+  if seconds > secondsPerDay then
+    s = s .. math.floor(seconds / secondsPerDay) .. " days "
+    seconds = (seconds % secondsPerDay)
+    detailCount = detailCount + 1
+  end
+  if seconds > secondsPerHour then
+    s = s .. math.floor(seconds / secondsPerHour) .. " hours "
+    seconds = (seconds % secondsPerHour)
+    detailCount = detailCount + 1
+  end
+  if detailCount < 2 and seconds > secondsPerMin then
+    s = s .. math.floor(seconds / secondsPerMin) .. " minutes "
+    seconds = (seconds % secondsPerMin)
+    detailCount = detailCount + 1
+  end
+  if detailCount < 2 then
+    s = s .. math.floor(seconds) .. " seconds "
+  end
+
+  return s
+end
+
 return util

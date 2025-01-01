@@ -7,6 +7,8 @@ local ServerProtocol = {}
 -- Helper methods for converting to ServerProtocol table formats --
 -------------------------------------------------------------------
 
+---@alias InputMethod ("controller" | "touch")
+
 function ServerProtocol.toSettings(ready, level, inputMethod, stage, selectedStage, character, selectedCharacter, panels, wantsRanked, wantsReady, loaded, publicId, levelData)
   local settings = {
     cursor = "__Ready",
@@ -117,6 +119,9 @@ function ServerProtocol.spectateRequestGranted(roomNumber, settingsA, settingsB,
   }
 end
 
+---@param roomNumber integer
+---@param opponentName string
+---@param opponentNumber integer
 function ServerProtocol.createRoom(roomNumber, settingsA, settingsB, ratingA, ratingB, opponentName, opponentNumber)
   local createRoomMessage =
   {
@@ -137,6 +142,9 @@ function ServerProtocol.createRoom(roomNumber, settingsA, settingsB, ratingA, ra
   }
 end
 
+---@param seed integer
+---@param ranked boolean
+---@param stage string
 function ServerProtocol.startMatch(seed, ranked, stage, dumbSettingsRecipient, dumbSettingsOpponent)
   local startMatchMessage =
   {
@@ -168,6 +176,11 @@ function ServerProtocol.lobbyState(unpaired, rooms, allPlayers)
   }
 end
 
+---@param notice string
+---@param newId privateUserId?
+---@param newName string?
+---@param oldName string?
+---@param publicId integer
 function ServerProtocol.approveLogin(notice, newId, newName, oldName, publicId)
   local approveLoginMessage =
   {
@@ -186,6 +199,8 @@ function ServerProtocol.approveLogin(notice, newId, newName, oldName, publicId)
   }
 end
 
+---@param reason string
+---@param banDuration string?
 function ServerProtocol.denyLogin(reason, banDuration)
   local denyLoginMessage =
   {

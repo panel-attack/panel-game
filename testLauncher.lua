@@ -31,6 +31,7 @@ function love.load()
 end
 
 local tests = {
+  "server.tests.RoomTests",
   "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "common.tests.engine.StackRollbackReplayTests",

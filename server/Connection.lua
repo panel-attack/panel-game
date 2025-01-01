@@ -89,23 +89,41 @@ function Connection:close()
 end
 
 -- Handle NetworkProtocol.clientMessageTypes.versionCheck
-function Connection:H(version)
+local function H(connection, version)
   if version ~= NetworkProtocol.NETWORK_VERSION then
-    self:send(NetworkProtocol.serverMessageTypes.versionWrong.prefix)
+    connection:send(NetworkProtocol.serverMessageTypes.versionWrong.prefix)
   else
-    self:send(NetworkProtocol.serverMessageTypes.versionCorrect.prefix)
+    connection:send(NetworkProtocol.serverMessageTypes.versionCorrect.prefix)
+  end
+end
+
+local function data_received(connection, data)
+  connection.lastCommunicationTime = time()
+  connection.leftovers = connection.leftovers .. data
+
+  while true do
+    local type, message, remaining = NetworkProtocol.getMessageFromString(connection.leftovers, false)
+    if type then
+      -- when type is not nil, the others are most certainly not nil too
+      ---@cast remaining string
+      ---@cast message string
+      connection:processMessage(type, message)
+      connection.leftovers = remaining
+    else
+      break
+    end
   end
 end
 
 ---@return boolean
-function Connection:read()
-  local data, error, partialData = self.socket:receive("*a")
+local function read(connection)
+  local data, error, partialData = connection.socket:receive("*a")
   -- "timeout" is a common "error" that just means there is currently nothing to read but the connection is still active
   if error then
     data = partialData
   end
   if data and data:len() > 0 then
-    self:data_received(data)
+    data_received(connection, data)
   end
   if error == "closed" then
     return false
@@ -113,14 +131,30 @@ function Connection:read()
   return true
 end
 
+local function sendQueuedMessages(connection)
+  for i = connection.outgoingMessageQueue.first, connection.outgoingMessageQueue.last do
+    local message = connection.outgoingMessageQueue[i]
+    if not send(connection, message) then
+      connection.sendRetryCount = connection.sendRetryCount + 1
+      break
+    else
+      connection.sendRetryCount = 0
+    end
+  end
+
+  if connection.sendRetryCount == 0 and connection.outgoingMessageQueue:len() > 0 then
+    connection.outgoingMessageQueue:clear()
+  end
+end
+
 ---@param t integer
 function Connection:update(t)
-  if not self:read() then
+  if not read(self) then
     logger.info("Closing connection " .. self.index .. ". Connection.read failed with closed error.")
     return false
   end
 
-  self:sendQueuedMessages()
+  sendQueuedMessages(self)
 
   if self.sendRetryCount >= self.sendRetryLimit then
     logger.info("Closing connection " .. self.index .. ". Connection.send failed after " .. self.sendRetryLimit .. " retries were attempted")
@@ -141,61 +175,18 @@ function Connection:update(t)
   return true
 end
 
-function Connection:sendQueuedMessages()
-  for i = self.outgoingMessageQueue.first, self.outgoingMessageQueue.last do
-    local message = self.outgoingMessageQueue[i]
-    if not send(self, message) then
-      self.sendRetryCount = self.sendRetryCount + 1
-      break
-    else
-      self.sendRetryCount = 0
-    end
-  end
-
-  if self.sendRetryCount == 0 and self.outgoingMessageQueue:len() > 0 then
-    self.outgoingMessageQueue:clear()
-  end
-end
-
-function Connection:data_received(data)
-  self.lastCommunicationTime = time()
-  self.leftovers = self.leftovers .. data
-
-  while true do
-    local type, message, remaining = NetworkProtocol.getMessageFromString(self.leftovers, false)
-    if type then
-      -- when type is not nil, the others are most certainly not nil too
-      ---@cast remaining string
-      ---@cast message string
-      self:processMessage(type, message)
-      self.leftovers = remaining
-    else
-      break
-    end
-  end
-end
-
 function Connection:processMessage(messageType, data)
   -- if messageType ~= NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix then
   --   logger.trace(self.index .. "- processing message:" .. messageType .. " data: " .. data)
   -- end
-  local status, error = pcall(
-      function()
-        if messageType == "J" then
-          self.incomingMessageQueue:push(data)
-        elseif messageType == "I" then
-          self.incomingInputQueue:push(data)
-        elseif messageType == "H" then
-          self:H(data)
-        elseif messageType == "E" then
-          -- Nothing to do here, the fact we got a message from the client updates the lastCommunicationTime
-        end
-      end
-    )
-  if status == false and error and type(error) == "string" then
-    logger.error("Incoming message from " .. self.index .. " caused an error:\n" ..
-                 " pcall error results: " .. tostring(error) ..
-                 "\nMessage " .. messageType .. ":\n" .. data)
+  if messageType == "J" then
+    self.incomingMessageQueue:push(data)
+  elseif messageType == "I" then
+    self.incomingInputQueue:push(data)
+  elseif messageType == "H" then
+    H(self, data)
+  elseif messageType == "E" then
+    -- Nothing to do here, the fact we got a message from the client updates the lastCommunicationTime
   end
 end
 

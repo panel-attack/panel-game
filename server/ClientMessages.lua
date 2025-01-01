@@ -40,6 +40,24 @@ function ClientMessages.sanitizeMessage(clientMessage)
   end
 end
 
+---@class ServerPlayerSettings
+---@field cursor string?
+---@field stage string?
+---@field stage_is_random string?
+---@field ready boolean?
+---@field character string?
+---@field character_is_random string?
+---@field panels_dir string?
+---@field level integer?
+---@field ranked boolean?
+---@field inputMethod InputMethod?
+---@field wants_ready boolean?
+---@field loaded boolean?
+---@field publicId integer?
+---@field levelData LevelData?
+---@field wants_ranked_match boolean?
+
+---@return {playerSettings: ServerPlayerSettings}
 function ClientMessages.sanitizeMenuState(playerSettings)
   local sanitized = {}
 

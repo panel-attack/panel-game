@@ -80,6 +80,7 @@ function Player:getSettings()
   )
 end
 
+---@param settings ServerPlayerSettings
 function Player:updateSettings(settings)
   if settings.character ~= nil then
     self.character = settings.character
@@ -150,6 +151,7 @@ function Player:setRoom(room)
       logger.info("Switching connection " .. self.connection.index .. " from room " .. self.room.roomNumber .. " to room " .. room.roomNumber)
     else
       logger.info("Setting room to " .. room.roomNumber .. " for connection " .. self.connection.index)
+
     end
   end
 

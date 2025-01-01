@@ -4,9 +4,6 @@ require("server.PlayerBase")
 local Server = require("server.server")
 
 local testServer = {nameToConnectionIndex = {}}
-testServer.isPlayerBanned = function (ip)
-  return nil
-end
 
 testServer.insertBan = function (ip, reason, completionTime)
   return {} -- might need more details later like reason and completiontime

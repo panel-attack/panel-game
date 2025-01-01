@@ -9,7 +9,6 @@ local GameModes = require("common.engine.GameModes")
 local LevelPresets = require("common.data.LevelPresets")
 local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
-local database = require("server.PADatabase")
 local Signal = require("common.lib.signal")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
@@ -18,7 +17,8 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 -- Players alternate between the character select state and playing, and spectators can join and leave
 ---@class Room : Signal
 ---@field players ServerPlayer[]
----@field leaderboard Leaderboard
+---@field database ServerDB
+---@field leaderboard Leaderboard?
 ---@field name string
 ---@field roomNumber integer
 ---@field stage string? stage for the game, randomly picked from both players
@@ -27,14 +27,17 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 ---@field ratings table[] ratings by player number
 ---@field game_outcome_reports integer[] game outcome reports by player number; transient, is cleared inbetween games
 ---@field matchCount integer
----@overload fun(roomNumber: integer, leaderboard: table, players: ServerPlayer[]): Room
+---@field replay Replay?
+---@overload fun(roomNumber: integer, players: ServerPlayer[], database: ServerDB, leaderboard: Leaderboard?): Room
 local Room = class(
 ---@param self Room
 ---@param roomNumber integer
----@param leaderboard table
 ---@param players ServerPlayer[]
-function(self, roomNumber, leaderboard, players)
+---@param database ServerDB
+---@param leaderboard Leaderboard?
+function(self, roomNumber, players, database, leaderboard)
   self.players = players
+  self.database = database
   self.leaderboard = leaderboard
   self.roomNumber = roomNumber
   self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
@@ -47,9 +50,11 @@ function(self, roomNumber, leaderboard, players)
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
     player:setRoom(self)
     self.win_counts[i] = 0
-    local rating = self.leaderboard:getRating(player) or 0
-    local placementProgress = self.leaderboard:getPlacementProgress(player)
-    self.ratings[i] = {old = rating, new = rating, difference = 0, league = self.leaderboard:get_league(rating), placement_match_progress = placementProgress}
+    if self.leaderboard then
+      local rating = self.leaderboard:getRating(player) or 0
+      local placementProgress = self.leaderboard:getPlacementProgress(player)
+      self.ratings[i] = {old = rating, new = rating, difference = 0, league = self.leaderboard:get_league(rating), placement_match_progress = placementProgress}
+    end
     player.cursor = "__Ready"
     player.player_number = i
   end
@@ -67,6 +72,15 @@ function(self, roomNumber, leaderboard, players)
 
   self:prepare_character_select()
 
+  self:sendRoomCreationMessage()
+
+  Signal.turnIntoEmitter(self)
+  self:createSignal("matchStart")
+  self:createSignal("matchEnd")
+end
+)
+
+function Room:sendRoomCreationMessage()
   local messageForA = ServerProtocol.createRoom(
     self.roomNumber,
     self.players[1]:getSettings(),
@@ -88,12 +102,7 @@ function(self, roomNumber, leaderboard, players)
     1
   )
   self.players[2]:sendJson(messageForB)
-
-  Signal.turnIntoEmitter(self)
-  self:createSignal("matchStart")
-  self:createSignal("matchEnd")
 end
-)
 
 function Room:onPlayerSettingsUpdate(player)
   if self:state() == "character select" then
@@ -383,18 +392,20 @@ function Room:resolve_game_outcome()
     -- everyone agrees on the outcome
     outcome = self.game_outcome_reports[1]
   end
-  local gameID = database:insertGame(self.replay.ranked)
+  local gameID = self.database:insertGame(self.replay.ranked)
   self.replay.gameId = gameID
 
   if outcome ~= 0 then
     self.replay.winnerIndex = outcome
     self.replay.winnerId = self.replay.players[outcome].publicId
     for i, player in ipairs(self.players) do
-      database:insertPlayerGameResult(player.userId, gameID, self.replay.players[i].settings.level, (player.player_number == outcome) and 1 or 2)
+      local level = not player:usesModifiedLevelData() and player.level or nil
+      self.database:insertPlayerGameResult(player.userId, gameID, level, (player.player_number == outcome) and 1 or 2)
     end
   else
     for i, player in ipairs(self.players) do
-      database:insertPlayerGameResult(player.userId, gameID, self.replay.players[i].settings.level, 0)
+      local level = not player:usesModifiedLevelData() and player.level or nil
+      self.database:insertPlayerGameResult(player.userId, gameID, level, 0)
     end
   end
 
@@ -422,6 +433,7 @@ function Room:resolve_game_outcome()
   if outcome == 0 then
     logger.debug("tie.  Nobody scored")
     --do nothing. no points or rating adjustments for ties.
+    self:emitSignal("matchEnd")
     return true
   else
     local someone_scored = false
@@ -445,10 +457,9 @@ function Room:resolve_game_outcome()
       local message = ServerProtocol.winCounts(self.win_counts[1], self.win_counts[2])
       self:broadcastJson(message)
     end
+    self:emitSignal("matchEnd")
     return true
   end
-
-  self:emitSignal("matchEnd")
 end
 
 function Room:saveReplay()
@@ -486,6 +497,10 @@ end
 ---@return boolean # if the players may play ranked
 ---@return string[] reasons why or why not they may play ranked or what caveats apply to playing ranked
 function Room:rating_adjustment_approved()
+  if not self.leaderboard then
+    return false, {"Room has no leaderboard"}
+  end
+
   for i, player in ipairs(self.players) do
     if not player.wants_ranked_match then
       return false, {player.name .. " doesn't want ranked"}
