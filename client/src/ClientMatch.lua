@@ -671,4 +671,17 @@ function ClientMatch:getWinners()
   end
 end
 
+function ClientMatch:resetPuzzle()
+  -- basically resetting the stack and match
+  local stack = self.stacks[1]
+  stack.analytic = AnalyticsInstance(stack.is_local)
+  ---@cast stack PlayerStack
+  local engine = stack.engine
+  engine:resetPuzzle()
+
+  self.engine.clock = 0
+  self.engine:setCountdown(engine.puzzle)
+  self.players[1]:incrementWinCount()
+end
+
 return ClientMatch
