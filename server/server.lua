@@ -32,7 +32,7 @@ local time = os.time
 -- Currently we are transitioning variables into this, but to start we will use this to define API
 ---@class Server
 ---@field socket TcpSocket the master socket for accepting incoming client connections
----@field database table the database object
+---@field database ServerDB the database object
 ---@field connectionNumberIndex integer GLOBAL counter of the next available connection index
 ---@field roomNumberIndex integer the next available room number
 ---@field rooms Room[] mapping of room number to room
@@ -48,15 +48,15 @@ local time = os.time
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
-local Server =
-  class(
+local Server = class(
+---@param self Server
+---@param databaseParam ServerDB
   function(self, databaseParam)
     self.connectionNumberIndex = 1
     self.roomNumberIndex = 1
     self.rooms = {}
     self.proposals = {}
     self.connections = {}
-    self.players = {}
     self.nameToConnectionIndex = {}
     self.socketToConnectionIndex = {}
     self.connectionToPlayer = {}
@@ -70,7 +70,12 @@ local Server =
     self.lobbyChanged = false
 
     logger.info("Starting up server with port: " .. (SERVER_PORT or 49569))
-    self.socket = socket.bind("*", SERVER_PORT or 49569)
+    local s = socket.bind("*", SERVER_PORT or 49569)
+    if s then
+      self.socket = s
+    else
+      error("Failed to create server socket. Check if there are any other instances blocking the port")
+    end
     self.socket:settimeout(0)
     if TCP_NODELAY_ENABLED then
       self.socket:setoption("tcp-nodelay", true)
@@ -186,7 +191,10 @@ function Server:lobby_state()
   local players = {}
   for _, connection in pairs(self.connections) do
     local player = self.connectionToPlayer[connection]
-    if player.state == "lobby" then
+    if player then
+      logger.debug("Player " .. player.name .. " state is " .. player.state)
+    end
+    if player and player.state == "lobby" then
       names[#names + 1] = player.name
       addPublicPlayerData(players, player.name, leaderboard.players[player.userId])
     end
@@ -241,7 +249,7 @@ end
 function Server:create_room(...)
   self:setLobbyChanged()
   local players = {...}
-  local newRoom = Room(self.roomNumberIndex, leaderboard, self, players)
+  local newRoom = Room(self.roomNumberIndex, leaderboard, players)
   newRoom:connectSignal("matchStart", self, self.lobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.lobbyChanged)
   self.roomNumberIndex = self.roomNumberIndex + 1
@@ -291,13 +299,13 @@ end
 
 -- Checks if a logging in player is banned based off their IP.
 ---@param ip string
----@return boolean
+---@return PlayerBan?
 function Server:isPlayerBanned(ip)
   return self.database:isPlayerBanned(ip)
 end
 
 ---@param ip string
----@param reason string?
+---@param reason string
 ---@param completionTime integer
 ---@return PlayerBan?
 function Server:insertBan(ip, reason, completionTime)
@@ -585,6 +593,12 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
       message.new_user_id = userId
     end
 
+    local playerData = self.database:getPlayerFromPrivateID(userId)
+    if not playerData then
+      self:denyLogin(connection, "Failed to assign public player ID, please try again", nil)
+      return false
+    end
+
     -- Name change is allowed because it was already checked above
     if self.playerbase.players[userId] ~= name then
       local oldName = self.playerbase.players[userId]
@@ -597,7 +611,8 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
       message.new_name = name
     end
 
-    local player = Player(userId, connection, name)
+    local player = Player(userId, connection, name, playerData.publicPlayerID)
+    player:setState("lobby")
     assert(player.publicPlayerID ~= nil)
     player:updateSettings(playerSettings)
     self.nameToConnectionIndex[name] = connection.index

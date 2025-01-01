@@ -1,5 +1,4 @@
 --local logger = require("common.lib.logger")
-local database = require("server.PADatabase")
 local class = require("common.lib.class")
 local ServerProtocol = require("common.network.ServerProtocol")
 local LevelPresets = require("common.data.LevelPresets")
@@ -30,22 +29,19 @@ local logger = require("common.lib.logger")
 ---@field player_number integer?
 ---@field opponent ServerPlayer to be removed
 ---@field state PlayerState
----@overload fun(privatePlayerID: privateUserId, connection: Connection, name: string): ServerPlayer
+---@overload fun(privatePlayerID: privateUserId, connection: Connection, name: string, publicId: integer): ServerPlayer
 local Player = class(
 ---@param self ServerPlayer
 ---@param privatePlayerID privateUserId
 ---@param connection Connection
-function(self, privatePlayerID, connection, name)
+---@param name string
+---@param publicId integer
+function(self, privatePlayerID, connection, name, publicId)
   connection.loggedIn = true
   self.userId = privatePlayerID
   self.connection = connection
   self.name = name or "noname"
-
-  assert(database ~= nil)
-  local playerData = database:getPlayerFromPrivateID(privatePlayerID)
-  if playerData then
-    self.publicPlayerID = playerData.publicPlayerID
-  end
+  self.publicPlayerID = publicId
 
   -- Player Settings
   self.character = nil

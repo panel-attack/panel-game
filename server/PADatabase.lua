@@ -3,6 +3,7 @@ local logger = require("common.lib.logger")
 local sqlite3 = require("lsqlite3")
 local db = sqlite3.open("PADatabase.sqlite3")
 
+---@class ServerDB
 PADatabase =
   class(
   function(self)
@@ -83,6 +84,8 @@ end
 
 local selectPlayerStatement = assert(db:prepare("SELECT * FROM Player WHERE privatePlayerID = ?"))
 -- Retrieves the player from the privatePlayerID
+---@param privatePlayerID privateUserId
+---@return {publicPlayerID: integer, privatePlayerID: integer, username: string, lastLoginTime: integer}?
 function PADatabase.getPlayerFromPrivateID(self, privatePlayerID)
   assert(privatePlayerID ~= nil)
   selectPlayerStatement:bind_values(privatePlayerID)
@@ -95,7 +98,7 @@ function PADatabase.getPlayerFromPrivateID(self, privatePlayerID)
     logger.error(db:errmsg())
     return nil
   end
-  return player 
+  return player
 end
 
 local updatePlayerUsernameStatement = assert(db:prepare("UPDATE Player SET username = ? WHERE privatePlayerID = ?"))
@@ -219,7 +222,8 @@ function PADatabase.insertIPID(self, ip, publicPlayerID)
 end
 
 local selectIPIDStatement = assert(db:prepare("SELECT publicPlayerID FROM IPID WHERE ip = ?"))
--- Selects all publicPlayerIDs that have been used with the given IP address.
+---@param ip string
+---@return integer[] # all publicPlayerIDs that have been used with the given IP address
 function PADatabase.getIPIDS(self, ip)
   selectIPIDStatement:bind_values(ip)
   local publicPlayerIDs = {}
@@ -235,6 +239,8 @@ end
 
 local selectIPBansStatement = assert(db:prepare("SELECT banID, reason, completionTime FROM PlayerBanList WHERE ip = ?"))
 -- Selects all bans associated with the ip given.
+---@param ip string
+---@return PlayerBan[]
 function PADatabase.getIPBans(self, ip)
   selectIPBansStatement:bind_values(ip)
   local bans = {}
@@ -250,6 +256,8 @@ end
 
 local selectIDBansStatement = assert(db:prepare("SELECT banID, reason, completionTime FROM PlayerBanList WHERE publicPlayerID = ?"))
 -- Selects all bans associated with the publicPlayerID given.
+---@param publicPlayerID integer
+---@return PlayerBan[]
 function PADatabase.getIDBans(self, publicPlayerID)
   selectIDBansStatement:bind_values(publicPlayerID)
   local bans = {}
@@ -265,6 +273,7 @@ end
 
 -- Checks if a logging in player is banned based off their IP.
 ---@param ip string
+---@return PlayerBan?
 function PADatabase.isPlayerBanned(self, ip)
   -- all ids associated with the information given
   local publicPlayerIDs = {}

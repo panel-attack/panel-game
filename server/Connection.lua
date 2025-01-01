@@ -31,6 +31,7 @@ local Connection = class(
     self.leftovers = ""
     self.loggedIn = false
     self.lastCommunicationTime = time()
+    self.lastPingTime = self.lastCommunicationTime
     self.incomingMessageQueue = Queue()
     self.outgoingMessageQueue = Queue()
     self.incomingInputQueue = Queue()

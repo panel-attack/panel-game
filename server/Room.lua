@@ -19,7 +19,6 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 ---@class Room : Signal
 ---@field players ServerPlayer[]
 ---@field leaderboard Leaderboard
----@field server Server
 ---@field name string
 ---@field roomNumber integer
 ---@field stage string? stage for the game, randomly picked from both players
@@ -28,18 +27,15 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 ---@field ratings table[] ratings by player number
 ---@field game_outcome_reports integer[] game outcome reports by player number; transient, is cleared inbetween games
 ---@field matchCount integer
----@overload fun(roomNumber: integer, leaderboard: table, server: Server, players: ServerPlayer[]): Room
-local Room =
-class(
+---@overload fun(roomNumber: integer, leaderboard: table, players: ServerPlayer[]): Room
+local Room = class(
 ---@param self Room
 ---@param roomNumber integer
 ---@param leaderboard table
----@param server Server
 ---@param players ServerPlayer[]
-function(self, roomNumber, leaderboard, server, players)
+function(self, roomNumber, leaderboard, players)
   self.players = players
   self.leaderboard = leaderboard
-  self.server = server
   self.roomNumber = roomNumber
   self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
   self.spectators = {}
@@ -436,6 +432,7 @@ function Room:resolve_game_outcome()
         logger.trace("Player " .. i .. " scored")
         self.win_counts[i] = self.win_counts[i] + 1
         if shouldAdjustRatings then
+          -- if the DB insert fails gameID is nil so maybe we should take a different branch then
           self.leaderboard:adjust_ratings(self, i, gameID)
         else
           logger.debug("Not adjusting ratings because: " .. reasons[1])
