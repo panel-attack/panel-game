@@ -7,3 +7,5 @@ function MockDB:insertGame(ranked)
   gameCount = gameCount + 1
   return gameCount
 end
+
+return MockDB

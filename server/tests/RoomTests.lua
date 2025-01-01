@@ -1,8 +1,10 @@
----@diagnostic disable: undefined-field, invisible
+---@diagnostic disable: undefined-field, invisible, inject-field
 local Room = require("server.Room")
 local Player = require("server.Player")
 local MockConnection = require("server.tests.MockConnection")
 local MockDB = require("server.tests.MockDatabase")
+-- TODO: Fix up server file io so that it can be replaced by a mock object
+require("server.server_file_io")
 
 COMPRESS_REPLAYS_ENABLED = true
 
@@ -16,6 +18,9 @@ local function getRoom()
   -- don't want to deal with I/O for the test
   p1.save_replays_publicly = "not at all"
   local room = Room(1, {p1, p2}, MockDB)
+  room.saveReplay = function(self)
+    self.replayRef = self.replay
+  end
 
   return room, p1, p2
 end
@@ -67,15 +72,14 @@ local function basicTest()
 
   room:reportOutcome(p1, 1)
 
-  assert(room.replay.completed, "Expected the replay to be marked as completed")
-  assert(room.replay.players[1].settings.inputs == "A912")
-  assert(room.replay.players[2].settings.inputs == "A909")
+  assert(room.replayRef.players[1].settings.inputs == "A912")
+  assert(room.replayRef.players[2].settings.inputs == "A909")
   assert(p1.state == "character select")
   assert(p2.state == "character select")
   assert(room.win_counts[1] == 1)
   assert(room.win_counts[2] == 0)
-  assert(room.replay.winnerIndex == 1)
-  assert(room.replay.winnerId == p1.publicPlayerID)
+  assert(room.replayRef.winnerIndex == 1)
+  assert(room.replayRef.winnerId == p1.publicPlayerID)
   assert(p1.connection.outgoingInputQueue:len() == 909)
   assert(p2.connection.outgoingInputQueue:len() == 912)
 

@@ -173,8 +173,8 @@ function Room:start_match()
           self.replay.seed,
           self.replay.ranked,
           self.replay.stageId,
-          recipient:getDumbSettings(self.ratings[i].new, i),
-          player:getDumbSettings(self.ratings[j].new, j)
+          recipient:getDumbSettings((self.leaderboard and self.ratings[i].new or 0), i),
+          player:getDumbSettings((self.leaderboard and self.ratings[j].new or 0), j)
         )
         recipient:sendJson(message)
         if i == 1 then
@@ -255,8 +255,8 @@ function Room:add_spectator(newSpectator)
     self.stage,
     self.replay,
     self.replay and self.replay.ranked or nil,
-    self.players[1]:getDumbSettings(self.ratings[1].new, 1),
-    self.players[2]:getDumbSettings(self.ratings[2].new, 2)
+    self.players[1]:getDumbSettings((self.leaderboard and self.ratings[1].new or 0), 1),
+    self.players[2]:getDumbSettings((self.leaderboard and self.ratings[2].new or 0), 2)
   )
 
   newSpectator:sendJson(message)
@@ -411,6 +411,7 @@ function Room:resolve_game_outcome()
 
   logger.info(self.roomNumber .. " " .. self.name .. " match " .. self.matchCount .. " ended with outcome " .. outcome)
 
+  self:finalizeReplay()
   self:saveReplay()
   self.replay = nil
 
@@ -462,11 +463,11 @@ function Room:resolve_game_outcome()
   end
 end
 
-function Room:saveReplay()
-  for i, player in ipairs(self.players) do
-    if player.save_replays_publicly == "not at all" then
-      logger.debug("replay not saved because a player didn't want it saved")
-      return
+function Room:finalizeReplay()
+  for i, player in ipairs(self.replay.players) do
+    player.settings.inputs = table.concat(self.inputs[i])
+    if COMPRESS_REPLAYS_ENABLED then
+      player.settings.inputs = ReplayPlayer.compressInputString(player.settings.inputs)
     end
   end
 
@@ -479,16 +480,18 @@ function Room:saveReplay()
       self.replay.players[i].publicId = - i
     end
   end
+end
+
+function Room:saveReplay()
+  for i, player in ipairs(self.players) do
+    if player.save_replays_publicly == "not at all" then
+      logger.debug("replay not saved because a player didn't want it saved")
+      return
+    end
+  end
 
   local path = "ftp" .. sep .. self.replay:generatePath(sep)
   local filename = self.replay:generateFileName() .. ".json"
-
-  for i, player in ipairs(self.replay.players) do
-    player.settings.inputs = table.concat(self.inputs[i])
-    if COMPRESS_REPLAYS_ENABLED then
-      player.settings.inputs = ReplayPlayer.compressInputString(player.settings.inputs)
-    end
-  end
 
   logger.debug("saving replay as " .. path .. sep .. filename)
   write_replay_file(self.replay, path, filename)
