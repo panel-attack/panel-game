@@ -39,21 +39,7 @@ function PuzzleGame:customRun()
   -- reset level
   if (self.inputConfiguration and self.inputConfiguration.isDown["TauntUp"]) and not self.match.isPaused then
     GAME.theme:playValidationSfx()
-    -- basically resetting the stack and match
-    local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
-    local stack = self.match.stacks[1]
-    stack:setPuzzleState(puzzle)
-    stack.confirmedInput = {}
-    stack.input_buffer = {}
-    stack.clock = 0
-    stack.game_stopwatch = 0
-    stack.game_stopwatch_running = false
-    stack.chain_counter = 0
-    stack.analytic = AnalyticsInstance(stack.is_local)
-
-    self.match.clock = 0
-    self.match:setCountdown(puzzle.doCountdown)
-    self.match.players[1]:incrementWinCount()
+    self.match:resetPuzzle()
   end
 end
 

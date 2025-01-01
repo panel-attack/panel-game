@@ -221,14 +221,14 @@ function PortraitGame:flipToPortrait()
       local raiseButton = TextButton({label = Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
-        stack.engine.touchInputController.touchingRaise = true
+        stack.touchInputDetector.touchingRaise = true
       end
       raiseButton.onDrag = function(button, x, y)
-        stack.engine.touchInputController.touchingRaise = button:inBounds(x, y)
+        stack.touchInputDetector.touchingRaise = button:inBounds(x, y)
       end
       raiseButton.onRelease = function(button, x, y, timeHeld)
         button.backgroundColor[4] = 0.7
-        stack.engine.touchInputController.touchingRaise = false
+        stack.touchInputDetector.touchingRaise = false
       end
       raiseButton.width = 70
       self.uiRoot.raiseButton = raiseButton

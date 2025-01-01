@@ -515,6 +515,21 @@ function Stack.deleteRollbackCopy(self, frame)
   end
 end
 
+-- will throw an error if there is no puzzle set
+function Stack:resetPuzzle()
+  if not self.puzzle then
+    error("Tried to reset puzzle but no puzzle was loaded")
+  end
+
+  self:setPuzzleState(self.puzzle)
+  self.confirmedInput = {}
+  self.input_buffer = {}
+  self.clock = 0
+  self.game_stopwatch = 0
+  self.game_stopwatch_running = false
+  self.chain_counter = 0
+end
+
 function Stack:setPuzzleState(puzzle)
   puzzle.stack = puzzle:fillMissingPanelsInPuzzleString(self.width, self.height)
 
