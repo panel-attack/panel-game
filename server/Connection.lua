@@ -1,12 +1,8 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
-local tableUtils = require("common.lib.tableUtils")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
-local ClientMessages = require("server.ClientMessages")
-local ServerProtocol = require("common.network.ServerProtocol")
 local util = require("common.lib.util")
-local LevelPresets = require("common.data.LevelPresets")
 local Queue = require("common.lib.Queue")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
@@ -16,10 +12,14 @@ local Queue = require("common.lib.Queue")
 ---@field leftovers string remaining data from the socket that hasn't been processed yet
 ---@field loggedIn boolean 
 ---@field lastCommunicationTime integer timestamp when the last message was received; for dropping the connection if heartbeats aren't returned
+---@field lastPingTime integer when the last ping was sent
 ---@field server Server the server managing this connection
 ---@field player ServerPlayer? the player object for this connection
 ---@field opponent Connection? the opponents connection object
----@field messageQueue Queue
+---@field incomingMessageQueue Queue
+---@field outgoingMessageQueue Queue
+---@field sendRetryCount integer
+---@field sendRetryLimit integer
 ---@overload fun(socket: any, index: integer, server: table) : Connection
 local Connection = class(
 ---@param self Connection
@@ -36,26 +36,19 @@ local Connection = class(
     self.server = server
     self.player = nil
     self.opponent = nil
-    self.messageQueue = Queue()
+    self.incomingMessageQueue = Queue()
+    self.outgoingMessageQueue = Queue()
+    self.sendRetryCount = 0
   end
 )
 
 local function send(connection, message)
-  local retryCount = 0
-  local retryLimit = 5
-  local success, error
-
-  while not success and retryCount <= retryLimit do
-    success, error, lastSent = connection.socket:send(message)
-    if not success then
-      logger.debug("Connection.send failed with " .. error .. ". will retry...")
-      retryCount = retryCount + 1
-    end
-  end
+  local success, error = connection.socket:send(message)
   if not success then
-    logger.info("Closing connection for " .. (connection.name or "nil") .. ". Connection.send failed after " .. retryLimit .. " retries were attempted")
-    connection:close()
+    logger.debug("Connection.send failed with " .. error .. ". will retry next update...")
   end
+
+  return success
 end
 
 -- dedicated method for sending JSON messages
@@ -68,7 +61,9 @@ function Connection:sendJson(messageInfo)
   logger.debug("Connection " .. self.index .. " Sending JSON: " .. json)
   local message = NetworkProtocol.markedMessageForTypeAndBody(messageInfo.messageType.prefix, json)
 
-  send(self, message)
+  if not send(self, message) then
+    self.outgoingMessageQueue:push(message)
+  end
 end
 
 -- dedicated method for sending inputs and magic prefixes
@@ -81,7 +76,9 @@ function Connection:send(message)
 --     end
 --   end
 
-  send(self, message)
+  if not send(self, message) then
+    self.outgoingMessageQueue:push(message)
+  end
 end
 
 function Connection:close()
@@ -131,6 +128,50 @@ function Connection:read()
   return true
 end
 
+---@param t integer
+function Connection:update(t)
+  if not self:read() then
+    logger.info("Closing connection " .. self.index .. ". Connection.read failed with closed error.")
+    return false
+  end
+
+  self:sendQueuedMessages()
+
+  if self.sendRetryCount >= self.sendRetryLimit then
+    logger.info("Closing connection " .. self.index .. ". Connection.send failed after " .. self.sendRetryLimit .. " retries were attempted")
+    return false
+  end
+
+  if t ~= self.lastCommunicationTime then
+    if t - self.lastCommunicationTime > 10 then
+      logger.info("Closing connection for " .. self.index .. ". Connection timed out (>10 sec)")
+      return false
+    elseif t > self.lastPingTime and t - self.lastCommunicationTime > 1 then
+      -- Request a ping to make sure the connection is still active
+      self:send(NetworkProtocol.serverMessageTypes.ping.prefix)
+      -- we don't want to ping for every run we're waiting for an answer
+      self.lastPingTime = t
+    end
+  end
+  return true
+end
+
+function Connection:sendQueuedMessages()
+  for i = self.outgoingMessageQueue.first, self.outgoingMessageQueue.last do
+    local message = self.outgoingMessageQueue[i]
+    if not send(self, message) then
+      self.sendRetryCount = self.sendRetryCount + 1
+      break
+    else
+      self.sendRetryCount = 0
+    end
+  end
+
+  if self.sendRetryCount == 0 and self.outgoingMessageQueue:len() > 0 then
+    self.outgoingMessageQueue:clear()
+  end
+end
+
 function Connection:data_received(data)
   self.lastCommunicationTime = time()
   self.leftovers = self.leftovers .. data
@@ -142,7 +183,7 @@ function Connection:data_received(data)
       ---@cast remaining string
       ---@cast message string
       if type == "J" then
-        self.messageQueue:push(message)
+        self.incomingMessageQueue:push(message)
       else
         --TODO: inputs cannot be routed like this in the future
         -- maybe implement a way to set a target for inputs on the connection so it stays dumb

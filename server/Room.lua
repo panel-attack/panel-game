@@ -10,6 +10,7 @@ local LevelPresets = require("common.data.LevelPresets")
 local util = require("common.lib.util")
 local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
+local database = require("server.PADatabase")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
@@ -381,18 +382,18 @@ function Room:resolve_game_outcome()
     -- everyone agrees on the outcome
     outcome = self.game_outcome_reports[1]
   end
-  local gameID = self.server.database:insertGame(self.replay.ranked)
+  local gameID = database:insertGame(self.replay.ranked)
   self.replay.gameId = gameID
 
   if outcome ~= 0 then
     self.replay.winnerIndex = outcome
     self.replay.winnerId = self.replay.players[outcome].publicId
     for i, player in ipairs(self.players) do
-      self.server.database:insertPlayerGameResult(player.userId, gameID, self.replay.players[i].settings.level, (player.player_number == outcome) and 1 or 2)
+      database:insertPlayerGameResult(player.userId, gameID, self.replay.players[i].settings.level, (player.player_number == outcome) and 1 or 2)
     end
   else
     for i, player in ipairs(self.players) do
-      self.server.database:insertPlayerGameResult(player.userId, gameID, self.replay.players[i].settings.level, 0)
+      database:insertPlayerGameResult(player.userId, gameID, self.replay.players[i].settings.level, 0)
     end
   end
 

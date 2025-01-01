@@ -4,7 +4,6 @@
 local socket = require("common.lib.socket")
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
-local NetworkProtocol = require("common.network.NetworkProtocol")
 local ServerProtocol = require("common.network.ServerProtocol")
 json = require("common.lib.dkjson")
 require("common.lib.mathExtensions")
@@ -374,17 +373,14 @@ function Server:update()
 
   self:acceptNewConnections()
 
-  self:readSockets()
+  self:updateConnections()
   self:processMessages()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
   local currentTime = time()
   if currentTime ~= self.lastProcessTime then
-    self:pingConnections(currentTime)
-
     self:flushLogs(currentTime)
-
     self.lastProcessTime = currentTime
   end
 
@@ -409,7 +405,7 @@ function Server:acceptNewConnections()
 end
 
 -- Process any data on all active connections
-function Server:readSockets()
+function Server:updateConnections()
   -- Make a list of all the sockets to listen to
   local socketsToCheck = {self.socket}
   for _, v in pairs(self.connections) do
@@ -422,7 +418,7 @@ function Server:readSockets()
   for _, currentSocket in ipairs(socketsWithData) do
     if self.socketToConnectionIndex[currentSocket] then
       local connectionIndex = self.socketToConnectionIndex[currentSocket]
-      local success = self.connections[connectionIndex]:read()
+      local success = self.connections[connectionIndex]:update(self.lastProcessTime)
       if not success then
         self:closeConnection(self.connections[connectionIndex])
       end
@@ -432,13 +428,12 @@ end
 
 function Server:processMessages()
   for index, connection in pairs(self.connections) do
-    if connection.messageQueue:len() > 0 then
-      local q = connection.messageQueue
+    if connection.incomingMessageQueue:len() > 0 then
+      local q = connection.incomingMessageQueue
       for i = q.first, q.last do
         local status, continue = pcall(function() return self:processMessage(q[i], connection) end)
         if status then
           if not continue then
-            q:clear()
             break
           end
         else
@@ -452,6 +447,7 @@ function Server:processMessages()
           end
         end
       end
+      q:clear()
     end
   end
 end
@@ -521,19 +517,6 @@ function Server:handleErrorReport(errorReport)
   logger.warn("Received an error report.")
   if not write_error_report(errorReport) then
     logger.error("The error report was either too large or had an I/O failure when attempting to write the file.")
-  end
-end
-
--- Check all active connections to make sure they have responded timely
-function Server:pingConnections(currentTime)
-  for _, connection in pairs(self.connections) do
-    if currentTime - connection.lastCommunicationTime > 10 then
-      local player = self.connectionToPlayer[connection]
-      logger.debug("Closing connection for " .. (player and player.name or "nil") .. ". Connection timed out (>10 sec)")
-      connection:close()
-    elseif currentTime - connection.lastCommunicationTime > 1 then
-      connection:send(NetworkProtocol.serverMessageTypes.ping.prefix) -- Request a ping to make sure the connection is still active
-    end
   end
 end
 
