@@ -14,7 +14,7 @@ require("server.stridx")
 require("server.server_globals")
 require("server.server_file_io")
 local Connection = require("server.Connection")
-require("server.Leaderboard")
+local Leaderboard = require("server.Leaderboard")
 require("server.PlayerBase")
 local Room = require("server.Room")
 local ClientMessages = require("server.ClientMessages")
@@ -36,7 +36,7 @@ local time = os.time
 ---@field connectionNumberIndex integer GLOBAL counter of the next available connection index
 ---@field roomNumberIndex integer the next available room number
 ---@field rooms Room[] mapping of room number to room
----@field proposals table mapping of player name to a mapping of the players they have challenged
+---@field proposals table<ServerPlayer, table<ServerPlayer, table>> mapping of player name to a mapping of the players they have challenged
 ---@field connections Connection[] mapping of connection number to connection
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
@@ -48,7 +48,7 @@ local time = os.time
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
-Server =
+local Server =
   class(
   function(self, databaseParam)
     self.connectionNumberIndex = 1
@@ -78,7 +78,7 @@ Server =
 
     self.playerbase = Playerbase("playerbase", "players.txt")
     read_players_file(self.playerbase)
-    leaderboard = Leaderboard("leaderboard", self)
+    leaderboard = Leaderboard("leaderboard")
     read_leaderboard_file()
 
     local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
@@ -91,7 +91,7 @@ Server =
     write_leaderboard_file()
     logger.debug(os.time())
     logger.debug("playerbase: " .. json.encode(self.playerbase.players))
-    logger.debug("leaderboard report: " .. json.encode(leaderboard:get_report()))
+    logger.debug("leaderboard report: " .. json.encode(leaderboard:get_report(self)))
     read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
     seed_from_mt(extract_mt())
@@ -184,10 +184,11 @@ end
 function Server:lobby_state()
   local names = {}
   local players = {}
-  for _, v in pairs(self.connections) do
-    if v.state == "lobby" then
-      names[#names + 1] = v.name
-      addPublicPlayerData(players, v.name, leaderboard.players[v.user_id])
+  for _, connection in pairs(self.connections) do
+    local player = self.connectionToPlayer[connection]
+    if player.state == "lobby" then
+      names[#names + 1] = player.name
+      addPublicPlayerData(players, player.name, leaderboard.players[player.userId])
     end
   end
   local spectatableRooms = {}
@@ -200,48 +201,39 @@ function Server:lobby_state()
   return {unpaired = names, spectatable = spectatableRooms, players = players}
 end
 
----@param senderName string
----@param receiverName string
-function Server:propose_game(senderName, receiverName)
-  logger.debug("propose game: " .. senderName .. " " .. receiverName)
-  local senderConnection = self.nameToConnectionIndex[senderName]
-  local receiverConnection = self.nameToConnectionIndex[receiverName]
-  if senderConnection then
----@diagnostic disable-next-line: cast-local-type
-    senderConnection = self.connections[senderConnection]
-  end
-  if receiverConnection then
----@diagnostic disable-next-line: cast-local-type
-    receiverConnection = self.connections[receiverConnection]
-  end
+---@param sender ServerPlayer
+---@param receiver ServerPlayer
+function Server:proposeGame(sender, receiver)
+  logger.debug("propose game: " .. sender.name .. " " .. receiver.name)
+
   local proposals = self.proposals
-  if senderConnection and senderConnection.state == "lobby" and receiverConnection and receiverConnection.state == "lobby" then
-    proposals[senderName] = proposals[senderName] or {}
-    proposals[receiverName] = proposals[receiverName] or {}
-    if proposals[senderName][receiverName] then
-      if proposals[senderName][receiverName][receiverName] then
-        self:create_room(senderConnection.player, receiverConnection.player)
+  if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
+    proposals[sender] = proposals[sender] or {}
+    proposals[receiver] = proposals[receiver] or {}
+    if proposals[sender][receiver] then
+      if proposals[sender][receiver][receiver] then
+        self:create_room(sender, receiver)
       end
     else
-      receiverConnection:sendJson(ServerProtocol.sendChallenge(senderName, receiverName))
-      local prop = {[senderName] = true}
-      proposals[senderName][receiverName] = prop
-      proposals[receiverName][senderName] = prop
+      receiver:sendJson(ServerProtocol.sendChallenge(sender.name, receiver.name))
+      local prop = {[sender] = true}
+      proposals[sender][receiver] = prop
+      proposals[receiver][sender] = prop
     end
   end
 end
 
----@param name string
-function Server:clear_proposals(name)
+---@param player ServerPlayer
+function Server:clearProposals(player)
   local proposals = self.proposals
-  if proposals[name] then
-    for othername, _ in pairs(proposals[name]) do
-      proposals[name][othername] = nil
-      if proposals[othername] then
-        proposals[othername][name] = nil
+  if proposals[player] then
+    for otherPlayer, _ in pairs(proposals[player]) do
+      proposals[player][otherPlayer] = nil
+      if proposals[otherPlayer] then
+        proposals[otherPlayer][player] = nil
       end
     end
-    proposals[name] = nil
+    proposals[player] = nil
   end
 end
 
@@ -250,10 +242,12 @@ function Server:create_room(...)
   self:setLobbyChanged()
   local players = {...}
   local newRoom = Room(self.roomNumberIndex, leaderboard, self, players)
+  newRoom:connectSignal("matchStart", self, self.lobbyChanged)
+  newRoom:connectSignal("matchEnd", self, self.lobbyChanged)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
   for _, player in ipairs(players) do
-    self:clear_proposals(player.name)
+    self:clearProposals(player)
     self.playerToRoom[player] = newRoom
   end
 end
@@ -396,7 +390,7 @@ function Server:acceptNewConnections()
     if TCP_NODELAY_ENABLED then
       newConnectionSocket:setoption("tcp-nodelay", true)
     end
-    local connection = Connection(newConnectionSocket, self.connectionNumberIndex, self)
+    local connection = Connection(newConnectionSocket, self.connectionNumberIndex)
     logger.debug("Accepted connection " .. self.connectionNumberIndex)
     self.connections[self.connectionNumberIndex] = connection
     self.socketToConnectionIndex[newConnectionSocket] = self.connectionNumberIndex
@@ -478,11 +472,11 @@ function Server:processMessage(message, connection)
       return false
     elseif player.state == "lobby" and message.game_request then
       if message.game_request.sender == player.name then
-        self:propose_game(message.game_request.sender, message.game_request.receiver)
+        self:proposeGame(player, self.nameToPlayer[message.game_request.receiver])
         return true
       end
     elseif message.leaderboard_request then
-      connection:sendJson(ServerProtocol.sendLeaderboard(leaderboard:get_report(self.connectionToPlayer[connection].userId)))
+      connection:sendJson(ServerProtocol.sendLeaderboard(leaderboard:get_report(self, self.connectionToPlayer[connection].userId)))
       return true
     elseif message.spectate_request then
       self:handleSpectateRequest(message, player)
@@ -700,7 +694,7 @@ function Server:closeConnection(connection)
   self.connectionToPlayer[connection] = nil
   connection:close()
   if player then
-    self:clear_proposals(player.name)
+    self:clearProposals(player)
     self:handleLeaveRoom(player)
     self.playerToRoom[player] = nil
     self.spectatorToRoom[player] = nil

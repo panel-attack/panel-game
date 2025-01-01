@@ -138,7 +138,7 @@ function PADatabase.getPlayerRecordCount()
 end
 
 local insertGameStatement = assert(db:prepare("INSERT INTO Game(ranked) VALUES (?)"))
--- returns the gameID
+---@return integer? gameID
 function PADatabase.insertGame(self, ranked)
   insertGameStatement:bind_values(ranked and 1 or 0)
   insertGameStatement:step()

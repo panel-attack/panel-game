@@ -2,7 +2,6 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
-local util = require("common.lib.util")
 local Queue = require("common.lib.Queue")
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
@@ -13,32 +12,27 @@ local Queue = require("common.lib.Queue")
 ---@field loggedIn boolean 
 ---@field lastCommunicationTime integer timestamp when the last message was received; for dropping the connection if heartbeats aren't returned
 ---@field lastPingTime integer when the last ping was sent
----@field server Server the server managing this connection
 ---@field player ServerPlayer? the player object for this connection
----@field opponent Connection? the opponents connection object
 ---@field incomingMessageQueue Queue
 ---@field outgoingMessageQueue Queue
 ---@field sendRetryCount integer
 ---@field sendRetryLimit integer
----@overload fun(socket: any, index: integer, server: table) : Connection
+---@overload fun(socket: any, index: integer) : Connection
 local Connection = class(
 ---@param self Connection
 ---@param socket TcpSocket
 ---@param index integer
----@param server Server
-  function(self, socket, index, server)
+  function(self, socket, index)
     self.index = index
     self.socket = socket
     self.leftovers = ""
-
     self.loggedIn = false
     self.lastCommunicationTime = time()
-    self.server = server
     self.player = nil
-    self.opponent = nil
     self.incomingMessageQueue = Queue()
     self.outgoingMessageQueue = Queue()
     self.sendRetryCount = 0
+    self.sendRetryLimit = 5
   end
 )
 
@@ -82,6 +76,9 @@ function Connection:send(message)
 end
 
 function Connection:close()
+  self.loggedIn = false
+  self.incomingMessageQueue:clear()
+  self.outgoingMessageQueue:clear()
   self.socket:close()
   self.socket = nil
 end
@@ -97,9 +94,6 @@ end
 
 -- Handle NetworkProtocol.clientMessageTypes.playerInput
 function Connection:I(message)
-  if self.opponent == nil then
-    return
-  end
   if self.room == nil then
     return
   end

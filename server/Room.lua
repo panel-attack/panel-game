@@ -11,12 +11,13 @@ local util = require("common.lib.util")
 local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
 local database = require("server.PADatabase")
+local Signal = require("common.lib.signal")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
 -- Object that represents a current session of play between two connections
 -- Players alternate between the character select state and playing, and spectators can join and leave
----@class Room
+---@class Room : Signal
 ---@field players ServerPlayer[]
 ---@field leaderboard Leaderboard
 ---@field server Server
@@ -92,6 +93,10 @@ function(self, roomNumber, leaderboard, server, players)
     1
   )
   self.players[2]:sendJson(messageForB)
+
+  Signal.turnIntoEmitter(self)
+  self:createSignal("matchStart")
+  self:createSignal("matchEnd")
 end
 )
 
@@ -183,7 +188,7 @@ function Room:start_match()
     v:setup_game()
   end
 
-  self.server:setLobbyChanged()
+  self:emitSignal("matchStart")
 end
 
 function Room:character_select()
@@ -299,6 +304,7 @@ function Room:close()
     end
   end
 
+  self.signalSubscriptions = nil
   self.spectators = nil
 end
 
@@ -445,6 +451,8 @@ function Room:resolve_game_outcome()
     end
     return true
   end
+
+  self:emitSignal("matchEnd")
 end
 
 function Room:saveReplay()

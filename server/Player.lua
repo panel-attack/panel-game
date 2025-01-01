@@ -9,7 +9,7 @@ local logger = require("common.lib.logger")
 ---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating")
 
 ---@class ServerPlayer : Signal
----@field connection Connection
+---@field package connection Connection
 ---@field userId privateUserId
 ---@field publicPlayerID integer
 ---@field character string id of the specific character that was picked
