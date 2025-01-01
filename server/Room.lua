@@ -27,8 +27,8 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 ---@field ratings table[] ratings by player number
 ---@field game_outcome_reports integer[] game outcome reports by player number; transient, is cleared inbetween games
 ---@field matchCount integer
----@overload fun(roomNumber: integer, leaderboard: table, server: Server, ...: ServerPlayer): Room
-Room =
+---@overload fun(roomNumber: integer, leaderboard: table, server: Server, players: ServerPlayer[]): Room
+local Room =
 class(
 ---@param self Room
 ---@param roomNumber integer
@@ -284,17 +284,21 @@ end
 function Room:close()
   logger.info("Closing room " .. self.roomNumber .. " " .. self.name)
 
-  for i, player in ipairs(self.players) do
+  for i = #self.players, 1, -1 do
+    local player = self.players[i]
     player:setRoom()
+    self.players[i] = nil
   end
 
-  for i, spectator in ipairs(self.spectators) do
+  for i = #self.spectators, 1, -1 do
+    local spectator = self.spectators[i]
     if spectator.room then
       spectator.state = "lobby"
       spectator:setRoom()
     end
   end
-  self:sendJsonToSpectators(ServerProtocol.leaveRoom())
+
+  self.spectators = nil
 end
 
 function Room:sendJsonToSpectators(message)
@@ -336,6 +340,8 @@ function Room:broadcastJson(message, sender)
   self:sendJsonToSpectators(message)
 end
 
+---@param player ServerPlayer
+---@param outcome integer
 function Room:reportOutcome(player, outcome)
   self.game_outcome_reports[player.player_number] = outcome
   if self:resolve_game_outcome() then
@@ -493,3 +499,16 @@ function Room:toString()
 
   return info
 end
+
+---@param message table
+---@param sender ServerPlayer
+function Room:handleTaunt(message, sender)
+  local msg = ServerProtocol.taunt(sender.player_number, message.type, message.index)
+  self:broadcastJson(msg, sender)
+end
+
+function Room:handleGameOverOutcome(message, sender)
+  self:reportOutcome(sender, message.outcome)
+end
+
+return Room

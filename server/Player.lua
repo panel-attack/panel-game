@@ -6,8 +6,10 @@ local LevelPresets = require("common.data.LevelPresets")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 
+---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating")
+
 ---@class ServerPlayer : Signal
----@field package connection Connection
+---@field connection Connection
 ---@field userId privateUserId
 ---@field publicPlayerID integer
 ---@field character string id of the specific character that was picked
@@ -27,14 +29,16 @@ local logger = require("common.lib.logger")
 ---@field name string
 ---@field player_number integer?
 ---@field opponent ServerPlayer to be removed
----@overload fun(privatePlayerID: privateUserId): ServerPlayer
+---@field state PlayerState
+---@overload fun(privatePlayerID: privateUserId, connection: Connection, name: string): ServerPlayer
 local Player = class(
 ---@param self ServerPlayer
 ---@param privatePlayerID privateUserId
 ---@param connection Connection
-function(self, privatePlayerID, connection)
+function(self, privatePlayerID, connection, name)
   self.userId = privatePlayerID
   self.connection = connection
+  self.name = name or "noname"
 
   assert(database ~= nil)
   local playerData = database:getPlayerFromPrivateID(privatePlayerID)
@@ -190,6 +194,11 @@ end
 ---@return boolean
 function Player:usesModifiedLevelData()
   return not deep_content_equal(self.levelData, LevelPresets.getModern(self.level))
+end
+
+---@param state PlayerState
+function Player:setState(state)
+  self.state = state
 end
 
 return Player

@@ -55,6 +55,8 @@ function NetworkProtocol.markedMessageForTypeAndBody(type, body)
 end
 
 -- Returns the next message in the queue, or nil if none / error
+---@param messageBuffer string
+---@param isServerMessage boolean?
 function NetworkProtocol.getMessageFromString(messageBuffer, isServerMessage)
   assert(isServerMessage ~= nil)
 

@@ -17,7 +17,11 @@ require("server.server_file_io")
 local Connection = require("server.Connection")
 require("server.Leaderboard")
 require("server.PlayerBase")
-require("server.Room")
+local Room = require("server.Room")
+local ClientMessages = require("server.ClientMessages")
+local utf8 = require("common.lib.utf8Additions")
+local tableUtils = require("common.lib.tableUtils")
+local Player = require("server.Player")
 
 local pairs = pairs
 local ipairs = ipairs
@@ -37,6 +41,10 @@ local time = os.time
 ---@field connections Connection[] mapping of connection number to connection
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
+---@field connectionToPlayer table<Connection, ServerPlayer> Mapping of connections to the player they send for
+---@field playerToRoom table<ServerPlayer, Room>
+---@field spectatorToRoom table<ServerPlayer, Room>
+---@field nameToPlayer table<string, ServerPlayer>
 ---@field lastProcessTime integer
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
@@ -52,6 +60,10 @@ Server =
     self.players = {}
     self.nameToConnectionIndex = {}
     self.socketToConnectionIndex = {}
+    self.connectionToPlayer = {}
+    self.playerToRoom = {}
+    self.spectatorToRoom = {}
+    self.nameToPlayer = {}
     assert(databaseParam ~= nil)
     self.database = databaseParam
     self.lastProcessTime = time()
@@ -238,12 +250,13 @@ end
 function Server:create_room(...)
   self:setLobbyChanged()
   local players = {...}
+  local newRoom = Room(self.roomNumberIndex, leaderboard, self, players)
+  self.roomNumberIndex = self.roomNumberIndex + 1
+  self.rooms[newRoom.roomNumber] = newRoom
   for _, player in ipairs(players) do
     self:clear_proposals(player.name)
+    self.playerToRoom[player] = newRoom
   end
-  local new_room = Room(self.roomNumberIndex, leaderboard, self, players)
-  self.roomNumberIndex = self.roomNumberIndex + 1
-  self.rooms[new_room.roomNumber] = new_room
 end
 
 ---@param roomNr integer
@@ -341,10 +354,19 @@ end
 
 ---@param room Room
 function Server:closeRoom(room)
-  room:close()
+  for _, player in ipairs(room.players) do
+    self.playerToRoom[player] = nil
+  end
+
+  for _, player in ipairs(room.spectators) do
+    self.spectatorToRoom[player] = nil
+  end
+
   if self.rooms[room.roomNumber] then
     self.rooms[room.roomNumber] = nil
   end
+
+  room:close()
   self:setLobbyChanged()
 end
 
@@ -353,6 +375,7 @@ function Server:update()
   self:acceptNewConnections()
 
   self:readSockets()
+  self:processMessages()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
@@ -399,8 +422,105 @@ function Server:readSockets()
   for _, currentSocket in ipairs(socketsWithData) do
     if self.socketToConnectionIndex[currentSocket] then
       local connectionIndex = self.socketToConnectionIndex[currentSocket]
-      self.connections[connectionIndex]:read()
+      local success = self.connections[connectionIndex]:read()
+      if not success then
+        self:closeConnection(self.connections[connectionIndex])
+      end
     end
+  end
+end
+
+function Server:processMessages()
+  for index, connection in pairs(self.connections) do
+    if connection.messageQueue:len() > 0 then
+      local q = connection.messageQueue
+      for i = q.first, q.last do
+        local status, continue = pcall(function() return self:processMessage(q[i], connection) end)
+        if status then
+          if not continue then
+            q:clear()
+            break
+          end
+        else
+          local error = continue
+          local player = self.connectionToPlayer[connection]
+          logger.error("Incoming message from " .. player.name .. " in state " .. player.state .. " caused an error:\n" ..
+                 " pcall error results: " .. tostring(error) ..
+                 "\nJ-Message:\n" .. q[i])
+          if self.playerToRoom[player] then
+            logger.error("Room state during error:\n" .. self.playerToRoom[player]:toString())
+          end
+        end
+      end
+    end
+  end
+end
+
+---@param connection Connection
+---@return boolean? # if messages from this connection should continue to get processed
+function Server:processMessage(message, connection)
+  message = json.decode(message)
+  message = ClientMessages.sanitizeMessage(message)
+
+  if message.error_report then -- Error report is checked for first so that a full login is not required
+    self:handleErrorReport(message.error_report)
+    -- After sending the error report, the client will throw the error, so end the connection.
+    self:closeConnection(connection)
+    return false
+  elseif not connection.loggedIn then
+    if message.login_request then
+      local IP_logging_in, port = self.socket:getpeername()
+      return self:login(connection, message.user_id, message.name, IP_logging_in, port, message.engine_version, message)
+    else
+      self:closeConnection(connection)
+      return false
+    end
+  else
+    local player = self.connectionToPlayer[connection]
+    if message.logout then
+      self:closeConnection(connection)
+      return false
+    elseif player.state == "lobby" and message.game_request then
+      if message.game_request.sender == player.name then
+        self:propose_game(message.game_request.sender, message.game_request.receiver)
+        return true
+      end
+    elseif message.leaderboard_request then
+      connection:sendJson(ServerProtocol.sendLeaderboard(leaderboard:get_report(self.connectionToPlayer[connection].userId)))
+      return true
+    elseif message.spectate_request then
+      self:handleSpectateRequest(message, player)
+      return true
+    elseif player.state == "character select" and message.playerSettings then
+      -- Note this also starts the game if everything is ready from both players character select settings
+      player:updateSettings(message.playerSettings)
+      return true
+    elseif player.state == "playing" and message.taunt then
+      self.playerToRoom[player]:handleTaunt(message, player)
+      return true
+    elseif player.state == "playing" and message.game_over then
+      self.playerToRoom[player]:handleGameOverOutcome(message)
+      return true
+    elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
+      self:handleLeaveRoom(player)
+      return true
+    elseif (player.state == "spectating") and message.leave_room then
+      if self.playerToRoom[player]:remove_spectator(player) then
+        self:setLobbyChanged()
+        return true
+      end
+    elseif message.unknown then
+      self:closeConnection(connection)
+      return false
+    end
+  end
+  return false
+end
+
+function Server:handleErrorReport(errorReport)
+  logger.warn("Received an error report.")
+  if not write_error_report(errorReport) then
+    logger.error("The error report was either too large or had an I/O failure when attempting to write the file.")
   end
 end
 
@@ -408,7 +528,8 @@ end
 function Server:pingConnections(currentTime)
   for _, connection in pairs(self.connections) do
     if currentTime - connection.lastCommunicationTime > 10 then
-      logger.debug("Closing connection for " .. (connection.name or "nil") .. ". Connection timed out (>10 sec)")
+      local player = self.connectionToPlayer[connection]
+      logger.debug("Closing connection for " .. (player and player.name or "nil") .. ". Connection timed out (>10 sec)")
       connection:close()
     elseif currentTime - connection.lastCommunicationTime > 1 then
       connection:send(NetworkProtocol.serverMessageTypes.ping.prefix) -- Request a ping to make sure the connection is still active
@@ -433,11 +554,176 @@ function Server:broadCastLobbyIfChanged()
     local lobbyState = self:lobby_state()
     local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
     for _, connection in pairs(self.connections) do
-      if connection.state == "lobby" then
+      if self.connectionToPlayer[connection].state == "lobby" then
         connection:sendJson(message)
       end
     end
     self.lobbyChanged = false
+  end
+end
+
+---@param connection Connection
+---@param userId privateUserId
+---@param name string
+---@param ipAddress string
+---@param port integer
+---@param engineVersion string
+---@param playerSettings table
+---@return boolean # whether the login was successful
+function Server:login(connection, userId, name, ipAddress, port, engineVersion, playerSettings)
+  local message = {}
+
+  logger.debug("New login attempt:  " .. ipAddress .. ":" .. port)
+
+  local denyReason, playerBan = self:canLogin(userId, name, ipAddress, engineVersion)
+
+  if denyReason ~= nil or playerBan ~= nil then
+    self:denyLogin(connection, denyReason, playerBan)
+    return false
+  else
+    if userId == "need a new user id" then
+      assert(self.playerbase:nameTaken("", name) == false)
+      userId = self:createNewUser(name)
+      logger.info("New user: " .. name .. " was created")
+      message.new_user_id = userId
+    end
+
+    -- Name change is allowed because it was already checked above
+    if self.playerbase.players[userId] ~= name then
+      local oldName = self.playerbase.players[userId]
+      self:changeUsername(userId, name)
+
+      logger.warn(userId .. " changed name " .. oldName .. " to " .. name)
+
+      message.name_changed = true
+      message.old_name = oldName
+      message.new_name = name
+    end
+
+    local player = Player(userId, connection, name)
+    player:updateSettings(playerSettings)
+    assert(connection.player.publicPlayerID ~= nil)
+    self.nameToConnectionIndex[name] = connection.index
+    self.connectionToPlayer[connection] = player
+    self.nameToPlayer[name] = player
+    connection.loggedIn = true
+    connection.player = player
+    leaderboard:update_timestamp(userId)
+    self.database:insertIPID(ipAddress, connection.player.publicPlayerID)
+    self:setLobbyChanged()
+
+    local serverNotices = self.database:getPlayerMessages(connection.player.publicPlayerID)
+    local serverUnseenBans = self.database:getPlayerUnseenBans(connection.player.publicPlayerID)
+    if tableUtils.length(serverNotices) > 0 or tableUtils.length(serverUnseenBans) > 0 then
+      local noticeString = ""
+      for messageID, serverNotice in pairs(serverNotices) do
+        noticeString = noticeString .. serverNotice .. "\n\n"
+        self.database:playerMessageSeen(messageID)
+      end
+      for banID, reason in pairs(serverUnseenBans) do
+        noticeString = noticeString .. "A ban was issued to you for: " .. reason .. "\n\n"
+        self.database:playerBanSeen(banID)
+      end
+      message.server_notice = noticeString
+    end
+
+    message.login_successful = true
+    connection:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name, connection.player.publicPlayerID))
+
+    logger.warn(connection.index .. " Login from " .. name .. " with ip: " .. ipAddress .. " publicPlayerID: " .. connection.player.publicPlayerID)
+    return true
+  end
+end
+
+---@return string? denyReason
+---@return PlayerBan? playerBan
+function Server:canLogin(userID, name, IP_logging_in, engineVersion)
+  local playerBan = self:isPlayerBanned(IP_logging_in)
+  local denyReason = nil
+  if playerBan then
+  elseif engineVersion ~= ENGINE_VERSION and not ANY_ENGINE_VERSION_ENABLED then
+    denyReason = "Please update your game, server expects engine version: " .. ENGINE_VERSION
+  elseif not name or name == "" then
+    denyReason = "Name cannot be blank"
+  elseif string.lower(name) == "anonymous" then
+    denyReason = 'Username cannot be "anonymous"'
+  elseif name:lower():match("d+e+f+a+u+l+t+n+a+m+e?") then
+    denyReason = 'Username cannot be "defaultname" or a variation of it'
+  elseif name:find("[^_%w]") then
+    denyReason = "Usernames are limited to alphanumeric and underscores"
+  elseif utf8.len(name) > NAME_LENGTH_LIMIT then
+    denyReason = "The name length limit is " .. NAME_LENGTH_LIMIT .. " characters"
+  elseif not userID then
+    denyReason = "Client did not send a user ID in the login request"
+  elseif userID == "need a new user id" then
+    if self.playerbase:nameTaken("", name) then
+      denyReason = "That player name is already taken"
+      logger.warn("Login failure: Player tried to create a new user with an already taken name: " .. name)
+    end
+  elseif not self.playerbase.players[userID] then
+    playerBan = self:insertBan(IP_logging_in, "The user ID provided was not found on this server", os.time() + 60)
+    logger.warn("Login failure: " .. name .. " specified an invalid user ID")
+  elseif self.playerbase.players[userID] ~= name and self.playerbase:nameTaken(userID, name) then
+    denyReason = "That player name is already taken"
+    logger.warn("Login failure: Player (" .. userID .. ") tried to use already taken name: " .. name)
+  elseif self.nameToConnectionIndex[name] then
+    denyReason = "Cannot login with the same name twice"
+  end
+
+  return denyReason, playerBan
+end
+
+---@param message table
+---@param player ServerPlayer
+function Server:handleSpectateRequest(message, player)
+  local requestedRoom = self:roomNumberToRoom(message.spectate_request.roomNumber)
+
+  if requestedRoom then
+    local roomState = requestedRoom:state()
+    if (roomState == "character select" or roomState == "playing") then
+      logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
+      self.spectatorToRoom[player] = requestedRoom
+      requestedRoom:add_spectator(player)
+      self:setLobbyChanged()
+    else
+      logger.warn("tried to join room in invalid state " .. roomState)
+    end
+  else
+    -- TODO: tell the client the join request failed, couldn't find the room.
+    logger.warn("couldn't find room")
+  end
+end
+
+function Server:handleLeaveRoom(player)
+  local room = self.playerToRoom[player]
+  if room then
+    self:closeRoom(room)
+  else
+    room = self.spectatorToRoom[player]
+    if room then
+      room:remove_spectator(player)
+      self.spectatorToRoom[player] = nil
+    end
+  end
+end
+
+---@param connection Connection
+function Server:closeConnection(connection)
+  local player = self.connectionToPlayer[connection]
+  logger.info("Closing connection " .. connection.index .. " to " .. player and player.name or "noname")
+
+  self.socketToConnectionIndex[connection.socket] = nil
+  self.connections[connection.index] = nil
+  self.connectionToPlayer[connection] = nil
+  connection:close()
+  if player then
+    self:clear_proposals(player.name)
+    self:handleLeaveRoom(player)
+    self.playerToRoom[player] = nil
+    self.spectatorToRoom[player] = nil
+    self.nameToPlayer[player.name] = nil
+    self.nameToConnectionIndex[player.name] = nil
+    self:setLobbyChanged()
   end
 end
 
