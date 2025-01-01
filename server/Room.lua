@@ -483,6 +483,8 @@ function Room:saveReplay()
   write_replay_file(self.replay, path, filename)
 end
 
+---@return boolean # if the players may play ranked
+---@return string[] reasons why or why not they may play ranked or what caveats apply to playing ranked
 function Room:rating_adjustment_approved()
   for i, player in ipairs(self.players) do
     if not player.wants_ranked_match then
@@ -493,6 +495,7 @@ function Room:rating_adjustment_approved()
   return self.leaderboard:rating_adjustment_approved(self.players)
 end
 
+---@return string
 function Room:toString()
   local info = self.name
   info = info .. "\nRoom number:" .. self.roomNumber
@@ -512,6 +515,8 @@ function Room:handleTaunt(message, sender)
   self:broadcastJson(msg, sender)
 end
 
+---@param message table
+---@param sender ServerPlayer
 function Room:handleGameOverOutcome(message, sender)
   self:reportOutcome(sender, message.outcome)
 end

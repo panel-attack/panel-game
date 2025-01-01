@@ -250,8 +250,8 @@ function Server:create_room(...)
   self:setLobbyChanged()
   local players = {...}
   local newRoom = Room(self.roomNumberIndex, leaderboard, players)
-  newRoom:connectSignal("matchStart", self, self.lobbyChanged)
-  newRoom:connectSignal("matchEnd", self, self.lobbyChanged)
+  newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
+  newRoom:connectSignal("matchEnd", self, self.setLobbyChanged)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
   for _, player in ipairs(players) do
@@ -428,30 +428,68 @@ function Server:updateConnections()
   end
 end
 
+local function error_printer(msg, layer)
+	logger.error((debug.traceback("Error: " .. tostring(msg), 1+(layer or 1)):gsub("\n[^\n]+$", "")))
+end
+
+local function handleError(msg)
+  msg = tostring(msg)
+
+	error_printer(msg, 2)
+
+  local trace = debug.traceback()
+  ---@type any
+  local sanitizedmsg = {}
+	for char in msg:gmatch(utf8.charpattern) do
+		table.insert(sanitizedmsg, char)
+	end
+	sanitizedmsg = table.concat(sanitizedmsg)
+
+	local err = {}
+
+	table.insert(err, "Error\n")
+	table.insert(err, sanitizedmsg)
+
+	if #sanitizedmsg ~= #msg then
+		table.insert(err, "Invalid UTF-8 string in error message.")
+	end
+
+	table.insert(err, "\n")
+
+	for l in trace:gmatch("(.-)\n") do
+		if not l:match("boot.lua") then
+			l = l:gsub("stack traceback:", "Traceback\n")
+			table.insert(err, l)
+		end
+	end
+
+	local p = table.concat(err, "\n")
+
+	p = p:gsub("\t", "")
+	p = p:gsub("%[string \"(.-)\"%]", "%1")
+
+  logger.error(p)
+end
+
 function Server:processMessages()
   for index, connection in pairs(self.connections) do
     if connection.incomingMessageQueue.last ~= -1 then
       local q = connection.incomingMessageQueue
       local player = self.connectionToPlayer[connection]
       for i = q.first, q.last do
-        local status, continue = pcall(function() return self:processMessage(q[i], connection) end)
+        local status, continue = xpcall(function() return self:processMessage(q[i], connection) end, handleError)
         if status then
           if not continue then
             break
           end
         else
-          local error = continue
           if player then
-            logger.error("Incoming message from " .. player.name .. " in state " .. player.state .. " caused an error:\n" ..
-                   " pcall error results: " .. tostring(error) ..
-                   "\nJ-Message:\n" .. q[i])
+            logger.error("Incoming message from " .. player.name .. " in state " .. player.state .. " caused an error." .. "\nJ-Message:\n" .. q[i])
             if self.playerToRoom[player] then
               logger.error("Room state during error:\n" .. self.playerToRoom[player]:toString())
             end
           else
-            logger.error("Incoming message from " .. connection.index .. " caused an error:\n" ..
-                   " pcall error results: " .. tostring(error) ..
-                   "\nJ-Message:\n" .. q[i])
+            logger.error("Incoming message from " .. connection.index .. " caused an error." .. "\nJ-Message:\n" .. q[i])
           end
         end
       end
@@ -512,7 +550,7 @@ function Server:processMessage(message, connection)
       self.playerToRoom[player]:handleTaunt(message, player)
       return true
     elseif player.state == "playing" and message.game_over then
-      self.playerToRoom[player]:handleGameOverOutcome(message)
+      self.playerToRoom[player]:handleGameOverOutcome(message, player)
       return true
     elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
       self:handleLeaveRoom(player)
