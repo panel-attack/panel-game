@@ -20,7 +20,7 @@ end
 
 function Playerbase:updatePlayer(user_id, user_name)
   self.players[user_id] = user_name
-  write_players_file(self)
+  FileIO.write_players_file(self)
 end
 
 -- returns true if the name is taken by a different user already

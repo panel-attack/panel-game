@@ -1,3 +1,4 @@
+---@diagnostic disable: param-type-mismatch
 --[[
 Source: https://web.archive.org/web/20231014182633/https://nocurve.com/2014/03/05/simple-csv-read-and-write-using-lua/
 Provided under a public domain license (see comments).
@@ -70,7 +71,7 @@ end
 
 ---------------------------------------------------------------------
 function read(path, sep, tonum, null)
-  if fileExists(path) == false then
+  if FileIO.fileExists(path) == false then
     return nil
   end
 

@@ -3,7 +3,9 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local csvfile = require("server.simplecsv")
 
-function makeDirectory(path) 
+FileIO = {}
+
+function FileIO.makeDirectory(path) 
   local status, error = pcall(
     function()
       lfs.mkdir(path)
@@ -14,15 +16,15 @@ function makeDirectory(path)
   end
 end
 
-function makeDirectoryRecursive(path)
+function FileIO.makeDirectoryRecursive(path)
   local sep, pStr = package.config:sub(1, 1), ""
   for dir in path:gmatch("[^" .. sep .. "]+") do
     pStr = pStr .. dir .. sep
-    makeDirectory(pStr)
+    FileIO.makeDirectory(pStr)
   end
 end
 
-function fileExists(name)
+function FileIO.fileExists(name)
   local f=io.open(name,"r")
   if f ~= nil then
     io.close(f)
@@ -32,7 +34,7 @@ function fileExists(name)
   end
 end
 
-function write_players_file(playerbase)
+function FileIO.write_players_file(playerbase)
   if playerbase.filename == nil then
     return
   end
@@ -50,7 +52,7 @@ function write_players_file(playerbase)
   end
 end
 
-function read_players_file(playerbase)
+function FileIO.read_players_file(playerbase)
   if playerbase.filename == nil then
     return
   end
@@ -62,7 +64,7 @@ function read_players_file(playerbase)
         io.input(f)
         local data = io.read("*all")
         playerbase.players = json.decode(data)
-        logger.info(table.length(playerbase.players) .. " players loaded")
+        logger.info(tableUtils.length(playerbase.players) .. " players loaded")
         io.close(f)
       end
     end
@@ -70,7 +72,7 @@ function read_players_file(playerbase)
 end
 
 
-function logGameResult(player1ID, player2ID, player1Won, rankedValue)
+function FileIO.logGameResult(player1ID, player2ID, player1Won, rankedValue)
   local status, error = pcall(
     function()
       local f = assert(io.open("GameResults.csv", "a"))
@@ -84,7 +86,7 @@ function logGameResult(player1ID, player2ID, player1Won, rankedValue)
   end
 end
 
-function readGameResults()
+function FileIO.readGameResults()
 
   local filename = "GameResults.csv"
 
@@ -97,8 +99,9 @@ function readGameResults()
   return gameResults
 end
 
-function write_error_report(error_report_json)
+function FileIO.write_error_report(error_report_json)
   local json_string = json.encode(error_report_json)
+  ---@cast json_string string # json.encode with only 1 arg always returns a string
   if json_string:len() >= 5000 --[[5kB]] then
     return false
   end
@@ -115,7 +118,7 @@ function write_error_report(error_report_json)
   )
 end
 
-function write_leaderboard_file()
+function FileIO.write_leaderboard_file()
   local status, error = pcall(
     function()
       -- local f = assert(io.open("leaderboard.txt", "w"))
@@ -134,7 +137,7 @@ function write_leaderboard_file()
         public_leaderboard_table[#public_leaderboard_table + 1] = {v.user_name, v.rating, v.ranked_games_played}
       end
       csvfile.write("." .. sep .. "leaderboard.csv", leaderboard_table)
-      makeDirectoryRecursive("." .. sep .. "ftp")
+      FileIO.makeDirectoryRecursive("." .. sep .. "ftp")
       csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_leaderboard.csv", public_leaderboard_table)
     end
   )
@@ -143,7 +146,7 @@ function write_leaderboard_file()
   end
 end
 
-function read_leaderboard_file()
+function FileIO.read_leaderboard_file()
   local filename = "./leaderboard.csv"
 
   local csv_table = {}
@@ -179,7 +182,7 @@ function read_leaderboard_file()
   end
 end
 
-function read_user_placement_match_file(user_id)
+function FileIO.read_user_placement_match_file(user_id)
   return pcall(
     function()
       local sep = package.config:sub(1, 1)
@@ -223,11 +226,11 @@ function read_user_placement_match_file(user_id)
   )
 end
 
-function move_user_placement_file_to_complete(user_id)
+function FileIO.move_user_placement_file_to_complete(user_id)
   local status, error = pcall(
     function()
       local sep = package.config:sub(1, 1)
-      makeDirectoryRecursive("./placement_matches/complete")
+      FileIO.makeDirectoryRecursive("./placement_matches/complete")
       local moved, err = os.rename("./placement_matches/incomplete/" .. user_id .. ".csv", "./placement_matches/complete/" .. user_id .. ".csv")
     end
   )
@@ -236,14 +239,14 @@ function move_user_placement_file_to_complete(user_id)
   end
 end
 
-function write_user_placement_match_file(user_id, placement_matches)
+function FileIO.write_user_placement_match_file(user_id, placement_matches)
   local sep = package.config:sub(1, 1)
   local pm_table = {}
   pm_table[#pm_table + 1] = {"op_user_id", "op_name", "op_rating", "outcome"}
   for k, v in ipairs(placement_matches) do
     pm_table[#pm_table + 1] = {v.op_user_id, v.op_name, v.op_rating, v.outcome}
   end
-  makeDirectoryRecursive("placement_matches" .. sep .. "incomplete")
+  FileIO.makeDirectoryRecursive("placement_matches" .. sep .. "incomplete")
   local fullFileName = "placement_matches" .. sep .. "incomplete" .. sep .. user_id .. ".csv"
   local status, error = pcall(
     function()
@@ -255,11 +258,11 @@ function write_user_placement_match_file(user_id, placement_matches)
   end
 end
 
-function write_replay_file(replay, path, filename)
+function FileIO.write_replay_file(replay, path, filename)
   local sep = package.config:sub(1, 1)
   local status, error = pcall(
     function()
-      makeDirectoryRecursive(path)
+      FileIO.makeDirectoryRecursive(path)
       local f = assert(io.open(path .. sep .. filename, "w"))
       io.output(f)
       io.write(json.encode(replay))
@@ -271,7 +274,7 @@ function write_replay_file(replay, path, filename)
   end
 end
 
-function read_csprng_seed_file()
+function FileIO.read_csprng_seed_file()
   pcall(
     function()
       local f = io.open("csprng_seed.txt", "r")

@@ -429,7 +429,7 @@ function Room:resolve_game_outcome()
   if shouldAdjustRatings then
     rankedValue = 1
   end
-  logGameResult(self.players[1].userId, self.players[2].userId, resultValue, rankedValue)
+  FileIO.logGameResult(self.players[1].userId, self.players[2].userId, resultValue, rankedValue)
 
   if outcome == 0 then
     logger.debug("tie.  Nobody scored")
@@ -494,7 +494,7 @@ function Room:saveReplay()
   local filename = self.replay:generateFileName() .. ".json"
 
   logger.debug("saving replay as " .. path .. sep .. filename)
-  write_replay_file(self.replay, path, filename)
+  FileIO.write_replay_file(self.replay, path, filename)
 end
 
 ---@return boolean # if the players may play ranked

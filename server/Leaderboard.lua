@@ -66,7 +66,7 @@ function Leaderboard.update(self, user_id, new_rating, match_details)
   end
   logger.debug("new_rating = " .. new_rating)
   logger.debug("about to write_leaderboard_file")
-  write_leaderboard_file()
+  FileIO.write_leaderboard_file()
   logger.debug("done with Leaderboard.update")
 end
 
@@ -116,7 +116,7 @@ function Leaderboard.update_timestamp(self, user_id)
   if self.players[user_id] then
     local timestamp = os.time()
     self.players[user_id].last_login_time = timestamp
-    write_leaderboard_file()
+    FileIO.write_leaderboard_file()
     logger.debug(user_id .. "'s login timestamp has been updated to " .. timestamp)
   else
     logger.debug(user_id .. " is not on the leaderboard, so no timestamp will be assigned at this time.")
@@ -152,7 +152,7 @@ end
 function Leaderboard:loadPlacementMatches(userId)
   logger.debug("Requested loading placement matches for user_id:  " .. (userId or "nil"))
   if not self.loadedPlacementMatches.incomplete[userId] then
-    local read_success, matches = read_user_placement_match_file(userId)
+    local read_success, matches = FileIO.read_user_placement_match_file(userId)
     if read_success then
       self.loadedPlacementMatches.incomplete[userId] = matches or {}
       logger.debug("loaded placement matches from file:")
@@ -194,7 +194,7 @@ function Leaderboard:addToLeaderboard(player, gameID)
       self.players[player.userId].placement_done = true
       database:insertPlayerELOChange(player.userId, DEFAULT_RATING, gameID)
     end
-    write_leaderboard_file()
+    FileIO.write_leaderboard_file()
   end
 end
 
@@ -294,7 +294,7 @@ function Leaderboard:adjust_ratings(room, winning_player_number, gameID)
         }
         logger.debug("PRINTING PLACEMENT MATCHES FOR USER")
         logger.debug(json.encode(leaderboard.loadedPlacementMatches.incomplete[players[player_number].userId]))
-        write_user_placement_match_file(players[player_number].userId, leaderboard.loadedPlacementMatches.incomplete[players[player_number].userId])
+        FileIO.write_user_placement_match_file(players[player_number].userId, leaderboard.loadedPlacementMatches.incomplete[players[player_number].userId])
 
         --adjust newcomer's placement_rating
         if not leaderboard.players[players[player_number].userId] then
@@ -406,8 +406,8 @@ function Leaderboard:process_placement_matches(user_id)
     self.players[placement_matches[i].op_user_id].ranked_games_won = (self.players[placement_matches[i].op_user_id].ranked_games_won or 0) + op_outcome
   end
   self.players[user_id].placement_done = true
-  write_leaderboard_file()
-  move_user_placement_file_to_complete(user_id)
+  FileIO.write_leaderboard_file()
+  FileIO.move_user_placement_file_to_complete(user_id)
 end
 
 ---@param players ServerPlayer[]

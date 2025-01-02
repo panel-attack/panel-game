@@ -83,9 +83,9 @@ local Server = class(
     end
 
     self.playerbase = Playerbase("playerbase", "players.txt")
-    read_players_file(self.playerbase)
+    FileIO.read_players_file(self.playerbase)
     leaderboard = Leaderboard("leaderboard")
-    read_leaderboard_file()
+    FileIO.read_leaderboard_file()
 
     local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
     if isPlayerTableEmpty then
@@ -94,11 +94,11 @@ local Server = class(
 
     logger.debug("leaderboard json:")
     logger.debug(json.encode(leaderboard.players))
-    write_leaderboard_file()
+    FileIO.write_leaderboard_file()
     logger.debug(os.time())
     logger.debug("playerbase: " .. json.encode(self.playerbase.players))
     logger.debug("leaderboard report: " .. json.encode(leaderboard:get_report(self)))
-    read_csprng_seed_file()
+    FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
     seed_from_mt(extract_mt())
     --timezone testing
@@ -144,7 +144,7 @@ function Server:importDatabase()
     self.database:insertPlayerELOChange(k, rating, 0)
   end
 
-  local gameMatches = readGameResults()
+  local gameMatches = FileIO.readGameResults()
   if gameMatches then -- only do it if there was a gameResults file to begin with
     logger.info("Importing GameResults.csv to database")
     for _, result in ipairs(gameMatches) do
@@ -375,6 +375,7 @@ function Server:updateConnections()
   end
 
   -- Wait for up to 1 second to see if there is any data to read on all the given sockets
+  -- as far as I understand the waiting time is only until at least one socket has data so it's not actually stalling unless there is no data anyway
   local socketsWithData = socket.select(socketsToCheck, nil, 1)
   assert(type(socketsWithData) == "table")
   for _, currentSocket in ipairs(socketsWithData) do
@@ -530,7 +531,7 @@ end
 
 function Server:handleErrorReport(errorReport)
   logger.warn("Received an error report.")
-  if not write_error_report(errorReport) then
+  if not FileIO.write_error_report(errorReport) then
     logger.error("The error report was either too large or had an I/O failure when attempting to write the file.")
   end
 end
