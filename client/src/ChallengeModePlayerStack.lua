@@ -24,7 +24,10 @@ function(self, args)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
   self.engine:connectSignal("finishedRun", self, self.onRun)
 
-  self.enableSfx = not self.engine.attackEngine.disableQueueLimit
+  -- queue limit is set for automated attack settings e.g. combo storm that send garbage every frame
+  -- that can cause an annoying buzzing sound depending on the delay of the SFX which we don't want
+  -- so only play SFX for attack settings from replays or ones that had the queue limit manually disabled
+  self.enableSfx = self.engine.attackEngine.disableQueueLimit
 
   self.multiBarFrameCount = 240
 
