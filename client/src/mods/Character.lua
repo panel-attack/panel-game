@@ -458,8 +458,6 @@ function Character.sound_init(self, full, yields)
       else
         self.musics[music]:setLooping(false)
       end
-    elseif not self.musics[music] and not self:isBundle() then
-      self.musics[music] = default_character.musics[music] or themes[config.theme].zero_sound
     end
 
     if yields then

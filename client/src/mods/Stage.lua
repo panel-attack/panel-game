@@ -20,7 +20,6 @@ local allImages = {"thumbnail", "background"}
 local defaulted_images = {thumbnail = true, background = true} -- those images will be defaulted if missing
 local basic_musics = {}
 local other_musics = {"normal_music", "danger_music", "normal_music_start", "danger_music_start"}
-local defaulted_musics = {} -- those musics will be defaulted if missing
 
 local randomStage = nil -- acts as the bundle stage for all theme stages
 
@@ -226,8 +225,6 @@ function Stage.sound_init(self, full, yields)
       else
         self.musics[music]:setLooping(false)
       end
-    elseif not self.musics[music] and defaulted_musics[music] then
-      self.musics[music] = themes[config.theme].zero_sound
     end
 
     if yields then
