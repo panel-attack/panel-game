@@ -94,7 +94,7 @@ local Server = class(
 
     logger.debug("leaderboard json:")
     logger.debug(json.encode(leaderboard.players))
-    FileIO.write_leaderboard_file()
+    FileIO.write_leaderboard_file(leaderboard)
     logger.debug(os.time())
     logger.debug("playerbase: " .. json.encode(self.playerbase.players))
     logger.debug("leaderboard report: " .. json.encode(leaderboard:get_report(self)))

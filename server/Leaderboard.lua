@@ -51,7 +51,7 @@ local Leaderboard =
   end
 )
 
-function Leaderboard.update(self, user_id, new_rating, match_details)
+function Leaderboard:update(user_id, new_rating, match_details)
   logger.debug("in Leaderboard.update")
   if self.players[user_id] then
     self.players[user_id].rating = new_rating
@@ -66,7 +66,7 @@ function Leaderboard.update(self, user_id, new_rating, match_details)
   end
   logger.debug("new_rating = " .. new_rating)
   logger.debug("about to write_leaderboard_file")
-  FileIO.write_leaderboard_file()
+  FileIO.write_leaderboard_file(self)
   logger.debug("done with Leaderboard.update")
 end
 
@@ -112,11 +112,11 @@ function Leaderboard:get_report(server, user_id_of_requester)
   return report
 end
 
-function Leaderboard.update_timestamp(self, user_id)
+function Leaderboard:update_timestamp(user_id)
   if self.players[user_id] then
     local timestamp = os.time()
     self.players[user_id].last_login_time = timestamp
-    FileIO.write_leaderboard_file()
+    FileIO.write_leaderboard_file(self)
     logger.debug(user_id .. "'s login timestamp has been updated to " .. timestamp)
   else
     logger.debug(user_id .. " is not on the leaderboard, so no timestamp will be assigned at this time.")
@@ -194,7 +194,7 @@ function Leaderboard:addToLeaderboard(player, gameID)
       self.players[player.userId].placement_done = true
       database:insertPlayerELOChange(player.userId, DEFAULT_RATING, gameID)
     end
-    FileIO.write_leaderboard_file()
+    FileIO.write_leaderboard_file(self)
   end
 end
 
@@ -406,7 +406,7 @@ function Leaderboard:process_placement_matches(user_id)
     self.players[placement_matches[i].op_user_id].ranked_games_won = (self.players[placement_matches[i].op_user_id].ranked_games_won or 0) + op_outcome
   end
   self.players[user_id].placement_done = true
-  FileIO.write_leaderboard_file()
+  FileIO.write_leaderboard_file(self)
   FileIO.move_user_placement_file_to_complete(user_id)
 end
 

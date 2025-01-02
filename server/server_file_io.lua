@@ -120,7 +120,8 @@ function FileIO.write_error_report(error_report_json)
   )
 end
 
-function FileIO.write_leaderboard_file()
+---@param leaderboard Leaderboard
+function FileIO.write_leaderboard_file(leaderboard)
   local status, error = pcall(
     function()
       -- local f = assert(io.open("leaderboard.txt", "w"))
