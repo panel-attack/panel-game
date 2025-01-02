@@ -252,7 +252,7 @@ function Server:create_room(...)
   local players = {...}
   local newRoom = Room(self.roomNumberIndex, players, self.database, leaderboard)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
-  newRoom:connectSignal("matchEnd", self, self.setLobbyChanged)
+  newRoom:connectSignal("matchEnd", self, self.processGameEnd)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
   for _, player in ipairs(players) do
@@ -746,6 +746,42 @@ function Server:closeConnection(connection)
     self.nameToConnectionIndex[player.name] = nil
     self:setLobbyChanged()
   end
+end
+
+---@param game ServerGame
+function Server:processGameEnd(room, game)
+  self:setLobbyChanged()
+
+  local gameID = self.database:insertGame(game.ranked)
+  game:setId(gameID)
+
+  -- record the game result for statistics, record keeping, and testing new features
+  local resultValue = 0.5
+  for i, player in ipairs(game.players) do
+    local level = not player:usesModifiedLevelData() and player.level or nil
+    self.database:insertPlayerGameResult(player.userId, game.id, level, game:getPlacement(player))
+    if player.publicPlayerID == game.winnerId then
+      if i == 1 then
+        resultValue = 1
+      elseif i == 2 then
+      resultValue = 0
+      end
+    end
+  end
+
+  local rankedValue = 0
+  if game.ranked then
+    rankedValue = 1
+  end
+  FileIO.logGameResult(game.players[1].userId, game.players[2].userId, resultValue, rankedValue)
+
+  if game.ranked and game.winnerId then
+    for i, player in ipairs(game.players) do
+      room.leaderboard:adjust_ratings(room, i, gameID)
+    end
+  end
+
+  FileIO.saveReplay(game)
 end
 
 return Server

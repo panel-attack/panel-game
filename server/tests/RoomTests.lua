@@ -15,16 +15,17 @@ local function getRoom()
   -- don't want to deal with I/O for the test
   p1.save_replays_publicly = "not at all"
   local room = Room(1, {p1, p2}, MockDB)
-  -- the replay field is being cleared after saving so save a reference to assert against
-  room.saveReplay = function(self)
-    self.replayRef = self.replay
-  end
+  -- the game is being cleared from the room when it ends so catch the reference to assert against
+  local gameCatcher = {
+    catch = function(self, r, game) self.game = game end
+  }
+  room:connectSignal("matchEnd", gameCatcher, gameCatcher.catch)
 
-  return room, p1, p2
+  return room, p1, p2, gameCatcher
 end
 
 local function basicTest()
-  local room, p1, p2 = getRoom()
+  local room, p1, p2, gameCatcher = getRoom()
   for i, player in ipairs(room.players) do
     assert(player.state == "character select")
     local firstMsg = player.connection.outgoingMessageQueue:pop()
@@ -61,23 +62,24 @@ local function basicTest()
     room:broadcastInput("A", p2)
   end
 
-  room:reportOutcome(p2, 1)
+  room:handleGameOverOutcome({outcome = 1}, p2)
 
   -- winner usually sends a few more inputs until they get the messages from the other play that the match is over
   room:broadcastInput("A", p1)
   room:broadcastInput("A", p1)
   room:broadcastInput("A", p1)
 
-  room:reportOutcome(p1, 1)
-
-  assert(room.replayRef.players[1].settings.inputs == "A912")
-  assert(room.replayRef.players[2].settings.inputs == "A909")
+  room:handleGameOverOutcome({outcome = 1}, p1)
+  assert(gameCatcher.game, "Expected the game catcher to catch the game")
+  local replay = gameCatcher.game.replay
+  assert(replay.players[1].settings.inputs == "A912")
+  assert(replay.players[2].settings.inputs == "A909")
   assert(p1.state == "character select")
   assert(p2.state == "character select")
   assert(room.win_counts[1] == 1)
   assert(room.win_counts[2] == 0)
-  assert(room.replayRef.winnerIndex == 1)
-  assert(room.replayRef.winnerId == p1.publicPlayerID)
+  assert(gameCatcher.game.winnerIndex == 1)
+  assert(gameCatcher.game.winnerId == p1.publicPlayerID)
   assert(p1.connection.outgoingInputQueue:len() == 909)
   assert(p2.connection.outgoingInputQueue:len() == 912)
 

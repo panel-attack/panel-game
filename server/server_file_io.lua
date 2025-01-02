@@ -3,6 +3,8 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local csvfile = require("server.simplecsv")
 
+local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
+
 FileIO = {}
 
 function FileIO.makeDirectory(path) 
@@ -300,4 +302,20 @@ function FileIO.read_csprng_seed_file()
       end
     end
   )
+end
+
+---@param game ServerGame
+function FileIO.saveReplay(game)
+  for i, player in ipairs(game.players) do
+    if player.save_replays_publicly == "not at all" then
+      logger.debug("replay not saved because a player didn't want it saved")
+      return
+    end
+  end
+
+  local path = "ftp" .. sep .. game.replay:generatePath(sep)
+  local filename = game.replay:generateFileName() .. ".json"
+
+  logger.debug("saving replay as " .. path .. sep .. filename)
+  FileIO.write_replay_file(game.replay, path, filename)
 end
