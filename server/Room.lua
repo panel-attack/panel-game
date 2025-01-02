@@ -51,7 +51,7 @@ function(self, roomNumber, players, database, leaderboard)
     player:setRoom(self)
     self.win_counts[i] = 0
     if self.leaderboard then
-      local rating = self.leaderboard:getRating(player) or 0
+      local rating = math.round(self.leaderboard:getRating(player) or 0)
       local placementProgress = self.leaderboard:getPlacementProgress(player)
       self.ratings[i] = {old = rating, new = rating, difference = 0, league = self.leaderboard:get_league(rating), placement_match_progress = placementProgress}
     end

@@ -52,19 +52,14 @@ local Leaderboard =
   end
 )
 
-function Leaderboard:update(user_id, new_rating, match_details)
+function Leaderboard:update(user_id, new_rating)
   logger.debug("in Leaderboard.update")
   if self.players[user_id] then
     self.players[user_id].rating = new_rating
   else
     self.players[user_id] = {rating = new_rating}
   end
-  if match_details and match_details ~= "" then
-    for k, v in pairs(match_details) do
-      self.players[user_id].ranked_games_won = (self.players[user_id].ranked_games_won or 0) + v.outcome
-      self.players[user_id].ranked_games_played = (self.players[user_id].ranked_games_played or 0) + 1
-    end
-  end
+
   logger.debug("new_rating = " .. new_rating)
   logger.debug("about to write_leaderboard_file")
   FileIO.write_leaderboard_file(self)
@@ -125,6 +120,8 @@ function Leaderboard:update_timestamp(user_id)
 end
 
 ---@param userId privateUserId
+---@return boolean processPlacementMatches if the player's placement matches should get processed
+---@return string? reason why they should not get processed
 function Leaderboard:qualifies_for_placement(userId)
   --local placement_match_win_ratio_requirement = .2
   self:loadPlacementMatches(userId)
@@ -171,10 +168,15 @@ function Leaderboard:loadPlacementMatches(userId)
 end
 
 ---@param player ServerPlayer
----@return number? rating
+---@return number rating
 function Leaderboard:getRating(player)
-  if self.players[player.userId] and self.players[player.userId].rating then
-    return math.round(self.players[player.userId].rating or 0)
+  if self.players[player.userId] then
+    local lp = self.players[player.userId]
+    if lp.placement_done then
+      return lp.rating or 0
+    else
+      return lp.placement_rating or 0
+    end
   end
 end
 
@@ -188,14 +190,15 @@ function Leaderboard:getPlacementProgress(player)
 end
 
 ---@param player ServerPlayer
----@param gameID integer
-function Leaderboard:addToLeaderboard(player, gameID)
+function Leaderboard:addToLeaderboard(player)
   if not self.players[player.userId] or not self.players[player.userId].rating then
     self.players[player.userId] = {user_name = player.name, rating = DEFAULT_RATING}
     logger.debug("Gave " .. self.players[player.userId].user_name .. " a new rating of " .. DEFAULT_RATING)
     if not PLACEMENT_MATCHES_ENABLED then
       self.players[player.userId].placement_done = true
-      database:insertPlayerELOChange(player.userId, DEFAULT_RATING, gameID)
+      -- we probably shouldn't insert on adding to leaderboard even if placement matches are disabled
+      -- cause that would cause two ratings to be recorded for the same gameID
+      --database:insertPlayerELOChange(player.userId, DEFAULT_RATING, gameID)
     end
     FileIO.write_leaderboard_file(self)
   end
@@ -267,21 +270,122 @@ function Leaderboard:addPlacementResult(player, opponent, result)
   logger.debug("PRINTING PLACEMENT MATCHES FOR USER")
   logger.debug(json.encode(self.loadedPlacementMatches.incomplete[player.userId]))
   FileIO.write_user_placement_match_file(player.userId, self.loadedPlacementMatches.incomplete[player.userId])
+
+  local leaderboardPlayer = self.players[player.userId]
+  --adjust newcomer's placement_rating
+  leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or DEFAULT_RATING, self.players[player.opponent.userId].rating, result, self:getK(player))
+  logger.debug("New newcomer rating: " .. leaderboardPlayer.placement_rating)
+  leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
+  if result == 1 then
+    leaderboardPlayer.ranked_games_won = (leaderboardPlayer.ranked_games_won or 0) + 1
+  end
 end
 
+---@param game ServerGame
+---@return boolean # if the game is a placement game
+---@return ServerPlayer?
+function Leaderboard:isPlacementGame(game)
+  for _, player in ipairs(game.players) do
+    if not self.players[player.userId].placement_done then
+      return true, player
+    end
+  end
+  return false
+end
+
+---@param game ServerGame
+---@return table? # The rating changes for each player in the game
+function Leaderboard:processGameResult(game)
+  if not game.winnerId then
+    -- the current approach is to ignore ties
+    return
+  end
+
+  if #game.players ~= 2 then
+    error("This leaderboard is only made to process results from games between two players")
+  end
+
+  for _, player in ipairs(game.players) do
+    --if they aren't on the leaderboard yet, give them the default rating
+    self:addToLeaderboard(player)
+  end
+
+  local ratings = {}
+
+  local placementMatch, placementPlayer = self:isPlacementGame(game)
+  for i, player in ipairs(game.players) do
+    local rating = {}
+    rating.old = self:getRating(player)
+    ratings[i] = rating
+  end
+
+  if placementMatch then
+    ---@cast placementPlayer -nil
+    -- if it is a placement match we only need to calculate the placement player and possible finalize placement if the game finished their placements
+    -- for the other player there is either no calculation or the calculation is done in the placement finalization
+
+    local placementIndex
+    local rankedIndex
+    local rankedPlayer
+    if game.players[1] == placementPlayer then
+      placementIndex = 1
+      rankedIndex = 2
+    else
+      placementIndex = 2
+      rankedIndex = 1
+    end
+    rankedPlayer = game.players[rankedIndex]
+
+    local Oa = (game.winnerId == placementPlayer.publicPlayerID) and 1 or 0
+    self:addPlacementResult(placementPlayer, rankedPlayer, Oa)
+    local processPlacementMatches, reason = self:qualifies_for_placement(placementPlayer.userId)
+    if processPlacementMatches then
+      self:process_placement_matches(placementPlayer.userId)
+    else
+      ratings[placementIndex].placement_match_progress = reason
+    end
+    for i, player in ipairs(game.players) do
+      ratings[i].new = self:getRating(player)
+      ratings[i].difference = ratings[i].new - ratings[i].old
+    end
+  else
+    for i, player in ipairs(game.players) do
+      local rating = ratings[i]
+      local Oa = (game.winnerId == player.publicPlayerID) and 1 or 0
+      rating.new = self:calculate_rating_adjustment(rating.old, self.players[player.opponent.userId].rating, Oa, self:getK(player))
+      rating.difference = rating.new - rating.old
+    end
+  end
+
+  for i, player in ipairs(game.players) do
+    local leaderboardPlayer = self.players[player.userId]
+    leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
+    if leaderboardPlayer.placements_done then
+      leaderboardPlayer.rating = ratings[i].new
+    end
+    ratings[i].ranked_games_played = leaderboardPlayer.ranked_games_played
+    ratings[i].userId = player.userId
+  end
+
+  logger.debug("about to write_leaderboard_file")
+  FileIO.write_leaderboard_file(self)
+  logger.debug("done with Leaderboard.processGameResult")
+
+  return ratings
+end
 
 ---@param room Room
 ---@param winning_player_number integer
 ---@param gameID integer
 function Leaderboard:adjust_ratings(room, winning_player_number, gameID)
-  logger.debug("Adjusting the rating of " .. room.players[1].name .. " and " .. room.players[2].name .. ". Player " .. winning_player_number .. " wins!")
   local players = room.players
+  logger.debug("Adjusting the rating of " .. players[1].name .. " and " .. players[2].name .. ". Player " .. winning_player_number .. " wins!")
   local continue = true
   local placement_match_progress
   room.ratings = {}
   for _, player in ipairs(players) do
     --if they aren't on the leaderboard yet, give them the default rating
-    self:addToLeaderboard(player, gameID)
+    self:addToLeaderboard(player)
   end
 
   local placement_done = {}
@@ -317,18 +421,6 @@ function Leaderboard:adjust_ratings(room, winning_player_number, gameID)
         logger.debug("Player " .. player_number .. " (unranked) just played a placement match against a ranked player.")
         logger.debug("Adding this match to the list of matches to be processed when player finishes placement")
         self:addPlacementResult(player, player.opponent, Oa)
-
-        --adjust newcomer's placement_rating
-        if not leaderboardPlayer then
-          leaderboardPlayer = {}
-          self.players[player.userId] = leaderboardPlayer
-        end
-        leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or DEFAULT_RATING, self.players[player.opponent.userId].rating, Oa, self:getK(player))
-        logger.debug("New newcomer rating: " .. leaderboardPlayer.placement_rating)
-        leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
-        if Oa == 1 then
-          leaderboardPlayer.ranked_games_won = (leaderboardPlayer.ranked_games_won or 0) + 1
-        end
 
         local process_them, reason = self:qualifies_for_placement(player.userId)
         if process_them then
