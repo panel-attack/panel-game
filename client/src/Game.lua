@@ -450,14 +450,14 @@ function Game.errorData(errorString, traceBack)
       theme = config.theme
     }
 
-  if GAME.battleRoom then
-    errorData.battleRoomInfo = GAME.battleRoom:getInfo()
-  end
-  if GAME.navigationStack and GAME.navigationStack.scenes
-      and #GAME.navigationStack.scenes > 0
-      and GAME.navigationStack.scenes[#GAME.navigationStack.scenes].match then
-    errorData.matchInfo = GAME.navigationStack.scenes[#GAME.navigationStack.scenes].match:getInfo()
-  end
+  -- if GAME.battleRoom then
+  --   errorData.battleRoomInfo = GAME.battleRoom:getInfo()
+  -- end
+  -- if GAME.navigationStack and GAME.navigationStack.scenes
+  --     and #GAME.navigationStack.scenes > 0
+  --     and GAME.navigationStack.scenes[#GAME.navigationStack.scenes].match then
+  --   errorData.matchInfo = GAME.navigationStack.scenes[#GAME.navigationStack.scenes].match:getInfo()
+  -- end
 
   return errorData
 end
