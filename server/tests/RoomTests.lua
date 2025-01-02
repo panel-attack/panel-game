@@ -3,12 +3,9 @@ local Room = require("server.Room")
 local Player = require("server.Player")
 local MockConnection = require("server.tests.MockConnection")
 local MockDB = require("server.tests.MockDatabase")
--- TODO: Fix up server file io so that it can be replaced by a mock object
-require("server.server_file_io")
+require("server.tests.MockIO")
 
 COMPRESS_REPLAYS_ENABLED = true
-
-
 
 local function getRoom()
   local p1 = Player(1, MockConnection(), "Bob", 4)
@@ -18,6 +15,7 @@ local function getRoom()
   -- don't want to deal with I/O for the test
   p1.save_replays_publicly = "not at all"
   local room = Room(1, {p1, p2}, MockDB)
+  -- the replay field is being cleared after saving so save a reference to assert against
   room.saveReplay = function(self)
     self.replayRef = self.replay
   end
