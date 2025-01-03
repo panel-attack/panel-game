@@ -3,18 +3,6 @@ local logger = require("common.lib.logger")
 local database = require("server.PADatabase")
 local Signal = require("common.lib.signal")
 
-local DEFAULT_RATING = 1500
-local RATING_SPREAD_MODIFIER = 400
-local PLACEMENT_MATCH_COUNT_REQUIREMENT = 30
-local ALLOWABLE_RATING_SPREAD_MULTIPLIER = .9 --set this to a huge number like 100 if you want everyone to be able to play with anyone, regardless of rating gap
-local K = 10
-local PLACEMENT_MATCH_K = 50
-local PLACEMENT_MATCHES_ENABLED = false
-local MIN_LEVEL_FOR_RANKED = 1
-local MAX_LEVEL_FOR_RANKED = 10
-local MIN_COLORS_FOR_RANKED = 5
-local MAX_COLORS_FOR_RANKED = 6
-
 local leagues = { {league="Newcomer",     min_rating = -1000},
             {league="Copper",       min_rating = 1},
             {league="Bronze",       min_rating = 1125},
@@ -31,8 +19,6 @@ for k, v in ipairs(leagues) do
   logger.debug(v.league .. ":  " .. v.min_rating)
 end
 
-logger.debug("RATING_SPREAD_MODIFIER: " .. (RATING_SPREAD_MODIFIER or "nil"))
-
 ---@alias LeaderboardPlayer {user_id: privateUserId, user_name: string, rating: number, placement_done:boolean, placement_rating: number, ranked_games_played: integer, ranked_games_won: integer, last_login_time: integer}
 
 -- Object that represents players rankings and placement matches, along with login times
@@ -41,7 +27,7 @@ logger.debug("RATING_SPREAD_MODIFIER: " .. (RATING_SPREAD_MODIFIER or "nil"))
 ---@field players table<string, LeaderboardPlayer>
 ---@field loadedPlacementMatches {incomplete: table, complete: table}
 ---@field playersPerGame integer
----@field consts table<string, number>
+---@field consts table<string, number | boolean>
 ---@overload fun(name: string): Leaderboard
 local Leaderboard =
   class(
@@ -66,12 +52,16 @@ local Leaderboard =
       MAX_LEVEL_FOR_RANKED = 10,
     }
 
+    logger.debug("RATING_SPREAD_MODIFIER: " .. (self.consts.RATING_SPREAD_MODIFIER or "nil"))
+
     Signal.turnIntoEmitter(self)
     self:createSignal("placementMatchesProcessed")
     self:createSignal("gameResultProcessed")
+    self:createSignal("placementMatchAdded")
     -- seems silly but by separating the persistence from the logic we can test the logic much more easily
     self:connectSignal("placementMatchesProcessed", self, self.completePlacement)
     self:connectSignal("gameResultProcessed", self, self.persistRatingChanges)
+    self:connectSignal("placementMatchAdded", self, self.persistPlacementMatches)
   end
 )
 
@@ -153,8 +143,8 @@ function Leaderboard:qualifies_for_placement(userId)
     return false, ""
   elseif (self.players[userId] and self.players[userId].placement_done) then
     return false, "user is already placed"
-  elseif placement_matches_played < PLACEMENT_MATCH_COUNT_REQUIREMENT then
-    return false, placement_matches_played .. "/" .. PLACEMENT_MATCH_COUNT_REQUIREMENT .. " placement matches played."
+  elseif placement_matches_played < self.consts.PLACEMENT_MATCH_COUNT_REQUIREMENT then
+    return false, placement_matches_played .. "/" .. self.consts.PLACEMENT_MATCH_COUNT_REQUIREMENT .. " placement matches played."
   -- else
   -- local win_ratio
   -- local win_count
@@ -215,8 +205,8 @@ end
 ---@param player ServerPlayer
 function Leaderboard:addToLeaderboard(player)
   if not self.players[player.userId] or not self.players[player.userId].rating then
-    self.players[player.userId] = {user_name = player.name, rating = DEFAULT_RATING}
-    logger.debug("Gave " .. self.players[player.userId].user_name .. " a new rating of " .. DEFAULT_RATING)
+    self.players[player.userId] = {user_name = player.name, rating = self.consts.DEFAULT_RATING}
+    logger.debug("Gave " .. self.players[player.userId].user_name .. " a new rating of " .. self.consts.DEFAULT_RATING)
     if not self.consts.PLACEMENT_MATCHES_ENABLED then
       self.players[player.userId].placement_done = true
     end
@@ -257,7 +247,7 @@ function Leaderboard:calculate_rating_adjustment(Rc, Ro, Oa, k) -- -- print("cal
       k= Constant (Probably will use 10)
   ]] -- print("vs")
   -- print(players[player_number].opponent.name.." Ranking: "..self.players[players[player_number].opponent.user_id].rating)
-  Oe = 1 / (1 + 10 ^ ((Ro - Rc) / RATING_SPREAD_MODIFIER))
+  Oe = 1 / (1 + 10 ^ ((Ro - Rc) / self.consts.RATING_SPREAD_MODIFIER))
   -- print("expected outcome: "..Oe)
   Rn = Rc + k * (Oa - Oe)
   return Rn
@@ -268,9 +258,9 @@ end
 function Leaderboard:getK(player)
   local k
   if self.players[player.userId].placement_done then
-    k = K
+    k = self.consts.K
   else
-    k = PLACEMENT_MATCH_K
+    k = self.consts.PLACEMENT_MATCH_K
   end
   return k
 end
@@ -289,16 +279,20 @@ function Leaderboard:addPlacementResult(player, opponent, result)
 
   logger.debug("PRINTING PLACEMENT MATCHES FOR USER")
   logger.debug(json.encode(self.loadedPlacementMatches.incomplete[player.userId]))
-  FileIO.write_user_placement_match_file(player.userId, self.loadedPlacementMatches.incomplete[player.userId])
+  self:emitSignal("placementMatchAdded", player.userId)
 
   local leaderboardPlayer = self.players[player.userId]
   --adjust newcomer's placement_rating
-  leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or DEFAULT_RATING, self.players[player.opponent.userId].rating, result, self:getK(player))
+  leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or self.consts.DEFAULT_RATING, self.players[player.opponent.userId].rating, result, self:getK(player))
   logger.debug("New newcomer rating: " .. leaderboardPlayer.placement_rating)
   leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
   if result == 1 then
     leaderboardPlayer.ranked_games_won = (leaderboardPlayer.ranked_games_won or 0) + 1
   end
+end
+
+function Leaderboard:persistPlacementMatches(userId)
+  FileIO.write_user_placement_match_file(userId, self.loadedPlacementMatches.incomplete[userId])
 end
 
 ---@param game ServerGame
@@ -325,6 +319,10 @@ function Leaderboard:processGameResult(game)
 
   if #game.players ~= self.playersPerGame then
     logger.error("This leaderboard is only made to process results from games between two players")
+    return {}
+  end
+
+  if not self:rating_adjustment_approved(game.players) then
     return {}
   end
 
@@ -439,11 +437,11 @@ function Leaderboard:process_placement_matches(userId)
   self.players[userId].placement_done = true
 
   self:emitSignal("placementMatchesProcessed", userId)
-  FileIO.write_leaderboard_file(self)
 end
 
 function Leaderboard:completePlacement(userId)
   FileIO.move_user_placement_file_to_complete(userId)
+  FileIO.write_leaderboard_file(self)
   -- what is not being done is that rating changes are not persisted into the DB
   -- the game IDs are old but the rating is applied on the PRESENT rating
   -- so putting them into the DB does not make any sense
@@ -484,13 +482,13 @@ function Leaderboard:rating_adjustment_approved(players)
       elseif self.players[v.userId].rating and self.players[v.userId].rating ~= 0 then
         ratings[k] = self.players[v.userId].rating
       else
-        ratings[k] = DEFAULT_RATING
+        ratings[k] = self.consts.DEFAULT_RATING
       end
     else
-      ratings[k] = DEFAULT_RATING
+      ratings[k] = self.consts.DEFAULT_RATING
     end
   end
-  if math.abs(ratings[1] - ratings[2]) > RATING_SPREAD_MODIFIER * ALLOWABLE_RATING_SPREAD_MULTIPLIER then
+  if math.abs(ratings[1] - ratings[2]) > self.consts.RATING_SPREAD_MODIFIER * self.consts.ALLOWABLE_RATING_SPREAD_MULTIPLIER then
     reasons[#reasons + 1] = "Players' ratings are too far apart"
   end
 

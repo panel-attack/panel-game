@@ -3,7 +3,6 @@ local Room = require("server.Room")
 local Player = require("server.Player")
 local MockConnection = require("server.tests.MockConnection")
 local MockDB = require("server.tests.MockDatabase")
-require("server.tests.MockIO")
 
 COMPRESS_REPLAYS_ENABLED = true
 
