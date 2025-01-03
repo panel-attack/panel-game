@@ -41,7 +41,7 @@ local tests = {
   "client.tests.StackGraphicsTests",
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
-  "server.tests.ConnectionTests",
+  "server.tests.LoginTests",
   "common.tests.engine.GarbageQueueTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.PanelGenTests",
