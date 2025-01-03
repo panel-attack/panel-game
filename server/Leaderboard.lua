@@ -40,6 +40,8 @@ logger.debug("RATING_SPREAD_MODIFIER: " .. (RATING_SPREAD_MODIFIER or "nil"))
 ---@field name string
 ---@field players table<string, LeaderboardPlayer>
 ---@field loadedPlacementMatches {incomplete: table, complete: table}
+---@field playersPerGame integer
+---@field consts table<string, number>
 ---@overload fun(name: string): Leaderboard
 local Leaderboard =
   class(
@@ -49,6 +51,19 @@ local Leaderboard =
     self.loadedPlacementMatches = {
       incomplete = {},
       complete = {}
+    }
+    self.playersPerGame = 2
+
+    self.consts = {
+      DEFAULT_RATING = 1500,
+      RATING_SPREAD_MODIFIER = 400,
+      PLACEMENT_MATCH_COUNT_REQUIREMENT = 30,
+      ALLOWABLE_RATING_SPREAD_MULTIPLIER = .9,
+      K = 10,
+      PLACEMENT_MATCHES_ENABLED = true,
+      PLACEMENT_MATCH_K = 50,
+      MIN_LEVEL_FOR_RANKED = 1,
+      MAX_LEVEL_FOR_RANKED = 10,
     }
 
     Signal.turnIntoEmitter(self)
@@ -134,7 +149,7 @@ function Leaderboard:qualifies_for_placement(userId)
   --local placement_match_win_ratio_requirement = .2
   self:loadPlacementMatches(userId)
   local placement_matches_played = #self.loadedPlacementMatches.incomplete[userId]
-  if not PLACEMENT_MATCHES_ENABLED then
+  if not self.consts.PLACEMENT_MATCHES_ENABLED then
     return false, ""
   elseif (self.players[userId] and self.players[userId].placement_done) then
     return false, "user is already placed"
@@ -202,11 +217,8 @@ function Leaderboard:addToLeaderboard(player)
   if not self.players[player.userId] or not self.players[player.userId].rating then
     self.players[player.userId] = {user_name = player.name, rating = DEFAULT_RATING}
     logger.debug("Gave " .. self.players[player.userId].user_name .. " a new rating of " .. DEFAULT_RATING)
-    if not PLACEMENT_MATCHES_ENABLED then
+    if not self.consts.PLACEMENT_MATCHES_ENABLED then
       self.players[player.userId].placement_done = true
-      -- we probably shouldn't insert on adding to leaderboard even if placement matches are disabled
-      -- cause that would cause two ratings to be recorded for the same gameID
-      --database:insertPlayerELOChange(player.userId, DEFAULT_RATING, gameID)
     end
     FileIO.write_leaderboard_file(self)
   end
@@ -311,8 +323,9 @@ function Leaderboard:processGameResult(game)
     return {}
   end
 
-  if #game.players ~= 2 then
-    error("This leaderboard is only made to process results from games between two players")
+  if #game.players ~= self.playersPerGame then
+    logger.error("This leaderboard is only made to process results from games between two players")
+    return {}
   end
 
   for _, player in ipairs(game.players) do
@@ -447,7 +460,7 @@ function Leaderboard:rating_adjustment_approved(players)
   local caveats = {}
   local both_players_are_placed = nil
 
-  if PLACEMENT_MATCHES_ENABLED then
+  if self.consts.PLACEMENT_MATCHES_ENABLED then
     if self.players[players[1].userId] and self.players[players[1].userId].placement_done and self.players[players[2].userId] and self.players[players[2].userId].placement_done then
       --both players are placed on the leaderboard.
       both_players_are_placed = true
@@ -483,12 +496,12 @@ function Leaderboard:rating_adjustment_approved(players)
 
   local player_level_out_of_bounds_for_ranked = false
   for i = 1, 2 do --we'll change 2 here when more players are allowed.
-    if (players[i].level < MIN_LEVEL_FOR_RANKED or players[i].level > MAX_LEVEL_FOR_RANKED) then
+    if (players[i].level < self.consts.MIN_LEVEL_FOR_RANKED or players[i].level > self.consts.MAX_LEVEL_FOR_RANKED) then
       player_level_out_of_bounds_for_ranked = true
     end
   end
   if player_level_out_of_bounds_for_ranked then
-    reasons[#reasons + 1] = "Only levels between " .. MIN_LEVEL_FOR_RANKED .. " and " .. MAX_LEVEL_FOR_RANKED .. " are allowed for ranked play."
+    reasons[#reasons + 1] = "Only levels between " .. self.consts.MIN_LEVEL_FOR_RANKED .. " and " .. self.consts.MAX_LEVEL_FOR_RANKED .. " are allowed for ranked play."
   end
   -- local playerColorsOutOfBoundsForRanked = false
   -- for i, player in ipairs(players) do
@@ -518,7 +531,7 @@ function Leaderboard:rating_adjustment_approved(players)
   if reasons[1] then
     return false, reasons
   else
-    if PLACEMENT_MATCHES_ENABLED and not both_players_are_placed and ((self.players[players[1].userId] and self.players[players[1].userId].placement_done) or (self.players[players[2].userId] and self.players[players[2].userId].placement_done)) then
+    if self.consts.PLACEMENT_MATCHES_ENABLED and not both_players_are_placed and ((self.players[players[1].userId] and self.players[players[1].userId].placement_done) or (self.players[players[2].userId] and self.players[players[2].userId].placement_done)) then
       caveats[#caveats + 1] = "Note: Rating adjustments for these matches will be processed when the newcomer finishes placement."
     end
     return true, caveats

@@ -192,7 +192,11 @@ end
 
 ---@return boolean
 function Player:usesModifiedLevelData()
-  return not deep_content_equal(self.levelData, LevelPresets.getModern(self.level))
+  if self.levelData == nil then
+    return false
+  else
+    return not deep_content_equal(self.levelData, LevelPresets.getModern(self.level))
+  end
 end
 
 ---@param state PlayerState
