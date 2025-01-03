@@ -749,22 +749,28 @@ function Server:closeConnection(connection)
 end
 
 ---@param game ServerGame
-function Server:processGameEnd(room, game)
+function Server:processGameEnd(game)
   self:setLobbyChanged()
 
   local gameID = self.database:insertGame(game.ranked)
-  game:setId(gameID)
+  if not gameID then
+    logger.error("Failed to persist game to database.")
+  else
+    game:setId(gameID)
+  end
 
   -- record the game result for statistics, record keeping, and testing new features
   local resultValue = 0.5
   for i, player in ipairs(game.players) do
     local level = not player:usesModifiedLevelData() and player.level or nil
-    self.database:insertPlayerGameResult(player.userId, game.id, level, game:getPlacement(player))
+    if game.id then
+      self.database:insertPlayerGameResult(player.userId, game.id, level, game:getPlacement(player))
+    end
     if player.publicPlayerID == game.winnerId then
       if i == 1 then
         resultValue = 1
       elseif i == 2 then
-      resultValue = 0
+        resultValue = 0
       end
     end
   end
@@ -776,9 +782,9 @@ function Server:processGameEnd(room, game)
   FileIO.logGameResult(game.players[1].userId, game.players[2].userId, resultValue, rankedValue)
 
   if game.ranked and game.winnerId then
-    for i, player in ipairs(game.players) do
-      room.leaderboard:adjust_ratings(room, i, gameID)
-    end
+    local ratingUpdates = leaderboard:processGameResult(game)
+    -- local message = ServerProtocol.updateRating(ratingUpdates[1], ratingUpdates[2])
+    -- room:broadcastJson(message)
   end
 
   FileIO.saveReplay(game)
