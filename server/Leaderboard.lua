@@ -19,7 +19,14 @@ for k, v in ipairs(leagues) do
   logger.debug(v.league .. ":  " .. v.min_rating)
 end
 
----@alias LeaderboardPlayer {user_id: privateUserId, user_name: string, rating: number, placement_done:boolean, placement_rating: number, ranked_games_played: integer, ranked_games_won: integer, last_login_time: integer}
+---@class LeaderboardPlayer 
+---@field user_name string?
+---@field rating number
+---@field placement_done boolean?
+---@field placement_rating number?
+---@field ranked_games_played integer?
+---@field ranked_games_won integer?
+---@field last_login_time integer?
 
 -- Object that represents players rankings and placement matches, along with login times
 ---@class Leaderboard : Signal
@@ -27,7 +34,7 @@ end
 ---@field players table<string, LeaderboardPlayer>
 ---@field loadedPlacementMatches {incomplete: table, complete: table}
 ---@field playersPerGame integer
----@field consts table<string, number | boolean>
+---@field consts table
 ---@overload fun(name: string): Leaderboard
 local Leaderboard =
   class(
@@ -181,15 +188,19 @@ function Leaderboard:loadPlacementMatches(userId)
 end
 
 ---@param player ServerPlayer
----@return number rating
+---@return number rating 0 if no rating has been set yet
 function Leaderboard:getRating(player)
   if self.players[player.userId] then
     local lp = self.players[player.userId]
     if lp.placement_done then
       return lp.rating or 0
     else
+      -- the leaderboard is a backend processing component and should not have any opinions on display matters
+      -- as long as it communicates someone is still in their placement matches, the client can choose to hide it
       return lp.placement_rating or 0
     end
+  else
+    return 0
   end
 end
 
@@ -285,10 +296,6 @@ function Leaderboard:addPlacementResult(player, opponent, result)
   --adjust newcomer's placement_rating
   leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or self.consts.DEFAULT_RATING, self.players[player.opponent.userId].rating, result, self:getK(player))
   logger.debug("New newcomer rating: " .. leaderboardPlayer.placement_rating)
-  leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
-  if result == 1 then
-    leaderboardPlayer.ranked_games_won = (leaderboardPlayer.ranked_games_won or 0) + 1
-  end
 end
 
 function Leaderboard:persistPlacementMatches(userId)
@@ -307,7 +314,7 @@ function Leaderboard:isPlacementGame(game)
   return false
 end
 
----@alias RatingUpdate {old: number, new: number, difference: number, ranked_games_played: integer, userId: privateUserId, placement_match_progress: string}
+---@alias RatingUpdate {old: number, new: number, difference: number, ranked_games_played: integer, ranked_games_won: integer, userId: privateUserId, placement_match_progress: string}
 
 ---@param game ServerGame
 ---@return RatingUpdate[] # The rating changes for each player in the game
@@ -333,14 +340,14 @@ function Leaderboard:processGameResult(game)
 
   local ratings = {}
 
-  local placementMatch, placementPlayer = self:isPlacementGame(game)
+  local isPlacementGame, placementPlayer = self:isPlacementGame(game)
   for i, player in ipairs(game.players) do
     local rating = {}
     rating.old = self:getRating(player)
     ratings[i] = rating
   end
 
-  if placementMatch then
+  if isPlacementGame then
     ---@cast placementPlayer -nil
     -- if it is a placement match we only need to calculate the placement player and possible finalize placement if the game finished their placements
     -- for the other player there is either no calculation or the calculation is done in the placement finalization
@@ -370,21 +377,29 @@ function Leaderboard:processGameResult(game)
       ratings[i].difference = ratings[i].new - ratings[i].old
     end
   else
-    for i, player in ipairs(game.players) do
-      local rating = ratings[i]
-      local Oa = (game.winnerId == player.publicPlayerID) and 1 or 0
-      rating.new = self:calculate_rating_adjustment(rating.old, self.players[player.opponent.userId].rating, Oa, self:getK(player))
-      rating.difference = rating.new - rating.old
-    end
+    local Oa = (game.winnerId == game.players[1].publicPlayerID) and 1 or 0
+    ratings[1].new = self:calculate_rating_adjustment(ratings[1].old, ratings[2].old, Oa, self:getK(game.players[1]))
+    ratings[1].difference = ratings[1].new - ratings[1].old
+
+    Oa = (Oa == 1 and 0 or 1)
+    ratings[2].new = self:calculate_rating_adjustment(ratings[2].old, ratings[1].old, Oa, self:getK(game.players[2]))
+    ratings[2].difference = ratings[2].new - ratings[2].old
   end
 
   for i, player in ipairs(game.players) do
     local leaderboardPlayer = self.players[player.userId]
-    leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
-    if leaderboardPlayer.placements_done then
+    if not isPlacementGame or player == placementPlayer then
+      -- placement games don't count as games for ranked players until they are done at which point these stats are updated from the placement match data
+      leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
+      if player.publicPlayerID == game.winnerId then
+        leaderboardPlayer.ranked_games_won = (leaderboardPlayer.ranked_games_won or 0) + 1
+      end
+    end
+    if leaderboardPlayer.placement_done then
       leaderboardPlayer.rating = ratings[i].new
     end
-    ratings[i].ranked_games_played = leaderboardPlayer.ranked_games_played
+    ratings[i].ranked_games_played = leaderboardPlayer.ranked_games_played or 0
+    ratings[i].ranked_games_won = leaderboardPlayer.ranked_games_won or 0
     ratings[i].userId = player.userId
     ratings[i].league = self:get_league(ratings[i].new)
   end

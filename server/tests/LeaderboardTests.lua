@@ -97,6 +97,9 @@ local function testSimpleGameProcessing()
   assert(ratingChanges[2].old == 1458)
   assert(math.round(ratingChanges[1].new, 8) == 1733.71182352)
   assert(ratingChanges[1].difference == - ratingChanges[2].difference)
+  -- Check if the rating update also has been applied on the leaderboard
+  assert(leaderboard:getRating(p2) == ratingChanges[1].new)
+  assert(leaderboard:getRating(p3) == ratingChanges[2].new)
 
   p2.opponent = nil
   p3.opponent = nil
@@ -133,7 +136,16 @@ local function testPlacementGameProcessing()
   assert(not ratingChanges[2].placement_match_progress)
   assert(ratingChanges[1].difference < -30)
   assert(ratingChanges[1].placement_match_progress)
-  
+  -- the official rating has not changed
+  assert(leaderboard.players[p4.userId].rating == leaderboard.consts.DEFAULT_RATING)
+  -- only the placement rating
+  assert(leaderboard:getRating(p4) ~= leaderboard.consts.DEFAULT_RATING)
+  assert(ratingChanges[1].ranked_games_played == 1)
+  assert(ratingChanges[1].ranked_games_won == 0)
+  -- games played against unranked players don't exist until placement is finished (lol wat)
+  assert(ratingChanges[2].ranked_games_played == 0)
+  assert(ratingChanges[2].ranked_games_won == 0)
+
   -- processing the same game twice should probably be illegal
   -- game ID should ideally get assigned right before the game is processed for the first
   -- and then the leaderboard can save the ID and verify if it has processed the same game already
@@ -143,6 +155,11 @@ local function testPlacementGameProcessing()
   -- getting more than usually possible in one game due to placement finishing
   assert(ratingChanges[2].difference > 10)
   assert(not ratingChanges[1].placement_match_progress)
+
+  assert(ratingChanges[1].ranked_games_played == 2)
+  assert(ratingChanges[1].ranked_games_won == 0)
+  assert(ratingChanges[2].ranked_games_played == 2)
+  assert(ratingChanges[2].ranked_games_won == 2)
 end
 
 testRankedApproved()
