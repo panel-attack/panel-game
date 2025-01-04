@@ -11,6 +11,7 @@ PlayerRating =
     volatility = volatility or self.STARTING_VOLATILITY
     self.maxVolatility = maxVolatility or PlayerRating.MAX_VOLATILITY
     self.glicko = Glicko2.g1(rating, ratingDeviation, volatility)
+    self.lastRatingPeriodCalculated = nil
   end
 )
 
@@ -28,7 +29,7 @@ PlayerRating.MAX_VOLATILITY = PlayerRating.STARTING_VOLATILITY
 
 -- Returns the rating period number for the given timestamp
 function PlayerRating.ratingPeriodForTimeStamp(timestamp)
-  local ratingPeriod = math.floor(timestamp / (PlayerRating.RATING_PERIOD_IN_SECONDS))
+  local ratingPeriod = timestamp / (PlayerRating.RATING_PERIOD_IN_SECONDS)
   return ratingPeriod
 end
 
@@ -105,10 +106,25 @@ function PlayerRating.invertedGameResult(gameResult)
   return gameResult
 end
 
+-- Returns the rating period number for the given timestamp
+function PlayerRating:newRatingUpdatedToRatingPeriod(ratingPeriod)
+  local updatedPlayer = self:copy()
+  if updatedPlayer.lastRatingPeriodCalculated == nil then
+    updatedPlayer.lastRatingPeriodCalculated = ratingPeriod
+    return updatedPlayer
+  elseif updatedPlayer.lastRatingPeriodCalculated >= ratingPeriod then
+    assert(false, "Trying to update to rating before already calculated")
+  end
+  local elapsedRatingPeriods = ratingPeriod - updatedPlayer.lastRatingPeriodCalculated
+  updatedPlayer = updatedPlayer:newRatingForRatingPeriodWithResults({}, elapsedRatingPeriods)
+  updatedPlayer.lastRatingPeriodCalculated = self.lastRatingPeriodCalculated + elapsedRatingPeriods
+  return updatedPlayer
+end
+
 -- Runs one "rating period" with the given results for the player.
 -- To get the accurate rating of a player, this must be run on every rating period since the last time they were updated.
-function PlayerRating:newRatingForRatingPeriodWithResults(gameResults)
-  local updatedGlicko = self.glicko:update(gameResults)
+function PlayerRating:newRatingForRatingPeriodWithResults(gameResults, elapsedRatingPeriods)
+  local updatedGlicko = self.glicko:update(gameResults, elapsedRatingPeriods)
   if updatedGlicko.RD > self.maxRatingDeviation then
     updatedGlicko.RD = self.maxRatingDeviation
   end
@@ -119,6 +135,5 @@ function PlayerRating:newRatingForRatingPeriodWithResults(gameResults)
   updatedPlayer.glicko = updatedGlicko
   return updatedPlayer
 end
-
 
 return PlayerRating

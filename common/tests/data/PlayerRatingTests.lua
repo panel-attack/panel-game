@@ -13,8 +13,8 @@ local function testWeirdNumberStability()
   local wins = 12
   local totalGames = 25
 
-  local updatedPlayer1 = player1:newRatingForRatingPeriodWithResults(player1:createSetResults(player2, wins, totalGames))
-  local updatedPlayer2 = player2:newRatingForRatingPeriodWithResults(player1:createSetResults(player1, totalGames-wins, totalGames))
+  local updatedPlayer1 = player1:newRatingForRatingPeriodWithResults(player1:createSetResults(player2, wins, totalGames), 1)
+  local updatedPlayer2 = player2:newRatingForRatingPeriodWithResults(player1:createSetResults(player1, totalGames-wins, totalGames), 1)
 
   assert(updatedPlayer1:getRating() > 1073)
   assert(updatedPlayer2:getRating() < 1500)
@@ -22,6 +22,18 @@ local function testWeirdNumberStability()
 end
 
 testWeirdNumberStability()
+
+local function testNoMatchesInRatingPeriod() 
+
+  local player1 = PlayerRating()
+
+  -- We shouldn't assert or blow up in here, v goes to infinity but it is okay to divide by infinity as that is 0...
+  local updatedPlayer1 = player1:newRatingForRatingPeriodWithResults({}, 1)
+  assert(updatedPlayer1:getRating() == 1500) -- rating shouldn't change
+  assert(updatedPlayer1.glicko.RD > 250) -- RD should go up
+end
+
+testNoMatchesInRatingPeriod()
 
 local function testRatingPeriodsForOccasionalPlayers() 
   local players = {}
@@ -58,7 +70,7 @@ local function testRatingPeriodsForOccasionalPlayers()
       previousPlayers[#previousPlayers+1] = players[k]:copy()
     end
     for k = 1, 3 do
-      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k])
+      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k], 1)
     end
   end
 
@@ -118,7 +130,7 @@ local function testRatingPeriodsForObsessivePlayers()
       previousPlayers[#previousPlayers+1] = players[k]:copy()
     end
     for k = 1, 3 do
-      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k])
+      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k], 1)
     end
   end
 
@@ -150,7 +162,7 @@ local function testMaxRD()
   local threeMonthsInSeconds = 60 * 60 * 24 * 31 * 3
   local threeMonthsOfRatingPeriod = math.ceil(threeMonthsInSeconds / PlayerRating.RATING_PERIOD_IN_SECONDS)
   for i = 1, threeMonthsOfRatingPeriod, 1 do
-    playerRating = playerRating:newRatingForRatingPeriodWithResults({})
+    playerRating = playerRating:newRatingForRatingPeriodWithResults({}, 1)
   end
 
   assert(playerRating.glicko.RD >= 120)
@@ -158,7 +170,7 @@ local function testMaxRD()
   local nineMoreMonths = 60 * 60 * 24 * 31 * 9
   local oneYearOfRatingPeriod = math.ceil(nineMoreMonths / PlayerRating.RATING_PERIOD_IN_SECONDS)
   for i = 1, oneYearOfRatingPeriod, 1 do
-    playerRating = playerRating:newRatingForRatingPeriodWithResults({})
+    playerRating = playerRating:newRatingForRatingPeriodWithResults({}, 1)
   end
 
   assert(playerRating.glicko.RD >= 245)
@@ -183,7 +195,7 @@ local function testFarming()
     tableUtils.appendToList(playerResults[2], players[2]:createSetResults(players[1], 9, 20))
 
     for k = 1, 2 do
-      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k])
+      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k], 1)
     end
   end
 
@@ -198,7 +210,7 @@ local function testFarming()
     tableUtils.appendToList(playerResults[1], players[1]:createSetResults(newbiePlayer, 10, 10))
 
     for k = 1, 1 do
-      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k])
+      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k], 1)
     end
   end
 
@@ -215,21 +227,31 @@ local function testNewcomerSwing()
   players[#players+1] = PlayerRating(1121.96, 29.65)
 
   -- Newcomer loses 40 times in a row...
-  for i = 1, 40, 1 do
+  local gameCount = 1
+  local setCount = 40
+  local setRatingPeriodLength = 1 / 24 / 60 -- 1 mins of playing
+  for i = 1, setCount, 1 do
     local playerResults = {}
     for _ = 1, 2 do
       playerResults[#playerResults+1] = {}
     end
 
-    tableUtils.appendToList(playerResults[1], players[1]:createSetResults(players[2], 0, 40))
-    tableUtils.appendToList(playerResults[2], players[2]:createSetResults(players[1], 40, 40))
+    tableUtils.appendToList(playerResults[1], players[1]:createSetResults(players[2], 0, gameCount))
+    tableUtils.appendToList(playerResults[2], players[2]:createSetResults(players[1], gameCount, gameCount))
 
     for k = 1, 2 do
-      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k])
+      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k], setRatingPeriodLength)
     end
   end
 
-  assert(players[1]:getRating() > 0) -- We should never get a negative rating
+  assert(players[1]:getRating() > 700) -- Newcomer shouldn't go too far below other player
+  assert(players[1]:getRating() < 800) -- Newcomer should go down significantly though
+  assert(players[1].glicko.RD > 80) -- Newcomer RD should start going down, but not too much
+  assert(players[1].glicko.RD < 90) -- Newcomer RD should start going down, but not too much
+  assert(players[2]:getRating() > 1130) -- Normal player shouldn't gain too much rating
+  assert(players[2]:getRating() < 1200)
+  assert(players[2].glicko.RD > 25) -- Normal player RD should stay similar
+  assert(players[2].glicko.RD < 30)
 end 
 
 testNewcomerSwing()
@@ -254,7 +276,7 @@ local function testSingleGameNotTooBigRatingChange()
     tableUtils.appendToList(playerResults[2], players[2]:createSetResults(players[1], 9, 20))
 
     for k = 1, 2 do
-      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k])
+      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k], 1)
     end
   end
 
@@ -263,7 +285,7 @@ local function testSingleGameNotTooBigRatingChange()
 
   local playerResults = {}
   tableUtils.appendToList(playerResults, players[1]:createSetResults(players[2], 1, 1))
-  players[1] = players[1]:newRatingForRatingPeriodWithResults(playerResults)
+  players[1] = players[1]:newRatingForRatingPeriodWithResults(playerResults, 1)
 
   local secondRating = players[1]:getRating()
   local ratingDifference = secondRating - firstRating
@@ -289,46 +311,37 @@ local function cleanNameForName(name, privateID)
   return publicIDMap[privateID]
 end
 
-local function runRatingPeriods(firstRatingPeriod, lastRatingPeriod, players, glickoResultsTable)
+local function runRatingPeriods(latestRatingPeriodFound, lastRatingPeriodSaved, players, playerID, gameResults, glickoResultsTable)
 
   local totalGamesPlayed = 0
 
-  -- Run each rating period (the later ones will just increase RD)
-  for i = firstRatingPeriod, lastRatingPeriod, 1 do
+  totalGamesPlayed = totalGamesPlayed + #gameResults
+
+  local playerTable = players[playerID]
+  -- Make sure the player is up to date with the current rating period
+  local newPlayerRating = playerTable.playerRating:newRatingUpdatedToRatingPeriod(latestRatingPeriodFound)
+  newPlayerRating = newPlayerRating:newRatingForRatingPeriodWithResults(gameResults, 0)
+  playerTable.playerRating = newPlayerRating
+
+  -- Save off to a table for data analysis
+  if lastRatingPeriodSaved == nil or latestRatingPeriodFound - lastRatingPeriodSaved >= 20 then
     for playerID, playerTable in pairs(players) do
-
-      local playerRating = playerTable.playerRating
-      local gameResults = playerTable.gameResults
-      totalGamesPlayed = totalGamesPlayed + #gameResults
-
-      local newPlayerRating = playerRating:newRatingForRatingPeriodWithResults(gameResults)
-
-      if playerTable.playerRating:getRating() < 0 then
-        local newPlayerRating2 = playerRating:newRatingForRatingPeriodWithResults(gameResults)
-      end
-
-      playerTable.playerRating = newPlayerRating
-      playerTable.gameResults = {}
+      local row = {}
+      row[#row+1] = latestRatingPeriodFound
+      row[#row+1] = playerID
+      row[#row+1] = playerTable.playerRating:getRating()
+      row[#row+1] = playerTable.playerRating.glicko.RD
+      glickoResultsTable[#glickoResultsTable+1] = row
     end
-
-    if i == firstRatingPeriod then
-      for playerID, playerTable in pairs(players) do
-        local row = {}
-        row[#row+1] = i
-        row[#row+1] = playerID
-        row[#row+1] = playerTable.playerRating:getRating()
-        row[#row+1] = playerTable.playerRating.glicko.RD
-        if firstRatingPeriod % 20 == 1 then
-          glickoResultsTable[#glickoResultsTable+1] = row
-        end
-      end
-    end
+    lastRatingPeriodSaved = latestRatingPeriodFound
   end
 
   totalGamesPlayed = totalGamesPlayed / 2
 
-  local now = os.date("*t", PlayerRating.timestampForRatingPeriod(firstRatingPeriod))
-  logger.info("Processing " .. firstRatingPeriod .. " to " .. lastRatingPeriod .. " on " .. string.format("%02d/%02d/%04d", now.month, now.day, now.year) .. " with " .. totalGamesPlayed .. " games")
+  local now = os.date("*t", PlayerRating.timestampForRatingPeriod(latestRatingPeriodFound))
+  logger.info("Processing " .. latestRatingPeriodFound .. " on " .. string.format("%02d/%02d/%04d", now.month, now.day, now.year) .. " with " .. totalGamesPlayed .. " games")
+
+  return lastRatingPeriodSaved
 end
 
 -- This test is to experiment with real world server data to verify the values work well.
@@ -337,8 +350,8 @@ end
 local function testRealWorldData()
   local players = {}
   local glickoResultsTable = {}
-  local ratingPeriodNeedingRun = nil
-  local latestRatingPeriodFound = nil
+  local lastRatingPeriodRun = nil
+  local lastRatingPeriodSaved = 0
   local gamesPlayedDays = {}
   local gameResults = simpleCSV.read("GameResults.csv")
   assert(gameResults)
@@ -389,17 +402,7 @@ local function testRealWorldData()
       goto continue
     end
 
-    latestRatingPeriodFound = PlayerRating.ratingPeriodForTimeStamp(timestamp)
-    if ratingPeriodNeedingRun == nil then
-      ratingPeriodNeedingRun = latestRatingPeriodFound
-    end
-
-    -- if we just passed the rating period, time to update ratings
-    if ratingPeriodNeedingRun ~= latestRatingPeriodFound then
-      assert(latestRatingPeriodFound > ratingPeriodNeedingRun)
-      runRatingPeriods(ratingPeriodNeedingRun, latestRatingPeriodFound-1, players, glickoResultsTable)
-      ratingPeriodNeedingRun = latestRatingPeriodFound
-    end
+    local currentRatingPeriod = PlayerRating.ratingPeriodForTimeStamp(timestamp)
 
     local currentPlayerSets = {{player1ID, player2ID}, {player2ID, player1ID}}
     for _, currentPlayers in ipairs(currentPlayerSets) do
@@ -409,7 +412,6 @@ local function testRealWorldData()
         players[playerID] = {}
         players[playerID].playerRating = PlayerRating()
         assert(players[playerID].playerRating:getRating() > 0)
-        players[playerID].gameResults = {}
         players[playerID].error = 0
         players[playerID].totalGames = 0
       end
@@ -428,16 +430,14 @@ local function testRealWorldData()
         players[currentPlayers[1]].totalGames = players[currentPlayers[1]].totalGames + 1
       --end
       local result = player:createGameResult(opponent, gameResult)
-      local gameResults = players[currentPlayers[1]].gameResults
-      gameResults[#gameResults+1] = result
+      local gameResults = {result}
+
+      -- Add in the results
+      lastRatingPeriodSaved = runRatingPeriods(currentRatingPeriod, lastRatingPeriodSaved, players, currentPlayers[1], gameResults, glickoResultsTable)
     end
 
     ::continue::
   end
-
-  -- Handle the last rating period
-  assert(ratingPeriodNeedingRun == latestRatingPeriodFound)
-  runRatingPeriods(ratingPeriodNeedingRun, latestRatingPeriodFound, players, glickoResultsTable)
 
   local totalError = 0
   local totalGames = 0
@@ -467,4 +467,4 @@ local function testRealWorldData()
   simpleCSV.write("GamesPlayed.csv", gamesPlayedData)
 end 
 
--- testRealWorldData()
+testRealWorldData()

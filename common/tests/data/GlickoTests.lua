@@ -4,7 +4,7 @@ local function basicTest()
   local player1 = Glicko2.g1(1500, 350)
   local player2 = Glicko2.g1(1500, 350)
 
-  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1})
+  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1}, 1)
 
   assert(math.floor(updatedPlayer1.Rating) == 1662)
   assert(math.floor(updatedPlayer2.Rating) == 1337)
@@ -22,7 +22,7 @@ local function expectedOutcome()
   assert(player1:expectedOutcome(player2) == 0.5)
   assert(player2:expectedOutcome(player1) == 0.5)
 
-  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1})
+  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1}, 1)
 
   assert(math.floor(updatedPlayer1.Rating) == 1662)
   assert(math.floor(updatedPlayer2.Rating) == 1337)
@@ -56,7 +56,7 @@ local function establishedVersusNew()
   local player1 = Glicko2.g1(1500, 40)
   local player2 = Glicko2.g1(1500, 350)
   
-  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1, 1, 1, 1, 1, 1, 1, 1, 1, 0})
+  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, 1)
   
   assert(math.floor(updatedPlayer1.Rating) == 1524)
   assert(math.floor(updatedPlayer2.Rating) == 1245)
@@ -75,9 +75,9 @@ local function orderDoesntMatter()
   local player1Copy = player1:copy()
   local player2Copy = player2:copy()
 
-  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1, 1, 1, 0})
+  local updatedPlayer1, updatedPlayer2 = Glicko2.updatedRatings(player1, player2, {1, 1, 1, 0}, 1)
   
-  local updatedPlayer1Copy, updatedPlayer2Copy = Glicko2.updatedRatings(player1Copy, player2Copy, {0, 1, 1, 1})
+  local updatedPlayer1Copy, updatedPlayer2Copy = Glicko2.updatedRatings(player1Copy, player2Copy, {0, 1, 1, 1}, 1)
 
   assert(updatedPlayer1Copy.Rating == updatedPlayer1.Rating)
   assert(updatedPlayer2Copy.Rating == updatedPlayer2.Rating)
@@ -97,7 +97,7 @@ local function paperExample()
   player1Results[#player1Results+1] = player3:score(0)
   player1Results[#player1Results+1] = player4:score(0)
 
-  local updatedPlayer1 = player1:update(player1Results)
+  local updatedPlayer1 = player1:update(player1Results, 1)
 
   assert(math.round(updatedPlayer1.Rating, 2) == 1464.05)
   assert(math.round(updatedPlayer1.RD, 2) == 151.52)

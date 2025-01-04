@@ -117,7 +117,7 @@ function Glicko2.deserialize(gv_s, version)
 	return gv
 end
 
-function Glicko2.updatedRatings(player1, player2, matchOutcomes)
+function Glicko2.updatedRatings(player1, player2, matchOutcomes, elapsedRatingPeriods)
 
     local player1Results = {}
     local player2Results = {}
@@ -132,8 +132,8 @@ function Glicko2.updatedRatings(player1, player2, matchOutcomes)
         player2Results[#player2Results+1] = player1:score(matchOutcome)
     end
     
-    local updatedPlayer1 = player1:update(player1Results)
-    local updatedPlayer2 = player2:update(player2Results)
+    local updatedPlayer1 = player1:update(player1Results, elapsedRatingPeriods)
+    local updatedPlayer2 = player2:update(player2Results, elapsedRatingPeriods)
 
     return updatedPlayer1, updatedPlayer2
 end
@@ -172,7 +172,7 @@ local function makebigf(g2, v, delta)
 end
 
 -- Updates a Glicko rating using the last set of matches
-function Glicko2:update(matches)
+function Glicko2:update(matches, elapsedRatingPeriods)
 	local g2 = self
 	local originalVersion = g2.Version
 
@@ -260,7 +260,7 @@ function Glicko2:update(matches)
 	end
 
 	-- step 6: update the rating deviation to the new pre-rating period value
-	local ratingDeviation = sqrt(g2.RD^2 + newVol^2)
+	local ratingDeviation = self:calculateNewRD(g2.RD, newVol, elapsedRatingPeriods)
 	
 	-- Step 7: Update to the new rating
 
@@ -285,6 +285,12 @@ function Glicko2:update(matches)
 	end
 
 	return result
+end
+
+-- This is the formula defined in step 6. It is also used for players who have not competed during the rating period
+function Glicko2:calculateNewRD(ratingDeviation, volatility, elapsedRatingPeriods)
+	local ratingDeviation = sqrt(ratingDeviation^2 + elapsedRatingPeriods * volatility^2)
+	return ratingDeviation
 end
 
 function Glicko2:deviation(deviations)
