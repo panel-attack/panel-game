@@ -20,12 +20,12 @@ PlayerRating.ALLOWABLE_RATING_SPREAD = 400
 
 PlayerRating.STARTING_RATING = 1500
 
-PlayerRating.STARTING_RATING_DEVIATION = 250
-PlayerRating.MAX_RATING_DEVIATION = 350
+PlayerRating.STARTING_RATING_DEVIATION = 200
+PlayerRating.MAX_RATING_DEVIATION = PlayerRating.STARTING_RATING_DEVIATION
 PlayerRating.PROVISIONAL_RATING_DEVIATION = 125
 
 PlayerRating.STARTING_VOLATILITY = 0.06
-PlayerRating.MAX_VOLATILITY = PlayerRating.STARTING_VOLATILITY
+PlayerRating.MAX_VOLATILITY = 0.3
 
 -- Returns the rating period number for the given timestamp
 function PlayerRating.ratingPeriodForTimeStamp(timestamp)

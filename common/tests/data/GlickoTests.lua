@@ -79,8 +79,8 @@ local function orderDoesntMatter()
   
   local updatedPlayer1Copy, updatedPlayer2Copy = Glicko2.updatedRatings(player1Copy, player2Copy, {0, 1, 1, 1}, 1)
 
-  assert(updatedPlayer1Copy.Rating == updatedPlayer1.Rating)
-  assert(updatedPlayer2Copy.Rating == updatedPlayer2.Rating)
+  assert(math.floatsEqualWithPrecision(updatedPlayer1Copy.Rating, updatedPlayer1.Rating, 10))
+  assert(math.floatsEqualWithPrecision(updatedPlayer2Copy.Rating, updatedPlayer2.Rating, 10))
 end 
 
 orderDoesntMatter()

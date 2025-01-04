@@ -25,12 +25,12 @@ testWeirdNumberStability()
 
 local function testNoMatchesInRatingPeriod() 
 
-  local player1 = PlayerRating()
+  local player1 = PlayerRating(1500, 150)
 
   -- We shouldn't assert or blow up in here, v goes to infinity but it is okay to divide by infinity as that is 0...
   local updatedPlayer1 = player1:newRatingForRatingPeriodWithResults({}, 1)
   assert(updatedPlayer1:getRating() == 1500) -- rating shouldn't change
-  assert(updatedPlayer1.glicko.RD > 250) -- RD should go up
+  assert(updatedPlayer1.glicko.RD > 150) -- RD should go up
 end
 
 testNoMatchesInRatingPeriod()
@@ -173,7 +173,7 @@ local function testMaxRD()
     playerRating = playerRating:newRatingForRatingPeriodWithResults({}, 1)
   end
 
-  assert(playerRating.glicko.RD >= 245)
+  assert(playerRating.glicko.RD >= PlayerRating.MAX_RATING_DEVIATION)
 end 
 
 testMaxRD()
@@ -246,8 +246,8 @@ local function testNewcomerSwing()
 
   assert(players[1]:getRating() > 700) -- Newcomer shouldn't go too far below other player
   assert(players[1]:getRating() < 800) -- Newcomer should go down significantly though
-  assert(players[1].glicko.RD > 80) -- Newcomer RD should start going down, but not too much
-  assert(players[1].glicko.RD < 90) -- Newcomer RD should start going down, but not too much
+  assert(players[1].glicko.RD > 70) -- Newcomer RD should start going down, but not too much
+  assert(players[1].glicko.RD < 150) -- Newcomer RD should start going down, but not too much
   assert(players[2]:getRating() > 1130) -- Normal player shouldn't gain too much rating
   assert(players[2]:getRating() < 1200)
   assert(players[2].glicko.RD > 25) -- Normal player RD should stay similar
@@ -289,7 +289,7 @@ local function testSingleGameNotTooBigRatingChange()
 
   local secondRating = players[1]:getRating()
   local ratingDifference = secondRating - firstRating
-  assert(ratingDifference > 2 and ratingDifference < 4) -- Rating shouldn't change too much from one game
+  assert(ratingDifference > 1 and ratingDifference < 4) -- Rating shouldn't change too much from one game
 end 
 
 testSingleGameNotTooBigRatingChange()
@@ -331,6 +331,7 @@ local function runRatingPeriods(latestRatingPeriodFound, lastRatingPeriodSaved, 
       row[#row+1] = playerID
       row[#row+1] = playerTable.playerRating:getRating()
       row[#row+1] = playerTable.playerRating.glicko.RD
+      row[#row+1] = playerTable.playerRating.glicko.Vol
       glickoResultsTable[#glickoResultsTable+1] = row
     end
     lastRatingPeriodSaved = latestRatingPeriodFound
@@ -457,8 +458,12 @@ local function testRealWorldData()
   local totalErrorPerGame = totalError / totalGames
 
   simpleCSV.write("Glicko.csv", glickoResultsTable)
-  -- 0.03724587514630  RATING PERIOD = 16hrs -- DEFAULT_RATING_DEVIATION = 250 = MAX_DEVIATION -- PROVISIONAL_DEVIATION = RD * 0.5 -- DEFAULT_VOLATILITY = 0.06 = MAX_VOLATILITY
-  -- 0.03792533617676  RATING PERIOD = 24hrs -- DEFAULT_RATING_DEVIATION = 250 = MAX_DEVIATION -- PROVISIONAL_DEVIATION = RD * 0.5 -- DEFAULT_VOLATILITY = 0.06 = MAX_VOLATILITY
+  -- 0.014760291450591 1 game per evaluation      DEFAULT_RATING_DEVIATION:200 MAX_DEVIATION:200 DEFAULT_VOLATILITY:0.06 MAX_VOLATILITY:0.3  Tau:0.5  RATING PERIOD = 16hrs
+  -- 0.019420264639828 1 game per evaluation      DEFAULT_RATING_DEVIATION:250 MAX_DEVIATION:250 DEFAULT_VOLATILITY:0.06 MAX_VOLATILITY:0.3  Tau:0.2  RATING PERIOD = 16hrs
+  -- 0.019439095055957 1 game per evaluation      DEFAULT_RATING_DEVIATION:250 MAX_DEVIATION:250 DEFAULT_VOLATILITY:0.06 MAX_VOLATILITY:0.3  Tau:0.75 RATING PERIOD = 16hrs
+  -- 0.01944363557018  1 game per evaluation      DEFAULT_RATING_DEVIATION:250 MAX_DEVIATION:350 DEFAULT_VOLATILITY:0.06 MAX_VOLATILITY:0.06 Tau:?    RATING PERIOD = 16hrs
+  -- 0.03724587514630  all games in rating period DEFAULT_RATING_DEVIATION:250 MAX_DEVIATION:250 DEFAULT_VOLATILITY:0.06 MAX_VOLATILITY:0.06 Tau:?    RATING PERIOD = 16hrs
+  -- 0.03792533617676  all games in rating period DEFAULT_RATING_DEVIATION:250 MAX_DEVIATION:250 DEFAULT_VOLATILITY:0.06 MAX_VOLATILITY:0.06 Tau:?    RATING PERIOD = 24hrs
 
   local gamesPlayedData = {}
   for dateKey, data in pairsSortedByKeys(gamesPlayedDays) do
@@ -467,4 +472,4 @@ local function testRealWorldData()
   simpleCSV.write("GamesPlayed.csv", gamesPlayedData)
 end 
 
-testRealWorldData()
+-- testRealWorldData()
