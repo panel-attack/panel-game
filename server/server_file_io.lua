@@ -139,9 +139,9 @@ function FileIO.write_leaderboard_file(leaderboard)
         leaderboard_table[#leaderboard_table + 1] = {user_id, v.user_name, v.rating, tostring(v.placement_done or ""), v.placement_rating, v.ranked_games_played, v.ranked_games_won, v.last_login_time}
         public_leaderboard_table[#public_leaderboard_table + 1] = {v.user_name, v.rating, v.ranked_games_played}
       end
-      csvfile.write("." .. sep .. "leaderboard.csv", leaderboard_table)
+      csvfile.write("." .. sep .. leaderboard.name .. ".csv", leaderboard_table)
       FileIO.makeDirectoryRecursive("." .. sep .. "ftp")
-      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_leaderboard.csv", public_leaderboard_table)
+      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_" .. leaderboard.name .. ".csv", public_leaderboard_table)
     end
   )
   if not status then
@@ -149,39 +149,19 @@ function FileIO.write_leaderboard_file(leaderboard)
   end
 end
 
-function FileIO.read_leaderboard_file()
-  local filename = "./leaderboard.csv"
-
+function FileIO.readCsvFile(filePath)
   local csv_table = {}
   local status, error = pcall(
     function()
-      csv_table = csvfile.read(filename)
+      csv_table = csvfile.read("." .. sep .. filePath)
     end
   )
+
   if not status then
-  elseif csv_table ~= nil and csv_table[2] then
-    logger.debug("loading leaderboard.csv")
-    for row = 2, #csv_table do
-      csv_table[row][1] = tostring(csv_table[row][1])
-      leaderboard.players[csv_table[row][1]] = {}
-      for col = 1, #csv_table[1] do
-        --Note csv_table[row][1] will be the player's user_id
-        --csv_table[1][col] will be a property name such as "rating"
-        if csv_table[row][col] == "" then
-          csv_table[row][col] = nil
-        end
-        --player with this user_id gets this property equal to the csv_table cell's value
-        if csv_table[1][col] == "user_name" then
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = tostring(csv_table[row][col])
-        elseif csv_table[1][col] == "rating" then
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = tonumber(csv_table[row][col])
-        elseif csv_table[1][col] == "placement_done" then
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = csv_table[row][col] and true and string.lower(csv_table[row][col]) ~= "false"
-        else
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = csv_table[row][col]
-        end
-      end
-    end
+    logger.error("Failed reading file " .. filePath .. " with the csv reader:\n" .. tostring(error))
+    return nil, error
+  else
+    return csv_table
   end
 end
 

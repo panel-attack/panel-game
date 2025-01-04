@@ -49,6 +49,7 @@ local time = os.time
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
+---@field leaderboard Leaderboard
 local Server = class(
 ---@param self Server
 ---@param databaseParam ServerDB
@@ -84,8 +85,11 @@ local Server = class(
 
     self.playerbase = Playerbase("playerbase", "players.txt")
     FileIO.read_players_file(self.playerbase)
-    leaderboard = Leaderboard("leaderboard")
-    FileIO.read_leaderboard_file()
+    local leaderboard = Leaderboard.createFromCsvData("leaderboard")
+    if not leaderboard then
+      leaderboard = Leaderboard("leaderboard")
+    end
+    self.leaderboard = leaderboard
 
     local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
     if isPlayerTableEmpty then
@@ -93,11 +97,11 @@ local Server = class(
     end
 
     logger.debug("leaderboard json:")
-    logger.debug(json.encode(leaderboard.players))
-    FileIO.write_leaderboard_file(leaderboard)
+    logger.debug(json.encode(self.leaderboard.players))
+    FileIO.write_leaderboard_file(self.leaderboard)
     logger.debug(os.time())
     logger.debug("playerbase: " .. json.encode(self.playerbase.players))
-    logger.debug("leaderboard report: " .. json.encode(leaderboard:get_report(self)))
+    logger.debug("leaderboard report: " .. json.encode(self.leaderboard:get_report(self)))
     FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
     seed_from_mt(extract_mt())
@@ -137,8 +141,8 @@ function Server:importDatabase()
   logger.info("Importing leaderboard.csv to database")
   for k, v in pairs(cleanedPlayerData) do
     local rating = 0
-    if leaderboard.players[k] then
-      rating = leaderboard.players[k].rating
+    if self.leaderboard.players[k] then
+      rating = self.leaderboard.players[k].rating
     end
     self.database:insertNewPlayer(k, v)
     self.database:insertPlayerELOChange(k, rating, 0)
@@ -197,14 +201,14 @@ function Server:lobby_state()
     end
     if player and player.state == "lobby" then
       names[#names + 1] = player.name
-      addPublicPlayerData(players, player.name, leaderboard.players[player.userId])
+      addPublicPlayerData(players, player.name, self.leaderboard.players[player.userId])
     end
   end
   local spectatableRooms = {}
   for _, room in pairs(self.rooms) do
     spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, a = room.players[1].name, b = room.players[2].name, state = room:state()}
     for i, player in ipairs(room.players) do
-      addPublicPlayerData(players, player.name, leaderboard.players[player.userId])
+      addPublicPlayerData(players, player.name, self.leaderboard.players[player.userId])
     end
   end
   return {unpaired = names, spectatable = spectatableRooms, players = players}
@@ -250,7 +254,7 @@ end
 function Server:create_room(...)
   self:setLobbyChanged()
   local players = {...}
-  local newRoom = Room(self.roomNumberIndex, players, self.database, leaderboard)
+  local newRoom = Room(self.roomNumberIndex, players, self.database, self.leaderboard)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.processGameEnd)
   self.roomNumberIndex = self.roomNumberIndex + 1
@@ -286,8 +290,8 @@ end
 
 function Server:changeUsername(privateUserID, username)
   self.playerbase:updatePlayer(privateUserID, username)
-  if leaderboard.players[privateUserID] then
-    leaderboard.players[privateUserID].user_name = username
+  if self.leaderboard.players[privateUserID] then
+    self.leaderboard.players[privateUserID].user_name = username
   end
   self.database:updatePlayerUsername(privateUserID, username)
 end
@@ -498,7 +502,7 @@ function Server:processMessage(message, connection)
         return true
       end
     elseif message.leaderboard_request then
-      connection:sendJson(ServerProtocol.sendLeaderboard(leaderboard:get_report(self, self.connectionToPlayer[connection].userId)))
+      connection:sendJson(ServerProtocol.sendLeaderboard(self.leaderboard:get_report(self, self.connectionToPlayer[connection].userId)))
       return true
     elseif message.spectate_request then
       self:handleSpectateRequest(message, player)
@@ -626,7 +630,7 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     self.nameToConnectionIndex[name] = connection.index
     self.connectionToPlayer[connection] = player
     self.nameToPlayer[name] = player
-    leaderboard:update_timestamp(userId)
+    self.leaderboard:update_timestamp(userId)
     self.database:insertIPID(ipAddress, player.publicPlayerID)
     self:setLobbyChanged()
 
@@ -782,7 +786,7 @@ function Server:processGameEnd(game)
   FileIO.logGameResult(game.players[1].userId, game.players[2].userId, resultValue, rankedValue)
 
   if game.ranked and game.winnerId then
-    local ratingUpdates = leaderboard:processGameResult(game)
+    local ratingUpdates = self.leaderboard:processGameResult(game)
     -- local message = ServerProtocol.updateRating(ratingUpdates[1], ratingUpdates[2])
     -- room:broadcastJson(message)
   end

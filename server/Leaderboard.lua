@@ -30,7 +30,7 @@ end
 
 -- Object that represents players rankings and placement matches, along with login times
 ---@class Leaderboard : Signal
----@field name string
+---@field name string doubles as the filename without extension
 ---@field players table<string, LeaderboardPlayer>
 ---@field loadedPlacementMatches {incomplete: table, complete: table}
 ---@field playersPerGame integer
@@ -71,6 +71,42 @@ local Leaderboard =
     self:connectSignal("placementMatchAdded", self, self.persistPlacementMatches)
   end
 )
+
+-- tries to create a new leaderboard object
+---@param leaderboardName string the name of the leaderboard without file extension
+---@return Leaderboard?
+function Leaderboard.createFromCsvData(leaderboardName)
+  local leaderboard = Leaderboard(leaderboardName)
+
+  local data = FileIO.readCsvFile(leaderboardName .. ".csv")
+  if not data then
+    return
+  else
+    for row = 2, #data do
+      data[row][1] = tostring(data[row][1])
+      leaderboard.players[data[row][1]] = {}
+      for col = 1, #data[1] do
+        --Note csv_table[row][1] will be the player's user_id
+        --csv_table[1][col] will be a property name such as "rating"
+        if data[row][col] == "" then
+          data[row][col] = nil
+        end
+        --player with this user_id gets this property equal to the csv_table cell's value
+        if data[1][col] == "user_name" then
+          leaderboard.players[data[row][1]][data[1][col]] = tostring(data[row][col])
+        elseif data[1][col] == "rating" then
+          leaderboard.players[data[row][1]][data[1][col]] = tonumber(data[row][col])
+        elseif data[1][col] == "placement_done" then
+          leaderboard.players[data[row][1]][data[1][col]] = data[row][col] and true and string.lower(data[row][col]) ~= "false"
+        else
+          leaderboard.players[data[row][1]][data[1][col]] = data[row][col]
+        end
+      end
+    end
+  end
+
+  return leaderboard
+end
 
 function Leaderboard:update(user_id, new_rating)
   logger.debug("in Leaderboard.update")
