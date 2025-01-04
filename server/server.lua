@@ -85,11 +85,7 @@ local Server = class(
 
     self.playerbase = Playerbase("playerbase", "players.txt")
     FileIO.read_players_file(self.playerbase)
-    local leaderboard = Leaderboard.createFromCsvData("leaderboard")
-    if not leaderboard then
-      leaderboard = Leaderboard("leaderboard")
-    end
-    self.leaderboard = leaderboard
+    self.leaderboard = Leaderboard.createFromCsvData("leaderboard")
 
     local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
     if isPlayerTableEmpty then

@@ -74,38 +74,42 @@ local Leaderboard =
 
 -- tries to create a new leaderboard object
 ---@param leaderboardName string the name of the leaderboard without file extension
----@return Leaderboard?
+---@return Leaderboard
 function Leaderboard.createFromCsvData(leaderboardName)
   local leaderboard = Leaderboard(leaderboardName)
 
   local data = FileIO.readCsvFile(leaderboardName .. ".csv")
-  if not data then
-    return
-  else
-    for row = 2, #data do
-      data[row][1] = tostring(data[row][1])
-      leaderboard.players[data[row][1]] = {}
-      for col = 1, #data[1] do
-        --Note csv_table[row][1] will be the player's user_id
-        --csv_table[1][col] will be a property name such as "rating"
-        if data[row][col] == "" then
-          data[row][col] = nil
-        end
-        --player with this user_id gets this property equal to the csv_table cell's value
-        if data[1][col] == "user_name" then
-          leaderboard.players[data[row][1]][data[1][col]] = tostring(data[row][col])
-        elseif data[1][col] == "rating" then
-          leaderboard.players[data[row][1]][data[1][col]] = tonumber(data[row][col])
-        elseif data[1][col] == "placement_done" then
-          leaderboard.players[data[row][1]][data[1][col]] = data[row][col] and true and string.lower(data[row][col]) ~= "false"
-        else
-          leaderboard.players[data[row][1]][data[1][col]] = data[row][col]
-        end
-      end
-    end
+  if data then
+    leaderboard:importData(data)
   end
 
   return leaderboard
+end
+
+---@param data { [1]: privateUserId, [2]: string, [3]: number, [4]: string, [5]: number?, [6]: integer, [7]: integer?, [8]: integer?}[]
+--- user_id, user_name, rating, placement_done, placement_rating, ranked_games_played, ranked_games_won, last_login_time
+function Leaderboard:importData(data)
+  for row = 2, #data do
+    data[row][1] = tostring(data[row][1])
+    self.players[data[row][1]] = {}
+    for col = 1, #data[1] do
+      --Note csv_table[row][1] will be the player's user_id
+      --csv_table[1][col] will be a property name such as "rating"
+      if data[row][col] == "" then
+        data[row][col] = nil
+      end
+      --player with this user_id gets this property equal to the csv_table cell's value
+      if data[1][col] == "user_name" then
+        self.players[data[row][1]][data[1][col]] = tostring(data[row][col])
+      elseif data[1][col] == "rating" then
+        self.players[data[row][1]][data[1][col]] = tonumber(data[row][col])
+      elseif data[1][col] == "placement_done" then
+        self.players[data[row][1]][data[1][col]] = data[row][col] and string.lower(data[row][col]) ~= "false"
+      else
+        self.players[data[row][1]][data[1][col]] = data[row][col]
+      end
+    end
+  end
 end
 
 function Leaderboard:update(user_id, new_rating)

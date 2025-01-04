@@ -33,15 +33,21 @@ p6:updateSettings({inputMethod = "controller", level = 10})
 
 local defaultRating = 1500
 
+local rowHeader = {"user_id", "user_name", "rating", "placement_done", "placement_rating"}
 local function addToLeaderboard(lb, player, placementDone, rating)
-  lb.players[player.userId] = {user_name = player.name, placement_done = placementDone}
+  local dataRow = {player.userId, player.name}
+
   if not placementDone then
+    dataRow[3] = defaultRating
+    dataRow[4] = tostring(false)
+    dataRow[5] = rating
     lb.loadedPlacementMatches.incomplete[player.userId] = {}
-    lb.players[player.userId].placement_rating = rating or defaultRating
-    lb.players[player.userId].rating = defaultRating
   else
-    lb.players[player.userId].rating = rating or defaultRating
+    dataRow[3] = rating
+    dataRow[4] = tostring(true)
   end
+
+  lb:importData({rowHeader, dataRow})
 end
 
 addToLeaderboard(leaderboard, p1, false, 1500)
@@ -50,6 +56,12 @@ addToLeaderboard(leaderboard, p3, true, 1458)
 addToLeaderboard(leaderboard, p4, false, 1300)
 addToLeaderboard(leaderboard, p5, true, 1222)
 addToLeaderboard(leaderboard, p6, true, 432)
+
+assert(leaderboard.players[tostring(p2.userId)].rating == 1732)
+assert(leaderboard.players[tostring(p2.userId)].placement_done)
+assert(leaderboard.players[tostring(p4.userId)].rating == 1500)
+assert(not leaderboard.players[tostring(p4.userId)].placement_done)
+assert(leaderboard.players[tostring(p4.userId)].placement_rating == 1300)
 
 local function testRankedApproved()
   -- two unrated players cannot play ranked
