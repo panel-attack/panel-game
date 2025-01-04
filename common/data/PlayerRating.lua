@@ -32,6 +32,11 @@ function PlayerRating.ratingPeriodForTimeStamp(timestamp)
   return ratingPeriod
 end
 
+function PlayerRating.timestampForRatingPeriod(ratingPeriod)
+  local timestamp = ratingPeriod * PlayerRating.RATING_PERIOD_IN_SECONDS
+  return timestamp
+end
+
 function PlayerRating:copy()
   local result = deepcpy(self)
   return result

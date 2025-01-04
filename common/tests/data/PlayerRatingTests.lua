@@ -1,6 +1,7 @@
 local PlayerRating = require("common.data.PlayerRating")
 local simpleCSV = require("server.simplecsv")
 local tableUtils = require("common.lib.tableUtils")
+local logger = require("common.lib.logger")
 
 -- If starting RD is too high, or too many matches happen in one rating period, massive swings can happen.
 -- This test is to explore that and come up with sane values.
@@ -208,6 +209,34 @@ end
 
 testFarming()
 
+local function testNewcomerSwing()
+  local players = {}
+  players[#players+1] = PlayerRating()
+  players[#players+1] = PlayerRating(1121.96, 29.65)
+
+  -- Newcomer loses 40 times in a row...
+  for i = 1, 40, 1 do
+    local playerResults = {}
+    for _ = 1, 2 do
+      playerResults[#playerResults+1] = {}
+    end
+
+    tableUtils.appendToList(playerResults[1], players[1]:createSetResults(players[2], 0, 40))
+    tableUtils.appendToList(playerResults[2], players[2]:createSetResults(players[1], 40, 40))
+
+    for k = 1, 2 do
+      players[k] = players[k]:newRatingForRatingPeriodWithResults(playerResults[k])
+    end
+  end
+
+  assert(players[1]:getRating() > 0) -- We should never get a negative rating
+end 
+
+testNewcomerSwing()
+
+
+
+
 local function testSingleGameNotTooBigRatingChange()
   local players = {}
   for _ = 1, 2 do
@@ -261,13 +290,22 @@ local function cleanNameForName(name, privateID)
 end
 
 local function runRatingPeriods(firstRatingPeriod, lastRatingPeriod, players, glickoResultsTable)
+
+  local totalGamesPlayed = 0
+
   -- Run each rating period (the later ones will just increase RD)
   for i = firstRatingPeriod, lastRatingPeriod, 1 do
     for playerID, playerTable in pairs(players) do
 
       local playerRating = playerTable.playerRating
       local gameResults = playerTable.gameResults
+      totalGamesPlayed = totalGamesPlayed + #gameResults
+
       local newPlayerRating = playerRating:newRatingForRatingPeriodWithResults(gameResults)
+
+      if playerTable.playerRating:getRating() < 0 then
+        local newPlayerRating2 = playerRating:newRatingForRatingPeriodWithResults(gameResults)
+      end
 
       playerTable.playerRating = newPlayerRating
       playerTable.gameResults = {}
@@ -286,6 +324,11 @@ local function runRatingPeriods(firstRatingPeriod, lastRatingPeriod, players, gl
       end
     end
   end
+
+  totalGamesPlayed = totalGamesPlayed / 2
+
+  local now = os.date("*t", PlayerRating.timestampForRatingPeriod(firstRatingPeriod))
+  logger.info("Processing " .. firstRatingPeriod .. " to " .. lastRatingPeriod .. " on " .. string.format("%02d/%02d/%04d", now.month, now.day, now.year) .. " with " .. totalGamesPlayed .. " games")
 end
 
 -- This test is to experiment with real world server data to verify the values work well.
@@ -296,6 +339,7 @@ local function testRealWorldData()
   local glickoResultsTable = {}
   local ratingPeriodNeedingRun = nil
   local latestRatingPeriodFound = nil
+  local gamesPlayedDays = {}
   local gameResults = simpleCSV.read("GameResults.csv")
   assert(gameResults)
 
@@ -327,6 +371,20 @@ local function testRealWorldData()
     assert(timestamp)
     assert(dateTable)
 
+    local now = os.date("*t", timestamp)
+    local dateKey = string.format("%02d/%02d/%04d", now.month, now.day, now.year)
+
+    if gamesPlayedDays[dateKey] == nil then
+      gamesPlayedDays[dateKey] = {"",0,0}
+      gamesPlayedDays[dateKey][1] = dateKey
+    end
+
+    if ranked == 0 then
+      gamesPlayedDays[dateKey][2] = gamesPlayedDays[dateKey][2] + 1
+    else
+      gamesPlayedDays[dateKey][3] = gamesPlayedDays[dateKey][3] + 1
+    end
+
     if ranked == 0 then
       goto continue
     end
@@ -349,13 +407,14 @@ local function testRealWorldData()
       -- Create a new player if one doesn't exist yet.
       if not players[playerID] then
         players[playerID] = {}
-        players[playerID].playerRating = PlayerRating(1500, 250)
+        players[playerID].playerRating = PlayerRating()
+        assert(players[playerID].playerRating:getRating() > 0)
         players[playerID].gameResults = {}
         players[playerID].error = 0
         players[playerID].totalGames = 0
       end
     end
-    
+
     for index, currentPlayers in ipairs(currentPlayerSets) do
       local player = players[currentPlayers[1]].playerRating
       local opponent = players[currentPlayers[2]].playerRating
@@ -372,7 +431,7 @@ local function testRealWorldData()
       local gameResults = players[currentPlayers[1]].gameResults
       gameResults[#gameResults+1] = result
     end
-    
+
     ::continue::
   end
 
@@ -400,6 +459,12 @@ local function testRealWorldData()
   simpleCSV.write("Glicko.csv", glickoResultsTable)
   -- 0.03724587514630  RATING PERIOD = 16hrs -- DEFAULT_RATING_DEVIATION = 250 = MAX_DEVIATION -- PROVISIONAL_DEVIATION = RD * 0.5 -- DEFAULT_VOLATILITY = 0.06 = MAX_VOLATILITY
   -- 0.03792533617676  RATING PERIOD = 24hrs -- DEFAULT_RATING_DEVIATION = 250 = MAX_DEVIATION -- PROVISIONAL_DEVIATION = RD * 0.5 -- DEFAULT_VOLATILITY = 0.06 = MAX_VOLATILITY
+
+  local gamesPlayedData = {}
+  for dateKey, data in pairsSortedByKeys(gamesPlayedDays) do
+    gamesPlayedData[#gamesPlayedData+1] = data
+  end
+  simpleCSV.write("GamesPlayed.csv", gamesPlayedData)
 end 
 
 -- testRealWorldData()
