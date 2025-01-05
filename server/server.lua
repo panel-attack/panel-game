@@ -276,7 +276,7 @@ end
 function Server:create_room(...)
   self:setLobbyChanged()
   local players = {...}
-  local newRoom = Room(self.roomNumberIndex, players, self.database, self.leaderboard)
+  local newRoom = Room(self.roomNumberIndex, players, self.leaderboard)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.processGameEnd)
   self.roomNumberIndex = self.roomNumberIndex + 1

@@ -16,7 +16,6 @@ local ServerGame = require("server.Game")
 -- Players alternate between the character select state and playing, and spectators can join and leave
 ---@class Room : Signal
 ---@field players ServerPlayer[]
----@field database ServerDB
 ---@field leaderboard Leaderboard?
 ---@field name string
 ---@field roomNumber integer
@@ -27,16 +26,14 @@ local ServerGame = require("server.Game")
 ---@field matchCount integer
 ---@field game ServerGame?
 ---@field gameMode GameMode
----@overload fun(roomNumber: integer, players: ServerPlayer[], database: ServerDB, leaderboard: Leaderboard?): Room
+---@overload fun(roomNumber: integer, players: ServerPlayer[], leaderboard: Leaderboard?): Room
 local Room = class(
 ---@param self Room
 ---@param roomNumber integer
 ---@param players ServerPlayer[]
----@param database ServerDB
 ---@param leaderboard Leaderboard?
-function(self, roomNumber, players, database, leaderboard)
+function(self, roomNumber, players, leaderboard)
   self.players = players
-  self.database = database
   self.leaderboard = leaderboard
   self.roomNumber = roomNumber
   self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
