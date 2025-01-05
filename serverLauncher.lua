@@ -14,7 +14,14 @@ local database = require("server.PADatabase")
 local Server = require("server.server")
 
 
-local currentServer = Server(database)
+local server = Server(database)
+server:initializePlayerData("players.txt")
+server:initializeLeaderboard("leaderboard.csv")
+local isPlayerTableEmpty = database:getPlayerRecordCount() == 0
+if isPlayerTableEmpty then
+  server:importDatabase()
+end
+
 while true do
-  currentServer:update()
+  server:update()
 end

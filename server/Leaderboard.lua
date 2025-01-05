@@ -30,7 +30,7 @@ end
 
 -- Object that represents players rankings and placement matches, along with login times
 ---@class Leaderboard : Signal
----@field name string doubles as the filename without extension
+---@field filePath string doubles as the filename without extension
 ---@field players table<string, LeaderboardPlayer>
 ---@field loadedPlacementMatches {incomplete: table, complete: table}
 ---@field playersPerGame integer
@@ -575,6 +575,21 @@ function Leaderboard:rating_adjustment_approved(players)
     end
     return true, caveats
   end
+end
+
+---@return table[] # the leaderboard with full information for saving internally
+---@return table[] # the leaderboard with a reduced data set for saving in a publicly accessible location
+function Leaderboard:toSheetData()
+  local leaderboard_table = {}
+  local public_leaderboard_table = {}
+  leaderboard_table[#leaderboard_table + 1] = {"user_id", "user_name", "rating", "placement_done", "placement_rating", "ranked_games_played", "ranked_games_won","last_login_time"}
+  public_leaderboard_table[#public_leaderboard_table + 1] = {"user_name", "rating", "ranked_games_played"} --excluding ranked_games_won for now because it doesn't track properly, and user_id because they are secret.
+  for user_id, v in pairs(self.players) do
+    leaderboard_table[#leaderboard_table + 1] = {user_id, v.user_name, v.rating, tostring(v.placement_done or ""), v.placement_rating, v.ranked_games_played, v.ranked_games_won, v.last_login_time}
+    public_leaderboard_table[#public_leaderboard_table + 1] = {v.user_name, v.rating, v.ranked_games_played}
+  end
+
+  return leaderboard_table, public_leaderboard_table
 end
 
 return Leaderboard

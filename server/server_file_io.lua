@@ -104,26 +104,13 @@ end
 
 ---@param leaderboard Leaderboard
 function FileIO.write_leaderboard_file(leaderboard)
+  local leaderboard_table, public_leaderboard_table = leaderboard:toSheetData()
+
   local status, error = pcall(
     function()
-      -- local f = assert(io.open("leaderboard.txt", "w"))
-      -- io.output(f)
-      -- io.write(json.encode(leaderboard.players))
-      -- io.close(f)
-      --now also write a CSV version of the file
-      --local csv = "user_id,user_name,rating,placement_done,placement_rating,ranked_games_played,ranked_games_won,last_login_time"
-      local sep = package.config:sub(1, 1)
-      local leaderboard_table = {}
-      local public_leaderboard_table = {}
-      leaderboard_table[#leaderboard_table + 1] = {"user_id", "user_name", "rating", "placement_done", "placement_rating", "ranked_games_played", "ranked_games_won","last_login_time"}
-      public_leaderboard_table[#public_leaderboard_table + 1] = {"user_name", "rating", "ranked_games_played"} --excluding ranked_games_won for now because it doesn't track properly, and user_id because they are secret.
-      for user_id, v in pairs(leaderboard.players) do
-        leaderboard_table[#leaderboard_table + 1] = {user_id, v.user_name, v.rating, tostring(v.placement_done or ""), v.placement_rating, v.ranked_games_played, v.ranked_games_won, v.last_login_time}
-        public_leaderboard_table[#public_leaderboard_table + 1] = {v.user_name, v.rating, v.ranked_games_played}
-      end
-      csvfile.write("." .. sep .. leaderboard.name .. ".csv", leaderboard_table)
+      csvfile.write("." .. sep .. leaderboard.filePath .. ".csv", leaderboard_table)
       FileIO.makeDirectoryRecursive("." .. sep .. "ftp")
-      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_" .. leaderboard.name .. ".csv", public_leaderboard_table)
+      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_" .. leaderboard.filePath .. ".csv", public_leaderboard_table)
     end
   )
   if not status then

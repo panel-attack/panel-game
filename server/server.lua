@@ -49,6 +49,7 @@ local time = os.time
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
+---@field playersFilePath string
 ---@field leaderboard Leaderboard
 local Server = class(
 ---@param self Server
@@ -83,29 +84,7 @@ local Server = class(
       self.socket:setoption("tcp-nodelay", true)
     end
 
-    local playerData = FileIO.readJson("players.txt")
-    self.playerbase = Playerbase("playerbase", playerData)
-    self.playerbase:connectSignal("playerUpdated", self, self.onPlayerBaseUpdate)
-    logger.debug("playerbase: " .. json.encode(self.playerbase.players))
-
-    self.leaderboard = Leaderboard("leaderboard")
-    local data = FileIO.readCsvFile(self.leaderboard.name .. ".csv")
-    if data then
-      self.leaderboard:importData(data)
-    end
-
-    logger.debug("leaderboard json:")
-    logger.debug(json.encode(self.leaderboard.players))
-    FileIO.write_leaderboard_file(self.leaderboard)
     logger.debug(os.time())
-    logger.debug("leaderboard report: " .. json.encode(self.leaderboard:get_report(self)))
-
-
-    -- both leaderboard and playerbase need to be loaded for DB import
-    local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
-    if isPlayerTableEmpty then
-      self:importDatabase()
-    end
 
     FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
@@ -129,6 +108,44 @@ local Server = class(
     -- print("get_tzoffset(get_timezone()) output:"..get_tzoffset(get_timezone()))    
   end
 )
+
+function Server:initializePlayerData(filePath, playerData)
+  if not self.playerbase then
+    self.playersFilePath = filePath
+    if not playerData then
+      playerData = FileIO.readJson(playerData)
+    else
+      -- do nothing, assume that's already parsed data
+    end
+
+    self.playerbase = Playerbase("playerbase", playerData)
+    self.playerbase:connectSignal("playerUpdated", self, self.onPlayerBaseUpdate)
+    logger.debug("playerbase: " .. json.encode(self.playerbase.players))
+  else
+    logger.warn("Tried to load player data when the server already had player data loaded!\n" .. debug.traceback())
+  end
+end
+
+function Server:initializeLeaderboard(filePath, data)
+  if not self.leaderboard then
+    self.leaderboard = Leaderboard(filePath)
+    if not data then
+      data = FileIO.readCsvFile(filePath)
+    else
+      -- do nothing, assume that's already parsed data
+    end
+    if data then
+      self.leaderboard:importData(data)
+    end
+
+    logger.debug("leaderboard json:")
+    logger.debug(json.encode(self.leaderboard.players))
+    FileIO.write_leaderboard_file(self.leaderboard)
+    logger.debug("leaderboard report: " .. json.encode(self.leaderboard:get_report(self)))
+  else
+    logger.warn("Tried to load leaderboard data when the server already had its leaderboard loaded!\n" .. debug.traceback())
+  end
+end
 
 function Server:importDatabase()
   local usedNames = {}
@@ -800,7 +817,7 @@ function Server:processGameEnd(game)
 end
 
 function Server:onPlayerBaseUpdate(playerName)
-  FileIO.writeAsJson(self.playerbase.players, "players.txt")
+  FileIO.writeAsJson(self.playerbase.players, self.playersFilePath)
 end
 
 return Server
