@@ -72,20 +72,6 @@ local Leaderboard =
   end
 )
 
--- tries to create a new leaderboard object
----@param leaderboardName string the name of the leaderboard without file extension
----@return Leaderboard
-function Leaderboard.createFromCsvData(leaderboardName)
-  local leaderboard = Leaderboard(leaderboardName)
-
-  local data = FileIO.readCsvFile(leaderboardName .. ".csv")
-  if data then
-    leaderboard:importData(data)
-  end
-
-  return leaderboard
-end
-
 ---@param data { [1]: privateUserId, [2]: string, [3]: number, [4]: string, [5]: number?, [6]: integer, [7]: integer?, [8]: integer?}[]
 --- user_id, user_name, rating, placement_done, placement_rating, ranked_games_played, ranked_games_won, last_login_time
 function Leaderboard:importData(data)
@@ -128,7 +114,7 @@ end
 
 ---@param server Server
 ---@param user_id_of_requester privateUserId?
----@return table
+---@return {user_name: string, rating: number, is_you: boolean?}[]
 function Leaderboard:get_report(server, user_id_of_requester)
   --returns the leaderboard as an array sorted from highest rating to lowest,
   --with usernames from playerbase.players instead of user_ids

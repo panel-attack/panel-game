@@ -83,21 +83,30 @@ local Server = class(
       self.socket:setoption("tcp-nodelay", true)
     end
 
-    self.playerbase = Playerbase("playerbase", "players.txt")
-    FileIO.read_players_file(self.playerbase)
-    self.leaderboard = Leaderboard.createFromCsvData("leaderboard")
+    local playerData = FileIO.readJson("players.txt")
+    self.playerbase = Playerbase("playerbase", playerData)
+    self.playerbase:connectSignal("playerUpdated", self, self.onPlayerBaseUpdate)
+    logger.debug("playerbase: " .. json.encode(self.playerbase.players))
 
-    local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
-    if isPlayerTableEmpty then
-      self:importDatabase()
+    self.leaderboard = Leaderboard("leaderboard")
+    local data = FileIO.readCsvFile(self.leaderboard.name .. ".csv")
+    if data then
+      self.leaderboard:importData(data)
     end
 
     logger.debug("leaderboard json:")
     logger.debug(json.encode(self.leaderboard.players))
     FileIO.write_leaderboard_file(self.leaderboard)
     logger.debug(os.time())
-    logger.debug("playerbase: " .. json.encode(self.playerbase.players))
     logger.debug("leaderboard report: " .. json.encode(self.leaderboard:get_report(self)))
+
+
+    -- both leaderboard and playerbase need to be loaded for DB import
+    local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
+    if isPlayerTableEmpty then
+      self:importDatabase()
+    end
+
     FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
     seed_from_mt(extract_mt())
@@ -144,7 +153,7 @@ function Server:importDatabase()
     self.database:insertPlayerELOChange(k, rating, 0)
   end
 
-  local gameMatches = FileIO.readGameResults()
+  local gameMatches = FileIO.readCsvFile("GameResults.csv")
   if gameMatches then -- only do it if there was a gameResults file to begin with
     logger.info("Importing GameResults.csv to database")
     for _, result in ipairs(gameMatches) do
@@ -788,6 +797,10 @@ function Server:processGameEnd(game)
   end
 
   FileIO.saveReplay(game)
+end
+
+function Server:onPlayerBaseUpdate(playerName)
+  FileIO.writeAsJson(self.playerbase.players, "players.txt")
 end
 
 return Server

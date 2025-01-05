@@ -7,7 +7,7 @@ local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "
 
 FileIO = {}
 
-function FileIO.makeDirectory(path) 
+function FileIO.makeDirectory(path)
   local status, error = pcall(
     function()
       lfs.mkdir(path)
@@ -36,41 +36,36 @@ function FileIO.fileExists(name)
   end
 end
 
-function FileIO.write_players_file(playerbase)
-  if playerbase.filename == nil then
-    return
-  end
-
+function FileIO.writeAsJson(data, filePath)
   local status, error = pcall(
     function()
-      local f = assert(io.open(playerbase.filename, "w"))
+      local f = assert(io.open(filePath, "w"))
       io.output(f)
-      io.write(json.encode(playerbase.players))
+      io.write(json.encode(data))
       io.close(f)
     end
   )
   if not status then
-    logger.error("Failed to write players file with error: " .. error)
+    logger.error("Failed to write file " .. filePath .. " with error: " .. error)
   end
 end
 
-function FileIO.read_players_file(playerbase)
-  if playerbase.filename == nil then
-    return
-  end
-  
+function FileIO.readJson(filename)
+  local json
+
   pcall(
     function()
-      local f = io.open(playerbase.filename, "r")
+      local f = io.open(filename, "r")
       if f then
         io.input(f)
         local data = io.read("*all")
-        playerbase.players = json.decode(data)
-        logger.info(tableUtils.length(playerbase.players) .. " players loaded")
+        json = json.decode(data)
         io.close(f)
       end
     end
   )
+
+  return json
 end
 
 
@@ -86,19 +81,6 @@ function FileIO.logGameResult(player1ID, player2ID, player1Won, rankedValue)
   if not status then
     logger.error("Failed to log game result: " .. error)
   end
-end
-
-function FileIO.readGameResults()
-
-  local filename = "GameResults.csv"
-
-  local gameResults = nil
-  pcall(
-    function()
-      gameResults = csvfile.read(filename)
-    end
-  )
-  return gameResults
 end
 
 function FileIO.write_error_report(error_report_json)
