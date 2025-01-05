@@ -27,7 +27,7 @@ local pairs = pairs
 local ipairs = ipairs
 local time = os.time
 
----@alias privateUserId integer | string
+---@alias privateUserId string
 
 -- Represents the full server object.
 -- Currently we are transitioning variables into this, but to start we will use this to define API

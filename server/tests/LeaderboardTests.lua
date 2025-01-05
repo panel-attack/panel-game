@@ -18,12 +18,12 @@ leaderboard.consts.PLACEMENT_MATCHES_ENABLED = true
 leaderboard.consts.MIN_LEVEL_FOR_RANKED = 1
 leaderboard.consts.MAX_LEVEL_FOR_RANKED = 10
 
-local p1 = Player(1, MockConnection(), "Bob", 4)
-local p2 = Player(2, MockConnection(), "Alice", 5)
-local p3 = Player(3, MockConnection(), "Ben", 8)
-local p4 = Player(4, MockConnection(), "Jerry", 24)
-local p5 = Player(5, MockConnection(), "Berta", 38)
-local p6 = Player(6, MockConnection(), "Raccoon", 83)
+local p1 = Player("1", MockConnection(), "Bob", 4)
+local p2 = Player("2", MockConnection(), "Alice", 5)
+local p3 = Player("3", MockConnection(), "Ben", 8)
+local p4 = Player("4", MockConnection(), "Jerry", 24)
+local p5 = Player("5", MockConnection(), "Berta", 38)
+local p6 = Player("6", MockConnection(), "Raccoon", 83)
 p1:updateSettings({inputMethod = "controller", level = 10})
 p2:updateSettings({inputMethod = "controller", level = 10})
 p3:updateSettings({inputMethod = "controller", level = 10})
@@ -57,11 +57,11 @@ addToLeaderboard(leaderboard, p4, false, 1300)
 addToLeaderboard(leaderboard, p5, true, 1222)
 addToLeaderboard(leaderboard, p6, true, 432)
 
-assert(leaderboard.players[tostring(p2.userId)].rating == 1732)
-assert(leaderboard.players[tostring(p2.userId)].placement_done)
-assert(leaderboard.players[tostring(p4.userId)].rating == 1500)
-assert(not leaderboard.players[tostring(p4.userId)].placement_done)
-assert(leaderboard.players[tostring(p4.userId)].placement_rating == 1300)
+assert(leaderboard.players[p2.userId].rating == 1732)
+assert(leaderboard.players[p2.userId].placement_done)
+assert(leaderboard.players[p4.userId].rating == 1500)
+assert(not leaderboard.players[p4.userId].placement_done)
+assert(leaderboard.players[p4.userId].placement_rating == 1300)
 
 local function testRankedApproved()
   -- two unrated players cannot play ranked

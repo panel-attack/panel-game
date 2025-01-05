@@ -7,8 +7,8 @@ local MockDB = require("server.tests.MockDatabase")
 COMPRESS_REPLAYS_ENABLED = true
 
 local function getRoom()
-  local p1 = Player(1, MockConnection(), "Bob", 4)
-  local p2 = Player(2, MockConnection(), "Alice", 5)
+  local p1 = Player("1", MockConnection(), "Bob", 4)
+  local p2 = Player("2", MockConnection(), "Alice", 5)
   p1:updateSettings({inputMethod = "controller", level = 10})
   p2:updateSettings({inputMethod = "controller", level = 10})
   -- don't want to deal with I/O for the test
