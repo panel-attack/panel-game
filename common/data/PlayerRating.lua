@@ -58,30 +58,26 @@ function PlayerRating:isProvisional()
   return self.glicko.RD >= PlayerRating.PROVISIONAL_RATING_DEVIATION
 end
 
--- Returns an array of result objects representing the players wins against the given player
+-- Returns an array of wins vs total games
+-- The wins / losses will be distributed by the ratio to try to balance it out.
 -- Really only meant for testing.
-function PlayerRating:createSetResults(opponent, player1WinCount, gameCount)
+function PlayerRating.createTestSetResults(player1WinCount, gameCount)
   
   assert(gameCount >= player1WinCount)
 
   local matchSet = {}
-  for i = 1, player1WinCount, 1 do
-    matchSet[#matchSet+1] = 1
-  end
   for i = 1, gameCount - player1WinCount, 1 do
     matchSet[#matchSet+1] = 0
   end
-    
-  local player1Results = {}
-  for j = 1, #matchSet do -- play through games
-    local matchOutcome = matchSet[j]
-    local gameResult = self:createGameResult(opponent, matchOutcome)
-    if gameResult then
-      player1Results[#player1Results+1] = gameResult
-    end
+
+  local step = gameCount / player1WinCount
+  local position = 1
+  for i = 1, player1WinCount, 1 do
+    matchSet[math.round(position)] = 1
+    position = position + step
   end
 
-  return player1Results
+  return matchSet
 end
 
 -- Helper function to create one game result with the given outcome if the players are allowed to rank.
@@ -106,24 +102,41 @@ function PlayerRating.invertedGameResult(gameResult)
   return gameResult
 end
 
--- Returns the rating period number for the given timestamp
-function PlayerRating:newRatingUpdatedToRatingPeriod(ratingPeriod)
-  local updatedPlayer = self:copy()
+function PlayerRating:newRatingForResultsAndLatestRatingPeriod(gameResult, latestRatingPeriodFound)
+  local updatedPlayer = self
   if updatedPlayer.lastRatingPeriodCalculated == nil then
-    updatedPlayer.lastRatingPeriodCalculated = ratingPeriod
-    return updatedPlayer
-  elseif updatedPlayer.lastRatingPeriodCalculated >= ratingPeriod then
-    assert(false, "Trying to update to rating before already calculated")
+    updatedPlayer = self:copy()
+    updatedPlayer.lastRatingPeriodCalculated = latestRatingPeriodFound
   end
-  local elapsedRatingPeriods = ratingPeriod - updatedPlayer.lastRatingPeriodCalculated
-  updatedPlayer = updatedPlayer:newRatingForRatingPeriodWithResults({}, elapsedRatingPeriods)
-  updatedPlayer.lastRatingPeriodCalculated = self.lastRatingPeriodCalculated + elapsedRatingPeriods
+  local elapsedRatingPeriods = latestRatingPeriodFound - updatedPlayer.lastRatingPeriodCalculated
+  if elapsedRatingPeriods > 0 then
+    updatedPlayer = updatedPlayer:newRatingForResultsAndElapsedRatingPeriod(gameResult, elapsedRatingPeriods)
+  end
+
   return updatedPlayer
 end
 
--- Runs one "rating period" with the given results for the player.
--- To get the accurate rating of a player, this must be run on every rating period since the last time they were updated.
-function PlayerRating:newRatingForRatingPeriodWithResults(gameResults, elapsedRatingPeriods)
+-- Runs the given results for the player with the given elapsedRatingPeriod
+function PlayerRating:newRatingForResultsAndElapsedRatingPeriod(gameResult, elapsedRatingPeriods)
+  local updatedPlayer = self
+
+  if elapsedRatingPeriods > 0 then
+    updatedPlayer = updatedPlayer:privateNewRatingForResultWithElapsedRatingPeriod(nil, elapsedRatingPeriods)
+    if updatedPlayer.lastRatingPeriodCalculated then
+      updatedPlayer.lastRatingPeriodCalculated = self.lastRatingPeriodCalculated + elapsedRatingPeriods
+    end
+  end
+
+  updatedPlayer = updatedPlayer:privateNewRatingForResultWithElapsedRatingPeriod(gameResult, 0)
+
+  return updatedPlayer
+end
+
+function PlayerRating:privateNewRatingForResultWithElapsedRatingPeriod(gameResult, elapsedRatingPeriods)
+  local gameResults = {}
+  if gameResult then
+    gameResults[#gameResults+1] = gameResult
+  end
   local updatedGlicko = self.glicko:update(gameResults, elapsedRatingPeriods)
   if updatedGlicko.RD > self.maxRatingDeviation then
     updatedGlicko.RD = self.maxRatingDeviation
