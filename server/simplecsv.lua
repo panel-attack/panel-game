@@ -36,6 +36,8 @@ sep: the separator character of the fields. Optionsl, defaults to ','
 tonum: whether to convert fields to numbers if possible. Optional. Defaults to true
 null: what value should null fields get. Optional. defaults to ''
 ]]
+
+local FileIO = require("server.server_file_io")
 module(..., package.seeall)
 
 ---------------------------------------------------------------------

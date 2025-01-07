@@ -35,11 +35,14 @@ end
 ---@field loadedPlacementMatches {incomplete: table, complete: table}
 ---@field playersPerGame integer
 ---@field consts table
----@overload fun(name: string): Leaderboard
+---@field gameMode GameMode the game mode this leaderboard is for; currently unused
+---@field persistence Persistence a collection of persistence methods; referenced directly on the leaderboard so they can be replaced for testing
+---@overload fun(gameMode: GameMode): Leaderboard
 local Leaderboard =
   class(
-  function(self, name)
-    self.name = name
+  function(self, gameMode, persistence)
+    self.gameMode = gameMode
+    self.persistence = persistence
     self.players = {}
     self.loadedPlacementMatches = {
       incomplete = {},
@@ -62,37 +65,33 @@ local Leaderboard =
     logger.debug("RATING_SPREAD_MODIFIER: " .. (self.consts.RATING_SPREAD_MODIFIER or "nil"))
 
     Signal.turnIntoEmitter(self)
-    self:createSignal("placementMatchesProcessed")
     self:createSignal("gameResultProcessed")
-    self:createSignal("placementMatchAdded")
-    -- seems silly but by separating the persistence from the logic we can test the logic much more easily
-    self:connectSignal("placementMatchesProcessed", self, self.completePlacement)
-    self:connectSignal("gameResultProcessed", self, self.persistRatingChanges)
-    self:connectSignal("placementMatchAdded", self, self.persistPlacementMatches)
   end
 )
 
----@param data { [1]: privateUserId, [2]: string, [3]: number, [4]: string, [5]: number?, [6]: integer, [7]: integer?, [8]: integer?}[]
+---@param data {[1]: privateUserId, [2]: string, [3]: number, [4]: string, [5]: number?, [6]: integer, [7]: integer?, [8]: integer?}[]
 --- user_id, user_name, rating, placement_done, placement_rating, ranked_games_played, ranked_games_won, last_login_time
 function Leaderboard:importData(data)
-  for row = 2, #data do
-    data[row][1] = tostring(data[row][1])
-    self.players[data[row][1]] = {}
-    for col = 1, #data[1] do
-      --Note csv_table[row][1] will be the player's user_id
-      --csv_table[1][col] will be a property name such as "rating"
-      if data[row][col] == "" then
-        data[row][col] = nil
-      end
-      --player with this user_id gets this property equal to the csv_table cell's value
-      if data[1][col] == "user_name" then
-        self.players[data[row][1]][data[1][col]] = tostring(data[row][col])
-      elseif data[1][col] == "rating" then
-        self.players[data[row][1]][data[1][col]] = tonumber(data[row][col])
-      elseif data[1][col] == "placement_done" then
-        self.players[data[row][1]][data[1][col]] = data[row][col] and string.lower(data[row][col]) ~= "false"
-      else
-        self.players[data[row][1]][data[1][col]] = data[row][col]
+  if data then
+    for row = 2, #data do
+      data[row][1] = tostring(data[row][1])
+      self.players[data[row][1]] = {}
+      for col = 1, #data[1] do
+        --Note csv_table[row][1] will be the player's user_id
+        --csv_table[1][col] will be a property name such as "rating"
+        if data[row][col] == "" then
+          data[row][col] = nil
+        end
+        --player with this user_id gets this property equal to the csv_table cell's value
+        if data[1][col] == "user_name" then
+          self.players[data[row][1]][data[1][col]] = tostring(data[row][col])
+        elseif data[1][col] == "rating" then
+          self.players[data[row][1]][data[1][col]] = tonumber(data[row][col])
+        elseif data[1][col] == "placement_done" then
+          self.players[data[row][1]][data[1][col]] = data[row][col] and string.lower(data[row][col]) ~= "false"
+        else
+          self.players[data[row][1]][data[1][col]] = data[row][col]
+        end
       end
     end
   end
@@ -107,8 +106,7 @@ function Leaderboard:update(user_id, new_rating)
   end
 
   logger.debug("new_rating = " .. new_rating)
-  logger.debug("about to write_leaderboard_file")
-  FileIO.write_leaderboard_file(self)
+  self.persistence.persistLeaderboard(self)
   logger.debug("done with Leaderboard.update")
 end
 
@@ -158,7 +156,7 @@ function Leaderboard:update_timestamp(user_id)
   if self.players[user_id] then
     local timestamp = os.time()
     self.players[user_id].last_login_time = timestamp
-    FileIO.write_leaderboard_file(self)
+    self.persistence.persistLeaderboard(self)
     logger.debug(user_id .. "'s login timestamp has been updated to " .. timestamp)
   else
     logger.debug(user_id .. " is not on the leaderboard, so no timestamp will be assigned at this time.")
@@ -196,14 +194,7 @@ end
 function Leaderboard:loadPlacementMatches(userId)
   logger.debug("Requested loading placement matches for user_id:  " .. (userId or "nil"))
   if not self.loadedPlacementMatches.incomplete[userId] then
-    local read_success, matches = FileIO.read_user_placement_match_file(userId)
-    if read_success then
-      self.loadedPlacementMatches.incomplete[userId] = matches or {}
-      logger.debug("loaded placement matches from file:")
-    else
-      self.loadedPlacementMatches.incomplete[userId] = {}
-      logger.debug("no pre-existing placement matches file, starting fresh")
-    end
+    self.loadedPlacementMatches.incomplete[userId] = self.persistence.getPlacementData(userId)
     logger.debug(tostring(self.loadedPlacementMatches.incomplete[userId]))
     logger.debug(json.encode(self.loadedPlacementMatches.incomplete[userId]))
   else
@@ -247,7 +238,7 @@ function Leaderboard:addToLeaderboard(player)
     if not self.consts.PLACEMENT_MATCHES_ENABLED then
       self.players[player.userId].placement_done = true
     end
-    FileIO.write_leaderboard_file(self)
+    self.persistence.persistLeaderboard(self)
   end
 end
 
@@ -316,16 +307,12 @@ function Leaderboard:addPlacementResult(player, opponent, result)
 
   logger.debug("PRINTING PLACEMENT MATCHES FOR USER")
   logger.debug(json.encode(self.loadedPlacementMatches.incomplete[player.userId]))
-  self:emitSignal("placementMatchAdded", player.userId)
+  self.persistence.persistPlacementGames(player.userId, self.loadedPlacementMatches.incomplete[player.userId])
 
   local leaderboardPlayer = self.players[player.userId]
   --adjust newcomer's placement_rating
   leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or self.consts.DEFAULT_RATING, self.players[player.opponent.userId].rating, result, self:getK(player))
   logger.debug("New newcomer rating: " .. leaderboardPlayer.placement_rating)
-end
-
-function Leaderboard:persistPlacementMatches(userId)
-  FileIO.write_user_placement_match_file(userId, self.loadedPlacementMatches.incomplete[userId])
 end
 
 ---@param game ServerGame
@@ -431,21 +418,10 @@ function Leaderboard:processGameResult(game)
   end
 
   logger.debug("done with Leaderboard.processGameResult")
+  self.persistence.persistLeaderboard(self)
   self:emitSignal("gameResultProcessed", ratings, game.id)
 
   return ratings
-end
-
----@param ratingUpdate RatingUpdate[]
----@param gameId integer
-function Leaderboard:persistRatingChanges(ratingUpdate, gameId)
-  logger.debug("about to write_leaderboard_file")
-  FileIO.write_leaderboard_file(self)
-  for i, rating in ipairs(ratingUpdate) do
-    if not rating.placement_match_progress then
-      database:insertPlayerELOChange(rating.userId, rating.new, gameId)
-    end
-  end
 end
 
 ---@param userId privateUserId
@@ -477,17 +453,8 @@ function Leaderboard:process_placement_matches(userId)
   end
   self.players[userId].placement_done = true
 
-  self:emitSignal("placementMatchesProcessed", userId)
-end
-
-function Leaderboard:completePlacement(userId)
-  FileIO.move_user_placement_file_to_complete(userId)
-  FileIO.write_leaderboard_file(self)
-  -- what is not being done is that rating changes are not persisted into the DB
-  -- the game IDs are old but the rating is applied on the PRESENT rating
-  -- so putting them into the DB does not make any sense
-  -- in fact the current implementation of placement matches really makes it so that persisting a rating history barely makes sense
-  --  because there will be illogical jumps induced by placement matches the moment the rating gets saved for the next time
+  self.persistence.persistPlacementFinalization(userId)
+  self.persistence.persistLeaderboard(self)
 end
 
 ---@param players ServerPlayer[]

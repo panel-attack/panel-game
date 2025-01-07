@@ -12,16 +12,17 @@ require("common.lib.timezones")
 require("common.lib.csprng")
 require("server.stridx")
 require("server.server_globals")
-require("server.server_file_io")
 local Connection = require("server.Connection")
 local Leaderboard = require("server.Leaderboard")
-require("server.PlayerBase")
+local Playerbase = require("server.PlayerBase")
 local Room = require("server.Room")
 local ClientMessages = require("server.ClientMessages")
 local utf8 = require("common.lib.utf8Additions")
 local tableUtils = require("common.lib.tableUtils")
 local Player = require("server.Player")
 local util = require("common.lib.util")
+local Persistence = require("server.Persistence")
+local FileIO = require("server.server_file_io")
 
 local pairs = pairs
 local ipairs = ipairs
@@ -49,7 +50,6 @@ local time = os.time
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
----@field playersFilePath string
 ---@field leaderboard Leaderboard
 local Server = class(
 ---@param self Server
@@ -109,28 +109,37 @@ local Server = class(
   end
 )
 
+---@param filePath string
+---@param playerData table<privateUserId, string>?
 function Server:initializePlayerData(filePath, playerData)
   if not self.playerbase then
-    self.playersFilePath = filePath
+    Persistence.setPlayerIdsPath(filePath)
     if not playerData then
-      playerData = FileIO.readJson(playerData)
+      playerData = Persistence.getPlayerData()
     else
       -- do nothing, assume that's already parsed data
     end
 
+    -- we don't want to design the API for persistence around the fact that we always need the entire playerData to write to disk
+    -- so hand it a reference so the design can be more atomic
+    Persistence.setPlayerDataRef(playerData)
+
     self.playerbase = Playerbase("playerbase", playerData)
-    self.playerbase:connectSignal("playerUpdated", self, self.onPlayerBaseUpdate)
     logger.debug("playerbase: " .. json.encode(self.playerbase.players))
   else
     logger.warn("Tried to load player data when the server already had player data loaded!\n" .. debug.traceback())
   end
 end
 
-function Server:initializeLeaderboard(filePath, data)
+---@param gameMode GameMode
+---@param filePath string
+---@param data table?
+function Server:initializeLeaderboard(gameMode, filePath, data)
   if not self.leaderboard then
-    self.leaderboard = Leaderboard(filePath)
+    Persistence.setLeaderboardPath(filePath)
+    self.leaderboard = Leaderboard(gameMode)
     if not data then
-      data = FileIO.readCsvFile(filePath)
+      data = Persistence.getLeaderboardData()
     else
       -- do nothing, assume that's already parsed data
     end
@@ -140,7 +149,7 @@ function Server:initializeLeaderboard(filePath, data)
 
     logger.debug("leaderboard json:")
     logger.debug(json.encode(self.leaderboard.players))
-    FileIO.write_leaderboard_file(self.leaderboard)
+    Persistence.persistLeaderboard(self.leaderboard)
     logger.debug("leaderboard report: " .. json.encode(self.leaderboard:get_report(self)))
   else
     logger.warn("Tried to load leaderboard data when the server already had its leaderboard loaded!\n" .. debug.traceback())
@@ -304,9 +313,7 @@ function Server:createNewUser(name)
   while not user_id or self.playerbase.players[user_id] do
     user_id = self:generate_new_user_id()
   end
-  self.playerbase:updatePlayer(user_id, name)
-  self.database:insertNewPlayer(user_id, name)
-  self.database:insertPlayerELOChange(user_id, 0, 0)
+  self.playerbase:addPlayer(user_id, name)
   return user_id
 end
 
@@ -315,7 +322,6 @@ function Server:changeUsername(privateUserID, username)
   if self.leaderboard.players[privateUserID] then
     self.leaderboard.players[privateUserID].user_name = username
   end
-  self.database:updatePlayerUsername(privateUserID, username)
 end
 
 ---@return privateUserId new_user_id
@@ -778,46 +784,13 @@ end
 function Server:processGameEnd(game)
   self:setLobbyChanged()
 
-  local gameID = self.database:insertGame(game.ranked)
-  if not gameID then
-    logger.error("Failed to persist game to database.")
-  else
-    game:setId(gameID)
-  end
-
-  -- record the game result for statistics, record keeping, and testing new features
-  local resultValue = 0.5
-  for i, player in ipairs(game.players) do
-    local level = not player:usesModifiedLevelData() and player.level or nil
-    if game.id then
-      self.database:insertPlayerGameResult(player.userId, game.id, level, game:getPlacement(player))
-    end
-    if player.publicPlayerID == game.winnerId then
-      if i == 1 then
-        resultValue = 1
-      elseif i == 2 then
-        resultValue = 0
-      end
-    end
-  end
-
-  local rankedValue = 0
-  if game.ranked then
-    rankedValue = 1
-  end
-  FileIO.logGameResult(game.players[1].userId, game.players[2].userId, resultValue, rankedValue)
+  Persistence.persistGame(game)
 
   if game.ranked and game.winnerId then
     local ratingUpdates = self.leaderboard:processGameResult(game)
     -- local message = ServerProtocol.updateRating(ratingUpdates[1], ratingUpdates[2])
     -- room:broadcastJson(message)
   end
-
-  FileIO.saveReplay(game)
-end
-
-function Server:onPlayerBaseUpdate(playerName)
-  FileIO.writeAsJson(self.playerbase.players, self.playersFilePath)
 end
 
 return Server

@@ -2,30 +2,39 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 require("server.server_file_io")
 local tableUtils = require("common.lib.tableUtils")
-local Signal = require("common.lib.signal")
 
 -- Represents all player accounts on the server.
-Playerbase =
+---@class Playerbase
+---@field players table<privateUserId, string>
+---@field persistence Persistence
+---@field publicIdToPrivateId privateUserId[]
+---@field privateIdToPublicId table<privateUserId, integer>
+local Playerbase =
   class(
-  function(self, name, playerData)
-    self.name = name
+  function(self, playerData, persistence)
+    self.persistence = persistence
     self.players = playerData or {}
-    --{["e2016ef09a0c7c2fa70a0fb5b99e9674"]="Bob",
-    --["d28ac48ba5e1a82e09b9579b0a5a7def"]="Alice"}
-    logger.info(tableUtils.length(self.players) .. " players loaded")
+    self.publicIdToPrivateId = {}
+    self.privateIdToPublicId = {}
 
-    Signal.turnIntoEmitter(self)
-    self:createSignal("playerUpdated")
+    for privateId, _ in pairs(self.players) do
+      local playerInfo = self.persistence.getPlayerInfo(privateId)
+      self.publicIdToPrivateId[playerInfo.publicPlayerID] = privateId
+      self.privateIdToPublicId[privateId] = playerInfo.publicPlayerID
+    end
+
+    logger.info(tableUtils.length(self.players) .. " players loaded")
   end
 )
 
 function Playerbase:addPlayer(userID, username)
   self:updatePlayer(userID, username)
+  self.persistence.persistNewPlayer(userID, username)
 end
 
 function Playerbase:updatePlayer(user_id, user_name)
   self.players[user_id] = user_name
-  self:emitSignal("playerUpdated", user_name)
+  self.persistence.persistPlayerNameChange(self.players)
 end
 
 -- returns true if the name is taken by a different user already

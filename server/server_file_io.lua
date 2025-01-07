@@ -5,7 +5,7 @@ local csvfile = require("server.simplecsv")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
-FileIO = {}
+local FileIO = {}
 
 function FileIO.makeDirectory(path)
   local status, error = pcall(
@@ -103,14 +103,14 @@ function FileIO.write_error_report(error_report_json)
 end
 
 ---@param leaderboard Leaderboard
-function FileIO.write_leaderboard_file(leaderboard)
+function FileIO.write_leaderboard_file(leaderboard, path)
   local leaderboard_table, public_leaderboard_table = leaderboard:toSheetData()
 
   local status, error = pcall(
     function()
-      csvfile.write("." .. sep .. leaderboard.filePath .. ".csv", leaderboard_table)
+      csvfile.write("." .. sep .. path, leaderboard_table)
       FileIO.makeDirectoryRecursive("." .. sep .. "ftp")
-      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_" .. leaderboard.filePath .. ".csv", public_leaderboard_table)
+      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_" .. path, public_leaderboard_table)
     end
   )
   if not status then
@@ -269,3 +269,5 @@ function FileIO.saveReplay(game)
   logger.debug("saving replay as " .. path .. sep .. filename)
   FileIO.write_replay_file(game.replay, path, filename)
 end
+
+return FileIO
