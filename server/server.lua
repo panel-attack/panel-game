@@ -21,7 +21,6 @@ local utf8 = require("common.lib.utf8Additions")
 local tableUtils = require("common.lib.tableUtils")
 local Player = require("server.Player")
 local util = require("common.lib.util")
-local Persistence = require("server.Persistence")
 local FileIO = require("server.server_file_io")
 
 local pairs = pairs
@@ -51,10 +50,12 @@ local time = os.time
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
 ---@field leaderboard Leaderboard
+---@field persistence Persistence
+---@field _shuttingDown boolean
 local Server = class(
 ---@param self Server
 ---@param databaseParam ServerDB
-  function(self, databaseParam)
+  function(self, databaseParam, persistence)
     self.connectionNumberIndex = 1
     self.roomNumberIndex = 1
     self.rooms = {}
@@ -68,23 +69,11 @@ local Server = class(
     self.nameToPlayer = {}
     assert(databaseParam ~= nil)
     self.database = databaseParam
+    self.persistence = persistence
     self.lastProcessTime = time()
     self.lastFlushTime = self.lastProcessTime
     self.lobbyChanged = false
-
-    logger.info("Starting up server with port: " .. (SERVER_PORT or 49569))
-    local s = socket.bind("*", SERVER_PORT or 49569)
-    if s then
-      self.socket = s
-    else
-      error("Failed to create server socket. Check if there are any other instances blocking the port")
-    end
-    self.socket:settimeout(0)
-    if TCP_NODELAY_ENABLED then
-      self.socket:setoption("tcp-nodelay", true)
-    end
-
-    logger.debug(os.time())
+    self._shuttingDown = false
 
     FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
@@ -109,22 +98,44 @@ local Server = class(
   end
 )
 
+function Server:start()
+  logger.info("Starting up server with port: " .. (SERVER_PORT or 49569))
+  local s = socket.bind("*", SERVER_PORT or 49569)
+  if s then
+    self.socket = s
+  else
+    error("Failed to create server socket. Check if there are any other instances blocking the port")
+  end
+  self.socket:settimeout(0)
+  if TCP_NODELAY_ENABLED then
+    self.socket:setoption("tcp-nodelay", true)
+  end
+
+  logger.debug(os.time())
+end
+
+function Server:stop()
+  self._shuttingDown = true
+  self.socket:close()
+  self.socket = nil
+end
+
 ---@param filePath string
 ---@param playerData table<privateUserId, string>?
 function Server:initializePlayerData(filePath, playerData)
   if not self.playerbase then
-    Persistence.setPlayerIdsPath(filePath)
+    self.persistence.setPlayerIdsPath(filePath)
     if not playerData then
-      playerData = Persistence.getPlayerData()
+      playerData = self.persistence.getPlayerData()
     else
       -- do nothing, assume that's already parsed data
     end
 
     -- we don't want to design the API for persistence around the fact that we always need the entire playerData to write to disk
     -- so hand it a reference so the design can be more atomic
-    Persistence.setPlayerDataRef(playerData)
+    self.persistence.setPlayerDataRef(playerData)
 
-    self.playerbase = Playerbase("playerbase", playerData)
+    self.playerbase = Playerbase(playerData, self.persistence)
     logger.debug("playerbase: " .. json.encode(self.playerbase.players))
   else
     logger.warn("Tried to load player data when the server already had player data loaded!\n" .. debug.traceback())
@@ -136,10 +147,10 @@ end
 ---@param data table?
 function Server:initializeLeaderboard(gameMode, filePath, data)
   if not self.leaderboard then
-    Persistence.setLeaderboardPath(filePath)
-    self.leaderboard = Leaderboard(gameMode)
+    self.persistence.setLeaderboardPath(filePath)
+    self.leaderboard = Leaderboard(gameMode, self.persistence)
     if not data then
-      data = Persistence.getLeaderboardData()
+      data = self.persistence.getLeaderboardData()
     else
       -- do nothing, assume that's already parsed data
     end
@@ -149,7 +160,7 @@ function Server:initializeLeaderboard(gameMode, filePath, data)
 
     logger.debug("leaderboard json:")
     logger.debug(json.encode(self.leaderboard.players))
-    Persistence.persistLeaderboard(self.leaderboard)
+    self.persistence.persistLeaderboard(self.leaderboard)
     logger.debug("leaderboard report: " .. json.encode(self.leaderboard:get_report(self)))
   else
     logger.warn("Tried to load leaderboard data when the server already had its leaderboard loaded!\n" .. debug.traceback())
@@ -365,7 +376,9 @@ end
 
 function Server:update()
 
-  self:acceptNewConnections()
+  if not self._shuttingDown then
+    self:acceptNewConnections()
+  end
 
   self:updateConnections()
   self:processMessages()
@@ -392,10 +405,14 @@ function Server:acceptNewConnections()
     end
     local connection = Connection(newConnectionSocket, self.connectionNumberIndex)
     logger.debug("Accepted connection " .. self.connectionNumberIndex)
-    self.connections[self.connectionNumberIndex] = connection
+    self:addConnection(connection)
     self.socketToConnectionIndex[newConnectionSocket] = self.connectionNumberIndex
-    self.connectionNumberIndex = self.connectionNumberIndex + 1
   end
+end
+
+function Server:addConnection(connection)
+  self.connections[self.connectionNumberIndex] = connection
+  self.connectionNumberIndex = self.connectionNumberIndex + 1
 end
 
 -- Process any data on all active connections
@@ -784,13 +801,7 @@ end
 function Server:processGameEnd(game)
   self:setLobbyChanged()
 
-  Persistence.persistGame(game)
-
-  if game.ranked and game.winnerId then
-    local ratingUpdates = self.leaderboard:processGameResult(game)
-    -- local message = ServerProtocol.updateRating(ratingUpdates[1], ratingUpdates[2])
-    -- room:broadcastJson(message)
-  end
+  self.persistence.persistGame(game)
 end
 
 return Server

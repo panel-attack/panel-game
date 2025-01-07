@@ -15,7 +15,7 @@ local function getRoom()
   local room = Room(1, {p1, p2})
   -- the game is being cleared from the room when it ends so catch the reference to assert against
   local gameCatcher = {
-    catch = function(self, r, game) self.game = game end
+    catch = function(self, game) self.game = game end
   }
   room:connectSignal("matchEnd", gameCatcher, gameCatcher.catch)
 

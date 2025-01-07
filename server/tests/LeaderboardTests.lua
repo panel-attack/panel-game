@@ -3,12 +3,11 @@ local ServerGame = require("server.Game")
 local Leaderboard = require("server.Leaderboard")
 local MockConnection = require("server.tests.MockConnection")
 local LevelPresets = require("common.data.LevelPresets")
+local GameModes = require("common.engine.GameModes")
+-- we don't want to test the persistence part here, do that explicitly elsewhere instead
+local MockPersistence = require("server.tests.MockPersistence")
 
-local leaderboard = Leaderboard("mock")
--- we don't want to test the persistence part
-leaderboard:disconnectSignal("placementMatchesProcessed", leaderboard)
-leaderboard:disconnectSignal("gameResultProcessed", leaderboard)
-leaderboard:disconnectSignal("placementMatchAdded", leaderboard)
+local leaderboard = Leaderboard(GameModes.getPreset("TWO_PLAYER_VS"), MockPersistence)
 leaderboard.consts.PLACEMENT_MATCH_COUNT_REQUIREMENT = 2
 leaderboard.consts.RATING_SPREAD_MODIFIER = 400
 leaderboard.consts.ALLOWABLE_RATING_SPREAD_MULTIPLIER = .9

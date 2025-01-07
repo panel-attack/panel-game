@@ -1,9 +1,8 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
-local database = require("server.PADatabase")
-local Signal = require("common.lib.signal")
 
-local leagues = { {league="Newcomer",     min_rating = -1000},
+local leagues = {
+            {league="Newcomer",     min_rating = -1000},
             {league="Copper",       min_rating = 1},
             {league="Bronze",       min_rating = 1125},
             {league="Silver",       min_rating = 1275},
@@ -37,7 +36,7 @@ end
 ---@field consts table
 ---@field gameMode GameMode the game mode this leaderboard is for; currently unused
 ---@field persistence Persistence a collection of persistence methods; referenced directly on the leaderboard so they can be replaced for testing
----@overload fun(gameMode: GameMode): Leaderboard
+---@overload fun(gameMode: GameMode, persistence: Persistence): Leaderboard
 local Leaderboard =
   class(
   function(self, gameMode, persistence)
@@ -63,9 +62,6 @@ local Leaderboard =
     }
 
     logger.debug("RATING_SPREAD_MODIFIER: " .. (self.consts.RATING_SPREAD_MODIFIER or "nil"))
-
-    Signal.turnIntoEmitter(self)
-    self:createSignal("gameResultProcessed")
   end
 )
 
@@ -419,7 +415,6 @@ function Leaderboard:processGameResult(game)
 
   logger.debug("done with Leaderboard.processGameResult")
   self.persistence.persistLeaderboard(self)
-  self:emitSignal("gameResultProcessed", ratings, game.id)
 
   return ratings
 end

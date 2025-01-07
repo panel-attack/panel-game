@@ -8,7 +8,7 @@ local logger = require("common.lib.logger")
 ---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating")
 
 ---@class ServerPlayer : Signal
----@field package connection Connection
+---@field package connection Connection ONLY FOR SENDING; accessing this in tests is fine, otherwise not, all message processing has to go through server
 ---@field userId privateUserId
 ---@field publicPlayerID integer
 ---@field character string id of the specific character that was picked

@@ -356,7 +356,16 @@ function Room:handleGameOverOutcome(message, sender)
   if self.game.complete then
     self:updateWinCounts(self.game)
     logger.info(self.roomNumber .. " " .. self.name .. " match " .. self.matchCount .. " ended with winner " .. (self.game.winnerId or ""))
-    self:emitSignal("matchEnd", self, self.game)
+    self:emitSignal("matchEnd", self.game)
+
+    if self.game.ranked and self.game.winnerId then
+      local ratingUpdates = self.leaderboard:processGameResult(self.game)
+      ratingUpdates[1].userId = nil
+      ratingUpdates[2].userId = nil
+      message = ServerProtocol.updateRating(ratingUpdates[1], ratingUpdates[2])
+      self:broadcastJson(message)
+      self.ratings = ratingUpdates
+    end
 
     logger.debug("\n*******************************")
     logger.debug("***" .. self.players[1].name .. " " .. self.win_counts[1] .. " - " .. self.win_counts[2] .. " " .. self.players[2].name .. "***")

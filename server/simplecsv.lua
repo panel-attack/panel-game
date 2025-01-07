@@ -37,7 +37,6 @@ tonum: whether to convert fields to numbers if possible. Optional. Defaults to t
 null: what value should null fields get. Optional. defaults to ''
 ]]
 
-local FileIO = require("server.server_file_io")
 module(..., package.seeall)
 
 ---------------------------------------------------------------------
@@ -73,10 +72,6 @@ end
 
 ---------------------------------------------------------------------
 function read(path, sep, tonum, null)
-  if FileIO.fileExists(path) == false then
-    return nil
-  end
-
   tonum = tonum or true
   sep = sep or ","
   null = null or ""

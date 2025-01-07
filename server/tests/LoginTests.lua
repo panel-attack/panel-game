@@ -1,7 +1,7 @@
 require("server.server_globals")
-local Connection = require("server.Connection")
-require("server.PlayerBase")
+local Playerbase = require("server.PlayerBase")
 local Server = require("server.server")
+local MockPersistence = require("server.tests.MockPersistence")
 
 local testServer = {nameToConnectionIndex = {}}
 
@@ -9,8 +9,7 @@ testServer.insertBan = function (ip, reason, completionTime)
   return {} -- might need more details later like reason and completiontime
 end
 
-
-testServer.playerbase = Playerbase("Test", nil)
+testServer.playerbase = Playerbase(nil, MockPersistence)
 testServer.playerbase:addPlayer(1, "Jerry")
 testServer.playerbase:addPlayer(2, "Ben")
 

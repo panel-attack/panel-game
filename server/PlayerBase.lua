@@ -19,8 +19,10 @@ local Playerbase =
 
     for privateId, _ in pairs(self.players) do
       local playerInfo = self.persistence.getPlayerInfo(privateId)
-      self.publicIdToPrivateId[playerInfo.publicPlayerID] = privateId
-      self.privateIdToPublicId[privateId] = playerInfo.publicPlayerID
+      if playerInfo then
+        self.publicIdToPrivateId[playerInfo.publicPlayerID] = privateId
+        self.privateIdToPublicId[privateId] = playerInfo.publicPlayerID
+      end
     end
 
     logger.info(tableUtils.length(self.players) .. " players loaded")

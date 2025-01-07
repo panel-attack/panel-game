@@ -119,6 +119,9 @@ function FileIO.write_leaderboard_file(leaderboard, path)
 end
 
 function FileIO.readCsvFile(filePath)
+  if FileIO.fileExists(filePath) == false then
+    return nil
+  end
   local csv_table = {}
   local status, error = pcall(
     function()

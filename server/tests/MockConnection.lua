@@ -5,9 +5,11 @@ local index = 0
 local MockConnection = class(function(self)
   index = index + 1
   self.index = index
-  self.socket = true
+  self.socket = {close = function() end, getpeername = function() return "170.46.23.4", math.random(40000,60000) end}
   self.outgoingMessageQueue = Queue()
   self.outgoingInputQueue = Queue()
+  self.incomingMessageQueue = Queue()
+  self.incomingInputQueue = Queue()
 end)
 
 function MockConnection:update(t) end
@@ -28,5 +30,13 @@ function MockConnection:close()
 end
 
 function MockConnection:processMessage(messageType, data) end
+
+function MockConnection:receiveInput(input)
+  self.incomingInputQueue:push(input)
+end
+
+function MockConnection:receiveMessage(message)
+  self.incomingMessageQueue:push(message)
+end
 
 return MockConnection
