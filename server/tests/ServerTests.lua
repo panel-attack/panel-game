@@ -194,7 +194,115 @@ local function testGameplay()
   message = bob.connection.outgoingMessageQueue:pop().messageText
   assert(message.spectators and message.spectators[1] == "Bob")
 
+  alice.connection:receiveMessage(json.encode(ClientProtocol.reportLocalGameResult(2).messageText))
+  server:update()
+  ben.connection:receiveMessage(json.encode(ClientProtocol.reportLocalGameResult(2).messageText))
+  server:update()
 
+  -- first we get win counts and then character select
+  -- explicitly check not because win_counts comes separately but may also come with character_select I think
+  -- realistically there is no need for these to be separate messages
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.win_counts and not message.character_select)
+  message = ben.connection.outgoingMessageQueue:pop().messageText
+  assert(message.win_counts and not message.character_select)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.win_counts and not message.character_select)
+
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.character_select)
+  message = ben.connection.outgoingMessageQueue:pop().messageText
+  assert(message.character_select)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.character_select)
+
+  -- with some bad luck we'll also get a ranked status update which the server sends way too many of
+  alice.connection:receiveMessage(readyMessage)
+  -- need to update one time extra to clear out the menu state message
+  server:update()
+  -- clear the menu state, kinda don't care
+  clearOutgoingMessages({alice, ben, bob})
+  ben.connection:receiveMessage(readyMessage)
+  server:update()
+
+  -- we checked before that players get the message but not yet for spectators
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.match_start)
+
+  -- surely this will work properly the second time as well for everyone else
+  clearOutgoingMessages({alice, ben, bob})
+
+  ben.connection:receiveMessage(json.encode(ClientProtocol.leaveRoom().messageText))
+  server:update()
+
+  -- the others get informed about the room closing
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.leave_room)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.leave_room)
+  -- this was an active quit so ben should get the leave back as well
+  message = ben.connection.outgoingMessageQueue:pop().messageText
+  assert(message.leave_room)
+
+  -- everyone is back to lobby
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
+  message = ben.connection.outgoingMessageQueue:pop().messageText
+  assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
 end
 
 testGameplay()
+
+local function startGame(server, room)
+  for i, player in ipairs(room.players) do
+    player.connection:receiveMessage(readyMessage)
+  end
+  server:update()
+  clearOutgoingMessages(room.players)
+  clearOutgoingMessages(room.spectators)
+end
+
+local function addSpectator(server, room, spectator)
+  spectator.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate(spectator.name, room.roomNumber).messageText))
+  server:update()
+  clearOutgoingMessages({spectator})
+end
+
+local function testDisconnect()
+  local server = getTestServer()
+  local bob = players[1]
+  login(server, bob)
+  local alice = players[2]
+  local ben = players[3]
+  setupRoom(server, alice, ben)
+  -- the server creates new player objects so we need to reassign
+  alice = server.connectionToPlayer[alice.connection]
+  ben = server.connectionToPlayer[ben.connection]
+  bob = server.connectionToPlayer[bob.connection]
+  addSpectator(server, server.playerToRoom[alice], bob)
+  startGame(server, server.playerToRoom[alice])
+
+  server:closeConnection(ben.connection)
+
+  local message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.leave_room)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.leave_room)
+  -- we closed the connection server side which under normal circumstances only happens in case of a disconnect
+  -- so the server should no longer try to send them a message
+  assert(ben.connection.outgoingMessageQueue:len() == 0)
+  assert(ben.connection.loggedIn == false)
+  assert(server.connectionToPlayer[ben.connection] == nil)
+
+  server:update()
+
+  -- the people that got kicked out get the new lobby state
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.unpaired and #message.unpaired == 2)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.unpaired and #message.unpaired == 2)
+end
+
+testDisconnect()

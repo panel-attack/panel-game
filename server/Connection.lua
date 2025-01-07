@@ -80,7 +80,6 @@ function Connection:send(message)
 end
 
 function Connection:close()
-  self.loggedIn = false
   self.incomingMessageQueue:clear()
   self.outgoingMessageQueue:clear()
   self.incomingInputQueue:clear()

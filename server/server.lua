@@ -785,6 +785,7 @@ function Server:closeConnection(connection)
   self.socketToConnectionIndex[connection.socket] = nil
   self.connections[connection.index] = nil
   self.connectionToPlayer[connection] = nil
+  connection.loggedIn = false
   connection:close()
   if player then
     self:clearProposals(player)
