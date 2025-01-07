@@ -22,6 +22,9 @@ local Playerbase =
       if playerInfo then
         self.publicIdToPrivateId[playerInfo.publicPlayerID] = privateId
         self.privateIdToPublicId[privateId] = playerInfo.publicPlayerID
+      else
+        self.publicIdToPrivateId[#self.publicIdToPrivateId+1] = privateId
+        self.privateIdToPublicId[privateId] = #self.publicIdToPrivateId
       end
     end
 
@@ -30,8 +33,20 @@ local Playerbase =
 )
 
 function Playerbase:addPlayer(userID, username)
-  self:updatePlayer(userID, username)
-  self.persistence.persistNewPlayer(userID, username)
+  self.players[userID] = username
+  if self.persistence.persistNewPlayer(userID, username) then
+    local playerInfo = self.persistence.getPlayerInfo(userID)
+    if playerInfo then
+      self.publicIdToPrivateId[playerInfo.publicPlayerID] = userID
+      self.privateIdToPublicId[userID] = playerInfo.publicPlayerID
+    else
+      self.publicIdToPrivateId[#self.publicIdToPrivateId+1] = userID
+      self.privateIdToPublicId[userID] = #self.publicIdToPrivateId
+    end
+    return true
+  else
+    return false
+  end
 end
 
 function Playerbase:updatePlayer(user_id, user_name)

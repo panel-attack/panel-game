@@ -93,9 +93,10 @@ function Persistence.persistPlayerData(playerData)
   FileIO.writeAsJson(playerData, PlayerIdsToNamesPath)
 end
 
+---@return boolean
 function Persistence.persistNewPlayer(userId, name)
-  PADatabase:insertNewPlayer(userId, name)
   Persistence.persistPlayerData(PlayerData)
+  return PADatabase:insertNewPlayer(userId, name)
 end
 
 function Persistence.persistPlayerNameChange(userId, name)

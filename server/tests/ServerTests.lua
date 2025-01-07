@@ -49,10 +49,12 @@ local function testLogin()
   assert(server.connectionNumberIndex == 2)
   local p = server.connectionToPlayer[bob.connection]
   assert(p)
-  assert(server.nameToConnectionIndex["Bob"] == bob.connection)
+  assert(server.nameToConnectionIndex["Bob"] == 1)
   assert(server.nameToPlayer["Bob"] == p)
+  local loginApproval = bob.connection.outgoingMessageQueue:pop()
+  assert(loginApproval and loginApproval.messageText.login_successful)
   local lobbyState = bob.connection.outgoingMessageQueue:pop()
-  assert(lobbyState and lobbyState.unpaired and lobbyState.unpaired[1] == "Bob")
+  assert(lobbyState and lobbyState.messageText.unpaired and lobbyState.messageText.unpaired[1] == "Bob")
 end
 
 testLogin()

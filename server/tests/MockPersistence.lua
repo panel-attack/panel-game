@@ -51,9 +51,11 @@ function MockPersistence.persistPlayerData(playerData)
 end
 
 function MockPersistence.persistNewPlayer(userId, name)
+  return true
 end
 
 function MockPersistence.persistPlayerNameChange(userId, name)
+  return true
 end
 
 ---@return table<privateUserId, string>

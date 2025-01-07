@@ -211,21 +211,17 @@ function Server:importDatabase()
   self.database:commitTransaction() -- bulk commit every statement from the start of beginTransaction
 end
 
-local function addPublicPlayerData(players, playerName, player)
-  if not players or not player then
+local function addPublicPlayerData(players, player, rating)
+  if not players or not rating then
     return
   end
 
-  if not players[playerName] then
-    players[playerName] = {}
+  if not players[player.name] then
+    players[player.name] = {}
   end
 
-  if player.rating then
-    players[playerName].rating = math.round(player.rating)
-  end
-
-  if player.ranked_games_played then
-    players[playerName].ranked_games_played = player.ranked_games_played
+  if rating then
+    players[player.name].rating = math.round(rating)
   end
 end
 
@@ -243,14 +239,14 @@ function Server:lobby_state()
     end
     if player and player.state == "lobby" then
       names[#names + 1] = player.name
-      addPublicPlayerData(players, player.name, self.leaderboard.players[player.userId])
+      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
     end
   end
   local spectatableRooms = {}
   for _, room in pairs(self.rooms) do
     spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, a = room.players[1].name, b = room.players[2].name, state = room:state()}
     for i, player in ipairs(room.players) do
-      addPublicPlayerData(players, player.name, self.leaderboard.players[player.userId])
+      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
     end
   end
   return {unpaired = names, spectatable = spectatableRooms, players = players}
@@ -318,14 +314,15 @@ function Server:roomNumberToRoom(roomNr)
 end
 
 ---@param name string
----@return privateUserId
+---@return privateUserId?
 function Server:createNewUser(name)
   local user_id = nil
   while not user_id or self.playerbase.players[user_id] do
     user_id = self:generate_new_user_id()
   end
-  self.playerbase:addPlayer(user_id, name)
-  return user_id
+  if self.playerbase:addPlayer(user_id, name) then
+    return user_id
+  end
 end
 
 function Server:changeUsername(privateUserID, username)
@@ -611,7 +608,7 @@ function Server:broadCastLobbyIfChanged()
 end
 
 ---@param connection Connection
----@param userId privateUserId
+---@param userId privateUserId?
 ---@param name string
 ---@param ipAddress string
 ---@param port integer
@@ -646,15 +643,16 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     if userId == "need a new user id" then
       assert(self.playerbase:nameTaken("", name) == false)
       userId = self:createNewUser(name)
-      logger.info("New user: " .. name .. " was created")
-      message.new_user_id = userId
+      if not userId then
+        connection:sendJson(ServerProtocol.denyLogin("Failed to assign public player ID, please try again"))
+        return false
+      else
+        logger.info("New user: " .. name .. " was created")
+        message.new_user_id = userId
+      end
     end
 
-    local playerData = self.database:getPlayerFromPrivateID(userId)
-    if not playerData then
-      connection:sendJson(ServerProtocol.denyLogin("Failed to assign public player ID, please try again"))
-      return false
-    end
+    ---@cast userId -nil
 
     -- Name change is allowed because it was already checked above
     if self.playerbase.players[userId] ~= name then
@@ -668,14 +666,16 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
       message.new_name = name
     end
 
-    local player = Player(userId, connection, name, playerData.publicPlayerID)
+    local player = Player(userId, connection, name, self.playerbase.privateIdToPublicId[userId])
     player:setState("lobby")
     assert(player.publicPlayerID ~= nil)
     player:updateSettings(playerSettings)
     self.nameToConnectionIndex[name] = connection.index
     self.connectionToPlayer[connection] = player
     self.nameToPlayer[name] = player
-    self.leaderboard:update_timestamp(userId)
+    if self.leaderboard then
+      self.leaderboard:update_timestamp(userId)
+    end
     self.database:insertIPID(ipAddress, player.publicPlayerID)
     self:setLobbyChanged()
 
