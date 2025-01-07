@@ -200,7 +200,6 @@ end
 local function loadRandomCharacter(visibleCharacters)
   local randomCharacter = Character("characters/__default", consts.RANDOM_CHARACTER_SPECIAL_VALUE)
   randomCharacter.images["icon"] = themes[config.theme].images.IMG_random_character
-  randomCharacter.sounds["selection"] = {}
   randomCharacter.display_name = "random"
   randomCharacter.subIds = visibleCharacters
   -- we need to shadow some character functions to correct load behaviour for the random character
