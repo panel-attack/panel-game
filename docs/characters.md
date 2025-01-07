@@ -16,7 +16,7 @@ Rather than trying to read through all of this and trying to understand it, it o
 
 Well, yes and no.  
 Over the years, many things have changed and a mod created five, two, one or half a year ago may not use all features available or not use the available features optimally.  
-Chain cards for example can go up to x99, combo SFX can be assigned per combo size if you wish so and high resolution assets actually look good on high resolution monitors now (unlike in the past).  
+Chain cards for example can go up to x999, combo SFX can be assigned per combo size if you wish so and high resolution assets actually look good on high resolution monitors now (unlike in the past).  
 All of the mentioned changes happened in late 2022 and who knows what the future brings? (aside from updates for this doc)
 
 Referencing existing mods is generally a fantastic idea (especially for garbage).  
