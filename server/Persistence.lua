@@ -106,7 +106,12 @@ end
 
 ---@return table<privateUserId, string>
 function Persistence.getPlayerData()
-  return FileIO.readJson(PlayerIdsToNamesPath)
+  local data = FileIO.readJson(PlayerIdsToNamesPath)
+  if data then
+    return data
+  else
+    return {}
+  end
 end
 
 ---@param privateUserId privateUserId

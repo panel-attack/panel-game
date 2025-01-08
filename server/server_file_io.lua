@@ -51,16 +51,15 @@ function FileIO.writeAsJson(data, filePath)
 end
 
 function FileIO.readJson(filename)
-  local json
-
+  local success, json =
   pcall(
     function()
       local f = io.open(filename, "r")
       if f then
         io.input(f)
         local data = io.read("*all")
-        json = json.decode(data)
         io.close(f)
+        return json.decode(data)
       end
     end
   )
