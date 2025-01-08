@@ -400,10 +400,10 @@ function Server:acceptNewConnections()
     if TCP_NODELAY_ENABLED then
       newConnectionSocket:setoption("tcp-nodelay", true)
     end
-    local connection = Connection(newConnectionSocket, self.connectionNumberIndex)
     logger.debug("Accepted connection " .. self.connectionNumberIndex)
-    self:addConnection(connection)
+    local connection = Connection(newConnectionSocket, self.connectionNumberIndex)
     self.socketToConnectionIndex[newConnectionSocket] = self.connectionNumberIndex
+    self:addConnection(connection)
   end
 end
 
@@ -528,7 +528,12 @@ function Server:processMessage(message, connection)
   elseif not connection.loggedIn then
     if message.login_request then
       local IP_logging_in, port = connection.socket:getpeername()
-      return self:login(connection, message.user_id, message.name, IP_logging_in, port, message.engine_version, message)
+      if self:login(connection, message.user_id, message.name, IP_logging_in, port, message.engine_version, message) then
+        return true
+      else
+        self:closeConnection(connection)
+        return false
+      end
     else
       self:closeConnection(connection)
       return false

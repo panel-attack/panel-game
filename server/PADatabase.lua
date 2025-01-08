@@ -1,4 +1,3 @@
-local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local sqlite3 = require("lsqlite3")
 ---@class SqliteDB
