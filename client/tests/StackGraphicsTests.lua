@@ -1,10 +1,8 @@
-local PlayerStack = require("client.src.PlayerStack")
 local ClientMatch = require("client.src.ClientMatch")
 local GameModes = require("common.engine.GameModes")
 local Player = require("client.src.Player")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
-local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 
 local Theme = require("client.src.mods.Theme")
 
@@ -15,13 +13,6 @@ end
 local legacyScoreX = 546
 local legacyScoreXP2 = 642
 local legacyScoreY = 208
-
-local currentTheme = themes[config.theme]
-
-local function setTheme(theme)
-  theme:load()
-  themes[config.theme] = theme
-end
 
 ---@param playerCount integer
 ---@param theme table?
@@ -48,6 +39,8 @@ local function createEndlessClientMatch(playerCount, theme)
   if theme then
     for i, stack in ipairs(clientMatch.stacks) do
       stack.theme = theme
+      -- different theme changes the offsets so we need to recalculate graphics values
+      stack:moveForRenderIndex(i)
     end
   end
 
@@ -62,8 +55,7 @@ assert(defaultTheme ~= nil)
 -- ORIGIN TESTING
 
 local function testOriginalThemeStackGraphics()
-  setTheme(v1Theme)
-  local match = createEndlessClientMatch(1)
+  local match = createEndlessClientMatch(1, v1Theme)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
@@ -77,8 +69,7 @@ end
 --test(testOriginalThemeStackGraphics)
 
 local function testOriginalThemeStackGraphicsPlayer2()
-  setTheme(v1Theme)
-  local match = createEndlessClientMatch(2)
+  local match = createEndlessClientMatch(2, v1Theme)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
@@ -92,8 +83,7 @@ end
 --test(testOriginalThemeStackGraphicsPlayer2)
 
 local function testNewThemeStackGraphics()
-  setTheme(defaultTheme)
-  local match = createEndlessClientMatch(1)
+  local match = createEndlessClientMatch(1, defaultTheme)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
@@ -108,8 +98,7 @@ end
 test(testNewThemeStackGraphics)
 
 local function testNewThemeStackGraphicsPlayer2()
-  setTheme(defaultTheme)
-  local match = createEndlessClientMatch(2)
+  local match = createEndlessClientMatch(2, defaultTheme)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
@@ -126,8 +115,7 @@ test(testNewThemeStackGraphicsPlayer2)
 -- ORIGIN SHIFT TESTING 
 
 local function testOriginalThemeOffset()
-  setTheme(v1Theme)
-  local match = createEndlessClientMatch(1)
+  local match = createEndlessClientMatch(1, v1Theme)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
@@ -146,8 +134,7 @@ end
 --test(testOriginalThemeOffset)
 
 local function testOriginalThemeOffsetPlayer2()
-  setTheme(v1Theme)
-  local match = createEndlessClientMatch(2)
+  local match = createEndlessClientMatch(2, v1Theme)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
@@ -166,8 +153,7 @@ end
 --test(testOriginalThemeOffsetPlayer2)
 
 local function testNewThemeOffset()
-  setTheme(defaultTheme)
-  local match = createEndlessClientMatch(1)
+  local match = createEndlessClientMatch(1, defaultTheme)
   local stack = match.stacks[1]
 
   assert(match ~= nil)
@@ -186,8 +172,7 @@ end
 test(testNewThemeOffset)
 
 local function testNewThemeOffsetPlayer2()
-  setTheme(defaultTheme)
-  local match = createEndlessClientMatch(2)
+  local match = createEndlessClientMatch(2, defaultTheme)
   local stack = match.stacks[2]
 
   assert(match ~= nil)
@@ -205,12 +190,11 @@ end
 
 test(testNewThemeOffsetPlayer2)
 
-setTheme(currentTheme)
-
 local function testShakeOffsetLargeGarbage()
   local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
+  ---@cast stack PlayerStack
 
   -- for i = 76, 1, -1 do
   --   logger.info("assert(stack:shakeOffsetForShakeFrames(" .. i .. ", 0, 1) == " .. stack:shakeOffsetForShakeFrames(i, 0, 1) .. ")")
@@ -304,6 +288,7 @@ local function testShakeOffsetReduction()
   local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
+  ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.5) == 1)
   assert(stack:shakeOffsetForShakeFrames(75, 0, 0.5) == 0)
   assert(stack:shakeOffsetForShakeFrames(74, 0, 0.5) == 2)
@@ -341,6 +326,7 @@ local function testShakeOffsetMassiveReduction()
   local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
+  ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.25) == 1)
   assert(stack:shakeOffsetForShakeFrames(75, 0, 0.25) == 0)
   assert(stack:shakeOffsetForShakeFrames(74, 0, 0.25) == 1)
@@ -378,6 +364,7 @@ local function testShakeInterpolate()
   local match = createEndlessClientMatch(2, defaultTheme)
   match.seed = 1
   local stack = match.stacks[2]
+  ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(70, 0, 1) == 30)
   assert(stack:shakeOffsetForShakeFrames(16, 0, 1) == 8)
   assert(stack:shakeOffsetForShakeFrames(70, 16, 1) == 19)

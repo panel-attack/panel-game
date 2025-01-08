@@ -14,8 +14,6 @@ local function finishedMatchForPath(path)
     end
   )
 
-  GAME.muteSound = true
-
   local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
   local match = Match.createFromReplay(replay)
 

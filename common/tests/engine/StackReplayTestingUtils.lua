@@ -109,8 +109,6 @@ function StackReplayTestingUtils:simulateMatchWithRollbackAtClock(match, clock)
 end
 
 function StackReplayTestingUtils:setupReplayWithPath(path)
-  GAME.muteSound = true
-
   local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
   local match = Match.createFromReplay(replay)
   match:start()
@@ -119,7 +117,6 @@ function StackReplayTestingUtils:setupReplayWithPath(path)
     stack:setMaxRunsPerFrame(1)
   end
 
-  assert(GAME ~= nil)
   assert(match ~= nil)
   assert(match.stacks[1])
 
