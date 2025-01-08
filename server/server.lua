@@ -560,7 +560,7 @@ function Server:processMessage(message, connection)
     elseif message.spectate_request then
       self:handleSpectateRequest(message, player)
       return true
-    elseif player.state == "character select" and message.playerSettings then
+    elseif message.playerSettings then
       -- Note this also starts the game if everything is ready from both players character select settings
       player:updateSettings(message.playerSettings)
       return true
