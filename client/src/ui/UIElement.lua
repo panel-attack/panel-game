@@ -6,8 +6,8 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field y number relative y offset to the parent element (canvas if no parent)
 ---@field width number width of the element for the sake of resizing children and touch hitboxes
 ---@field height number height of the element for the sake of resizing children and touch hitboxes
----@field hAlign string "left", "center", "right", determines the horizontal alignment relative to the parent
----@field vAlign string "top", "center", "bottom", determines the vertical alignment relative to the parent
+---@field hAlign ("left" | "center" | "right") determines the horizontal alignment relative to the parent
+---@field vAlign ("top" | "center" | "bottom") determines the vertical alignment relative to the parent
 ---@field hFill boolean if the element's width should fill out the entire parent's width
 ---@field vFill boolean if the element's height should fill out the entire parent's height
 ---@field isVisible boolean if the element is currently visible for rendering (also disables touch interaction)
@@ -20,13 +20,25 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
 
+---@class UiElementOptions
+---@field x number? relative x offset to the parent element (canvas if no parent)
+---@field y number? relative y offset to the parent element (canvas if no parent)
+---@field width number? width of the element for the sake of resizing children and touch hitboxes
+---@field height number? height of the element for the sake of resizing children and touch hitboxes
+---@field hAlign ("left" | "center" | "right")? determines the horizontal alignment relative to the parent
+---@field vAlign ("top" | "center" | "bottom")? determines the vertical alignment relative to the parent
+---@field hFill boolean? if the element's width should fill out the entire parent's width
+---@field vFill boolean? if the element's height should fill out the entire parent's height
+---@field isVisible boolean? if the element is currently visible for rendering (also disables touch interaction)
+---@field isEnabled boolean? if the element is currently eligible for touch interaction
+
 local uniqueId = 0
 
 -- base class for all UI elements
 -- takes in a options table for setting default values
 -- all valid base options are defined in the constructor
 ---@class UiElement
----@overload fun(options: table): UiElement
+---@overload fun(options: UiElementOptions): UiElement
 local UIElement = class(
   ---@param self UiElement
   function(self, options)

@@ -2,6 +2,24 @@ local class = require("common.lib.class")
 local UIElement = require("client.src.ui.UIElement")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+---@class LabelOptions : UiElementOptions
+---@field text string The raw text or localization key
+---@field translate boolean? Whether the game looks for a localization for text or not
+---@field replacements string[]? Additional strings to perform string format on a localized key with parts marked for replacement
+---@field fontSize integer? The size of the font
+---@field wrap boolean? If the font should wrap around
+---@field wrapRatio number? By which % of the unwrapped text the text should wrap
+
+---@class Label : UiElement
+---@field text string The raw text or localization key
+---@field translate boolean Whether the game looks for a localization for text or not
+---@field replacementTable string[]? Additional strings to perform string format on a localized key with parts marked for replacement
+---@field fontSize integer The size of the font
+---@field wrap boolean If the font should wrap around
+---@field wrapRatio number By which % of the unwrapped text the text should wrap
+---@field font love.Font Cached font for recreating the love.Text on changes
+---@field drawable love.Text Cached love.Text for redrawing
+---@overload fun(options: LabelOptions): Label
 local Label = class(
   function(self, options)
     self.hAlign = options.hAlign or "left"
@@ -21,10 +39,10 @@ local Label = class(
 
     self:setText(options.text, options.replacements, options.translate)
 
-    self.TYPE = "Label"
   end,
   UIElement
 )
+Label.TYPE = "Label"
 
 function Label:getEffectiveDimensions()
   return self.drawable:getDimensions()

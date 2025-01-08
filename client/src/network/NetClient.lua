@@ -114,7 +114,7 @@ local function processLeaveRoomMessage(self, message)
       -- instead we actively abort the match ourselves
       self.room.match:abort()
       self.room.match:deinit()
-      transition = MessageTransition(love.timer.getTime(), 5, message.reason or "")
+      transition = MessageTransition(love.timer.getTime(), 5, message.reason or "", false)
     end
 
     -- and then shutdown the room
