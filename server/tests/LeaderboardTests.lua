@@ -1,11 +1,10 @@
-local Player = require("server.Player")
 local ServerGame = require("server.Game")
 local Leaderboard = require("server.Leaderboard")
-local MockConnection = require("server.tests.MockConnection")
 local LevelPresets = require("common.data.LevelPresets")
 local GameModes = require("common.engine.GameModes")
 -- we don't want to test the persistence part here, do that explicitly elsewhere instead
 local MockPersistence = require("server.tests.MockPersistence")
+local ServerTesting = require("server.tests.ServerTesting")
 
 local leaderboard = Leaderboard(GameModes.getPreset("TWO_PLAYER_VS"), MockPersistence)
 leaderboard.consts.PLACEMENT_MATCH_COUNT_REQUIREMENT = 2
@@ -17,44 +16,16 @@ leaderboard.consts.PLACEMENT_MATCHES_ENABLED = true
 leaderboard.consts.MIN_LEVEL_FOR_RANKED = 1
 leaderboard.consts.MAX_LEVEL_FOR_RANKED = 10
 
-local p1 = Player("1", MockConnection(), "Bob", 4)
-local p2 = Player("2", MockConnection(), "Alice", 5)
-local p3 = Player("3", MockConnection(), "Ben", 8)
-local p4 = Player("4", MockConnection(), "Jerry", 24)
-local p5 = Player("5", MockConnection(), "Berta", 38)
-local p6 = Player("6", MockConnection(), "Raccoon", 83)
-p1:updateSettings({inputMethod = "controller", level = 10})
-p2:updateSettings({inputMethod = "controller", level = 10})
-p3:updateSettings({inputMethod = "controller", level = 10})
-p4:updateSettings({inputMethod = "controller", level = 10})
-p5:updateSettings({inputMethod = "controller", level = 10})
-p6:updateSettings({inputMethod = "controller", level = 10})
-
-local defaultRating = 1500
-
-local rowHeader = {"user_id", "user_name", "rating", "placement_done", "placement_rating"}
-local function addToLeaderboard(lb, player, placementDone, rating)
-  local dataRow = {player.userId, player.name}
-
-  if not placementDone then
-    dataRow[3] = defaultRating
-    dataRow[4] = tostring(false)
-    dataRow[5] = rating
-    lb.loadedPlacementMatches.incomplete[player.userId] = {}
-  else
-    dataRow[3] = rating
-    dataRow[4] = tostring(true)
-  end
-
-  lb:importData({rowHeader, dataRow})
+for i, player in ipairs(ServerTesting.players) do
+  ServerTesting.addToLeaderboard(leaderboard, player)
 end
 
-addToLeaderboard(leaderboard, p1, false, 1500)
-addToLeaderboard(leaderboard, p2, true, 1732)
-addToLeaderboard(leaderboard, p3, true, 1458)
-addToLeaderboard(leaderboard, p4, false, 1300)
-addToLeaderboard(leaderboard, p5, true, 1222)
-addToLeaderboard(leaderboard, p6, true, 432)
+local p1 = ServerTesting.players[1]
+local p2 = ServerTesting.players[2]
+local p3 = ServerTesting.players[3]
+local p4 = ServerTesting.players[4]
+local p5 = ServerTesting.players[5]
+local p6 = ServerTesting.players[6]
 
 assert(leaderboard.players[p2.userId].rating == 1732)
 assert(leaderboard.players[p2.userId].placement_done)

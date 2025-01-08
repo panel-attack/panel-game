@@ -29,6 +29,10 @@ function MockConnection:close()
   self.socket = false
 end
 
+function MockConnection:restore()
+  self.socket = {close = function() end, getpeername = function() return "170.46.23.4", math.random(40000,60000) end}
+end
+
 function MockConnection:processMessage(messageType, data) end
 
 function MockConnection:receiveInput(input)

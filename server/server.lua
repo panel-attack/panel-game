@@ -220,7 +220,7 @@ local function addPublicPlayerData(players, player, ratingInfo)
     players[player.name] = {}
   end
 
-  if ratingInfo then
+  if ratingInfo and ratingInfo.placement_done then
     players[player.name].rating = math.round(ratingInfo.rating)
   end
 end
@@ -604,7 +604,8 @@ function Server:broadCastLobbyIfChanged()
     local lobbyState = self:lobby_state()
     local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
     for _, connection in pairs(self.connections) do
-      if self.connectionToPlayer[connection].state == "lobby" then
+      local player = self.connectionToPlayer[connection]
+      if player and player.state == "lobby" then
         connection:sendJson(message)
       end
     end

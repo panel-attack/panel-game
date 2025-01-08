@@ -1,50 +1,17 @@
 ---@diagnostic disable: invisible, undefined-field
-local Server = require("server.server")
-local database = require("server.PADatabase")
 local MockPersistence = require("server.tests.MockPersistence")
 local ClientProtocol = require("common.network.ClientProtocol")
-local MockConnection = require("server.tests.MockConnection")
-local Player = require("server.Player")
 local json = require("common.lib.dkjson")
 local NetworkProtocol = require("common.network.NetworkProtocol")
+local ServerTesting = require("server.tests.ServerTesting")
+local Leaderboard = require("server.Leaderboard")
+local GameModes = require("common.engine.GameModes")
 
--- as these integration tests are rather complex there is usually first a test testing a certain step
--- when the test paths a shortcut function is defined that effectively implements the step as a whole without the asserts for further tests
-
-local players = {
-  Player("1", MockConnection(), "Bob", 4),
-  Player("2", MockConnection(), "Alice", 5),
-  Player("3", MockConnection(), "Ben", 8),
-  Player("4", MockConnection(), "Jerry", 24),
-  Player("5", MockConnection(), "Berta", 38),
-  Player("6", MockConnection(), "Raccoon", 83),
-}
-
-local playerData = {}
-for i, player in ipairs(players) do
-  player.connection.loggedIn = false
-  playerData[player.userId] = player.name
-end
-
-local function getTestServer()
-  local testServer = Server(database, MockPersistence)
-  testServer:initializePlayerData("", playerData)
-
-  -- we don't want to call anything that has anything to do with real sockets
-  -- messages just get injected into the MockConnection queues
-  testServer.update = function(self)
-    self:processMessages()
-    self:broadCastLobbyIfChanged()
-    self.lastProcessTime = os.time()
-  end
-
-  return testServer
-end
 
 local function testLogin()
-  local server = getTestServer()
+  local server = ServerTesting.getTestServer()
 
-  local bob = players[1]
+  local bob = ServerTesting.players[1]
   server:addConnection(bob.connection)
   server:update()
 
@@ -62,37 +29,13 @@ local function testLogin()
   assert(lobbyState and lobbyState.messageText.unpaired and lobbyState.messageText.unpaired[1] == "Bob")
 end
 
-testLogin()
-
-local function login(server, player)
-  player.connection.loggedIn = false
-  server:addConnection(player.connection)
-  player.connection:receiveMessage(json.encode(ClientProtocol.requestLogin(player.userId, player.name, 10, "controller", "pacci", nil, nil, nil, nil, true, "with my name").messageText))
-  server:update()
-  player.connection.outgoingMessageQueue:clear()
-end
-
-local function clearOutgoingMessages(p)
-  for _, player in pairs(p) do
-    player.connection.outgoingMessageQueue:clear()
-    player.connection.outgoingInputQueue:clear()
-  end
-end
-
 local function testRoomSetup()
-  local server = getTestServer()
-  local alice = players[2]
-  local ben = players[3]
-  local bob = players[1]
-  login(server, alice)
-  login(server, ben)
-  login(server, bob)
-  clearOutgoingMessages(players)
-
-  -- the server creates new player objects so we need to reassign
-  alice = server.connectionToPlayer[alice.connection]
-  ben = server.connectionToPlayer[ben.connection]
-  bob = server.connectionToPlayer[bob.connection]
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben = ServerTesting.login(server, ServerTesting.players[3])
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+  -- there are other tests to verify lobby data
+  ServerTesting.clearOutgoingMessages({alice, ben, bob})
 
   alice.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer("Alice", "Ben").messageText))
   server:update()
@@ -115,37 +58,15 @@ local function testRoomSetup()
   assert(message.spectatable and #message.spectatable == 1)
 end
 
-testRoomSetup()
-
-local function setupRoom(server, player1, player2)
-  login(server, player1)
-  login(server, player2)
-  local p = {player1, player2}
-  clearOutgoingMessages(p)
-  player1.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer(player1.name, player2.name).messageText))
-  server:update()
-  player2.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer(player2.name, player1.name).messageText))
-  server:update()
-  clearOutgoingMessages(p)
-
-  return server
-end
-
 local readyMessage = json.encode({menu_state = {wants_ready = true, loaded = true, ready = true}})
 
 local function testGameplay()
-  local server = getTestServer()
-  local bob = players[1]
-  login(server, bob)
-  local alice = players[2]
-  local ben = players[3]
-  setupRoom(server, alice, ben)
-  clearOutgoingMessages({bob})
-
-  -- the server creates new player objects so we need to reassign
-  alice = server.connectionToPlayer[alice.connection]
-  ben = server.connectionToPlayer[ben.connection]
-  bob = server.connectionToPlayer[bob.connection]
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben = ServerTesting.login(server, ServerTesting.players[3])
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+  ServerTesting.setupRoom(server, alice, ben, true)
+  ServerTesting.clearOutgoingMessages({alice, ben, bob})
 
   alice.connection:receiveMessage(readyMessage)
   server:update()
@@ -221,7 +142,7 @@ local function testGameplay()
   -- need to update one time extra to clear out the menu state message
   server:update()
   -- clear the menu state, kinda don't care
-  clearOutgoingMessages({alice, ben, bob})
+  ServerTesting.clearOutgoingMessages({alice, ben, bob})
   ben.connection:receiveMessage(readyMessage)
   server:update()
 
@@ -230,7 +151,7 @@ local function testGameplay()
   assert(message.match_start)
 
   -- surely this will work properly the second time as well for everyone else
-  clearOutgoingMessages({alice, ben, bob})
+  ServerTesting.clearOutgoingMessages({alice, ben, bob})
 
   ben.connection:receiveMessage(json.encode(ClientProtocol.leaveRoom().messageText))
   server:update()
@@ -253,36 +174,14 @@ local function testGameplay()
   assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
 end
 
-testGameplay()
-
-local function startGame(server, room)
-  for i, player in ipairs(room.players) do
-    player.connection:receiveMessage(readyMessage)
-  end
-  server:update()
-  clearOutgoingMessages(room.players)
-  clearOutgoingMessages(room.spectators)
-end
-
-local function addSpectator(server, room, spectator)
-  spectator.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate(spectator.name, room.roomNumber).messageText))
-  server:update()
-  clearOutgoingMessages({spectator})
-end
-
 local function testDisconnect()
-  local server = getTestServer()
-  local bob = players[1]
-  login(server, bob)
-  local alice = players[2]
-  local ben = players[3]
-  setupRoom(server, alice, ben)
-  -- the server creates new player objects so we need to reassign
-  alice = server.connectionToPlayer[alice.connection]
-  ben = server.connectionToPlayer[ben.connection]
-  bob = server.connectionToPlayer[bob.connection]
-  addSpectator(server, server.playerToRoom[alice], bob)
-  startGame(server, server.playerToRoom[alice])
+  local server = ServerTesting.getTestServer()
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben = ServerTesting.login(server, ServerTesting.players[3])
+  ServerTesting.setupRoom(server, alice, ben, true)
+  ServerTesting.addSpectator(server, server.playerToRoom[alice], bob)
+  ServerTesting.startGame(server, server.playerToRoom[alice])
 
   server:closeConnection(ben.connection)
 
@@ -305,4 +204,50 @@ local function testDisconnect()
   assert(message.unpaired and #message.unpaired == 2)
 end
 
+
+local function testLobbyDataComposition()
+  local server = ServerTesting.getTestServer()
+  local leaderboard = Leaderboard(GameModes.getPreset("TWO_PLAYER_VS"), MockPersistence)
+  for i, player in ipairs(ServerTesting.players) do
+    ServerTesting.addToLeaderboard(leaderboard, player)
+  end
+  server.leaderboard = leaderboard
+
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben = ServerTesting.login(server, ServerTesting.players[3])
+  local jerry = ServerTesting.login(server, ServerTesting.players[4])
+
+  local room = ServerTesting.setupRoom(server, ben, jerry, true)
+  ServerTesting.addSpectator(server, room, bob)
+  ServerTesting.clearOutgoingMessages(ServerTesting.players)
+
+  local berta = ServerTesting.login(server, ServerTesting.players[5])
+
+  -- now everyone besides berta and alice are in the room and berta had her messages cleared after login including lobby
+  -- so check what alice can see
+
+  local message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.unpaired and #message.unpaired == 2)
+  assert(message.players)
+  assert(message.spectatable and #message.spectatable == 1)
+  for _, unpaired in ipairs(message.unpaired) do
+    assert(unpaired == "Alice" or unpaired == "Berta")
+    -- alice and berta both have a rating
+    assert(message.players[unpaired] and tonumber(message.players[unpaired].rating))
+  end
+
+  -- Jerry does not have a rating yet
+  assert(message.players[message.spectatable[1].a] and not message.players[message.spectatable[1].a].rating)
+  -- but Ben does
+  assert(message.players[message.spectatable[1].b] and tonumber(message.players[message.spectatable[1].b].rating))
+
+  -- bob as a spectator is invisible rip
+  assert(not message.players["Bob"])
+end
+
+testLogin()
+testRoomSetup()
+testGameplay()
 testDisconnect()
+testLobbyDataComposition()
