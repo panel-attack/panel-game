@@ -260,6 +260,7 @@ function Room:close(reason)
   for i = #self.players, 1, -1 do
     local player = self.players[i]
     player:removeFromRoom(self, reason)
+    self.disconnectSignal(player, "settingsUpdated", self)
     self.players[i] = nil
   end
 
