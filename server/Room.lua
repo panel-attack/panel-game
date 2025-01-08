@@ -226,6 +226,7 @@ function Room:add_spectator(newSpectator)
   self:broadcastJson(ServerProtocol.updateSpectators(spectatorList))
 end
 
+---@return string[]
 function Room:spectator_names()
   local list = {}
   for i, spectator in ipairs(self.spectators) do
@@ -234,6 +235,7 @@ function Room:spectator_names()
   return list
 end
 
+---@param spectator ServerPlayer
 function Room:remove_spectator(spectator)
   local lobbyChanged = false
   for i, v in ipairs(self.spectators) do
@@ -241,7 +243,7 @@ function Room:remove_spectator(spectator)
       self.spectators[i].state = "lobby"
       logger.debug(spectator.name .. " left " .. self.name .. " as a spectator")
       table.remove(self.spectators, i)
-      spectator:setRoom()
+      spectator:removeFromRoom(self, spectator.name .. " left")
       lobbyChanged = true
       break
     end

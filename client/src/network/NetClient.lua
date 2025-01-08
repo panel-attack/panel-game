@@ -350,15 +350,8 @@ function NetClient:leaveRoom()
     self.tcpClient:dropOldInputMessages()
     self.tcpClient:sendRequest(ClientMessages.leaveRoom())
 
-    if self.room:hasLocalPlayer() then
-      -- the server sends us back the confirmation that we left the room
-      -- so we reenter ONLINE state via processLeaveRoomMessage, not here
-    else
-      -- but as spectator there is no confirmation
-      -- meaning state needs to be reset immediately
-      self.room = nil
-      self.state = states.ONLINE
-    end
+    -- the server sends us back the confirmation that we left the room
+    -- so we reenter ONLINE state via processLeaveRoomMessage, not here
   end
 end
 
