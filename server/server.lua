@@ -633,7 +633,7 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     reason = playerBan.reason
     banDuration = "Ban Remaining: " .. util.toDayHourMinuteSecondString(secondsRemaining)
 
-    self.database:playerBanSeen(playerBan.banID)
+    self:markBanAsSeen(playerBan.banID)
     logger.warn("Login denied because of ban: " .. playerBan.reason)
     connection:sendJson(ServerProtocol.denyLogin(reason, banDuration))
 
@@ -682,20 +682,20 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     if self.leaderboard then
       self.leaderboard:update_timestamp(userId)
     end
-    self.database:insertIPID(ipAddress, player.publicPlayerID)
+    self:logIP(player, ipAddress)
     self:setLobbyChanged()
 
-    local serverNotices = self.database:getPlayerMessages(player.publicPlayerID)
-    local serverUnseenBans = self.database:getPlayerUnseenBans(player.publicPlayerID)
+    local serverNotices = self:getMessages(player)
+    local serverUnseenBans = self:getUnseenBans(player)
     if tableUtils.length(serverNotices) > 0 or tableUtils.length(serverUnseenBans) > 0 then
       local noticeString = ""
       for messageID, serverNotice in pairs(serverNotices) do
         noticeString = noticeString .. serverNotice .. "\n\n"
-        self.database:playerMessageSeen(messageID)
+        self:markMessageAsSeen(messageID)
       end
       for banID, reason in pairs(serverUnseenBans) do
         noticeString = noticeString .. "A ban was issued to you for: " .. reason .. "\n\n"
-        self.database:playerBanSeen(banID)
+        self:markBanAsSeen(banID)
       end
       message.server_notice = noticeString
     end
@@ -809,6 +809,36 @@ function Server:processGameEnd(game)
   self:setLobbyChanged()
 
   self.persistence.persistGame(game)
+end
+
+---@param player ServerPlayer
+---@param ipAddress string
+function Server:logIP(player, ipAddress)
+  self.database:insertIPID(ipAddress, player.publicPlayerID)
+end
+
+-- gets the messages for that player
+---@param player ServerPlayer
+---@return table<integer, string>
+function Server:getMessages(player)
+  return self.database:getPlayerMessages(player.publicPlayerID)
+end
+
+-- gets the bans for that player they did not see yet
+---@param player ServerPlayer
+---@return table<integer, string>
+function Server:getUnseenBans(player)
+  return self.database:getPlayerUnseenBans(player.publicPlayerID)
+end
+
+---@param banId integer
+function Server:markBanAsSeen(banId)
+  self.database:playerBanSeen(banId)
+end
+
+---@param messageId integer
+function Server:markMessageAsSeen(messageId)
+  self.database:playerMessageSeen(messageId)
 end
 
 return Server

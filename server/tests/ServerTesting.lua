@@ -1,6 +1,5 @@
 ---@diagnostic disable: invisible, undefined-field, inject-field
 local Server = require("server.server")
-local database = require("server.PADatabase")
 local MockPersistence = require("server.tests.MockPersistence")
 local ClientProtocol = require("common.network.ClientProtocol")
 local MockConnection = require("server.tests.MockConnection")
@@ -59,8 +58,17 @@ function ServerTesting.addToLeaderboard(lb, player)
 end
 
 function ServerTesting.getTestServer()
-  local testServer = Server(database, MockPersistence)
+  local testServer = Server(false, MockPersistence)
   testServer:initializePlayerData("", playerData)
+
+  -- let's just wrap and overwrite the functions that directly access the database for now
+  testServer.logIP = function(player, ipAddress) end
+  testServer.getMessages = function(player) return {} end
+  testServer.getUnseenBans = function(player) return {} end
+  testServer.markBanAsSeen = function(banId) end
+  testServer.markMessageAsSeen = function(messageId) end
+  testServer.getBanByIP = function(ip) end
+  testServer.insertBan = function(ip, reason, completionTime) end
 
   -- we don't want to call anything that has anything to do with real sockets
   -- messages just get injected into the MockConnection queues

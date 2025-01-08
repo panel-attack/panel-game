@@ -190,7 +190,7 @@ end
 local selectPlayerMessagesStatement = assert(db:prepare("SELECT messageID, message FROM PlayerMessageList WHERE publicPlayerID = ? AND messageSeen IS NULL"))
 -- Retrieves player messages that the player has not seen yet.
 ---@param publicPlayerID integer
----@return string[] messages
+---@return table<integer, string> messages
 function PADatabase:getPlayerMessages(publicPlayerID)
   selectPlayerMessagesStatement:bind_values(publicPlayerID)
   local playerMessages = {}
