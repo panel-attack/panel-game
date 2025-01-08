@@ -40,6 +40,8 @@ local tests = {
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
   "server.tests.ConnectionTests",
+  "common.tests.data.GlickoTests",
+  "common.tests.data.PlayerRatingTests",
   "common.tests.engine.GarbageQueueTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.PanelGenTests",
