@@ -73,12 +73,15 @@ function ServerProtocol.menuState(settings, playerNumber)
   }
 end
 
-local leaveRoom = {
-  messageType = msgTypes.jsonMessage,
-  messageText = {leave_room = true},
-}
-function ServerProtocol.leaveRoom()
-  return leaveRoom
+function ServerProtocol.leaveRoom(reason)
+  local leaveRoomMessage = {
+    leave_room = true,
+    reason = reason
+  }
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = leaveRoomMessage,
+  }
 end
 
 function ServerProtocol.sendLeaderboard(leaderboard)

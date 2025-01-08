@@ -354,7 +354,7 @@ function Server:insertBan(ip, reason, completionTime)
 end
 
 ---@param room Room
-function Server:closeRoom(room)
+function Server:closeRoom(room, reason)
   for _, player in ipairs(room.players) do
     self.playerToRoom[player] = nil
   end
@@ -367,7 +367,7 @@ function Server:closeRoom(room)
     self.rooms[room.roomNumber] = nil
   end
 
-  room:close()
+  room:close(reason)
   self:setLobbyChanged()
 end
 
@@ -425,11 +425,17 @@ function Server:updateConnections()
   local socketsWithData = socket.select(socketsToCheck, nil, 1)
   assert(type(socketsWithData) == "table")
   for _, currentSocket in ipairs(socketsWithData) do
-    if self.socketToConnectionIndex[currentSocket] then
-      local connectionIndex = self.socketToConnectionIndex[currentSocket]
-      local success = self.connections[connectionIndex]:update(self.lastProcessTime)
+    local connectionIndex = self.socketToConnectionIndex[currentSocket]
+    if connectionIndex then
+      local connection = self.connections[connectionIndex]
+      local success = connection:update(self.lastProcessTime)
       if not success then
-        self:closeConnection(self.connections[connectionIndex])
+        local player = self.connectionToPlayer[connection]
+        local reason = "disconnect"
+        if player then
+          reason = player.name .. "'s connection failed"
+        end
+        self:closeConnection(self.connections[connectionIndex], reason)
       end
     end
   end
@@ -523,7 +529,7 @@ function Server:processMessage(message, connection)
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
     -- After sending the error report, the client will throw the error, so end the connection.
-    self:closeConnection(connection)
+    self:closeConnection(connection, "crashed")
     return false
   elseif not connection.loggedIn then
     if message.login_request then
@@ -531,7 +537,7 @@ function Server:processMessage(message, connection)
       if self:login(connection, message.user_id, message.name, IP_logging_in, port, message.engine_version, message) then
         return true
       else
-        self:closeConnection(connection)
+        self:closeConnection(connection, "login while logged in")
         return false
       end
     else
@@ -541,7 +547,7 @@ function Server:processMessage(message, connection)
   else
     local player = self.connectionToPlayer[connection]
     if message.logout then
-      self:closeConnection(connection)
+      self:closeConnection(connection, "logout")
       return false
     elseif player.state == "lobby" and message.game_request then
       if message.game_request.sender == player.name then
@@ -565,7 +571,7 @@ function Server:processMessage(message, connection)
       self.playerToRoom[player]:handleGameOverOutcome(message, player)
       return true
     elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
-      self:handleLeaveRoom(player)
+      self:handleLeaveRoom(player, player.name .. " left")
       return true
     elseif (player.state == "spectating") and message.leave_room then
       if self.playerToRoom[player]:remove_spectator(player) then
@@ -770,10 +776,10 @@ function Server:handleSpectateRequest(message, player)
   end
 end
 
-function Server:handleLeaveRoom(player)
+function Server:handleLeaveRoom(player, reason)
   local room = self.playerToRoom[player]
   if room then
-    self:closeRoom(room)
+    self:closeRoom(room, reason)
   else
     room = self.spectatorToRoom[player]
     if room then
@@ -784,7 +790,8 @@ function Server:handleLeaveRoom(player)
 end
 
 ---@param connection Connection
-function Server:closeConnection(connection)
+---@param reason string? why the player is getting disconnected
+function Server:closeConnection(connection, reason)
   local player = self.connectionToPlayer[connection]
   logger.info("Closing connection " .. connection.index .. " to " .. (player and player.name or "noname"))
 
@@ -795,7 +802,7 @@ function Server:closeConnection(connection)
   connection:close()
   if player then
     self:clearProposals(player)
-    self:handleLeaveRoom(player)
+    self:handleLeaveRoom(player, reason)
     self.playerToRoom[player] = nil
     self.spectatorToRoom[player] = nil
     self.nameToPlayer[player.name] = nil

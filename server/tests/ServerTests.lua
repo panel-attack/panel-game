@@ -158,12 +158,12 @@ local function testGameplay()
 
   -- the others get informed about the room closing
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room)
+  assert(message.leave_room and message.reason == "Ben left")
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room)
+  assert(message.leave_room and message.reason == "Ben left")
   -- this was an active quit so ben should get the leave back as well
   message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room)
+  assert(message.leave_room and message.reason == "Ben left")
 
   -- everyone is back to lobby
   message = alice.connection.outgoingMessageQueue:pop().messageText
@@ -183,12 +183,12 @@ local function testDisconnect()
   ServerTesting.addSpectator(server, server.playerToRoom[alice], bob)
   ServerTesting.startGame(server, server.playerToRoom[alice])
 
-  server:closeConnection(ben.connection)
+  server:closeConnection(ben.connection, "Ben's connection failed")
 
   local message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room)
+  assert(message.leave_room and message.reason == "Ben's connection failed")
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room)
+  assert(message.leave_room and message.reason == "Ben's connection failed")
   -- we closed the connection server side which under normal circumstances only happens in case of a disconnect
   -- so the server should no longer try to send them a message
   assert(ben.connection.outgoingMessageQueue:len() == 0)

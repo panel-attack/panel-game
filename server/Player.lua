@@ -133,29 +133,31 @@ function Player:updateSettings(settings)
   self:emitSignal("settingsUpdated", self)
 end
 
----@param room Room?
-function Player:setRoom(room)
-  if not room then
-    if self.room then
-      logger.info("Clearing room " .. self.room.roomNumber .. " for connection " .. self.connection.index)
-      -- if there is no socket the room got closed because the player hard DCd so shouldn't update state in that case
-      if self.connection.socket then
-        self.opponent = nil
-        self.state = "lobby"
-        self.player_number = nil
-        self:sendJson(ServerProtocol.leaveRoom())
-      end
-    end
+function Player:addToRoom(room)
+  if self.room then
+    logger.info("Switching player " .. self.name .. " from room " .. self.room.roomNumber .. " to room " .. room.roomNumber)
   else
-    if self.room then
-      logger.info("Switching connection " .. self.connection.index .. " from room " .. self.room.roomNumber .. " to room " .. room.roomNumber)
-    else
-      logger.info("Setting room to " .. room.roomNumber .. " for connection " .. self.connection.index)
-
-    end
+    logger.info("Setting room to " .. room.roomNumber .. " for player " .. self.name)
   end
 
   self.room = room
+end
+
+function Player:removeFromRoom(room, reason)
+  if self.room then
+    logger.info("Clearing room " .. room.roomNumber .. " for player " .. self.name)
+    -- if there is no socket the room got closed because the player hard DCd so shouldn't update state in that case
+    if self.connection.socket then
+      self.opponent = nil
+      self.state = "lobby"
+      self.player_number = nil
+      self:sendJson(ServerProtocol.leaveRoom(reason))
+    end
+  else
+    logger.error("Trying to remove player " .. self.name .. " from room " .. room.roomNumber .. " even though they have no room assigned")
+  end
+
+  self.room = nil
 end
 
 function Player:sendJson(message)

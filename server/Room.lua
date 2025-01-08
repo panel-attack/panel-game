@@ -45,7 +45,7 @@ function(self, roomNumber, players, leaderboard)
 
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
-    player:setRoom(self)
+    player:addToRoom(self)
     self.win_counts[i] = 0
     if self.leaderboard then
       local rating = math.round(self.leaderboard:getRating(player) or 0)
@@ -195,7 +195,7 @@ end
 ---@param newSpectator ServerPlayer
 function Room:add_spectator(newSpectator)
   newSpectator.state = "spectating"
-  newSpectator:setRoom(self)
+  newSpectator:addToRoom(self)
   self.spectators[#self.spectators + 1] = newSpectator
   logger.debug(newSpectator.name .. " joined " .. self.name .. " as a spectator")
 
@@ -252,12 +252,12 @@ function Room:remove_spectator(spectator)
   return lobbyChanged
 end
 
-function Room:close()
+function Room:close(reason)
   logger.info("Closing room " .. self.roomNumber .. " " .. self.name)
 
   for i = #self.players, 1, -1 do
     local player = self.players[i]
-    player:setRoom()
+    player:removeFromRoom(self, reason)
     self.players[i] = nil
   end
 
@@ -265,7 +265,7 @@ function Room:close()
     local spectator = self.spectators[i]
     if spectator.room then
       spectator.state = "lobby"
-      spectator:setRoom()
+      spectator:removeFromRoom(self, reason)
     end
   end
 
