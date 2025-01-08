@@ -114,7 +114,7 @@ local function processLeaveRoomMessage(self, message)
       -- instead we actively abort the match ourselves
       self.room.match:abort()
       self.room.match:deinit()
-      transition = MessageTransition(love.timer.getTime(), 5, message.reason)
+      transition = MessageTransition(love.timer.getTime(), 5, message.reason or "")
     end
 
     -- and then shutdown the room
@@ -457,6 +457,7 @@ end
 
 function NetClient:logout()
   self.tcpClient:sendRequest(ClientMessages.logout())
+  love.timer.sleep(0.001)
   self.tcpClient:resetNetwork()
   self.state = states.OFFLINE
   resetLobbyData(self)
