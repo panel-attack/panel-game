@@ -211,8 +211,8 @@ function Server:importDatabase()
   self.database:commitTransaction() -- bulk commit every statement from the start of beginTransaction
 end
 
-local function addPublicPlayerData(players, player, rating)
-  if not players or not rating then
+local function addPublicPlayerData(players, player, ratingInfo)
+  if not players or not ratingInfo then
     return
   end
 
@@ -220,8 +220,8 @@ local function addPublicPlayerData(players, player, rating)
     players[player.name] = {}
   end
 
-  if rating then
-    players[player.name].rating = math.round(rating)
+  if ratingInfo then
+    players[player.name].rating = math.round(ratingInfo.rating)
   end
 end
 
