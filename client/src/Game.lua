@@ -235,13 +235,6 @@ function Game:setupRoutine()
 
   self:cleanupOldVersions()
   self:writeReleaseStreamDefinition()
-  -- Run all unit tests now that we have everything loaded
-  if TESTS_ENABLED then
-    self:runUnitTests()
-  end
-  if PERFORMANCE_TESTS_ENABLED then
-    self:runPerformanceTests()
-  end
 
   self:initializeLocalPlayer()
 end

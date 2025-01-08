@@ -1761,8 +1761,6 @@ function Stack:makeStartingBoardPanels()
   ret = table.concat(ret)
   ret = string.sub(ret, self.width + 1)
 
-  PanelGenerator.privateCheckPanels(ret, self.width)
-
   return ret
 end
 

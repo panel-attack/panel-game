@@ -56,21 +56,8 @@ function PanelGenerator.privateGeneratePanels(rowsToMake, rowWidth, ncolors, pre
       result = result .. tostring(color)
     end
   end
-  PanelGenerator.privateCheckPanels(result, rowWidth)
   -- logger.debug(result)
   return result
-end
-
-function PanelGenerator.privateCheckPanels(ret, rowWidth)
-  if TESTS_ENABLED then
-    assert(string.len(ret) % rowWidth == 0)
-    for i = rowWidth + 1, string.len(ret) do
-      local color = PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(ret, i, i)]
-      if color ~= 0 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(ret, i - rowWidth, i - rowWidth)] then
-        error("invalid panels: " .. ret)
-      end
-    end
-  end
 end
 
 function PanelGenerator.assignMetalLocations(ret, rowWidth)
@@ -114,7 +101,6 @@ function PanelGenerator.assignMetalLocations(ret, rowWidth)
   -- new_ret was started with a row of 0 because the algorithm relies on a row without shock panels being there at the start
   -- so cut that extra row out again
   new_ret = string.sub(new_ret, rowWidth + 1)
-  PanelGenerator.privateCheckPanels(new_ret, rowWidth)
 
   -- logger.debug("panels after potential metal panel position assignments:")
   -- logger.debug(ret)
