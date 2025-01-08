@@ -289,9 +289,7 @@ function Game:createDirectoriesIfNeeded()
     end
   end
 
-  if #fileUtils.getFilteredDirectoryItems("training") == 0 then
-    fileUtils.recursiveCopy("client/assets/default_data/training", "training")
-  end
+  fileUtils.recursiveCopy("client/assets/default_data/training", "training")
   readAttackFiles("training")
 
   if love.system.getOS() ~= "OS X" then

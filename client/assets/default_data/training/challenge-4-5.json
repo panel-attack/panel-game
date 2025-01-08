@@ -2,6 +2,7 @@
     "delayBeforeStart": 0,
     "delayBeforeRepeat": 100,
     "mergeComboMetalQueue": false,
+    "disableQueueLimit": true,
     "attackPatterns": [
         {
             "height": 4,
@@ -42,6 +43,6 @@
             "metal": false,
             "width": 4,
             "height": 1
-        },
+        }
     ]
 }

@@ -2,6 +2,7 @@
     "delayBeforeStart": 0,
     "delayBeforeRepeat": 0,
     "mergeComboMetalQueue": false,
+    "disableQueueLimit": true,
     "attackPatterns": [
         {
             "chain": false,

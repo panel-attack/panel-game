@@ -8,6 +8,7 @@
   "mergeComboMetalQueue": false,
     "delayBeforeStart": 0,
     "delayBeforeRepeat": 91,
+    "disableQueueLimit": true,
     "attackPatterns": [
       {
         "chainEndTime": 884,
