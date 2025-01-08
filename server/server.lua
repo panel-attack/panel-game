@@ -21,7 +21,7 @@ local utf8 = require("common.lib.utf8Additions")
 local tableUtils = require("common.lib.tableUtils")
 local Player = require("server.Player")
 local util = require("common.lib.util")
-local FileIO = require("server.server_file_io")
+local FileIO = require("server.FileIO")
 
 local pairs = pairs
 local ipairs = ipairs

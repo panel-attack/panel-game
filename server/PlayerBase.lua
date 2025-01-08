@@ -1,6 +1,5 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
-require("server.server_file_io")
 local tableUtils = require("common.lib.tableUtils")
 
 -- Represents all player accounts on the server.

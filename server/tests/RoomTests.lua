@@ -1,13 +1,12 @@
 ---@diagnostic disable: undefined-field, invisible, inject-field
 local Room = require("server.Room")
-local Player = require("server.Player")
-local MockConnection = require("server.tests.MockConnection")
+local ServerTesting = require("server.tests.ServerTesting")
 
 COMPRESS_REPLAYS_ENABLED = true
 
 local function getRoom()
-  local p1 = Player("1", MockConnection(), "Bob", 4)
-  local p2 = Player("2", MockConnection(), "Alice", 5)
+  local p1 = ServerTesting.players[1]
+  local p2 = ServerTesting.players[2]
   p1:updateSettings({inputMethod = "controller", level = 10})
   p2:updateSettings({inputMethod = "controller", level = 10})
   -- don't want to deal with I/O for the test

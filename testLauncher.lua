@@ -31,7 +31,6 @@ function love.load()
 end
 
 local tests = {
-  -- the server tests are order sensitive because the MockConnections need to have unique IDs so they increment on creation
   "server.tests.ServerTests",
   "server.tests.LeaderboardTests",
   "server.tests.RoomTests",

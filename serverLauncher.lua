@@ -8,7 +8,6 @@ require("server.server_globals")
 local util = require("common.lib.util")
 util.addToCPath("./common/lib/??")
 util.addToCPath("./server/lib/??")
--- these are order sensitive because the MockConnections need to have unique IDs so they increment on creation
 require("server.tests.ServerTests")
 require("server.tests.LeaderboardTests")
 require("server.tests.RoomTests")

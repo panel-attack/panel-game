@@ -1,12 +1,7 @@
-local PADatabase = require("server.PADatabase")
-local FileIO = require("server.server_file_io")
-local logger = require("common.lib.logger")
 
 ---@type Persistence
 local MockPersistence = {}
 
-local VsLeaderboardPath = "leaderboard.csv"
-local PlayerIdsToNamesPath = "players.txt"
 -- this should be a reference to the same player data the Playerbase holds onto
 local PlayerData
 
@@ -60,6 +55,9 @@ end
 
 ---@return table<privateUserId, string>
 function MockPersistence.getPlayerData()
+  if PlayerData then
+    return PlayerData
+  end
   return {}
 end
 
