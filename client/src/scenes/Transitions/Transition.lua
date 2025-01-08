@@ -5,6 +5,14 @@ local consts = require("common.engine.consts")
 -- A transition, or more specifically a scene transition represents an object that handles going from one scene to the next
 -- For the duration of handover, the transition is responsible for handling both update and draw calls on the scenes
 -- (the general rule of thumb however is that you never want to update the old scene once the transition started, only the draw)
+---@class Transition
+---@field startTime number
+---@field duration number
+---@field timePassed number
+---@field progress number
+---@field oldScene table
+---@field newScene table
+---@field uiRoot UiElement
 local Transition = class(function(transition, startTime, duration)
   transition.startTime = startTime
   transition.timePassed = 0

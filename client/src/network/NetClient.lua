@@ -12,6 +12,7 @@ local SoundController = require("client.src.music.SoundController")
 local GameCatchUp = require("client.src.scenes.GameCatchUp")
 local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
+local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 
 
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
@@ -106,12 +107,14 @@ end
 
 local function processLeaveRoomMessage(self, message)
   if self.room then
+    local transition
     if self.room.match then
       -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
       self.room.match:disconnectSignal("matchEnded", self.room)
       -- instead we actively abort the match ourselves
       self.room.match:abort()
       self.room.match:deinit()
+      transition = MessageTransition(love.timer.getTime(), 5, message.reason)
     end
 
     -- and then shutdown the room
@@ -119,7 +122,7 @@ local function processLeaveRoomMessage(self, message)
     self.room = nil
 
     self.state = states.ONLINE
-    GAME.navigationStack:popToName("Lobby")
+    GAME.navigationStack:popToName("Lobby", transition)
   end
 end
 

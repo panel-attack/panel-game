@@ -48,9 +48,9 @@ function Playerbase:addPlayer(userID, username)
   end
 end
 
-function Playerbase:updatePlayer(user_id, user_name)
-  self.players[user_id] = user_name
-  self.persistence.persistPlayerNameChange(self.players)
+function Playerbase:updatePlayer(userId, userName)
+  self.players[userId] = userName
+  self.persistence.persistPlayerNameChange(userId, userName)
 end
 
 -- returns true if the name is taken by a different user already
