@@ -3,7 +3,6 @@ local Player = require("client.src.Player")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local class = require("common.lib.class")
-local ServerMessages = require("client.src.network.ServerMessages")
 local Signal = require("common.lib.signal")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local ModController = require("client.src.mods.ModController")
@@ -13,10 +12,21 @@ local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
 local consts = require("common.engine.consts")
-local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
-BattleRoom = class(function(self, mode, gameScene)
+---@class BattleRoom : Signal
+---@field mode GameMode
+---@field players Player[]
+---@field spectators string[]
+---@field spectating boolean
+---@field allAssetsLoaded boolean
+---@field ranked boolean
+---@field state BattleRoomState
+---@field matchesPlayed integer
+---@field online boolean
+---@overload fun(mode: GameMode, gameScene: table): BattleRoom
+BattleRoom = class(
+function(self, mode, gameScene)
   assert(mode)
   self.mode = mode
   self.players = {}
@@ -40,6 +50,7 @@ end)
 
 -- defining these here so they're available in network.BattleRoom too
 -- maybe splitting BattleRoom wasn't so smart after all
+---@enum BattleRoomState
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
 
@@ -72,7 +83,6 @@ function BattleRoom.createFromServerMessage(message)
 
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
-    message = ServerMessages.sanitizeSpectatorJoin(message)
     if message.replay then
       local replay = message.replay
       -- if the server message lacks ENGINE_VERSION, the standard replay sanitization may conservatively guess v046
@@ -105,7 +115,6 @@ function BattleRoom.createFromServerMessage(message)
     battleRoom.spectating = true
   else
     battleRoom = BattleRoom(gameMode, GameBase)
-    message = ServerMessages.sanitizeCreateRoom(message)
     -- player 1 is always the local player so that data can be ignored in favor of local data
     battleRoom:addPlayer(GAME.localPlayer)
     GAME.localPlayer.playerNumber = message.players[1].playerNumber
@@ -115,7 +124,7 @@ function BattleRoom.createFromServerMessage(message)
 
     local player2 = Player(message.players[2].name, message.players[2].publicId or -2, false)
     player2.playerNumber = message.players[2].playerNumber
-    player2:updateSettings(message.players[2])
+    player2:updateSettings(message.players[2].settings)
     player2:setRating(message.players[2].ratingInfo.new)
     player2:setLeague(message.players[2].ratingInfo.league)
     battleRoom:addPlayer(player2)

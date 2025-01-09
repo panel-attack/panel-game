@@ -26,6 +26,8 @@ local ServerGame = require("server.Game")
 ---@field matchCount integer
 ---@field game ServerGame?
 ---@field gameMode GameMode
+---@field ranked boolean if the next match is anticipated to be ranked 
+---@field rankedReasons string[]
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], leaderboard: Leaderboard?): Room
 local Room = class(
 ---@param self Room
@@ -65,9 +67,17 @@ function(self, roomNumber, players, leaderboard)
     end
   end
 
+  if self.leaderboard then
+    self.ranked, self.rankedReasons = self.leaderboard:rating_adjustment_approved(self.players)
+  else
+    self.ranked = false
+    self.rankedReasons = { "No leaderboard attached to the room" }
+  end
+
   self:prepare_character_select()
 
-  self:sendRoomCreationMessage()
+  local message = ServerProtocol.createRoom(self)
+  self:broadcastJson(message)
 
   Signal.turnIntoEmitter(self)
   self:createSignal("matchStart")
@@ -75,43 +85,21 @@ function(self, roomNumber, players, leaderboard)
 end
 )
 
-function Room:sendRoomCreationMessage()
-  local messageForA = ServerProtocol.createRoom(
-    self.roomNumber,
-    self.players[1]:getSettings(),
-    self.players[2]:getSettings(),
-    self.ratings[1],
-    self.ratings[2],
-    self.players[2].name,
-    2
-  )
-  self.players[1]:sendJson(messageForA)
 
-  local messageForB = ServerProtocol.createRoom(
-    self.roomNumber,
-    self.players[1]:getSettings(),
-    self.players[2]:getSettings(),
-    self.ratings[1],
-    self.ratings[2],
-    self.players[1].name,
-    1
-  )
-  self.players[2]:sendJson(messageForB)
-end
 
 function Room:onPlayerSettingsUpdate(player)
   if self:state() == "character select" then
     logger.debug("about to check for rating_adjustment_approval for " .. player.name .. " and " .. player.name)
     if tableUtils.trueForAll(self.players, "wants_ranked_match") then
       local ranked_match_approved, reasons = self:rating_adjustment_approved()
-      self:broadcastJson(ServerProtocol.updateRankedStatus(ranked_match_approved, reasons))
+      self:broadcastJson(ServerProtocol.updateRankedStatus(self.roomNumber, ranked_match_approved, reasons))
     end
 
     if tableUtils.trueForAll(self.players, ServerPlayer.isReady) then
       self:start_match()
     else
       local settings = player:getSettings()
-      local msg = ServerProtocol.menuState(settings, tableUtils.indexOf(self.players, player))
+      local msg = ServerProtocol.settingsUpdate(player, settings)
       self:broadcastJson(msg, player)
     end
   end
@@ -130,23 +118,8 @@ function Room:start_match()
 
   self.game = ServerGame.createFromRoomState(self)
 
-  for i, recipient in ipairs(self.players) do
-    for j, player in ipairs(self.players) do
-      if i ~= j then
-        local message = ServerProtocol.startMatch(
-          self.game.seed,
-          self.game.ranked,
-          self.stageId,
-          recipient:getDumbSettings((self.leaderboard and self.ratings[i].new or 0), i),
-          player:getDumbSettings((self.leaderboard and self.ratings[j].new or 0), j)
-        )
-        recipient:sendJson(message)
-        if i == 1 then
-          self:sendJsonToSpectators(message)
-        end
-      end
-    end
-  end
+  local message = ServerProtocol.startMatch(self.roomNumber, self.game.replay)
+  self:broadcastJson(message)
 
   for i, player in ipairs(self.players) do
     player:setup_game()
@@ -157,19 +130,6 @@ function Room:start_match()
   end
 
   self:emitSignal("matchStart")
-end
-
-function Room:character_select()
-  self.game = nil
-  self:prepare_character_select()
-  self:broadcastJson(
-    ServerProtocol.characterSelect(
-      self.ratings[1],
-      self.ratings[2],
-      self.players[1]:getSettings(),
-      self.players[2]:getSettings()
-    )
-  )
 end
 
 function Room:prepare_character_select()
@@ -204,26 +164,12 @@ function Room:add_spectator(newSpectator)
     replay = self.game:getPartialReplay(COMPRESS_REPLAYS_ENABLED)
   end
 
-  local message = ServerProtocol.spectateRequestGranted(
-    self.roomNumber,
-    self.players[1]:getSettings(),
-    self.players[2]:getSettings(),
-    self.ratings[1],
-    self.ratings[2],
-    self.players[1].name,
-    self.players[2].name,
-    self.win_counts,
-    self.stage,
-    replay,
-    replay and replay.ranked or nil,
-    self.players[1]:getDumbSettings((self.leaderboard and self.ratings[1].new or 0), 1),
-    self.players[2]:getDumbSettings((self.leaderboard and self.ratings[2].new or 0), 2)
-  )
+  local message = ServerProtocol.spectateRequestGranted(self, replay)
 
   newSpectator:sendJson(message)
   local spectatorList = self:spectator_names()
   logger.debug("sending spectator list: " .. json.encode(spectatorList))
-  self:broadcastJson(ServerProtocol.updateSpectators(spectatorList))
+  self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, spectatorList))
 end
 
 ---@return string[]
@@ -347,7 +293,7 @@ end
 ---@param message table
 ---@param sender ServerPlayer
 function Room:handleTaunt(message, sender)
-  local msg = ServerProtocol.taunt(sender.player_number, message.type, message.index)
+  local msg = ServerProtocol.taunt(sender, message.type, message.index)
   self:broadcastJson(msg, sender)
 end
 
@@ -365,15 +311,21 @@ function Room:handleGameOverOutcome(message, sender)
       local ratingUpdates = self.leaderboard:processGameResult(self.game)
       ratingUpdates[1].userId = nil
       ratingUpdates[2].userId = nil
-      message = ServerProtocol.updateRating(ratingUpdates[1], ratingUpdates[2])
-      self:broadcastJson(message)
       self.ratings = ratingUpdates
     end
 
     logger.debug("\n*******************************")
     logger.debug("***" .. self.players[1].name .. " " .. self.win_counts[1] .. " - " .. self.win_counts[2] .. " " .. self.players[2].name .. "***")
     logger.debug("*******************************\n")
-    self:character_select()
+
+    self:prepare_character_select()
+    self:broadcastJson(
+      ServerProtocol.gameResult(
+        self.game,
+        self
+      )
+    )
+    self.game = nil
   end
 end
 
@@ -389,9 +341,6 @@ function Room:updateWinCounts(game)
   if not game.winnerId then
     logger.debug("tie.  Nobody scored")
   end
-
-  message = ServerProtocol.winCounts(self.win_counts[1], self.win_counts[2])
-  self:broadcastJson(message)
 end
 
 return Room

@@ -197,6 +197,8 @@ function Replay.replayCanBeViewed(replay)
   end
 end
 
+---@param match Match
+---@param replay Replay
 function Replay.finalizeReplay(match, replay)
   if not replay.completed then
     for i = 1, #match.stacks do

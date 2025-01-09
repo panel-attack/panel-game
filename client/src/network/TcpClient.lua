@@ -8,6 +8,7 @@ local ClientMessages = require("common.network.ClientProtocol")
 require("client.src.TimeQueue")
 local class = require("common.lib.class")
 local Request = require("client.src.network.Request")
+local ServerMessages = require("client.src.network.ServerMessages")
 
 local TcpClient = class(function(tcpClient)
   -- holds data fragments
@@ -166,12 +167,12 @@ function TcpClient:queueMessage(type, data)
     self:send(NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix)
     self.connectionUptime = self.connectionUptime + 1
   elseif type == NetworkProtocol.serverMessageTypes.jsonMessage.prefix then
+    logger.trace("Queuing JSON: " .. dump(data))
     local current_message = json.decode(data)
     if not current_message then
       error(loc("nt_msg_err", (data or "nil")))
     end
-    logger.trace("Queuing JSON: " .. dump(current_message))
-    self.receivedMessageQueue:push(current_message)
+    self.receivedMessageQueue:push(ServerMessages.sanitizeMessage(current_message))
   end
 end
 

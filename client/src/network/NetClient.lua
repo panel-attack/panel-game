@@ -14,7 +14,7 @@ local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 
-
+---@enum NetClientStates
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 
 -- Most functions of NetClient are private as they only should get triggered via incoming server messages
@@ -137,6 +137,7 @@ local function processTauntMessage(self, message)
   characters[characterId]:playTaunt(message.type, message.index)
 end
 
+---@param self NetClient
 local function processMatchStartMessage(self, message)
   if not self.room then
     return
@@ -147,7 +148,8 @@ local function processMatchStartMessage(self, message)
   for _, playerSettings in ipairs(message.playerSettings) do
     -- contains level, characterId, panelId
     for _, player in ipairs(self.room.players) do
-      if playerSettings.playerNumber == player.playerNumber then
+      -- TODO: Verify that matching by publicId actually works
+      if playerSettings.publicId == player.publicId then
         -- verify that settings on server and local match to prevent desync / crash
         if playerSettings.level ~= player.settings.level then
           player:setLevel(playerSettings.level)
@@ -214,7 +216,7 @@ local function processRankedStatusMessage(self, message)
 end
 
 local function processMenuStateMessage(player, message)
-  local menuState = ServerMessages.sanitizeMenuState(message.menu_state)
+  local menuState = message.menuState
   if message.player_number then
     -- only update if playernumber matches the player's
     if message.player_number == player.playerNumber then
@@ -295,6 +297,17 @@ local function createListeners(self)
   return messageListeners
 end
 
+---@class NetClient : Signal
+---@field tcpClient table
+---@field leaderboard table
+---@field pendingResponses table
+---@field state NetClientStates
+---@field lobbyListeners table
+---@field roomListeners table
+---@field matchListeners table
+---@field messageListeners table
+---@field room BattleRoom?
+---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
   self.leaderboard = nil

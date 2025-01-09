@@ -22,7 +22,8 @@ function MockConnection:send(message)
 end
 
 function MockConnection:sendJson(messageInfo)
-  self.outgoingMessageQueue:push(messageInfo)
+  -- need a deepcpy due to the implementation detail of messageInfo generation
+  self.outgoingMessageQueue:push(deepcpy(messageInfo))
 end
 
 function MockConnection:close()

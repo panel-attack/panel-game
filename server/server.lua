@@ -217,7 +217,7 @@ local function addPublicPlayerData(players, player, ratingInfo)
   end
 
   if not players[player.name] then
-    players[player.name] = {}
+    players[player.name] = { publicId = player.publicPlayerID }
   end
 
   if ratingInfo and ratingInfo.placement_done then
@@ -266,7 +266,7 @@ function Server:proposeGame(sender, receiver)
         self:create_room(sender, receiver)
       end
     else
-      receiver:sendJson(ServerProtocol.sendChallenge(sender.name, receiver.name))
+      receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver))
       local prop = {[sender] = true}
       proposals[sender][receiver] = prop
       proposals[receiver][sender] = prop
@@ -707,7 +707,7 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     end
 
     message.login_successful = true
-    connection:sendJson(ServerProtocol.approveLogin(message.server_notice, message.new_user_id, message.new_name, message.old_name, player.publicPlayerID))
+    connection:sendJson(ServerProtocol.approveLogin(player.publicPlayerID, message.server_notice, message.new_user_id, message.new_name, message.old_name))
 
     logger.warn(connection.index .. " Login from " .. name .. " with ip: " .. ipAddress .. " publicPlayerID: " .. player.publicPlayerID)
     return true

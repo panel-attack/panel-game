@@ -111,15 +111,17 @@ function Game:receiveOutcomeReport(player, outcome)
     --for now though...
     logger.warn("clients " .. self.players[1].name .. " and " .. self.players[2].name .. " disagree on their game outcome. So the server will declare a tie.")
     result = 0
+    self.aborted = true
   else
     if result ~= 0 then
       self.winnerIndex = result
       self.winnerId = self.players[result].publicPlayerID
     end
+    self.aborted = false
   end
 
   self.complete = true
-  self:finalizeReplay()
+  self:finalizeReplay(result)
 end
 
 ---@param outcomeReports integer[]
@@ -139,9 +141,9 @@ function Game.getOutcome(outcomeReports)
   return outcomeReports[1]
 end
 
-function Game:finalizeReplay()
-  self.replay.winnerIndex = self.winnerIndex
-  self.replay.winnerId = self.winnerId
+---@param result integer?
+function Game:finalizeReplay(result)
+  self.replay:setOutcome(result)
 
   for i, player in ipairs(self.replay.players) do
     player.settings.inputs = table.concat(self.inputs[i])

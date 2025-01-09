@@ -6,7 +6,7 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local ServerTesting = require("server.tests.ServerTesting")
 local Leaderboard = require("server.Leaderboard")
 local GameModes = require("common.engine.GameModes")
-
+local tableUtils = require("common.lib.tableUtils")
 
 local function testLogin()
   local server = ServerTesting.getTestServer()
@@ -23,10 +23,10 @@ local function testLogin()
   assert(p)
   assert(server.nameToConnectionIndex["Bob"] == 1)
   assert(server.nameToPlayer["Bob"] == p)
-  local loginApproval = bob.connection.outgoingMessageQueue:pop()
-  assert(loginApproval and loginApproval.messageText.login_successful)
-  local lobbyState = bob.connection.outgoingMessageQueue:pop()
-  assert(lobbyState and lobbyState.messageText.unpaired and lobbyState.messageText.unpaired[1] == "Bob")
+  local message = bob.connection.outgoingMessageQueue:pop()
+  assert(message and message.messageText.type == "loginResponse" and message.messageText.content.approved)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message and message.type == "lobbyState" and message.content.unpaired and message.content.unpaired[1] == "Bob")
 end
 
 local function testRoomSetup()
@@ -42,7 +42,7 @@ local function testRoomSetup()
   assert(server.proposals[alice][ben][alice])
   assert(server.proposals[ben][alice][alice])
   local message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.game_request and message.game_request.sender == "Alice" and message.game_request.receiver == "Ben")
+  assert(message.type == "challenge" and message.content.sender == "Alice" and message.content.receiver == "Ben")
   assert(ben.connection.outgoingMessageQueue:len() == 0)
 
   ben.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer("Ben", "Alice").messageText))
@@ -53,7 +53,12 @@ local function testRoomSetup()
   local room = server.playerToRoom[alice]
   assert(room and room.roomNumber == 1)
   assert(room == server.playerToRoom[ben])
-  message = bob.connection.outgoingMessageQueue:pop().messageText
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
+  message = ben.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
+
+  message = bob.connection.outgoingMessageQueue:pop().messageText.content
   assert(message.unpaired and #message.unpaired == 1)
   assert(message.spectatable and #message.spectatable == 1)
 end
@@ -70,21 +75,22 @@ local function testGameplay()
 
   alice.connection:receiveMessage(readyMessage)
   server:update()
-  local menuState = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(menuState.menu_state)
+  local message = ben.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "settingsUpdate")
   ben.connection:receiveMessage(readyMessage)
   server:update()
   -- we only want to assert sparsely here because RoomTests take care of detailed asserts
   -- primarily we want to make sure that messages coming in via the connections are correctly routed to the Room
   -- and messages that should be sent as the result of room events back to the players
   -- so just do a cursory check if ONE of the expected things changed is enough to verify the message (probably) ended up where it should
-  local lobbyState = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(lobbyState.unpaired and #lobbyState.unpaired == 1)
-  assert(#lobbyState.spectatable == 1 and lobbyState.spectatable[1].state == "playing" and lobbyState.spectatable[1].roomNumber == 1)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyState")
+  assert(message.content.unpaired and #message.content.unpaired == 1)
+  assert(#message.content.spectatable == 1 and message.content.spectatable[1].state == "playing" and message.content.spectatable[1].roomNumber == 1)
   local matchStart = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(matchStart.match_start)
+  assert(matchStart.type == "matchStart")
   matchStart = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(matchStart.match_start)
+  assert(matchStart.type == "matchStart")
 
   alice.connection:receiveInput("A")
   ben.connection:receiveInput("g")
@@ -97,11 +103,11 @@ local function testGameplay()
   bob.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Bob", 1).messageText))
   server:update()
 
-  local message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.spectate_request_granted)
-  assert(message.replay_of_match_so_far)
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectateRequestGranted")
+  assert(message.content.replay)
   ---@type Replay
-  local replay = message.replay_of_match_so_far
+  local replay = message.content.replay
   -- by convention the player challenging first ends up as player two
   -- not formally required but something the test relies on, feel free to change if it crashes here due to that
   assert(replay.players[2].settings.inputs == "A1")
@@ -109,33 +115,23 @@ local function testGameplay()
 
   -- everyone gets the spectator update
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.spectators and message.spectators[1] == "Bob")
+  assert(message.type == "spectatorUpdate" and message.content and message.content[1] == "Bob")
   message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.spectators and message.spectators[1] == "Bob")
+  assert(message.type == "spectatorUpdate" and message.content and message.content[1] == "Bob")
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.spectators and message.spectators[1] == "Bob")
+  assert(message.type == "spectatorUpdate" and message.content and message.content[1] == "Bob")
 
   alice.connection:receiveMessage(json.encode(ClientProtocol.reportLocalGameResult(2).messageText))
   server:update()
   ben.connection:receiveMessage(json.encode(ClientProtocol.reportLocalGameResult(2).messageText))
   server:update()
 
-  -- first we get win counts and then character select
-  -- explicitly check not because win_counts comes separately but may also come with character_select I think
-  -- realistically there is no need for these to be separate messages
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.win_counts and not message.character_select)
+  assert(message.type == "gameResult")
   message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.win_counts and not message.character_select)
+  assert(message.type == "gameResult")
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.win_counts and not message.character_select)
-
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.character_select)
-  message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.character_select)
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.character_select)
+  assert(message.type == "gameResult")
 
   -- with some bad luck we'll also get a ranked status update which the server sends way too many of
   alice.connection:receiveMessage(readyMessage)
@@ -148,7 +144,7 @@ local function testGameplay()
 
   -- we checked before that players get the message but not yet for spectators
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.match_start)
+  assert(message.type == "matchStart")
 
   -- surely this will work properly the second time as well for everyone else
   ServerTesting.clearOutgoingMessages({alice, ben, bob})
@@ -158,19 +154,19 @@ local function testGameplay()
 
   -- the others get informed about the room closing
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room and message.reason == "Ben left")
+  assert(message.type == "leaveRoom" and message.content.reason == "Ben left")
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room and message.reason == "Ben left")
+  assert(message.type == "leaveRoom" and message.content.reason == "Ben left")
   -- this was an active quit so ben should get the leave back as well
   message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room and message.reason == "Ben left")
+  assert(message.type == "leaveRoom" and message.content.reason == "Ben left")
 
   -- everyone is back to lobby
-  message = alice.connection.outgoingMessageQueue:pop().messageText
+  message = alice.connection.outgoingMessageQueue:pop().messageText.content
   assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
-  message = bob.connection.outgoingMessageQueue:pop().messageText
+  message = bob.connection.outgoingMessageQueue:pop().messageText.content
   assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
-  message = ben.connection.outgoingMessageQueue:pop().messageText
+  message = ben.connection.outgoingMessageQueue:pop().messageText.content
   assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
 end
 
@@ -186,9 +182,9 @@ local function testDisconnect()
   server:closeConnection(ben.connection, "Ben's connection failed")
 
   local message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room and message.reason == "Ben's connection failed")
+  assert(message.type == "leaveRoom" and message.content.reason == "Ben's connection failed")
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.leave_room and message.reason == "Ben's connection failed")
+  assert(message.type == "leaveRoom" and message.content.reason == "Ben's connection failed")
   -- we closed the connection server side which under normal circumstances only happens in case of a disconnect
   -- so the server should no longer try to send them a message
   assert(ben.connection.outgoingMessageQueue:len() == 0)
@@ -199,9 +195,9 @@ local function testDisconnect()
 
   -- the people that got kicked out get the new lobby state
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.unpaired and #message.unpaired == 2)
+  assert(message.type == "lobbyState" and message.content.unpaired and #message.content.unpaired == 2)
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.unpaired and #message.unpaired == 2)
+  assert(message.type == "lobbyState" and message.content.unpaired and #message.content.unpaired == 2)
 end
 
 
@@ -228,6 +224,8 @@ local function testLobbyDataComposition()
   -- so check what alice can see
 
   local message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyState")
+  message = message.content
   assert(message.unpaired and #message.unpaired == 2)
   assert(message.players)
   assert(message.spectatable and #message.spectatable == 1)

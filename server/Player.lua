@@ -75,12 +75,11 @@ function Player:getSettings()
     self.wants_ranked_match,
     self.wantsReady,
     self.loaded,
-    self.publicPlayerID,
     self.levelData or LevelPresets.getModern(self.level)
   )
 end
 
----@param settings ServerPlayerSettings
+---@param settings ServerIncomingPlayerSettings
 function Player:updateSettings(settings)
   if settings.character ~= nil then
     self.character = settings.character
@@ -151,7 +150,7 @@ function Player:removeFromRoom(room, reason)
       self.opponent = nil
       self.state = "lobby"
       self.player_number = nil
-      self:sendJson(ServerProtocol.leaveRoom(reason))
+      self:sendJson(ServerProtocol.leaveRoom(room.roomNumber, reason))
     end
   else
     logger.error("Trying to remove player " .. self.name .. " from room " .. room.roomNumber .. " even though they have no room assigned")
@@ -177,19 +176,6 @@ function Player:setup_game()
   if self.state ~= "spectating" then
     self.state = "playing"
   end
-end
-
-function Player:getDumbSettings(rating, playerNumber)
-  return ServerProtocol.toDumbSettings(
-    self.character,
-    self.level,
-    self.panels_dir,
-    playerNumber or self.player_number,
-    self.inputMethod,
-    rating,
-    self.publicPlayerID,
-    self.levelData
-  )
 end
 
 ---@return boolean

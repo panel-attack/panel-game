@@ -26,7 +26,7 @@ local function basicTest()
   for i, player in ipairs(room.players) do
     assert(player.state == "character select")
     local firstMsg = player.connection.outgoingMessageQueue:pop()
-    assert(firstMsg.messageText.create_room, "Expected create_room message")
+    assert(firstMsg.messageText.type == "createRoom", "Expected create_room message")
   end
   p1:updateSettings({wants_ready = true, loaded = false, ready = false})
   p2:updateSettings({wants_ready = false, loaded = true, ready = false})
@@ -38,7 +38,7 @@ local function basicTest()
     local settingUpdateCount = 0
     local q = player.connection.outgoingMessageQueue
     for j = q.first, q.last do
-      if q[j].messageText.menu_state then
+      if q[j].messageText.type == "settingsUpdate" then
         settingUpdateCount = settingUpdateCount + 1
       end
     end
@@ -51,7 +51,7 @@ local function basicTest()
   for i, player in ipairs(room.players) do
     assert(player.state == "playing")
     local firstMsg = player.connection.outgoingMessageQueue:pop()
-    assert(firstMsg.messageText.match_start, "Expected match_start message")
+    assert(firstMsg.messageText.type == "matchStart", "Expected match_start message")
   end
 
   for i = 1, 909 do
@@ -82,26 +82,15 @@ local function basicTest()
 
   for i, player in ipairs(room.players) do
     assert(player.state == "character select")
-    local winCountCount = 0
-    local characterSelectCount = 0
-    local q = player.connection.outgoingMessageQueue
-    for j = q.first, q.last do
-      if q[j].messageText.character_select then
-        characterSelectCount = characterSelectCount + 1
-      elseif q[j].messageText.win_counts then
-        winCountCount = winCountCount + 1
-      end
-    end
-    assert(winCountCount == 1, "Expected player " .. i .. " to have received 1 win count update")
-    assert(characterSelectCount == 1, "Expected player " .. i .. " to have received 1 character select message")
-    q:clear()
+    local message = player.connection.outgoingMessageQueue:pop().messageText
+    assert(message.type == "gameResult", "Expected player " .. i .. " to have received 1 gameResult message")
   end
 
   room:close()
   for i, player in ipairs({p1, p2}) do
     assert(player.state == "lobby")
     local firstMsg = player.connection.outgoingMessageQueue:pop()
-    assert(firstMsg.messageText.leave_room, "Expected leave_room message")
+    assert(firstMsg.messageText.type == "leaveRoom", "Expected leave_room message")
   end
 end
 
