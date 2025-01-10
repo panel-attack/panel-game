@@ -61,11 +61,6 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
   self.room = GAME.battleRoom
-  if self.room then
-    logger.debug("Successfully created battleRoom")
-  else
-    logger.debug("Failed to create a BattleRoom")
-  end
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
   GAME.navigationStack:push(CharacterSelect2p())
@@ -222,9 +217,9 @@ end
 
 local function processMenuStateMessage(player, message)
   local menuState = message.menu_state
-  if message.player_number then
+  if menuState.playerNumber then
     -- only update if playernumber matches the player's
-    if message.player_number == player.playerNumber then
+    if menuState.playerNumber == player.playerNumber then
       player:updateSettings(menuState)
     else
       -- this update is for someone else
@@ -287,7 +282,7 @@ local function createListeners(self)
   -- messageListener holds *all* available listeners
   local messageListeners = {}
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
-  messageListeners.players = createListener(self, "players", updateLobbyState)
+  messageListeners.players = createListener(self, "unpaired", updateLobbyState)
   messageListeners.game_request = createListener(self, "game_request", processGameRequest)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)

@@ -320,7 +320,7 @@ local function sanitizePlayerSettings1(settings, publicId)
     inputMethod = settings.inputMethod,
     wantsRanked = settings.wantsRanked,
     wantsReady = settings.wantsReady,
-    loaded = settings.loaded,
+    hasLoaded = settings.loaded,
     ready = settings.ready,
     publicId = publicId,
     playerNumber = settings.playerNumber
@@ -454,7 +454,6 @@ function ServerMessages.sanitizePlayerMessage(message)
     return
     {
       menu_state = sanitizePlayerSettings(message),
-      player_number = content.playerNumber
     }
   elseif message.type == "taunt" then
     return
