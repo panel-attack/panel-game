@@ -116,18 +116,23 @@ function BattleRoom.createFromServerMessage(message)
   else
     battleRoom = BattleRoom(gameMode, GameBase)
     -- player 1 is always the local player so that data can be ignored in favor of local data
-    battleRoom:addPlayer(GAME.localPlayer)
-    GAME.localPlayer.playerNumber = message.players[1].playerNumber
-    GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
-    GAME.localPlayer:setRating(message.players[1].ratingInfo.new)
-    GAME.localPlayer:setLeague(message.players[1].ratingInfo.league)
 
-    local player2 = Player(message.players[2].name, message.players[2].publicId or -2, false)
-    player2.playerNumber = message.players[2].playerNumber
-    player2:updateSettings(message.players[2].settings)
-    player2:setRating(message.players[2].ratingInfo.new)
-    player2:setLeague(message.players[2].ratingInfo.league)
-    battleRoom:addPlayer(player2)
+    for i, player in ipairs(message.players) do
+      local p
+      -- match by name so devs can play against themselves still
+      if player.name == GAME.localPlayer.name then
+        logger.debug("Local player is player number " .. player.playerNumber)
+        p = GAME.localPlayer
+        GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
+      else
+        p = Player(player.name, player.publicId or -i, false)
+        p:updateSettings(player.settings)
+      end
+      p.playerNumber = player.playerNumber
+      p:setRating(player.ratingInfo.new)
+      p:setLeague(player.ratingInfo.league)
+      battleRoom:addPlayer(p)
+    end
   end
 
   battleRoom:updateRankedStatus(message.ranked)

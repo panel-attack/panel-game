@@ -432,11 +432,10 @@ function ServerMessages.sanitizeServerMessage(message)
         playerNumber = player.playerNumber,
         ratingInfo = player.rating,
         name = player.name,
-        level = player.settings.level,
-        levelData = player.settings.levelData,
         publicId = player.publicId,
         settings = sanitizePlayerSettings1(player.settings),
       }
+      players[player.playerNumber].settings.playerNumber = player.playerNumber
     end
 
     return {
@@ -450,8 +449,8 @@ function ServerMessages.sanitizeServerMessage(message)
 end
 
 function ServerMessages.sanitizePlayerMessage(message)
+  local content = message.content
   if message.type == "settingsUpdate" then
-    local content = message.content
     return
     {
       menu_state = sanitizePlayerSettings(message),
@@ -461,17 +460,17 @@ function ServerMessages.sanitizePlayerMessage(message)
     return
     {
       taunt = true,
-      type = message.content.type,
-      index = message.content.index,
-      player_number = message.content.playerNumber,
+      type = content.type,
+      index = content.index,
+      player_number = content.playerNumber,
     }
   elseif message.type == "challenge" then
     return
     {
       game_request =
       {
-        sender = message.content.sender,
-        receiver = message.content.receiver,
+        sender = content.sender,
+        receiver = content.receiver,
       }
     }
   end

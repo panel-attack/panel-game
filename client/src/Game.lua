@@ -35,6 +35,10 @@ local function newCanvasSnappedScale(self)
   return result
 end
 
+---@class PanelAttack
+---@field netClient NetClient
+---@field battleRoom BattleRoom?
+---@overload fun(): PanelAttack
 local Game = class(
   function(self)
     self.scores = require("client.src.scores")

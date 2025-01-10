@@ -61,6 +61,11 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
   self.room = GAME.battleRoom
+  if self.room then
+    logger.debug("Successfully created battleRoom")
+  else
+    logger.debug("Failed to create a BattleRoom")
+  end
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
   GAME.navigationStack:push(CharacterSelect2p())
@@ -216,7 +221,7 @@ local function processRankedStatusMessage(self, message)
 end
 
 local function processMenuStateMessage(player, message)
-  local menuState = message.menuState
+  local menuState = message.menu_state
   if message.player_number then
     -- only update if playernumber matches the player's
     if message.player_number == player.playerNumber then
@@ -285,7 +290,6 @@ local function createListeners(self)
   messageListeners.players = createListener(self, "players", updateLobbyState)
   messageListeners.game_request = createListener(self, "game_request", processGameRequest)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
-  messageListeners.win_counts = createListener(self, "win_counts", processWinCountsMessage)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)
   messageListeners.ranked_match_denied = createListener(self, "ranked_match_denied", processRankedStatusMessage)
   messageListeners.leave_room = createListener(self, "leave_room", processLeaveRoomMessage)
@@ -307,6 +311,7 @@ end
 ---@field matchListeners table
 ---@field messageListeners table
 ---@field room BattleRoom?
+---@field lobbyData table
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
@@ -327,7 +332,6 @@ local NetClient = class(function(self)
 
   -- all listeners running while in a room but not in a match
   self.roomListeners = {
-    win_counts = messageListeners.win_counts,
     ranked_match_approved = messageListeners.ranked_match_approved,
     ranked_match_denied = messageListeners.ranked_match_denied,
     leave_room = messageListeners.leave_room,
@@ -338,7 +342,6 @@ local NetClient = class(function(self)
 
   -- all listeners running while in a match
   self.matchListeners = {
-    win_counts = messageListeners.win_counts,
     leave_room = messageListeners.leave_room,
     taunt = messageListeners.taunt,
     -- for spectators catching up to an ongoing match, a match_start acts as a cancel
