@@ -24,9 +24,9 @@ local consts = require("common.engine.consts")
 ---@field state BattleRoomState
 ---@field matchesPlayed integer
 ---@field online boolean
----@overload fun(mode: GameMode): BattleRoom
+---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
 BattleRoom = class(
-function(self, mode)
+function(self, mode, gameScene)
   assert(mode)
   self.mode = mode
   self.players = {}
@@ -36,7 +36,7 @@ function(self, mode)
   self.ranked = false
   self.state = 1
   self.matchesPlayed = 0
-  self.gameScene = require("client.src.scenes." .. mode.gameScene)
+  self.gameScene = gameScene or require("client.src.scenes." .. mode.gameScene)
   -- this is a bit naive but effective for now
   self.online = GAME.netClient:isConnected()
   if self.online then
