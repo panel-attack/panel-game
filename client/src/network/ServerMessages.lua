@@ -82,9 +82,12 @@ function ServerMessages.sanitizeRoomMessage(message)
   elseif message.type == "matchStart" then
     ---@type Replay
     local replay = message.content
-    local settings = { shallowcpy(replay.players[1].settings), shallowcpy(replay.players[2].settings) }
-    settings[1].publicId = replay.players[1].publicId
-    settings[2].publicId = replay.players[2].publicId
+    local settings = {}
+    for i, player in ipairs(replay.players) do
+      settings[i] = shallowcpy(player.settings)
+      settings[i].publicId = player.publicId
+    end
+
     return
     {
       playerSettings = settings,
@@ -105,6 +108,8 @@ function ServerMessages.sanitizeRoomMessage(message)
     end
 
     return msg
+  elseif message.type == "gameAbort" then
+    return { gameAbort = true, source = message.content.source }
   end
   return message
 end
@@ -155,6 +160,7 @@ function ServerMessages.sanitizeServerMessage(message)
       ranked = message.content.ranked,
       winCounts = winCounts,
       players = players,
+      gameMode = message.content.gameMode,
       replay = message.content.replay
     }
   elseif message.type == "createRoom" then
@@ -174,6 +180,7 @@ function ServerMessages.sanitizeServerMessage(message)
       create_room = true,
       ranked = message.content.ranked,
       players = players,
+      gameMode = message.content.gameMode
     }
   else
     return message

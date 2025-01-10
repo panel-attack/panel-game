@@ -134,6 +134,31 @@ function ClientMessages.sendTaunt(direction, index)
   }
 end
 
+function ClientMessages.sendRoomRequest(gameMode)
+  local roomRequestMessage = {
+    recipient = "server",
+    type = "roomRequest",
+    content = { gameMode = gameMode }
+  }
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = roomRequestMessage
+  }
+end
+
+function ClientMessages.sendMatchAbort(roomNumber)
+  local matchAbortMessage = {
+    recipient = "room",
+    recipientId = roomNumber,
+    type = "matchAbort",
+    content = true
+  }
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = matchAbortMessage
+  }
+end
+
 -------------------------
 -- miscellaneous requests
 -------------------------

@@ -22,6 +22,7 @@ local tableUtils = require("common.lib.tableUtils")
 local Player = require("server.Player")
 local util = require("common.lib.util")
 local FileIO = require("server.FileIO")
+local GameModes = require("common.engine.GameModes")
 
 local pairs = pairs
 local ipairs = ipairs
@@ -244,8 +245,13 @@ function Server:lobby_state()
   end
   local spectatableRooms = {}
   for _, room in pairs(self.rooms) do
-    spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, a = room.players[1].name, b = room.players[2].name, state = room:state()}
+    spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, state = room:state()}
     for i, player in ipairs(room.players) do
+      if i == 1 then
+        spectatableRooms[#spectatableRooms].a = room.players[i].name
+      else
+        spectatableRooms[#spectatableRooms].b = room.players[i].name
+      end
       addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
     end
   end
@@ -263,7 +269,7 @@ function Server:proposeGame(sender, receiver)
     proposals[receiver] = proposals[receiver] or {}
     if proposals[sender][receiver] then
       if proposals[sender][receiver][receiver] then
-        self:create_room(sender, receiver)
+        self:create_room(GameModes.getPreset("TWO_PLAYER_VS"), sender, receiver)
       end
     else
       receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver))
@@ -288,11 +294,16 @@ function Server:clearProposals(player)
   end
 end
 
+---@param gameMode GameMode
 ---@param ... ServerPlayer
-function Server:create_room(...)
+function Server:create_room(gameMode, ...)
   self:setLobbyChanged()
   local players = {...}
-  local newRoom = Room(self.roomNumberIndex, players, self.leaderboard)
+  local leaderboard
+  if self.leaderboard and deep_content_equal(gameMode, self.leaderboard.gameMode) then
+    leaderboard = self.leaderboard
+  end
+  local newRoom = Room(self.roomNumberIndex, players, gameMode, leaderboard)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.processGameEnd)
   self.roomNumberIndex = self.roomNumberIndex + 1
@@ -554,6 +565,9 @@ function Server:processMessage(message, connection)
         self:proposeGame(player, self.nameToPlayer[message.game_request.receiver])
         return true
       end
+    elseif player.state == "lobby" and message.roomRequest then
+      self:create_room(message.gameMode, player)
+      return true
     elseif message.leaderboard_request then
       connection:sendJson(ServerProtocol.sendLeaderboard(self.leaderboard:get_report(self, self.connectionToPlayer[connection].userId)))
       return true
@@ -570,6 +584,8 @@ function Server:processMessage(message, connection)
     elseif player.state == "playing" and message.game_over then
       self.playerToRoom[player]:handleGameOverOutcome(message, player)
       return true
+    elseif (player.state == "playing") and message.matchAbort then
+      self.playerToRoom[player]:abortGame(player)
     elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
       self:handleLeaveRoom(player, player.name .. " left")
       return true
@@ -815,7 +831,12 @@ end
 function Server:processGameEnd(game)
   self:setLobbyChanged()
 
-  self.persistence.persistGame(game)
+  -- this is a sufficient criteria only by incidence as only the 2P VS gameMode has playerCount set to 2
+  -- there needs to be a better mechanism to validate whether a game should be persisted / persisted for a leaderboard
+  -- as the current persistGame somewhat assumes both (explicit player number and that the game was played to determine a winner/placement)
+  if game and game.complete and game.replay.gameMode.playerCount == 2 then
+    self.persistence.persistGame(game)
+  end
 end
 
 ---@param player ServerPlayer

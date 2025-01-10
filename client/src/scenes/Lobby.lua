@@ -8,6 +8,7 @@ local util = require("common.lib.util")
 local NetClient = require("client.src.network.NetClient")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local Leaderboard = require("client.src.ui.Leaderboard")
+local GameModes = require("common.engine.GameModes")
 
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
 local Lobby = class(function(self, sceneParams)
@@ -62,6 +63,9 @@ end
 function Lobby:initLobbyMenu()
   local menuItems = {
     MenuItem.createMenuItem(self.lobbyMessage),
+    MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
+      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_ENDLESS"))
+    end),
     MenuItem.createButtonMenuItem("lb_show_board", nil, nil, function()
       self:toggleLeaderboard()
     end),
@@ -131,7 +135,7 @@ function Lobby:onLobbyStateUpdate(lobbyState)
   local desiredIndex = self.lobbyMenu.selectedIndex
 
   -- cleanup previous lobby menu
-  while #self.lobbyMenu.menuItems > 3 do
+  while #self.lobbyMenu.menuItems > 4 do
     self.lobbyMenu:removeMenuItemAtIndex(2)
   end
   self.lobbyMenu:setSelectedIndex(1)
@@ -149,10 +153,13 @@ function Lobby:onLobbyStateUpdate(lobbyState)
     end
   end
   for _, room in ipairs(lobbyState.spectatableRooms) do
-    if room.name then
+    if room.b then
       local playerA = room.a .. self:playerRatingString(room.a)
       local playerB = room.b .. self:playerRatingString(room.b)
       local roomName = loc("lb_spectate") .. " " .. playerA .. " vs " .. playerB .. " (" .. room.state .. ")"
+      self.lobbyMenu:addMenuItem(2, MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)))
+    else
+      local roomName = loc("lb_spectate") .. " " .. room.name .. " (" .. room.state .. ")"
       self.lobbyMenu:addMenuItem(2, MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)))
     end
   end

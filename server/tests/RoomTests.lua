@@ -1,6 +1,7 @@
 ---@diagnostic disable: undefined-field, invisible, inject-field
 local Room = require("server.Room")
 local ServerTesting = require("server.tests.ServerTesting")
+local GameModes = require("common.engine.GameModes")
 
 COMPRESS_REPLAYS_ENABLED = true
 
@@ -11,7 +12,7 @@ local function getRoom()
   p2:updateSettings({inputMethod = "controller", level = 10})
   -- don't want to deal with I/O for the test
   p1.save_replays_publicly = "not at all"
-  local room = Room(1, {p1, p2})
+  local room = Room(1, {p1, p2}, GameModes.getPreset("TWO_PLAYER_VS"))
   -- the game is being cleared from the room when it ends so catch the reference to assert against
   local gameCatcher = {
     catch = function(self, game) self.game = game end

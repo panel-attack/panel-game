@@ -56,6 +56,15 @@ local function updateLobbyState(self, lobbyState)
   self:emitSignal("lobbyStateUpdate", self.lobbyData)
 end
 
+local function getSceneByGameMode(gameMode)
+  -- this is so hacky oh my god
+  if gameMode.richPresenceLabel == "2p versus" then
+    return CharacterSelect2p()
+  elseif gameMode.richPresenceLabel == "Endless" then
+    return require("client.src.scenes.EndlessMenu")()
+  end
+end
+
 -- starts a 2p vs online match
 local function start2pVsOnlineMatch(self, createRoomMessage)
   resetLobbyData(self)
@@ -63,7 +72,7 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   self.room = GAME.battleRoom
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
-  GAME.navigationStack:push(CharacterSelect2p())
+  GAME.navigationStack:push(getSceneByGameMode(self.room.mode))
   self.state = states.ROOM
 end
 
@@ -97,7 +106,7 @@ local function processGameResultMessage(self, message)
 
   self.room:updateWinrates()
   self.room:updateExpectedWinrates()
-  self.state = states.ROOM
+  self:setState(states.ROOM)
 end
 
 local function processLeaveRoomMessage(self, message)
@@ -180,7 +189,7 @@ local function processMatchStartMessage(self, message)
 
   self.tcpClient:dropOldInputMessages()
   self.room:startMatch(message.stageId, message.seed)
-  self.state = states.INGAME
+  self:setState(states.INGAME)
 end
 
 local function processRankedStatusMessage(self, message)
@@ -248,11 +257,18 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
     local catchUp = GameCatchUp(vsScene)
     -- need to push character select, otherwise the pop on match end will return to lobby
     -- directly add to the stack so it isn't getting displayed
-    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = CharacterSelect2p()
+    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneByGameMode(self.room.mode)
     GAME.navigationStack:push(catchUp)
   else
     self.state = states.ROOM
-    GAME.navigationStack:push(CharacterSelect2p())
+    GAME.navigationStack:push(getSceneByGameMode(self.room.mode))
+  end
+end
+
+local function handleGameAbort(self, gameAbortMessage)
+  if self.room and self.room.match then
+    self.room.match:abort()
+    self.state = states.ROOM
   end
 end
 
@@ -276,6 +292,7 @@ local function createListeners(self)
   messageListeners.taunt = createListener(self, "taunt", processTauntMessage)
   messageListeners.gameResult = createListener(self, "gameResult", processGameResultMessage)
   messageListeners.spectators = createListener(self, "spectators", processSpectatorListMessage)
+  messageListeners.gameAbort = createListener(self, "gameAbort", handleGameAbort)
 
   return messageListeners
 end
@@ -316,7 +333,7 @@ local NetClient = class(function(self)
     leave_room = messageListeners.leave_room,
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
-    gameResult = messageListeners.gameResult
+    gameResult = messageListeners.gameResult,
   }
 
   -- all listeners running while in a match
@@ -326,7 +343,8 @@ local NetClient = class(function(self)
     -- for spectators catching up to an ongoing match, a match_start acts as a cancel
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
-    gameResult = messageListeners.gameResult
+    gameResult = messageListeners.gameResult,
+    gameAbort = messageListeners.gameAbort,
   }
 
   self.messageListeners = messageListeners
@@ -402,6 +420,19 @@ function NetClient:requestSpectate(roomNumber)
   end
 end
 
+function NetClient:requestRoom(gameMode)
+  if self:isConnected() then
+    self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode))
+  end
+end
+
+function NetClient:sendMatchAbort()
+  if self:isConnected() then
+    self.tcpClient:sendRequest(ClientMessages.sendMatchAbort())
+    self:setState(states.ROOM)
+  end
+end
+
 local function sendPlayerSettings(player)
   GAME.netClient.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
@@ -436,7 +467,7 @@ function NetClient:sendErrorReport(errorData, server, ip)
   end
   self.tcpClient:sendRequest(ClientMessages.sendErrorReport(errorData))
   self.tcpClient:resetNetwork()
-  self.state = states.OFFLINE
+  self:setState(states.OFFLINE)
 end
 
 function NetClient:isConnected()
@@ -446,7 +477,7 @@ end
 function NetClient:login(ip, port)
   if not self:isConnected() then
     self.loginRoutine = LoginRoutine(self.tcpClient, ip, port)
-    self.state = states.LOGIN
+    self:setState(states.LOGIN)
   end
 end
 
@@ -454,7 +485,7 @@ function NetClient:logout()
   self.tcpClient:sendRequest(ClientMessages.logout())
   love.timer.sleep(0.001)
   self.tcpClient:resetNetwork()
-  self.state = states.OFFLINE
+  self:setState(states.OFFLINE)
   resetLobbyData(self)
 end
 
@@ -469,19 +500,19 @@ function NetClient:update()
       self.loginState = result
     else
       if result.loggedIn then
-        self.state = states.ONLINE
+        self:setState(states.ONLINE)
         self.loginState = result.message
         self.loginTime = love.timer.getTime()
       else
         self.loginState = result.message
-        self.state = states.OFFLINE
+        self:setState(states.OFFLINE)
         end
       self:emitSignal("loginFinished", result)
     end
   end
 
   if not self.tcpClient:processIncomingMessages() then
-    self.state = states.OFFLINE
+    self.state:setState(states.OFFLINE)
     self.room = nil
     self.tcpClient:resetNetwork()
     resetLobbyData(self)
@@ -529,6 +560,12 @@ function NetClient:update()
       processInputMessages(self)
     end
   end
+end
+
+---@param state NetClientStates
+function NetClient:setState(state)
+  logger.debug("Setting netclient state to " .. state)
+  self.state = state
 end
 
 return NetClient

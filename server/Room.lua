@@ -25,13 +25,14 @@ local ServerGame = require("server.Game")
 ---@field gameMode GameMode
 ---@field ranked boolean if the next match is anticipated to be ranked 
 ---@field rankedReasons string[]
----@overload fun(roomNumber: integer, players: ServerPlayer[], leaderboard: Leaderboard?): Room
+---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
 local Room = class(
 ---@param self Room
 ---@param roomNumber integer
 ---@param players ServerPlayer[]
+---@param gameMode GameMode
 ---@param leaderboard Leaderboard?
-function(self, roomNumber, players, leaderboard)
+function(self, roomNumber, players, gameMode, leaderboard)
   self.players = players
   self.leaderboard = leaderboard
   self.roomNumber = roomNumber
@@ -40,7 +41,7 @@ function(self, roomNumber, players, leaderboard)
   self.win_counts = {}
   self.ratings = {}
   self.matchCount = 0
-  self.gameMode = GameModes.getPreset("TWO_PLAYER_VS")
+  self.gameMode = gameMode
 
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
@@ -231,7 +232,9 @@ function Room:broadcastInput(input, sender)
   self.game:receiveInput(sender, input)
 
   local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, input)
-  sender.opponent:send(inputMessage)
+  if sender.opponent then
+    sender.opponent:send(inputMessage)
+  end
 
   if sender.player_number == 1 then
     inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix, input)
@@ -311,7 +314,9 @@ function Room:handleGameOverOutcome(message, sender)
     end
 
     logger.debug("\n*******************************")
-    logger.debug("***" .. self.players[1].name .. " " .. self.win_counts[1] .. " - " .. self.win_counts[2] .. " " .. self.players[2].name .. "***")
+    for i, player in ipairs(self.players) do
+      logger.debug("***" .. player.name .. " " .. self.win_counts[i] .. "***")
+    end
     logger.debug("*******************************\n")
 
     self:prepare_character_select()
@@ -336,6 +341,16 @@ function Room:updateWinCounts(game)
   end
   if not game.winnerId then
     logger.debug("tie.  Nobody scored")
+  end
+end
+
+function Room:abortGame(player)
+  if #self.players == 1 and self.players[1] == player then
+    logger.debug(player.name .. " aborted the game")
+    self:broadcastJson(ServerProtocol.sendGameAbort(player), player)
+    self:emitSignal("matchEnd", self.game)
+    self:prepare_character_select()
+    self.game = nil
   end
 end
 

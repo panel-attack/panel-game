@@ -169,6 +169,7 @@ function ServerProtocol.addToRoom(room, replay)
   local addToRoomMessage = addToRoomTemplate
   local content = addToRoomMessage.content
   content.roomNumber = room.roomNumber
+  content.gameMode = room.gameMode
   content.ranked = (replay and replay.ranked or room.ranked)
   content.replay = replay
   content.stage = (replay and replay.stageId or nil)
@@ -213,6 +214,7 @@ function ServerProtocol.spectateRequestGranted(room, replay)
   local spectateRequestGrantedMessage = spectateRequestGrantedTemplate
   local content = spectateRequestGrantedMessage.content
   content.roomNumber = room.roomNumber
+  content.gameMode = room.gameMode
   content.ranked = (replay and replay.ranked or room.ranked)
   content.replay = replay
   content.stage = (replay and replay.stageId or nil)
@@ -252,6 +254,7 @@ function ServerProtocol.createRoom(room)
   local content = createRoomMessage.content
   content.roomNumber = room.roomNumber
   content.ranked = room.ranked
+  content.gameMode = room.gameMode
   content.players = {}
 
   for i, player in ipairs(room.players) do
@@ -401,7 +404,7 @@ local spectatorUpdateTemplate = {
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.updateSpectators(roomNumber, spectators)
   local spectatorUpdateMessage = spectatorUpdateTemplate
-  spectatorUpdateMessage.sender = roomNumber
+  spectatorUpdateMessage.senderId = roomNumber
   spectatorUpdateMessage.content = spectators
 
   return {
@@ -470,10 +473,28 @@ function ServerProtocol.sendChallenge(sender, receiver)
   challengeMessage.senderId = sender.publicPlayerID
   challengeMessage.content.sender = sender.name
   challengeMessage.content.receiver = receiver.name
-  
+
   return {
     messageType = msgTypes.jsonMessage,
     messageText = challengeMessage,
+  }
+end
+
+local abortGameTemplate = {
+  sender = "room",
+  senderId = nil,
+  type = "gameAbort",
+  content = { source = nil }
+}
+
+---@param source ServerPlayer who requested the abort
+function ServerProtocol.sendGameAbort(source)
+  local abortGameMessage = abortGameTemplate
+  abortGameMessage.content.source = source.name
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = abortGameMessage,
   }
 end
 

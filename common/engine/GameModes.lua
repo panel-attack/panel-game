@@ -10,6 +10,7 @@ local GameModes = {}
 ---@field timeLimit integer?
 --- the following properties should be strictly client side rather than universal
 --- but since they're just magic strings without dependencies it's not like they ruin anything for now
+---@field playerCount integer
 ---@field gameScene string
 ---@field style Styles
 ---@field richPresenceLabel string?

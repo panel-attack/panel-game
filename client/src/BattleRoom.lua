@@ -77,9 +77,7 @@ end
 
 function BattleRoom.createFromServerMessage(message)
   local battleRoom
-  -- two player versus being the only option so far
-  -- in the future this information should be in the message!
-  local gameMode = GameModes.getPreset("TWO_PLAYER_VS")
+  local gameMode = message.gameMode
 
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
@@ -90,7 +88,7 @@ function BattleRoom.createFromServerMessage(message)
       replay.engineVersion = consts.ENGINE_VERSION
       local match = ClientMatch.createFromReplay(replay, false)
       for i, player in ipairs(match.players) do
-        player:updateSettings(message.players[i])
+        player:updateSettings(message.players[i].settings)
       end
       -- need this to make sure both have the same player tables
       -- there's like one stupid reference to battleRoom in engine that breaks otherwise
@@ -102,12 +100,14 @@ function BattleRoom.createFromServerMessage(message)
       for i = 1, #message.players do
         local player = Player(message.players[i].name, message.players[i].publicId or -i, false)
         battleRoom:addPlayer(player)
-        player:updateSettings(message.players[i])
+        player:updateSettings(message.players[i].settings)
       end
     end
     for i = 1, #battleRoom.players do
-      battleRoom.players[i]:setRating(message.players[i].ratingInfo.new)
-      battleRoom.players[i]:setLeague(message.players[i].ratingInfo.league)
+      if message.players[i].ratingInfo then
+        battleRoom.players[i]:setRating(message.players[i].ratingInfo.new)
+        battleRoom.players[i]:setLeague(message.players[i].ratingInfo.league)
+      end
     end
     if message.winCounts then
       battleRoom:setWinCounts(message.winCounts)
@@ -115,8 +115,6 @@ function BattleRoom.createFromServerMessage(message)
     battleRoom.spectating = true
   else
     battleRoom = BattleRoom(gameMode, GameBase)
-    -- player 1 is always the local player so that data can be ignored in favor of local data
-
     for i, player in ipairs(message.players) do
       local p
       -- match by name so devs can play against themselves still
@@ -129,8 +127,10 @@ function BattleRoom.createFromServerMessage(message)
         p:updateSettings(player.settings)
       end
       p.playerNumber = player.playerNumber
-      p:setRating(player.ratingInfo.new)
-      p:setLeague(player.ratingInfo.league)
+      if player.ratingInfo then
+        p:setRating(player.ratingInfo.new)
+        p:setLeague(player.ratingInfo.league)
+      end
       battleRoom:addPlayer(p)
     end
   end
@@ -237,7 +237,7 @@ end
 
 -- creates a match with the players in the BattleRoom
 function BattleRoom:createMatch()
-  local supportsPause = not self.online or #self.players == 1
+  local supportsPause = not self.online or (#self.players == 1 and self.players[1].isLocal)
   local optionalArgs = { timeLimit = self.mode.timeLimit , ranked = self.ranked}
 
   self.match = ClientMatch(
@@ -564,6 +564,9 @@ function BattleRoom:onMatchEnded(match)
       -- local player could pause and leave
       -- -> back to select screen, battleRoom stays intact
       -- each scene handles the pop individually
+      if self.online and match:hasLocalPlayer() then
+        GAME.netClient:sendMatchAbort()
+      end
     end
 
     -- other aborts come via network and are directly handled in response to the network message (or lack thereof)
