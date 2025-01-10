@@ -17,7 +17,7 @@ local logger = require("common.lib.logger")
 ---@field stage_is_random string? id of the stage (bundle) that was selected; will match stage if not a bundle
 ---@field panels_dir string id of the specific panel set that was selected
 ---@field wants_ranked_match boolean
----@field inputMethod ("controller" | "touch")
+---@field inputMethod InputMethod
 ---@field level integer display property for the level
 ---@field levelData LevelData
 ---@field wantsReady boolean

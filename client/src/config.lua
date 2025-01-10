@@ -5,6 +5,54 @@ local consts = require("common.engine.consts")
 require("client.src.globals")
 
 -- Default configuration values
+---@class UserConfig
+---@field version string
+---@field language_code string
+---@field theme string
+---@field panels string?
+---@field character string
+---@field stage string
+---@field ranked boolean
+---@field inputMethod InputMethod
+---@field use_music_from ("stage" | "often_stage" | "either" | "often_characters" | "characters")
+---@field level integer
+---@field endless_speed integer
+---@field endless_difficulty integer
+---@field endless_level integer?
+---@field puzzle_level integer
+---@field puzzle_randomColors boolean
+---@field puzzle_randomFlipped boolean
+---@field name string
+---@field master_volume number
+---@field SFX_volume number
+---@field music_volume number
+---@field enableMenuMusic boolean
+---@field debug_mode boolean
+---@field debugShowServers boolean
+---@field debugShowDesignHelper boolean
+---@field show_fps boolean
+---@field activeGarbageCollectionPercent number
+---@field show_ingame_infos boolean
+---@field danger_music_changeback_delay boolean
+---@field enable_analytics boolean
+---@field save_replays_publicly ("not at all" | "anonymously" | "with my name")
+---@field portrait_darkness number
+---@field popfx boolean
+---@field shakeIntensity number
+---@field cardfx_scale number
+---@field renderTelegraph boolean
+---@field renderAttacks boolean
+---@field defaultPanelsCopied boolean
+---@field maximizeOnStartup boolean
+---@field gameScaleType ("auto" | "fit" | "fixed")
+---@field gameScaleFixedValue number
+---@field windowWidth number
+---@field windowHeight number
+---@field borderless boolean
+---@field fullscreen boolean
+---@field display integer
+---@field windowX number?
+---@field windowY number?
 config = {
     -- The last used engine version
     version                       = consts.ENGINE_VERSION,
