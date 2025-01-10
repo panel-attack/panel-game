@@ -195,7 +195,7 @@ function ServerMessages.sanitizeStartMatch(message)
     seed = message.seed,
     ranked = message.ranked,
     stageId = message.stage,
-    match_Start = true,
+    match_start = true,
     sanitized = true
   }
 
@@ -347,7 +347,7 @@ function ServerMessages.sanitizeRoomMessage(message)
   elseif message.type == "gameResult" then
     -- this is a new type, need to handle in client code
     return message
-  elseif message.type == "startMatch" then
+  elseif message.type == "matchStart" then
     ---@type Replay
     local replay = message.content
     local settings = { shallowcpy(replay.players[1].settings), shallowcpy(replay.players[2].settings) }
@@ -359,7 +359,7 @@ function ServerMessages.sanitizeRoomMessage(message)
       seed = replay.seed,
       ranked = replay.ranked,
       stageId = replay.stageId,
-      match_Start = true,
+      match_start = true,
     }
   elseif message.type == "spectatorUpdate" then
     return { spectators = message.content }

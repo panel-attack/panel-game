@@ -86,7 +86,6 @@ local function processCharacterSelectMessage(self, message)
 
   -- character_select and create_room are the same message
   -- except that character_select has an additional character_select = true flag
-  message = ServerMessages.sanitizeCreateRoom(message)
   for _, messagePlayer in ipairs(message.players) do
     for _, roomPlayer in ipairs(self.room.players) do
       if messagePlayer.playerNumber == roomPlayer.playerNumber then
@@ -142,8 +141,6 @@ local function processMatchStartMessage(self, message)
   if not self.room then
     return
   end
-
-  message = ServerMessages.sanitizeStartMatch(message)
 
   for _, playerSettings in ipairs(message.playerSettings) do
     -- contains level, characterId, panelId
