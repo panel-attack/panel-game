@@ -62,6 +62,10 @@ local function getSceneByGameMode(gameMode)
     return CharacterSelect2p()
   elseif gameMode.richPresenceLabel == "Endless" then
     return require("client.src.scenes.EndlessMenu")()
+  elseif gameMode.richPresenceLabel == "Time Attack" then
+    return require("client.src.scenes.TimeAttackMenu")()
+  elseif gameMode.richPresenceLabel == "1p vs self" then
+    return require("client.src.scenes.VsSelfGame")()
   end
 end
 
@@ -512,7 +516,7 @@ function NetClient:update()
   end
 
   if not self.tcpClient:processIncomingMessages() then
-    self.state:setState(states.OFFLINE)
+    self:setState(states.OFFLINE)
     self.room = nil
     self.tcpClient:resetNetwork()
     resetLobbyData(self)

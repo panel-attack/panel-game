@@ -24,9 +24,9 @@ local consts = require("common.engine.consts")
 ---@field state BattleRoomState
 ---@field matchesPlayed integer
 ---@field online boolean
----@overload fun(mode: GameMode, gameScene: table): BattleRoom
+---@overload fun(mode: GameMode): BattleRoom
 BattleRoom = class(
-function(self, mode, gameScene)
+function(self, mode)
   assert(mode)
   self.mode = mode
   self.players = {}
@@ -36,7 +36,7 @@ function(self, mode, gameScene)
   self.ranked = false
   self.state = 1
   self.matchesPlayed = 0
-  self.gameScene = gameScene
+  self.gameScene = require("client.src.scenes." .. mode.gameScene)
   -- this is a bit naive but effective for now
   self.online = GAME.netClient:isConnected()
   if self.online then
@@ -48,8 +48,6 @@ function(self, mode, gameScene)
   self:createSignal("allAssetsLoadedChanged")
 end)
 
--- defining these here so they're available in network.BattleRoom too
--- maybe splitting BattleRoom wasn't so smart after all
 ---@enum BattleRoomState
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
@@ -62,7 +60,7 @@ function BattleRoom.createFromMatch(match)
   gameMode.winConditions = deepcpy(match.winConditions)
   gameMode.gameOverConditions = deepcpy(match.gameOverConditions)
 
-  local battleRoom = BattleRoom(gameMode, GameBase)
+  local battleRoom = BattleRoom(gameMode)
 
   for i = 1, #match.players do
     battleRoom:addPlayer(match.players[i])
@@ -96,7 +94,7 @@ function BattleRoom.createFromServerMessage(message)
       battleRoom.mode.gameScene = gameMode.gameScene
       battleRoom.mode.richPresenceLabel = gameMode.richPresenceLabel
     else
-      battleRoom = BattleRoom(gameMode, GameBase)
+      battleRoom = BattleRoom(gameMode)
       for i = 1, #message.players do
         local player = Player(message.players[i].name, message.players[i].publicId or -i, false)
         battleRoom:addPlayer(player)
@@ -114,7 +112,7 @@ function BattleRoom.createFromServerMessage(message)
     end
     battleRoom.spectating = true
   else
-    battleRoom = BattleRoom(gameMode, GameBase)
+    battleRoom = BattleRoom(gameMode)
     for i, player in ipairs(message.players) do
       local p
       -- match by name so devs can play against themselves still
@@ -143,8 +141,8 @@ function BattleRoom.createFromServerMessage(message)
   return battleRoom
 end
 
-function BattleRoom.createLocalFromGameMode(gameMode, gameScene)
-  local battleRoom = BattleRoom(gameMode, gameScene)
+function BattleRoom.createLocalFromGameMode(gameMode)
+  local battleRoom = BattleRoom(gameMode)
 
   if gameMode.playerCount == 1 then
     -- always use the game client's local player
