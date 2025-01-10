@@ -1,6 +1,5 @@
 local lfs = require("lfs")
 local logger = require("common.lib.logger")
-local tableUtils = require("common.lib.tableUtils")
 local csvfile = require("server.simplecsv")
 
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")

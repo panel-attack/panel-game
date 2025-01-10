@@ -93,12 +93,16 @@ function Persistence.persistPlayerData(playerData)
   FileIO.writeAsJson(playerData, PlayerIdsToNamesPath)
 end
 
+---@param userId privateUserId
+---@param name string
 ---@return boolean
 function Persistence.persistNewPlayer(userId, name)
   Persistence.persistPlayerData(PlayerData)
   return PADatabase:insertNewPlayer(userId, name)
 end
 
+---@param userId privateUserId
+---@param name string
 function Persistence.persistPlayerNameChange(userId, name)
   PADatabase:updatePlayerUsername(userId, name)
   Persistence.persistPlayerData(PlayerData)
@@ -108,6 +112,7 @@ end
 function Persistence.getPlayerData()
   local data = FileIO.readJson(PlayerIdsToNamesPath)
   if data then
+    ---@cast data table<privateUserId, string>
     return data
   else
     return {}

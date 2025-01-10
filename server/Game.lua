@@ -183,7 +183,7 @@ function Game:getPlacement(player)
   if not self.winnerId then
     return 0
   else
-    if self.winnerId == player.publicPlayerID then
+    if self.winnerIndex == player.player_number then
       return 1
     else
       return 2

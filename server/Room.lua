@@ -1,12 +1,9 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
-local Replay = require("common.data.Replay")
-local ReplayPlayer = require("common.data.ReplayPlayer")
 local ServerProtocol = require("common.network.ServerProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local GameModes = require("common.engine.GameModes")
 -- heresy, remove once communication of levelData is established
-local LevelPresets = require("common.data.LevelPresets")
 local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
 local Signal = require("common.lib.signal")
@@ -134,7 +131,7 @@ end
 
 function Room:prepare_character_select()
   logger.debug("Called Server.lua Room.character_select")
-  for i, player in ipairs(self.players) do
+  for _, player in ipairs(self.players) do
     player.state = "character select"
     player.cursor = "__Ready"
     player.ready = false
@@ -176,7 +173,7 @@ end
 function Room:spectator_names()
   local list = {}
   for i, spectator in ipairs(self.spectators) do
-    list[#list + 1] = spectator.name
+    list[i] = spectator.name
   end
   return list
 end
@@ -223,10 +220,8 @@ function Room:close(reason)
 end
 
 function Room:sendJsonToSpectators(message)
-  for i, spectator in ipairs(self.spectators) do
-    if spectator then
-      spectator:sendJson(message)
-    end
+  for _, spectator in ipairs(self.spectators) do
+    spectator:sendJson(message)
   end
 end
 
@@ -252,7 +247,7 @@ end
 -- broadcasts the message to everyone in the room
 -- if an optional sender is specified, they are excluded from the broadcast
 function Room:broadcastJson(message, sender)
-  for i, player in ipairs(self.players) do
+  for _, player in ipairs(self.players) do
     if player ~= sender then
       player:sendJson(message)
     end
@@ -268,7 +263,7 @@ function Room:rating_adjustment_approved()
     return false, {"Room has no leaderboard"}
   end
 
-  for i, player in ipairs(self.players) do
+  for _, player in ipairs(self.players) do
     if not player.wants_ranked_match then
       return false, {player.name .. " doesn't want ranked"}
     end
@@ -282,7 +277,7 @@ function Room:toString()
   local info = self.name
   info = info .. "\nRoom number:" .. self.roomNumber
   info = info .. "\nWin Counts" .. table_to_string(self.win_counts)
-  for i, player in ipairs(self.players) do
+  for _, player in ipairs(self.players) do
     info = info .. "\n" .. player.name .. " settings:"
     info = info .. "\n" .. table_to_string(player:getSettings())
   end
@@ -304,13 +299,14 @@ function Room:handleGameOverOutcome(message, sender)
 
   if self.game.complete then
     self:updateWinCounts(self.game)
-    logger.info(self.roomNumber .. " " .. self.name .. " match " .. self.matchCount .. " ended with winner " .. (self.game.winnerId or ""))
+    logger.info(self.roomNumber .. " " .. self.name .. " match " .. self.matchCount .. " ended with winner " .. (self.game.winnerIndex or ""))
     self:emitSignal("matchEnd", self.game)
 
     if self.game.ranked and self.game.winnerId then
       local ratingUpdates = self.leaderboard:processGameResult(self.game)
-      ratingUpdates[1].userId = nil
-      ratingUpdates[2].userId = nil
+      for i, _ in ipairs(self.players) do
+        ratingUpdates[i].userId = nil
+      end
       self.ratings = ratingUpdates
     end
 
@@ -333,7 +329,7 @@ end
 function Room:updateWinCounts(game)
   for i, player in ipairs(self.players) do
     logger.debug("checking if player " .. i .. " scored...")
-    if player.publicPlayerID == game.winnerId then
+    if player.player_number == game.winnerIndex then
       logger.trace("Player " .. i .. " scored")
       self.win_counts[i] = self.win_counts[i] + 1
     end

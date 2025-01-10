@@ -78,8 +78,7 @@ function ServerMessages.sanitizeRoomMessage(message)
   if message.type == "leaveRoom" then
     return {leave_room = true, reason = message.content.reason}
   elseif message.type == "gameResult" then
-    -- this is a new type, need to handle in client code
-    return message
+    return { gameResult = message.content }
   elseif message.type == "matchStart" then
     ---@type Replay
     local replay = message.content

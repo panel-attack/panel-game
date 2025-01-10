@@ -377,7 +377,7 @@ function ServerProtocol.gameResult(game, room)
     -- publicId can't be the key as it would disallow developers playing against themselves for testing
     content[player.player_number] = {
       rating = room.ratings[player.player_number],
-      winCounts = room.win_counts[player.player_number],
+      winCount = room.win_counts[player.player_number],
       placement = game:getPlacement(player),
       publicId = player.publicPlayerID
     }

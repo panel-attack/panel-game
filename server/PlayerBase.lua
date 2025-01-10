@@ -8,6 +8,7 @@ local tableUtils = require("common.lib.tableUtils")
 ---@field persistence Persistence
 ---@field publicIdToPrivateId privateUserId[]
 ---@field privateIdToPublicId table<privateUserId, integer>
+---@overload fun(playerData: table<privateUserId, string>, persistence: Persistence): Playerbase
 local Playerbase =
   class(
   function(self, playerData, persistence)
@@ -31,9 +32,12 @@ local Playerbase =
   end
 )
 
-function Playerbase:addPlayer(userID, username)
-  self.players[userID] = username
-  if self.persistence.persistNewPlayer(userID, username) then
+---@param userID privateUserId
+---@param playerName string
+---@return boolean success
+function Playerbase:addPlayer(userID, playerName)
+  self.players[userID] = playerName
+  if self.persistence.persistNewPlayer(userID, playerName) then
     local playerInfo = self.persistence.getPlayerInfo(userID)
     if playerInfo then
       self.publicIdToPrivateId[playerInfo.publicPlayerID] = userID
@@ -48,12 +52,17 @@ function Playerbase:addPlayer(userID, username)
   end
 end
 
-function Playerbase:updatePlayer(userId, userName)
-  self.players[userId] = userName
-  self.persistence.persistPlayerNameChange(userId, userName)
+---@param userId privateUserId
+---@param playerName string
+function Playerbase:updatePlayer(userId, playerName)
+  self.players[userId] = playerName
+  self.persistence.persistPlayerNameChange(userId, playerName)
 end
 
 -- returns true if the name is taken by a different user already
+---@param userID privateUserId
+---@param playerName string
+---@return boolean
 function Playerbase:nameTaken(userID, playerName)
 
   for key, value in pairs(self.players) do

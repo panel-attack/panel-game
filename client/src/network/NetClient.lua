@@ -73,8 +73,9 @@ local function processSpectatorListMessage(self, message)
   end
 end
 
-local function processCharacterSelectMessage(self, message)
-  -- receiving a character select message means that both players have reported their game results to the server
+---@param self NetClient
+local function processGameResultMessage(self, message)
+  -- receiving a gameResult message means that both players have reported their game results to the server
   -- that means from here on it is expected to receive no further input messages from either player
   -- if we went game over first, the opponent will notice later and keep sending inputs until we went game over on their end too
   -- these extra messages will remain unprocessed in the queue and need to be cleared up so they don't get applied the next match
@@ -84,22 +85,17 @@ local function processCharacterSelectMessage(self, message)
     return
   end
 
-  -- character_select and create_room are the same message
-  -- except that character_select has an additional character_select = true flag
-  for _, messagePlayer in ipairs(message.players) do
-    for _, roomPlayer in ipairs(self.room.players) do
-      if messagePlayer.playerNumber == roomPlayer.playerNumber then
-        if messagePlayer.ratingInfo then
-          roomPlayer:setRating(messagePlayer.ratingInfo.new)
-          roomPlayer:setLeague(messagePlayer.ratingInfo.league)
-        end
-        if not roomPlayer.isLocal then
-          roomPlayer:updateSettings(messagePlayer)
-        end
-      end
+  for _, roomPlayer in ipairs(self.room.players) do
+    local messagePlayer = message.gameResult[roomPlayer.playerNumber]
+    roomPlayer:setWinCount(messagePlayer.winCount)
+
+    if messagePlayer.ratingInfo then
+      roomPlayer:setRating(messagePlayer.ratingInfo.new)
+      roomPlayer:setLeague(messagePlayer.ratingInfo.league)
     end
   end
 
+  self.room:updateWinrates()
   self.room:updateExpectedWinrates()
   self.state = states.ROOM
 end
@@ -145,8 +141,7 @@ local function processMatchStartMessage(self, message)
   for _, playerSettings in ipairs(message.playerSettings) do
     -- contains level, characterId, panelId
     for _, player in ipairs(self.room.players) do
-      -- TODO: Verify that matching by publicId actually works
-      if playerSettings.publicId == player.publicId then
+      if playerSettings.playerNumber == player.playerNumber then
         -- verify that settings on server and local match to prevent desync / crash
         if playerSettings.level ~= player.settings.level then
           player:setLevel(playerSettings.level)
@@ -186,14 +181,6 @@ local function processMatchStartMessage(self, message)
   self.tcpClient:dropOldInputMessages()
   self.room:startMatch(message.stageId, message.seed)
   self.state = states.INGAME
-end
-
-local function processWinCountsMessage(self, message)
-  if not self.room then
-    return
-  end
-
-  self.room:setWinCounts(message.win_counts)
 end
 
 local function processRankedStatusMessage(self, message)
@@ -287,7 +274,7 @@ local function createListeners(self)
   messageListeners.leave_room = createListener(self, "leave_room", processLeaveRoomMessage)
   messageListeners.match_start = createListener(self, "match_start", processMatchStartMessage)
   messageListeners.taunt = createListener(self, "taunt", processTauntMessage)
-  messageListeners.character_select = createListener(self, "character_select", processCharacterSelectMessage)
+  messageListeners.gameResult = createListener(self, "gameResult", processGameResultMessage)
   messageListeners.spectators = createListener(self, "spectators", processSpectatorListMessage)
 
   return messageListeners
@@ -329,7 +316,7 @@ local NetClient = class(function(self)
     leave_room = messageListeners.leave_room,
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
-    character_select = messageListeners.character_select
+    gameResult = messageListeners.gameResult
   }
 
   -- all listeners running while in a match
@@ -339,7 +326,7 @@ local NetClient = class(function(self)
     -- for spectators catching up to an ongoing match, a match_start acts as a cancel
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
-    character_select = messageListeners.character_select
+    gameResult = messageListeners.gameResult
   }
 
   self.messageListeners = messageListeners
