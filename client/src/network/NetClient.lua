@@ -271,6 +271,7 @@ end
 
 local function handleGameAbort(self, gameAbortMessage)
   if self.room and self.room.match then
+    self.tcpClient:dropOldInputMessages()
     self.room.match:abort()
     self.state = states.ROOM
   end
@@ -555,13 +556,10 @@ function NetClient:update()
       listener:listen()
     end
   elseif self.state == states.INGAME then
+    processInputMessages(self)
+
     for _, listener in pairs(self.matchListeners) do
       listener:listen()
-    end
-    -- we could receive a leaveRoom message and the room could get axed while processing listeners
-    -- so always need to check if the room is still there
-    if self.room and self.room.match then
-      processInputMessages(self)
     end
   end
 end

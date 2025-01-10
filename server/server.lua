@@ -497,6 +497,15 @@ end
 
 function Server:processMessages()
   for index, connection in pairs(self.connections) do
+    if connection.incomingInputQueue.last ~= -1 then
+      local q = connection.incomingInputQueue
+      local player = self.connectionToPlayer[connection]
+      for i = q.first, q.last do
+        self.playerToRoom[player]:broadcastInput(q[i], player)
+      end
+      q:shallowClear()
+    end
+
     if connection.incomingMessageQueue.last ~= -1 then
       local q = connection.incomingMessageQueue
       local player = self.connectionToPlayer[connection]
@@ -518,15 +527,6 @@ function Server:processMessages()
         end
       end
       q:clear()
-    end
-
-    if connection.incomingInputQueue.last ~= -1 then
-      local q = connection.incomingInputQueue
-      local player = self.connectionToPlayer[connection]
-      for i = q.first, q.last do
-        self.playerToRoom[player]:broadcastInput(q[i], player)
-      end
-      q:shallowClear()
     end
   end
 end

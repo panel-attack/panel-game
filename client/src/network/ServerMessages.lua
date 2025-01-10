@@ -1,3 +1,4 @@
+local Replay = require("common.data.Replay")
 -- this file forms an abstraction layer to translate the messages sent by the server to a format understood by the client
 -- the client should expect the formats specified in common/network/ServerProtocol which may extend to other standardised interop formats in common/data
 -- e.g. Replay or LevelData
@@ -151,6 +152,10 @@ function ServerMessages.sanitizeServerMessage(message)
         publicId = publicId,
         settings = sanitizePlayerSettings1(player.settings),
       }
+    end
+
+    if message.content.replay then
+      message.content.replay = Replay.createFromTable(message.content.replay, false)
     end
 
     return
