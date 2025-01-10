@@ -590,7 +590,7 @@ function Server:processMessage(message, connection)
       self:handleLeaveRoom(player, player.name .. " left")
       return true
     elseif (player.state == "spectating") and message.leave_room then
-      if self.playerToRoom[player]:remove_spectator(player) then
+      if self.spectatorToRoom[player]:remove_spectator(player) then
         self:setLobbyChanged()
         return true
       end

@@ -65,7 +65,7 @@ local function getSceneByGameMode(gameMode)
   elseif gameMode.richPresenceLabel == "Time Attack" then
     return require("client.src.scenes.TimeAttackMenu")()
   elseif gameMode.richPresenceLabel == "1p vs self" then
-    return require("client.src.scenes.VsSelfGame")()
+    return require("client.src.scenes.CharacterSelectVsSelf")()
   end
 end
 

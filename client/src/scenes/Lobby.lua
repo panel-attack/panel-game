@@ -66,6 +66,12 @@ function Lobby:initLobbyMenu()
     MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
       GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_ENDLESS"))
     end),
+    MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
+      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"))
+    end),
+    MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
+      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
+    end),
     MenuItem.createButtonMenuItem("lb_show_board", nil, nil, function()
       self:toggleLeaderboard()
     end),
@@ -135,7 +141,7 @@ function Lobby:onLobbyStateUpdate(lobbyState)
   local desiredIndex = self.lobbyMenu.selectedIndex
 
   -- cleanup previous lobby menu
-  while #self.lobbyMenu.menuItems > 4 do
+  while #self.lobbyMenu.menuItems > 6 do
     self.lobbyMenu:removeMenuItemAtIndex(2)
   end
   self.lobbyMenu:setSelectedIndex(1)

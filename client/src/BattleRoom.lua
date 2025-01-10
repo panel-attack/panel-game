@@ -59,8 +59,9 @@ function BattleRoom.createFromMatch(match)
   gameMode.stackInteraction = match.stackInteraction
   gameMode.winConditions = deepcpy(match.winConditions)
   gameMode.gameOverConditions = deepcpy(match.gameOverConditions)
+  gameMode.timeLimit = match.timeLimit
 
-  local battleRoom = BattleRoom(gameMode)
+  local battleRoom = BattleRoom(gameMode, GameBase)
 
   for i = 1, #match.players do
     battleRoom:addPlayer(match.players[i])
