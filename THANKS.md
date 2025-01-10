@@ -10,7 +10,7 @@ Jon_12156 - ongoing maintenance and improvements to the game, including spectato
 
 JamesVanBoxtel - ongoing maintenance and improvements to the game, including high resolution support, telegraph, challenge mode, debug tools. Also main creator of the modern Panel Attack theme.
 
-Shosoul - ongoing maintenance and improvements, especially server side and networking. Training mode, telegraph, discord rich presence, server database.
+AegisCrusader - ongoing maintenance and improvements, especially server side and networking. Training mode, telegraph, discord rich presence, server database.
 
 Endaris - ongoing maintenance and improvements. Clear puzzles, per-combo SFX, client-side performance optimizations, engine and project refactoring, documentation, UI rework, github integration, extended replay support.
 
