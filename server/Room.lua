@@ -115,8 +115,10 @@ function Room:start_match()
   self.stageId = self.players[stageIndex].stage
 
   self.game = ServerGame.createFromRoomState(self)
-
-  local message = ServerProtocol.startMatch(self.roomNumber, self.game.replay)
+  local replay = self.game:getPartialReplay(false)
+  -- games generated via createFromRoomState always have a replay
+  ---@cast replay -nil
+  local message = ServerProtocol.startMatch(self.roomNumber, replay)
   self:broadcastJson(message)
 
   for i, player in ipairs(self.players) do

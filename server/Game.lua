@@ -50,7 +50,7 @@ function Game.createFromRoomState(room)
     replayPlayer:setInputMethod(player.inputMethod)
     -- TODO: pack the adjacent color setting with level data or send it with player settings
     -- this is not something for the server to decide, it should just take what it gets
-    if game.replay.gameMode.StackInteractions == GameModes.StackInteractions.NONE then
+    if game.replay.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
       replayPlayer:setAllowAdjacentColors(true)
     else
       replayPlayer:setAllowAdjacentColors(player.level < 8)

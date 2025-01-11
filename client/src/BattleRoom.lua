@@ -116,20 +116,36 @@ function BattleRoom.createFromServerMessage(message)
     battleRoom = BattleRoom(gameMode)
     for i, player in ipairs(message.players) do
       local p
-      -- match by name so devs can play against themselves still
+
+      -- match by name so devs can play against themselves still; eventually we'll want to match by publicId instead
       if player.name == GAME.localPlayer.name then
         logger.debug("Local player is player number " .. player.playerNumber)
         p = GAME.localPlayer
-        GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
       else
         p = Player(player.name, player.publicId or -i, false)
-        p:updateSettings(player.settings)
       end
-      p.playerNumber = player.playerNumber
+
+      -- order is important here as setting style will indirectly also override levelData so it needs to be before updateSettings
+      if gameMode.style ~= GameModes.Styles.CHOOSE then
+        p:setStyle(gameMode.style)
+      else
+        if player.settings.levelData then
+          if player.settings.levelData.frameConstants.GARBAGE_HOVER then
+            p:setStyle(GameModes.Styles.MODERN)
+          else
+            p:setStyle(GameModes.Styles.CLASSIC)
+          end
+        end
+      end
+
+      p:updateSettings(player.settings)
+
       if player.ratingInfo then
         p:setRating(player.ratingInfo.new)
         p:setLeague(player.ratingInfo.league)
       end
+
+      p.playerNumber = player.playerNumber
       battleRoom:addPlayer(p)
     end
   end

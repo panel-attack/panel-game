@@ -1,4 +1,5 @@
 local Replay = require("common.data.Replay")
+local GameModes = require("common.engine.GameModes")
 -- this file forms an abstraction layer to translate the messages sent by the server to a format understood by the client
 -- the client should expect the formats specified in common/network/ServerProtocol which may extend to other standardised interop formats in common/data
 -- e.g. Replay or LevelData
@@ -30,7 +31,11 @@ function ServerMessages.toServerMenuState(player)
   menuState.panels_dir = player.settings.panelId
   menuState.wants_ready = player.settings.wantsReady
   menuState.ranked = player.settings.wantsRanked
-  menuState.level = player.settings.level
+  if player.settings.style == GameModes.Styles.MODERN then
+    menuState.level = player.settings.level
+  else
+    menuState.level = player.settings.difficulty
+  end
   menuState.loaded = player.hasLoaded
   menuState.ready = menuState.loaded and menuState.wants_ready
   menuState.inputMethod = player.settings.inputMethod
@@ -82,7 +87,7 @@ function ServerMessages.sanitizeRoomMessage(message)
     return { gameResult = message.content }
   elseif message.type == "matchStart" then
     ---@type Replay
-    local replay = message.content
+    local replay = Replay.createFromTable(message.content, false)
     local settings = {}
     for i, player in ipairs(replay.players) do
       settings[i] = shallowcpy(player.settings)
@@ -95,6 +100,7 @@ function ServerMessages.sanitizeRoomMessage(message)
       seed = replay.seed,
       ranked = replay.ranked,
       stageId = replay.stageId,
+      replay = replay,
       match_start = true,
     }
   elseif message.type == "spectatorUpdate" then

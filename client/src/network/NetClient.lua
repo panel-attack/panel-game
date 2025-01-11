@@ -198,7 +198,7 @@ local function processMatchStartMessage(self, message)
   end
 
   self.tcpClient:dropOldInputMessages()
-  self.room:startMatch(message.stageId, message.seed)
+  self.room:startMatch(message.stageId, message.seed, message.replay)
   self:setState(states.INGAME)
 end
 
