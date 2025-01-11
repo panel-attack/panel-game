@@ -139,9 +139,11 @@ function Room:prepare_character_select()
   end
 end
 
----@return "character select"|"lobby"|"not_logged_in"|"playing"|"spectating"
+---@return "character select"|"lobby"|"not_logged_in"|"playing"|"spectating"|"closed"
 function Room:state()
-  if self.players[1].state == "character select" then
+  if #self.players == 0 then
+    return "closed"
+  elseif self.players[1].state == "character select" then
     return "character select"
   elseif self.players[1].state == "playing" then
     return "playing"
@@ -192,9 +194,13 @@ function Room:remove_spectator(spectator)
       break
     end
   end
-  local spectatorList = self:spectator_names()
-  logger.debug("sending spectator list: " .. json.encode(spectatorList))
-  self:broadcastJson(ServerProtocol.updateSpectators(spectatorList))
+
+  if lobbyChanged then
+    local spectatorList = self:spectator_names()
+    logger.debug("sending spectator list: " .. json.encode(spectatorList))
+    self:broadcastJson(ServerProtocol.updateSpectators(spectatorList))
+  end
+
   return lobbyChanged
 end
 
@@ -213,11 +219,11 @@ function Room:close(reason)
     if spectator.room then
       spectator.state = "lobby"
       spectator:removeFromRoom(self, reason)
+      self.spectators[i] = nil
     end
   end
 
   self.signalSubscriptions = nil
-  self.spectators = nil
 end
 
 function Room:sendJsonToSpectators(message)

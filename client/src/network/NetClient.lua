@@ -13,6 +13,7 @@ local GameCatchUp = require("client.src.scenes.GameCatchUp")
 local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
+local LevelData = require("common.data.LevelData")
 
 ---@enum NetClientStates
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
@@ -159,6 +160,11 @@ local function processMatchStartMessage(self, message)
         if playerSettings.level ~= player.settings.level then
           player:setLevel(playerSettings.level)
         end
+        if playerSettings.levelData and LevelData.validate(playerSettings.levelData) then
+          playerSettings.levelData = setmetatable(playerSettings.levelData, LevelData)
+          player:setLevelData(playerSettings.levelData)
+        end
+
         if player.isLocal then
           if not player.inputConfiguration then
             -- fallback in case the player lost their input config while the server sent the message

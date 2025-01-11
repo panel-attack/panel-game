@@ -517,7 +517,7 @@ function Server:processMessages()
           end
         else
           if player then
-            logger.error("Incoming message from " .. player.name .. " in state " .. player.state .. " caused an error." .. "\nJ-Message:\n" .. q[i])
+            logger.error("Incoming message from " .. (player.name or connection.index) .. " in state " .. (player.state or "unknown") .. " caused an error." .. "\nJ-Message:\n" .. q[i])
             if self.playerToRoom[player] then
               logger.error("Room state during error:\n" .. self.playerToRoom[player]:toString())
             end
@@ -590,7 +590,7 @@ function Server:processMessage(message, connection)
       self:handleLeaveRoom(player, player.name .. " left")
       return true
     elseif (player.state == "spectating") and message.leave_room then
-      if self.spectatorToRoom[player]:remove_spectator(player) then
+      if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
         self:setLobbyChanged()
         return true
       end
