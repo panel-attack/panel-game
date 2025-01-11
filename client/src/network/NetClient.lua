@@ -234,13 +234,15 @@ end
 
 local function processInputMessages(self)
   local messages = self.tcpClient.receivedMessageQueue:pop_all_with(NetworkProtocol.serverMessageTypes.opponentInput.prefix, NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix)
-  for _, msg in ipairs(messages) do
-    for type, data in pairs(msg) do
-      logger.trace("Processing: " .. type .. " with data:" .. data)
-      if type == NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix then
-        self.room.match.stacks[1]:receiveConfirmedInput(data)
-      elseif type == NetworkProtocol.serverMessageTypes.opponentInput.prefix then
-        self.room.match.stacks[2]:receiveConfirmedInput(data)
+  if self.room and self.room.match then
+    for _, msg in ipairs(messages) do
+      for type, data in pairs(msg) do
+        logger.trace("Processing: " .. type .. " with data:" .. data)
+        if type == NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix then
+          self.room.match.stacks[1]:receiveConfirmedInput(data)
+        elseif type == NetworkProtocol.serverMessageTypes.opponentInput.prefix then
+          self.room.match.stacks[2]:receiveConfirmedInput(data)
+        end
       end
     end
   end
