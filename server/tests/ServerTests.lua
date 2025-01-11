@@ -244,8 +244,73 @@ local function testLobbyDataComposition()
   assert(not message.players["Bob"])
 end
 
+local function testSinglePlayer()
+  local server = ServerTesting.getTestServer()
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+
+  ServerTesting.clearOutgoingMessages({bob, alice})
+
+  bob.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset("ONE_PLAYER_VS_SELF")).messageText))
+  server:update()
+  assert(server.playerToRoom[bob])
+  local message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "createRoom")
+
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyState")
+  assert(#message.content.spectatable == 1)
+
+  alice.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Alice", server.playerToRoom[bob].roomNumber).messageText))
+  server:update()
+
+  assert(server.spectatorToRoom[alice] == server.playerToRoom[bob])
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectatorUpdate")
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectateRequestGranted" and message.content.replay == nil)
+  assert(deep_content_equal(message.content.gameMode, GameModes.getPreset("ONE_PLAYER_VS_SELF")))
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectatorUpdate")
+
+  bob.connection:receiveMessage(readyMessage)
+  server:update()
+
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "matchStart")
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "matchStart")
+
+  alice.connection:receiveMessage(json.encode(ClientProtocol.leaveRoom().messageText))
+  server:update()
+
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectatorUpdate")
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "leaveRoom")
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyState")
+
+  alice.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Alice", server.playerToRoom[bob].roomNumber).messageText))
+  server:update()
+
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectatorUpdate")
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectateRequestGranted" and message.content.replay ~= nil)
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "spectatorUpdate")
+
+  bob.connection:receiveMessage(json.encode(ClientProtocol.sendMatchAbort(server.playerToRoom[bob].roomNumber).messageText))
+  server:update()
+
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "gameAbort")
+end
+
 testLogin()
 testRoomSetup()
 testGameplay()
 testDisconnect()
 testLobbyDataComposition()
+testSinglePlayer()
