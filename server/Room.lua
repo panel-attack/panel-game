@@ -66,7 +66,7 @@ function(self, roomNumber, players, gameMode, leaderboard)
   end
 
   if self.leaderboard then
-    self.ranked, self.rankedReasons = self.leaderboard:rating_adjustment_approved(self.players)
+    self.ranked, self.rankedReasons = self:rating_adjustment_approved()
   else
     self.ranked = false
     self.rankedReasons = { "No leaderboard attached to the room" }
@@ -87,8 +87,8 @@ end
 
 function Room:onPlayerSettingsUpdate(player)
   if self:state() == "character select" then
-    logger.debug("about to check for rating_adjustment_approval for " .. player.name .. " and " .. player.name)
-    if tableUtils.trueForAll(self.players, "wants_ranked_match") then
+    if self.ranked or player.wants_ranked_match then
+      logger.debug("about to check for rating_adjustment_approval for " .. player.name)
       local ranked_match_approved, reasons = self:rating_adjustment_approved()
       self:broadcastJson(ServerProtocol.updateRankedStatus(self.roomNumber, ranked_match_approved, reasons))
     end

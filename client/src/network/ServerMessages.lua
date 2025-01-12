@@ -107,15 +107,10 @@ function ServerMessages.sanitizeRoomMessage(message)
   elseif message.type == "spectatorUpdate" then
     return { spectators = message.content }
   elseif message.type == "rankedUpdate" then
-    local msg = { reasons = message.content.reasons}
-
-    if message.content.ranked then
-      msg.ranked_match_approved = true
-    else
-      msg.ranked_match_denied = true
-    end
-
-    return msg
+    return {
+      ranked_match_approved = message.content.ranked,
+      reasons = message.content.reasons,
+    }
   elseif message.type == "gameAbort" then
     return { gameAbort = true, source = message.content.source }
   end

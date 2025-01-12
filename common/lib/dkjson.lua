@@ -362,7 +362,7 @@ encode2 = function (value, indent, level, buffer, buflen, tables, globalorder, s
 end
 
 ---@overload fun(value: table): string
----@overload fun(value: table, state: table): boolean
+---@overload fun(value: table, state: table): (boolean | string)
 function json.encode (value, state)
   state = state or {}
   local oldbuffer = state.buffer

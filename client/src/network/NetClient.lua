@@ -299,7 +299,6 @@ local function createListeners(self)
   messageListeners.game_request = createListener(self, "game_request", processGameRequest)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)
-  messageListeners.ranked_match_denied = createListener(self, "ranked_match_denied", processRankedStatusMessage)
   messageListeners.leave_room = createListener(self, "leave_room", processLeaveRoomMessage)
   messageListeners.match_start = createListener(self, "match_start", processMatchStartMessage)
   messageListeners.taunt = createListener(self, "taunt", processTauntMessage)
@@ -342,7 +341,6 @@ local NetClient = class(function(self)
   -- all listeners running while in a room but not in a match
   self.roomListeners = {
     ranked_match_approved = messageListeners.ranked_match_approved,
-    ranked_match_denied = messageListeners.ranked_match_denied,
     leave_room = messageListeners.leave_room,
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
