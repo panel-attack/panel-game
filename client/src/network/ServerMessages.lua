@@ -92,6 +92,7 @@ function ServerMessages.sanitizeRoomMessage(message)
     for i, player in ipairs(replay.players) do
       settings[i] = shallowcpy(player.settings)
       settings[i].publicId = player.publicId
+      settings[i].playerNumber = i
     end
 
     return
