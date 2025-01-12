@@ -200,7 +200,7 @@ function Room:remove_spectator(spectator)
   if lobbyChanged then
     local spectatorList = self:spectator_names()
     logger.debug("sending spectator list: " .. json.encode(spectatorList))
-    self:broadcastJson(ServerProtocol.updateSpectators(spectatorList))
+    self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, spectatorList))
   end
 
   return lobbyChanged

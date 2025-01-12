@@ -401,6 +401,8 @@ local spectatorUpdateTemplate = {
   content = nil
 }
 
+---@param roomNumber integer
+---@param spectators string[]
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.updateSpectators(roomNumber, spectators)
   local spectatorUpdateMessage = spectatorUpdateTemplate
