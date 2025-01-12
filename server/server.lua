@@ -563,7 +563,7 @@ function Server:processMessage(message, connection)
   else
     local player = self.connectionToPlayer[connection]
     if message.logout then
-      self:closeConnection(connection, player.name .. "logged out")
+      self:closeConnection(connection, player.name .. " logged out")
       return false
     elseif player.state == "lobby" and message.game_request then
       if message.game_request.sender == player.name then
