@@ -834,12 +834,13 @@ end
 
 ---@param game ServerGame
 function Server:processGameEnd(game)
+  logger.debug("Processing game end")
   self:setLobbyChanged()
 
-  -- this is a sufficient criteria only by incidence as only the 2P VS gameMode has playerCount set to 2
+  -- this is a sufficient criteria only by incidence as it remains the only 2 player online game mode so far
   -- there needs to be a better mechanism to validate whether a game should be persisted / persisted for a leaderboard
   -- as the current persistGame somewhat assumes both (explicit player number and that the game was played to determine a winner/placement)
-  if game and game.complete and game.replay.gameMode.playerCount == 2 then
+  if game and game.complete and #game.replay.players == 2 then
     self.persistence.persistGame(game)
   end
 end
