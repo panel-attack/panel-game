@@ -500,8 +500,13 @@ function Server:processMessages()
     if connection.incomingInputQueue.last ~= -1 then
       local q = connection.incomingInputQueue
       local player = self.connectionToPlayer[connection]
-      for i = q.first, q.last do
-        self.playerToRoom[player]:broadcastInput(q[i], player)
+      if player then
+        local room = self.playerToRoom[player]
+        if room then
+          for i = q.first, q.last do
+            self.playerToRoom[player]:broadcastInput(q[i], player)
+          end
+        end
       end
       q:shallowClear()
     end
