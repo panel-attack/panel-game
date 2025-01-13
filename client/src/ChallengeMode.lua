@@ -11,14 +11,12 @@ require("client.src.BattleRoom")
 -- Challenge Mode is a particular play through of the challenge mode in the game, it contains all the settings for the mode.
 local ChallengeMode =
   class(
-  function(self, difficulty, stageIndex)
-    self.mode = GameModes.getPreset("ONE_PLAYER_CHALLENGE")
+  function(self, mode, gameScene, difficulty, stageIndex)
     self.stages = self:createStages(difficulty)
     self.difficulty = difficulty
     self.difficultyName = loc("challenge_difficulty_" .. difficulty)
     self.continues = 0
     self.expendedTime = 0
-    self.gameScene = Game1pChallenge
     self.challengeComplete = false
 
     self:addPlayer(GAME.localPlayer)
@@ -32,6 +30,10 @@ local ChallengeMode =
   end,
   BattleRoom
 )
+
+function ChallengeMode.create(difficulty, stageIndex)
+  return ChallengeMode(GameModes.getPreset("ONE_PLAYER_CHALLENGE"), Game1pChallenge, difficulty, stageIndex)
+end
 
 ChallengeMode.numDifficulties = 8
 
