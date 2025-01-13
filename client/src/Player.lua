@@ -232,6 +232,7 @@ function Player:setPuzzleIndex(puzzleIndex)
 end
 
 function Player:setRating(rating)
+  rating = math.round(rating)
   if self.rating and tonumber(self.rating) then
     -- only save a rating if we actually have one, tonumber assures that rating does not track placement progress instead
     self.ratingHistory[#self.ratingHistory + 1] = self.rating
