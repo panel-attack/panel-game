@@ -84,6 +84,7 @@ function ServerMessages.sanitizeRoomMessage(message)
   if message.type == "leaveRoom" then
     return {leave_room = true, reason = message.content.reason}
   elseif message.type == "gameResult" then
+    message.content.ratingInfo = message.content.rating
     return { gameResult = message.content }
   elseif message.type == "matchStart" then
     ---@type Replay
