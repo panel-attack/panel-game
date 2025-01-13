@@ -24,6 +24,7 @@ local consts = require("common.engine.consts")
 ---@field state BattleRoomState
 ---@field matchesPlayed integer
 ---@field online boolean
+---@field gameScene table
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
 BattleRoom = class(
 function(self, mode, gameScene)
@@ -158,8 +159,8 @@ function BattleRoom.createFromServerMessage(message)
   return battleRoom
 end
 
-function BattleRoom.createLocalFromGameMode(gameMode)
-  local battleRoom = BattleRoom(gameMode)
+function BattleRoom.createLocalFromGameMode(gameMode, gameScene)
+  local battleRoom = BattleRoom(gameMode, gameScene)
 
   if gameMode.playerCount == 1 then
     -- always use the game client's local player
