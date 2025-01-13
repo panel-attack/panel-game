@@ -93,6 +93,9 @@ local function login(tcpClient, ip, port)
           else --if result.login_denied then
             result.loggedIn = false
             result.message = loc("lb_error_msg") .. "\n" .. value.reason
+            if value.ban_duration then
+              result.message = result.message .. "\n" .. value.ban_duration
+            end
             return result
           end
         else

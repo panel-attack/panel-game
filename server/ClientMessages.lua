@@ -27,6 +27,12 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeGameResult(clientMessage)
   elseif clientMessage.logout then
     return clientMessage
+  elseif clientMessage.type and clientMessage.type == "roomRequest" then
+    return ClientMessages.sanitizeRoomRequest(clientMessage)
+  elseif clientMessage.type and clientMessage.type == "matchAbort" then
+    return ClientMessages.sanitizeMatchAbort(clientMessage)
+  elseif clientMessage.error_report then
+    return clientMessage
   else
     local errorMsg = "Received an unexpected message"
     local messageJson = json.encode(clientMessage)
@@ -40,6 +46,24 @@ function ClientMessages.sanitizeMessage(clientMessage)
   end
 end
 
+---@class ServerIncomingPlayerSettings
+---@field cursor string?
+---@field stage string?
+---@field stage_is_random string?
+---@field ready boolean?
+---@field character string?
+---@field character_is_random string?
+---@field panels_dir string?
+---@field level integer?
+---@field ranked boolean?
+---@field inputMethod InputMethod?
+---@field wants_ready boolean?
+---@field loaded boolean?
+---@field publicId integer?
+---@field levelData LevelData?
+---@field wants_ranked_match boolean?
+
+---@return {playerSettings: ServerIncomingPlayerSettings}
 function ClientMessages.sanitizeMenuState(playerSettings)
   local sanitized = {}
 
@@ -144,6 +168,25 @@ function ClientMessages.sanitizeTaunt(taunt)
     taunt = taunt.taunt,
     type = taunt.type,
     index = taunt.index
+  }
+
+  return sanitized
+end
+
+function ClientMessages.sanitizeRoomRequest(roomRequest)
+  local sanitized =
+  {
+    roomRequest = true,
+    gameMode = roomRequest.content.gameMode
+  }
+
+  return sanitized
+end
+
+function ClientMessages.sanitizeMatchAbort(matchAbort)
+  local sanitized =
+  {
+    matchAbort = true
   }
 
   return sanitized

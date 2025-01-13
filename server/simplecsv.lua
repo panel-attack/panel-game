@@ -1,3 +1,4 @@
+---@diagnostic disable: param-type-mismatch
 --[[
 Source: https://web.archive.org/web/20231014182633/https://nocurve.com/2014/03/05/simple-csv-read-and-write-using-lua/
 Provided under a public domain license (see comments).
@@ -35,6 +36,7 @@ sep: the separator character of the fields. Optionsl, defaults to ','
 tonum: whether to convert fields to numbers if possible. Optional. Defaults to true
 null: what value should null fields get. Optional. defaults to ''
 ]]
+
 module(..., package.seeall)
 
 ---------------------------------------------------------------------
@@ -70,10 +72,6 @@ end
 
 ---------------------------------------------------------------------
 function read(path, sep, tonum, null)
-  if fileExists(path) == false then
-    return nil
-  end
-
   tonum = tonum or true
   sep = sep or ","
   null = null or ""

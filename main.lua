@@ -12,6 +12,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.jprof.jprof")
 local Replay = require("common.data.Replay")
 require("common.lib.util")
+local consts = require("common.engine.consts")
 
 local Game = require("client.src.Game")
 -- move to load once global dependencies have been resolved
@@ -178,7 +179,7 @@ function love.errorhandler(msg)
     pcall(function()
       local match = GAME.battleRoom.match
       match.aborted = true
-      Replay.finalizeReplay(match, match.replay)
+      Replay.finalizeReplay(match.engine, match.replay)
       logger.info("Replay of match during crash:\n" .. json.encode(match.replay))
     end)
   end
@@ -203,9 +204,9 @@ function love.errorhandler(msg)
     local errorData = Game.errorData(sanitizedMessage, sanitizedTrace)
     local detailedErrorLogString = Game.detailedErrorLogString(errorData)
     errorData.detailedErrorLogString = detailedErrorLogString
-    -- if GAME_UPDATER_GAME_VERSION then
-    --   GAME.netClient:sendErrorReport(errorData, consts.SERVER_LOCATION, 59569)
-    -- end
+    if GAME.updater and not DEBUG_ENABLED and not os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") then
+      GAME.netClient:sendErrorReport(errorData, consts.SERVER_LOCATION, 49569)
+    end
     return detailedErrorLogString
   end
 

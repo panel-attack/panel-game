@@ -232,6 +232,7 @@ function Player:setPuzzleIndex(puzzleIndex)
 end
 
 function Player:setRating(rating)
+  rating = math.round(rating)
   if self.rating and tonumber(self.rating) then
     -- only save a rating if we actually have one, tonumber assures that rating does not track placement progress instead
     self.ratingHistory[#self.ratingHistory + 1] = self.rating
@@ -360,8 +361,18 @@ function Player:updateSettings(settings)
     self:setPanels(settings.panelId)
   end
 
-  if settings.level ~= nil then
-    self:setLevel(settings.level)
+  if settings.levelData ~= nil then
+    if settings.level ~= nil then
+      if settings.levelData.frameConstants.GARBAGE_HOVER then
+        self:setStyle(GameModes.Styles.MODERN)
+        self:setLevel(settings.level)
+      else
+        self:setStyle(GameModes.Styles.CLASSIC)
+        self:setDifficulty(settings.level)
+      end
+    end
+
+    self:setLevelData(settings.levelData)
   end
 
   if settings.inputMethod ~= nil then

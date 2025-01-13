@@ -523,7 +523,9 @@ function Match:hasEnded()
       self.gameOverClock = gameOverClock
       -- make sure everyone has run to the currently known game over clock
       -- because if they haven't they might still go gameover before that time
-      if tableUtils.trueForAll(self.stacks, function(stack) return stack.clock and stack.clock >= gameOverClock end) then
+      -- > instead of >= because game over clock is set to the frame it was running when it died but increments only at the end of the frame
+      -- so a stack running to gameOverClock won't have found out it's dying on the next frame
+      if tableUtils.trueForAll(self.stacks, function(stack) return stack.clock and stack.clock > gameOverClock end) then
         self.ended = true
         return true
       end

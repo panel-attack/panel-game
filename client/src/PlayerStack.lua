@@ -447,6 +447,15 @@ function PlayerStack.enqueue_card(self, chain, x, y, n)
   self.card_q:push({frame = 1, chain = chain, x = x, y = y, n = n, burstAtlas = card_burstAtlas, burstParticle = card_burstParticle})
 end
 
+
+-- frames to use for the card animation
+local CARD_ANIMATION = {false,
+   -1, 0, 1, 2, 3, 4, 4, 5, 5, 6,
+   6, 7, 7, 8, 8, 8, 9, 9, 9, 9,
+   9, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+   10, 10, 10, 10, 10, 10, 11, 11, 11, 11,
+   11}
+
 -- Update all the card frames used for doing the card animation
 function PlayerStack.update_cards(self)
   if self.canvas == nil then
@@ -455,9 +464,9 @@ function PlayerStack.update_cards(self)
 
   for i = self.card_q.first, self.card_q.last do
     local card = self.card_q[i]
-    if consts.CARD_ANIMATION[card.frame] then
+    if CARD_ANIMATION[card.frame] then
       card.frame = card.frame + 1
-      if (consts.CARD_ANIMATION[card.frame] == nil) then
+      if (CARD_ANIMATION[card.frame] == nil) then
         if config.popfx == true then
           GraphicsUtil:releaseQuad(card.burstParticle)
         end
@@ -473,9 +482,9 @@ end
 function PlayerStack.drawCards(self)
   for i = self.card_q.first, self.card_q.last do
     local card = self.card_q[i]
-    if consts.CARD_ANIMATION[card.frame] then
+    if CARD_ANIMATION[card.frame] then
       local draw_x = (self.panelOriginX) + (card.x - 1) * 16
-      local draw_y = (self.panelOriginY) + (11 - card.y) * 16 + self.engine.displacement - consts.CARD_ANIMATION[card.frame]
+      local draw_y = (self.panelOriginY) + (11 - card.y) * 16 + self.engine.displacement - CARD_ANIMATION[card.frame]
       -- Draw burst around card
       if card.burstAtlas and card.frame then
         GraphicsUtil.setColor(1, 1, 1, self:opacityForFrame(card.frame, 1, 22))

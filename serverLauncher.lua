@@ -8,13 +8,25 @@ require("server.server_globals")
 local util = require("common.lib.util")
 util.addToCPath("./common/lib/??")
 util.addToCPath("./server/lib/??")
-require("server.tests.ConnectionTests")
+require("server.tests.ServerTests")
+require("server.tests.LeaderboardTests")
+require("server.tests.RoomTests")
+require("server.tests.LoginTests")
 
 local database = require("server.PADatabase")
 local Server = require("server.server")
+local GameModes = require("common.engine.GameModes")
+local Persistence = require("server.Persistence")
 
+local server = Server(database, Persistence)
+server:initializePlayerData("players.txt")
+server:initializeLeaderboard(GameModes.getPreset("TWO_PLAYER_VS"), "leaderboard.csv")
+local isPlayerTableEmpty = database:getPlayerRecordCount() == 0
+if isPlayerTableEmpty then
+  server:importDatabase()
+end
+server:start()
 
-local currentServer = Server(database)
 while true do
-  currentServer:update()
+  server:update()
 end

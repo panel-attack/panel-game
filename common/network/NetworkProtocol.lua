@@ -6,7 +6,7 @@ local NetworkProtocol = {}
 -- Version 002 we supported unicode JSON
 -- Version 003 we updated login requirements and started sending the network version
 -- Version 004 server communicates replays in a new standardised format
-NetworkProtocol.NETWORK_VERSION = "004"
+NetworkProtocol.NETWORK_VERSION = "005"
 
 local messageEndMarker = "←J←"
 
@@ -55,6 +55,8 @@ function NetworkProtocol.markedMessageForTypeAndBody(type, body)
 end
 
 -- Returns the next message in the queue, or nil if none / error
+---@overload fun(messageBuffer: string, isServerMessage: boolean?): nil, nil, nil
+---@overload fun(messageBuffer: string, isServerMessage: boolean?): string, string, string
 function NetworkProtocol.getMessageFromString(messageBuffer, isServerMessage)
   assert(isServerMessage ~= nil)
 

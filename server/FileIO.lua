@@ -1,9 +1,12 @@
 local lfs = require("lfs")
 local logger = require("common.lib.logger")
-local tableUtils = require("common.lib.tableUtils")
 local csvfile = require("server.simplecsv")
 
-function makeDirectory(path) 
+local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
+
+local FileIO = {}
+
+function FileIO.makeDirectory(path)
   local status, error = pcall(
     function()
       lfs.mkdir(path)
@@ -14,15 +17,15 @@ function makeDirectory(path)
   end
 end
 
-function makeDirectoryRecursive(path)
+function FileIO.makeDirectoryRecursive(path)
   local sep, pStr = package.config:sub(1, 1), ""
   for dir in path:gmatch("[^" .. sep .. "]+") do
     pStr = pStr .. dir .. sep
-    makeDirectory(pStr)
+    FileIO.makeDirectory(pStr)
   end
 end
 
-function fileExists(name)
+function FileIO.fileExists(name)
   local f=io.open(name,"r")
   if f ~= nil then
     io.close(f)
@@ -32,45 +35,39 @@ function fileExists(name)
   end
 end
 
-function write_players_file(playerbase)
-  if playerbase.filename == nil then
-    return
-  end
-
+function FileIO.writeAsJson(data, filePath)
   local status, error = pcall(
     function()
-      local f = assert(io.open(playerbase.filename, "w"))
+      local f = assert(io.open(filePath, "w"))
       io.output(f)
-      io.write(json.encode(playerbase.players))
+      io.write(json.encode(data))
       io.close(f)
     end
   )
   if not status then
-    logger.error("Failed to write players file with error: " .. error)
+    logger.error("Failed to write file " .. filePath .. " with error: " .. error)
   end
 end
 
-function read_players_file(playerbase)
-  if playerbase.filename == nil then
-    return
-  end
-  
+function FileIO.readJson(filename)
+  local success, json =
   pcall(
     function()
-      local f = io.open(playerbase.filename, "r")
+      local f = io.open(filename, "r")
       if f then
         io.input(f)
         local data = io.read("*all")
-        playerbase.players = json.decode(data)
-        logger.info(table.length(playerbase.players) .. " players loaded")
         io.close(f)
+        return json.decode(data)
       end
     end
   )
+
+  return json
 end
 
 
-function logGameResult(player1ID, player2ID, player1Won, rankedValue)
+function FileIO.logGameResult(player1ID, player2ID, player1Won, rankedValue)
   local status, error = pcall(
     function()
       local f = assert(io.open("GameResults.csv", "a"))
@@ -84,20 +81,7 @@ function logGameResult(player1ID, player2ID, player1Won, rankedValue)
   end
 end
 
-function readGameResults()
-
-  local filename = "GameResults.csv"
-
-  local gameResults = nil
-  pcall(
-    function()
-      gameResults = csvfile.read(filename)
-    end
-  )
-  return gameResults
-end
-
-function write_error_report(error_report_json)
+function FileIO.write_error_report(error_report_json)
   local json_string = json.encode(error_report_json)
   if json_string:len() >= 5000 --[[5kB]] then
     return false
@@ -107,6 +91,7 @@ function write_error_report(error_report_json)
   local filename = "v" .. (error_report_json.engine_version or "000") .. "-" .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec) .. "_" .. (error_report_json.name or "Unknown") .. "-ErrorReport.json"
   return pcall(
     function()
+      FileIO.makeDirectoryRecursive("." .. sep .. "reports")
       local f = assert(io.open("reports" .. sep .. filename, "w"))
       io.output(f)
       io.write(json_string)
@@ -115,27 +100,15 @@ function write_error_report(error_report_json)
   )
 end
 
-function write_leaderboard_file()
+---@param leaderboard Leaderboard
+function FileIO.write_leaderboard_file(leaderboard, path)
+  local leaderboard_table, public_leaderboard_table = leaderboard:toSheetData()
+
   local status, error = pcall(
     function()
-      -- local f = assert(io.open("leaderboard.txt", "w"))
-      -- io.output(f)
-      -- io.write(json.encode(leaderboard.players))
-      -- io.close(f)
-      --now also write a CSV version of the file
-      --local csv = "user_id,user_name,rating,placement_done,placement_rating,ranked_games_played,ranked_games_won,last_login_time"
-      local sep = package.config:sub(1, 1)
-      local leaderboard_table = {}
-      local public_leaderboard_table = {}
-      leaderboard_table[#leaderboard_table + 1] = {"user_id", "user_name", "rating", "placement_done", "placement_rating", "ranked_games_played", "ranked_games_won","last_login_time"}
-      public_leaderboard_table[#public_leaderboard_table + 1] = {"user_name", "rating", "ranked_games_played"} --excluding ranked_games_won for now because it doesn't track properly, and user_id because they are secret.
-      for user_id, v in pairs(leaderboard.players) do
-        leaderboard_table[#leaderboard_table + 1] = {user_id, v.user_name, v.rating, tostring(v.placement_done or ""), v.placement_rating, v.ranked_games_played, v.ranked_games_won, v.last_login_time}
-        public_leaderboard_table[#public_leaderboard_table + 1] = {v.user_name, v.rating, v.ranked_games_played}
-      end
-      csvfile.write("." .. sep .. "leaderboard.csv", leaderboard_table)
-      makeDirectoryRecursive("." .. sep .. "ftp")
-      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_leaderboard.csv", public_leaderboard_table)
+      csvfile.write("." .. sep .. path, leaderboard_table)
+      FileIO.makeDirectoryRecursive("." .. sep .. "ftp")
+      csvfile.write("." .. sep .. "ftp" .. sep .. "PA_public_" .. path, public_leaderboard_table)
     end
   )
   if not status then
@@ -143,43 +116,26 @@ function write_leaderboard_file()
   end
 end
 
-function read_leaderboard_file()
-  local filename = "./leaderboard.csv"
-
+function FileIO.readCsvFile(filePath)
+  if FileIO.fileExists(filePath) == false then
+    return nil
+  end
   local csv_table = {}
   local status, error = pcall(
     function()
-      csv_table = csvfile.read(filename)
+      csv_table = csvfile.read("." .. sep .. filePath)
     end
   )
+
   if not status then
-  elseif csv_table ~= nil and csv_table[2] then
-    logger.debug("loading leaderboard.csv")
-    for row = 2, #csv_table do
-      csv_table[row][1] = tostring(csv_table[row][1])
-      leaderboard.players[csv_table[row][1]] = {}
-      for col = 1, #csv_table[1] do
-        --Note csv_table[row][1] will be the player's user_id
-        --csv_table[1][col] will be a property name such as "rating"
-        if csv_table[row][col] == "" then
-          csv_table[row][col] = nil
-        end
-        --player with this user_id gets this property equal to the csv_table cell's value
-        if csv_table[1][col] == "user_name" then
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = tostring(csv_table[row][col])
-        elseif csv_table[1][col] == "rating" then
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = tonumber(csv_table[row][col])
-        elseif csv_table[1][col] == "placement_done" then
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = csv_table[row][col] and true and string.lower(csv_table[row][col]) ~= "false"
-        else
-          leaderboard.players[csv_table[row][1]][csv_table[1][col]] = csv_table[row][col]
-        end
-      end
-    end
+    logger.error("Failed reading file " .. filePath .. " with the csv reader:\n" .. tostring(error))
+    return nil, error
+  else
+    return csv_table
   end
 end
 
-function read_user_placement_match_file(user_id)
+function FileIO.read_user_placement_match_file(user_id)
   return pcall(
     function()
       local sep = package.config:sub(1, 1)
@@ -223,11 +179,11 @@ function read_user_placement_match_file(user_id)
   )
 end
 
-function move_user_placement_file_to_complete(user_id)
+function FileIO.move_user_placement_file_to_complete(user_id)
   local status, error = pcall(
     function()
       local sep = package.config:sub(1, 1)
-      makeDirectoryRecursive("./placement_matches/complete")
+      FileIO.makeDirectoryRecursive("./placement_matches/complete")
       local moved, err = os.rename("./placement_matches/incomplete/" .. user_id .. ".csv", "./placement_matches/complete/" .. user_id .. ".csv")
     end
   )
@@ -236,14 +192,14 @@ function move_user_placement_file_to_complete(user_id)
   end
 end
 
-function write_user_placement_match_file(user_id, placement_matches)
+function FileIO.write_user_placement_match_file(user_id, placement_matches)
   local sep = package.config:sub(1, 1)
   local pm_table = {}
   pm_table[#pm_table + 1] = {"op_user_id", "op_name", "op_rating", "outcome"}
   for k, v in ipairs(placement_matches) do
     pm_table[#pm_table + 1] = {v.op_user_id, v.op_name, v.op_rating, v.outcome}
   end
-  makeDirectoryRecursive("placement_matches" .. sep .. "incomplete")
+  FileIO.makeDirectoryRecursive("placement_matches" .. sep .. "incomplete")
   local fullFileName = "placement_matches" .. sep .. "incomplete" .. sep .. user_id .. ".csv"
   local status, error = pcall(
     function()
@@ -255,11 +211,11 @@ function write_user_placement_match_file(user_id, placement_matches)
   end
 end
 
-function write_replay_file(replay, path, filename)
+function FileIO.write_replay_file(replay, path, filename)
   local sep = package.config:sub(1, 1)
   local status, error = pcall(
     function()
-      makeDirectoryRecursive(path)
+      FileIO.makeDirectoryRecursive(path)
       local f = assert(io.open(path .. sep .. filename, "w"))
       io.output(f)
       io.write(json.encode(replay))
@@ -271,7 +227,7 @@ function write_replay_file(replay, path, filename)
   end
 end
 
-function read_csprng_seed_file()
+function FileIO.read_csprng_seed_file()
   pcall(
     function()
       local f = io.open("csprng_seed.txt", "r")
@@ -298,3 +254,21 @@ function read_csprng_seed_file()
     end
   )
 end
+
+---@param game ServerGame
+function FileIO.saveReplay(game)
+  for i, player in ipairs(game.players) do
+    if player.save_replays_publicly == "not at all" then
+      logger.debug("replay not saved because a player didn't want it saved")
+      return
+    end
+  end
+
+  local path = "ftp" .. sep .. game.replay:generatePath(sep)
+  local filename = game.replay:generateFileName() .. ".json"
+
+  logger.debug("saving replay as " .. path .. sep .. filename)
+  FileIO.write_replay_file(game.replay, path, filename)
+end
+
+return FileIO

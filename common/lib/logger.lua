@@ -2,6 +2,7 @@ local os = require("os")
 local socket
 if love then
   -- love comes with luasocket
+---@diagnostic disable-next-line: different-requires
   socket = require("socket")
 else
 ---@diagnostic disable-next-line: different-requires

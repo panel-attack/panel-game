@@ -35,6 +35,19 @@ local function newCanvasSnappedScale(self)
   return result
 end
 
+---@class PanelAttack
+---@field netClient NetClient
+---@field battleRoom BattleRoom?
+---@field globalCanvas love.Canvas
+---@field muteSound boolean
+---@field rich_presence table
+---@field input table
+---@field backgroundImage table
+---@field backgroundColor number[]
+---@field updater table?
+---@field automaticScales number[]
+---@field config UserConfig
+---@overload fun(): PanelAttack
 local Game = class(
   function(self)
     self.scores = require("client.src.scores")
@@ -235,13 +248,6 @@ function Game:setupRoutine()
 
   self:cleanupOldVersions()
   self:writeReleaseStreamDefinition()
-  -- Run all unit tests now that we have everything loaded
-  if TESTS_ENABLED then
-    self:runUnitTests()
-  end
-  if PERFORMANCE_TESTS_ENABLED then
-    self:runPerformanceTests()
-  end
 
   self:initializeLocalPlayer()
 end
@@ -343,7 +349,7 @@ end
 function Game:handleResize(newWidth, newHeight)
   if self.previousWindowWidth ~= newWidth or self.previousWindowHeight ~= newHeight then
     self:updateCanvasPositionAndScale(newWidth, newHeight)
-    if self.match then
+    if self.battleRoom and self.battleRoom.match then
       self.needsAssetReload = true
     else
       self:refreshCanvasAndImagesForNewScale()
@@ -362,7 +368,7 @@ function Game:update(dt)
     self.battleRoom:update(dt)
   end
   prof.pop("battleRoom update")
-  self.netClient:update(dt)
+  self.netClient:update()
 
   handleShortcuts()
 

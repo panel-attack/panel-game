@@ -144,6 +144,7 @@ if PROF_CAPTURE then
     end
 
     function profiler.connect(saveFullProfData, port, address)
+---@diagnostic disable-next-line: different-requires
         local socket = require("socket")
 
         local sock, err = socket.tcp()

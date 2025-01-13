@@ -4,7 +4,6 @@
 local socket = require("common.lib.socket")
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
-local NetworkProtocol = require("common.network.NetworkProtocol")
 local ServerProtocol = require("common.network.ServerProtocol")
 json = require("common.lib.dkjson")
 require("common.lib.mathExtensions")
@@ -13,38 +12,51 @@ require("common.lib.timezones")
 require("common.lib.csprng")
 require("server.stridx")
 require("server.server_globals")
-require("server.server_file_io")
 local Connection = require("server.Connection")
-require("server.Leaderboard")
-require("server.PlayerBase")
-require("server.Room")
+local Leaderboard = require("server.Leaderboard")
+local Playerbase = require("server.PlayerBase")
+local Room = require("server.Room")
+local ClientMessages = require("server.ClientMessages")
+local utf8 = require("common.lib.utf8Additions")
+local tableUtils = require("common.lib.tableUtils")
+local Player = require("server.Player")
+local util = require("common.lib.util")
+local FileIO = require("server.FileIO")
+local GameModes = require("common.engine.GameModes")
 
 local pairs = pairs
 local ipairs = ipairs
 local time = os.time
 
----@alias privateUserId integer | string
+---@alias privateUserId string
 
 -- Represents the full server object.
 -- Currently we are transitioning variables into this, but to start we will use this to define API
 ---@class Server
 ---@field socket TcpSocket the master socket for accepting incoming client connections
----@field database table the database object
+---@field database ServerDB the database object
 ---@field connectionNumberIndex integer GLOBAL counter of the next available connection index
 ---@field roomNumberIndex integer the next available room number
 ---@field rooms Room[] mapping of room number to room
----@field proposals table mapping of player name to a mapping of the players they have challenged
+---@field proposals table<ServerPlayer, table<ServerPlayer, table>> mapping of player name to a mapping of the players they have challenged
 ---@field connections Connection[] mapping of connection number to connection
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
----@field loaded_placement_matches table
+---@field connectionToPlayer table<Connection, ServerPlayer> Mapping of connections to the player they send for
+---@field playerToRoom table<ServerPlayer, Room>
+---@field spectatorToRoom table<ServerPlayer, Room>
+---@field nameToPlayer table<string, ServerPlayer>
 ---@field lastProcessTime integer
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
-Server =
-  class(
-  function(self, databaseParam)
+---@field leaderboard Leaderboard
+---@field persistence Persistence
+---@field _shuttingDown boolean
+local Server = class(
+---@param self Server
+---@param databaseParam ServerDB
+  function(self, databaseParam, persistence)
     self.connectionNumberIndex = 1
     self.roomNumberIndex = 1
     self.rooms = {}
@@ -52,44 +64,19 @@ Server =
     self.connections = {}
     self.nameToConnectionIndex = {}
     self.socketToConnectionIndex = {}
+    self.connectionToPlayer = {}
+    self.playerToRoom = {}
+    self.spectatorToRoom = {}
+    self.nameToPlayer = {}
     assert(databaseParam ~= nil)
     self.database = databaseParam
-    self.loaded_placement_matches = {
-      incomplete = {},
-      complete = {}
-    }
+    self.persistence = persistence
     self.lastProcessTime = time()
     self.lastFlushTime = self.lastProcessTime
     self.lobbyChanged = false
+    self._shuttingDown = false
 
-    logger.info("Starting up server with port: " .. (SERVER_PORT or 49569))
-    self.socket = socket.bind("*", SERVER_PORT or 49569)
-    self.socket:settimeout(0)
-    if TCP_NODELAY_ENABLED then
-      self.socket:setoption("tcp-nodelay", true)
-    end
-
-    self.playerbase = Playerbase("playerbase", "players.txt")
-    read_players_file(self.playerbase)
-    leaderboard = Leaderboard("leaderboard", self)
-    read_leaderboard_file()
-
-    local isPlayerTableEmpty = self.database:getPlayerRecordCount() == 0
-    if isPlayerTableEmpty then
-      self:importDatabase()
-    end
-
-    logger.debug("leaderboard json:")
-    logger.debug(json.encode(leaderboard.players))
-    write_leaderboard_file()
-    logger.debug("Leagues")
-    for k, v in ipairs(leagues) do
-      logger.debug(v.league .. ":  " .. v.min_rating)
-    end
-    logger.debug(os.time())
-    logger.debug("playerbase: " .. json.encode(self.playerbase.players))
-    logger.debug("leaderboard report: " .. json.encode(leaderboard:get_report()))
-    read_csprng_seed_file()
+    FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
     seed_from_mt(extract_mt())
     --timezone testing
@@ -104,7 +91,6 @@ Server =
     -- now = os.date("*t",to_UTC(server_start_time))
     -- local formatted_UTC_time = string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec)
     -- print("formatted UTC time: "..formatted_UTC_time)
-    logger.debug("RATING_SPREAD_MODIFIER: " .. (RATING_SPREAD_MODIFIER or "nil"))
     logger.debug("COMPRESS_REPLAYS_ENABLED: " .. (COMPRESS_REPLAYS_ENABLED and "true" or "false"))
     logger.debug("initialized!")
     -- print("get_timezone() output: "..get_timezone())
@@ -112,6 +98,75 @@ Server =
     -- print("get_tzoffset(get_timezone()) output:"..get_tzoffset(get_timezone()))    
   end
 )
+
+function Server:start()
+  logger.info("Starting up server with port: " .. (SERVER_PORT or 49569))
+  local s = socket.bind("*", SERVER_PORT or 49569)
+  if s then
+    self.socket = s
+  else
+    error("Failed to create server socket. Check if there are any other instances blocking the port")
+  end
+  self.socket:settimeout(0)
+  if TCP_NODELAY_ENABLED then
+    self.socket:setoption("tcp-nodelay", true)
+  end
+
+  logger.debug(os.time())
+end
+
+function Server:stop()
+  self._shuttingDown = true
+  self.socket:close()
+  self.socket = nil
+end
+
+---@param filePath string
+---@param playerData table<privateUserId, string>?
+function Server:initializePlayerData(filePath, playerData)
+  if not self.playerbase then
+    self.persistence.setPlayerIdsPath(filePath)
+    if not playerData then
+      playerData = self.persistence.getPlayerData()
+    else
+      -- do nothing, assume that's already parsed data
+    end
+
+    -- we don't want to design the API for persistence around the fact that we always need the entire playerData to write to disk
+    -- so hand it a reference so the design can be more atomic
+    self.persistence.setPlayerDataRef(playerData)
+
+    self.playerbase = Playerbase(playerData, self.persistence)
+    logger.debug("playerbase: " .. json.encode(self.playerbase.players))
+  else
+    logger.warn("Tried to load player data when the server already had player data loaded!\n" .. debug.traceback())
+  end
+end
+
+---@param gameMode GameMode
+---@param filePath string
+---@param data table?
+function Server:initializeLeaderboard(gameMode, filePath, data)
+  if not self.leaderboard then
+    self.persistence.setLeaderboardPath(filePath)
+    self.leaderboard = Leaderboard(gameMode, self.persistence)
+    if not data then
+      data = self.persistence.getLeaderboardData()
+    else
+      -- do nothing, assume that's already parsed data
+    end
+    if data then
+      self.leaderboard:importData(data)
+    end
+
+    logger.debug("leaderboard json:")
+    logger.debug(json.encode(self.leaderboard.players))
+    self.persistence.persistLeaderboard(self.leaderboard)
+    logger.debug("leaderboard report: " .. json.encode(self.leaderboard:get_report(self)))
+  else
+    logger.warn("Tried to load leaderboard data when the server already had its leaderboard loaded!\n" .. debug.traceback())
+  end
+end
 
 function Server:importDatabase()
   local usedNames = {}
@@ -129,14 +184,14 @@ function Server:importDatabase()
   logger.info("Importing leaderboard.csv to database")
   for k, v in pairs(cleanedPlayerData) do
     local rating = 0
-    if leaderboard.players[k] then
-      rating = leaderboard.players[k].rating
+    if self.leaderboard.players[k] then
+      rating = self.leaderboard.players[k].rating
     end
     self.database:insertNewPlayer(k, v)
     self.database:insertPlayerELOChange(k, rating, 0)
   end
 
-  local gameMatches = readGameResults()
+  local gameMatches = FileIO.readCsvFile("GameResults.csv")
   if gameMatches then -- only do it if there was a gameResults file to begin with
     logger.info("Importing GameResults.csv to database")
     for _, result in ipairs(gameMatches) do
@@ -157,21 +212,17 @@ function Server:importDatabase()
   self.database:commitTransaction() -- bulk commit every statement from the start of beginTransaction
 end
 
-local function addPublicPlayerData(players, playerName, player)
-  if not players or not player then
+local function addPublicPlayerData(players, player, ratingInfo)
+  if not players or not ratingInfo then
     return
   end
 
-  if not players[playerName] then
-    players[playerName] = {}
+  if not players[player.name] then
+    players[player.name] = { publicId = player.publicPlayerID }
   end
 
-  if player.rating then
-    players[playerName].rating = math.round(player.rating)
-  end
-
-  if player.ranked_games_played then
-    players[playerName].ranked_games_played = player.ranked_games_played
+  if ratingInfo and ratingInfo.placement_done then
+    players[player.name].rating = math.round(ratingInfo.rating)
   end
 end
 
@@ -182,75 +233,85 @@ end
 function Server:lobby_state()
   local names = {}
   local players = {}
-  for _, v in pairs(self.connections) do
-    if v.state == "lobby" then
-      names[#names + 1] = v.name
-      addPublicPlayerData(players, v.name, leaderboard.players[v.user_id])
+  for _, connection in pairs(self.connections) do
+    local player = self.connectionToPlayer[connection]
+    if player then
+      logger.debug("Player " .. player.name .. " state is " .. player.state)
+    end
+    if player and player.state == "lobby" then
+      names[#names + 1] = player.name
+      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
     end
   end
   local spectatableRooms = {}
-  for _, v in pairs(self.rooms) do
-    spectatableRooms[#spectatableRooms + 1] = {roomNumber = v.roomNumber, name = v.name, a = v.a.name, b = v.b.name, state = v:state()}
-    addPublicPlayerData(players, v.a.name, leaderboard.players[v.a.user_id])
-    addPublicPlayerData(players, v.b.name, leaderboard.players[v.b.user_id])
+  for _, room in pairs(self.rooms) do
+    spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, state = room:state()}
+    for i, player in ipairs(room.players) do
+      if i == 1 then
+        spectatableRooms[#spectatableRooms].a = room.players[i].name
+      else
+        spectatableRooms[#spectatableRooms].b = room.players[i].name
+      end
+      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
+    end
   end
   return {unpaired = names, spectatable = spectatableRooms, players = players}
 end
 
----@param senderName string
----@param receiverName string
-function Server:propose_game(senderName, receiverName)
-  logger.debug("propose game: " .. senderName .. " " .. receiverName)
-  local senderConnection = self.nameToConnectionIndex[senderName]
-  local receiverConnection = self.nameToConnectionIndex[receiverName]
-  if senderConnection then
----@diagnostic disable-next-line: cast-local-type
-    senderConnection = self.connections[senderConnection]
-  end
-  if receiverConnection then
----@diagnostic disable-next-line: cast-local-type
-    receiverConnection = self.connections[receiverConnection]
-  end
+---@param sender ServerPlayer
+---@param receiver ServerPlayer
+function Server:proposeGame(sender, receiver)
+  logger.debug("propose game: " .. sender.name .. " " .. receiver.name)
+
   local proposals = self.proposals
-  if senderConnection and senderConnection.state == "lobby" and receiverConnection and receiverConnection.state == "lobby" then
-    proposals[senderName] = proposals[senderName] or {}
-    proposals[receiverName] = proposals[receiverName] or {}
-    if proposals[senderName][receiverName] then
-      if proposals[senderName][receiverName][receiverName] then
-        self:create_room(senderConnection, receiverConnection)
+  if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
+    proposals[sender] = proposals[sender] or {}
+    proposals[receiver] = proposals[receiver] or {}
+    if proposals[sender][receiver] then
+      if proposals[sender][receiver][receiver] then
+        self:create_room(GameModes.getPreset("TWO_PLAYER_VS"), sender, receiver)
       end
     else
-      receiverConnection:sendJson(ServerProtocol.sendChallenge(senderName, receiverName))
-      local prop = {[senderName] = true}
-      proposals[senderName][receiverName] = prop
-      proposals[receiverName][senderName] = prop
+      receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver))
+      local prop = {[sender] = true}
+      proposals[sender][receiver] = prop
+      proposals[receiver][sender] = prop
     end
   end
 end
 
----@param name string
-function Server:clear_proposals(name)
+---@param player ServerPlayer
+function Server:clearProposals(player)
   local proposals = self.proposals
-  if proposals[name] then
-    for othername, _ in pairs(proposals[name]) do
-      proposals[name][othername] = nil
-      if proposals[othername] then
-        proposals[othername][name] = nil
+  if proposals[player] then
+    for otherPlayer, _ in pairs(proposals[player]) do
+      proposals[player][otherPlayer] = nil
+      if proposals[otherPlayer] then
+        proposals[otherPlayer][player] = nil
       end
     end
-    proposals[name] = nil
+    proposals[player] = nil
   end
 end
 
----@param a Connection
----@param b Connection
-function Server:create_room(a, b)
+---@param gameMode GameMode
+---@param ... ServerPlayer
+function Server:create_room(gameMode, ...)
   self:setLobbyChanged()
-  self:clear_proposals(a.name)
-  self:clear_proposals(b.name)
-  local new_room = Room(a, b, self.roomNumberIndex, leaderboard, self)
+  local players = {...}
+  local leaderboard
+  if self.leaderboard and deep_content_equal(gameMode, self.leaderboard.gameMode) then
+    leaderboard = self.leaderboard
+  end
+  local newRoom = Room(self.roomNumberIndex, players, gameMode, leaderboard)
+  newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
+  newRoom:connectSignal("matchEnd", self, self.processGameEnd)
   self.roomNumberIndex = self.roomNumberIndex + 1
-  self.rooms[new_room.roomNumber] = new_room
+  self.rooms[newRoom.roomNumber] = newRoom
+  for _, player in ipairs(players) do
+    self:clearProposals(player)
+    self.playerToRoom[player] = newRoom
+  end
 end
 
 ---@param roomNr integer
@@ -264,24 +325,22 @@ function Server:roomNumberToRoom(roomNr)
 end
 
 ---@param name string
----@return privateUserId
+---@return privateUserId?
 function Server:createNewUser(name)
   local user_id = nil
   while not user_id or self.playerbase.players[user_id] do
     user_id = self:generate_new_user_id()
   end
-  self.playerbase:updatePlayer(user_id, name)
-  self.database:insertNewPlayer(user_id, name)
-  self.database:insertPlayerELOChange(user_id, 0, 0)
-  return user_id
+  if self.playerbase:addPlayer(user_id, name) then
+    return user_id
+  end
 end
 
 function Server:changeUsername(privateUserID, username)
   self.playerbase:updatePlayer(privateUserID, username)
-  if leaderboard.players[privateUserID] then
-    leaderboard.players[privateUserID].user_name = username
+  if self.leaderboard.players[privateUserID] then
+    self.leaderboard.players[privateUserID].user_name = username
   end
-  self.database:updatePlayerUsername(privateUserID, username)
 end
 
 ---@return privateUserId new_user_id
@@ -292,346 +351,51 @@ end
 
 -- Checks if a logging in player is banned based off their IP.
 ---@param ip string
----@return boolean
-function Server:isPlayerBanned(ip)
-  return self.database:isPlayerBanned(ip)
+---@return DB_Ban?
+function Server:getBanByIP(ip)
+  return self.database:getBanByIP(ip)
 end
 
 ---@param ip string
----@param reason string?
+---@param reason string
 ---@param completionTime integer
----@return PlayerBan?
+---@return DB_Ban?
 function Server:insertBan(ip, reason, completionTime)
   return self.database:insertBan(ip, reason, completionTime)
 end
 
----@param connection Connection
----@param reason string?
----@param ban PlayerBan?
-function Server:denyLogin(connection, reason, ban)
-  assert(ban == nil or reason == nil)
-  local banDuration
-  if ban then
-    local banRemainingString = "Ban Remaining: "
-    local secondsRemaining = (ban.completionTime - os.time())
-    local secondsPerDay = 60 * 60 * 24
-    local secondsPerHour = 60 * 60
-    local secondsPerMin = 60
-    local detailCount = 0
-    if secondsRemaining > secondsPerDay then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining / secondsPerDay) .. " days "
-      secondsRemaining = (secondsRemaining % secondsPerDay)
-      detailCount = detailCount + 1
-    end
-    if secondsRemaining > secondsPerHour then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining / secondsPerHour) .. " hours "
-      secondsRemaining = (secondsRemaining % secondsPerHour)
-      detailCount = detailCount + 1
-    end
-    if detailCount < 2 and secondsRemaining > secondsPerMin then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining / secondsPerMin) .. " minutes "
-      secondsRemaining = (secondsRemaining % secondsPerMin)
-      detailCount = detailCount + 1
-    end
-    if detailCount < 2 then
-      banRemainingString = banRemainingString .. math.floor(secondsRemaining) .. " seconds "
-    end
-    reason = ban.reason
-    banDuration = banRemainingString
-
-    self.database:playerBanSeen(ban.banID)
-    logger.warn("Login denied because of ban: " .. ban.reason)
+---@param room Room
+function Server:closeRoom(room, reason)
+  for _, player in ipairs(room.players) do
+    self.playerToRoom[player] = nil
   end
 
-  connection:sendJson(ServerProtocol.denyLogin(reason, banDuration))
-end
+  for _, player in ipairs(room.spectators) do
+    self.spectatorToRoom[player] = nil
+  end
 
----@param room Room
-function Server:closeRoom(room)
-  room:close()
   if self.rooms[room.roomNumber] then
     self.rooms[room.roomNumber] = nil
   end
-end
 
-function Server:calculate_rating_adjustment(Rc, Ro, Oa, k) -- -- print("calculating expected outcome for") -- print(players[player_number].name.." Ranking: "..leaderboard.players[players[player_number].user_id].rating)
-  --[[ --Algorithm we are implementing, per community member Bbforky:
-      Formula for Calculating expected outcome:
-      RATING_SPREAD_MODIFIER = 400
-      Oe=1/(1+10^((Ro-Rc)/RATING_SPREAD_MODIFIER)))
-
-      Oe= Expected Outcome
-      Ro= Current rating of opponent
-      Rc= Current rating
-
-      Formula for Calculating new rating:
-
-      Rn=Rc+k(Oa-Oe)
-
-      Rn=New Rating
-      Oa=Actual Outcome (0 for loss, 1 for win)
-      k= Constant (Probably will use 10)
-  ]] -- print("vs")
-  -- print(players[player_number].opponent.name.." Ranking: "..leaderboard.players[players[player_number].opponent.user_id].rating)
-  Oe = 1 / (1 + 10 ^ ((Ro - Rc) / RATING_SPREAD_MODIFIER))
-  -- print("expected outcome: "..Oe)
-  Rn = Rc + k * (Oa - Oe)
-  return Rn
-end
-
----@param room Room
----@param winning_player_number integer
----@param gameID integer
-function Server:adjust_ratings(room, winning_player_number, gameID)
-  logger.debug("Adjusting the rating of " .. room.a.name .. " and " .. room.b.name .. ". Player " .. winning_player_number .. " wins!")
-  local players = {room.a, room.b}
-  local continue = true
-  local placement_match_progress
-  room.ratings = {}
-  for player_number = 1, 2 do
-    --if they aren't on the leaderboard yet, give them the default rating
-    if not leaderboard.players[players[player_number].user_id] or not leaderboard.players[players[player_number].user_id].rating then
-      leaderboard.players[players[player_number].user_id] = {user_name = self.playerbase.players[players[player_number].user_id], rating = DEFAULT_RATING}
-      logger.debug("Gave " .. self.playerbase.players[players[player_number].user_id] .. " a new rating of " .. DEFAULT_RATING)
-      if not PLACEMENT_MATCHES_ENABLED then
-        leaderboard.players[players[player_number].user_id].placement_done = true
-        self.database:insertPlayerELOChange(players[player_number].user_id, DEFAULT_RATING, gameID)
-      end
-      write_leaderboard_file()
-    end
-  end
-  local placement_done = {}
-  for player_number = 1, 2 do
-    placement_done[players[player_number].user_id] = leaderboard.players[players[player_number].user_id].placement_done
-  end
-  for player_number = 1, 2 do
-    local k, Oa  --max point change per match, actual outcome
-    room.ratings[player_number] = {}
-    if placement_done[players[player_number].user_id] == true then
-      k = 10
-    else
-      k = 50
-    end
-    if players[player_number].player_number == winning_player_number then
-      Oa = 1
-    else
-      Oa = 0
-    end
-    if placement_done[players[player_number].user_id] then
-      if placement_done[players[player_number].opponent.user_id] then
-        logger.debug("Player " .. player_number .. " played a non-placement ranked match.  Updating his rating now.")
-        room.ratings[player_number].new = self:calculate_rating_adjustment(leaderboard.players[players[player_number].user_id].rating, leaderboard.players[players[player_number].opponent.user_id].rating, Oa, k)
-        self.database:insertPlayerELOChange(players[player_number].user_id, room.ratings[player_number].new, gameID)
-      else
-        logger.debug("Player " .. player_number .. " played ranked against an unranked opponent.  We'll process this match when his opponent has finished placement")
-        room.ratings[player_number].placement_matches_played = leaderboard.players[players[player_number].user_id].ranked_games_played
-        room.ratings[player_number].new = math.round(leaderboard.players[players[player_number].user_id].rating)
-        room.ratings[player_number].old = math.round(leaderboard.players[players[player_number].user_id].rating)
-        room.ratings[player_number].difference = 0
-      end
-    else -- this player has not finished placement
-      if placement_done[players[player_number].opponent.user_id] then
-        logger.debug("Player " .. player_number .. " (unranked) just played a placement match against a ranked player.")
-        logger.debug("Adding this match to the list of matches to be processed when player finishes placement")
-        self:load_placement_matches(players[player_number].user_id)
-        local pm_count = #self.loaded_placement_matches.incomplete[players[player_number].user_id]
-
-        self.loaded_placement_matches.incomplete[players[player_number].user_id][pm_count + 1] = {
-          op_user_id = players[player_number].opponent.user_id,
-          op_name = self.playerbase.players[players[player_number].opponent.user_id],
-          op_rating = leaderboard.players[players[player_number].opponent.user_id].rating,
-          outcome = Oa
-        }
-        logger.debug("PRINTING PLACEMENT MATCHES FOR USER")
-        logger.debug(json.encode(self.loaded_placement_matches.incomplete[players[player_number].user_id]))
-        write_user_placement_match_file(players[player_number].user_id, self.loaded_placement_matches.incomplete[players[player_number].user_id])
-
-        --adjust newcomer's placement_rating
-        if not leaderboard.players[players[player_number].user_id] then
-          leaderboard.players[players[player_number].user_id] = {}
-        end
-        leaderboard.players[players[player_number].user_id].placement_rating = self:calculate_rating_adjustment(leaderboard.players[players[player_number].user_id].placement_rating or DEFAULT_RATING, leaderboard.players[players[player_number].opponent.user_id].rating, Oa, PLACEMENT_MATCH_K)
-        logger.debug("New newcomer rating: " .. leaderboard.players[players[player_number].user_id].placement_rating)
-        leaderboard.players[players[player_number].user_id].ranked_games_played = (leaderboard.players[players[player_number].user_id].ranked_games_played or 0) + 1
-        if Oa == 1 then
-          leaderboard.players[players[player_number].user_id].ranked_games_won = (leaderboard.players[players[player_number].user_id].ranked_games_won or 0) + 1
-        end
-
-        local process_them, reason = self:qualifies_for_placement(players[player_number].user_id)
-        if process_them then
-          local op_player_number = players[player_number].opponent.player_number
-          logger.debug("op_player_number: " .. op_player_number)
-          room.ratings[player_number].old = 0
-          if not room.ratings[op_player_number] then
-            room.ratings[op_player_number] = {}
-          end
-          room.ratings[op_player_number].old = math.round(leaderboard.players[players[op_player_number].user_id].rating)
-          self:process_placement_matches(players[player_number].user_id)
-
-          room.ratings[player_number].new = math.round(leaderboard.players[players[player_number].user_id].rating)
-
-          room.ratings[player_number].difference = math.round(room.ratings[player_number].new - room.ratings[player_number].old)
-          room.ratings[player_number].league = self:get_league(room.ratings[player_number].new)
-
-          room.ratings[op_player_number].new = math.round(leaderboard.players[players[op_player_number].user_id].rating)
-
-          room.ratings[op_player_number].difference = math.round(room.ratings[op_player_number].new - room.ratings[op_player_number].old)
-          room.ratings[op_player_number].league = self:get_league(room.ratings[player_number].new)
-          return
-        else
-          placement_match_progress = reason
-        end
-      else
-        logger.error("Neither player is done with placement.  We should not have gotten to this line of code")
-      end
-      room.ratings[player_number].new = 0
-      room.ratings[player_number].old = 0
-      room.ratings[player_number].difference = 0
-    end
-    logger.debug("room.ratings[" .. player_number .. "].new = " .. (room.ratings[player_number].new or ""))
-  end
-  --check that both player's new room.ratings are numeric (and not nil)
-  for player_number = 1, 2 do
-    if tonumber(room.ratings[player_number].new) then
-      continue = true
-    else
-      logger.warn(players[player_number].name .. "'s new rating wasn't calculated properly.  Not adjusting the rating for this match")
-      continue = false
-    end
-  end
-  if continue then
-    --now that both new room.ratings have been calculated properly, actually update the leaderboard
-    for player_number = 1, 2 do
-      logger.debug(self.playerbase.players[players[player_number].user_id])
-      logger.debug("Old rating:" .. leaderboard.players[players[player_number].user_id].rating)
-      room.ratings[player_number].old = leaderboard.players[players[player_number].user_id].rating
-      leaderboard.players[players[player_number].user_id].ranked_games_played = (leaderboard.players[players[player_number].user_id].ranked_games_played or 0) + 1
-      leaderboard:update(players[player_number].user_id, room.ratings[player_number].new)
-      logger.debug("New rating:" .. leaderboard.players[players[player_number].user_id].rating)
-    end
-    for player_number = 1, 2 do
-      --round and calculate rating gain or loss (difference) to send to the clients
-      if placement_done[players[player_number].user_id] then
-        room.ratings[player_number].old = math.round(room.ratings[player_number].old or leaderboard.players[players[player_number].user_id].rating)
-        room.ratings[player_number].new = math.round(room.ratings[player_number].new or leaderboard.players[players[player_number].user_id].rating)
-        room.ratings[player_number].difference = room.ratings[player_number].new - room.ratings[player_number].old
-      else
-        room.ratings[player_number].old = 0
-        room.ratings[player_number].new = 0
-        room.ratings[player_number].difference = 0
-        room.ratings[player_number].placement_match_progress = placement_match_progress
-      end
-      room.ratings[player_number].league = self:get_league(room.ratings[player_number].new)
-    end
-  -- local message = ServerProtocol.updateRating(room.ratings[1], room.ratings[2])
-  -- room:broadcastJson(message)
-  end
-end
-
----@param user_id privateUserId
-function Server:load_placement_matches(user_id)
-  logger.debug("Requested loading placement matches for user_id:  " .. (user_id or "nil"))
-  if not self.loaded_placement_matches.incomplete[user_id] then
-    local read_success, matches = read_user_placement_match_file(user_id)
-    if read_success then
-      self.loaded_placement_matches.incomplete[user_id] = matches or {}
-      logger.debug("loaded placement matches from file:")
-    else
-      self.loaded_placement_matches.incomplete[user_id] = {}
-      logger.debug("no pre-existing placement matches file, starting fresh")
-    end
-    logger.debug(tostring(self.loaded_placement_matches.incomplete[user_id]))
-    logger.debug(json.encode(self.loaded_placement_matches.incomplete[user_id]))
-  else
-    logger.debug("Didn't load placement matches from file. It is already loaded")
-  end
-end
-
----@param user_id privateUserId
-function Server:qualifies_for_placement(user_id)
-  --local placement_match_win_ratio_requirement = .2
-  self:load_placement_matches(user_id)
-  local placement_matches_played = #self.loaded_placement_matches.incomplete[user_id]
-  if not PLACEMENT_MATCHES_ENABLED then
-    return false, ""
-  elseif (leaderboard.players[user_id] and leaderboard.players[user_id].placement_done) then
-    return false, "user is already placed"
-  elseif placement_matches_played < PLACEMENT_MATCH_COUNT_REQUIREMENT then
-    return false, placement_matches_played .. "/" .. PLACEMENT_MATCH_COUNT_REQUIREMENT .. " placement matches played."
-  -- else
-  -- local win_ratio
-  -- local win_count
-  -- for i=1,placement_matches_played do
-  -- win_count = win_count + self.loaded_placement_matches.incomplete[user_id][i].outcome
-  -- end
-  -- win_ratio = win_count / placement_matches_played
-  -- if win_ratio < placement_match_win_ratio_requirement then
-  -- return false, "placement win ratio is currently "..math.round(win_ratio*100).."%.  "..math.round(placement_match_win_ratio_requirement*100).."% is required for placement."
-  -- end
-  end
-  return true
-end
-
----@param user_id privateUserId
-function Server:process_placement_matches(user_id)
-  self:load_placement_matches(user_id)
-  local placement_matches = self.loaded_placement_matches.incomplete[user_id]
-  if #placement_matches < 1 then
-    logger.error("Failed to process placement matches because we couldn't find any")
-    return
-  end
-
-  --assign the current placement_rating as the newcomer's official rating.
-  leaderboard.players[user_id].rating = leaderboard.players[user_id].placement_rating
-  leaderboard.players[user_id].placement_done = true
-  logger.debug("FINAL PLACEMENT RATING for " .. (self.playerbase.players[user_id] or "nil") .. ": " .. (leaderboard.players[user_id].rating or "nil"))
-
-  --Calculate changes to opponents ratings for placement matches won/lost
-  logger.debug("adjusting opponent rating(s) for these placement matches")
-  for i = 1, #placement_matches do
-    if placement_matches[i].outcome == 0 then
-      op_outcome = 1
-    else
-      op_outcome = 0
-    end
-    local op_rating_change = self:calculate_rating_adjustment(placement_matches[i].op_rating, leaderboard.players[user_id].placement_rating, op_outcome, 10) - placement_matches[i].op_rating
-    leaderboard.players[placement_matches[i].op_user_id].rating = leaderboard.players[placement_matches[i].op_user_id].rating + op_rating_change
-    leaderboard.players[placement_matches[i].op_user_id].ranked_games_played = (leaderboard.players[placement_matches[i].op_user_id].ranked_games_played or 0) + 1
-    leaderboard.players[placement_matches[i].op_user_id].ranked_games_won = (leaderboard.players[placement_matches[i].op_user_id].ranked_games_won or 0) + op_outcome
-  end
-  leaderboard.players[user_id].placement_done = true
-  write_leaderboard_file()
-  move_user_placement_file_to_complete(user_id)
-end
-
----@param rating number
----@return string
-function Server:get_league(rating)
-  if not rating then
-    return leagues[1].league --("Newcomer")
-  end
-  for i = 1, #leagues do
-    if i == #leagues or leagues[i + 1].min_rating > rating then
-      return leagues[i].league
-    end
-  end
-  return "LeagueNotFound"
+  room:close(reason)
+  self:setLobbyChanged()
 end
 
 function Server:update()
 
-  self:acceptNewConnections()
+  if not self._shuttingDown then
+    self:acceptNewConnections()
+  end
 
-  self:readSockets()
+  self:updateConnections()
+  self:processMessages()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
   local currentTime = time()
   if currentTime ~= self.lastProcessTime then
-    self:pingConnections(currentTime)
-
     self:flushLogs(currentTime)
-
     self.lastProcessTime = currentTime
   end
 
@@ -647,16 +411,20 @@ function Server:acceptNewConnections()
     if TCP_NODELAY_ENABLED then
       newConnectionSocket:setoption("tcp-nodelay", true)
     end
-    local connection = Connection(newConnectionSocket, self.connectionNumberIndex, self)
     logger.debug("Accepted connection " .. self.connectionNumberIndex)
-    self.connections[self.connectionNumberIndex] = connection
+    local connection = Connection(newConnectionSocket, self.connectionNumberIndex)
     self.socketToConnectionIndex[newConnectionSocket] = self.connectionNumberIndex
-    self.connectionNumberIndex = self.connectionNumberIndex + 1
+    self:addConnection(connection)
   end
 end
 
+function Server:addConnection(connection)
+  self.connections[self.connectionNumberIndex] = connection
+  self.connectionNumberIndex = self.connectionNumberIndex + 1
+end
+
 -- Process any data on all active connections
-function Server:readSockets()
+function Server:updateConnections()
   -- Make a list of all the sockets to listen to
   local socketsToCheck = {self.socket}
   for _, v in pairs(self.connections) do
@@ -664,25 +432,190 @@ function Server:readSockets()
   end
 
   -- Wait for up to 1 second to see if there is any data to read on all the given sockets
+  -- as far as I understand the waiting time is only until at least one socket has data so it's not actually stalling unless there is no data anyway
   local socketsWithData = socket.select(socketsToCheck, nil, 1)
   assert(type(socketsWithData) == "table")
   for _, currentSocket in ipairs(socketsWithData) do
-    if self.socketToConnectionIndex[currentSocket] then
-      local connectionIndex = self.socketToConnectionIndex[currentSocket]
-      self.connections[connectionIndex]:read()
+    local connectionIndex = self.socketToConnectionIndex[currentSocket]
+    if connectionIndex then
+      local connection = self.connections[connectionIndex]
+      local success = connection:update(self.lastProcessTime)
+      if not success then
+        local player = self.connectionToPlayer[connection]
+        local reason = "disconnect"
+        if player then
+          reason = player.name .. "'s connection failed"
+        end
+        self:closeConnection(self.connections[connectionIndex], reason)
+      end
     end
   end
 end
 
--- Check all active connections to make sure they have responded timely
-function Server:pingConnections(currentTime)
-  for _, connection in pairs(self.connections) do
-    if currentTime - connection.lastCommunicationTime > 10 then
-      logger.debug("Closing connection for " .. (connection.name or "nil") .. ". Connection timed out (>10 sec)")
-      connection:close()
-    elseif currentTime - connection.lastCommunicationTime > 1 then
-      connection:send(NetworkProtocol.serverMessageTypes.ping.prefix) -- Request a ping to make sure the connection is still active
+local function error_printer(msg, layer)
+	logger.error((debug.traceback("Error: " .. tostring(msg), 1+(layer or 1)):gsub("\n[^\n]+$", "")))
+end
+
+local function handleError(msg)
+  msg = tostring(msg)
+
+	error_printer(msg, 2)
+
+  local trace = debug.traceback()
+  ---@type any
+  local sanitizedmsg = {}
+	for char in msg:gmatch(utf8.charpattern) do
+		table.insert(sanitizedmsg, char)
+	end
+	sanitizedmsg = table.concat(sanitizedmsg)
+
+	local err = {}
+
+	table.insert(err, "Error\n")
+	table.insert(err, sanitizedmsg)
+
+	if #sanitizedmsg ~= #msg then
+		table.insert(err, "Invalid UTF-8 string in error message.")
+	end
+
+	table.insert(err, "\n")
+
+	for l in trace:gmatch("(.-)\n") do
+		if not l:match("boot.lua") then
+			l = l:gsub("stack traceback:", "Traceback\n")
+			table.insert(err, l)
+		end
+	end
+
+	local p = table.concat(err, "\n")
+
+	p = p:gsub("\t", "")
+	p = p:gsub("%[string \"(.-)\"%]", "%1")
+
+  logger.error(p)
+end
+
+function Server:processMessages()
+  for index, connection in pairs(self.connections) do
+    if connection.incomingInputQueue.last ~= -1 then
+      local q = connection.incomingInputQueue
+      local player = self.connectionToPlayer[connection]
+      if player then
+        local room = self.playerToRoom[player]
+        if room then
+          for i = q.first, q.last do
+            self.playerToRoom[player]:broadcastInput(q[i], player)
+          end
+        end
+      end
+      q:shallowClear()
     end
+
+    if connection.incomingMessageQueue.last ~= -1 then
+      local q = connection.incomingMessageQueue
+      local player = self.connectionToPlayer[connection]
+      for i = q.first, q.last do
+        local status, continue = xpcall(function() return self:processMessage(q[i], connection) end, handleError)
+        if status then
+          if not continue then
+            break
+          end
+        else
+          if player then
+            logger.error("Incoming message from " .. (player.name or connection.index) .. " in state " .. (player.state or "unknown") .. " caused an error." .. "\nJ-Message:\n" .. q[i])
+            if self.playerToRoom[player] then
+              logger.error("Room state during error:\n" .. self.playerToRoom[player]:toString())
+            end
+          else
+            logger.error("Incoming message from " .. connection.index .. " caused an error." .. "\nJ-Message:\n" .. q[i])
+          end
+        end
+      end
+      q:clear()
+    end
+  end
+end
+
+---@param connection Connection
+---@return boolean? # if messages from this connection should continue to get processed
+function Server:processMessage(message, connection)
+  message = json.decode(message)
+  message = ClientMessages.sanitizeMessage(message)
+
+  if message.error_report then -- Error report is checked for first so that a full login is not required
+    self:handleErrorReport(message.error_report)
+    -- After sending the error report, the client will throw the error, so end the connection.
+    local player = self.connectionToPlayer[connection]
+    if player then
+      self:closeConnection(connection, player.name ..  " crashed")
+    else
+      self:closeConnection(connection)
+    end
+    return false
+  elseif not connection.loggedIn then
+    if message.login_request then
+      local IP_logging_in, port = connection.socket:getpeername()
+      if self:login(connection, message.user_id, message.name, IP_logging_in, port, message.engine_version, message) then
+        return true
+      else
+        self:closeConnection(connection, "login while logged in")
+        return false
+      end
+    else
+      self:closeConnection(connection)
+      return false
+    end
+  else
+    local player = self.connectionToPlayer[connection]
+    if message.logout then
+      self:closeConnection(connection, player.name .. " logged out")
+      return false
+    elseif player.state == "lobby" and message.game_request then
+      if message.game_request.sender == player.name then
+        self:proposeGame(player, self.nameToPlayer[message.game_request.receiver])
+        return true
+      end
+    elseif player.state == "lobby" and message.roomRequest then
+      self:create_room(message.gameMode, player)
+      return true
+    elseif message.leaderboard_request then
+      connection:sendJson(ServerProtocol.sendLeaderboard(self.leaderboard:get_report(self, self.connectionToPlayer[connection].userId)))
+      return true
+    elseif message.spectate_request then
+      self:handleSpectateRequest(message, player)
+      return true
+    elseif message.playerSettings then
+      -- Note this also starts the game if everything is ready from both players character select settings
+      player:updateSettings(message.playerSettings)
+      return true
+    elseif player.state == "playing" and message.taunt then
+      self.playerToRoom[player]:handleTaunt(message, player)
+      return true
+    elseif player.state == "playing" and message.game_over then
+      self.playerToRoom[player]:handleGameOverOutcome(message, player)
+      return true
+    elseif (player.state == "playing") and message.matchAbort then
+      self.playerToRoom[player]:abortGame(player)
+    elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
+      self:handleLeaveRoom(player, player.name .. " left")
+      return true
+    elseif (player.state == "spectating") and message.leave_room then
+      if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
+        self:setLobbyChanged()
+        return true
+      end
+    elseif message.unknown then
+      self:closeConnection(connection)
+      return false
+    end
+  end
+  return false
+end
+
+function Server:handleErrorReport(errorReport)
+  logger.warn("Received an error report.")
+  if not FileIO.write_error_report(errorReport) then
+    logger.error("The error report was either too large or had an I/O failure when attempting to write the file.")
   end
 end
 
@@ -703,12 +636,248 @@ function Server:broadCastLobbyIfChanged()
     local lobbyState = self:lobby_state()
     local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
     for _, connection in pairs(self.connections) do
-      if connection.state == "lobby" then
+      local player = self.connectionToPlayer[connection]
+      if player and player.state == "lobby" then
         connection:sendJson(message)
       end
     end
     self.lobbyChanged = false
   end
+end
+
+---@param connection Connection
+---@param userId privateUserId?
+---@param name string
+---@param ipAddress string
+---@param port integer
+---@param engineVersion string
+---@param playerSettings table
+---@return boolean # whether the login was successful
+function Server:login(connection, userId, name, ipAddress, port, engineVersion, playerSettings)
+  local message = {}
+
+  logger.debug("New login attempt:  " .. ipAddress .. ":" .. port)
+
+  local playerBan = self:getBanByIP(ipAddress)
+  if playerBan then
+    local secondsRemaining = (playerBan.completionTime - os.time())
+
+    reason = playerBan.reason
+    banDuration = "Ban Remaining: " .. util.toDayHourMinuteSecondString(secondsRemaining)
+
+    self:markBanAsSeen(playerBan.banID)
+    logger.warn("Login denied because of ban: " .. playerBan.reason)
+    connection:sendJson(ServerProtocol.denyLogin(reason, banDuration))
+
+    return false
+  end
+
+  local loginApproved, denyReason = self:canLogin(userId, name, ipAddress, engineVersion)
+
+  if not loginApproved then
+    connection:sendJson(ServerProtocol.denyLogin(denyReason))
+    return false
+  else
+    if userId == "need a new user id" then
+      assert(self.playerbase:nameTaken("", name) == false)
+      userId = self:createNewUser(name)
+      if not userId then
+        connection:sendJson(ServerProtocol.denyLogin("Failed to assign public player ID, please try again"))
+        return false
+      else
+        logger.info("New user: " .. name .. " was created")
+        message.new_user_id = userId
+      end
+    end
+
+    ---@cast userId -nil
+
+    -- Name change is allowed because it was already checked above
+    if self.playerbase.players[userId] ~= name then
+      local oldName = self.playerbase.players[userId]
+      self:changeUsername(userId, name)
+
+      logger.warn(userId .. " changed name " .. oldName .. " to " .. name)
+
+      message.name_changed = true
+      message.old_name = oldName
+      message.new_name = name
+    end
+
+    local player = Player(userId, connection, name, self.playerbase.privateIdToPublicId[userId])
+    player:setState("lobby")
+    assert(player.publicPlayerID ~= nil)
+    player:updateSettings(playerSettings)
+    self.nameToConnectionIndex[name] = connection.index
+    self.connectionToPlayer[connection] = player
+    self.nameToPlayer[name] = player
+    if self.leaderboard then
+      self.leaderboard:update_timestamp(userId)
+    end
+    self:logIP(player, ipAddress)
+    self:setLobbyChanged()
+
+    local serverNotices = self:getMessages(player)
+    local serverUnseenBans = self:getUnseenBans(player)
+    if tableUtils.length(serverNotices) > 0 or tableUtils.length(serverUnseenBans) > 0 then
+      local noticeString = ""
+      for messageID, serverNotice in pairs(serverNotices) do
+        noticeString = noticeString .. serverNotice .. "\n\n"
+        self:markMessageAsSeen(messageID)
+      end
+      for banID, reason in pairs(serverUnseenBans) do
+        noticeString = noticeString .. "A ban was issued to you for: " .. reason .. "\n\n"
+        self:markBanAsSeen(banID)
+      end
+      message.server_notice = noticeString
+    end
+
+    message.login_successful = true
+    connection:sendJson(ServerProtocol.approveLogin(player.publicPlayerID, message.server_notice, message.new_user_id, message.new_name, message.old_name))
+
+    logger.warn(connection.index .. " Login from " .. name .. " with ip: " .. ipAddress .. " publicPlayerID: " .. player.publicPlayerID)
+    return true
+  end
+end
+
+---@return boolean loginApproved if the player can log in
+---@return string denyReason why the player cannot log in, nil if login was approved
+function Server:canLogin(userID, name, IP_logging_in, engineVersion)
+  local denyReason = nil
+  if engineVersion ~= ENGINE_VERSION and not ANY_ENGINE_VERSION_ENABLED then
+    denyReason = "Please update your game, server expects engine version: " .. ENGINE_VERSION
+  elseif not name or name == "" then
+    denyReason = "Name cannot be blank"
+  elseif string.lower(name) == "anonymous" then
+    denyReason = 'Username cannot be "anonymous"'
+  elseif name:lower():match("d+e+f+a+u+l+t+n+a+m+e?") then
+    denyReason = 'Username cannot be "defaultname" or a variation of it'
+  elseif name:find("[^_%w]") then
+    denyReason = "Usernames are limited to alphanumeric and underscores"
+  elseif utf8.len(name) > NAME_LENGTH_LIMIT then
+    denyReason = "The name length limit is " .. NAME_LENGTH_LIMIT .. " characters"
+  elseif not userID then
+    denyReason = "Client did not send a user ID in the login request"
+  elseif userID == "need a new user id" then
+    if self.playerbase:nameTaken("", name) then
+      denyReason = "That player name is already taken"
+      logger.warn("Login failure: Player tried to create a new user with an already taken name: " .. name)
+    end
+  elseif not self.playerbase.players[userID] then
+    denyReason = "The user ID provided was not found on this server"
+    playerBan = self:insertBan(IP_logging_in, denyReason, os.time() + 60)
+    logger.warn("Login failure: " .. name .. " specified an invalid user ID")
+  elseif self.playerbase.players[userID] ~= name and self.playerbase:nameTaken(userID, name) then
+    denyReason = "That player name is already taken"
+    logger.warn("Login failure: Player (" .. userID .. ") tried to use already taken name: " .. name)
+  elseif self.nameToConnectionIndex[name] then
+    denyReason = "Cannot login with the same name twice"
+  end
+
+  if denyReason then
+    return false, denyReason
+  else
+    return true, ""
+  end
+end
+
+---@param message table
+---@param player ServerPlayer
+function Server:handleSpectateRequest(message, player)
+  local requestedRoom = self:roomNumberToRoom(message.spectate_request.roomNumber)
+
+  if requestedRoom then
+    local roomState = requestedRoom:state()
+    if (roomState == "character select" or roomState == "playing") then
+      logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
+      self.spectatorToRoom[player] = requestedRoom
+      requestedRoom:add_spectator(player)
+      self:setLobbyChanged()
+    else
+      logger.warn("tried to join room in invalid state " .. roomState)
+    end
+  else
+    -- TODO: tell the client the join request failed, couldn't find the room.
+    logger.warn("couldn't find room")
+  end
+end
+
+function Server:handleLeaveRoom(player, reason)
+  local room = self.playerToRoom[player]
+  if room then
+    self:closeRoom(room, reason)
+  else
+    room = self.spectatorToRoom[player]
+    if room then
+      room:remove_spectator(player)
+      self.spectatorToRoom[player] = nil
+    end
+  end
+end
+
+---@param connection Connection
+---@param reason string? why the player is getting disconnected
+function Server:closeConnection(connection, reason)
+  local player = self.connectionToPlayer[connection]
+  logger.info("Closing connection " .. connection.index .. " to " .. (player and player.name or "noname"))
+
+  self.socketToConnectionIndex[connection.socket] = nil
+  self.connections[connection.index] = nil
+  self.connectionToPlayer[connection] = nil
+  connection.loggedIn = false
+  connection:close()
+  if player then
+    self:clearProposals(player)
+    self:handleLeaveRoom(player, reason)
+    self.playerToRoom[player] = nil
+    self.spectatorToRoom[player] = nil
+    self.nameToPlayer[player.name] = nil
+    self.nameToConnectionIndex[player.name] = nil
+    self:setLobbyChanged()
+  end
+end
+
+---@param game ServerGame
+function Server:processGameEnd(game)
+  logger.debug("Processing game end")
+  self:setLobbyChanged()
+
+  -- this is a sufficient criteria only by incidence as it remains the only 2 player online game mode so far
+  -- there needs to be a better mechanism to validate whether a game should be persisted / persisted for a leaderboard
+  -- as the current persistGame somewhat assumes both (explicit player number and that the game was played to determine a winner/placement)
+  if game and game.complete and #game.replay.players == 2 then
+    self.persistence.persistGame(game)
+  end
+end
+
+---@param player ServerPlayer
+---@param ipAddress string
+function Server:logIP(player, ipAddress)
+  self.database:insertIPID(ipAddress, player.publicPlayerID)
+end
+
+-- gets the messages for that player
+---@param player ServerPlayer
+---@return table<integer, string>
+function Server:getMessages(player)
+  return self.database:getPlayerMessages(player.publicPlayerID)
+end
+
+-- gets the bans for that player they did not see yet
+---@param player ServerPlayer
+---@return table<integer, string>
+function Server:getUnseenBans(player)
+  return self.database:getPlayerUnseenBans(player.publicPlayerID)
+end
+
+---@param banId integer
+function Server:markBanAsSeen(banId)
+  self.database:playerBanSeen(banId)
+end
+
+---@param messageId integer
+function Server:markMessageAsSeen(messageId)
+  self.database:playerMessageSeen(messageId)
 end
 
 return Server

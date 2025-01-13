@@ -15,7 +15,7 @@ local REPLAY_VERSION = 2
 ---@field engineVersion string The engine version the replay was generated with
 ---@field replayVersion number Indicates the version of the replay's data format
 ---@field seed number The seed to be used to for random functions
----@field gameMode table Contains flags and fields determining the overall Match settings
+---@field gameMode GameMode Contains flags and fields determining the overall Match settings
 ---@field players ReplayPlayer[] The players that are/were part of the Match
 ---@field ranked boolean? If the match counted towards the ladder
 ---@field stageId string? The stage that was picked for the match on the machine saving the replay
@@ -197,6 +197,8 @@ function Replay.replayCanBeViewed(replay)
   end
 end
 
+---@param match Match
+---@param replay Replay
 function Replay.finalizeReplay(match, replay)
   if not replay.completed then
     for i = 1, #match.stacks do

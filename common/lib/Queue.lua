@@ -53,6 +53,14 @@ function Queue.clear(self)
   self.last = -1
 end
 
+-- A shallow clear does not empty the array, it only resets the item markers so that the Queue thinks it is empty
+-- Pushing new elements into it will then override the orphaned elements inside
+-- This can interfere with garbage collection if the Queue inadvertently keeps holding onto an otherwise orphaned element
+function Queue:shallowClear()
+  self.first = 0
+  self.last = -1
+end
+
 function Queue:contains(element)
   for i = self.first, self.last do
     if self[i] == element then

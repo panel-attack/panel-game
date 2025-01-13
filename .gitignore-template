@@ -12,6 +12,7 @@ PADatabase.sqlite3
 players.txt
 leaderboard.csv
 ftp
+reports
 # for developing and debugging updater related features you may want to drop these in
 updater
 releaseStreams.json

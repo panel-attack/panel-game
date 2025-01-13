@@ -49,25 +49,45 @@ function tableUtils.first(tab, filter)
 end 
  
 -- returns true if the table contains at least one value that fulfills the condition, otherwise false 
-function tableUtils.trueForAny(tab, condition) 
-  for _, value in pairs(tab) do 
-    if condition(value) then 
-      return true 
-    end 
-  end 
-  return false 
-end 
- 
+function tableUtils.trueForAny(tab, condition)
+  if type(condition) == "function" then
+    for _, value in pairs(tab) do
+      if condition(value) then
+        return true
+      end
+    end
+    return false
+  else
+    for _, value in pairs(tab) do
+      if value[condition] then
+        return true
+      end
+    end
+    return false
+  end
+end
+
 -- returns true if all value elements of the table fulfill the condition, otherwise false 
-function tableUtils.trueForAll(tab, condition) 
-  for _, value in pairs(tab) do 
-    if not condition(value) then 
-      return false 
-    end 
-  end 
-  return true 
-end 
- 
+---@param tab table
+---@param condition function | string
+function tableUtils.trueForAll(tab, condition)
+  if type(condition) == "function" then
+    for _, value in pairs(tab) do
+      if not condition(value) then
+        return false
+      end
+    end
+    return true
+  else
+    for _, value in pairs(tab) do
+      if not value[condition] then
+        return false
+      end
+    end
+    return true
+  end
+end
+
 -- appends all entries of tab to the end of list 
 function tableUtils.appendToList(list, tab)
   for i = 1, #tab do

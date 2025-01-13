@@ -8,9 +8,7 @@ local function enableProfiler()
 end
 
 for _, value in pairs(arg) do
-  if value == "test" then
-    TESTS_ENABLED = 1
-  elseif value == "debug" then
+  if value == "debug" then
     if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
       require("lldebugger").start()
       DEBUG_ENABLED = 1
@@ -30,8 +28,6 @@ for _, value in pairs(arg) do
     -- this would allow us to simply turn off the GC during matches and only collect afterwards
     PROFILE_MEMORY = true
     collectgarbage("stop")
-  elseif value == "performanceTests" then
-    PERFORMANCE_TESTS_ENABLED = 1
   elseif value == "updaterTest" then
     -- drop the updater directory of the updater in for debugging purposes
     GAME_UPDATER_STATES = { idle = 0, checkingForUpdates = 1, downloading = 2}

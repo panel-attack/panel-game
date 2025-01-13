@@ -4,6 +4,11 @@ local class = require("common.lib.class")
 
 -- Tracks a queue data structure.
 -- Values are tracked via incrementing ID keys, when something is nilled it is tracked as an "empty"
+---@class ServerQueue
+---@field data table
+---@field first integer
+---@field last integer
+---@field empties integer
 ServerQueue =
   class(
   function(self)
