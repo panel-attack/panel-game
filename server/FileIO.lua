@@ -83,7 +83,6 @@ end
 
 function FileIO.write_error_report(error_report_json)
   local json_string = json.encode(error_report_json)
-  ---@cast json_string string # json.encode with only 1 arg always returns a string
   if json_string:len() >= 5000 --[[5kB]] then
     return false
   end
@@ -92,6 +91,7 @@ function FileIO.write_error_report(error_report_json)
   local filename = "v" .. (error_report_json.engine_version or "000") .. "-" .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec) .. "_" .. (error_report_json.name or "Unknown") .. "-ErrorReport.json"
   return pcall(
     function()
+      FileIO.makeDirectoryRecursive("." .. sep .. "reports")
       local f = assert(io.open("reports" .. sep .. filename, "w"))
       io.output(f)
       io.write(json_string)

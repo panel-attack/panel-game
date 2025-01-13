@@ -152,6 +152,7 @@ local function processMatchStartMessage(self, message)
     return
   end
 
+  error("oops")
   for _, playerSettings in ipairs(message.playerSettings) do
     -- contains level, characterId, panelId
     for _, player in ipairs(self.room.players) do
