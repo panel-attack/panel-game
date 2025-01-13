@@ -3,6 +3,10 @@ local logger = require("common.lib.logger")
 local Queue = require("common.lib.Queue")
 
 -- A class representing a Queue that pops based on time
+---@class TimeQueue
+---@field queue Queue
+---@field latestPush number
+---@field now number
 TimeQueue =
   class(
   function(self)

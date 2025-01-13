@@ -10,6 +10,16 @@ local class = require("common.lib.class")
 local Request = require("client.src.network.Request")
 local ServerMessages = require("client.src.network.ServerMessages")
 
+---@class TcpClient
+---@field data string
+---@field connectionUptime integer
+---@field receivedMessageQueue ServerQueue
+---@field sendNetworkQueue TimeQueue
+---@field receiveNetworkQueue TimeQueue
+---@field delayedProcessing boolean
+---@field ip string
+---@field port integer
+---@field socket TcpSocket
 local TcpClient = class(function(tcpClient)
   -- holds data fragments
   tcpClient.data = ""
@@ -24,6 +34,9 @@ local TcpClient = class(function(tcpClient)
 end)
 
 -- setup the network connection on the given IP and port
+---@param ip string
+---@param port integer
+---@return boolean success
 function TcpClient:connectToServer(ip, port)
   self.ip = ip
   self.port = port or 49569
@@ -38,12 +51,14 @@ function TcpClient:connectToServer(ip, port)
   return true
 end
 
+---@return boolean
 function TcpClient:isConnected()
   return self.socket and self.socket:getpeername() ~= nil
 end
 
 -- Appends all data from the socket to TcpClient.data
--- returns false if something went wrong
+-- returns false if something went wrong, nil if there was no socket to read
+---@return boolean?
 function TcpClient:readSocket()
   if not self.socket then
     return
@@ -202,6 +217,9 @@ function TcpClient:processIncomingMessages()
   while true do
     local type, message, remaining = NetworkProtocol.getMessageFromString(self.data, true)
     if type then
+      -- if type isn't nil, these aren't either
+      ---@cast message -nil
+      ---@cast remaining -nil
       if self.delayedProcessing then
         -- in stoner mode, don't directly send the message but add it to a timed queue with a delay instead
         local lagSeconds = (math.random() * (receiveMaxLag - receiveMinLag)) + receiveMinLag

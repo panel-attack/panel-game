@@ -31,6 +31,8 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeRoomRequest(clientMessage)
   elseif clientMessage.type and clientMessage.type == "matchAbort" then
     return ClientMessages.sanitizeMatchAbort(clientMessage)
+  elseif clientMessage.error_report then
+    return clientMessage
   else
     local errorMsg = "Received an unexpected message"
     local messageJson = json.encode(clientMessage)

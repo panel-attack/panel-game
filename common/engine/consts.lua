@@ -50,14 +50,6 @@ consts.DEFAULT_THEME_DIRECTORY = "Panel Attack Modern"
 consts.SCOREMODE_TA    = 1
 consts.SCOREMODE_PDP64 = 2 -- currently not used
 
--- frames to use for the card animation
-consts.CARD_ANIMATION = {false,
-   -1, 0, 1, 2, 3, 4, 4, 5, 5, 6,
-   6, 7, 7, 8, 8, 8, 9, 9, 9, 9,
-   9, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-   10, 10, 10, 10, 10, 10, 11, 11, 11, 11,
-   11}
-
 -- Yes, 2 is slower than 1 and 50..99 are the same.
 consts.SPEED_TO_RISE_TIME = tableUtils.map(
    {942, 983, 838, 790, 755, 695, 649, 604, 570, 515,

@@ -310,7 +310,7 @@ local function createListeners(self)
 end
 
 ---@class NetClient : Signal
----@field tcpClient table
+---@field tcpClient TcpClient
 ---@field leaderboard table
 ---@field pendingResponses table
 ---@field state NetClientStates
@@ -472,9 +472,12 @@ function NetClient:registerPlayerUpdates(room)
   self.roomListeners.menu_state = listener
 end
 
-function NetClient:sendErrorReport(errorData, server, ip)
+---@param errorData table
+---@param server string
+---@param port integer
+function NetClient:sendErrorReport(errorData, server, port)
   if not self:isConnected() then
-    self.tcpClient:connectToServer(server, ip)
+    self.tcpClient:connectToServer(server, port)
   end
   self.tcpClient:sendRequest(ClientMessages.sendErrorReport(errorData))
   self.tcpClient:resetNetwork()

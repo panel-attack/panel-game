@@ -545,7 +545,12 @@ function Server:processMessage(message, connection)
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
     -- After sending the error report, the client will throw the error, so end the connection.
-    self:closeConnection(connection, "crashed")
+    local player = self.connectionToPlayer[connection]
+    if player then
+      self:closeConnection(connection, player.name ..  " crashed")
+    else
+      self:closeConnection(connection)
+    end
     return false
   elseif not connection.loggedIn then
     if message.login_request then
