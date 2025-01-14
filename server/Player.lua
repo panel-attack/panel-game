@@ -140,6 +140,8 @@ function Player:addToRoom(room)
   end
 
   self.room = room
+  self.wantsReady = false
+  self.ready = false
 end
 
 function Player:removeFromRoom(room, reason)
@@ -157,6 +159,8 @@ function Player:removeFromRoom(room, reason)
   end
 
   self.room = nil
+  self.wantsReady = false
+  self.ready = false
 end
 
 function Player:sendJson(message)
