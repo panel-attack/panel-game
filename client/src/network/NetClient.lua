@@ -165,19 +165,30 @@ local function processMatchStartMessage(self, message)
           player:setLevelData(playerSettings.levelData)
         end
 
+        if playerSettings.inputMethod ~= player.settings.inputMethod then
+          -- since only one player can claim touch, touch is unclaimed every time we return to character select
+          -- this also means they will send controller as their input method until they ready up
+          -- if the remote touch player readies up AFTER the local client, we never get informed about the change in input method
+          -- besides for the match start message itself
+          -- likewise if the local player readies up with touch and then unreadies their inputMethod will flip back to controller so we even have to overwrite the local player setting
+          -- so it's very important to set this here
+          player:setInputMethod(playerSettings.inputMethod)
+        end
+
         if player.isLocal then
           if not player.inputConfiguration then
+            if player.settings.inputMethod == "touch" then
+              player:restrictInputs(GAME.input.mouse)
+            else
+              if player.lastUsedInputConfiguration.x then
+                -- there is no configuration and the last one is a touch configuration
+                -- there is no way to know which input configuration the player wanted to use in this scenario so throw an error
+                error("Player's input configuration does not match input method " .. player.settings.inputMethod .. " sent by server.")
+              else
+                player:restrictInputs(player.lastUsedInputConfiguration)
+              end
+            end
             -- fallback in case the player lost their input config while the server sent the message
-            player:restrictInputs(player.lastUsedInputConfiguration)
-          end
-        else
-          if playerSettings.inputMethod ~= player.settings.inputMethod then
-            -- since only one player can claim touch, touch is unclaimed every time we return to character select
-            -- this also means they will send controller as their input method until they ready up
-            -- if the remote touch player readies up AFTER the local client, we never get informed about the change in input method
-            -- besides for the match start message itself
-            -- so it's very important to set this here
-            player:setInputMethod(playerSettings.inputMethod)
           end
         end
         -- generally I don't think it's a good idea to try and rematch the other diverging settings here
