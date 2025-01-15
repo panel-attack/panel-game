@@ -70,6 +70,10 @@ function Lobby:initLobbyMenu()
       GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"))
     end),
     MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
+      if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
+        GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
+        GAME.netClient:sendPlayerSettings(GAME.localPlayer)
+      end
       GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
     end),
     MenuItem.createButtonMenuItem("lb_show_board", nil, nil, function()
@@ -77,7 +81,7 @@ function Lobby:initLobbyMenu()
     end),
     MenuItem.createButtonMenuItem("lb_back", nil, nil, exitMenu)
   }
-  self.leaderboardToggleLabel = menuItems[2].textButton.children[1]
+  self.leaderboardToggleLabel = menuItems[5].textButton.children[1]
 
   self.lobbyMenuStartingUp = true
   self.lobbyMenu = Menu.createCenteredMenu(menuItems)
@@ -119,6 +123,10 @@ end
 -- challenges the opponent with that name
 function Lobby:requestGameFunction(opponentName)
   return function()
+    if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
+      GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
+      GAME.netClient:sendPlayerSettings(GAME.localPlayer)
+    end
     GAME.netClient:challengePlayer(opponentName)
     GAME.theme:playValidationSfx()
   end

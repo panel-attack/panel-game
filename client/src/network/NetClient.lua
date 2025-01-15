@@ -455,8 +455,12 @@ function NetClient:sendMatchAbort()
   end
 end
 
-local function sendPlayerSettings(player)
+function sendPlayerSettings(player)
   GAME.netClient.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
+end
+
+function NetClient:sendPlayerSettings(player)
+  self.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
 function NetClient:registerPlayerUpdates(room)
