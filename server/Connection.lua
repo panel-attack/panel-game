@@ -43,7 +43,7 @@ local Connection = class(
 local function send(connection, message)
   local success, error = connection.socket:send(message)
   if not success then
-    logger.debug("Connection.send failed with " .. error .. ". will retry next update...")
+    logger.debug(connection.index .. "Connection.send failed with " .. error .. ". will retry next update...")
   end
 
   return success
@@ -137,6 +137,7 @@ local function sendQueuedMessages(connection)
       connection.sendRetryCount = connection.sendRetryCount + 1
       break
     else
+      logger.debug(connection.index .. " Retry succeeded after " .. connection.sendRetryCount)
       connection.sendRetryCount = 0
     end
   end
