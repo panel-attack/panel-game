@@ -651,9 +651,9 @@ end
 ---@param ipAddress string
 ---@param port integer
 ---@param engineVersion string
----@param playerSettings table
+---@param loginMessage ServerIncomingLoginMessage
 ---@return boolean # whether the login was successful
-function Server:login(connection, userId, name, ipAddress, port, engineVersion, playerSettings)
+function Server:login(connection, userId, name, ipAddress, port, engineVersion, loginMessage)
   local message = {}
 
   logger.debug("New login attempt:  " .. ipAddress .. ":" .. port)
@@ -705,9 +705,10 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     end
 
     local player = Player(userId, connection, name, self.playerbase.privateIdToPublicId[userId])
+    player.save_replays_publicly = loginMessage.save_replays_publicly
     player:setState("lobby")
     assert(player.publicPlayerID ~= nil)
-    player:updateSettings(playerSettings)
+    player:updateSettings(loginMessage.playerSettings)
     self.nameToConnectionIndex[name] = connection.index
     self.connectionToPlayer[connection] = player
     self.nameToPlayer[name] = player

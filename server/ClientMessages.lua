@@ -87,23 +87,23 @@ function ClientMessages.sanitizeMenuState(playerSettings)
   return {playerSettings = sanitized}
 end
 
+---@class ServerIncomingLoginMessage
+---@field playerSettings ServerIncomingPlayerSettings
+---@field login_request boolean
+---@field user_id privateUserId
+---@field engine_version string
+---@field name string
+---@field save_replays_publicly ("not at all" | "anonymously" | "with my name")
+
+---@return ServerIncomingLoginMessage
 function ClientMessages.sanitizeLoginRequest(loginRequest)
-  local sanitized =
-  {
-    login_request = true,
-    user_id = loginRequest.user_id,
-    engine_version = loginRequest.engine_version,
-    name = loginRequest.name,
-    level = loginRequest.level,
-    inputMethod = loginRequest.inputMethod,
-    panels_dir = loginRequest.panels_dir,
-    character_is_random = loginRequest.character_is_random,
-    character = loginRequest.character,
-    stage_is_random = loginRequest.stage_is_random,
-    stage = loginRequest.stage,
-    ranked = loginRequest.ranked,
-    save_replays_publicly = loginRequest.save_replays_publicly
-  }
+  ---@type ServerIncomingLoginMessage
+  local sanitized = ClientMessages.sanitizeMenuState(loginRequest)
+  sanitized.login_request = true
+  sanitized.user_id = loginRequest.user_id
+  sanitized.engine_version = loginRequest.engine_version
+  sanitized.name = loginRequest.name
+  sanitized.save_replays_publicly = loginRequest.save_replays_publicly
 
   return sanitized
 end

@@ -87,10 +87,12 @@ end
 
 function Room:onPlayerSettingsUpdate(player)
   if self:state() == "character select" then
-    if self.ranked or player.wants_ranked_match then
-      logger.debug("about to check for rating_adjustment_approval for " .. player.name)
-      local ranked_match_approved, reasons = self:rating_adjustment_approved()
-      self:broadcastJson(ServerProtocol.updateRankedStatus(self.roomNumber, ranked_match_approved, reasons))
+    if self.leaderboard then
+      if self.ranked or player.wants_ranked_match then
+        logger.debug("about to check for rating_adjustment_approval for " .. player.name)
+        local ranked_match_approved, reasons = self:rating_adjustment_approved()
+        self:broadcastJson(ServerProtocol.updateRankedStatus(self.roomNumber, ranked_match_approved, reasons))
+      end
     end
 
     if tableUtils.trueForAll(self.players, ServerPlayer.isReady) then
