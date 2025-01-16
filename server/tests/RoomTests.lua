@@ -95,4 +95,86 @@ local function basicTest()
   end
 end
 
+-- p1 aborts after getting significantly ahead
+local function abortTest1()
+  local room, p1, p2, gameCatcher = getRoom()
+  room:start_match()
+  for i = 1, 120 do
+    -- simulate inputs
+    room:broadcastInput("A", p1)
+  end
+  p2.connection.outgoingMessageQueue:clear()
+  room:handleGameAbort(p1)
+  assert(room.game == nil)
+
+  local game = gameCatcher.game
+  assert(game.complete ~= true)
+  local message = p2.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "gameAbort" and message.content.source == ServerTesting.players[1].name)
+end
+
+-- p1 aborts for no reason while p2 reports a win
+local function abortTest2()
+  local room, p1, p2, gameCatcher = getRoom()
+  room:start_match()
+  for i = 1, 120 do
+    -- simulate inputs
+    room:broadcastInput("A", p1)
+    room:broadcastInput("A", p2)
+  end
+
+  p1.connection.outgoingMessageQueue:clear()
+  p2.connection.outgoingMessageQueue:clear()
+  room:handleGameAbort(p1)
+
+  -- expectation is that the match did not end
+  assert(room.game)
+  assert(room.game.complete ~= true)
+  assert(gameCatcher.game == nil)
+
+  assert(p2.connection.outgoingMessageQueue:len() == 0)
+
+  room:handleGameOverOutcome({outcome = 2}, p2)
+
+  assert(room.game == nil)
+
+  local game = gameCatcher.game
+  assert(game.complete == true)
+
+  local message = p2.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "gameResult" and message.content[1].placement == 2 and message.content[2].placement == 1)
+  message = p1.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "gameResult" and message.content[1].placement == 2 and message.content[2].placement == 1)
+end
+
+-- both players abort despite no sufficiently significant difference in input count
+-- I don't know if this is true but I would assume congestion and dropping of messages can be unidirectional so it seems possible that the server has the inputs but fails to get them to the player
+local function abortTest3()
+  local room, p1, p2, gameCatcher = getRoom()
+  room:start_match()
+  for i = 1, 120 do
+    -- simulate inputs
+    room:broadcastInput("A", p1)
+    room:broadcastInput("A", p2)
+  end
+
+  p1.connection.outgoingMessageQueue:clear()
+  p2.connection.outgoingMessageQueue:clear()
+  room:handleGameAbort(p1)
+  room:handleGameAbort(p2)
+
+  assert(room.game == nil)
+
+  local game = gameCatcher.game
+  assert(game.complete == true)
+
+  local message = p2.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "gameResult" and message.content[1].placement == 0 and message.content[2].placement == 0)
+  message = p1.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "gameResult" and message.content[1].placement == 0 and message.content[2].placement == 0)
+end
+
 basicTest()
+abortTest1()
+abortTest2()
+abortTest3()

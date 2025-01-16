@@ -567,21 +567,26 @@ function BattleRoom:onMatchEnded(match)
   else
     -- match:deinit is the responsibility of the one switching out of the game scene
     match:deinit()
-    -- in the case of a network based abort, the network part of the battleRoom would unregister from the onMatchEnded signal
-    -- and initialise the transition to wherever else before calling abort on the match to finalize it
-    -- that means whenever we land here, it was a match-side local abort that leaves the room intact
-    if match.desyncError then
-      -- match could have a desync error
-      -- -> back to select screen, battleRoom stays intact
-      -- ^ this behaviour is different to the past but until the server tells us the room is dead there is no reason to assume it to be dead
-      local transition = MessageTransition(GAME.timer, 5, "ss_latency_error")
-      GAME.navigationStack:pop(transition)
-    else
-      -- local player could pause and leave
-      -- -> back to select screen, battleRoom stays intact
-      -- each scene handles the pop individually
-      if self.online and match:hasLocalPlayer() then
-        GAME.netClient:sendMatchAbort()
+
+    -- in the case of a network based abort (== opponent left / disconnected in some way),
+    --  the network part of the battleRoom would unregister from the onMatchEnded signal
+    --  and initialise the transition to wherever else before calling abort on the match to finalize it
+    -- that means whenever we land here, it was a CLIENT SIDE abort that leaves the room intact
+
+    if self.online and match:hasLocalPlayer() then
+      -- as the abort is client side we NEED to tell the server we aborted as otherwise the server match stalls
+      GAME.netClient:sendMatchAbort()
+
+      if match.engine.desyncError then
+        -- match could have a desync error
+        -- -> back to select screen, battleRoom stays intact
+        -- ^ this behaviour is different to the past but until the server tells us the room is dead there is no reason to assume it to be dead
+        local transition = MessageTransition(GAME.timer, 5, "ss_latency_error")
+        GAME.navigationStack:pop(transition)
+      else
+        -- local player could pause and leave
+        -- -> back to select screen, battleRoom stays intact
+        -- the UI used to abort handles the pop directly
       end
     end
 

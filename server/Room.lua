@@ -305,7 +305,7 @@ function Room:handleTaunt(message, sender)
   self:broadcastJson(msg, sender)
 end
 
----@param message table
+---@param message { outcome: integer, [any]: any }
 ---@param sender ServerPlayer
 function Room:handleGameOverOutcome(message, sender)
   logger.debug(self.roomNumber .. ": Received game result from " .. sender.name .. ": " .. message.outcome)
@@ -355,14 +355,55 @@ function Room:updateWinCounts(game)
   end
 end
 
-function Room:abortGame(player)
-  if #self.players == 1 and self.players[1] == player then
-    logger.debug(player.name .. " aborted the game")
-    self:broadcastJson(ServerProtocol.sendGameAbort(player), player)
-    self:emitSignal("matchEnd", self.game)
-    self:prepare_character_select()
-    self.game = nil
+function Room:handleGameAbort(sender)
+  if #self.players == 1 and self.players[1] == sender then
+    logger.debug(sender.name .. " aborted the game")
+    self:abortGame(sender)
+  elseif #self.players == 2 and tableUtils.contains(self.players, sender) then
+    -- aborts in multiplayer room are a bigger deal so we should log them as info
+    logger.info(sender.name .. " aborted the game")
+
+    -- there is obviously some abuse potential here, e.g. by sending aborts instead of a game result
+    -- the room should only accept the abort if there is a significant difference in inputs on Game, suggesting the abort is legitimate
+    local inputCountDifference = self.game:getInputCountDifference()
+    if inputCountDifference > 100 then
+      logger.info("abort was judged as legitimate with an inputCountDifference of " .. inputCountDifference)
+      self:abortGame(sender)
+    else
+      logger.info("abort was judged as illegitimate with an inputCountDifference of " .. inputCountDifference)
+      -- if that is not the case, we're in a bit of a pickle as the sender already stopped the match client side
+      --  but there is no indication for the abort actually being legitimate
+      -- I don't think there is a truly fair way to resolve that situation as the assumption of manipulation makes it impossible to make a correct decision
+      --  as long as clients are given the "power" to abort (and realistically they can always do that just by Alt+F4)
+      -- ; up to now closing the room was the effective outcome either way
+      -- even running a simulation of the game to the end to see if there was a winner would not resolve it as clients could be modified to not send an input that leads to a game over
+
+      -- I think the fair thing is to assume that the client reported a loss in that scenario
+      -- if both clients end up sending an abort that is denied by above criteria they'll both report a loss
+      -- this leads to the outcome resolving as a tie which is fair as long as ties are discarded for the ladder (currently they are)
+      -- that would be a scenario in which the above condition was simply not enough to validate the abort
+      local outcome
+      if sender.player_number == 1 then
+        outcome = 2
+      else
+        outcome = 1
+      end
+      self:handleGameOverOutcome({outcome = outcome}, sender)
+
+      -- it could naturally still happen that one player aborts and the other reports a win leading to a win instead of a tie
+      -- while clients could be manipulated to just report a win instead of an abort in this scenario,
+      --  the general occurence of the situation should be rare enough that consequences of abuse in this manner should be minimal
+      --  as the abuser does only have control over their own connection to the server
+    end
   end
+
+end
+
+function Room:abortGame(sender)
+  self:broadcastJson(ServerProtocol.sendGameAbort(sender), sender)
+  self:emitSignal("matchEnd", self.game)
+  self:prepare_character_select()
+  self.game = nil
 end
 
 return Room

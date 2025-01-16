@@ -191,4 +191,15 @@ function Game:getPlacement(player)
   end
 end
 
+---@return integer
+function Game:getInputCountDifference()
+  if #self.inputs == 1 then
+    return 0
+  elseif #self.inputs == 2 then
+    return math.abs(#self.inputs[1] - #self.inputs[2])
+  else
+    return 0
+  end
+end
+
 return Game
