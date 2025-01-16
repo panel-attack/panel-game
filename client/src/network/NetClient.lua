@@ -288,11 +288,18 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
   end
 end
 
+---@param self NetClient
 local function handleGameAbort(self, gameAbortMessage)
-  if self.room and self.room.match then
+  if self.room and self.room.match and self.state == states.INGAME then
     self.tcpClient:dropOldInputMessages()
+    -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
+    self.room.match:disconnectSignal("matchEnded", self.room)
+    -- instead we actively abort the match ourselves
     self.room.match:abort()
+    self.room.match:deinit()
     self.state = states.ROOM
+    transition = MessageTransition(love.timer.getTime(), 5, "Game aborted by " .. (gameAbortMessage.source or "unknown"), false)
+    GAME.navigationStack:pop(transition)
   end
 end
 
