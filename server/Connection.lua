@@ -4,6 +4,8 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
 local Queue = require("common.lib.Queue")
 
+local TIME_OUT = 10
+
 ---@alias InputProcessor { processInput: function }
 
 -- Represents a connection to a specific player. Responsible for sending and receiving messages
@@ -40,15 +42,6 @@ local Connection = class(
   end
 )
 
-local function send(connection, message)
-  local success, error = connection.socket:send(message)
-  if not success then
-    logger.debug(connection.index .. "Connection.send failed with " .. error .. ". will retry next update...")
-  end
-
-  return success
-end
-
 -- dedicated method for sending JSON messages
 function Connection:sendJson(messageInfo)
   if messageInfo.messageType ~= NetworkProtocol.serverMessageTypes.jsonMessage then
@@ -59,9 +52,7 @@ function Connection:sendJson(messageInfo)
   logger.debug("Connection " .. self.index .. " Sending JSON: " .. json)
   local message = NetworkProtocol.markedMessageForTypeAndBody(messageInfo.messageType.prefix, json)
 
-  if not send(self, message) then
-    self.outgoingMessageQueue:push(message)
-  end
+  self.outgoingMessageQueue:push(message)
 end
 
 -- dedicated method for sending inputs and magic prefixes
@@ -74,9 +65,7 @@ function Connection:send(message)
 --     end
 --   end
 
-  if not send(self, message) then
-    self.outgoingMessageQueue:push(message)
-  end
+  self.outgoingMessageQueue:push(message)
 end
 
 function Connection:close()
@@ -130,39 +119,63 @@ local function read(connection)
   return true
 end
 
+---@param connection Connection
+---@return boolean # if the connection is still considered open
 local function sendQueuedMessages(connection)
   for i = connection.outgoingMessageQueue.first, connection.outgoingMessageQueue.last do
     local message = connection.outgoingMessageQueue[i]
-    if not send(connection, message) then
-      connection.sendRetryCount = connection.sendRetryCount + 1
-      break
-    else
+    local success, error = connection.socket:send(message)
+    if not success then
+      if error == "closed" then
+        return false
+      else
+        connection.sendRetryCount = connection.sendRetryCount + 1
+        break
+      end
+    elseif connection.sendRetryCount > 0 then
       logger.debug(connection.index .. " Retry succeeded after " .. connection.sendRetryCount)
       connection.sendRetryCount = 0
     end
   end
 
-  if connection.sendRetryCount == 0 and connection.outgoingMessageQueue:len() > 0 then
-    connection.outgoingMessageQueue:clear()
+  if connection.sendRetryCount == 0 then
+    if connection.outgoingMessageQueue:len() > 0 then
+      connection.outgoingMessageQueue:clear()
+    end
+  elseif connection.sendRetryCount >= connection.sendRetryLimit then
+    logger.info("Closing connection " .. connection.index .. ". Connection.send failed after " .. connection.sendRetryLimit .. " retries were attempted")
+    return false
   end
+
+  return true
 end
 
 ---@param t integer
-function Connection:update(t)
-  if not read(self) then
-    logger.info("Closing connection " .. self.index .. ". Connection.read failed with closed error.")
-    return false
+function Connection:update(t, canRead, canSend)
+  if canRead then
+    if not read(self) then
+      logger.info("Closing connection " .. self.index .. ". Connection.read failed with closed error.")
+      return false
+    end
   end
 
-  sendQueuedMessages(self)
+  if canSend then
+    if not sendQueuedMessages(self) then
+      logger.info("Send for connection " .. self.index .. " failed because the socket has been closed or the retry limit has been surpassed")
+      return false
+    end
+  end
 
-  if self.sendRetryCount >= self.sendRetryLimit then
-    logger.info("Closing connection " .. self.index .. ". Connection.send failed after " .. self.sendRetryLimit .. " retries were attempted")
-    return false
+  if not canRead and not canSend then
+    -- it is possible for the socket to "close" based on internal status as luasocket implements its own connection keeping
+    -- luasocket does not give a good way to check this easily as closed sockets are ignored in socket.select so we need to check
+    if (not self.socket) or (self.socket:getpeername() == nil) then
+      return false
+    end
   end
 
   if t ~= self.lastCommunicationTime then
-    if t - self.lastCommunicationTime > 10 then
+    if t - self.lastCommunicationTime > TIME_OUT then
       logger.info("Closing connection for " .. self.index .. ". Connection timed out (>10 sec)")
       return false
     elseif t > self.lastPingTime and t - self.lastCommunicationTime > 1 then
@@ -172,6 +185,7 @@ function Connection:update(t)
       self.lastPingTime = t
     end
   end
+
   return true
 end
 

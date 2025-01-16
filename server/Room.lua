@@ -306,6 +306,7 @@ end
 ---@param message table
 ---@param sender ServerPlayer
 function Room:handleGameOverOutcome(message, sender)
+  logger.debug(self.roomNumber .. ": Received game result from " .. sender.name .. ": " .. message.outcome)
   self.game:receiveOutcomeReport(sender, message.outcome)
 
   if self.game.complete then
@@ -321,7 +322,7 @@ function Room:handleGameOverOutcome(message, sender)
       self.ratings = ratingUpdates
     end
 
-    logger.debug("\n*******************************")
+    logger.debug("*******************************")
     for i, player in ipairs(self.players) do
       logger.debug("***" .. player.name .. " " .. self.win_counts[i] .. "***")
     end

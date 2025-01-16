@@ -426,28 +426,28 @@ end
 -- Process any data on all active connections
 function Server:updateConnections()
   -- Make a list of all the sockets to listen to
-  local socketsToCheck = {self.socket}
+  local socketsToRead = {self.socket}
   for _, v in pairs(self.connections) do
-    socketsToCheck[#socketsToCheck + 1] = v.socket
+    socketsToRead[#socketsToRead + 1] = v.socket
   end
 
-  -- Wait for up to 1 second to see if there is any data to read on all the given sockets
+  local socketsToSend = shallowcpy(socketsToRead)
+
+  -- Wait for up to 1 second to see if there is any socket to read / write on
   -- as far as I understand the waiting time is only until at least one socket has data so it's not actually stalling unless there is no data anyway
-  local socketsWithData = socket.select(socketsToCheck, nil, 1)
-  assert(type(socketsWithData) == "table")
-  for _, currentSocket in ipairs(socketsWithData) do
-    local connectionIndex = self.socketToConnectionIndex[currentSocket]
-    if connectionIndex then
-      local connection = self.connections[connectionIndex]
-      local success = connection:update(self.lastProcessTime)
-      if not success then
-        local player = self.connectionToPlayer[connection]
-        local reason = "disconnect"
-        if player then
-          reason = player.name .. "'s connection failed"
-        end
-        self:closeConnection(self.connections[connectionIndex], reason)
+  socketsToRead, socketsToSend = socket.select(socketsToRead, socketsToSend, 1)
+
+  for _, connection in pairs(self.connections) do
+    local canRead = not not socketsToRead[connection.socket]
+    local canSend = not not socketsToSend[connection.socket]
+    local success = connection:update(self.lastProcessTime, canRead, canSend)
+    if not success then
+      local player = self.connectionToPlayer[connection]
+      local reason = "disconnect"
+      if player then
+        reason = player.name .. "'s connection failed"
       end
+      self:closeConnection(connection, reason)
     end
   end
 end
