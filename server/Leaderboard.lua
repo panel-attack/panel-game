@@ -411,7 +411,11 @@ function Leaderboard:processGameResult(game)
     ratings[i].ranked_games_played = leaderboardPlayer.ranked_games_played or 0
     ratings[i].ranked_games_won = leaderboardPlayer.ranked_games_won or 0
     ratings[i].userId = player.userId
-    ratings[i].league = self:get_league(ratings[i].new)
+    if ratings[i].placement_match_progress then
+      ratings[i].league = self:get_league(0)
+    else
+      ratings[i].league = self:get_league(ratings[i].new)
+    end
   end
 
   logger.debug("done with Leaderboard.processGameResult")

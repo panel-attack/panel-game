@@ -105,8 +105,9 @@ function BattleRoom.createFromServerMessage(message)
     end
     for i = 1, #battleRoom.players do
       if message.players[i].ratingInfo then
-        battleRoom.players[i]:setRating(message.players[i].ratingInfo.new)
-        battleRoom.players[i]:setLeague(message.players[i].ratingInfo.league)
+        local ratingInfo = message.players[i].ratingInfo
+        battleRoom.players[i]:setRating(ratingInfo.placement_match_progress or ratingInfo.new)
+        battleRoom.players[i]:setLeague(ratingInfo.league)
       end
     end
     if message.winCounts then
