@@ -167,9 +167,7 @@ function Leaderboard:qualifies_for_placement(userId)
   --local placement_match_win_ratio_requirement = .2
   self:loadPlacementMatches(userId)
   local placement_matches_played = #self.loadedPlacementMatches.incomplete[userId]
-  if not self.consts.PLACEMENT_MATCHES_ENABLED then
-    return false, ""
-  elseif (self.players[userId] and self.players[userId].placement_done) then
+  if (self.players[userId] and self.players[userId].placement_done) then
     return false, "user is already placed"
   elseif placement_matches_played < self.consts.PLACEMENT_MATCH_COUNT_REQUIREMENT then
     return false, placement_matches_played .. "/" .. self.consts.PLACEMENT_MATCH_COUNT_REQUIREMENT .. " placement matches played."
@@ -183,6 +181,8 @@ function Leaderboard:qualifies_for_placement(userId)
   -- if win_ratio < placement_match_win_ratio_requirement then
   -- return false, "placement win ratio is currently "..math.round(win_ratio*100).."%.  "..math.round(placement_match_win_ratio_requirement*100).."% is required for placement."
   -- end
+  elseif not self.consts.PLACEMENT_MATCHES_ENABLED then
+    return false, ""
   end
   return true
 end
