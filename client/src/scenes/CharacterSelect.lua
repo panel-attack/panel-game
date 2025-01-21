@@ -388,14 +388,14 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   -- by applying focusable we can turn it into an "on release" interaction rather than on press by taking control of input interpretation
   Focusable(characterButton)
   characterButton.holdTime = 0
-  characterButton.receiveInputs = function(self, inputs, dt, inputSource)
+  characterButton.receiveInputs = function(self, inputs, dt)
     if inputs.isPressed["Swap1"] then
       -- measure the time the press is held for
       self.holdTime = self.holdTime + dt
     else
       self:yieldFocus()
       -- apply the actual click on release with the held time and reset it afterwards
-      self:onClick(inputSource, self.holdTime)
+      self:onClick(inputs, self.holdTime)
       self.holdTime = 0
     end
     self.updateSuperSelectShader(self.superSelectImage, self.holdTime)
