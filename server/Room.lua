@@ -50,7 +50,17 @@ function(self, roomNumber, players, gameMode, leaderboard)
     if self.leaderboard then
       local rating = math.round(self.leaderboard:getRating(player) or 0)
       local placementProgress = self.leaderboard:getPlacementProgress(player)
-      self.ratings[i] = {old = rating, new = rating, difference = 0, league = self.leaderboard:get_league(rating), placement_match_progress = placementProgress}
+      self.ratings[i] = {
+        old = rating,
+        new = rating,
+        difference = 0,
+        placement_match_progress = placementProgress
+      }
+      if placementProgress then
+        self.ratings[i].league = self.leaderboard:get_league(0)
+      else
+        self.ratings[i].league = self.leaderboard:get_league(rating)
+      end
     end
     player.cursor = "__Ready"
     player.player_number = i
