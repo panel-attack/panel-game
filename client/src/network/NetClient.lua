@@ -543,7 +543,7 @@ function NetClient:update()
       else
         self.loginState = result.message
         self:setState(states.OFFLINE)
-        end
+      end
       self:emitSignal("loginFinished", result)
     end
   end

@@ -558,11 +558,10 @@ function Server:processMessage(message, connection)
       if self:login(connection, message.user_id, message.name, IP_logging_in, port, message.engine_version, message) then
         return true
       else
-        self:closeConnection(connection, "login while logged in")
         return false
       end
     else
-      self:closeConnection(connection)
+      self:closeConnection(connection, "login while logged in")
       return false
     end
   else
