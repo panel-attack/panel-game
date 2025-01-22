@@ -143,7 +143,7 @@ function BattleRoom.createFromServerMessage(message)
       p:updateSettings(player.settings)
 
       if player.ratingInfo then
-        p:setRating(player.ratingInfo.new)
+        p:setRating(player.ratingInfo.placement_match_progress or player.ratingInfo.new)
         p:setLeague(player.ratingInfo.league)
       end
 
