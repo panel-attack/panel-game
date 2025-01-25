@@ -47,8 +47,8 @@ local function handleCopy()
 
     for i = 1, #match.players do
       local player = match.players[i]
-      if player.stack.toPuzzleInfo then
-        stacks["P" .. i] = player.stack:toPuzzleInfo()
+      if player.stack.engine.toPuzzleInfo then
+        stacks["P" .. i] = player.stack.engine:toPuzzleInfo()
         stacks["P" .. i]["Player"] = player.name
       end
     end
