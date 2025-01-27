@@ -6,6 +6,7 @@ local FileUtils = require("client.src.FileUtils")
 local GraphicsUtil = {
   fontFile = nil,
   fontSize = 12,
+  fontDpiScale = 1,
   fontCache = {},
   quadPool = {}
 }
@@ -198,14 +199,13 @@ function GraphicsUtil.drawStraightLine(x1, y1, x2, y2, r, g, b, a)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
-local function privateMakeFont(fontPath, size)
+local function privateMakeFont(fontPath, size, dpiScale)
   local f
   local hinting = "normal"
-  local dpi = GAME:newCanvasSnappedScale()
   if fontPath then
-    f = love.graphics.newFont(fontPath, size, hinting, dpi)
+    f = love.graphics.newFont(fontPath, size, hinting, dpiScale)
   else
-    f = love.graphics.newFont(size, hinting, dpi)
+    f = love.graphics.newFont(size, hinting, dpiScale)
   end
 
   return f
@@ -214,19 +214,26 @@ end
 -- Creates a new font based on the current font and a delta
 function GraphicsUtil.getGlobalFontWithSize(fontSize)
   local f = GraphicsUtil.fontCache[fontSize]
-  if not f then
-    f = privateMakeFont(GraphicsUtil.fontFile, fontSize)
+  if not f or f:getDPIScale() ~= GraphicsUtil.fontDpiScale then
+    f = privateMakeFont(GraphicsUtil.fontFile, fontSize, GraphicsUtil.fontDpiScale)
     GraphicsUtil.fontCache[fontSize] = f
   end
   return f
 end
 
-function GraphicsUtil.setGlobalFont(filepath, size)
+function GraphicsUtil.setGlobalFont(filepath, size, dpiScale)
+  GraphicsUtil.setFontDpiScale(dpiScale)
   GraphicsUtil.fontCache = {}
   GraphicsUtil.fontFile = filepath
   GraphicsUtil.fontSize = size
   local createdFont = GraphicsUtil.getGlobalFontWithSize(size)
   love.graphics.setFont(createdFont)
+end
+
+function GraphicsUtil.setFontDpiScale(dpiScale)
+  if dpiScale and tonumber(dpiScale) then
+    GraphicsUtil.fontDpiScale = dpiScale
+  end
 end
 
 -- Returns the current global font
@@ -335,7 +342,7 @@ function GraphicsUtil.getAlignmentOffset(parentElement, childElement)
     yOffset = 0
   end
 
-  return xOffset, yOffset
+  return math.round(xOffset), math.round(yOffset)
 end
 
 -- sets the translation for a childElement inside of a parentElement so that

@@ -219,7 +219,7 @@ function Game:setupRoutine()
   -- loading various assets into the game
   coroutine.yield("Loading localization...")
   Localization:init()
-  self.setLanguage(config.language_code)
+  self:setLanguage(config.language_code)
 
   detectHardwareProblems()
 
@@ -569,7 +569,7 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
     -- Go from biggest to smallest and used the highest one that still fits
     for i = #availableScales, 1, -1 do
       local scale = availableScales[i]
-      if config.gameScaleType ~= "auto" or 
+      if config.gameScaleType ~= "auto" or
         (newWindowWidth >= self.globalCanvas:getWidth() * scale and newWindowHeight >= self.globalCanvas:getHeight() * scale) then
         self.canvasXScale = scale
         self.canvasYScale = scale
@@ -618,7 +618,7 @@ function Game:refreshCanvasAndImagesForNewScale()
   characters_reload_graphics()
 
   -- Reload loc to get the new font
-  self.setLanguage(config.language_code)
+  self:setLanguage(config.language_code)
 end
 
 -- Transform from window coordinates to game coordinates
@@ -637,7 +637,7 @@ function Game:drawLoadingString(loadingString)
   GraphicsUtil.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", nil, nil, 10)
 end
 
-function Game.setLanguage(lang_code)
+function Game:setLanguage(lang_code)
   for i, v in ipairs(Localization.codes) do
     if v == lang_code then
       Localization.lang_index = i
@@ -647,13 +647,13 @@ function Game.setLanguage(lang_code)
   config.language_code = Localization.codes[Localization.lang_index]
 
   if themes[config.theme] and themes[config.theme].font and themes[config.theme].font.path then
-    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size)
+    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size, self:newCanvasSnappedScale())
   elseif config.language_code == "JP" then
-    GraphicsUtil.setGlobalFont("client/assets/fonts/jp.ttf", 14)
+    GraphicsUtil.setGlobalFont("client/assets/fonts/jp.ttf", 14, self:newCanvasSnappedScale())
   elseif config.language_code == "TH" then
-    GraphicsUtil.setGlobalFont("client/assets/fonts/th.otf", 14)
+    GraphicsUtil.setGlobalFont("client/assets/fonts/th.otf", 14, self:newCanvasSnappedScale())
   else
-    GraphicsUtil.setGlobalFont(nil, 12)
+    GraphicsUtil.setGlobalFont(nil, 12, self:newCanvasSnappedScale())
   end
 
   Localization:refresh_global_strings()

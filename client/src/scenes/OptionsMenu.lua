@@ -161,9 +161,9 @@ function OptionsMenu:loadBaseMenu()
   local languageLabels = {}
   for k, v in ipairs(languageName) do
     local lang = config.language_code
-    GAME.setLanguage(v[1])
+    GAME:setLanguage(v[1])
     languageLabels[#languageLabels + 1] = Label({text = v[2], translate = false, width = 70, height = 25})
-    GAME.setLanguage(lang)
+    GAME:setLanguage(lang)
   end
 
   local languageStepper = Stepper({
@@ -172,7 +172,7 @@ function OptionsMenu:loadBaseMenu()
     selectedIndex = languageNumber,
     onChange = function(value)
       GAME.theme:playMoveSfx()
-      GAME.setLanguage(value[1])
+      GAME:setLanguage(value[1])
       self:updateMenuLanguage()
     end
   })
