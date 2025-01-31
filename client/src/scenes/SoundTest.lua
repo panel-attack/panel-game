@@ -92,6 +92,10 @@ function SoundTest:load()
 
         local labels, values = createSfxMenuInfo(value)
         sfxStepper:setLabels(labels, values, 1)
+        
+        -- redraw sfx stepper
+        self.soundTestMenu:removeMenuItemAtIndex(5);
+        self.soundTestMenu:addMenuItem(5, MenuItem.createStepperMenuItem("op_music_sfx", nil, nil, sfxStepper))
 
         if playButtonGroup.value == "character" then
           playMusic("character", value, musicTypeButtonGroup.value)
@@ -201,9 +205,9 @@ function SoundTest:load()
     end)
   }
   
-  soundTestMenu = Menu.createCenteredMenu(soundTestMenuOptions)
+  self.soundTestMenu = Menu.createCenteredMenu(soundTestMenuOptions)
 
-  self.uiRoot:addChild(soundTestMenu)
+  self.uiRoot:addChild(self.soundTestMenu)
   
   self.backgroundImg = themes[config.theme].images.bg_main
 
@@ -218,7 +222,7 @@ function SoundTest:load()
 end
 
 function SoundTest:update(dt)
-  soundTestMenu:receiveInputs()
+  self.soundTestMenu:receiveInputs()
   self.backgroundImg:update(dt)
 end
 
