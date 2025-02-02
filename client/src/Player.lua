@@ -238,7 +238,7 @@ function Player:setRating(rating)
   end
 
   if rating and tonumber(rating) then
-    rating = math.round(rating)
+    rating = math.round(tonumber(rating))
   end
 
   self.rating = rating
