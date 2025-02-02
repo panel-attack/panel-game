@@ -36,5 +36,8 @@ for _, value in pairs(arg) do
     for match in string.gmatch(value, "user%-id=(.*)") do
       CUSTOM_USER_ID = match
     end
+    for match in string.gmatch(value, "username=(.*)") do
+      CUSTOM_USERNAME = match
+    end
   end
 end
