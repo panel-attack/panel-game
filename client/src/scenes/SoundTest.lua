@@ -22,8 +22,6 @@ SoundTest.name = "SoundTest"
 local BUTTON_WIDTH = 70
 local BUTTON_HEIGHT = 25
 
-local soundTestMenu
-
 local menuValidateSound
 
 local function playMusic(source, id, musicType)
