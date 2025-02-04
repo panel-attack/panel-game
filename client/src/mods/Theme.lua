@@ -839,8 +839,10 @@ function Theme:loadDefaultStage()
     end
     defaultStage:preload()
     defaultStage:load(true)
-  else
+  elseif self.path ~= consts.DEFAULT_THEME_DIRECTORY then
     defaultStage = themes[consts.DEFAULT_THEME_DIRECTORY]:loadDefaultStage()
+  else
+    error("No default stage available")
   end
 
   self.defaultStage = defaultStage
