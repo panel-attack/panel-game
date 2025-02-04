@@ -102,7 +102,6 @@ local Game = class(
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  -- TODO: include this with save.lua?
   GAME.puzzleSets = {}
   save.write_puzzles()
   save.read_puzzles("puzzles")

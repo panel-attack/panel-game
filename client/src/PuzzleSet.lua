@@ -6,6 +6,7 @@ local Puzzle = require("common.engine.Puzzle")
 ---@class PuzzleSet
 ---@field setName string
 ---@field puzzles Puzzle[]
+---@field fileSource string?
 local PuzzleSet =
   class(
   function(self, setName, puzzles)
@@ -14,10 +15,14 @@ local PuzzleSet =
   end
 )
 
-function PuzzleSet.loadFromFile(filename)
-  local data = FileUtils.readJsonFile(filename)
+---@param filePath string
+---@return PuzzleSet?
+function PuzzleSet.loadFromFile(filePath)
+  local data = FileUtils.readJsonFile(filePath)
 
   if data then
+    local set
+
     if data["Version"] == 2 then
       for _, puzzleSet in pairs(data["Puzzle Sets"]) do
         local puzzleSetName = puzzleSet["Set Name"]
@@ -27,21 +32,24 @@ function PuzzleSet.loadFromFile(filename)
           puzzles[#puzzles + 1] = puzzle
         end
 
-        return PuzzleSet(puzzleSetName, puzzles)
+        set = PuzzleSet(puzzleSetName, puzzles)
       end
     elseif data["Version"] ~= 2 and data["Version"] then
-      error("Puzzle " .. filename .. " specifies invalid version " .. data["Version"])
+      error("Puzzle " .. filePath .. " specifies invalid version " .. data["Version"])
     else -- old file format compatibility
-      for set_name, puzzle_set in pairs(data) do
+      for setName, puzzleSet in pairs(data) do
         local puzzles = {}
-        for _, puzzleData in pairs(puzzle_set) do
+        for _, puzzleData in pairs(puzzleSet) do
           local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
           puzzles[#puzzles + 1] = puzzle
         end
 
-        return PuzzleSet(set_name, puzzles)
+        set = PuzzleSet(setName, puzzles)
       end
     end
+
+    set.fileSource = filePath
+    return set
   end
 end
 
