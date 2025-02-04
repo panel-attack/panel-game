@@ -290,13 +290,13 @@ function Game:createDirectoriesIfNeeded()
 
     -- Move the old user ID spot to the new folder (we won't delete the old one for backwards compatibility and safety)
     if love.filesystem.getInfo(oldServerDirectory) then
-      local userID = read_user_id_file(consts.LEGACY_SERVER_LOCATION)
-      write_user_id_file(userID, consts.SERVER_LOCATION)
+      local userID = save.read_user_id_file(consts.LEGACY_SERVER_LOCATION)
+      save.write_user_id_file(userID, consts.SERVER_LOCATION)
     end
   end
 
   fileUtils.recursiveCopy("client/assets/default_data/training", "training")
-  readAttackFiles("training")
+  save.readAttackFiles("training")
 
   if love.system.getOS() ~= "OS X" then
     fileUtils.recursiveRemoveFiles(".", ".DS_Store")

@@ -1,4 +1,4 @@
-require("client.src.save")
+local save = require("client.src.save")
 local Match = require("common.engine.Match")
 local Stack = require("common.engine.Stack")
 local SimulatedStack = require("common.engine.SimulatedStack")
@@ -32,7 +32,7 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
 
   if attackFile then
     args = {
-      attackSettings = readAttackFile(attackFile),
+      attackSettings = save.readAttackFile(attackFile),
       which = 2,
       is_local = false,
     }

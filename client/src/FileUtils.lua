@@ -257,9 +257,13 @@ function fileUtils.write(path, filename, data)
   end
 end
 
-function fileUtils.writeJson(path, filename, tab)
-  local encoded = json.encode(tab)
-  ---@cast encoded string # json.encode always returns a string if not called with a second argument
+---@param path string
+---@param filename string
+---@param tab table
+---@param encodeArgs table?
+function fileUtils.writeJson(path, filename, tab, encodeArgs)
+  local encoded = json.encode(tab, encodeArgs)
+  ---@cast encoded string # json.encode always returns a string if the second argument does not contain the buffer field
   fileUtils.write(path, filename, encoded)
 end
 

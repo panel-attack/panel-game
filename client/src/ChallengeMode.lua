@@ -6,6 +6,7 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
 require("client.src.BattleRoom")
+local save = require("client.src.save")
 
 
 -- Challenge Mode is a particular play through of the challenge mode in the game, it contains all the settings for the mode.
@@ -148,7 +149,7 @@ function ChallengeMode:attackFilePath(difficulty, stageIndex)
 end
 
 function ChallengeMode:getAttackSettings(difficulty, stageIndex)
-  local attackFile = readAttackFile(self:attackFilePath(difficulty, stageIndex))
+  local attackFile = save.readAttackFile(self:attackFilePath(difficulty, stageIndex))
   assert(attackFile ~= nil, "could not find attack file for challenge mode")
   return attackFile
 end

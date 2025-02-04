@@ -8,6 +8,7 @@ local input = require("client.src.inputManager")
 local joystickManager = require("common.lib.joystickManager")
 local util = require("common.lib.util")
 local class = require("common.lib.class")
+local save = require("client.src.save")
 
 -- Scene for configuring input
 local InputConfigMenu = class(
@@ -74,7 +75,7 @@ function InputConfigMenu:updateKey(key, pressedKey, index)
   GAME.input.inputConfigurations[self.configIndex][key] = pressedKey
   local keyDisplayName = self:getKeyDisplayName(pressedKey)
   self:currentKeyLabelForIndex(index + 1):setText(keyDisplayName)
-  write_key_file()
+  save.write_key_file()
 end
 
 function InputConfigMenu:setKey(key, index)
@@ -134,7 +135,7 @@ function InputConfigMenu:clearAllInputs()
     local keyName = loc("op_none")
     self:currentKeyLabelForIndex(i + 1):setText(keyName)
   end
-  write_key_file()
+  save.write_key_file()
 end
 
 function InputConfigMenu:resetToDefault(menuOptions) 
@@ -153,7 +154,7 @@ function InputConfigMenu:resetToDefault(menuOptions)
   GAME.theme:playMoveSfx()
   self.slider:setValue(1)
   self:updateInputConfigMenuLabels(1)
-  write_key_file() 
+  save.write_key_file()
 end
 
 local function exitMenu()

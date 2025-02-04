@@ -6,6 +6,7 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local TextButton = require("client.src.ui.TextButton")
 local Label = require("client.src.ui.Label")
+local save = require("client.src.save")
 
 -- Scene for setting the username
 local SetUserIdMenu = class(function(self, sceneParams)
@@ -27,7 +28,7 @@ function SetUserIdMenu:load(sceneParams)
     vAlign = "top",
     width = 200,
     height = 25,
-    value =  read_user_id_file(self.serverIp)
+    value =  save.read_user_id_file(self.serverIp)
   })
 
   self.confirmationButton = TextButton({
@@ -64,7 +65,7 @@ function SetUserIdMenu:confirmId()
   if not hasNonDigits and self.idInputField.value:len() > 0 then
     -- not much point in doing validation but let's stay numeric and non-empty at least
     GAME.theme:playValidationSfx()
-    write_user_id_file(self.idInputField.value, self.serverIp)
+    save.write_user_id_file(self.idInputField.value, self.serverIp)
     -- this is dirty but with how stupid nested OptionsMenu is, there is no way to get back right to where we came from
     GAME.navigationStack:pop()
   else

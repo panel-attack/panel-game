@@ -217,9 +217,6 @@ config = {
           if type(read_data.name) == "string" then
             configTable.name = read_data.name
           end
-          if CUSTOM_USERNAME then
-            configTable.name = CUSTOM_USERNAME
-          end
 
           if type(read_data.master_volume) == "number" then
             configTable.master_volume = util.bound(0, read_data.master_volume, 100)
@@ -317,4 +314,5 @@ config = {
 
       end
     )
+    return configTable
   end

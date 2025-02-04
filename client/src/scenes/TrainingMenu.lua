@@ -9,6 +9,7 @@ local tableUtils = require("common.lib.tableUtils")
 local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
 local GameModes = require("common.engine.GameModes")
 local GameBase = require("client.src.scenes.GameBase")
+local save = require("client.src.save")
 
 local TrainingMenu = class(
   function (self, sceneParams)
@@ -62,7 +63,7 @@ function TrainingMenu:load(sceneParams)
     createBasicTrainingMode(loc("large_garbage"), 6, 12),
   }
   local translatableGarbagePatternNames = {"combo_storm", "factory", "large_garbage"}
-  for _, value in ipairs(readAttackFiles("training")) do
+  for _, value in ipairs(save.readAttackFiles("training")) do
     table.insert(garbagePatternNames, value.name)
     table.insert(garbagePatternValues, value)
   end
