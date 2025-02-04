@@ -666,7 +666,12 @@ function Character.fillInMissingSounds(self, sfxTable,  name, maxIndex)
     if sfxTable and sfxTable[i] then
       fillUpSound = sfxTable[i]
     else
-      sfxTable[i] = fillUpSound
+      if i >= perSizeSfxStart[name] then
+        sfxTable[i] = fillUpSound
+      else
+        -- leave it empty
+        sfxTable[i] = nil
+      end
     end
   end
 
@@ -700,8 +705,8 @@ function Character.playComboSfx(self, size)
     -- combo sfx available!
     if self.combo_style == comboStyle.classic then
       -- roll among all combos in case a per_combo style character had its combostyle changed to classic
-      local randomSFX = tableUtils.getRandomElement(self.sounds.combo)
-      randomSFX:play()
+      local rolledIndex = math.random(#self.sounds.combo)
+      self.sounds.combo[rolledIndex]:play()
     else
       -- use fallback sound if the combo size is higher than the highest combo sfx
       -- an alternative scenario is if in per_combo style the shock sfx redirects here for a 3 shock match
