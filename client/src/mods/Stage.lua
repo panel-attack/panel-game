@@ -23,6 +23,14 @@ local other_musics = {"normal_music", "danger_music", "normal_music_start", "dan
 
 local randomStage = nil -- acts as the bundle stage for all theme stages
 
+---@class Stage : Mod
+---@field display_name string
+---@field music_style string defines the behaviour for music when switching between normal and danger
+---@field music_volume number defines a multiplier to apply to the StageTrack
+---@field images table<string, love.Image> graphical assets of the stage
+---@field musics table<string, love.Source> music assets of the stage
+---@field hasMusic boolean? if the stage has any music
+---@field stageTrack StageTrack? the StageTrack constructed from the stage's music assets
 local Stage =
   class(
   function(s, full_path, folder_name)

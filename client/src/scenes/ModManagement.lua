@@ -55,7 +55,7 @@ function ModManagement:load()
   self.cursor = GridCursor({
     grid = self.characterGrid,
     player = GAME.localPlayer,
-    frameImages = themes[config.theme].images.IMG_char_sel_cursors[1],
+    frameImages = themes[config.theme]:getGridCursor(1),
     startPosition = {x = 9, y = 1},
   })
 

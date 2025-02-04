@@ -122,6 +122,9 @@ function fileUtils.readJsonFile(file)
 end
 
 --returns a source, or nil if it could not find a file
+---@param path_and_filename string
+---@param streamed boolean?
+---@return love.Source?
 function fileUtils.loadSoundFromSupportExtensions(path_and_filename, streamed)
   for k, extension in ipairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
     if love.filesystem.getInfo(path_and_filename .. extension) then
@@ -132,6 +135,10 @@ function fileUtils.loadSoundFromSupportExtensions(path_and_filename, streamed)
 end
 
 -- returns a new sound effect if it can be found, else returns nil
+---@param sound_name string the file name without extension we're looking for
+---@param dirs_to_check string[] the directories that are searched for the file
+---@param streamed boolean? true if the source should be loaded as a stream, false/nil if static
+---@return love.Source?
 function fileUtils.findSound(sound_name, dirs_to_check, streamed)
   streamed = streamed or false
   local found_source
