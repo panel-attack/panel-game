@@ -24,10 +24,6 @@ local flags = {
   "us" -- United States of America
 }
 
----@enum ThemeVersion
-local THEME_VERSIONS = { original = 1, two = 2, fixedOffsets = 3, current = 3}
-
-
 -- Represents the current styles and images to apply to the game UI
 ---@class Theme
 ---@field path string
@@ -48,7 +44,7 @@ Theme =
   function(self, fullPath, foldername)
     self.path = fullPath
     self.name = foldername
-    self.version = THEME_VERSIONS.original
+    self.version = Theme.THEME_VERSIONS.original
     self.images = {} -- theme images
     self.fontMaps = {}
     self.sounds = {} -- theme sfx
@@ -61,6 +57,9 @@ Theme =
     self.main_menu_max_height = 0
   end
 )
+
+---@enum ThemeVersion
+Theme.THEME_VERSIONS = { original = 1, two = 2, fixedOffsets = 3, current = 3}
 
 Theme.TYPE = "theme"
 -- name of the top level save directory for mods of this type
@@ -723,8 +722,8 @@ function Theme:loadMusic(full)
 end
 
 function Theme:upgradeAndSaveVerboseConfig()
-  if self.version == THEME_VERSIONS.original then
-    self.version = THEME_VERSIONS.two
+  if self.version == Theme.THEME_VERSIONS.original then
+    self.version = Theme.THEME_VERSIONS.two
     self:saveVerboseConfig()
   end
 end
@@ -751,9 +750,9 @@ function Theme.json_init(self)
   -- Then override with custom theme
   local customData = fileUtils.readJsonFile(self.path .. "/config.json")
   local version = self:versionForJSONVersion(customData.version)
-  if version == THEME_VERSIONS.original then
+  if version == Theme.THEME_VERSIONS.original then
     self:loadVersion1DefaultValues()
-  elseif version == THEME_VERSIONS.two then
+  elseif version == Theme.THEME_VERSIONS.two then
     self:loadVersion2DefaultValues()
   end
   self:applyJSONData(customData)
@@ -765,7 +764,7 @@ function Theme:versionForJSONVersion(jsonVersion)
   if jsonVersion and type(jsonVersion) == "number" then
     return  jsonVersion
   else
-    return THEME_VERSIONS.original
+    return Theme.THEME_VERSIONS.original
   end
 end
 
@@ -804,7 +803,7 @@ function Theme:final_init()
 end
 
 function Theme:offsetsAreFixed()
-  return self.version >= THEME_VERSIONS.fixedOffsets
+  return self.version >= Theme.THEME_VERSIONS.fixedOffsets
 end
 
 function Theme:chainImage(chainAmount)
