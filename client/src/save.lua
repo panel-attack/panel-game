@@ -70,7 +70,7 @@ function save.read_user_id_file(serverIP)
 end
 
 -- writes the stock puzzles
-function write_puzzles()
+function save.write_puzzles()
   love.filesystem.createDirectory("puzzles")
   pcall(
     function()
@@ -80,7 +80,7 @@ function write_puzzles()
 end
 
 -- reads the selected puzzle file
-function read_puzzles(path)
+function save.read_puzzles(path)
   pcall(
     function()
       puzzle_packs = FileUtils.getFilteredDirectoryItems(path) or {}

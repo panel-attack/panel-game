@@ -3,6 +3,9 @@ local FileUtils = require("client.src.FileUtils")
 local Puzzle = require("common.engine.Puzzle")
 
 -- A puzzle set is a set of puzzles, typically they have a common difficulty or theme.
+---@class PuzzleSet
+---@field setName string
+---@field puzzles Puzzle[]
 local PuzzleSet =
   class(
   function(self, setName, puzzles)

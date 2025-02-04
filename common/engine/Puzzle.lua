@@ -2,6 +2,14 @@ local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels
+---@class Puzzle
+---@field puzzleType ("moves" | "chain" | "clear")
+---@field doCountdown boolean
+---@field moves integer
+---@field stack string string representation of the panel colors
+---@field randomizeColors boolean
+---@field stop_time integer
+---@field shake_time integer
 Puzzle =
   class(
   function(self, puzzleType, doCountdown, moves, stack, stop_time, shake_time)

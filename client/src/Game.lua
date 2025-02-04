@@ -47,6 +47,7 @@ end
 ---@field updater table?
 ---@field automaticScales number[]
 ---@field config UserConfig
+---@field puzzleSets table<string, PuzzleSet>
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
@@ -102,7 +103,10 @@ Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
   -- TODO: include this with save.lua?
-  require("client.src.puzzles")
+  GAME.puzzleSets = {}
+  save.write_puzzles()
+  save.read_puzzles("puzzles")
+
   -- move to constructor
   self.updater = GAME_UPDATER or nil
   if self.updater then
