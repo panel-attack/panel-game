@@ -16,41 +16,53 @@ local PuzzleSet =
 )
 
 ---@param filePath string
----@return PuzzleSet?
+---@return PuzzleSet[]
 function PuzzleSet.loadFromFile(filePath)
   local data = FileUtils.readJsonFile(filePath)
+  local puzzleSets = {}
 
   if data then
-    local set
-
     if data["Version"] == 2 then
-      for _, puzzleSet in pairs(data["Puzzle Sets"]) do
-        local puzzleSetName = puzzleSet["Set Name"]
-        local puzzles = {}
-        for _, puzzle in pairs(puzzleSet["Puzzles"]) do
-          local puzzle = Puzzle(puzzle["Puzzle Type"], puzzle["Do Countdown"], puzzle["Moves"], puzzle["Stack"], puzzle["Stop"], puzzle["Shake"])
-          puzzles[#puzzles + 1] = puzzle
-        end
-
-        set = PuzzleSet(puzzleSetName, puzzles)
+      for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
+        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV2(puzzleSetData)
       end
     elseif data["Version"] ~= 2 and data["Version"] then
       error("Puzzle " .. filePath .. " specifies invalid version " .. data["Version"])
     else -- old file format compatibility
       for setName, puzzleSet in pairs(data) do
-        local puzzles = {}
-        for _, puzzleData in pairs(puzzleSet) do
-          local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
-          puzzles[#puzzles + 1] = puzzle
-        end
-
-        set = PuzzleSet(setName, puzzles)
+        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV1(setName, puzzleSet)
       end
     end
-
-    set.fileSource = filePath
-    return set
   end
+
+  for _, puzzleSet in ipairs(puzzleSets) do
+    puzzleSet.fileSource = filePath
+  end
+
+  return puzzleSets
+end
+
+---@return PuzzleSet
+function PuzzleSet.loadV1(setName, puzzleSetData)
+  local puzzles = {}
+  for _, puzzleData in pairs(puzzleSetData) do
+    local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
+    puzzles[#puzzles + 1] = puzzle
+  end
+
+  return PuzzleSet(setName, puzzles)
+end
+
+---@return PuzzleSet
+function PuzzleSet.loadV2(puzzleSetData)
+  local puzzleSetName = puzzleSetData["Set Name"]
+  local puzzles = {}
+  for _, puzzleData in pairs(puzzleSetData["Puzzles"]) do
+    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"])
+    puzzles[#puzzles + 1] = puzzle
+  end
+
+  return PuzzleSet(puzzleSetName, puzzles)
 end
 
 return PuzzleSet

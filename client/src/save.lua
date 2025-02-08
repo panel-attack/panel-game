@@ -83,14 +83,14 @@ end
 function save.read_puzzles(path)
   pcall(
     function()
-      puzzle_packs = FileUtils.getFilteredDirectoryItems(path) or {}
+      local puzzleFiles = FileUtils.getFilteredDirectoryItems(path) or {}
       local count = 0
       logger.debug("loading custom puzzles...")
-      for _, filename in pairs(puzzle_packs) do
+      for _, filename in pairs(puzzleFiles) do
         logger.trace(filename)
         if love.filesystem.getInfo(path .. "/" .. filename) and filename ~= "README.txt" then
-          local puzzleSet = PuzzleSet.loadFromFile(path .. "/" .. filename)
-          if puzzleSet then
+          local puzzleSets = PuzzleSet.loadFromFile(path .. "/" .. filename)
+          for _, puzzleSet in ipairs(puzzleSets) do
             GAME.puzzleSets[puzzleSet.setName] = puzzleSet
             count = count + 1
           end

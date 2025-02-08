@@ -260,7 +260,7 @@ end
 ---@param path string
 ---@param filename string
 ---@param tab table
----@param encodeArgs table?
+---@param encodeArgs ({indent: boolean, keyorder: string[], level: integer} | nil)
 function fileUtils.writeJson(path, filename, tab, encodeArgs)
   local encoded = json.encode(tab, encodeArgs)
   ---@cast encoded string # json.encode always returns a string if the second argument does not contain the buffer field
