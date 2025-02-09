@@ -1,4 +1,5 @@
 local class = require("common.lib.class")
+table.new = require("table.new")
 
 --- A simple class for limiting the amount of memory taken up by transient data (e.g. logs)
 ---@class Ring
@@ -26,10 +27,12 @@ function Ring:__tostring()
   local t = {}
   for i = self.currentIndex + 1, self.currentIndex + self.size do
     local index = wrap(1, i, self.size)
-    t[#t+1] = tostring(self.content[index])
+    if self.content[index] then
+      t[#t+1] = tostring(self.content[index])
+    end
   end
 
-  return table.concat(t)
+  return table.concat(t, "\n")
 end
 
 return Ring

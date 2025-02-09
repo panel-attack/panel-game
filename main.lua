@@ -145,7 +145,7 @@ function love.quit()
   end
 
   write_conf_file()
-  pcall(love.filesystem.write, "debug.log", table.concat(logger.messages, "\n"))
+  pcall(love.filesystem.write, "debug.log", tostring(logger.messageBuffer))
 
   if GAME.updater then
     while GAME.updater.state ~= GAME_UPDATER_STATES.idle do
@@ -156,7 +156,7 @@ end
 
 function love.errorhandler(msg)
   if lldebugger then
-    pcall(love.filesystem.write, "debug.log", table.concat(logger.messages, "\n"))
+    pcall(love.filesystem.write, "debug.log", tostring(logger.messageBuffer))
     error(msg, 2)
   end
 
@@ -219,9 +219,9 @@ function love.errorhandler(msg)
     table.insert(errorLines, sanitizedMessage)
     logger.info(sanitizedMessage)
   end
-  if logger.messages then
+  if logger.messageBuffer then
     logger.info("config during crash: " .. table_to_string(config))
-    pcall(love.filesystem.write, "crash.log", table.concat(logger.messages, "\n"))
+    pcall(love.filesystem.write, "crash.log", tostring(logger.messageBuffer))
   end
   if #sanitizedMessage ~= #msg then
     table.insert(errorLines, "Invalid UTF-8 string in error message.")
