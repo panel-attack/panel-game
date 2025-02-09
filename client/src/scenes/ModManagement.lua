@@ -164,26 +164,21 @@ function ModManagement:loadStageGrid()
       local stage = allStages[stageId]
       local icon = ImageContainer({drawBorders = true, image = stage.images.thumbnail, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
       local enableSelector = BoolSelector({startValue = not not stages[stage.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
-      enableSelector.onSelect = function(self, cursor)
-        if inputs.isDown["Swap1"] then
-          self:setValue(not self.value)
-          stage:enable(self.value)
-          if tableUtils.length(visibleStages) == 0 then
-            SoundController:stopSfx(GAME.theme.sounds.menu_validate)
-            GAME.theme:playCancelSfx()
-            self:setValue(not self.value)
-            stage:enable(self.value)
-          end
-          if not self.value and stage.id == config.stage and #visibleStages > 0 then
-            GAME.localPlayer:setStage(stages[consts.RANDOM_STAGE_SPECIAL_VALUE])
-          end
+      enableSelector.onValueChange = function(boolSelector, value)
+        GAME.theme:playValidationSfx()
+        stage:enable(boolSelector.value)
+        if tableUtils.length(visibleStages) == 0 then
+          SoundController:stopSfx(GAME.theme.sounds.menu_validate)
+          GAME.theme:playCancelSfx()
+          boolSelector:setValue(not boolSelector.value)
+          stage:enable(boolSelector.value)
+        end
+        if not boolSelector.value and stage.id == config.stage and #visibleStages > 0 then
+          GAME.localPlayer:setStage(stages[consts.RANDOM_STAGE_SPECIAL_VALUE])
         end
       end
       local visibilitySelector = BoolSelector({startValue = stage.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
-      visibilitySelector.onSelect = function(self, cursor)
-        if inputs.isDown["Swap1"] then
-          self:setValue(not self.value)
-        end
+      visibilitySelector.onValueChange = function(boolSelector, value)
       end
       local name = Label({text = stage.display_name, translate = false, hAlign = "center", vAlign = "center"})
       local hasMusicLabel = Label({text = tostring(stage.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})
@@ -243,26 +238,21 @@ function ModManagement:loadCharacterGrid()
       local character = allCharacters[characterId]
       local icon = ImageContainer({drawBorders = true, image = character.images.icon, hFill = true, vFill = true})
       local enableSelector = BoolSelector({startValue = not not characters[character.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
-      enableSelector.onSelect = function(self, cursor)
-        if inputs.isDown["Swap1"] then
-          self:setValue(not self.value)
-          character:enable(self.value)
-          if tableUtils.length(visibleCharacters) == 0 then
-            SoundController:stopSfx(GAME.theme.sounds.menu_validate)
-            GAME.theme:playCancelSfx()
-            self:setValue(not self.value)
-            character:enable(self.value)
-          end
-          if not self.value and character.id == config.character and #visibleCharacters > 0 then
-            GAME.localPlayer:setCharacter(characters[consts.RANDOM_CHARACTER_SPECIAL_VALUE])
-          end
+      enableSelector.onValueChange = function(boolSelector, value)
+        GAME.theme:playValidationSfx()
+        character:enable(boolSelector.value)
+        if tableUtils.length(visibleCharacters) == 0 then
+          SoundController:stopSfx(GAME.theme.sounds.menu_validate)
+          GAME.theme:playCancelSfx()
+          boolSelector:setValue(not boolSelector.value)
+          character:enable(boolSelector.value)
+        end
+        if not boolSelector.value and character.id == config.character and #visibleCharacters > 0 then
+          GAME.localPlayer:setCharacter(characters[consts.RANDOM_CHARACTER_SPECIAL_VALUE])
         end
       end
       local visibilitySelector = BoolSelector({startValue = character.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
-      visibilitySelector.onSelect = function(self, cursor)
-        if inputs.isDown["Swap1"] then
-          self:setValue(not self.value)
-        end
+      visibilitySelector.onValueChange = function(boolSelector, value)
       end
       local displayName = Label({text = character.display_name, translate = false, hAlign = "center", vAlign = "center"})
       local hasMusicLabel = Label({text = tostring(character.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})

@@ -6,7 +6,7 @@ local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionW
 local Label = require("client.src.ui.Label")
 local Stepper = require("client.src.ui.Stepper")
 local Slider = require("client.src.ui.Slider")
-local canBeFocused = require("client.src.ui.Focusable")
+local Focusable = require("client.src.ui.Focusable")
 
 -- Scene for the endless game setup menu
 local EndlessMenu = class(
