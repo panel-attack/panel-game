@@ -468,6 +468,34 @@ The fade animation is centered over the panel but smaller than a panel.
 Aspect ratio of each individual frame: 1:1 (square)
 Recommended size per frame: 64x64px (scaled down to 32 pixels centered on panel center, so gives 2x resolution)
 
+#### telegraph
+
+These are the images used to render the attack animations and attacks above the player's stack before they fall
+
+##### attack
+
+The image used to send an attack from your chain or combo to the opponent's telegraph
+
+Recommended size: 96x96px (2x resolution)
+
+##### 1-wide
+
+1 through 6, these are used for single high garbage blocks, 1 and 2 can only be used in training mode
+
+Recommended size: 144x96px (2x resolution)
+
+##### 1-tall
+
+1 through 14, these are used for chain garbage
+
+Recommended size: 144x96px (2x resolution)
+
+##### 6-wide-metal
+
+Image used for metal garbage
+
+Recommended size: 144x96px (2x resolution)
+
 -----------------------------------------------------------
 
 

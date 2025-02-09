@@ -1,0 +1,10 @@
+{
+  "name": "Rattles",
+  "id": "PA_Rattles",
+  "version": 1,
+  "popfx_burstRotate": true,
+  "popfx_style": "fadeburst",
+  "chain_style": "per_chain",
+  "combo_style": "per_combo",
+  "music_style": "dynamic"
+}
