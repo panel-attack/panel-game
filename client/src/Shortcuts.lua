@@ -69,7 +69,7 @@ local function handleDumpAttackPattern(playerNumber)
 
     if player and player.stack then
       local data, state = player.stack:getAttackPatternData()
-      FileUtils.writeJson("", "dumpAttackPattern.json",data, state)
+      FileUtils.writeJson("training", data.extraInfo.dateGenerated .. "_" .. data.extraInfo.playerName .. "_" .. data.extraInfo.gpm .. "gpm.json", data, state)
       return true
     end
   end
