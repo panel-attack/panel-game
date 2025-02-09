@@ -610,7 +610,7 @@ function CharacterSelect:createRankedSelection(player, width)
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
-    x = 0,
+    x = 2,
     scale = 2,
   })
   rankedSelector.playerNumberIcon = playerNumberIcon
@@ -648,7 +648,7 @@ function CharacterSelect:createStyleSelection(player, width)
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
-    x = 4,
+    x = 8,
     scale = 2,
   })
   styleSelector.playerNumberIcon = playerNumberIcon
