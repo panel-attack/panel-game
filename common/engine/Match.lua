@@ -294,7 +294,7 @@ function Match:pushGarbageTo(stack)
       end
       local garbageDelivery = st:getReadyGarbageAt(stack.clock)
       if garbageDelivery then
-        logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
+        --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
         stack:receiveGarbage(garbageDelivery)
       end
     end
