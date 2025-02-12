@@ -1,7 +1,7 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local canBeFocused = require("client.src.ui.Focusable")
+local Focusable = require("client.src.ui.Focusable")
 local tableUtils = require("common.lib.tableUtils")
 
 local function calculateFontSize(height)
@@ -11,7 +11,7 @@ end
 -- A carousel with arrow touch buttons that allows to spin a selection of elements around in both directions
 -- This is an "abstract" class, classes should inherit this and overwrite createPassenger and drawPassenger
 local Carousel = class(function(carousel, options)
-  canBeFocused(carousel)
+  Focusable(carousel)
 
   if options.passengers == nil then
     carousel.passengers = {}

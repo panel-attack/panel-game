@@ -584,7 +584,7 @@ function Character.reassignLegacySfx(self)
     self:fillInMissingSounds(self.sounds.chain, "chain", maxIndex)
   end
 
-  if #self.sounds.shock > 0 then
+  if tableUtils.length(self.sounds.shock) > 0 then
     -- combo_echo won't get used if shock is present, so it shouldn't show up in sound test any longer
     self.sounds.combo_echo = nil
   end
@@ -632,7 +632,6 @@ function Character:loadSfx(name)
         -- otherwise use the index as normal
         targetIndex = index
       end
-
 
       if sfx[targetIndex] == nil then
         local searchName = name
@@ -701,13 +700,7 @@ function Character.playComboSfx(self, size)
   -- self.sounds.combo[0] is the fallback combo sound which is guaranteed to be set if there is a combo sfx
   if self.sounds.combo[0] == nil then
     -- no combos loaded, try to fallback to the fallback chain sound
-    if self.sounds.chain[0] == nil then
-      -- technically we should always have a default chain sound from the default_character
-      -- so if this error ever occurs, something is seriously cursed
-      error("Found neither chain nor combo sfx upon trying to play combo sfx")
-    else
-      self.sounds.chain[0]:play()
-    end
+    self:playChainSfx(0)
   else
     -- combo sfx available!
     if self.combo_style == comboStyle.classic then
@@ -731,12 +724,18 @@ function Character.playChainSfx(self, length)
   if self.sounds.chain[length] then
     self.sounds.chain[length]:play()
   else
-    self.sounds.chain[0]:play()
+    if self.sounds.chain[0] == nil then
+      -- technically we should always have a default chain sound from the default_character
+      -- so if this error ever occurs, something is seriously cursed
+      error("Found no chain sfx for character")
+    else
+      self.sounds.chain[0]:play()
+    end
   end
 end
 
 function Character.playShockSfx(self, size)
-  if #self.sounds.shock > 0 then
+  if tableUtils.length(self.sounds.shock) > 0 then
     if self.sounds.shock[size] then
       self.sounds.shock[size]:play()
     else

@@ -446,7 +446,7 @@ function CharacterSelect:createCursor(grid, player)
     startPosition = {x = 9, y = 2},
     player = player,
     -- this needs to be index, not playerNumber, as playerNumber is a server prop
-    frameImages = themes[config.theme].images.IMG_char_sel_cursors[tableUtils.indexOf(GAME.battleRoom.players, player)],
+    frameImages = themes[config.theme]:getGridCursor(tableUtils.indexOf(GAME.battleRoom.players, player)),
   })
 
   player:connectSignal("wantsReadyChanged", cursor, cursor.setRapidBlinking)
@@ -602,20 +602,6 @@ function CharacterSelect:createRankedSelection(player, width)
 
   Focusable(rankedSelector)
 
-  rankedSelector.receiveInputs = function(self, inputs)
-    if inputs.isDown["Up"] then
-      self:setValue(true)
-    elseif inputs.isDown["Down"] then
-      self:setValue(false)
-    elseif inputs.isDown["Swap1"] then
-      GAME.theme:playValidationSfx()
-      self:yieldFocus()
-    elseif inputs.isDown["Swap2"] then
-      GAME.theme:playCancelSfx()
-      self:yieldFocus()
-    end
-  end
-
   player:connectSignal("wantsRankedChanged", rankedSelector, rankedSelector.setValue)
 
   -- player number icon
@@ -624,7 +610,7 @@ function CharacterSelect:createRankedSelection(player, width)
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
-    x = 4,
+    x = 2,
     scale = 2,
   })
   rankedSelector.playerNumberIcon = playerNumberIcon
@@ -647,20 +633,6 @@ function CharacterSelect:createStyleSelection(player, width)
 
   Focusable(styleSelector)
 
-  styleSelector.receiveInputs = function(self, inputs)
-    if inputs.isDown["Up"] then
-      self:setValue(true)
-    elseif inputs.isDown["Down"] then
-      self:setValue(false)
-    elseif inputs.isDown["Swap1"] then
-      GAME.theme:playValidationSfx()
-      self:yieldFocus()
-    elseif inputs.isDown["Swap2"] then
-      GAME.theme:playCancelSfx()
-      self:yieldFocus()
-    end
-  end
-
   player:connectSignal("styleChanged", styleSelector, function(p, style)
       if style == GameModes.Styles.MODERN then
         styleSelector:setValue(true)
@@ -676,7 +648,7 @@ function CharacterSelect:createStyleSelection(player, width)
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
-    x = 4,
+    x = 8,
     scale = 2,
   })
   styleSelector.playerNumberIcon = playerNumberIcon

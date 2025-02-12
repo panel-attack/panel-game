@@ -36,13 +36,10 @@ end
 local function saveStack(stack, match)
   local data, state = stack:getAttackPatternData()
   local level = stack.level
-  local savePath = "dumpedAttackPatterns/" ..
-      data.extraInfo.gpm ..
-      "GPM" .. "-Level" .. level .. "-" .. data.extraInfo.matchLength .. "-" .. data.extraInfo.playerName
-  savePath = savePath:gsub(":", "-"):gsub("%.", "-")
-  savePath = savePath .. ".json"
-  love.filesystem.createDirectory("dumpedAttackPatterns")
-  saveJSONToPath(data, state, savePath)
+  local filename = data.extraInfo.gpm .. "GPM" .. "-Level" .. level .. "-" .. data.extraInfo.matchLength .. "-" .. data.extraInfo.playerName
+  filename = filename:gsub(":", "-"):gsub("%.", "-")
+  filename = filename .. ".json"
+  fileUtils.writeJson("dumpedAttackPatterns", filename, data, state)
   --logger.info("Saved " .. savePath)
 end
 

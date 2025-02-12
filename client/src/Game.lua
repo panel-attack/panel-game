@@ -48,6 +48,7 @@ end
 ---@field updater table?
 ---@field automaticScales number[]
 ---@field config UserConfig
+---@field puzzleSets table<string, PuzzleSet>
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
@@ -102,8 +103,10 @@ local Game = class(
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  -- TODO: include this with save.lua?
-  require("client.src.puzzles")
+  GAME.puzzleSets = {}
+  save.write_puzzles()
+  save.read_puzzles("puzzles")
+
   -- move to constructor
   self.updater = GAME_UPDATER or nil
   if self.updater then
@@ -286,13 +289,13 @@ function Game:createDirectoriesIfNeeded()
 
     -- Move the old user ID spot to the new folder (we won't delete the old one for backwards compatibility and safety)
     if love.filesystem.getInfo(oldServerDirectory) then
-      local userID = read_user_id_file(consts.LEGACY_SERVER_LOCATION)
-      write_user_id_file(userID, consts.SERVER_LOCATION)
+      local userID = save.read_user_id_file(consts.LEGACY_SERVER_LOCATION)
+      save.write_user_id_file(userID, consts.SERVER_LOCATION)
     end
   end
 
   fileUtils.recursiveCopy("client/assets/default_data/training", "training")
-  readAttackFiles("training")
+  save.readAttackFiles("training")
 
   if love.system.getOS() ~= "OS X" then
     fileUtils.recursiveRemoveFiles(".", ".DS_Store")

@@ -6,7 +6,7 @@ local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionW
 local Label = require("client.src.ui.Label")
 local Stepper = require("client.src.ui.Stepper")
 local Slider = require("client.src.ui.Slider")
-local canBeFocused = require("client.src.ui.Focusable")
+local Focusable = require("client.src.ui.Focusable")
 
 -- Scene for the endless game setup menu
 local EndlessMenu = class(
@@ -51,10 +51,7 @@ function EndlessMenu:loadUserInterface()
   self.ui.grid:createElementAt(3, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
 
   self.ui.styleSelection = MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
-  local trueLabel = Label({text = "endless_modern", vAlign = "top", hAlign = "center"})
-  local falseLabel = Label({text = "endless_classic", vAlign = "bottom", hAlign = "center"})
-  self.ui.styleSelection:addChild(trueLabel)
-  self.ui.styleSelection:addChild(falseLabel)
+  self.ui.styleSelection:setTitle("endless_modern")
   local styleSelector = self:createStyleSelection(player, unitSize)
   self.ui.styleSelection:addElement(styleSelector, player)
 

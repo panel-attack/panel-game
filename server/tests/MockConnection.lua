@@ -44,4 +44,6 @@ function MockConnection:receiveMessage(message)
   self.incomingMessageQueue:push(message)
 end
 
+function MockConnection:enableNoDelay(enable) end
+
 return MockConnection

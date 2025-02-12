@@ -1,22 +1,15 @@
 local inputManager = require("client.src.inputManager")
-local fileUtils = require("client.src.FileUtils")
+local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
-local Puzzle = require("common.engine.Puzzle")
 local PuzzleSet = require("client.src.PuzzleSet")
 
 -- the save.lua file contains the read/write functions
 
-local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
-
 local save = {}
 
 -- writes to the "keys.txt" file
-function write_key_file()
-  pcall(
-    function()
-      love.filesystem.write("keysV3.json", json.encode(inputManager:getSaveKeyMap()))
-    end
-  )
+function save.write_key_file()
+  FileUtils.writeJson("", "keysV3.json", inputManager:getSaveKeyMap())
 end
 
 -- reads the "keys.txt" file
@@ -34,7 +27,7 @@ function save.read_key_file()
   if not love.filesystem.getInfo(filename, "file") then
     return inputManager.inputConfigurations
   else
-    local inputConfigs = fileUtils.readJsonFile(filename)
+    local inputConfigs = FileUtils.readJsonFile(filename)
 
     if migrateInputs then
       -- migrate old input configs
@@ -58,17 +51,14 @@ function save.read_txt_file(path_and_filename)
 end
 
 -- writes to the "user_id.txt" file of the directory of the connected ip
-function write_user_id_file(userID, serverIP)
-  pcall(
-    function()
-      love.filesystem.createDirectory("servers/" .. serverIP)
-      love.filesystem.write("servers/" .. serverIP .. "/user_id.txt", tostring(userID))
-    end
-  )
+---@param userID string
+---@param serverIP string
+function save.write_user_id_file(userID, serverIP)
+  FileUtils.write("servers/" .. serverIP, "user_id.txt", tostring(userID))
 end
 
 -- reads the "user_id.txt" file of the directory of the connected ip
-function read_user_id_file(serverIP)
+function save.read_user_id_file(serverIP)
   local userID
   pcall(
     function()
@@ -80,62 +70,42 @@ function read_user_id_file(serverIP)
 end
 
 -- writes the stock puzzles
-function write_puzzles()
+function save.write_puzzles()
   love.filesystem.createDirectory("puzzles")
   pcall(
     function()
-      fileUtils.recursiveCopy("client/assets/default_data/puzzles", "puzzles")
+      FileUtils.recursiveCopy("client/assets/default_data/puzzles", "puzzles")
     end
   )
 end
 
 -- reads the selected puzzle file
-function read_puzzles(path)
+function save.read_puzzles(path)
   pcall(
     function()
-      puzzle_packs = fileUtils.getFilteredDirectoryItems(path) or {}
+      local puzzleFiles = FileUtils.getFilteredDirectoryItems(path) or {}
+      local count = 0
       logger.debug("loading custom puzzles...")
-      for _, filename in pairs(puzzle_packs) do
+      for _, filename in pairs(puzzleFiles) do
         logger.trace(filename)
         if love.filesystem.getInfo(path .. "/" .. filename) and filename ~= "README.txt" then
-          logger.debug("loading custom puzzle set: " .. (filename or "nil"))
-          local teh_json = love.filesystem.read(path .. "/" .. filename)
-          local current_json = json.decode(teh_json) or {}
-          if current_json["Version"] == 2 then
-            for _, puzzleSet in pairs(current_json["Puzzle Sets"]) do
-              local puzzleSetName = puzzleSet["Set Name"]
-              local puzzles = {}
-              for _, puzzle in pairs(puzzleSet["Puzzles"]) do
-                local puzzle = Puzzle(puzzle["Puzzle Type"], puzzle["Do Countdown"], puzzle["Moves"], puzzle["Stack"], puzzle["Stop"], puzzle["Shake"])
-                puzzles[#puzzles + 1] = puzzle
-              end
-
-              local puzzleSet = PuzzleSet(puzzleSetName, puzzles)
-              GAME.puzzleSets[puzzleSetName] = puzzleSet
-            end
-          elseif current_json["Version"] ~= 2 and current_json["Version"] then
-            error("Puzzle " .. filename .. " specifies invalid version " .. current_json["Version"])
-          else -- old file format compatibility
-            for set_name, puzzle_set in pairs(current_json) do
-              local puzzles = {}
-              for _, puzzleData in pairs(puzzle_set) do
-                local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
-                puzzles[#puzzles + 1] = puzzle
-              end
-
-              local puzzleSet = PuzzleSet(set_name, puzzles)
-              GAME.puzzleSets[set_name] = puzzleSet
-            end
+          local puzzleSets = PuzzleSet.loadFromFile(path .. "/" .. filename)
+          for _, puzzleSet in ipairs(puzzleSets) do
+            GAME.puzzleSets[puzzleSet.setName] = puzzleSet
+            count = count + 1
           end
-
-          logger.debug("loaded above set")
         end
       end
+      logger.debug("loaded " .. count .. " puzzle sets")
     end
   )
 end
 
-function readAttackFile(path)
+-- I think this is unnecessary as we use the path with love.filesystem.read which assumes / as the separator
+-- But testing attack file generation seemed a bit out of scope for the intended changes, so leaving it for another time
+local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
+
+function save.readAttackFile(path)
   if love.filesystem.getInfo(path, "file") then
     local jsonData = love.filesystem.read(path)
     local trainingConf, position, errorMsg = json.decode(jsonData)
@@ -143,7 +113,7 @@ function readAttackFile(path)
       if not trainingConf.name or type(trainingConf.name) ~= "string" then
         local filenameOnly = path:match('%' .. sep .. '?(.*)$')
         if filenameOnly ~= nil then
-          trainingConf.name = fileUtils.getFileNameWithoutExtension(filenameOnly)
+          trainingConf.name = FileUtils.getFileNameWithoutExtension(filenameOnly)
         end
       end
       return trainingConf
@@ -153,17 +123,17 @@ function readAttackFile(path)
   end
 end
 
-function readAttackFiles(path)
+function save.readAttackFiles(path)
   local results = {}
   local lfs = love.filesystem
-  local raw_dir_list = fileUtils.getFilteredDirectoryItems(path)
+  local raw_dir_list = FileUtils.getFilteredDirectoryItems(path)
   for _, v in ipairs(raw_dir_list) do
     local current_path = path .. "/" .. v
     if lfs.getInfo(current_path) then
       if lfs.getInfo(current_path).type == "directory" then
-        readAttackFiles(current_path)
+        save.readAttackFiles(current_path)
       else
-        local training_conf = readAttackFile(current_path)
+        local training_conf = save.readAttackFile(current_path)
         if training_conf ~= nil then
           results[#results+1] = training_conf
         end
@@ -172,16 +142,6 @@ function readAttackFiles(path)
   end
 
   return results
-end
-
-function saveJSONToPath(data, state, path)
-  love.filesystem.write(path, json.encode(data, state))
-end
-
-function print_list(t)
-  for i, v in ipairs(t) do
-    print(v)
-  end
 end
 
 return save

@@ -314,4 +314,5 @@ config = {
 
       end
     )
+    return configTable
   end

@@ -204,4 +204,12 @@ function Connection:processMessage(messageType, data)
   end
 end
 
+-- Disables Nagle's Algorithm for TCP. Decreases data packet delivery delay, but increases amount of bandwidth and data used.
+-- We want this on for players in a room and off for everyone else
+function Connection:enableNoDelay(enable)
+  if self.socket then
+    self.socket:setoption("tcp-nodelay", enable)
+  end
+end
+
 return Connection

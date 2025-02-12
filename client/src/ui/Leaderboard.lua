@@ -1,7 +1,7 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local Label = require("client.src.ui.Label")
-local canBeFocused = require("client.src.ui.Focusable")
+local Focusable = require("client.src.ui.Focusable")
 local util = require("common.lib.util")
 
 local Leaderboard = class(function(self, options)
@@ -18,7 +18,7 @@ local Leaderboard = class(function(self, options)
   self.firstVisibleIndex = nil
   self.lastVisibleIndex = nil
 
-  canBeFocused(self)
+  Focusable(self)
 end,
 UiElement)
 

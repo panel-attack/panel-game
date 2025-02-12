@@ -1,5 +1,6 @@
 local class = require("common.lib.class")
 local ClientMessages = require("common.network.ClientProtocol")
+local save = require("client.src.save")
 
 -- abstraction level function
 -- returns things as a parameter list so the API in ClientProtocol can be more explicit about which parameters it expects
@@ -52,12 +53,9 @@ local function login(tcpClient, ip, port)
         result.message = loc("nt_ver_err")
         return result
       else
-        local userId = read_user_id_file(ip)
+        local userId = save.read_user_id_file(ip)
         if not userId then
           userId = "need a new user id"
-        end
-        if CUSTOM_USER_ID then
-          userId = CUSTOM_USER_ID
         end
 
         response = tcpClient:sendRequest(ClientMessages.requestLogin(userId, toLoginData(config, GAME.localPlayer)))
@@ -75,7 +73,7 @@ local function login(tcpClient, ip, port)
           if value.login_successful then
             result.loggedIn = true
             if value.new_user_id then
-              write_user_id_file(value.new_user_id, GAME.connected_server_ip)
+              save.write_user_id_file(value.new_user_id, GAME.connected_server_ip)
               result.message = loc("lb_user_new", config.name)
             elseif value.name_changed then
               result.message = loc("lb_user_update", value.old_name, value.new_name)

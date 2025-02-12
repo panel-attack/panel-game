@@ -25,13 +25,26 @@ local flags = {
 }
 
 -- Represents the current styles and images to apply to the game UI
+---@class Theme
+---@field path string
+---@field name string
+---@field version ThemeVersion
+---@field images table
+---@field fontMaps table
+---@field sounds table<string, (love.Source | table | nil)>
+---@field musics table<string, love.Source>
+---@field font table
+---@field main_menu_screen_pos number[]
+---@field main_menu_y_max number
+---@field main_menu_max_height number
+---@field defaultStage Stage
 Theme =
   class(
+---@param self Theme
   function(self, fullPath, foldername)
-    self.VERSIONS = { original = 1, two = 2, fixedOffsets = 3, current = 3}
     self.path = fullPath
     self.name = foldername
-    self.version = self.VERSIONS.original
+    self.version = Theme.THEME_VERSIONS.original
     self.images = {} -- theme images
     self.fontMaps = {}
     self.sounds = {} -- theme sfx
@@ -44,6 +57,9 @@ Theme =
     self.main_menu_max_height = 0
   end
 )
+
+---@enum ThemeVersion
+Theme.THEME_VERSIONS = { original = 1, two = 2, fixedOffsets = 3, current = 3}
 
 Theme.TYPE = "theme"
 -- name of the top level save directory for mods of this type
@@ -305,6 +321,25 @@ function Theme:loadMenuGraphics()
   self.images.IMG_bug = self:load_theme_img("bug")
 end
 
+local MAX_SUPPORTED_PLAYERS = 2
+
+---@param theme Theme
+---@return table<integer, table<integer, love.Texture>>
+local function loadGridCursors(theme)
+  local gridCursors = {}
+  theme.images.IMG_char_sel_cursors = {}
+  for player_num = 1, MAX_SUPPORTED_PLAYERS do
+    gridCursors[player_num] = {}
+    for position_num = 1, 2 do
+      gridCursors[player_num][position_num] = theme:load_theme_img("p" .. player_num .. "_select_screen_cursor" .. position_num)
+    end
+  end
+
+  theme.images.IMG_char_sel_cursors = gridCursors
+
+  return theme.images.IMG_char_sel_cursors
+end
+
 function Theme:loadSelectionGraphics()
   self.images.flags = {}
   for _, flag in ipairs(flags) do
@@ -337,16 +372,12 @@ function Theme:loadSelectionGraphics()
   self.images.IMG_random_stage = self:load_theme_img("random_stage")
   self.images.IMG_random_character = self:load_theme_img("random_character")
 
-  local MAX_SUPPORTED_PLAYERS = 2
-  self.images.IMG_char_sel_cursors = {}
   self.images.IMG_players = {}
   for player_num = 1, MAX_SUPPORTED_PLAYERS do
     self.images.IMG_players[player_num] = self:load_theme_img("p" .. player_num)
-    self.images.IMG_char_sel_cursors[player_num] = {}
-    for position_num = 1, 2 do
-      self.images.IMG_char_sel_cursors[player_num][position_num] = self:load_theme_img("p" .. player_num .. "_select_screen_cursor" .. position_num)
-    end
   end
+
+  loadGridCursors(self)
 end
 
 function Theme:loadIngameGraphics()
@@ -594,6 +625,10 @@ function Theme:applyConfigVolume()
   SoundController:applyMusicVolume(self.musics)
 end
 
+
+---@param theme Theme
+---@param SFX_name string
+---@return love.Source?
 local function loadThemeSfx(theme, SFX_name)
   local dirs_to_check = {
     theme.path .. "/sfx/",
@@ -630,12 +665,14 @@ function Theme:loadIngameSfx()
   self.sounds.game_over = loadThemeSfx(self, "gameover")
   self.sounds.countdown = loadThemeSfx(self, "countdown")
   self.sounds.go = loadThemeSfx(self, "go")
+  ---@type love.Source[]
   self.sounds.garbage_thud = {
       loadThemeSfx(self, "thud_1"),
       loadThemeSfx(self, "thud_2"),
       loadThemeSfx(self, "thud_3")
     }
-    self.sounds.pops = {}
+  ---@type love.Source[][]
+  self.sounds.pops = {}
 
   for popLevel = 1, 4 do
     self.sounds.pops[popLevel] = {}
@@ -685,8 +722,8 @@ function Theme:loadMusic(full)
 end
 
 function Theme:upgradeAndSaveVerboseConfig()
-  if self.version == self.VERSIONS.original then
-    self.version = self.VERSIONS.two
+  if self.version == Theme.THEME_VERSIONS.original then
+    self.version = Theme.THEME_VERSIONS.two
     self:saveVerboseConfig()
   end
 end
@@ -703,7 +740,7 @@ function Theme:saveVerboseConfig()
     jsonData[key] = self[key]
   end
 
-  love.filesystem.write(jsonPath, json.encode(jsonData))
+  fileUtils.writeJson(self.path, "config.json", jsonData)
 end
 
 -- initializes theme using the json settings
@@ -713,9 +750,9 @@ function Theme.json_init(self)
   -- Then override with custom theme
   local customData = fileUtils.readJsonFile(self.path .. "/config.json")
   local version = self:versionForJSONVersion(customData.version)
-  if version == self.VERSIONS.original then
+  if version == Theme.THEME_VERSIONS.original then
     self:loadVersion1DefaultValues()
-  elseif version == self.VERSIONS.two then
+  elseif version == Theme.THEME_VERSIONS.two then
     self:loadVersion2DefaultValues()
   end
   self:applyJSONData(customData)
@@ -727,7 +764,7 @@ function Theme:versionForJSONVersion(jsonVersion)
   if jsonVersion and type(jsonVersion) == "number" then
     return  jsonVersion
   else
-    return self.VERSIONS.original
+    return Theme.THEME_VERSIONS.original
   end
 end
 
@@ -766,7 +803,7 @@ function Theme:final_init()
 end
 
 function Theme:offsetsAreFixed()
-  return self.version >= self.VERSIONS.fixedOffsets
+  return self.version >= Theme.THEME_VERSIONS.fixedOffsets
 end
 
 function Theme:chainImage(chainAmount)
@@ -801,7 +838,7 @@ function Theme:loadDefaultStage()
     end
     defaultStage:preload()
     defaultStage:load(true)
-  elseif self.id ~= consts.DEFAULT_THEME_DIRECTORY then
+  elseif self.path ~= consts.DEFAULT_THEME_DIRECTORY then
     defaultStage = themes[consts.DEFAULT_THEME_DIRECTORY]:loadDefaultStage()
   else
     error("No default stage available")
@@ -867,6 +904,15 @@ end
 
 function Theme:playMoveSfx()
   SoundController:playSfx(self.sounds.menu_move)
+end
+
+function Theme:getGridCursor(index)
+  index = index or 1
+  if not self.images.IMG_char_sel_cursors or self.images.IMG_char_sel_cursors[index] then
+    loadGridCursors(self)
+  end
+
+  return self.images.IMG_char_sel_cursors[index]
 end
 
 return Theme

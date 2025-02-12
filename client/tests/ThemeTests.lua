@@ -9,7 +9,7 @@ defaultTheme:load()
 
 assert(defaultTheme ~= nil)
 assert(defaultTheme.name ~= nil)
-assert(defaultTheme.version == defaultTheme.VERSIONS.current)
+assert(defaultTheme.version == defaultTheme.THEME_VERSIONS.current)
 assert(defaultTheme.images.bg_main ~= nil)
 assert(defaultTheme.multibar_is_absolute == true)
 assert(defaultTheme.images.IMG_cards[true][0] ~= nil)
@@ -52,7 +52,7 @@ local v1Theme = Theme(Theme.themeDirectoryPath .. "V1Test", "V1Test")
 v1Theme:load()
 assert(v1Theme ~= nil)
 assert(v1Theme.name == "V1Test")
-assert(v1Theme.version == v1Theme.VERSIONS.two) -- it was upgraded
+assert(v1Theme.version == v1Theme.THEME_VERSIONS.two) -- it was upgraded
 assert(v1Theme.images.bg_main ~= nil)
 assert(v1Theme.multibar_is_absolute == false) -- old v1 default
 assert(v1Theme.bg_main_is_tiled == true) -- override from v1 default
