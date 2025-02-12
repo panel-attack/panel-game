@@ -1,5 +1,5 @@
 local os = require("os")
-local Ring = require("common.lib.Ring")
+local RingBuffer = require("common.lib.RingBuffer")
 local socket
 if love then
   -- love comes with luasocket
@@ -11,7 +11,7 @@ else
 end
 
 local logger = {
-  messageBuffer = Ring(2048)
+  messageBuffer = RingBuffer(2048)
 }
 
 local TRACE = 0 -- Log something that is very detailed verbose debug logging
