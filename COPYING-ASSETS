@@ -226,7 +226,7 @@ themes/Panel Attack Modern/sfx/thud_#
 
   Additionally the situation on these is a bit unclear. The EULA suggests that it might be required for each developer to acquire their own license to work with the assets.
   However, the licensor of the assets, Cafofo Music, went completely missing and many of their asset packs have been taken down, presumably for copyright infringement.
-  Unlike most other asset packs from this seller however, according to our insight this pack is still available for download for the anyone who originally purchased it. This indicates that it was not flagged for copyright and the mediator (Unity) considers these assets as lawfully acquired as otherwise continuing to host them would be an infringement itself.
+  Unlike most other asset packs from this seller however, according to our insight this pack is still available for download for anyone who originally purchased it. This indicates that it was not flagged for copyright and the mediator (Unity) considers these assets as lawfully acquired as otherwise continuing to host them would be an infringement itself.
   The conclusion is that we cannot obtain new licenses by fault of the licensor but the already acquired license is valid.
   Accordingly these assets should be replaced as soon as convenient or once the licensor becomes available again, maintainers shall obtain additional licenses, whichever is first.
 
@@ -296,6 +296,33 @@ themes/Panel Attack Modern/default/stage
   License: CC BY-NC-SA 4.0
   https://h-v-b.bandcamp.com
 
+
+
+default_data/characters/Rattles/icon
+default_data/characters/Rattles/portrait
+  Copyright (C) 2025 Gaster
+  License: CC BY-SA 4.0
+
+default_data/characters/Rattles/telegraph/attack
+default_data/characters/Rattles/burst
+  Copyright (C) 2025 JamBox
+
+default_data/characters/Rattles/telegraph/
+  Copyright (C) 2025 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+default_data/characters/Rattles/Garbage
+  Copyright (C) 2025 JamBox, Donavin Draws
+  License: CC BY-SA 4.0
+
+default_data/characters/Rattles/Character SFX
+  Copyright (C) 2025 Harry Dyer
+  License: CC BY-SA 4.0
+
+default_data/characters/Rattles/Character Music
+  Copyright (C) Hunter van Brocklin
+  License: CC BY-NC-SA 4.0
+  https://h-v-b.bandcamp.com
 
 Stages
 ======

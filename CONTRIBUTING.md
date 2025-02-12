@@ -130,6 +130,7 @@ To guarantee that the metadata is visible in common software, it is recommended 
 To do these contribution guidelines justice, images should include in their XMP metadata the tags at the minimum
 - `dc:Creator` to indicate the creator
 - `dc:Rights` to indicate the copyright of the creator, year of creation and the license the artwork is available under
+- `dc:Contributor` to indicate additional contributors in case of a collaborative work
 
 ##### Creative Commons metadata
 
