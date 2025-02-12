@@ -1,6 +1,6 @@
 -- use in tandem with FocusDirector.lua
 
-local function canBeFocused(uiElement)
+local function focusable(uiElement)
   uiElement.isFocusable = true
   uiElement.hasFocus = false
   if uiElement.receiveInputs == nil then
@@ -17,4 +17,4 @@ local function canBeFocused(uiElement)
   -- end
 end
 
-return canBeFocused
+return focusable

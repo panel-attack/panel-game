@@ -2,14 +2,47 @@ local UiElement = require("client.src.ui.UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+--- A BoolSelector is a UIElement that shows if a setting is on or off and lets you toggle it.
 local BoolSelector = class(function(boolSelector, options)
   boolSelector.value = options.startValue or false
   boolSelector.TYPE = "BoolSelector"
+  boolSelector.vertical = false
 end,
 UiElement)
 
+function BoolSelector:onTouch(x, y)
+end
+
 function BoolSelector:onRelease(x, y)
   self:setValue(not self.value)
+end
+
+
+function BoolSelector:onSelect(boolSelector, selector)
+  self:setValue(not self.value)
+end
+
+function BoolSelector:receiveInputs(input)
+  if self.isFocusable then
+    if (input:isPressedWithRepeat("Right") and self.vertical == false) or
+        (input:isPressedWithRepeat("Up") and self.vertical) then
+        self:setValue(true)
+    elseif (input:isPressedWithRepeat("Left") and self.vertical == false) or
+    (input:isPressedWithRepeat("Down") and self.vertical) then
+      self:setValue(false)
+    elseif input.isDown["Swap1"] then
+      GAME.theme:playValidationSfx()
+      self:yieldFocus()
+    elseif input.isDown["Swap2"] then
+      GAME.theme:playCancelSfx()
+      self:yieldFocus()
+    end
+  else 
+    if input.isDown["Swap1"] then
+      GAME.theme:playValidationSfx()
+      self:setValue(not self.value)
+    end
+  end
 end
 
 function BoolSelector:setValue(value)
@@ -23,7 +56,11 @@ end
 -- other code may implement a callback here
 -- function BoolSelector.onValueChange() end
 
-local fakeCenteredChild = {hAlign = "center", vAlign = "center", width = 30, height = 40}
+local circleRadius = 10
+local extraDistance = 16
+local lengthPadding = 2
+local widthPadding = 2
+local fakeCenteredChild = {hAlign = "center", vAlign = "center", width = totalWidth, height = totalLength}
 
 function BoolSelector:drawSelf()
   if DEBUG_ENABLED then
@@ -32,17 +69,37 @@ function BoolSelector:drawSelf()
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 
+  local circleX = circleRadius + widthPadding
+  local circleY = circleRadius + lengthPadding
+  local totalWidth = circleRadius * 2 + 2 * widthPadding
+  local totalLength = circleRadius * 2 + 2 * lengthPadding
+  if self.vertical then
+    totalLength = totalLength + extraDistance
+    if self.value == false then
+      circleY = circleY + extraDistance
+    end
+  else
+    totalWidth = totalWidth + extraDistance
+    if self.value then
+      circleX = circleX + extraDistance
+    end
+  end
+  fakeCenteredChild.width = totalWidth
+  fakeCenteredChild.height = totalLength
+
   -- we want these to be centered but creating a Rectangle / Circle ui element is maybe a bit too much?
   -- so just apply the translation via a fake element with all necessary props
   GraphicsUtil.applyAlignment(self, fakeCenteredChild)
   love.graphics.translate(self.x, self.y)
 
-  GraphicsUtil.drawRectangle("line", 0, 0, 30, 40, nil, nil, nil, nil, 10, 15)
   if self.value then
-    love.graphics.circle("fill", 15, 15, 10)
-  else
-    love.graphics.circle("fill", 15, 25, 10)
+    GraphicsUtil.setColor(30/255, 190/255, 67/255, 1)
+    GraphicsUtil.drawRectangle("fill", 0, 0, totalWidth, totalLength, nil, nil, nil, nil, circleRadius, circleRadius)
+    GraphicsUtil.setColor(1, 1, 1, 1)
   end
+
+  GraphicsUtil.drawRectangle("line", 0, 0, totalWidth, totalLength, nil, nil, nil, nil, circleRadius, circleRadius)
+  love.graphics.circle("fill", circleX, circleY, circleRadius)
 
   GraphicsUtil.resetAlignment()
 end

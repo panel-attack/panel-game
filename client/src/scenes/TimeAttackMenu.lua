@@ -48,10 +48,7 @@ function TimeAttackMenu:loadUserInterface()
   self.ui.grid:createElementAt(3, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
 
   self.ui.styleSelection = MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
-  local trueLabel = Label({text = "endless_modern", vAlign = "top", hAlign = "center"})
-  local falseLabel = Label({text = "endless_classic", vAlign = "bottom", hAlign = "center"})
-  self.ui.styleSelection:addChild(trueLabel)
-  self.ui.styleSelection:addChild(falseLabel)
+  self.ui.styleSelection:setTitle("endless_modern")
   local styleSelector = self:createStyleSelection(player, unitSize)
   self.ui.styleSelection:addElement(styleSelector, player)
 

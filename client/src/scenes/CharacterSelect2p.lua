@@ -39,10 +39,7 @@ function CharacterSelect2p:loadUserInterface()
 
   self.ui.leaveButton = self:createLeaveButton()
   self.ui.rankedSelection = MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
-  local trueLabel = Label({text = "ss_ranked", vAlign = "top", hAlign = "center"})
-  local falseLabel = Label({text = "ss_casual", vAlign = "bottom", hAlign = "center"})
-  self.ui.rankedSelection:addChild(trueLabel)
-  self.ui.rankedSelection:addChild(falseLabel)
+  self.ui.rankedSelection:setTitle("ss_ranked")
 
   local levelHeight
   local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / #GAME.battleRoom.players - self.ui.panelSelection.height
@@ -50,18 +47,18 @@ function CharacterSelect2p:loadUserInterface()
   local rankedWidth
 
   if GAME.battleRoom.online then
-    self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection)
+    self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
     self.ui.grid:createElementAt(3, 2, 2, 1, "rankedSelection", self.ui.rankedSelection, nil, true)
-    self.ui.grid:createElementAt(5, 2, 2, 1, "stageSelection", self.ui.stageSelection)
-    self.ui.grid:createElementAt(7, 2, 2, 1, "levelSelection", self.ui.levelSelection)
+    self.ui.grid:createElementAt(5, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
+    self.ui.grid:createElementAt(7, 2, 2, 1, "levelSelection", self.ui.levelSelection, nil, true)
 
     levelHeight = 12
     stageWidth = self.ui.grid.unitSize - self.ui.grid.unitMargin * 2
     rankedWidth = stageWidth
   else
-    self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection)
-    self.ui.grid:createElementAt(3, 2, 3, 1, "stageSelection", self.ui.stageSelection)
-    self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection)
+    self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
+    self.ui.grid:createElementAt(3, 2, 3, 1, "stageSelection", self.ui.stageSelection, nil, true)
+    self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
 
     levelHeight = 20
     stageWidth = self.ui.grid.unitSize * 1.5 - self.ui.grid.unitMargin * 2

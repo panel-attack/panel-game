@@ -36,6 +36,7 @@ local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 ---@field spectatorString string newLine concatenated version of spectators for display
 ---@field winners MatchParticipant[]
 
+--- The ClientMatch is a way to create a match that will run with graphics and sounds on a client.
 ---@class ClientMatch : Signal
 ---@overload fun(players: MatchParticipant[], doCountdown: boolean, stackInteraction: integer, winConditions: integer[], gameOverConditions: integer[], supportsPause: boolean, optionalArgs: table?): ClientMatch
 local ClientMatch = class(
@@ -63,8 +64,7 @@ function(self, players, doCountdown, stackInteraction, winConditions, gameOverCo
     self.ranked = optionalArgs.ranked
   end
 
-  -- match needs its own table so it can sort players with impunity
-  self.players = shallowcpy(players)
+  self.players = players
 
   self.currentMusicIsDanger = false
 
@@ -132,17 +132,6 @@ function ClientMatch:runGameOver()
 end
 
 function ClientMatch:start()
-  -- battle room may add the players in any order
-  -- match has to make sure the local player ends up as P1 (left side)
-  -- if both are local or both are not, order by playerNumber
-  table.sort(self.players, function(a, b)
-    if a.isLocal == b.isLocal then
-      return a.playerNumber < b.playerNumber
-    else
-      return a.isLocal
-    end
-  end)
-
   self.stacks = {}
   local engineStacks = {}
   for i, player in ipairs(self.players) do
