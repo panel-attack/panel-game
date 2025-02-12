@@ -92,14 +92,13 @@ function BoolSelector:drawSelf()
   GraphicsUtil.applyAlignment(self, fakeCenteredChild)
   love.graphics.translate(self.x, self.y)
 
-  GraphicsUtil.drawRectangle("line", 0, 0, totalWidth, totalLength, nil, nil, nil, nil, circleRadius, circleRadius)
-
   if self.value then
     GraphicsUtil.setColor(30/255, 190/255, 67/255, 1)
     GraphicsUtil.drawRectangle("fill", 0, 0, totalWidth, totalLength, nil, nil, nil, nil, circleRadius, circleRadius)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 
+  GraphicsUtil.drawRectangle("line", 0, 0, totalWidth, totalLength, nil, nil, nil, nil, circleRadius, circleRadius)
   love.graphics.circle("fill", circleX, circleY, circleRadius)
 
   GraphicsUtil.resetAlignment()
