@@ -138,6 +138,7 @@ local PANELS_TO_NEXT_SPEED =
 ---@field puzzle table? Optional puzzle
 ---@field game_stopwatch integer? Clock time minus time that swaps were blocked
 ---@field rollbackBuffer RollbackBuffer
+---@field rollbackPanelBuffer Panel[]
 ---@field panelTemplate (Panel | fun(id: integer, row: integer, column: integer): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
 
 
@@ -260,6 +261,7 @@ local Stack = class(
     s.garbageGenCount = 0
 
     s.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
+    s.rollbackPanelBuffer = {}
 
     s.warningsTriggered = {}
 
@@ -329,11 +331,20 @@ function Stack:rollbackCopyPanels(copy)
     for j = 1, self.width do
       local index = i * self.width + j
       -- if it's a fresh copy or the current stack is higher than the stale copy there may not be any preexisting table at this location
-      panels[index] = panels[index] or {}
+      local panelCopy = panels[index]
+      if not panelCopy then
+        if #self.rollbackPanelBuffer > 0 then
+          panelCopy = table.remove(self.rollbackPanelBuffer)
+        else
+          -- panels have 13 base props and up to 11 garbage specific props OR 7 non-garbage specific props
+          panelCopy = table.new(0, 24)
+        end
+      end
       local sPanel = self.panels[i][j]
       for k, v in pairs(sPanel) do
-        panels[index][k] = v
+        panelCopy[k] = v
       end
+      panels[index] = panelCopy
     end
   end
 
@@ -344,13 +355,15 @@ end
 function Stack:rollbackCopy()
   local copy = self.rollbackBuffer:getOldest()
   if copy then
-    -- this is to eliminate offscreen rows of chain garbage higher up from the old copy so they don't linger in the new copy
-    for i = #copy.panels, (#self.panels + 1) * self.width + 1, -1 do
-      copy.panels[i] = nil
-    end
     -- as we're reusing tables and many panel values can be nil, it's necessary to clear out data to not have false data linger
     for i = 1, #copy.panels do
       table.clear(copy.panels[i])
+    end
+    -- this is to eliminate offscreen rows of chain garbage higher up from the old copy so they don't linger in the new copy
+    for i = #copy.panels, (#self.panels + 1) * self.width + 1, -1 do
+      -- but as offscreen rows come and go and we don't want to reallocate them every time, buffer them as well!
+      self.rollbackPanelBuffer[#self.rollbackPanelBuffer+1] = copy.panels[i]
+      copy.panels[i] = nil
     end
   else
     copy = {panels = {}, currentGarbageDropColumnIndexes = {}}

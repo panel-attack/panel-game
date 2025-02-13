@@ -18,9 +18,8 @@ require("common.lib.util")
 ---@field chaining boolean? if the panel will cause a chain when matched in this moment
 ---@field propagatesChaining boolean panels are updated bottom to top
 --- panels will check if this is set on the panel below to update their chaining state in combination with their own state
----@field matchAnyway boolean a flag to determine if a hovering panel can be matched or not despite hovering panels normally being unmatchable
---- PA always checks matches and then updates everything at once; the flag exists to compensate for the order of actions to keep some hovering panels matchable on their first frame
---- if we first updated swapping panels, then checked matches and then updated all panels it might be possible to get rid of this flag; debatable if that is desirable
+---@field debug_tag string? Non-functional field, may be set for debugging purposes
+-- GARBAGE-EXCLUSIVE PROPERTIES
 ---@field isGarbage boolean? if the panel is acting as garbage
 ---@field garbageId integer? the unique id of the piece of garbage the panel belongs to (unique per stack)
 ---@field metal boolean? if the panel is acting as shock garbage
@@ -33,9 +32,9 @@ require("common.lib.util")
 ---@field pop_index integer? index of the panel in the sequence formed of all garbage panels in the match scheduled to be garbage popping
 ---@field shake_time integer? how many frames of invincibility the garbage panel grants upon making contact with non-garbage panels on the screen for the first time
 --- all panels in a garbage block have the same shake_time
+-- NON-GARBAGE EXCLUSIVE PROPERTIES
 ---@field combo_size integer? size of the regular match the panel is part of; size compared against index determines the pop timing; also used for determining popFX size
 ---@field combo_index integer? pop index among panels in the regular match; index compared against size determines the pop timing
----@field chain_index integer? number of the chain link if this panel got matched as part of a chain (I think)
 ---@field isSwappingFromLeft boolean? a direction indicator so we can check if swaps are possible with currently swapping panels and their surroundings
 ---@field dont_swap boolean? if a panel is not supposed to be swappable for arcane reasons it gets flagged down with this
 --- in the future this should probably get axed
@@ -45,7 +44,9 @@ require("common.lib.util")
 --- then this panel should be forced to hover after and the panels above as well
 --- indicated by this bool for itself and the panels above
 ---@field fell_from_garbage integer? Animation timer for "bounce" after falling from garbage.
----@field debug_tag string? Non-functional field, may be set for debugging purposes
+---@field matchAnyway boolean a flag to determine if a hovering panel can be matched or not despite hovering panels normally being unmatchable
+--- PA always checks matches and then updates everything at once; the flag exists to compensate for the order of actions to keep some hovering panels matchable on their first frame
+--- if we first updated swapping panels, then checked matches and then updated all panels it might be possible to get rid of this flag; debatable if that is desirable
 
 -- clears information relating to state, matches and various stuff
 -- a true argument must be supplied to clear the chaining flag as well
@@ -63,9 +64,6 @@ local function clear_flags(panel, clearChaining)
   -- size compared against index determines the pop timing
   -- also used for determining popFX size
   panel.combo_size = nil
-
-  -- number of the chain link if this panel got matched as part of a chain (I think)
-  panel.chain_index = nil
 
   -- a direction indicator so we can check if swaps are possible with currently swapping panels
   -- ...and their surroundings
