@@ -320,140 +320,173 @@ function Stack.divergenceString(stackToTest)
   return result
 end
 
--- Backup important variables into the passed in variable to be restored in rollback. Note this doesn't do a full copy.
--- param source the stack to copy from
--- param other the variable to copy to (this may be a full stack object in the case of restore, or just a table in case of backup)
-function Stack.rollbackCopy(source, other)
-  local restoringStack = getmetatable(other) ~= nil
-
-  if other == nil then
-    if #source.rollbackCopyPool == 0 then
-      other = {}
-    else
-      other = source.rollbackCopyPool[#source.rollbackCopyPool]
-      source.rollbackCopyPool[#source.rollbackCopyPool] = nil
+-- saves a copy of the stack with its current clock within its rollback buffer
+function Stack:rollbackCopy()
+  local copy = self.rollbackBuffer:getOldest()
+  if copy then
+    -- this is too eliminate offscreen rows of chain garbage higher up from the old copy so they don't linger in the new copy
+    for i = #copy.panels, #self.panels * self.width, -1 do
+      copy.panels[i] = nil
     end
-  end
-  other.queuedSwapColumn = source.queuedSwapColumn
-  other.queuedSwapRow = source.queuedSwapRow
-  other.speed = source.speed
-  other.health = source.health
-
-  if other.currentGarbageDropColumnIndexes == nil then
-    other.currentGarbageDropColumnIndexes = {}
-  end
-  for garbageWidth = 1, #source.currentGarbageDropColumnIndexes do
-    other.currentGarbageDropColumnIndexes[garbageWidth] = source.currentGarbageDropColumnIndexes[garbageWidth]
+    -- as we're reusing tables and many panel values can be nil, it's necessary to clear out data to not have false data linger
+    for i = 1, #copy.panels do
+      table.clear(copy.panels[i])
+    end
+  else
+    copy = {panels = {}, currentGarbageDropColumnIndexes = {}}
   end
 
-  prof.push("rollback copy panels")
-  local width = source.width or other.width
-  local height_to_cpy = #source.panels
-  other.panels = other.panels or {}
-  local startRow = 1
-  if source.panels[0] then
-    startRow = 0
+  copy.queuedSwapColumn = self.queuedSwapColumn
+  copy.queuedSwapRow = self.queuedSwapRow
+  copy.speed = self.speed
+  copy.health = self.health
+  copy.countdown_timer = self.countdown_timer
+  copy.clock = self.clock
+  copy.game_stopwatch = self.game_stopwatch
+  copy.game_stopwatch_running = self.game_stopwatch_running
+  copy.rise_lock = self.rise_lock
+  copy.top_cur_row = self.top_cur_row
+  copy.displacement = self.displacement
+  copy.nextSpeedIncreaseClock = self.nextSpeedIncreaseClock
+  copy.panels_to_speedup = self.panels_to_speedup
+  copy.stop_time = self.stop_time
+  copy.pre_stop_time = self.pre_stop_time
+  copy.score = self.score
+  copy.chain_counter = self.chain_counter
+  copy.n_active_panels = self.n_active_panels
+  copy.n_prev_active_panels = self.n_prev_active_panels
+  copy.rise_timer = self.rise_timer
+  copy.manual_raise = self.manual_raise
+  copy.manual_raise_yet = self.manual_raise_yet
+  copy.prevent_manual_raise = self.prevent_manual_raise
+  copy.cur_timer = self.cur_timer
+  copy.cur_dir = self.cur_dir
+  copy.cur_row = self.cur_row
+  copy.cur_col = self.cur_col
+  copy.shake_time = self.shake_time
+  copy.peak_shake_time = self.peak_shake_time
+  copy.do_countdown = self.do_countdown
+  copy.panel_buffer = self.panel_buffer
+  copy.gpanel_buffer = self.gpanel_buffer
+  copy.panelGenCount = self.panelGenCount
+  copy.garbageGenCount = self.garbageGenCount
+  copy.panels_in_top_row = self.panels_in_top_row
+  copy.has_risen = self.has_risen
+  copy.metal_panels_queued = self.metal_panels_queued
+  copy.panels_cleared = self.panels_cleared
+  copy.game_over_clock = self.game_over_clock
+  copy.highestGarbageIdMatched = self.highestGarbageIdMatched
+
+  for garbageWidth = 1, #self.currentGarbageDropColumnIndexes do
+    copy.currentGarbageDropColumnIndexes[garbageWidth] = self.currentGarbageDropColumnIndexes[garbageWidth]
   end
-  other.panelsCreatedCount = source.panelsCreatedCount
-  for i = startRow, height_to_cpy do
-    if other.panels[i] == nil then
-      other.panels[i] = {}
-      for j = 1, width do
-        if restoringStack then
-          other:createPanelAt(i, j) -- the panel ID will be overwritten below
-        else
-          -- We don't need to "create" a panel, since we are just backing up the key values
-          -- and when we restore we will usually have a panel to restore into.
-          other.panels[i][j] = {}
-        end
+
+  copy.panels = copy.panels or {}
+  copy.panelsCreatedCount = self.panelsCreatedCount
+
+  -- rollback data for panels is saved in an unrolled format to avoid creating dozens of extra tables for storage
+  -- panels are saved in a flat table and indexed left to right, going up from row 0
+  for i = 0, #self.panels do
+    for j = 1, self.width do
+      local index = i * self.width + j
+      -- if it's a fresh copy or the current stack is higher than the stale copy there may not be any preexisting table at this location
+      copy.panels[index] = copy.panels[index] or {}
+      local sPanel = self.panels[i][j]
+      for k, v in pairs(sPanel) do
+        copy.panels[index][k] = v
       end
     end
-    for j = 1, width do
-      local opanel = other.panels[i][j]
-      local spanel = source.panels[i][j]
-      -- Clear all variables not in source, then copy all source variables to the backup
-      -- Note the functions are kept from the same stack so they will still be valid
-      for k, _ in pairs(opanel) do
-        if spanel[k] == nil then
-          opanel[k] = nil
-        end
-      end
-      for k, v in pairs(spanel) do
-        opanel[k] = v
-      end
-    end
   end
-  -- this is too eliminate offscreen rows of chain garbage higher up that the clone might have had
-  for i = height_to_cpy + 1, #other.panels do
-    other.panels[i] = nil
-  end
-  prof.pop("rollback copy panels")
 
-  prof.push("rollback copy the rest")
-  other.countdown_timer = source.countdown_timer
-  other.clock = source.clock
-  other.game_stopwatch = source.game_stopwatch
-  other.game_stopwatch_running = source.game_stopwatch_running
-  other.rise_lock = source.rise_lock
-  other.top_cur_row = source.top_cur_row
-  other.displacement = source.displacement
-  other.nextSpeedIncreaseClock = source.nextSpeedIncreaseClock
-  other.panels_to_speedup = source.panels_to_speedup
-  other.stop_time = source.stop_time
-  other.pre_stop_time = source.pre_stop_time
-  other.score = source.score
-  other.chain_counter = source.chain_counter
-  other.n_active_panels = source.n_active_panels
-  other.n_prev_active_panels = source.n_prev_active_panels
-  other.rise_timer = source.rise_timer
-  other.manual_raise = source.manual_raise
-  other.manual_raise_yet = source.manual_raise_yet
-  other.prevent_manual_raise = source.prevent_manual_raise
-  other.cur_timer = source.cur_timer
-  other.cur_dir = source.cur_dir
-  other.cur_row = source.cur_row
-  other.cur_col = source.cur_col
-  other.shake_time = source.shake_time
-  other.peak_shake_time = source.peak_shake_time
-  other.do_countdown = source.do_countdown
-  other.panel_buffer = source.panel_buffer
-  other.gpanel_buffer = source.gpanel_buffer
-  other.panelGenCount = source.panelGenCount
-  other.garbageGenCount = source.garbageGenCount
-  other.panels_in_top_row = source.panels_in_top_row
-  other.has_risen = source.has_risen
-  other.metal_panels_queued = source.metal_panels_queued
-  other.panels_cleared = source.panels_cleared
-  other.game_over_clock = source.game_over_clock
-  other.highestGarbageIdMatched = source.highestGarbageIdMatched
-  prof.pop("rollback copy the rest")
-
-  return other
+  self.rollbackBuffer:saveCopy(self.clock, copy)
 end
 
 local function internalRollbackToFrame(stack, frame)
-  local currentFrame = stack.clock
-  if frame < currentFrame and stack.rollbackCopies[frame] then
-    logger.debug("Rolling back " .. stack.which .. " to " .. frame)
-    Stack.rollbackCopy(stack.rollbackCopies[frame], stack)
-    -- this is for the interpolation of the shake animation only (not a physics relevant field)
-    if stack.rollbackCopies[frame - 1] then
-      stack.prev_shake_time = stack.rollbackCopies[frame - 1].shake_time
-    else
-      -- if this is the oldest rollback frame we don't need to interpolate with previous values
-      -- because there are no previous values, pretend it just went down smoothly
-      -- this can lead to minor differences in display for the same frame when using rewind
-      stack.prev_shake_time = stack.shake_time + 1
-    end
+  local copy = stack.rollbackBuffer:rollbackToFrame(frame)
 
-    for f = frame, currentFrame do
-      stack:deleteRollbackCopy(f)
-    end
-
-    return true
+  if not copy then
+    return false
   end
 
-  return false
+  stack.countdown_timer = copy.countdown_timer
+  stack.clock = copy.clock
+  stack.game_stopwatch = copy.game_stopwatch
+  stack.game_stopwatch_running = copy.game_stopwatch_running
+  stack.rise_lock = copy.rise_lock
+  stack.top_cur_row = copy.top_cur_row
+  stack.displacement = copy.displacement
+  stack.nextSpeedIncreaseClock = copy.nextSpeedIncreaseClock
+  stack.panels_to_speedup = copy.panels_to_speedup
+  stack.stop_time = copy.stop_time
+  stack.pre_stop_time = copy.pre_stop_time
+  stack.score = copy.score
+  stack.chain_counter = copy.chain_counter
+  stack.n_active_panels = copy.n_active_panels
+  stack.n_prev_active_panels = copy.n_prev_active_panels
+  stack.rise_timer = copy.rise_timer
+  stack.manual_raise = copy.manual_raise
+  stack.manual_raise_yet = copy.manual_raise_yet
+  stack.prevent_manual_raise = copy.prevent_manual_raise
+  stack.cur_timer = copy.cur_timer
+  stack.cur_dir = copy.cur_dir
+  stack.cur_row = copy.cur_row
+  stack.cur_col = copy.cur_col
+  stack.shake_time = copy.shake_time
+  stack.peak_shake_time = copy.peak_shake_time
+  stack.do_countdown = copy.do_countdown
+  stack.panel_buffer = copy.panel_buffer
+  stack.gpanel_buffer = copy.gpanel_buffer
+  stack.panelGenCount = copy.panelGenCount
+  stack.garbageGenCount = copy.garbageGenCount
+  stack.panels_in_top_row = copy.panels_in_top_row
+  stack.has_risen = copy.has_risen
+  stack.metal_panels_queued = copy.metal_panels_queued
+  stack.panels_cleared = copy.panels_cleared
+  stack.game_over_clock = copy.game_over_clock
+  stack.highestGarbageIdMatched = copy.highestGarbageIdMatched
+  stack.queuedSwapColumn = copy.queuedSwapColumn
+  stack.queuedSwapRow = copy.queuedSwapRow
+  stack.speed = copy.speed
+  stack.health = copy.health
+
+  -- we can just overwrite using the copied table as the rollbackBuffer discards that table from reuse
+  stack.currentGarbageDropColumnIndexes = copy.currentGarbageDropColumnIndexes
+
+  -- roll up the panel copies into the table structure
+  for i, panel in ipairs(copy.panels) do
+    local row = panel.row
+    local column = panel.column
+
+    if stack.panels[row][column] then
+      table.clear(stack.panels[row][column])
+    else
+      stack.panels[row][column] = stack.panelTemplate(panel.id, row, column)
+    end
+
+    for k, v in pairs(panel) do
+      stack.panels[row][column][k] = v
+    end
+  end
+
+  -- we need to cut off any offscreen panels that were not there in the copied data
+  -- -1 cause we always have a row 0 at the beginning of copy.panels, +1 because we don't actually want to remove the top most row
+  local maxRow = #copy.panels / stack.width -- - 1 + 1
+  for i = #stack.panels, maxRow, -1 do
+    stack.panels[i] = nil
+  end
+
+  -- this is for the interpolation of the shake animation only (not a physics relevant field)
+  local previousData = stack.rollbackBuffer:peekPrevious()
+  if previousData.clock == frame - 1 then
+    stack.prev_shake_time = previousData.shake_time
+  else
+    -- if this is the oldest rollback frame we don't need to interpolate with previous values
+    -- because there are no previous values, pretend it just went down smoothly
+    -- this can lead to minor differences in display for the same frame when using rewind
+    stack.prev_shake_time = stack.shake_time + 1
+  end
+
+  return true
 end
 
 ---@param frame integer the frame to rollback to if possible
@@ -505,7 +538,7 @@ function Stack.saveForRollback(self)
   prof.push("Stack:saveForRollback")
   self:remove_extra_rows()
   prof.push("Stack.rollbackCopy")
-  self.rollbackCopies[self.clock] = Stack.rollbackCopy(self)
+  self:rollbackCopy()
   prof.pop("Stack.rollbackCopy")
   prof.push("incomingGarbage:rollbackCopy")
   self.incomingGarbage:rollbackCopy(self.clock)
@@ -515,20 +548,8 @@ function Stack.saveForRollback(self)
     self.outgoingGarbage:rollbackCopy(self.clock)
   end
   prof.pop("outgoingGarbage:rollbackCopy")
-
-  prof.push("delete rollback copy")
-  local deleteFrame = self.clock - MAX_LAG - 1
-  self:deleteRollbackCopy(deleteFrame)
-  prof.pop("delete rollback copy")
   prof.pop("Stack:saveForRollback")
   self:emitSignal("rollbackSaved", self.clock)
-end
-
-function Stack.deleteRollbackCopy(self, frame)
-  if self.rollbackCopies[frame] then
-    self.rollbackCopyPool[#self.rollbackCopyPool + 1] = self.rollbackCopies[frame]
-    self.rollbackCopies[frame] = nil
-  end
 end
 
 -- will throw an error if there is no puzzle set
@@ -1719,11 +1740,7 @@ function Stack:getInfo()
   info.playerNumber = self.which
   info.inputMethod = self.inputMethod
   info.rollbackCount = self.rollbackCount
-  if self.rollbackCopies then
-    info.rollbackCopyCount = tableUtils.length(self.rollbackCopies)
-  else
-    info.rollbackCopyCount = 0
-  end
+  info.rollbackCopyCount = self.rollbackBuffer:getSize()
 
   return info
 end

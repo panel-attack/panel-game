@@ -72,4 +72,26 @@ function RollbackBuffer:rollbackToFrame(frame)
   end
 end
 
+function RollbackBuffer:peekPrevious()
+  local previousIndex = wrap(1, self.currentIndex - 1, self.size)
+  return self.buffer[previousIndex]
+end
+
+---@return integer
+function RollbackBuffer:getSize()
+  local size = 0
+  local index = self.currentIndex
+  for i = 1, self.size do
+    index = wrap(1, index - 1, self.size)
+
+    if not self.frames[index] then
+      return size
+    end
+
+    size = size + 1
+  end
+
+  return size
+end
+
 return RollbackBuffer
