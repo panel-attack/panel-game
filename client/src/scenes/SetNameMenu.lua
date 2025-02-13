@@ -1,10 +1,8 @@
 local Scene = require("client.src.scenes.Scene")
-local InputField = require("client.src.ui.InputField")
-local Label = require("client.src.ui.Label")
+local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
 local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
-local TextButton = require("client.src.ui.TextButton")
 
 -- Scene for setting the username
 local SetNameMenu = class(
@@ -19,7 +17,7 @@ SetNameMenu.name = "SetNameMenu"
 
 function SetNameMenu:load()
   local x, y = unpack(themes[config.theme].main_menu_screen_pos)
-  self.promptLabel = Label({
+  self.promptLabel = ui.Label({
     text = "op_enter_name",
     vAlign = "top",
     hAlign = "center",
@@ -27,7 +25,7 @@ function SetNameMenu:load()
   })
   self.uiRoot:addChild(self.promptLabel)
 
-  self.validationLabel = Label({
+  self.validationLabel = ui.Label({
     text = "",
     vAlign = "top",
     hAlign = "center",
@@ -36,7 +34,7 @@ function SetNameMenu:load()
   })
   self.uiRoot:addChild(self.validationLabel)
 
-  self.nameField = InputField({
+  self.nameField = ui.InputField({
     y = y + 50,
     width = 200,
     height = 25,
@@ -48,7 +46,7 @@ function SetNameMenu:load()
   })
   self.uiRoot:addChild(self.nameField)
 
-  self.nameLengthLabel = Label({
+  self.nameLengthLabel = ui.Label({
     x = self.nameField.width / 2 + 30,
     y = y + 50 + 5.5,
     vAlign = "top",
@@ -58,8 +56,8 @@ function SetNameMenu:load()
   })
   self.uiRoot:addChild(self.nameLengthLabel)
 
-  self.confirmationButton = TextButton({
-    label = Label({text = "mm_set_name"}),
+  self.confirmationButton = ui.TextButton({
+    label = ui.Label({text = "mm_set_name"}),
     y = y + 100,
     vAlign = "top",
     hAlign = "center",

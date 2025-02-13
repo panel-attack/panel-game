@@ -1,9 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
-local Menu = require("client.src.ui.Menu")
-local MenuItem = require("client.src.ui.MenuItem")
-local Label = require("client.src.ui.Label")
-local Stepper = require("client.src.ui.Stepper")
-local Slider = require("client.src.ui.Slider")
+local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
@@ -70,14 +66,14 @@ function TrainingMenu:load(sceneParams)
   
   local garbagePatternLabels = {}
   for _, garbagepatternName in ipairs(garbagePatternNames) do
-    table.insert(garbagePatternLabels, Label({
+    table.insert(garbagePatternLabels, ui.Label({
         text = garbagepatternName,
         translate = tableUtils.contains(translatableGarbagePatternNames, garbagepatternName),
         width = 70,
         height = 25}))
   end
 
-  local garbagePatternStepper = Stepper({
+  local garbagePatternStepper = ui.Stepper({
       labels = garbagePatternLabels,
       values = garbagePatternValues,
       selectedIndex = 1,
@@ -87,7 +83,7 @@ function TrainingMenu:load(sceneParams)
     }
   )
 
-  local widthSlider = Slider({
+  local widthSlider = ui.Slider({
     min = 1, 
     max = 6, 
     value = 1,
@@ -95,7 +91,7 @@ function TrainingMenu:load(sceneParams)
     onValueChange = function() garbagePatternStepper:setState(1) end
   })
 
-  local heightSlider = Slider({
+  local heightSlider = ui.Slider({
     min = 1, 
     max = 99, 
     value = 1,
@@ -103,14 +99,14 @@ function TrainingMenu:load(sceneParams)
   })
 
   local menuItems = {
-    MenuItem.createStepperMenuItem("Garbage Pattern", nil, false, garbagePatternStepper),
-    MenuItem.createSliderMenuItem("width", nil, nil, widthSlider),
-    MenuItem.createSliderMenuItem("height", nil, nil, heightSlider),
-    MenuItem.createButtonMenuItem("go_", nil, nil, function() self:goToCharacterSelect(garbagePatternStepper.value, widthSlider.value, heightSlider.value) end),
-    MenuItem.createButtonMenuItem("back", nil, nil, exitMenu)
+    ui.MenuItem.createStepperMenuItem("Garbage Pattern", nil, false, garbagePatternStepper),
+    ui.MenuItem.createSliderMenuItem("width", nil, nil, widthSlider),
+    ui.MenuItem.createSliderMenuItem("height", nil, nil, heightSlider),
+    ui.MenuItem.createButtonMenuItem("go_", nil, nil, function() self:goToCharacterSelect(garbagePatternStepper.value, widthSlider.value, heightSlider.value) end),
+    ui.MenuItem.createButtonMenuItem("back", nil, nil, exitMenu)
   }
 
-  self.menu = Menu.createCenteredMenu(menuItems)
+  self.menu = ui.Menu.createCenteredMenu(menuItems)
   self.uiRoot:addChild(self.menu)
 end
 

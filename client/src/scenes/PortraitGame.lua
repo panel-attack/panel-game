@@ -3,11 +3,8 @@ local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Telegraph = require("client.src.graphics.Telegraph")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local PixelFontLabel = require("client.src.ui.PixelFontLabel")
-local TextButton = require("client.src.ui.TextButton")
-local Label = require("client.src.ui.Label")
+local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
-local tableUtils = require("common.lib.tableUtils")
 local system = require("client.src.system")
 
 local PortraitGame = class(function(self, sceneParams)
@@ -37,7 +34,7 @@ function PortraitGame:customLoad()
   self.uiRoot.width = consts.CANVAS_HEIGHT
   self.uiRoot.height = consts.CANVAS_WIDTH
 
-  local communityMessage = Label({
+  local communityMessage = ui.Label({
     text = "join_community",
     replacements = {"\ndiscord." .. consts.SERVER_LOCATION},
     translate = true,
@@ -49,7 +46,7 @@ function PortraitGame:customLoad()
   self.uiRoot:addChild(self.uiRoot.communityMessage)
 
   local timerScale = themes[config.theme].time_Scale
-  self.uiRoot.timer = PixelFontLabel({
+  self.uiRoot.timer = ui.PixelFontLabel({
     text = getTimer(self.match),
     fontMap = themes[config.theme].fontMaps.time,
     hAlign = "center",
@@ -219,7 +216,7 @@ function PortraitGame:flipToPortrait()
       stack.origin_x = stack.frameOriginX / stack.gfxScale
 
       -- create a raise button that interacts with the touch controller
-      local raiseButton = TextButton({label = Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
+      local raiseButton = ui.TextButton({label = ui.Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
         stack.touchInputDetector.touchingRaise = true

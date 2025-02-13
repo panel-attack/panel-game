@@ -1,12 +1,7 @@
 local CharacterSelect = require("client.src.scenes.CharacterSelect")
 local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
-local Grid = require("client.src.ui.Grid")
-local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionWrapper")
-local Label = require("client.src.ui.Label")
-local Stepper = require("client.src.ui.Stepper")
-local Slider = require("client.src.ui.Slider")
-local Focusable = require("client.src.ui.Focusable")
+local ui = require("client.src.ui")
 
 -- Scene for the endless game setup menu
 local EndlessMenu = class(
@@ -27,7 +22,7 @@ function EndlessMenu:loadUserInterface()
   local player = GAME.battleRoom.players[1]
 
   local unitSize = 100
-  self.ui.grid = Grid({unitSize = unitSize, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
+  self.ui.grid = ui.Grid({unitSize = unitSize, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
   self.uiRoot:addChild(self.ui.grid)
 
   self.ui.characterIcons[1] = self:createPlayerIcon(player)
@@ -38,26 +33,26 @@ function EndlessMenu:loadUserInterface()
   self:refresh()
   self.ui.grid:createElementAt(2, 1, 2, 1, "recordBox", self.ui.recordBox, nil, true)
 
-  self.ui.panelSelection = MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
+  self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
   self.ui.panelSelection:setTitle("panels")
   local panelCarousel = self:createPanelCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.panelSelection.height)
   self.ui.panelSelection:addElement(panelCarousel, player)
   self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
 
   local stageCarousel = self:createStageCarousel(player, self.ui.grid.unitSize * 2 - self.ui.grid.unitMargin * 2)
-  self.ui.stageSelection = MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
+  self.ui.stageSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.stageSelection:setTitle("stage")
   self.ui.stageSelection:addElement(stageCarousel, player)
   self.ui.grid:createElementAt(3, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
 
-  self.ui.styleSelection = MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
+  self.ui.styleSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.styleSelection:setTitle("endless_modern")
   local styleSelector = self:createStyleSelection(player, unitSize)
   self.ui.styleSelection:addElement(styleSelector, player)
 
   self.ui.grid:createElementAt(5, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
 
-  self.ui.speedSelection = MultiPlayerSelectionWrapper({
+  self.ui.speedSelection = ui.MultiPlayerSelectionWrapper({
     hFill = true,
     alignment = "top",
     hAlign = "center",
@@ -67,7 +62,7 @@ function EndlessMenu:loadUserInterface()
   local speedSlider = self:createSpeedSlider(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.speedSelection.height)
   self.ui.speedSelection:addElement(speedSlider, player)
 
-  self.ui.difficultySelection = MultiPlayerSelectionWrapper({
+  self.ui.difficultySelection = ui.MultiPlayerSelectionWrapper({
     hFill = true,
     alignment = "top",
     hAlign = "center",
@@ -78,7 +73,7 @@ function EndlessMenu:loadUserInterface()
   local difficultyCarousel = self:createDifficultyCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.difficultySelection.height)
   self.ui.difficultySelection:addElement(difficultyCarousel, player)
 
-  self.ui.levelSelection = MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
+  self.ui.levelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
   self.ui.levelSelection:setTitle("level")
   local levelSlider = self:createLevelSlider(player, 20, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.levelSelection.height)
   self.ui.levelSelection:addElement(levelSlider, player)

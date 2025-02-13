@@ -9,9 +9,11 @@ local ui = {
   Focusable = require(PATH .. ".Focusable"),
   FocusDirector = require(PATH .. ".FocusDirector"),
   Grid = require(PATH .. ".Grid"),
+  GridCursor = require(PATH .. ".GridCursor"),
   ImageContainer = require(PATH .. ".ImageContainer"),
   InputField = require(PATH .. ".InputField"),
   ---@type fun(options: LabelOptions): Label
+  ---@see Label
   Label = require(PATH .. ".Label"),
   Leaderboard = require(PATH .. ".Leaderboard"),
   LevelSlider = require(PATH .. ".LevelSlider"),
@@ -28,6 +30,8 @@ local ui = {
   StageCarousel = require(PATH .. ".StageCarousel"),
   Stepper = require(PATH .. ".Stepper"),
   TextButton = require(PATH .. ".TextButton"),
+  ---@type fun(options:UiElementOptions): UiElement
+  ---@see UiElement
   UiElement = require(PATH .. ".UIElement"),
   ValueLabel = require(PATH .. ".ValueLabel"),
 }

@@ -1,7 +1,6 @@
 local CharacterSelect = require("client.src.scenes.CharacterSelect")
 local class = require("common.lib.class")
-local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionWrapper")
-local Grid = require("client.src.ui.Grid")
+local ui = require("client.src.ui")
 
 local CharacterSelectChallenge = class(
   function (self, sceneParams)
@@ -16,12 +15,12 @@ function CharacterSelectChallenge:customLoad(sceneParams)
 end
 
 function CharacterSelectChallenge:loadUserInterface()
-  self.ui.grid = Grid({unitSize = 100, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
+  self.ui.grid = ui.Grid({unitSize = 100, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
   self.uiRoot:addChild(self.ui.grid)
 
-  self.ui.panelSelection = MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
+  self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
   self.ui.panelSelection:setTitle("panels")
-  self.ui.stageSelection = MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
+  self.ui.stageSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.stageSelection:setTitle("stage")
   self.ui.readyButton = self:createReadyButton()
   local characterButtons = self:getCharacterButtons()

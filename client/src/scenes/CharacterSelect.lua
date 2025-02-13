@@ -4,25 +4,10 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.engine.GameModes")
 local Scene = require("client.src.scenes.Scene")
-local StageCarousel = require("client.src.ui.StageCarousel")
-local LevelSlider = require("client.src.ui.LevelSlider")
-local PanelCarousel = require("client.src.ui.PanelCarousel")
-local PagedUniGrid = require("client.src.ui.PagedUniGrid")
-local Button = require("client.src.ui.Button")
-local TextButton = require("client.src.ui.TextButton")
-local GridCursor = require("client.src.ui.GridCursor")
-local Focusable = require("client.src.ui.Focusable")
-local ImageContainer = require("client.src.ui.ImageContainer")
-local Label = require("client.src.ui.Label")
-local BoolSelector = require("client.src.ui.BoolSelector")
-local UiElement = require("client.src.ui.UIElement")
-local StackPanel = require("client.src.ui.StackPanel")
-local PixelFontLabel = require("client.src.ui.PixelFontLabel")
+local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local SoundController = require("client.src.music.SoundController")
 local Character = require("client.src.mods.Character")
-local Slider = require("client.src.ui.Slider")
-local Carousel = require("client.src.ui.Carousel")
 
 -- The character select screen scene
 local CharacterSelect = class(function(self)
@@ -58,9 +43,9 @@ function CharacterSelect:load()
 end
 
 function CharacterSelect:createPlayerIcon(player)
-  local playerIcon = UiElement({hFill = true, vFill = true})
+  local playerIcon = ui.UiElement({hFill = true, vFill = true})
 
-  local selectedCharacterIcon = ImageContainer({
+  local selectedCharacterIcon = ui.ImageContainer({
     hFill = true,
     vFill = true,
     image = characters[player.settings.selectedCharacterId].images.icon,
@@ -78,7 +63,7 @@ function CharacterSelect:createPlayerIcon(player)
 
   -- level icon
   if player.settings.style == GameModes.Styles.MODERN and player.settings.level then
-    local levelIcon = ImageContainer({
+    local levelIcon = ui.ImageContainer({
       image = themes[config.theme].images.IMG_levels[player.settings.level],
       hAlign = "right",
       vAlign = "bottom",
@@ -96,7 +81,7 @@ function CharacterSelect:createPlayerIcon(player)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
-  local playerNumberIcon = ImageContainer({
+  local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "bottom",
@@ -107,7 +92,7 @@ function CharacterSelect:createPlayerIcon(player)
   playerIcon:addChild(playerNumberIcon)
 
   -- player name
-  local playerName = Label({
+  local playerName = ui.Label({
     text = player.name,
     translate = false,
     hAlign = "center",
@@ -116,7 +101,7 @@ function CharacterSelect:createPlayerIcon(player)
   playerIcon:addChild(playerName)
 
   -- load icon
-  local loadIcon = ImageContainer({
+  local loadIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_loading,
     hAlign = "center",
     vAlign = "center",
@@ -127,7 +112,7 @@ function CharacterSelect:createPlayerIcon(player)
   playerIcon:addChild(loadIcon)
 
   -- ready icon
-  local readyIcon = ImageContainer({
+  local readyIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_ready,
     hAlign = "center",
     vAlign = "center",
@@ -151,10 +136,10 @@ function CharacterSelect:createPlayerIcon(player)
 end
 
 function CharacterSelect:createReadyButton()
-  local readyButton = TextButton({
+  local readyButton = ui.TextButton({
     hFill = true,
     vFill = true,
-    label = Label({text = "ready"}),
+    label = ui.Label({text = "ready"}),
     backgroundColor = {1, 1, 1, 0},
     outlineColor = {1, 1, 1, 1}
   })
@@ -175,10 +160,10 @@ function CharacterSelect:createReadyButton()
 end
 
 function CharacterSelect:createLeaveButton()
-  leaveButton = TextButton({
+  leaveButton = ui.TextButton({
     hFill = true,
     vFill = true,
-    label = Label({text = "leave"}),
+    label = ui.Label({text = "leave"}),
     backgroundColor = {1, 1, 1, 0},
     outlineColor = {1, 1, 1, 1},
     onClick = function()
@@ -192,7 +177,7 @@ function CharacterSelect:createLeaveButton()
 end
 
 function CharacterSelect:createStageCarousel(player, width)
-  local stageCarousel = StageCarousel({hAlign = "center", vAlign = "center", width = width, vFill = true})
+  local stageCarousel = ui.StageCarousel({hAlign = "center", vAlign = "center", width = width, vFill = true})
   stageCarousel:loadCurrentStages()
 
   -- stage carousel
@@ -211,7 +196,7 @@ function CharacterSelect:createStageCarousel(player, width)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
-  local playerNumberIcon = ImageContainer({
+  local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     scale = 2,
   })
@@ -250,7 +235,7 @@ function CharacterSelect:getCharacterButtons()
   local characterButtons = {}
 
   for i = 0, #visibleCharacters do
-    local characterButton = Button({
+    local characterButton = ui.Button({
       hFill = true,
       vFill = true,
     })
@@ -263,19 +248,19 @@ function CharacterSelect:getCharacterButtons()
     end
 
     characterButton.characterId = character.id
-    characterButton.image = ImageContainer({image = character.images.icon, hFill = true, vFill = true})
+    characterButton.image = ui.ImageContainer({image = character.images.icon, hFill = true, vFill = true})
     characterButton:addChild(characterButton.image)
-    characterButton.label = Label({text = character.display_name, translate = character.id == consts.RANDOM_CHARACTER_SPECIAL_VALUE, vAlign = "top", hAlign = "center", wrap = true})
+    characterButton.label = ui.Label({text = character.display_name, translate = character.id == consts.RANDOM_CHARACTER_SPECIAL_VALUE, vAlign = "top", hAlign = "center", wrap = true})
     characterButton:addChild(characterButton.label)
 
     if character.flag and themes[config.theme].images.flags[character.flag] then
-      characterButton.flag = ImageContainer({image = themes[config.theme].images.flags[character.flag], vAlign = "bottom", hAlign = "right", x = -2, y = -2, width = 16, height = 16})
+      characterButton.flag = ui.ImageContainer({image = themes[config.theme].images.flags[character.flag], vAlign = "bottom", hAlign = "right", x = -2, y = -2, width = 16, height = 16})
       characterButton:addChild(characterButton.flag)
     end
 
     if character.stage and stages[character.stage] then
       -- draw the stage icon in the center
-      characterButton.stageIcon = ImageContainer({image = stages[character.stage].images.thumbnail, vAlign = "bottom", hAlign = "center", y = -2, width = 32, height = 16})
+      characterButton.stageIcon = ui.ImageContainer({image = stages[character.stage].images.thumbnail, vAlign = "bottom", hAlign = "center", y = -2, width = 32, height = 16})
       characterButton:addChild(characterButton.stageIcon)
     end
 
@@ -288,7 +273,7 @@ function CharacterSelect:getCharacterButtons()
         panels:drawPanelFrame(1, "normal", 0, 0, panels.size)
       end)
 
-      characterButton.panelIcon = ImageContainer({image = canvas, vAlign = "bottom", hAlign = "left", x = 2, y = -2, width = 16, height = 16})
+      characterButton.panelIcon = ui.ImageContainer({image = canvas, vAlign = "bottom", hAlign = "left", x = 2, y = -2, width = 16, height = 16})
       characterButton:addChild(characterButton.panelIcon)
     end
 
@@ -354,7 +339,7 @@ end
 
 function CharacterSelect.applySuperSelectInteraction(characterButton)
   -- creating the super select image + shader
-  local superSelectImage = ImageContainer({image = themes[config.theme].images.IMG_super, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
+  local superSelectImage = ui.ImageContainer({image = themes[config.theme].images.IMG_super, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
   superSelectImage.shader = love.graphics.newShader(super_select_pixelcode)
   superSelectImage.drawSelf = function(self)
     GraphicsUtil.setShader(self.shader)
@@ -386,7 +371,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
 
   -- keyboard / controller interaction
   -- by applying focusable we can turn it into an "on release" interaction rather than on press by taking control of input interpretation
-  Focusable(characterButton)
+  ui.Focusable(characterButton)
   characterButton.holdTime = 0
   characterButton.receiveInputs = function(self, inputs, dt)
     if inputs.isPressed["Swap1"] then
@@ -403,7 +388,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
 end
 
 function CharacterSelect:createCharacterGrid(characterButtons, grid, width, height)
-  local characterGrid = PagedUniGrid({x = 0, y = 0, unitSize = grid.unitSize, gridWidth = width, gridHeight = height, unitMargin = grid.unitMargin})
+  local characterGrid = ui.PagedUniGrid({x = 0, y = 0, unitSize = grid.unitSize, gridWidth = width, gridHeight = height, unitMargin = grid.unitMargin})
 
   for i = 1, #characterButtons do
     characterGrid:addElement(characterButtons[i])
@@ -413,7 +398,7 @@ function CharacterSelect:createCharacterGrid(characterButtons, grid, width, heig
 end
 
 function CharacterSelect:createPageIndicator(pagedUniGrid)
-  local pageCounterLabel = Label({
+  local pageCounterLabel = ui.Label({
     text = loc("page") .. " " .. pagedUniGrid.currentPage .. "/" .. #pagedUniGrid.pages,
     hAlign = "center",
     vAlign = "top",
@@ -439,7 +424,7 @@ function CharacterSelect:createPageTurnButtons(pagedUniGrid)
 end
 
 function CharacterSelect:createCursor(grid, player)
-  local cursor = GridCursor({
+  local cursor = ui.GridCursor({
     grid = grid,
     activeArea = {x1 = 1, y1 = 2, x2 = 9, y2 = 5},
     translateSubGrids = true,
@@ -470,7 +455,7 @@ function CharacterSelect:createCursor(grid, player)
 end
 
 function CharacterSelect:createPanelCarousel(player, height)
-  local panelCarousel = PanelCarousel({hAlign = "center", vAlign = "top", hFill = true, height = height})
+  local panelCarousel = ui.PanelCarousel({hAlign = "center", vAlign = "top", hFill = true, height = height})
   panelCarousel:setColorCount(player.settings.levelData.colors)
   panelCarousel:loadPanels()
 
@@ -495,7 +480,7 @@ function CharacterSelect:createPanelCarousel(player, height)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
-  local playerNumberIcon = ImageContainer({
+  local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
@@ -510,7 +495,7 @@ function CharacterSelect:createPanelCarousel(player, height)
 end
 
 function CharacterSelect:createLevelSlider(player, imageWidth, height)
-  local levelSlider = LevelSlider({
+  local levelSlider = ui.LevelSlider({
     tickLength = imageWidth,
     value = player.settings.level,
     onValueChange = function(s)
@@ -520,7 +505,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
     vAlign = "center",
   })
 
-  Focusable(levelSlider)
+  ui.Focusable(levelSlider)
   levelSlider.receiveInputs = function(self, inputs)
     if inputs:isPressedWithRepeat("Left") then
       self:setValue(self.value - 1)
@@ -563,8 +548,8 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   end
 
   -- wrap in an extra element so we can offset properly as levelslider is fixed height + width
-  local uiElement = UiElement({height = height, hFill = true})
-  Focusable(uiElement)
+  local uiElement = ui.UiElement({height = height, hFill = true})
+  ui.Focusable(uiElement)
   uiElement.levelSlider = levelSlider
   uiElement.levelSlider.yieldFocus = function()
     uiElement:yieldFocus()
@@ -579,7 +564,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
-  local playerNumberIcon = ImageContainer({
+  local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
@@ -594,19 +579,19 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
 end
 
 function CharacterSelect:createRankedSelection(player, width)
-  local rankedSelector = BoolSelector({startValue = player.settings.wantsRanked, vFill = true, width = width, vAlign = "center", hAlign = "center"})
+  local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, vFill = true, width = width, vAlign = "center", hAlign = "center"})
   rankedSelector.onValueChange = function(boolSelector, value)
     GAME.theme:playValidationSfx()
     player:setWantsRanked(value)
   end
 
-  Focusable(rankedSelector)
+  ui.Focusable(rankedSelector)
 
   player:connectSignal("wantsRankedChanged", rankedSelector, rankedSelector.setValue)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
-  local playerNumberIcon = ImageContainer({
+  local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
@@ -620,7 +605,7 @@ function CharacterSelect:createRankedSelection(player, width)
 end
 
 function CharacterSelect:createStyleSelection(player, width)
-  local styleSelector = BoolSelector({
+  local styleSelector = ui.BoolSelector({
     startValue = (player.settings.style == GameModes.Styles.MODERN),
     vFill = true,
     width = width,
@@ -631,7 +616,7 @@ function CharacterSelect:createStyleSelection(player, width)
   -- onValueChange should get implemented by the caller
   -- as likely the UI needs to be altered to accomodate the style choice
 
-  Focusable(styleSelector)
+  ui.Focusable(styleSelector)
 
   player:connectSignal("styleChanged", styleSelector, function(p, style)
       if style == GameModes.Styles.MODERN then
@@ -644,7 +629,7 @@ function CharacterSelect:createStyleSelection(player, width)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
-  local playerNumberIcon = ImageContainer({
+  local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
     vAlign = "center",
@@ -658,11 +643,11 @@ function CharacterSelect:createStyleSelection(player, width)
 end
 
 function CharacterSelect:createRecordsBox(lastText)
-  local stackPanel = StackPanel({alignment = "top", hFill = true, vAlign = "center"})
+  local stackPanel = ui.StackPanel({alignment = "top", hFill = true, vAlign = "center"})
 
-  local lastLines = UiElement({hFill = true})
-  local lastLinesLabel = PixelFontLabel({ text = lastText, xScale = 0.5, yScale = 1, hAlign = "left", x = 10})
-  local lastLinesValue = PixelFontLabel({ text = self.lastScore, xScale = 0.5, yScale = 1, hAlign = "right", x = -10})
+  local lastLines = ui.UiElement({hFill = true})
+  local lastLinesLabel = ui.PixelFontLabel({ text = lastText, xScale = 0.5, yScale = 1, hAlign = "left", x = 10})
+  local lastLinesValue = ui.PixelFontLabel({ text = self.lastScore, xScale = 0.5, yScale = 1, hAlign = "right", x = -10})
   lastLines.height = lastLinesLabel.height + 4
   lastLines.label = lastLinesLabel
   lastLines.value = lastLinesValue
@@ -671,9 +656,9 @@ function CharacterSelect:createRecordsBox(lastText)
   stackPanel.lastLines = lastLines
   stackPanel:addElement(lastLines)
 
-  local record = UiElement({hFill = true})
-  local recordLabel = PixelFontLabel({ text = "record", xScale = 0.5, yScale = 1, hAlign = "left", x = 10})
-  local recordValue = PixelFontLabel({ text = self.record, xScale = 0.5, yScale = 1, hAlign = "right", x = -10})
+  local record = ui.UiElement({hFill = true})
+  local recordLabel = ui.PixelFontLabel({ text = "record", xScale = 0.5, yScale = 1, hAlign = "left", x = 10})
+  local recordValue = ui.PixelFontLabel({ text = self.record, xScale = 0.5, yScale = 1, hAlign = "right", x = -10})
   record.height = recordLabel.height + 4
   record.label = recordLabel
   record.value = recordValue
@@ -694,9 +679,9 @@ function CharacterSelect:createRecordsBox(lastText)
 end
 
 function CharacterSelect:createPlayerInfo(player)
-  local stackPanel = StackPanel({alignment = "top", hFill = true, vAlign = "top"})
+  local stackPanel = ui.StackPanel({alignment = "top", hFill = true, vAlign = "top"})
 
-  stackPanel.leagueLabel = Label({
+  stackPanel.leagueLabel = ui.Label({
     x = 4,
     text = loc("ss_rating") .. " " .. ((player.league) or "none"),
     translate = false
@@ -705,7 +690,7 @@ function CharacterSelect:createPlayerInfo(player)
     self:setText(loc("ss_rating") .. " " .. (league or "none"))
   end
 
-  stackPanel.ratingLabel = Label({
+  stackPanel.ratingLabel = ui.Label({
     x = 4,
     text = player.rating or "",
     translate = false
@@ -720,7 +705,7 @@ function CharacterSelect:createPlayerInfo(player)
     end
   end
 
-  stackPanel.winsLabel = Label({
+  stackPanel.winsLabel = ui.Label({
     x = 4,
     text = loc("ss_wins") .. " " .. player:getWinCountForDisplay(),
     translate = false
@@ -729,12 +714,12 @@ function CharacterSelect:createPlayerInfo(player)
     self:setText(loc("ss_wins") .. " " .. winCount, nil, false)
   end
 
-  stackPanel.winrateLabel = Label({
+  stackPanel.winrateLabel = ui.Label({
     x = 4,
     text = "ss_winrate"
   })
 
-  stackPanel.winrateValueLabel = Label({
+  stackPanel.winrateValueLabel = ui.Label({
     x = 4,
     text = "  " .. loc("ss_current_rating") .. " " .. tostring(player.winrate) .. "%",
     translate = false
@@ -743,7 +728,7 @@ function CharacterSelect:createPlayerInfo(player)
     self:setText("  " .. loc("ss_current_rating") .. tostring(winrate) .. "%", nil, false)
   end
 
-  stackPanel.winrateExpectedLabel = Label({
+  stackPanel.winrateExpectedLabel = ui.Label({
     x = 4,
     text = ""
   })
@@ -770,14 +755,14 @@ function CharacterSelect:createPlayerInfo(player)
 end
 
 function CharacterSelect:createRankedStatusPanel()
-  local rankedStatus = StackPanel({
+  local rankedStatus = ui.StackPanel({
     alignment = "top",
     hAlign = "center",
     vAlign = "top",
     y = 40,
     width = 300
   })
-  rankedStatus.rankedLabel = Label({
+  rankedStatus.rankedLabel = ui.Label({
     text = "",
     hAlign = "center",
     vAlign = "top"
@@ -787,7 +772,7 @@ function CharacterSelect:createRankedStatusPanel()
   else
     rankedStatus.rankedLabel:setText("ss_casual")
   end
-  rankedStatus.commentLabel = Label({
+  rankedStatus.commentLabel = ui.Label({
     text = GAME.battleRoom.rankedComments or "",
     hAlign = "center",
     vAlign = "top",
@@ -811,7 +796,7 @@ function CharacterSelect:createRankedStatusPanel()
 end
 
 function CharacterSelect:createSpeedSlider(player, height, min)
-  local speedSlider = Slider({
+  local speedSlider = ui.Slider({
     min = min or 1,
     max = 99,
     value = player.settings.speed,
@@ -822,13 +807,13 @@ function CharacterSelect:createSpeedSlider(player, height, min)
     hAlign = "center",
     vAlign = "center",
   })
-  Focusable(speedSlider)
+  ui.Focusable(speedSlider)
 
   player:connectSignal("startingSpeedChanged", speedSlider, speedSlider.setValue)
 
   -- wrap in an extra element so we can offset properly as speedSlider is fixed height + width
-  local uiElement = UiElement({height = height, hFill = true})
-  Focusable(uiElement)
+  local uiElement = ui.UiElement({height = height, hFill = true})
+  ui.Focusable(uiElement)
   uiElement.speedSlider = speedSlider
   uiElement.speedSlider.yieldFocus = function()
     GAME.theme:playValidationSfx()
@@ -844,12 +829,12 @@ end
 
 function CharacterSelect:createDifficultyCarousel(player, height)
   local passengers = {
-    { id = 1, uiElement = Label({text = "easy", vAlign = "center", hAlign = "center"})},
-    { id = 2, uiElement = Label({text = "normal", vAlign = "center", hAlign = "center"})},
-    { id = 3, uiElement = Label({text = "hard", vAlign = "center", hAlign = "center"})},
-    { id = 4, uiElement = Label({text = "ss_ex_mode", vAlign = "center", hAlign = "center"})},
+    { id = 1, uiElement = ui.Label({text = "easy", vAlign = "center", hAlign = "center"})},
+    { id = 2, uiElement = ui.Label({text = "normal", vAlign = "center", hAlign = "center"})},
+    { id = 3, uiElement = ui.Label({text = "hard", vAlign = "center", hAlign = "center"})},
+    { id = 4, uiElement = ui.Label({text = "ss_ex_mode", vAlign = "center", hAlign = "center"})},
   }
-  local difficultyCarousel = Carousel({
+  local difficultyCarousel = ui.Carousel({
     hAlign = "center",
     vAlign = "top",
     hFill = true,

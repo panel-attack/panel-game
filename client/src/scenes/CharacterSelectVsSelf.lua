@@ -1,7 +1,6 @@
 local CharacterSelect = require("client.src.scenes.CharacterSelect")
 local class = require("common.lib.class")
-local Grid = require("client.src.ui.Grid")
-local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionWrapper")
+local ui = require("client.src.ui")
 
 -- The character select screen scene
 local CharacterSelectVsSelf = class(
@@ -21,7 +20,7 @@ end
 function CharacterSelectVsSelf:loadUserInterface()
   local player = GAME.battleRoom.players[1]
 
-  self.ui.grid = Grid({unitSize = 100, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
+  self.ui.grid = ui.Grid({unitSize = 100, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
   self.uiRoot:addChild(self.ui.grid)
 
   self.ui.characterIcons[1] = self:createPlayerIcon(player)
@@ -31,19 +30,19 @@ function CharacterSelectVsSelf:loadUserInterface()
   self:refresh()
   self.ui.grid:createElementAt(2, 1, 2, 1, "recordBox", self.ui.recordBox)
 
-  self.ui.panelSelection = MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
+  self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
   self.ui.panelSelection:setTitle("panels")
   local panelCarousel = self:createPanelCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.panelSelection.height)
   self.ui.panelSelection:addElement(panelCarousel, player)
   self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection)
 
   local stageCarousel = self:createStageCarousel(player, self.ui.grid.unitSize * 3 - self.ui.grid.unitMargin * 2)
-  self.ui.stageSelection = MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
+  self.ui.stageSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.stageSelection:setTitle("stage")
   self.ui.stageSelection:addElement(stageCarousel, player)
   self.ui.grid:createElementAt(3, 2, 3, 1, "stageSelection", self.ui.stageSelection)
 
-  self.ui.levelSelection = MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
+  self.ui.levelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
   self.ui.levelSelection:setTitle("level")
   local levelSlider = self:createLevelSlider(player, 20, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.levelSelection.height)
   local oldOnValueChange = levelSlider.onValueChange

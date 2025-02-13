@@ -1,5 +1,5 @@
 local class = require("common.lib.class")
-local UiElement = require("client.src.ui.UIElement")
+local ui = require("client.src.ui")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
@@ -10,7 +10,7 @@ local SoundController = require("client.src.music.SoundController")
 -- Each scene must add its UiElements as children to its uiRoot property
 local Scene = class(
   function (self, sceneParams)
-    self.uiRoot = UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+    self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main

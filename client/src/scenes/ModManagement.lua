@@ -1,18 +1,10 @@
 local Scene = require("client.src.scenes.Scene")
 local class = require("common.lib.class")
-local ScrollContainer = require("client.src.ui.ScrollContainer")
-local StackPanel = require("client.src.ui.StackPanel")
-local ImageContainer = require("client.src.ui.ImageContainer")
-local BoolSelector = require("client.src.ui.BoolSelector")
-local Grid = require("client.src.ui.Grid")
-local Label = require("client.src.ui.Label")
-local GridCursor = require("client.src.ui.GridCursor")
+local ui = require("client.src.ui")
 local inputs = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local consts = require("common.engine.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
-local Menu = require("client.src.ui.Menu")
-local MenuItem = require("client.src.ui.MenuItem")
 local SoundController = require("client.src.music.SoundController")
 
 local ModManagement = class(function(self, options)
@@ -25,7 +17,7 @@ Scene)
 ModManagement.name = "ModManagement"
 
 function ModManagement:load()
-  self.stackPanel = StackPanel(
+  self.stackPanel = ui.StackPanel(
     {
       alignment = "top",
       width = 600,
@@ -36,7 +28,7 @@ function ModManagement:load()
     }
   )
 
-  self.headerLabel = Label({
+  self.headerLabel = ui.Label({
     text = "placeholder",
     hAlign = "center",
     fontSize = 16,
@@ -52,7 +44,7 @@ function ModManagement:load()
 
   self.scrollContainer = nil
 
-  self.cursor = GridCursor({
+  self.cursor = ui.GridCursor({
     grid = self.characterGrid,
     player = GAME.localPlayer,
     frameImages = themes[config.theme]:getGridCursor(1),
@@ -75,7 +67,7 @@ function ModManagement:load()
     self.receiveMode = "Menu"
   end
 
-  self.manageCharactersButton = MenuItem.createButtonMenuItem(
+  self.manageCharactersButton = ui.MenuItem.createButtonMenuItem(
     "characters", nil, true,
     function(button, inputs)
       GAME.theme:playValidationSfx()
@@ -92,7 +84,7 @@ function ModManagement:load()
     end
   )
 
-  self.manageStagesButton = MenuItem.createButtonMenuItem(
+  self.manageStagesButton = ui.MenuItem.createButtonMenuItem(
     "stages", nil, true,
     function(button, inputs)
       GAME.theme:playValidationSfx()
@@ -109,14 +101,14 @@ function ModManagement:load()
     end
   )
 
-  self.backButton = MenuItem.createButtonMenuItem("back", nil, true,
+  self.backButton = ui.MenuItem.createButtonMenuItem("back", nil, true,
     function(button, inputs)
       GAME.theme:playCancelSfx()
       GAME.navigationStack:pop()
     end
   )
 
-  self.menu = Menu({
+  self.menu = ui.Menu({
     menuItems =
     {
       self.manageCharactersButton,
@@ -135,7 +127,7 @@ function ModManagement:load()
 end
 
 function ModManagement:newScrollContainer()
-  return ScrollContainer({
+  return ui.ScrollContainer({
     width = 800,
     height = 550,
     hAlign = "center",
@@ -150,7 +142,7 @@ local columnWidth = 2
 local headerY = 90
 
 function ModManagement:loadStageGrid()
-  local stageGrid = Grid({
+  local stageGrid = ui.Grid({
     unitSize = gridUnitSize,
     gridWidth = gridWidth,
     gridHeight = #stageIds - 1, -- cannot disable random stage as it's the fallback of fallbacks
@@ -162,8 +154,8 @@ function ModManagement:loadStageGrid()
   for index, stageId in ipairs(stageIds) do
     if stageId ~= consts.RANDOM_STAGE_SPECIAL_VALUE then
       local stage = allStages[stageId]
-      local icon = ImageContainer({drawBorders = true, image = stage.images.thumbnail, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
-      local enableSelector = BoolSelector({startValue = not not stages[stage.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local icon = ui.ImageContainer({drawBorders = true, image = stage.images.thumbnail, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
+      local enableSelector = ui.BoolSelector({startValue = not not stages[stage.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
       enableSelector.onValueChange = function(boolSelector, value)
         GAME.theme:playValidationSfx()
         stage:enable(boolSelector.value)
@@ -177,11 +169,11 @@ function ModManagement:loadStageGrid()
           GAME.localPlayer:setStage(stages[consts.RANDOM_STAGE_SPECIAL_VALUE])
         end
       end
-      local visibilitySelector = BoolSelector({startValue = stage.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local visibilitySelector = ui.BoolSelector({startValue = stage.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
       visibilitySelector.onValueChange = function(boolSelector, value)
       end
-      local name = Label({text = stage.display_name, translate = false, hAlign = "center", vAlign = "center"})
-      local hasMusicLabel = Label({text = tostring(stage.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})
+      local name = ui.Label({text = stage.display_name, translate = false, hAlign = "center", vAlign = "center"})
+      local hasMusicLabel = ui.Label({text = tostring(stage.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})
       local subCount = 0
       if #stage.subIds > 0 then
         for _, c in ipairs(stage.subIds) do
@@ -190,7 +182,7 @@ function ModManagement:loadStageGrid()
           end
         end
       end
-      local bundleIndicator = Label({text = tostring(subCount), translate = false, hAlign = "center", vAlign = "center"})
+      local bundleIndicator = ui.Label({text = tostring(subCount), translate = false, hAlign = "center", vAlign = "center"})
       stageGrid:createElementAt(1, index, 1, 1, "thumbnail", icon)
       stageGrid:createElementAt(2, index, 3, 1, "name", name)
       stageGrid:createElementAt(3*columnWidth - 1, index, columnWidth, 1, "hasMusic", hasMusicLabel)
@@ -204,7 +196,7 @@ function ModManagement:loadStageGrid()
 end
 
 function ModManagement:loadGridHeader()
-  local headLine = Grid({
+  local headLine = ui.Grid({
     unitSize = gridUnitSize,
     gridWidth = gridWidth,
     gridHeight = 1,
@@ -213,18 +205,18 @@ function ModManagement:loadGridHeader()
     vAlign = "top",
     y = headerY,
   })
-  headLine:createElementAt(1, 1, 1, 1, "icon", Label({text = "Icon", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(2, 1, 3, 1, "name", Label({text = "Name", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(3*columnWidth - 1, 1, columnWidth, 1, "music", Label({text = "Music", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(4*columnWidth - 1, 1, columnWidth, 1, "subMods", Label({text = "Sub mods", hAlign = "center", vAlign = "center"}))
-  --headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "visible", Label({text = "Visible", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "enabled", Label({text = "Enabled", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(1, 1, 1, 1, "icon", ui.Label({text = "Icon", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(2, 1, 3, 1, "name", ui.Label({text = "Name", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(3*columnWidth - 1, 1, columnWidth, 1, "music", ui.Label({text = "Music", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(4*columnWidth - 1, 1, columnWidth, 1, "subMods", ui.Label({text = "Sub mods", hAlign = "center", vAlign = "center"}))
+  --headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "visible", ui.Label({text = "Visible", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "enabled", ui.Label({text = "Enabled", hAlign = "center", vAlign = "center"}))
 
   return headLine
 end
 
 function ModManagement:loadCharacterGrid()
-  local characterGrid = Grid({
+  local characterGrid = ui.Grid({
     unitSize = gridUnitSize,
     gridWidth = gridWidth,
     gridHeight = #characterIds - 1, -- cannot disable random character as it's the fallback of fallbacks
@@ -236,8 +228,8 @@ function ModManagement:loadCharacterGrid()
   for index, characterId in ipairs(characterIds) do
     if characterId ~= consts.RANDOM_CHARACTER_SPECIAL_VALUE then
       local character = allCharacters[characterId]
-      local icon = ImageContainer({drawBorders = true, image = character.images.icon, hFill = true, vFill = true})
-      local enableSelector = BoolSelector({startValue = not not characters[character.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local icon = ui.ImageContainer({drawBorders = true, image = character.images.icon, hFill = true, vFill = true})
+      local enableSelector = ui.BoolSelector({startValue = not not characters[character.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
       enableSelector.onValueChange = function(boolSelector, value)
         GAME.theme:playValidationSfx()
         character:enable(boolSelector.value)
@@ -251,11 +243,11 @@ function ModManagement:loadCharacterGrid()
           GAME.localPlayer:setCharacter(characters[consts.RANDOM_CHARACTER_SPECIAL_VALUE])
         end
       end
-      local visibilitySelector = BoolSelector({startValue = character.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local visibilitySelector = ui.BoolSelector({startValue = character.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
       visibilitySelector.onValueChange = function(boolSelector, value)
       end
-      local displayName = Label({text = character.display_name, translate = false, hAlign = "center", vAlign = "center"})
-      local hasMusicLabel = Label({text = tostring(character.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})
+      local displayName = ui.Label({text = character.display_name, translate = false, hAlign = "center", vAlign = "center"})
+      local hasMusicLabel = ui.Label({text = tostring(character.hasMusic):upper(), translate = false, hAlign = "center", vAlign = "center"})
       local subCount = 0
       if #character.subIds > 0 then
         for _, c in ipairs(character.subIds) do
@@ -264,7 +256,7 @@ function ModManagement:loadCharacterGrid()
           end
         end
       end
-      local bundleIndicator = Label({text = tostring(subCount), translate = false, hAlign = "center", vAlign = "center"})
+      local bundleIndicator = ui.Label({text = tostring(subCount), translate = false, hAlign = "center", vAlign = "center"})
       characterGrid:createElementAt(1, index, 1, 1, "icon", icon)
       characterGrid:createElementAt(2, index, 3, 1, "name", displayName)
       characterGrid:createElementAt(3*columnWidth - 1, index, columnWidth, 1, "hasMusic", hasMusicLabel)

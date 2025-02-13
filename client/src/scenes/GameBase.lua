@@ -11,8 +11,7 @@ local ModController = require("client.src.mods.ModController")
 local SoundController = require("client.src.music.SoundController")
 local UpdatingImage = require("client.src.graphics.UpdatingImage")
 local prof = require("common.lib.jprof.jprof")
-local Menu = require("client.src.ui.Menu")
-local MenuItem = require("client.src.ui.MenuItem")
+local ui = require("client.src.ui")
 local FileUtils = require("client.src.FileUtils")
 local ClientStack = require("client.src.ClientStack")
 
@@ -152,7 +151,7 @@ function GameBase:load(sceneParams)
   self.musicSource = self:pickMusicSource()
 
   local pauseMenuItems = {
-    MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
+    ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
       self.match:togglePause()
@@ -161,14 +160,14 @@ function GameBase:load(sceneParams)
       end
       self:initializeFrameInfo()
     end),
-    MenuItem.createButtonMenuItem("back", nil, true, function()
+    ui.MenuItem.createButtonMenuItem("back", nil, true, function()
       GAME.theme:playCancelSfx()
       self.match:abort()
       self:startNextScene()
     end),
   }
 
-  self.pauseMenu = Menu({
+  self.pauseMenu = ui.Menu({
     x = 0,
     y = 0,
     hAlign = "center",

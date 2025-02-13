@@ -1,7 +1,6 @@
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Scene = require("client.src.scenes.Scene")
-local Label = require("client.src.ui.Label")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local input = require("client.src.inputManager")

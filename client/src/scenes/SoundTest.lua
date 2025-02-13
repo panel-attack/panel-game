@@ -1,10 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
-local Stepper = require("client.src.ui.Stepper")
-local Label = require("client.src.ui.Label")
-local TextButton = require("client.src.ui.TextButton")
-local ButtonGroup = require("client.src.ui.ButtonGroup")
-local Menu = require("client.src.ui.Menu")
-local MenuItem = require("client.src.ui.MenuItem")
+local ui = require("client.src.ui")
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -54,7 +49,7 @@ local function createSfxMenuInfo(characterId)
   local sfxLabels = {}
   local sfxValues = {}
   for _, sfx in ipairs(soundFiles) do
-    sfxLabels[#sfxLabels + 1] = Label({
+    sfxLabels[#sfxLabels + 1] = ui.Label({
         text = string.match(sfx, "(.*)[.]"),
         translate = false,
         width = BUTTON_WIDTH,
@@ -69,7 +64,7 @@ function SoundTest:load()
   local characterLabels = {}
   local characterIds = {}
   for _, character in pairs(characters) do
-    characterLabels[#characterLabels + 1] = Label({
+    characterLabels[#characterLabels + 1] = ui.Label({
         text = character.display_name,
         translate = false,
         width = BUTTON_WIDTH,
@@ -80,7 +75,7 @@ function SoundTest:load()
   local playButtonGroup
   local musicTypeButtonGroup
   local sfxStepper
-  local characterStepper = Stepper(
+  local characterStepper = ui.Stepper(
     {
       labels = characterLabels,
       values = characterIds,
@@ -93,7 +88,7 @@ function SoundTest:load()
         
         -- redraw sfx stepper
         self.soundTestMenu:removeMenuItemAtIndex(5);
-        self.soundTestMenu:addMenuItem(5, MenuItem.createStepperMenuItem("op_music_sfx", nil, nil, sfxStepper))
+        self.soundTestMenu:addMenuItem(5, ui.MenuItem.createStepperMenuItem("op_music_sfx", nil, nil, sfxStepper))
 
         if playButtonGroup.value == "character" then
           playMusic("character", value, musicTypeButtonGroup.value)
@@ -106,14 +101,14 @@ function SoundTest:load()
   local stageLabels = {}
   local stageIds = {}
   for _, stage in pairs(stages) do
-    stageLabels[#stageLabels + 1] = Label({
+    stageLabels[#stageLabels + 1] = ui.Label({
         text = stage.display_name,
         translate = false,
         width = BUTTON_WIDTH,
         height = BUTTON_HEIGHT})
     stageIds[#stageIds + 1] = stage.id
   end
-  local stageStepper = Stepper(
+  local stageStepper = ui.Stepper(
     {
       labels = stageLabels,
       values = stageIds,
@@ -127,11 +122,11 @@ function SoundTest:load()
     }
   )
   
-  musicTypeButtonGroup = ButtonGroup(
+  musicTypeButtonGroup = ui.ButtonGroup(
     {
       buttons = {
-        TextButton({label = Label({text = "Normal", translate = false})}),
-        TextButton({label = Label({text = "Danger", translate = false})}),
+        ui.TextButton({label = ui.Label({text = "Normal", translate = false})}),
+        ui.TextButton({label = ui.Label({text = "Danger", translate = false})}),
       },
       values = {"normal_music", "danger_music"},
       selectedIndex = 1,
@@ -146,12 +141,12 @@ function SoundTest:load()
     }
   )
   
-  playButtonGroup = ButtonGroup(
+  playButtonGroup = ui.ButtonGroup(
     {
       buttons = {
-        TextButton({label = Label({text = "op_off"})}),
-        TextButton({label = Label({text = "character"})}),
-        TextButton({label = Label({text = "stage"})}),
+        ui.TextButton({label = ui.Label({text = "op_off"})}),
+        ui.TextButton({label = ui.Label({text = "character"})}),
+        ui.TextButton({label = ui.Label({text = "stage"})}),
       },
       values = {"", "character", "stage"},
       selectedIndex = 1,
@@ -170,7 +165,7 @@ function SoundTest:load()
   
   local labels, values = createSfxMenuInfo(characterStepper.value)
   
-  sfxStepper = Stepper(
+  sfxStepper = ui.Stepper(
     {
       labels = labels,
       values = values,
@@ -189,13 +184,13 @@ function SoundTest:load()
 
   local menuLabelWidth = 120
   local soundTestMenuOptions = {
-    MenuItem.createStepperMenuItem("character", nil, nil, characterStepper),
-    MenuItem.createStepperMenuItem("stage", nil, nil, stageStepper),
-    MenuItem.createToggleButtonGroupMenuItem("op_music_type", nil, nil, musicTypeButtonGroup),
-    MenuItem.createToggleButtonGroupMenuItem("Background", nil, false, playButtonGroup),
-    MenuItem.createStepperMenuItem("op_music_sfx", nil, nil, sfxStepper),
-    MenuItem.createButtonMenuItem("op_music_play", nil, nil, playCharacterSFXFn),
-    MenuItem.createButtonMenuItem("back", nil, nil, function()
+    ui.MenuItem.createStepperMenuItem("character", nil, nil, characterStepper),
+    ui.MenuItem.createStepperMenuItem("stage", nil, nil, stageStepper),
+    ui.MenuItem.createToggleButtonGroupMenuItem("op_music_type", nil, nil, musicTypeButtonGroup),
+    ui.MenuItem.createToggleButtonGroupMenuItem("Background", nil, false, playButtonGroup),
+    ui.MenuItem.createStepperMenuItem("op_music_sfx", nil, nil, sfxStepper),
+    ui.MenuItem.createButtonMenuItem("op_music_play", nil, nil, playCharacterSFXFn),
+    ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
       love.audio.stop()
       SoundController:stopMusic()
       themes[config.theme].sounds.menu_validate = menuValidateSound
@@ -203,7 +198,7 @@ function SoundTest:load()
     end)
   }
   
-  self.soundTestMenu = Menu.createCenteredMenu(soundTestMenuOptions)
+  self.soundTestMenu = ui.Menu.createCenteredMenu(soundTestMenuOptions)
 
   self.uiRoot:addChild(self.soundTestMenu)
   

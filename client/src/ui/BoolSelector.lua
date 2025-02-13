@@ -62,6 +62,8 @@ local circleRadius = 10
 local extraDistance = 16
 local lengthPadding = 2
 local widthPadding = 2
+local totalWidth = 0
+local totalLength = 0
 local fakeCenteredChild = {hAlign = "center", vAlign = "center", width = totalWidth, height = totalLength}
 
 function BoolSelector:drawSelf()
@@ -73,8 +75,8 @@ function BoolSelector:drawSelf()
 
   local circleX = circleRadius + widthPadding
   local circleY = circleRadius + lengthPadding
-  local totalWidth = circleRadius * 2 + 2 * widthPadding
-  local totalLength = circleRadius * 2 + 2 * lengthPadding
+  totalWidth = circleRadius * 2 + 2 * widthPadding
+  totalLength = circleRadius * 2 + 2 * lengthPadding
   if self.vertical then
     totalLength = totalLength + extraDistance
     if self.value == false then

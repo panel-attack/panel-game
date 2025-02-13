@@ -1,7 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local consts = require("common.engine.consts")
-local Menu = require("client.src.ui.Menu")
-local MenuItem = require("client.src.ui.MenuItem")
+local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
 local GameModes = require("common.engine.GameModes")
@@ -42,58 +41,58 @@ end
 
 function MainMenu:createMainMenu()
 
-  local menuItems = {MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
+  local menuItems = {ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"), EndlessGame)
       if GAME.battleRoom then
         switchToScene(EndlessMenu())
       end
     end),
-    MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_PUZZLE"), PuzzleGame)
       if GAME.battleRoom then
         switchToScene(PuzzleMenu())
       end
     end),
-    MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"), TimeAttackGame)
       if GAME.battleRoom then
         switchToScene(TimeAttackMenu())
       end
     end),
-    MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
       if GAME.battleRoom then
         switchToScene(CharacterSelectVsSelf())
       end
     end),
-    MenuItem.createButtonMenuItem("mm_1_training", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_1_training", nil, nil, function()
       switchToScene(TrainingMenu())
     end),
-    MenuItem.createButtonMenuItem("mm_1_challenge_mode", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_1_challenge_mode", nil, nil, function()
       switchToScene(ChallengeModeMenu())
     end),
-    MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
       switchToScene(Lobby({serverIp = "panelattack.com"}))
     end),
-    MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
       if GAME.battleRoom then
         switchToScene(CharacterSelect2p())
       end
     end),
-    MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
       switchToScene(ReplayBrowser())
     end),
-    MenuItem.createButtonMenuItem("mm_configure", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_configure", nil, nil, function()
       switchToScene(InputConfigMenu())
     end),
-    MenuItem.createButtonMenuItem("mm_set_name", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_set_name", nil, nil, function()
       switchToScene(SetNameMenu())
     end),
-    MenuItem.createButtonMenuItem("mm_options", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_options", nil, nil, function()
       switchToScene(OptionsMenu())
     end),
-    MenuItem.createButtonMenuItem("mm_fullscreen", {"\n(Alt+Enter)"}, nil, function()
+    ui.MenuItem.createButtonMenuItem("mm_fullscreen", {"\n(Alt+Enter)"}, nil, function()
       GAME.theme:playValidationSfx()
       local fullscreen = love.window.getFullscreen()
       love.window.setFullscreen(not fullscreen, "desktop")
@@ -102,13 +101,13 @@ function MainMenu:createMainMenu()
         love.window.maximize()
       end
     end),
-    MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end )
+    ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end )
   }
 
-  local menu = Menu.createCenteredMenu(menuItems)
+  local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
+  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
+                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
                         }
 
   local function addDebugMenuItems()
@@ -118,7 +117,7 @@ function MainMenu:createMainMenu()
       end
     end
     if config.debugShowDesignHelper then
-      menu:addMenuItem(#menu.menuItems, MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
+      menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
           switchToScene(DesignHelper())
         end))
     end

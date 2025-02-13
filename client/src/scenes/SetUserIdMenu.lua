@@ -1,11 +1,9 @@
 local Scene = require("client.src.scenes.Scene")
-local InputField = require("client.src.ui.InputField")
+local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
 local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local TextButton = require("client.src.ui.TextButton")
-local Label = require("client.src.ui.Label")
 local save = require("client.src.save")
 
 -- Scene for setting the username
@@ -22,7 +20,7 @@ function SetUserIdMenu:load(sceneParams)
   self.backgroundImg = themes[config.theme].images.bg_main
   self.serverIp = sceneParams.serverIp
 
-  self.idInputField = InputField({
+  self.idInputField = ui.InputField({
     x = menuX,
     y = menuY + 30,
     vAlign = "top",
@@ -31,15 +29,15 @@ function SetUserIdMenu:load(sceneParams)
     value =  save.read_user_id_file(self.serverIp)
   })
 
-  self.confirmationButton = TextButton({
-    label = Label({text = "go_"}),
+  self.confirmationButton = ui.TextButton({
+    label = ui.Label({text = "go_"}),
     x = menuX,
     y = menuY + 60,
     vAlign = "top",
     onClick = function() self:confirmId() end
   })
 
-  self.warningLabel = Label({
+  self.warningLabel = ui.Label({
     text = "THIS IS THE EQUIVALENT TO YOUR ACCOUNT AND PASSWORD IN ONE\n" ..
            "DO NOT SHARE WITH ANYONE\n" ..
            "ONLY CHANGE TO SYNC YOUR ID BETWEEN DIFFERENT DEVICES\n" ..
