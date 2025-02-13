@@ -262,6 +262,13 @@ local Stack = class(
 
     s.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
     s.rollbackPanelBuffer = {}
+    -- this is a bit of an opportunistic thing:
+    -- one issue with rollback is that it allocates a ton of memory while it boots up which in turn accelerates the garbage collector
+    -- that creates a situation where more memory is allocated, the GC starts running faster and the odds of having to run double updates for the opponent is high
+    -- by preallocating memory for the panels (which is responsible for 90% of rollback memory), the load is less concentrated and stacks are generally more "rollback ready"
+    for i = 1, ((s.height + 1) * s.width) * MAX_LAG do
+      s.rollbackPanelBuffer[#s.rollbackPanelBuffer+1] = table.new(0, 24)
+    end
 
     s.warningsTriggered = {}
 
