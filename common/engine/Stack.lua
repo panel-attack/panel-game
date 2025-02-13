@@ -345,7 +345,7 @@ function Stack:rollbackCopy()
   local copy = self.rollbackBuffer:getOldest()
   if copy then
     -- this is to eliminate offscreen rows of chain garbage higher up from the old copy so they don't linger in the new copy
-    for i = #copy.panels, #self.panels * self.width, -1 do
+    for i = #copy.panels, (#self.panels + 1) * self.width + 1, -1 do
       copy.panels[i] = nil
     end
     -- as we're reusing tables and many panel values can be nil, it's necessary to clear out data to not have false data linger
