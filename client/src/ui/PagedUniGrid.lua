@@ -1,8 +1,9 @@
-local UiElement = require("client.src.ui.UIElement")
-local Grid = require("client.src.ui.Grid")
+local PATH = (...):gsub('%.[^%.]+$', '')
+local UiElement = require(PATH .. ".UIElement")
+local Label = require(PATH .. ".Label")
+local TextButton = require(PATH .. ".TextButton")
+local Grid = require(PATH .. ".Grid")
 local class = require("common.lib.class")
-local TextButton = require("client.src.ui.TextButton")
-local Label = require("client.src.ui.Label")
 local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 

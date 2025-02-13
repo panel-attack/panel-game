@@ -1,7 +1,7 @@
-local UiElement = require("client.src.ui.UIElement")
+local PATH = (...):gsub('%.[^%.]+$', '')
+local UiElement = require(PATH .. ".UIElement")
+local Focusable = require(PATH .. ".Focusable")
 local class = require("common.lib.class")
-local Focusable = require("client.src.ui.Focusable")
-local consts = require("common.engine.consts")
 
 -- technically this value should be derived from the font size set for the label
 local SCROLL_STEP = 14

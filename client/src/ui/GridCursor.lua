@@ -1,6 +1,7 @@
-local UiElement = require("client.src.ui.UIElement")
+local PATH = (...):gsub('%.[^%.]+$', '')
+local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
-local directsFocus = require("client.src.ui.FocusDirector")
+local directsFocus = require(PATH .. ".FocusDirector")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 

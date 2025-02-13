@@ -1,7 +1,8 @@
-local StackPanel = require("client.src.ui.StackPanel")
-local Label = require("client.src.ui.Label")
+local PATH = (...):gsub('%.[^%.]+$', '')
+local Label = require(PATH .. ".Label")
+local StackPanel = require(PATH .. ".StackPanel")
 local class = require("common.lib.class")
-local Focusable = require("client.src.ui.Focusable")
+local Focusable = require(PATH .. ".Focusable")
 
 -- forms a layer of abstraction between a player specific selector (e.g. GridCursor) and UiElements that exist per player
 -- the MultiPlayerSelectionWrapper displays the UiElements of all players but upon selection only redirects inputs to the 

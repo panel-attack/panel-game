@@ -1,7 +1,8 @@
+local PATH = (...):gsub('%.[^%.]+$', '')
+local UiElement = require(PATH .. ".UIElement")
+local Focusable = require(PATH .. ".Focusable")
 local class = require("common.lib.class")
-local UiElement = require("client.src.ui.UIElement")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local Focusable = require("client.src.ui.Focusable")
 local tableUtils = require("common.lib.tableUtils")
 
 local function calculateFontSize(height)

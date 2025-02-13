@@ -1,7 +1,8 @@
-local Carousel = require("client.src.ui.Carousel")
+local PATH = (...):gsub('%.[^%.]+$', '')
+local Carousel = require(PATH .. ".Carousel")
 local class = require("common.lib.class")
-local StackPanel = require("client.src.ui.StackPanel")
-local ImageContainer = require("client.src.ui.ImageContainer")
+local StackPanel = require(PATH .. ".StackPanel")
+local ImageContainer = require(PATH .. ".ImageContainer")
 
 local PanelCarousel = class(function(carousel, options)
   carousel.colorCount = 5

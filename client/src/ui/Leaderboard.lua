@@ -1,7 +1,8 @@
+local PATH = (...):gsub('%.[^%.]+$', '')
+local UiElement = require(PATH .. ".UIElement")
+local Label = require(PATH .. ".Label")
+local Focusable = require(PATH .. ".Focusable")
 local class = require("common.lib.class")
-local UiElement = require("client.src.ui.UIElement")
-local Label = require("client.src.ui.Label")
-local Focusable = require("client.src.ui.Focusable")
 local util = require("common.lib.util")
 
 local Leaderboard = class(function(self, options)

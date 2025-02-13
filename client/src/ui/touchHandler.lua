@@ -3,6 +3,7 @@ local input = require("client.src.inputManager")
 -- all elements that implement touch interactions must register themselves with the touch handler on construction
 
 local touchHandler = {
+  ---@type UiElement?
   touchedElement = nil,
   holdTimer = 0,
   draggedThisFrame = false,

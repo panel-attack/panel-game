@@ -1,8 +1,9 @@
+local PATH = (...):gsub('%.[^%.]+$', '')
+local UIElement = require(PATH .. ".UIElement")
+local TextButton = require(PATH .. ".TextButton")
+local Label = require(PATH .. ".Label")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
-local UIElement = require("client.src.ui.UIElement")
-local TextButton = require("client.src.ui.TextButton")
-local Label = require("client.src.ui.Label")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local NAV_BUTTON_WIDTH = 25

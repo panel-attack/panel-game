@@ -1,8 +1,9 @@
-local Carousel = require("client.src.ui.Carousel")
+local PATH = (...):gsub('%.[^%.]+$', '')
+local Carousel = require(PATH .. ".Carousel")
+local StackPanel = require(PATH .. ".StackPanel")
+local Label = require(PATH .. ".Label")
+local ImageContainer = require(PATH .. ".ImageContainer")
 local class = require("common.lib.class")
-local StackPanel = require("client.src.ui.StackPanel")
-local Label = require("client.src.ui.Label")
-local ImageContainer = require("client.src.ui.ImageContainer")
 local consts = require("common.engine.consts")
 local Stage = require("client.src.mods.Stage")
 
