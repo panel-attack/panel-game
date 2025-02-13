@@ -95,7 +95,7 @@ function StackReplayTestingUtils:simulateMatchUntil(match, clockGoal)
   assert(match.stacks[1].is_local == false, "Don't use 'local' for tests, we might simulate the clock time too much if local")
   while match.stacks[1].clock < clockGoal do
     assert(not match:hasEnded(), "Game isn't expected to end yet")
-    assert(#match.stacks[1].input_buffer > 0)
+    assert(#match.stacks[1].confirmedInput > match.stacks[1].clock)
     match:run()
   end
   assert(match.stacks[1].clock == clockGoal)

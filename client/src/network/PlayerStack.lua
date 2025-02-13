@@ -25,7 +25,6 @@ function PlayerStack:send_controls()
     -- Send 1 frame at clock time 0 then wait till we get our first input from the other player.
     -- This will cause a player that got the start message earlier than the other player to wait for the other player just once.
     -- print("self.confirmedInput="..(self.confirmedInput or "nil"))
-    -- print("self.input_buffer="..(self.input_buffer or "nil"))
     -- print("send_controls returned immediately")
     return
   end

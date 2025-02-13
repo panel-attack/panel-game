@@ -826,9 +826,6 @@ function PlayerStack:drawDebug()
     GraphicsUtil.printf("Confirmed " .. #engine.confirmedInput, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("input_buffer " .. #engine.input_buffer, drawX, drawY)
-
-    drawY = drawY + padding
     GraphicsUtil.printf("rollbackCount " .. engine.rollbackCount, drawX, drawY)
 
     drawY = drawY + padding

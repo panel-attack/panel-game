@@ -398,7 +398,7 @@ local function platformTest(waitFrames, useMatchSide)
 
   local fullInputs = ReplayPlayer.decompressInputString(compressedInputs)
   stack:receiveConfirmedInput(fullInputs) -- make the clear and then do the platform
-  assert(#match.stacks[1].input_buffer > 0)
+  assert(#match.stacks[1].confirmedInput > match.stacks[1].clock)
   StackReplayTestingUtils:fullySimulateMatch(match)
   assert(match.stacks[1].clock == 134)
   assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 1)

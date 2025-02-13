@@ -253,8 +253,8 @@ As a short version for understanding "roughly" what is going on as part of a sin
 Inside of a `BattleRoom`, after the `Player` has readied up a `ClientMatch` is being created and started.  
 In the start process, a `PlayerStack` is being constructed via the constructor `PlayerStack = class(... etc)` based on the `Player`'s settings.  
 Every frame, `ClientMatch:run()` is called on the game scene which in turn runs the engine match and the `Stack`s.  
-Via `inputManager.lua`, there are inputs injected to the `Stack`'s `input_buffer` via `receiveConfirmedInput`.
-`Stack.run` applies the input as part of `Stack.simulate` and advances its state by one frame.  
+Via `inputManager.lua`, there are inputs injected to the `Stack`'s `confirmedInput` via `receiveConfirmedInput`.
+`Stack.run` applies the inputs as part of `Stack.simulate` and advances its state by one frame.  
 If you read the comments for `Stack.simulate`, you may notice a suspicious absence of phase 1 and 2, mostly because they already got extracted into separate functions.
 
 ### Replays and Interoperability

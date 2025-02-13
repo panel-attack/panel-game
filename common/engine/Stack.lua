@@ -81,7 +81,6 @@ local PANELS_TO_NEXT_SPEED =
 --- will get periodically extended as it gets consumed
 ---@field inputMethod string "controller" or "touch", determines how inputs are interpreted internally
 ---@field touchInputController table
----@field input_buffer string[] Inputs that haven't been processed yet
 ---@field confirmedInput string[] All inputs the player has input so far (or ever)
 ---@field input_state string The input for the current frame
 ---@field package garbageCreatedCount integer The number of individual garbage blocks created on this stack \n
@@ -195,7 +194,6 @@ local Stack = class(
 
     s.panel_buffer = ""
     s.gpanel_buffer = ""
-    s.input_buffer = {}
     s.confirmedInput = {}
     s.garbageCreatedCount = 0
     s.garbageLandedThisFrame = {}
@@ -438,12 +436,6 @@ local function internalRollbackToFrame(stack, frame)
   if frame < currentFrame and stack.rollbackCopies[frame] then
     logger.debug("Rolling back " .. stack.which .. " to " .. frame)
     Stack.rollbackCopy(stack.rollbackCopies[frame], stack)
-    -- The remaining inputs is the confirmed inputs not processed yet for this clock time
-    -- We have processed clock time number of inputs when we are at clock, so we only want to process the clock+1 input on
-    stack.input_buffer = {}
-    for i = stack.clock + 1, #stack.confirmedInput do
-      stack.input_buffer[#stack.input_buffer+1] = stack.confirmedInput[i]
-    end
     -- this is for the interpolation of the shake animation only (not a physics relevant field)
     if stack.rollbackCopies[frame - 1] then
       stack.prev_shake_time = stack.rollbackCopies[frame - 1].shake_time
@@ -547,7 +539,6 @@ function Stack:resetPuzzle()
 
   self:setPuzzleState(self.puzzle)
   self.confirmedInput = {}
-  self.input_buffer = {}
   self.clock = 0
   self.game_stopwatch = 0
   self.game_stopwatch_running = false
@@ -832,7 +823,7 @@ function Stack:shouldRun(runsSoFar)
   end
 
   -- Decide how many frames of input we should run.
-  local buffer_len = #self.input_buffer
+  local buffer_len = #self.confirmedInput - self.clock
 
   -- If we are local we always want to catch up and run the new input which is already appended
   if self.is_local then
@@ -862,7 +853,7 @@ function Stack.run(self)
 
   if self.is_local == false then
     if self.play_to_end then
-      if #self.input_buffer < 4 then
+      if #self.confirmedInput - self.clock < 4 then
         self.play_to_end = nil
       end
     end
@@ -888,9 +879,7 @@ function Stack.setupInput(self)
   self.input_state = nil
 
   if self:game_ended() == false then
-    if self.input_buffer and #self.input_buffer > 0 then
-      self.input_state = table.remove(self.input_buffer, 1)
-    end
+    self.input_state = self.confirmedInput[self.clock + 1]
   else
     self.input_state = self:idleInput()
   end
@@ -901,11 +890,9 @@ end
 function Stack.receiveConfirmedInput(self, input)
   if utf8.len(input) == 1 then
     self.confirmedInput[#self.confirmedInput+1] = input
-    self.input_buffer[#self.input_buffer+1] = input
   else
     local inputs = string.toCharTable(input)
     tableUtils.appendToList(self.confirmedInput, inputs)
-    tableUtils.appendToList(self.input_buffer, inputs)
   end
   --logger.debug("Player " .. self.which .. " got new input. Total length: " .. #self.confirmedInput)
 end

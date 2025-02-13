@@ -265,7 +265,7 @@ function Match:run()
   -- for i = 1, #self.players do
   --   local stack = self.players[i].stack
   --   if stack and stack.is_local not stack:game_ended() then
-  --     assert(#stack.input_buffer == 0, "Local games should always simulate all inputs")
+  --     assert(#stack.confirmedInput == stack.clock, "Local games should always simulate all inputs")
   --   end
   -- end
 
