@@ -320,11 +320,31 @@ function Stack.divergenceString(stackToTest)
   return result
 end
 
+function Stack:rollbackCopyPanels(copy)
+  local panels = copy.panels or {}
+
+  -- rollback data for panels is saved in an unrolled format to avoid creating dozens of extra tables for storage
+  -- panels are saved in a flat table and indexed left to right, going up from row 0
+  for i = 0, #self.panels do
+    for j = 1, self.width do
+      local index = i * self.width + j
+      -- if it's a fresh copy or the current stack is higher than the stale copy there may not be any preexisting table at this location
+      panels[index] = panels[index] or {}
+      local sPanel = self.panels[i][j]
+      for k, v in pairs(sPanel) do
+        panels[index][k] = v
+      end
+    end
+  end
+
+  return panels
+end
+
 -- saves a copy of the stack with its current clock within its rollback buffer
 function Stack:rollbackCopy()
   local copy = self.rollbackBuffer:getOldest()
   if copy then
-    -- this is too eliminate offscreen rows of chain garbage higher up from the old copy so they don't linger in the new copy
+    -- this is to eliminate offscreen rows of chain garbage higher up from the old copy so they don't linger in the new copy
     for i = #copy.panels, #self.panels * self.width, -1 do
       copy.panels[i] = nil
     end
@@ -381,22 +401,10 @@ function Stack:rollbackCopy()
     copy.currentGarbageDropColumnIndexes[garbageWidth] = self.currentGarbageDropColumnIndexes[garbageWidth]
   end
 
-  copy.panels = copy.panels or {}
   copy.panelsCreatedCount = self.panelsCreatedCount
-
-  -- rollback data for panels is saved in an unrolled format to avoid creating dozens of extra tables for storage
-  -- panels are saved in a flat table and indexed left to right, going up from row 0
-  for i = 0, #self.panels do
-    for j = 1, self.width do
-      local index = i * self.width + j
-      -- if it's a fresh copy or the current stack is higher than the stale copy there may not be any preexisting table at this location
-      copy.panels[index] = copy.panels[index] or {}
-      local sPanel = self.panels[i][j]
-      for k, v in pairs(sPanel) do
-        copy.panels[index][k] = v
-      end
-    end
-  end
+  prof.push("rollbackCopyPanels")
+  copy.panels = self:rollbackCopyPanels(copy)
+  prof.pop("rollbackCopyPanels")
 
   self.rollbackBuffer:saveCopy(self.clock, copy)
 end
@@ -453,17 +461,17 @@ local function internalRollbackToFrame(stack, frame)
   stack.currentGarbageDropColumnIndexes = copy.currentGarbageDropColumnIndexes
 
   -- roll up the panel copies into the table structure
-  for i, panel in ipairs(copy.panels) do
-    local row = panel.row
-    local column = panel.column
+  for i, panelCopy in ipairs(copy.panels) do
+    local row = panelCopy.row
+    local column = panelCopy.column
 
     if stack.panels[row][column] then
       table.clear(stack.panels[row][column])
     else
-      stack.panels[row][column] = stack.panelTemplate(panel.id, row, column)
+      stack.panels[row][column] = stack.panelTemplate(panelCopy.id, row, column)
     end
 
-    for k, v in pairs(panel) do
+    for k, v in pairs(panelCopy) do
       stack.panels[row][column][k] = v
     end
   end
