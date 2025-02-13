@@ -15,6 +15,7 @@ local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
 local ReplayPlayer = require("common.data.ReplayPlayer")
 local TouchInputController = require("common.engine.TouchInputController")
+local RollbackBuffer = require("common.engine.RollbackBuffer")
 
 -- Stuff defined in this file:
 --  . the data structures that store the configuration of
@@ -137,6 +138,8 @@ local PANELS_TO_NEXT_SPEED =
 ---@field warningsTriggered table ancient ancient, probably remove
 ---@field puzzle table? Optional puzzle
 ---@field game_stopwatch integer? Clock time minus time that swaps were blocked
+---@field rollbackBuffer RollbackBuffer
+---@field panelTemplate (Panel | fun(id: integer, row: integer, column: integer): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
 
 
 -- Represents the full panel stack for one player
@@ -201,6 +204,8 @@ local Stack = class(
     s.panels = {}
     s.width = 6
     s.height = 12
+    s.panelTemplate = s:createPanelTemplate()
+
     for i = 0, s.height do
       s.panels[i] = {}
       for j = 1, s.width do
@@ -256,6 +261,8 @@ local Stack = class(
     s.panelGenCount = 0
     s.garbageGenCount = 0
 
+    s.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
+
     s.warningsTriggered = {}
 
     s:createSignal("matched")
@@ -270,6 +277,23 @@ local Stack = class(
 )
 
 Stack.TYPE = "Stack"
+
+---@return (Panel | fun(id: integer, row: integer, column: integer): Panel)
+function Stack:createPanelTemplate()
+  local panelTemplate = class(function(p, id, row, column) end, Panel)
+  panelTemplate.frameTimes = self.levelData.frameConstants
+  panelTemplate.onPop = function(panel)
+    self:onPop(panel)
+  end
+  panelTemplate.onPopped = function(panel)
+    self:onPopped(panel)
+  end
+  panelTemplate.onLand = function(panel)
+    self:onLand(panel)
+  end
+
+  return panelTemplate
+end
 
 function Stack.divergenceString(stackToTest)
   local result = ""
@@ -1577,16 +1601,13 @@ function Stack:getAttackPatternData()
 end
 
 -- creates a new panel at the specified row+column and adds it to the Stack's panels table
----@param self table
+---@param self Stack
 ---@param row integer
 ---@param column integer
 ---@return Panel panel New Panel at the specified row+column that has been added to the Stack's panels table and subscribed to for signals
 function Stack.createPanelAt(self, row, column)
   self.panelsCreatedCount = self.panelsCreatedCount + 1
-  local panel = Panel(self.panelsCreatedCount, row, column, self.levelData.frameConstants)
-  panel:connectSignal("pop", self, self.onPop)
-  panel:connectSignal("popped", self, self.onPopped)
-  panel:connectSignal("land", self, self.onLand)
+  local panel = self.panelTemplate(self.panelsCreatedCount, row, column)
   self.panels[row][column] = panel
   return panel
 end

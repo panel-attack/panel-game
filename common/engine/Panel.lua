@@ -1,5 +1,4 @@
 local class = require("common.lib.class")
-local Signal = require("common.lib.signal")
 require("common.lib.util")
 
 ---@class Panel
@@ -159,7 +158,7 @@ end
 -- I'm not sure if there are better ways to represent this kind of mixin, spamming the Union type Panel | Signal everywhere felt dumb
 
 -- Represents an individual panel in a stack
----@class Panel: Signal
+---@class Panel
 ---@overload fun(id: integer, row: integer, column: integer, frameTimes: table<string, integer>): Panel
 Panel = class(
 ---@param p Panel
@@ -169,10 +168,6 @@ function(p, id, row, column, frameTimes)
   p.row = row
   p.column = column
   p.frameTimes = frameTimes
-  Signal.turnIntoEmitter(p)
-  p:createSignal("pop")
-  p:createSignal("popped")
-  p:createSignal("land")
 end
 )
 
@@ -258,7 +253,7 @@ end
 -- makes the panel enter landing state and informs the stack about the event depending on whether it's garbage or not
 ---@param panel Panel
 local function land(panel)
-  panel:emitSignal("land", panel)
+  panel:onLand()
   if panel.isGarbage then
     panel.state = "normal"
   else
@@ -487,7 +482,7 @@ matchedState.update = function(panel, panels)
   if panel.isGarbage and panel.timer == panel.pop_time then
     -- technically this is criminal and garbage panels should enter popping state too
     -- there is also little reason why garbage uses pop_time and normal panels timer
-    panel:emitSignal("pop", panel)
+    panel:onPop()
   end
   if panel.timer == 0 then
     matchedState.changeState(panel, panels)
@@ -544,7 +539,7 @@ end
 ---@param panel Panel
 ---@param panels Panel[][]
 poppingState.changeState = function(panel, panels)
-  panel:emitSignal("pop", panel)
+  panel:onPop()
   -- If it is the last panel to pop, it has to skip popped state
   if panel.combo_size == panel.combo_index then
     poppedState.changeState(panel, panels)
@@ -569,7 +564,7 @@ end
 poppedState.changeState = function(panel, panels)
   -- It's time for this panel
   -- to be gone forever :'(
-  panel:emitSignal("popped", panel)
+  panel:onPopped()
   clear(panel, true, true)
   -- Flag so panels above can know whether they should be chaining or not
   panel.propagatesChaining = true
@@ -863,6 +858,18 @@ function Panel:match(isChainLink, comboIndex, comboSize)
   end
   self.combo_index = comboIndex
   self.combo_size = comboSize
+end
+
+function Panel:onPop()
+  error("Did not implement Panel:onPop()")
+end
+
+function Panel:onPopped()
+  error("Did not implement Panel:onPopped()")
+end
+
+function Panel:onLand()
+  error("Did not implement Panel:onLand()")
 end
 
 return Panel
