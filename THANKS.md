@@ -1,6 +1,6 @@
 Panel Attack is the product of the work of many. Thanks to everyone who contributed to the game in its more than 10 years of history.
 
-# Programmers
+# Developers
 
 Brandon Lockaby - First PC game engine upon which Panel Attack was based - V3PdP, gbrandon at gmail dot com
 
@@ -8,11 +8,11 @@ SharpObject - adaptation to Lua and Love2d, first support for online play, some 
 
 Jon_12156 - ongoing maintenance and improvements to the game, including spectator mode, sound, ranking, mobile and touch controls.
 
-JamesVanBoxtel - ongoing maintenance and improvements to the game, including high resolution support, telegraph, challenge mode, debug tools. Also main creator of the modern Panel Attack theme.
+JamBox - ongoing maintenance and improvements to the game, including high resolution support, telegraph, challenge mode, debug tools. Also main creator of the modern Panel Attack theme and lead of the pacci initiative.
 
 AegisCrusader - ongoing maintenance and improvements, especially server side and networking. Training mode, telegraph, discord rich presence, server database.
 
-Endaris - ongoing maintenance and improvements. Clear puzzles, per-combo SFX, client-side performance optimizations, engine and project refactoring, documentation, UI rework, github integration, extended replay support.
+Endaris - ongoing maintenance and improvements. Clear puzzles, per-combo SFX, client-side performance optimizations, engine and project refactoring, documentation, UI rework, github integration, extended replay support, per-mod volume settings, server improvements.
 
 Sankyr - gameloop rework, input rework, UI rework
 
@@ -50,34 +50,39 @@ The Noto Project Authors - https://github.com/notofonts/thai
 luautf8 developers - https://github.com/starwing/luautf8  
 Joel Schumacher - Discord RPC for Lua https://github.com/pfirsich/lua-discordRPC   
 
-# Art
+# Assets
 
 ## Official panels 
+
 - Mizuno
 
-## Official theme 
+## Official theme
+
 - JamesVanBoxtel
 - kornflakes
+- Andrew "A2Z" Anderson
 
 ## Official characters
 
-### Esme
-#### Portrait
-Gaster
+### Art
 
-#### Voice Actor
-Erin Culpepper 
+- Gaster
+- JamBox
+- DonavinDraws
+- Ace of Arrows
 
-### Magellan
-#### Portrait
-Gaster
+### Voice Actors
 
-#### Voice Actor
-Harry Dyer
+- Harry Dyer
+- Erin Culpepper
 
-# Music
-## Panel Attack Main Theme 
-- Andrew "A2Z" Anderson
+### Music
+
+- Hunter van Brocklin
+
+## Official stages
+
+- Hali
 
 # Special Thanks
 The TetrisAttackOnline community <http://discord.panelattack.com>:  
@@ -87,7 +92,7 @@ CardsOfTheHeart - advice with improving timings of things like stop time and sha
 Myself086 - figuring out how shock block spawning is supposed to work, among other things about the game.  
 orangetriangle - finding several engine bug repros  
 PDR_Lava - continuous testing of canary builds
-
+JamBox - Leading the  
 
 The League of Puzzle Speedrunners <http://discord.puzzlegeneral.com> - many of our players heard about us there, and they provided restreaming of some of our Tournaments  
 
