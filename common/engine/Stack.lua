@@ -1768,7 +1768,7 @@ function Stack:getInfo()
   info.playerNumber = self.which
   info.inputMethod = self.inputMethod
   info.rollbackCount = self.rollbackCount
-  info.rollbackCopyCount = self.rollbackBuffer:getSize()
+  info.rollbackCopyCount = self.rollbackBuffer:getStoredCopyCount()
 
   return info
 end

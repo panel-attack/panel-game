@@ -77,14 +77,14 @@ function RollbackBuffer:peekPrevious()
   return self.buffer[previousIndex]
 end
 
----@return integer
-function RollbackBuffer:getSize()
+---@return integer # how many usable rollback copies are stored in the buffer
+function RollbackBuffer:getStoredCopyCount()
   local size = 0
   local index = self.currentIndex
   for i = 1, self.size do
     index = wrap(1, index - 1, self.size)
 
-    if not self.frames[index] then
+    if not self.frames[index] or self.frames[index] == -1 then
       return size
     end
 
