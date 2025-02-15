@@ -50,7 +50,7 @@ end)
 
 -- starts playing the music if it was not already playing
 function Music:play()
-  if not self.queueableSource:isPlaying() then
+  if not self.queueableSource:isPlaying() and not self.paused then
     if self.start then
       self.queueableSource:queue(self.start)
       self.sourceDuration = self.sourceDuration + self.start:getDuration()
@@ -128,6 +128,11 @@ function Music.load(path, filename)
       error("Failed to load music " .. filename .. " for " .. path .. ":\n"
       .. "Sample rate, bit depth or channel count are different between " .. startFilename .. " and " .. mainFilename)
     end
+  end
+
+  if main:getDuration() < 3 then
+    error("Failed to load music " .. mainFilename .. " for " .. path .. ":\n"
+    .. "The looping portion of music has to be at least 3 seconds long")
   end
 
   if main then
