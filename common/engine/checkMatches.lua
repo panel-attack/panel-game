@@ -445,7 +445,7 @@ local function matchOnContact(a, b)
     elseif a.right == b.left - 1 or a.left == b.right + 1 then
       -- the matching panel could be touching horizontally
       -- verify horizontal contact
-      return (a.top <= b.bottom and b.top <= a.top) or (b.top <= a.bottom and a.top <= b.top)
+      return (b.top >= a.bottom and b.top <= a.top) or (a.top >= b.bottom and a.top <= b.top)
     else
       return false
     end
