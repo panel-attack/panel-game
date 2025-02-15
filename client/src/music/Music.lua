@@ -34,6 +34,7 @@ local Music = class(
 ---@param start love.SoundData
 function(music, main, start)
   assert(main, "Music needs at least a main audio!")
+
   music.main = main
   music.start = start
   music.loopDuration = main:getDuration()
@@ -121,6 +122,13 @@ end
 function Music.load(path, filename)
   local main, mainFilename = FileUtils.loadSoundDataFromSupportedExtensions(path, filename)
   local start, startFilename = FileUtils.loadSoundDataFromSupportedExtensions(path, filename .. "_start")
+
+  if start then
+    if main:getSampleRate() ~= start:getSampleRate() or main:getBitDepth() ~= start:getBitDepth() or main:getChannelCount() ~= start:getChannelCount() then
+      error("Failed to load music " .. filename .. " for " .. path .. ":\n"
+      .. "Sample rate, bit depth or channel count are different between " .. startFilename .. " and " .. mainFilename)
+    end
+  end
 
   if main then
     local m = Music(main, start)
