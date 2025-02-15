@@ -123,19 +123,19 @@ function Music.load(path, filename)
   local main, mainFilename = FileUtils.loadSoundDataFromSupportedExtensions(path, filename)
   local start, startFilename = FileUtils.loadSoundDataFromSupportedExtensions(path, filename .. "_start")
 
-  if start then
-    if main:getSampleRate() ~= start:getSampleRate() or main:getBitDepth() ~= start:getBitDepth() or main:getChannelCount() ~= start:getChannelCount() then
-      error("Failed to load music " .. filename .. " for " .. path .. ":\n"
-      .. "Sample rate, bit depth or channel count are different between " .. startFilename .. " and " .. mainFilename)
-    end
-  end
-
-  if main:getDuration() < 3 then
-    error("Failed to load music " .. mainFilename .. " for " .. path .. ":\n"
-    .. "The looping portion of music has to be at least 3 seconds long")
-  end
-
   if main then
+    if start then
+      if main:getSampleRate() ~= start:getSampleRate() or main:getBitDepth() ~= start:getBitDepth() or main:getChannelCount() ~= start:getChannelCount() then
+        error("Failed to load music " .. filename .. " for " .. path .. ":\n"
+        .. "Sample rate, bit depth or channel count are different between " .. startFilename .. " and " .. mainFilename)
+      end
+    end
+
+    if main:getDuration() < 3 then
+      error("Failed to load music " .. mainFilename .. " for " .. path .. ":\n"
+      .. "The looping portion of music has to be at least 3 seconds long")
+    end
+
     local m = Music(main, start)
     m.path = path
     m.mainFilename = mainFilename
