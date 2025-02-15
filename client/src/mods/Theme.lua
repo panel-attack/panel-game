@@ -32,7 +32,7 @@ local flags = {
 ---@field images table
 ---@field fontMaps table
 ---@field sounds table<string, (love.Source | table | nil)>
----@field musics table<string, love.Source>
+---@field musics table<string, Music>
 ---@field font table
 ---@field main_menu_screen_pos number[]
 ---@field main_menu_y_max number
@@ -690,34 +690,13 @@ function Theme:loadSfx(full)
   end
 end
 
-local basicMusics = {"main", "main_start"}
-local fullMusics = {"main", "main_start", "select_screen", "select_screen_start", "title_screen", "title_screen_start"} -- the music used in a theme
+local basicMusics = {"main",}
+local fullMusics = {"main", "select_screen", "title_screen",} -- the music used in a theme
 
 function Theme:loadMusic(full)
   local musics = full and fullMusics or basicMusics
   for _, music in ipairs(musics) do
-    self.musics[music] = fileUtils.loadSoundFromSupportExtensions(self.path .. "/music/" .. music, true)
-    if self.musics[music] then
-      if not string.find(music, "start") then
-        self.musics[music]:setLooping(true)
-      else
-        self.musics[music]:setLooping(false)
-      end
-    end
-  end
-
-  self.stageTracks = {}
-
-  if self.musics.main then
-    self.stageTracks.main = Music(self.musics.main, self.musics.main_start)
-  end
-
-  if self.musics.select_screen then
-    self.stageTracks.select_screen = Music(self.musics.select_screen, self.musics.select_screen_start)
-  end
-
-  if self.musics.title_screen then
-    self.stageTracks.title_screen = Music(self.musics.title_screen, self.musics.title_screen_start)
+    self.musics[music] = Music.load(self.path .. "/music", music)
   end
 end
 

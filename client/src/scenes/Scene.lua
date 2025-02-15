@@ -30,8 +30,8 @@ local sceneMusicLabels = { "title_screen", "main", "select_screen" }
 -- tries to apply the passed music with respect to the current theme's available musics
 local function applyMusic(music)
   if music and tableUtils.contains(sceneMusicLabels, music) then
-    if GAME.theme.stageTracks[music] and config.enableMenuMusic then
-      SoundController:playMusic(GAME.theme.stageTracks[music])
+    if GAME.theme.musics[music] and config.enableMenuMusic then
+      SoundController:playMusic(GAME.theme.musics[music])
       return true
     end
   end

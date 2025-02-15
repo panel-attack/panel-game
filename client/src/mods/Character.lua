@@ -9,13 +9,13 @@ local tableUtils = require("common.lib.tableUtils")
 local fileUtils = require("client.src.FileUtils")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local Music = require("client.src.music.Music")
 local StageTrack = require("client.src.music.StageTrack")
 local DynamicStageTrack = require("client.src.music.DynamicStageTrack")
 local RelayStageTrack = require("client.src.music.RelayStageTrack")
 local Mod = require("client.src.mods.Mod")
 local FileGroup = require("client.src.FileGroup")
 local SfxGroup = require("client.src.music.SfxGroup")
+local Music = require("client.src.music.Music")
 
 ---@type Character
 local default_character = nil -- holds default assets fallbacks
@@ -34,7 +34,7 @@ local comboStyle = {classic = 0, per_combo = 1}
 ---@field images table<string, love.Image> graphical assets of the character
 ---@field telegraph_garbage_images userdata[][] graphical assets for telegraph display
 ---@field sounds table<string, table<integer, SfxGroup> | SfxGroup> sound effect assets of the character
----@field musics table<string, love.Source> music assets of the character
+---@field musics table<string, Music> music assets of the character
 ---@field hasMusic boolean? if the character has any music
 ---@field flag string? flag to be displayed in selection menus
 ---@field chain_style ChainStyle defines a pattern in which SFX are used for chain events
@@ -425,7 +425,7 @@ local other_sfx = {
   "taunt_up",
   "taunt_down"}
 local basic_musics = {}
-local other_musics = {"normal_music", "danger_music", "normal_music_start", "danger_music_start"}
+local other_musics = {"normal_music", "danger_music"}
 
 function Character.sound_init(self, full, yields)
   -- SFX
@@ -448,44 +448,30 @@ function Character.sound_init(self, full, yields)
   self.hasMusic = fileUtils.soundFileExists("normal_music", self.path)
   local character_musics = full and other_musics or basic_musics
   for _, music in ipairs(character_musics) do
-    self.musics[music] = fileUtils.loadSoundFromSupportExtensions(self.path .. "/" .. music, true)
-    -- Set looping status for music.
-    -- Intros won't loop, but other parts should.
-    if self.musics[music] then
-      if not string.find(music, "start") then
-        self.musics[music]:setLooping(true)
-      else
-        self.musics[music]:setLooping(false)
-      end
-    end
+    self.musics[music] = Music.load(self.path, music)
 
     if yields then
       coroutine.yield()
     end
   end
 
-  self:applyConfigVolume()
-
   if full and self.musics.normal_music then
-    local normalMusic = Music(self.musics.normal_music, self.musics.normal_music_start)
-    local dangerMusic
-    if self.musics.danger_music then
-      dangerMusic = Music(self.musics.danger_music, self.musics.danger_music_start)
-    end
     if self.music_style == "normal" then
-      self.stageTrack = StageTrack(normalMusic, dangerMusic, self.music_volume)
+      self.stageTrack = StageTrack(self.musics.normal_music, self.musics.danger_music, self.music_volume)
     elseif self.music_style == "dynamic" then
-      if dangerMusic then
-        self.stageTrack = DynamicStageTrack(normalMusic, dangerMusic, self.music_volume)
+      if self.musics.danger_music then
+        self.stageTrack = DynamicStageTrack(self.musics.normal_music, self.musics.danger_music, self.music_volume)
       else
         -- DynamicStageTrack HAVE to have danger music
         -- default back to a regular stage track if there is none
-        self.stageTrack = StageTrack(normalMusic, nil, self.music_volume)
+        self.stageTrack = StageTrack(self.musics.normal_music, nil, self.music_volume)
       end
     elseif self.music_style == "relay" then
-      self.stageTrack = RelayStageTrack(normalMusic, dangerMusic, self.music_volume)
+      self.stageTrack = RelayStageTrack(self.musics.normal_music, self.musics.danger_music, self.music_volume)
     end
   end
+
+  self:applyConfigVolume()
 end
 
 function Character.sound_uninit(self)

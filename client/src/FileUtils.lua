@@ -134,6 +134,15 @@ function fileUtils.loadSoundFromSupportExtensions(path_and_filename, streamed)
   return nil
 end
 
+function fileUtils.loadSoundDataFromSupportedExtensions(path, filename)
+  for k, extension in ipairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
+    local fullPath = path .. "/" .. filename .. extension
+    if love.filesystem.exists(fullPath) then
+      return love.sound.newSoundData(fullPath), filename .. extension
+    end
+  end
+end
+
 -- returns a new sound effect if it can be found, else returns nil
 ---@param sound_name string the file name without extension we're looking for
 ---@param dirs_to_check string[] the directories that are searched for the file
