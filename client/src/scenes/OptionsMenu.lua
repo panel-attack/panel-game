@@ -94,13 +94,12 @@ local function createToggleButtonGroup(configField, onChangeFn)
   })
 end
 
-local function createConfigSlider(configField, min, max, onValueChangeFn, precision)
+local function createConfigSlider(configField, min, max, onValueChangeFn, value)
   return ui.Slider({
     min = min,
     max = max,
-    value = config[configField] or 0,
+    value = value or config[configField] or 0,
     tickLength = math.ceil(100 / max),
-    precision = precision,
     onValueChange = function(slider)
       config[configField] = slider.value
       if onValueChangeFn then
@@ -226,7 +225,7 @@ function OptionsMenu:loadGeneralMenu()
     end
   })
 
-  local performanceSlider = createConfigSlider("activeGarbageCollectionPercent", 20, 80)
+  local performanceSlider = createConfigSlider("activeGarbageCollectionPercent", 20, 80, nil, (config.activeGarbageCollectionPercent * 100))
   performanceSlider.onValueChange = function(slider)
     config.activeGarbageCollectionPercent = slider.value / 100
     GAME.theme:playMoveSfx()
@@ -360,44 +359,17 @@ function OptionsMenu:loadGraphicsMenu()
 
   local function getFixedScaleSlider()
     local slider = ui.Slider({
-      min = 50,
-      max = 300,
-      value = (config.gameScaleFixedValue * 100) or 100,
+      min = 0.5,
+      max = 3,
+      value = config.gameScaleFixedValue or 1,
+      tickAmount = 0.01,
       tickLength = 1,
+      onlyChangeOnRelease = true, -- performance is bad so don't change till release
       onValueChange = function(slider)
-        config.gameScaleFixedValue = slider.value / 100
+        config.gameScaleFixedValue = slider.value
         scaleSettingsChanged()
       end
     })
-    slider.minText:set(slider.min / 100)
-    slider.maxText:set(slider.max / 100)
-    slider.valueText:set(slider.value / 100)
-    slider.setValue = function(s, value)
-      local changed = value ~= s.value
-      s.value = util.bound(s.min, value, s.max)
-      s.valueText:set(s.value / 100)
-      if changed then
-        s:onValueChange()
-      end
-    end
-    slider.receiveInputs = function(s, input)
-      if input:isPressedWithRepeat("Left") then
-        s:setValue(s.value - 10)
-      elseif input:isPressedWithRepeat("Right") then
-        s:setValue(s.value + 10)
-      end
-    end
-    local function drag(s, x, y)
-      local screenX, screenY = s:getScreenPos()
-      s.valueText:set((math.floor((x - screenX) / s.tickLength) + s.min) / 100)
-    end
-    local function touch(s, x, y)
-      s.preTouchValue = s.value
-      drag(s, x, y)
-    end
-
-    slider.onTouch = touch
-    slider.onDrag = drag
     return slider
   end
 
@@ -443,18 +415,12 @@ function OptionsMenu:loadGraphicsMenu()
       min = 50,
       max = 100,
       value = (config.shakeIntensity * 100) or 100,
-      tickLength = 2,
+      tickAmount = 5,
+      tickLength = 10,
       onValueChange = function(slider)
         config.shakeIntensity = slider.value / 100
       end
     })
-    slider.receiveInputs = function(s, input)
-      if input:isPressedWithRepeat("Left") then
-        s:setValue(s.value - 5)
-      elseif input:isPressedWithRepeat("Right") then
-        s:setValue(s.value + 5)
-      end
-    end
     return slider
   end
 
