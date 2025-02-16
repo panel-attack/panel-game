@@ -92,7 +92,6 @@ CardsOfTheHeart - advice with improving timings of things like stop time and sha
 Myself086 - figuring out how shock block spawning is supposed to work, among other things about the game.  
 orangetriangle - finding several engine bug repros  
 PDR_Lava - continuous testing of canary builds
-JamBox - Leading the  
 
 The League of Puzzle Speedrunners <http://discord.puzzlegeneral.com> - many of our players heard about us there, and they provided restreaming of some of our Tournaments  
 
