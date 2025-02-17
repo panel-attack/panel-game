@@ -5,6 +5,11 @@ local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local handleRadius = 7.5
+local xPadding = 8
+local yPadding = 2
+local valueBackgroundPaddingX = 2
+local valueBackgroundPaddingY = -1 -- textHeight isn't a tight bounds
+local sliderBarThickness = 6
 
 local Slider = class(
   function(self, options)
@@ -22,17 +27,15 @@ local Slider = class(
     self.maxText = GraphicsUtil.newText(love.graphics.getFont(), self.max)
     self.valueText = GraphicsUtil.newText(love.graphics.getFont(), self.value)
 
-    self.width = self.tickLength * self:tickCount() + 2
-    self.height = handleRadius * 2 + 12 -- magic
+    local valueTextWidth, valueTextHeight = self.valueText:getDimensions()
+    local textWidth, textHeight = self.maxText:getDimensions()
+    self.width = self.tickLength * self:tickCount() + xPadding + math.max(xPadding, textWidth / 2)
+    self.height = yPadding * 2 + handleRadius * 2 + valueTextHeight + textHeight
     
     self.TYPE = "Slider"
   end,
   UIElement
 )
-
-local sliderYOffset = 15
-local textYOffset = 0
-local sliderBarThickness = 5
 
 function Slider:onTouch(x, y)
   self:setValueFromPos(x, false)
@@ -64,12 +67,12 @@ end
 
 function Slider:getValueForPos(x)
   local screenX, screenY = self:getScreenPos()
-  local v = self:getBoundedValue((x - screenX) / self.tickLength * self.tickAmount + self.min)
+  local v = self:getBoundedValue((x - (screenX + xPadding)) / self.tickLength * self.tickAmount + self.min)
   return v
 end
 
 function Slider:getCurrentXForValue()
-  local v = self.x + (self.value - self.min) * self.tickLength / self.tickAmount
+  local v = self.x + xPadding + (self.value - self.min) * self.tickLength / self.tickAmount
   return v
 end
 
@@ -97,25 +100,40 @@ end
 
 local SLIDER_CIRCLE_COLOR = {0.5, 0.5, 1, 0.8}
 function Slider:drawSelf()
-  local light_gray = .5
+  local valueTextWidth, valueTextHeight = self.valueText:getDimensions()
+
+  local gray = .5
+  local lightGray = .65
   local alpha = .7
   local barWidth = self:tickCount() * self.tickLength
-  GraphicsUtil.setColor(light_gray, light_gray, light_gray, alpha)
-  GraphicsUtil.drawRectangle("fill", self.x, self.y + sliderYOffset, barWidth, sliderBarThickness)
+  local currentX = self:getCurrentXForValue()
 
+  -- Slider bar
+  GraphicsUtil.setColor(gray, gray, gray, alpha)
+  GraphicsUtil.drawRectangle("fill", self.x + xPadding, self.y + yPadding + valueTextHeight, barWidth, sliderBarThickness)
+
+  -- Slider circle
   GraphicsUtil.setColor(unpack(SLIDER_CIRCLE_COLOR))
-  local x = self:getCurrentXForValue()
-  love.graphics.circle("fill", x, self.y + sliderYOffset + sliderBarThickness / 2, handleRadius, 32)
+  love.graphics.circle("fill", currentX, self.y + yPadding + valueTextHeight + sliderBarThickness / 2, handleRadius, 32)
+  
+  -- Value background
+  GraphicsUtil.setColor(gray, gray, gray, alpha)
+  GraphicsUtil.drawRectangle("fill", currentX - valueTextWidth / 2 - valueBackgroundPaddingX, self.y + yPadding - valueBackgroundPaddingY, valueTextWidth + valueBackgroundPaddingX*2, valueTextHeight + valueBackgroundPaddingY*2)
+  
+  -- Value centered at top
   GraphicsUtil.setColor(1, 1, 1, 1)
+  GraphicsUtil.draw(self.valueText, currentX - valueTextWidth / 2, self.y + yPadding, 0, 1, 1, 0, 0)
+
+  GraphicsUtil.setColor(lightGray, lightGray, lightGray, 1)
 
   local textWidth, textHeight = self.minText:getDimensions()
-  GraphicsUtil.draw(self.minText, self.x - textWidth * .3, self.y + textYOffset, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.minText, self.x + xPadding - textWidth / 2, self.y + yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
 
   textWidth, textHeight = self.maxText:getDimensions()
-  GraphicsUtil.draw(self.maxText, self.x + barWidth - textWidth, self.y + textYOffset, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.maxText, self.x + xPadding + barWidth - textWidth / 2, self.y + yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
 
-  textWidth, textHeight = self.valueText:getDimensions()
-  GraphicsUtil.draw(self.valueText, self.x + (barWidth / 2.0) - textWidth / 2, self.y + textYOffset, 0, 1, 1, 0, 0)
+  GraphicsUtil.setColor(1, 1, 1, 1)
+
 end
 
 return Slider
