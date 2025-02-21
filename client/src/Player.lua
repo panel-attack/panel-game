@@ -8,6 +8,7 @@ local CharacterLoader = require("client.src.mods.CharacterLoader")
 local PlayerStack = require("client.src.PlayerStack")
 require("client.src.network.PlayerStack")
 local logger = require("common.lib.logger")
+local StackBehaviours = require("common.data.StackBehaviours")
 ---@module "common.data.LevelData"
 
 -- A player is mostly a data representation of a Panel Attack player
@@ -83,15 +84,10 @@ function Player:createStackFromSettings(match, which)
   args.character = self.settings.characterId
   if self.settings.style == GameModes.Styles.MODERN then
     args.level = self.settings.level
-    if match.stackInteraction == GameModes.StackInteractions.NONE then
-      args.allowAdjacentColors = true
-    else
-      args.allowAdjacentColors = args.level < 8
-    end
   else
     args.difficulty = self.settings.difficulty
-    args.allowAdjacentColors = true
   end
+  args.behaviours = StackBehaviours.getDefault(args.level)
 
   ---@type LevelData
   args.levelData = self.settings.levelData
@@ -101,7 +97,7 @@ function Player:createStackFromSettings(match, which)
   -- but it is tracked in replays and set for player in createFromReplayPlayer
   -- so if the match is from a loaded replay, use it
   if match.replay and self.settings.allowAdjacentColors ~= nil then
-    args.allowAdjacentColors = self.settings.allowAdjacentColors
+    args.behaviours.allowAdjacentColors = self.settings.allowAdjacentColors
   end
   args.inputMethod = self.settings.inputMethod
   args.stackInteraction = match.stackInteraction

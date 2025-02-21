@@ -158,6 +158,7 @@ function ReplayBrowser:update()
     end
     if input.isDown["MenuSelect"] and Replay.replayCanBeViewed(selectedReplay) then
       GAME.theme:playValidationSfx()
+      SoundController:stopMusic()
       local match = ClientMatch.createFromReplay(selectedReplay, false)
       match.renderDuringPause = true
       match:start()

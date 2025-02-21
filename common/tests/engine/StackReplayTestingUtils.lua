@@ -6,6 +6,7 @@ local Replay = require("common.data.Replay")
 local LevelPresets = require("common.data.LevelPresets")
 local Stack = require("common.engine.Stack")
 require("common.engine.checkMatches")
+local StackBehaviours = require("common.data.StackBehaviours")
 
 local StackReplayTestingUtils = {}
 
@@ -26,7 +27,7 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
       stackInteraction = endless.stackInteraction,
       gameOverConditions = endless.gameOverConditions,
       is_local = false,
-      allowAdjacentColors = true
+      behaviours = StackBehaviours.getDefault()
     }
 
     if level then
@@ -56,7 +57,7 @@ function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, inputMethod, 
     gameOverConditions = gameMode.gameOverConditions,
     is_local = false,
     levelData = levelData or LevelPresets.getModern(5),
-    allowAdjacentColors = true,
+    behaviours = StackBehaviours.getDefault(5),
     inputMethod = inputMethod or "controller",
   }
   local stacks = { Stack(args) }

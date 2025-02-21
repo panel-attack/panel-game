@@ -161,8 +161,8 @@ Recommended size: 2560x1440px
 
 ## Music assets
 
-Allowed formats are .mp3, .ogg, .wav, .it, .flac.  
-.midi files are not supported by the framework Panel Attack uses so please refrain from asking devs to support that.
+Supported formats are .ogg, .wav, .mp3, .flac.  
+Additionally there is limited support for modplug formats see [here](modplug.md)
 
 A stage's music may be used depending on Panel Attack's audio settings and game mode.  
 See the documentation of the music_style configuration for how this behaves.

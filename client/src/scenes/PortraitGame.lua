@@ -13,11 +13,12 @@ GameBase)
 
 PortraitGame.name = "PortraitGame"
 
+---@param match ClientMatch
 local function getTimer(match)
   local frames = 0
   local stack = match.stacks[1]
-  if stack ~= nil and stack.game_stopwatch ~= nil and tonumber(stack.game_stopwatch) ~= nil then
-    frames = stack.game_stopwatch
+  if stack ~= nil and stack.engine.game_stopwatch ~= nil and tonumber(stack.engine.game_stopwatch) ~= nil then
+    frames = stack.engine.game_stopwatch
   end
 
   if match.timeLimit then
@@ -27,7 +28,7 @@ local function getTimer(match)
     end
   end
 
-  return frames_to_time_string(frames, match.ended)
+  return frames_to_time_string(frames, match.engine.ended)
 end
 
 function PortraitGame:customLoad()

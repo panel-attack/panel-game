@@ -4,6 +4,10 @@ local pairs, type, setmetatable, getmetatable = pairs, type, setmetatable, getme
 local util = {}
 
 -- bounds b so a<=b<=c
+---@param a number
+---@param b number
+---@param c number
+---@return number
 function util.bound(a, b, c)
   if b < a then
     return a

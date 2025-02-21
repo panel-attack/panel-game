@@ -135,15 +135,15 @@ function SoundController:playMusic(music)
       if music ~= self.activeTrack then
         self.activeTrack:stop()
         self.activeTrack = music
-        self.activeTrack:play()
         self.activeTrack:setVolume(config.music_volume / 100)
+        self.activeTrack:play()
       elseif not music:isPlaying() then
         self.activeTrack:play()
       end
     else
       self.activeTrack = music
-      self.activeTrack:play()
       self.activeTrack:setVolume(config.music_volume / 100)
+      self.activeTrack:play()
     end
   end
 end

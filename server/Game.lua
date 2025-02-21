@@ -4,6 +4,7 @@ local Replay = require("common.data.Replay")
 local ReplayPlayer = require("common.data.ReplayPlayer")
 local LevelPresets = require("common.data.LevelPresets")
 local logger = require("common.lib.logger")
+local StackBehaviours = require("common.data.StackBehaviours")
 
 ---@class ServerGame
 ---@field id integer?
@@ -48,12 +49,12 @@ function Game.createFromRoomState(room)
       replayPlayer:setLevelData(LevelPresets.getModern(player.level))
     end
     replayPlayer:setInputMethod(player.inputMethod)
-    -- TODO: pack the adjacent color setting with level data or send it with player settings
+    -- TODO: include behaviour settings with player settings
     -- this is not something for the server to decide, it should just take what it gets
     if game.replay.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
-      replayPlayer:setAllowAdjacentColors(true)
+      replayPlayer:setBehaviours(StackBehaviours.getDefault())
     else
-      replayPlayer:setAllowAdjacentColors(player.level < 8)
+      replayPlayer:setBehaviours(StackBehaviours.getDefault(player.level))
     end
     -- this is a display-only prop, the true info is stored in levelData
     replayPlayer:setLevel(player.level)

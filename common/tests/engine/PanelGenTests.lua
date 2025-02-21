@@ -2,6 +2,7 @@ local PanelGenerator = require("common.engine.PanelGenerator")
 local GameModes = require("common.engine.GameModes")
 local Stack = require("common.engine.Stack")
 local LevelPresets = require("common.data.LevelPresets")
+local StackBehaviours = require("common.data.StackBehaviours")
 
 local function checkPanels(panels, rowWidth)
   assert(string.len(panels) % rowWidth == 0)
@@ -89,9 +90,9 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
     seed = seed
   }
   if gameMode.stackInteraction == GameModes.StackInteractions.NONE or not level then
-    args.allowAdjacentColors = true
+    args.behaviours = StackBehaviours.getDefault()
   else
-    args.allowAdjacentColors = level < 8
+    args.behaviours = StackBehaviours.getDefault(level)
   end
 
   if level then

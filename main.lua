@@ -53,6 +53,7 @@ function love.load(args, rawArgs)
   end
 
   local newPixelWidth, newPixelHeight = love.graphics.getWidth(), love.graphics.getHeight()
+  logger.debug("Updating canvas scale from love.load")
   GAME:updateCanvasPositionAndScale(newPixelWidth, newPixelHeight)
 
   GAME:load()
@@ -340,6 +341,7 @@ end
 
 function love.resize(newWidth, newHeight)
   if GAME then
+    logger.debug("Updating canvas scale from love.resize")
     GAME:handleResize(newWidth, newHeight)
   end
 end

@@ -484,9 +484,12 @@ While no chain is on-going, `pop1` SFX are used.
 
 ## Music assets
 
-Music can optionally play at various screens of the game.  
-You may use .mp3, .ogg, .wav, .it or .flac for these.  
-.midi files are not supported by the framework Panel Attack uses so please refrain from asking devs to support that.  
+Music can optionally play at various screens of the game.
+
+Supported formats are .ogg, .wav, .mp3, .flac.
+
+Additionally there is limited support for modplug formats see [here](modplug.md)
+
 All file names are case sensitive and the extension *always* has to be lowercase!  
 While an incorrectly cased file may load on Windows, it will not on other operating systems!  
 

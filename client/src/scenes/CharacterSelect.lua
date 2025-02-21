@@ -6,7 +6,6 @@ local GameModes = require("common.engine.GameModes")
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local SoundController = require("client.src.music.SoundController")
 local Character = require("client.src.mods.Character")
 
 -- The character select screen scene

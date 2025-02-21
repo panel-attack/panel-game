@@ -5,6 +5,7 @@ local SimulatedStack = require("common.engine.SimulatedStack")
 require("common.engine.checkMatches")
 local GameModes = require("common.engine.GameModes")
 local LevelPresets = require("common.data.LevelPresets")
+local StackBehaviours = require("common.data.StackBehaviours")
 
 local GarbageQueueTestingUtils = {}
 
@@ -24,7 +25,7 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
     stackInteraction = mode.stackInteraction,
     gameOverConditions = mode.gameOverConditions,
     is_local = false,
-    allowAdjacentColors = true,
+    behaviours = StackBehaviours.getDefault(),
     levelData = levelData,
   }
 

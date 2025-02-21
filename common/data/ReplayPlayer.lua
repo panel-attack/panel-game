@@ -24,6 +24,7 @@ local utf8 = require("common.lib.utf8Additions")
 ---@field difficulty (number | nil)
 ---@field attackEngineSettings table?
 ---@field healthSettings table?
+---@field stackBehaviours StackBehaviours?
 
 ---@class ReplayPlayer
 ---@overload fun(name: string, publicId: number, human: boolean?): ReplayPlayer
@@ -66,7 +67,12 @@ end
 -- modifies whether panels of the same color may spawn next to each other
 -- this should be determined externally based on some rules
 function ReplayPlayer:setAllowAdjacentColors(allowAdjacentColors)
-  self.settings.allowAdjacentColors = allowAdjacentColors
+  self.settings.stackBehaviours.allowAdjacentColors = allowAdjacentColors
+end
+
+---@param behaviours StackBehaviours
+function ReplayPlayer:setBehaviours(behaviours)
+  self.settings.stackBehaviours = behaviours
 end
 
 function ReplayPlayer:setAttackEngineSettings(attackEngineSettings)

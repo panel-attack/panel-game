@@ -445,7 +445,7 @@ local function matchOnContact(a, b)
     elseif a.right == b.left - 1 or a.left == b.right + 1 then
       -- the matching panel could be touching horizontally
       -- verify horizontal contact
-      return (a.top <= b.bottom and b.top <= a.top) or (b.top <= a.bottom and a.top <= b.top)
+      return (b.top >= a.bottom and b.top <= a.top) or (a.top >= b.bottom and a.top <= b.top)
     else
       return false
     end
@@ -758,7 +758,7 @@ end
 function Stack:refillGarbagePanelBuffer()
   PanelGenerator:setSeed(self.seed + self.garbageGenCount)
   -- privateGeneratePanels already appends to the existing self.gpanel_buffer
-  local garbagePanels = PanelGenerator.privateGeneratePanels(20, self.width, self.levelData.colors, self.gpanel_buffer, not self.allowAdjacentColors)
+  local garbagePanels = PanelGenerator.privateGeneratePanels(20, self.width, self.levelData.colors, self.gpanel_buffer, not self.behaviours.allowAdjacentColors)
   -- and then we append that result to the remaining buffer
   self.gpanel_buffer = self.gpanel_buffer .. garbagePanels
   -- that means the next 10 rows of garbage will use the same colors as the 10 rows after

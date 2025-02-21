@@ -10,74 +10,73 @@ local function playSource(source)
   musicThread:start(source)
 end
 
+local BUFFER_SIZE = 4096
+local BUFFER_COUNT = 32
+
 ---@class Music
 ---@operator call:Music
----@field package main love.SoundData looping source of the music
----@field package start love.SoundData? start source of the music
----@field package mainStartTime number? the time at which the main source is supposed to replace the start source
----@field package paused boolean if the music is currently paused
+---@field package mainDecoder love.Decoder
+---@field package startData love.SoundData? start source of the music
+---@field package paused boolean? if the music is currently playing (false), paused (true) or stopped (nil)
 ---@field package queueableSource love.Source
----@field package loopDuration number in seconds
----@field package timeStarted number in seconds for love.timer.getTime
----@field package loopsQueued integer
----@field package sourceDuration number
 ---@field path string?
 ---@field mainFilename string?
 ---@field startFilename string?
 
 -- construct a music object with a looping `main` music and an optional `start` played as the intro
+-- the music is streamed via a queueable source 
 ---@class Music
----@overload fun(main: love.SoundData, start: love.SoundData): Music
+---@overload fun(main: love.Decoder, start: love.SoundData?): Music
 local Music = class(
 ---@param music Music
----@param main love.SoundData
----@param start love.SoundData
-function(music, main, start)
-  assert(main, "Music needs at least a main audio!")
-
-  music.main = main
-  music.start = start
-  music.loopDuration = main:getDuration()
-  music.mainStartTime = nil
-  music.queueableSource = love.audio.newQueueableSource(main:getSampleRate(), main:getBitDepth(), main:getChannelCount(), 2)
-  music.queueableSource:stop()
-
-  music.timeStarted = 0
-  music.loopsQueued = 1
-  music.sourceDuration = 0
-  music.paused = false
+---@param mainDecoder love.Decoder
+---@param startData love.SoundData?
+function(music, mainDecoder, startData)
+  music.mainDecoder = mainDecoder
+  music.startData = startData
+  -- with the default buffer count of 8, in some scenarios the music would end prematurely due to Music:update not being called frequently enough
+  music.queueableSource = love.audio.newQueueableSource(mainDecoder:getSampleRate(), mainDecoder:getBitDepth(), mainDecoder:getChannelCount(), BUFFER_COUNT)
 end)
+
+Music.TYPE = "Music"
+Music.buffersize = 4096
+
+function Music:buffer()
+  local freeBufferCount = self.queueableSource:getFreeBufferCount()
+  for i = 1, freeBufferCount do
+    local chunk = self.mainDecoder:decode()
+    if not chunk then
+      self.mainDecoder:seek(0)
+      chunk = self.mainDecoder:decode()
+    end
+    self.queueableSource:queue(chunk)
+  end
+end
 
 -- starts playing the music if it was not already playing
 function Music:play()
-  if not self.queueableSource:isPlaying() and not self.paused then
-    if self.start then
-      self.queueableSource:queue(self.start)
-      self.sourceDuration = self.sourceDuration + self.start:getDuration()
-    end
-    self.queueableSource:queue(self.main)
-    self.loopsQueued = 1
-    self.sourceDuration = self.sourceDuration + self.loopDuration
+  if self.paused == nil and self.startData then
+    self.queueableSource:queue(self.startData)
   end
+  self:buffer()
 
   logger.debug("playing " .. (self.path or "Unknown") .. "/" .. (self.mainFilename or "Unknown"))
 
-  self.timeStarted = love.timer.getTime()
   playSource(self.queueableSource)
   self.paused = false
 end
 
 ---@return boolean? # if the music is currently playing
 function Music:isPlaying()
-  return self.queueableSource:isPlaying()
+  return self.paused == false
 end
 
 -- stops the music and resets it (whether it was playing or not)
 function Music:stop()
-  self.paused = false
-  self.sourceDuration = 0
-  self.loopsQueued = 0
+  logger.debug("stopped " .. (self.path or "Unknown") .. "/" .. (self.mainFilename or "Unknown"))
+  self.paused = nil
   self.queueableSource:stop()
+  self.mainDecoder:seek(0)
 end
 
 -- pauses the music
@@ -101,47 +100,54 @@ function Music:getVolume()
   return self.queueableSource:getVolume()
 end
 
--- update the music to advance the timer
--- this is important to try and (roughly) get the transition from start to main right
 function Music:update()
-  local timePlaying = love.timer.getTime() - self.timeStarted
-  local assumedSourceLength = (self.loopDuration * self.loopsQueued)
-  if self.start then
-    assumedSourceLength = assumedSourceLength + self.start:getDuration()
-  end
-
-  if assumedSourceLength - timePlaying < 2 then
-    self.queueableSource:queue(self.main)
-    self.loopsQueued = self.loopsQueued + 1
+  if self.paused == false then
+    self:buffer()
+    -- on very long frames it could happen that the music runs out of buffers and stopped due to that even though we never intended to stop the music
+    if not self.queueableSource:isPlaying() and not musicThread:isRunning() then
+      -- in that case, resume playing rather than starting over
+      logger.debug("Resumed music play after interrupt")
+      playSource(self.queueableSource)
+    end
   end
 end
 
 ---@param path string
----@param filename string
+---@param name string
 ---@return Music?
-function Music.load(path, filename)
-  local main, mainFilename = FileUtils.loadSoundDataFromSupportedExtensions(path, filename)
-  local start, startFilename = FileUtils.loadSoundDataFromSupportedExtensions(path, filename .. "_start")
+function Music.load(path, name)
+  local startData
+  local startName = FileUtils.getSoundFileName(name .. "_start", path)
+  local mainName = FileUtils.getSoundFileName(name, path)
 
-  if main then
-    if start then
-      if main:getSampleRate() ~= start:getSampleRate() or main:getBitDepth() ~= start:getBitDepth() or main:getChannelCount() ~= start:getChannelCount() then
-        error("Failed to load music " .. filename .. " for " .. path .. ":\n"
-        .. "Sample rate, bit depth or channel count are different between " .. startFilename .. " and " .. mainFilename)
-      end
-    end
-
-    if main:getDuration() < 3 then
-      error("Failed to load music " .. mainFilename .. " for " .. path .. ":\n"
-      .. "The looping portion of music has to be at least 3 seconds long")
-    end
-
-    local m = Music(main, start)
-    m.path = path
-    m.mainFilename = mainFilename
-    m.startFilename = startFilename
-    return m
+  if not mainName then
+    return
   end
+
+  if startName then
+    startData = FileUtils.loadSoundData(path, startName)
+  end
+
+  local mainDecoder = love.sound.newDecoder(path .. "/" .. mainName, BUFFER_SIZE)
+
+  if startData then
+    if mainDecoder:getSampleRate() ~= startData:getSampleRate() or mainDecoder:getBitDepth() ~= startData:getBitDepth() or mainDecoder:getChannelCount() ~= startData:getChannelCount() then
+      error("Failed to load music " .. name .. " for " .. path .. ":\n"
+      .. "Sample rate, bit depth or channel count are different between " .. startName .. " and " .. mainName)
+    end
+  end
+
+  local duration = mainDecoder:getDuration()
+  if duration > 0 and duration < 3 then
+    error("Failed to load music " .. mainName .. " for " .. path .. ":\n"
+    .. "The looping portion of music has to be at least 3 seconds long")
+  end
+
+  local m = Music(mainDecoder, startData)
+  m.path = path
+  m.mainFilename = mainName
+  m.startFilename = startName
+  return m
 end
 
 return Music

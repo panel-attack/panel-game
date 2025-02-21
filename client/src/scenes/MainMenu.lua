@@ -94,12 +94,7 @@ function MainMenu:createMainMenu()
     end),
     ui.MenuItem.createButtonMenuItem("mm_fullscreen", {"\n(Alt+Enter)"}, nil, function()
       GAME.theme:playValidationSfx()
-      local fullscreen = love.window.getFullscreen()
-      love.window.setFullscreen(not fullscreen, "desktop")
-      fullscreen = not fullscreen
-      if not fullscreen and config.maximizeOnStartup and not love.window.isMaximized() then
-        love.window.maximize()
-      end
+      GAME:toggleFullscreen()
     end),
     ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end )
   }

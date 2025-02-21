@@ -7,6 +7,7 @@ local tableUtils = require("common.lib.tableUtils")
 local ReplayPlayer = require("common.data.ReplayPlayer")
 local LevelPresets = require("common.data.LevelPresets")
 local LevelData = require("common.data.LevelData")
+local StackBehaviours = require("common.data.StackBehaviours")
 
 local REPLAY_VERSION = 2
 
@@ -264,7 +265,12 @@ function Replay.createFromV2Data(replayData)
     else
       replayPlayer:setHealthSettings(player.settings.healthSettings)
     end
-    replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
+    if replayData.engineVersion == "047" or replayData.engineVersion == "048" then
+      replayPlayer:setBehaviours(StackBehaviours.getV048Default(player.settings.level))
+      replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
+    else
+      replayPlayer:setBehaviours(player.settings.stackBehaviours)
+    end
     replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
     replayPlayer:setLevel(player.settings.level)
     replayPlayer:setDifficulty(player.settings.difficulty)
@@ -337,6 +343,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   end
 
   p1:setInputs(ReplayPlayer.decompressInputString(v1r.in_buf))
+  p1:setBehaviours(StackBehaviours.getV048Default(v1r.P1_level))
 
   if v1r.P1_level then
     p1:setLevel(v1r.P1_level)
@@ -367,6 +374,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     p2:setInputs(ReplayPlayer.decompressInputString(v1r.I))
 
     -- presence of V2 means level and vs
+    p2:setBehaviours(StackBehaviours.getV048Default(v1r.P2_level))
     p2:setLevel(v1r.P2_level)
     p2:setAllowAdjacentColors(v1r.P2_level < 8)
     p2:setLevelData(LevelPresets.getModern(v1r.P2_level))

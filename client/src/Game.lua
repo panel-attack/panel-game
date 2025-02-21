@@ -84,8 +84,6 @@ local Game = class(
     -- specifies a time that is compared against self.timer to determine if GameScale should be shown
     self.showGameScaleUntil = 0
     self.needsAssetReload = false
-    self.previousWindowWidth = 0
-    self.previousWindowHeight = 0
 
     self.crashTrace = nil -- set to the trace of your thread before throwing an error if you use a coroutine
 
@@ -346,15 +344,13 @@ function Game:updateMouseVisibility(dt)
 end
 
 function Game:handleResize(newWidth, newHeight)
-  if self.previousWindowWidth ~= newWidth or self.previousWindowHeight ~= newHeight then
-    self:updateCanvasPositionAndScale(newWidth, newHeight)
-    if self.battleRoom and self.battleRoom.match then
-      self.needsAssetReload = true
-    else
-      self:refreshCanvasAndImagesForNewScale()
-    end
-    self.showGameScaleUntil = self.timer + 5
+  self:updateCanvasPositionAndScale(newWidth, newHeight)
+  if self.battleRoom and self.battleRoom.match then
+    self.needsAssetReload = true
+  else
+    self:refreshCanvasAndImagesForNewScale()
   end
+  self.showGameScaleUntil = self.timer + 5
 end
 
 -- Called every few fractions of a second to update the game
@@ -398,13 +394,11 @@ function Game:draw()
 
   -- resetting the canvas means everything we draw is drawn to the screen
   love.graphics.setCanvas()
-  -- clear in preparation for the next render (is this really necessary with the clear further up?)
-  love.graphics.clear(love.graphics.getBackgroundColor())
 
   love.graphics.setBlendMode("alpha", "premultiplied")
   -- now we draw the finished canvas at scale
   -- this way we don't have to worry about scaling singular elements, just draw everything at 1280x720 to the canvas
-  love.graphics.draw(self.globalCanvas, self.canvasX, self.canvasY, 0, self.canvasXScale, self.canvasYScale)
+  love.graphics.draw(self.globalCanvas, self.canvasX, self.canvasY, 0, self.canvasXScale, self.canvasYScale, self.globalCanvas:getWidth() / 2, self.globalCanvas:getHeight() / 2)
   love.graphics.setBlendMode("alpha", "alphamultiply")
 end
 
@@ -534,52 +528,66 @@ function Game.detailedErrorLogString(errorData)
   return detailedErrorLogString
 end
 
--- Calculates the proper dimensions to not stretch the game for various sizes
-function scale_letterbox(width, height, w_ratio, h_ratio)
-  if height / h_ratio > width / w_ratio then
-    local scaled_height = h_ratio * width / w_ratio
-    return 0, (height - scaled_height) / 2, width, scaled_height
+function Game:toggleFullscreen()
+  local fullscreen = love.window.getFullscreen()
+  love.window.setFullscreen(not fullscreen, "desktop")
+  fullscreen = not fullscreen
+  if not fullscreen and config.maximizeOnStartup and not love.window.isMaximized() then
+    logger.debug("calling maximize via fullscreen toggle")
+    love.window.maximize()
   end
-  local scaled_width = w_ratio * height / h_ratio
-  return (width - scaled_width) / 2, 0, scaled_width, height
+  logger.debug("updating canvas scale from fullscreen toggle, toggling to " .. tostring(fullscreen))
+  local newWidth, newHeight = love.graphics.getDimensions()
+  self:updateCanvasPositionAndScale(newWidth, newHeight)
 end
 
 -- Updates the scale and position values to use up the right size of the window based on the user's settings.
 function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
-  local scaleIsUpdated = false
-  if config.gameScaleType ~= "fit" then
-    local availableScales = shallowcpy(self.automaticScales)
-    if config.gameScaleType == "fixed" then
-      availableScales = {config.gameScaleFixedValue}
-    end
+  logger.debug("Updating canvas scale with args " .. newWindowWidth .. "," .. newWindowHeight)
 
-    -- Handle both "auto" and a fixed scale
-    -- Go from biggest to smallest and used the highest one that still fits
-    for i = #availableScales, 1, -1 do
+  -- we want to draw at integer coordinates to prevent weird interpolation
+  if newWindowWidth % 2 > 0 then
+    newWindowWidth = newWindowWidth - 1
+  end
+
+  if newWindowHeight % 2 > 0 then
+    newWindowHeight = newWindowHeight - 1
+  end
+
+  -- the global canvas is drawn with centered origin so just by placing it in the middle of the screen will do the job fine, always
+  self.canvasX = math.floor(newWindowWidth / 2)
+  self.canvasY = math.floor(newWindowHeight / 2)
+
+  if config.gameScaleType == "fit" then
+    local w, h
+    local canvasWidth, canvasHeight = self.globalCanvas:getDimensions()
+    if newWindowHeight / canvasHeight > newWindowWidth / canvasWidth then
+      w = newWindowWidth
+      h = canvasHeight * newWindowWidth / canvasWidth
+    else
+      w = canvasWidth * newWindowHeight / canvasHeight
+      h = newWindowHeight
+    end
+    self.canvasXScale = w / canvasWidth
+    self.canvasYScale = h / canvasHeight
+  elseif config.gameScaleType == "fixed" then
+    self.canvasXScale = config.gameScaleFixedValue
+    self.canvasYScale = config.gameScaleFixedValue
+  elseif config.gameScaleType == "auto" then
+    local availableScales = shallowcpy(self.automaticScales)
+    -- use a default minimum for automatic if the window gets too small
+    local newScale = 0.5
+    for i= #availableScales, 1, -1 do
       local scale = availableScales[i]
-      if config.gameScaleType ~= "auto" or
-        (newWindowWidth >= self.globalCanvas:getWidth() * scale and newWindowHeight >= self.globalCanvas:getHeight() * scale) then
-        self.canvasXScale = scale
-        self.canvasYScale = scale
-        self.canvasX = math.floor((newWindowWidth - (scale * self.globalCanvas:getWidth())) / 2)
-        self.canvasY = math.floor((newWindowHeight - (scale * self.globalCanvas:getHeight())) / 2)
-        scaleIsUpdated = true
+      if (newWindowWidth >= self.globalCanvas:getWidth() * scale and newWindowHeight >= self.globalCanvas:getHeight() * scale) then
+        newScale = scale
         break
       end
     end
-  end
 
-  if scaleIsUpdated == false then
-    -- The only thing left to do is scale to fit the window
-    local w, h
-    local canvasWidth, canvasHeight = self.globalCanvas:getDimensions()
-    self.canvasX, self.canvasY, w, h = scale_letterbox(newWindowWidth, newWindowHeight, canvasWidth, canvasHeight)
-    self.canvasXScale = w / canvasWidth
-    self.canvasYScale = h / canvasHeight
+    self.canvasXScale = newScale
+    self.canvasYScale = newScale
   end
-
-  self.previousWindowWidth = newWindowWidth
-  self.previousWindowHeight = newWindowHeight
 end
 
 -- Reloads the canvas and all images / fonts for the new game scale
@@ -611,7 +619,8 @@ end
 
 -- Transform from window coordinates to game coordinates
 function Game:transform_coordinates(x, y)
-  return (x - self.canvasX) / self.canvasXScale, (y - self.canvasY) / self.canvasYScale
+  local newX, newY = (x - self.canvasX) / self.canvasXScale + self.globalCanvas:getWidth() / 2, (y - self.canvasY) / self.canvasYScale + self.globalCanvas:getHeight() / 2
+  return newX, newY
 end
 
 

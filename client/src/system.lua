@@ -71,17 +71,25 @@ function system.startDebugger()
   end
 end
 
-local loveVersionStringValue = nil
+local major, minor, revision, codename = love.getVersion()
+local loveVersionStringValue = string.format("%d.%d.%d", major, minor, revision)
 
 ---@return string
 function system.loveVersionString()
-  if loveVersionStringValue then
-    return loveVersionStringValue
-  end
-  local major, minor, revision, codename = love.getVersion()
-
-  loveVersionStringValue = string.format("%d.%d.%d", major, minor, revision)
   return loveVersionStringValue
+end
+
+---@param reqMajor number the major love version that is required
+---@param reqMinor number the minor love version that is required
+---@return boolean
+function system.meetsLoveVersionRequirement(reqMajor, reqMinor)
+  if reqMajor < major then
+    return true
+  elseif reqMajor > major then
+    return false
+  else--if reqMajor == major
+    return minor >= reqMinor
+  end
 end
 
 ---@return string

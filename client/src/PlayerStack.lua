@@ -317,6 +317,7 @@ function PlayerStack:deinit()
   GraphicsUtil:releaseQuad(self.multi_prestopQuad)
   GraphicsUtil:releaseQuad(self.multi_stopQuad)
   GraphicsUtil:releaseQuad(self.multi_shakeQuad)
+  self.engine:deinit()
 end
 
 ---------------------

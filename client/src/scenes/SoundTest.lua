@@ -176,7 +176,7 @@ function SoundTest:load()
     }
   )
   
-  local playCharacterSFXFn = function() 
+  local playCharacterSFXFn = function()
     if #sfxStepper.labels > 0 then
       love.audio.play(love.audio.newSource(characters[characterStepper.value].path.."/"..sfxStepper.value, "static"))
     end
@@ -191,8 +191,8 @@ function SoundTest:load()
     ui.MenuItem.createStepperMenuItem("op_music_sfx", nil, nil, sfxStepper),
     ui.MenuItem.createButtonMenuItem("op_music_play", nil, nil, playCharacterSFXFn),
     ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-      love.audio.stop()
       SoundController:stopMusic()
+      love.audio.stop()
       themes[config.theme].sounds.menu_validate = menuValidateSound
       GAME.navigationStack:pop()
     end)

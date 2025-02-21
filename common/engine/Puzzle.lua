@@ -10,8 +10,8 @@ local class = require("common.lib.class")
 ---@field randomizeColors boolean
 ---@field stop_time integer
 ---@field shake_time integer
-Puzzle =
-  class(
+---@overload fun(puzzleType: string, doCountdown: boolean, moves: integer?, stack: string, stop_time: integer?, shake_time: integer?): Puzzle
+Puzzle = class(
   function(self, puzzleType, doCountdown, moves, stack, stop_time, shake_time)
     self.puzzleType = puzzleType or "moves"
     self.doCountdown = doCountdown

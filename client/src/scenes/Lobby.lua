@@ -74,7 +74,11 @@ function Lobby:initLobbyMenu()
       GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
     end),
     ui.MenuItem.createButtonMenuItem("lb_show_board", nil, nil, function()
-      self:toggleLeaderboard()
+      if self.leaderboard.hasFocus then
+        self.leaderboard:yieldFocus()
+      else
+        self:toggleLeaderboard()
+      end
     end),
     ui.MenuItem.createButtonMenuItem("lb_back", nil, nil, exitMenu)
   }
