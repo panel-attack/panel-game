@@ -79,12 +79,12 @@ function TouchInputController:handleTouch(touchedCell, previousTouchedCell)
           return cursorRow, cursorColumn
         else
           -- We touched somewhere else on the stack
-          -- clear cursor, lingering and touched panel so we can do another initial touch next frame
           self:clearLingeringTouch()
-          -- this is so previousTouchedCell is 0, 0 on the next frame allowing us to run into touchInitiated again
-          touchedCell.row = 0
-          touchedCell.col = 0
-          return 0, 0
+          if self:panelIsSelectable(touchedCell.row, touchedCell.col) then
+            return touchedCell.row, touchedCell.col
+          else
+            return 0, 0
+          end
         end
       else
         if self:panelIsSelectable(touchedCell.row, touchedCell.col) then
@@ -160,7 +160,6 @@ end
 function TouchInputController:tryPerformTouchSwap(targetColumn)
   if self.touchSwapCooldownTimer == 0
   and self.stack.cur_col ~= 0 and targetColumn ~= self.stack.cur_col then
-    local swapSuccessful = false
     -- +1 for swapping to the right, -1 for swapping to the left
     local swapDirection = math.sign(targetColumn - self.stack.cur_col)
     local originPanel = self.stack.panels[self.stack.cur_row][self.stack.cur_col]

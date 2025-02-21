@@ -309,7 +309,6 @@ function inputManager:mousePressed(x, y, button)
   if not self.mouse.isDown[button] and not self.mouse.isPressed[button] then
     self.mouse.isDown[button] = KEY_CHANGE.DETECTED
   end
-  x, y = GAME:transform_coordinates(x, y)
   self.mouse.x = x
   self.mouse.y = y
 end
@@ -318,13 +317,11 @@ function inputManager:mouseReleased(x, y, button)
   self.mouse.isDown[button] = KEY_CHANGE.NONE
   self.mouse.isPressed[button] = KEY_CHANGE.NONE
   self.mouse.isUp[button] = KEY_CHANGE.DETECTED
-  x, y = GAME:transform_coordinates(x, y)
   self.mouse.x = x
   self.mouse.y = y
 end
 
 function inputManager:mouseMoved(x, y)
-  x, y = GAME:transform_coordinates(x, y)
   self.mouse.x = x
   self.mouse.y = y
 end

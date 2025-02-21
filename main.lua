@@ -87,18 +87,23 @@ end
 
 -- Handle a mouse or touch press
 function love.mousepressed(x, y, button)
-  touchHandler:touch(x, y)
+  x, y = GAME:transform_coordinates(x, y)
+  if button == 1 then
+    touchHandler:touch(x, y)
+  end
   inputManager:mousePressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
+  x, y = GAME:transform_coordinates(x, y)
   if button == 1 then
     touchHandler:release(x, y)
-    inputManager:mouseReleased(x, y, button)
   end
+  inputManager:mouseReleased(x, y, button)
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
+  x, y = GAME:transform_coordinates(x, y)
   if love.mouse.isDown(1) then
     touchHandler:drag(x, y)
   end
