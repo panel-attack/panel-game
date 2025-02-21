@@ -14,7 +14,6 @@ local prof = require("common.lib.jprof.jprof")
 local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
 local ReplayPlayer = require("common.data.ReplayPlayer")
-local TouchInputController = require("common.engine.TouchInputController")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 
 -- Stuff defined in this file:
@@ -80,7 +79,6 @@ local PANELS_TO_NEXT_SPEED =
 ---@field gpanel_buffer string numeric string containing a buffer of panels for garbage to turn into upon matching \n
 --- will get periodically extended as it gets consumed
 ---@field inputMethod string "controller" or "touch", determines how inputs are interpreted internally
----@field touchInputController table
 ---@field confirmedInput string[] All inputs the player has input so far (or ever)
 ---@field input_state string The input for the current frame
 ---@field package garbageCreatedCount integer The number of individual garbage blocks created on this stack \n
@@ -189,9 +187,6 @@ local Stack = class(
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
     s.inputMethod = arguments.inputMethod
-    if s.inputMethod == "touch" then
-      s.touchInputController = TouchInputController(s)
-    end
 
     s.panel_buffer = ""
     s.gpanel_buffer = ""
@@ -1623,9 +1618,6 @@ function Stack.new_row(self)
   end
   self.panel_buffer = string.sub(self.panel_buffer, 7)
   self.displacement = 16
-  if self.inputMethod == "touch" and self.touchInputController then
-    self.touchInputController:stackIsCreatingNewRow()
-  end
   self:emitSignal("newRow", self)
 end
 
