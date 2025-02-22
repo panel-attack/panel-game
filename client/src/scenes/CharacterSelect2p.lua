@@ -2,6 +2,7 @@ local CharacterSelect = require("client.src.scenes.CharacterSelect")
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
 
+---@class CharacterSelect2p : CharacterSelect
 local CharacterSelect2p = class(
   function (self, sceneParams)
   end,
@@ -69,9 +70,8 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.grid:createElementAt(9, 6, 1, 1, "leaveButton", self.ui.leaveButton)
 
   self.ui.characterIcons = {}
-  for i = 1, #GAME.battleRoom.players do
-    local player = GAME.battleRoom.players[i]
 
+  for i, player in ipairs(self.players) do
     local panelCarousel = self:createPanelCarousel(player, panelHeight)
     self.ui.panelSelection:addElement(panelCarousel, player)
 

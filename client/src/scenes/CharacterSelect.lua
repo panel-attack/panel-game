@@ -9,6 +9,9 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Character = require("client.src.mods.Character")
 
 -- The character select screen scene
+---@class CharacterSelect : Scene
+---@field backgroundImg table
+---@field players Player[]
 local CharacterSelect = class(function(self)
   self.backgroundImg = themes[config.theme].images.bg_select_screen
   self.music = "select_screen"
@@ -34,6 +37,16 @@ end
 -- end abstract functions
 
 function CharacterSelect:load()
+  self.players = shallowcpy(GAME.battleRoom.players)
+  -- display order is driven by locality
+  table.sort(self.players, function(a, b)
+    if a.isLocal == b.isLocal then
+      return a.playerNumber < b.playerNumber
+    else
+      return a.isLocal
+    end
+  end)
+
   self.ui = {}
   self.ui.cursors = {}
   self.ui.characterIcons = {}
@@ -41,6 +54,8 @@ function CharacterSelect:load()
   self:customLoad()
 end
 
+---@param player Player
+---@return UiElement playerIcon
 function CharacterSelect:createPlayerIcon(player)
   local playerIcon = ui.UiElement({hFill = true, vFill = true})
 
@@ -79,7 +94,7 @@ function CharacterSelect:createPlayerIcon(player)
   end
 
   -- player number icon
-  local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
+  local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
@@ -134,6 +149,7 @@ function CharacterSelect:createPlayerIcon(player)
   return playerIcon
 end
 
+---@return TextButton readyButton
 function CharacterSelect:createReadyButton()
   local readyButton = ui.TextButton({
     hFill = true,
@@ -158,6 +174,7 @@ function CharacterSelect:createReadyButton()
   return readyButton
 end
 
+---@return TextButton leaveButton
 function CharacterSelect:createLeaveButton()
   leaveButton = ui.TextButton({
     hFill = true,
@@ -175,6 +192,9 @@ function CharacterSelect:createLeaveButton()
   return leaveButton
 end
 
+---@param player Player
+---@param width number
+---@return UiElement stageCarousel
 function CharacterSelect:createStageCarousel(player, width)
   local stageCarousel = ui.StageCarousel({hAlign = "center", vAlign = "center", width = width, vFill = true})
   stageCarousel:loadCurrentStages()
@@ -194,13 +214,13 @@ function CharacterSelect:createStageCarousel(player, width)
   player:connectSignal("selectedStageIdChanged", stageCarousel, stageCarousel.setPassengerById)
 
   -- player number icon
-  local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
+  local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     scale = 2,
   })
 
-  if #GAME.battleRoom.players > 1 then
+  if #self.players > 1 then
     playerNumberIcon.hAlign = "center"
     playerNumberIcon.vAlign = "top"
     playerNumberIcon.y = 2
@@ -230,6 +250,7 @@ local super_select_pixelcode = [[
       }
   ]]
 
+---@return Button[] characterButtons
 function CharacterSelect:getCharacterButtons()
   local characterButtons = {}
 
@@ -287,7 +308,7 @@ function CharacterSelect:getCharacterButtons()
       local player
       if inputSource and inputSource.player then
         player = inputSource.player
-      elseif tableUtils.trueForAny(GAME.battleRoom.players, function(p) return p == GAME.localPlayer end) then
+      elseif tableUtils.trueForAny(self.players, function(p) return p == GAME.localPlayer end) then
          player = GAME.localPlayer
       else
         return
@@ -336,6 +357,7 @@ local function updateSuperSelectShader(image, timer)
   end
 end
 
+---@param characterButton Button
 function CharacterSelect.applySuperSelectInteraction(characterButton)
   -- creating the super select image + shader
   local superSelectImage = ui.ImageContainer({image = themes[config.theme].images.IMG_super, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
@@ -430,7 +452,7 @@ function CharacterSelect:createCursor(grid, player)
     startPosition = {x = 9, y = 2},
     player = player,
     -- this needs to be index, not playerNumber, as playerNumber is a server prop
-    frameImages = themes[config.theme]:getGridCursor(tableUtils.indexOf(GAME.battleRoom.players, player)),
+    frameImages = themes[config.theme]:getGridCursor(tableUtils.indexOf(self.players, player)),
   })
 
   player:connectSignal("wantsReadyChanged", cursor, cursor.setRapidBlinking)
@@ -478,7 +500,7 @@ function CharacterSelect:createPanelCarousel(player, height)
   player:connectSignal("colorCountChanged", panelCarousel, panelCarousel.setColorCount)
 
   -- player number icon
-  local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
+  local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
@@ -493,6 +515,10 @@ function CharacterSelect:createPanelCarousel(player, height)
   return panelCarousel
 end
 
+---@param player Player
+---@param imageWidth number
+---@param height number
+---@return UiElement levelSliderContainer
 function CharacterSelect:createLevelSlider(player, imageWidth, height)
   local levelSlider = ui.LevelSlider({
     tickLength = imageWidth,
@@ -562,7 +588,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   player:connectSignal("levelChanged", levelSlider, levelSlider.setValue)
 
   -- player number icon
-  local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
+  local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
@@ -577,6 +603,9 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   return uiElement
 end
 
+---@param player Player
+---@param width number
+---@return BoolSelector rankedSelector
 function CharacterSelect:createRankedSelection(player, width)
   local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, vFill = true, width = width, vAlign = "center", hAlign = "center"})
   rankedSelector.onValueChange = function(boolSelector, value)
@@ -589,7 +618,7 @@ function CharacterSelect:createRankedSelection(player, width)
   player:connectSignal("wantsRankedChanged", rankedSelector, rankedSelector.setValue)
 
   -- player number icon
-  local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
+  local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
@@ -603,6 +632,9 @@ function CharacterSelect:createRankedSelection(player, width)
   return rankedSelector
 end
 
+---@param player Player
+---@param width number
+---@return BoolSelector styleSelector
 function CharacterSelect:createStyleSelection(player, width)
   local styleSelector = ui.BoolSelector({
     startValue = (player.settings.style == GameModes.Styles.MODERN),
@@ -627,7 +659,7 @@ function CharacterSelect:createStyleSelection(player, width)
   )
 
   -- player number icon
-  local playerIndex = tableUtils.indexOf(GAME.battleRoom.players, player)
+  local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_players[playerIndex],
     hAlign = "left",
@@ -794,6 +826,10 @@ function CharacterSelect:createRankedStatusPanel()
   return rankedStatus
 end
 
+---@param player Player
+---@param height number
+---@param min integer
+---@return UiElement speedSliderContainer
 function CharacterSelect:createSpeedSlider(player, height, min)
   local speedSlider = ui.Slider({
     min = min or 1,

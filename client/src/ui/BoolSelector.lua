@@ -4,13 +4,20 @@ local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+---@class BoolSelectorOptions : UiElementOptions
+---@field startValue boolean?
+
 --- A BoolSelector is a UIElement that shows if a setting is on or off and lets you toggle it.
+---@class BoolSelector : UiElement
+---@field value boolean
+---@field vertical boolean
 local BoolSelector = class(function(boolSelector, options)
   boolSelector.value = options.startValue or false
-  boolSelector.TYPE = "BoolSelector"
   boolSelector.vertical = false
 end,
 UiElement)
+
+BoolSelector.TYPE = "BoolSelector"
 
 function BoolSelector:onTouch(x, y)
 end

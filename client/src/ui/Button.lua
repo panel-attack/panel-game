@@ -4,6 +4,15 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
 
+---@class ButtonOptions : UiElementOptions
+---@field backgroundColor number[]?
+---@field outlineColor number[]?
+---@field onClick fun(button: Button?, input: table?, timeHeld: number?)?
+
+---@class Button : UiElement
+---@field backgroundColor number[]
+---@field outlineColor number []
+---@field onClick fun(button: Button?, input: table?, timeHeld: number?)
 local Button = class(
   function(self, options)
     self.backgroundColor = options.backgroundColor or {.3, .3, .3, .7}
@@ -13,11 +22,11 @@ local Button = class(
     self.onClick = options.onClick or function()
       GAME.theme:playValidationSfx()
     end
-
-    self.TYPE = "Button"
   end,
   UIElement
 )
+
+Button.TYPE = "Button"
 
 function Button:onTouch(x, y)
   self.backgroundColor[4] = 1

@@ -5,10 +5,19 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
 
+---@alias sceneMusic ("none" | "main" | "title_screen" | "select_screen")
+
 -- Base class for a container representing a single screen of PanelAttack.
 -- Each scene should have a field called <Scene>.name = <Scene> (for identification in errors and debugging)
 -- Each scene must add its UiElements as children to its uiRoot property
+---@class Scene
+---@field uiRoot UiElement
+---@field music sceneMusic
+---@field fallbackMusic sceneMusic
+---@field keepMusic boolean
+---@overload fun(sceneParams: table): Scene
 local Scene = class(
+---@param self Scene
   function (self, sceneParams)
     self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
     -- scenes may specify theme music to use that is played once they are switched to

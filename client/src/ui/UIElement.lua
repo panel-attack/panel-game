@@ -19,6 +19,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field onDrag function? touch callback for when the mouse touching the element is dragged across the screen
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
+---@field [any] any
 
 ---@class UiElementOptions
 ---@field x number? relative x offset to the parent element (canvas if no parent)

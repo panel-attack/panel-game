@@ -109,13 +109,13 @@ function Slider:getCurrentXForValue()
 end
 
 ---@param x number
----@param committed boolean if the callback should get executed
+---@param committed boolean? if the callback should get executed
 function Slider:setValueFromPos(x, committed)
   self:setValue(self:getValueForPos(x), committed)
 end
 
 ---@param newValue number
----@param committed boolean if the callback should get executed
+---@param committed boolean? if the callback should get executed
 function Slider:setValue(newValue, committed)
   self.value = util.bound(self.min, newValue, self.max)
   self.valueText:set(tostring(self.value))

@@ -11,8 +11,17 @@ local GraphicsUtil = {
   quadPool = {}
 }
 
+---@class PixelFontMap
+---@field charWidth number
+---@field charHeight number
+---@field atlas love.Texture
+---@field charToQuad table<string, love.Quad>
+
+---@param characters string
+---@param atlas love.Texture
+---@return PixelFontMap
 function GraphicsUtil.createPixelFontMap(characters, atlas)
-  local pixelFontMap = { atlas = atlas }
+  local pixelFontMap = { atlas = atlas, charToQuad = {}}
 
   local atlasWidth, atlasHeight = atlas:getDimensions()
   local charWidth = atlasWidth / characters:len()
@@ -22,7 +31,7 @@ function GraphicsUtil.createPixelFontMap(characters, atlas)
 
   for i = 1, characters:len() do
     local char = characters:sub(i, i)
-    pixelFontMap[char] = love.graphics.newQuad((i - 1) * charWidth, 0, charWidth, atlasHeight, atlasWidth, atlasHeight)
+    pixelFontMap.charToQuad[char] = love.graphics.newQuad((i - 1) * charWidth, 0, charWidth, atlasHeight, atlasWidth, atlasHeight)
   end
 
   return pixelFontMap
@@ -75,6 +84,8 @@ function GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extensi
 end
 
 local supportedScales = {3, 2, 1}
+---@param pathAndName string
+---@return love.Texture?
 function GraphicsUtil.loadImageFromSupportedExtensions(pathAndName)
   for _, extension in ipairs(FileUtils.SUPPORTED_IMAGE_FORMATS) do
     for _, scale in ipairs(supportedScales) do
@@ -98,6 +109,14 @@ end
 -- TODO support both upper and lower case
 -- atlas - the image to use as the pixel font
 -- font map - a dictionary of a character mapped to the column number in the pixel font image
+---@param str string
+---@param fontMap PixelFontMap
+---@param x number
+---@param y number
+---@param xScale number?
+---@param yScale number?
+---@param align ("left" | "center" | "right" | nil)
+---@param characterSpacing integer
 function GraphicsUtil.drawPixelFont(str, fontMap, x, y, xScale, yScale, align, characterSpacing)
   xScale = xScale or 1
   yScale = yScale or 1
@@ -127,7 +146,7 @@ function GraphicsUtil.drawPixelFont(str, fontMap, x, y, xScale, yScale, align, c
       end
 
       -- Render it at the proper digit location
-      GraphicsUtil.drawQuad(fontMap.atlas, fontMap[character], characterX, y, 0, xScale, yScale)
+      GraphicsUtil.drawQuad(fontMap.atlas, fontMap.charToQuad[character], characterX, y, 0, xScale, yScale)
 
     end
   end
@@ -162,11 +181,14 @@ function GraphicsUtil:newRecycledQuad(x, y, width, height, sw, sh)
 end
 
 -- Stop using a quad and add it to the pool for reuse
+---@param quad love.Quad?
 function GraphicsUtil:releaseQuad(quad)
-  if #self.quadPool >= maxQuadPool then
-    quad:release()
-  else
-    self.quadPool[#self.quadPool+1] = quad
+  if quad then
+    if #self.quadPool >= maxQuadPool then
+      quad:release()
+    else
+      self.quadPool[#self.quadPool+1] = quad
+    end
   end
 end
 

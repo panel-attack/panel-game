@@ -167,7 +167,7 @@ function ClientMatch:start()
       attackEngineHost:setGarbageTarget(player.stack)
       player.stack:setGarbageSource(attackEngineHost)
       engineStacks[#engineStacks+1] = attackEngineHost.engine
-      self.stacks[attackEngineHost.which] = attackEngineHost
+      self.stacks[attackEngineHost.engine.which] = attackEngineHost
     end
   end
 
@@ -175,6 +175,8 @@ function ClientMatch:start()
                      {timeLimit = self.timeLimit, puzzle = self.puzzle})
   self.engine:setSeed(self.seed)
   self.engine:start()
+
+  self:moveStacks()
 
   -- outgoing garbage is already correctly directed by Match
   -- but the relationship is indirect between engine stacks to reduce coupling
@@ -239,6 +241,25 @@ function ClientMatch:deinit()
   end
 end
 
+function ClientMatch:moveStacks()
+-- we want to render the stacks in a particular order so that the local player ends up as P1 (left side)
+  -- BUT: we want to keep player indexing consistent over boundaries (client <-> replay <- server) to not mess with replay saving
+  -- so we solve the rendering requirement via a shallowcpy and assigning positions directly to the stacks rather than starting reordering shenanigans all across the code base
+  local players = shallowcpy(self.players)
+  table.sort(players, function(a, b)
+    if a.isLocal == b.isLocal then
+      return a.playerNumber < b.playerNumber
+    else
+      return a.isLocal
+    end
+  end)
+
+  for i, player in ipairs(players) do
+    player.stack:moveForRenderIndex(i)
+    player.stack:assignAssets(GAME.theme:getIngameAssetPack(i))
+  end
+end
+
 function ClientMatch:setStage(stageId)
   logger.debug("Setting match stage id to " .. (stageId or ""))
   if stageId then
@@ -295,7 +316,12 @@ function ClientMatch:finalizeReplay()
     replay:setRanked(self.ranked)
 
     for i, replayPlayer in ipairs(replay.players) do
-      local player = self.players[i]
+      local player
+      for _, p in ipairs(self.players[i]) do
+        if player.publicId == replayPlayer.publicId then
+          player = p
+        end
+      end
 
       -- attackEngines may get their own "player" in replays even though they don't have one for the Match
       -- in these cases the attackEngine data is saved with the targeted player so let's not duplicate the data
@@ -538,7 +564,7 @@ function ClientMatch:render()
     local drawY = 23
     for i = 1, #self.stacks do
       local stack = self.stacks[i]
-      GraphicsUtil.print("P" .. stack.which .." Average Latency: " .. stack.engine.framesBehind, 1, drawY)
+      GraphicsUtil.print("P" .. stack.renderIndex .." Average Latency: " .. stack.engine.framesBehind, 1, drawY)
       drawY = drawY + 11
     end
 

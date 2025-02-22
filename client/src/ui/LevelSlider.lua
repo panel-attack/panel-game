@@ -4,6 +4,7 @@ local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+---@class LevelSlider : Slider
 local LevelSlider = class(
   function(self, options)
     self.min = 1

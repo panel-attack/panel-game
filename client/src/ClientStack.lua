@@ -14,7 +14,6 @@ end
 ---The base class for a client side wrapper around an engine stack
 ---Supports general properties for positioning and drawing
 ---@class ClientStack : Signal
----@field which integer determines the position of the stack like an index but also serves as an id within the match
 ---@field is_local boolean if the Stack gets its inputs live from the local client or not
 ---@field character Character the character to use for drawing and sounds
 ---@field theme table the theme to determine offsets via theme for multibar and other properties
@@ -34,6 +33,8 @@ end
 ---@field danger_music boolean
 ---@field garbageSource ClientStack The stack the garbage assets are used from
 ---@field match ClientMatch
+---@field assets IngameAssetPack
+---@field renderIndex integer determines the position of the stack and how some elements are rendered
 
 ---@class ClientStack
 local ClientStack = class(
@@ -41,14 +42,12 @@ function(self, args)
   ---@class ClientStack
   self = self
 
-  assert(args.which)
   assert(args.is_local ~= nil)
   assert(args.character)
   assert(args.match)
 
-  self.which = args.which or 1
   -- player number according to the multiplayer server, for game outcome reporting 
-  self.player_number = args.player_number or self.which
+  self.player_number = args.player_number or args.which
   self.is_local = args.is_local
   self.character = characters[args.character]
   self.theme = args.theme or themes[config.theme]
@@ -68,12 +67,6 @@ function(self, args)
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
   self.canvas = true
   self.portraitFade = config.portrait_darkness / 100 -- will be set back to 0 if count down happens
-  self.healthQuad = GraphicsUtil:newRecycledQuad(0, 0, themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight(), themes[config.theme].images.IMG_healthbar:getWidth(), themes[config.theme].images.IMG_healthbar:getHeight())
-  self.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight(), self.theme.images.IMG_multibar_prestop_bar:getWidth(), self.theme.images.IMG_multibar_prestop_bar:getHeight())
-  self.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight(), self.theme.images.IMG_multibar_stop_bar:getWidth(), self.theme.images.IMG_multibar_stop_bar:getHeight())
-  self.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight(), self.theme.images.IMG_multibar_shake_bar:getWidth(), self.theme.images.IMG_multibar_shake_bar:getHeight())
-
-  self:moveForRenderIndex(self.which)
 
   self.danger_music = false
 
@@ -87,7 +80,7 @@ function ClientStack:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlr
   assert(cameFromLegacyScoreOffset ~= nil)
   assert(legacyOffsetIsAlreadyScaled ~= nil)
   local x = 546
-  if self.which == 2 then
+  if self.renderIndex == 2 then
     x = 642
   end
   if cameFromLegacyScoreOffset == false or themes[config.theme]:offsetsAreFixed() then
@@ -202,7 +195,7 @@ function ClientStack:drawNumber(number, themePositionOffset, scale, cameFromLega
   end
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
-  GraphicsUtil.drawPixelFont(number, themes[config.theme].fontMaps.numbers[self.which], x, y, scale, scale, "center", 0)
+  GraphicsUtil.drawPixelFont(number, self.assets.numberPixelFont, x, y, scale, scale, "center", 0)
 end
 
 function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
@@ -215,7 +208,7 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   local limit = consts.CANVAS_WIDTH - x
   local alignment = "left"
   if themes[config.theme]:offsetsAreFixed() then
-    if self.which == 1 then
+    if self.renderIndex == 1 then
       limit = x
       x = 0
       alignment = "right"
@@ -232,33 +225,34 @@ end
 
 -- Positions the stack draw position for the given player
 function ClientStack:moveForRenderIndex(renderIndex)
-    -- Position of elements should ideally be on even coordinates to avoid non pixel alignment
-    if renderIndex == 1 then
-      self.mirror_x = 1
-      self.multiplication = 0
-    elseif renderIndex == 2 then
-      self.mirror_x = -1
-      self.multiplication = 1
-    end
-    local centerX = (GAME.globalCanvas:getWidth() / 2)
-    local stackWidth = self:canvasWidth()
-    local innerStackXMovement = 100
-    local outerStackXMovement = stackWidth + innerStackXMovement
-    self.panelOriginXOffset = 4
-    self.panelOriginYOffset = 4
+  self.renderIndex = renderIndex
+  -- Position of elements should ideally be on even coordinates to avoid non pixel alignment
+  if renderIndex == 1 then
+    self.mirror_x = 1
+    self.multiplication = 0
+  elseif renderIndex == 2 then
+    self.mirror_x = -1
+    self.multiplication = 1
+  end
+  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local stackWidth = self:canvasWidth()
+  local innerStackXMovement = 100
+  local outerStackXMovement = stackWidth + innerStackXMovement
+  self.panelOriginXOffset = 4
+  self.panelOriginYOffset = 4
 
-    local outerNonScaled = centerX - (outerStackXMovement * self.mirror_x)
-    self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerNonScaled / self.gfxScale) -- The outer X value of the frame
+  local outerNonScaled = centerX - (outerStackXMovement * self.mirror_x)
+  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerNonScaled / self.gfxScale) -- The outer X value of the frame
 
-    local frameOriginNonScaled = outerNonScaled
-    if self.mirror_x == -1 then
-      frameOriginNonScaled = outerNonScaled - stackWidth
-    end
-    self.frameOriginX = frameOriginNonScaled / self.gfxScale -- The left X value where the frame is drawn
-    self.frameOriginY = 108 / self.gfxScale
+  local frameOriginNonScaled = outerNonScaled
+  if self.mirror_x == -1 then
+    frameOriginNonScaled = outerNonScaled - stackWidth
+  end
+  self.frameOriginX = frameOriginNonScaled / self.gfxScale -- The left X value where the frame is drawn
+  self.frameOriginY = 108 / self.gfxScale
 
-    self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
-    self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
+  self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
+  self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
 end
 
 -- to be used in conjunction with resetDrawArea
@@ -295,11 +289,11 @@ function ClientStack:drawCharacter()
     end
   end
 
-  self.character:drawPortrait(self.which, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
+  self.character:drawPortrait(self.renderIndex, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
 end
 
 function ClientStack:drawFrame()
-  local frameImage = themes[config.theme].images.frames[self.which]
+  local frameImage = self.assets.frame
 
   if frameImage then
     local scaleX = self:canvasWidth() / frameImage:getWidth()
@@ -309,7 +303,7 @@ function ClientStack:drawFrame()
 end
 
 function ClientStack:drawWall(displacement, rowCount)
-  local wallImage = themes[config.theme].images.walls[self.which]
+  local wallImage = self.assets.wall
 
   if wallImage then
     local y = (4 - displacement + rowCount * 16) * self.gfxScale
@@ -354,7 +348,7 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   local barPos = themes[config.theme].multibar_Pos
   local overtimePos = themes[config.theme].multibar_LeftoverTime_Pos
 
-  self:drawLabel(themes[config.theme].images.healthbarFrames.absolute[self.which], framePos, themes[config.theme].healthbar_frame_Scale * (self.gfxScale / 3))
+  self:drawLabel(self.assets.multibar.frameAbsolute, framePos, themes[config.theme].healthbar_frame_Scale * (self.gfxScale / 3))
 
   local multiBarFrameCount = self.multiBarFrameCount
   local multiBarMaxHeight = 589 * (self.gfxScale / 3) * themes[config.theme].multibar_Scale
@@ -362,7 +356,7 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
 
   local healthHeight = (self.engine.health / multiBarFrameCount) * multiBarMaxHeight
   healthHeight = math.min(healthHeight, multiBarMaxHeight)
-  self:drawBar(themes[config.theme].images.IMG_healthbar, self.healthQuad, barPos, healthHeight, 0, 0, themes[config.theme].multibar_Scale)
+  self:drawBar(self.assets.multibar.health, self.healthQuad, barPos, healthHeight, 0, 0, themes[config.theme].multibar_Scale)
 
   bottomOffset = healthHeight
 
@@ -373,12 +367,12 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
     -- shake is only drawn if it is greater than prestop + stop
     -- shake is always guaranteed to fit
     local shakeHeight = (shake_time / multiBarFrameCount) * multiBarMaxHeight
-    self:drawBar(themes[config.theme].images.IMG_multibar_shake_bar, self.multi_shakeQuad, barPos, shakeHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
+    self:drawBar(self.assets.multibar.shake, self.multi_shakeQuad, barPos, shakeHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
   else
     -- stop/prestop are only drawn if greater than shake
     if stop_time > 0 then
       stopHeight = math.min(stop_time, multiBarFrameCount - self.engine.health) / multiBarFrameCount * multiBarMaxHeight
-      self:drawBar(themes[config.theme].images.IMG_multibar_stop_bar, self.multi_stopQuad, barPos, stopHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
+      self:drawBar(self.assets.multibar.stop, self.multi_stopQuad, barPos, stopHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
 
       bottomOffset = bottomOffset + stopHeight
     end
@@ -394,7 +388,7 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
     end
 
     if pre_stop_time and pre_stop_time > 0 then
-      self:drawBar(themes[config.theme].images.IMG_multibar_prestop_bar, self.multi_prestopQuad, barPos, preStopHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
+      self:drawBar(self.assets.multibar.preStop, self.multi_prestopQuad, barPos, preStopHeight, bottomOffset, 0, themes[config.theme].multibar_Scale)
     end
 
     if remainingSeconds > 0 then
@@ -409,7 +403,7 @@ function ClientStack:drawPlayerName()
 end
 
 function ClientStack:drawWinCount()
-  self:drawLabel(themes[config.theme].images.IMG_wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, true)
+  self:drawLabel(self.assets.wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, true)
   self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, true)
 end
 
@@ -453,16 +447,33 @@ function ClientStack:game_ended()
   end
 end
 
+---@param assetPack IngameAssetPack
+function ClientStack:assignAssets(assetPack)
+  self.assets = assetPack
+
+  local width, height = self.assets.multibar.health:getDimensions()
+  self.healthQuad = GraphicsUtil:newRecycledQuad(0, 0, width, height, width, height)
+  width, height = self.assets.multibar.preStop:getDimensions()
+  self.multi_prestopQuad = GraphicsUtil:newRecycledQuad(0, 0, width, height, width, height)
+  width, height = self.assets.multibar.stop:getDimensions()
+  self.multi_stopQuad = GraphicsUtil:newRecycledQuad(0, 0, width, height, width, height)
+  width, height = self.assets.multibar.shake:getDimensions()
+  self.multi_shakeQuad = GraphicsUtil:newRecycledQuad(0, 0, width, height, width, height)
+end
+
+function ClientStack:deinit()
+  GraphicsUtil:releaseQuad(self.healthQuad)
+  GraphicsUtil:releaseQuad(self.multi_prestopQuad)
+  GraphicsUtil:releaseQuad(self.multi_stopQuad)
+  GraphicsUtil:releaseQuad(self.multi_shakeQuad)
+end
+
 --------------------------------
 ------ abstract functions ------
 --------------------------------
 
 function ClientStack:runGameOver()
   error("did not implement runGameOver")
-end
-
-function ClientStack:deinit()
-  error("did not implement deinit")
 end
 
 function ClientStack:render()

@@ -3,7 +3,25 @@ local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
-local PixelFontLabel = class(function(self, options)
+---@class PixelFontLabelOptions : UiElementOptions
+---@field text string?
+---@field charSpacing integer?
+---@field xScale number?
+---@field yScale number?
+---@field fontMap PixelFontMap?
+
+---@class PixelFontLabel : UiElement
+---@field text string
+---@field charSpacing integer
+---@field xScale number
+---@field yScale number
+---@field fontMap PixelFontMap
+---@field charDistanceScaled number
+---@overload fun(options: PixelFontLabelOptions): PixelFontLabel
+local PixelFontLabel = class(
+---@param self PixelFontLabel
+---@param options PixelFontLabelOptions
+function(self, options)
   if options.text then
     self.text = tostring(options.text):upper()
   else
@@ -42,7 +60,7 @@ function PixelFontLabel:drawSelf()
       local characterX = self.x + ((i - 1) * self.charDistanceScaled)
 
       -- Render it at the proper digit location
-      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap[char], characterX, self.y, 0, self.xScale, self.yScale)
+      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap.charToQuad[char], characterX, self.y, 0, self.xScale, self.yScale)
     end
   end
 end

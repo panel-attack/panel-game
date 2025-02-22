@@ -36,14 +36,6 @@ function(self, args)
   self.sfxMetal = 0
 
   self.difficultyQuads = {}
-
-  self.stackHeightQuad = GraphicsUtil:newRecycledQuad(0, 0, themes[config.theme].images.IMG_multibar_shake_bar:getWidth(),
-                                                      themes[config.theme].images.IMG_multibar_shake_bar:getHeight(),
-                                                      themes[config.theme].images.IMG_multibar_shake_bar:getWidth(),
-                                                      themes[config.theme].images.IMG_multibar_shake_bar:getHeight())
-
-  -- somehow bad things happen if this is called in the base class constructor instead
-  self:moveForRenderIndex(self.which)
 end,
 ClientStack)
 
@@ -140,11 +132,11 @@ end
 
 function ChallengeModePlayerStack:renderStackHeight()
   local percentage = self.engine.healthEngine:getTopOutPercentage()
-  local xScale = (self:canvasWidth() - 8) / themes[config.theme].images.IMG_multibar_shake_bar:getWidth()
-  local yScale = (self:canvasHeight() - 4) / themes[config.theme].images.IMG_multibar_shake_bar:getHeight() * percentage
+  local xScale = (self:canvasWidth() - 8) / self.assets.multibar.shake:getWidth()
+  local yScale = (self:canvasHeight() - 4) / self.assets.multibar.shake:getHeight() * percentage
 
   GraphicsUtil.setColor(1, 1, 1, 0.6)
-  GraphicsUtil.drawQuad(themes[config.theme].images.IMG_multibar_shake_bar, self.stackHeightQuad, 4, self:canvasHeight(), 0, xScale,
+  GraphicsUtil.drawQuad(self.assets.multibar.shake, self.stackHeightQuad, 4, self:canvasHeight(), 0, xScale,
                      -yScale)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
@@ -170,8 +162,7 @@ end
 
 function ChallengeModePlayerStack:drawSpeed()
   if self.engine.healthEngine then
-    self:drawLabel(themes[config.theme].images["IMG_speed_" .. self.which .. "P"], themes[config.theme].speedLabel_Pos,
-                   themes[config.theme].speedLabel_Scale)
+    self:drawLabel(self.assets.speed, themes[config.theme].speedLabel_Pos, themes[config.theme].speedLabel_Scale)
     self:drawNumber(self.engine.healthEngine.currentRiseSpeed, themes[config.theme].speed_Pos, themes[config.theme].speed_Scale)
   end
 end
@@ -179,10 +170,8 @@ end
 -- rating is substituted for challenge mode difficulty here
 function ChallengeModePlayerStack:drawRating()
   if self.player.settings.difficulty then
-    self:drawLabel(themes[config.theme].images["IMG_rating_" .. self.which .. "P"], themes[config.theme].ratingLabel_Pos,
-                   themes[config.theme].ratingLabel_Scale, true)
-    self:drawNumber(self.player.settings.difficulty, themes[config.theme].rating_Pos,
-                    themes[config.theme].rating_Scale)
+    self:drawLabel(self.assets.rating, themes[config.theme].ratingLabel_Pos, themes[config.theme].ratingLabel_Scale, true)
+    self:drawNumber(self.player.settings.difficulty, themes[config.theme].rating_Pos, themes[config.theme].rating_Scale)
   end
 end
 
@@ -209,21 +198,29 @@ function ChallengeModePlayerStack:drawDebug()
     GraphicsUtil.printf("Clock " .. self.engine.clock, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("P" .. self.which .. " Ended?: " .. tostring(self.engine:game_ended()), drawX, drawY)
+    GraphicsUtil.printf("P" .. self.renderIndex .. " Ended?: " .. tostring(self.engine:game_ended()), drawX, drawY)
   end
 end
 
 -- in the long run we should have all quads organized in a Stack.quads table
 -- that way deinit could be implemented generically in StackBase
 function ChallengeModePlayerStack:deinit()
-  self.healthQuad:release()
-  self.stackHeightQuad:release()
+  ClientStack.deinit(self)
+  GraphicsUtil:releaseQuad(self.stackHeightQuad)
   for _, quad in ipairs(self.difficultyQuads) do
     GraphicsUtil:releaseQuad(quad)
   end
 end
 
 function ChallengeModePlayerStack:runGameOver()
+end
+
+---@param assetPack IngameAssetPack
+function ChallengeModePlayerStack:assignAssets(assetPack)
+  ClientStack.assignAssets(self, assetPack)
+
+  local w, h = self.assets.multibar.shake:getDimensions()
+  self.stackHeightQuad = GraphicsUtil:newRecycledQuad(0, 0, w, h, w, h)
 end
 
 return ChallengeModePlayerStack
