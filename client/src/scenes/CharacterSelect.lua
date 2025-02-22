@@ -176,7 +176,7 @@ function CharacterSelect:createLeaveButton()
 end
 
 function CharacterSelect:createStageCarousel(player, width)
-  local stageCarousel = ui.StageCarousel({hAlign = "center", vAlign = "center", width = width, vFill = true})
+  local stageCarousel = ui.StageCarousel({isEnabled = player.isLocal, hAlign = "center", vAlign = "center", width = width, vFill = true})
   stageCarousel:loadCurrentStages()
 
   -- stage carousel
@@ -454,7 +454,7 @@ function CharacterSelect:createCursor(grid, player)
 end
 
 function CharacterSelect:createPanelCarousel(player, height)
-  local panelCarousel = ui.PanelCarousel({hAlign = "center", vAlign = "top", hFill = true, height = height})
+  local panelCarousel = ui.PanelCarousel({isEnabled = player.isLocal, hAlign = "center", vAlign = "top", hFill = true, height = height})
   panelCarousel:setColorCount(player.settings.levelData.colors)
   panelCarousel:loadPanels()
 
@@ -495,6 +495,7 @@ end
 
 function CharacterSelect:createLevelSlider(player, imageWidth, height)
   local levelSlider = ui.LevelSlider({
+    isEnabled = player.isLocal,
     tickLength = imageWidth,
     value = player.settings.level,
     onValueChange = function(s)
@@ -578,7 +579,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
 end
 
 function CharacterSelect:createRankedSelection(player, width)
-  local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, vFill = true, width = width, vAlign = "center", hAlign = "center"})
+  local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, isEnabled = player.isLocal, vFill = true, width = width, vAlign = "center", hAlign = "center"})
   rankedSelector.onValueChange = function(boolSelector, value)
     GAME.theme:playValidationSfx()
     player:setWantsRanked(value)
@@ -834,6 +835,7 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     { id = 4, uiElement = ui.Label({text = "ss_ex_mode", vAlign = "center", hAlign = "center"})},
   }
   local difficultyCarousel = ui.Carousel({
+    isEnabled = player.isLocal, 
     hAlign = "center",
     vAlign = "top",
     hFill = true,

@@ -139,7 +139,7 @@ end
 -- overwrite the default callback to always return itself so the class can act as an intermediator
 -- because any children that are offscreen at scrollOffset 0 cannot get hit by the default touchhandler without translating touch coordinates
 function ScrollContainer:getTouchedElement(x, y)
-  if self.isVisible and self.isEnabled and UiElement.inBounds(self, x, y) then
+  if self.isVisible and self.isEnabled and self:isTouchable() and UiElement.inBounds(self, x, y) then
     return self
   end
 end
