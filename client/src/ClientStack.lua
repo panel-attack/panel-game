@@ -253,6 +253,8 @@ function ClientStack:moveForRenderIndex(renderIndex)
 
   self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
   self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
+
+  self:assignAssets(GAME.theme:getIngameAssetPack(self.renderIndex))
 end
 
 -- to be used in conjunction with resetDrawArea

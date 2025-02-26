@@ -10,6 +10,8 @@ local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
 local UpdatingImage = require("client.src.graphics.UpdatingImage")
 
+local MAX_SUPPORTED_PLAYERS = 2
+
 -- from https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
 local flags = {
   "cn", -- China
@@ -325,8 +327,6 @@ function Theme:loadMenuGraphics()
   self.images.IMG_bug = self:load_theme_img("bug")
 end
 
-local MAX_SUPPORTED_PLAYERS = 2
-
 ---@param theme Theme
 ---@return table<integer, love.Texture[]>
 local function loadGridCursors(theme)
@@ -420,7 +420,7 @@ function Theme:loadIngameGraphics()
   --play field frames, plus the wall at the bottom.
   self.images.frames = {}
   self.images.walls = {}
-  for i = 1, 2 do
+  for i = 1, MAX_SUPPORTED_PLAYERS do
     self.images.frames[i] = self:load_theme_img("frame/frame" .. i .. "P")
     self.images.walls[i] = self:load_theme_img("frame/wall" .. i .. "P")
   end
@@ -443,7 +443,7 @@ function Theme:loadIngameLabels()
   self.images.levelLabels = {}
   self.images.scoreLabels = {}
   self.images.ratingLabels = {}
-  for i = 1, 2 do
+  for i = 1, MAX_SUPPORTED_PLAYERS do
     self.images.speedLabels[i] = self:load_theme_img("speed_" .. i .. "P")
     self.images.levelLabels[i] = self:load_theme_img("level_" .. i .. "P")
     self.images.scoreLabels[i] = self:load_theme_img("score_" .. i .. "P")
@@ -465,11 +465,11 @@ end
 function Theme:loadMultibar()
   self.images.healthbarFrames = {}
   self.images.healthbarFrames.relative = {}
-  self.images.healthbarFrames.relative[1]  = self:load_theme_img("healthbar_frame_1P")
-  self.images.healthbarFrames.relative[2]  = self:load_theme_img("healthbar_frame_2P")
   self.images.healthbarFrames.absolute = {}
-  self.images.healthbarFrames.absolute[1] = self:load_theme_img("healthbar_frame_1P_absolute")
-  self.images.healthbarFrames.absolute[2] = self:load_theme_img("healthbar_frame_2P_absolute")
+  for i = 1, MAX_SUPPORTED_PLAYERS do
+    self.images.healthbarFrames.relative[i]  = self:load_theme_img("healthbar_frame_" .. i .. "P")
+    self.images.healthbarFrames.absolute[i] = self:load_theme_img("healthbar_frame_" .. i .. "P_absolute")
+  end
 
   self.images.IMG_healthbar = self:load_theme_img("healthbar")
 
@@ -523,7 +523,7 @@ end
 function Theme:loadLevelNumberAtlasses()
   self.images.levelNumberAtlas = {}
   local levels = 11
-  for i = 1, 2 do
+  for i = 1, MAX_SUPPORTED_PLAYERS do
     self.images.levelNumberAtlas[i] = {}
     self.images.levelNumberAtlas[i].image = self:load_theme_img("level_numbers_" .. i .. "P")
     local charWidth = self.images.levelNumberAtlas[i].image:getWidth() / levels

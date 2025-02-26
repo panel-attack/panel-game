@@ -176,6 +176,7 @@ function ClientMatch:start()
   self.engine:setSeed(self.seed)
   self.engine:start()
 
+  -- needs to happen before garbageTargets are set as it defines the set of coordinates relevant for telegraph
   self:moveStacks()
 
   -- outgoing garbage is already correctly directed by Match
@@ -256,7 +257,6 @@ function ClientMatch:moveStacks()
 
   for i, player in ipairs(players) do
     player.stack:moveForRenderIndex(i)
-    player.stack:assignAssets(GAME.theme:getIngameAssetPack(i))
   end
 end
 
@@ -317,11 +317,13 @@ function ClientMatch:finalizeReplay()
 
     for i, replayPlayer in ipairs(replay.players) do
       local player
-      for _, p in ipairs(self.players[i]) do
-        if player.publicId == replayPlayer.publicId then
+      for _, p in ipairs(self.players) do
+        if p.publicId == replayPlayer.publicId then
           player = p
+          break
         end
       end
+      assert(player, "Didn't find player with publicId " .. tostring(replayPlayer.publicId))
 
       -- attackEngines may get their own "player" in replays even though they don't have one for the Match
       -- in these cases the attackEngine data is saved with the targeted player so let's not duplicate the data
