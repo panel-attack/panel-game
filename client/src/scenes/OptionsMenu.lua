@@ -502,6 +502,7 @@ function OptionsMenu:loadDebugMenu()
     ui.MenuItem.createToggleButtonGroupMenuItem("Profile frame times", nil, false, createToggleButtonGroup("debugProfile",
       function()
         prof.enable(config.debugProfile)
+        prof.setDurationFilter(config.debugProfileThreshold / 1000)
       end)),
     ui.MenuItem.createSliderMenuItem("Discard frames below duration (ms)", nil, false, createConfigSlider("debugProfileThreshold", 0, 100,
       function()
