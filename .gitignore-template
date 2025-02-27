@@ -6,6 +6,7 @@ makelove.toml
 # directories added by the IDE
 .vscode
 # files generated from running the server locally
+placement_matches
 csprng_seed.txt
 GameResults.csv
 PADatabase.sqlite3
