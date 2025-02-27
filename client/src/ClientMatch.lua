@@ -362,6 +362,27 @@ function ClientMatch:finalizeReplay()
     end
 
     Replay.finalizeReplay(self.engine, self.replay)
+
+    -- we kept player order consistent throughout from replay creation to evade issues with properties/inputs being recorded on the wrong replayPlayer
+    -- but now all the data is there so reorder the players according to display
+    local replayPlayers = shallowcpy(self.replay.players)
+
+    for _, playerStack in ipairs(self.stacks) do
+      local replayPlayer
+      for _, rp in ipairs(replayPlayers) do
+        if rp.publicId == playerStack.player.publicId then
+          replayPlayer = rp
+        end
+
+        if replayPlayer then
+          self.replay.players[playerStack.renderIndex] = replayPlayer
+          if self.replay.winnerId == replayPlayer.publicId then
+            self.replay.winnerIndex = playerStack.renderIndex
+          end
+        end
+      end
+    end
+
   end
 
   return replay
