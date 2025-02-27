@@ -232,11 +232,13 @@ local super_select_pixelcode = [[
 
 function CharacterSelect:getCharacterButtons()
   local characterButtons = {}
+  local enableButtons = GAME.battleRoom:hasLocalPlayer()
 
   for i = 0, #visibleCharacters do
     local characterButton = ui.Button({
       hFill = true,
       vFill = true,
+      isEnabled = enableButtons,
     })
 
     local character
