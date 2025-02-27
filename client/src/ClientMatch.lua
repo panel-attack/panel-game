@@ -15,6 +15,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Telegraph = require("client.src.graphics.Telegraph")
 local MatchParticipant = require("client.src.MatchParticipant")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
+local NetworkProtocol = require("common.network.NetworkProtocol")
 
 ---@class ClientMatch
 ---@field players table[]
@@ -700,6 +701,28 @@ function ClientMatch:resetPuzzle()
   self.engine.clock = 0
   self.engine:setCountdown(engine.puzzle)
   self.players[1]:incrementWinCount()
+end
+
+---@param prefix "I" | "U"
+---@param input string
+function ClientMatch:receiveInput(prefix, input)
+  if self:hasLocalPlayer() then
+    if self.players[1].human and self.players[1].isLocal then
+      ---@diagnostic disable-next-line: param-type-mismatch
+      self.stacks[2]:receiveConfirmedInput(input)
+    elseif self.players[2].human and self.players[2].isLocal then
+      ---@diagnostic disable-next-line: param-type-mismatch
+      self.stacks[1]:receiveConfirmedInput(input)
+    end
+  else
+    if prefix == NetworkProtocol.serverMessageTypes.opponentInput.prefix then
+      ---@diagnostic disable-next-line: param-type-mismatch
+      self.stacks[2]:receiveConfirmedInput(input)
+    else
+      ---@diagnostic disable-next-line: param-type-mismatch
+      self.stacks[1]:receiveConfirmedInput(input)
+    end
+  end
 end
 
 return ClientMatch

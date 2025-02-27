@@ -124,6 +124,9 @@ function BattleRoom.createFromServerMessage(message)
       if player.name == GAME.localPlayer.name then
         logger.debug("Local player is player number " .. player.playerNumber)
         p = GAME.localPlayer
+        if GAME.localPlayer.publicId < 0 and player.publicId > 0 then
+          GAME.localPlayer.publicId = player.publicId
+        end
       else
         p = Player(player.name, player.publicId or -i, false)
       end
@@ -545,7 +548,6 @@ function BattleRoom:shutdown()
     GAME.netClient:leaveRoom()
   end
   self.hasShutdown = true
-  GAME:initializeLocalPlayer()
   GAME.battleRoom = nil
   self = nil
 end

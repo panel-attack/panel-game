@@ -410,7 +410,7 @@ function Player:getInfo()
   info.wantsReady = tostring(self.settings.wantsReady)
   info.wantsRanked = tostring(self.settings.wantsRanked)
   info.inputMethod = self.settings.inputMethod
-  --info.publicId = self.settings.publicId
+  info.publicId = self.publicId
   info.playerNumber = self.playerNumber
   info.isLocal = tostring(self.isLocal)
   info.human = tostring(self.human)
