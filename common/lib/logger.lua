@@ -65,8 +65,8 @@ function direct_log(prefix, msg)
   -- %X - Time
   local message = string.format("%s.%03d %s:%s", os.date("%x %X"), socket_millis, prefix, msg)
   print(message)
+  logger.messageBuffer:push(message)
   if not SERVER_MODE then
-    logger.messageBuffer:push(message)
     -- the space in the string below is on purpose
     if prefix == "ERROR" or prefix == " WARN" then
       love.filesystem.append("warnings.txt", message .. "\n")

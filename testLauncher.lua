@@ -2,15 +2,18 @@
 -- with love 12 you can pass the name of a lua file as an argument when starting love
 -- this will cause that file to be used in place of main.lua
 -- so by passing "./testLauncher.lua" as the first arg this becomes a testrunner that shares the game's conf.lua
---jit.off()
-print("jit version: " .. require("jit").version)
-jit.off()
 if arg[2] == "debug" then
   require("client.src.developer")
 end
 local t = love.timer.getTime()
-package.path = package.path .. ";/usr/local/share/luajit-2.1/?.lua"
-require("jit.p").start("vFi1m1", "profiling/jitProfile.log")
+--jit.off()
+print("jit version: " .. require("jit").version)
+-- for luajit's built-in profiler to run, luajit with the version matching love's has to be installed
+-- jit.version yields the timestamp of the commit that was used to build as its patch number
+-- clone the luajit repo, checkout the commit belonging to the time stamp and compile and jit.p should "just work"
+-- assuming it is in the lua path which on linux may require this next line to be used
+--package.path = package.path .. ";/usr/local/share/luajit-2.1/?.lua"
+--require("jit.p").start("vFi1m1", "profiling/jitProfile.log")
 
 require("common.lib.mathExtensions")
 local util = require("common.lib.util")
@@ -37,18 +40,18 @@ function love.load()
 end
 
 local tests = {
-  --"server.tests.ServerTests",
-  --"server.tests.LeaderboardTests",
-  --"server.tests.RoomTests",
-  --"server.tests.LoginTests",
-  --"client.tests.FileUtilsTests",
-  --"client.tests.ModControllerTests",
+  "server.tests.ServerTests",
+  "server.tests.LeaderboardTests",
+  "server.tests.RoomTests",
+  "server.tests.LoginTests",
+  "client.tests.FileUtilsTests",
+  "client.tests.ModControllerTests",
   "common.tests.engine.StackRollbackReplayTests",
-  --"client.tests.QueueTests",
-  --"client.tests.ServerQueueTests",
-  --"client.tests.StackGraphicsTests",
-  --"client.tests.TcpClientTests",
-  --"client.tests.ThemeTests",
+  "client.tests.QueueTests",
+  "client.tests.ServerQueueTests",
+  "client.tests.StackGraphicsTests",
+  "client.tests.TcpClientTests",
+  "client.tests.ThemeTests",
   "common.tests.engine.GarbageQueueTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.PanelGenTests",
@@ -60,12 +63,12 @@ local tests = {
   "common.tests.engine.StackTouchReplayTests",
   -- disabled for testLauncher because it needs the client love callbacks
   --"common.tests.lib.InputTests",
-  --"common.tests.lib.JsonEncodingTests",
-  --"common.tests.lib.tableUtilsTest",
-  --"common.tests.lib.utf8AdditionsTests",
-  --"common.tests.lib.utilTests",
-  --"common.tests.network.NetworkProtocolTests",
-  --"common.tests.network.TouchDataEncodingTests",
+  "common.tests.lib.JsonEncodingTests",
+  "common.tests.lib.tableUtilsTest",
+  "common.tests.lib.utf8AdditionsTests",
+  "common.tests.lib.utilTests",
+  "common.tests.network.NetworkProtocolTests",
+  "common.tests.network.TouchDataEncodingTests",
 }
 
 local updateCount = 0
@@ -90,7 +93,7 @@ end
 
 function love.quit()
   print(love.timer.getTime() - t .. "s elapsed")
-  require("jit.p").stop()
+  --require("jit.p").stop()
   love.filesystem.write("test.log", tostring(logger.messageBuffer))
 end
 
@@ -101,6 +104,10 @@ function love.errorhandler(msg)
   if lldebugger then
     error(msg, 2)
   else
+    if love.filesystem.exists("test-crash.log") then
+      local sep = package.config:sub(1, 1)
+      love.system.openURL(love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")
+    end
     return love_errorhandler(msg)
   end
 end
