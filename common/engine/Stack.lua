@@ -1071,6 +1071,7 @@ function Stack:simulate()
 
   self:checkMatches()
   self:updatePanels()
+  self:updateActivePanelCount()
 
   --prof.push("shake time updates")
   self.prev_shake_time = self.shake_time
@@ -1152,10 +1153,6 @@ function Stack:simulate()
     self.score = 99999
   -- lol owned
   end
-
-  --prof.push("updateActivePanels")
-  self:updateActivePanels()
-  --prof.pop("updateActivePanels")
 
   if self.puzzle and self.n_active_panels == 0 and self.n_prev_active_panels == 0 then
     if self:checkGameOver() then
@@ -1809,9 +1806,11 @@ function Stack.hasChainingPanels(self)
   return false
 end
 
-function Stack.updateActivePanels(self)
+function Stack:updateActivePanelCount()
+  --prof.push("updateActivePanelCount")
   self.n_prev_active_panels = self.n_active_panels
   self.n_active_panels, self.swappingPanelCount = self:getActivePanelCount()
+  --prof.pop("updateActivePanelCount")
 end
 
 ---@return integer activePanelCount
