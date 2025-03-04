@@ -1206,45 +1206,6 @@ function Stack:simulate()
   end
 end
 
----@param leftPanel Panel
----@param rightPanel Panel
----@return boolean # if the swap cost could be afforded
-function Stack:paySwapCost(leftPanel, rightPanel)
-  if self.behaviours.swapStallingMode == 1 then
-    local row = self.cur_row
-    local col = self.cur_col
-    if self.panels_in_top_row and self.pre_stop_time == 0 and self.stop_time == 0 and self.shake_time == 0 and (self.n_active_panels - self.swappingPanelCount) == 0 then
-      local newRecord = { leftId = leftPanel.id, rightId = rightPanel.id, row = row, col = col }
-      local punish = false
-      for _, oldRecord in ipairs(self.swapStallingBackLog) do
-        if deep_content_equal(newRecord, oldRecord) then
-          punish = true
-          break
-        end
-      end
-
-      if punish then
-        if self.health > self.behaviours.swapStallingPunish then
-          self.health = self.health - self.behaviours.swapStallingPunish
-          return true
-        else
-          -- there is no longer enough health, deny the swap
-          return false
-        end
-      else
-        -- mark the reverse swap of the swap initiated just now
-        self.swapStallingBackLog[#self.swapStallingBackLog+1] = { leftId = newRecord.rightId, rightId = newRecord.leftId, row = row, col = col }
-        -- and the swap itself so it's already marked in case the reverse swap happens and logic stays simple for when data is added
-        self.swapStallingBackLog[#self.swapStallingBackLog+1] = newRecord
-      end
-    elseif #self.swapStallingBackLog > 0 then
-      self.swapStallingBackLog = {}
-    end
-  end
-
-  return true
-end
-
 ---@param direction CursorDirection?
 function Stack:applyCursorDirection(direction)
   --prof.push("cursor movement")
