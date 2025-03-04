@@ -1123,7 +1123,7 @@ function Stack.simulate(self)
   -- Phase 3. /////////////////////////////////////////////////////////////
   -- Actions performed according to player input
 
-  self:moveCursor(self.cursorDirection)
+  self:applyCursorDirection(self.cursorDirection)
 
   --prof.push("new swap")
   -- Queue Swapping
@@ -1251,7 +1251,7 @@ function Stack.simulate(self)
 end
 
 ---@param direction CursorDirection?
-function Stack:moveCursor(direction)
+function Stack:applyCursorDirection(direction)
   --prof.push("cursor movement")
   if self.inputMethod == "touch" then
     --with touch, cursor movement happen at stack:control time
@@ -1259,8 +1259,7 @@ function Stack:moveCursor(direction)
     if direction and (self.cur_timer == 0 or self.cur_timer == self.cur_wait_time) and self.cursorLock == nil then
       local previousRow = self.cur_row
       local previousCol = self.cur_col
-      self.cur_row = util.bound(1, self.cur_row + DIRECTION_ROW[direction], self.top_cur_row)
-      self.cur_col = util.bound(1, self.cur_col + DIRECTION_COLUMN[direction], self.width - 1)
+      self:moveCursorInDirection(direction)
       self:emitSignal("cursorMoved", previousRow, previousCol)
     else
       self.cur_row = util.bound(1, self.cur_row, self.top_cur_row)
@@ -1271,6 +1270,12 @@ function Stack:moveCursor(direction)
     self.cur_timer = self.cur_timer + 1
   end
   --prof.pop("cursor movement")
+end
+
+---@param direction CursorDirection
+function Stack:moveCursorInDirection(direction)
+  self.cur_row = util.bound(1, self.cur_row + DIRECTION_ROW[direction], self.top_cur_row)
+  self.cur_col = util.bound(1, self.cur_col + DIRECTION_COLUMN[direction], self.width - 1)
 end
 
 function Stack:runCountDownIfNeeded()
@@ -1806,7 +1811,7 @@ function Stack:getActivePanelCount()
   return count, swappingCount
 end
 
-function Stack.updateRiseLock(self)
+function Stack:updateRiseLock()
   local previousRiseLock = self.rise_lock
   if self.do_countdown then
     self.rise_lock = true
