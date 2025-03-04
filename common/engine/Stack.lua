@@ -60,6 +60,13 @@ local PANELS_TO_NEXT_SPEED =
   45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
   45, 45, 45, 45, 45, 45, 45, 45, math.huge}
 
+---@alias CursorDirection ("up" | "down" | "left" | "right")
+
+---@type table<CursorDirection, integer>
+local DIRECTION_COLUMN = {up = 0, down = 0, left = -1, right = 1}
+---@type table<CursorDirection, integer>
+local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
+
 ---@class Stack : BaseStack
 ---@field width integer How many columns of panels the stack has
 ---@field height integer How many rows of panels the stack has
@@ -125,7 +132,7 @@ local PANELS_TO_NEXT_SPEED =
 ---@field swap_2 boolean if there was an attempt to initiate a swap via swap2 on this frame
 ---@field cur_wait_time integer DAS delay: number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
 ---@field cur_timer integer number of ticks the current movement key has been held
----@field cur_dir string? direction of the current movement key
+---@field cursorDirection CursorDirection? direction of the current movement key
 ---@field cur_row integer row the cursor is on
 ---@field cur_col integer column the cursor is on
 ---@field queuedSwapRow integer row in which a swap for next frame has been queued
@@ -247,7 +254,7 @@ local Stack = class(
     -- number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
     s.cur_wait_time = consts.DEFAULT_INPUT_REPEAT_DELAY
     s.cur_timer = 0 -- number of ticks for which a new direction's been pressed
-    s.cur_dir = nil -- the direction pressed
+    s.cursorDirection = nil -- the direction pressed
     s.cur_row = 7 -- the row the cursor's on
     s.cur_col = 3 -- the column the left half of the cursor's on
     s.queuedSwapColumn = 0 -- the left column of the two columns to swap or 0 if no swap queued
@@ -398,7 +405,7 @@ function Stack:rollbackCopy()
   copy.manual_raise_yet = self.manual_raise_yet
   copy.prevent_manual_raise = self.prevent_manual_raise
   copy.cur_timer = self.cur_timer
-  copy.cur_dir = self.cur_dir
+  copy.cursorDirection = self.cursorDirection
   copy.cur_row = self.cur_row
   copy.cur_col = self.cur_col
   copy.shake_time = self.shake_time
@@ -427,6 +434,8 @@ function Stack:rollbackCopy()
   self.rollbackBuffer:saveCopy(self.clock, copy)
 end
 
+---@param stack Stack
+---@param frame integer
 local function internalRollbackToFrame(stack, frame)
   local copy = stack.rollbackBuffer:rollbackToFrame(frame)
 
@@ -455,7 +464,7 @@ local function internalRollbackToFrame(stack, frame)
   stack.manual_raise_yet = copy.manual_raise_yet
   stack.prevent_manual_raise = copy.prevent_manual_raise
   stack.cur_timer = copy.cur_timer
-  stack.cur_dir = copy.cur_dir
+  stack.cursorDirection = copy.cursorDirection
   stack.cur_row = copy.cur_row
   stack.cur_col = copy.cur_col
   stack.shake_time = copy.shake_time
@@ -848,12 +857,12 @@ function Stack.controls(self)
       new_dir = "right"
     end
 
-    if new_dir == self.cur_dir then
+    if new_dir == self.cursorDirection then
       if self.cur_timer ~= self.cur_wait_time then
         self.cur_timer = self.cur_timer + 1
       end
     else
-      self.cur_dir = new_dir
+      self.cursorDirection = new_dir
       self.cur_timer = 0
     end
   end
@@ -949,9 +958,6 @@ function Stack.receiveConfirmedInput(self, input)
   end
   --logger.debug("Player " .. self.which .. " got new input. Total length: " .. #self.confirmedInput)
 end
-
-local d_col = {up = 0, down = 0, left = -1, right = 1}
-local d_row = {up = 1, down = -1, left = 0, right = 0}
 
 function Stack.hasPanelsInTopRow(self)
   local panelRow = self.panels[self.height]
@@ -1117,25 +1123,7 @@ function Stack.simulate(self)
   -- Phase 3. /////////////////////////////////////////////////////////////
   -- Actions performed according to player input
 
-  --prof.push("cursor movement")
-  -- CURSOR MOVEMENT
-  if self.inputMethod == "touch" then
-      --with touch, cursor movement happen at stack:control time
-  else
-    if self.cur_dir and (self.cur_timer == 0 or self.cur_timer == self.cur_wait_time) and self.cursorLock == nil then
-      local previousRow = self.cur_row
-      local previousCol = self.cur_col
-      self:moveCursorInDirection(self.cur_dir)
-      self:emitSignal("cursorMoved", previousRow, previousCol)
-    else
-      self.cur_row = util.bound(1, self.cur_row, self.top_cur_row)
-    end
-  end
-
-  if self.cur_timer ~= self.cur_wait_time then
-    self.cur_timer = self.cur_timer + 1
-  end
-  --prof.pop("cursor movement")
+  self:moveCursor(self.cursorDirection)
 
   --prof.push("new swap")
   -- Queue Swapping
@@ -1262,6 +1250,29 @@ function Stack.simulate(self)
   end
 end
 
+---@param direction CursorDirection?
+function Stack:moveCursor(direction)
+  --prof.push("cursor movement")
+  if self.inputMethod == "touch" then
+    --with touch, cursor movement happen at stack:control time
+  else
+    if direction and (self.cur_timer == 0 or self.cur_timer == self.cur_wait_time) and self.cursorLock == nil then
+      local previousRow = self.cur_row
+      local previousCol = self.cur_col
+      self.cur_row = util.bound(1, self.cur_row + DIRECTION_ROW[direction], self.top_cur_row)
+      self.cur_col = util.bound(1, self.cur_col + DIRECTION_COLUMN[direction], self.width - 1)
+      self:emitSignal("cursorMoved", previousRow, previousCol)
+    else
+      self.cur_row = util.bound(1, self.cur_row, self.top_cur_row)
+    end
+  end
+
+  if self.cur_timer ~= self.cur_wait_time then
+    self.cur_timer = self.cur_timer + 1
+  end
+  --prof.pop("cursor movement")
+end
+
 function Stack:runCountDownIfNeeded()
   if self.do_countdown then
     self.game_stopwatch_running = false
@@ -1312,12 +1323,6 @@ function Stack:runCountDownIfNeeded()
       end
     end
   end
-end
-
-function Stack:moveCursorInDirection(directionString)
-  assert(directionString ~= nil and type(directionString) == "string")
-  self.cur_row = util.bound(1, self.cur_row + d_row[directionString], self.top_cur_row)
-  self.cur_col = util.bound(1, self.cur_col + d_col[directionString], self.width - 1)
 end
 
 -- Returns true if the stack is simulated past the end of the match.
