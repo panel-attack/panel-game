@@ -56,8 +56,7 @@ local function basicSwapTest()
 
   local leftPanel = stack.panels[1][1]
   local rightPanel = stack.panels[1][2]
-  assert(stack:canSwap(leftPanel, rightPanel), "should be able to swap")
-  stack:setQueuedSwapPosition(1, 1)
+  assert(stack:tryQueueSwap(leftPanel, rightPanel), "should be able to swap")
   assert(stack.queuedSwapRow == 1)
   stack:new_row()
   assert(stack.queuedSwapRow == 2)
@@ -182,8 +181,9 @@ local function swapStalling1Test1()
   assert(match.clock > preWiggleInputs:len(), "expected to live before starting to wiggle")
   assert(inputs:len() > match.clock and stack.game_over_clock > 0, "expected the stack to go game over")
   -- at clock time 197 we get 59 frames of prestop which have run out at 257, followed by 6 frames of hover and 2 frames until the frames have finished landing
-  -- wiggling starts at frame 252 for 28 frames on every 3rd frame with swaps on 255, 258, 261, 264, 267, the latter 2 are after landing so the swap at 267 should kill us
-  assert(stack.game_over_clock == 267)
+  -- wiggling starts at frame 252 for 28 frames on every 3rd frame with swaps on 255, 258, 261, 264, 267, the latter 2 are after landing so the swap at 267 should get denied
+  -- following which it takes 5 more frames until passive raise kills us
+  assert(stack.game_over_clock == 272)
 end
 
 swapStalling1Test1()

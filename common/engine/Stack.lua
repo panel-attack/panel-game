@@ -15,6 +15,7 @@ local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
 local ReplayPlayer = require("common.data.ReplayPlayer")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
+local WigglePay = require("common.engine.WigglePay")
 
 local rollbackPanelBuffer = {}
 -- this is a bit of an opportunistic thing:
@@ -769,15 +770,7 @@ function Stack.has_falling_garbage(self)
 end
 
 function Stack:swapQueued()
-  if self.queuedSwapColumn ~= 0 and self.queuedSwapRow ~= 0 then
-    return true
-  end
-  return false
-end
-
-function Stack:setQueuedSwapPosition(column, row)
-  self.queuedSwapColumn = column
-  self.queuedSwapRow = row
+  return self.queuedSwapColumn ~= 0 and self.queuedSwapRow ~= 0
 end
 
 -- Setup the stack at a new starting state
@@ -824,10 +817,7 @@ function Stack.controls(self)
         if self.cur_col ~= 0 and self.cur_row ~= 0 and cursorColumn ~= self.cur_col and cursorRow ~= 0 then
           local panel1 = self.panels[cursorRow][cursorColumn]
           local panel2 = self.panels[self.cur_row][self.cur_col]
-          if self:canSwap(panel1, panel2) then
-            local swapColumn = math.min(self.cur_col, cursorColumn)
-            self:setQueuedSwapPosition(swapColumn, cursorRow)
-          end
+          self:tryQueueSwap(panel1, panel2)
         end
         self.cur_col = cursorColumn
         self.cur_row = cursorRow
@@ -1073,7 +1063,8 @@ function Stack:simulate()
   if self:swapQueued() then
     self:swap(self.queuedSwapRow, self.queuedSwapColumn)
     swapped_this_frame = true
-    self:setQueuedSwapPosition(0, 0)
+    self.queuedSwapColumn = 0
+    self.queuedSwapRow = 0
   end
   --prof.pop("old swap")
 
@@ -1101,11 +1092,7 @@ function Stack:simulate()
     if self.swapThisFrame and not swapped_this_frame then
       local leftPanel = self.panels[self.cur_row][self.cur_col]
       local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
-      local canSwap = self:canSwap(leftPanel, rightPanel)
-      if canSwap then
-        self:setQueuedSwapPosition(self.cur_col, self.cur_row)
-      end
-      self.swapThisFrame = false
+      self:tryQueueSwap(leftPanel, rightPanel)
     end
   end
   --prof.pop("new swap")
@@ -1215,6 +1202,45 @@ function Stack:simulate()
   if self.game_stopwatch_running then
     self.game_stopwatch = (self.game_stopwatch or -1) + 1
   end
+end
+
+---@param leftPanel Panel
+---@param rightPanel Panel
+---@return boolean # if the swap cost could be afforded
+function Stack:paySwapCost(leftPanel, rightPanel)
+  if self.behaviours.swapStallingMode == 1 then
+    local row = self.cur_row
+    local col = self.cur_col
+    if self.panels_in_top_row and self.pre_stop_time == 0 and self.stop_time == 0 and self.shake_time == 0 and (self.n_active_panels - self.swappingPanelCount) == 0 then
+      local newRecord = { leftId = leftPanel.id, rightId = rightPanel.id, row = row, col = col }
+      local punish = false
+      for _, oldRecord in ipairs(self.swapStallingBackLog) do
+        if deep_content_equal(newRecord, oldRecord) then
+          punish = true
+          break
+        end
+      end
+
+      if punish then
+        if self.health > self.behaviours.swapStallingPunish then
+          self.health = self.health - self.behaviours.swapStallingPunish
+          return true
+        else
+          -- there is no longer enough health, deny the swap
+          return false
+        end
+      else
+        -- mark the reverse swap of the swap initiated just now
+        self.swapStallingBackLog[#self.swapStallingBackLog+1] = { leftId = newRecord.rightId, rightId = newRecord.leftId, row = row, col = col }
+        -- and the swap itself so it's already marked in case the reverse swap happens and logic stays simple for when data is added
+        self.swapStallingBackLog[#self.swapStallingBackLog+1] = newRecord
+      end
+    elseif #self.swapStallingBackLog > 0 then
+      self.swapStallingBackLog = {}
+    end
+  end
+
+  return true
 end
 
 ---@param direction CursorDirection?
@@ -1359,6 +1385,27 @@ function Stack.setGameOver(self)
   self:emitSignal("gameOver", self)
 end
 
+---@param panel1 Panel
+---@param panel2 Panel
+---@return boolean # if the swap was queued successfully
+function Stack:tryQueueSwap(panel1, panel2)
+  local canSwap, healthCost = self:canSwap(panel1, panel2)
+  if canSwap then
+    WigglePay.registerSwap(self, panel1, panel2, healthCost or 0)
+
+    -- by convention, swap column is the left panel
+    self.queuedSwapColumn = math.min(panel1.column, panel2.column)
+    self.queuedSwapRow = panel1.row
+    return true
+  end
+
+  return false
+end
+
+---@param panel1 Panel
+---@param panel2 Panel
+---@return boolean canSwap
+---@return integer? healthCost
 function Stack:canSwap(panel1, panel2)
   if math.abs(panel1.column - panel2.column) ~= 1 or panel1.row ~= panel2.row then
     -- panels are not horizontally adjacent, can't swap
@@ -1413,7 +1460,11 @@ function Stack:canSwap(panel1, panel2)
     end
   end
 
-  return true
+  if self.behaviours.swapStallingMode == 1 then
+    return WigglePay.canSwap(self, panel1, panel2)
+  else
+    return true
+  end
 end
 
 -- Swaps panels at the current cursor location
@@ -1421,33 +1472,6 @@ function Stack:swap(row, col)
   local panels = self.panels
   local leftPanel = panels[row][col]
   local rightPanel = panels[row][col + 1]
-  if self.behaviours.swapStallingMode == 1 then
-    if self.panels_in_top_row and self.pre_stop_time == 0 and self.stop_time == 0 and self.shake_time == 0 and (self.n_active_panels - self.swappingPanelCount) == 0 then
-      local newRecord = { leftId = leftPanel.id, rightId = rightPanel.id, row = row, col = col }
-      local punish = false
-      for _, oldRecord in ipairs(self.swapStallingBackLog) do
-        if deep_content_equal(newRecord, oldRecord) then
-          punish = true
-          break
-        end
-      end
-
-      if punish then
-        self.health = self.health - self.behaviours.swapStallingPunish
-        if self:checkGameOver() then
-          self:setGameOver()
-          return
-        end
-      else
-        -- mark the reverse swap of the swap initiated just now
-        self.swapStallingBackLog[#self.swapStallingBackLog+1] = { leftId = newRecord.rightId, rightId = newRecord.leftId, row = row, col = col }
-        -- and the swap itself so it's already marked in case the reverse swap happens and logic stays simple for when data is added
-        self.swapStallingBackLog[#self.swapStallingBackLog+1] = newRecord
-      end
-    elseif #self.swapStallingBackLog > 0 then
-      self.swapStallingBackLog = {}
-    end
-  end
   self:processPuzzleSwap()
   leftPanel:startSwap(true)
   rightPanel:startSwap(false)
