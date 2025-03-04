@@ -280,6 +280,7 @@ local Stack = class(
     s:createSignal("panelLanded")
     s:createSignal("cursorMoved")
     s:createSignal("panelsSwapped")
+    s:createSignal("swapDenied")
     s:createSignal("garbageMatched")
     s:createSignal("newRow")
   end,
@@ -1089,10 +1090,14 @@ function Stack:simulate()
   -- Queue Swapping
   -- Note: Swapping is queued in Stack.controls for touch mode
   if self.inputMethod == "controller" then
-    if self.swapThisFrame and not swapped_this_frame then
-      local leftPanel = self.panels[self.cur_row][self.cur_col]
-      local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
-      self:tryQueueSwap(leftPanel, rightPanel)
+    if self.swapThisFrame then
+      if swapped_this_frame then
+        self:emitSignal("swapDenied")
+      else
+        local leftPanel = self.panels[self.cur_row][self.cur_col]
+        local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
+        self:tryQueueSwap(leftPanel, rightPanel)
+      end
     end
   end
   --prof.pop("new swap")
@@ -1397,9 +1402,10 @@ function Stack:tryQueueSwap(panel1, panel2)
     self.queuedSwapColumn = math.min(panel1.column, panel2.column)
     self.queuedSwapRow = panel1.row
     return true
+  else
+    self:emitSignal("swapDenied")
+    return false
   end
-
-  return false
 end
 
 ---@param panel1 Panel

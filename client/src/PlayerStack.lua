@@ -45,6 +45,7 @@ function(self, args)
   self.engine:connectSignal("matched", self, self.onEngineMatched)
   self.engine:connectSignal("cursorMoved", self, self.onCursorMoved)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
+  self.engine:connectSignal("swapDenied", self, self.onSwapDenied)
   self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("newRow", self, self.onNewRow)
   self.engine:connectSignal("finishedRun", self, self.onRun)
@@ -226,6 +227,10 @@ function PlayerStack:onPanelsSwapped()
     self.sfxSwap = true
   end
   self.analytic:register_swap()
+end
+
+function PlayerStack:onSwapDenied()
+  -- play an SFX
 end
 
 function PlayerStack:onGarbageMatched(garbagePanelCount)
