@@ -128,8 +128,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 --- conversely if the rise_lock happened from the start and the manual_raise never achieved a single tick of displacement of raise, this being false leads to manual_raise being set to false again, effectively cancelling the raise
 ---@field prevent_manual_raise boolean if set to true it prevents raises initiating another raise; mostly to prevent manual_raise_yet from being overwritten so it can do its cryptic work \n
 --- this set of fields can really do with a rework
----@field swap_1 boolean if there was an attempt to initiate a swap via swap1 on this frame
----@field swap_2 boolean if there was an attempt to initiate a swap via swap2 on this frame
+---@field swapThisFrame boolean if there was an attempt to initiate a swap on this frame
 ---@field cur_wait_time integer DAS delay: number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
 ---@field cur_timer integer number of ticks the current movement key has been held
 ---@field cursorDirection CursorDirection? direction of the current movement key
@@ -248,8 +247,7 @@ local Stack = class(
     s.manual_raise = false
     s.manual_raise_yet = false
     s.prevent_manual_raise = false
-    s.swap_1 = false -- attempt to initiate a swap on this frame
-    s.swap_2 = false
+    s.swapThisFrame = false -- attempt to initiate a swap on this frame
 
     -- number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
     s.cur_wait_time = consts.DEFAULT_INPUT_REPEAT_DELAY
@@ -844,8 +842,7 @@ function Stack.controls(self)
     local swap, up, down, left, right
     raise, swap, up, down, left, right = unpack(base64decode[sdata])
 
-    self.swap_1 = swap
-    self.swap_2 = swap
+    self.swapThisFrame = swap
 
     if up then
       new_dir = "up"
@@ -1101,15 +1098,14 @@ function Stack:simulate()
   -- Queue Swapping
   -- Note: Swapping is queued in Stack.controls for touch mode
   if self.inputMethod == "controller" then
-    if (self.swap_1 or self.swap_2) and not swapped_this_frame then
+    if self.swapThisFrame and not swapped_this_frame then
       local leftPanel = self.panels[self.cur_row][self.cur_col]
       local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
       local canSwap = self:canSwap(leftPanel, rightPanel)
       if canSwap then
         self:setQueuedSwapPosition(self.cur_col, self.cur_row)
       end
-      self.swap_1 = false
-      self.swap_2 = false
+      self.swapThisFrame = false
     end
   end
   --prof.pop("new swap")
