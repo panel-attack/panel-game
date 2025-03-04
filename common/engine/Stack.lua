@@ -974,6 +974,7 @@ function Stack.updatePanels(self)
     return
   end
 
+  prof.push("Stack:updatePanels")
   self.shake_time_on_frame = 0
   for row = 1, #self.panels do
     for col = 1, self.width do
@@ -981,38 +982,43 @@ function Stack.updatePanels(self)
       panel:update(self.panels)
     end
   end
+  prof.pop("Stack:updatePanels")
 end
 
-function Stack.shouldDropGarbage(self)
+function Stack:shouldDropGarbage()
   -- this is legit ugly, these should rather be returned in a parameter table
   -- or even better in a dedicated garbage class table
   local garbage = self.incomingGarbage:peek()
 
-  -- new garbage can't drop if the stack is full
-  -- new garbage always drops one by one
-  if not self.panels_in_top_row and not self:has_falling_garbage() then
-    if not self:hasActivePanels() then
-      return true
-    elseif garbage.isChain then
-      -- drop chain garbage higher than 1 row immediately
-      return garbage.height > 1
-    else
-      -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
-      -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
-      -- and because of that hack, we need to do another hack here and allow n-height combo garbage
-      -- technically garbage should get fixed garbageQueue side though so we should not reach here
-      if garbage.height > 1 then
-        logger.debug("Reached the cursed path")
+  if not garbage then
+    return false
+  else
+    -- new garbage can't drop if the stack is full
+    -- new garbage always drops one by one
+    if not self.panels_in_top_row and not self:has_falling_garbage() then
+      if not self:hasActivePanels() then
         return true
+      elseif garbage.isChain then
+        -- drop chain garbage higher than 1 row immediately
+        return garbage.height > 1
       else
-        return false
+        -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
+        -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
+        -- and because of that hack, we need to do another hack here and allow n-height combo garbage
+        -- technically garbage should get fixed garbageQueue side though so we should not reach here
+        if garbage.height > 1 then
+          logger.debug("Reached the cursed path")
+          return true
+        else
+          return false
+        end
       end
     end
   end
 end
 
 -- One run of the engine routine.
-function Stack.simulate(self)
+function Stack:simulate()
   --prof.push("simulate 1")
   -- self:prep_first_row()
   local panels = self.panels
@@ -1040,48 +1046,18 @@ function Stack.simulate(self)
   self:updateRiseLock()
   --prof.pop("new row stuff")
 
-  --prof.push("speed increase")
-  -- Increase the speed if applicable
-  if self.levelData.speedIncreaseMode == 1 then
-    -- increase per interval
-    if self.clock == self.nextSpeedIncreaseClock then
-      self.speed = min(self.speed + 1, 99)
-      self.nextSpeedIncreaseClock = self.nextSpeedIncreaseClock + DT_SPEED_INCREASE
-    end
-  elseif self.panels_to_speedup <= 0 then
-    -- mode 2: increase speed based on cleared panels
-    self.speed = min(self.speed + 1, 99)
-    self.panels_to_speedup = self.panels_to_speedup + PANELS_TO_NEXT_SPEED[self.speed]
-  end
-  --prof.pop("speed increase")
-
+  self:updateSpeed()
 
   --prof.push("passive raise")
   -- Phase 0 //////////////////////////////////////////////////////////////
   -- Stack automatic rising
   if self.behaviours.passiveRaise then
-    if not self.manual_raise and self.stop_time == 0 and not self.rise_lock then
-      if self.panels_in_top_row then
-        self.health = self.health - 1
-      else
-        self.rise_timer = self.rise_timer - 1
-        if self.rise_timer <= 0 then -- try to rise
-          self.displacement = self.displacement - 1
-          if self.displacement == 0 then
-            self.prevent_manual_raise = false
-            self.top_cur_row = self.height
-            self:new_row()
-          end
-          self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
-        end
-      end
-    end
+    self:advancePassiveRaise()
 
     if self:checkGameOver() then
       self:setGameOver()
     end
   end
-
   --prof.pop("passive raise")
 
   --prof.push("reset stuff")
@@ -1104,12 +1080,8 @@ function Stack.simulate(self)
   end
   --prof.pop("old swap")
 
-  prof.push("Stack:checkMatches")
   self:checkMatches()
-  prof.pop("Stack:checkMatches")
-  prof.push("Stack:updatePanels")
   self:updatePanels()
-  prof.pop("Stack:updatePanels")
 
   --prof.push("shake time updates")
   self.prev_shake_time = self.shake_time
@@ -1219,6 +1191,7 @@ function Stack.simulate(self)
   for col_idx = 1, self.width do
     if panels[self.height][col_idx]:dangerous() then
       self.panels_in_top_row = true
+      break
     end
   end
   --prof.pop("double-check panels_in_top_row")
@@ -1229,17 +1202,15 @@ function Stack.simulate(self)
     for col_idx = 1, self.width do
       if panels[row_idx][col_idx].color ~= 0 then
         self.panels_in_top_row = true
+        break
       end
     end
   end
   --prof.pop("doublecheck panels above top row")
 
-
   prof.push("pop from incoming garbage q")
-  if self.incomingGarbage:len() > 0 then
-    if self:shouldDropGarbage() then
-      self:tryDropGarbage()
-    end
+  if self:shouldDropGarbage() then
+    self:tryDropGarbage()
   end
   prof.pop("pop from incoming garbage q")
 
@@ -1276,6 +1247,42 @@ end
 function Stack:moveCursorInDirection(direction)
   self.cur_row = util.bound(1, self.cur_row + DIRECTION_ROW[direction], self.top_cur_row)
   self.cur_col = util.bound(1, self.cur_col + DIRECTION_COLUMN[direction], self.width - 1)
+end
+
+function Stack:updateSpeed()
+  --prof.push("speed increase")
+  -- Increase the speed if applicable
+  if self.levelData.speedIncreaseMode == 1 then
+    -- increase per interval
+    if self.clock == self.nextSpeedIncreaseClock then
+      self.speed = min(self.speed + 1, 99)
+      self.nextSpeedIncreaseClock = self.nextSpeedIncreaseClock + DT_SPEED_INCREASE
+    end
+  elseif self.panels_to_speedup <= 0 then
+    -- mode 2: increase speed based on cleared panels
+    self.speed = min(self.speed + 1, 99)
+    self.panels_to_speedup = self.panels_to_speedup + PANELS_TO_NEXT_SPEED[self.speed]
+  end
+  --prof.pop("speed increase")
+end
+
+function Stack:advancePassiveRaise()
+  if not self.manual_raise and self.stop_time == 0 and not self.rise_lock then
+    if self.panels_in_top_row then
+      self.health = self.health - 1
+    else
+      self.rise_timer = self.rise_timer - 1
+      if self.rise_timer <= 0 then -- try to rise
+        self.displacement = self.displacement - 1
+        if self.displacement == 0 then
+          self.prevent_manual_raise = false
+          self.top_cur_row = self.height
+          self:new_row()
+        end
+        self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
+      end
+    end
+  end
 end
 
 function Stack:runCountDownIfNeeded()

@@ -267,6 +267,7 @@ function GarbageQueue:pushTable(garbageArray)
   end
 end
 
+---@return {width: integer, height: integer, isMetal: boolean, isChain: boolean, frameEarned: integer, finalized: boolean?}?
 function GarbageQueue:peek()
   return self.stagedGarbage[#self.stagedGarbage]
 end

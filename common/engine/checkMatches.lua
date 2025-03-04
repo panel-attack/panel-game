@@ -114,6 +114,7 @@ function Stack:checkMatches()
     return
   end
 
+  prof.push("Stack:checkMatches")
   --local reference = self:getMatchingPanels2()
   local matchingPanels = self:getMatchingPanels()
   local comboSize = #matchingPanels
@@ -152,6 +153,7 @@ function Stack:checkMatches()
   end
 
   self:clearChainingFlags()
+  prof.pop("Stack:checkMatches")
 end
 
 -- getMatchingPanels2 is a reference implementation
