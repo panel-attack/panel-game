@@ -4,6 +4,7 @@ local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local logger = require("common.lib.logger")
 local fileUtils = require("client.src.FileUtils")
+local ModLoader = require("client.src.mods.ModLoader")
 
 local StartUp = class(function(scene, sceneParams)
   scene.migrationRoutine = coroutine.create(scene.migrate)
@@ -54,6 +55,10 @@ function StartUp:update(dt)
         GAME.navigationStack:replace(require("client.src.scenes.TitleScreen")())
       else
         GAME.navigationStack:replace(require("client.src.scenes.MainMenu")())
+      end
+
+      if next(ModLoader.invalidMods) then
+        GAME.navigationStack:push(require("client.src.scenes.ModValidationScene")())
       end
     end
   end

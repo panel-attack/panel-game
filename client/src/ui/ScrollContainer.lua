@@ -12,7 +12,7 @@ local util = require("common.lib.util")
 ---@field maxScrollOffset number maximum allowed value for scrollOffset the object will bound to
 
 ---@class ScrollContainer
----@overload fun(options: table): ScrollContainer
+---@overload fun(options: ScrollContainerOptions): ScrollContainer
 local ScrollContainer = class(
 ---@param self ScrollContainer
 function(self, options)

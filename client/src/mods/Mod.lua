@@ -70,6 +70,10 @@ function Mod:enable(enable)
   error("All mods need to implement a disable function")
 end
 
+function Mod:validate()
+  error("All mods need to implement a validate function")
+end
+
 function Mod:register(user)
   self.users[user] = true
 end

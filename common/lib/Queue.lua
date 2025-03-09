@@ -1,12 +1,12 @@
 local class = require("common.lib.class")
 
----@class Queue
----@field first integer First index of the array
----@field last integer Last index of the array; if it is lesser than first, the queue is empty
 
 -- A class representing a Queue data structure where you typically put new data on the front and take data off the back.
 -- TODO consolidate with ServerQueue
----@class Queue
+---@class Queue<T>: { [integer]: T }
+---@field first integer First index of the array
+---@field last integer Last index of the array; if it is lesser than first, the queue is empty
+---@overload fun(): Queue
 Queue =
   class(
   function(q)
@@ -21,7 +21,7 @@ function Queue.push(self, value)
   self[last] = value
 end
 
-function Queue.pop(self)
+function Queue:pop()
   local first = self.first
   if first > self.last then
     error("Queue is empty")

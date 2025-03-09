@@ -31,7 +31,7 @@ local comboStyle = {classic = 0, per_combo = 1}
 ---@field display_name string Name for display in selection menus
 ---@field stage string? Id of a stage for super select
 ---@field panels string? Id of a panel set for super select
----@field images table<string, love.Image> graphical assets of the character
+---@field images table<string, love.Texture> graphical assets of the character
 ---@field telegraph_garbage_images userdata[][] graphical assets for telegraph display
 ---@field sounds table<string, table<integer, SfxGroup> | SfxGroup> sound effect assets of the character
 ---@field musics table<string, Music> music assets of the character
@@ -489,13 +489,26 @@ end
 function Character:validate()
   -- validate that the mod has both normal and danger music if it is dynamic
   -- do this on initialization so modders get a crash on load and know immediately what to fix
+  local valid, err
   if self.music_style == "dynamic" then
-    if not fileUtils.getSoundFileName("normal_music", self.path) or fileUtils.getSoundFileName("danger_music", self.path) then
-      local err = "Error loading character " .. self.id .. "\n at "
+    local normalMusicFile = fileUtils.getSoundFileName("normal_music", self.path)
+    local dangerMusicFile = fileUtils.getSoundFileName("danger_music", self.path)
+    if not (normalMusicFile and dangerMusicFile) then
+      err = "Error loading character " .. self.id .. "\n at "
                      .. self.path ..
                   ":\n Characters with dynamic music must have a normal_music and danger_music file"
       return false, err
     end
+  end
+
+  valid, err = Music.validate(self.path, "normal_music")
+  if not valid then
+    return valid, err
+  end
+
+  valid, err = Music.validate(self.path, "danger_music")
+  if not valid then
+    return valid, err
   end
 
   return true

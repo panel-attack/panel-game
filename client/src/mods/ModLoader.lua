@@ -5,11 +5,17 @@ local fileUtils = require("client.src.FileUtils")
 
 local ModLoader = {}
 
+---@type Queue<Mod>
 ModLoader.loading_queue = Queue() -- mods to load
+---@type table<Mod, boolean>
 ModLoader.cancellationList = {}
+---@type { mod: Mod, loadFunc: fun() }?
 ModLoader.loading_mod = nil -- currently loading mod
+---@type table<Mod, string>
+ModLoader.invalidMods = {}
 
 -- loads the mod of the specified id
+---@param mod Mod
 function ModLoader.load(mod)
   logger.debug("Queueing mod " .. mod.id .. ", fullyLoaded: " .. tostring(mod.fullyLoaded))
   if not mod.fullyLoaded then
@@ -17,7 +23,7 @@ function ModLoader.load(mod)
   end
 end
 
--- return true if there is still data to load
+---@return boolean # if there is still data to load
 function ModLoader.update()
   if not ModLoader.loading_mod and ModLoader.loading_queue:len() > 0 then
     local mod = ModLoader.loading_queue:pop()
@@ -31,22 +37,22 @@ function ModLoader.update()
     logger.debug("Loading mod " .. mod.id)
     ModLoader.loading_mod = {
       mod,
-      coroutine.create(
+      coroutine.wrap(
         function()
           mod:load()
+          return "done"
         end
       )
     }
   end
 
   if ModLoader.loading_mod then
-    if coroutine.status(ModLoader.loading_mod[2]) == "suspended" then
-      coroutine.resume(ModLoader.loading_mod[2])
-      return true
-    elseif coroutine.status(ModLoader.loading_mod[2]) == "dead" then
+    if ModLoader.loading_mod[2]() == "done" then
       logger.debug("finished loading mod " .. ModLoader.loading_mod[1].id)
       ModLoader.loading_mod = nil
       return ModLoader.loading_queue:len() > 0
+    else
+      return true
     end
   end
 
@@ -61,6 +67,7 @@ function ModLoader.wait()
 end
 
 -- cancels loading the mod if it is currently being loaded or queued for it
+---@param mod Mod
 function ModLoader.cancelLoad(mod)
   if ModLoader.loading_mod and not ModLoader.cancellationList[mod] then
     logger.debug("cancelling load for mod " .. mod.id)
@@ -266,17 +273,42 @@ function ModLoader.fixConfigMod(modType, filtered, visible)
   end
 end
 
+function ModLoader.removeInvalid(unfiltered)
+  local invalid = {}
+
+  for id, mod in pairs(unfiltered) do
+    local valid, reason = mod:validate()
+    if not valid then
+      invalid[mod] = reason
+      unfiltered[id] = nil
+    end
+  end
+
+  return invalid
+end
+
 -- locally initializes mod tables for the Mod type and preloads all of its mods
 -- returns 4 mod tables:
---   all mods of that type
---   all ids of valid mods
---   all mods that made it through the filter
---   all mods that are supposed to be visible
+---@param modType any the class table of the mod type
+---@return table<string, Mod> all all valid mods of that type
+---@return table<integer, string> ids all ids of valid mods
+---@return table<string, Mod> filtered all mods that made it through the blacklist filter
+---@return table<integer, string> visible all mods that are supposed to be visible
 function ModLoader.initMods(modType)
   local all = ModLoader.loadAllMods(modType)
+  local invalid = ModLoader.removeInvalid(all)
   local ids = ModLoader.fillModIdList(modType, all)
   local filtered = ModLoader.disableBlacklisted(modType, all)
   local visible = ModLoader.filterToVisible(modType, filtered, ids)
+
+  -- in case of a previous init, we should make sure to have cleared old entries for this mod type
+  for _, mod in pairs(all) do
+    ModLoader.invalidMods[mod] = nil
+  end
+
+  for mod, reason in pairs(invalid) do
+    ModLoader.invalidMods[mod] = reason
+  end
 
   modType.loadDefaultMod()
 

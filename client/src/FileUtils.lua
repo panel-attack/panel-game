@@ -205,7 +205,7 @@ end
 
 ---@param soundName string
 ---@param path string
----@return string? error
+---@return string? soundNameWithExtension
 function fileUtils.getSoundFileName(soundName, path)
   local p = path .. "/" .. soundName
   for _, extension in pairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
