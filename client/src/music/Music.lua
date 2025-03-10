@@ -150,4 +150,35 @@ function Music.load(path, name)
   return m
 end
 
+function Music.validate(path, name)
+  local mainName = FileUtils.getSoundFileName(name, path)
+
+  if mainName then
+    local mainDecoder = love.sound.newDecoder(path .. "/" .. mainName, BUFFER_SIZE)
+
+    local duration = mainDecoder:getDuration()
+    if duration > 0 and duration < 3 then
+      return false , name .. " music at " .. path .. " failed to validate:\n"
+      .. "The looping portion of music has to be at least 3 seconds long"
+    end
+
+    local startName = FileUtils.getSoundFileName(name .. "_start", path)
+    if startName then
+      local startDecoder = love.sound.newDecoder(path .. "/" .. startName, BUFFER_SIZE)
+
+      if mainDecoder:getSampleRate() ~= startDecoder:getSampleRate() then
+        return false, name .. " music at " .. path .. " failed to validate: The sample rate has to be identical between start and main music file."
+      end
+      if mainDecoder:getBitDepth() ~= startDecoder:getBitDepth() then
+        return false, name .. " music at " .. path .. " failed to validate: The bit depth has to be identical between start and main music file."
+      end
+      if mainDecoder:getChannelCount() ~= startDecoder:getChannelCount() then
+        return false, name .. " music at " .. path .. " failed to validate: The channel count has to be identical between start and main music file."
+      end
+    end
+  end
+
+  return true
+end
+
 return Music
