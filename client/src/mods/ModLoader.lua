@@ -10,19 +10,14 @@ ModLoader.cancellationList = {}
 ModLoader.loading_mod = nil -- currently loading mod
 
 -- loads the mod of the specified id
----@param mod Mod
 function ModLoader.load(mod)
-  if mod.fullyLoaded then
-    logger.debug("Not queueing mod " .. mod.id .. " because it is already fullyLoaded")
-  elseif tableUtils.contains(ModLoader.loading_queue, mod) then
-    logger.debug("Not queueing mod " .. mod.id .. " because it is already queued")
-  else
-    logger.debug("Queueing mod " .. mod.id)
+  logger.debug("Queueing mod " .. mod.id .. ", fullyLoaded: " .. tostring(mod.fullyLoaded))
+  if not mod.fullyLoaded then
     ModLoader.loading_queue:push(mod)
   end
 end
 
----@return boolean # if there is still data to load
+-- return true if there is still data to load
 function ModLoader.update()
   if not ModLoader.loading_mod and ModLoader.loading_queue:len() > 0 then
     local mod = ModLoader.loading_queue:pop()
@@ -31,11 +26,7 @@ function ModLoader.update()
     if ModLoader.cancellationList[mod] then
       logger.debug("Mod " .. mod.id .. " was in the cancellation list and has been cancelled")
       ModLoader.cancellationList[mod] = nil
-      -- it is more or less important to call this again as otherwise ModLoader.loading_mod will remain nil for a frame
-      -- in that scenario other parts of the game will assume "everything has loaded" and queue things that are already in the queue again
-      -- which can lead to weird loopback scenarios where mods are added and cancelled because they are already loaded and loading_mod stays nil
-      -- because it stays blocked by the cancellationList being refilled with the same mods that are added to the list again etc etc.
-      return ModLoader.update()
+      return true
     end
     logger.debug("Loading mod " .. mod.id)
     ModLoader.loading_mod = {
@@ -70,12 +61,7 @@ function ModLoader.wait()
 end
 
 -- cancels loading the mod if it is currently being loaded or queued for it
----@param mod Mod
 function ModLoader.cancelLoad(mod)
-  if not mod.fullyLoaded and tableUtils.length(mod.users) > 0 then
-    logger.debug("tried to cancel load of mod that is registered with a user; not acceptable")
-    return
-  end
   if ModLoader.loading_mod and not ModLoader.cancellationList[mod] then
     logger.debug("cancelling load for mod " .. mod.id)
     if ModLoader.loading_mod[1] == mod then

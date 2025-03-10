@@ -39,6 +39,7 @@ function(self)
     selectedStageId = consts.RANDOM_STAGE_SPECIAL_VALUE,
     panelId = config.panels,
   }
+  self.hasLoaded = false
   self.human = false
 
   self:reset()
@@ -65,7 +66,6 @@ function MatchParticipant:reset()
   self.expectedWinrate = 0
   self.settings.wantsReady = false
   self.ready = false
-  self.hasLoaded = false
 end
 
 -- returns the count of wins modified by the `modifiedWins` property

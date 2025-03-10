@@ -7,7 +7,6 @@ local class = require("common.lib.class")
 -- A class representing a Queue data structure where you typically put new data on the front and take data off the back.
 -- TODO consolidate with ServerQueue
 ---@class Queue
----@overload fun(): Queue
 Queue =
   class(
   function(q)
