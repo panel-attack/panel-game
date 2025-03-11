@@ -27,9 +27,11 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field replay Replay
 ---@field doCountdown boolean if a countdown is performed at the start of the match
 ---@field stackInteraction StackInteractions how the stacks in the match interact with each other
+---@field matchEndConditions table<MatchEndCondition, any>
+---@field matchWinCriteria table<MatchWinCriteria, WinCondition>
 ---@field winConditions MatchWinConditions[] enumerated conditions to determine a winner between multiple stacks
----@field gameOverConditions GameOverConditions[] enumerated conditions for Stacks to go game over
----@field gameWinConditions GameWinConditions[] enumerated conditions for Stacks to stop in a winning state
+---@field stackOverConditions table<StackOverCondition, any> enumerated conditions for Stacks to go game over
+---@field stackWinConditions table<StackWinCondition, any> enumerated conditions for Stacks to stop in a winning state
 ---@field timeLimit integer? if the game automatically ends after a certain time
 ---@field supportsPause boolean if the game can be paused
 ---@field isPaused boolean if the game is currently paused
@@ -44,25 +46,22 @@ local StackBehaviours = require("common.data.StackBehaviours")
 
 --- The ClientMatch is a way to create a match that will run with graphics and sounds on a client.
 ---@class ClientMatch : Signal
----@overload fun(players: MatchParticipant[], stackInteraction: StackInteractions, winConditions: MatchWinConditions[], gameOverConditions: GameOverConditions[], gameWinConditions: GameWinConditions[], panelSource: PanelSource, supportsPause: boolean, doCountdown: boolean, optionalArgs: table?): ClientMatch
+---@overload fun(players: MatchParticipant[], stackInteraction: StackInteractions, matchEndConditions: table<MatchEndCondition, any>, stackOverConditions: table<StackOverCondition, any>, stackWinConditions: table<StackWinCondition, any>, panelSource: PanelSource, matchWinnerRuleset: table<MatchWinCriteria, WinCondition>, supportsPause: boolean, doCountdown: boolean, optionalArgs: table?): ClientMatch
 local ClientMatch = class(
-function(self, players, stackInteraction, winConditions, gameOverConditions, gameWinConditions, panelSource, supportsPause, doCountdown, optionalArgs)
+function(self, players, stackInteraction, matchEndConditions, stackOverConditions, stackWinConditions, panelSource, supportsPause, doCountdown, optionalArgs)
   assert(stackInteraction)
-  assert(winConditions)
-  assert(gameOverConditions)
+  assert(matchEndConditions)
+  assert(stackOverConditions)
   assert(panelSource)
   assert(supportsPause ~= nil)
   assert(doCountdown ~= nil)
   self.doCountdown = doCountdown
   self.stackInteraction = stackInteraction
-  self.winConditions = winConditions
+  self.matchEndConditions = matchEndConditions
   self.panelSource = panelSource
-  self.gameOverConditions = gameOverConditions
-  self.gameWinConditions = gameWinConditions
-  if tableUtils.contains(gameOverConditions, GameModes.GameOverConditions.TIME_OUT) then
-    assert(optionalArgs.timeLimit)
-    self.timeLimit = optionalArgs.timeLimit
-  end
+  self.gameOverConditions = stackOverConditions
+  self.gameWinConditions = stackWinConditions
+
   self.supportsPause = supportsPause
   self.isPaused = false
   self.renderDuringPause = false
@@ -141,7 +140,7 @@ function ClientMatch:runGameOver()
 end
 
 function ClientMatch:start()
-  self.engine = Match(self.stackInteraction, self.winConditions, self.gameOverConditions, self.gameWinConditions, self.panelSource, self.doCountdown, {timeLimit = self.timeLimit})
+  self.engine = Match(self.stackInteraction, self.winConditions, self.stackOverConditions, self.stackWinConditions, self.panelSource, self.doCountdown, {timeLimit = self.timeLimit})
 
   self.stacks = {}
   local engineStacks = {}

@@ -8,6 +8,7 @@ local ReplayPlayer = require("common.data.ReplayPlayer")
 local LevelPresets = require("common.data.LevelPresets")
 local LevelData = require("common.data.LevelData")
 local StackBehaviours = require("common.data.StackBehaviours")
+local InputCompression = require("common.data.InputCompression")
 
 local REPLAY_VERSION = 2
 
@@ -221,7 +222,7 @@ function Replay.finalizeReplay(match, replay)
   if not replay.completed then
     for i = 1, #match.stacks do
       if match.stacks[i].confirmedInput then
-        replay.players[i].settings.inputs = ReplayPlayer.compressInputString(table.concat(match.stacks[i].confirmedInput))
+        replay.players[i].settings.inputs = InputCompression.compressInputString(table.concat(match.stacks[i].confirmedInput))
       end
     end
 
@@ -278,7 +279,7 @@ function Replay.createFromV2Data(replayData)
         replayPlayer:setLevelData(player.settings.levelData)
       end
       replayPlayer:setInputMethod(player.settings.inputMethod)
-      replayPlayer:setInputs(ReplayPlayer.decompressInputString(player.settings.inputs))
+      replayPlayer:setInputs(InputCompression.decompressInputString(player.settings.inputs))
     else
       replayPlayer:setHealthSettings(player.settings.healthSettings)
     end
@@ -359,7 +360,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     p1:setInputMethod(v1r.inputMethod or "controller")
   end
 
-  p1:setInputs(ReplayPlayer.decompressInputString(v1r.in_buf))
+  p1:setInputs(InputCompression.decompressInputString(v1r.in_buf))
   p1:setBehaviours(StackBehaviours.getV048Default(v1r.P1_level))
 
   if v1r.P1_level then
@@ -388,7 +389,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     -- not saved in v1
     p2:setPanelId(config and config.panels or "pacci")
     p2:setInputMethod(v1r.P2_inputMethod or "controller")
-    p2:setInputs(ReplayPlayer.decompressInputString(v1r.I))
+    p2:setInputs(InputCompression.decompressInputString(v1r.I))
 
     -- presence of V2 means level and vs
     p2:setBehaviours(StackBehaviours.getV048Default(v1r.P2_level))

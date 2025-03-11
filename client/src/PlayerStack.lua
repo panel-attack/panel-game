@@ -13,6 +13,7 @@ local TouchInputController = require("client.src.TouchInputController")
 local TouchInputDetector = require("client.src.TouchInputDetector")
 local logger = require("common.lib.logger")
 require("client.src.analytics")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
 ---@module "common.data.LevelData"
 
 local floor, min, max = math.floor, math.min, math.max
@@ -788,7 +789,7 @@ function PlayerStack:drawDebug()
       if engine.inputMethod == "touch" then
         iraise, _, _ = TouchDataEncoding.latinStringToTouchData(input, engine.width)
       else
-        iraise, iswap, iup, idown, ileft, iright = unpack(base64decode[input])
+        iraise, iswap, iup, idown, ileft, iright = unpack(KeyDataEncoding.base64decode[input])
       end
       local inputs_to_print = "inputs:"
       if iraise then

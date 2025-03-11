@@ -3,6 +3,7 @@ local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingU
 local GameModes = require("common.engine.GameModes")
 local Puzzle = require("common.engine.Puzzle")
 local LevelPresets = require("common.data.LevelPresets")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
 
 local function puzzleTest()
   -- to stop rising
@@ -138,10 +139,10 @@ local function swapStalling1Test1()
   stack.behaviours.swapStallingMode = 1
   stack:setPuzzleState(puzzle)
 
-  local left = base64encode[3]
-  local down = base64encode[5]
-  local right = base64encode[2]
-  local swap = base64encode[17]
+  local left = KeyDataEncoding.left
+  local down = KeyDataEncoding.down
+  local right = KeyDataEncoding.right
+  local swap = KeyDataEncoding.swap
 
   local sequence1 = table.concat({
     -- +4 combo with the reds (color 1) in column 3

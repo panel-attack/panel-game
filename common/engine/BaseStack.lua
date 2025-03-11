@@ -24,10 +24,10 @@ local GameModes = require("common.engine.GameModes")
 ---@field play_to_end boolean?
 ---@field max_runs_per_frame integer How many times run() may be called within a single Match:run; used to keep stacks synchronous in various scenarios
 ---@field TYPE string
----@field supportedGameOverConditions GameOverConditions[]
----@field supportedGameWinConditions GameWinConditions[]
----@field gameOverConditions GameOverConditions[] Array of enumerated values signifying ways of going game over
----@field gameWinConditions GameWinConditions[] Array of enumerated values signifying ways of ending the game without going game over
+---@field supportedStackOverConditions StackOverCondition[]
+---@field supportedStackWinConditions StackWinCondition[]
+---@field stackOverConditions table<StackOverCondition, any> Array of enumerated values signifying ways of going game over
+---@field stackWinConditions table<StackWinCondition, any> Array of enumerated values signifying ways of ending the game without going game over
 
 ---@class BaseStack : Signal
 local BaseStack = class(
@@ -52,8 +52,8 @@ function(self, args)
     end
   end
 
-  self.gameOverConditions = args.gameOverConditions
-  self.gameWinConditions = args.gameWinConditions
+  self.stackOverConditions = args.gameOverConditions
+  self.stackWinConditions = args.gameWinConditions
 
   -- basics
   self.framesBehindArray = {}
@@ -80,8 +80,8 @@ function(self, args)
 end)
 
 BaseStack.TYPE = "BaseStack"
-BaseStack.supportedGameOverConditions = { GameModes.GameOverConditions.NEGATIVE_HEALTH, GameModes.GameOverConditions.TIME_OUT }
-BaseStack.supportedGameWinConditions = {}
+BaseStack.supportedStackOverConditions = { GameModes.StackOverConditions.HEALTH }
+BaseStack.supportedStackWinConditions = {}
 
 ---@param enable boolean
 function BaseStack:enableCatchup(enable)
@@ -131,7 +131,7 @@ end
 ---@param gameOverCondition GameOverConditions
 ---@return boolean
 function BaseStack:supportsGameOverCondition(gameOverCondition)
-  for _, enum in ipairs(self.supportedGameOverConditions) do
+  for _, enum in ipairs(self.supportedStackOverConditions) do
     if gameOverCondition == enum then
       return true
     end
@@ -143,7 +143,7 @@ end
 ---@param gameWinCondition GameWinConditions
 ---@return boolean
 function BaseStack:supportsGameWinCondition(gameWinCondition)
-  for _, enum in ipairs(self.supportedGameWinConditions) do
+  for _, enum in ipairs(self.supportedStackWinConditions) do
     if gameWinCondition == enum then
       return true
     end

@@ -5,6 +5,7 @@ local GameModes = require("common.engine.GameModes")
 local ReplayPlayer = require("common.data.ReplayPlayer")
 local logger = require("common.lib.logger")
 local LevelPresets = require("common.data.LevelPresets")
+local InputCompression = require("common.data.InputCompression")
 
 local testReplayFolder = "common/tests/engine/replays/"
 
@@ -397,7 +398,7 @@ local function platformTest(waitFrames, useMatchSide)
   end
   compressedInputs = compressedInputs .. "Q1A80" -- do the platform, and wait for the chain
 
-  local fullInputs = ReplayPlayer.decompressInputString(compressedInputs)
+  local fullInputs = InputCompression.decompressInputString(compressedInputs)
   stack:receiveConfirmedInput(fullInputs) -- make the clear and then do the platform
   assert(#match.stacks[1].confirmedInput > match.stacks[1].clock)
   StackReplayTestingUtils:fullySimulateMatch(match)

@@ -5,6 +5,7 @@ local ReplayPlayer = require("common.data.ReplayPlayer")
 local LevelPresets = require("common.data.LevelPresets")
 local logger = require("common.lib.logger")
 local StackBehaviours = require("common.data.StackBehaviours")
+local InputCompression = require("common.data.InputCompression")
 
 ---@class ServerGame
 ---@field id integer?
@@ -87,7 +88,7 @@ function Game:getPartialReplay(compressInputs)
     for i, player in ipairs(self.replay.players) do
       player.settings.inputs = table.concat(self.inputs[i])
       if compressInputs then
-        player.settings.inputs = ReplayPlayer.compressInputString(player.settings.inputs)
+        player.settings.inputs = InputCompression.compressInputString(player.settings.inputs)
       end
     end
     return self.replay
@@ -149,7 +150,7 @@ function Game:finalizeReplay(result)
   for i, player in ipairs(self.replay.players) do
     player.settings.inputs = table.concat(self.inputs[i])
     if COMPRESS_REPLAYS_ENABLED then
-      player.settings.inputs = ReplayPlayer.compressInputString(player.settings.inputs)
+      player.settings.inputs = InputCompression.compressInputString(player.settings.inputs)
     end
   end
 

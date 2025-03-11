@@ -49,6 +49,7 @@ end
 ---@field automaticScales number[]
 ---@field config UserConfig
 ---@field puzzleSets table<string, PuzzleSet>
+---@field lastReplayPath string?
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)

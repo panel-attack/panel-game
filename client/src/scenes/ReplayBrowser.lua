@@ -115,8 +115,8 @@ local function selectMenuItem()
 end
 
 function ReplayBrowser:load()
-  if Replay.lastPath then
-    current_path = string.sub(Replay.lastPath, (string.len(base_path) + 1)) .. "/"
+  if GAME.lastReplayPath then
+    current_path = string.sub(GAME.lastReplayPath, (string.len(base_path) + 1)) .. "/"
   end
 
   state = "browser"

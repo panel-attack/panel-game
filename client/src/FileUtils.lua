@@ -243,9 +243,7 @@ end
 function fileUtils.saveReplay(replay)
   local path = replay:generatePath("/")
   local filename = replay:generateFileName()
-  -- TODO: This is for legacy support of the replay browser only;
-  -- as Replay is a common.data object, client should not use it to write client specific fields
-  Replay.lastPath = path
+  GAME.lastReplayPath = path
   fileUtils.writeJson(path, filename .. ".json", replay)
 end
 

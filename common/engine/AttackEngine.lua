@@ -31,8 +31,7 @@ AttackPattern =
 ---@field attackSettings table The format for serializing AttackPattern information
 ---@field clock integer  The clock to control the continuity of the sending process
 ---@field outgoingGarbage GarbageQueue The garbage queue attacks are added to
-local AttackEngine =
-  class(
+local AttackEngine = class(
   function(self, attackSettings, garbageQueue)
     self.delayBeforeStart = attackSettings.delayBeforeStart or 0
     self.delayBeforeRepeat = attackSettings.delayBeforeRepeat or 0

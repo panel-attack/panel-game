@@ -17,6 +17,8 @@ table.clear = require("table.clear")
 local ReplayPlayer = require("common.data.ReplayPlayer")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 local WigglePay = require("common.engine.WigglePay")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local InputCompression= require("common.data.InputCompression")
 
 local rollbackPanelBuffer = {}
 -- this is a bit of an opportunistic thing:
@@ -282,8 +284,8 @@ local Stack = class(
 )
 
 Stack.TYPE = "Stack"
-Stack.supportedGameOverConditions = { GameModes.GameOverConditions.NEGATIVE_HEALTH, GameModes.GameOverConditions.TIME_OUT, GameModes.GameOverConditions.NO_MOVES_LEFT, GameModes.GameOverConditions.CHAIN_DROPPED }
-Stack.supportedGameWinConditions = { GameModes.GameWinConditions.NO_MATCHABLE_PANELS, GameModes.GameWinConditions.NO_MATCHABLE_GARBAGE }
+Stack.supportedStackOverConditions = { GameModes.StackOverConditions.HEALTH, GameModes.StackOverConditions.SWAPS, GameModes.StackOverConditions.CHAIN }
+Stack.supportedStackWinConditions = { GameModes.StackWinConditions.MATCHABLE_PANELS, GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS, GameModes.StackWinConditions.SCORE }
 
 ---@return (Panel | fun(row: integer, column: integer): Panel)
 function Stack:createPanelTemplate()
@@ -616,12 +618,12 @@ function Stack:setPuzzleState(puzzle)
   self.behaviours.passiveRaise = false
 
   if puzzle.moves > 0 then
-    tableUtils.appendIfNotExists(self.gameOverConditions, GameModes.GameOverConditions.NO_MOVES_LEFT)
+    self.stackOverConditions[GameModes.StackOverConditions.SWAPS] = 0
   end
 
   if puzzle.puzzleType == "clear" then
-    tableUtils.appendIfNotExists(self.gameOverConditions, GameModes.GameOverConditions.NEGATIVE_HEALTH)
-    tableUtils.appendIfNotExists(self.gameWinConditions, GameModes.GameWinConditions.NO_MATCHABLE_GARBAGE)
+    self.stackOverConditions[GameModes.StackOverConditions.HEALTH] = 0
+    self.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
     -- also fill up the garbage queue so that the stack stays topped out even when downstacking
     local comboStorm = {}
     for i = 1, self.height do
@@ -630,10 +632,10 @@ function Stack:setPuzzleState(puzzle)
     end
     self.incomingGarbage:pushTable(comboStorm)
   elseif puzzle.puzzleType == "chain" then
-    tableUtils.appendIfNotExists(self.gameOverConditions, GameModes.GameOverConditions.CHAIN_DROPPED)
-    tableUtils.appendIfNotExists(self.gameWinConditions, GameModes.GameWinConditions.NO_MATCHABLE_PANELS)
+    self.stackOverConditions[GameModes.StackOverConditions.CHAIN] = false
+    self.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
   elseif puzzle.puzzleType == "moves" then
-    tableUtils.appendIfNotExists(self.gameWinConditions, GameModes.GameWinConditions.NO_MATCHABLE_PANELS)
+    self.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
   end
 
   -- transform any cleared garbage into colorless garbage panels
@@ -816,7 +818,7 @@ function Stack.controls(self)
     end
   else --input method is controller
     local swap, up, down, left, right
-    raise, swap, up, down, left, right = unpack(base64decode[sdata])
+    raise, swap, up, down, left, right = unpack(KeyDataEncoding.base64decode[sdata])
 
     self.swapThisFrame = swap
 
@@ -906,7 +908,7 @@ end
 
 local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
 function Stack.idleInput(self)
-  return (self.inputMethod == "touch" and touchIdleInput) or base64encode[1]
+  return (self.inputMethod == "touch" and touchIdleInput) or KeyDataEncoding.base64encode[1]
 end
 
 -- Grabs input from the buffer of inputs or from the controller and sends out to the network if needed.
@@ -1780,24 +1782,24 @@ end
 
 function Stack:checkGameOver()
   if self.game_over_clock <= 0 then
-    for _, gameOverCondition in ipairs(self.gameOverConditions) do
-      if gameOverCondition == GameModes.GameOverConditions.NEGATIVE_HEALTH then
-        if self.health <= 0 and self.shake_time <= 0 then
+    for stackOverCondition, value in pairs(self.stackOverConditions) do
+      if stackOverCondition == GameModes.StackOverConditions.HEALTH then
+        if self.health <= value and self.shake_time <= 0 then
           return true
         elseif not self.rise_lock and self.behaviours.allowManualRaise and self.panels_in_top_row and self.manual_raise then
           return true
         end
-      elseif gameOverCondition == GameModes.GameOverConditions.NO_MOVES_LEFT then
-        if self.puzzle.remaining_moves <= 0 and not self:hasActivePanels() then
+      elseif stackOverCondition == GameModes.StackOverConditions.SWAPS then
+        if self.puzzle.remaining_moves <= value and not self:hasActivePanels() then
           return true
         end
-      elseif gameOverCondition == GameModes.GameOverConditions.CHAIN_DROPPED then
+      elseif stackOverCondition == GameModes.StackOverConditions.CHAIN then
         -- not sure if these actually work as intended after removing analytics
-        if not tableUtils.first(self.outgoingGarbage.history, isCompletedChain) and self.panels_cleared > 3 then
+        if tableUtils.first(self.outgoingGarbage.history, isCompletedChain) == value and self.panels_cleared > 3 then
           -- We finished matching but never made a chain -> fail
           return true
         end
-        if tableUtils.first(self.outgoingGarbage.history, isCompletedChain) and not self:hasChainingPanels() then
+        if tableUtils.first(self.outgoingGarbage.history, isCompletedChain) and self:hasChainingPanels() == value then
           -- We achieved a chain, finished chaining, but haven't won yet -> fail
           return true
         end
@@ -1809,22 +1811,22 @@ function Stack:checkGameOver()
 end
 
 function Stack:checkGameWin()
-  for _, gameWinCondition in ipairs(self.gameWinConditions) do
-    if gameWinCondition == GameModes.GameWinConditions.NO_MATCHABLE_PANELS then
+  for stackWinCondition, value in pairs(self.stackWinConditions) do
+    if stackWinCondition == GameModes.StackWinConditions.MATCHABLE_PANELS then
       local panels = self.panels
-      local matchablePanelFound = false
+      local matchablePanelCount = 0
       for row = 1, self.height do
         for col = 1, self.width do
           local color = panels[row][col].color
           if color ~= 0 and color ~= 9 then
-            matchablePanelFound = true
+            matchablePanelCount = matchablePanelCount + 1
           end
         end
       end
-      if not matchablePanelFound then
+      if matchablePanelCount <= value then
         return true
       end
-    elseif gameWinCondition == GameModes.GameWinConditions.NO_MATCHABLE_GARBAGE then
+    elseif stackWinCondition == GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS then
       if not self:hasGarbage() then
         return true
       end
@@ -1867,6 +1869,17 @@ function Stack:toReplayPlayer()
   replayPlayer:setBehaviours(self.behaviours)
 
   return replayPlayer
+end
+
+---@return ReplayStack
+function Stack:toReplayStack(stackIndex)
+  return {
+    stackIndex = stackIndex,
+    levelData = self.levelData,
+    stackBehaviours = self.behaviours,
+    inputMethod = self.inputMethod,
+    inputs = InputCompression.compressInputString(table.concat(self.confirmedInput)),
+  }
 end
 
 ---@param replayPlayer ReplayPlayer

@@ -28,6 +28,22 @@ local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3 }
 -- these are competitive win conditions to determine a winner across multiple stacks
 ---@enum MatchWinConditions
 local MatchWinConditions = { LAST_ALIVE = 1, SCORE = 2, TIME = 3 }
+
+---@enum  MatchEndCondition
+local MatchEndConditions = { STACKS_ACTIVE = 1, TIME_LIMIT = 2 }
+
+---@enum MatchWinCriteria
+local MatchWinCriterias = { GAME_OVER_CLOCK = 1, SCORE = 2, TIME = 3 }
+
+---@enum WinCondition
+local orders = { LOWEST = 1, HIGHEST = 2 }
+
+---@enum StackOverCondition
+local StackOverConditions = { HEALTH = 1, SWAPS = 2, CHAIN = 3 }
+
+---@enum StackWinCondition
+local StackWinConditions = { MATCHABLE_PANELS = 1, MATCHABLE_GARBAGE_PANELS = 2, SCORE = 3 }
+
 -- these are game winning objectives on the stack level, the stack stops running without going game over
 ---@enum GameWinConditions
 local GameWinConditions = { NO_MATCHABLE_PANELS = 1, NO_MATCHABLE_GARBAGE = 2}
@@ -142,6 +158,10 @@ GameModes.StackInteractions = StackInteractions
 GameModes.WinConditions = MatchWinConditions
 GameModes.GameWinConditions = GameWinConditions
 GameModes.GameOverConditions = GameOverConditions
+GameModes.MatchEndConditions = MatchEndConditions
+GameModes.MatchWinCriterias = MatchWinCriterias
+GameModes.StackWinConditions = StackWinConditions
+GameModes.StackOverConditions = StackOverConditions
 
 local privateGameModes = {}
 privateGameModes.ONE_PLAYER_VS_SELF = OnePlayerVsSelf
