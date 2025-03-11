@@ -1,4 +1,5 @@
 local Health = require("common.engine.Health")
+require("common.lib.mathExtensions")
 
 local function testHealthDamageBaseCase()
   local secondsToppedOutToLose = 10

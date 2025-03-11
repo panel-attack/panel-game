@@ -24,3 +24,18 @@ function math.integerAwayFromZero(number)
     return math.floor(number)
   end
 end
+
+-- Returns if two floats are equal within a certain number of decimal places
+---@param a number
+---@param b number
+---@param decimalPrecision integer the number of decimal places to compare
+---@return boolean equal
+function math.floatsEqualWithPrecision(a, b, decimalPrecision)
+  assert(type(a) == "number", "floatsEqualWithPrecision expects a number argument for the first argument")
+  assert(type(b) == "number", "floatsEqualWithPrecision expects a number argument for the second argument")
+  assert(type(decimalPrecision) == "number", "floatsEqualWithPrecision expects a number argument for the third argument")
+
+  local threshold = math.pow(0.1, decimalPrecision)
+  local diff = math.abs(a - b) -- Absolute value of difference
+  return diff < threshold
+end

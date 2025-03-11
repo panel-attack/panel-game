@@ -18,17 +18,18 @@ function util.bound(a, b, c)
   end
 end
 
--- returns the percentage of value between min and max
-function linear_smooth(value, min, max)
-  return (value - min) / (max - min)
-end
-
 -- mods b so a<=b<=c
+---@param a number
+---@param b number
+---@param c number
+---@return number
 function wrap(a, b, c)
   return (b - a) % (c - a + 1) + a
 end
 
 -- a useful right inverse of table.concat
+---@param str string
+---@return string[]
 function procat(str)
   local ret = {}
   for i = 1, #str do
@@ -40,6 +41,8 @@ end
 -- iterate over a dictionary sorted by keys
 
 -- this is a dedicated method to use for dictionaries for technical reasons
+---@param tab table
+---@return fun(): any, any
 function pairsSortedByKeys(tab)
   -- these are already sorted
   local keys = tableUtils.getKeys(tab)
@@ -59,6 +62,9 @@ function pairsSortedByKeys(tab)
 end
 
 -- Returns true if a and b have equal content
+---@param a any
+---@param b any
+---@return boolean
 function content_equal(a, b)
   if type(a) ~= "table" or type(b) ~= "table" then
     return a == b
@@ -75,6 +81,9 @@ function content_equal(a, b)
 end
 
 -- does not perform deep comparisons of keys which are tables.
+---@param a any
+---@param b any
+---@return boolean
 function deep_content_equal(a, b)
   if type(a) ~= "table" or type(b) ~= "table" then
     return a == b
@@ -97,6 +106,9 @@ function deep_content_equal(a, b)
 end
 
 -- copy the table one key deep
+---@generic T
+---@param tab T
+---@return T shallowCopy
 function shallowcpy(tab)
   assert(tab ~= nil)
   local ret = {}
@@ -128,6 +140,9 @@ function real_deepcpy(tab)
 end
 
 -- copys the full variable deeply
+---@generic T
+---@param tab T
+---@return T deepCopy
 function deepcpy(tab)
   if type(tab) ~= "table" then
     return tab
@@ -137,6 +152,8 @@ function deepcpy(tab)
   return ret
 end
 
+---@param tab table
+---@return string
 function table_to_string(tab)
   local ret = ""
   for k,v in pairs(tab) do
@@ -154,6 +171,9 @@ function table_to_string(tab)
 end
 
 -- Returns a time string for the number of frames
+---@param frame_count integer
+---@param include_centiseconds boolean
+---@return string
 function frames_to_time_string(frame_count, include_centiseconds)
   local min_sec_sep = ":"
   local sec_60th_sep = "'"
@@ -189,6 +209,9 @@ for i = 1, 64 do
 end
 
 -- split the input string on some separator, returns table
+---@param inputstr string
+---@param sep string?
+---@return string[]?
 function util.split(inputstr, sep)
   sep = sep or "%s"
   local t = {}
@@ -201,6 +224,8 @@ function util.split(inputstr, sep)
 end
 
 -- Remove white space from the ends of a string
+---@param s string
+---@return string trimmed
 function trim(s)
   return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
@@ -248,18 +273,6 @@ function util.getWeakTable()
   local t = {}
   setmetatable(t, metaTableForWeakKeysAndValues)
   return t
-end
-
--- Returns if two floats are equal within a certain number of decimal places
--- @param decimalPrecision the number of decimal places to compare
-function math.floatsEqualWithPrecision(a, b, decimalPrecision)
-  assert(type(a) == "number", "floatsEqualWithPrecision expects a number argument for the first argument")
-  assert(type(b) == "number", "floatsEqualWithPrecision expects a number argument for the second argument")
-  assert(type(decimalPrecision) == "number", "floatsEqualWithPrecision expects a number argument for the third argument")
-
-  local threshold = math.pow(0.1, decimalPrecision)
-  local diff = math.abs(a - b) -- Absolute value of difference
-  return diff < threshold
 end
 
 function assertEqual(a, b)
