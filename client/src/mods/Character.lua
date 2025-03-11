@@ -493,7 +493,7 @@ function Character:validate()
   if self.music_style == "dynamic" then
     local normalMusicFile = fileUtils.getSoundFileName("normal_music", self.path)
     local dangerMusicFile = fileUtils.getSoundFileName("danger_music", self.path)
-    if (normalMusicFile or dangerMusicFile) and not (normalMusicFile and dangerMusicFile) then
+    if normalMusicFile and not dangerMusicFile then
       err = "Error loading character " .. self.id .. "\n at "
                      .. self.path ..
                   ":\n Characters with dynamic music must have a normal_music and danger_music file"

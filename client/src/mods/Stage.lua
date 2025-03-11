@@ -265,7 +265,7 @@ function Stage:validate()
   if self.music_style == "dynamic" then
     local normalMusicFile = fileUtils.getSoundFileName("normal_music", self.path)
     local dangerMusicFile = fileUtils.getSoundFileName("danger_music", self.path)
-    if not (normalMusicFile and dangerMusicFile) then
+    if normalMusicFile and not dangerMusicFile then
       err = "Error loading stage " .. self.id .. "\n at "
                   .. self.path ..
                   ":\n Stages with dynamic music must have a normal_music and danger_music file"
