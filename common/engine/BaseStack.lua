@@ -34,26 +34,26 @@ local BaseStack = class(
 ---@param self BaseStack
 function(self, args)
   assert(args.is_local ~= nil)
-  assert(args.gameWinConditions)
-  assert(args.gameOverConditions)
+  assert(args.stackWinConditions)
+  assert(args.stackOverConditions)
   self.engineVersion = args.engineVersion
   self.which = args.which or 1
   self.is_local = args.is_local
 
-  for _, gameOverCondition in ipairs(args.gameOverConditions) do
+  for _, gameOverCondition in ipairs(args.stackOverConditions) do
     if not self:supportsGameOverCondition(gameOverCondition) then
       error(self.TYPE .. " does not support game over condition " .. gameOverCondition)
     end
   end
 
-  for _, gameWinCondition in ipairs(args.gameWinConditions) do
+  for _, gameWinCondition in ipairs(args.stackWinConditions) do
     if not self:supportsGameWinCondition(gameWinCondition) then
       error(self.TYPE .. " does not support game win condition " .. gameWinCondition)
     end
   end
 
-  self.stackOverConditions = args.gameOverConditions
-  self.stackWinConditions = args.gameWinConditions
+  self.stackOverConditions = args.stackOverConditions
+  self.stackWinConditions = args.stackWinConditions
 
   -- basics
   self.framesBehindArray = {}

@@ -16,6 +16,12 @@ function(self, seed)
   self.garbageGenCount = 0
 end)
 
+GeneratorSource.TYPE = "GeneratorSource"
+
+function GeneratorSource:toReplaySource()
+  return { seed = self.seed }
+end
+
 function GeneratorSource:getStartingBoardHeight(stack)
   return 7
 end

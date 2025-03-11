@@ -76,6 +76,7 @@ local PANELS_TO_NEXT_SPEED =
 ---@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbagePanelBuffer string numeric string containing a buffer of panels for garbage to turn into upon matching
 ---@field garbageGenCount integer How many times the garbagePanelBuffer was extended; relevant to keep PRNG deterministic for replays
+---@field toReplaySource fun(self: PanelSource): table<ReplayPanelSourceIdentifier, any>
 
 ---@alias CursorDirection ("up" | "down" | "left" | "right")
 
@@ -87,7 +88,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@class Stack : BaseStack
 ---@field width integer How many columns of panels the stack has
 ---@field height integer How many rows of panels the stack has
----@field levelData LevelData
+---@field levelData LevelData Frame data to determine Panel physics
 ---@field allowAdjacentColorsOnStartingBoard boolean if the panel generator is allowed to put panels of the same color next to each other on the starting board
 ---@field shockEnabled boolean whether shock panels may be queued
 ---@field behaviours StackBehaviours a table of flags and settings to modify the stack behaviour in chunks of functionality
@@ -155,11 +156,11 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field warningsTriggered table ancient ancient, probably remove
 ---@field puzzle table? Optional puzzle
 ---@field game_stopwatch integer? Clock time minus time that swaps were blocked
----@field rollbackBuffer RollbackBuffer
+---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
 ---@field panelTemplate (Panel | fun(row: integer, column: integer): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
----@field swapStallingBackLog table
----@field swappingPanelCount integer
----@field panelSource PanelSource
+---@field swapStallingBackLog table tracks swaps that will incur a health cost for stalling if not swapping would have resulted in health loss
+---@field swappingPanelCount integer how many panels are swapping on this frame
+---@field panelSource PanelSource where the Stack gets its panels from 
 
 
 -- Represents the full panel stack for one player
@@ -175,6 +176,7 @@ local Stack = class(
     s.levelData = arguments.levelData
     s.behaviours = arguments.behaviours
     s.panelSource = arguments.panelSource
+    s.inputMethod = arguments.inputMethod
 
     -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
 
@@ -201,7 +203,6 @@ local Stack = class(
 
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
-    s.inputMethod = arguments.inputMethod
 
     s.confirmedInput = table.new(43200, 0)
     s.garbageCreatedCount = 0

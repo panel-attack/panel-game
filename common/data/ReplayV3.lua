@@ -17,7 +17,7 @@ local stackTypes = { Stack = 1, SimulatedStack = 2 }
 ---@class Rules
 ---@field doCountdown boolean
 ---@field MatchEndConditions table<MatchEndCondition, any>
----@field MatchWinnerRuleset table<MatchWinCriteria, WinCondition>
+---@field MatchWinRuleset table<MatchWinCriteria, WinCondition>[]
 ---@field StackOverConditions table<StackOverCondition, any>
 ---@field StackWinConditions table<StackWinCondition, integer>
 ---@field StackSetupModifications table?
@@ -259,7 +259,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
   local rules = {
     doCountdown = v2Replay.gameMode.doCountdown,
     MatchEndConditions = { STACKS_ACTIVE = stacksActive, TIME_LIMIT = v2Replay.gameMode.timeLimit },
-    MatchWinnerRuleset = { GAME_OVER_CLOCK = "HIGHEST" },
+    MatchWinRuleset = { { GAME_OVER_CLOCK = "HIGHEST" } },
     -- other conditions were not part of replays in v2
     StackOverConditions = { HEALTH = 0 },
     -- StackWinConditions were always empty in v2 replays

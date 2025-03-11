@@ -14,9 +14,22 @@ function(self, puzzleString, panelBuffer, garbageBuffer)
   self.panelBuffer = panelBuffer or ""
   self.garbagePanelBuffer = garbageBuffer or ""
   self.panelGenCount = 0
+  self.garbageGenCount = 0
 
   self.panels = {}
 end)
+
+PuzzleSource.TYPE = "PuzzleSource"
+
+function PuzzleSource:toReplaySource()
+  return {
+    puzzle = {
+      puzzleString = self.puzzleString,
+      panelBuffer = self.panelBuffer,
+      garbagePanelBuffer = self.garbagePanelBuffer
+    }
+  }
+end
 
 ---@param stack Stack
 ---@param column integer

@@ -28,7 +28,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field doCountdown boolean if a countdown is performed at the start of the match
 ---@field stackInteraction StackInteractions how the stacks in the match interact with each other
 ---@field matchEndConditions table<MatchEndCondition, any>
----@field matchWinCriteria table<MatchWinCriteria, WinCondition>
+---@field matchWinCriteria table<MatchWinCriteria, WinCondition>[]
 ---@field winConditions MatchWinConditions[] enumerated conditions to determine a winner between multiple stacks
 ---@field stackOverConditions table<StackOverCondition, any> enumerated conditions for Stacks to go game over
 ---@field stackWinConditions table<StackWinCondition, any> enumerated conditions for Stacks to stop in a winning state
