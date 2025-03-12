@@ -22,11 +22,11 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   local levelData = LevelPresets.getModern(1)
   levelData.maxHealth = stackHealth or math.huge
 
-  local match = Match(mode.stackInteraction, mode.winConditions, mode.gameOverConditions, mode.gameWinConditions, GeneratorSource(math.random(1, 999999)), mode.doCountdown)
-  local behaviours = StackBehaviours.getDefault(10)
+  local match = Match(GeneratorSource(math.random(1, 999999), false, true), mode.matchEndConditions, mode.matchWinRuleset, mode.stackOverConditions, mode.stackWinConditions, mode.doCountdown)
+  local behaviours = StackBehaviours.getDefault()
   -- the stack shouldn't die
   behaviours.passiveRaise = false
-  local stack1 = match:createStackWithSettings(levelData, false, "controller", behaviours)
+  local stack1 = match:createStackWithSettings(levelData, behaviours, false, "controller")
 
   stack1.behaviours.passiveRaise = false
   -- the stack should run only 1 frame per Match:run
@@ -37,6 +37,9 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   if attackFile then
     local stack2 = match:createSimulatedStackWithSettings(save.readAttackFile(attackFile))
     stack2:setMaxRunsPerFrame(1)
+    match:addTarget(stack2, stack1)
+  else
+    match:addTarget(stack1, stack1)
   end
 
   match:start()

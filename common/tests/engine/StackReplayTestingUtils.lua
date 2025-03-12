@@ -8,9 +8,13 @@ local Stack = require("common.engine.Stack")
 require("common.engine.checkMatches")
 local StackBehaviours = require("common.data.StackBehaviours")
 local GeneratorSource = require("common.engine.GeneratorSource")
+local ReplayV3 = require("common.data.ReplayV3")
 
 local StackReplayTestingUtils = {}
 
+---@param path string
+---@return Match match
+---@return number timeElapsed
 function StackReplayTestingUtils:simulateReplayWithPath(path)
   local match = self:setupReplayWithPath(path)
   return self:fullySimulateMatch(match)
@@ -22,7 +26,7 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
     playerCount = 1
   end
 
-  local match = Match(endless.stackInteraction, endless.winConditions, endless.gameOverConditions, endless.gameWinConditions, GeneratorSource(1), endless.doCountdown)
+  local match = Match(GeneratorSource(1, true, false), endless.matchEndConditions, endless.matchWinRuleset, endless.stackOverConditions, endless.stackWinConditions, endless.doCountdown)
 
   local levelData
   if level then
@@ -32,7 +36,7 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
     levelData.startingSpeed = speed
   end
   for i = 1, playerCount do
-    match:createStackWithSettings(levelData, false, "controller", StackBehaviours.getDefault())
+    match:createStackWithSettings(levelData, StackBehaviours.getDefault(), false, "controller")
   end
 
   match:start()
@@ -44,9 +48,14 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
   return match
 end
 
-function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, inputMethod, levelData)
-  local match = Match(gameMode.stackInteraction, gameMode.winConditions, gameMode.gameOverConditions, gameMode.gameWinConditions, GeneratorSource(1), gameMode.doCountdown)
-  match:createStackWithSettings(levelData or LevelPresets.getModern(5), false, inputMethod or "controller", StackBehaviours.getDefault(5))
+function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, panelSource, inputMethod, levelData)
+  if not panelSource then
+    local allowAdjacentColors = (gameMode.stackInteraction == GameModes.StackInteractions.NONE)
+    local enableShock = (gameMode.stackInteraction ~= GameModes.StackInteractions.NONE)
+    panelSource = GeneratorSource(1, allowAdjacentColors, enableShock)
+  end
+  local match = Match(panelSource, gameMode.matchEndConditions, gameMode.matchWinRuleset, gameMode.stackOverConditions, gameMode.stackWinConditions, gameMode.doCountdown)
+  match:createStackWithSettings(levelData or LevelPresets.getModern(5), StackBehaviours.getDefault(), false, inputMethod or "controller")
 
   match:start()
 
@@ -62,6 +71,10 @@ function StackReplayTestingUtils:fullySimulateMatch(match)
 
   while not match:hasEnded() do
     match:run()
+    -- print("Match.clock: " .. match.clock)
+    -- if match.stacks[1].game_stopwatch then
+    --   print("Stack.game_stopwatch: " .. match.stacks[1].game_stopwatch)
+    -- end
   end
   local endTime = love.timer.getTime()
 
@@ -95,6 +108,7 @@ end
 
 function StackReplayTestingUtils:setupReplayWithPath(path)
   local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
+  replay = ReplayV3.loadFromV2Replay(replay)
   local match = Match.createFromReplay(replay)
   match:start()
   -- we want to be able to stop with precision so cap the number of runs

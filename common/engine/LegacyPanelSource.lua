@@ -7,6 +7,7 @@ require("common.lib.util")
 ---@field seed integer
 ---@field allowAdjacentColors boolean
 ---@field allowAdjacentColorsOnStartingBoard boolean
+---@field shockEnabled boolean
 ---@overload fun(seed: integer): LegacyPanelSource
 local LegacyPanelSource = class(
 ---@param self LegacyPanelSource
@@ -19,6 +20,7 @@ function(self, seed)
   self.garbageGenCount = 0
   self.allowAdjacentColors = false
   self.allowAdjacentColorsOnStartingBoard = false
+  self.shockEnabled = true
 end)
 
 LegacyPanelSource.TYPE = "LegacyPanelSource"
@@ -110,12 +112,14 @@ function LegacyPanelSource:createNewRow(stack, row)
 
   -- assign colors to the new row 0
   local metal_panels_this_row = 0
-  if stack.metal_panels_queued > 3 then
-    stack.metal_panels_queued = stack.metal_panels_queued - 2
-    metal_panels_this_row = 2
-  elseif stack.metal_panels_queued > 0 then
-    stack.metal_panels_queued = stack.metal_panels_queued - 1
-    metal_panels_this_row = 1
+  if self.shockEnabled then
+    if stack.metal_panels_queued > 3 then
+      stack.metal_panels_queued = stack.metal_panels_queued - 2
+      metal_panels_this_row = 2
+    elseif stack.metal_panels_queued > 0 then
+      stack.metal_panels_queued = stack.metal_panels_queued - 1
+      metal_panels_this_row = 1
+    end
   end
 
   for col = 1, stack.width do

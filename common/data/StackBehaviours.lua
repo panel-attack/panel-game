@@ -18,7 +18,7 @@ function StackBehaviour.getV048Default(level)
     allowManualRaise = true,
     swapStallingMode = 0,
     swapStallingPunish = 0,
-    -- was level based in v048
+    -- was level based in v048 and before
     allowAdjacentColors = allowAdjacentColors,
   }
 end
@@ -29,6 +29,7 @@ function StackBehaviour.getV049Default()
     allowManualRaise = true,
     swapStallingMode = 1,
     swapStallingPunish = 4,
+    -- allowAdjacentColors was deprecated as a Stack setting, lives on the PanelSource now
   }
 end
 

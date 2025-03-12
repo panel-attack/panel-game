@@ -162,6 +162,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field swapStallingBackLog table tracks swaps that will incur a health cost for stalling if not swapping would have resulted in health loss
 ---@field swappingPanelCount integer how many panels are swapping on this frame
 ---@field panelSource PanelSource where the Stack gets its panels from 
+---@field swapCount integer
 
 
 -- Represents the full panel stack for one player
@@ -258,6 +259,7 @@ local Stack = class(
     s.queuedSwapColumn = 0 -- the left column of the two columns to swap or 0 if no swap queued
     s.queuedSwapRow = 0 -- the row of the queued swap or 0 if no swap queued
     s.top_cur_row = s.height - 1
+    s.swapCount = 0
 
     s.panels_cleared = s.panels_cleared or 0
     s.metal_panels_queued = s.metal_panels_queued or 0
@@ -266,8 +268,6 @@ local Stack = class(
     s.shake_time = 0
     s.shake_time_on_frame = 0
     s.peak_shake_time = 0
-
-    s.garbageGenCount = 0
 
     s.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 
@@ -1142,10 +1142,8 @@ function Stack:simulate()
   -- lol owned
   end
 
-  if self.puzzle and self.n_active_panels == 0 and self.n_prev_active_panels == 0 then
-    if self:checkGameOver() then
-      self:setGameOver()
-    end
+  if self:checkGameOver() then
+    self:setGameOver()
   end
 
   --prof.push("process staged garbage")
@@ -1344,6 +1342,7 @@ function Stack:tryQueueSwap(panel1, panel2)
   if canSwap then
     WigglePay.registerSwap(self, panel1, panel2, healthCost or 0)
 
+    self.swapCount = self.swapCount + 1
     -- by convention, swap column is the left panel
     self.queuedSwapColumn = math.min(panel1.column, panel2.column)
     self.queuedSwapRow = panel1.row
@@ -1365,7 +1364,7 @@ function Stack:canSwap(panel1, panel2)
   elseif self.do_countdown or self.clock <= 1 then
     -- swapping is not possible during countdown and on the first frame
     return false
-  elseif self.puzzle and self.puzzle.moves ~= 0 and self.puzzle.remaining_moves == 0 then
+  elseif self.stackOverConditions[GameModes.StackOverConditions.SWAPS] and self.stackOverConditions[GameModes.StackOverConditions.SWAPS] <= self.swapCount then
     -- used all available moves in a move puzzle
     return false
   elseif panel1.color == 0 and panel2.color == 0 then
@@ -1792,7 +1791,7 @@ function Stack:checkGameOver()
           return true
         end
       elseif stackOverCondition == GameModes.StackOverConditions.SWAPS then
-        if self.puzzle.remaining_moves <= value and not self:hasActivePanels() then
+        if self.swapCount >= value and not self:hasActivePanels() then
           return true
         end
       elseif stackOverCondition == GameModes.StackOverConditions.CHAIN then

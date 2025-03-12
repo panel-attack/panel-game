@@ -2,22 +2,28 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local PanelGenerator = require("common.engine.PanelGenerator")
 require("common.lib.util")
+table.new = require("table.new")
 
 ---@class GeneratorSource : PanelSource
 ---@field seed integer
 ---@field allowAdjacentColors boolean
----@overload fun(seed: integer, allowAdjacentColors: boolean): GeneratorSource
+---@field shockEnabled boolean
+---@field garbageShockEnabled boolean
+---@overload fun(seed: integer, allowAdjacentColors: boolean, shockEnabled: boolean): GeneratorSource
 local GeneratorSource = class(
 ---@param self GeneratorSource
 ---@param seed integer
 ---@param allowAdjacentColors boolean
-function(self, seed, allowAdjacentColors)
+---@param shockEnabled boolean
+function(self, seed, allowAdjacentColors, shockEnabled)
   self.seed = seed
   self.panelBuffer = ""
   self.garbagePanelBuffer = ""
   self.panelGenCount = 0
   self.garbageGenCount = 0
   self.allowAdjacentColors = allowAdjacentColors
+  self.shockEnabled = shockEnabled
+  self.garbageShockEnabled = false
 end)
 
 GeneratorSource.TYPE = "GeneratorSource"
@@ -27,7 +33,9 @@ function GeneratorSource:toReplaySource()
   return {
     sourceType = 1,
     seed = self.seed,
-    allowAdjacentColors = self.allowAdjacentColors
+    allowAdjacentColors = self.allowAdjacentColors,
+    shockEnabled = self.shockEnabled,
+    garbageShockEnabled = self.garbageShockEnabled
   }
 end
 
@@ -42,7 +50,9 @@ function GeneratorSource:generateStartingBoard(stack)
 
   local ret = PanelGenerator.privateGeneratePanels(self:getStartingBoardHeight(stack), stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColors)
   -- technically there can never be metal on the starting board but we need to call it to advance the RNG (compatibility)
-  ret = PanelGenerator.assignMetalLocations(ret, stack.width)
+  if self.shockEnabled then
+    ret = PanelGenerator.assignMetalLocations(ret, stack.width)
+  end
 
   self.panelGenCount = self.panelGenCount + 1
 
@@ -74,7 +84,9 @@ function GeneratorSource:generatePanels(stack)
   PanelGenerator:setSeed(self.seed + self.panelGenCount)
 
   local panelColors = PanelGenerator.privateGeneratePanels(100, stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColors)
-  panelColors = PanelGenerator.assignMetalLocations(panelColors, stack.width)
+  if self.shockEnabled then
+    panelColors = PanelGenerator.assignMetalLocations(panelColors, stack.width)
+  end
 
   self.panelGenCount = self.panelGenCount + 1
 
@@ -85,8 +97,45 @@ end
 ---@return string
 function GeneratorSource:generateGarbagePanels(stack)
   PanelGenerator:setSeed(self.seed + self.garbageGenCount)
+
+  local garbageColors = PanelGenerator.privateGeneratePanels(20, stack.width, stack.levelData.colors, self.garbagePanelBuffer, not self.allowAdjacentColors)
+  if self.garbageShockEnabled then
+    garbageColors = PanelGenerator.assignMetalLocations(garbageColors, stack.width)
+  end
+
   self.garbageGenCount = self.garbageGenCount + 1
-  return PanelGenerator.privateGeneratePanels(20, stack.width, stack.levelData.colors, self.garbagePanelBuffer, not self.allowAdjacentColors)
+
+  return garbageColors
+end
+
+---@param rowString string
+---@param metalPanelCount integer
+---@return integer[]
+local function convertMetalPanels(rowString, metalPanelCount)
+  local colors = table.new(rowString:len(), 0)
+
+  for i = 1, rowString:len() do
+    local colorString = rowString:sub(i, i)
+    local color = 0
+    if tonumber(colorString) then
+      color = colorString + 0
+    elseif colorString >= "A" and colorString <= "Z" then
+      if metalPanelCount > 0 then
+        color = 8
+      else
+        color = PanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
+      end
+    elseif colorString >= "a" and colorString <= "z" then
+      if metalPanelCount > 1 then
+        color = 8
+      else
+        color = PanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
+      end
+    end
+    colors[i] = tonumber(color)
+  end
+
+  return colors
 end
 
 ---@param stack Stack
@@ -102,8 +151,8 @@ function GeneratorSource:createNewRow(stack, row)
     end
   end
 
-  -- assign colors to the new row 0
   local metal_panels_this_row = 0
+  -- assign colors to the new row 0
   if stack.metal_panels_queued > 3 then
     stack.metal_panels_queued = stack.metal_panels_queued - 2
     metal_panels_this_row = 2
@@ -112,30 +161,14 @@ function GeneratorSource:createNewRow(stack, row)
     metal_panels_this_row = 1
   end
 
+  local colors = convertMetalPanels(string.sub(self.panelBuffer, 1, stack.width), metal_panels_this_row)
+  self.panelBuffer = string.sub(self.panelBuffer, stack.width + 1)
+
   for col = 1, stack.width do
     local panel = stack:createPanelAt(row, col)
-    local colorString = self.panelBuffer:sub(col, col)
-    local color = 0
-    if tonumber(colorString) then
-      color = colorString + 0
-    elseif colorString >= "A" and colorString <= "Z" then
-      if metal_panels_this_row > 0 then
-        color = 8
-      else
-        color = PanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
-      end
-    elseif colorString >= "a" and colorString <= "z" then
-      if metal_panels_this_row > 1 then
-        color = 8
-      else
-        color = PanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
-      end
-    end
-    panel.color = color
+    panel.color = colors[col]
     panel.state = "dimmed"
   end
-
-  self.panelBuffer = string.sub(self.panelBuffer, stack.width + 1)
 
   return stack.panels[row]
 end
@@ -148,16 +181,17 @@ function GeneratorSource:getGarbagePanelRowString(stack)
   end
   local garbagePanelRow = string.sub(self.garbagePanelBuffer, 1, stack.width)
   self.garbagePanelBuffer = string.sub(self.garbagePanelBuffer, stack.width + 1)
+  garbagePanelRow = table.concat(convertMetalPanels(garbagePanelRow, 0))
   return garbagePanelRow
 end
 
 function GeneratorSource:clone()
-  local source = GeneratorSource(self.seed)
+  local source = GeneratorSource(self.seed, self.allowAdjacentColors, self.shockEnabled)
   source.panelBuffer = self.panelBuffer
   source.garbagePanelBuffer = self.garbagePanelBuffer
   source.panelGenCount = self.panelGenCount
   source.garbageGenCount = self.garbageGenCount
-  source.allowAdjacentColors = self.allowAdjacentColors
+  source.garbageShockEnabled = self.garbageShockEnabled
   return source
 end
 

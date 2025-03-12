@@ -1,5 +1,7 @@
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
+local GameModes = require("common.engine.GameModes")
+local PuzzleSource = require("common.engine.PuzzleSource")
 
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels
 ---@class Puzzle
@@ -66,7 +68,7 @@ function Puzzle.randomizeColorsInPuzzleString(puzzleString)
   for i = 1, #colorArray, 1 do
     newColorOrder[tostring(tableUtils.length(newColorOrder)+1)] = tostring(table.remove(colorArray, love.math.random(1, #colorArray)))
   end
-  
+
   puzzleString = puzzleString:gsub("%d", newColorOrder)
 
   return puzzleString
@@ -223,6 +225,57 @@ function Puzzle.toPuzzleString(panels)
   end
 
   return table.concat(puzzleMatrix)
+end
+
+---@return GameMode
+function Puzzle:toGameMode()
+  local mode = GameModes.getPreset("ONE_PLAYER_PUZZLE")
+  mode.stackSetupModifications = {}
+
+  if self.moves > 0 then
+    mode.stackOverConditions[GameModes.StackOverConditions.SWAPS] = self.moves
+  end
+
+  if self.puzzleType == "clear" then
+    mode.stackOverConditions[GameModes.StackOverConditions.HEALTH] = 0
+    mode.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
+    mode.stackSetupModifications.stopTime = self.stop_time
+    mode.stackSetupModifications.shakeTime = self.shake_time
+  else
+    mode.stackSetupModifications.behaviours = {
+      allowManualRaise = false,
+      passiveRaise = false,
+    }
+    if self.puzzleType == "chain" then
+      mode.stackOverConditions[GameModes.StackOverConditions.CHAIN] = false
+      mode.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
+    elseif self.puzzleType == "moves" then
+      mode.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
+    end
+  end
+
+  mode.doCountdown = self.doCountdown
+
+  return mode
+end
+
+---@param randomize boolean?
+---@param flip boolean?
+---@return PuzzleSource
+function Puzzle:toPanelSource(randomize, flip)
+  local puzzleString = self:fillMissingPanelsInPuzzleString(6, 12)
+
+  if randomize then
+    puzzleString = Puzzle.randomizeColorsInPuzzleString(puzzleString)
+  end
+
+  if flip then
+    if math.random(2) == 1 then
+      puzzleString = Puzzle.horizontallyFlipPuzzleString(puzzleString)
+    end
+  end
+
+  return PuzzleSource(puzzleString)
 end
 
 return Puzzle

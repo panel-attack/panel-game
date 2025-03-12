@@ -14,7 +14,7 @@ local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 
 ---@class Match
----@field stacks BaseStack[] The stacks to run as part of the match
+---@field stacks (Stack | SimulatedStack)[] The stacks to run as part of the match
 ---@field garbageTargets table<integer, table<integer, Stack>> assignments by index where each stack's garbage is directed
 ---@field garbageSources table<Stack, table<integer, Stack>> assignments by index where each stack's incoming garbage comes from
 ---@field engineVersion string
@@ -23,7 +23,7 @@ local ReplayV3 = require("common.data.ReplayV3")
 ---@field matchEndConditions table<MatchEndCondition, any>
 ---@field stackOverConditions table<StackOverCondition, any> enumerated conditions for Stacks to go game over
 ---@field stackWinConditions table<StackWinCondition, any> enumerated conditions for Stacks to stop in a winning state
----@field panelSource PanelSource
+---@field panelSource (PanelSource | LegacyPanelSource | PuzzleSource | GeneratorSource)
 ---@field timeLimit integer? if the game automatically ends after a certain time
 ---@field puzzle table
 ---@field startTimestamp integer
@@ -66,7 +66,7 @@ function(self, panelSource, matchEndConditions, matchWinRuleset, stackOverCondit
   end
 
   if matchEndConditions[GameModes.MatchEndConditions.TIME_LIMIT] then
-    self.timeLimit = matchEndConditions[GameModes.MatchEndConditions.TIME_LIMIT]
+    self.timeLimit = matchEndConditions[GameModes.MatchEndConditions.TIME_LIMIT] * 60
   end
 
 
@@ -470,11 +470,12 @@ function Match.createFromReplay(replay)
   if rps.sourceType == ReplayV3.panelSourceTypes.seedV1 then
     panelSource = LegacyPanelSource(rps.seed)
     panelSource:setAllowAdjacentColorsOnStartingBoard(rps.allowAdjacentColorsOnStartingBoard)
+    panelSource.shockEnabled = (#replay.garbageFlows > 0)
     -- allowAdjacentColor is respectively modified on each cloned panelSource as the field can be unique per stack
   elseif rps.sourceType == ReplayV3.panelSourceTypes.puzzle then
     panelSource = PuzzleSource(rps.puzzleString, rps.panelBuffer, rps.garbagePanelBuffer)
   elseif rps.sourceType == ReplayV3.panelSourceTypes.seedV2 then
-    panelSource = GeneratorSource(rps.seed, rps.allowAdjacentColors)
+    panelSource = GeneratorSource(rps.seed, rps.allowAdjacentColors, rps.shockEnabled)
   else
     error("Unknown panel source " .. tostring(rps.sourceType))
   end
@@ -545,8 +546,8 @@ function Match:hasEnded()
     end
   end
 
-  if tableUtils.contains(self.matchWinRuleset, GameModes.WinConditions.LAST_ALIVE) then
-    if aliveCount == 1 then
+  if self.matchEndConditions[GameModes.MatchEndConditions.STACKS_ACTIVE] then
+    if aliveCount == self.matchEndConditions[GameModes.MatchEndConditions.STACKS_ACTIVE] then
       local gameOverClock = 0
       for i = 1, #self.stacks do
         if self.stacks[i].game_over_clock > gameOverClock then
@@ -572,7 +573,7 @@ function Match:hasEnded()
   end
 
   if self.timeLimit then
-    if tableUtils.trueForAll(self.stacks, function(stack) return stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit * 60 end) then
+    if tableUtils.trueForAll(self.stacks, function(stack) return stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit end) then
       self.ended = true
       return true
     end
@@ -640,7 +641,7 @@ function Match:checkAborted()
           break
         end
       end
-    elseif tableUtils.contains(self.stackOverConditions, GameModes.GameOverConditions.TIME_OUT) then
+    elseif tableUtils.contains(self.matchEndConditions, GameModes.MatchEndConditions.TIME_LIMIT) then
       local timeLimit = self.timeLimit
       if self.doCountdown then
         timeLimit = timeLimit + TOTAL_COUNTDOWN_LENGTH
@@ -675,7 +676,7 @@ function Match:shouldRun(stack, runsSoFar)
   if not stack:game_ended() then
     if self.timeLimit then
       -- timeLimit will malfunction with SimulatedStack
-      if stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit * 60 then
+      if stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit then
         -- the stack should only run 1 frame beyond the time limit (excluding countdown)
         return false
       end
@@ -688,10 +689,10 @@ function Match:shouldRun(stack, runsSoFar)
   end
 
   -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and stack.which == 2 then
+  if config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
     -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
-    if stack.garbageTarget and stack.garbageTarget.game_ended and stack.garbageTarget:game_ended() == false then
-      if stack.clock + config.debug_vsFramesBehind >= stack.garbageTarget.clock then
+    if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
+      if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then
         return false
       end
     end
@@ -745,6 +746,8 @@ function Match:createStackWithSettings(levelData, behaviours, isLocal, inputMeth
 
   local stack = Stack(args)
   self.stacks[#self.stacks+1] = stack
+  self.garbageTargets[#self.stacks] = {}
+  self.garbageSources[stack] = {}
   if inputs then
     stack:receiveConfirmedInput(InputCompression.decompressInputString(inputs))
   end
@@ -768,8 +771,24 @@ function Match:createSimulatedStackWithSettings(attackSettings, healthSettings)
 
   local simulatedStack = SimulatedStack(args)
   self.stacks[#self.stacks+1] = simulatedStack
+  self.garbageTargets[#self.stacks] = {}
+  self.garbageSources[simulatedStack] = {}
 
   return simulatedStack
+end
+
+---@param source BaseStack
+---@param target BaseStack
+function Match:addTarget(source, target)
+  local index = tableUtils.indexOf(self.stacks, source)
+
+  if not tableUtils.contains(self.garbageTargets[index], target) then
+    table.insert(self.garbageTargets[index], target)
+  end
+
+  if not tableUtils.contains(self.garbageSources[target], source) then
+    table.insert(self.garbageSources[target], source)
+  end
 end
 
 return Match

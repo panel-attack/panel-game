@@ -4,28 +4,27 @@ local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingU
 local Replay = require("common.data.Replay")
 local GameModes = require("common.engine.GameModes")
 local InputCompression = require("common.data.InputCompression")
+local ReplayV3 = require("common.data.ReplayV3")
 
 
 local function endlessSaveTest()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
   local puzzleString = Puzzle.toPuzzleString(match.stacks[1].panels):sub(-36)
-  assert(puzzleString == "002040054133025661353423461141644526")
+  assert(puzzleString == "302002554033625061353023461141644526")
   match.stacks[1]:receiveConfirmedInput(string.rep(match.stacks[1]:idleInput(), 909))
   local replay = match:createNewReplay()
   StackReplayTestingUtils:fullySimulateMatch(match)
 
   assert(match ~= nil)
-  assert(match.stackInteraction == GameModes.StackInteractions.NONE)
   assert(match.timeLimit == nil)
-  assert(tableUtils.length(match.matchWinRuleset) == 0)
   assert(match.panelSource.seed == 1)
   assert(match.stacks[1].game_over_clock == 908)
 
-  Replay.finalizeReplay(match, replay)
+  ReplayV3.finalizeReplay(match, replay)
   local replayJSON = json.encode(replay)
 
   assert(replay ~= nil)
-  assert(replay.players[1].settings.inputs == "A909")
+  assert(replay.stacks[1].inputs == "A909")
   assert(replayJSON ~= nil)
   assert(type(replayJSON) == "string")
   StackReplayTestingUtils:cleanup(match)

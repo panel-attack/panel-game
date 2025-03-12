@@ -89,14 +89,16 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
     is_local = false,
     stackInteraction = gameMode.stackInteraction,
     gameOverConditions = gameMode.gameOverConditions,
+    stackOverConditions = gameMode.stackOverConditions,
     gameWinConditions = gameMode.gameWinConditions,
+    stackWinConditions = gameMode.stackWinConditions,
     inputMethod = "controller",
     panelSource = LegacyPanelSource(seed)
   }
   if gameMode.stackInteraction == GameModes.StackInteractions.NONE or not level then
-    args.behaviours = StackBehaviours.getDefault()
+    args.behaviours = StackBehaviours.getV048Default()
   else
-    args.behaviours = StackBehaviours.getDefault(level)
+    args.behaviours = StackBehaviours.getV048Default(level)
   end
 
   if level then

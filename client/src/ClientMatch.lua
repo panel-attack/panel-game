@@ -157,7 +157,7 @@ function ClientMatch:start()
         behaviours = StackBehaviours.getDefault()
       end
 
-      engineStack = self.engine:createStackWithSettings(player.settings.levelData, player.isLocal, player.settings.inputMethod, behaviours)
+      engineStack = self.engine:createStackWithSettings(player.settings.levelData, behaviours, player.isLocal, player.settings.inputMethod)
     else
       ---@cast player ChallengeModePlayer
       engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings, player.settings.healthSettings)

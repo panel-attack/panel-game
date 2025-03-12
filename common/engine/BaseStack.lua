@@ -40,15 +40,15 @@ function(self, args)
   self.which = args.which or 1
   self.is_local = args.is_local
 
-  for _, gameOverCondition in ipairs(args.stackOverConditions) do
-    if not self:supportsGameOverCondition(gameOverCondition) then
-      error(self.TYPE .. " does not support game over condition " .. gameOverCondition)
+  for stackOverCondition, _ in ipairs(args.stackOverConditions) do
+    if not self:supportsGameOverCondition(stackOverCondition) then
+      error(self.TYPE .. " does not support stack over condition " .. stackOverCondition)
     end
   end
 
-  for _, gameWinCondition in ipairs(args.stackWinConditions) do
-    if not self:supportsGameWinCondition(gameWinCondition) then
-      error(self.TYPE .. " does not support game win condition " .. gameWinCondition)
+  for stackWinCondition, _ in ipairs(args.stackWinConditions) do
+    if not self:supportsGameWinCondition(stackWinCondition) then
+      error(self.TYPE .. " does not support stack win condition " .. stackWinCondition)
     end
   end
 

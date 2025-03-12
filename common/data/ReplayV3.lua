@@ -70,7 +70,7 @@ local stackTypes = { Stack = 1, SimulatedStack = 2 }
 ---@field completed boolean? If the match that is represented by the replay has already finished
 ---@field gameId integer? The identifier for the game on the server it was played on
 ---@field duration integer? How long the game took in frames
----@field gameModeName ("timeattack" | "endless" | "vsSelf" | "training" | "challenge" | "VS")?
+---@field gameModeName ("timeattack" | "endless" | "vsSelf" | "training" | "challenge" | "VS" | "puzzle")?
 ---@field stacks BaseStackMetadata[]?
 
 ---@class ReplayV3
@@ -277,7 +277,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
   local panelSource = {
     sourceType = panelSourceTypes.seedV1,
     seed = v2Replay.seed,
-    allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(v2Replay.players, function(p) return (not p.human) or p.settings.allowAdjacentColors end)
+    allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(v2Replay.players, function(p) return (not p.human) or p.settings.stackBehaviours.allowAdjacentColors end)
   }
 
   local replay = ReplayV3(v2Replay.engineVersion, rules, panelSource)
@@ -298,7 +298,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
       allowManualRaise = true,
       swapStallingMode = 0,
       swapStallingPunish = 0,
-      allowAdjacentColors = v2Player.settings.allowAdjacentColors
+      allowAdjacentColors = v2Player.settings.stackBehaviours.allowAdjacentColors
     }
     replay.stacks[1] = {
       stackType = stackTypes.Stack,
@@ -337,21 +337,25 @@ function ReplayV3.loadFromV2Replay(v2Replay)
   else
     for i, v2Player in ipairs(v2Replay.players) do
       if v2Player.human then
+        ---@type StackBehaviours
         local behaviours = {
           passiveRaise = true,
           allowManualRaise = true,
           swapStallingMode = 0,
           swapStallingPunish = 0,
-          allowAdjacentColors = v2Player.settings.allowAdjacentColors
+          allowAdjacentColors = v2Player.settings.stackBehaviours.allowAdjacentColors
         }
-        replay.stacks[i] = {
+        ---@type ReplayStack
+        local replayStack = {
           stackType = stackTypes.Stack,
           levelData = v2Player.settings.levelData,
           stackBehaviours = behaviours,
           inputMethod = v2Player.settings.inputMethod,
           inputs = v2Player.settings.inputs,
         }
+        replay.stacks[i] = replayStack
 
+        ---@type StackMetadata
         local metadata = {
           publicId = v2Player.publicId,
           name = v2Player.name,
@@ -365,12 +369,16 @@ function ReplayV3.loadFromV2Replay(v2Replay)
         }
         replay.metadata.stacks[i] = metadata
       else
-        replay.stacks[i] = {
+        ---@type ReplaySimulatedStack
+        local replayStack = {
           stackType = stackTypes.SimulatedStack,
           attackSettings = v2Player.settings.attackEngineSettings,
           healthSettings = v2Player.settings.healthSettings
         }
 
+        replay.stacks[i] = replayStack
+
+        ---@type SimulatedStackMetadata
         local metadata = {
           stackIndex = i,
           wins = v2Player.wins,

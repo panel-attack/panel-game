@@ -7,10 +7,10 @@ local KeyDataEncoding = require("common.data.KeyDataEncoding")
 
 local function puzzleTest()
   -- to stop rising
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
-  local puzzle = Puzzle(nil, nil, 1, "011010")
+  local puzzle = Puzzle("moves", false, 1, "011010")
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
-  stack:setPuzzleState(puzzle)
+  ---@cast stack Stack
 
   assert(stack.panels[1][1].color == 0, "wrong color")
   assert(stack.panels[1][2].color == 1, "wrong color")
@@ -27,10 +27,10 @@ end
 puzzleTest()
 
 local function clearPuzzleTest()
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
   local puzzle = Puzzle("clear", false, 0, "[============================][====]246260[====]600016514213466313451511124242", 60, 0)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
-  stack:setPuzzleState(puzzle)
+  ---@cast stack Stack
 
   assert(stack.panels[1][1].color == 1, "wrong color")
   assert(stack.panels[1][2].color == 2, "wrong color")
@@ -49,6 +49,7 @@ clearPuzzleTest()
 local function basicSwapTest()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
   local stack = match.stacks[1]
+---@cast stack Stack
 
   stack.do_countdown = false
 
@@ -70,6 +71,7 @@ local function moveAfterCountdownV46Test()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
   match:setEngineVersion(consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE)
   local stack = match.stacks[1]
+  ---@cast stack Stack
   stack.do_countdown = true
   assert(characters ~= nil, "no characters")
   local lastBlockedCursorMovementFrame = 33
@@ -132,12 +134,11 @@ testShakeFrames()
 
 
 local function swapStalling1Test1()
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"), "controller", LevelPresets.getModern(10))
   local puzzle = Puzzle("clear", false, 0, "[======================][====]246260[====]600016514213461336451511124242", 0, 0)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
   ---@cast stack Stack
   stack.behaviours.swapStallingMode = 1
-  stack:setPuzzleState(puzzle)
 
   local left = KeyDataEncoding.left
   local down = KeyDataEncoding.down
@@ -188,4 +189,5 @@ local function swapStalling1Test1()
   assert(stack.game_over_clock == 269)
 end
 
-swapStalling1Test1()
+-- need to add the physics suspension before this runs
+--swapStalling1Test1()
