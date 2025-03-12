@@ -9,6 +9,7 @@ require("common.engine.checkMatches")
 local consts = require("common.engine.consts")
 local GeneratorSource = require("common.engine.GeneratorSource")
 local PuzzleSource    = require("common.engine.PuzzleSource")
+local LegacyPanelSource = require("common.engine.LegacyPanelSource")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 
@@ -389,57 +390,20 @@ function Match:getInfo()
 end
 
 function Match:start()
-  local allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(self.stacks, function(stack) return not stack.behaviours or stack.behaviours.allowAdjacentColors end)
   local shockEnabled = (self.stackInteraction ~= GameModes.StackInteractions.NONE)
 
   for i, stack in ipairs(self.stacks) do
     stack:setCountdown(self.doCountdown)
     if stack.TYPE == "Stack" then
       ---@cast stack Stack
-      stack:setAllowAdjacentColorsOnStartingBoard(allowAdjacentColorsOnStartingBoard)
       stack:enableShockPanels(shockEnabled)
-    end
-    self.garbageTargets[i] = {}
-    self.garbageSources[stack] = {}
-  end
-
-  if self.stackInteraction == GameModes.StackInteractions.SELF then
-    for i, stack in ipairs(self.stacks) do
-      table.insert(self.garbageTargets[i], stack)
-      table.insert(self.garbageSources[stack], stack)
-    end
-  elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
-    for i = 1, #self.stacks do
-      for j = 1, #self.stacks do
-        if i ~= j then
-          -- needs to be reworked for more than 2P in a single game
-          table.insert(self.garbageTargets[i], self.stacks[j])
-          table.insert(self.garbageSources[self.stacks[j]], self.stacks[i])
-        end
-      end
-    end
-  elseif self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-    for i, stack1 in ipairs(self.stacks) do
-      for j, stack2 in ipairs(self.stacks) do
-        if i ~= j then
-          -- needs to be reworked for more than 2P in a single game
-          if stack1.TYPE == "Stack" and stack2.TYPE == "SimulatedStack" then
-            table.insert(self.garbageTargets[j], self.stacks[i])
-            table.insert(self.garbageSources[self.stacks[i]], self.stacks[j])
-          end
-        end
-      end
     end
   end
 
   for i, stack in ipairs(self.stacks) do
-    if false then
-      -- puzzles are currently set directly on the player's stack
-    else
       stack:starting_state()
       -- always need clock 0 as a base for rollback
       stack:saveForRollback()
-    end
   end
 end
 
@@ -501,15 +465,18 @@ end
 ---@return Match
 function Match.createFromReplay(replay)
   local panelSource
+  local rps = replay.panelSource
 
-  local type, properties = next(replay.panelSource)
-  if type == "seed" then
-    ---@cast properties integer
-    panelSource = GeneratorSource(properties)
-  elseif type == "puzzle" then
-    panelSource = PuzzleSource(properties.puzzleString, properties.panelBuffer, properties.garbagePanelBuffer)
+  if rps.sourceType == ReplayV3.panelSourceTypes.seedV1 then
+    panelSource = LegacyPanelSource(rps.seed)
+    panelSource:setAllowAdjacentColorsOnStartingBoard(rps.allowAdjacentColorsOnStartingBoard)
+    -- allowAdjacentColor is respectively modified on each cloned panelSource as the field can be unique per stack
+  elseif rps.sourceType == ReplayV3.panelSourceTypes.puzzle then
+    panelSource = PuzzleSource(rps.puzzleString, rps.panelBuffer, rps.garbagePanelBuffer)
+  elseif rps.sourceType == ReplayV3.panelSourceTypes.seedV2 then
+    panelSource = GeneratorSource(rps.seed, rps.allowAdjacentColors)
   else
-    error("Didn't find valid panel source in replay")
+    error("Unknown panel source " .. tostring(rps.sourceType))
   end
 
   local match = Match(
@@ -769,6 +736,12 @@ function Match:createStackWithSettings(levelData, behaviours, isLocal, inputMeth
     behaviours = behaviours,
     engineVersion = self.engineVersion,
   }
+
+  local panelSource = args.panelSource
+  if panelSource.TYPE == "LegacyPanelSource" then
+    ---@cast panelSource LegacyPanelSource
+    panelSource.allowAdjacentColors = behaviours.allowAdjacentColors
+  end
 
   local stack = Stack(args)
   self.stacks[#self.stacks+1] = stack

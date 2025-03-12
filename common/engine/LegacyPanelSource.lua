@@ -3,27 +3,28 @@ local tableUtils = require("common.lib.tableUtils")
 local PanelGenerator = require("common.engine.PanelGenerator")
 require("common.lib.util")
 
----@class GeneratorSource : PanelSource
+---@class LegacyPanelSource : PanelSource
 ---@field seed integer
 ---@field allowAdjacentColors boolean
----@overload fun(seed: integer, allowAdjacentColors: boolean): GeneratorSource
-local GeneratorSource = class(
----@param self GeneratorSource
+---@field allowAdjacentColorsOnStartingBoard boolean
+---@overload fun(seed: integer): LegacyPanelSource
+local LegacyPanelSource = class(
+---@param self LegacyPanelSource
 ---@param seed integer
----@param allowAdjacentColors boolean
-function(self, seed, allowAdjacentColors)
+function(self, seed)
   self.seed = seed
   self.panelBuffer = ""
   self.garbagePanelBuffer = ""
   self.panelGenCount = 0
   self.garbageGenCount = 0
-  self.allowAdjacentColors = allowAdjacentColors
+  self.allowAdjacentColors = false
+  self.allowAdjacentColorsOnStartingBoard = false
 end)
 
-GeneratorSource.TYPE = "GeneratorSource"
+LegacyPanelSource.TYPE = "LegacyPanelSource"
 
 ---@return ReplayPanelSource
-function GeneratorSource:toReplaySource()
+function LegacyPanelSource:toReplaySource()
   return {
     sourceType = 1,
     seed = self.seed,
@@ -31,16 +32,21 @@ function GeneratorSource:toReplaySource()
   }
 end
 
-function GeneratorSource:getStartingBoardHeight(stack)
+---@param allow boolean
+function LegacyPanelSource:setAllowAdjacentColorsOnStartingBoard(allow)
+  self.allowAdjacentColorsOnStartingBoard = allow
+end
+
+function LegacyPanelSource:getStartingBoardHeight(stack)
   return 7
 end
 
 ---@param stack Stack
 ---@return string
-function GeneratorSource:generateStartingBoard(stack)
+function LegacyPanelSource:generateStartingBoard(stack)
   PanelGenerator:setSeed(self.seed + self.panelGenCount)
 
-  local ret = PanelGenerator.privateGeneratePanels(self:getStartingBoardHeight(stack), stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColors)
+  local ret = PanelGenerator.privateGeneratePanels(self:getStartingBoardHeight(stack), stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColorsOnStartingBoard)
   -- technically there can never be metal on the starting board but we need to call it to advance the RNG (compatibility)
   ret = PanelGenerator.assignMetalLocations(ret, stack.width)
 
@@ -70,7 +76,7 @@ end
 
 ---@param stack Stack
 ---@return string
-function GeneratorSource:generatePanels(stack)
+function LegacyPanelSource:generatePanels(stack)
   PanelGenerator:setSeed(self.seed + self.panelGenCount)
 
   local panelColors = PanelGenerator.privateGeneratePanels(100, stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColors)
@@ -83,7 +89,7 @@ end
 
 ---@param stack Stack
 ---@return string
-function GeneratorSource:generateGarbagePanels(stack)
+function LegacyPanelSource:generateGarbagePanels(stack)
   PanelGenerator:setSeed(self.seed + self.garbageGenCount)
   self.garbageGenCount = self.garbageGenCount + 1
   return PanelGenerator.privateGeneratePanels(20, stack.width, stack.levelData.colors, self.garbagePanelBuffer, not self.allowAdjacentColors)
@@ -92,15 +98,15 @@ end
 ---@param stack Stack
 ---@param row integer
 ---@return Panel[] panelRow
-function GeneratorSource:createNewRow(stack, row)
+function LegacyPanelSource:createNewRow(stack, row)
   if self.panelGenCount == 0 then
     self.panelBuffer = self:generateStartingBoard(stack)
-    self.panelBuffer = self:generatePanels(stack)
   else
     if string.len(self.panelBuffer) <= 10 * stack.width then
       self.panelBuffer = self:generatePanels(stack)
     end
   end
+
 
   -- assign colors to the new row 0
   local metal_panels_this_row = 0
@@ -142,23 +148,39 @@ end
 
 ---@param stack Stack
 ---@return string
-function GeneratorSource:getGarbagePanelRowString(stack)
+function LegacyPanelSource:getGarbagePanelRowString(stack)
   if string.len(self.garbagePanelBuffer) <= 10 * stack.width then
-    self.garbagePanelBuffer = self:generateGarbagePanels(stack)
+    -- generateGarbagePanels already appends to the existing garbagePanelBuffer
+    local newGarbagePanels = self:generateGarbagePanels(stack)
+    -- and then we append that result to the remaining buffer
+    self.garbagePanelBuffer = self.garbagePanelBuffer .. newGarbagePanels
+    -- that means the next 10 rows of garbage will use the same colors as the 10 rows after
+  -- that's a bug but it cannot be fixed without breaking replays
+  -- it is also hard to abuse as 
+  -- a) players would need to accurately track the 10 row cycles
+  -- b) "solve into the same thing" only applies to a limited degree:
+  --   a garbage panel row of 123456 solves into 1234 for ====00 but into 3456 for 00====
+  --   that means information may be incomplete and partial memorization may prove unreliable
+  -- c) garbage panels change every (10 + n * 20 rows) with n>0 in ℕ 
+  --    so the player needs to always survive 20 rows to start abusing
+  --    and can then only abuse for every 10 rows out of 20
+  -- overall it is to be expected that the strain of trying to memorize outweighs the gains
+  -- this bug should be fixed with the next breaking change to the engine
   end
   local garbagePanelRow = string.sub(self.garbagePanelBuffer, 1, stack.width)
   self.garbagePanelBuffer = string.sub(self.garbagePanelBuffer, stack.width + 1)
   return garbagePanelRow
 end
 
-function GeneratorSource:clone()
-  local source = GeneratorSource(self.seed)
+function LegacyPanelSource:clone()
+  local source = LegacyPanelSource(self.seed)
   source.panelBuffer = self.panelBuffer
   source.garbagePanelBuffer = self.garbagePanelBuffer
   source.panelGenCount = self.panelGenCount
   source.garbageGenCount = self.garbageGenCount
   source.allowAdjacentColors = self.allowAdjacentColors
+  source.allowAdjacentColorsOnStartingBoard = self.allowAdjacentColorsOnStartingBoard
   return source
 end
 
-return GeneratorSource
+return LegacyPanelSource

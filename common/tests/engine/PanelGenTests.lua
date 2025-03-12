@@ -3,7 +3,7 @@ local GameModes = require("common.engine.GameModes")
 local Stack = require("common.engine.Stack")
 local LevelPresets = require("common.data.LevelPresets")
 local StackBehaviours = require("common.data.StackBehaviours")
-local GeneratorSource = require("common.engine.GeneratorSource")
+local LegacyPanelSource = require("common.engine.LegacyPanelSource")
 
 local function checkPanels(panels, rowWidth)
   assert(string.len(panels) % rowWidth == 0)
@@ -81,6 +81,8 @@ end
 
 testPanelGenForRegularBoard2()
 
+---@return Stack stack
+---@return LegacyPanelSource panelSource
 local function createStack(gameMode, difficulty, level, colorCount, seed)
   local args = {
     which = 1,
@@ -89,7 +91,7 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
     gameOverConditions = gameMode.gameOverConditions,
     gameWinConditions = gameMode.gameWinConditions,
     inputMethod = "controller",
-    panelSource = GeneratorSource(seed)
+    panelSource = LegacyPanelSource(seed)
   }
   if gameMode.stackInteraction == GameModes.StackInteractions.NONE or not level then
     args.behaviours = StackBehaviours.getDefault()
@@ -104,7 +106,9 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
     args.levelData:setColorCount(colorCount)
   end
 
-  return Stack(args)
+  args.panelSource.allowAdjacentColors = args.behaviours.allowAdjacentColors
+
+  return Stack(args), args.panelSource
 end
 
 local function testStackStartingBoard1()
@@ -112,9 +116,8 @@ local function testStackStartingBoard1()
   local difficulty = "easy"
   -- endless easy deviates by 1 color from time attack easy which is the default easy preset
   local colorCount = 5
-  local stack = createStack(GameModes.getPreset("ONE_PLAYER_ENDLESS"), difficulty, nil, colorCount, seed)
-  stack:setAllowAdjacentColorsOnStartingBoard(true)
-  local panelSource = stack.panelSource
+  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_ENDLESS"), difficulty, nil, colorCount, seed)
+  panelSource:setAllowAdjacentColorsOnStartingBoard(true)
 
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
   checkPanels(panelSource.panelBuffer, 6)
@@ -132,9 +135,8 @@ testStackStartingBoard1()
 local function testStackStartingBoard2()
   local seed = 8
   local level = 10
-  local stack = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
-  stack:setAllowAdjacentColorsOnStartingBoard(false)
-  local panelSource = stack.panelSource
+  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  panelSource:setAllowAdjacentColorsOnStartingBoard(false)
 
   -- expected starting 7 rows (unprocessed):    312132464356316131624643241456614364463521
   -- expected starting 7 rows (shock assigned): c12A324643EfCa6131624Fd32D145f614Cf446c52A
@@ -162,9 +164,8 @@ local function testStackStartingBoard3()
   -- this seed tests for a certain bug that occured when the first character was a possible metal location for generating the starting board
   local seed = 351545
   local level = 10
-  local stack = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
-  stack:setAllowAdjacentColorsOnStartingBoard(false)
-  local panelSource = stack.panelSource
+  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  panelSource:setAllowAdjacentColorsOnStartingBoard(false)
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
   checkPanels(panelSource.panelBuffer, 6)
   assert(panelSource.panelBuffer == "c0D000505000D0f4005F310115D21e3d23F4e6462A")
@@ -176,9 +177,8 @@ local function testStackStartingBoard4()
   -- this seed tests for a certain bug that occured when a starting board row had no shock assignments left:
   local seed = 4530333
   local level = 8
-  local stack = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
-  stack:setAllowAdjacentColorsOnStartingBoard(false)
-  local panelSource = stack.panelSource
+  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  panelSource:setAllowAdjacentColorsOnStartingBoard(false)
 
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
   checkPanels(panelSource.panelBuffer, 6)

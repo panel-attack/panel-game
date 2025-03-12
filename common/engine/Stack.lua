@@ -76,7 +76,8 @@ local PANELS_TO_NEXT_SPEED =
 ---@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbagePanelBuffer string numeric string containing a buffer of panels for garbage to turn into upon matching
 ---@field garbageGenCount integer How many times the garbagePanelBuffer was extended; relevant to keep PRNG deterministic for replays
----@field toReplaySource fun(self: PanelSource): table<ReplayPanelSourceIdentifier, any>
+---@field toReplaySource fun(self: PanelSource): table<ReplayPanelSourceType, any>
+---@field TYPE string
 
 ---@alias CursorDirection ("up" | "down" | "left" | "right")
 

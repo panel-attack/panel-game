@@ -8,11 +8,15 @@ require("common.lib.timezones")
 local tableUtils = require("common.lib.tableUtils")
 local InputCompression = require("common.data.InputCompression")
 
----@enum (key) ReplayPanelSourceIdentifier
-local panelSourceIdentifiers = { seed = 1, puzzle = 2 }
+---@enum ReplayPanelSourceType
+local panelSourceTypes = { seedV1 = 1, puzzle = 2, seedV2 = 3 }
 
 ---@enum StackType
 local stackTypes = { Stack = 1, SimulatedStack = 2 }
+
+---@class ReplayPanelSource
+---@field sourceType ReplayPanelSourceType
+---@field [string] any
 
 ---@class Rules
 ---@field doCountdown boolean
@@ -72,17 +76,17 @@ local stackTypes = { Stack = 1, SimulatedStack = 2 }
 ---@class ReplayV3
 ---@field engineVersion string The engine version the replay was generated with
 ---@field replayVersion integer Indicates the version of the replay's data format
----@field panelSource { [ReplayPanelSourceIdentifier]: any }
+---@field panelSource ReplayPanelSource
 ---@field rules Rules
 ---@field stacks ReplayBaseStack[]
 ---@field garbageFlows GarbageFlow[]
 ---@field metadata ReplayMetadata
----@overload fun(engineVersion: string, rules: Rules, panelSource: { [ReplayPanelSourceIdentifier]: any }): ReplayV3
+---@overload fun(engineVersion: string, rules: Rules, panelSource: ReplayPanelSource): ReplayV3
 local ReplayV3 = class(
 ---@param self ReplayV3
 ---@param engineVersion string
 ---@param rules Rules
----@param panelSource { [ReplayPanelSourceIdentifier]: any }
+---@param panelSource { [ReplayPanelSourceType]: any }
 function(self, engineVersion, rules, panelSource)
   self.engineVersion = engineVersion
   self.replayVersion = 3
@@ -92,6 +96,8 @@ function(self, engineVersion, rules, panelSource)
   self.garbageFlows = {}
   self.metadata = { stacks = {} }
 end)
+
+ReplayV3.panelSourceTypes = panelSourceTypes
 
 ---@param ranked boolean
 function ReplayV3:setRanked(ranked)
@@ -268,7 +274,13 @@ function ReplayV3.loadFromV2Replay(v2Replay)
     -- StackSetupModifications = {}
   }
 
-  local replay = ReplayV3(v2Replay.engineVersion, rules, { seed = v2Replay.seed })
+  local panelSource = {
+    sourceType = panelSourceTypes.seedV1,
+    seed = v2Replay.seed,
+    allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(v2Replay.players, function(p) return (not p.human) or p.settings.allowAdjacentColors end)
+  }
+
+  local replay = ReplayV3(v2Replay.engineVersion, rules, panelSource)
 
   replay.metadata.stageId = v2Replay.stageId
   replay.metadata.timestamp = v2Replay.timestamp
