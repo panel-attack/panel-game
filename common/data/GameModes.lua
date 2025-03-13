@@ -4,22 +4,19 @@ local GameModes = {}
 
 ---@class GameMode
 ---@field stackInteraction StackInteractions
----@field gameWinConditions GameWinConditions[]
 ---@field stackWinConditions table<StackWinCondition, any>
----@field gameOverConditions GameOverConditions[]
 ---@field stackOverConditions table<StackOverCondition, any>
----@field winConditions MatchWinConditions[]
 ---@field matchWinRuleset table<MatchWinCriteria, WinCondition>[]
 ---@field matchEndConditions table<MatchEndCondition, any>
 ---@field doCountdown boolean
----@field stackSetupModifications table
----@field timeLimit integer?
+---@field stackSetupModifications table?
 --- the following properties should be strictly client side rather than universal
 --- but since they're just magic strings without dependencies it's not like they ruin anything for now
 ---@field playerCount integer
 ---@field gameScene string
 ---@field style Styles
 ---@field richPresenceLabel string?
+---@field name string
 
 -- longterm we want to abandon the concept of "style" on the engine and room setup level
 -- the engine only cares about levelData, style is a menu-only concept
@@ -29,10 +26,6 @@ local GameModes = {}
 local Styles = { CHOOSE = 0, CLASSIC = 1, MODERN = 2}
 ---@enum StackInteractions
 local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3 }
-
--- these are competitive win conditions to determine a winner across multiple stacks
----@enum MatchWinConditions
-local MatchWinConditions = { LAST_ALIVE = 1, SCORE = 2, TIME = 3 }
 
 ---@enum  MatchEndCondition
 local MatchEndConditions = { STACKS_ACTIVE = "STACKS_ACTIVE", TIME_LIMIT = "TIME_LIMIT" }
@@ -49,13 +42,6 @@ local StackOverConditions = { HEALTH = "HEALTH", SWAPS = "SWAPS", CHAIN = "CHAIN
 ---@enum StackWinCondition
 local StackWinConditions = { MATCHABLE_PANELS = "MATCHABLE_PANELS", MATCHABLE_GARBAGE_PANELS = "MATCHABLE_GARBAGE_PANELS", SCORE = "SCORE" }
 
--- these are game winning objectives on the stack level, the stack stops running without going game over
----@enum GameWinConditions
-local GameWinConditions = { NO_MATCHABLE_PANELS = 1, NO_MATCHABLE_GARBAGE = 2}
--- these are game losing objectives on the stack level, the stack goes game over or is forced to stop running in another way
----@enum GameOverConditions
-local GameOverConditions = { NEGATIVE_HEALTH = 1, TIME_OUT = 2, NO_MOVES_LEFT = 3, CHAIN_DROPPED = 4 }
-
 local StackSetupModifications = {
   
 }
@@ -70,11 +56,8 @@ local OnePlayerVsSelf = {
   playerCount = 1,
   stackInteraction = StackInteractions.SELF,
   matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  winConditions = { },
   matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  gameOverConditions = { GameOverConditions.NEGATIVE_HEALTH },
   stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  gameWinConditions = {},
   stackWinConditions = {},
   doCountdown = true,
 }
@@ -89,14 +72,10 @@ local OnePlayerTimeAttack = {
   playerCount = 1,
   stackInteraction = StackInteractions.NONE,
   matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0, [MatchEndConditions.TIME_LIMIT] = TIME_ATTACK_TIME * 60 },
-  winConditions = { },
   matchWinRuleset = { { [MatchWinCriterias.SCORE] = orders.HIGHEST} },
-  gameOverConditions = { GameOverConditions.NEGATIVE_HEALTH, GameOverConditions.TIME_OUT },
   stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  gameWinConditions = {},
   stackWinConditions = {},
   doCountdown = true,
-  timeLimit = TIME_ATTACK_TIME,
 }
 
 local OnePlayerEndless = {
@@ -109,11 +88,8 @@ local OnePlayerEndless = {
   playerCount = 1,
   stackInteraction = StackInteractions.NONE,
   matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  winConditions = { },
   matchWinRuleset = { {[MatchWinCriterias.SCORE] = orders.HIGHEST}, { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  gameOverConditions = { GameOverConditions.NEGATIVE_HEALTH },
   stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  gameWinConditions = {},
   stackWinConditions = {},
   doCountdown = true,
 }
@@ -128,11 +104,8 @@ local OnePlayerTraining = {
   playerCount = 1,
   stackInteraction = StackInteractions.ATTACK_ENGINE,
   matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  winConditions = { MatchWinConditions.LAST_ALIVE },
   matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  gameOverConditions = { GameOverConditions.NEGATIVE_HEALTH },
   stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  gameWinConditions = {},
   stackWinConditions = {},
   doCountdown = true,
 }
@@ -148,13 +121,10 @@ local OnePlayerPuzzle = {
   playerCount = 1,
   stackInteraction = StackInteractions.NONE,
   matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  winConditions = {},
   matchWinRuleset = { { [MatchWinCriterias.TIME] = orders.LOWEST} },
   -- these are extended based on the loaded puzzle
-  gameOverConditions = {},
   stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
   -- these are extended based on the loaded puzzle
-  gameWinConditions = {},
   stackWinConditions = {},
   doCountdown = false,
 }
@@ -169,11 +139,8 @@ local OnePlayerChallenge = {
   playerCount = 1,
   stackInteraction = StackInteractions.VERSUS,
   matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 1 },
-  winConditions = { MatchWinConditions.LAST_ALIVE },
   matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  gameOverConditions = { GameOverConditions.NEGATIVE_HEALTH },
   stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  gameWinConditions = {},
   stackWinConditions = {},
   doCountdown = true,
 }
@@ -188,20 +155,14 @@ local TwoPlayerVersus = {
   playerCount = 2,
   stackInteraction = StackInteractions.VERSUS,
   matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 1 },
-  winConditions = { MatchWinConditions.LAST_ALIVE},
   matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  gameOverConditions = { GameOverConditions.NEGATIVE_HEALTH },
   stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  gameWinConditions = {},
   stackWinConditions = {},
   doCountdown = true,
 }
 
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
-GameModes.WinConditions = MatchWinConditions
-GameModes.GameWinConditions = GameWinConditions
-GameModes.GameOverConditions = GameOverConditions
 GameModes.MatchEndConditions = MatchEndConditions
 GameModes.MatchWinCriterias = MatchWinCriterias
 GameModes.WinCriteriaOrder = orders

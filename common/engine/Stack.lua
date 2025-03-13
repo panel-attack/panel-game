@@ -1862,7 +1862,7 @@ function Stack:getConfirmedInputCount()
   return #self.confirmedInput
 end
 
----@return ReplayPlayer
+---@return ReplayV2Player
 function Stack:toReplayPlayer()
   local replayPlayer = ReplayPlayer("Player " .. self.which, - self.which)
   replayPlayer:setLevelData(self.levelData)
@@ -1883,8 +1883,8 @@ function Stack:toReplayStack(stackIndex)
   }
 end
 
----@param replayPlayer ReplayPlayer
----@param replay Replay
+---@param replayPlayer ReplayV2Player
+---@param replay ReplayV2
 ---@return Stack
 function Stack.createFromReplayPlayer(replayPlayer, replay)
   local args = {

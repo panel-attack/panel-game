@@ -239,7 +239,7 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   love.filesystem.write(filePath .. "." .. format, data)
 end
 
----@param replay Replay
+---@param replay ReplayV2
 function fileUtils.saveReplay(replay)
   local path = replay:generatePath("/")
   local filename = replay:generateFileName()

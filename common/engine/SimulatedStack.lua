@@ -215,8 +215,8 @@ function SimulatedStack:toReplayPlayer()
   return replayPlayer
 end
 
----@param replayPlayer ReplayPlayer
----@param replay Replay
+---@param replayPlayer ReplayV2Player
+---@param replay ReplayV2
 ---@return SimulatedStack
 function SimulatedStack.createFromReplayPlayer(replayPlayer, replay)
 -- TODO

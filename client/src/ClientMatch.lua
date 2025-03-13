@@ -24,7 +24,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field players MatchParticipant[]
 ---@field stacks (PlayerStack|ChallengeModePlayerStack)[]
 ---@field engine Match
----@field replay Replay
+---@field replay ReplayV2
 ---@field doCountdown boolean if a countdown is performed at the start of the match
 ---@field stackInteraction StackInteractions how the stacks in the match interact with each other
 ---@field matchEndConditions table<MatchEndCondition, any>
@@ -330,7 +330,7 @@ function ClientMatch:rewindToFrame(frame)
   self.engine:rewindToFrame(frame)
 end
 
----@return Replay?
+---@return ReplayV2?
 function ClientMatch:finalizeReplay()
   local replay
   if not self.replay.completed then
@@ -421,7 +421,7 @@ function ClientMatch:finalizeReplay()
   return replay
 end
 
----@param replay Replay
+---@param replay ReplayV2
 ---@param supportsPause boolean
 ---@return ClientMatch
 function ClientMatch.createFromReplay(replay, supportsPause)

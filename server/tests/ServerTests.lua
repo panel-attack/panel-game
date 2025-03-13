@@ -106,7 +106,7 @@ local function testGameplay()
   message = bob.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectateRequestGranted")
   assert(message.content.replay)
-  ---@type Replay
+  ---@type ReplayV2
   local replay = message.content.replay
   -- by convention the player challenging first ends up as player two
   -- not formally required but something the test relies on, feel free to change if it crashes here due to that

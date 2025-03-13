@@ -12,13 +12,13 @@ local InputCompression = require("common.data.InputCompression")
 
 local REPLAY_VERSION = 2
 
----@class Replay
+---@class ReplayV2
 ---@field timestamp number The time the replay got created as a system dependent timestamp
 ---@field engineVersion string The engine version the replay was generated with
 ---@field replayVersion number Indicates the version of the replay's data format
 ---@field seed number The seed to be used to for random functions
 ---@field gameMode GameMode Contains flags and fields determining the overall Match settings
----@field players ReplayPlayer[] The players that are/were part of the Match
+---@field players ReplayV2Player[] The players that are/were part of the Match
 ---@field ranked boolean? If the match counted towards the ladder
 ---@field stageId string? The stage that was picked for the match on the machine saving the replay
 ---@field duration number? How long the game took in frames
@@ -29,9 +29,9 @@ local REPLAY_VERSION = 2
 ---@field gameId number? The identifier for the game on the server it was played on
 
 -- A replay is a data recording of a Match
----@class Replay
----@overload fun(engineVersion: string, seed: number, gameMode: table, puzzle: table?): Replay
-local Replay = class(
+---@class ReplayV2
+---@overload fun(engineVersion: string, seed: number, gameMode: table, puzzle: table?): ReplayV2
+local ReplayV2 = class(
 function(self, engineVersion, seed, gameMode, puzzle)
     self.timestamp = to_UTC(os.time())
     self.engineVersion = engineVersion
@@ -50,22 +50,22 @@ function(self, engineVersion, seed, gameMode, puzzle)
   end
 )
 
-Replay.TYPE = "Replay"
+ReplayV2.TYPE = "Replay"
 
-function Replay:setRanked(ranked)
+function ReplayV2:setRanked(ranked)
   self.ranked = ranked
 end
 
-function Replay:setStage(stageId)
+function ReplayV2:setStage(stageId)
   self.stageId = stageId
 end
 
 -- set the duration in frames
-function Replay:setDuration(duration)
+function ReplayV2:setDuration(duration)
   self.duration = duration
 end
 
-function Replay:setOutcome(outcome)
+function ReplayV2:setOutcome(outcome)
   if outcome == nil then
     self.incomplete = true
     self.winnerIndex = nil
@@ -88,17 +88,17 @@ function Replay:setOutcome(outcome)
   self.completed = true
 end
 
-function Replay:setTimestamp(timestamp)
+function ReplayV2:setTimestamp(timestamp)
   self.timestamp = timestamp
 end
 
 -- adds or updates a replay player at the specified index
 -- replayPlayer is a table as defined by the ReplayPlayer class
-function Replay:updatePlayer(i, replayPlayer)
+function ReplayV2:updatePlayer(i, replayPlayer)
   self.players[i] = replayPlayer
 end
 
-function Replay:generatePath(pathSeparator)
+function ReplayV2:generatePath(pathSeparator)
   local now = os.date("*t", self.timestamp)
   local sep = pathSeparator
   local path = "replays" .. sep .. "v" .. self.engineVersion .. sep .. string.format("%04d" .. sep .. "%02d" .. sep .. "%02d", now.year, now.month, now.day)
@@ -130,7 +130,7 @@ function Replay:generatePath(pathSeparator)
   return path
 end
 
-function Replay:generateFileName()
+function ReplayV2:generateFileName()
   local time = os.date("*t", self.timestamp)
   local filename = "v" .. self.engineVersion .. "-"
   filename = filename .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", time.year, time.month, time.day, time.hour, time.min, time.sec)
@@ -184,8 +184,8 @@ function Replay:generateFileName()
   return filename
 end
 
----@param replay Replay
-function Replay.replayCanBeViewed(replay)
+---@param replay ReplayV2
+function ReplayV2.replayCanBeViewed(replay)
   if DEBUG_ENABLED then
     return true
   end
@@ -217,8 +217,8 @@ function Replay.replayCanBeViewed(replay)
 end
 
 ---@param match Match
----@param replay Replay
-function Replay.finalizeReplay(match, replay)
+---@param replay ReplayV2
+function ReplayV2.finalizeReplay(match, replay)
   if not replay.completed then
     for i = 1, #match.stacks do
       if match.stacks[i].confirmedInput then
@@ -243,16 +243,16 @@ end
 -- creates a Replay from the table t which contains the deserialized data representation of a replay from network or file
 -- use the completed flag to indicate whether the replay is done (functionally equivalent to being loaded from file at this time)
 --   or whether it is in progress (functionally equivalent to getting the replay sent on joining a match as a spectator)
-function Replay.createFromTable(t, completed)
+function ReplayV2.createFromTable(t, completed)
   local replay
   if not t then
     -- there was a problem reading the file
     return replay
   else
     if not t.replayVersion then
-      replay = Replay.createFromLegacyReplay(t)
+      replay = ReplayV2.createFromLegacyReplay(t)
     elseif tonumber(t.replayVersion) == 2 then
-      replay = Replay.createFromV2Data(t)
+      replay = ReplayV2.createFromV2Data(t)
     end
     if completed ~= nil then
       replay.completed = completed
@@ -262,8 +262,8 @@ function Replay.createFromTable(t, completed)
   return replay
 end
 
-function Replay.createFromV2Data(replayData)
-  local replay = Replay(replayData.engineVersion, replayData.seed, replayData.gameMode)
+function ReplayV2.createFromV2Data(replayData)
+  local replay = ReplayV2(replayData.engineVersion, replayData.seed, replayData.gameMode)
   replay:setStage(replayData.stageId)
   replay:setRanked(replayData.ranked)
   replay:setDuration(replayData.duration)
@@ -311,7 +311,7 @@ end
 -- they were however encoded in the filename
 -- since this is in common they'd have to be determined elsewhere and passed in as arguments
 -- if they are present in the data, the data takes priority over the arguments
-function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
+function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   local mode
   local gameMode
   if legacyReplay.vs then
@@ -339,7 +339,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   -- really bold assumption; serverside replays haven't been tracking engineVersion until very late into v047
   local engineVersion = legacyReplay.engineVersion or "046"
 
-  local replay = Replay(engineVersion, v1r.seed, gameMode)
+  local replay = ReplayV2(engineVersion, v1r.seed, gameMode)
   if legacyReplay.timestamp then
     replay:setTimestamp(legacyReplay.timestamp)
   elseif timestamp then
@@ -419,4 +419,4 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   return replay
 end
 
-return Replay
+return ReplayV2

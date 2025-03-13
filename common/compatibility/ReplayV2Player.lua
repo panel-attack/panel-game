@@ -4,15 +4,15 @@
 
 local class = require("common.lib.class")
 
----@class ReplayPlayer
+---@class ReplayV2Player
 ---@field name string The name of the player
 ---@field publicId number The publicId of the player; negative numbers indicate unknown or anonymous
 ---@field human boolean Whether the player is/was human
 ---@field wins number How many wins the player had in the set prior to the game
----@field settings ReplayPlayerSettings
+---@field settings ReplayV2PlayerSettings
 ---@field analytics table?
 
----@class ReplayPlayerSettings Specifies settings of the player that change between replays
+---@class ReplayV2PlayerSettings Specifies settings of the player that change between replays
 ---@field characterId string?
 ---@field panelId string?
 ---@field levelData LevelData?
@@ -25,9 +25,9 @@ local class = require("common.lib.class")
 ---@field healthSettings table?
 ---@field stackBehaviours StackBehaviours?
 
----@class ReplayPlayer
----@overload fun(name: string, publicId: number, human: boolean?): ReplayPlayer
-local ReplayPlayer = class(
+---@class ReplayV2Player
+---@overload fun(name: string, publicId: number, human: boolean?): ReplayV2Player
+local ReplayV2Player = class(
 function(self, name, publicId, human)
   self.name = name
   self.publicId = publicId
@@ -35,22 +35,22 @@ function(self, name, publicId, human)
   self.settings = {}
 end)
 
-ReplayPlayer.TYPE = "ReplayPlayer"
+ReplayV2Player.TYPE = "ReplayPlayer"
 
-function ReplayPlayer:setWins(wins)
+function ReplayV2Player:setWins(wins)
   self.wins = wins
 end
 
-function ReplayPlayer:setCharacterId(characterId)
+function ReplayV2Player:setCharacterId(characterId)
   self.settings.characterId = characterId
 end
 
-function ReplayPlayer:setPanelId(panelId)
+function ReplayV2Player:setPanelId(panelId)
   self.settings.panelId = panelId
 end
 
 ---@param levelData LevelData
-function ReplayPlayer:setLevelData(levelData)
+function ReplayV2Player:setLevelData(levelData)
   if levelData and levelData.TYPE == "LevelData" then
     ---@type LevelData
     self.settings.levelData = levelData
@@ -59,41 +59,41 @@ end
 
 -- sets the inputMethod
 -- valid inputMethods are "controller" and "touch"
-function ReplayPlayer:setInputMethod(inputMethod)
+function ReplayV2Player:setInputMethod(inputMethod)
   self.settings.inputMethod = inputMethod
 end
 
 -- modifies whether panels of the same color may spawn next to each other
 -- this should be determined externally based on some rules
-function ReplayPlayer:setAllowAdjacentColors(allowAdjacentColors)
+function ReplayV2Player:setAllowAdjacentColors(allowAdjacentColors)
   self.settings.stackBehaviours.allowAdjacentColors = allowAdjacentColors
 end
 
 ---@param behaviours StackBehaviours
-function ReplayPlayer:setBehaviours(behaviours)
+function ReplayV2Player:setBehaviours(behaviours)
   self.settings.stackBehaviours = behaviours
 end
 
-function ReplayPlayer:setAttackEngineSettings(attackEngineSettings)
+function ReplayV2Player:setAttackEngineSettings(attackEngineSettings)
   self.settings.attackEngineSettings = attackEngineSettings
 end
 
-function ReplayPlayer:setHealthSettings(healthSettings)
+function ReplayV2Player:setHealthSettings(healthSettings)
   self.settings.healthSettings = healthSettings
 end
 
 -- sets the level for display, level = icon number
-function ReplayPlayer:setLevel(level)
+function ReplayV2Player:setLevel(level)
   self.settings.level = level
 end
 
 -- sets the difficulty for display
 -- 1 Easy, 2 Normal, 3 Hard, 4 Ex
-function ReplayPlayer:setDifficulty(difficulty)
+function ReplayV2Player:setDifficulty(difficulty)
   self.settings.difficulty = difficulty
 end
 
-function ReplayPlayer:setInputs(inputs)
+function ReplayV2Player:setInputs(inputs)
   if type(inputs) == "table" then
     self.settings.inputs = table.concat(inputs)
   else
@@ -101,7 +101,7 @@ function ReplayPlayer:setInputs(inputs)
   end
 end
 
-function ReplayPlayer:validate()
+function ReplayV2Player:validate()
   -- check for gameplay relevant settings
   if self.human == nil then
     return false
@@ -134,4 +134,4 @@ function ReplayPlayer:validate()
   return true
 end
 
-return ReplayPlayer
+return ReplayV2Player

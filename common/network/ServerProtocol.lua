@@ -164,7 +164,7 @@ local addToRoomTemplate = {
 }
 
 ---@param room Room
----@param replay Replay?
+---@param replay ReplayV2?
 function ServerProtocol.addToRoom(room, replay)
   local addToRoomMessage = addToRoomTemplate
   local content = addToRoomMessage.content
@@ -208,7 +208,7 @@ local spectateRequestGrantedTemplate = {
 -- effectively spectate grant is just a super set of create room and both can be summarized into addToRoom
 -- we need to keep them separate for the client to tell apart for now though
 ---@param room Room
----@param replay Replay?
+---@param replay ReplayV2?
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.spectateRequestGranted(room, replay)
   local spectateRequestGrantedMessage = spectateRequestGrantedTemplate
@@ -283,7 +283,7 @@ local matchStartTemplate = {
 }
 
 ---@param roomNumber integer
----@param replay Replay
+---@param replay ReplayV2
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.startMatch(roomNumber, replay)
   local startMatchMessage = matchStartTemplate

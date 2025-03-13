@@ -250,7 +250,7 @@ function ReplayV3.finalizeReplay(match, replay)
 end
 
 
----@param v2Replay Replay
+---@param v2Replay ReplayV2
 ---@return ReplayV3
 function ReplayV3.loadFromV2Replay(v2Replay)
   local stacksActive

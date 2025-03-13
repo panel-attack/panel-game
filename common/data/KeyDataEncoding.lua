@@ -1,7 +1,7 @@
 -- Not actually for encoding/decoding byte streams as base64.
 -- Rather, it's for encoding streams of 6-bit symbols in printable characters.
-base64encode = procat("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890+/")
-base64decode = {}
+local base64encode = procat("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890+/")
+local base64decode = {}
 for i = 1, 64 do
   local val = i - 1
   base64decode[base64encode[i]] = {}

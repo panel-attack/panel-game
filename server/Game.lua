@@ -11,7 +11,7 @@ local InputCompression = require("common.data.InputCompression")
 ---@field id integer?
 ---@field seed integer
 ---@field players ServerPlayer[]
----@field replay Replay
+---@field replay ReplayV2
 ---@field winnerId integer?
 ---@field winnerIndex integer?
 ---@field ranked boolean
@@ -80,7 +80,7 @@ function Game:receiveInput(player, input)
 end
 
 ---@param compressInputs boolean
----@return Replay?
+---@return ReplayV2?
 function Game:getPartialReplay(compressInputs)
   if not self.replay then
     return nil
