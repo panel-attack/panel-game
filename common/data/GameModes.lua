@@ -1,22 +1,18 @@
+local MatchRules = require("common.data.MatchRules")
 local TIME_ATTACK_TIME = 120
 
 local GameModes = {}
 
 ---@class GameMode
 ---@field stackInteraction StackInteractions
----@field stackWinConditions table<StackWinCondition, any>
----@field stackOverConditions table<StackOverCondition, any>
----@field matchWinRuleset table<MatchWinCriteria, WinCondition>[]
----@field matchEndConditions table<MatchEndCondition, any>
----@field doCountdown boolean
----@field stackSetupModifications table?
+---@field matchRules MatchRules
+---@field playerCount integer
+---@field name string
 --- the following properties should be strictly client side rather than universal
 --- but since they're just magic strings without dependencies it's not like they ruin anything for now
----@field playerCount integer
 ---@field gameScene string
 ---@field style Styles
 ---@field richPresenceLabel string?
----@field name string
 
 -- longterm we want to abandon the concept of "style" on the engine and room setup level
 -- the engine only cares about levelData, style is a menu-only concept
@@ -27,25 +23,6 @@ local Styles = { CHOOSE = 0, CLASSIC = 1, MODERN = 2}
 ---@enum StackInteractions
 local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3 }
 
----@enum  MatchEndCondition
-local MatchEndConditions = { STACKS_ACTIVE = "STACKS_ACTIVE", TIME_LIMIT = "TIME_LIMIT" }
-
----@enum MatchWinCriteria
-local MatchWinCriterias = { GAME_OVER_CLOCK = "GAME_OVER_CLOCK", SCORE = "SCORE", TIME = "TIME" }
-
----@enum WinCondition
-local orders = { LOWEST = "LOWEST", HIGHEST = "HIGHEST" }
-
----@enum StackOverCondition
-local StackOverConditions = { HEALTH = "HEALTH", SWAPS = "SWAPS", CHAIN = "CHAIN" }
-
----@enum StackWinCondition
-local StackWinConditions = { MATCHABLE_PANELS = "MATCHABLE_PANELS", MATCHABLE_GARBAGE_PANELS = "MATCHABLE_GARBAGE_PANELS", SCORE = "SCORE" }
-
-local StackSetupModifications = {
-  
-}
-
 local OnePlayerVsSelf = {
   style = Styles.MODERN,
   gameScene = "VsSelfGame",
@@ -55,11 +32,13 @@ local OnePlayerVsSelf = {
   -- already known match properties
   playerCount = 1,
   stackInteraction = StackInteractions.SELF,
-  matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  stackWinConditions = {},
-  doCountdown = true,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 0 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    doCountdown = true,
+  }
 }
 
 local OnePlayerTimeAttack = {
@@ -71,11 +50,13 @@ local OnePlayerTimeAttack = {
   -- already known match properties
   playerCount = 1,
   stackInteraction = StackInteractions.NONE,
-  matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0, [MatchEndConditions.TIME_LIMIT] = TIME_ATTACK_TIME * 60 },
-  matchWinRuleset = { { [MatchWinCriterias.SCORE] = orders.HIGHEST} },
-  stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  stackWinConditions = {},
-  doCountdown = true,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 0, [MatchRules.MatchEndConditions.TIME_LIMIT] = TIME_ATTACK_TIME * 60 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.SCORE] = MatchRules.orders.HIGHEST} },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    doCountdown = true,
+  }
 }
 
 local OnePlayerEndless = {
@@ -87,11 +68,13 @@ local OnePlayerEndless = {
   -- already known match properties
   playerCount = 1,
   stackInteraction = StackInteractions.NONE,
-  matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  matchWinRuleset = { {[MatchWinCriterias.SCORE] = orders.HIGHEST}, { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  stackWinConditions = {},
-  doCountdown = true,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 0 },
+    matchWinRuleset = { {[MatchRules.MatchWinCriterias.SCORE] = MatchRules.orders.HIGHEST}, { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    doCountdown = true,
+  }
 }
 
 local OnePlayerTraining = {
@@ -103,11 +86,13 @@ local OnePlayerTraining = {
   -- already known match properties
   playerCount = 1,
   stackInteraction = StackInteractions.ATTACK_ENGINE,
-  matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  stackWinConditions = {},
-  doCountdown = true,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 0 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    doCountdown = true,
+  }
 }
 
 local OnePlayerPuzzle = {
@@ -120,13 +105,15 @@ local OnePlayerPuzzle = {
   -- already known match properties
   playerCount = 1,
   stackInteraction = StackInteractions.NONE,
-  matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 0 },
-  matchWinRuleset = { { [MatchWinCriterias.TIME] = orders.LOWEST} },
-  -- these are extended based on the loaded puzzle
-  stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  -- these are extended based on the loaded puzzle
-  stackWinConditions = {},
-  doCountdown = false,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 0 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.TIME] = MatchRules.orders.LOWEST} },
+    -- these are extended based on the loaded puzzle
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    -- these are extended based on the loaded puzzle
+    stackWinConditions = {},
+    doCountdown = false,
+  }
 }
 
 local OnePlayerChallenge = {
@@ -138,13 +125,16 @@ local OnePlayerChallenge = {
   -- already known match properties
   playerCount = 1,
   stackInteraction = StackInteractions.VERSUS,
-  matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 1 },
-  matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  stackWinConditions = {},
-  doCountdown = true,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    doCountdown = true,
+  }
 }
 
+---@type GameMode
 local TwoPlayerVersus = {
   style = Styles.MODERN,
   gameScene = "GameBase",
@@ -154,20 +144,17 @@ local TwoPlayerVersus = {
   -- already known match properties
   playerCount = 2,
   stackInteraction = StackInteractions.VERSUS,
-  matchEndConditions = { [MatchEndConditions.STACKS_ACTIVE] = 1 },
-  matchWinRuleset = { { [MatchWinCriterias.GAME_OVER_CLOCK] = orders.HIGHEST} },
-  stackOverConditions = { [StackOverConditions.HEALTH] = 0 },
-  stackWinConditions = {},
-  doCountdown = true,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    doCountdown = true
+  }
 }
 
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
-GameModes.MatchEndConditions = MatchEndConditions
-GameModes.MatchWinCriterias = MatchWinCriterias
-GameModes.WinCriteriaOrder = orders
-GameModes.StackWinConditions = StackWinConditions
-GameModes.StackOverConditions = StackOverConditions
 
 local privateGameModes = {}
 privateGameModes.ONE_PLAYER_VS_SELF = OnePlayerVsSelf

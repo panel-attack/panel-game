@@ -4,7 +4,7 @@ local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local AttackEngine = require("common.engine.AttackEngine")
-local ReplayPlayer = require("common.data.ReplayPlayer")
+local ReplayPlayer = require("common.compatibility.ReplayV2Player")
 
 ---@class SimulatedStack : BaseStack
 ---@field attackEngine AttackEngine

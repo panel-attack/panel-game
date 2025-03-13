@@ -14,7 +14,7 @@
 
 local TIME_ATTACK_TIME = 120
 
-local GameModes = {}
+local LegacyGameModes = {}
 
 -- longterm we want to abandon the concept of "style" on the engine and room setup level
 -- the engine only cares about levelData, style is a menu-only concept
@@ -138,11 +138,11 @@ local TwoPlayerVersus = {
   doCountdown = true,
 }
 
-GameModes.Styles = Styles
-GameModes.StackInteractions = StackInteractions
-GameModes.WinConditions = MatchWinConditions
-GameModes.GameWinConditions = GameWinConditions
-GameModes.GameOverConditions = GameOverConditions
+LegacyGameModes.Styles = Styles
+LegacyGameModes.StackInteractions = StackInteractions
+LegacyGameModes.WinConditions = MatchWinConditions
+LegacyGameModes.GameWinConditions = GameWinConditions
+LegacyGameModes.GameOverConditions = GameOverConditions
 
 local privateGameModes = {}
 privateGameModes.ONE_PLAYER_VS_SELF = OnePlayerVsSelf
@@ -161,9 +161,9 @@ privateGameModes.TWO_PLAYER_VS = TwoPlayerVersus
 ---@overload fun(mode: "ONE_PLAYER_PUZZLE"): LegacyGameMode
 ---@overload fun(mode: "ONE_PLAYER_CHALLENGE"): LegacyGameMode
 ---@overload fun(mode: "TWO_PLAYER_VS"): LegacyGameMode
-function GameModes.getPreset(mode)
+function LegacyGameModes.getPreset(mode)
   assert(privateGameModes[mode], "Trying to access non existing mode " .. mode)
   return deepcpy(privateGameModes[mode])
 end
 
-return GameModes
+return LegacyGameModes

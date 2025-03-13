@@ -5,18 +5,18 @@ local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local util = require("common.lib.util")
 local utf8 = require("common.lib.utf8Additions")
-local GameModes = require("common.data.GameModes")
 local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local Panel = require("common.engine.Panel")
 local prof = require("common.lib.zoneProfiler")
 local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
-local ReplayPlayer = require("common.data.ReplayPlayer")
+local ReplayPlayer = require("common.compatibility.ReplayV2Player")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 local WigglePay = require("common.engine.WigglePay")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local InputCompression= require("common.data.InputCompression")
+local MatchRules = require("common.data.MatchRules")
 
 local rollbackPanelBuffer = {}
 -- this is a bit of an opportunistic thing:
@@ -284,8 +284,8 @@ local Stack = class(
 )
 
 Stack.TYPE = "Stack"
-Stack.supportedStackOverConditions = { GameModes.StackOverConditions.HEALTH, GameModes.StackOverConditions.SWAPS, GameModes.StackOverConditions.CHAIN }
-Stack.supportedStackWinConditions = { GameModes.StackWinConditions.MATCHABLE_PANELS, GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS, GameModes.StackWinConditions.SCORE }
+Stack.supportedStackOverConditions = { MatchRules.StackOverConditions.HEALTH, MatchRules.StackOverConditions.SWAPS, MatchRules.StackOverConditions.CHAIN }
+Stack.supportedStackWinConditions = { MatchRules.StackWinConditions.MATCHABLE_PANELS, MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS, MatchRules.StackWinConditions.SCORE }
 
 ---@return (Panel | fun(row: integer, column: integer): Panel)
 function Stack:createPanelTemplate()
@@ -618,12 +618,12 @@ function Stack:setPuzzleState(puzzle)
   self.behaviours.passiveRaise = false
 
   if puzzle.moves > 0 then
-    self.stackOverConditions[GameModes.StackOverConditions.SWAPS] = 0
+    self.stackOverConditions[MatchRules.StackOverConditions.SWAPS] = 0
   end
 
   if puzzle.puzzleType == "clear" then
-    self.stackOverConditions[GameModes.StackOverConditions.HEALTH] = 0
-    self.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
+    self.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
+    self.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
     -- also fill up the garbage queue so that the stack stays topped out even when downstacking
     local comboStorm = {}
     for i = 1, self.height do
@@ -632,10 +632,10 @@ function Stack:setPuzzleState(puzzle)
     end
     self.incomingGarbage:pushTable(comboStorm)
   elseif puzzle.puzzleType == "chain" then
-    self.stackOverConditions[GameModes.StackOverConditions.CHAIN] = false
-    self.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
+    self.stackOverConditions[MatchRules.StackOverConditions.CHAIN] = false
+    self.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
   elseif puzzle.puzzleType == "moves" then
-    self.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
+    self.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
   end
 
   -- transform any cleared garbage into colorless garbage panels
@@ -1362,7 +1362,7 @@ function Stack:canSwap(panel1, panel2)
   elseif self.do_countdown or self.clock <= 1 then
     -- swapping is not possible during countdown and on the first frame
     return false
-  elseif self.stackOverConditions[GameModes.StackOverConditions.SWAPS] and self.stackOverConditions[GameModes.StackOverConditions.SWAPS] <= self.swapCount then
+  elseif self.stackOverConditions[MatchRules.StackOverConditions.SWAPS] and self.stackOverConditions[MatchRules.StackOverConditions.SWAPS] <= self.swapCount then
     -- used all available moves in a move puzzle
     return false
   elseif panel1.color == 0 and panel2.color == 0 then
@@ -1782,17 +1782,17 @@ end
 function Stack:checkGameOver()
   if self.game_over_clock <= 0 then
     for stackOverCondition, value in pairs(self.stackOverConditions) do
-      if stackOverCondition == GameModes.StackOverConditions.HEALTH then
+      if stackOverCondition == MatchRules.StackOverConditions.HEALTH then
         if self.health <= value and self.shake_time <= 0 then
           return true
         elseif not self.rise_lock and self.behaviours.allowManualRaise and self.panels_in_top_row and self.manual_raise then
           return true
         end
-      elseif stackOverCondition == GameModes.StackOverConditions.SWAPS then
+      elseif stackOverCondition == MatchRules.StackOverConditions.SWAPS then
         if self.swapCount >= value and not self:hasActivePanels() then
           return true
         end
-      elseif stackOverCondition == GameModes.StackOverConditions.CHAIN then
+      elseif stackOverCondition == MatchRules.StackOverConditions.CHAIN then
         -- not sure if these actually work as intended after removing analytics
         if tableUtils.first(self.outgoingGarbage.history, isCompletedChain) == value and self.panels_cleared > 3 then
           -- We finished matching but never made a chain -> fail
@@ -1811,7 +1811,7 @@ end
 
 function Stack:checkGameWin()
   for stackWinCondition, value in pairs(self.stackWinConditions) do
-    if stackWinCondition == GameModes.StackWinConditions.MATCHABLE_PANELS then
+    if stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_PANELS then
       local panels = self.panels
       local matchablePanelCount = 0
       for row = 1, self.height do
@@ -1825,7 +1825,7 @@ function Stack:checkGameWin()
       if matchablePanelCount <= value then
         return true
       end
-    elseif stackWinCondition == GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS then
+    elseif stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS then
       if not self:hasGarbage() then
         return true
       end

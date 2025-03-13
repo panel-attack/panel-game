@@ -89,9 +89,9 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
     is_local = false,
     stackInteraction = gameMode.stackInteraction,
     gameOverConditions = gameMode.gameOverConditions,
-    stackOverConditions = gameMode.stackOverConditions,
+    stackOverConditions = gameMode.matchRules.stackOverConditions,
     gameWinConditions = gameMode.gameWinConditions,
-    stackWinConditions = gameMode.stackWinConditions,
+    stackWinConditions = gameMode.matchRules.stackWinConditions,
     inputMethod = "controller",
     panelSource = LegacyPanelSource(seed)
   }

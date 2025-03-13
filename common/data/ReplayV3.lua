@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local LevelData = require("common.data.LevelData")
 local StackBehaviours = require("common.data.StackBehaviours")
 local logger = require("common.lib.logger")
+local MatchRules = require("common.data.MatchRules")
 local GameModes = require("common.data.GameModes")
 local consts = require("common.engine.consts")
 require("common.lib.timezones")
@@ -18,14 +19,6 @@ local stackTypes = { Stack = 1, SimulatedStack = 2 }
 ---@class ReplayPanelSource
 ---@field sourceType ReplayPanelSourceType
 ---@field [string] any
-
----@class Rules
----@field doCountdown boolean
----@field MatchEndConditions table<MatchEndCondition, any>
----@field MatchWinRuleset table<MatchWinCriteria, WinCondition>[]
----@field StackOverConditions table<StackOverCondition, any>
----@field StackWinConditions table<StackWinCondition, integer>
----@field StackSetupModifications table?
 
 ---@class ReplayBaseStack
 ---@field stackType StackType
@@ -78,15 +71,15 @@ local stackTypes = { Stack = 1, SimulatedStack = 2 }
 ---@field engineVersion string The engine version the replay was generated with
 ---@field replayVersion integer Indicates the version of the replay's data format
 ---@field panelSource ReplayPanelSource
----@field rules Rules
+---@field rules MatchRules
 ---@field stacks ReplayBaseStack[]
 ---@field garbageFlows GarbageFlow[]
 ---@field metadata ReplayMetadata
----@overload fun(engineVersion: string, rules: Rules, panelSource: ReplayPanelSource): ReplayV3
+---@overload fun(engineVersion: string, rules: MatchRules, panelSource: ReplayPanelSource): ReplayV3
 local ReplayV3 = class(
 ---@param self ReplayV3
 ---@param engineVersion string
----@param rules Rules
+---@param rules MatchRules
 ---@param panelSource { [ReplayPanelSourceType]: any }
 function(self, engineVersion, rules, panelSource)
   self.engineVersion = engineVersion
@@ -205,6 +198,8 @@ function ReplayV3:generatePath(pathSeparator)
     path = path .. sep .. "Time Attack"
   elseif self.metadata.gameModeName == "endless" then
     path = path .. sep .. "Endless"
+  elseif self.metadata.gameModeName == "puzzle" then
+    path = path .. sep .. "Puzzle"
   elseif self.metadata.gameModeName == "vsSelf" then
     path = path .. sep .. "Vs Self"
   elseif self.metadata.gameModeName == "training" then
@@ -325,15 +320,15 @@ function ReplayV3.loadFromV2Replay(v2Replay)
     stacksActive = #v2Replay.players - 1
   end
 
-  ---@type Rules
+  ---@type MatchRules
   local rules = {
     doCountdown = v2Replay.gameMode.doCountdown,
-    MatchEndConditions = { STACKS_ACTIVE = stacksActive, TIME_LIMIT = v2Replay.gameMode.timeLimit },
-    MatchWinRuleset = { { GAME_OVER_CLOCK = "HIGHEST" } },
+    matchEndConditions = { STACKS_ACTIVE = stacksActive, TIME_LIMIT = v2Replay.gameMode.timeLimit },
+    matchWinRuleset = { { GAME_OVER_CLOCK = "HIGHEST" } },
     -- other conditions were not part of replays in v2
-    StackOverConditions = { HEALTH = 0 },
+    stackOverConditions = { HEALTH = 0 },
     -- StackWinConditions were always empty in v2 replays
-    StackWinConditions = {},
+    stackWinConditions = {},
     -- new in v3
     -- StackSetupModifications = {}
   }

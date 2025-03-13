@@ -2,6 +2,7 @@ local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local PuzzleSource = require("common.engine.PuzzleSource")
+local MatchRules = require("common.data.MatchRules")
 
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels
 ---@class Puzzle
@@ -230,31 +231,33 @@ end
 ---@return GameMode
 function Puzzle:toGameMode()
   local mode = GameModes.getPreset("ONE_PLAYER_PUZZLE")
-  mode.stackSetupModifications = {}
+  if not mode.matchRules.stackSetupModifications then
+    mode.matchRules.stackSetupModifications = {}
+  end
 
   if self.moves > 0 then
-    mode.stackOverConditions[GameModes.StackOverConditions.SWAPS] = self.moves
+    mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.SWAPS] = self.moves
   end
 
   if self.puzzleType == "clear" then
-    mode.stackOverConditions[GameModes.StackOverConditions.HEALTH] = 0
-    mode.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
-    mode.stackSetupModifications.stopTime = self.stop_time
-    mode.stackSetupModifications.shakeTime = self.shake_time
+    mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
+    mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
+    mode.matchRules.stackSetupModifications.stopTime = self.stop_time
+    mode.matchRules.stackSetupModifications.shakeTime = self.shake_time
   else
-    mode.stackSetupModifications.behaviours = {
+    mode.matchRules.stackSetupModifications.behaviours = {
       allowManualRaise = false,
       passiveRaise = false,
     }
     if self.puzzleType == "chain" then
-      mode.stackOverConditions[GameModes.StackOverConditions.CHAIN] = false
-      mode.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
+      mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.CHAIN] = false
+      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
     elseif self.puzzleType == "moves" then
-      mode.stackWinConditions[GameModes.StackWinConditions.MATCHABLE_PANELS] = 0
+      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
     end
   end
 
-  mode.doCountdown = self.doCountdown
+  mode.matchRules.doCountdown = self.doCountdown
 
   return mode
 end

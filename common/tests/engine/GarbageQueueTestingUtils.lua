@@ -22,7 +22,7 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   local levelData = LevelPresets.getModern(1)
   levelData.maxHealth = stackHealth or math.huge
 
-  local match = Match(GeneratorSource(math.random(1, 999999), false, true), mode.matchEndConditions, mode.matchWinRuleset, mode.stackOverConditions, mode.stackWinConditions, mode.doCountdown)
+  local match = Match(GeneratorSource(math.random(1, 999999), false, true), mode.matchRules)
   local behaviours = StackBehaviours.getDefault()
   -- the stack shouldn't die
   behaviours.passiveRaise = false

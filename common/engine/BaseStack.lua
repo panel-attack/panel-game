@@ -1,7 +1,7 @@
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GarbageQueue = require("common.engine.GarbageQueue")
-local GameModes = require("common.data.GameModes")
+local MatchRules = require("common.data.MatchRules")
 
 ---@class BaseStack
 ---@field engineVersion string
@@ -80,7 +80,7 @@ function(self, args)
 end)
 
 BaseStack.TYPE = "BaseStack"
-BaseStack.supportedStackOverConditions = { GameModes.StackOverConditions.HEALTH }
+BaseStack.supportedStackOverConditions = { MatchRules.StackOverConditions.HEALTH }
 BaseStack.supportedStackWinConditions = {}
 
 ---@param enable boolean
