@@ -157,7 +157,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field puzzle table? Optional puzzle
 ---@field game_stopwatch integer? Clock time minus time that swaps were blocked
 ---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
----@field panelTemplate (Panel | fun(row: integer, column: integer): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
+---@field panelTemplate (Panel | fun(row: integer, column: integer, id: integer?): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
 ---@field swapStallingBackLog table tracks swaps that will incur a health cost for stalling if not swapping would have resulted in health loss
 ---@field swappingPanelCount integer how many panels are swapping on this frame
 ---@field panelSource PanelSource where the Stack gets its panels from 
@@ -291,11 +291,13 @@ Stack.TYPE = "Stack"
 Stack.supportedStackOverConditions = { MatchRules.StackOverConditions.HEALTH, MatchRules.StackOverConditions.SWAPS, MatchRules.StackOverConditions.CHAIN }
 Stack.supportedStackWinConditions = { MatchRules.StackWinConditions.MATCHABLE_PANELS, MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS, MatchRules.StackWinConditions.SCORE }
 
----@return (Panel | fun(row: integer, column: integer): Panel)
+---@return (Panel | fun(row: integer, column: integer, id: integer?): Panel)
 function Stack:createPanelTemplate()
-  local panelTemplate = class(function(p, row, column)
-    self.panelsCreatedCount = self.panelsCreatedCount + 1
-    p.id = self.panelsCreatedCount
+  local panelTemplate = class(function(p, row, column, id)
+    if not id then
+      self.panelsCreatedCount = self.panelsCreatedCount + 1
+      p.id = self.panelsCreatedCount
+    end
   end, Panel)
   panelTemplate.frameTimes = self.levelData.frameConstants
   panelTemplate.onPop = function(panel)
@@ -503,7 +505,7 @@ local function internalRollbackToFrame(stack, frame)
     if stack.panels[row][column] then
       table.clear(stack.panels[row][column])
     else
-      stack.panels[row][column] = stack.panelTemplate(panelCopy.id, row, column)
+      stack.panels[row][column] = stack.panelTemplate(row, column, panelCopy.id)
     end
 
     for k, v in pairs(panelCopy) do
@@ -650,7 +652,7 @@ function Stack:starting_state(n)
 end
 
 -- Takes the control input from input_state and sets up the engine to start using it.
-function Stack.controls(self)
+function Stack:controls()
   local new_dir = nil
   local sdata = self.input_state
   local raise
