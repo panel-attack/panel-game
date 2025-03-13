@@ -26,7 +26,7 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   local behaviours = StackBehaviours.getDefault()
   -- the stack shouldn't die
   behaviours.passiveRaise = false
-  local stack1 = match:createStackWithSettings(levelData, behaviours, false, "controller")
+  local stack1 = match:createStackWithSettings(levelData, false, "controller")
 
   stack1.behaviours.passiveRaise = false
   -- the stack should run only 1 frame per Match:run

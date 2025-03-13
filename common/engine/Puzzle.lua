@@ -47,7 +47,7 @@ function Puzzle:fillMissingPanelsInPuzzleString(width, height)
       puzzleString = string.rep("0", width - fillUpLength) .. puzzleString
     end
     -- then fill up with single line garbage to ensure topout
-    while string.len(puzzleString) < boardSizeInPanels do
+    while string.len(puzzleString) < boardSizeInPanels * 2 do
       puzzleString = "[" .. string.rep("=", width - 2) .. "]" .. puzzleString
     end
   else

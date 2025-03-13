@@ -23,6 +23,7 @@ local Styles = { CHOOSE = 0, CLASSIC = 1, MODERN = 2}
 ---@enum StackInteractions
 local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3 }
 
+---@type GameMode
 local OnePlayerVsSelf = {
   style = Styles.MODERN,
   gameScene = "VsSelfGame",
@@ -37,10 +38,12 @@ local OnePlayerVsSelf = {
     matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     stackWinConditions = {},
+    stackSetupModifications = {},
     doCountdown = true,
   }
 }
 
+---@type GameMode
 local OnePlayerTimeAttack = {
   style = Styles.CHOOSE,
   gameScene = "TimeAttackGame",
@@ -55,10 +58,12 @@ local OnePlayerTimeAttack = {
     matchWinRuleset = { { [MatchRules.MatchWinCriterias.SCORE] = MatchRules.orders.HIGHEST} },
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     stackWinConditions = {},
+    stackSetupModifications = {},
     doCountdown = true,
   }
 }
 
+---@type GameMode
 local OnePlayerEndless = {
   style = Styles.CHOOSE,
   gameScene = "EndlessGame",
@@ -73,10 +78,12 @@ local OnePlayerEndless = {
     matchWinRuleset = { {[MatchRules.MatchWinCriterias.SCORE] = MatchRules.orders.HIGHEST}, { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     stackWinConditions = {},
+    stackSetupModifications = {},
     doCountdown = true,
   }
 }
 
+---@type GameMode
 local OnePlayerTraining = {
   style = Styles.MODERN,
   gameScene = "GameBase",
@@ -91,10 +98,12 @@ local OnePlayerTraining = {
     matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     stackWinConditions = {},
+    stackSetupModifications = {},
     doCountdown = true,
   }
 }
 
+---@type GameMode
 local OnePlayerPuzzle = {
   -- flags for battleRoom to evaluate and in some cases offer UI for
   style = Styles.MODERN,
@@ -112,10 +121,13 @@ local OnePlayerPuzzle = {
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     -- these are extended based on the loaded puzzle
     stackWinConditions = {},
+    -- these are extended based on the loaded puzzle
+    stackSetupModifications = {},
     doCountdown = false,
   }
 }
 
+---@type GameMode
 local OnePlayerChallenge = {
   style = Styles.MODERN,
   gameScene = "Game1pChallenge",
@@ -130,6 +142,7 @@ local OnePlayerChallenge = {
     matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     stackWinConditions = {},
+    stackSetupModifications = {},
     doCountdown = true,
   }
 }
@@ -149,6 +162,7 @@ local TwoPlayerVersus = {
     matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     stackWinConditions = {},
+    stackSetupModifications = {},
     doCountdown = true
   }
 }
@@ -156,6 +170,7 @@ local TwoPlayerVersus = {
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
 
+---@type table<string, GameMode>
 local privateGameModes = {}
 privateGameModes.ONE_PLAYER_VS_SELF = OnePlayerVsSelf
 privateGameModes.ONE_PLAYER_TIME_ATTACK = OnePlayerTimeAttack

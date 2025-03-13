@@ -34,7 +34,7 @@ local function createEndlessClientMatch(playerCount, theme)
     players[#players+1] = player
   end
 
-  local clientMatch = ClientMatch(players, endless.stackInteraction, endless.winConditions, endless.gameOverConditions, endless.gameWinConditions, GeneratorSource(math.random(1, 999999)), false, true)
+  local clientMatch = ClientMatch(players, endless, GeneratorSource(math.random(1, 999999), true, false), false)
   clientMatch:start()
 
   if theme then

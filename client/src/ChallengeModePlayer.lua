@@ -54,9 +54,9 @@ local function characterForStageNumber(stageNumber)
 end
 
 ---@param engineStack SimulatedStack
----@param engineMatch Match
+---@param match ClientMatch
 ---@return ChallengeModePlayerStack
-function ChallengeModePlayer:createClientStack(engineStack, engineMatch)
+function ChallengeModePlayer:createClientStack(engineStack, match)
   local args = {
     engine = engineStack,
     player_number = self.playerNumber,
@@ -65,7 +65,7 @@ function ChallengeModePlayer:createClientStack(engineStack, engineMatch)
     player = self,
     attackSettings = self.settings.attackEngineSettings,
     healthSettings = self.settings.healthSettings,
-    match = engineMatch,
+    match = match,
   }
 
   self.stack = ChallengeModePlayerStack(args)

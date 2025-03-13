@@ -327,7 +327,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
     -- StackWinConditions were always empty in v2 replays
     stackWinConditions = {},
     -- new in v3
-    -- StackSetupModifications = {}
+    stackSetupModifications = {}
   }
 
   local panelSource = {

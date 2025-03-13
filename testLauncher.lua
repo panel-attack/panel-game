@@ -60,7 +60,7 @@ local tests = {
   "common.tests.engine.PuzzleTests",
   "common.tests.engine.StackTouchReplayTests",
   "common.tests.engine.StackRollbackReplayTests",
-  --"client.tests.StackGraphicsTests",
+  "client.tests.StackGraphicsTests",
   -- disabled for testLauncher because it needs the client love callbacks
   --"common.tests.lib.InputTests",
   "common.tests.lib.JsonEncodingTests",

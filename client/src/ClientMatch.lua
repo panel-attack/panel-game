@@ -42,15 +42,16 @@ local StackBehaviours = require("common.data.StackBehaviours")
 
 --- The ClientMatch is a way to create a match that will run with graphics and sounds on a client.
 ---@class ClientMatch : Signal
----@overload fun(players: MatchParticipant[], stackInteraction: StackInteractions, matchRules: MatchRules, panelSource: PanelSource, matchWinnerRuleset: table<MatchWinCriteria, WinCondition>, supportsPause: boolean, doCountdown: boolean, optionalArgs: table?): ClientMatch
+---@overload fun(players: MatchParticipant[], gameMode: GameMode, panelSource: PanelSource, supportsPause: boolean, optionalArgs: table?): ClientMatch
 local ClientMatch = class(
-function(self, players, stackInteraction, matchRules, panelSource, supportsPause, optionalArgs)
-  assert(stackInteraction)
-  assert(matchRules)
+function(self, players, gameMode, panelSource, supportsPause, optionalArgs)
+  assert(players)
+  assert(gameMode)
   assert(panelSource)
   assert(supportsPause ~= nil)
-  self.matchRules = matchRules
-  self.stackInteraction = stackInteraction
+  self.gameMode = gameMode
+  self.matchRules = gameMode.matchRules
+  self.stackInteraction = gameMode.stackInteraction
   self.panelSource = panelSource
 
   self.supportsPause = supportsPause
@@ -140,35 +141,30 @@ function ClientMatch:start()
     local engineStack
     local clientStack
     if player.human then
-      ---@cast player Player
-      local behaviours
-      if player.settings.style == GameModes.Styles.MODERN then
-        behaviours = StackBehaviours.getDefault(player.settings.level)
-      else
-        behaviours = StackBehaviours.getDefault()
-      end
-
-      engineStack = self.engine:createStackWithSettings(player.settings.levelData, behaviours, player.isLocal, player.settings.inputMethod)
+      engineStack = self.engine:createStackWithSettings(player.settings.levelData, player.isLocal, player.settings.inputMethod)
     else
       ---@cast player ChallengeModePlayer
       engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings, player.settings.healthSettings)
     end
 
     engineStacks[#engineStacks+1] = engineStack
-    clientStack = player:createClientStack(engineStack, self.engine)
+    clientStack = player:createClientStack(engineStack, self)
     self.stacks[i] = clientStack
     if self.replay then
+      local replayStack = self.replay.stacks[i]
       if self.replay.metadata.completed then
         -- watching a finished replay
         if player.human then
           ---@cast clientStack PlayerStack
-          clientStack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
+          ---@cast replayStack ReplayStack
+          clientStack:receiveConfirmedInput(replayStack.inputs)
         end
         clientStack:setMaxRunsPerFrame(1)
-      elseif not self:hasLocalPlayer() and self.replay.players[i].settings.inputs then
+      elseif not self:hasLocalPlayer() and replayStack.stackType == 1 then
         ---@cast clientStack PlayerStack
+        ---@cast replayStack ReplayStack
         -- catching up to a match in progress
-        clientStack:receiveConfirmedInput(self.replay.players[i].settings.inputs)
+        clientStack:receiveConfirmedInput(replayStack.inputs)
         clientStack:enableCatchup(true)
       end
     end
@@ -176,19 +172,32 @@ function ClientMatch:start()
 
   if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
     for i, player in ipairs(self.players) do
+      local engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings)
       local attackEngineHost = ChallengeModePlayerStack({
-        which = #engineStacks + 1,
+        engine = engineStack,
         is_local = not (self.replay and self.replay.metadata.completed),
         character = CharacterLoader.fullyResolveCharacterSelection(),
         attackSettings = player.settings.attackEngineSettings,
         match = self,
       })
-      attackEngineHost:setGarbageTarget(player.stack)
-      player.stack:setGarbageSource(attackEngineHost)
-      engineStacks[#engineStacks+1] = attackEngineHost.engine
-      self.stacks[attackEngineHost.engine.which] = attackEngineHost
+      self.engine:addTarget(engineStack, player.stack.engine)
+      self.stacks[#self.stacks+1] = attackEngineHost
+    end
+  elseif self.stackInteraction == GameModes.StackInteractions.SELF then
+    for i, stack in ipairs(self.stacks) do
+      self.engine:addTarget(stack.engine, stack.engine)
+    end
+  elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
+    for i, stack1 in ipairs(self.stacks) do
+      for j, stack2 in ipairs(self.stacks) do
+        if i ~= j then
+          self.engine:addTarget(stack1.engine, stack2.engine)
+        end
+      end
     end
   end
+
+  self:initializeTelegraphRelationships()
 
   self.engine:start()
 
@@ -198,22 +207,7 @@ function ClientMatch:start()
   -- match already tracks garbage directions as n to n to theoretically support more than 2 players
   -- (there are some other pieces missing still to actually support that)
   -- here on client side we can simply acknowledge that only up to 2 players per match are supported
-  if self.stackInteraction == GameModes.StackInteractions.SELF then
-    for i, stack in ipairs(self.stacks) do
-      stack:setGarbageTarget(stack)
-      stack:setGarbageSource(stack)
-    end
-  elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
-    for i, stack1 in ipairs(self.stacks) do
-      for j, stack2 in ipairs(self.stacks) do
-        if i ~= j then
-          stack1:setGarbageTarget(stack2)
-          stack2:setGarbageSource(stack1)
-        end
-      end
-    end
-  end
-
+  
   self:moveStacks()
 
   if self.engine.timeLimit then
@@ -329,6 +323,7 @@ function ClientMatch:finalizeReplay()
     replay:setDuration(self.engine.clock)
     replay:setStage(self.stageId)
     replay:setRanked(self.ranked)
+    replay.metadata.gameModeName = self.gameMode.name
 
     for i, player in ipairs(self.players) do
       local stackIndex = tableUtils.indexOf(self.engine.stacks, player.stack.engine)
@@ -366,23 +361,23 @@ function ClientMatch:finalizeReplay()
 
     -- we kept player order consistent throughout from replay creation to evade issues with properties/inputs being recorded on the wrong stack
     -- but now all the data is there so reorder the players according to display
-    local replayPlayers = shallowcpy(self.replay.players)
+    -- local replayPlayers = shallowcpy(self.replay.players)
 
-    for _, playerStack in ipairs(self.stacks) do
-      local replayPlayer
-      for _, rp in ipairs(replayPlayers) do
-        if playerStack.player and playerStack.player.human and rp.publicId == playerStack.player.publicId then
-          replayPlayer = rp
-        end
+    -- for _, playerStack in ipairs(self.stacks) do
+    --   local replayPlayer
+    --   for _, rp in ipairs(replayPlayers) do
+    --     if playerStack.player and playerStack.player.human and rp.publicId == playerStack.player.publicId then
+    --       replayPlayer = rp
+    --     end
 
-        if replayPlayer then
-          self.replay.players[playerStack.renderIndex] = replayPlayer
-          if self.replay.metadata.winnerId == replayPlayer.publicId then
-            self.replay.metadata.winnerIndex = playerStack.renderIndex
-          end
-        end
-      end
-    end
+    --     if replayPlayer then
+    --       self.replay.players[playerStack.renderIndex] = replayPlayer
+    --       if self.replay.metadata.winnerId == replayPlayer.publicId then
+    --         self.replay.metadata.winnerIndex = playerStack.renderIndex
+    --       end
+    --     end
+    --   end
+    -- end
 
   end
 
@@ -435,22 +430,26 @@ function ClientMatch.createFromReplay(replay, supportsPause)
   end
 
   -- and then mirror the garbageTarget / garbageSource assignments for telegraph
-  for i, garbageTargets in ipairs(clientMatch.engine.garbageTargets) do
-    for _, engineStack in ipairs(garbageTargets) do
-      local index = tableUtils.indexOf(clientMatch.engine.stacks, engineStack)
-      clientMatch.stacks[i]:setGarbageTarget(clientMatch.stacks[index])
-    end
-  end
-
-  for recipientStack, garbageSources in pairs(clientMatch.engine.garbageSources) do
-    local recipientIndex = tableUtils.indexOf(clientMatch.engine.stacks, recipientStack)
-    for _, engineStack in ipairs(garbageSources) do
-      local index = tableUtils.indexOf(clientMatch.engine.stacks, engineStack)
-      clientMatch.stacks[recipientIndex]:setGarbageSource(clientMatch.stacks[index])
-    end
-  end
+  clientMatch:initializeTelegraphRelationships()
 
   return clientMatch
+end
+
+function ClientMatch:initializeTelegraphRelationships()
+  for i, garbageTargets in ipairs(self.engine.garbageTargets) do
+    for _, engineStack in ipairs(garbageTargets) do
+      local index = tableUtils.indexOf(self.engine.stacks, engineStack)
+      self.stacks[i]:setGarbageTarget(self.stacks[index])
+    end
+  end
+
+  for recipientStack, garbageSources in pairs(self.engine.garbageSources) do
+    local recipientIndex = tableUtils.indexOf(self.engine.stacks, recipientStack)
+    for _, engineStack in ipairs(garbageSources) do
+      local index = tableUtils.indexOf(self.engine.stacks, engineStack)
+      self.stacks[recipientIndex]:setGarbageSource(self.stacks[index])
+    end
+  end
 end
 
 function ClientMatch:playCountdownSfx()
@@ -713,15 +712,11 @@ function ClientMatch:getWinners()
 end
 
 function ClientMatch:resetPuzzle()
-  -- basically resetting the stack and match
-  local stack = self.stacks[1]
-  stack.analytic = AnalyticsInstance(stack.is_local)
-  ---@cast stack PlayerStack
-  local engine = stack.engine
-  engine:resetPuzzle()
-
-  self.engine.clock = 0
-  self.engine:setCountdown(engine.puzzle.doCountdown)
+  -- basically rewinding the match but clearing all the player inputs before it can rerun, effectively resulting in a restart
+  -- frame 0 is always saved as a rollback copy even if there is otherwise no reason to save copies
+  self.engine:rewindToFrame(0)
+  local stackEngine = self.engine.stacks[1]
+  stackEngine.confirmedInput = {}
   self.players[1]:incrementWinCount()
 end
 

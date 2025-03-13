@@ -17,6 +17,7 @@ local WigglePay = require("common.engine.WigglePay")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local InputCompression= require("common.data.InputCompression")
 local MatchRules = require("common.data.MatchRules")
+local StackBehaviours = require("common.data.StackBehaviours")
 
 local rollbackPanelBuffer = {}
 -- this is a bit of an opportunistic thing:
@@ -164,19 +165,22 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 
 
 -- Represents the full panel stack for one player
----@class Stack : Signal
----@overload fun(arguments: table): Stack
+---@class Stack
+---@overload fun(args: {levelData: LevelData, behaviours: StackBehaviours, panelSource: PanelSource, inputMethod: InputMethod}): Stack
 local Stack = class(
 ---@param s Stack
-  function(s, arguments)
-    assert(arguments.levelData ~= nil)
-    assert(arguments.behaviours ~= nil)
-    assert(arguments.panelSource)
+  function(s, args)
+    assert(args.levelData ~= nil)
+    assert(args.behaviours ~= nil)
+    assert(args.panelSource)
 
-    s.levelData = arguments.levelData
-    s.behaviours = arguments.behaviours
-    s.panelSource = arguments.panelSource
-    s.inputMethod = arguments.inputMethod
+    s.levelData = args.levelData
+    s.behaviours = StackBehaviours.getDefault()
+    for key, value in pairs(args.behaviours) do
+      s.behaviours[key] = value
+    end
+    s.panelSource = args.panelSource
+    s.inputMethod = args.inputMethod
 
     -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
 
@@ -589,145 +593,6 @@ function Stack.saveForRollback(self)
   prof.pop("outgoingGarbage:rollbackCopy")
   prof.pop("Stack:saveForRollback")
   self:emitSignal("rollbackSaved", self.clock)
-end
-
--- will throw an error if there is no puzzle set
-function Stack:resetPuzzle()
-  if not self.puzzle then
-    error("Tried to reset puzzle but no puzzle was loaded")
-  end
-
-  self:setPuzzleState(self.puzzle)
-  self.confirmedInput = {}
-  self.clock = 0
-  self.game_stopwatch = 0
-  self.game_stopwatch_running = false
-  self.chain_counter = 0
-end
-
-function Stack:setPuzzleState(puzzle)
-  puzzle.stack = puzzle:fillMissingPanelsInPuzzleString(self.width, self.height)
-
-  self.puzzle = puzzle
-  -- by default row 12 is initially blocked so unblock it for puzzles
-  self.top_cur_row = self.height
-  self:setPanelsForPuzzleString(puzzle.stack)
-  self.do_countdown = puzzle.doCountdown or false
-  self.puzzle.remaining_moves = puzzle.moves
-  self.behaviours.allowManualRaise = false
-  self.behaviours.passiveRaise = false
-
-  if puzzle.moves > 0 then
-    self.stackOverConditions[MatchRules.StackOverConditions.SWAPS] = 0
-  end
-
-  if puzzle.puzzleType == "clear" then
-    self.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
-    self.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
-    -- also fill up the garbage queue so that the stack stays topped out even when downstacking
-    local comboStorm = {}
-    for i = 1, self.height do
-                            --  width        height, metal, from chain
-      table.insert(comboStorm, {width = self.width - 1,  height = 1, isChain = false, isMetal = false, frameEarned = 0})
-    end
-    self.incomingGarbage:pushTable(comboStorm)
-  elseif puzzle.puzzleType == "chain" then
-    self.stackOverConditions[MatchRules.StackOverConditions.CHAIN] = false
-    self.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
-  elseif puzzle.puzzleType == "moves" then
-    self.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
-  end
-
-  -- transform any cleared garbage into colorless garbage panels
-  self.panelSource.garbagePanelBuffer = "9999999999999999999999999999999999999999999999999999999999999999999999999"
-  self.panelSource.panelBuffer = "9999999999999999999999999999999999999999999999999999999999999999999999999"
-end
-
----@param puzzleString string
-function Stack:setPanelsForPuzzleString(puzzleString)
-  local panels = self.panels
-
-  local garbageStartRow = nil
-  local garbageStartColumn = nil
-  local isMetal = false
-  local connectedGarbagePanels = {}
-  local rowCount = string.len(puzzleString) / 6
-  -- chunk the puzzle string into rows
-  -- it is necessary to go bottom up because garbage block panels contain the offset relative to their bottom left corner
-  for row = 1, rowCount do
-      local rowString = string.sub(puzzleString, #puzzleString - 5, #puzzleString)
-      puzzleString = string.sub(puzzleString, 1, #puzzleString - 6)
-      -- copy the panels into the row
-      panels[row] = {}
-      for column = 6, 1, -1 do
-          local color = string.sub(rowString, column, column)
-          if not garbageStartRow and tonumber(color) then
-            local panel = self:createPanelAt(row, column)
-            panel.color = tonumber(color)
-          else
-            -- start of a garbage block
-            if color == "]" or color == "}" then
-              garbageStartRow = row
-              garbageStartColumn = column
-              connectedGarbagePanels = {}
-              -- use the stack prop to avoid collisions in garbage id
-              self.garbageCreatedCount = self.garbageCreatedCount + 1
-              if color == "}" then
-                isMetal = true
-              else
-                isMetal = false
-              end
-            end
-            local panel = self:createPanelAt(row, column)
-            panel.garbageId = self.garbageCreatedCount
-            panel.isGarbage = true
-            panel.color = 9
-            panel.y_offset = row - garbageStartRow
-            -- iterating the row right to left to make sure we catch the start of each garbage block
-            -- but the offset is expected left to right, therefore we can't know the x_offset before reaching the end of the garbage
-            -- instead save the column index in that field to calculate it later
-            panel.x_offset = column
-            panel.metal = isMetal
-            table.insert(connectedGarbagePanels, panel)
-            -- garbage ends here
-            if color == "[" or color == "{" then
-              -- calculate dimensions of the garbage and add it to the relevant width/height properties
-              local height = connectedGarbagePanels[#connectedGarbagePanels].y_offset + 1
-              -- this is disregarding the possible existence of irregularly shaped garbage
-              local width = garbageStartColumn - column + 1
-              local shake_time = self:shakeFramesForGarbageSize(width, height)
-              for i = 1, #connectedGarbagePanels do
-                connectedGarbagePanels[i].x_offset = connectedGarbagePanels[i].x_offset - column
-                connectedGarbagePanels[i].height = height
-                connectedGarbagePanels[i].width = width
-                connectedGarbagePanels[i].shake_time = shake_time
-                connectedGarbagePanels[i].garbageId = self.garbageCreatedCount
-                -- panels are already in the main table and they should already be updated by reference
-              end
-              garbageStartRow = nil
-              garbageStartColumn = nil
-              connectedGarbagePanels = nil
-              isMetal = false
-            end
-          end
-      end
-  end
-
-  -- add row 0 because it crashes if there is no row 0 for whatever reason
-  panels[0] = {}
-  for column = 6, 1, -1 do
-    local panel = self:createPanelAt(0, column)
-    panel.color = 9
-    panel.state = "dimmed"
-  end
-
-  -- We need to mark all panels as state changed in case they need to match for clear puzzles / active puzzles.
-  for row = 1, self.height do
-    for col = 1, self.width do
-      panels[row][col].stateChanged = true
-      panels[row][col].shake_time = nil
-    end
-  end
 end
 
 function Stack.toPuzzleInfo(self)
@@ -1421,7 +1286,6 @@ function Stack:swap(row, col)
   local panels = self.panels
   local leftPanel = panels[row][col]
   local rightPanel = panels[row][col + 1]
-  self:processPuzzleSwap()
   leftPanel:startSwap(true)
   rightPanel:startSwap(false)
   Panel.switch(leftPanel, rightPanel, panels)
@@ -1452,19 +1316,6 @@ function Stack:swap(row, col)
     if rightPanel.color == 0 and panels[row + 1][col + 1].color ~= 0 then
       rightPanel.dont_swap = true
     end
-  end
-end
-
-function Stack.processPuzzleSwap(self)
-  if self.puzzle then
-    if self.puzzle.remaining_moves == self.puzzle.moves and self.puzzle.puzzleType == "clear" then
-      -- start depleting stop / shake time
-      self.behaviours.passiveRaise = true
-      self.stop_time = self.puzzle.stop_time
-      self.shake_time = self.puzzle.shake_time
-      self.peak_shake_time = self.shake_time
-    end
-    self.puzzle.remaining_moves = self.puzzle.remaining_moves - 1
   end
 end
 

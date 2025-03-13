@@ -11,7 +11,7 @@
 ---@field matchWinRuleset table<MatchWinCriteria, WinCondition>[]
 ---@field stackOverConditions table<StackOverCondition, any>
 ---@field stackWinConditions table<StackWinCondition, integer>
----@field stackSetupModifications StackSetupModifications?
+---@field stackSetupModifications StackSetupModifications
 
 local MatchRules = {}
 

@@ -98,16 +98,16 @@ function Player:reset()
 end
 
 ---@param engineStack Stack
----@param engineMatch Match
+---@param match ClientMatch
 ---@return PlayerStack
-function Player:createClientStack(engineStack, engineMatch)
+function Player:createClientStack(engineStack, match)
   local args = {
     engine = engineStack,
     player_number = self.playerNumber,
     panels_dir = self.settings.panelId,
     characterId = self.settings.characterId,
     player = self,
-    match = engineMatch,
+    match = match,
   }
 
   if self.settings.style == GameModes.Styles.MODERN then

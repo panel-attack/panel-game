@@ -259,33 +259,31 @@ function BattleRoom:winningPlayer()
   end
 end
 
+---@param seed integer
+---@param stackInteraction StackInteractions
 ---@return PanelSource
-function BattleRoom:createPanelSource(seed)
+function BattleRoom:createPanelSource(seed, stackInteraction)
   local player = self.players[1]
   if player.settings.puzzleSet and player.settings.puzzleIndex and player.settings.puzzleSet[player.settings.puzzleIndex] then
     local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
-    local puzzleString = Puzzle.fillMissingPanelsInPuzzleString(puzzle, 6, 12)
-    return PuzzleSource(puzzleString)
+    return puzzle:toPanelSource(config.puzzle_randomColors, config.puzzle_randomFlipped)
   else
-    return GeneratorSource(seed)
+    return GeneratorSource(seed or math.random(1, 999999), stackInteraction == GameModes.StackInteractions.NONE, stackInteraction ~= GameModes.StackInteractions.NONE)
   end
 end
 
 -- creates a match with the players in the BattleRoom
----@param panelSource PanelSource
+---@param seed integer
 ---@return ClientMatch
-function BattleRoom:createMatch(panelSource)
+function BattleRoom:createMatch(seed)
+  local panelSource = self:createPanelSource(seed, self.mode.stackInteraction)
   local supportsPause = not self.online or (#self.players == 1 and self.players[1].isLocal)
 
   self.match = ClientMatch(
     self.players,
-    self.mode.stackInteraction,
-    shallowcpy(self.mode.winConditions),
-    shallowcpy(self.mode.gameOverConditions),
-    shallowcpy(self.mode.gameWinConditions),
+    self.mode,
     panelSource,
-    supportsPause,
-    self.mode.doCountdown
+    supportsPause
   )
 
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
@@ -295,6 +293,24 @@ function BattleRoom:createMatch(panelSource)
   end
 
   return self.match
+end
+
+---@param puzzleSet PuzzleSet
+function BattleRoom:setPuzzleSet(puzzleSet)
+  self.puzzleSet = puzzleSet
+end
+
+---@param puzzle Puzzle
+function BattleRoom:setPuzzle(puzzle)
+  local isValid, validationError = puzzle:validate()
+  if not isValid then
+    validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
+                    .. validationError
+    local transition = MessageTransition(GAME.timer, 5, validationError)
+    GAME.navigationStack:popToTop(transition)
+  else
+    self.mode = puzzle:toGameMode()
+  end
 end
 
 -- adds an existing Player to the BattleRoom
@@ -376,8 +392,7 @@ end
 
 -- creates a match based on the room and player settings, starts it up and switches to the Game scene
 function BattleRoom:startMatch(stageId, seed, replayOfMatch)
-  local panelSource = self:createPanelSource(seed)
-  local match = self:createMatch(panelSource)
+  local match = self:createMatch(seed)
 
   match.replay = replayOfMatch
   match:setStage(stageId)

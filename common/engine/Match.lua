@@ -62,6 +62,8 @@ function(self, panelSource, matchRules)
 end
 )
 
+Match.TYPE = "Match"
+
 -- returns the players that won the match in a table
 -- returns a single winner if there was a clear winner
 -- returns multiple winners if there was a tie (or the game mode had no win conditions)
@@ -461,7 +463,12 @@ function Match.createFromReplay(replay)
     local stack
     if replayStack.stackType == 1 then
       ---@cast replayStack ReplayStack
-      stack = match:createStackWithSettings(replayStack.levelData, replayStack.stackBehaviours, false, replayStack.inputMethod, replayStack.inputs)
+      local stackPanelSource = match.panelSource:clone()
+      if rps.sourceType == ReplayV3.panelSourceTypes.seedV1 then
+        ---@cast stackPanelSource LegacyPanelSource
+        stackPanelSource.allowAdjacentColors = replayStack.stackBehaviours.allowAdjacentColors
+      end
+      stack = match:createStackWithSettings(replayStack.levelData, false, replayStack.inputMethod, replayStack.inputs, stackPanelSource)
     elseif replayStack.stackType == 2 then
       ---@cast replayStack ReplaySimulatedStack
       stack = match:createSimulatedStackWithSettings(replayStack.attackSettings, replayStack.healthSettings)
@@ -593,20 +600,20 @@ function Match:checkAborted()
       -- someone got a desync error, this definitely died
       self.aborted = true
       self.winners = {}
-    elseif tableUtils.contains(self.rules.matchWinRuleset, GameModes.WinConditions.LAST_ALIVE) then
+    elseif self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
       local alive = 0
       for i = 1, #self.stacks do
         if not self.stacks[i]:game_ended() then
           alive = alive + 1
         end
-        -- if there is more than 1 alive with a last alive win condition, this must have been aborted
-        if alive > 1 then
+        -- if there is more than n alive with a stacksActive condition, this must have been aborted
+        if alive > self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
           self.aborted = true
           self.winners = {}
           break
         end
       end
-    elseif tableUtils.contains(self.rules.matchEndConditions, MatchRules.MatchEndConditions.TIME_LIMIT) then
+    elseif self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT] then
       local timeLimit = self.timeLimit
       if self.doCountdown then
         timeLimit = timeLimit + TOTAL_COUNTDOWN_LENGTH
@@ -686,29 +693,23 @@ end
 
 
 ---@param levelData LevelData
----@param behaviours StackBehaviours
 ---@param isLocal boolean
 ---@param inputMethod InputMethod
 ---@param inputs string?
+---@param panelSource PanelSource?
 ---@return Stack
-function Match:createStackWithSettings(levelData, behaviours, isLocal, inputMethod, inputs)
+function Match:createStackWithSettings(levelData, isLocal, inputMethod, inputs, panelSource)
   local args = {
     which = #self.stacks + 1,
     levelData = levelData,
     is_local = isLocal,
     stackOverConditions = self.rules.stackOverConditions,
     stackWinConditions = self.rules.stackWinConditions,
-    panelSource = self.panelSource:clone(),
+    panelSource = panelSource or self.panelSource:clone(),
     inputMethod = inputMethod,
-    behaviours = behaviours,
+    behaviours = self.rules.stackSetupModifications.behaviours or {},
     engineVersion = self.engineVersion,
   }
-
-  local panelSource = args.panelSource
-  if panelSource.TYPE == "LegacyPanelSource" then
-    ---@cast panelSource LegacyPanelSource
-    panelSource.allowAdjacentColors = behaviours.allowAdjacentColors
-  end
 
   local stack = Stack(args)
   self.stacks[#self.stacks+1] = stack

@@ -50,6 +50,7 @@ end
 ---@field config UserConfig
 ---@field puzzleSets table<string, PuzzleSet>
 ---@field lastReplayPath string?
+---@field crashTrace string?
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)

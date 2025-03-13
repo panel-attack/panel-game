@@ -1,9 +1,9 @@
 ---@class StackBehaviours
----@field passiveRaise boolean if the stack will passively rise on its own
----@field allowManualRaise boolean manual raise inputs are ignored or not
----@field swapStallingMode integer how swaps are treated with respect to stalling passive raise
----@field swapStallingPunish integer how much health is deducted for stalling swaps
----@field allowAdjacentColors boolean? if the panel generator is allowed to put panels of the same color next to each other (horizontally only); deprecated in v049
+---@field passiveRaise boolean? if the stack will passively rise on its own
+---@field allowManualRaise boolean? manual raise inputs are ignored or not
+---@field swapStallingMode integer? how swaps are treated with respect to stalling passive raise
+---@field swapStallingPunish integer? how much health is deducted for stalling swaps
+---@field allowAdjacentColors boolean? deprecated in v049, lives on the PanelSource now; if the panel generator is allowed to put panels of the same color next to each other (horizontally only)
 
 local StackBehaviour = {}
 
