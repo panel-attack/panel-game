@@ -9,7 +9,7 @@ local RunTimeGraph = require("client.src.RunTimeGraph")
 local CustomRun = require("client.src.CustomRun")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.zoneProfiler")
-local Replay = require("common.data.Replay")
+local ReplayV3 = require("common.data.ReplayV3")
 require("common.lib.util")
 local consts = require("common.engine.consts")
 local system = require("client.src.system")
@@ -189,7 +189,7 @@ function love.errorhandler(msg)
     pcall(function()
       local match = GAME.battleRoom.match
       match.aborted = true
-      Replay.finalizeReplay(match.engine, match.replay)
+      ReplayV3.finalizeReplay(match.engine, match.replay)
       logger.info("Replay of match during crash:\n" .. json.encode(match.replay))
     end)
   end

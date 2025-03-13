@@ -1,6 +1,5 @@
 local tableUtils = require("common.lib.tableUtils")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
-local GameModes = require("common.engine.GameModes")
 local logger = require("common.lib.logger")
 local LevelPresets = require("common.data.LevelPresets")
 

@@ -1,7 +1,8 @@
 local class = require("common.lib.class")
-local GameModes = require("common.engine.GameModes")
-local Replay = require("common.data.Replay")
-local ReplayPlayer = require("common.data.ReplayPlayer")
+--TODO: replay with V3 replays and GameModes
+local LegacyGameModes = require("common.compatibility.LegacyGameModes")
+local ReplayV2 = require("common.compatibility.ReplayV2")
+local ReplayV2Player = require("common.compatibility.ReplayV2Player")
 local LevelPresets = require("common.data.LevelPresets")
 local logger = require("common.lib.logger")
 local StackBehaviours = require("common.data.StackBehaviours")
@@ -34,13 +35,13 @@ end)
 function Game.createFromRoomState(room)
   local game = Game(room.players)
 
-  game.replay = Replay(ENGINE_VERSION, game.seed, room.gameMode)
+  game.replay = ReplayV2(ENGINE_VERSION, game.seed, room.gameMode)
   game.replay:setStage(room.stageId)
 
   game.inputs = {}
   for i, player in ipairs(room.players) do
     game.inputs[i] = {}
-    local replayPlayer = ReplayPlayer(player.name, player.publicPlayerID, true)
+    local replayPlayer = ReplayV2Player(player.name, player.publicPlayerID, true)
     replayPlayer:setWins(room.win_counts[i])
     replayPlayer:setCharacterId(player.character)
     replayPlayer:setPanelId(player.panels_dir)
@@ -52,7 +53,7 @@ function Game.createFromRoomState(room)
     replayPlayer:setInputMethod(player.inputMethod)
     -- TODO: include behaviour settings with player settings
     -- this is not something for the server to decide, it should just take what it gets
-    if game.replay.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
+    if game.replay.gameMode.stackInteraction == LegacyGameModes.StackInteractions.NONE then
       replayPlayer:setBehaviours(StackBehaviours.getDefault())
     else
       replayPlayer:setBehaviours(StackBehaviours.getDefault(player.level))

@@ -1,8 +1,4 @@
-local tableUtils = require("common.lib.tableUtils")
-local consts = require("common.engine.consts")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
-local Replay = require("common.data.Replay")
-local GameModes = require("common.engine.GameModes")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 

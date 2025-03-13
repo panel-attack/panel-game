@@ -1,5 +1,5 @@
 local logger = require("common.lib.logger")
-local GameModes = require("common.engine.GameModes")
+local LegacyGameModes = require("common.compatibility.LegacyGameModes")
 local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 require("common.lib.timezones")
@@ -17,7 +17,7 @@ local REPLAY_VERSION = 2
 ---@field engineVersion string The engine version the replay was generated with
 ---@field replayVersion number Indicates the version of the replay's data format
 ---@field seed number The seed to be used to for random functions
----@field gameMode GameMode Contains flags and fields determining the overall Match settings
+---@field gameMode LegacyGameMode Contains flags and fields determining the overall Match settings
 ---@field players ReplayV2Player[] The players that are/were part of the Match
 ---@field ranked boolean? If the match counted towards the ladder
 ---@field stageId string? The stage that was picked for the match on the machine saving the replay
@@ -103,17 +103,17 @@ function ReplayV2:generatePath(pathSeparator)
   local sep = pathSeparator
   local path = "replays" .. sep .. "v" .. self.engineVersion .. sep .. string.format("%04d" .. sep .. "%02d" .. sep .. "%02d", now.year, now.month, now.day)
 
-  if self.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
+  if self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.NONE then
     if self.gameMode.timeLimit then
       path = path .. sep .. "Time Attack"
     else
       path = path .. sep .. "Endless"
     end
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
+  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.SELF then
     path = path .. sep .. "Vs Self"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.ATTACK_ENGINE then
     path = path .. sep .. "Training"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.VERSUS then
     if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
       path = path .. sep .. "Challenge Mode"
     else
@@ -149,17 +149,17 @@ function ReplayV2:generateFileName()
     end
   end
 
-  if self.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
+  if self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.NONE then
     if self.gameMode.timeLimit then
       filename = filename .. "-timeattack"
     else
       filename = filename .. "-endless"
     end
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
+  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.SELF then
     filename = filename .. "-vsSelf"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.ATTACK_ENGINE then
     filename = filename .. "-training"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.VERSUS then
     if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
       filename = filename .. "-challenge"
     else
@@ -167,7 +167,7 @@ function ReplayV2:generateFileName()
     end
 
     if not self.incomplete then
-      if self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+      if self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.VERSUS then
         if self.winnerIndex then
           filename = filename .. "-P" .. self.winnerIndex .. "wins"
         else
@@ -182,38 +182,6 @@ function ReplayV2:generateFileName()
   end
 
   return filename
-end
-
----@param replay ReplayV2
-function ReplayV2.replayCanBeViewed(replay)
-  if DEBUG_ENABLED then
-    return true
-  end
-  if replay.engineVersion > consts.ENGINE_VERSION then
-    -- replay is from a newer game version, we can't watch
-    -- or maybe we can but there is no way to verify we can
-    return false
-  elseif replay.engineVersion < consts.VERSION_MIN_VIEW then
-    -- there were breaking changes since the version the replay was recorded on
-    -- definitely can not watch
-    return false
-  else
-    if replay.engineVersion == consts.ENGINE_VERSIONS.LEVELDATA and replay.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-      -- in v048 garbage matching was broken for blocks higher than 1 row that were touching horizontally, so deny viewing those
-      local hasBrokenGarbage = false
-      for i, attackPattern in ipairs(replay.players[1].settings.attackEngineSettings.attackPatterns) do
-        if attackPattern.height > 1 and attackPattern.width <= 3 then
-          hasBrokenGarbage = true
-          break
-        end
-      end
-
-      return not hasBrokenGarbage
-    end
-
-    -- can view this one
-    return true
-  end
 end
 
 ---@param match Match
@@ -317,16 +285,16 @@ function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   if legacyReplay.vs then
     mode = "vs"
     if legacyReplay.vs.P2_char then
-      gameMode = GameModes.getPreset("TWO_PLAYER_VS")
+      gameMode = LegacyGameModes.getPreset("TWO_PLAYER_VS")
     else
-      gameMode = GameModes.getPreset("ONE_PLAYER_VS_SELF")
+      gameMode = LegacyGameModes.getPreset("ONE_PLAYER_VS_SELF")
     end
   elseif legacyReplay.time then
     mode = "time"
-    gameMode = GameModes.getPreset("ONE_PLAYER_TIME_ATTACK")
+    gameMode = LegacyGameModes.getPreset("ONE_PLAYER_TIME_ATTACK")
   elseif legacyReplay.endless then
     mode = "endless"
-    gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+    gameMode = LegacyGameModes.getPreset("ONE_PLAYER_ENDLESS")
   end
   local v1r = legacyReplay[mode]
   -- doCountdown used to be configurable client side for time attack / endless

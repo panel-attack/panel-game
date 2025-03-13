@@ -2,9 +2,9 @@ local Scene = require("client.src.scenes.Scene")
 local input = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.data.Replay")
+local ReplayV3 = require("common.data.ReplayV3")
 local class = require("common.lib.class")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
 local ClientMatch = require("client.src.ClientMatch")
 
@@ -98,7 +98,7 @@ local function selectMenuItem()
     if file_info then
       if file_info.type == "file" then
         filename = selection
-        local replay = Replay.createFromTable(fileUtils.readJsonFile(selection), true)
+        local replay = ReplayV3.createFromTable(fileUtils.readJsonFile(selection), true)
         if replay then
           selectedReplay = replay
         end
@@ -156,7 +156,7 @@ function ReplayBrowser:update()
       GAME.theme:playValidationSfx()
       state = "browser"
     end
-    if input.isDown["MenuSelect"] and Replay.replayCanBeViewed(selectedReplay) then
+    if input.isDown["MenuSelect"] and ReplayV3.replayCanBeViewed(selectedReplay) then
       GAME.theme:playValidationSfx()
       SoundController:stopMusic()
       local match = ClientMatch.createFromReplay(selectedReplay, false)
@@ -176,7 +176,7 @@ function ReplayBrowser:draw()
     replayMenu()
   elseif state == "info" then
     local next_func = nil
-    if Replay.replayCanBeViewed(selectedReplay) == false then
+    if ReplayV3.replayCanBeViewed(selectedReplay) == false then
       GraphicsUtil.print(loc("rp_browser_wrong_version"), menu_x - 150, menu_y - 80 + menu_h)
     end
 
@@ -228,7 +228,7 @@ function ReplayBrowser:draw()
       GraphicsUtil.print(loc("rp_browser_info_ranked"), menu_x + 200, menu_y + 130)
     end
 
-    if Replay.replayCanBeViewed(selectedReplay) then
+    if ReplayV3.replayCanBeViewed(selectedReplay) then
       GraphicsUtil.print(loc("rp_browser_watch"), menu_x + 75, menu_y + 150)
     end
   end

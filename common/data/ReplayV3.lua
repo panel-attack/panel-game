@@ -2,11 +2,12 @@ local class = require("common.lib.class")
 local LevelData = require("common.data.LevelData")
 local StackBehaviours = require("common.data.StackBehaviours")
 local logger = require("common.lib.logger")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local consts = require("common.engine.consts")
 require("common.lib.timezones")
 local tableUtils = require("common.lib.tableUtils")
 local InputCompression = require("common.data.InputCompression")
+local ReplayV2 = require("common.compatibility.ReplayV2")
 
 ---@enum ReplayPanelSourceType
 local panelSourceTypes = { seedV1 = 1, puzzle = 2, seedV2 = 3 }
@@ -249,6 +250,69 @@ function ReplayV3.finalizeReplay(match, replay)
   end
 end
 
+---@param replay ReplayV3
+function ReplayV3.replayCanBeViewed(replay)
+  if DEBUG_ENABLED then
+    return true
+  end
+  if replay.engineVersion > consts.ENGINE_VERSION then
+    -- replay is from a newer game version, we can't watch
+    -- or maybe we can but there is no way to verify we can
+    return false
+  elseif replay.engineVersion < consts.VERSION_MIN_VIEW then
+    -- there were breaking changes since the version the replay was recorded on
+    -- definitely can not watch
+    return false
+  else
+    if replay.engineVersion == consts.ENGINE_VERSIONS.LEVELDATA then
+      local stack = replay.stacks[2]
+      ---@cast stack ReplaySimulatedStack
+      if stack and stack.stackType == 2 and not stack.healthSettings then
+        -- in v048 garbage matching was broken for blocks higher than 1 row that were touching horizontally, so deny viewing those
+        local hasBrokenGarbage = false
+        for i, attackPattern in ipairs(stack.attackSettings.attackPatterns) do
+          if attackPattern.height > 1 and attackPattern.width <= 3 then
+            hasBrokenGarbage = true
+            break
+          end
+        end
+        return not hasBrokenGarbage
+      end
+    end
+
+    -- can view this one
+    return true
+  end
+end
+
+-- creates a Replay from the table t which contains the deserialized data representation of a replay from network or file
+-- use the completed flag to indicate whether the replay is done (functionally equivalent to being loaded from file at this time)
+--   or whether it is in progress (functionally equivalent to getting the replay sent on joining a match as a spectator)
+function ReplayV3.createFromTable(t, completed)
+  local replay
+  if not t then
+    -- there was a problem reading the file
+    return replay
+  else
+    if t.replayVersion == 3 then
+      -- TODO: Implement direct loading of v3 replays
+
+    else
+      if not t.replayVersion then
+        replay = ReplayV2.createFromLegacyReplay(t)
+      elseif tonumber(t.replayVersion) == 2 then
+        replay = ReplayV2.createFromV2Data(t)
+      end
+
+      if completed ~= nil then
+        replay.completed = completed
+      end
+      replay = ReplayV3.loadFromV2Replay(replay)
+    end
+  end
+
+  return replay
+end
 
 ---@param v2Replay ReplayV2
 ---@return ReplayV3

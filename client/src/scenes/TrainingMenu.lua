@@ -3,7 +3,7 @@ local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local GameBase = require("client.src.scenes.GameBase")
 local save = require("client.src.save")
 

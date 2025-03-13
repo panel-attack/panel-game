@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local CharacterSelect = require("client.src.scenes.CharacterSelect")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local ui = require("client.src.ui")
 
 -- Scene for the time attack game setup menu

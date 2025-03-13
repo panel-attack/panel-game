@@ -1,9 +1,9 @@
 local PanelGenerator = require("common.engine.PanelGenerator")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local Stack = require("common.engine.Stack")
 local LevelPresets = require("common.data.LevelPresets")
 local StackBehaviours = require("common.data.StackBehaviours")
-local LegacyPanelSource = require("common.engine.LegacyPanelSource")
+local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
 
 local function checkPanels(panels, rowWidth)
   assert(string.len(panels) % rowWidth == 0)

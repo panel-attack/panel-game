@@ -1,7 +1,7 @@
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GarbageQueue = require("common.engine.GarbageQueue")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 
 ---@class BaseStack
 ---@field engineVersion string

@@ -1,6 +1,6 @@
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local PuzzleSource = require("common.engine.PuzzleSource")
 
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels

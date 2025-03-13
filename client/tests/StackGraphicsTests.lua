@@ -1,5 +1,5 @@
 local ClientMatch = require("client.src.ClientMatch")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local Player = require("client.src.Player")
 local consts = require("common.engine.consts")
 local GeneratorSource = require("common.engine.GeneratorSource")

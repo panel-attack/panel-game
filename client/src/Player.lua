@@ -1,5 +1,5 @@
 local class = require("common.lib.class")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local LevelPresets = require("common.data.LevelPresets")
 local input = require("client.src.inputManager")
 local MatchParticipant = require("client.src.MatchParticipant")

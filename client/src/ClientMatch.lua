@@ -5,12 +5,12 @@ local StageLoader = require("client.src.mods.StageLoader")
 local ModController = require("client.src.mods.ModController")
 local consts = require("common.engine.consts")
 local tableUtils = require("common.lib.tableUtils")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
 local Player = require("client.src.Player")
 local Signal = require("common.lib.signal")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
-local Replay = require("common.data.Replay")
+local ReplayV3 = require("common.data.ReplayV3")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Telegraph = require("client.src.graphics.Telegraph")
 local MatchParticipant = require("client.src.MatchParticipant")
@@ -394,7 +394,7 @@ function ClientMatch:finalizeReplay()
       end
     end
 
-    Replay.finalizeReplay(self.engine, self.replay)
+    ReplayV3.finalizeReplay(self.engine, self.replay)
 
     -- we kept player order consistent throughout from replay creation to evade issues with properties/inputs being recorded on the wrong replayPlayer
     -- but now all the data is there so reorder the players according to display

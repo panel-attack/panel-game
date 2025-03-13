@@ -1,8 +1,7 @@
 local logger = require("common.lib.logger")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local Match = require("common.engine.Match")
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.data.Replay")
 local LevelPresets = require("common.data.LevelPresets")
 local Stack = require("common.engine.Stack")
 require("common.engine.checkMatches")
@@ -107,8 +106,7 @@ function StackReplayTestingUtils:simulateMatchWithRollbackAtClock(match, clock)
 end
 
 function StackReplayTestingUtils:setupReplayWithPath(path)
-  local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
-  replay = ReplayV3.loadFromV2Replay(replay)
+  local replay = ReplayV3.createFromTable(fileUtils.readJsonFile(path), true)
   local match = Match.createFromReplay(replay)
   match:start()
   -- we want to be able to stop with precision so cap the number of runs

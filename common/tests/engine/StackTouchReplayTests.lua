@@ -1,6 +1,5 @@
 local consts = require("common.engine.consts")
 local tableUtils = require("common.lib.tableUtils")
-local GameModes = require("common.engine.GameModes")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 local LevelPresets = require("common.data.LevelPresets")
 
