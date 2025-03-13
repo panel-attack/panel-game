@@ -145,6 +145,20 @@ function MatchParticipant:refreshCharacter()
   end
 end
 
+function MatchParticipant:setPanels(panelId)
+  if panelId ~= self.settings.panelId then
+    if panels[panelId] then
+      self.settings.panelId = panelId
+    else
+      -- default back to config panels always
+      self.settings.panelId = config.panels
+    end
+    -- panels are always loaded so no loading is necessary
+
+    self:emitSignal("panelIdChanged", self.settings.panelId)
+  end
+end
+
 function MatchParticipant:setWantsReady(wantsReady)
   if wantsReady ~= self.settings.wantsReady then
     self.settings.wantsReady = wantsReady

@@ -276,7 +276,6 @@ end
 ---@return ClientMatch
 function BattleRoom:createMatch(panelSource)
   local supportsPause = not self.online or (#self.players == 1 and self.players[1].isLocal)
-  local optionalArgs = { timeLimit = self.mode.timeLimit , ranked = self.ranked}
 
   self.match = ClientMatch(
     self.players,
@@ -286,8 +285,7 @@ function BattleRoom:createMatch(panelSource)
     shallowcpy(self.mode.gameWinConditions),
     panelSource,
     supportsPause,
-    self.mode.doCountdown,
-    optionalArgs
+    self.mode.doCountdown
   )
 
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)

@@ -10,12 +10,6 @@ local tableUtils = require("common.lib.tableUtils")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV2 = require("common.compatibility.ReplayV2")
 
----@enum ReplayPanelSourceType
-local panelSourceTypes = { seedV1 = 1, puzzle = 2, seedV2 = 3 }
-
----@enum StackType
-local stackTypes = { Stack = 1, SimulatedStack = 2 }
-
 ---@class ReplayPanelSource
 ---@field sourceType ReplayPanelSourceType
 ---@field [string] any
@@ -91,7 +85,10 @@ function(self, engineVersion, rules, panelSource)
   self.metadata = { stacks = {} }
 end)
 
-ReplayV3.panelSourceTypes = panelSourceTypes
+---@enum ReplayPanelSourceType
+ReplayV3.panelSourceTypes = { seedV1 = 1, puzzle = 2, seedV2 = 3 }
+---@enum StackType
+ReplayV3.stackTypes = { Stack = 1, SimulatedStack = 2 }
 
 ---@param ranked boolean
 function ReplayV3:setRanked(ranked)
@@ -121,7 +118,7 @@ function ReplayV3:generateFileName()
 
   for i, player in ipairs(self.metadata.stacks) do
     local stack = self.stacks[player.stackIndex]
-    if stack.stackType == stackTypes.Stack then
+    if stack.stackType == ReplayV3.stackTypes.Stack then
       ---@cast stack ReplayStack
       ---@cast player StackMetadata
       filename = filename .. "-" .. player.name
@@ -143,7 +140,7 @@ function ReplayV3:generateFileName()
   filename = filename .. "-" .. self.metadata.gameModeName
 
   if self.metadata.gameModeName == "VS" then
-    if tableUtils.trueForAll(self.stacks, function(p) return p.stackType == stackTypes.Stack end) then
+    if tableUtils.trueForAll(self.stacks, function(p) return p.stackType == ReplayV3.stackTypes.Stack end) then
       filename = filename .. (self.metadata.ranked and "ranked" or "casual")
     end
 
@@ -178,7 +175,7 @@ function ReplayV3:setOutcome(outcome)
     else
       self.metadata.winnerIndex = outcome
       for i, player in ipairs(self.metadata.stacks) do
-        if player.stackIndex == i and self.stacks[i].stackType == stackTypes.Stack then
+        if player.stackIndex == i and self.stacks[i].stackType == ReplayV3.stackTypes.Stack then
           ---@cast player StackMetadata
           self.metadata.winnerId = player.publicId
         end
@@ -334,7 +331,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
   }
 
   local panelSource = {
-    sourceType = panelSourceTypes.seedV1,
+    sourceType = ReplayV3.panelSourceTypes.seedV1,
     seed = v2Replay.seed,
     allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(v2Replay.players, function(p) return (not p.human) or p.settings.stackBehaviours.allowAdjacentColors end)
   }
@@ -360,7 +357,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
       allowAdjacentColors = v2Player.settings.stackBehaviours.allowAdjacentColors
     }
     replay.stacks[1] = {
-      stackType = stackTypes.Stack,
+      stackType = ReplayV3.stackTypes.Stack,
       levelData = v2Player.settings.levelData,
       stackBehaviours = behaviours,
       inputMethod = v2Player.settings.inputMethod,
@@ -368,7 +365,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
     }
 
     replay.stacks[2] = {
-      stackType = stackTypes.SimulatedStack,
+      stackType = ReplayV3.stackTypes.SimulatedStack,
       attackSettings = v2Player.settings.attackEngineSettings
     }
 
@@ -406,7 +403,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
         }
         ---@type ReplayStack
         local replayStack = {
-          stackType = stackTypes.Stack,
+          stackType = ReplayV3.stackTypes.Stack,
           levelData = v2Player.settings.levelData,
           stackBehaviours = behaviours,
           inputMethod = v2Player.settings.inputMethod,
@@ -430,7 +427,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
       else
         ---@type ReplaySimulatedStack
         local replayStack = {
-          stackType = stackTypes.SimulatedStack,
+          stackType = ReplayV3.stackTypes.SimulatedStack,
           attackSettings = v2Player.settings.attackEngineSettings,
           healthSettings = v2Player.settings.healthSettings
         }

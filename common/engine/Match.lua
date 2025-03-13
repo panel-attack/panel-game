@@ -19,6 +19,7 @@ local MatchRules = require("common.data.MatchRules")
 ---@field garbageSources table<Stack, table<integer, Stack>> assignments by index where each stack's incoming garbage comes from
 ---@field engineVersion string
 ---@field rules MatchRules
+---@field doCountdown boolean if a countdown is performed at the start of the match; mirror of rules.doCountdown for easier access
 ---@field panelSource (PanelSource | LegacyPanelSource | PuzzleSource | GeneratorSource)
 ---@field timeLimit integer? if the game automatically ends after a certain time
 ---@field puzzle table
@@ -46,6 +47,7 @@ function(self, panelSource, matchRules)
   assert(panelSource)
   self.panelSource = panelSource
   self.rules = matchRules
+  self.doCountdown = self.rules.doCountdown
 
   if self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT] then
     self.timeLimit = self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT] * 60
@@ -360,7 +362,7 @@ function Match:getInfo()
   local info = {}
   info.stackInteraction = self.stackInteraction
   info.timeLimit = self.timeLimit or "none"
-  info.doCountdown = tostring(self.rules.doCountdown)
+  info.doCountdown = tostring(self.doCountdown)
   info.ended = self.ended
   info.stacks = {}
   for i, stack in ipairs(self.stacks) do
@@ -374,7 +376,7 @@ function Match:start()
   local shockEnabled = (self.stackInteraction ~= GameModes.StackInteractions.NONE)
 
   for i, stack in ipairs(self.stacks) do
-    stack:setCountdown(self.rules.doCountdown)
+    stack:setCountdown(self.doCountdown)
     if stack.TYPE == "Stack" then
       ---@cast stack Stack
       stack:enableShockPanels(shockEnabled)
@@ -606,7 +608,7 @@ function Match:checkAborted()
       end
     elseif tableUtils.contains(self.rules.matchEndConditions, MatchRules.MatchEndConditions.TIME_LIMIT) then
       local timeLimit = self.timeLimit
-      if self.rules.doCountdown then
+      if self.doCountdown then
         timeLimit = timeLimit + TOTAL_COUNTDOWN_LENGTH
       end
       for i, stack in ipairs(self.stacks) do
@@ -666,6 +668,7 @@ function Match:shouldRun(stack, runsSoFar)
 end
 
 function Match:setCountdown(doCountdown)
+  self.doCountdown = doCountdown
   self.rules.doCountdown = doCountdown
 end
 

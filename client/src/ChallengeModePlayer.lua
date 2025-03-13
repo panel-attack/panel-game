@@ -26,6 +26,8 @@ function(self, playerNumber)
 end,
 MatchParticipant)
 
+ChallengeModePlayer.TYPE = "ChallengeModePlayer"
+
 local function characterForStageNumber(stageNumber)
   -- Get all other characters than the player character
   local otherCharacters = {}
@@ -79,6 +81,20 @@ end
 function ChallengeModePlayer:setWantsReady(wantsReady)
   self.settings.wantsReady = true
   self:emitSignal("wantsReadyChanged", true)
+end
+
+---@param stackMetadata SimulatedStackMetadata
+---@return ChallengeModePlayer
+function ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
+  local player = ChallengeModePlayer(stackMetadata.stackIndex)
+  player:setCharacter(stackMetadata.characterId)
+  player:setPanels(stackMetadata.panelId)
+  player.settings.difficulty = stackMetadata.challengeModeDifficulty
+  player.settings.level = stackMetadata.stageIndex
+
+  -- see if things like attackEngineSettings and healthSettings need to be loaded on the ChallengeModePlayer too - I think not
+
+  return player
 end
 
 function ChallengeModePlayer.createFromReplayPlayer(replayPlayer, playerNumber)

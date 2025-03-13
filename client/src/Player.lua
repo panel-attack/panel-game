@@ -92,6 +92,11 @@ MatchParticipant)
 
 Player.TYPE = "Player"
 
+function Player:reset()
+  MatchParticipant.reset(self)
+  self:unrestrictInputs()
+end
+
 ---@param engineStack Stack
 ---@param engineMatch Match
 ---@return PlayerStack
@@ -105,10 +110,6 @@ function Player:createClientStack(engineStack, engineMatch)
     match = engineMatch,
   }
 
-  function Player:reset()
-    MatchParticipant.reset(self)
-    self:unrestrictInputs()
-  end
   if self.settings.style == GameModes.Styles.MODERN then
     args.level = self.settings.level
   else
@@ -125,20 +126,6 @@ function Player:getRatingDiff()
     return self.rating - self.ratingHistory[#self.ratingHistory]
   else
     return 0
-  end
-end
-
-function Player:setPanels(panelId)
-  if panelId ~= self.settings.panelId then
-    if panels[panelId] then
-      self.settings.panelId = panelId
-    else
-      -- default back to config panels always
-      self.settings.panelId = config.panels
-    end
-    -- panels are always loaded so no loading is necessary
-
-    self:emitSignal("panelIdChanged", self.settings.panelId)
   end
 end
 
@@ -283,6 +270,27 @@ function Player.getLocalPlayer()
   else
     player:setStyle(GameModes.Styles.CLASSIC)
   end
+
+  return player
+end
+
+---@param stackMetadata StackMetadata
+---@return Player
+function Player.createFromReplayMetadata(stackMetadata)
+  local player = Player(stackMetadata.name, stackMetadata.publicId, false)
+  player.playerNumber = stackMetadata.stackIndex
+  player:setWinCount(stackMetadata.wins)
+  player:setPanels(stackMetadata.panelId)
+  player:setCharacter(stackMetadata.characterId)
+  if stackMetadata.level then
+    player:setStyle(GameModes.Styles.MODERN)
+    player:setLevel(stackMetadata.level)
+  else
+    player:setStyle(GameModes.Styles.CLASSIC)
+    player:setDifficulty(stackMetadata.difficulty)
+  end
+
+  -- see if things like inputMethod and levelData need to be loaded on the Player too - I think not
 
   return player
 end
