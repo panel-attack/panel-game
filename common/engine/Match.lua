@@ -707,7 +707,7 @@ function Match:createStackWithSettings(levelData, isLocal, inputMethod, inputs, 
     stackWinConditions = self.rules.stackWinConditions,
     panelSource = panelSource or self.panelSource:clone(),
     inputMethod = inputMethod,
-    behaviours = self.rules.stackSetupModifications.behaviours or {},
+    stackSetupModifications = self.rules.stackSetupModifications or {},
     engineVersion = self.engineVersion,
   }
 

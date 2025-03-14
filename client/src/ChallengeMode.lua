@@ -10,8 +10,15 @@ local save = require("client.src.save")
 
 
 -- Challenge Mode is a particular play through of the challenge mode in the game, it contains all the settings for the mode.
-local ChallengeMode =
-  class(
+---@class ChallengeMode : BattleRoom
+---@field stages table
+---@field difficulty integer
+---@field difficultyName string
+---@field continues integer
+---@field expendedTime number
+---@field challengeComplete boolean
+---@field player ChallengeModePlayer
+local ChallengeMode = class(
   function(self, mode, gameScene, difficulty, stageIndex)
     self.stages = self:createStages(difficulty)
     self.difficulty = difficulty

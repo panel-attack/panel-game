@@ -155,7 +155,7 @@ end
 ---@generic T
 ---@param tab table<T, any>
 ---@param element any
----@return T?
+---@return T
 function tableUtils.indexOf(tab, element)
   for key, value in pairs(tab) do
     if value == element then

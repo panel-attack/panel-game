@@ -142,9 +142,9 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field cur_timer integer number of ticks the current movement key has been held
 ---@field cursorDirection CursorDirection? direction of the current movement key
 ---@field cur_row integer row the cursor is on
----@field cur_col integer column the cursor is on
----@field queuedSwapRow integer row in which a swap for next frame has been queued
----@field queuedSwapColumn integer column of the left (or in case of touch the "target") panel for which a swap has been queued for next frame
+---@field cur_col integer the column the left half of the cursor is on (or just the cursor in case of touch)
+---@field queuedSwapRow integer row in which a swap for next frame has been queued; 0 if none queued
+---@field queuedSwapColumn integer column of the left (or in case of touch the "target") panel for which a swap has been queued for next frame; 0 if none queued
 ---@field top_cur_row integer the maximum row index the cursor is allowed to go at the moment
 ---@field panels_cleared integer How many panels have been cleared on the stack so far; relevant for the occurence of shock panels
 ---@field metal_panels_queued integer How many shock panels are currently queued up
@@ -154,7 +154,6 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field peak_shake_time integer Records the maximum shake time obtained for the current stretch of uninterrupted shake time. \n
 --- Any additional shake time gained before shake depletes to 0 will reset shake_time back to this value. Set to 0 when shake_time reaches 0.
 ---@field warningsTriggered table ancient ancient, probably remove
----@field puzzle table? Optional puzzle
 ---@field game_stopwatch integer? Clock time minus time that swaps were blocked
 ---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
 ---@field panelTemplate (Panel | fun(row: integer, column: integer, id: integer?): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
@@ -166,18 +165,21 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 
 -- Represents the full panel stack for one player
 ---@class Stack
----@overload fun(args: {levelData: LevelData, behaviours: StackBehaviours, panelSource: PanelSource, inputMethod: InputMethod}): Stack
+---@overload fun(args: {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod}): Stack
 local Stack = class(
 ---@param s Stack
+---@param args {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod}
   function(s, args)
     assert(args.levelData ~= nil)
-    assert(args.behaviours ~= nil)
+    assert(args.stackSetupModifications ~= nil)
     assert(args.panelSource)
 
     s.levelData = args.levelData
     s.behaviours = StackBehaviours.getDefault()
-    for key, value in pairs(args.behaviours) do
-      s.behaviours[key] = value
+    if args.stackSetupModifications.behaviours then
+      for key, value in pairs(args.stackSetupModifications.behaviours) do
+        s.behaviours[key] = value
+      end
     end
     s.panelSource = args.panelSource
     s.inputMethod = args.inputMethod
@@ -234,7 +236,7 @@ local Stack = class(
     s.rise_lock = false
     s.has_risen = false
 
-    s.stop_time = 0
+    s.stop_time = args.stackSetupModifications.stopTime or 0
     s.pre_stop_time = 0
 
     s.score = 0
@@ -256,10 +258,10 @@ local Stack = class(
     s.cur_wait_time = consts.DEFAULT_INPUT_REPEAT_DELAY
     s.cur_timer = 0 -- number of ticks for which a new direction's been pressed
     s.cursorDirection = nil -- the direction pressed
-    s.cur_row = 7 -- the row the cursor's on
-    s.cur_col = 3 -- the column the left half of the cursor's on
-    s.queuedSwapColumn = 0 -- the left column of the two columns to swap or 0 if no swap queued
-    s.queuedSwapRow = 0 -- the row of the queued swap or 0 if no swap queued
+    s.cur_row = args.stackSetupModifications.startingRow or 7
+    s.cur_col = args.stackSetupModifications.startingCol or  3
+    s.queuedSwapColumn = 0
+    s.queuedSwapRow = 0
     s.top_cur_row = s.height - 1
     s.swapCount = 0
 
@@ -267,7 +269,7 @@ local Stack = class(
     s.metal_panels_queued = s.metal_panels_queued or 0
 
     s.prev_shake_time = 0
-    s.shake_time = 0
+    s.shake_time = args.stackSetupModifications.shakeTime or 0
     s.shake_time_on_frame = 0
     s.peak_shake_time = 0
 
@@ -416,6 +418,7 @@ function Stack:rollbackCopy()
   copy.cur_col = self.cur_col
   copy.shake_time = self.shake_time
   copy.peak_shake_time = self.peak_shake_time
+  copy.shake_time_on_frame = self.shake_time_on_frame
   copy.do_countdown = self.do_countdown
   copy.panelBuffer = self.panelSource.panelBuffer
   copy.panelGenCount = self.panelSource.panelGenCount
@@ -475,6 +478,7 @@ local function internalRollbackToFrame(stack, frame)
   stack.cur_col = copy.cur_col
   stack.shake_time = copy.shake_time
   stack.peak_shake_time = copy.peak_shake_time
+  stack.shake_time_on_frame = copy.shake_time_on_frame
   stack.do_countdown = copy.do_countdown
   stack.panelSource.panelBuffer = copy.panelBuffer
   stack.panelSource.panelGenCount = copy.panelGenCount
@@ -867,50 +871,60 @@ function Stack:simulate()
   table.clear(self.garbageLandedThisFrame)
   self:runCountDownIfNeeded()
 
-  if self.pre_stop_time ~= 0 then
-    self.pre_stop_time = self.pre_stop_time - 1
-  elseif self.stop_time ~= 0 then
-    self.stop_time = self.stop_time - 1
-  end
-  --prof.pop("simulate 1")
-
   --prof.push("simulate danger updates")
   self.panels_in_top_row = self:hasPanelsInTopRow()
   --prof.pop("simulate danger updates")
 
-  --prof.push("new row stuff")
-  if self.displacement == 0 and self.has_risen then
-    self.top_cur_row = self.height
-    self:new_row()
-  end
-
-  self:updateRiseLock()
-  --prof.pop("new row stuff")
-
-  self:updateSpeed()
-
-  --prof.push("passive raise")
-  -- Phase 0 //////////////////////////////////////////////////////////////
-  -- Stack automatic rising
-  if self.behaviours.passiveRaise then
-    self:advancePassiveRaise()
-
-    if self:checkGameOver() then
-      self:setGameOver()
+  if self.swapCount >= self.behaviours.startTimersWithSwapCount then
+    --prof.push("shake time updates")
+    self.prev_shake_time = self.shake_time
+    self.shake_time = self.shake_time - 1
+    self.shake_time = max(self.shake_time, self.shake_time_on_frame)
+    if self.shake_time == 0 then
+      self.peak_shake_time = 0
     end
-  end
-  --prof.pop("passive raise")
+    --prof.pop("shake time updates")
+    if self.pre_stop_time ~= 0 then
+      self.pre_stop_time = self.pre_stop_time - 1
+    elseif self.stop_time ~= 0 then
+      self.stop_time = self.stop_time - 1
+    end
+    --prof.pop("simulate 1")
 
-  --prof.push("reset stuff")
-  local hasFallingGarbage = self:has_falling_garbage()
-  if not self.panels_in_top_row and not hasFallingGarbage then
-    self.health = self.levelData.maxHealth
-  end
+    --prof.push("new row stuff")
+    if self.displacement == 0 and self.has_risen then
+      self.top_cur_row = self.height
+      self:new_row()
+    end
 
-  if self.displacement % 16 ~= 0 then
-    self.top_cur_row = self.height - 1
+    self:updateRiseLock()
+    --prof.pop("new row stuff")
+
+    self:updateSpeed()
+
+    --prof.push("passive raise")
+    -- Phase 0 //////////////////////////////////////////////////////////////
+    -- Stack automatic rising
+    if self.behaviours.passiveRaise then
+      self:advancePassiveRaise()
+
+      if self:checkGameOver() then
+        self:setGameOver()
+      end
+    end
+    --prof.pop("passive raise")
+
+    --prof.push("reset stuff")
+    local hasFallingGarbage = self:has_falling_garbage()
+    if not self.panels_in_top_row and not hasFallingGarbage then
+      self.health = self.levelData.maxHealth
+    end
+
+    if self.displacement % 16 ~= 0 then
+      self.top_cur_row = self.height - 1
+    end
+    --prof.pop("reset stuff")
   end
-  --prof.pop("reset stuff")
 
   --prof.push("old swap")
   -- Begin the swap we input last frame.
@@ -925,15 +939,6 @@ function Stack:simulate()
   self:checkMatches()
   self:updatePanels()
   self:updateActivePanelCount()
-
-  --prof.push("shake time updates")
-  self.prev_shake_time = self.shake_time
-  self.shake_time = self.shake_time - 1
-  self.shake_time = max(self.shake_time, self.shake_time_on_frame)
-  if self.shake_time == 0 then
-    self.peak_shake_time = 0
-  end
-  --prof.pop("shake time updates")
 
   -- Phase 3. /////////////////////////////////////////////////////////////
   -- Actions performed according to player input

@@ -90,7 +90,6 @@ function ServerMessages.sanitizeRoomMessage(message)
     end
     return { gameResult = message.content }
   elseif message.type == "matchStart" then
-    ---@type ReplayV2
     local replay = ReplayV3.createFromTable(message.content, false)
     local settings = {}
     for i, player in ipairs(replay.players) do

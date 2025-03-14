@@ -4,6 +4,7 @@
 ---@field swapStallingMode integer? how swaps are treated with respect to stalling passive raise
 ---@field swapStallingPunish integer? how much health is deducted for stalling swaps
 ---@field allowAdjacentColors boolean? deprecated in v049, lives on the PanelSource now; if the panel generator is allowed to put panels of the same color next to each other (horizontally only)
+---@field startTimersWithSwapCount integer?
 
 local StackBehaviour = {}
 
@@ -20,6 +21,7 @@ function StackBehaviour.getV048Default(level)
     swapStallingPunish = 0,
     -- was level based in v048 and before
     allowAdjacentColors = allowAdjacentColors,
+    startTimersWithSwapCount = 0,
   }
 end
 
@@ -30,6 +32,7 @@ function StackBehaviour.getV049Default()
     swapStallingMode = 1,
     swapStallingPunish = 4,
     -- allowAdjacentColors was deprecated as a Stack setting, lives on the PanelSource now
+    startTimersWithSwapCount = 0,
   }
 end
 

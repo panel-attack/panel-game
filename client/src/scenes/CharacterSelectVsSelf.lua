@@ -18,7 +18,7 @@ function CharacterSelectVsSelf:customLoad(sceneParams)
 end
 
 function CharacterSelectVsSelf:loadUserInterface()
-  local player = GAME.battleRoom.players[1]
+  local player = self.battleRoom.players[1]
 
   self.ui.grid = ui.Grid({unitSize = 100, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
   self.uiRoot:addChild(self.ui.grid)
@@ -83,8 +83,8 @@ end
 
 function CharacterSelectVsSelf:refresh()
   local level
-  if GAME.battleRoom then
-    level = GAME.battleRoom.players[1].settings.level
+  if self.battleRoom then
+    level = self.battleRoom.players[1].settings.level
   else
     level = GAME.localPlayer.settings.level
   end

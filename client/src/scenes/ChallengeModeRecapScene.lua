@@ -9,10 +9,18 @@ local util = require("common.lib.util")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 
 -- Gives a summary of the recently completed challenge mode game
-local ChallengeModeRecapScene = class(function(self, sceneParams)
-  self.backgroundImg = themes[config.theme].images.bg_main
+---@class ChallengeModeRecapScene : Scene
+---@field challengeMode ChallengeMode
+---@field timeSplitElement UiElement
+---@field recapStartTime number
+---@field minDisplayTime number
+---@field maxDisplayTime number
+---@field backgroundImg UpdatingImage
+local ChallengeModeRecapScene = class(
+function(self, sceneParams)
+  self.backgroundImg = GAME.theme.images.bg_main
   self.challengeMode = sceneParams.challengeMode
-  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 200}, GAME.battleRoom)
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 200}, self.challengeMode)
   self.uiRoot:addChild(self.timeSplitElement)
   self.recapStartTime = love.timer.getTime()
   self.minDisplayTime = 2 -- the minimum amount of seconds the scene will be displayed for
@@ -53,7 +61,7 @@ function ChallengeModeRecapScene:draw()
   drawY = drawY + 120
   GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
   drawY = drawY + 20
-  GraphicsUtil.printf(GAME.battleRoom.continues, drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(self.challengeMode.continues, drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
 
   local font = GraphicsUtil.getGlobalFont()
   GraphicsUtil.print(loc("continue_button"), (consts.CANVAS_WIDTH - font:getWidth(loc("continue_button"))) / 2, consts.CANVAS_HEIGHT - 60)

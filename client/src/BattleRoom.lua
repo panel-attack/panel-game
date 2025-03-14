@@ -295,6 +295,10 @@ function BattleRoom:createMatch(seed)
   return self.match
 end
 
+function BattleRoom:setGameMode(gameMode)
+  self.mode = gameMode
+end
+
 ---@param puzzleSet PuzzleSet
 function BattleRoom:setPuzzleSet(puzzleSet)
   self.puzzleSet = puzzleSet
@@ -391,10 +395,14 @@ function BattleRoom:updateRankedStatus(rankedStatus, comments)
 end
 
 -- creates a match based on the room and player settings, starts it up and switches to the Game scene
-function BattleRoom:startMatch(stageId, seed, replayOfMatch)
+---@param replay ReplayV3?
+function BattleRoom:startMatch(replay)
+  if replay then
+    self.match = ClientMatch.createFromReplay(replay, false)
+  end
   local match = self:createMatch(seed)
 
-  match.replay = replayOfMatch
+  match.replay = replay
   match:setStage(stageId)
 
   if (#match.players > 1 or match.stackInteraction == GameModes.StackInteractions.VERSUS) then

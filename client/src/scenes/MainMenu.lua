@@ -44,25 +44,25 @@ function MainMenu:createMainMenu()
   local menuItems = {ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"), EndlessGame)
       if GAME.battleRoom then
-        switchToScene(EndlessMenu())
+        switchToScene(EndlessMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_PUZZLE"), PuzzleGame)
       if GAME.battleRoom then
-        switchToScene(PuzzleMenu())
+        switchToScene(PuzzleMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"), TimeAttackGame)
       if GAME.battleRoom then
-        switchToScene(TimeAttackMenu())
+        switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
       if GAME.battleRoom then
-        switchToScene(CharacterSelectVsSelf())
+        switchToScene(CharacterSelectVsSelf({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_training", nil, nil, function()
@@ -77,7 +77,7 @@ function MainMenu:createMainMenu()
     ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
       if GAME.battleRoom then
-        switchToScene(CharacterSelect2p())
+        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()

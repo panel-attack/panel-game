@@ -12,10 +12,15 @@ local Character = require("client.src.mods.Character")
 ---@class CharacterSelect : Scene
 ---@field backgroundImg table
 ---@field players Player[]
-local CharacterSelect = class(function(self)
+---@field battleRoom BattleRoom
+local CharacterSelect = class(
+---@param self CharacterSelect
+function(self, sceneParams)
   self.backgroundImg = themes[config.theme].images.bg_select_screen
   self.music = "select_screen"
   self.fallbackMusic = "main"
+  self.battleRoom = sceneParams.battleRoom
+  self.players = shallowcpy(self.battleRoom.players)
   self:load()
 end, Scene)
 
@@ -37,7 +42,6 @@ end
 -- end abstract functions
 
 function CharacterSelect:load()
-  self.players = shallowcpy(GAME.battleRoom.players)
   -- display order is driven by locality
   table.sort(self.players, function(a, b)
     if a.isLocal == b.isLocal then
@@ -253,7 +257,7 @@ local super_select_pixelcode = [[
 ---@return Button[] characterButtons
 function CharacterSelect:getCharacterButtons()
   local characterButtons = {}
-  local enableButtons = GAME.battleRoom:hasLocalPlayer()
+  local enableButtons = self.battleRoom:hasLocalPlayer()
 
   for i = 0, #visibleCharacters do
     local characterButton = ui.Button({
@@ -766,7 +770,7 @@ function CharacterSelect:createPlayerInfo(player)
     x = 4,
     text = ""
   })
-  if GAME.battleRoom.ranked then
+  if self.battleRoom.ranked then
     stackPanel.winrateExpectedLabel:setText(loc("ss_expected_rating") .. " " .. player.expectedWinrate .. "%")
   end
   stackPanel.winrateExpectedLabel.update = function(self, expectedWinrate)
@@ -801,13 +805,13 @@ function CharacterSelect:createRankedStatusPanel()
     hAlign = "center",
     vAlign = "top"
   })
-  if GAME.battleRoom.ranked then
+  if self.battleRoom.ranked then
     rankedStatus.rankedLabel:setText("ss_ranked")
   else
     rankedStatus.rankedLabel:setText("ss_casual")
   end
   rankedStatus.commentLabel = ui.Label({
-    text = GAME.battleRoom.rankedComments or "",
+    text = self.battleRoom.rankedComments or "",
     hAlign = "center",
     vAlign = "top",
     translate = false
@@ -824,7 +828,7 @@ function CharacterSelect:createRankedStatusPanel()
     rankedStatus.commentLabel:setText(comments, nil, false)
   end
 
-  GAME.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.update)
+  self.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.update)
 
   return rankedStatus
 end
@@ -901,7 +905,7 @@ function CharacterSelect:update(dt)
       end
     end
   end
-  if GAME.battleRoom and GAME.battleRoom.spectating then
+  if self.battleRoom and self.battleRoom.spectating then
     if input.isDown["MenuEsc"] then
       GAME.theme:playCancelSfx()
       GAME.netClient:leaveRoom()
@@ -922,8 +926,8 @@ end
 function CharacterSelect:leave()
   GAME.navigationStack:pop(nil,
     function()
-      if GAME.battleRoom then
-        GAME.battleRoom:shutdown()
+      if self.battleRoom then
+        self.battleRoom:shutdown()
       end
     end)
 end

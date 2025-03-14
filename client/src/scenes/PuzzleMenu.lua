@@ -4,6 +4,13 @@ local ui = require("client.src.ui")
 local class = require("common.lib.class")
 
 -- Scene for the puzzle selection menu
+---@class PuzzleMenu : Scene
+---@field menu Menu
+---@field puzzleSet PuzzleSet
+---@field puzzleLabel Label
+---@field levelSlider LevelSlider
+---@field randomColorButtons ButtonGroup
+---@field battleRoom BattleRoom
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -13,6 +20,8 @@ local PuzzleMenu = class(
     self.randomColorButtons = nil
     self.menu = nil
     self.puzzleLabel = nil
+    self.puzzleSet = nil
+    self.battleRoom = sceneParams.battleRoom
 
     self:load(sceneParams)
   end,
@@ -53,7 +62,7 @@ end
 
 function PuzzleMenu:exit()
   GAME.theme:playValidationSfx()
-  GAME.battleRoom:shutdown()
+  self.battleRoom:shutdown()
   GAME.navigationStack:pop()
 end
 
@@ -83,7 +92,7 @@ function PuzzleMenu:load(sceneParams)
       end
     }
   )
-  
+
   self.randomlyFlipPuzzleButtons = ui.ButtonGroup(
     {
       buttons = {
@@ -98,7 +107,7 @@ function PuzzleMenu:load(sceneParams)
       end
     }
   )
-  
+
   local menuOptions = {
     ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider),
     ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons),

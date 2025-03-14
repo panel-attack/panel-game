@@ -244,6 +244,7 @@ function Puzzle:toGameMode()
     mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
     mode.matchRules.stackSetupModifications.stopTime = self.stop_time
     mode.matchRules.stackSetupModifications.shakeTime = self.shake_time
+    mode.matchRules.stackSetupModifications.behaviours.startTimersWithSwapCount = 1
   else
     mode.matchRules.stackSetupModifications.behaviours = {
       allowManualRaise = false,
