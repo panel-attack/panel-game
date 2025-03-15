@@ -54,14 +54,17 @@ function SoundController:setMasterVolume(volume)
   love.audio.setVolume(volume / 100)
 end
 
--- stops all sources in a table of integer indexed sources or a single sfx from playing
+-- stops all sources in a table of integer indexed sources or a sfx object from playing
 function SoundController:stopSfx(sfx)
-  if type(sfx) == "table" then
+
+  -- If the sound object has stop and is playing functions we can use them to stop it.
+  -- This could be a love Source object or a SfxGroup
+  if sfx.stop and sfx.isPlaying then
+    stopIfPlaying(sfx)
+  elseif type(sfx) == "table" then
     for _, s in ipairs(sfx) do
       stopIfPlaying(s)
     end
-  elseif type(sfx) == "userdata" and sfx:typeOf("Source") then
-    stopIfPlaying(sfx)
   end
 end
 
