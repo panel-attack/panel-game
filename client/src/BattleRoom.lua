@@ -259,32 +259,21 @@ function BattleRoom:winningPlayer()
   end
 end
 
----@param seed integer
----@param stackInteraction StackInteractions
 ---@return PanelSource
-function BattleRoom:createPanelSource(seed, stackInteraction)
+function BattleRoom:createPanelSource()
   local player = self.players[1]
-  if player.settings.puzzleSet and player.settings.puzzleIndex and player.settings.puzzleSet[player.settings.puzzleIndex] then
+  if player.settings.puzzleSet and player.settings.puzzleIndex and player.settings.puzzleSet.puzzles[player.settings.puzzleIndex] then
     local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
     return puzzle:toPanelSource(config.puzzle_randomColors, config.puzzle_randomFlipped)
   else
-    return GeneratorSource(seed or math.random(1, 999999), stackInteraction == GameModes.StackInteractions.NONE, stackInteraction ~= GameModes.StackInteractions.NONE)
+    return GeneratorSource(math.random(1, 999999), self.mode.stackInteraction == GameModes.StackInteractions.NONE, self.mode.stackInteraction ~= GameModes.StackInteractions.NONE)
   end
 end
 
 -- creates a match with the players in the BattleRoom
----@param seed integer
 ---@return ClientMatch
-function BattleRoom:createMatch(seed)
-  local panelSource = self:createPanelSource(seed, self.mode.stackInteraction)
-  local supportsPause = not self.online or (#self.players == 1 and self.players[1].isLocal)
-
-  self.match = ClientMatch(
-    self.players,
-    self.mode,
-    panelSource,
-    supportsPause
-  )
+function BattleRoom:createMatch()
+  self.match = ClientMatch.createFromBattleRoom(self)
 
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
 
@@ -397,13 +386,18 @@ end
 -- creates a match based on the room and player settings, starts it up and switches to the Game scene
 ---@param replay ReplayV3?
 function BattleRoom:startMatch(replay)
+  local match
   if replay then
-    self.match = ClientMatch.createFromReplay(replay, false)
+    match = ClientMatch.createFromReplay(replay, self.players)
+  else
+    match = ClientMatch.createFromBattleRoom(self)
   end
-  local match = self:createMatch(seed)
 
-  match.replay = replay
-  match:setStage(stageId)
+  match:connectSignal("matchEnded", self, self.onMatchEnded)
+
+  for _, player in ipairs(self.players) do
+    match:connectSignal("matchEnded", player, player.onMatchEnded)
+  end
 
   if (#match.players > 1 or match.stackInteraction == GameModes.StackInteractions.VERSUS) then
     GAME.rich_presence:setPresence((match:hasLocalPlayer() and "Playing" or "Spectating") .. " a " .. (self.mode.richPresenceLabel or self.mode.gameScene) ..
@@ -412,14 +406,11 @@ function BattleRoom:startMatch(replay)
     GAME.rich_presence:setPresence("Playing " .. self.mode.richPresenceLabel .. " mode", nil, true)
   end
 
-  if self.ranked and not match.room_ratings then
-    match.room_ratings = {}
-  end
-
   match:start()
+  self.match = match
   self.state = BattleRoom.states.MatchInProgress
   local transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
-  local scene = self:createScene(self.match)
+  local scene = self:createScene(match)
   scene:load()
   GAME.navigationStack:push(scene, transition)
 end

@@ -148,6 +148,7 @@ local function processTauntMessage(self, message)
 end
 
 ---@param self NetClient
+---@param message { replay: ReplayV3, [string]: any }
 local function processMatchStartMessage(self, message)
   if not self.room then
     return
@@ -210,7 +211,7 @@ local function processMatchStartMessage(self, message)
   end
 
   self.tcpClient:dropOldInputMessages()
-  self.room:startMatch(message.stageId, message.seed, message.replay)
+  self.room:startMatch(message.replay)
   self:setState(states.INGAME)
 end
 

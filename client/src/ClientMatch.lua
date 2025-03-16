@@ -39,33 +39,20 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field spectatorString string newLine concatenated version of spectators for display
 ---@field winners MatchParticipant[]
 ---@field panelSource PanelSource
+---@field gameMode GameMode
 
 --- The ClientMatch is a way to create a match that will run with graphics and sounds on a client.
 ---@class ClientMatch : Signal
----@overload fun(players: MatchParticipant[], gameMode: GameMode, panelSource: PanelSource, supportsPause: boolean, optionalArgs: table?): ClientMatch
+---@overload fun(players: MatchParticipant[], ranked: boolean): ClientMatch
 local ClientMatch = class(
-function(self, players, gameMode, panelSource, supportsPause, optionalArgs)
+function(self, players, ranked)
   assert(players)
-  assert(gameMode)
-  assert(panelSource)
-  assert(supportsPause ~= nil)
-  self.gameMode = gameMode
-  self.matchRules = gameMode.matchRules
-  self.stackInteraction = gameMode.stackInteraction
-  self.panelSource = panelSource
+  self.players = players
+  self.ranked = ranked
 
-  self.supportsPause = supportsPause
+  self.supportsPause = false
   self.isPaused = false
   self.renderDuringPause = false
-
-  if optionalArgs then
-    -- debatable if these couldn't be player settings instead
-    self.puzzle = optionalArgs.puzzle
-    self.ranked = optionalArgs.ranked
-  end
-
-  self.players = players
-
   self.currentMusicIsDanger = false
 
   self.spectators = {}
@@ -79,6 +66,145 @@ function(self, players, gameMode, panelSource, supportsPause, optionalArgs)
 end)
 
 local countdownEnd = consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
+
+---@param battleRoom BattleRoom
+function ClientMatch.createFromBattleRoom(battleRoom)
+  local clientMatch = ClientMatch.createFromGameMode(battleRoom.players, battleRoom.mode, battleRoom:createPanelSource(), battleRoom.ranked)
+
+  clientMatch.supportsPause = not battleRoom.online or (#battleRoom.players == 1 and battleRoom.players[1].isLocal)
+
+  return clientMatch
+end
+
+---@param gameMode GameMode
+function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked)
+  local clientMatch = ClientMatch(players, ranked)
+  clientMatch:setStage()
+  clientMatch.gameMode = gameMode
+  clientMatch.stackInteraction = gameMode.stackInteraction
+  clientMatch.matchRules = gameMode.matchRules
+  clientMatch.panelSource = panelSource
+  clientMatch.supportsPause = #players == 1 and players[1].isLocal
+
+  clientMatch:setup()
+
+  return clientMatch
+end
+
+---@param replay ReplayV3
+---@param players MatchParticipant[]?
+---@return ClientMatch
+function ClientMatch.createFromReplay(replay, players)
+  local engine = Match.createFromReplay(replay)
+
+  -- we only need to reconstruct the players from the metadata
+  -- unless we already got them passed in
+  players = players or {}
+
+  for _, stackMetadata in ipairs(replay.metadata.stacks) do
+    local stackData = replay.stacks[stackMetadata.stackIndex]
+    if stackData.stackType == 1 and not players[stackMetadata.stackIndex] then
+      ---@cast stackMetadata StackMetadata
+      players[stackMetadata.stackIndex] = Player.createFromReplayMetadata(stackMetadata)
+    elseif stackData.stackType == 2 and not players[stackMetadata.stackIndex] then
+      ---@cast stackMetadata SimulatedStackMetadata
+      players[stackMetadata.stackIndex] = ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
+    end
+  end
+
+  ---@type ClientMatch
+  ---@diagnostic disable-next-line: param-type-mismatch
+  local clientMatch = ClientMatch(players, replay.metadata.ranked)
+  clientMatch.replay = replay
+  clientMatch.engine = engine
+  clientMatch.supportsPause = false
+
+  clientMatch:setStage(replay.metadata.stageId)
+
+  clientMatch.players = players
+
+  -- and assign their stacks from the engine
+  for i, player in ipairs(clientMatch.players) do
+    local clientStack = player:createClientStack(clientMatch.engine.stacks[i], clientMatch.engine)
+    if replay.metadata.completed then
+      -- watching a finished replay
+      clientStack:setMaxRunsPerFrame(1)
+    elseif not clientMatch:hasLocalPlayer() and player.human then
+      ---@cast clientStack PlayerStack
+      clientStack:enableCatchup(true)
+    end
+    clientMatch.stacks[i] = clientStack
+  end
+
+  return clientMatch
+end
+
+function ClientMatch:setup()
+  self.engine = Match(self.panelSource, self.matchRules)
+
+  self.stacks = {}
+
+  for i, player in ipairs(self.players) do
+    local engineStack
+    local clientStack
+    if player.human then
+      engineStack = self.engine:createStackWithSettings(player.settings.levelData, player.isLocal, player.settings.inputMethod)
+    else
+      ---@cast player ChallengeModePlayer
+      engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings, player.settings.healthSettings)
+    end
+
+    clientStack = player:createClientStack(engineStack, self)
+    self.stacks[i] = clientStack
+    -- if self.replay then
+    --   local replayStack = self.replay.stacks[i]
+    --   if self.replay.metadata.completed then
+    --     -- watching a finished replay
+    --     if player.human then
+    --       ---@cast clientStack PlayerStack
+    --       ---@cast replayStack ReplayStack
+    --       clientStack:receiveConfirmedInput(replayStack.inputs)
+    --     end
+    --     clientStack:setMaxRunsPerFrame(1)
+    --   elseif not self:hasLocalPlayer() and replayStack.stackType == 1 then
+    --     ---@cast clientStack PlayerStack
+    --     ---@cast replayStack ReplayStack
+    --     -- catching up to a match in progress
+    --     clientStack:receiveConfirmedInput(replayStack.inputs)
+    --     clientStack:enableCatchup(true)
+    --   end
+    -- end
+  end
+
+  if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+    for i, player in ipairs(self.players) do
+      local engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings)
+      local attackEngineHost = ChallengeModePlayerStack({
+        engine = engineStack,
+        is_local = not (self.replay and self.replay.metadata.completed),
+        character = CharacterLoader.fullyResolveCharacterSelection(),
+        attackSettings = player.settings.attackEngineSettings,
+        match = self,
+      })
+      self.engine:addTarget(engineStack, player.stack.engine)
+      self.stacks[#self.stacks+1] = attackEngineHost
+    end
+  elseif self.stackInteraction == GameModes.StackInteractions.SELF then
+    for i, stack in ipairs(self.stacks) do
+      self.engine:addTarget(stack.engine, stack.engine)
+    end
+  elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
+    for i, stack1 in ipairs(self.stacks) do
+      for j, stack2 in ipairs(self.stacks) do
+        if i ~= j then
+          self.engine:addTarget(stack1.engine, stack2.engine)
+        end
+      end
+    end
+  end
+
+  self.replay = self.engine:createNewReplay()
+end
 
 function ClientMatch:run()
   if self.isPaused or self.engine:hasEnded() then
@@ -132,71 +258,6 @@ function ClientMatch:runGameOver()
 end
 
 function ClientMatch:start()
-  self.engine = Match(self.panelSource, self.matchRules)
-
-  self.stacks = {}
-  local engineStacks = {}
-
-  for i, player in ipairs(self.players) do
-    local engineStack
-    local clientStack
-    if player.human then
-      engineStack = self.engine:createStackWithSettings(player.settings.levelData, player.isLocal, player.settings.inputMethod)
-    else
-      ---@cast player ChallengeModePlayer
-      engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings, player.settings.healthSettings)
-    end
-
-    engineStacks[#engineStacks+1] = engineStack
-    clientStack = player:createClientStack(engineStack, self)
-    self.stacks[i] = clientStack
-    if self.replay then
-      local replayStack = self.replay.stacks[i]
-      if self.replay.metadata.completed then
-        -- watching a finished replay
-        if player.human then
-          ---@cast clientStack PlayerStack
-          ---@cast replayStack ReplayStack
-          clientStack:receiveConfirmedInput(replayStack.inputs)
-        end
-        clientStack:setMaxRunsPerFrame(1)
-      elseif not self:hasLocalPlayer() and replayStack.stackType == 1 then
-        ---@cast clientStack PlayerStack
-        ---@cast replayStack ReplayStack
-        -- catching up to a match in progress
-        clientStack:receiveConfirmedInput(replayStack.inputs)
-        clientStack:enableCatchup(true)
-      end
-    end
-  end
-
-  if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-    for i, player in ipairs(self.players) do
-      local engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings)
-      local attackEngineHost = ChallengeModePlayerStack({
-        engine = engineStack,
-        is_local = not (self.replay and self.replay.metadata.completed),
-        character = CharacterLoader.fullyResolveCharacterSelection(),
-        attackSettings = player.settings.attackEngineSettings,
-        match = self,
-      })
-      self.engine:addTarget(engineStack, player.stack.engine)
-      self.stacks[#self.stacks+1] = attackEngineHost
-    end
-  elseif self.stackInteraction == GameModes.StackInteractions.SELF then
-    for i, stack in ipairs(self.stacks) do
-      self.engine:addTarget(stack.engine, stack.engine)
-    end
-  elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
-    for i, stack1 in ipairs(self.stacks) do
-      for j, stack2 in ipairs(self.stacks) do
-        if i ~= j then
-          self.engine:addTarget(stack1.engine, stack2.engine)
-        end
-      end
-    end
-  end
-
   self:initializeTelegraphRelationships()
 
   self.engine:start()
@@ -207,7 +268,7 @@ function ClientMatch:start()
   -- match already tracks garbage directions as n to n to theoretically support more than 2 players
   -- (there are some other pieces missing still to actually support that)
   -- here on client side we can simply acknowledge that only up to 2 players per match are supported
-  
+
   self:moveStacks()
 
   if self.engine.timeLimit then
@@ -220,13 +281,6 @@ function ClientMatch:start()
     if self.engine.doCountdown then
       self.panicTickStartTime = self.panicTickStartTime + consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
     end
-  end
-
-  if not self.replay then
-    self.replay = self.engine:createNewReplay()
-  else
-    self.engine:setAlwaysSaveRollbacks(self.replay.metadata.completed)
-    self.engine:setEngineVersion(self.replay.engineVersion)
   end
 end
 
@@ -274,10 +328,9 @@ function ClientMatch:setStage(stageId)
   if stageId then
     -- we got one from the server
     self.stageId = StageLoader.fullyResolveStageSelection(stageId)
-  elseif #self.players == 1 then
-    self.stageId = StageLoader.resolveBundle(self.players[1].settings.selectedStageId)
   else
-    self.stageId = StageLoader.fullyResolveStageSelection()
+    local player = self.players[math.random(#self.players)]
+    self.stageId = StageLoader.resolveBundle(player.settings.selectedStageId)
   end
   ModController:loadModFor(stages[self.stageId], self)
 end
@@ -340,8 +393,11 @@ function ClientMatch:finalizeReplay()
           ---@cast player Player
           metadata.name = player.name
           metadata.publicId = player.publicId
-          metadata.level = player.settings.level
-          metadata.difficulty = player.settings.difficulty
+          if player.settings.style == GameModes.Styles.MODERN then
+            metadata.level = player.settings.level
+          else
+            metadata.difficulty = player.settings.difficulty
+          end
           metadata.analytics = player.stack.analytic.data
           ---@diagnostic disable-next-line: inject-field
           metadata.analytics.score = player.stack.engine.score
@@ -382,57 +438,6 @@ function ClientMatch:finalizeReplay()
   end
 
   return replay
-end
-
----@param replay ReplayV3
----@param supportsPause boolean
----@return ClientMatch
-function ClientMatch.createFromReplay(replay, supportsPause)
-  local engine = Match.createFromReplay(replay)
-
-  ---@type ClientMatch
----@diagnostic disable-next-line: param-type-mismatch
-  local clientMatch = setmetatable({}, ClientMatch)
-  clientMatch.replay = replay
-  clientMatch.engine = engine
-  clientMatch.supportsPause = supportsPause
-
-  clientMatch:setStage(replay.metadata.stageId)
-
-  -- we only need to reconstruct the players from the metadata
-
-  local players = {}
-
-  for _, stackMetadata in ipairs(replay.metadata.stacks) do
-    local stackData = replay.stacks[stackMetadata.stackIndex]
-    if stackData.stackType == 1 then
-      ---@cast stackMetadata StackMetadata
-      players[stackMetadata.stackIndex] = Player.createFromReplayMetadata(stackMetadata)
-    elseif stackData.stackType == 2 then
-      ---@cast stackMetadata SimulatedStackMetadata
-      players[stackMetadata.stackIndex] = ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
-    end
-  end
-
-  clientMatch.players = players
-
-  -- and assign their stacks from the engine
-  for i, player in ipairs(clientMatch.players) do
-    local clientStack = player:createClientStack(clientMatch.engine.stacks[i], clientMatch.engine)
-    if replay.metadata.completed then
-      -- watching a finished replay
-      clientStack:setMaxRunsPerFrame(1)
-    elseif not clientMatch:hasLocalPlayer() and player.human then
-      ---@cast clientStack PlayerStack
-      clientStack:enableCatchup(true)
-    end
-    clientMatch.stacks[i] = clientStack
-  end
-
-  -- and then mirror the garbageTarget / garbageSource assignments for telegraph
-  clientMatch:initializeTelegraphRelationships()
-
-  return clientMatch
 end
 
 function ClientMatch:initializeTelegraphRelationships()
@@ -718,6 +723,10 @@ function ClientMatch:resetPuzzle()
   local stackEngine = self.engine.stacks[1]
   stackEngine.confirmedInput = {}
   self.players[1]:incrementWinCount()
+  -- rollback data is discarded so we need to resave frame 0
+  for i, stack in ipairs(self.engine.stacks) do
+    stack:saveForRollback()
+  end
 end
 
 ---@param prefix "I" | "U"

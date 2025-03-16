@@ -26,10 +26,7 @@ function PuzzleGame:customLoad()
   self.puzzleIndex = self.match.players[1].settings.puzzleIndex
   local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
   local isValid, validationError = puzzle:validate()
-  if isValid then
-    self.match.players[1].stack:setPuzzleState(puzzle)
-    self.match:setCountdown(puzzle.doCountdown)
-  else
+  if not isValid then
     validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
                     .. validationError
     local transition = MessageTransition(GAME.timer, 5, validationError)
@@ -40,25 +37,26 @@ end
 function PuzzleGame:customRun()
   -- reset level
   if (self.inputConfiguration and self.inputConfiguration.isDown["TauntUp"]) then
-    if self.match.ended then
-      FileUtils.saveReplay(self.match.replay)
-    else
-      if not self.match.isPaused then
-        GAME.theme:playValidationSfx()
-        self.match:resetPuzzle()
-      end
+    if not self.match.ended and not self.match.isPaused then
+      GAME.theme:playValidationSfx()
+      self.match:resetPuzzle()
     end
   end
 end
 
 function PuzzleGame:readyToProceedToNextScene()
-  return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
+  if (self.inputConfiguration and self.inputConfiguration.isDown["TauntUp"]) then 
+    FileUtils.saveReplay(self.match.replay)
+  else
+    return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
+  end
 end
 
 function PuzzleGame:startNextScene()
   if self.match.engine.aborted then
     GAME.navigationStack:pop()
   elseif self.match.players[1].settings.puzzleIndex <= #self.match.players[1].settings.puzzleSet.puzzles then
+    GAME.battleRoom:setGameMode(self.puzzleSet.puzzles[self.match.players[1].settings.puzzleIndex]:toGameMode())
     self.match.players[1]:setWantsReady(true)
   else
     GAME.navigationStack:pop()

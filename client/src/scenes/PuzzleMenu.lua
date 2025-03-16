@@ -2,6 +2,7 @@ local Scene = require("client.src.scenes.Scene")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
 local class = require("common.lib.class")
+local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
@@ -34,30 +35,31 @@ local BUTTON_WIDTH = 60
 local BUTTON_HEIGHT = 25
 
 function PuzzleMenu:startGame(puzzleSet)
+  self.puzzleSet = deepcpy(puzzleSet)
   if config.puzzle_level ~= self.levelSlider.value or config.puzzle_randomColors ~= self.randomColorsButtons.value then
     logger.debug("saving settings...")
     write_conf_file()
   end
 
-  if config.puzzle_randomColors or config.puzzle_randomFlipped then
-    puzzleSet = deepcpy(puzzleSet)
-
-    for _, puzzle in pairs(puzzleSet.puzzles) do
-      if config.puzzle_randomColors then
-        puzzle.stack = Puzzle.randomizeColorsInPuzzleString(puzzle.stack)
-      end
-      if config.puzzle_randomFlipped then
-        if math.random(2) == 1 then
-          puzzle.stack = Puzzle.horizontallyFlipPuzzleString(puzzle.stack)
-        end
-      end
-    end
-  end
-
   GAME.theme:playValidationSfx()
-
   GAME.localPlayer:setPuzzleSet(puzzleSet)
-  GAME.localPlayer:setWantsReady(true)
+
+  self:startNextPuzzle()
+end
+
+function PuzzleMenu:startNextPuzzle()
+  local player = self.battleRoom.players[1]
+  local puzzle = self.puzzleSet.puzzles[player.settings.puzzleIndex]
+  local isValid, validationError = puzzle:validate()
+  if not isValid then
+    validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
+                    .. validationError
+    local transition = MessageTransition(GAME.timer, 5, validationError)
+    GAME.navigationStack:popToTop(transition)
+  else
+    self.battleRoom:setGameMode(puzzle:toGameMode())
+  end
+  player:setWantsReady(true)
 end
 
 function PuzzleMenu:exit()
@@ -117,7 +119,7 @@ function PuzzleMenu:load(sceneParams)
   for puzzleSetName, puzzleSet in pairsSortedByKeys(GAME.puzzleSets) do
     menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(puzzleSetName, nil, false, function() self:startGame(puzzleSet) end)
   end
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, self.exit)
+  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function() self:exit() end)
 
   self.menu = ui.Menu.createCenteredMenu(menuOptions)
 

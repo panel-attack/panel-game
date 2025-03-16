@@ -14,6 +14,7 @@ local TouchInputDetector = require("client.src.TouchInputDetector")
 local logger = require("common.lib.logger")
 require("client.src.analytics")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local MatchRules      = require("common.data.MatchRules")
 ---@module "common.data.LevelData"
 
 local floor, min, max = math.floor, math.min, math.max
@@ -1217,15 +1218,14 @@ function PlayerStack:drawAnalyticData()
 end
 
 function PlayerStack:drawMoveCount()
-  -- draw outside of stack's frame canvas
-  if self.engine.puzzle then
-    self:drawLabel(self.assets.moves, themes[config.theme].moveLabel_Pos, themes[config.theme].moveLabel_Scale, false, true)
-    local moveNumber = math.abs(self.engine.puzzle.remaining_moves)
-    if self.engine.puzzle.puzzleType == "moves" then
-      moveNumber = self.engine.puzzle.remaining_moves
-    end
-    self:drawNumber(moveNumber, themes[config.theme].move_Pos, themes[config.theme].move_Scale, true)
+  local moveNumber
+  self:drawLabel(self.assets.moves, GAME.theme.moveLabel_Pos, GAME.theme.moveLabel_Scale, false, true)
+  if self.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
+    moveNumber = self.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] - self.engine.swapCount
+  else
+    moveNumber = self.engine.swapCount
   end
+  self:drawNumber(moveNumber, themes[config.theme].move_Pos, themes[config.theme].move_Scale, true)
 end
 
 local function shouldFlashForFrame(frame)

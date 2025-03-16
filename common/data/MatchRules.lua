@@ -8,7 +8,7 @@
 ---@class MatchRules
 ---@field doCountdown boolean
 ---@field matchEndConditions table<MatchEndCondition, any>
----@field matchWinRuleset table<MatchWinCriteria, WinCondition>[]
+---@field matchWinRuleset table<MatchWinCriteria, PlacementOrder>[]
 ---@field stackOverConditions table<StackOverCondition, any>
 ---@field stackWinConditions table<StackWinCondition, integer>
 ---@field stackSetupModifications StackSetupModifications
@@ -21,7 +21,7 @@ MatchRules.MatchEndConditions = { STACKS_ACTIVE = "STACKS_ACTIVE", TIME_LIMIT = 
 ---@enum MatchWinCriteria
 MatchRules.MatchWinCriterias = { GAME_OVER_CLOCK = "GAME_OVER_CLOCK", SCORE = "SCORE", TIME = "TIME" }
 
----@enum WinCondition
+---@enum PlacementOrder
 MatchRules.orders = { LOWEST = "LOWEST", HIGHEST = "HIGHEST" }
 
 ---@enum StackOverCondition

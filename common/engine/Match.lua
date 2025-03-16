@@ -456,9 +456,6 @@ function Match.createFromReplay(replay)
 
   local match = Match(panelSource, replay.rules)
 
-  match.engineVersion = replay.engineVersion
-  match:setAlwaysSaveRollbacks(replay.metadata.completed)
-
   for i, replayStack in ipairs(replay.stacks) do
     local stack
     if replayStack.stackType == 1 then
@@ -486,6 +483,9 @@ function Match.createFromReplay(replay)
       table.insert(match.garbageSources[recipientStack], match.stacks[garbageFlow.source])
     end
   end
+
+  match:setEngineVersion(replay.engineVersion)
+  match:setAlwaysSaveRollbacks(replay.metadata.completed)
 
   return match
 end

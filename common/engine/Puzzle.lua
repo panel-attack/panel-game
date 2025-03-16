@@ -232,7 +232,9 @@ end
 function Puzzle:toGameMode()
   local mode = GameModes.getPreset("ONE_PLAYER_PUZZLE")
   if not mode.matchRules.stackSetupModifications then
-    mode.matchRules.stackSetupModifications = {}
+    mode.matchRules.stackSetupModifications = { behaviours = {}}
+  elseif not mode.matchRules.stackSetupModifications.behaviours then
+    mode.matchRules.stackSetupModifications.behaviours = {}
   end
 
   if self.moves > 0 then

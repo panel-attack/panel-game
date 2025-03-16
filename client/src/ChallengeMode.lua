@@ -219,6 +219,7 @@ function ChallengeMode:onMatchEnded(match)
 end
 
 function ChallengeMode:setStage(index)
+  logger.debug("Setting stage to index " .. index)
   self.stageIndex = index
   GAME.localPlayer:setLevel(self.stages[index].playerLevel)
 

@@ -93,7 +93,8 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
     gameWinConditions = gameMode.gameWinConditions,
     stackWinConditions = gameMode.matchRules.stackWinConditions,
     inputMethod = "controller",
-    panelSource = LegacyPanelSource(seed)
+    panelSource = LegacyPanelSource(seed),
+    stackSetupModifications = {}
   }
   if gameMode.stackInteraction == GameModes.StackInteractions.NONE or not level then
     args.behaviours = StackBehaviours.getV048Default()

@@ -430,6 +430,7 @@ function Stack:rollbackCopy()
   copy.panels_cleared = self.panels_cleared
   copy.game_over_clock = self.game_over_clock
   copy.highestGarbageIdMatched = self.highestGarbageIdMatched
+  copy.swapCount = self.swapCount
 
   for garbageWidth = 1, #self.currentGarbageDropColumnIndexes do
     copy.currentGarbageDropColumnIndexes[garbageWidth] = self.currentGarbageDropColumnIndexes[garbageWidth]
@@ -494,6 +495,7 @@ local function internalRollbackToFrame(stack, frame)
   stack.queuedSwapRow = copy.queuedSwapRow
   stack.speed = copy.speed
   stack.health = copy.health
+  stack.swapCount = copy.swapCount
 
   -- we can just overwrite using the copied table as the rollbackBuffer discards that table from reuse
   stack.currentGarbageDropColumnIndexes = copy.currentGarbageDropColumnIndexes
@@ -526,7 +528,7 @@ local function internalRollbackToFrame(stack, frame)
 
   -- this is for the interpolation of the shake animation only (not a physics relevant field)
   local previousData = stack.rollbackBuffer:peekPrevious()
-  if previousData.clock == frame - 1 then
+  if previousData and previousData.clock == frame - 1 then
     stack.prev_shake_time = previousData.shake_time
   else
     -- if this is the oldest rollback frame we don't need to interpolate with previous values
@@ -1647,7 +1649,7 @@ function Stack:checkGameOver()
           return true
         end
       elseif stackOverCondition == MatchRules.StackOverConditions.SWAPS then
-        if self.swapCount >= value and not self:hasActivePanels() then
+        if self.swapCount >= value and not self:hasActivePanels() and not self:swapQueued() then
           return true
         end
       elseif stackOverCondition == MatchRules.StackOverConditions.CHAIN then

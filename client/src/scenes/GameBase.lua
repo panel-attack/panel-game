@@ -14,6 +14,7 @@ local prof = require("common.lib.zoneProfiler")
 local ui = require("client.src.ui")
 local FileUtils = require("client.src.FileUtils")
 local ClientStack = require("client.src.ClientStack")
+local MatchRules = require("common.data.MatchRules")
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
@@ -405,11 +406,11 @@ end
 function GameBase:drawHUD()
   if not self.match.isPaused then
     for i, stack in ipairs(self.match.stacks) do
-      if stack.engine.puzzle then
+      if stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
         stack:drawMoveCount()
       end
       if config.show_ingame_infos then
-        if not stack.engine.puzzle then
+        if not stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
           stack:drawScore()
           stack:drawSpeed()
         end
