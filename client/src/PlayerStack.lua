@@ -1002,12 +1002,6 @@ function PlayerStack:drawMultibar()
   local stop_time = engine.stop_time
   local shake_time = engine.shake_time
 
-  -- before the first move, display the stop time from the puzzle, not the stack
-  if engine.puzzle and engine.puzzle.puzzleType == "clear" and engine.puzzle.moves == engine.puzzle.remaining_moves then
-    stop_time = engine.puzzle.stop_time
-    shake_time = engine.puzzle.shake_time
-  end
-
   if self.theme.multibar_is_absolute then
     -- absolute multibar is *only* supported for v3 themes
     self:drawAbsoluteMultibar(stop_time, shake_time, engine.pre_stop_time)
@@ -1602,7 +1596,8 @@ function PlayerStack:getAttackPatternData()
 end
 
 function PlayerStack.updateDangerBounce(self)
-  if self.engine.puzzle then
+  if not self.engine.behaviours.passiveRaise then
+    -- no passive raise, no danger
     return
   end
 
@@ -1618,7 +1613,7 @@ function PlayerStack.updateDangerBounce(self)
     end
   end
   if self.danger then
-    if self.engine.panels_in_top_row and self.engine.speed ~= 0 and not self.engine.puzzle then
+    if self.engine.panels_in_top_row and self.engine.speed ~= 0 then
       -- Player has topped out, panels hold the "flattened" frame
       self.danger_timer = 0
     elseif self.engine.stop_time == 0 then

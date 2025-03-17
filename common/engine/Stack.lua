@@ -613,9 +613,9 @@ function Stack.toPuzzleInfo(self)
   return puzzleInfo
 end
 
-function Stack.hasGarbage(self)
+function Stack:hasGarbage()
   -- garbage is more likely to be found at the top of the stack
-  for row = #self.panels, 1, -1 do
+  for row = self.height, 1, -1 do
     for column = 1, #self.panels[row] do
       if self.panels[row][column].isGarbage
         and self.panels[row][column].state ~= "matched" then
