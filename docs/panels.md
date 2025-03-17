@@ -137,13 +137,10 @@ Whenever the player has no stop time, the panic frame will be displayed.
 
 This means that if a separate panic animation is supplied, only the panic animation will visibly play and whenever stop time is gained, the animation will freeze on the corresponding danger frame. Otherwise the danger animation plays and freezes in accordance with stop time.
 
+As they share a timer, it is recommended to use the same length / timing for danger and panic as otherwise the transition between the two may look odd.
+
 *Panels in the "hovering" state only adopt the danger frames if the garbageBounce animation is used.
 
-#### panic
-
-This is an OPTIONAL animation, if not specified it will default to the danger animation.  
-Displayed under the same conditions as danger except when there is NO stop time left.
-Like with danger
 
 #### garbagePop
 
