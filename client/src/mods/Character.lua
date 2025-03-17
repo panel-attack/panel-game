@@ -749,29 +749,29 @@ function Character.playShockSfx(self, size)
   end
 end
 
--- Stops old combo / chain sounds and plays the appropriate chain or combo sound
-function Character.playAttackSfx(self, attack)
-  -- stop previous attack sounds if any
-  local function stopAttackSounds()
-    for _, v in pairs(self.sounds.combo) do
-      SoundController:stopSfx(v)
-    end
-
-    if tableUtils.length(self.sounds.shock) > 0 then
-      for _, v in pairs(self.sounds.shock) do
-        SoundController:stopSfx(v)
-      end
-    elseif self.sounds.combo_echo then
-      SoundController:stopSfx(self.sounds.combo_echo)
-    end
-
-    for _, v in pairs(self.sounds.chain) do
-      SoundController:stopSfx(v)
-    end
+-- stop previous attack sounds if any
+function Character:stopAttackSounds()
+  for _, v in pairs(self.sounds.combo) do
+    SoundController:stopSfx(v)
   end
 
+  if tableUtils.length(self.sounds.shock) > 0 then
+    for _, v in pairs(self.sounds.shock) do
+      SoundController:stopSfx(v)
+    end
+  elseif self.sounds.combo_echo then
+    SoundController:stopSfx(self.sounds.combo_echo)
+  end
+
+  for _, v in pairs(self.sounds.chain) do
+    SoundController:stopSfx(v)
+  end
+end
+
+-- Stops old combo / chain sounds and plays the appropriate chain or combo sound
+function Character.playAttackSfx(self, attack)
   if self.sounds.chain then
-    stopAttackSounds()
+    self:stopAttackSounds()
 
     -- play combos or chains
     if attack.type == consts.ATTACK_TYPE.combo then
