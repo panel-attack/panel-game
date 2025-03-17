@@ -1591,22 +1591,30 @@ function PlayerStack:getAttackPatternData()
   return data, state
 end
 
-function PlayerStack.updateDangerBounce(self)
+-- calculate which columns should bounce
+function PlayerStack:updateDangerBounce()
   if self.engine.puzzle then
     return
   end
 
-  -- calculate which columns should bounce
+  -- reset state
   self.danger = false
-  local panelRow = self.engine.panels[self.engine.height - 1]
-  for idx = 1, self.engine.width do
-    if panelRow[idx]:dangerous() then
-      self.danger = true
-      self.danger_col[idx] = true
-    else
-      self.danger_col[idx] = false
+  for column = 1, self.engine.width do
+    self.danger_col[column] = false
+  end
+
+  for row = self.engine.height - 1, self.engine.height do
+    local panelRow = self.engine.panels[row]
+    if panelRow then
+      for idx = 1, self.engine.width do
+        if panelRow[idx]:dangerous() then
+          self.danger = true
+          self.danger_col[idx] = true
+        end
+      end
     end
   end
+
   if self.danger then
     if self.engine.panels_in_top_row and self.engine.speed ~= 0 and not self.engine.puzzle then
       -- Player has topped out, panels hold the "flattened" frame

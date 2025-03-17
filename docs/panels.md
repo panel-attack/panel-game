@@ -124,9 +124,18 @@ Currently a single frame and not animatable.
 
 #### danger
 
-Panels in the states "normal", "falling" and "hovering" in a column that is close to the top or even touching it, perform a danger animation.  
-This animation loops but is held on its first frame if the player is topped out and has no stop time left.  
-To make this panic state visible, the first frame of the danger animation should NOT match the normal frame.
+Panels in the states "normal", "falling" and "hovering"* in a column that is close to the top or even touching it, perform a danger animation.  
+This animation loops as long as the player is not topped out OR has stop time remaining while topped out.  
+If a top out occurs without stop time, the first panic frame is held instead.  
+If no panic animation is specified, the first frame of the danger animation is displayed so it should NOT match the normal frame.
+
+*Panels in the "hovering" state only adopt the danger frames if the garbageBounce animation is used.
+
+#### panic
+
+This is an OPTIONAL animation, if not specified it will default to the danger animation.  
+Displayed under the same conditions as danger except when there is NO stop time left.
+Like with danger
 
 #### garbagePop
 

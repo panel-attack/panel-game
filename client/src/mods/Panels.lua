@@ -15,6 +15,7 @@ local ANIMATION_STATES = {
 
 local OPTIONAL_ANIMATION_STATES = {
   "garbageBounce",
+  "panic",
 }
 
 local DEFAULT_PANEL_ANIM =
@@ -322,8 +323,8 @@ function Panels:load()
     self:loadSheets()
   end
 
-  if self.sheetConfig.dangerStop == nil then
-    self.sheetConfig.dangerStop = self.sheetConfig.danger
+  if self.sheetConfig.panic == nil then
+    self.sheetConfig.panic = self.sheetConfig.danger
   end
   
   self.scale = 16 / self.size
@@ -446,9 +447,11 @@ local function getGarbageBounceProps(panelSet, panel)
 end
 
 local function getDangerBounceProps(panelSet, panel, dangerTimer, stopTime)
-  local conf = panelSet.sheetConfig.danger
+  local conf
   if stopTime > 0 then
-    conf = panelSet.sheetConfig.dangerStop
+    conf = panelSet.sheetConfig.danger
+  else
+    conf = panelSet.sheetConfig.panic
   end
   -- dangerTimer counts up from 0 but top out and getting out of danger force it back to 0
   local frame = ceil(wrap(1, dangerTimer + 1 + floor((panel.column - 1) / 2), conf.durationPerFrame * conf.frames) / conf.durationPerFrame)
