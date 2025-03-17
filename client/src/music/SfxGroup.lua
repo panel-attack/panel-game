@@ -35,7 +35,7 @@ end
 
 ---@param index integer? optionally specify an exact index you want to play if possible
 function SfxGroup:play(index)
-  self:stopPlayingIfNeeded()
+  self:stop()
 
   if index and self.sources[index] then
     self.lastPlaying = self.sources[index]
@@ -56,15 +56,10 @@ function SfxGroup:isPlaying()
 end
 
 function SfxGroup:stop()
-  if self.lastPlaying then
-    self.lastPlaying:stop()
-  end
-end
-
-function SfxGroup:stopPlayingIfNeeded()
   if self:isPlaying() then
     self.lastPlaying:stop()
   end
+  self.lastPlaying = nil
 end
 
 function SfxGroup:clone()
