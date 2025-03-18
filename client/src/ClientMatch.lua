@@ -103,12 +103,15 @@ function ClientMatch.createFromReplay(replay, players)
 
   for _, stackMetadata in ipairs(replay.metadata.stacks) do
     local stackData = replay.stacks[stackMetadata.stackIndex]
-    if stackData.stackType == 1 and not players[stackMetadata.stackIndex] then
-      ---@cast stackMetadata StackMetadata
-      players[stackMetadata.stackIndex] = Player.createFromReplayMetadata(stackMetadata)
-    elseif stackData.stackType == 2 and not players[stackMetadata.stackIndex] then
-      ---@cast stackMetadata SimulatedStackMetadata
-      players[stackMetadata.stackIndex] = ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
+
+    if not players[stackMetadata.stackIndex] then
+      if stackData.stackType == 1 then
+        ---@cast stackMetadata StackMetadata
+        players[stackMetadata.stackIndex] = Player.createFromReplayMetadata(stackMetadata)
+      elseif stackData.stackType == 2 then
+        ---@cast stackMetadata SimulatedStackMetadata
+        players[stackMetadata.stackIndex] = ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
+      end
     end
   end
 
@@ -118,6 +121,9 @@ function ClientMatch.createFromReplay(replay, players)
   clientMatch.replay = replay
   clientMatch.engine = engine
   clientMatch.supportsPause = false
+  clientMatch.stacks = {}
+  clientMatch.spectators = {}
+  clientMatch.spectatorString = ""
 
   clientMatch:setStage(replay.metadata.stageId)
 
@@ -125,7 +131,7 @@ function ClientMatch.createFromReplay(replay, players)
 
   -- and assign their stacks from the engine
   for i, player in ipairs(clientMatch.players) do
-    local clientStack = player:createClientStack(clientMatch.engine.stacks[i], clientMatch.engine)
+    local clientStack = player:createClientStack(clientMatch.engine.stacks[i], clientMatch)
     if replay.metadata.completed then
       -- watching a finished replay
       clientStack:setMaxRunsPerFrame(1)

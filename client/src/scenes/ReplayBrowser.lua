@@ -25,7 +25,8 @@ local path_contents = {}
 local filename = nil
 local state = "browser"
 -- technically this should start as nil but it drives the language server a bit crazy
-local selectedReplay = {}
+---@type ReplayV3
+local selectedReplay
 
 local menu_x = 400
 local menu_y = 280
@@ -133,6 +134,8 @@ function ReplayBrowser:update()
       GAME.theme:playValidationSfx()
       if selectMenuItem() then
         state = "info"
+      else
+        GAME.theme:playCancelSfx()
       end
     end
     if input.isDown["MenuBack"] then
@@ -159,10 +162,12 @@ function ReplayBrowser:update()
     if input.isDown["MenuSelect"] and ReplayV3.replayCanBeViewed(selectedReplay) then
       GAME.theme:playValidationSfx()
       SoundController:stopMusic()
-      local match = ClientMatch.createFromReplay(selectedReplay, false)
+      local match = ClientMatch.createFromReplay(selectedReplay)
       match.renderDuringPause = true
       match:start()
       GAME.navigationStack:push(ReplayGame({match = match}))
+    else
+      GAME.theme:playCancelSfx()
     end
   end
 end
@@ -184,47 +189,52 @@ function ReplayBrowser:draw()
     GraphicsUtil.print(filename, menu_x - 150, menu_y - 40 + menu_h)
 
     local modeText
-    if #selectedReplay.players == 2 then
+    if #selectedReplay.metadata.gameModeName == "VS" then
       modeText = loc("rp_browser_info_2p_vs")
-    else
-      if selectedReplay.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
+    elseif selectedReplay.metadata.gameModeName == "vsSelf" then
         modeText = loc("rp_browser_info_1p_vs")
-      elseif selectedReplay.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+      elseif selectedReplay.metadata.gameModeName == "training" then
         modeText = loc("mm_1_training")
-      elseif selectedReplay.gameMode.puzzle then
+      elseif selectedReplay.metadata.gameModeName == "puzzle" then
         modeText = loc("rp_browser_info_puzzle")
-      elseif selectedReplay.gameMode.timeLimit then
+      elseif selectedReplay.metadata.gameModeName == "timeattack" then
         modeText = loc("rp_browser_info_time")
-      else
+      elseif selectedReplay.metadata.gameModeName == "endless" then
         modeText = loc("rp_browser_info_endless")
+      else
+        modeText = "Unknown"
       end
-    end
+
     GraphicsUtil.print(modeText, menu_x + 220, menu_y + 20)
 
     local offsetX = 0
-    for i, player in ipairs(selectedReplay.players) do
+    for i, player in ipairs(selectedReplay.metadata.stacks) do
+      local stack = selectedReplay.stacks[player.stackIndex]
       GraphicsUtil.print(loc("rp_browser_info_" .. i .. "p"), menu_x + offsetX, menu_y + 50)
       GraphicsUtil.print(loc("rp_browser_info_name", player.name or ("Player " .. i)), menu_x + offsetX, menu_y + 65)
-      GraphicsUtil.print(loc("rp_browser_info_character", player.settings.characterId or ""), menu_x + offsetX, menu_y + 80)
-      if player.human then
-        if player.settings.level then
-          GraphicsUtil.print(loc("rp_browser_info_level", player.settings.level), menu_x + offsetX, menu_y + 95)
+      GraphicsUtil.print(loc("rp_browser_info_character", player.characterId or ""), menu_x + offsetX, menu_y + 80)
+      if stack.stackType == 1 then
+        ---@cast player StackMetadata
+        ---@cast stack ReplayStack
+        if player.level then
+          GraphicsUtil.print(loc("rp_browser_info_level", player.level), menu_x + offsetX, menu_y + 95)
         else
-          GraphicsUtil.print(loc("rp_browser_info_speed", player.settings.levelData.startingSpeed), menu_x + offsetX, menu_y + 95)
-          GraphicsUtil.print(loc("rp_browser_info_difficulty", player.settings.difficulty), menu_x + offsetX, menu_y + 110)
+          GraphicsUtil.print(loc("rp_browser_info_speed", stack.levelData.startingSpeed), menu_x + offsetX, menu_y + 95)
+          GraphicsUtil.print(loc("rp_browser_info_difficulty", player.difficulty), menu_x + offsetX, menu_y + 110)
         end
       else
-        if player.settings.difficulty then
-          GraphicsUtil.print(loc("challenge_difficulty_" .. player.settings.difficulty), menu_x + offsetX, menu_y + 95)
+        ---@cast player SimulatedStackMetadata
+        if player.challengeModeDifficulty then
+          GraphicsUtil.print(loc("challenge_difficulty_" .. player.challengeModeDifficulty), menu_x + offsetX, menu_y + 95)
         end
-        if player.settings.level then
-          GraphicsUtil.print(loc("stage") .. " " .. player.settings.level, menu_x + offsetX, menu_y + 110)
+        if player.stageIndex then
+          GraphicsUtil.print(loc("stage") .. " " .. player.stageIndex, menu_x + offsetX, menu_y + 110)
         end
       end
       offsetX = offsetX + 300
     end
 
-    if selectedReplay.ranked then
+    if selectedReplay.metadata.ranked then
       GraphicsUtil.print(loc("rp_browser_info_ranked"), menu_x + 200, menu_y + 130)
     end
 
