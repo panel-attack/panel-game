@@ -613,7 +613,7 @@ function Stack.toPuzzleInfo(self)
   return puzzleInfo
 end
 
-function Stack:hasGarbage()
+function Stack:hasMatchableGarbage()
   -- garbage is more likely to be found at the top of the stack
   for row = self.height, 1, -1 do
     for column = 1, #self.panels[row] do
@@ -1014,8 +1014,10 @@ function Stack:simulate()
   -- lol owned
   end
 
-  if self:checkGameOver() then
-    self:setGameOver()
+  if not self:checkGameWin() then
+    if self:checkGameOver() then
+      self:setGameOver()
+    end
   end
 
   --prof.push("process staged garbage")
@@ -1686,7 +1688,7 @@ function Stack:checkGameWin()
         return true
       end
     elseif stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS then
-      if not self:hasGarbage() then
+      if not self:hasMatchableGarbage() then
         return true
       end
     end
