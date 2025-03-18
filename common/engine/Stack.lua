@@ -145,7 +145,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field cur_col integer the column the left half of the cursor is on (or just the cursor in case of touch)
 ---@field queuedSwapRow integer row in which a swap for next frame has been queued; 0 if none queued
 ---@field queuedSwapColumn integer column of the left (or in case of touch the "target") panel for which a swap has been queued for next frame; 0 if none queued
----@field top_cur_row integer the maximum row index the cursor is allowed to go at the moment
+---@field top_cur_row integer the maximum row index the cursor is allowed to go at the moment; accessibility of row 12 depends on the stack's current displacement
 ---@field panels_cleared integer How many panels have been cleared on the stack so far; relevant for the occurence of shock panels
 ---@field metal_panels_queued integer How many shock panels are currently queued up
 ---@field prev_shake_time integer How many frames of shake time we had last frame; by comparing with the new shake_time it can be determined whether there should be a thud SFX or other things
@@ -262,7 +262,7 @@ local Stack = class(
     s.cur_col = args.stackSetupModifications.startingCol or  3
     s.queuedSwapColumn = 0
     s.queuedSwapRow = 0
-    s.top_cur_row = s.height - 1
+    s.top_cur_row = s.height
     s.swapCount = 0
 
     s.panels_cleared = s.panels_cleared or 0
@@ -1139,7 +1139,7 @@ function Stack:runCountDownIfNeeded()
       if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
         self.cursorLock = true
       end
-      self.cur_row = self.height
+      self.cur_row = self.height - 1
       if self.inputMethod == "touch" then
         self.cur_col = self.width
       elseif self.inputMethod == "controller" then
