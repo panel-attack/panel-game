@@ -48,6 +48,7 @@ local tests = {
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",
   "client.tests.ServerQueueTests",
+  "client.tests.SoundGroupTests",
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
   "common.tests.engine.PanelGenTests",

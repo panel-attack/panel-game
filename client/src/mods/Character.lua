@@ -31,7 +31,7 @@ local comboStyle = {classic = 0, per_combo = 1}
 ---@field display_name string Name for display in selection menus
 ---@field stage string? Id of a stage for super select
 ---@field panels string? Id of a panel set for super select
----@field images table<string, love.Image> graphical assets of the character
+---@field images table<string, love.Texture> graphical assets of the character
 ---@field telegraph_garbage_images userdata[][] graphical assets for telegraph display
 ---@field sounds table<string, table<integer, SfxGroup> | SfxGroup> sound effect assets of the character
 ---@field musics table<string, Music> music assets of the character
@@ -489,13 +489,26 @@ end
 function Character:validate()
   -- validate that the mod has both normal and danger music if it is dynamic
   -- do this on initialization so modders get a crash on load and know immediately what to fix
+  local valid, err
   if self.music_style == "dynamic" then
-    if not fileUtils.getSoundFileName("normal_music", self.path) or fileUtils.getSoundFileName("danger_music", self.path) then
-      local err = "Error loading character " .. self.id .. "\n at "
+    local normalMusicFile = fileUtils.getSoundFileName("normal_music", self.path)
+    local dangerMusicFile = fileUtils.getSoundFileName("danger_music", self.path)
+    if normalMusicFile and not dangerMusicFile then
+      err = "Error loading character " .. self.id .. "\n at "
                      .. self.path ..
                   ":\n Characters with dynamic music must have a normal_music and danger_music file"
       return false, err
     end
+  end
+
+  valid, err = Music.validate(self.path, "normal_music")
+  if not valid then
+    return valid, err
+  end
+
+  valid, err = Music.validate(self.path, "danger_music")
+  if not valid then
+    return valid, err
   end
 
   return true
@@ -736,29 +749,29 @@ function Character.playShockSfx(self, size)
   end
 end
 
--- Stops old combo / chain sounds and plays the appropriate chain or combo sound
-function Character.playAttackSfx(self, attack)
-  -- stop previous attack sounds if any
-  local function stopAttackSounds()
-    for _, v in pairs(self.sounds.combo) do
-      SoundController:stopSfx(v)
-    end
-
-    if tableUtils.length(self.sounds.shock) > 0 then
-      for _, v in pairs(self.sounds.shock) do
-        SoundController:stopSfx(v)
-      end
-    elseif self.sounds.combo_echo then
-      SoundController:stopSfx(self.sounds.combo_echo)
-    end
-
-    for _, v in pairs(self.sounds.chain) do
-      SoundController:stopSfx(v)
-    end
+-- stop previous attack sounds if any
+function Character:stopAttackSounds()
+  for _, v in pairs(self.sounds.combo) do
+    SoundController:stopSfx(v)
   end
 
+  if tableUtils.length(self.sounds.shock) > 0 then
+    for _, v in pairs(self.sounds.shock) do
+      SoundController:stopSfx(v)
+    end
+  elseif self.sounds.combo_echo then
+    SoundController:stopSfx(self.sounds.combo_echo)
+  end
+
+  for _, v in pairs(self.sounds.chain) do
+    SoundController:stopSfx(v)
+  end
+end
+
+-- Stops old combo / chain sounds and plays the appropriate chain or combo sound
+function Character.playAttackSfx(self, attack)
   if self.sounds.chain then
-    stopAttackSounds()
+    self:stopAttackSounds()
 
     -- play combos or chains
     if attack.type == consts.ATTACK_TYPE.combo then
