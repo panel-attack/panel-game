@@ -23,11 +23,10 @@ PuzzleSource.TYPE = "PuzzleSource"
 
 function PuzzleSource:toReplaySource()
   return {
-    puzzle = {
-      puzzleString = self.puzzleString,
-      panelBuffer = self.panelBuffer,
-      garbagePanelBuffer = self.garbagePanelBuffer
-    }
+    sourceType = 2,
+    puzzleString = self.puzzleString,
+    panelBuffer = self.panelBuffer,
+    garbagePanelBuffer = self.garbagePanelBuffer
   }
 end
 

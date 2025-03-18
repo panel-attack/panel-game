@@ -31,7 +31,7 @@ GeneratorSource.TYPE = "GeneratorSource"
 ---@return ReplayPanelSource
 function GeneratorSource:toReplaySource()
   return {
-    sourceType = 1,
+    sourceType = 3,
     seed = self.seed,
     allowAdjacentColors = self.allowAdjacentColors,
     shockEnabled = self.shockEnabled,

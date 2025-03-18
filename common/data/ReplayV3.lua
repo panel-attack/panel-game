@@ -277,6 +277,14 @@ function ReplayV3.replayCanBeViewed(replay)
   end
 end
 
+---@param replayData table
+---@return ReplayV3
+function ReplayV3.createFromV3Data(replayData)
+  ---@diagnostic disable-next-line: param-type-mismatch
+  replayData = setmetatable(replayData, ReplayV3)
+  return replayData
+end
+
 -- creates a Replay from the table t which contains the deserialized data representation of a replay from network or file
 -- use the completed flag to indicate whether the replay is done (functionally equivalent to being loaded from file at this time)
 --   or whether it is in progress (functionally equivalent to getting the replay sent on joining a match as a spectator)
@@ -287,8 +295,8 @@ function ReplayV3.createFromTable(t, completed)
     return replay
   else
     if t.replayVersion == 3 then
-      -- TODO: Implement direct loading of v3 replays
-
+      replay = ReplayV3.createFromV3Data(t)
+      t.metadata.completed = completed
     else
       if not t.replayVersion then
         replay = ReplayV2.createFromLegacyReplay(t)

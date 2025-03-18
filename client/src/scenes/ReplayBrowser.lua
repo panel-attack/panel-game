@@ -102,6 +102,8 @@ local function selectMenuItem()
         local replay = ReplayV3.createFromTable(fileUtils.readJsonFile(selection), true)
         if replay then
           selectedReplay = replay
+        else
+          GAME.theme:playCancelSfx()
         end
         return not not replay
       elseif file_info.type == "directory" then
@@ -134,8 +136,6 @@ function ReplayBrowser:update()
       GAME.theme:playValidationSfx()
       if selectMenuItem() then
         state = "info"
-      else
-        GAME.theme:playCancelSfx()
       end
     end
     if input.isDown["MenuBack"] then
@@ -159,15 +159,17 @@ function ReplayBrowser:update()
       GAME.theme:playValidationSfx()
       state = "browser"
     end
-    if input.isDown["MenuSelect"] and ReplayV3.replayCanBeViewed(selectedReplay) then
-      GAME.theme:playValidationSfx()
-      SoundController:stopMusic()
-      local match = ClientMatch.createFromReplay(selectedReplay)
-      match.renderDuringPause = true
-      match:start()
-      GAME.navigationStack:push(ReplayGame({match = match}))
-    else
-      GAME.theme:playCancelSfx()
+    if input.isDown["MenuSelect"] then
+      if ReplayV3.replayCanBeViewed(selectedReplay) then
+        GAME.theme:playValidationSfx()
+        SoundController:stopMusic()
+        local match = ClientMatch.createFromReplay(selectedReplay)
+        match.renderDuringPause = true
+        match:start()
+        GAME.navigationStack:push(ReplayGame({match = match}))
+      else
+        GAME.theme:playCancelSfx()
+      end
     end
   end
 end

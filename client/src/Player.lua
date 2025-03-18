@@ -95,6 +95,8 @@ Player.TYPE = "Player"
 function Player:reset()
   MatchParticipant.reset(self)
   self:unrestrictInputs()
+  self.settings.puzzleSet = nil
+  self.settings.puzzleIndex = nil
 end
 
 ---@param engineStack Stack
