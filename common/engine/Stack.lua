@@ -262,7 +262,14 @@ local Stack = class(
     s.cur_col = args.stackSetupModifications.startingCol or  3
     s.queuedSwapColumn = 0
     s.queuedSwapRow = 0
-    s.top_cur_row = s.height - 1
+    if s.behaviours.passiveRaise then
+      -- technically it should always start at height but changing it would break replays
+      -- see https://github.com/panel-attack/panel-game/issues/634
+      -- this is a compromise to make puzzle setup as painless as possible
+      s.top_cur_row = s.height - 1
+    else
+      s.top_cur_row = s.height
+    end
     s.swapCount = 0
 
     s.panels_cleared = s.panels_cleared or 0
@@ -1139,7 +1146,7 @@ function Stack:runCountDownIfNeeded()
       if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
         self.cursorLock = true
       end
-      self.cur_row = self.height
+      self.cur_row = self.height - 1
       if self.inputMethod == "touch" then
         self.cur_col = self.width
       elseif self.inputMethod == "controller" then
