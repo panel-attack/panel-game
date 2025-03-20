@@ -375,20 +375,11 @@ function Match:getInfo()
 end
 
 function Match:start()
-  local shockEnabled = (self.stackInteraction ~= GameModes.StackInteractions.NONE)
-
-  for i, stack in ipairs(self.stacks) do
+  for _, stack in ipairs(self.stacks) do
     stack:setCountdown(self.doCountdown)
-    if stack.TYPE == "Stack" then
-      ---@cast stack Stack
-      stack:enableShockPanels(shockEnabled)
-    end
-  end
-
-  for i, stack in ipairs(self.stacks) do
-      stack:starting_state()
-      -- always need clock 0 as a base for rollback
-      stack:saveForRollback()
+    stack:starting_state()
+    -- always need clock 0 as a base for rollback
+    stack:saveForRollback()
   end
 end
 

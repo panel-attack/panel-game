@@ -56,15 +56,15 @@ end)
 ---@enum BattleRoomState
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
-
+---@param match ClientMatch
 function BattleRoom.createFromMatch(match)
-  local gameMode = {}
-  gameMode.playerCount = #match.players
-  gameMode.doCountdown = match.doCountdown
-  gameMode.stackInteraction = match.stackInteraction
-  gameMode.winConditions = deepcpy(match.winConditions)
-  gameMode.gameOverConditions = deepcpy(match.gameOverConditions)
-  gameMode.timeLimit = match.timeLimit
+  local gameMode = {
+    matchRules = match.matchRules,
+    playerCount = #match.players,
+    name = match.replay.metadata.gameModeName,
+    gameScene = "GameBase",
+    richPresenceLabel = "Spectating",
+  }
 
   local battleRoom = BattleRoom(gameMode, GameBase)
 
@@ -90,10 +90,7 @@ function BattleRoom.createFromServerMessage(message)
       -- if the server message lacks ENGINE_VERSION, the standard replay sanitization may conservatively guess v046
       -- but since we're online and successfully connected we KNOW it has to be our engine version
       replay.engineVersion = consts.ENGINE_VERSION
-      local match = ClientMatch.createFromReplay(replay, false)
-      for i, player in ipairs(match.players) do
-        player:updateSettings(message.players[i].settings)
-      end
+      local match = ClientMatch.createFromReplay(replay)
       -- need this to make sure both have the same player tables
       -- there's like one stupid reference to battleRoom in engine that breaks otherwise
       battleRoom = BattleRoom.createFromMatch(match)

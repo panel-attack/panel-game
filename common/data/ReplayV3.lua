@@ -10,6 +10,8 @@ local tableUtils = require("common.lib.tableUtils")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV2 = require("common.compatibility.ReplayV2")
 
+local REPLAY_VERSION = 3
+
 ---@class ReplayPanelSource
 ---@field sourceType ReplayPanelSourceType
 ---@field [string] any
@@ -49,8 +51,9 @@ local ReplayV2 = require("common.compatibility.ReplayV2")
 ---@field stageIndex integer?
 
 ---@class ReplayMetadata
+---@field timestamp integer The time the replay got created as a system dependent timestamp; this denotes the start time
+---@field stacks BaseStackMetadata[]
 ---@field stageId string? The stage that was picked for the match on the machine saving the replay
----@field timestamp integer? The time the replay got created as a system dependent timestamp; this denotes the start time
 ---@field winnerIndex integer? index of players that won the match; nil if incomplete or the match concluded with a tie
 ---@field winnerId integer? publicId of the player that won the match; negative if unknown; nil if incomplete or the match concluded with a tie
 ---@field ranked boolean? If the match counted towards a ladder
@@ -59,7 +62,6 @@ local ReplayV2 = require("common.compatibility.ReplayV2")
 ---@field gameId integer? The identifier for the game on the server it was played on
 ---@field duration integer? How long the game took in frames
 ---@field gameModeName ("timeattack" | "endless" | "vsSelf" | "training" | "challenge" | "VS" | "puzzle")?
----@field stacks BaseStackMetadata[]?
 
 ---@class ReplayV3
 ---@field engineVersion string The engine version the replay was generated with
@@ -77,12 +79,12 @@ local ReplayV3 = class(
 ---@param panelSource { [ReplayPanelSourceType]: any }
 function(self, engineVersion, rules, panelSource)
   self.engineVersion = engineVersion
-  self.replayVersion = 3
+  self.replayVersion = REPLAY_VERSION
   self.rules = rules
   self.panelSource = panelSource
   self.stacks = {}
   self.garbageFlows = {}
-  self.metadata = { stacks = {} }
+  self.metadata = { stacks = {}, timestamp = to_UTC(os.time()) }
 end)
 
 ---@enum ReplayPanelSourceType
@@ -212,6 +214,8 @@ function ReplayV3:generatePath(pathSeparator)
     -- sort player names alphabetically for folder name so we don't have a folder "a-vs-b" and also "b-vs-a"
     table.sort(names)
     path = path .. sep .. table.concat(names, "-vs-")
+  else
+    path = path .. sep .. "Unknown"
   end
 
   return path

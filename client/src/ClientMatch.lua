@@ -552,27 +552,23 @@ end
 
 function ClientMatch:drawTimer()
   -- Draw the timer for time attack
-  if self.puzzle then
-    -- puzzles don't have a timer...yet?
-  else
-    local frames = 0
-    local stack = self.stacks[1]
-    if stack ~= nil and stack.engine.game_stopwatch ~= nil and tonumber(stack.engine.game_stopwatch) ~= nil then
-      frames = stack.engine.game_stopwatch
-    end
-
-    if self.timeLimit then
-      frames = (self.timeLimit * 60) - frames
-      if frames < 0 then
-        frames = 0
-      end
-    end
-
-    local timeString = frames_to_time_string(frames, self.engine.ended)
-
-    self:drawMatchLabel(themes[config.theme].images.IMG_time, themes[config.theme].timeLabel_Pos, themes[config.theme].timeLabel_Scale)
-    self:drawMatchTime(timeString, themes[config.theme].time_Pos, themes[config.theme].time_Scale)
+  local frames = 0
+  local stack = self.stacks[1]
+  if stack ~= nil and stack.engine.game_stopwatch ~= nil and tonumber(stack.engine.game_stopwatch) ~= nil then
+    frames = stack.engine.game_stopwatch
   end
+
+  if self.timeLimit then
+    frames = (self.timeLimit * 60) - frames
+    if frames < 0 then
+      frames = 0
+    end
+  end
+
+  local timeString = frames_to_time_string(frames, self.engine.ended)
+
+  self:drawMatchLabel(themes[config.theme].images.IMG_time, themes[config.theme].timeLabel_Pos, themes[config.theme].timeLabel_Scale)
+  self:drawMatchTime(timeString, themes[config.theme].time_Pos, themes[config.theme].time_Scale)
 end
 
 function ClientMatch:drawMatchType()

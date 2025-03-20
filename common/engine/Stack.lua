@@ -547,6 +547,7 @@ local function internalRollbackToFrame(stack, frame)
   return true
 end
 
+---@param self Stack
 ---@param frame integer the frame to rollback to if possible
 ---@return boolean success if rolling back succeeded
 function Stack.rollbackToFrame(self, frame)

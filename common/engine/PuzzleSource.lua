@@ -75,7 +75,7 @@ function PuzzleSource:createNewRow(stack, row)
     self.panelBuffer = self:generateStartingBoard(stack)
   else
     if self.panelBuffer == "" then
-      self.panelBuffer = self:generatePanels(stack, 20)
+      self.panelBuffer = self:generatePanels(stack)
     end
   end
 

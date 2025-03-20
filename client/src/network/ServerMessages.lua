@@ -91,19 +91,9 @@ function ServerMessages.sanitizeRoomMessage(message)
     return { gameResult = message.content }
   elseif message.type == "matchStart" then
     local replay = ReplayV3.createFromTable(message.content, false)
-    local settings = {}
-    for i, player in ipairs(replay.players) do
-      settings[i] = shallowcpy(player.settings)
-      settings[i].publicId = player.publicId
-      settings[i].playerNumber = i
-    end
 
     return
     {
-      playerSettings = settings,
-      seed = replay.seed,
-      ranked = replay.ranked,
-      stageId = replay.stageId,
       replay = replay,
       match_start = true,
     }

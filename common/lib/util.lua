@@ -172,7 +172,7 @@ end
 
 -- Returns a time string for the number of frames
 ---@param frame_count integer
----@param include_centiseconds boolean
+---@param include_centiseconds boolean?
 ---@return string
 function frames_to_time_string(frame_count, include_centiseconds)
   local min_sec_sep = ":"

@@ -154,49 +154,58 @@ local function processMatchStartMessage(self, message)
     return
   end
 
-  for _, playerSettings in ipairs(message.playerSettings) do
-    -- contains level, characterId, panelId
-    for _, player in ipairs(self.room.players) do
-      if playerSettings.playerNumber == player.playerNumber then
-        -- verify that settings on server and local match to prevent desync / crash
-        if playerSettings.level ~= player.settings.level then
-          player:setLevel(playerSettings.level)
-        end
-        if playerSettings.levelData and LevelData.validate(playerSettings.levelData) then
-          playerSettings.levelData = setmetatable(playerSettings.levelData, LevelData)
-          player:setLevelData(playerSettings.levelData)
-        end
-
-        if playerSettings.inputMethod ~= player.settings.inputMethod then
-          -- since only one player can claim touch, touch is unclaimed every time we return to character select
-          -- this also means they will send controller as their input method until they ready up
-          -- if the remote touch player readies up AFTER the local client, we never get informed about the change in input method
-          -- besides for the match start message itself
-          -- likewise if the local player readies up with touch and then unreadies their inputMethod will flip back to controller so we even have to overwrite the local player setting
-          -- so it's very important to set this here
-          player:setInputMethod(playerSettings.inputMethod)
-        end
-
-        if player.isLocal then
-          if not player.inputConfiguration then
-            if player.settings.inputMethod == "touch" then
-              player:restrictInputs(GAME.input.mouse)
-            else
-              if player.lastUsedInputConfiguration.x then
-                -- there is no configuration and the last one is a touch configuration
-                -- there is no way to know which input configuration the player wanted to use in this scenario so throw an error
-                error("Player's input configuration does not match input method " .. player.settings.inputMethod .. " sent by server.")
-              else
-                player:restrictInputs(player.lastUsedInputConfiguration)
-              end
-            end
-            -- fallback in case the player lost their input config while the server sent the message
+  for j, player in ipairs(self.room.players) do
+    for i, metadata in ipairs(message.replay.metadata.stacks) do
+      if player.playerNumber == metadata.stackIndex then
+        if player.human then
+          ---@cast metadata StackMetadata
+          if metadata.level and metadata.level ~= player.settings.level then
+            player:setLevel(metadata.level)
           end
         end
-        -- generally I don't think it's a good idea to try and rematch the other diverging settings here
-        -- everyone is loaded and ready which can only happen after character/panel data was already exchanged
-        -- if they diverge it's because the chosen mod is missing on the other client
-        -- generally I think server should only send physics relevant data with match_start
+      end
+    end
+
+    for i, stackSettings in ipairs(message.replay.stacks) do
+      if player.playerNumber == i then
+        if player.human then
+          ---@cast stackSettings ReplayStack
+          if LevelData.validate(stackSettings.levelData) and not LevelData.__eq(stackSettings.levelData, player.settings.levelData) then
+            setmetatable(stackSettings.levelData, LevelData)
+            player:setLevelData(stackSettings.levelData)
+          end
+
+          if stackSettings.inputMethod ~= player.settings.inputMethod then
+            -- since only one player can claim touch, touch is unclaimed every time we return to character select
+            -- this also means they will send controller as their input method until they ready up
+            -- if the remote touch player readies up AFTER the local client, we never get informed about the change in input method
+            -- besides for the match start message itself
+            -- likewise if the local player readies up with touch and then unreadies their inputMethod will flip back to controller so we even have to overwrite the local player setting
+            -- so it's very important to set this here
+            player:setInputMethod(stackSettings.inputMethod)
+          end
+
+          if player.isLocal then
+            if not player.inputConfiguration then
+              if player.settings.inputMethod == "touch" then
+                player:restrictInputs(GAME.input.mouse)
+              else
+                if player.lastUsedInputConfiguration and player.lastUsedInputConfiguration.x then
+                  -- there is no configuration and the last one is a touch configuration
+                  -- there is no way to know which input configuration the player wanted to use in this scenario so throw an error
+                  error("Player's input configuration does not match input method " .. player.settings.inputMethod .. " sent by server.")
+                else
+                  player:restrictInputs(player.lastUsedInputConfiguration)
+                end
+              end
+              -- fallback in case the player lost their input config while the server sent the message
+            end
+          end
+          -- generally I don't think it's a good idea to try and rematch the other diverging settings here
+          -- everyone is loaded and ready which can only happen after character/panel data was already exchanged
+          -- if they diverge it's because the chosen mod is missing on the other client
+          -- generally I think server should only send physics relevant data with match_start
+        end
       end
     end
   end

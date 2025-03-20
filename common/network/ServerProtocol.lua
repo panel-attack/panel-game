@@ -283,7 +283,7 @@ local matchStartTemplate = {
 }
 
 ---@param roomNumber integer
----@param replay ReplayV2
+---@param replay ReplayV3
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.startMatch(roomNumber, replay)
   local startMatchMessage = matchStartTemplate
