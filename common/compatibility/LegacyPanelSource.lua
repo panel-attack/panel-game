@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
-local PanelGenerator = require("common.engine.PanelGenerator")
+local LegacyPanelGenerator = require("common.compatibility.LegacyPanelGenerator")
 require("common.lib.util")
 
 ---@class LegacyPanelSource : PanelSource
@@ -46,11 +46,11 @@ end
 ---@param stack Stack
 ---@return string
 function LegacyPanelSource:generateStartingBoard(stack)
-  PanelGenerator:setSeed(self.seed + self.panelGenCount)
+  LegacyPanelGenerator:setSeed(self.seed + self.panelGenCount)
 
-  local ret = PanelGenerator.privateGeneratePanels(self:getStartingBoardHeight(stack), stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColorsOnStartingBoard)
+  local ret = LegacyPanelGenerator.privateGeneratePanels(self:getStartingBoardHeight(stack), stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColorsOnStartingBoard)
   -- technically there can never be metal on the starting board but we need to call it to advance the RNG (compatibility)
-  ret = PanelGenerator.assignMetalLocations(ret, stack.width)
+  ret = LegacyPanelGenerator.assignMetalLocations(ret, stack.width)
 
   self.panelGenCount = self.panelGenCount + 1
 
@@ -62,7 +62,7 @@ function LegacyPanelSource:generateStartingBoard(stack)
   local height = tableUtils.map(procat(string.rep(maxStartingHeight, stack.width)), function(s) return tonumber(s) end)
   local to_remove = 2 * stack.width
   while to_remove > 0 do
-    local idx = PanelGenerator:random(1, stack.width) -- pick a random column
+    local idx = LegacyPanelGenerator:random(1, stack.width) -- pick a random column
     if height[idx] > 0 then
       ret[idx + stack.width * (-height[idx] + 8)] = "0" -- delete the topmost panel in this column
       height[idx] = height[idx] - 1
@@ -79,10 +79,10 @@ end
 ---@param stack Stack
 ---@return string
 function LegacyPanelSource:generatePanels(stack)
-  PanelGenerator:setSeed(self.seed + self.panelGenCount)
+  LegacyPanelGenerator:setSeed(self.seed + self.panelGenCount)
 
-  local panelColors = PanelGenerator.privateGeneratePanels(100, stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColors)
-  panelColors = PanelGenerator.assignMetalLocations(panelColors, stack.width)
+  local panelColors = LegacyPanelGenerator.privateGeneratePanels(100, stack.width, stack.levelData.colors, self.panelBuffer, not self.allowAdjacentColors)
+  panelColors = LegacyPanelGenerator.assignMetalLocations(panelColors, stack.width)
 
   self.panelGenCount = self.panelGenCount + 1
 
@@ -92,9 +92,9 @@ end
 ---@param stack Stack
 ---@return string
 function LegacyPanelSource:generateGarbagePanels(stack)
-  PanelGenerator:setSeed(self.seed + self.garbageGenCount)
+  LegacyPanelGenerator:setSeed(self.seed + self.garbageGenCount)
   self.garbageGenCount = self.garbageGenCount + 1
-  return PanelGenerator.privateGeneratePanels(20, stack.width, stack.levelData.colors, self.garbagePanelBuffer, not self.allowAdjacentColors)
+  return LegacyPanelGenerator.privateGeneratePanels(20, stack.width, stack.levelData.colors, self.garbagePanelBuffer, not self.allowAdjacentColors)
 end
 
 ---@param stack Stack
@@ -132,13 +132,13 @@ function LegacyPanelSource:createNewRow(stack, row)
       if metal_panels_this_row > 0 then
         color = 8
       else
-        color = PanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
+        color = LegacyPanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
       end
     elseif colorString >= "a" and colorString <= "z" then
       if metal_panels_this_row > 1 then
         color = 8
       else
-        color = PanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
+        color = LegacyPanelGenerator.PANEL_COLOR_TO_NUMBER[colorString]
       end
     end
     panel.color = color

@@ -1,4 +1,4 @@
-local PanelGenerator = require("common.engine.PanelGenerator")
+local LegacyPanelGenerator = require("common.compatibility.LegacyPanelGenerator")
 local GameModes = require("common.data.GameModes")
 local Stack = require("common.engine.Stack")
 local LevelPresets = require("common.data.LevelPresets")
@@ -8,16 +8,16 @@ local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
 local function checkPanels(panels, rowWidth)
   assert(string.len(panels) % rowWidth == 0)
   for i = rowWidth + 1, string.len(panels) do
-    local color = PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(panels, i, i)]
-    if color ~= 0 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(panels, i - rowWidth, i - rowWidth)] then
+    local color = LegacyPanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(panels, i, i)]
+    if color ~= 0 and color == LegacyPanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(panels, i - rowWidth, i - rowWidth)] then
       error("invalid panels: " .. panels)
     end
   end
 end
 
 local function testPanelGenForGarbage1()
-  PanelGenerator:setSeed(1)
-  local panelbuffer = PanelGenerator.privateGeneratePanels(20, 6, 6, "", true)
+  LegacyPanelGenerator:setSeed(1)
+  local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(20, 6, 6, "", true)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "123624354235541356256135534246123164452652261534436416143654326141464535125612654356413561525232252356624214265623324561")
 end
@@ -25,8 +25,8 @@ end
 testPanelGenForGarbage1()
 
 local function testPanelGenForGarbage2()
-  PanelGenerator:setSeed(2)
-  local panelbuffer = PanelGenerator.privateGeneratePanels(20, 6, 5, "", false)
+  LegacyPanelGenerator:setSeed(2)
+  local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(20, 6, 5, "", false)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "434133551424345232231321415545122411314534442342321125245242532315353252215143543315252554121343254532431155123232552441")
 end
@@ -34,11 +34,11 @@ end
 testPanelGenForGarbage2()
 
 local function  testPanelGenForStartingBoard1()
-  PanelGenerator:setSeed(3)
-  local panelbuffer = PanelGenerator.privateGeneratePanels(7, 6, 6, "", true)
+  LegacyPanelGenerator:setSeed(3)
+  local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(7, 6, 6, "", true)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "163625451214636135424264342531164654525236")
-  panelbuffer = PanelGenerator.assignMetalLocations(panelbuffer, 6)
+  panelbuffer = LegacyPanelGenerator.assignMetalLocations(panelbuffer, 6)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "aF3625451Ba4f3613E4B42f434B53a1F4f5452E2c6")
 end
@@ -46,11 +46,11 @@ end
 testPanelGenForStartingBoard1()
 
 local function  testPanelGenForStartingBoard2()
-  PanelGenerator:setSeed(4)
-  local panelbuffer = PanelGenerator.privateGeneratePanels(7, 6, 5, "", false)
+  LegacyPanelGenerator:setSeed(4)
+  local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(7, 6, 5, "", false)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "213125551342142153554322312431223144435532")
-  panelbuffer = PanelGenerator.assignMetalLocations(panelbuffer, 6)
+  panelbuffer = LegacyPanelGenerator.assignMetalLocations(panelbuffer, 6)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "bA312555Ac42A4215c5Ed322C12d312b31D4435E3b")
 end
@@ -58,11 +58,11 @@ end
 testPanelGenForStartingBoard2()
 
 local function testPanelGenForRegularBoard1()
-  PanelGenerator:setSeed(5)
-  local panelbuffer = PanelGenerator.privateGeneratePanels(100, 6, 6, "", true)
+  LegacyPanelGenerator:setSeed(5)
+  local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(100, 6, 6, "", true)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "654324321251632562264313656452423131215252532543421625565262343613412156636415463561636414452141345235621513536242254626163532654146526562342141651526365143143526321645264161652632145154623536312145631323352515525642142351323642141535434326262414534541646254521416213262654126315235162463235141146525535313651524536315125124316356121561532153623461212513435421514146161614234261425452352141125434641313123265514643263465312351243136354363415646652431534612463565516231134316612432154651323236152315461452134346212615423146345412252346564651215246353532415243351621123253432612561464324141432453645121")
-  panelbuffer = PanelGenerator.assignMetalLocations(panelbuffer, 6)
+  panelbuffer = LegacyPanelGenerator.assignMetalLocations(panelbuffer, 6)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "6e43B432aB51Fc2562264cA365f45BD231c12a5B525325DcD21f2556e2F23d3F1341b1E6fC6415463eF1Fc641445B1d1C45b356bA513e3624B2e46B6a6353B6e4A4652F5f2c4214A6E15b636eA43A435b63b1F45b6416A65b6C2a4515D623eC6cA2145631cB33e251Ee2E6421D235a32C6d2A41e354C432f26b4A45C4e4164f2E4521d1F2Ac262F541b63a5B351624fCbC514114f5B5e3531C65a5B45C6c15a2E1243a6C5612A56a532Ae3f2346A212eA3d3542A51Da46a616A42c4B614254eBc52A411254cDfD1313123b6EeA464326C4f5c12C512431cF3Ed363415F4f6E24c1E34f1246C56e5A6b3113d3A6f1243B1e4F513232cF15Bc154614eBa34C462aB615423aD6cD5412252c4F56D6e1b1524F3eC532d15B4335A62aa23B534Cb612561D6d3Bd141d32D536D51b1")
 end
@@ -70,11 +70,11 @@ end
 testPanelGenForRegularBoard1()
 
 local function testPanelGenForRegularBoard2()
-  PanelGenerator:setSeed(6)
-  local panelbuffer = PanelGenerator.privateGeneratePanels(100, 6, 5, "", false)
+  LegacyPanelGenerator:setSeed(6)
+  local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(100, 6, 5, "", false)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "145351332145523213115122252545445452221343433432312521455343144124413531554454345223423131115425344234431141125415332244224535141253322145154411321145155231511522352445411522342315511221425515531442344515513321144153425512334433245252112144224552442323153155425324153231325123143312552554135142442251233512525145451523233415124323215215531154155325421531153124422331143415424534533215151422242141354335211523545414422551314414535522353254215521552342135433213225345354254513421324244113112535355443144324331453453345544232433521551435342213554131435225313443132154553232341124232253443315152231533543")
-  panelbuffer = PanelGenerator.assignMetalLocations(panelbuffer, 6)
+  panelbuffer = LegacyPanelGenerator.assignMetalLocations(panelbuffer, 6)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "A453e133b14Ee23B1311e1B2b5254E4dE452221c4Cd3C432312eB1d5534C1d4A24d135C15E4d5434E2b3dB3131115Db53d423DD3a1411b5D15C3224d224Ec51D125c32bA451E441ac21A451Ee231e115B235b44E4a1E22C4b3155A122aD255a5531D4b3Dd515e133B114dA534255Abc34D332d525B11B1d4224E5bdD2323153a5E4B53b415C23a325aB3A4c312552E5dAc514244B25ab33E125B514e45a5B3233D1e1Bd3232152AeEc11541553Be4Ba5311531bDD2b3311d3D15d2453D53C2a5151D2b2dB1413543CeB1a5235d54A4422e5A3aD4145355bBC53b5421E52a5e2C42a354C3213b2EC4e354254eA34bA324244A1c1Ab535C5544c1D4c24c3145C4E3c4554D2c24C3e2155a4C53d221C55D1c1Dc5225313Dd31Cb154E5323b3D1a24b3B2534d331E15Bb31eC3543")
 end

@@ -1,6 +1,5 @@
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
-local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
 local LevelData = require("common.data.LevelData")
 local prof = require("common.lib.zoneProfiler")
