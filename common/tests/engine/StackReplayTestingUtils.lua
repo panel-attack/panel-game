@@ -3,9 +3,6 @@ local GameModes = require("common.data.GameModes")
 local Match = require("common.engine.Match")
 local fileUtils = require("client.src.FileUtils")
 local LevelPresets = require("common.data.LevelPresets")
-local Stack = require("common.engine.Stack")
-require("common.engine.checkMatches")
-local StackBehaviours = require("common.data.StackBehaviours")
 local GeneratorSource = require("common.engine.GeneratorSource")
 local ReplayV3 = require("common.data.ReplayV3")
 
@@ -49,7 +46,6 @@ end
 
 function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, panelSource, inputMethod, levelData)
   if not panelSource then
-    local allowAdjacentColors = (gameMode.stackInteraction == GameModes.StackInteractions.NONE)
     local enableShock = (gameMode.stackInteraction ~= GameModes.StackInteractions.NONE)
     panelSource = GeneratorSource(1, enableShock)
   end
@@ -70,10 +66,6 @@ function StackReplayTestingUtils:fullySimulateMatch(match)
 
   while not match:hasEnded() do
     match:run()
-    -- print("Match.clock: " .. match.clock)
-    -- if match.stacks[1].game_stopwatch then
-    --   print("Stack.game_stopwatch: " .. match.stacks[1].game_stopwatch)
-    -- end
   end
   local endTime = love.timer.getTime()
 
