@@ -162,24 +162,6 @@ function ClientMatch:setup()
 
     clientStack = player:createClientStack(engineStack, self)
     self.stacks[i] = clientStack
-    -- if self.replay then
-    --   local replayStack = self.replay.stacks[i]
-    --   if self.replay.metadata.completed then
-    --     -- watching a finished replay
-    --     if player.human then
-    --       ---@cast clientStack PlayerStack
-    --       ---@cast replayStack ReplayStack
-    --       clientStack:receiveConfirmedInput(replayStack.inputs)
-    --     end
-    --     clientStack:setMaxRunsPerFrame(1)
-    --   elseif not self:hasLocalPlayer() and replayStack.stackType == 1 then
-    --     ---@cast clientStack PlayerStack
-    --     ---@cast replayStack ReplayStack
-    --     -- catching up to a match in progress
-    --     clientStack:receiveConfirmedInput(replayStack.inputs)
-    --     clientStack:enableCatchup(true)
-    --   end
-    -- end
   end
 
   if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
@@ -423,6 +405,7 @@ function ClientMatch:finalizeReplay()
 
     ReplayV3.finalizeReplay(self.engine, self.replay)
 
+    -- TODO
     -- we kept player order consistent throughout from replay creation to evade issues with properties/inputs being recorded on the wrong stack
     -- but now all the data is there so reorder the players according to display
     -- local replayPlayers = shallowcpy(self.replay.players)
