@@ -22,7 +22,7 @@ local tableUtils = require("common.lib.tableUtils")
 local Player = require("server.Player")
 local util = require("common.lib.util")
 local FileIO = require("server.FileIO")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 
 local pairs = pairs
 local ipairs = ipairs
@@ -859,7 +859,7 @@ function Server:processGameEnd(game)
   -- this is a sufficient criteria only by incidence as it remains the only 2 player online game mode so far
   -- there needs to be a better mechanism to validate whether a game should be persisted / persisted for a leaderboard
   -- as the current persistGame somewhat assumes both (explicit player number and that the game was played to determine a winner/placement)
-  if game and game.complete and #game.replay.players == 2 then
+  if game and game.complete and game.replay.metadata.gameModeName == "VS" then
     self.persistence.persistGame(game)
   end
 end

@@ -5,6 +5,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 local GeneratorSource = require("common.engine.GeneratorSource")
+local LevelPresets    = require("common.data.LevelPresets")
 
 ---@class ServerGame
 ---@field id integer?
@@ -49,7 +50,7 @@ function Game.createFromRoomState(room)
     local stack = {
       inputMethod = player.inputMethod,
       inputs = "",
-      levelData = player.levelData,
+      levelData = player.levelData or LevelPresets.getModern(player.level),
       stackType = 1,
       stackBehaviours = StackBehaviours.getDefault(),
     }
@@ -66,7 +67,7 @@ function Game.createFromRoomState(room)
       wins = room.win_counts[i],
     }
 
-    if player.levelData.frameConstants.GARBAGE_HOVER then
+    if stack.levelData.frameConstants.GARBAGE_HOVER then
       metadata.level = player.level
     else
       -- TODO: https://github.com/panel-attack/panel-game/issues/602

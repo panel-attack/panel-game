@@ -40,10 +40,10 @@ function love.load()
 end
 
 local tests = {
-  --"server.tests.ServerTests",
-  --"server.tests.LeaderboardTests",
-  --"server.tests.RoomTests",
-  --"server.tests.LoginTests",
+  "server.tests.ServerTests",
+  "server.tests.LeaderboardTests",
+  "server.tests.RoomTests",
+  "server.tests.LoginTests",
   "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",

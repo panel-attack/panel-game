@@ -5,7 +5,7 @@ function math.sign(v)
 end
 
 ---@param number number
----@param numberOfDecimalPlaces integer
+---@param numberOfDecimalPlaces integer?
 ---@return number
 function math.round(number, numberOfDecimalPlaces)
   if number == 0 then
