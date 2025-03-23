@@ -243,7 +243,7 @@ function fileUtils.saveReplay(replay)
   local path = replay:generatePath("/")
   local filename = replay:generateFileName()
   GAME.lastReplayPath = path
-  fileUtils.writeJson(path, filename .. ".json", replay)
+  fileUtils.writeJson(path, filename .. ".json", replay, replay.keyOrder)
 end
 
 ---@param files string[]

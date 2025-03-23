@@ -87,6 +87,9 @@ function(self, engineVersion, rules, panelSource)
   self.metadata = { stacks = {}, timestamp = to_UTC(os.time()) }
 end)
 
+-- so that json.encode always has the same basic structure
+ReplayV3.keyOrder = {keyorder = {"engineVersion", "replayVersion", "panelSource", "rules", "stacks", "garbageFlows", "metadata"}}
+
 ---@enum ReplayPanelSourceType
 ReplayV3.panelSourceTypes = { seedV1 = 1, puzzle = 2, seedV2 = 3 }
 ---@enum StackType
