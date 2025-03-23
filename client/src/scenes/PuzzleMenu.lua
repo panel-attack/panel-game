@@ -3,6 +3,7 @@ local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
+local LevelPresets      = require("common.data.LevelPresets")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
@@ -77,6 +78,7 @@ function PuzzleMenu:load(sceneParams)
         GAME.theme:playMoveSfx()
         config.puzzle_level = s.value
         GAME.localPlayer:setLevel(s.value)
+        GAME.localPlayer:setLevelData(LevelPresets.getModern(s.value))
       end
     })
 

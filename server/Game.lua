@@ -1,6 +1,5 @@
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
-local LevelPresets = require("common.data.LevelPresets")
 local logger = require("common.lib.logger")
 local StackBehaviours = require("common.data.StackBehaviours")
 local InputCompression = require("common.data.InputCompression")
@@ -22,7 +21,7 @@ local Game = class(
 ---@param players ServerPlayer[]
 ---@param id integer?
 function(self, players, id)
-  self.seed = math.random(1,9999999)
+  self.seed = math.random(1, 9999999)
   self.players = players
   self.inputs = {}
   for i = 1, #players do

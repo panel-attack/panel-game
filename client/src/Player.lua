@@ -31,7 +31,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 -- Due to this, unless for a good reason, all properties on Player should be set using the setters
 ---@class Player : MatchParticipant
 ---@field settings PlayerSettings
----@overload fun(name: string, publicId: integer, isLocal: boolean?)
+---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player
 ---@param name string
@@ -79,7 +79,6 @@ function(self, name, publicId, isLocal)
   self:createSignal("styleChanged")
   self:createSignal("difficultyChanged")
   self:createSignal("startingSpeedChanged")
-  self:createSignal("colorCountChanged")
   self:createSignal("levelChanged")
   self:createSignal("levelDataChanged")
   self:createSignal("inputMethodChanged")
@@ -141,9 +140,6 @@ end
 function Player:setDifficulty(difficulty)
   if difficulty ~= self.settings.difficulty then
     self.settings.difficulty = difficulty
-    if self.settings.style == GameModes.Styles.CLASSIC then
-      self:setLevelData(LevelPresets.getClassic(difficulty))
-    end
     self:emitSignal("difficultyChanged", difficulty)
   end
 end
@@ -166,9 +162,6 @@ end
 function Player:setLevel(level)
   if level ~= self.settings.level then
     self.settings.level = level
-    if self.settings.style == GameModes.Styles.MODERN then
-      self:setLevelData(LevelPresets.getModern(level))
-    end
     self:emitSignal("levelChanged", level)
   end
 end
@@ -293,30 +286,6 @@ function Player.createFromReplayMetadata(stackMetadata)
   end
 
   -- see if things like inputMethod and levelData need to be loaded on the Player too - I think not
-
-  return player
-end
-
-function Player.createFromReplayPlayer(replayPlayer, playerNumber)
-  local player = Player(replayPlayer.name, replayPlayer.publicId, false)
-
-  player.playerNumber = playerNumber
-  player:setWinCount(replayPlayer.wins)
-  player:setPanels(replayPlayer.settings.panelId)
-  player:setCharacter(replayPlayer.settings.characterId)
-  player:setInputMethod(replayPlayer.settings.inputMethod)
-  -- style will be obsolete for replays with style-independent levelData
-  if replayPlayer.settings.level then
-    player:setStyle(GameModes.Styles.MODERN)
-    player:setLevel(replayPlayer.settings.level)
-  else
-    player:setStyle(GameModes.Styles.CLASSIC)
-    player:setDifficulty(replayPlayer.settings.difficulty)
-  end
-  -- no matter what style / level / difficulty is actually selected, levelData should have gotten preloaded correctly
-  player:setLevelData(replayPlayer.settings.levelData)
-  player.settings.allowAdjacentColors = replayPlayer.settings.allowAdjacentColors
-  player:setAttackEngineSettings(replayPlayer.settings.attackEngineSettings)
 
   return player
 end

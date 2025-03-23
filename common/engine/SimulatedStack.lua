@@ -4,7 +4,6 @@ local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local AttackEngine = require("common.engine.AttackEngine")
-local ReplayPlayer = require("common.compatibility.ReplayV2Player")
 
 ---@class SimulatedStack : BaseStack
 ---@field attackEngine AttackEngine
@@ -204,23 +203,6 @@ function SimulatedStack:getAttackPatternData()
   if self.attackEngine then
     return self.attackEngine.attackSettings
   end
-end
-
-function SimulatedStack:toReplayPlayer()
-  local replayPlayer = ReplayPlayer("Player " .. self.which, - self.which)
-
-  replayPlayer:setAttackEngineSettings(self.attackEngine.attackSettings)
-  replayPlayer:setHealthSettings(self.healthEngine:getSettings())
-
-  return replayPlayer
-end
-
----@param replayPlayer ReplayV2Player
----@param replay ReplayV2
----@return SimulatedStack
-function SimulatedStack.createFromReplayPlayer(replayPlayer, replay)
--- TODO
-  return SimulatedStack({})
 end
 
 return SimulatedStack

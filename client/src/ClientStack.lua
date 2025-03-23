@@ -1,7 +1,6 @@
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Signal = require("common.lib.signal")
--- TODO: move graphics related functionality to client
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 -- Draws an image at the given spot while scaling all coordinate and scale values with stack.gfxScale

@@ -491,7 +491,7 @@ function NetClient:registerPlayerUpdates(room)
       player:connectSignal("difficultyChanged", player, sendPlayerSettings)
       player:connectSignal("startingSpeedChanged", player, sendPlayerSettings)
       player:connectSignal("levelChanged", player, sendPlayerSettings)
-      player:connectSignal("colorCountChanged", player, sendPlayerSettings)
+      player:connectSignal("levelDataChanged", player, sendPlayerSettings)
       player:connectSignal("inputMethodChanged", player, sendPlayerSettings)
       player:connectSignal("hasLoadedChanged", player, sendPlayerSettings)
     else

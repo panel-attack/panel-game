@@ -97,16 +97,6 @@ function ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
   return player
 end
 
-function ChallengeModePlayer.createFromReplayPlayer(replayPlayer, playerNumber)
-  local player = ChallengeModePlayer(playerNumber)
-  player.settings.attackEngineSettings = replayPlayer.settings.attackEngineSettings
-  player.settings.healthSettings = replayPlayer.settings.healthSettings
-  player.settings.characterId = CharacterLoader.fullyResolveCharacterSelection(replayPlayer.settings.characterId)
-  player.settings.difficulty = replayPlayer.settings.difficulty
-  player.isLocal = false
-  return player
-end
-
 function ChallengeModePlayer:getInfo()
   local info = {}
   info.characterId = self.settings.characterId

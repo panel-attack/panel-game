@@ -4,6 +4,7 @@ local Player = require("client.src.Player")
 local consts = require("common.engine.consts")
 local GeneratorSource = require("common.engine.GeneratorSource")
 local logger = require("common.lib.logger")
+local LevelPresets = require("common.data.LevelPresets")
 
 local Theme = require("client.src.mods.Theme")
 
@@ -27,6 +28,7 @@ local function createEndlessClientMatch(playerCount, theme)
     local player = Player.getLocalPlayer()
     player.isLocal = false
     player:setLevel(10)
+    player:setLevelData(LevelPresets.getModern(10))
     player:setStyle(GameModes.Styles.MODERN)
     player.playerNumber = i
 

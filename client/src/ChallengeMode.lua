@@ -222,6 +222,7 @@ function ChallengeMode:setStage(index)
   logger.debug("Setting stage to index " .. index)
   self.stageIndex = index
   GAME.localPlayer:setLevel(self.stages[index].playerLevel)
+  GAME.localPlayer:setLevelData(levelPresets.getModern(GAME.localPlayer.settings.level))
 
   local stageSettings = self.stages[self.stageIndex]
   self.player:setAttackEngineSettings(stageSettings.attackSettings)

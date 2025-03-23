@@ -7,6 +7,7 @@ local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Character = require("client.src.mods.Character")
+local LevelPresets = require("common.data.LevelPresets")
 
 -- The character select screen scene
 ---@class CharacterSelect : Scene
@@ -501,9 +502,12 @@ function CharacterSelect:createPanelCarousel(player, height)
 
   panelCarousel:setPassengerById(player.settings.panelId)
 
+  local updateColor = function(carousel, levelData)
+    carousel:setColorCount(levelData.colors)
+  end
+
   -- to update the UI if code gets changed from the backend (e.g. network messages)
-  player:connectSignal("selectedStageIdChanged", panelCarousel, panelCarousel.setPassengerById)
-  player:connectSignal("colorCountChanged", panelCarousel, panelCarousel.setColorCount)
+  player:connectSignal("levelDataChanged", panelCarousel, updateColor)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
@@ -567,12 +571,14 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   -- level slider
   levelSlider.onSelectCallback = function(self)
     player:setLevel(self.value)
+    player:setLevelData(LevelPresets.getModern(self.value))
   end
 
   levelSlider.setValueFromPos = function(self, x)
     local screenX, screenY = self:getScreenPos()
     self:setValue(math.floor((x - screenX) / self.tickLength) + self.min)
     player:setLevel(self.value)
+    player:setLevelData(LevelPresets.getModern(self.value))
   end
 
   levelSlider.onBackCallback = function(self)
@@ -887,8 +893,15 @@ function CharacterSelect:createDifficultyCarousel(player, height)
   })
 
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    -- TODO: Make Endless Easy use 5 colors again
+    local levelData = LevelPresets.getClassic(selectedPassenger.id)
     player:setDifficulty(selectedPassenger.id)
+    if self.battleRoom.mode.name == "endless" and selectedPassenger.id == 1 then
+      -- Endless easy uses 5 colors instead of 6
+      levelData:setColorCount(5)
+      -- and by extension also allows adjacent panels of the same colors
+      levelData:setAdjacentDenialFrequency(0)
+    end
+    player:setLevelData(levelData)
     GAME.theme:playMoveSfx()
     self:refresh()
   end

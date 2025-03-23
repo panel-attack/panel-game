@@ -278,6 +278,8 @@ function LevelData.validate(data)
     return false
   elseif data.colors < 4 or data.colors > 7 then
     return false
+  elseif data.adjacentDenialFrequency and (type(data.adjacentDenialFrequency) ~= "number" or data.adjacentDenialFrequency < 0) then
+    return false
   elseif not data.maxHealth or type(data.maxHealth) ~= "number" then
     return false
   elseif data.maxHealth < 1 then

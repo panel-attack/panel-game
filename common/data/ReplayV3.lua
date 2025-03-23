@@ -286,6 +286,17 @@ end
 function ReplayV3.createFromV3Data(replayData)
   ---@diagnostic disable-next-line: param-type-mismatch
   replayData = setmetatable(replayData, ReplayV3)
+
+  ---@cast replayData ReplayV3
+
+  for i, stack in ipairs(replayData.stacks) do
+    if stack.stackType == 1 then
+      ---@cast stack ReplayStack
+      if LevelData.validate(stack.levelData) then
+        stack.levelData = setmetatable(stack.levelData, LevelData)
+      end
+    end
+  end
   return replayData
 end
 

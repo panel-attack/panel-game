@@ -106,7 +106,6 @@ end
 
 -- Draws the given string with the given pixel font image atlas
 -- string - the string to draw
--- TODO support both upper and lower case
 -- atlas - the image to use as the pixel font
 -- font map - a dictionary of a character mapped to the column number in the pixel font image
 ---@param str string

@@ -63,7 +63,7 @@ function AnalyticsInstance:saveForRollback(frame)
     copy = create_blank_data()
   end
 
-  -- TODO: Implement a less memory intensive rollback mechanism
+  -- todo: Implement a less memory intensive rollback mechanism
   -- see https://github.com/panel-attack/panel-game/issues/493
 
   copy.destroyed_panels = self.data.destroyed_panels

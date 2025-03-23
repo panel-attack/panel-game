@@ -10,15 +10,15 @@ local class = require("common.lib.class")
 ---@field adjacentDenialFrequency number in percent
 ---@field adjacentAccepted integer how many rolls of an adjacent panel have been accepted
 ---@field adjacentDenied integer how many rolls of an adjacent panel have been denied
----@overload fun(seed: integer, adjacentDenialFrequency: number?): PanelGenerator
+---@overload fun(seed: integer, adjacentDenialFrequency: number): PanelGenerator
 local PanelGenerator = class(
 ---@param self PanelGenerator
 ---@param seed integer
----@param adjacentDenialFrequency number?
+---@param adjacentDenialFrequency number
 function(self, seed, adjacentDenialFrequency)
   self.seed = seed
   self.generatedCount = 0
-  self.adjacentDenialFrequency = adjacentDenialFrequency or 1
+  self.adjacentDenialFrequency = adjacentDenialFrequency
   self.adjacentAccepted = 0
   self.adjacentDenied = 0
   self.rng = love.math.newRandomGenerator()
@@ -60,15 +60,15 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
   --              "\ncolors: " .. ncolors)
 
   previousRow = previousRow or string.rep("0", rowWidth)
-  local result = ""
+  local newPanels = ""
 
   if ncolors < 2 then
     error("Trying to generate panels with only " .. ncolors .. " colors")
   end
 
   for n = 1, rowWidth do
-    local previousTwoMatchOnThisRow = n > 2 and PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -1, -1)] ==
-                                          PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -2, -2)]
+    local previousTwoMatchOnThisRow = n > 2 and PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -1, -1)] ==
+                                          PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -2, -2)]
     local nogood = true
     local color = 0
     local belowColor = PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(previousRow, n, n)]
@@ -78,10 +78,10 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
       if color == belowColor then
         -- can't have the same color as above
         nogood = true
-      elseif (previousTwoMatchOnThisRow and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -1, -1)]) then
+      elseif (previousTwoMatchOnThisRow and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -1, -1)]) then
         -- can't have three in a row
         nogood = true
-      elseif (n > 1 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -1, -1)]) then
+      elseif (n > 1 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -1, -1)]) then
         -- only allow horizontally adjacent colors with a certain frequency
         if self.adjacentDenialFrequency >= 1 then
           nogood = true
@@ -104,15 +104,15 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
         nogood = false
       end
     end
-    result = result .. tostring(color)
+    newPanels = newPanels .. tostring(color)
   end
 
   if assignMetalLocations then
-    result = self:assignMetalLocations(result, previousRow)
+    newPanels = self:assignMetalLocations(newPanels, previousRow)
   end
   -- logger.debug(result)
   -- only return the new panels
-  return result
+  return newPanels
 end
 
 ---@param rowString string
