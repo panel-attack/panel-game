@@ -50,7 +50,7 @@ function(self, name, publicId, isLocal)
   settings.speed = 1
   ---@type LevelData
   settings.levelData = LevelPresets.getModern(1)
-  settings.style = 0
+  settings.style = GameModes.Styles.MODERN
   settings.characterId = ""
   settings.stageId = ""
   settings.panelId = ""
@@ -252,7 +252,6 @@ function Player.getLocalPlayer()
   local player = Player(config.name, -1, true)
 
   player:setDifficulty(config.endless_difficulty)
-  player:setSpeed(config.endless_speed)
   player:setLevel(config.level)
   player:setCharacter(config.character)
   player:setStage(config.stage)
@@ -262,8 +261,11 @@ function Player.getLocalPlayer()
   player:setInputMethod(config.inputMethod)
   if config.endless_level then
     player:setStyle(GameModes.Styles.MODERN)
+    player:setLevelData(LevelPresets.getModern(player.settings.level))
   else
     player:setStyle(GameModes.Styles.CLASSIC)
+    player:setLevelData(LevelPresets.getClassic(player.settings.difficulty))
+    player:setSpeed(config.endless_speed)
   end
 
   return player
