@@ -1,7 +1,12 @@
+---@param v number
+---@return (1 | -1)
 function math.sign(v)
 	return (v >= 0 and 1) or -1
 end
 
+---@param number number
+---@param numberOfDecimalPlaces integer
+---@return number
 function math.round(number, numberOfDecimalPlaces)
   if number == 0 then
     return number
@@ -38,4 +43,10 @@ function math.floatsEqualWithPrecision(a, b, decimalPrecision)
   local threshold = math.pow(0.1, decimalPrecision)
   local diff = math.abs(a - b) -- Absolute value of difference
   return diff < threshold
+end
+
+---@param value number
+---@return boolean
+function math.isNaN(value)
+  return value ~= value
 end

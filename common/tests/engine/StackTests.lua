@@ -188,5 +188,4 @@ local function swapStalling1Test1()
   assert(stack.game_over_clock == 269)
 end
 
--- need to add the physics suspension before this runs
---swapStalling1Test1()
+swapStalling1Test1()

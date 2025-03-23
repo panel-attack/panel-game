@@ -83,13 +83,23 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
         nogood = true
       elseif (n > 1 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -1, -1)]) then
         -- only allow horizontally adjacent colors with a certain frequency
-        if self.adjacentDenied / (self.adjacentAccepted + self.adjacentDenied) <= self.adjacentDenialFrequency then
-          self.adjacentDenied = self.adjacentDenied + 1
+        if self.adjacentDenialFrequency >= 1 then
           nogood = true
+          -- denying everything, no need to track numbers
         else
-          self.adjacentAccepted = self.adjacentAccepted + 1
-          nogood = false
+          -- a bit jank; frequency evaluates to NaN on the very first call of this function
+          local frequency = self.adjacentDenied / (self.adjacentAccepted + self.adjacentDenied)
+          -- NaN evaluates to false with all operators except ~= (which evaluates to true, even with itself (IEEE 754 standard lua follows))
+          if frequency <= self.adjacentDenialFrequency then
+            self.adjacentDenied = self.adjacentDenied + 1
+            nogood = true
+          else
+            -- that means the first double is always accepted as NaN <= adjacentDenialFrequency evaluates to false
+            self.adjacentAccepted = self.adjacentAccepted + 1
+            nogood = false
+          end
         end
+
       else
         nogood = false
       end
