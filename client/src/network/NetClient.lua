@@ -57,15 +57,16 @@ local function updateLobbyState(self, lobbyState)
   self:emitSignal("lobbyStateUpdate", self.lobbyData)
 end
 
-local function getSceneByGameMode(gameMode, room)
+---@param room BattleRoom
+local function getSceneFromRoom(room)
   -- this is so hacky oh my god
-  if gameMode.richPresenceLabel == "2p versus" then
+  if room.mode.name == "VS" then
     return CharacterSelect2p({battleRoom = room})
-  elseif gameMode.richPresenceLabel == "Endless" then
+  elseif room.mode.name == "endless" then
     return require("client.src.scenes.EndlessMenu")({battleRoom = room})
-  elseif gameMode.richPresenceLabel == "Time Attack" then
+  elseif room.mode.name == "timeattack" then
     return require("client.src.scenes.TimeAttackMenu")({battleRoom = room})
-  elseif gameMode.richPresenceLabel == "1p vs self" then
+  elseif room.mode.name == "vsSelf" then
     return require("client.src.scenes.CharacterSelectVsSelf")({battleRoom = room})
   end
 end
@@ -77,7 +78,7 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   self.room = GAME.battleRoom
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
-  GAME.navigationStack:push(getSceneByGameMode(self.room.mode, self.room))
+  GAME.navigationStack:push(getSceneFromRoom(self.room))
   self.state = states.ROOM
 end
 
@@ -288,11 +289,11 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
     local catchUp = GameCatchUp(vsScene)
     -- need to push character select, otherwise the pop on match end will return to lobby
     -- directly add to the stack so it isn't getting displayed
-    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneByGameMode(self.room.mode)
+    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneFromRoom(self.room.mode)
     GAME.navigationStack:push(catchUp)
   else
     self.state = states.ROOM
-    GAME.navigationStack:push(getSceneByGameMode(self.room.mode))
+    GAME.navigationStack:push(getSceneFromRoom(self.room.mode))
   end
 end
 
