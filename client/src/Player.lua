@@ -13,7 +13,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 
 
 ---@class PlayerSettings : ParticipantSettings
----@field puzzleSet PuzzleSet
+---@field puzzleSet PuzzleSet?
 ---@field puzzleIndex integer?
 ---@field level integer
 ---@field difficulty integer

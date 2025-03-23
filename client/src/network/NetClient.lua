@@ -289,11 +289,11 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
     local catchUp = GameCatchUp(vsScene)
     -- need to push character select, otherwise the pop on match end will return to lobby
     -- directly add to the stack so it isn't getting displayed
-    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneFromRoom(self.room.mode)
+    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneFromRoom(self.room)
     GAME.navigationStack:push(catchUp)
   else
     self.state = states.ROOM
-    GAME.navigationStack:push(getSceneFromRoom(self.room.mode))
+    GAME.navigationStack:push(getSceneFromRoom(self.room))
   end
 end
 
