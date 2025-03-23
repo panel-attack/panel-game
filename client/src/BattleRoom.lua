@@ -263,7 +263,7 @@ function BattleRoom:createPanelSource()
     local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
     return puzzle:toPanelSource(config.puzzle_randomColors, config.puzzle_randomFlipped)
   else
-    return GeneratorSource(math.random(1, 999999), self.mode.stackInteraction == GameModes.StackInteractions.NONE, self.mode.stackInteraction ~= GameModes.StackInteractions.NONE)
+    return GeneratorSource(math.random(1, 999999), self.mode.stackInteraction ~= GameModes.StackInteractions.NONE)
   end
 end
 

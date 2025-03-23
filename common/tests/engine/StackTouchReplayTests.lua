@@ -58,6 +58,7 @@ local function simpleTouchTest()
   -- so for the preset, the time attack value got picked which means every time we want to do endless, color count needs to be overwritten
   local endlessRef = LevelPresets.getClassic(1)
   endlessRef:setColorCount(5)
+  endlessRef:setAdjacentDenialFrequency(0)
   assert(match.stacks[1].levelData == endlessRef)
   assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 1)
   assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return not g.isChain end) == 3)

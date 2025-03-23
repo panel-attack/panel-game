@@ -433,14 +433,13 @@ function Match.createFromReplay(replay)
   local rps = replay.panelSource
 
   if rps.sourceType == ReplayV3.panelSourceTypes.seedV1 then
-    panelSource = LegacyPanelSource(rps.seed)
+    panelSource = LegacyPanelSource(rps.seed, rps.shockEnabled)
     panelSource:setAllowAdjacentColorsOnStartingBoard(rps.allowAdjacentColorsOnStartingBoard)
-    panelSource.shockEnabled = (#replay.garbageFlows > 0)
     -- allowAdjacentColor is respectively modified on each cloned panelSource as the field can be unique per stack
   elseif rps.sourceType == ReplayV3.panelSourceTypes.puzzle then
     panelSource = PuzzleSource(rps.puzzleString, rps.panelBuffer, rps.garbagePanelBuffer)
   elseif rps.sourceType == ReplayV3.panelSourceTypes.seedV2 then
-    panelSource = GeneratorSource(rps.seed, rps.allowAdjacentColors, rps.shockEnabled)
+    panelSource = GeneratorSource(rps.seed, rps.shockEnabled)
   else
     error("Unknown panel source " .. tostring(rps.sourceType))
   end
@@ -451,12 +450,7 @@ function Match.createFromReplay(replay)
     local stack
     if replayStack.stackType == 1 then
       ---@cast replayStack ReplayStack
-      local stackPanelSource = match.panelSource:clone()
-      if rps.sourceType == ReplayV3.panelSourceTypes.seedV1 then
-        ---@cast stackPanelSource LegacyPanelSource
-        stackPanelSource.allowAdjacentColors = replayStack.stackBehaviours.allowAdjacentColors
-      end
-      stack = match:createStackWithSettings(replayStack.levelData, false, replayStack.inputMethod, replayStack.inputs, stackPanelSource)
+      stack = match:createStackWithSettings(replayStack.levelData, false, replayStack.inputMethod, replayStack.inputs)
     elseif replayStack.stackType == 2 then
       ---@cast replayStack ReplaySimulatedStack
       stack = match:createSimulatedStackWithSettings(replayStack.attackSettings, replayStack.healthSettings)
@@ -687,16 +681,15 @@ end
 ---@param isLocal boolean
 ---@param inputMethod InputMethod
 ---@param inputs string?
----@param panelSource PanelSource?
 ---@return Stack
-function Match:createStackWithSettings(levelData, isLocal, inputMethod, inputs, panelSource)
+function Match:createStackWithSettings(levelData, isLocal, inputMethod, inputs)
   local args = {
     which = #self.stacks + 1,
     levelData = levelData,
     is_local = isLocal,
     stackOverConditions = self.rules.stackOverConditions,
     stackWinConditions = self.rules.stackWinConditions,
-    panelSource = panelSource or self.panelSource:clone(),
+    panelSource = self.panelSource,
     inputMethod = inputMethod,
     stackSetupModifications = self.rules.stackSetupModifications or {},
     engineVersion = self.engineVersion,

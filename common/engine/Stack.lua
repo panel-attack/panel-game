@@ -38,6 +38,8 @@ end
 local min, pairs = math.min, pairs
 local max = math.max
 
+local DEFAULT_INPUT_REPEAT_DELAY = 20
+
 local GARBAGE_SIZE_TO_SHAKE_FRAMES = {
   18, 18, 18, 18, 24, 42,
   42, 42, 42, 42, 42, 66,
@@ -70,7 +72,7 @@ local PANELS_TO_NEXT_SPEED =
 ---@field getStartingBoardHeight fun(self: PanelSource, stack: Stack): integer
 ---@field createNewRow fun(self: PanelSource, stack: Stack, row: integer)
 ---@field getGarbagePanelRowString fun(self: PanelSource, stack: Stack): string
----@field clone fun(self: PanelSource): PanelSource
+---@field clone fun(self: PanelSource, stack: Stack): PanelSource
 ---@field panelBuffer string alphanumeric string containing a buffer of panels to rise from below; string characters indicate possible metal positions
 ---@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbagePanelBuffer string numeric string containing a buffer of panels for garbage to turn into upon matching
@@ -89,8 +91,6 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field width integer How many columns of panels the stack has
 ---@field height integer How many rows of panels the stack has
 ---@field levelData LevelData Frame data to determine Panel physics
----@field allowAdjacentColorsOnStartingBoard boolean if the panel generator is allowed to put panels of the same color next to each other on the starting board
----@field shockEnabled boolean whether shock panels may be queued
 ---@field behaviours StackBehaviours a table of flags and settings to modify the stack behaviour in chunks of functionality
 ---@field speed integer Index for accessing the table for the rise_timer, thus indirectly determining how quickly the stack rises
 ---@field nextSpeedIncreaseClock integer? at which clock time the speed is going to increase the next time; only relevant if the levelData's speedIncreaseMode is 1
@@ -181,7 +181,7 @@ local Stack = class(
         s.behaviours[key] = value
       end
     end
-    s.panelSource = args.panelSource
+    s.panelSource = args.panelSource:clone(s)
     s.inputMethod = args.inputMethod
 
     -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
@@ -255,7 +255,7 @@ local Stack = class(
     s.swapThisFrame = false -- attempt to initiate a swap on this frame
 
     -- number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
-    s.cur_wait_time = consts.DEFAULT_INPUT_REPEAT_DELAY
+    s.cur_wait_time = DEFAULT_INPUT_REPEAT_DELAY
     s.cur_timer = 0 -- number of ticks for which a new direction's been pressed
     s.cursorDirection = nil -- the direction pressed
     s.cur_row = args.stackSetupModifications.startingRow or 7
@@ -1518,7 +1518,7 @@ function Stack.onPop(self, panel)
     self.score = self.score + 10
 
     self.panels_cleared = self.panels_cleared + 1
-    if self.shockEnabled and self.panels_cleared % self.levelData.shockFrequency == 0 then
+    if self.panels_cleared % self.levelData.shockFrequency == 0 then
           self.metal_panels_queued = min(self.metal_panels_queued + 1, self.levelData.shockCap)
     end
   end
@@ -1668,7 +1668,7 @@ function Stack:checkGameOver()
             if tableUtils.trueForAny(self.outgoingGarbage.history, isCompletedChain) then
               -- the chain dropped
               return true
-            elseif self.chain_counter == 0 then
+            elseif self.panels_cleared > 0 and self.chain_counter == 0 then
               return true
             end
           else
@@ -1754,41 +1754,6 @@ function Stack:toReplayStack(stackIndex)
     inputMethod = self.inputMethod,
     inputs = InputCompression.compressInputString(table.concat(self.confirmedInput)),
   }
-end
-
----@param replayPlayer ReplayV2Player
----@param replay ReplayV2
----@return Stack
-function Stack.createFromReplayPlayer(replayPlayer, replay)
-  local args = {
-    engineVersion = replay.engineVersion,
-    gameOverConditions = replay.gameMode.gameOverConditions,
-    -- this being unknown is correct; replays don't save stack specific game win conditions so far
-    -- these would be for puzzle mode and similar, where a stack can finish without game over; separate from match win conditions
-    ---@see GameModes
-    gameWinConditions = replay.gameMode.gameWinConditions,
-    allowAdjacentColors = replayPlayer.settings.allowAdjacentColors,
-    behaviours = replayPlayer.settings.stackBehaviours,
-    levelData = replayPlayer.settings.levelData,
-    is_local = false,
-    which = tableUtils.indexOf(replay.players, replayPlayer),
-    seed = replay.seed,
-    inputMethod = replayPlayer.settings.inputMethod,
-  }
-
-  local stack = Stack(args)
-  stack:receiveConfirmedInput(replayPlayer.settings.inputs)
-  return stack
-end
-
----@param allow boolean
-function Stack:setAllowAdjacentColorsOnStartingBoard(allow)
-  self.allowAdjacentColorsOnStartingBoard = allow
-end
-
----@param enable boolean
-function Stack:enableShockPanels(enable)
-  self.shockEnabled = enable
 end
 
 function Stack:deinit()

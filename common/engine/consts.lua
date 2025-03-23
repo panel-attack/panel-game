@@ -14,7 +14,6 @@ local consts = {
   DEFAULT_THEME_DIR = "Panel Attack",
   RANDOM_CHARACTER_SPECIAL_VALUE = "__RandomCharacter",
   RANDOM_STAGE_SPECIAL_VALUE = "__RandomStage",
-  DEFAULT_INPUT_REPEAT_DELAY = 20,
   MOUSE_POINTER_TIMEOUT = 1.5, --seconds
   KEY_NAMES = {"Up", "Down", "Left", "Right", "Swap1", "Swap2", "TauntUp", "TauntDown", "Raise1", "Raise2", "Start"},
   FRAME_RATE = 1 / 60,

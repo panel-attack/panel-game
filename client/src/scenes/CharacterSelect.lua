@@ -835,7 +835,7 @@ end
 
 ---@param player Player
 ---@param height number
----@param min integer
+---@param min integer?
 ---@return UiElement speedSliderContainer
 function CharacterSelect:createSpeedSlider(player, height, min)
   local speedSlider = ui.Slider({
@@ -877,7 +877,7 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     { id = 4, uiElement = ui.Label({text = "ss_ex_mode", vAlign = "center", hAlign = "center"})},
   }
   local difficultyCarousel = ui.Carousel({
-    isEnabled = player.isLocal, 
+    isEnabled = player.isLocal,
     hAlign = "center",
     vAlign = "top",
     hFill = true,
@@ -887,6 +887,7 @@ function CharacterSelect:createDifficultyCarousel(player, height)
   })
 
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
+    -- TODO: Make Endless Easy use 5 colors again
     player:setDifficulty(selectedPassenger.id)
     GAME.theme:playMoveSfx()
     self:refresh()

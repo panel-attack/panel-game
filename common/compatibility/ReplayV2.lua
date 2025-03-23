@@ -252,7 +252,7 @@ function ReplayV2.createFromV2Data(replayData)
       replayPlayer:setHealthSettings(player.settings.healthSettings)
     end
     if replayData.engineVersion == "047" or replayData.engineVersion == "048" then
-      replayPlayer:setBehaviours(StackBehaviours.getV048Default(player.settings.level))
+      replayPlayer:setBehaviours(StackBehaviours.getV048Default())
       replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
     else
       replayPlayer:setBehaviours(player.settings.stackBehaviours)
@@ -329,16 +329,15 @@ function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   end
 
   p1:setInputs(InputCompression.decompressInputString(v1r.in_buf))
-  p1:setBehaviours(StackBehaviours.getV048Default(v1r.P1_level))
+  p1:setBehaviours(StackBehaviours.getV048Default())
 
   if v1r.P1_level then
     p1:setLevel(v1r.P1_level)
     -- suffices because modern endless/timeattack never had replays
-    p1:setAllowAdjacentColors(v1r.P1_level < 8)
     p1:setLevelData(LevelPresets.getModern(v1r.P1_level))
+    p1:setAllowAdjacentColors(v1r.P1_level < 8)
   else
     p1:setDifficulty(v1r.difficulty)
-    p1:setAllowAdjacentColors(true)
     local levelData = LevelPresets.getClassic(v1r.difficulty)
     levelData:setStartingSpeed(v1r.speed)
     if v1r.difficulty == 1 and mode == "endless" then
@@ -346,6 +345,7 @@ function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
       levelData:setColorCount(5)
     end
     p1:setLevelData(levelData)
+    p1:setAllowAdjacentColors(true)
   end
 
   replay:updatePlayer(1, p1)
@@ -360,10 +360,15 @@ function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     p2:setInputs(InputCompression.decompressInputString(v1r.I))
 
     -- presence of V2 means level and vs
-    p2:setBehaviours(StackBehaviours.getV048Default(v1r.P2_level))
+    p2:setBehaviours(StackBehaviours.getV048Default())
     p2:setLevel(v1r.P2_level)
-    p2:setAllowAdjacentColors(v1r.P2_level < 8)
     p2:setLevelData(LevelPresets.getModern(v1r.P2_level))
+    p2:setAllowAdjacentColors(v1r.P2_level < 8)
+    if v1r.P2_level < 8 then
+      p2.settings.levelData.adjacentDenialFrequency = 0
+    else
+      p2.settings.levelData.adjacentDenialFrequency = 1
+    end
 
     replay:updatePlayer(2, p2)
   end

@@ -66,7 +66,7 @@ end
 -- modifies whether panels of the same color may spawn next to each other
 -- this should be determined externally based on some rules
 function ReplayV2Player:setAllowAdjacentColors(allowAdjacentColors)
-  self.settings.stackBehaviours.allowAdjacentColors = allowAdjacentColors
+  self.settings.allowAdjacentColors = allowAdjacentColors
 end
 
 ---@param behaviours StackBehaviours

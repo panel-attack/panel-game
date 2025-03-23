@@ -93,25 +93,28 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
     gameWinConditions = gameMode.gameWinConditions,
     stackWinConditions = gameMode.matchRules.stackWinConditions,
     inputMethod = "controller",
-    panelSource = LegacyPanelSource(seed),
-    stackSetupModifications = {}
+    panelSource = LegacyPanelSource(seed, gameMode.stackInteraction ~= GameModes.StackInteractions.NONE),
+    behaviours = StackBehaviours.getV048Default(),
+    stackSetupModifications = {},
   }
-  if gameMode.stackInteraction == GameModes.StackInteractions.NONE or not level then
-    args.behaviours = StackBehaviours.getV048Default()
-  else
-    args.behaviours = StackBehaviours.getV048Default(level)
-  end
 
   if level then
     args.levelData = LevelPresets.getModern(level)
+    if level < 8 then
+      args.levelData:setAdjacentDenialFrequency(0)
+    else
+      args.levelData:setAdjacentDenialFrequency(1)
+    end
   else
     args.levelData = LevelPresets.getClassic(difficulty)
     args.levelData:setColorCount(colorCount)
+    args.levelData:setAdjacentDenialFrequency(0)
   end
 
-  args.panelSource.allowAdjacentColors = args.behaviours.allowAdjacentColors
+  local stack = Stack(args)
 
-  return Stack(args), args.panelSource
+---@diagnostic disable-next-line: return-type-mismatch
+  return stack, stack.panelSource
 end
 
 local function testStackStartingBoard1()

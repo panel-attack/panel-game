@@ -345,7 +345,8 @@ function ReplayV3.loadFromV2Replay(v2Replay)
   local panelSource = {
     sourceType = ReplayV3.panelSourceTypes.seedV1,
     seed = v2Replay.seed,
-    allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(v2Replay.players, function(p) return (not p.human) or p.settings.stackBehaviours.allowAdjacentColors end)
+    allowAdjacentColorsOnStartingBoard = tableUtils.trueForAll(v2Replay.players, function(p) return (not p.human) or p.settings.allowAdjacentColors end),
+    shockEnabled = (v2Replay.gameMode.stackInteraction ~= GameModes.StackInteractions.NONE)
   }
 
   local replay = ReplayV3(v2Replay.engineVersion, rules, panelSource)
@@ -366,7 +367,6 @@ function ReplayV3.loadFromV2Replay(v2Replay)
       allowManualRaise = true,
       swapStallingMode = 0,
       swapStallingPunish = 0,
-      allowAdjacentColors = v2Player.settings.stackBehaviours.allowAdjacentColors
     }
     replay.stacks[1] = {
       stackType = ReplayV3.stackTypes.Stack,
@@ -411,7 +411,6 @@ function ReplayV3.loadFromV2Replay(v2Replay)
           allowManualRaise = true,
           swapStallingMode = 0,
           swapStallingPunish = 0,
-          allowAdjacentColors = v2Player.settings.stackBehaviours.allowAdjacentColors
         }
         ---@type ReplayStack
         local replayStack = {
@@ -422,6 +421,12 @@ function ReplayV3.loadFromV2Replay(v2Replay)
           inputs = v2Player.settings.inputs,
         }
         replay.stacks[i] = replayStack
+
+        if v2Player.settings.allowAdjacentColors then
+          replayStack.levelData.adjacentDenialFrequency = 0
+        else
+          replayStack.levelData.adjacentDenialFrequency = 1
+        end
 
         ---@type StackMetadata
         local metadata = {

@@ -188,7 +188,9 @@ function PuzzleSource:getGarbagePanelRowString(stack)
   return garbagePanelRow
 end
 
-function PuzzleSource:clone()
+---@param stack Stack
+---@return PuzzleSource
+function PuzzleSource:clone(stack)
   local source = PuzzleSource(self.puzzleString, self.panelBuffer, self.garbagePanelBuffer)
   source.panelGenCount = self.panelGenCount
   source.panels = deepcpy(self.panels)

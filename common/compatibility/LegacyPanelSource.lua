@@ -8,11 +8,12 @@ require("common.lib.util")
 ---@field allowAdjacentColors boolean
 ---@field allowAdjacentColorsOnStartingBoard boolean
 ---@field shockEnabled boolean
----@overload fun(seed: integer): LegacyPanelSource
+---@overload fun(seed: integer, shockEnabled: boolean): LegacyPanelSource
 local LegacyPanelSource = class(
 ---@param self LegacyPanelSource
 ---@param seed integer
-function(self, seed)
+---@param shockEnabled boolean
+function(self, seed, shockEnabled)
   self.seed = seed
   self.panelBuffer = ""
   self.garbagePanelBuffer = ""
@@ -20,7 +21,7 @@ function(self, seed)
   self.garbageGenCount = 0
   self.allowAdjacentColors = false
   self.allowAdjacentColorsOnStartingBoard = false
-  self.shockEnabled = true
+  self.shockEnabled = shockEnabled
 end)
 
 LegacyPanelSource.TYPE = "LegacyPanelSource"
@@ -30,7 +31,9 @@ function LegacyPanelSource:toReplaySource()
   return {
     sourceType = 1,
     seed = self.seed,
-    allowAdjacentColors = self.allowAdjacentColors
+    allowAdjacentColors = self.allowAdjacentColors,
+    allowAdjacentColorsOnStartingBoard = self.allowAdjacentColorsOnStartingBoard,
+    shockEnabled = self.shockEnabled
   }
 end
 
@@ -176,13 +179,15 @@ function LegacyPanelSource:getGarbagePanelRowString(stack)
   return garbagePanelRow
 end
 
-function LegacyPanelSource:clone()
-  local source = LegacyPanelSource(self.seed)
+---@param stack Stack
+---@return LegacyPanelSource
+function LegacyPanelSource:clone(stack)
+  local source = LegacyPanelSource(self.seed, self.shockEnabled)
   source.panelBuffer = self.panelBuffer
   source.garbagePanelBuffer = self.garbagePanelBuffer
   source.panelGenCount = self.panelGenCount
   source.garbageGenCount = self.garbageGenCount
-  source.allowAdjacentColors = self.allowAdjacentColors
+  source.allowAdjacentColors = (stack.levelData.adjacentDenialFrequency == 0)
   source.allowAdjacentColorsOnStartingBoard = self.allowAdjacentColorsOnStartingBoard
   return source
 end

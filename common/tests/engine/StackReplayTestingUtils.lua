@@ -25,7 +25,7 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
     playerCount = 1
   end
 
-  local match = Match(GeneratorSource(1, true, false), endless.matchRules)
+  local match = Match(GeneratorSource(1, false), endless.matchRules)
 
   local levelData
   if level then
@@ -51,7 +51,7 @@ function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, panelSource, 
   if not panelSource then
     local allowAdjacentColors = (gameMode.stackInteraction == GameModes.StackInteractions.NONE)
     local enableShock = (gameMode.stackInteraction ~= GameModes.StackInteractions.NONE)
-    panelSource = GeneratorSource(1, allowAdjacentColors, enableShock)
+    panelSource = GeneratorSource(1, enableShock)
   end
   local match = Match(panelSource, gameMode.matchRules)
   match:createStackWithSettings(levelData or LevelPresets.getModern(5), false, inputMethod or "controller")

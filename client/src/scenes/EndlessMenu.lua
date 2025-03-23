@@ -4,6 +4,7 @@ local GameModes = require("common.data.GameModes")
 local ui = require("client.src.ui")
 
 -- Scene for the endless game setup menu
+---@class EndlessMenu : CharacterSelect
 local EndlessMenu = class(
   function(self, sceneParams)
     self.gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
