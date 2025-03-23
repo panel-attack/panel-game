@@ -3,12 +3,14 @@ local tableUtils = require("common.lib.tableUtils")
 local PanelGenerator = require("common.engine.PanelGenerator")
 require("common.lib.util")
 table.new = require("table.new")
+local RollbackBuffer = require("common.engine.RollbackBuffer")
 
----@class GeneratorSource : PanelSource
+---@class GeneratorSource : PanelSource, canRollback
 ---@field seed integer
 ---@field shockEnabled boolean
 ---@field garbageShockEnabled boolean
 ---@field panelGenerator PanelGenerator
+---@field rollbackBuffer RollbackBuffer
 ---@overload fun(seed: integer, shockEnabled: boolean): GeneratorSource
 local GeneratorSource = class(
 ---@param self GeneratorSource
@@ -22,6 +24,7 @@ function(self, seed, shockEnabled)
   self.garbageGenCount = 0
   self.shockEnabled = shockEnabled
   self.garbageShockEnabled = false
+  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
 GeneratorSource.TYPE = "GeneratorSource"
@@ -211,6 +214,42 @@ function GeneratorSource:clone(stack)
   source.garbageShockEnabled = self.garbageShockEnabled
   source.panelGenerator = PanelGenerator(self.seed, stack.levelData.adjacentDenialFrequency)
   return source
+end
+
+function GeneratorSource:saveForRollback(frame)
+  local copy = self.rollbackBuffer:getOldest()
+
+  if not copy then
+    copy = table.new(0, 6)
+  end
+
+  copy.panelBuffer = self.panelBuffer
+  copy.garbagePanelBuffer = self.garbagePanelBuffer
+  copy.panelGenCount = self.panelGenCount
+  copy.garbageGenCount = self.garbageGenCount
+  copy.adjacentAccepted = self.panelGenerator.adjacentAccepted
+  copy.adjacentDenied = self.panelGenerator.adjacentDenied
+
+  self.rollbackBuffer:saveCopy(frame, copy)
+end
+
+function GeneratorSource:rollbackToFrame(frame)
+  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+
+  if not copy then
+    error("Could not rollback GeneratorSource")
+  end
+
+  self.panelBuffer = copy.panelBuffer
+  self.garbagePanelBuffer = copy.garbagePanelBuffer
+  self.panelGenCount = copy.panelGenCount
+  self.garbageGenCount = copy.garbageGenCount
+  self.panelGenerator.adjacentAccepted = copy.adjacentAccepted
+  self.panelGenerator.adjacentDenied = copy.adjacentDenied
+end
+
+function GeneratorSource:rewindToFrame(frame)
+  self:rollbackToFrame(frame)
 end
 
 return GeneratorSource

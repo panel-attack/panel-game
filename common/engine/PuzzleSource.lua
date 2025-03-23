@@ -1,8 +1,10 @@
 local class = require("common.lib.class")
+local RollbackBuffer = require("common.engine.RollbackBuffer")
 
 ---@class PuzzleSource : PanelSource
 ---@field puzzleString string
 ---@field panels Panel[]
+---@field rollbackBuffer RollbackBuffer
 ---@overload fun(puzzleString: string, panelBuffer: string?, garbageBuffer: string?): PuzzleSource
 local PuzzleSource = class(
 ---@param self PuzzleSource
@@ -17,6 +19,7 @@ function(self, puzzleString, panelBuffer, garbageBuffer)
   self.garbageGenCount = 0
 
   self.panels = {}
+  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
 PuzzleSource.TYPE = "PuzzleSource"
@@ -50,7 +53,8 @@ end
 function PuzzleSource:generatePanels(stack)
   self.panelGenCount = self.panelGenCount + 1
   local panels = ""
-  local desiredCount = stack.width * 100
+  -- only generate one row at a time 
+  local desiredCount = stack.width
   if self.panelBuffer:len() > desiredCount then
     panels = self.panelBuffer:sub(1, desiredCount)
     self.panelBuffer = self.panelBuffer:sub(desiredCount + 1)
@@ -65,7 +69,19 @@ end
 
 function PuzzleSource:generateGarbagePanels(stack)
   self.garbageGenCount = self.garbageGenCount + 1
-  return string.rep(9, stack.width * 20)
+  local garbagePanels = ""
+  -- only generate one row at a time 
+  local desiredCount = stack.width
+  if self.garbagePanelBuffer:len() > desiredCount then
+    garbagePanels = self.garbagePanelBuffer:sub(1, desiredCount)
+    self.garbagePanelBuffer = self.garbagePanelBuffer:sub(desiredCount + 1)
+  else
+    garbagePanels = self.garbagePanelBuffer
+    self.garbagePanelBuffer = ""
+    garbagePanels = garbagePanels .. string.rep(9, desiredCount - garbagePanels:len())
+  end
+
+  return garbagePanels
 end
 
 ---@param stack Stack
@@ -73,14 +89,20 @@ end
 function PuzzleSource:createNewRow(stack, row)
   if self.panelGenCount == 0 then
     self.panelBuffer = self:generateStartingBoard(stack)
-  else
-    if self.panelBuffer == "" then
-      self.panelBuffer = self:generatePanels(stack)
-    end
   end
 
   if #self.panels < stack.width then
-    self:createPanelBuffer(stack)
+    if self.panelBuffer == "" then
+      self.panelBuffer = self:generatePanels(stack)
+    end
+    local panels = self:createPanels(self.panelBuffer, stack)
+    -- unroll the panels for consumption into self.panels
+    for r = #panels, 1, -1 do
+      for col = 1, #panels[r] do
+        self.panels[#self.panels+1] = panels[r][col]
+      end
+    end
+    self.panelBuffer = ""
   end
 
   for col = 1, stack.width do
@@ -90,11 +112,15 @@ function PuzzleSource:createNewRow(stack, row)
   end
 end
 
+-- transforms the entire panelBuffer into panels using the stack's template
+-- this is done in bulk with the whole panelBuffer because garbage within the panelBuffer that stretches over multiple rows is difficult to handle otherwise
+---@param panelBuffer string
 ---@param stack Stack
-function PuzzleSource:createPanelBuffer(stack)
+---@return Panel[][]
+function PuzzleSource:createPanels(panelBuffer, stack)
   local panels = {}
 
-  local puzzleString = self.panelBuffer
+  local puzzleString = panelBuffer
   local garbageStartRow = nil
   local garbageStartColumn = nil
   local isMetal = false
@@ -168,14 +194,7 @@ function PuzzleSource:createPanelBuffer(stack)
     end
   end
 
-  self.panelBuffer = ""
-
-  -- finally unroll the panels for consumption
-  for row = #panels, 1, -1 do
-    for col = 1, #panels[row] do
-      self.panels[#self.panels+1] = panels[row][col]
-    end
-  end
+  return panels
 end
 
 function PuzzleSource:getGarbagePanelRowString(stack)
@@ -193,8 +212,42 @@ end
 function PuzzleSource:clone(stack)
   local source = PuzzleSource(self.puzzleString, self.panelBuffer, self.garbagePanelBuffer)
   source.panelGenCount = self.panelGenCount
-  source.panels = deepcpy(self.panels)
+  source.garbageGenCount = self.garbageGenCount
+  -- self.panels is not cloned under the assumption that panels always get fully consumed on the frame they got created
   return source
+end
+
+function PuzzleSource:saveForRollback(frame)
+  local copy = self.rollbackBuffer:getOldest()
+
+  if not copy then
+    copy = table.new(0, 4)
+  end
+
+  copy.panelBuffer = self.panelBuffer
+  copy.garbagePanelBuffer = self.garbagePanelBuffer
+  copy.panelGenCount = self.panelGenCount
+  copy.garbageGenCount = self.garbageGenCount
+  -- self.panels is not stored under the assumption that panels always get fully consumed on the frame they got created
+
+  self.rollbackBuffer:saveCopy(frame, copy)
+end
+
+function PuzzleSource:rollbackToFrame(frame)
+  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+
+  if not copy then
+    error("Could not rollback PuzzleSource")
+  end
+
+  self.panelBuffer = copy.panelBuffer
+  self.garbagePanelBuffer = copy.garbagePanelBuffer
+  self.panelGenCount = copy.panelGenCount
+  self.garbageGenCount = copy.garbageGenCount
+end
+
+function PuzzleSource:rewindToFrame(frame)
+  self:rollbackToFrame(frame)
 end
 
 return PuzzleSource

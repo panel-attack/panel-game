@@ -3,7 +3,7 @@ local Signal = require("common.lib.signal")
 local GarbageQueue = require("common.engine.GarbageQueue")
 local MatchRules = require("common.data.MatchRules")
 
----@class BaseStack
+---@class BaseStack : canRollback
 ---@field engineVersion string
 ---@field which integer identifier of the Stack within the Match
 ---@field is_local boolean effectively if the Stack is receiving its inputs via local input
@@ -19,8 +19,8 @@ local MatchRules = require("common.data.MatchRules")
 ---@field rollbackCopyPool Queue
 ---@field rollbackCount integer How many times the stack has been rolled back
 ---@field lastRollbackFrame integer the clock time before the Stack was last rolled back \n
----@field health integer Reaching 0 typically means game over (depends on the gameOverConditions)
 --- -1 if it has not been rolled back yet (or should not run back to its pre-rollback frame)
+---@field health integer Reaching 0 typically means game over (depends on the stackOverConditions)
 ---@field play_to_end boolean?
 ---@field max_runs_per_frame integer How many times run() may be called within a single Match:run; used to keep stacks synchronous in various scenarios
 ---@field TYPE string

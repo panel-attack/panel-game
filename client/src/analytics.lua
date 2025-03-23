@@ -34,7 +34,7 @@ local function create_blank_data()
 end
 
 -- The class representing one set of analytics data
----@class AnalyticsInstance
+---@class AnalyticsInstance : canRollback
 ---@field save_to_overall boolean if the data collected by this instance should be added to all time stats
 ---@field data AnalyticsData
 ---@field lastGPM string formatted GPM for display

@@ -11,7 +11,6 @@ local Panel = require("common.engine.Panel")
 local prof = require("common.lib.zoneProfiler")
 local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
-local ReplayPlayer = require("common.compatibility.ReplayV2Player")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 local WigglePay = require("common.engine.WigglePay")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
@@ -65,7 +64,7 @@ local PANELS_TO_NEXT_SPEED =
   45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
   45, 45, 45, 45, 45, 45, 45, 45, math.huge}
 
----@class PanelSource
+---@class PanelSource : canRollback
 ---@field generateStartingBoard fun(self: PanelSource, stack: Stack): string
 ---@field generatePanels fun(self: PanelSource, stack: Stack): string
 ---@field generateGarbagePanels fun(self: PanelSource, stack:Stack): string
@@ -427,10 +426,6 @@ function Stack:rollbackCopy()
   copy.peak_shake_time = self.peak_shake_time
   copy.shake_time_on_frame = self.shake_time_on_frame
   copy.do_countdown = self.do_countdown
-  copy.panelBuffer = self.panelSource.panelBuffer
-  copy.panelGenCount = self.panelSource.panelGenCount
-  copy.garbagePanelBuffer = self.panelSource.garbagePanelBuffer
-  copy.garbageGenCount = self.panelSource.garbageGenCount
   copy.panels_in_top_row = self.panels_in_top_row
   copy.has_risen = self.has_risen
   copy.metal_panels_queued = self.metal_panels_queued
@@ -488,10 +483,6 @@ local function internalRollbackToFrame(stack, frame)
   stack.peak_shake_time = copy.peak_shake_time
   stack.shake_time_on_frame = copy.shake_time_on_frame
   stack.do_countdown = copy.do_countdown
-  stack.panelSource.panelBuffer = copy.panelBuffer
-  stack.panelSource.panelGenCount = copy.panelGenCount
-  stack.panelSource.garbagePanelBuffer = copy.garbagePanelBuffer
-  stack.panelSource.garbageGenCount = copy.garbageGenCount
   stack.panels_in_top_row = copy.panels_in_top_row
   stack.has_risen = copy.has_risen
   stack.metal_panels_queued = copy.metal_panels_queued
@@ -554,13 +545,9 @@ function Stack.rollbackToFrame(self, frame)
   local currentFrame = self.clock
 
   if internalRollbackToFrame(self, frame) then
-    if self.incomingGarbage then
-      self.incomingGarbage:rollbackToFrame(frame)
-    end
-
-    if self.outgoingGarbage then
-      self.outgoingGarbage:rollbackToFrame(frame)
-    end
+    self.incomingGarbage:rollbackToFrame(frame)
+    self.outgoingGarbage:rollbackToFrame(frame)
+    self.panelSource:rollbackToFrame(frame)
 
     self.rollbackCount = self.rollbackCount + 1
     -- match will try to fast forward this stack to that frame
@@ -576,13 +563,9 @@ end
 ---@return boolean success if rewinding succeeded
 function Stack:rewindToFrame(frame)
   if internalRollbackToFrame(self, frame) then
-    if self.incomingGarbage then
-      self.incomingGarbage:rewindToFrame(frame)
-    end
-
-    if self.outgoingGarbage then
-      self.outgoingGarbage:rewindToFrame(frame)
-    end
+    self.incomingGarbage:rewindToFrame(frame)
+    self.outgoingGarbage:rewindToFrame(frame)
+    self.panelSource:rewindToFrame(frame)
 
     self:emitSignal("rollbackPerformed", self)
     return true
@@ -593,20 +576,21 @@ end
 
 -- Saves state in backups in case its needed for rollback
 -- NOTE: the clock time is the save state for simulating right BEFORE that clock time is simulated
-function Stack.saveForRollback(self)
+function Stack:saveForRollback()
   prof.push("Stack:saveForRollback")
   self:remove_extra_rows()
   prof.push("Stack.rollbackCopy")
   self:rollbackCopy()
   prof.pop("Stack.rollbackCopy")
-  prof.push("incomingGarbage:rollbackCopy")
-  self.incomingGarbage:rollbackCopy(self.clock)
-  prof.pop("incomingGarbage:rollbackCopy")
-  prof.push("outgoingGarbage:rollbackCopy")
+  prof.push("incomingGarbage:saveForRollback")
+  self.incomingGarbage:saveForRollback(self.clock)
+  prof.pop("incomingGarbage:saveForRollback")
+  prof.push("outgoingGarbage:saveForRollback")
   if self.outgoingGarbage then
-    self.outgoingGarbage:rollbackCopy(self.clock)
+    self.outgoingGarbage:saveForRollback(self.clock)
   end
-  prof.pop("outgoingGarbage:rollbackCopy")
+  prof.pop("outgoingGarbage:saveForRollback")
+  self.panelSource:saveForRollback(self.clock)
   prof.pop("Stack:saveForRollback")
   self:emitSignal("rollbackSaved", self.clock)
 end
@@ -1733,16 +1717,6 @@ end
 ---@return integer
 function Stack:getConfirmedInputCount()
   return #self.confirmedInput
-end
-
----@return ReplayV2Player
-function Stack:toReplayPlayer()
-  local replayPlayer = ReplayPlayer("Player " .. self.which, - self.which)
-  replayPlayer:setLevelData(self.levelData)
-  replayPlayer:setInputMethod(self.inputMethod)
-  replayPlayer:setBehaviours(self.behaviours)
-
-  return replayPlayer
 end
 
 ---@return ReplayStack

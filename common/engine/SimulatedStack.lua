@@ -117,14 +117,14 @@ function SimulatedStack:saveForRollback()
     copy = {}
   end
 
-  self.incomingGarbage:rollbackCopy(self.clock)
+  self.incomingGarbage:saveForRollback(self.clock)
 
   if self.healthEngine then
     self.healthEngine:saveRollbackCopy()
   end
 
   if self.attackEngine then
-    self.attackEngine:rollbackCopy(self.clock)
+    self.attackEngine:saveForRollback(self.clock)
   end
 
   copy.health = self.health

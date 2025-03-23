@@ -2,12 +2,14 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local LegacyPanelGenerator = require("common.compatibility.LegacyPanelGenerator")
 require("common.lib.util")
+local RollbackBuffer       = require("common.engine.RollbackBuffer")
 
 ---@class LegacyPanelSource : PanelSource
 ---@field seed integer
 ---@field allowAdjacentColors boolean
 ---@field allowAdjacentColorsOnStartingBoard boolean
 ---@field shockEnabled boolean
+---@field rollbackBuffer RollbackBuffer
 ---@overload fun(seed: integer, shockEnabled: boolean): LegacyPanelSource
 local LegacyPanelSource = class(
 ---@param self LegacyPanelSource
@@ -22,6 +24,7 @@ function(self, seed, shockEnabled)
   self.allowAdjacentColors = false
   self.allowAdjacentColorsOnStartingBoard = false
   self.shockEnabled = shockEnabled
+  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
 LegacyPanelSource.TYPE = "LegacyPanelSource"
@@ -190,6 +193,38 @@ function LegacyPanelSource:clone(stack)
   source.allowAdjacentColors = (stack.levelData.adjacentDenialFrequency == 0)
   source.allowAdjacentColorsOnStartingBoard = self.allowAdjacentColorsOnStartingBoard
   return source
+end
+
+function LegacyPanelSource:saveForRollback(frame)
+  local copy = self.rollbackBuffer:getOldest()
+
+  if not copy then
+    copy = table.new(0, 4)
+  end
+
+  copy.panelBuffer = self.panelBuffer
+  copy.garbagePanelBuffer = self.garbagePanelBuffer
+  copy.panelGenCount = self.panelGenCount
+  copy.garbageGenCount = self.garbageGenCount
+
+  self.rollbackBuffer:saveCopy(frame, copy)
+end
+
+function LegacyPanelSource:rollbackToFrame(frame)
+  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+
+  if not copy then
+    error("Could not rollback LegacyPanelSource")
+  end
+
+  self.panelBuffer = copy.panelBuffer
+  self.garbagePanelBuffer = copy.garbagePanelBuffer
+  self.panelGenCount = copy.panelGenCount
+  self.garbageGenCount = copy.garbageGenCount
+end
+
+function LegacyPanelSource:rewindToFrame(frame)
+  self:rollbackToFrame(frame)
 end
 
 return LegacyPanelSource
