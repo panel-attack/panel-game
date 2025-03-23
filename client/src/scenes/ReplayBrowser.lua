@@ -191,21 +191,23 @@ function ReplayBrowser:draw()
     GraphicsUtil.print(filename, menu_x - 150, menu_y - 40 + menu_h)
 
     local modeText
-    if #selectedReplay.metadata.gameModeName == "VS" then
+    if selectedReplay.metadata.gameModeName == "VS" then
       modeText = loc("rp_browser_info_2p_vs")
+    elseif selectedReplay.metadata.gameModeName == "challenge" then
+      modeText = loc("mm_1_challenge_mode")
     elseif selectedReplay.metadata.gameModeName == "vsSelf" then
-        modeText = loc("rp_browser_info_1p_vs")
-      elseif selectedReplay.metadata.gameModeName == "training" then
-        modeText = loc("mm_1_training")
-      elseif selectedReplay.metadata.gameModeName == "puzzle" then
-        modeText = loc("rp_browser_info_puzzle")
-      elseif selectedReplay.metadata.gameModeName == "timeattack" then
-        modeText = loc("rp_browser_info_time")
-      elseif selectedReplay.metadata.gameModeName == "endless" then
-        modeText = loc("rp_browser_info_endless")
-      else
-        modeText = "Unknown"
-      end
+      modeText = loc("mm_1_vs")
+    elseif selectedReplay.metadata.gameModeName == "training" then
+      modeText = loc("mm_1_training")
+    elseif selectedReplay.metadata.gameModeName == "puzzle" then
+      modeText = loc("mm_1_puzzle")
+    elseif selectedReplay.metadata.gameModeName == "timeattack" then
+      modeText = loc("mm_1_time")
+    elseif selectedReplay.metadata.gameModeName == "endless" then
+      modeText = loc("mm_1_endless")
+    else
+      modeText = "Unknown"
+    end
 
     GraphicsUtil.print(modeText, menu_x + 220, menu_y + 20)
 
