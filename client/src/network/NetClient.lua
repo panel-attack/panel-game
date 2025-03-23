@@ -57,16 +57,16 @@ local function updateLobbyState(self, lobbyState)
   self:emitSignal("lobbyStateUpdate", self.lobbyData)
 end
 
-local function getSceneByGameMode(gameMode)
+local function getSceneByGameMode(gameMode, room)
   -- this is so hacky oh my god
   if gameMode.richPresenceLabel == "2p versus" then
-    return CharacterSelect2p()
+    return CharacterSelect2p({battleRoom = room})
   elseif gameMode.richPresenceLabel == "Endless" then
-    return require("client.src.scenes.EndlessMenu")()
+    return require("client.src.scenes.EndlessMenu")({battleRoom = room})
   elseif gameMode.richPresenceLabel == "Time Attack" then
-    return require("client.src.scenes.TimeAttackMenu")()
+    return require("client.src.scenes.TimeAttackMenu")({battleRoom = room})
   elseif gameMode.richPresenceLabel == "1p vs self" then
-    return require("client.src.scenes.CharacterSelectVsSelf")()
+    return require("client.src.scenes.CharacterSelectVsSelf")({battleRoom = room})
   end
 end
 
@@ -77,7 +77,7 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   self.room = GAME.battleRoom
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
-  GAME.navigationStack:push(getSceneByGameMode(self.room.mode))
+  GAME.navigationStack:push(getSceneByGameMode(self.room.mode, self.room))
   self.state = states.ROOM
 end
 

@@ -382,7 +382,9 @@ function ClientMatch:finalizeReplay()
     replay:setDuration(self.engine.clock)
     replay:setStage(self.stageId)
     replay:setRanked(self.ranked)
-    replay.metadata.gameModeName = self.gameMode.name
+    if self.gameMode then
+      replay.metadata.gameModeName = self.gameMode.name
+    end
 
     for i, player in ipairs(self.players) do
       local stackIndex = tableUtils.indexOf(self.engine.stacks, player.stack.engine)

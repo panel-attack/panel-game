@@ -44,6 +44,7 @@ function Game.createFromRoomState(room)
   local replay = ReplayV3(ENGINE_VERSION, room.gameMode.matchRules, GeneratorSource(game.seed, true):toReplaySource())
   replay:setStage(room.stageId)
   replay:setRanked(game.ranked)
+  replay.metadata.gameModeName = room.gameMode.name
 
   for i, player in ipairs(room.players) do
     ---@type ReplayStack

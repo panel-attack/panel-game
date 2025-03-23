@@ -44,6 +44,7 @@ function(self, args)
   self.stackInteraction = args.stackInteraction
 
   assert(self.engine.TYPE == "Stack")
+  self.engine.is_local = self.player.isLocal
   self.engine:connectSignal("panelLanded", self, self.onPanelLand)
   self.engine:connectSignal("panelPop", self, self.onPanelPop)
   self.engine:connectSignal("matched", self, self.onEngineMatched)
@@ -67,7 +68,7 @@ function(self, args)
   self.difficulty = args.difficulty
   self.level = args.level
 
-  self.inputMethod = args.inputMethod or "controller"
+  self.inputMethod = self.engine.inputMethod
   if self.inputMethod == "touch" then
     self.touchInputController = TouchInputController(self.engine)
     self.touchInputDetector = TouchInputDetector(self)

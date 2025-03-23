@@ -50,7 +50,7 @@ function(self, args)
   self.engine = args.engine
   -- player number according to the multiplayer server, for game outcome reporting 
   self.player_number = args.player_number or args.engine.which
-  self.is_local = args.engine.is_local
+  self.is_local = args.player and args.player.isLocal or args.engine.is_local
   self.character = characters[args.characterId]
   self.theme = args.theme or themes[config.theme]
   self.match = args.match
