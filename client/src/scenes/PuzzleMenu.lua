@@ -8,7 +8,6 @@ local LevelPresets      = require("common.data.LevelPresets")
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
 ---@field menu Menu
----@field puzzleSet PuzzleSet
 ---@field puzzleLabel Label
 ---@field levelSlider LevelSlider
 ---@field randomColorButtons ButtonGroup
@@ -22,7 +21,6 @@ local PuzzleMenu = class(
     self.randomColorButtons = nil
     self.menu = nil
     self.puzzleLabel = nil
-    self.puzzleSet = nil
     self.battleRoom = sceneParams.battleRoom
 
     self:load(sceneParams)
@@ -36,7 +34,6 @@ local BUTTON_WIDTH = 60
 local BUTTON_HEIGHT = 25
 
 function PuzzleMenu:startGame(puzzleSet)
-  self.puzzleSet = deepcpy(puzzleSet)
   if config.puzzle_level ~= self.levelSlider.value or config.puzzle_randomColors ~= self.randomColorsButtons.value then
     logger.debug("saving settings...")
     write_conf_file()
@@ -50,10 +47,10 @@ end
 
 function PuzzleMenu:startNextPuzzle()
   local player = self.battleRoom.players[1]
-  local puzzle = self.puzzleSet.puzzles[player.settings.puzzleIndex]
+  local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
   local isValid, validationError = puzzle:validate()
   if not isValid then
-    validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
+    validationError = "Validation error in puzzle set " .. player.settings.puzzleSet.setName .. "\n"
                     .. validationError
     local transition = MessageTransition(GAME.timer, 5, validationError)
     GAME.navigationStack:popToTop(transition)

@@ -56,7 +56,16 @@ function PuzzleGame:startNextScene()
   if self.match.engine.aborted then
     GAME.navigationStack:pop()
   elseif self.match.players[1].settings.puzzleIndex <= #self.match.players[1].settings.puzzleSet.puzzles then
-    GAME.battleRoom:setGameMode(self.puzzleSet.puzzles[self.match.players[1].settings.puzzleIndex]:toGameMode())
+    local puzzle = self.puzzleSet.puzzles[self.match.players[1].settings.puzzleIndex]
+    local isValid, validationError = puzzle:validate()
+    if not isValid then
+      validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
+                      .. validationError
+      local transition = MessageTransition(GAME.timer, 5, validationError)
+      GAME.navigationStack:popToTop(transition)
+    else
+      GAME.battleRoom:setGameMode(puzzle:toGameMode())
+    end
     self.match.players[1]:setWantsReady(true)
   else
     GAME.navigationStack:pop()
