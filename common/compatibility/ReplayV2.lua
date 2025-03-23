@@ -1,9 +1,7 @@
-local logger = require("common.lib.logger")
 local LegacyGameModes = require("common.compatibility.LegacyGameModes")
 local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 require("common.lib.timezones")
-local tableUtils = require("common.lib.tableUtils")
 local ReplayPlayer = require("common.compatibility.ReplayV2Player")
 local LevelPresets = require("common.data.LevelPresets")
 local LevelData = require("common.data.LevelData")
@@ -96,116 +94,6 @@ end
 -- replayPlayer is a table as defined by the ReplayPlayer class
 function ReplayV2:updatePlayer(i, replayPlayer)
   self.players[i] = replayPlayer
-end
-
-function ReplayV2:generatePath(pathSeparator)
-  local now = os.date("*t", self.timestamp)
-  local sep = pathSeparator
-  local path = "replays" .. sep .. "v" .. self.engineVersion .. sep .. string.format("%04d" .. sep .. "%02d" .. sep .. "%02d", now.year, now.month, now.day)
-
-  if self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.NONE then
-    if self.gameMode.timeLimit then
-      path = path .. sep .. "Time Attack"
-    else
-      path = path .. sep .. "Endless"
-    end
-  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.SELF then
-    path = path .. sep .. "Vs Self"
-  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.ATTACK_ENGINE then
-    path = path .. sep .. "Training"
-  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.VERSUS then
-    if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
-      path = path .. sep .. "Challenge Mode"
-    else
-      local names = {}
-      for i, player in ipairs(self.players) do
-        names[i] = player.name
-      end
-      -- sort player names alphabetically for folder name so we don't have a folder "a-vs-b" and also "b-vs-a"
-      table.sort(names)
-      path = path .. sep .. table.concat(names, "-vs-")
-    end
-  end
-
-  return path
-end
-
-function ReplayV2:generateFileName()
-  local time = os.date("*t", self.timestamp)
-  local filename = "v" .. self.engineVersion .. "-"
-  filename = filename .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", time.year, time.month, time.day, time.hour, time.min, time.sec)
-
-  for _, player in ipairs(self.players) do
-    if player.human then
-      filename = filename .. "-" .. player.name
-      if player.settings.level then
-        filename = filename .. "-L" .. player.settings.level
-      elseif player.settings.difficulty then
-        filename = filename .. "-Spd" .. player.settings.levelData.startingSpeed
-        filename = filename .. "-Dif" .. player.settings.difficulty
-      end
-    elseif player.settings.difficulty then
-      filename = filename .. "-stage-" .. player.settings.difficulty .. "-" .. (player.settings.level or 0)
-    end
-  end
-
-  if self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.NONE then
-    if self.gameMode.timeLimit then
-      filename = filename .. "-timeattack"
-    else
-      filename = filename .. "-endless"
-    end
-  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.SELF then
-    filename = filename .. "-vsSelf"
-  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.ATTACK_ENGINE then
-    filename = filename .. "-training"
-  elseif self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.VERSUS then
-    if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
-      filename = filename .. "-challenge"
-    else
-      filename = filename .. "-VS-" .. (self.ranked and "ranked" or "casual")
-    end
-
-    if not self.incomplete then
-      if self.gameMode.stackInteraction == LegacyGameModes.StackInteractions.VERSUS then
-        if self.winnerIndex then
-          filename = filename .. "-P" .. self.winnerIndex .. "wins"
-        else
-          filename = filename .. "-draw"
-        end
-      end
-    end
-  end
-
-  if self.incomplete then
-    filename = filename .. "-INCOMPLETE"
-  end
-
-  return filename
-end
-
----@param match Match
----@param replay ReplayV2
-function ReplayV2.finalizeReplay(match, replay)
-  if not replay.completed then
-    for i = 1, #match.stacks do
-      if match.stacks[i].confirmedInput then
-        replay.players[i].settings.inputs = InputCompression.compressInputString(table.concat(match.stacks[i].confirmedInput))
-      end
-    end
-
-    -- abort is functionally equivalent to #match.winners == 0
-    if match.aborted then
-      replay:setOutcome()
-    else
-      local winners = match:getWinners()
-      if #winners == 1 then
-        replay:setOutcome(tableUtils.indexOf(match.stacks, match.winners[1]))
-      elseif #winners > 1 then
-        replay:setOutcome(0)
-      end
-    end
-  end
 end
 
 -- creates a Replay from the table t which contains the deserialized data representation of a replay from network or file
