@@ -42,21 +42,9 @@ function PuzzleMenu:startGame(puzzleSet)
   GAME.theme:playValidationSfx()
   GAME.localPlayer:setPuzzleSet(puzzleSet)
 
-  self:startNextPuzzle()
-end
-
-function PuzzleMenu:startNextPuzzle()
   local player = self.battleRoom.players[1]
   local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
-  local isValid, validationError = puzzle:validate()
-  if not isValid then
-    validationError = "Validation error in puzzle set " .. player.settings.puzzleSet.setName .. "\n"
-                    .. validationError
-    local transition = MessageTransition(GAME.timer, 5, validationError)
-    GAME.navigationStack:popToTop(transition)
-  else
-    self.battleRoom:setGameMode(puzzle:toGameMode())
-  end
+  self.battleRoom:setGameMode(puzzle:toGameMode())
   player:setWantsReady(true)
 end
 
