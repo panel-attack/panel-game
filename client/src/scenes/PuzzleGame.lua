@@ -46,7 +46,7 @@ function PuzzleGame:customRun()
 end
 
 function PuzzleGame:readyToProceedToNextScene()
-  if (self.inputConfiguration and self.inputConfiguration.isDown["TauntUp"]) then
+  if (self.inputConfiguration and self.inputConfiguration.isDown["TauntDown"]) then
     FileUtils.saveReplay(self.match.replay)
   else
     return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
