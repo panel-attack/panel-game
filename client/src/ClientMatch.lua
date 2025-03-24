@@ -119,7 +119,7 @@ function ClientMatch.createFromReplay(replay, players)
   local clientMatch = ClientMatch(players, replay.metadata.ranked)
   clientMatch.replay = replay
   clientMatch.engine = engine
-  clientMatch.supportsPause = false
+  clientMatch.supportsPause = #players == 1 and players[1].isLocal
   clientMatch.stacks = {}
   clientMatch.spectators = {}
   clientMatch.spectatorString = ""
