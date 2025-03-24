@@ -89,13 +89,7 @@ function GeneratorSource:generatePanels(stack)
   self.panelGenerator:setSeed(self.seed + self.panelGenCount)
 
   local lastRow = self.panelBuffer:sub(-stack.width)
-  local newPanels = ""
-
-  for i = 1, 100 do
-    local newRow = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, self.shockEnabled)
-    newPanels = newPanels .. newRow
-    lastRow = newRow
-  end
+  local newPanels = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, self.shockEnabled)
 
   self.panelGenCount = self.panelGenCount + 1
 
@@ -159,7 +153,7 @@ function GeneratorSource:createNewRow(stack, row)
     self.panelBuffer = self:generateStartingBoard(stack)
     self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
   else
-    if string.len(self.panelBuffer) <= 10 * stack.width then
+    if string.len(self.panelBuffer) <= 2 * stack.width then
       self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
     end
   end
