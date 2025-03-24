@@ -21,8 +21,8 @@ local function getTimer(match)
     frames = stack.engine.game_stopwatch
   end
 
-  if match.timeLimit then
-    frames = (match.timeLimit * 60) - frames
+  if match.engine.timeLimit then
+    frames = (match.engine.timeLimit * 60) - frames
     if frames < 0 then
       frames = 0
     end

@@ -50,7 +50,7 @@ function(self, panelSource, matchRules)
   self.doCountdown = self.rules.doCountdown
 
   if self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT] then
-    self.timeLimit = self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT] * 60
+    self.timeLimit = self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT]
   end
 
   self.timeSpentRunning = 0

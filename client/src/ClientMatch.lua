@@ -28,7 +28,6 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field replay ReplayV3
 ---@field doCountdown boolean 
 ---@field stackInteraction StackInteractions how the stacks in the match interact with each other
----@field timeLimit integer? if the game automatically ends after a certain time
 ---@field supportsPause boolean if the game can be paused
 ---@field isPaused boolean if the game is currently paused
 ---@field renderDuringPause boolean if the game should be rendered while paused
@@ -543,8 +542,8 @@ function ClientMatch:drawTimer()
     frames = stack.engine.game_stopwatch
   end
 
-  if self.timeLimit then
-    frames = (self.timeLimit * 60) - frames
+  if self.engine.timeLimit then
+    frames = (self.engine.timeLimit) - frames
     if frames < 0 then
       frames = 0
     end

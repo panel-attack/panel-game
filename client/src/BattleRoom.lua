@@ -13,7 +13,6 @@ local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTran
 local Easings = require("client.src.Easings")
 local consts = require("common.engine.consts")
 local system = require("client.src.system")
-local PuzzleSource = require("common.engine.PuzzleSource")
 local GeneratorSource = require("common.engine.GeneratorSource")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
@@ -56,54 +55,29 @@ end)
 ---@enum BattleRoomState
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
----@param match ClientMatch
-function BattleRoom.createFromMatch(match)
-  local gameMode = {
-    matchRules = match.matchRules,
-    playerCount = #match.players,
-    name = match.replay.metadata.gameModeName,
-    gameScene = "GameBase",
-    richPresenceLabel = "Spectating",
-  }
-
-  local battleRoom = BattleRoom(gameMode, GameBase)
-
-  for i = 1, #match.players do
-    battleRoom:addPlayer(match.players[i])
-  end
-
-  battleRoom.match = match
-  battleRoom.match:start()
-  battleRoom.state = BattleRoom.states.MatchInProgress
-
-  return battleRoom
-end
-
 function BattleRoom.createFromServerMessage(message)
-  local battleRoom
-  local gameMode = message.gameMode
+  local battleRoom = BattleRoom(message.gameMode)
 
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
     if message.replay then
       local replay = message.replay
-      -- if the server message lacks ENGINE_VERSION, the standard replay sanitization may conservatively guess v046
-      -- but since we're online and successfully connected we KNOW it has to be our engine version
-      replay.engineVersion = consts.ENGINE_VERSION
       local match = ClientMatch.createFromReplay(replay)
-      -- need this to make sure both have the same player tables
-      -- there's like one stupid reference to battleRoom in engine that breaks otherwise
-      battleRoom = BattleRoom.createFromMatch(match)
-      battleRoom.mode.gameScene = gameMode.gameScene
-      battleRoom.mode.richPresenceLabel = gameMode.richPresenceLabel
+      for i = 1, #match.players do
+        battleRoom:addPlayer(match.players[i])
+      end
+
+      battleRoom.match = match
+      battleRoom.match:start()
+      battleRoom.state = BattleRoom.states.MatchInProgress
     else
-      battleRoom = BattleRoom(gameMode)
       for i = 1, #message.players do
         local player = Player(message.players[i].name, message.players[i].publicId or -i, false)
         battleRoom:addPlayer(player)
         player:updateSettings(message.players[i].settings)
       end
     end
+
     for i = 1, #battleRoom.players do
       if message.players[i].ratingInfo then
         local ratingInfo = message.players[i].ratingInfo
@@ -116,7 +90,7 @@ function BattleRoom.createFromServerMessage(message)
     end
     battleRoom.spectating = true
   else
-    battleRoom = BattleRoom(gameMode)
+    local gameMode = message.gameMode
     for i, player in ipairs(message.players) do
       local p
 

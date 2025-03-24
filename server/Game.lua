@@ -41,7 +41,14 @@ function Game.createFromRoomState(room)
   local roomIsRanked, reasons = room:rating_adjustment_approved()
   game.ranked = roomIsRanked
 
-  local replay = ReplayV3(ENGINE_VERSION, room.gameMode.matchRules, GeneratorSource(game.seed, true):toReplaySource())
+  local replayPanelSource = {
+    sourceType = 3,
+    seed = game.seed,
+    shockEnabled = room.gameMode.stackInteraction ~= GameModes.StackInteractions.NONE,
+    garbageShockEnabled = false,
+  }
+
+  local replay = ReplayV3(ENGINE_VERSION, room.gameMode.matchRules, replayPanelSource)
   replay:setStage(room.stageId)
   replay:setRanked(game.ranked)
   replay.metadata.gameModeName = room.gameMode.name

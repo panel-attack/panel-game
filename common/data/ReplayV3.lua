@@ -346,7 +346,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
   ---@type MatchRules
   local rules = {
     doCountdown = v2Replay.gameMode.doCountdown,
-    matchEndConditions = { STACKS_ACTIVE = stacksActive, TIME_LIMIT = v2Replay.gameMode.timeLimit },
+    matchEndConditions = { STACKS_ACTIVE = stacksActive, TIME_LIMIT = v2Replay.gameMode.timeLimit * 60 },
     matchWinRuleset = { { GAME_OVER_CLOCK = "HIGHEST" } },
     -- other conditions were not part of replays in v2
     stackOverConditions = { HEALTH = 0 },
