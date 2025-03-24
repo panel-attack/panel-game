@@ -450,7 +450,7 @@ function ReplayV3.loadFromV2Replay(v2Replay)
         local metadata = {
           publicId = v2Player.publicId,
           name = v2Player.name,
-          stackIndex = 1,
+          stackIndex = i,
           wins = v2Player.wins,
           characterId = v2Player.settings.characterId,
           panelId = v2Player.settings.panelId,

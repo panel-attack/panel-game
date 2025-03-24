@@ -537,6 +537,7 @@ function Match:hasEnded()
   end
 
   if self:isIrrecoverablyDesynced() then
+    logger.info("Match irrecoverably desynced")
     self.ended = true
     self.aborted = true
     self.desyncError = true
