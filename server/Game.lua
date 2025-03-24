@@ -4,7 +4,6 @@ local logger = require("common.lib.logger")
 local StackBehaviours = require("common.data.StackBehaviours")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
-local GeneratorSource = require("common.engine.GeneratorSource")
 local LevelPresets    = require("common.data.LevelPresets")
 
 ---@class ServerGame

@@ -255,8 +255,12 @@ function BattleRoom:createMatch()
   return self.match
 end
 
+---@param gameMode GameMode
 function BattleRoom:setGameMode(gameMode)
   self.mode = gameMode
+  if gameMode.gameScene then
+    self.gameScene = require("client.src.scenes." .. gameMode.gameScene)
+  end
 end
 
 -- adds an existing Player to the BattleRoom
