@@ -8,7 +8,6 @@ local RollbackBuffer = require("common.engine.RollbackBuffer")
 ---@class GeneratorSource : PanelSource
 ---@field seed integer
 ---@field shockEnabled boolean
----@field garbageShockEnabled boolean
 ---@field panelGenerator PanelGenerator
 ---@field rollbackBuffer RollbackBuffer
 ---@overload fun(seed: integer, shockEnabled: boolean): GeneratorSource
@@ -19,7 +18,6 @@ local GeneratorSource = class(
 function(self, seed, shockEnabled)
   self.seed = seed
   self.shockEnabled = shockEnabled
-  self.garbageShockEnabled = false
   self.panelBuffer = ""
   self.garbagePanelBuffer = ""
   self.panelGenCount = 0
@@ -35,7 +33,6 @@ function GeneratorSource:toReplaySource()
     sourceType = 3,
     seed = self.seed,
     shockEnabled = self.shockEnabled,
-    garbageShockEnabled = self.garbageShockEnabled,
   }
 end
 
@@ -105,7 +102,7 @@ function GeneratorSource:generateGarbagePanels(stack)
   local newPanels = ""
 
   for i = 1, 20 do
-    local newRow = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, self.garbageShockEnabled)
+    local newRow = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, false)
     newPanels = newPanels .. newRow
     lastRow = newRow
   end
@@ -190,9 +187,6 @@ function GeneratorSource:getGarbagePanelRowString(stack)
   end
   local garbagePanelRow = self.garbagePanelBuffer:sub(1, stack.width)
   self.garbagePanelBuffer = self.garbagePanelBuffer:sub(stack.width + 1)
-  if self.garbageShockEnabled then
-    garbagePanelRow = table.concat(convertMetalPanels(garbagePanelRow, 0))
-  end
   return garbagePanelRow
 end
 
@@ -205,7 +199,6 @@ function GeneratorSource:clone(stack)
   source.garbagePanelBuffer = self.garbagePanelBuffer
   source.panelGenCount = self.panelGenCount
   source.garbageGenCount = self.garbageGenCount
-  source.garbageShockEnabled = self.garbageShockEnabled
   source.panelGenerator = PanelGenerator(self.seed, stack.levelData.adjacentDenialFrequency)
   return source
 end

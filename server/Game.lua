@@ -44,7 +44,6 @@ function Game.createFromRoomState(room)
     sourceType = 3,
     seed = game.seed,
     shockEnabled = room.gameMode.stackInteraction ~= GameModes.StackInteractions.NONE,
-    garbageShockEnabled = false,
   }
 
   local replay = ReplayV3(ENGINE_VERSION, room.gameMode.matchRules, replayPanelSource)
