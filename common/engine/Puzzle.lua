@@ -11,18 +11,18 @@ local MatchRules = require("common.data.MatchRules")
 ---@field moves integer
 ---@field stack string string representation of the panel colors
 ---@field randomizeColors boolean
----@field stop_time integer
----@field shake_time integer
----@overload fun(puzzleType: string, doCountdown: boolean, moves: integer?, stack: string, stop_time: integer?, shake_time: integer?): Puzzle
+---@field stopTime integer?
+---@field shakeTime integer?
+---@overload fun(puzzleType: string, doCountdown: boolean, moves: integer?, stack: string, stopTime: integer?, shakeTime: integer?): Puzzle
 Puzzle = class(
-  function(self, puzzleType, doCountdown, moves, stack, stop_time, shake_time)
+  function(self, puzzleType, doCountdown, moves, stack, stopTime, shakeTime)
     self.puzzleType = puzzleType or "moves"
     self.doCountdown = doCountdown
     self.moves = moves or 0
     self.stack = string.gsub(stack, "%s+", "") -- Remove whitespace so files can be easier to read
     self.randomizeColors = false
-    self.stop_time = stop_time or 0
-    self.shake_time = shake_time or 0
+    self.stopTime = stopTime
+    self.shakeTime = shakeTime
   end
 )
 
@@ -244,8 +244,8 @@ function Puzzle:toGameMode()
   if self.puzzleType == "clear" then
     mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
     mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
-    mode.matchRules.stackSetupModifications.stopTime = self.stop_time
-    mode.matchRules.stackSetupModifications.shakeTime = self.shake_time
+    mode.matchRules.stackSetupModifications.stopTime = self.stopTime
+    mode.matchRules.stackSetupModifications.shakeTime = self.shakeTime
     mode.matchRules.stackSetupModifications.behaviours.startTimersWithSwapCount = 1
   else
     mode.matchRules.stackSetupModifications.behaviours = {

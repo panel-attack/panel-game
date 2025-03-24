@@ -81,12 +81,6 @@ function PortraitGame:drawMultibar(stack)
   local stop_time = stack.engine.stop_time
   local shake_time = stack.engine.shake_time
 
-  -- before the first move, display the stop time from the puzzle, not the stack
-  if stack.engine.puzzle and stack.engine.puzzle.puzzleType == "clear" and stack.engine.puzzle.moves == stack.engine.puzzle.remaining_moves then
-    stop_time = stack.engine.puzzle.stop_time
-    shake_time = stack.engine.puzzle.shake_time
-  end
-
   framePos = framePos or themes[config.theme].healthbar_frame_Pos
   barPos = barPos or themes[config.theme].multibar_Pos
   overtimePos = overtimePos or themes[config.theme].multibar_LeftoverTime_Pos
