@@ -35,6 +35,7 @@ local REPLAY_VERSION = 3
 
 ---@class BaseStackMetadata
 ---@field stackIndex integer
+---@field renderIndex integer?
 ---@field panelId string?
 ---@field characterId string?
 ---@field wins integer?

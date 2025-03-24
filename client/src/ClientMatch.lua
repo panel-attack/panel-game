@@ -293,6 +293,15 @@ function ClientMatch:deinit()
 end
 
 function ClientMatch:moveStacks()
+  if self.replay and self.replay.metadata.completed then
+    if tableUtils.trueForAll(self.replay.metadata.stacks, function(s) return s.renderIndex end) then
+      for _, stackMetadata in ipairs(self.replay.metadata.stacks) do
+        self.stacks[stackMetadata.stackIndex]:moveForRenderIndex(stackMetadata.renderIndex)
+      end
+      return
+    end
+  end
+
   -- we want to render the stacks in a particular order so that the local player ends up as P1 (left side)
   -- BUT: we want to keep player indexing consistent over boundaries (client <-> replay <- server) to not mess with replay saving
   -- so we solve the rendering requirement via a shallowcpy and assigning positions directly to the stacks rather than starting reordering shenanigans all across the code base
@@ -372,6 +381,7 @@ function ClientMatch:finalizeReplay()
       ---@type BaseStackMetadata
       local metadata = {
         stackIndex = stackIndex,
+        renderIndex = stack.renderIndex,
         characterId = stack.character.id,
         panelId = stack.panels_dir,
       }
@@ -405,28 +415,6 @@ function ClientMatch:finalizeReplay()
     end
 
     ReplayV3.finalizeReplay(self.engine, self.replay)
-
-    -- TODO
-    -- we kept player order consistent throughout from replay creation to evade issues with properties/inputs being recorded on the wrong stack
-    -- but now all the data is there so reorder the players according to display
-    -- local replayPlayers = shallowcpy(self.replay.players)
-
-    -- for _, playerStack in ipairs(self.stacks) do
-    --   local replayPlayer
-    --   for _, rp in ipairs(replayPlayers) do
-    --     if playerStack.player and playerStack.player.human and rp.publicId == playerStack.player.publicId then
-    --       replayPlayer = rp
-    --     end
-
-    --     if replayPlayer then
-    --       self.replay.players[playerStack.renderIndex] = replayPlayer
-    --       if self.replay.metadata.winnerId == replayPlayer.publicId then
-    --         self.replay.metadata.winnerIndex = playerStack.renderIndex
-    --       end
-    --     end
-    --   end
-    -- end
-
   end
 
   return replay
