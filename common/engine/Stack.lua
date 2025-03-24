@@ -68,15 +68,15 @@ local PANELS_TO_NEXT_SPEED =
 ---@field generateStartingBoard fun(self: PanelSource, stack: Stack): string
 ---@field generatePanels fun(self: PanelSource, stack: Stack): string
 ---@field generateGarbagePanels fun(self: PanelSource, stack:Stack): string
----@field getStartingBoardHeight fun(self: PanelSource, stack: Stack): integer
----@field createNewRow fun(self: PanelSource, stack: Stack, row: integer)
----@field getGarbagePanelRowString fun(self: PanelSource, stack: Stack): string
----@field clone fun(self: PanelSource, stack: Stack): PanelSource
+---@field getStartingBoardHeight fun(self: PanelSource, stack: Stack): integer how many rows are to be generated at the start
+---@field createNewRow fun(self: PanelSource, stack: Stack, row: integer) creates a new set of panels for the stack with the specified row index and writes it to the stack's panels array
+---@field getGarbagePanelRowString fun(self: PanelSource, stack: Stack): string returns a string of color indices
+---@field clone fun(self: PanelSource, stack: Stack): PanelSource creates a PanelSource that is tailored to the Stack's settings based on the template that is cloned from
 ---@field panelBuffer string alphanumeric string containing a buffer of panels to rise from below; string characters indicate possible metal positions
 ---@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbagePanelBuffer string numeric string containing a buffer of panels for garbage to turn into upon matching
 ---@field garbageGenCount integer How many times the garbagePanelBuffer was extended; relevant to keep PRNG deterministic for replays
----@field toReplaySource fun(self: PanelSource): table<ReplayPanelSourceType, any>
+---@field toReplaySource fun(self: PanelSource): ReplayPanelSource
 ---@field TYPE string
 
 ---@alias CursorDirection ("up" | "down" | "left" | "right")
