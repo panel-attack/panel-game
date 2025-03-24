@@ -130,12 +130,12 @@ Panels in the states "normal", "falling" and "hovering"* in a column that is clo
 This animation is staggered across columns in pairs of two, loops as long as the player is not topped out and pauses on the current frame while the player has stop time.  
 Whenever the player is topped out, the animation resets to the first frame and is held there so the first frame of this animation should NOT match the normal frame.
 
-Specifying a panic animation is OPTIONAL and the danger animation will be used for both parts.
+Specifying a panic animation is OPTIONAL and the danger animation will be used for both parts if no panic animation is supplied.
 
 Whenever the player has stop time, the danger frame will be displayed.  
 Whenever the player has no stop time, the panic frame will be displayed.  
 
-This means that if a separate panic animation is supplied, only the panic animation will visibly play and whenever stop time is gained, the animation will freeze on the corresponding danger frame. Otherwise the danger animation plays and freezes in accordance with stop time.
+This means that if a separate panic animation is supplied the danger animation will never do full animation because it will always be freezed at frame 1 or whatever frame you got stop time.
 
 As they share a timer, it is recommended to use the same length / timing for danger and panic as otherwise the transition between the two may look odd.
 
