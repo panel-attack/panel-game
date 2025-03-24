@@ -169,7 +169,7 @@ function ClientMatch:setup()
       local attackEngineHost = ChallengeModePlayerStack({
         engine = engineStack,
         is_local = not (self.replay and self.replay.metadata.completed),
-        character = CharacterLoader.fullyResolveCharacterSelection(),
+        characterId = CharacterLoader.fullyResolveCharacterSelection(),
         attackSettings = player.settings.attackEngineSettings,
         match = self,
       })
@@ -367,16 +367,18 @@ function ClientMatch:finalizeReplay()
       replay.metadata.gameModeName = self.gameMode.name
     end
 
-    for i, player in ipairs(self.players) do
-      local stackIndex = tableUtils.indexOf(self.engine.stacks, player.stack.engine)
-      if stackIndex then
-        ---@type BaseStackMetadata
-        local metadata = {
-          stackIndex = stackIndex,
-          wins = player.wins,
-          characterId = player.settings.characterId,
-          panelId = player.settings.panelId,
-        }
+    for i, stack in ipairs(self.stacks) do
+      local stackIndex = tableUtils.indexOf(self.engine.stacks, stack.engine)
+      ---@type BaseStackMetadata
+      local metadata = {
+        stackIndex = stackIndex,
+        characterId = stack.character.id,
+        panelId = stack.panels_dir,
+      }
+
+      local player = stack.player
+      if player then
+        metadata.wins = player.wins
         if player.human then
           ---@cast metadata StackMetadata
           ---@cast player Player
@@ -398,8 +400,8 @@ function ClientMatch:finalizeReplay()
           metadata.challengeModeDifficulty = player.settings.difficulty
           metadata.stageIndex = player.settings.level
         end
-        replay.metadata.stacks[i] = metadata
       end
+      replay.metadata.stacks[i] = metadata
     end
 
     ReplayV3.finalizeReplay(self.engine, self.replay)

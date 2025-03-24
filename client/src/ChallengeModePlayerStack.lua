@@ -130,7 +130,9 @@ end
 function ChallengeModePlayerStack:render()
   self:setDrawArea()
   self:drawCharacter()
-  self:renderStackHeight()
+  if self.engine.healthEngine then
+    self:renderStackHeight()
+  end
   self:drawFrame()
   self:drawWall(0, 12)
   self:resetDrawArea()

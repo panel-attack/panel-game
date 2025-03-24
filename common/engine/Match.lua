@@ -405,7 +405,7 @@ function Match:createNewReplay()
       local replayStack = {
         stackType = 2,
         attackSettings = stack:getAttackPatternData(),
-        healthSettings = stack.healthEngine:getSettings()
+        healthSettings = stack.healthEngine and stack.healthEngine:getSettings()
       }
       replay.stacks[i] = replayStack
     end

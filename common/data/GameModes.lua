@@ -94,7 +94,7 @@ local OnePlayerTraining = {
   playerCount = 1,
   stackInteraction = StackInteractions.ATTACK_ENGINE,
   matchRules = {
-    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 0 },
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 1 },
     matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST} },
     stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
     stackWinConditions = {},
