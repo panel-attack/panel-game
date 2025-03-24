@@ -259,24 +259,6 @@ function BattleRoom:setGameMode(gameMode)
   self.mode = gameMode
 end
 
----@param puzzleSet PuzzleSet
-function BattleRoom:setPuzzleSet(puzzleSet)
-  self.puzzleSet = puzzleSet
-end
-
----@param puzzle Puzzle
-function BattleRoom:setPuzzle(puzzle)
-  local isValid, validationError = puzzle:validate()
-  if not isValid then
-    validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
-                    .. validationError
-    local transition = MessageTransition(GAME.timer, 5, validationError)
-    GAME.navigationStack:popToTop(transition)
-  else
-    self.mode = puzzle:toGameMode()
-  end
-end
-
 -- adds an existing Player to the BattleRoom
 function BattleRoom:addPlayer(player)
   if not player.playerNumber then
