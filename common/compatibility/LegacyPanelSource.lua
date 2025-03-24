@@ -165,17 +165,17 @@ function LegacyPanelSource:getGarbagePanelRowString(stack)
     -- and then we append that result to the remaining buffer
     self.garbagePanelBuffer = self.garbagePanelBuffer .. newGarbagePanels
     -- that means the next 10 rows of garbage will use the same colors as the 10 rows after
-  -- that's a bug but it cannot be fixed without breaking replays
-  -- it is also hard to abuse as 
-  -- a) players would need to accurately track the 10 row cycles
-  -- b) "solve into the same thing" only applies to a limited degree:
-  --   a garbage panel row of 123456 solves into 1234 for ====00 but into 3456 for 00====
-  --   that means information may be incomplete and partial memorization may prove unreliable
-  -- c) garbage panels change every (10 + n * 20 rows) with n>0 in ℕ 
-  --    so the player needs to always survive 20 rows to start abusing
-  --    and can then only abuse for every 10 rows out of 20
-  -- overall it is to be expected that the strain of trying to memorize outweighs the gains
-  -- this bug should be fixed with the next breaking change to the engine
+    -- that's a bug
+    -- it is relatively hard to abuse as 
+    -- a) players would need to accurately track the 10 row cycles
+    -- b) "solve into the same thing" only applies to a limited degree:
+    --   a garbage panel row of 123456 solves into 1234 for ====00 but into 3456 for 00====
+    --   that means information may be incomplete and partial memorization may prove unreliable
+    -- c) garbage panels change every (10 + n * 20 rows) with n>0 in ℕ 
+    --    so the player needs to always survive the first 20 rows to start abusing
+    --    and can then only abuse for every 10 rows out of 20
+    -- overall it is to be expected that the strain of trying to memorize outweighs the gains
+    -- this bug is in part why this LegacyPanelSource was replaced with GeneratorSource
   end
   local garbagePanelRow = string.sub(self.garbagePanelBuffer, 1, stack.width)
   self.garbagePanelBuffer = string.sub(self.garbagePanelBuffer, stack.width + 1)
