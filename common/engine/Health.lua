@@ -5,7 +5,7 @@ local class = require("common.lib.class")
 ---@class HealthSettings
 ---@field framesToppedOutToLose number Starting value of framesToppedOutToLose
 ---@field lineClearGPM number How many "lines" we clear per minute. Essentially how fast we recover.
----@field height number How many "lines" need to be accumulated before we are "topped" out.
+---@field lineHeightToKill number How many "lines" need to be accumulated before we are "topped" out.
 ---@field riseSpeed integer The initial speed lines accumulate with passively
 
 ---@class HealthEngine
@@ -140,7 +140,7 @@ function Health:getSettings()
   return {
     framesToppedOutToLose = self.maxSecondsToppedOutToLose,
     lineClearGPM = self.lineClearRate * 60,
-    height = self.height,
+    lineHeightToKill = self.height,
     riseSpeed = self.initialRiseSpeed
   }
 end

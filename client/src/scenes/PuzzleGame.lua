@@ -24,6 +24,7 @@ function PuzzleGame:customLoad()
   -- we cache the player's input configuration here so that only inputs from this config can start the next puzzle
 ---@diagnostic disable-next-line: assign-type-mismatch
   self.player = self.match.players[1]
+  self.inputConfiguration = self.player.inputConfiguration
   local puzzle = self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex]
   local isValid, validationError = puzzle:validate()
   if not isValid then
@@ -45,10 +46,10 @@ function PuzzleGame:customRun()
 end
 
 function PuzzleGame:readyToProceedToNextScene()
-  if (self.player.inputConfiguration and self.player.inputConfiguration.isDown["TauntUp"]) then
+  if (self.inputConfiguration and self.inputConfiguration.isDown["TauntUp"]) then
     FileUtils.saveReplay(self.match.replay)
   else
-    return tableUtils.trueForAny(self.player.inputConfiguration.isDown, function(key) return key end)
+    return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
   end
 end
 
