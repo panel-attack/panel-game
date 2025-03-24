@@ -5,7 +5,7 @@ require("common.lib.util")
 table.new = require("table.new")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 
----@class GeneratorSource : PanelSource, canRollback
+---@class GeneratorSource : PanelSource
 ---@field seed integer
 ---@field shockEnabled boolean
 ---@field garbageShockEnabled boolean
@@ -18,12 +18,12 @@ local GeneratorSource = class(
 ---@param shockEnabled boolean
 function(self, seed, shockEnabled)
   self.seed = seed
+  self.shockEnabled = shockEnabled
+  self.garbageShockEnabled = false
   self.panelBuffer = ""
   self.garbagePanelBuffer = ""
   self.panelGenCount = 0
   self.garbageGenCount = 0
-  self.shockEnabled = shockEnabled
-  self.garbageShockEnabled = false
   self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
@@ -66,14 +66,14 @@ function GeneratorSource:generateStartingBoard(stack)
   local startingBoardArray = procat(startingBoard)
   local maxStartingHeight = 7
   local height = tableUtils.map(procat(string.rep(maxStartingHeight, stack.width)), function(s) return tonumber(s) end)
-  local to_remove = 2 * stack.width
-  while to_remove > 0 do
+  local toRemove = 2 * stack.width
+  while toRemove > 0 do
     local idx = self.panelGenerator:random(1, stack.width) -- pick a random column
     if height[idx] > 0 then
       -- delete the topmost panel in this column
       startingBoardArray[idx + stack.width * (-height[idx] + 8)] = "0"
       height[idx] = height[idx] - 1
-      to_remove = to_remove - 1
+      toRemove = toRemove - 1
     end
   end
 
@@ -164,19 +164,19 @@ function GeneratorSource:createNewRow(stack, row)
     end
   end
 
-  local metal_panels_this_row = 0
+  local metalPanelsThisRow = 0
   if self.shockEnabled then
     -- assign colors to the new row 0
-    if stack.metal_panels_queued > 3 then
-      stack.metal_panels_queued = stack.metal_panels_queued - 2
-      metal_panels_this_row = 2
-    elseif stack.metal_panels_queued > 0 then
-      stack.metal_panels_queued = stack.metal_panels_queued - 1
-      metal_panels_this_row = 1
+    if stack.metalPanelsQueued > 3 then
+      stack.metalPanelsQueued = stack.metalPanelsQueued - 2
+      metalPanelsThisRow = 2
+    elseif stack.metalPanelsQueued > 0 then
+      stack.metalPanelsQueued = stack.metalPanelsQueued - 1
+      metalPanelsThisRow = 1
     end
   end
 
-  local colors = convertMetalPanels(self.panelBuffer:sub(1, stack.width), metal_panels_this_row)
+  local colors = convertMetalPanels(self.panelBuffer:sub(1, stack.width), metalPanelsThisRow)
   self.panelBuffer = self.panelBuffer:sub(stack.width + 1)
 
   for col = 1, stack.width do

@@ -782,7 +782,7 @@ function PlayerStack:drawDebug()
     end
 
     GraphicsUtil.print(loc("pl_cleared", (engine.panels_cleared or 0)), x, y + 165)
-    GraphicsUtil.print(loc("pl_metal", (engine.metal_panels_queued or 0)), x, y + 180)
+    GraphicsUtil.print(loc("pl_metal", (engine.metalPanelsQueued or 0)), x, y + 180)
 
     local input = engine.confirmedInput[engine.clock]
 

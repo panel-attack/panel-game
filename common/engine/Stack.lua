@@ -146,7 +146,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field queuedSwapColumn integer column of the left (or in case of touch the "target") panel for which a swap has been queued for next frame; 0 if none queued
 ---@field top_cur_row integer the maximum row index the cursor is allowed to go at the moment
 ---@field panels_cleared integer How many panels have been cleared on the stack so far; relevant for the occurence of shock panels
----@field metal_panels_queued integer How many shock panels are currently queued up
+---@field metalPanelsQueued integer How many shock panels are currently queued up
 ---@field prev_shake_time integer How many frames of shake time we had last frame; by comparing with the new shake_time it can be determined whether there should be a thud SFX or other things
 ---@field shake_time integer Invincibility frames earned by a previously off-screen garbage panel transitioning from falling to normal state. Not cumulative. Depletes by 1 each frame.
 ---@field shake_time_on_frame integer The shake time that would have been earned by falling panels this frame. Overwrites shake_time if greater.
@@ -272,7 +272,7 @@ local Stack = class(
     s.swapCount = 0
 
     s.panels_cleared = s.panels_cleared or 0
-    s.metal_panels_queued = s.metal_panels_queued or 0
+    s.metalPanelsQueued = s.metalPanelsQueued or 0
 
     s.prev_shake_time = 0
     s.shake_time = args.stackSetupModifications.shakeTime or 0
@@ -428,7 +428,7 @@ function Stack:rollbackCopy()
   copy.do_countdown = self.do_countdown
   copy.panels_in_top_row = self.panels_in_top_row
   copy.has_risen = self.has_risen
-  copy.metal_panels_queued = self.metal_panels_queued
+  copy.metalPanelsQueued = self.metalPanelsQueued
   copy.panels_cleared = self.panels_cleared
   copy.game_over_clock = self.game_over_clock
   copy.highestGarbageIdMatched = self.highestGarbageIdMatched
@@ -485,7 +485,7 @@ local function internalRollbackToFrame(stack, frame)
   stack.do_countdown = copy.do_countdown
   stack.panels_in_top_row = copy.panels_in_top_row
   stack.has_risen = copy.has_risen
-  stack.metal_panels_queued = copy.metal_panels_queued
+  stack.metalPanelsQueued = copy.metalPanelsQueued
   stack.panels_cleared = copy.panels_cleared
   stack.game_over_clock = copy.game_over_clock
   stack.highestGarbageIdMatched = copy.highestGarbageIdMatched
@@ -1503,7 +1503,7 @@ function Stack.onPop(self, panel)
 
     self.panels_cleared = self.panels_cleared + 1
     if self.panels_cleared % self.levelData.shockFrequency == 0 then
-          self.metal_panels_queued = min(self.metal_panels_queued + 1, self.levelData.shockCap)
+          self.metalPanelsQueued = min(self.metalPanelsQueued + 1, self.levelData.shockCap)
     end
   end
 

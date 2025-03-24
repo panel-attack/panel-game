@@ -119,11 +119,11 @@ function LegacyPanelSource:createNewRow(stack, row)
   -- assign colors to the new row 0
   local metal_panels_this_row = 0
   if self.shockEnabled then
-    if stack.metal_panels_queued > 3 then
-      stack.metal_panels_queued = stack.metal_panels_queued - 2
+    if stack.metalPanelsQueued > 3 then
+      stack.metalPanelsQueued = stack.metalPanelsQueued - 2
       metal_panels_this_row = 2
-    elseif stack.metal_panels_queued > 0 then
-      stack.metal_panels_queued = stack.metal_panels_queued - 1
+    elseif stack.metalPanelsQueued > 0 then
+      stack.metalPanelsQueued = stack.metalPanelsQueued - 1
       metal_panels_this_row = 1
     end
   end
