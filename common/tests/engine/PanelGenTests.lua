@@ -4,6 +4,7 @@ local Stack = require("common.engine.Stack")
 local LevelPresets = require("common.data.LevelPresets")
 local StackBehaviours = require("common.data.StackBehaviours")
 local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
+require("common.lib.util")
 
 local function checkPanels(panels, rowWidth)
   assert(string.len(panels) % rowWidth == 0)
@@ -15,25 +16,25 @@ local function checkPanels(panels, rowWidth)
   end
 end
 
-local function testPanelGenForGarbage1()
+local function testLegacyPanelGenForGarbage1()
   LegacyPanelGenerator:setSeed(1)
   local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(20, 6, 6, "", true)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "123624354235541356256135534246123164452652261534436416143654326141464535125612654356413561525232252356624214265623324561")
 end
 
-testPanelGenForGarbage1()
+testLegacyPanelGenForGarbage1()
 
-local function testPanelGenForGarbage2()
+local function testLegacyPanelGenForGarbage2()
   LegacyPanelGenerator:setSeed(2)
   local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(20, 6, 5, "", false)
   checkPanels(panelbuffer, 6)
   assert(panelbuffer == "434133551424345232231321415545122411314534442342321125245242532315353252215143543315252554121343254532431155123232552441")
 end
 
-testPanelGenForGarbage2()
+testLegacyPanelGenForGarbage2()
 
-local function  testPanelGenForStartingBoard1()
+local function  testLegacyPanelGenForStartingBoard1()
   LegacyPanelGenerator:setSeed(3)
   local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(7, 6, 6, "", true)
   checkPanels(panelbuffer, 6)
@@ -43,9 +44,9 @@ local function  testPanelGenForStartingBoard1()
   assert(panelbuffer == "aF3625451Ba4f3613E4B42f434B53a1F4f5452E2c6")
 end
 
-testPanelGenForStartingBoard1()
+testLegacyPanelGenForStartingBoard1()
 
-local function  testPanelGenForStartingBoard2()
+local function  testLegacyPanelGenForStartingBoard2()
   LegacyPanelGenerator:setSeed(4)
   local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(7, 6, 5, "", false)
   checkPanels(panelbuffer, 6)
@@ -55,9 +56,9 @@ local function  testPanelGenForStartingBoard2()
   assert(panelbuffer == "bA312555Ac42A4215c5Ed322C12d312b31D4435E3b")
 end
 
-testPanelGenForStartingBoard2()
+testLegacyPanelGenForStartingBoard2()
 
-local function testPanelGenForRegularBoard1()
+local function testLegacyPanelGenForRegularBoard1()
   LegacyPanelGenerator:setSeed(5)
   local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(100, 6, 6, "", true)
   checkPanels(panelbuffer, 6)
@@ -67,9 +68,9 @@ local function testPanelGenForRegularBoard1()
   assert(panelbuffer == "6e43B432aB51Fc2562264cA365f45BD231c12a5B525325DcD21f2556e2F23d3F1341b1E6fC6415463eF1Fc641445B1d1C45b356bA513e3624B2e46B6a6353B6e4A4652F5f2c4214A6E15b636eA43A435b63b1F45b6416A65b6C2a4515D623eC6cA2145631cB33e251Ee2E6421D235a32C6d2A41e354C432f26b4A45C4e4164f2E4521d1F2Ac262F541b63a5B351624fCbC514114f5B5e3531C65a5B45C6c15a2E1243a6C5612A56a532Ae3f2346A212eA3d3542A51Da46a616A42c4B614254eBc52A411254cDfD1313123b6EeA464326C4f5c12C512431cF3Ed363415F4f6E24c1E34f1246C56e5A6b3113d3A6f1243B1e4F513232cF15Bc154614eBa34C462aB615423aD6cD5412252c4F56D6e1b1524F3eC532d15B4335A62aa23B534Cb612561D6d3Bd141d32D536D51b1")
 end
 
-testPanelGenForRegularBoard1()
+testLegacyPanelGenForRegularBoard1()
 
-local function testPanelGenForRegularBoard2()
+local function testLegacyPanelGenForRegularBoard2()
   LegacyPanelGenerator:setSeed(6)
   local panelbuffer = LegacyPanelGenerator.privateGeneratePanels(100, 6, 5, "", false)
   checkPanels(panelbuffer, 6)
@@ -79,11 +80,11 @@ local function testPanelGenForRegularBoard2()
   assert(panelbuffer == "A453e133b14Ee23B1311e1B2b5254E4dE452221c4Cd3C432312eB1d5534C1d4A24d135C15E4d5434E2b3dB3131115Db53d423DD3a1411b5D15C3224d224Ec51D125c32bA451E441ac21A451Ee231e115B235b44E4a1E22C4b3155A122aD255a5531D4b3Dd515e133B114dA534255Abc34D332d525B11B1d4224E5bdD2323153a5E4B53b415C23a325aB3A4c312552E5dAc514244B25ab33E125B514e45a5B3233D1e1Bd3232152AeEc11541553Be4Ba5311531bDD2b3311d3D15d2453D53C2a5151D2b2dB1413543CeB1a5235d54A4422e5A3aD4145355bBC53b5421E52a5e2C42a354C3213b2EC4e354254eA34bA324244A1c1Ab535C5544c1D4c24c3145C4E3c4554D2c24C3e2155a4C53d221C55D1c1Dc5225313Dd31Cb154E5323b3D1a24b3B2534d331E15Bb31eC3543")
 end
 
-testPanelGenForRegularBoard2()
+testLegacyPanelGenForRegularBoard2()
 
 ---@return Stack stack
 ---@return LegacyPanelSource panelSource
-local function createStack(gameMode, difficulty, level, colorCount, seed)
+local function createStackWithLegacySource(gameMode, difficulty, level, colorCount, seed)
   local args = {
     which = 1,
     is_local = false,
@@ -117,12 +118,12 @@ local function createStack(gameMode, difficulty, level, colorCount, seed)
   return stack, stack.panelSource
 end
 
-local function testStackStartingBoard1()
+local function testLegacyStartingBoard1()
   local seed = 7
   local difficulty = "easy"
   -- endless easy deviates by 1 color from time attack easy which is the default easy preset
   local colorCount = 5
-  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_ENDLESS"), difficulty, nil, colorCount, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_ENDLESS"), difficulty, nil, colorCount, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(true)
 
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
@@ -135,13 +136,13 @@ local function testStackStartingBoard1()
   assert(panelSource.panelBuffer == "0bC00201240a0D3305e32E114D535d21aD123B21c3453b4EB115c135eA53aC1315344Eb142b44E5C4b11c1E5424234EeC14b232b15D4c1241B2c5E3341a34B545Ec1a3132E41bA313515dDe13D214e41A3B21b354d24D3E1425d1eE331332dE4A1e2322e33D3421b2EAe213233dE53e5113B1A3d4555b5E12d432C43e1C4b54D125Ca355453eA4e3432C24E5a2A24d2353B2c1d4332E25bD515c523B21bA551d35A2b3213E4b3B41b315A25d314D415bB55Ec453a311B12dE2155533Bd2B5b113525cE5B5a5235C4a31D122dC224a35e322AD35a551E422dB45d334221Bb5dA241b23E1414e4C1dC22435134cB15Ea255144Edb42E1351D4e43d513Cb533E433d51B423aD55d421A153aE2Cd132155B25eb353B1544b4B2A15c3E54b214aB143c54C214b213DB5e3455311eB4D3b14E2233b41Db213C15c252E14d114Eb3")
 end
 
-testStackStartingBoard1()
+testLegacyStartingBoard1()
 
 
-local function testStackStartingBoard2()
+local function testLegacyStartingBoard2()
   local seed = 8
   local level = 10
-  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(false)
 
   -- expected starting 7 rows (unprocessed):    312132464356316131624643241456614364463521
@@ -164,26 +165,26 @@ local function testStackStartingBoard2()
   -- for compatibility with seeds in replays, these rows being reprocessed for metal has to be considered correct behaviour
 end
 
-testStackStartingBoard2()
+testLegacyStartingBoard2()
 
-local function testStackStartingBoard3()
+local function testLegacyStartingBoard3()
   -- this seed tests for a certain bug that occured when the first character was a possible metal location for generating the starting board
   local seed = 351545
   local level = 10
-  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(false)
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
   checkPanels(panelSource.panelBuffer, 6)
   assert(panelSource.panelBuffer == "c0D000505000D0f4005F310115D21e3d23F4e6462A")
 end
 
-testStackStartingBoard3()
+testLegacyStartingBoard3()
 
-local function testStackStartingBoard4()
+local function testLegacyStartingBoard4()
   -- this seed tests for a certain bug that occured when a starting board row had no shock assignments left:
   local seed = 4530333
   local level = 8
-  local stack, panelSource = createStack(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(false)
 
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
@@ -197,10 +198,10 @@ local function testStackStartingBoard4()
   assert(panelSource.panelBuffer == "D30000Be405154A03dbC401352cE321E12e1425d3Ec4A5245B3b411415Ce5Ce452d13E415c212Ea54C1254B12eaB4231353e1Da451B545c21DC25d211421Ebd35D1451C53bd21C433A51b153Ae13D151d135D53e4B54b1c12E1554e3B44B154eA5d1235434aBAe25245154eAA5a5144a3B53b315A41eB453235bD5Cd132423E41e513aB31e251BB151c5323e4Cb451C435a41C1d5A524542dEEd152432d3E3Bd214213Ac53E2414a312dE42e432C425Bd5E1213a454cE4b4514E1Eb513d35D543431bCa2E4522e1B435143bA13Ea32eD342132a2A4e1252C451dE1B3e3455B415c35bD252415dC1c5C5425A42e3d21C1d21B131dB131231Be2eD242435Ce134a432Ae23D531C21d5B1d3514B15b4145D5bcB124145cD24Bd25435252aBCd235453a5C2a25A533d252Aa3E4153131eAD54e433214bDE43a3115B5d3Ca3135")
 end
 
-testStackStartingBoard4()
+testLegacyStartingBoard4()
 
 --[[
-  Why PanelGen cannot be touched or get called without losing backward compatibility for replays:
+  Why LegacyPanelSource cannot be touched or get called without losing backward compatibility for replays:
   The big big issue is how shock panels are assigned.
   The general outline is:
   1. A seed is set on the pseudo random number generator (PRNG)
@@ -229,7 +230,113 @@ testStackStartingBoard4()
      Beyond the starting board having this shitty interaction:
      all following panel gens should easily be consistent as these 0 "corrupted" lines are no longer in the panel buffer by that time 
      (and I'm not aware of any lines with 2 letters being interpreted as a number)
-     so in theory it IS actually possible to move starting board generation outside of `Stack.new_row` and handle it in `starting_state`
-     just have to find a way to apply the first row and remove it from the panel buffer before calling the panel buffer again
-     this could for example be achieved by moving the panel gen code to the end of `new_row` so that the first row is out in any case
 ]]--
+
+local GeneratorSource = require("common.engine.GeneratorSource")
+
+---@param seed integer
+---@param shockEnabled boolean
+---@param levelData LevelData
+---@return Stack
+---@return GeneratorSource
+local function createStackWithGeneratorSource(seed, shockEnabled, levelData)
+  local sourceTemplate = GeneratorSource(seed, shockEnabled)
+  local stack = Stack({levelData = levelData, stackSetupModifications = {}, panelSource = sourceTemplate, inputMethod = "controller", is_local = false, stackOverConditions = {}, stackWinConditions = {}})
+---@diagnostic disable-next-line: return-type-mismatch
+  return stack, stack.panelSource
+end
+
+local function testPanelGenForStartingBoard()
+  local stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(10))
+  source:growPanelBuffer(stack)
+  assert(source.panelBuffer == "0000200020E025A010C4602d4e2F5261E34cE416a441C14c")
+  source:growPanelBuffer(stack)
+  -- the panel buffer only grows when it is near empty
+  assert(source.panelBuffer == "0000200020E025A010C4602d4e2F5261E34cE416a441C14c")
+  checkPanels(source.panelBuffer, stack.width)
+
+  stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(5))
+  source:growPanelBuffer(stack)
+  assert(source.panelBuffer == "0b000003200004A0533520cAaD4323423B5daD2513434a3E")
+  source:growPanelBuffer(stack)
+  assert(source.panelBuffer == "0b000003200004A0533520cAaD4323423B5daD2513434a3E")
+  checkPanels(source.panelBuffer, stack.width)
+
+  stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(1))
+  source:growPanelBuffer(stack)
+  assert(source.panelBuffer == "00C0200020d002D050bC3011544A5da233B554aD51d3413C")
+  source:growPanelBuffer(stack)
+  assert(source.panelBuffer == "00C0200020d002D050bC3011544A5da233B554aD51d3413C")
+  checkPanels(source.panelBuffer, stack.width)
+end
+
+local function testPanelGenForRegularBoard()
+  local stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(10))
+  source.panelGenCount = 1
+  local panelColors = ""
+  source:growPanelBuffer(stack)
+  for i = 1, 30 do
+    source:growPanelBuffer(stack)
+    panelColors = panelColors .. source.panelBuffer:sub(1, stack.width)
+    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
+  end
+
+  checkPanels(panelColors, stack.width)
+  assert(panelColors == "41C6a4Af25452141BffE32431614Ba24bE45c1323D242Ab6Ac423521eD234F31d221dB153f51D6b3D6133f23E4123A3ab1E453546Eb4A3565f5f3E32C4514e1F24f1646e1CdE46256413dC4Fd265f23E322c135A614Bd33f312D")
+
+  stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(5))
+  source.panelGenCount = 1
+  panelColors = ""
+  source:growPanelBuffer(stack)
+  for i = 1, 30 do
+    source:growPanelBuffer(stack)
+    panelColors = panelColors .. source.panelBuffer:sub(1, stack.width)
+    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
+  end
+
+  checkPanels(panelColors, stack.width)
+  assert(panelColors == "d3413C153Eb421b13BeD32451551Cb41Dd53c2132D243Ba1Ac134321dB313C53a4b11D2135D1c5B35b423Ec435a213A4434b5Cc5E4241b454Ed5C4233441dAAe52345434Ab3E4e25e4A3544E52b352c45E1D2a1351c4B42E1a45")
+
+  stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(1))
+  source.panelGenCount = 1
+  panelColors = ""
+  source:growPanelBuffer(stack)
+  for i = 1, 30 do
+    source:growPanelBuffer(stack)
+    panelColors = panelColors .. source.panelBuffer:sub(1, stack.width)
+    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
+  end
+
+  checkPanels(panelColors, stack.width)
+  assert(panelColors == "d3413C153Eb421b13BeD4324153Ea34aD454322A1cB432e51c1C1421D23a3c5E14B113d23eD135b335A23Eb243a213A4434b5Cc5E4241b454Ed5C4233351dD1Eb3515454Ab3E3e255413cB4Ee255e23D421a221A534Cb32e311B")
+end
+
+local function testPanelGenForGarbage()
+  local stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(10))
+  local garbageColors = ""
+  for i = 1, 30 do
+    garbageColors = garbageColors .. source:getGarbagePanelRowString(stack)
+  end
+  checkPanels(garbageColors, stack.width)
+  assert(garbageColors == "123624354235541356256135534246123164452652261534436416143654326141464535125612654356413561525232252356624214265623324561413614356562423135164656251415613523424312656526342635425252")
+
+  stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(5))
+  garbageColors = ""
+  for i = 1, 30 do
+    garbageColors = garbageColors .. source:getGarbagePanelRowString(stack)
+  end
+  checkPanels(garbageColors, stack.width)
+  assert(garbageColors == "123523232432441325524151343235112414454323212254454142513251355342412451125243354124512431241223553142425235244514351431434154243541152322313214152451224134513442342321125245242532")
+
+  stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(1))
+  garbageColors = ""
+  for i = 1, 30 do
+    garbageColors = garbageColors .. source:getGarbagePanelRowString(stack)
+  end
+  checkPanels(garbageColors, stack.width)
+  assert(garbageColors == "123523232432441325524151343233511415445323251432544115412544325131553414241245112524335412451243124122355311424252335445441331235415322332141554512241131453442342321125245242532315")
+end
+
+testPanelGenForStartingBoard()
+testPanelGenForRegularBoard()
+testPanelGenForGarbage()

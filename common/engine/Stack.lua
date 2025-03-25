@@ -164,10 +164,10 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 
 -- Represents the full panel stack for one player
 ---@class Stack
----@overload fun(args: {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod}): Stack
+---@overload fun(args: {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod, is_local: boolean, stackWinConditions: table<StackWinCondition, any>, stackOverCondition: table<StackOverCondition, any>}): Stack
 local Stack = class(
 ---@param s Stack
----@param args {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod}
+---@param args {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod, is_local: boolean, stackWinConditions: table<StackWinCondition, any>, stackOverCondition: table<StackOverCondition, any>}
   function(s, args)
     assert(args.levelData ~= nil)
     assert(args.stackSetupModifications ~= nil)

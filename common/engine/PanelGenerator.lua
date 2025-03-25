@@ -59,7 +59,10 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
   --              "\nbuffer: " .. previousPanels ..
   --              "\ncolors: " .. ncolors)
 
-  previousRow = previousRow or string.rep("0", rowWidth)
+  if not previousRow or previousRow == "" then
+    previousRow = string.rep("0", rowWidth)
+  end
+
   local newPanels = ""
 
   if ncolors < 2 then

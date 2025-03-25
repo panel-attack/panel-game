@@ -143,9 +143,7 @@ local function convertMetalPanels(rowString, metalPanelCount)
 end
 
 ---@param stack Stack
----@param row integer
----@return Panel[] panelRow
-function GeneratorSource:createNewRow(stack, row)
+function GeneratorSource:growPanelBuffer(stack)
   if self.panelGenCount == 0 then
     self.panelBuffer = self:generateStartingBoard(stack)
     self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
@@ -154,6 +152,13 @@ function GeneratorSource:createNewRow(stack, row)
       self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
     end
   end
+end
+
+---@param stack Stack
+---@param row integer
+---@return Panel[] panelRow
+function GeneratorSource:createNewRow(stack, row)
+  self:growPanelBuffer(stack)
 
   local metalPanelsThisRow = 0
   if self.shockEnabled then
