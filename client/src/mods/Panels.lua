@@ -15,6 +15,7 @@ local ANIMATION_STATES = {
 
 local OPTIONAL_ANIMATION_STATES = {
   "garbageBounce",
+  "panic",
 }
 
 local DEFAULT_PANEL_ANIM =
@@ -322,6 +323,10 @@ function Panels:load()
     self:loadSheets()
   end
 
+  if self.sheetConfig.panic == nil then
+    self.sheetConfig.panic = self.sheetConfig.danger
+  end
+  
   self.scale = 16 / self.size
 
   self.quad = love.graphics.newQuad(0, 0, self.size, self.size, self.sheets[1])
@@ -441,21 +446,26 @@ local function getGarbageBounceProps(panelSet, panel)
   end
 end
 
-local function getDangerBounceProps(panelSet, panel, dangerTimer)
-  local conf = panelSet.sheetConfig.danger
+local function getDangerBounceProps(panelSet, panel, dangerTimer, stopTime)
+  local conf
+  if stopTime > 0 then
+    conf = panelSet.sheetConfig.danger
+  else
+    conf = panelSet.sheetConfig.panic
+  end
   -- dangerTimer counts up from 0 but top out and getting out of danger force it back to 0
   local frame = ceil(wrap(1, dangerTimer + 1 + floor((panel.column - 1) / 2), conf.durationPerFrame * conf.frames) / conf.durationPerFrame)
   return conf, frame
 end
 
-function Panels:getDrawProps(panel, x, y, dangerCol, dangerTimer)
+function Panels:getDrawProps(panel, x, y, dangerCol, dangerTimer, stopTime)
   local conf
   local frame
   local animationName
   if panel.state == "normal" then
     if dangerCol[panel.column] then
       animationName = "danger"
-      conf, frame = getDangerBounceProps(self, panel, dangerTimer)
+      conf, frame = getDangerBounceProps(self, panel, dangerTimer, stopTime)
     else
       animationName = "normal"
       -- normal has no timer at the moment, therefore restricted to 1 frame
@@ -515,7 +525,7 @@ function Panels:getDrawProps(panel, x, y, dangerCol, dangerTimer)
       conf, frame = getGarbageBounceProps(self, panel)
     elseif dangerCol[panel.column] and self.sheetConfig.garbageBounce then
       animationName = "danger"
-      conf, frame = getDangerBounceProps(self, panel, dangerTimer)
+      conf, frame = getDangerBounceProps(self, panel, dangerTimer, stopTime)
     else
       animationName = "hovering"
       conf = self.sheetConfig.hovering
@@ -536,7 +546,7 @@ function Panels:getDrawProps(panel, x, y, dangerCol, dangerTimer)
       conf, frame = getGarbageBounceProps(self, panel)
     elseif dangerCol[panel.column] then
       animationName = "danger"
-      conf, frame = getDangerBounceProps(self, panel, dangerTimer)
+      conf, frame = getDangerBounceProps(self, panel, dangerTimer, stopTime)
     else
       animationName = "falling"
       conf = self.sheetConfig.falling
@@ -591,13 +601,14 @@ end
 -- clock: Stack.clock to calculate animation frames
 -- danger: nil - no danger, false - regular danger, true - panic
 -- dangerTimer: remaining time for which the danger animation continues 
-function Panels:addToDraw(panel, x, y, stackScale, danger, dangerTimer)
+-- stopTime: the remaining stop time
+function Panels:addToDraw(panel, x, y, stackScale, danger, dangerTimer, stopTime)
   if panel.color == 9 then
     love.graphics.draw(self.greyPanel, x * stackScale, y * stackScale, 0, self.scale * stackScale)
   else
     local batch = self.batches[panel.color]
     local conf, frame
-    conf, frame, x, y = self:getDrawProps(panel, x, y, danger, dangerTimer)
+    conf, frame, x, y = self:getDrawProps(panel, x, y, danger, dangerTimer, stopTime)
 
     if conf then
       self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size)

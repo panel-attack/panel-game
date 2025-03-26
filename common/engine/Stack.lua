@@ -755,7 +755,7 @@ function Stack.run(self)
 
   if self.is_local == false then
     if self.play_to_end then
-      if #self.confirmedInput - self.clock < 4 then
+      if #self.confirmedInput - self.clock <= 10 then
         self.play_to_end = nil
       end
     end

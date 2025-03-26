@@ -122,11 +122,25 @@ Currently a single frame and not animatable.
 When a player loses all health and goes game over, all panels in their stack are displayed with their dead frame.  
 Currently a single frame and not animatable.
 
-#### danger
+#### danger and panic
 
-Panels in the states "normal", "falling" and "hovering" in a column that is close to the top or even touching it, perform a danger animation.  
-This animation loops but is held on its first frame if the player is topped out and has no stop time left.  
-To make this panic state visible, the first frame of the danger animation should NOT match the normal frame.
+These are explained together because they share their internal animation timer.
+
+Panels in the states "normal", "falling" and "hovering"* in a column that is close to the top perform a danger or panic animation.  
+This animation is staggered across columns in pairs of two, loops as long as the player is not topped out and pauses on the current frame while the player has stop time.  
+Whenever the player is topped out, the animation resets to the first frame and is held there so the first frame of this animation should NOT match the normal frame.
+
+Specifying a panic animation is OPTIONAL and the danger animation will be used for both parts if no panic animation is supplied.
+
+Whenever the player has stop time, the danger frame will be displayed.  
+Whenever the player has no stop time, the panic frame will be displayed.  
+
+This means that if a separate panic animation is supplied the danger animation will never do full animation because it will always be freezed at frame 1 or whatever frame you got stop time.
+
+As they share a timer, it is recommended to use the same length / timing for danger and panic as otherwise the transition between the two may look odd.
+
+*Panels in the "hovering" state only adopt the danger frames if the garbageBounce animation is used.
+
 
 #### garbagePop
 

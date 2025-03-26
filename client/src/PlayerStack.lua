@@ -1330,7 +1330,7 @@ function PlayerStack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
                   drawGfxScaled(self, garbageImages.pop, draw_x, draw_y, 0, 16 / popped_w, 16 / popped_h)
                 end
               elseif panel.y_offset == -1 then
-                panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale)
+                panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale, self.danger_col, self.danger_timer, self.engine.stop_time)
               end
             else
               if shouldFlashForFrame(flash_time) == false then
@@ -1354,7 +1354,7 @@ function PlayerStack:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
             end
           end
         else
-          panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale, self.danger_col, self.danger_timer)
+          panelSet:addToDraw(panel, draw_x, draw_y, self.gfxScale, self.danger_col, self.danger_timer, self.engine.stop_time)
         end
       end
     end
@@ -1596,23 +1596,31 @@ function PlayerStack:getAttackPatternData()
   return data, state
 end
 
+-- calculate which columns should bounce
 function PlayerStack.updateDangerBounce(self)
   if not self.engine.behaviours.passiveRaise then
     -- no passive raise, no danger
     return
   end
 
-  -- calculate which columns should bounce
+  -- reset state
   self.danger = false
-  local panelRow = self.engine.panels[self.engine.height - 1]
-  for idx = 1, self.engine.width do
-    if panelRow[idx]:dangerous() then
-      self.danger = true
-      self.danger_col[idx] = true
-    else
-      self.danger_col[idx] = false
+  for column = 1, self.engine.width do
+    self.danger_col[column] = false
+  end
+
+  for row = self.engine.height - 1, self.engine.height do
+    local panelRow = self.engine.panels[row]
+    if panelRow then
+      for idx = 1, self.engine.width do
+        if panelRow[idx]:dangerous() then
+          self.danger = true
+          self.danger_col[idx] = true
+        end
+      end
     end
   end
+
   if self.danger then
     if self.engine.panels_in_top_row and self.engine.speed ~= 0 then
       -- Player has topped out, panels hold the "flattened" frame
