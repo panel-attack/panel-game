@@ -162,10 +162,12 @@ function PortraitGame:draw()
   end
   if not self.match.isPaused or self.match.renderDuringPause then
     for _, stack in ipairs(self.match.stacks) do
-      stack:render()
-      -- don't render stacks that only have an attack engine
-      if stack.engine.is_local and stack.player.human and stack.inputMethod == "touch" then
-        self:drawMultibar(stack)
+      if stack.player then
+        -- don't render stacks that only have an attack engine
+        stack:render()
+        if stack.engine.is_local and stack.player.human and stack.inputMethod == "touch" then
+          self:drawMultibar(stack)
+        end
       end
 
       if stack.garbageTarget then --and stack.garbageTarget.is_local and stack.garbageTarget.inputMethod == "touch" then
