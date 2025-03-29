@@ -1,7 +1,10 @@
 local Scene = require("client.src.scenes.Scene")
+local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
+local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local class = require("common.lib.class")
+local tableUtils = require("common.lib.tableUtils")
 
 -- Scene for the puzzle selection menu
 local PuzzleMenu = class(
@@ -13,6 +16,7 @@ local PuzzleMenu = class(
     self.randomColorButtons = nil
     self.menu = nil
     self.puzzleLabel = nil
+    self.puzzleLibrary = PuzzleLibrary(consts.PUZZLES_SAVE_DIRECTORY, GAME.scores)
 
     self:load(sceneParams)
   end,
@@ -57,6 +61,11 @@ function PuzzleMenu:exit()
   GAME.navigationStack:pop()
 end
 
+
+function PuzzleMenu:refresh()
+  self:refreshMenu()
+end
+
 function PuzzleMenu:load(sceneParams)
   local tickLength = 16
   self.levelSlider = ui.LevelSlider({
@@ -99,24 +108,36 @@ function PuzzleMenu:load(sceneParams)
     }
   )
   
+  self:refreshMenu()
+
+  local x, y = unpack(themes[config.theme].main_menu_screen_pos)
+  self.puzzleLabel = ui.Label({text = "pz_puzzles", x = x - 10, y = y - 40})
+
+  self.uiRoot:addChild(self.puzzleLabel)
+end
+
+function PuzzleMenu:refreshMenu()
+
+  if self.menu then
+    self.menu:detach()
+    self.menu = nil
+  end
+
   local menuOptions = {
     ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider),
     ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons),
     ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons),
   }
 
-  for puzzleSetName, puzzleSet in pairsSortedByKeys(GAME.puzzleSets) do
-    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(puzzleSetName, nil, false, function() self:startGame(puzzleSet) end)
+  local filteredPuzzleSets = self.puzzleLibrary:getPuzzlesForPuzzleMenu()
+  for index, puzzleSet in ipairs(filteredPuzzleSets) do
+    local name = puzzleSet.setName .. " Win Rate: " .. self.puzzleLibrary:puzzleSetGetWinRate(puzzleSet)
+    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(name, nil, false, function() self:startGame(puzzleSet) end)
   end
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, self.exit)
 
   self.menu = ui.Menu.createCenteredMenu(menuOptions)
-
-  local x, y = unpack(themes[config.theme].main_menu_screen_pos)
-  self.puzzleLabel = ui.Label({text = "pz_puzzles", x = x - 10, y = y - 40})
-
   self.uiRoot:addChild(self.menu)
-  self.uiRoot:addChild(self.puzzleLabel)
 end
 
 function PuzzleMenu:update(dt)

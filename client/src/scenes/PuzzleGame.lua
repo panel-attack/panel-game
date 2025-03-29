@@ -3,6 +3,7 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local ReplayPlayer = require("common.data.ReplayPlayer")
 local consts = require("common.engine.consts")
 
 -- Scene for a puzzle mode instance of the game
@@ -40,6 +41,7 @@ function PuzzleGame:customRun()
   -- reset level
   if (self.inputConfiguration and self.inputConfiguration.isDown["TauntUp"]) and not self.match.isPaused then
     GAME.theme:playValidationSfx()
+    self:savePuzzleRecordResult(false)
     self.match:resetPuzzle()
   end
 end
@@ -58,12 +60,21 @@ function PuzzleGame:startNextScene()
   end
 end
 
+-- TODO: ideally this would be in the puzzle library
+function PuzzleGame:savePuzzleRecordResult(success)
+  local inputs = ReplayPlayer.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
+  GAME.scores:savePuzzleRecord(self.puzzleSet.puzzles[self.puzzleIndex], inputs, to_UTC(os.time()), success)
+end
+
 function PuzzleGame:customGameOverSetup()
   if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
+    -- the below code is kind of hacky, the game scene isn't in charge of whats next.
+    self:savePuzzleRecordResult(true)
     self.match.players[1]:setPuzzleIndex(self.puzzleIndex + 1)
   else -- puzzle failed or manually reset
     self.text = loc("pl_you_lose")
+    self:savePuzzleRecordResult(false)
   end
 end
 

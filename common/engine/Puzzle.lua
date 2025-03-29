@@ -1,5 +1,6 @@
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
+local sha256 = require("common.lib.sha256")
 
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels
 ---@class Puzzle
@@ -20,6 +21,7 @@ Puzzle =
     self.randomizeColors = false
     self.stop_time = stop_time or 0
     self.shake_time = shake_time or 0
+    self.UUID = sha256.hexFromBin(self.stack .. self.puzzleType .. tostring(self.doCountdown) .. tostring(self.moves) .. tostring(self.stop_time) .. tostring(self.shake_time))
   end
 )
 

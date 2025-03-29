@@ -1,5 +1,6 @@
 local levelPresets = require("common.data.LevelPresets")
 local fileUtils = require("client.src.FileUtils")
+local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 
 -- 1 had only vs scores in an incompatible format
@@ -33,8 +34,54 @@ Scores =
       self.endless[i]["record"] = 0
       self.endless[i]["last"] = 0
     end
+
+    self.puzzleRecords = {}
   end
 )
+
+function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
+  assert(puzzle.UUID ~= nil)
+  local puzzleRecord = {}
+  puzzleRecord.UUID = puzzle.UUID
+  puzzleRecord.inputs = inputs
+  puzzleRecord.timestamp = timestamp
+  puzzleRecord.success = success
+
+  self.puzzleRecords[#self.puzzleRecords+1] = puzzleRecord
+  self:saveToFile()
+end
+
+function Scores:getRecordsForPuzzleUUID(puzzleUUID)
+  local records = tableUtils.filter(self.puzzleRecords, function(record) return record.UUID == puzzleUUID end)
+
+  return records
+end
+
+function Scores:puzzleUUIDHasBeenBeaten(puzzleUUID)
+  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
+
+  records = tableUtils.filter(records, function(record) return record.success end)
+
+  return #records > 0
+end
+
+function Scores:puzzleSuccessRateForUUID(puzzleUUID)
+  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
+
+  if #records == 0 then
+    return 0
+  end
+
+  local wins = 0
+  for index, value in ipairs(records) do
+    if value.success then
+      wins = wins + 1
+    end
+  end
+
+  local result = wins / #records
+  return result
+end
 
 function Scores.saveVsSelfScoreForLevel(self, score, level)
   self.vsSelf[level]["last"] = score
@@ -84,7 +131,7 @@ function Scores.recordEndlessForLevel(self, level)
   return self.endless[level]["record"]
 end
 
-local function read_score_file()
+function Scores.createFromScoreFile()
   local scores = Scores()
   pcall(
     function()
@@ -102,6 +149,7 @@ local function read_score_file()
           if read_data.vsSelf then scores.vsSelf = read_data.vsSelf end
           if read_data.timeAttack1P then scores.timeAttack1P = read_data.timeAttack1P end
           if read_data.endless then scores.endless = read_data.endless end
+          if read_data.puzzleRecords then scores.puzzleRecords = read_data.puzzleRecords end
         end
       end
     end
@@ -120,6 +168,4 @@ function Scores.saveToFile(self)
   end
 end
 
-local scores = read_score_file()
-
-return scores
+return Scores

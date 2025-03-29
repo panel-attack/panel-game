@@ -38,6 +38,8 @@ consts.COUNTDOWN_CURSOR_SPEED = 4 --one move every this many frames
 consts.COUNTDOWN_START = 8
 consts.COUNTDOWN_LENGTH = 180 --3 seconds at 60 fps
 
+consts.PUZZLES_SAVE_DIRECTORY = "puzzles"
+
 consts.SERVER_SAVE_DIRECTORY = "servers/"
 consts.LEGACY_SERVER_LOCATION = "18.188.43.50"
 consts.SERVER_LOCATION = "panelattack.com"
