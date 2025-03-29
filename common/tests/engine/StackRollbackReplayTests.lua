@@ -1,6 +1,5 @@
 local tableUtils = require("common.lib.tableUtils")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
-local GameModes = require("common.engine.GameModes")
 local logger = require("common.lib.logger")
 local LevelPresets = require("common.data.LevelPresets")
 
@@ -15,35 +14,40 @@ local function rollbackPastAttackTest()
   local garbageTelegraphPopTime = 463
   local rollbackTime = garbageTelegraphPopTime
   StackReplayTestingUtils:simulateMatchUntil(match, startClock)
-  StackReplayTestingUtils:simulateStack(match.stacks[1], aheadTime)
+  local stack1 = match.stacks[1]
+  local stack2 = match.stacks[2]
+  ---@cast stack1 Stack
+  ---@cast stack2 Stack
+  StackReplayTestingUtils:simulateStack(stack1, aheadTime)
 
   -- Simulate to a point P1 has sent an attack to P2
-  assert(#match.stacks[1].outgoingGarbage.garbageInTransit[523] == 1)
+  assert(#stack1.outgoingGarbage.garbageInTransit[523] == 1)
 
   -- Rollback P1 past the time the attack popped off the garbage queue
   match:debugRollbackAndCaptureState(rollbackTime)
 
   -- This should cause the attack to be undone
-  assert(match.stacks[1].outgoingGarbage.garbageInTransit[523] == nil)
+  assert(stack1.outgoingGarbage.garbageInTransit[523] == nil)
 
   -- Simulate again, attack should pop off again
   StackReplayTestingUtils:simulateMatchUntil(match, aheadTime)
 
-  assert(match.stacks[1].outgoingGarbage.garbageInTransit[523] ~= nil and #match.stacks[1].outgoingGarbage.garbageInTransit[523] == 1)
+  assert(stack1.outgoingGarbage.garbageInTransit[523] ~= nil and #stack1.outgoingGarbage.garbageInTransit[523] == 1)
 
   StackReplayTestingUtils:fullySimulateMatch(match)
 
   assert(match ~= nil)
-  assert(match.stackInteraction == GameModes.StackInteractions.VERSUS)
-  assert(match.seed == 2992240)
-  assert(match.stacks[1].game_over_clock == 2039)
-  assert(match.stacks[1].levelData == LevelPresets.getModern(10))
-  assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 4)
-  assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return not g.isChain end) == 4)
-  assert(match.stacks[2].game_over_clock <= 0)
-  assert(match.stacks[2].levelData == LevelPresets.getModern(10))
-  assert(tableUtils.count(match.stacks[2].outgoingGarbage.history, function(g) return g.isChain end) == 4)
-  assert(tableUtils.count(match.stacks[2].outgoingGarbage.history, function(g) return not g.isChain end) == 4)
+  assert(match.garbageTargets[1][1] == match.stacks[2])
+  assert(match.garbageTargets[2][1] == match.stacks[1])
+  assert(match.panelSource.seed == 2992240)
+  assert(stack1.game_over_clock == 2039)
+  assert(stack1.levelData == LevelPresets.getModern(10))
+  assert(tableUtils.count(stack1.outgoingGarbage.history, function(g) return g.isChain end) == 4)
+  assert(tableUtils.count(stack1.outgoingGarbage.history, function(g) return not g.isChain end) == 4)
+  assert(stack2.game_over_clock <= 0)
+  assert(stack2.levelData == LevelPresets.getModern(10))
+  assert(tableUtils.count(stack2.outgoingGarbage.history, function(g) return g.isChain end) == 4)
+  assert(tableUtils.count(stack2.outgoingGarbage.history, function(g) return not g.isChain end) == 4)
   StackReplayTestingUtils:cleanup(match)
 end
 
@@ -56,33 +60,38 @@ local function rollbackNotPastAttackTest()
   local garbageTelegraphPopTime = 463
   local rollbackTime = garbageTelegraphPopTime + 1
   StackReplayTestingUtils:simulateMatchUntil(match, startClock)
-  StackReplayTestingUtils:simulateStack(match.stacks[1], aheadTime)
+  local stack1 = match.stacks[1]
+  local stack2 = match.stacks[2]
+  ---@cast stack1 Stack
+  ---@cast stack2 Stack
+  StackReplayTestingUtils:simulateStack(stack1, aheadTime)
 
   -- Simulate to a point P1 has sent an attack to P2
-  assert(#match.stacks[1].outgoingGarbage.garbageInTransit[523] == 1)
+  assert(#stack1.outgoingGarbage.garbageInTransit[523] == 1)
 
   -- Rollback P1 but not past the time the attack popped off the garbage queue
   match:debugRollbackAndCaptureState(rollbackTime)
-  assert(match.stacks[1].outgoingGarbage.garbageInTransit[523] ~= nil and #match.stacks[1].outgoingGarbage.garbageInTransit[523] == 1)
+  assert(stack1.outgoingGarbage.garbageInTransit[523] ~= nil and #stack1.outgoingGarbage.garbageInTransit[523] == 1)
 
   -- Simulate again, attack shouldn't pop off again
   StackReplayTestingUtils:simulateMatchUntil(match, aheadTime)
 
-  assert(match.stacks[1].outgoingGarbage.garbageInTransit[523] ~= nil and #match.stacks[1].outgoingGarbage.garbageInTransit[523] == 1)
+  assert(stack1.outgoingGarbage.garbageInTransit[523] ~= nil and #stack1.outgoingGarbage.garbageInTransit[523] == 1)
 
   StackReplayTestingUtils:fullySimulateMatch(match)
 
   assert(match ~= nil)
-  assert(match.stackInteraction == GameModes.StackInteractions.VERSUS)
-  assert(match.seed == 2992240)
-  assert(match.stacks[1].game_over_clock == 2039)
-  assert(match.stacks[1].levelData == LevelPresets.getModern(10))
-  assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 4)
-  assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return not g.isChain end) == 4)
-  assert(match.stacks[2].game_over_clock <= 0)
-  assert(match.stacks[2].levelData == LevelPresets.getModern(10))
-  assert(tableUtils.count(match.stacks[2].outgoingGarbage.history, function(g) return g.isChain end) == 4)
-  assert(tableUtils.count(match.stacks[2].outgoingGarbage.history, function(g) return not g.isChain end) == 4)
+  assert(match.garbageTargets[1][1] == match.stacks[2])
+  assert(match.garbageTargets[2][1] == match.stacks[1])
+  assert(match.panelSource.seed == 2992240)
+  assert(stack1.game_over_clock == 2039)
+  assert(stack1.levelData == LevelPresets.getModern(10))
+  assert(tableUtils.count(stack1.outgoingGarbage.history, function(g) return g.isChain end) == 4)
+  assert(tableUtils.count(stack1.outgoingGarbage.history, function(g) return not g.isChain end) == 4)
+  assert(stack2.game_over_clock <= 0)
+  assert(stack2.levelData == LevelPresets.getModern(10))
+  assert(tableUtils.count(stack2.outgoingGarbage.history, function(g) return g.isChain end) == 4)
+  assert(tableUtils.count(stack2.outgoingGarbage.history, function(g) return not g.isChain end) == 4)
   StackReplayTestingUtils:cleanup(match)
 end
 
@@ -90,7 +99,9 @@ end
 -- Make sure the attack only happens once and only once if we rollback before it happened
 local function rollbackFullyPastAttack()
   local match = StackReplayTestingUtils:setupReplayWithPath(testReplayFolder .. "v046-2023-02-01-05-38-16-vsSelf-L8.txt")
-  local outgoingGarbage = match.stacks[1].outgoingGarbage
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+  local outgoingGarbage = stack.outgoingGarbage
 
   StackReplayTestingUtils:simulateMatchUntil(match, 360)
   -- combo got queued
@@ -156,30 +167,30 @@ local function rollbackFullyPastAttack()
   assert(t[1].finalizedClock == 636)
   assert(not t[2].isChain and t[2].width == 3 and t[2].frameEarned == 344)
   assert(match ~= nil)
-  assert(match.stackInteraction == GameModes.StackInteractions.SELF)
-  assert(match.seed == 3917661)
-  assert(match.stacks[1].game_over_clock == 797)
-  assert(match.stacks[1].levelData == LevelPresets.getModern(8))
-  assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 1)
-  assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return not g.isChain end) == 1)
+  assert(match.garbageTargets[1][1] == match.stacks[1])
+  assert(match.panelSource.seed == 3917661)
+  assert(stack.game_over_clock == 797)
+  assert(stack.levelData == LevelPresets.getModern(8))
+  assert(tableUtils.count(stack.outgoingGarbage.history, function(g) return g.isChain end) == 1)
+  assert(tableUtils.count(stack.outgoingGarbage.history, function(g) return not g.isChain end) == 1)
   StackReplayTestingUtils:cleanup(match)
 end
 
 local function rollbackFromDeath()
   local match = StackReplayTestingUtils:setupReplayWithPath(testReplayFolder .. "rollbackFromDeath.json")
-
+  local stack = match.stacks[1]
   StackReplayTestingUtils:fullySimulateMatch(match)
-  assert(match.stacks[1].game_over_clock == 652)
+  assert(stack.game_over_clock == 652)
 
   match:rewindToFrame(613)
-  assert(match.stacks[1].outgoingGarbage.garbageInTransit[631], "expected +4 in transit")
+  assert(stack.outgoingGarbage.garbageInTransit[631], "expected +4 in transit")
   StackReplayTestingUtils:fullySimulateMatch(match)
-  assert(match.stacks[1].game_over_clock == 652)
+  assert(stack.game_over_clock == 652)
 
   match:rewindToFrame(481)
-  assert(match.stacks[1].outgoingGarbage.stagedGarbage[1].frameEarned == 480, "expected +4 queued")
+  assert(stack.outgoingGarbage.stagedGarbage[1].frameEarned == 480, "expected +4 queued")
   StackReplayTestingUtils:fullySimulateMatch(match)
-  assert(match.stacks[1].game_over_clock == 652)
+  assert(stack.game_over_clock == 652)
 end
 
 logger.info("running rollbackFromDeath")

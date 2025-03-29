@@ -1,6 +1,7 @@
 local TouchDataEncoding = require("common.data.TouchDataEncoding")
 ---@class PlayerStack
 local PlayerStack = require("client.src.PlayerStack")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
 
 function PlayerStack.handle_input_taunt(self)
   if self.inputMethod ~= "touch" then
@@ -17,7 +18,7 @@ end
 
 local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
 function PlayerStack.idleInput(self)
-  return (self.inputMethod == "touch" and touchIdleInput) or base64encode[1]
+  return (self.inputMethod == "touch" and touchIdleInput) or KeyDataEncoding.base64encode[1]
 end
 
 function PlayerStack:send_controls()
@@ -32,7 +33,7 @@ function PlayerStack:send_controls()
   local to_send
   if self.inputMethod == "controller" then
     local input = self.player.inputConfiguration
-    to_send = base64encode[
+    to_send = KeyDataEncoding.base64encode[
       ((input.isDown["Raise1"] or input.isDown["Raise2"] or input.isPressed["Raise1"] or input.isPressed["Raise2"]) and 32 or 0) +
       ((input.isDown["Swap1"] or input.isDown["Swap2"]) and 16 or 0) +
       ((input.isDown["Up"] or input.isPressed["Up"]) and 8 or 0) +

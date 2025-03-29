@@ -1,9 +1,29 @@
 local util = require("common.lib.util")
-require("common.lib.csprng")
 local logger = require("common.lib.logger")
+local class = require("common.lib.class")
 
 -- table of static functions used for generating panels
-local PanelGenerator = { rng = love.math.newRandomGenerator(), generatedCount = 0}
+---@class PanelGenerator
+---@field rng love.RandomGenerator
+---@field generatedCount integer debug property to see how often random was actually called since last setting the seed
+---@field seed integer
+---@field adjacentDenialFrequency number in percent
+---@field adjacentAccepted integer how many rolls of an adjacent panel have been accepted
+---@field adjacentDenied integer how many rolls of an adjacent panel have been denied
+---@overload fun(seed: integer, adjacentDenialFrequency: number): PanelGenerator
+local PanelGenerator = class(
+---@param self PanelGenerator
+---@param seed integer
+---@param adjacentDenialFrequency number
+function(self, seed, adjacentDenialFrequency)
+  self.seed = seed
+  self.generatedCount = 0
+  self.adjacentDenialFrequency = adjacentDenialFrequency
+  self.adjacentAccepted = 0
+  self.adjacentDenied = 0
+  self.rng = love.math.newRandomGenerator()
+  self.rng:setSeed(seed)
+end)
 
 PanelGenerator.PANEL_COLOR_NUMBER_TO_UPPER = {"A", "B", "C", "D", "E", "F", "G", "H", "I", [0] = "0"}
 PanelGenerator.PANEL_COLOR_NUMBER_TO_LOWER = {"a", "b", "c", "d", "e", "f", "g", "h", "i", [0] = "0" }
@@ -28,83 +48,109 @@ function PanelGenerator:random(min, max)
   return self.rng:random(min, max)
 end
 
-function PanelGenerator.privateGeneratePanels(rowsToMake, rowWidth, ncolors, previousPanels, disallowAdjacentColors)
+-- generates panels for one row based on previousPanels
+---@param rowWidth integer
+---@param ncolors integer
+---@param previousRow string
+---@param assignMetalLocations boolean
+---@return string newPanels
+function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMetalLocations)
   -- logger.info("generating panels with seed: " .. PanelGenerator.rng:getSeed() ..
   --              "\nbuffer: " .. previousPanels ..
   --              "\ncolors: " .. ncolors)
 
-  local result = previousPanels
+  if not previousRow or previousRow == "" then
+    previousRow = string.rep("0", rowWidth)
+  end
+
+  local newPanels = ""
 
   if ncolors < 2 then
     error("Trying to generate panels with only " .. ncolors .. " colors")
   end
 
-  for x = 0, rowsToMake - 1 do
-    for y = 0, rowWidth - 1 do
-      local previousTwoMatchOnThisRow = y > 1 and PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -1, -1)] ==
-                                            PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -2, -2)]
-      local nogood = true
-      local color = 0
-      local belowColor = PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -rowWidth, -rowWidth)]
-      while nogood do
-        color = PanelGenerator:random(1, ncolors)
-        nogood =
-            (previousTwoMatchOnThisRow and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -1, -1)]) or -- Can't have three in a row on this column
-            color == belowColor or -- can't have the same color as below
-                (y > 0 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(result, -1, -1)] and disallowAdjacentColors) -- on level 8+ vs, don't allow any adjacent colors
+  for n = 1, rowWidth do
+    local previousTwoMatchOnThisRow = n > 2 and PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -1, -1)] ==
+                                          PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -2, -2)]
+    local nogood = true
+    local color = 0
+    local belowColor = PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(previousRow, n, n)]
+    while nogood do
+      color = self:random(1, ncolors)
+
+      if color == belowColor then
+        -- can't have the same color as above
+        nogood = true
+      elseif (previousTwoMatchOnThisRow and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -1, -1)]) then
+        -- can't have three in a row
+        nogood = true
+      elseif (n > 1 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -1, -1)]) then
+        -- only allow horizontally adjacent colors with a certain frequency
+        if self.adjacentDenialFrequency >= 1 then
+          nogood = true
+          -- denying everything, no need to track numbers
+        else
+          -- a bit jank; frequency evaluates to NaN on the very first call of this function
+          local frequency = self.adjacentDenied / (self.adjacentAccepted + self.adjacentDenied)
+          -- NaN evaluates to false with all operators except ~= (which evaluates to true, even with itself (IEEE 754 standard lua follows))
+          if frequency <= self.adjacentDenialFrequency then
+            self.adjacentDenied = self.adjacentDenied + 1
+            nogood = true
+          else
+            -- that means the first double is always accepted as NaN <= adjacentDenialFrequency evaluates to false
+            self.adjacentAccepted = self.adjacentAccepted + 1
+            nogood = false
+          end
+        end
+
+      else
+        nogood = false
       end
-      result = result .. tostring(color)
     end
+    newPanels = newPanels .. tostring(color)
+  end
+
+  if assignMetalLocations then
+    newPanels = self:assignMetalLocations(newPanels, previousRow)
   end
   -- logger.debug(result)
-  return result
+  -- only return the new panels
+  return newPanels
 end
 
-function PanelGenerator.assignMetalLocations(ret, rowWidth)
-  -- logger.debug("panels before potential metal panel position assignments:")
-  -- logger.debug(ret)
-  -- assign potential metal panel placements
-  local new_ret = string.rep("0", rowWidth)
-  local new_row
-  local prev_row
-  for i = 1, string.len(ret) / rowWidth do
-    local current_row_from_ret = string.sub(ret, (i - 1) * rowWidth + 1, (i - 1) * rowWidth + rowWidth)
-    -- logger.debug("current_row_from_ret: " .. current_row_from_ret)
-    if tonumber(current_row_from_ret) then -- doesn't already have letters in it for metal panel locations
-      prev_row = string.sub(new_ret, 0 - rowWidth, -1)
-      local first, second -- locations of potential metal panels
-      -- while panel vertically adjacent is not numeric, so can be a metal panel
-      while not first or not tonumber(string.sub(prev_row, first, first)) do
-        first = PanelGenerator:random(1, rowWidth)
-      end
-      while not second or second == first or not tonumber(string.sub(prev_row, second, second)) do
-        second = PanelGenerator:random(1, rowWidth)
-      end
-      new_row = ""
-      for j = 1, rowWidth do
-        local chr_from_ret = string.sub(ret, (i - 1) * rowWidth + j, (i - 1) * rowWidth + j)
-        local num_from_ret = tonumber(chr_from_ret)
-        if j == first then
-          new_row = new_row .. (PanelGenerator.PANEL_COLOR_NUMBER_TO_UPPER[num_from_ret] or chr_from_ret or "0")
-        elseif j == second then
-          new_row = new_row .. (PanelGenerator.PANEL_COLOR_NUMBER_TO_LOWER[num_from_ret] or chr_from_ret or "0")
-        else
-          new_row = new_row .. chr_from_ret
-        end
-      end
-    else
-      new_row = current_row_from_ret
-    end
-    new_ret = new_ret .. new_row
+---@param rowString string
+---@param previousRowString string?
+---@return string rowString
+function PanelGenerator:assignMetalLocations(rowString, previousRowString)
+  local rowWidth = rowString:len()
+  previousRowString = previousRowString or string.rep("0", rowWidth)
+
+  local newString = ""
+
+  -- locations of potential metal panels
+  local first, second
+  -- just like other panels, we don't want metal panels ghost matching on their own
+  -- so reroll until the same position of the previous row is not marked for metal
+  while not first or not tonumber(string.sub(previousRowString, first, first)) do
+    first = self:random(1, rowWidth)
+  end
+  while not second or second == first or not tonumber(string.sub(previousRowString, second, second)) do
+    second = self:random(1, rowWidth)
   end
 
-  -- new_ret was started with a row of 0 because the algorithm relies on a row without shock panels being there at the start
-  -- so cut that extra row out again
-  new_ret = string.sub(new_ret, rowWidth + 1)
+  for j = 1, rowWidth do
+    local char = string.sub(rowString, j, j)
+    local num = tonumber(char)
+    if j == first then
+      newString = newString .. (PanelGenerator.PANEL_COLOR_NUMBER_TO_UPPER[num] or char or "0")
+    elseif j == second then
+      newString = newString .. (PanelGenerator.PANEL_COLOR_NUMBER_TO_LOWER[num] or char or "0")
+    else
+      newString = newString .. char
+    end
+  end
 
-  -- logger.debug("panels after potential metal panel position assignments:")
-  -- logger.debug(ret)
-  return new_ret
+  return newString
 end
 
 return PanelGenerator

@@ -69,6 +69,7 @@ function system.startDebugger()
     require("mobdebug").start()
     require('mobdebug').coro()
   end
+  DEBUG_ENABLED = true
 end
 
 local major, minor, revision, codename = love.getVersion()

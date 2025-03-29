@@ -610,9 +610,11 @@ function Panels:addToDraw(panel, x, y, stackScale, danger, dangerTimer, stopTime
     local conf, frame
     conf, frame, x, y = self:getDrawProps(panel, x, y, danger, dangerTimer, stopTime)
 
-    self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size)
-    -- scale / 3 because for the current standard size of 16
-    batch:add(self.quad, x * stackScale, y * stackScale, 0, self.scale * stackScale)
+    if conf then
+      self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size)
+      -- scale / 3 because for the current standard size of 16
+      batch:add(self.quad, x * stackScale, y * stackScale, 0, self.scale * stackScale)
+    end
   end
 end
 

@@ -12,8 +12,11 @@ local NAVIGATION_BUTTON_WIDTH = 30
 -- Menu is a collection of buttons that stack vertically and supports scrolling and keyboard navigation.
 -- It requires the passed in menu items to have valid widths and adds padding between each. The height also must be passed in
 -- and the width is the maximum of all buttons.
+---@class Menu : UiElement
 local Menu = class(
   function(self, options)
+    ---@class Menu
+    self = self
     self.TYPE = "VerticalScrollingButtonMenu"
 
     self.selectedIndex = 1
@@ -43,7 +46,7 @@ Menu.NAVIGATION_BUTTON_WIDTH = NAVIGATION_BUTTON_WIDTH
 Menu.BUTTON_HORIZONTAL_PADDING = 0
 Menu.BUTTON_VERTICAL_PADDING = 8
 
-function Menu.createCenteredMenu(items) 
+function Menu.createCenteredMenu(items)
   local menu = Menu({
     x = 0,
     y = 0,

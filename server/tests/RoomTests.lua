@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-field, invisible, inject-field
 local Room = require("server.Room")
 local ServerTesting = require("server.tests.ServerTesting")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 
 COMPRESS_REPLAYS_ENABLED = true
 
@@ -70,8 +70,8 @@ local function basicTest()
   room:handleGameOverOutcome({outcome = 1}, p1)
   assert(gameCatcher.game, "Expected the game catcher to catch the game")
   local replay = gameCatcher.game.replay
-  assert(replay.players[1].settings.inputs == "A912")
-  assert(replay.players[2].settings.inputs == "A909")
+  assert(replay.stacks[1].inputs == "A912")
+  assert(replay.stacks[2].inputs == "A909")
   assert(p1.state == "character select")
   assert(p2.state == "character select")
   assert(room.win_counts[1] == 1)

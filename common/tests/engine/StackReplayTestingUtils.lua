@@ -1,14 +1,16 @@
 local logger = require("common.lib.logger")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local Match = require("common.engine.Match")
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.data.Replay")
 local LevelPresets = require("common.data.LevelPresets")
-local Stack = require("common.engine.Stack")
-require("common.engine.checkMatches")
+local GeneratorSource = require("common.engine.GeneratorSource")
+local ReplayV3 = require("common.data.ReplayV3")
 
 local StackReplayTestingUtils = {}
 
+---@param path string
+---@return Match match
+---@return number timeElapsed
 function StackReplayTestingUtils:simulateReplayWithPath(path)
   local match = self:setupReplayWithPath(path)
   return self:fullySimulateMatch(match)
@@ -19,27 +21,20 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
   if playerCount == nil then
     playerCount = 1
   end
-  local stacks = {}
-  for i = 1, playerCount do
-    local args = {
-      which = i,
-      stackInteraction = endless.stackInteraction,
-      gameOverConditions = endless.gameOverConditions,
-      is_local = false,
-      allowAdjacentColors = true
-    }
 
-    if level then
-      args.levelData = LevelPresets.getModern(level)
-    else
-      args.levelData = LevelPresets.getClassic(difficulty)
-      args.levelData.startingSpeed = speed
-    end
-    stacks[i] = Stack(args)
+  local match = Match(GeneratorSource(1, false), endless.matchRules)
+
+  local levelData
+  if level then
+    levelData = LevelPresets.getModern(level)
+  else
+    levelData = LevelPresets.getClassic(difficulty)
+    levelData.startingSpeed = speed
+  end
+  for i = 1, playerCount do
+    match:createStackWithSettings(levelData, false, "controller")
   end
 
-  local match = Match(stacks, endless.doCountdown, endless.stackInteraction, endless.winConditions, endless.gameOverConditions)
-  match:setSeed(1)
   match:start()
 
   for i = 1, #match.stacks do
@@ -49,20 +44,14 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
   return match
 end
 
-function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, inputMethod, levelData)
-  local args = {
-    which = 1,
-    stackInteraction = gameMode.stackInteraction,
-    gameOverConditions = gameMode.gameOverConditions,
-    is_local = false,
-    levelData = levelData or LevelPresets.getModern(5),
-    allowAdjacentColors = true,
-    inputMethod = inputMethod or "controller",
-  }
-  local stacks = { Stack(args) }
+function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, panelSource, inputMethod, levelData)
+  if not panelSource then
+    local enableShock = (gameMode.stackInteraction ~= GameModes.StackInteractions.NONE)
+    panelSource = GeneratorSource(1, enableShock)
+  end
+  local match = Match(panelSource, gameMode.matchRules)
+  match:createStackWithSettings(levelData or LevelPresets.getModern(5), false, inputMethod or "controller")
 
-  local match = Match(stacks, gameMode.doCountdown, gameMode.stackInteraction, gameMode.winConditions, gameMode.gameOverConditions)
-  match:setSeed(1)
   match:start()
 
   for i = 1, #match.stacks do
@@ -109,7 +98,7 @@ function StackReplayTestingUtils:simulateMatchWithRollbackAtClock(match, clock)
 end
 
 function StackReplayTestingUtils:setupReplayWithPath(path)
-  local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
+  local replay = ReplayV3.createFromTable(fileUtils.readJsonFile(path), true)
   local match = Match.createFromReplay(replay)
   match:start()
   -- we want to be able to stop with precision so cap the number of runs

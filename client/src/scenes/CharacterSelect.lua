@@ -2,20 +2,26 @@ local consts = require("common.engine.consts")
 local input = require("client.src.inputManager")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Character = require("client.src.mods.Character")
+local LevelPresets = require("common.data.LevelPresets")
 
 -- The character select screen scene
 ---@class CharacterSelect : Scene
 ---@field backgroundImg table
 ---@field players Player[]
-local CharacterSelect = class(function(self)
+---@field battleRoom BattleRoom
+local CharacterSelect = class(
+---@param self CharacterSelect
+function(self, sceneParams)
   self.backgroundImg = themes[config.theme].images.bg_select_screen
   self.music = "select_screen"
   self.fallbackMusic = "main"
+  self.battleRoom = sceneParams.battleRoom
+  self.players = shallowcpy(self.battleRoom.players)
   self:load()
 end, Scene)
 
@@ -37,7 +43,6 @@ end
 -- end abstract functions
 
 function CharacterSelect:load()
-  self.players = shallowcpy(GAME.battleRoom.players)
   -- display order is driven by locality
   table.sort(self.players, function(a, b)
     if a.isLocal == b.isLocal then
@@ -253,7 +258,7 @@ local super_select_pixelcode = [[
 ---@return Button[] characterButtons
 function CharacterSelect:getCharacterButtons()
   local characterButtons = {}
-  local enableButtons = GAME.battleRoom:hasLocalPlayer()
+  local enableButtons = self.battleRoom:hasLocalPlayer()
 
   for i = 0, #visibleCharacters do
     local characterButton = ui.Button({
@@ -497,9 +502,12 @@ function CharacterSelect:createPanelCarousel(player, height)
 
   panelCarousel:setPassengerById(player.settings.panelId)
 
+  local updateColor = function(carousel, levelData)
+    carousel:setColorCount(levelData.colors)
+  end
+
   -- to update the UI if code gets changed from the backend (e.g. network messages)
-  player:connectSignal("selectedStageIdChanged", panelCarousel, panelCarousel.setPassengerById)
-  player:connectSignal("colorCountChanged", panelCarousel, panelCarousel.setColorCount)
+  player:connectSignal("levelDataChanged", panelCarousel, updateColor)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
@@ -563,12 +571,14 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   -- level slider
   levelSlider.onSelectCallback = function(self)
     player:setLevel(self.value)
+    player:setLevelData(LevelPresets.getModern(self.value))
   end
 
   levelSlider.setValueFromPos = function(self, x)
     local screenX, screenY = self:getScreenPos()
     self:setValue(math.floor((x - screenX) / self.tickLength) + self.min)
     player:setLevel(self.value)
+    player:setLevelData(LevelPresets.getModern(self.value))
   end
 
   levelSlider.onBackCallback = function(self)
@@ -766,7 +776,7 @@ function CharacterSelect:createPlayerInfo(player)
     x = 4,
     text = ""
   })
-  if GAME.battleRoom.ranked then
+  if self.battleRoom.ranked then
     stackPanel.winrateExpectedLabel:setText(loc("ss_expected_rating") .. " " .. player.expectedWinrate .. "%")
   end
   stackPanel.winrateExpectedLabel.update = function(self, expectedWinrate)
@@ -801,13 +811,13 @@ function CharacterSelect:createRankedStatusPanel()
     hAlign = "center",
     vAlign = "top"
   })
-  if GAME.battleRoom.ranked then
+  if self.battleRoom.ranked then
     rankedStatus.rankedLabel:setText("ss_ranked")
   else
     rankedStatus.rankedLabel:setText("ss_casual")
   end
   rankedStatus.commentLabel = ui.Label({
-    text = GAME.battleRoom.rankedComments or "",
+    text = self.battleRoom.rankedComments or "",
     hAlign = "center",
     vAlign = "top",
     translate = false
@@ -824,14 +834,14 @@ function CharacterSelect:createRankedStatusPanel()
     rankedStatus.commentLabel:setText(comments, nil, false)
   end
 
-  GAME.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.update)
+  self.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.update)
 
   return rankedStatus
 end
 
 ---@param player Player
 ---@param height number
----@param min integer
+---@param min integer?
 ---@return UiElement speedSliderContainer
 function CharacterSelect:createSpeedSlider(player, height, min)
   local speedSlider = ui.Slider({
@@ -873,7 +883,7 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     { id = 4, uiElement = ui.Label({text = "ss_ex_mode", vAlign = "center", hAlign = "center"})},
   }
   local difficultyCarousel = ui.Carousel({
-    isEnabled = player.isLocal, 
+    isEnabled = player.isLocal,
     hAlign = "center",
     vAlign = "top",
     hFill = true,
@@ -883,7 +893,15 @@ function CharacterSelect:createDifficultyCarousel(player, height)
   })
 
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
+    local levelData = LevelPresets.getClassic(selectedPassenger.id)
     player:setDifficulty(selectedPassenger.id)
+    if self.battleRoom.mode.name == "endless" and selectedPassenger.id == 1 then
+      -- Endless easy uses 5 colors instead of 6
+      levelData:setColorCount(5)
+      -- and by extension also allows adjacent panels of the same colors
+      levelData:setAdjacentDenialFrequency(0)
+    end
+    player:setLevelData(levelData)
     GAME.theme:playMoveSfx()
     self:refresh()
   end
@@ -901,7 +919,7 @@ function CharacterSelect:update(dt)
       end
     end
   end
-  if GAME.battleRoom and GAME.battleRoom.spectating then
+  if self.battleRoom and self.battleRoom.spectating then
     if input.isDown["MenuEsc"] then
       GAME.theme:playCancelSfx()
       GAME.netClient:leaveRoom()
@@ -922,8 +940,8 @@ end
 function CharacterSelect:leave()
   GAME.navigationStack:pop(nil,
     function()
-      if GAME.battleRoom then
-        GAME.battleRoom:shutdown()
+      if self.battleRoom then
+        self.battleRoom:shutdown()
       end
     end)
 end

@@ -1,7 +1,6 @@
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Signal = require("common.lib.signal")
--- TODO: move graphics related functionality to client
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 -- Draws an image at the given spot while scaling all coordinate and scale values with stack.gfxScale
@@ -35,21 +34,24 @@ end
 ---@field match ClientMatch
 ---@field assets IngameAssetPack
 ---@field renderIndex integer determines the position of the stack and how some elements are rendered
+---@field player_number integer used for display ordering
 
 ---@class ClientStack
 local ClientStack = class(
+---@param self ClientStack
+---@param args table
 function(self, args)
-  ---@class ClientStack
   self = self
 
-  assert(args.is_local ~= nil)
-  assert(args.character)
+  assert(args.engine)
+  assert(args.characterId)
   assert(args.match)
 
+  self.engine = args.engine
   -- player number according to the multiplayer server, for game outcome reporting 
-  self.player_number = args.player_number or args.which
-  self.is_local = args.is_local
-  self.character = characters[args.character]
+  self.player_number = args.player_number or args.engine.which
+  self.is_local = args.player and args.player.isLocal or args.engine.is_local
+  self.character = characters[args.characterId]
   self.theme = args.theme or themes[config.theme]
   self.match = args.match
 

@@ -1,14 +1,15 @@
 local consts = require("common.engine.consts")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
-local GameModes = require("common.engine.GameModes")
 local Puzzle = require("common.engine.Puzzle")
+local LevelPresets = require("common.data.LevelPresets")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
 
 local function puzzleTest()
   -- to stop rising
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
-  local puzzle = Puzzle(nil, nil, 1, "011010")
+  local puzzle = Puzzle("moves", false, 1, "011010")
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
-  stack:setPuzzleState(puzzle)
+  ---@cast stack Stack
 
   assert(stack.panels[1][1].color == 0, "wrong color")
   assert(stack.panels[1][2].color == 1, "wrong color")
@@ -16,17 +17,19 @@ local function puzzleTest()
   stack:receiveConfirmedInput("AA") -- can't swap on first two frames ?!
   match:run()
   match:run()
-  assert(stack:canSwap(1, 4), "should be able to swap")
+  local leftPanel = stack.panels[1][4]
+  local rightPanel = stack.panels[1][5]
+  assert(stack:canSwap(leftPanel, rightPanel), "should be able to swap")
   StackReplayTestingUtils:cleanup(match)
 end
 
 puzzleTest()
 
 local function clearPuzzleTest()
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
   local puzzle = Puzzle("clear", false, 0, "[============================][====]246260[====]600016514213466313451511124242", 60, 0)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
-  stack:setPuzzleState(puzzle)
+  ---@cast stack Stack
 
   assert(stack.panels[1][1].color == 1, "wrong color")
   assert(stack.panels[1][2].color == 2, "wrong color")
@@ -34,7 +37,9 @@ local function clearPuzzleTest()
   stack:receiveConfirmedInput("AA") -- can't swap on first two frames ?!
   match:run()
   match:run()
-  assert(stack:canSwap(1, 4), "should be able to swap")
+  local leftPanel = stack.panels[1][4]
+  local rightPanel = stack.panels[1][5]
+  assert(stack:canSwap(leftPanel, rightPanel), "should be able to swap")
   StackReplayTestingUtils:cleanup(match)
 end
 
@@ -43,14 +48,16 @@ clearPuzzleTest()
 local function basicSwapTest()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
   local stack = match.stacks[1]
+---@cast stack Stack
 
   stack.do_countdown = false
 
   stack:receiveConfirmedInput("AA") -- can't swap on first two frames
   StackReplayTestingUtils:simulateMatchUntil(match, 2)
 
-  assert(stack:canSwap(1, 1), "should be able to swap")
-  stack:setQueuedSwapPosition(1, 1)
+  local leftPanel = stack.panels[1][1]
+  local rightPanel = stack.panels[1][2]
+  assert(stack:tryQueueSwap(leftPanel, rightPanel), "should be able to swap")
   assert(stack.queuedSwapRow == 1)
   stack:new_row()
   assert(stack.queuedSwapRow == 2)
@@ -63,6 +70,7 @@ local function moveAfterCountdownV46Test()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
   match:setEngineVersion(consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE)
   local stack = match.stacks[1]
+  ---@cast stack Stack
   stack.do_countdown = true
   assert(characters ~= nil, "no characters")
   local lastBlockedCursorMovementFrame = 33
@@ -80,9 +88,9 @@ moveAfterCountdownV46Test()
 
 local function testShakeFrames()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
-  match.seed = 1 -- so we consistently have a panel to swap
   match.engineVersion = consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE
   local stack = match.stacks[1]
+  ---@cast stack Stack
 
   -- imaginary garbage should crash
   assert(pcall(stack.shakeFrameForGarbageSize, 6, 0) == false)
@@ -122,3 +130,62 @@ local function testShakeFrames()
 end
 
 testShakeFrames()
+
+
+local function swapStalling1Test1()
+  local puzzle = Puzzle("clear", false, 0, "[======================][====]246260[====]600016514213461336451511124242", 0, 0)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+  stack.behaviours.swapStallingMode = 1
+
+  local left = KeyDataEncoding.left
+  local down = KeyDataEncoding.down
+  local right = KeyDataEncoding.right
+  local swap = KeyDataEncoding.swap
+
+  local sequence1 = table.concat({
+    -- +4 combo with the reds (color 1) in column 3
+    down, down, right, swap, left, swap, down .. left, swap,
+  }, "A")
+
+  local sequence2 = table.concat({
+    -- swap the right most panels in row 4 twice; this works, we got stop time; then prepare to move the dark blue panel over
+    right, right, right, swap, swap, down
+  }, "A")
+
+  -- we wait until we're about out of invincibility frames
+  local frameConstants = stack.levelData.frameConstants
+  local invincibilityTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * (4 + 6) + stack:calculateStopTime(4, true)
+  invincibilityTime = invincibilityTime - sequence2:len() + 2
+  local sequence3 = string.rep("A", invincibilityTime)
+
+  local sequence4 = table.concat({
+    -- stealth over the dark blue for a horizontal match and move out of the clear wall so the wiggle is not intercepted
+    swap, left, swap, right
+  }, "A")
+
+  -- wait until we're out of invincibility frames again
+  invincibilityTime = frameConstants.FLASH + frameConstants.FACE + frameConstants.POP * 3
+  local sequence5 = string.rep("A", invincibilityTime)
+
+  local preWiggleInputs = sequence1 .. sequence2 .. sequence3 .. sequence4 .. sequence5
+  local wiggle = table.concat({
+    -- wiggle
+    swap, swap, swap, swap, swap, swap, swap, swap, swap, swap
+  }, "AA")
+
+  -- can't swap on first two frames ?!
+  local inputs = "AA" .. preWiggleInputs .. wiggle
+
+  stack:receiveConfirmedInput(inputs) -- can't swap on first two frames
+  StackReplayTestingUtils:fullySimulateMatch(match)
+  assert(match.clock > preWiggleInputs:len(), "expected to live before starting to wiggle")
+  assert(inputs:len() > match.clock and stack.game_over_clock > 0, "expected the stack to go game over")
+  -- at clock time 197 we get 59 frames of prestop which have run out at 257, followed by 6 frames of hover and 2 frames until the frames have finished landing
+  -- wiggling starts at frame 252 for 28 frames on every 3rd frame with swaps on 255, 258, 261, 264, 267, the latter 2 are after landing so the swap at 267 should get denied
+  -- following which it takes 2 more frames until passive raise kills us
+  assert(stack.game_over_clock == 269)
+end
+
+swapStalling1Test1()

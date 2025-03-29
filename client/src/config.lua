@@ -32,6 +32,7 @@ require("client.src.globals")
 ---@field debugShowDesignHelper boolean
 ---@field debugProfile boolean
 ---@field debugProfileThreshold integer
+---@field debug_vsFramesBehind integer
 ---@field show_fps boolean
 ---@field show_ingame_infos boolean
 ---@field danger_music_changeback_delay boolean

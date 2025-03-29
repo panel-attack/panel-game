@@ -4,12 +4,10 @@ local BaseStack = require("common.engine.BaseStack")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local AttackEngine = require("common.engine.AttackEngine")
-local ReplayPlayer = require("common.data.ReplayPlayer")
 
 ---@class SimulatedStack : BaseStack
----@field attackEngine table
----@field healthEngine table
-
+---@field attackEngine AttackEngine
+---@field healthEngine HealthEngine
 -- A simulated stack sends attacks and takes damage from a player, it "loses" if it takes too many attacks.
 local SimulatedStack = class(
 function(self, args)
@@ -76,7 +74,7 @@ end
 function SimulatedStack:setGameOver()
   self.game_over_clock = self.clock
 
-  SoundController:playSfx(themes[config.theme].sounds.game_over)
+  self:emitSignal("gameOver")
 end
 
 function SimulatedStack:shouldRun(runsSoFar)
@@ -119,14 +117,14 @@ function SimulatedStack:saveForRollback()
     copy = {}
   end
 
-  self.incomingGarbage:rollbackCopy(self.clock)
+  self.incomingGarbage:saveForRollback(self.clock)
 
   if self.healthEngine then
     self.healthEngine:saveRollbackCopy()
   end
 
   if self.attackEngine then
-    self.attackEngine:rollbackCopy(self.clock)
+    self.attackEngine:saveForRollback(self.clock)
   end
 
   copy.health = self.health
@@ -205,23 +203,6 @@ function SimulatedStack:getAttackPatternData()
   if self.attackEngine then
     return self.attackEngine.attackSettings
   end
-end
-
-function SimulatedStack:toReplayPlayer()
-  local replayPlayer = ReplayPlayer("Player " .. self.which, - self.which)
-
-  replayPlayer:setAttackEngineSettings(self.attackEngineSettings)
-  replayPlayer:setHealthSettings(self.healthSettings)
-
-  return replayPlayer
-end
-
----@param replayPlayer ReplayPlayer
----@param replay Replay
----@return SimulatedStack
-function SimulatedStack.createFromReplayPlayer(replayPlayer, replay)
--- TODO
-  return SimulatedStack({})
 end
 
 return SimulatedStack

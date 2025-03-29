@@ -1,9 +1,10 @@
 local CharacterSelect = require("client.src.scenes.CharacterSelect")
 local class = require("common.lib.class")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local ui = require("client.src.ui")
 
 -- Scene for the endless game setup menu
+---@class EndlessMenu : CharacterSelect
 local EndlessMenu = class(
   function(self, sceneParams)
     self.gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
@@ -19,7 +20,7 @@ function EndlessMenu:customLoad(sceneParams)
 end
 
 function EndlessMenu:loadUserInterface()
-  local player = GAME.battleRoom.players[1]
+  local player = self.battleRoom.players[1]
 
   local unitSize = 100
   self.ui.grid = ui.Grid({unitSize = unitSize, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
@@ -127,8 +128,8 @@ end
 
 function EndlessMenu:refresh()
   local difficulty
-  if GAME.battleRoom then
-    difficulty = GAME.battleRoom.players[1].settings.difficulty
+  if self.battleRoom then
+    difficulty = self.battleRoom.players[1].settings.difficulty
   else
     difficulty = GAME.localPlayer.settings.difficulty
   end

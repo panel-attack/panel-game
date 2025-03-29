@@ -10,7 +10,7 @@ This is most noticeable if you use L or R, the stack will sort of jitter on its 
 There are no plans to implement this.
 
 In Tetris Attack, only one pair of panels can be swapping at any time, and the new swap can only be created in some frames of the old swap.
-In Panel Attack, the timing is unrestricted.
+In Panel Attack, swaps cannot occur on consecutive frames, but the timing for back-to-back swaps is less strict than the rule enforced by Tetris Attack.
 
 In Tetris Attack, chains past 13 do not generate bigger chain blocks.  
 Panel Attack's chain blocks are always (chain length - 1) high.

@@ -139,8 +139,8 @@ PuzzleTests.testRandomizeColorsSometimesSameColors()
 function PuzzleTests.testHorizontallyFlippedPuzzle()
   local puzzleString = "{====}929999[====]040000224999949999"
   local puzzle = Puzzle("moves", false, 5, puzzleString)
-  local flippedString = puzzle:horizontallyFlipPuzzleString()
-  assert(flippedString == "000000000000000000000000000000000000{====}999929[====]000040999422999949")
+  local flippedString = Puzzle.horizontallyFlipPuzzleString(puzzle.stack)
+  assert(flippedString == "{====}999929[====]000040999422999949")
 end
 
 PuzzleTests.testHorizontallyFlippedPuzzle()
@@ -148,8 +148,8 @@ PuzzleTests.testHorizontallyFlippedPuzzle()
 function PuzzleTests.testHorizontallyFlippedSmallPuzzle()
   local puzzleString = "123"
   local puzzle = Puzzle("moves", false, 5, puzzleString)
-  local flippedString = puzzle:horizontallyFlipPuzzleString()
-  assert(flippedString == "000000000000000000000000000000000000000000000000000000000000000000321000")
+  local flippedString = Puzzle.horizontallyFlipPuzzleString(puzzle.stack)
+  assert(flippedString == "321000")
 end
 
 PuzzleTests.testHorizontallyFlippedSmallPuzzle()
@@ -157,7 +157,7 @@ PuzzleTests.testHorizontallyFlippedSmallPuzzle()
 function PuzzleTests.testHorizontallyFlippedBigGarbagePuzzle()
   local puzzleString = "[============================][====]632620[====]200042543641322141354544463636"
   local puzzle = Puzzle("moves", false, 5, puzzleString)
-  local flippedString = puzzle:horizontallyFlipPuzzleString()
+  local flippedString = Puzzle.horizontallyFlipPuzzleString(puzzle.stack)
   assert(flippedString == "[============================][====]026236[====]240002146345141223445453636364")
 end
 
@@ -166,7 +166,7 @@ PuzzleTests.testHorizontallyFlippedBigGarbagePuzzle()
 function PuzzleTests.testHorizontallyFlippedSmallGarbagePuzzle()
   local puzzleString = "[============================]00[==]632620[==]00200042543641322141354544463636"
   local puzzle = Puzzle("moves", false, 5, puzzleString)
-  local flippedString = puzzle:horizontallyFlipPuzzleString()
+  local flippedString = Puzzle.horizontallyFlipPuzzleString(puzzle.stack)
   assert(flippedString == "[============================][==]0002623600[==]240002146345141223445453636364")
 end
 

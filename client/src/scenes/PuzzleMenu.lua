@@ -5,8 +5,16 @@ local ui = require("client.src.ui")
 local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
+local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
+local LevelPresets      = require("common.data.LevelPresets")
 
 -- Scene for the puzzle selection menu
+---@class PuzzleMenu : Scene
+---@field menu Menu
+---@field puzzleLabel Label
+---@field levelSlider LevelSlider
+---@field randomColorButtons ButtonGroup
+---@field battleRoom BattleRoom
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -17,6 +25,7 @@ local PuzzleMenu = class(
     self.menu = nil
     self.puzzleLabel = nil
     self.puzzleLibrary = PuzzleLibrary(consts.PUZZLES_SAVE_DIRECTORY, GAME.scores)
+    self.battleRoom = sceneParams.battleRoom
 
     self:load(sceneParams)
   end,
@@ -34,30 +43,18 @@ function PuzzleMenu:startGame(puzzleSet)
     write_conf_file()
   end
 
-  if config.puzzle_randomColors or config.puzzle_randomFlipped then
-    puzzleSet = deepcpy(puzzleSet)
-
-    for _, puzzle in pairs(puzzleSet.puzzles) do
-      if config.puzzle_randomColors then
-        puzzle.stack = Puzzle.randomizeColorsInPuzzleString(puzzle.stack)
-      end
-      if config.puzzle_randomFlipped then
-        if math.random(2) == 1 then
-          puzzle.stack = puzzle:horizontallyFlipPuzzleString()
-        end
-      end
-    end
-  end
-
   GAME.theme:playValidationSfx()
-
   GAME.localPlayer:setPuzzleSet(puzzleSet)
-  GAME.localPlayer:setWantsReady(true)
+
+  local player = self.battleRoom.players[1]
+  local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
+  self.battleRoom:setGameMode(puzzle:toGameMode())
+  player:setWantsReady(true)
 end
 
 function PuzzleMenu:exit()
   GAME.theme:playValidationSfx()
-  GAME.battleRoom:shutdown()
+  self.battleRoom:shutdown()
   GAME.navigationStack:pop()
 end
 
@@ -75,6 +72,7 @@ function PuzzleMenu:load(sceneParams)
         GAME.theme:playMoveSfx()
         config.puzzle_level = s.value
         GAME.localPlayer:setLevel(s.value)
+        GAME.localPlayer:setLevelData(LevelPresets.getModern(s.value))
       end
     })
 
@@ -92,7 +90,7 @@ function PuzzleMenu:load(sceneParams)
       end
     }
   )
-  
+
   self.randomlyFlipPuzzleButtons = ui.ButtonGroup(
     {
       buttons = {
@@ -107,7 +105,7 @@ function PuzzleMenu:load(sceneParams)
       end
     }
   )
-  
+
   self:refreshMenu()
 
   local x, y = unpack(themes[config.theme].main_menu_screen_pos)
@@ -134,7 +132,7 @@ function PuzzleMenu:refreshMenu()
     local name = puzzleSet.setName .. " Win Rate: " .. self.puzzleLibrary:puzzleSetGetWinRate(puzzleSet)
     menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(name, nil, false, function() self:startGame(puzzleSet) end)
   end
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, self.exit)
+  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function() self:exit() end)
 
   self.menu = ui.Menu.createCenteredMenu(menuOptions)
   self.uiRoot:addChild(self.menu)

@@ -9,7 +9,7 @@ local TouchInputDetector =
     self.stack = stack
     self.width = stack.engine.width
     self.height = stack.engine.height
-    self.touchInputController = stack.engine.touchInputController
+    self.touchInputController = stack.touchInputController
     -- whether the stack (panels) are touched.  Still true if touch is dragged off the stack, but not released yet.
     self.touchingStack = false
     --if any is {row = 0, col = 0}, this is the equivalent if the variable being nil and not refering to any panel on the stack

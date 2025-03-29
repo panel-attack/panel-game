@@ -5,9 +5,11 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ReplayPlayer = require("common.data.ReplayPlayer")
 local consts = require("common.engine.consts")
+local FileUtils = require("client.src.FileUtils")
 
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
+---@field player Player
 local PuzzleGame = class(
   function (self, sceneParams)
     self.keepMusic = true
@@ -21,40 +23,45 @@ PuzzleGame.name = "PuzzleGame"
 
 function PuzzleGame:customLoad()
   -- we cache the player's input configuration here so that only inputs from this config can start the next puzzle
-  self.inputConfiguration = self.match.players[1].inputConfiguration
-  self.puzzleSet = self.match.players[1].settings.puzzleSet
-  self.puzzleIndex = self.match.players[1].settings.puzzleIndex
-  local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
+---@diagnostic disable-next-line: assign-type-mismatch
+  self.player = self.match.players[1]
+  self.inputConfiguration = self.player.inputConfiguration
+  local puzzle = self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex]
   local isValid, validationError = puzzle:validate()
-  if isValid then
-    self.match.players[1].stack:setPuzzleState(puzzle)
-    self.match:setCountdown(puzzle.doCountdown)
-  else
-    validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
+  if not isValid then
+    validationError = "Validation error in puzzle set " .. self.player.settings.puzzleSet.setName .. "\n"
                     .. validationError
     local transition = MessageTransition(GAME.timer, 5, validationError)
-    GAME.navigationStack:pop(transition)
+    GAME.navigationStack:popToTop(transition)
   end
 end
 
 function PuzzleGame:customRun()
   -- reset level
-  if (self.inputConfiguration and self.inputConfiguration.isDown["TauntUp"]) and not self.match.isPaused then
-    GAME.theme:playValidationSfx()
-    self:savePuzzleRecordResult(false)
-    self.match:resetPuzzle()
+  if (self.player.inputConfiguration and self.player.inputConfiguration.isDown["TauntUp"]) then
+    if not self.match.ended and not self.match.isPaused then
+      GAME.theme:playValidationSfx()
+      self:savePuzzleRecordResult(false)
+      self.match:resetPuzzle()
+    end
   end
 end
 
 function PuzzleGame:readyToProceedToNextScene()
-  return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
+  if (self.inputConfiguration and self.inputConfiguration.isDown["TauntDown"]) then
+    FileUtils.saveReplay(self.match.replay)
+  else
+    return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
+  end
 end
 
 function PuzzleGame:startNextScene()
   if self.match.engine.aborted then
     GAME.navigationStack:pop()
-  elseif self.match.players[1].settings.puzzleIndex <= #self.match.players[1].settings.puzzleSet.puzzles then
-    self.match.players[1]:setWantsReady(true)
+  elseif self.player.settings.puzzleIndex <= #self.player.settings.puzzleSet.puzzles then
+    local puzzle = self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex]
+    GAME.battleRoom:setGameMode(puzzle:toGameMode())
+    self.player:setWantsReady(true)
   else
     GAME.navigationStack:pop()
   end
@@ -71,7 +78,7 @@ function PuzzleGame:customGameOverSetup()
     self.text = loc("pl_you_win")
     -- the below code is kind of hacky, the game scene isn't in charge of whats next.
     self:savePuzzleRecordResult(true)
-    self.match.players[1]:setPuzzleIndex(self.puzzleIndex + 1)
+    self.player:setPuzzleIndex(self.player.settings.puzzleIndex + 1)
   else -- puzzle failed or manually reset
     self.text = loc("pl_you_lose")
     self:savePuzzleRecordResult(false)

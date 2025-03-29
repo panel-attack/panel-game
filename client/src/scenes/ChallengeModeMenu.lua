@@ -24,7 +24,7 @@ function ChallengeModeMenu:goToCharacterSelect(difficulty)
   GAME.theme:playValidationSfx()
   GAME.battleRoom = ChallengeMode.create(difficulty)
   if GAME.battleRoom then
-    GAME.navigationStack:replace(CharacterSelectChallenge())
+    GAME.navigationStack:replace(CharacterSelectChallenge({battleRoom = GAME.battleRoom}))
   end
 end
 

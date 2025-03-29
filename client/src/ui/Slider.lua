@@ -16,11 +16,11 @@ local sliderBarThickness = 6
 ---@field max number? maximum value
 ---@field tickLength integer? how many pixels represent a value change of tickAmount
 ---@field tickAmount number? the minimum delta the value can change by
----@field value number initial value
----@field onValueChange fun(slider:Slider) callback for whenever the value is changed
+---@field value number? initial value
+---@field onValueChange fun(slider:Slider)? callback for whenever the value is changed
 ---@field onlyChangeOnRelease boolean? flag to control when onValueChange is called; set it to true for sliders that have a callback that takes a long time
----@field width nil? width is calculated internally based on min, max, tickLength and tickAmount
----@field height nil? height is calculated internally based on min, max, tickLength and tickAmount
+---@field width nil width is calculated internally based on min, max, tickLength and tickAmount
+---@field height nil height is calculated internally based on min, max, tickLength and tickAmount
 
 -- A horizontal Slider element
 ---@class Slider: UiElement
