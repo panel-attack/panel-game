@@ -3,7 +3,7 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local ReplayPlayer = require("common.data.ReplayPlayer")
+local ReplayPlayer = require("common.compatibility.ReplayV2")
 local consts = require("common.engine.consts")
 local FileUtils = require("client.src.FileUtils")
 
