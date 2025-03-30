@@ -70,11 +70,17 @@ function save.read_user_id_file(serverIP)
 end
 
 -- writes the stock puzzles
-function save.write_puzzles()
-  love.filesystem.createDirectory("puzzles")
+function save.writeDefaultPuzzles(defaultPuzzleDirectory, readmePath, savePuzzleDirectory)
   pcall(
     function()
-      FileUtils.recursiveCopy("client/assets/default_data/puzzles", "puzzles")
+      -- Until we have a way to disable the default puzzles, we shouldn't keep writing them if the user has their own puzzles.
+      -- We will also need a way to handle new puzzles and updates to puzzles.
+      local puzzleFiles = FileUtils.getFilteredDirectoryItems(savePuzzleDirectory) or {}
+      if #puzzleFiles == 0 then
+        love.filesystem.createDirectory(savePuzzleDirectory)
+        FileUtils.recursiveCopy(defaultPuzzleDirectory, savePuzzleDirectory)
+        FileUtils.copyFile(readmePath, savePuzzleDirectory .. "/README.txt")
+      end
     end
   )
 end

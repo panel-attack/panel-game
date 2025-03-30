@@ -101,7 +101,7 @@ Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
   GAME.puzzleSets = {}
-  save.write_puzzles()
+  save.writeDefaultPuzzles("client/assets/default_data/puzzles", "docs/puzzles.txt", consts.PUZZLES_SAVE_DIRECTORY)
   save.read_puzzles("puzzles")
 
   -- move to constructor
