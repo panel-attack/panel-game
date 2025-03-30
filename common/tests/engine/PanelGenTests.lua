@@ -5,6 +5,9 @@ local LevelPresets = require("common.data.LevelPresets")
 local StackBehaviours = require("common.data.StackBehaviours")
 local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
 require("common.lib.util")
+local logger = require("common.lib.logger")
+local tableUtils = require("common.lib.tableUtils")
+local PanelGenerator = require("common.engine.PanelGenerator")
 
 local function checkPanels(panels, rowWidth)
   assert(string.len(panels) % rowWidth == 0)
@@ -340,3 +343,149 @@ end
 testPanelGenForStartingBoard()
 testPanelGenForRegularBoard()
 testPanelGenForGarbage()
+
+local cache = table.new(6, 0)
+local function getColorCounts(row, counts)
+  for i = 1, row:len() do
+    cache[i] = row:sub(i, i)
+  end
+
+  if counts then
+    for i = 1, #counts do
+      counts[i] = 0
+    end
+  else
+    counts = {0, 0, 0, 0, 0, 0, 0, 0, 0}
+  end
+
+  for i, color in ipairs(cache) do
+    counts[tonumber(color)] = counts[tonumber(color)] + 1
+  end
+
+  return counts
+end
+
+local function isBadRow(colorCountArray)
+  for i, count in ipairs(colorCountArray) do
+    if count ~= 0 and count ~= 2 then
+      return false
+    end
+  end
+
+  return true
+end
+
+local function isSadRow(colorCountArray)
+  local twoCount = 0
+  for i, count in ipairs(colorCountArray) do
+    if count == 2 then
+      twoCount = twoCount + 1
+    end
+  end
+
+  return twoCount == 2
+end
+
+local function hasHorizontalMatch(colorCount)
+  return colorCount >= 3
+end
+
+local function testStatisticalProperties(stack, source)
+  local badRowCount = 0
+  local lastWasBad = false
+  local doubleBadCount = 0
+  local sadRowCount = 0
+  local lastWasSad = false
+  local doubleSadCount = 0
+  local badSadCount = 0
+  local sadBadCount = 0
+  local horizontalMatchCount = 0
+  local goodRowCount = 0
+  local uniqueColorCount = 0
+  source.panelGenCount = 1
+  local N = 1000000
+  source:growPanelBuffer(stack)
+  local colorCounts
+  for i = 1, N do
+    source:growPanelBuffer(stack)
+    local newRow = source.panelBuffer:sub(1, stack.width)
+    colorCounts = getColorCounts(newRow, colorCounts)
+    if tableUtils.trueForAny(colorCounts, hasHorizontalMatch) then
+      horizontalMatchCount = horizontalMatchCount + 1
+      goodRowCount = goodRowCount + 1
+      lastWasBad = false
+      lastWasSad = false
+    elseif isBadRow(colorCounts) then
+      badRowCount = badRowCount + 1
+      if lastWasBad then
+        doubleBadCount = doubleBadCount + 1
+      elseif lastWasSad then
+        sadBadCount = sadBadCount + 1
+      end
+      lastWasBad = true
+      lastWasSad = false
+    elseif isSadRow(colorCounts) then
+      sadRowCount = sadRowCount + 1
+      if lastWasBad then
+        badSadCount = badSadCount + 1
+      elseif lastWasSad then
+        doubleSadCount = doubleSadCount + 1
+      end
+      lastWasBad = false
+      lastWasSad = true
+    else
+      lastWasBad = false
+      lastWasSad = false
+      goodRowCount = goodRowCount + 1
+    end
+
+    for _, colorCount in ipairs(colorCounts) do
+      if colorCount > 0 then
+        uniqueColorCount = uniqueColorCount + 1
+      end      
+    end
+
+    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
+  end
+
+  logger.info(badRowCount .. " bad rows (~" .. math.round(badRowCount/N, 1) .. "%)")
+  logger.info(sadRowCount .. " sad rows (~" .. math.round(sadRowCount/N, 1) .. "%)")
+  logger.info(goodRowCount .. " good rows (~" .. math.round(goodRowCount/N, 1) .. "%)")
+  logger.info(horizontalMatchCount .. " had a horizontal match (~" .. math.round(horizontalMatchCount/N, 1) .. "%; ~" .. math.round(horizontalMatchCount/goodRowCount, 1) .. "% of all good rows)")
+  logger.info(doubleBadCount .. " times two bad rows followed right after each other (~" .. math.round(doubleBadCount/N, 1) .. ")")
+  logger.info(sadBadCount + badSadCount .. " times a bad row followed on a sad row or vice versa (~" .. math.round((badSadCount + sadBadCount)/N, 1) .. "%)")
+  logger.info(doubleSadCount .. " times two sad rows followed right after each other (~" .. math.round(doubleSadCount/N, 1) .. "%)")
+  logger.info(math.round(uniqueColorCount / N, 2) .. " unique colors per row on average")
+end
+
+-- local testSeed = 2328743
+
+-- local stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(1))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacents, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(3))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 2/7, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(5))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 4/7, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(7))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 6/7, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(8))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 1, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(1, false, LevelPresets.getModern(10))
+-- logger.debug("Testing statistical properties of panel gen for 6 colors, adjacent denial frequency of 1, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- local adjacent6Colors = LevelPresets.getModern(10)
+-- adjacent6Colors:setAdjacentDenialFrequency(0)
+-- stack, source = createStackWithGeneratorSource(testSeed, false, adjacent6Colors)
+-- logger.debug("Testing statistical properties of panel gen for 6 colors, adjacents, no shock")
+-- testStatisticalProperties(stack, source)
