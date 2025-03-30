@@ -73,9 +73,7 @@ local PANELS_TO_NEXT_SPEED =
 ---@field getGarbagePanelRowString fun(self: PanelSource, stack: Stack): string returns a string of color indices
 ---@field clone fun(self: PanelSource, stack: Stack): PanelSource creates a PanelSource that is tailored to the Stack's settings based on the template that is cloned from
 ---@field panelBuffer string alphanumeric string containing a buffer of panels to rise from below; string characters indicate possible metal positions
----@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbagePanelBuffer string numeric string containing a buffer of panels for garbage to turn into upon matching
----@field garbageGenCount integer How many times the garbagePanelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field toReplaySource fun(self: PanelSource): ReplayPanelSource
 ---@field TYPE string
 
@@ -169,6 +167,8 @@ local Stack = class(
 ---@param s Stack
 ---@param args {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod, is_local: boolean, stackWinConditions: table<StackWinCondition, any>, stackOverCondition: table<StackOverCondition, any>}
   function(s, args)
+    s.width = 6
+    s.height = 12
     assert(args.levelData ~= nil)
     assert(args.stackSetupModifications ~= nil)
     assert(args.panelSource)
@@ -215,8 +215,6 @@ local Stack = class(
     s.highestGarbageIdMatched = 0
     s.panelsCreatedCount = 0
     s.panels = {}
-    s.width = 6
-    s.height = 12
     s.panelTemplate = s:createPanelTemplate()
 
     for i = 0, s.height do

@@ -9,6 +9,7 @@ local RollbackBuffer = require("common.engine.RollbackBuffer")
 ---@field seed integer
 ---@field shockEnabled boolean
 ---@field panelGenerator PanelGenerator
+---@field garbagePanelGenerator PanelGenerator
 ---@field rollbackBuffer RollbackBuffer
 ---@overload fun(seed: integer, shockEnabled: boolean): GeneratorSource
 local GeneratorSource = class(
@@ -20,8 +21,6 @@ function(self, seed, shockEnabled)
   self.shockEnabled = shockEnabled
   self.panelBuffer = ""
   self.garbagePanelBuffer = ""
-  self.panelGenCount = 0
-  self.garbageGenCount = 0
   self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
@@ -43,8 +42,6 @@ end
 ---@param stack Stack
 ---@return string startingBoard
 function GeneratorSource:generateStartingBoard(stack)
-  self.panelGenerator:setSeed(self.seed + self.panelGenCount)
-
   local startingBoard = ""
   local lastRow
 
@@ -53,8 +50,6 @@ function GeneratorSource:generateStartingBoard(stack)
     startingBoard = startingBoard .. newRow
     lastRow = newRow
   end
-
-  self.panelGenCount = self.panelGenCount + 1
 
   -- legacy crutch, the arcane magic for the non-uniform starting board assumes this is there and it really doesn't work without it
   --  even though the chunk is removed at the end of the function
@@ -83,12 +78,8 @@ end
 ---@param stack Stack
 ---@return string newPanels
 function GeneratorSource:generatePanels(stack)
-  self.panelGenerator:setSeed(self.seed + self.panelGenCount)
-
   local lastRow = self.panelBuffer:sub(-stack.width)
   local newPanels = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, self.shockEnabled)
-
-  self.panelGenCount = self.panelGenCount + 1
 
   return newPanels
 end
@@ -96,18 +87,14 @@ end
 ---@param stack Stack
 ---@return string newPanels
 function GeneratorSource:generateGarbagePanels(stack)
-  self.panelGenerator:setSeed(self.seed + self.garbageGenCount)
-
   local lastRow = self.garbagePanelBuffer:sub(-stack.width)
   local newPanels = ""
 
   for i = 1, 20 do
-    local newRow = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, false)
+    local newRow = self.garbagePanelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, false)
     newPanels = newPanels .. newRow
     lastRow = newRow
   end
-
-  self.garbageGenCount = self.garbageGenCount + 1
 
   return newPanels
 end
@@ -144,21 +131,16 @@ end
 
 ---@param stack Stack
 function GeneratorSource:growPanelBuffer(stack)
-  if self.panelGenCount == 0 then
-    self.panelBuffer = self:generateStartingBoard(stack)
-    self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
-  else
-    if string.len(self.panelBuffer) <= 2 * stack.width then
-      self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
-    end
-  end
+  self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
 end
 
 ---@param stack Stack
 ---@param row integer
 ---@return Panel[] panelRow
 function GeneratorSource:createNewRow(stack, row)
-  self:growPanelBuffer(stack)
+  if string.len(self.panelBuffer) <= 2 * stack.width then
+    self:growPanelBuffer(stack)
+  end
 
   local metalPanelsThisRow = 0
   if self.shockEnabled then
@@ -200,11 +182,21 @@ end
 ---@return GeneratorSource
 function GeneratorSource:clone(stack)
   local source = GeneratorSource(self.seed, self.shockEnabled)
-  source.panelBuffer = self.panelBuffer
-  source.garbagePanelBuffer = self.garbagePanelBuffer
-  source.panelGenCount = self.panelGenCount
-  source.garbageGenCount = self.garbageGenCount
   source.panelGenerator = PanelGenerator(self.seed, stack.levelData.adjacentDenialFrequency)
+  source.garbagePanelGenerator = PanelGenerator(math.floor((self.seed + 5) / 2), 1)
+  if self.panelGenerator then
+    source.panelGenerator:setState(self.panelGenerator:getState())
+  end
+  if self.garbagePanelGenerator then
+    source.garbagePanelGenerator:setState(self.garbagePanelGenerator:getState())
+  end
+  if self.panelBuffer:len() > 0 then
+    source.panelBuffer = self.panelBuffer
+  else
+    source.panelBuffer = source:generateStartingBoard(stack)
+  end
+
+  source.garbagePanelBuffer = self.garbagePanelBuffer
   return source
 end
 
@@ -217,8 +209,8 @@ function GeneratorSource:saveForRollback(frame)
 
   copy.panelBuffer = self.panelBuffer
   copy.garbagePanelBuffer = self.garbagePanelBuffer
-  copy.panelGenCount = self.panelGenCount
-  copy.garbageGenCount = self.garbageGenCount
+  copy.panelGenState = self.panelGenerator:getState()
+  copy.garbagePanelGenState = self.garbagePanelGenerator:getState()
   copy.adjacentAccepted = self.panelGenerator.adjacentAccepted
   copy.adjacentDenied = self.panelGenerator.adjacentDenied
 
@@ -234,8 +226,8 @@ function GeneratorSource:rollbackToFrame(frame)
 
   self.panelBuffer = copy.panelBuffer
   self.garbagePanelBuffer = copy.garbagePanelBuffer
-  self.panelGenCount = copy.panelGenCount
-  self.garbageGenCount = copy.garbageGenCount
+  self.panelGenerator:setState(copy.panelGenState)
+  self.garbagePanelGenerator:setState(copy.garbagePanelGenState)
   self.panelGenerator.adjacentAccepted = copy.adjacentAccepted
   self.panelGenerator.adjacentDenied = copy.adjacentDenied
 end
