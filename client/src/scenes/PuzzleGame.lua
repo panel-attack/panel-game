@@ -3,7 +3,7 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local ReplayPlayer = require("common.compatibility.ReplayV2")
+local InputCompression = require("common.data.InputCompression")
 local consts = require("common.engine.consts")
 local FileUtils = require("client.src.FileUtils")
 
@@ -69,8 +69,8 @@ end
 
 -- TODO: ideally this would be in the puzzle library
 function PuzzleGame:savePuzzleRecordResult(success)
-  local inputs = ReplayPlayer.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
-  GAME.scores:savePuzzleRecord(self.puzzleSet.puzzles[self.puzzleIndex], inputs, to_UTC(os.time()), success)
+  local inputs = InputCompression.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
+  GAME.scores:savePuzzleRecord(self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex], inputs, to_UTC(os.time()), success)
 end
 
 function PuzzleGame:customGameOverSetup()
@@ -79,7 +79,7 @@ function PuzzleGame:customGameOverSetup()
     -- the below code is kind of hacky, the game scene isn't in charge of whats next.
     self:savePuzzleRecordResult(true)
     self.player:setPuzzleIndex(self.player.settings.puzzleIndex + 1)
-  else -- puzzle failed or manually reset
+  else -- puzzle failed
     self.text = loc("pl_you_lose")
     self:savePuzzleRecordResult(false)
   end

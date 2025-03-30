@@ -132,6 +132,12 @@ function PuzzleMenu:refreshMenu()
     local name = puzzleSet.setName .. " Win Rate: " .. self.puzzleLibrary:puzzleSetGetWinRate(puzzleSet)
     menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(name, nil, false, function() self:startGame(puzzleSet) end)
   end
+
+  local trainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSet()
+  if #trainingPuzzleSet.puzzles > 0 then
+    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(trainingPuzzleSet.setName, nil, false, function() self:startGame(trainingPuzzleSet) end)
+  end
+  
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function() self:exit() end)
 
   self.menu = ui.Menu.createCenteredMenu(menuOptions)

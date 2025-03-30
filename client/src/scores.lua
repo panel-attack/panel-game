@@ -57,12 +57,19 @@ function Scores:getRecordsForPuzzleUUID(puzzleUUID)
   return records
 end
 
-function Scores:puzzleUUIDHasBeenBeaten(puzzleUUID)
+function Scores:puzzleUUIDWinStreak(puzzleUUID)
   local records = self:getRecordsForPuzzleUUID(puzzleUUID)
 
-  records = tableUtils.filter(records, function(record) return record.success end)
+  local winStreak = 0
+  for i = #records, 1, -1 do
+    local currentRecord = records[i]
+    if currentRecord.success == false then
+      break
+    end
+    winStreak = winStreak + 1
+  end
 
-  return #records > 0
+  return winStreak
 end
 
 function Scores:puzzleSuccessRateForUUID(puzzleUUID)

@@ -67,13 +67,73 @@ function PuzzleLibrary:puzzleSetGetWinRate(puzzleSet)
   return result / #puzzleSet.puzzles
 end
 
+local ONE_HOUR = 60 * 60
+local ALMOST_A_DAY = ONE_HOUR * 23
+local DAY = ONE_HOUR * 24
+function PuzzleLibrary:trainIntervalForStreak(streakCount)
+
+  if streakCount >= 10 then
+    return ALMOST_A_DAY + 30 * DAY
+  elseif streakCount >= 5 then
+    return ALMOST_A_DAY + 14 * DAY
+  elseif streakCount >= 4 then
+    return ALMOST_A_DAY + 5 * DAY
+  elseif streakCount >= 3 then
+    return ALMOST_A_DAY + DAY
+  elseif streakCount >= 2 then
+    return ALMOST_A_DAY
+  elseif streakCount >= 1 then
+    return ONE_HOUR
+  end
+
+  return 0
+end
+
+function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
+
+  local winStreak = self.puzzleResults:puzzleUUIDWinStreak(UUID)
+  if winStreak == 0 then
+    return 0
+  end
+
+  local records = self.puzzleResults:getRecordsForPuzzleUUID(UUID)
+
+  assert(#records > 0)
+  local latestRecord = records[#records]
+  assert(latestRecord.success)
+  assert(latestRecord.timestamp)
+
+  local trainInterval = self:trainIntervalForStreak(winStreak)
+  local nextTrainingDate = latestRecord.timestamp + trainInterval
+  return nextTrainingDate
+end
+
+function PuzzleLibrary:currentTrainingPuzzleSet()
+
+  local results = {}
+  local currentTime = to_UTC(os.time())
+  for _, puzzleSet in ipairs(self.puzzleSets) do
+    for _, puzzle in ipairs(puzzleSet.puzzles) do
+      local trainingDate = self:getNextTrainingDateForPuzzleUUID(puzzle.UUID)
+      if currentTime > trainingDate then
+        results[#results+1] = puzzle
+      end
+    end
+  end
+
+  table.sort(results, function(a,b) return self:getNextTrainingDateForPuzzleUUID(a.UUID) < self:getNextTrainingDateForPuzzleUUID(b.UUID) end)
+
+  local puzzleSet = PuzzleSet("Training Set", results)
+  return puzzleSet
+end
+
 function PuzzleLibrary:getPuzzlesForPuzzleMenu()
   local filteredPuzzleSets = tableUtils.filter(self.puzzleSets, function(puzzleSet) 
-    -- return GAME.scores:puzzleUUIDHasBeenBeaten(puzzleSet.puzzles[#puzzleSet.puzzles].UUID) == false
+    -- might want to filter this for now, but at least make a copy
     return true
   end)
 
-  table.sort(filteredPuzzleSets, function(a,b) return self:puzzleSetGetWinRate(a) < self:puzzleSetGetWinRate(b) end)
+  table.sort(filteredPuzzleSets, function(a,b) return a.setName < b.setName end)
 
   return filteredPuzzleSets
 end
