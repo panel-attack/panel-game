@@ -379,6 +379,8 @@ local function testStatisticalProperties(stack, source)
   local uniqueColorCount = 0
   local N = 1000000
   source:growPanelBuffer(stack)
+  -- skim off the starting board as that has color 0 to taint results
+  source.panelBuffer = source.panelBuffer:sub(37)
   local colorCounts
   for i = 1, N do
     source:growPanelBuffer(stack)
@@ -416,19 +418,19 @@ local function testStatisticalProperties(stack, source)
     for _, colorCount in ipairs(colorCounts) do
       if colorCount > 0 then
         uniqueColorCount = uniqueColorCount + 1
-      end      
+      end
     end
 
     source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
   end
 
-  logger.info(badRowCount .. " bad rows (~" .. math.round(badRowCount/N, 1) .. "%)")
-  logger.info(sadRowCount .. " sad rows (~" .. math.round(sadRowCount/N, 1) .. "%)")
-  logger.info(goodRowCount .. " good rows (~" .. math.round(goodRowCount/N, 1) .. "%)")
-  logger.info(horizontalMatchCount .. " had a horizontal match (~" .. math.round(horizontalMatchCount/N, 1) .. "%; ~" .. math.round(horizontalMatchCount/goodRowCount, 1) .. "% of all good rows)")
-  logger.info(doubleBadCount .. " times two bad rows followed right after each other (~" .. math.round(doubleBadCount/N, 1) .. ")")
-  logger.info(sadBadCount + badSadCount .. " times a bad row followed on a sad row or vice versa (~" .. math.round((badSadCount + sadBadCount)/N, 1) .. "%)")
-  logger.info(doubleSadCount .. " times two sad rows followed right after each other (~" .. math.round(doubleSadCount/N, 1) .. "%)")
+  logger.info(badRowCount .. " bad rows (~" .. (math.round(badRowCount/N, 3) * 100) .. "%)")
+  logger.info(sadRowCount .. " sad rows (~" .. (math.round(sadRowCount/N, 3) * 100) .. "%)")
+  logger.info(goodRowCount .. " good rows (~" .. (math.round(goodRowCount/N, 3) * 100) .. "%)")
+  logger.info(horizontalMatchCount .. " had a horizontal match (~" .. (math.round(horizontalMatchCount/N, 3) * 100) .. "%; ~" .. (math.round(horizontalMatchCount/goodRowCount, 3) * 100) .. "% of all good rows)")
+  logger.info(doubleBadCount .. " times two bad rows followed right after each other (~" .. (math.round(doubleBadCount/N, 4) * 100) .. "%)")
+  logger.info(sadBadCount + badSadCount .. " times a bad row followed on a sad row or vice versa (~" .. (math.round((badSadCount + sadBadCount)/N, 3) * 100) .. "%)")
+  logger.info(doubleSadCount .. " times two sad rows followed right after each other (~" .. (math.round(doubleSadCount/N, 3) * 100) .. "%)")
   logger.info(math.round(uniqueColorCount / N, 2) .. " unique colors per row on average")
 end
 
