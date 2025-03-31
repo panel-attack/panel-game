@@ -1109,6 +1109,7 @@ function Stack:simulate()
   if self.behaviours.allowManualRaise then
     if self.manual_raise then
       if not self.rise_lock then
+        self.stop_time = 0
         if self.panels_in_top_row then
           if self:checkGameOver() then
             self:setGameOver()
@@ -1125,7 +1126,6 @@ function Stack:simulate()
             self.prevent_manual_raise = true
           end
           self.manual_raise_yet = true --ehhhh
-          self.stop_time = 0
         end
       elseif not self.manual_raise_yet then
         self.manual_raise = false
