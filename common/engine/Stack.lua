@@ -66,7 +66,6 @@ local PANELS_TO_NEXT_SPEED =
 
 ---@class PanelSource : canRollback
 ---@field generateStartingBoard fun(self: PanelSource, stack: Stack): string
----@field generatePanels fun(self: PanelSource, stack: Stack): string
 ---@field generateGarbagePanels fun(self: PanelSource, stack:Stack): string
 ---@field getStartingBoardHeight fun(self: PanelSource, stack: Stack): integer how many rows are to be generated at the start
 ---@field createNewRow fun(self: PanelSource, stack: Stack, row: integer) creates a new set of panels for the stack with the specified row index and writes it to the stack's panels array

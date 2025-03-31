@@ -51,9 +51,8 @@ end
 ---@param rowWidth integer
 ---@param ncolors integer
 ---@param previousRow string
----@param assignMetalLocations boolean
 ---@return string newPanels
-function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMetalLocations)
+function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow)
   -- logger.info("generating panels with seed: " .. PanelGenerator.rng:getSeed() ..
   --              "\nbuffer: " .. previousPanels ..
   --              "\ncolors: " .. ncolors)
@@ -109,10 +108,6 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
     end
     newPanels = newPanels .. tostring(color)
   end
-
-  if assignMetalLocations then
-    newPanels = self:assignMetalLocations(newPanels, previousRow)
-  end
   -- logger.debug(result)
   -- only return the new panels
   return newPanels
@@ -123,7 +118,9 @@ end
 ---@return string rowString
 function PanelGenerator:assignMetalLocations(rowString, previousRowString)
   local rowWidth = rowString:len()
-  previousRowString = previousRowString or string.rep("0", rowWidth)
+  if not previousRowString or previousRowString == "" then
+    previousRowString = string.rep("0", rowWidth)
+  end
 
   local newString = ""
 

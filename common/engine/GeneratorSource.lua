@@ -42,18 +42,14 @@ end
 ---@param stack Stack
 ---@return string startingBoard
 function GeneratorSource:generateStartingBoard(stack)
-  local startingBoard = ""
-  local lastRow
-
   for i = 1, self:getStartingBoardHeight(stack) do
-    local newRow = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, self.shockEnabled)
-    startingBoard = startingBoard .. newRow
-    lastRow = newRow
+    self:growPanelBuffer(stack)
   end
 
   -- legacy crutch, the arcane magic for the non-uniform starting board assumes this is there and it really doesn't work without it
   --  even though the chunk is removed at the end of the function
-  startingBoard = string.rep("0", stack.width) .. startingBoard
+  local startingBoard = string.rep("0", stack.width) .. self.panelBuffer
+  self.panelBuffer = ""
   -- arcane magic to get a non-uniform starting board
   local startingBoardArray = procat(startingBoard)
   local maxStartingHeight = 7
@@ -77,21 +73,12 @@ end
 
 ---@param stack Stack
 ---@return string newPanels
-function GeneratorSource:generatePanels(stack)
-  local lastRow = self.panelBuffer:sub(-stack.width)
-  local newPanels = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, self.shockEnabled)
-
-  return newPanels
-end
-
----@param stack Stack
----@return string newPanels
 function GeneratorSource:generateGarbagePanels(stack)
   local lastRow = self.garbagePanelBuffer:sub(-stack.width)
   local newPanels = ""
 
   for i = 1, 20 do
-    local newRow = self.garbagePanelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow, false)
+    local newRow = self.garbagePanelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow)
     newPanels = newPanels .. newRow
     lastRow = newRow
   end
@@ -129,9 +116,44 @@ local function convertMetalPanels(rowString, metalPanelCount)
   return colors
 end
 
+local counts = {0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+---@param rowString string
+---@return boolean
+local function isBadRow(rowString)
+  for i = 1, #counts do
+    counts[i] = 0
+  end
+
+  for i = 1, rowString:len() do
+    local color = tonumber(rowString:sub(i, i))
+    ---@cast color -nil
+    counts[color] = counts[color] + 1
+  end
+
+  for color, count in ipairs(counts) do
+    if count ~= 0 and count ~= 2 then
+      return false
+    end
+  end
+
+  return true
+end
+
 ---@param stack Stack
 function GeneratorSource:growPanelBuffer(stack)
-  self.panelBuffer = self.panelBuffer .. self:generatePanels(stack)
+  local lastRow = self.panelBuffer:sub(-stack.width)
+  local newPanels
+
+  while newPanels == nil or isBadRow(newPanels) do
+    newPanels = self.panelGenerator:generatePanels(stack.width, stack.levelData.colors, lastRow)
+  end
+
+  if self.shockEnabled then
+    newPanels = self.panelGenerator:assignMetalLocations(newPanels, lastRow)
+  end
+
+  self.panelBuffer = self.panelBuffer .. newPanels
 end
 
 ---@param stack Stack
