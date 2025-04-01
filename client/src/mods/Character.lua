@@ -238,7 +238,9 @@ function Character:enable(enable)
     visibleCharacters[#visibleCharacters+1] = self.id
   elseif not enable and characters[self.id] then
     local i = tableUtils.indexOf(visibleCharacters, self.id)
-    table.remove(visibleCharacters, i)
+    if i then
+      table.remove(visibleCharacters, i)
+    end
     characters[self.id] = nil
   end
 

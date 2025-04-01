@@ -151,7 +151,9 @@ function Stage:enable(enable)
     visibleStages[#visibleStages+1] = self.id
   elseif not enable and stages[self.id] then
     local i = tableUtils.indexOf(visibleStages, self.id)
-    table.remove(visibleStages, i)
+    if i then
+      table.remove(visibleStages, i)
+    end
     stages[self.id] = nil
   end
 
