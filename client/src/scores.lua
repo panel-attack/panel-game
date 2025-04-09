@@ -5,9 +5,16 @@ local class = require("common.lib.class")
 
 -- 1 had only vs scores in an incompatible format
 -- 2 has vs self, time attack, endless
-local currentVersion = 2
+-- 3 has vs self, time attack, endless, puzzles
+local currentVersion = 3
 
 -- Holds on the current scores and records for game modes
+---@class Scores
+---@field version string
+---@field vsSelf table
+---@field timeAttack1P table
+---@field endless table
+---@field puzzleRecords table
 Scores =
   class(
   function(self)
@@ -151,8 +158,7 @@ function Scores.createFromScoreFile()
         end
 
         -- Ignore the scores save file if its the old format
-        if scores.version == 1 then
-        elseif scores.version == currentVersion then
+        if scores.version == currentVersion then
           if read_data.vsSelf then scores.vsSelf = read_data.vsSelf end
           if read_data.timeAttack1P then scores.timeAttack1P = read_data.timeAttack1P end
           if read_data.endless then scores.endless = read_data.endless end
@@ -162,7 +168,7 @@ function Scores.createFromScoreFile()
     end
   )
 
-  if scores.version == 1 then
+  if scores.version < currentVersion then
     scores.version = currentVersion
     scores:saveToFile()
   end

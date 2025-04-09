@@ -1,6 +1,5 @@
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
-local sha256 = require("common.lib.sha256")
 local GameModes = require("common.data.GameModes")
 local PuzzleSource = require("common.engine.PuzzleSource")
 local MatchRules = require("common.data.MatchRules")
@@ -24,7 +23,8 @@ Puzzle = class(
     self.randomizeColors = false
     self.stopTime = stopTime
     self.shakeTime = shakeTime
-    self.UUID = sha256.hexFromBin(self.stack .. self.puzzleType .. tostring(self.doCountdown) .. tostring(self.moves) .. tostring(self.stop_time) .. tostring(self.shake_time))
+    local hashString = self.stack .. self.puzzleType .. tostring(self.doCountdown) .. tostring(self.moves) .. tostring(self.stop_time) .. tostring(self.shake_time)
+    self.UUID = love.data.encode("string", "hex", love.data.hash("sha256", hashString))
   end
 )
 

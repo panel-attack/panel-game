@@ -21,24 +21,20 @@ local PuzzleLibrary =
 
 -- Loads all puzzles from the given directory
 function PuzzleLibrary:loadPuzzlesFromDirectory(path)
-  pcall(
-    function()
-      local puzzleFiles = FileUtils.getFilteredDirectoryItems(path) or {}
-      local count = 0
-      logger.debug("loading custom puzzles...")
-      for _, filename in pairs(puzzleFiles) do
-        logger.trace(filename)
-        if love.filesystem.getInfo(path .. "/" .. filename) and filename ~= "README.txt" then
-          local puzzleSets = PuzzleSet.loadFromFile(path .. "/" .. filename)
-          for _, puzzleSet in ipairs(puzzleSets) do
-            self.puzzleSets[#self.puzzleSets+1] = puzzleSet
-            count = count + 1
-          end
-        end
+  local puzzleFiles = FileUtils.getFilteredDirectoryItems(path) or {}
+  local count = 0
+  logger.debug("loading custom puzzles...")
+  for _, filename in pairs(puzzleFiles) do
+    logger.trace(filename)
+    if love.filesystem.getInfo(path .. "/" .. filename) and filename ~= "README.txt" then
+      local puzzleSets = PuzzleSet.loadFromFile(path .. "/" .. filename)
+      for _, puzzleSet in ipairs(puzzleSets) do
+        self.puzzleSets[#self.puzzleSets+1] = puzzleSet
+        count = count + 1
       end
-      logger.debug("loaded " .. count .. " puzzle sets")
     end
-  )
+  end
+  logger.debug("loaded " .. count .. " puzzle sets")
 end
 
 
@@ -108,22 +104,50 @@ function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
   return nextTrainingDate
 end
 
+local invalidSetsForTraining = {"Classic set 1",
+    "Classic set 2",
+    "Classic set 3",
+    "Classic set 4",
+    "Classic set 5",
+    "Classic set 6",
+    "Bagagle Mode",
+    "Go Hard",
+    "Ridiculous Mode"}
+function PuzzleLibrary.puzzleSetAllowedForTraining(puzzleSet)
+  if tableUtils.contains(invalidSetsForTraining, puzzleSet.setName) then
+    return false
+  end
+
+  return true
+end
+
 function PuzzleLibrary:currentTrainingPuzzleSet()
 
   local results = {}
   local currentTime = to_UTC(os.time())
   for _, puzzleSet in ipairs(self.puzzleSets) do
-    for _, puzzle in ipairs(puzzleSet.puzzles) do
-      local trainingDate = self:getNextTrainingDateForPuzzleUUID(puzzle.UUID)
-      if currentTime > trainingDate then
-        results[#results+1] = puzzle
+    if PuzzleLibrary.puzzleSetAllowedForTraining(puzzleSet) then
+      for _, puzzle in ipairs(puzzleSet.puzzles) do
+        local trainingDate = self:getNextTrainingDateForPuzzleUUID(puzzle.UUID)
+        if currentTime > trainingDate then
+          results[#results+1] = puzzle
+        end
       end
     end
   end
 
-  table.sort(results, function(a,b) return self:getNextTrainingDateForPuzzleUUID(a.UUID) < self:getNextTrainingDateForPuzzleUUID(b.UUID) end)
+  local sortFunction = function(a,b) 
+      local aTrainDate = self:getNextTrainingDateForPuzzleUUID(a.UUID)
+      local bTrainDate = self:getNextTrainingDateForPuzzleUUID(b.UUID)
+      if aTrainDate == bTrainDate then
+        return a.UUID < b.UUID
+      end
+      return aTrainDate < bTrainDate
+    end
 
-  local puzzleSet = PuzzleSet("Training Set", results)
+  table.sort(results, sortFunction)
+
+  local puzzleSet = PuzzleSet("Training " .. #results, results)
   return puzzleSet
 end
 
