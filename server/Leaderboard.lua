@@ -308,7 +308,7 @@ function Leaderboard:addPlacementResult(player, opponent, result)
 
   local leaderboardPlayer = self.players[player.userId]
   --adjust newcomer's placement_rating
-  leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or self.consts.DEFAULT_RATING, self.players[player.opponent.userId].rating, result, self:getK(player))
+  leaderboardPlayer.placement_rating = self:calculate_rating_adjustment(leaderboardPlayer.placement_rating or self.consts.DEFAULT_RATING, self.players[opponent.userId].rating, result, self:getK(player))
   logger.debug("New newcomer rating: " .. leaderboardPlayer.placement_rating)
 end
 
