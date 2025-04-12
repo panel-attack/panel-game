@@ -27,7 +27,6 @@ local logger = require("common.lib.logger")
 ---@field save_replays_publicly ("not at all" | "anonymously" | "with my name")
 ---@field name string
 ---@field player_number integer?
----@field opponent ServerPlayer to be removed
 ---@field state PlayerState
 ---@overload fun(privatePlayerID: privateUserId, connection: Connection, name: string, publicId: integer): ServerPlayer
 local Player = class(
@@ -149,7 +148,6 @@ function Player:removeFromRoom(room, reason)
     logger.info("Clearing room " .. room.roomNumber .. " for player " .. self.name)
     -- if there is no socket the room got closed because the player hard DCd so shouldn't update state in that case
     if self.connection.socket then
-      self.opponent = nil
       self.state = "lobby"
       self.player_number = nil
       self:sendJson(ServerProtocol.leaveRoom(room.roomNumber, reason))
