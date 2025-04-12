@@ -17,11 +17,15 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@class ChallengeModePlayerStack
 ---@overload fun(args: table): ChallengeModePlayerStack
 local ChallengeModePlayerStack = class(
+---@param self ChallengeModePlayerStack
+---@param args table
 function(self, args)
-  self.engine = SimulatedStack(args)
+  self.player = args.player
+  assert(self.engine.TYPE == "SimulatedStack")
   self.engine.outgoingGarbage:connectSignal("garbagePushed", self, self.onGarbagePushed)
   self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
+  self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("finishedRun", self, self.onRun)
 
   -- queue limit is set for automated attack settings e.g. combo storm that send garbage every frame
@@ -38,6 +42,10 @@ function(self, args)
   self.difficultyQuads = {}
 end,
 ClientStack)
+
+function ChallengeModePlayerStack:onGameOver()
+  SoundController:playSfx(themes[config.theme].sounds.game_over)
+end
 
 function ChallengeModePlayerStack:onGarbagePushed(garbage)
   -- TODO: Handle combos SFX greather than 7

@@ -1,7 +1,7 @@
 local logger = require("common.lib.logger")
 local Player = require("client.src.Player")
 local tableUtils = require("common.lib.tableUtils")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
@@ -13,6 +13,7 @@ local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTran
 local Easings = require("client.src.Easings")
 local consts = require("common.engine.consts")
 local system = require("client.src.system")
+local GeneratorSource = require("common.engine.GeneratorSource")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
 ---@class BattleRoom : Signal
@@ -26,6 +27,7 @@ local system = require("client.src.system")
 ---@field matchesPlayed integer
 ---@field online boolean
 ---@field gameScene table
+---@field match ClientMatch
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
 BattleRoom = class(
 function(self, mode, gameScene)
@@ -53,57 +55,29 @@ end)
 ---@enum BattleRoomState
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
-
-function BattleRoom.createFromMatch(match)
-  local gameMode = {}
-  gameMode.playerCount = #match.players
-  gameMode.doCountdown = match.doCountdown
-  gameMode.stackInteraction = match.stackInteraction
-  gameMode.winConditions = deepcpy(match.winConditions)
-  gameMode.gameOverConditions = deepcpy(match.gameOverConditions)
-  gameMode.timeLimit = match.timeLimit
-
-  local battleRoom = BattleRoom(gameMode, GameBase)
-
-  for i = 1, #match.players do
-    battleRoom:addPlayer(match.players[i])
-  end
-
-  battleRoom.match = match
-  battleRoom.match:start()
-  battleRoom.state = BattleRoom.states.MatchInProgress
-
-  return battleRoom
-end
-
 function BattleRoom.createFromServerMessage(message)
-  local battleRoom
-  local gameMode = message.gameMode
+  local battleRoom = BattleRoom(message.gameMode)
 
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
     if message.replay then
       local replay = message.replay
-      -- if the server message lacks ENGINE_VERSION, the standard replay sanitization may conservatively guess v046
-      -- but since we're online and successfully connected we KNOW it has to be our engine version
-      replay.engineVersion = consts.ENGINE_VERSION
-      local match = ClientMatch.createFromReplay(replay, false)
-      for i, player in ipairs(match.players) do
-        player:updateSettings(message.players[i].settings)
+      local match = ClientMatch.createFromReplay(replay)
+      for i = 1, #match.players do
+        battleRoom:addPlayer(match.players[i])
       end
-      -- need this to make sure both have the same player tables
-      -- there's like one stupid reference to battleRoom in engine that breaks otherwise
-      battleRoom = BattleRoom.createFromMatch(match)
-      battleRoom.mode.gameScene = gameMode.gameScene
-      battleRoom.mode.richPresenceLabel = gameMode.richPresenceLabel
+
+      battleRoom.match = match
+      battleRoom.match:start()
+      battleRoom.state = BattleRoom.states.MatchInProgress
     else
-      battleRoom = BattleRoom(gameMode)
       for i = 1, #message.players do
         local player = Player(message.players[i].name, message.players[i].publicId or -i, false)
         battleRoom:addPlayer(player)
         player:updateSettings(message.players[i].settings)
       end
     end
+
     for i = 1, #battleRoom.players do
       if message.players[i].ratingInfo then
         local ratingInfo = message.players[i].ratingInfo
@@ -116,7 +90,7 @@ function BattleRoom.createFromServerMessage(message)
     end
     battleRoom.spectating = true
   else
-    battleRoom = BattleRoom(gameMode)
+    local gameMode = message.gameMode
     for i, player in ipairs(message.players) do
       local p
 
@@ -256,20 +230,21 @@ function BattleRoom:winningPlayer()
   end
 end
 
--- creates a match with the players in the BattleRoom
-function BattleRoom:createMatch()
-  local supportsPause = not self.online or (#self.players == 1 and self.players[1].isLocal)
-  local optionalArgs = { timeLimit = self.mode.timeLimit , ranked = self.ranked}
+---@return PanelSource
+function BattleRoom:createPanelSource()
+  local player = self.players[1]
+  if player.settings.puzzleSet and player.settings.puzzleIndex and player.settings.puzzleSet.puzzles[player.settings.puzzleIndex] then
+    local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
+    return puzzle:toPanelSource(config.puzzle_randomColors, config.puzzle_randomFlipped)
+  else
+    return GeneratorSource(math.random(1, 999999), self.mode.stackInteraction ~= GameModes.StackInteractions.NONE)
+  end
+end
 
-  self.match = ClientMatch(
-    self.players,
-    self.mode.doCountdown,
-    self.mode.stackInteraction,
-    shallowcpy(self.mode.winConditions),
-    shallowcpy(self.mode.gameOverConditions),
-    supportsPause,
-    optionalArgs
-  )
+-- creates a match with the players in the BattleRoom
+---@return ClientMatch
+function BattleRoom:createMatch()
+  self.match = ClientMatch.createFromBattleRoom(self)
 
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
 
@@ -278,6 +253,14 @@ function BattleRoom:createMatch()
   end
 
   return self.match
+end
+
+---@param gameMode GameMode
+function BattleRoom:setGameMode(gameMode)
+  self.mode = gameMode
+  if gameMode.gameScene then
+    self.gameScene = require("client.src.scenes." .. gameMode.gameScene)
+  end
 end
 
 -- adds an existing Player to the BattleRoom
@@ -358,12 +341,20 @@ function BattleRoom:updateRankedStatus(rankedStatus, comments)
 end
 
 -- creates a match based on the room and player settings, starts it up and switches to the Game scene
-function BattleRoom:startMatch(stageId, seed, replayOfMatch)
-  local match = self:createMatch()
+---@param replay ReplayV3?
+function BattleRoom:startMatch(replay)
+  local match
+  if replay then
+    match = ClientMatch.createFromReplay(replay, self.players)
+  else
+    match = ClientMatch.createFromBattleRoom(self)
+  end
 
-  match.replay = replayOfMatch
-  match:setStage(stageId)
-  match:setSeed(seed)
+  match:connectSignal("matchEnded", self, self.onMatchEnded)
+
+  for _, player in ipairs(self.players) do
+    match:connectSignal("matchEnded", player, player.onMatchEnded)
+  end
 
   if (#match.players > 1 or match.stackInteraction == GameModes.StackInteractions.VERSUS) then
     GAME.rich_presence:setPresence((match:hasLocalPlayer() and "Playing" or "Spectating") .. " a " .. (self.mode.richPresenceLabel or self.mode.gameScene) ..
@@ -372,14 +363,11 @@ function BattleRoom:startMatch(stageId, seed, replayOfMatch)
     GAME.rich_presence:setPresence("Playing " .. self.mode.richPresenceLabel .. " mode", nil, true)
   end
 
-  if self.ranked and not match.room_ratings then
-    match.room_ratings = {}
-  end
-
   match:start()
+  self.match = match
   self.state = BattleRoom.states.MatchInProgress
   local transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
-  local scene = self:createScene(self.match)
+  local scene = self:createScene(match)
   scene:load()
   GAME.navigationStack:push(scene, transition)
 end

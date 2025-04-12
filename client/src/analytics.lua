@@ -34,7 +34,7 @@ local function create_blank_data()
 end
 
 -- The class representing one set of analytics data
----@class AnalyticsInstance
+---@class AnalyticsInstance : canRollback
 ---@field save_to_overall boolean if the data collected by this instance should be added to all time stats
 ---@field data AnalyticsData
 ---@field lastGPM string formatted GPM for display
@@ -63,7 +63,7 @@ function AnalyticsInstance:saveForRollback(frame)
     copy = create_blank_data()
   end
 
-  -- TODO: Implement a less memory intensive rollback mechanism
+  -- todo: Implement a less memory intensive rollback mechanism
   -- see https://github.com/panel-attack/panel-game/issues/493
 
   copy.destroyed_panels = self.data.destroyed_panels

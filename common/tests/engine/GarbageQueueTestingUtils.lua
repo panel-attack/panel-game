@@ -3,9 +3,10 @@ local Match = require("common.engine.Match")
 local Stack = require("common.engine.Stack")
 local SimulatedStack = require("common.engine.SimulatedStack")
 require("common.engine.checkMatches")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local LevelPresets = require("common.data.LevelPresets")
 local StackBehaviours = require("common.data.StackBehaviours")
+local GeneratorSource = require("common.engine.GeneratorSource")
 
 local GarbageQueueTestingUtils = {}
 
@@ -17,38 +18,31 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   else
     mode = GameModes.getPreset("ONE_PLAYER_VS_SELF")
   end
+
   local levelData = LevelPresets.getModern(1)
-  levelData.maxHealth = stackHealth or 100000
+  levelData.maxHealth = stackHealth or math.huge
 
-  local args = {
-    which = 1,
-    stackInteraction = mode.stackInteraction,
-    gameOverConditions = mode.gameOverConditions,
-    is_local = false,
-    behaviours = StackBehaviours.getDefault(),
-    levelData = levelData,
-  }
+  local match = Match(GeneratorSource(math.random(1, 999999), true), mode.matchRules)
+  local behaviours = StackBehaviours.getDefault()
+  -- the stack shouldn't die
+  behaviours.passiveRaise = false
+  local stack1 = match:createStackWithSettings(levelData, false, "controller")
 
-  stacks[1] = Stack(args)
+  stack1.behaviours.passiveRaise = false
+  -- the stack should run only 1 frame per Match:run
+  stack1:setMaxRunsPerFrame(1)
+  -- the stack won't run without inputs so just feed it idle inputs
+  stack1:receiveConfirmedInput(string.rep("A", 10000))
 
   if attackFile then
-    args = {
-      attackSettings = save.readAttackFile(attackFile),
-      which = 2,
-      is_local = false,
-    }
-    stacks[2] = SimulatedStack(args)
-    stacks[2]:setMaxRunsPerFrame(1)
+    local stack2 = match:createSimulatedStackWithSettings(save.readAttackFile(attackFile))
+    stack2:setMaxRunsPerFrame(1)
+    match:addTarget(stack2, stack1)
+  else
+    match:addTarget(stack1, stack1)
   end
 
-  local match = Match(stacks, mode.doCountdown, mode.stackInteraction, mode.winConditions, mode.gameOverConditions)
   match:start()
-  -- the stack shouldn't die
-  stacks[1].behaviours.passiveRaise = false
-  -- the stack should run only 1 frame per Match:run
-  stacks[1]:setMaxRunsPerFrame(1)
-  -- the stack won't run without inputs so just feed it idle inputs
-  stacks[1]:receiveConfirmedInput(string.rep("A", 10000))
 
   -- make some space for garbage to fall
   GarbageQueueTestingUtils.reduceRowsTo(match.stacks[1], 0)

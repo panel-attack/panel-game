@@ -1,6 +1,5 @@
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
-local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
 local LevelData = require("common.data.LevelData")
 local prof = require("common.lib.zoneProfiler")
@@ -746,7 +745,7 @@ function Stack:convertGarbagePanels(isChain)
       if panel.y_offset == -1 and panel.color == 9 then
         -- the bottom row of the garbage piece is about to transform into panels
         if garbagePanelRow == nil then
-          garbagePanelRow = self:getGarbagePanelRow()
+          garbagePanelRow = self.panelSource:getGarbagePanelRowString(self)
         end
         panel.color = string.sub(garbagePanelRow, column, column) + 0
         if isChain then
@@ -755,37 +754,6 @@ function Stack:convertGarbagePanels(isChain)
       end
     end
   end
-end
-
-function Stack:refillGarbagePanelBuffer()
-  PanelGenerator:setSeed(self.seed + self.garbageGenCount)
-  -- privateGeneratePanels already appends to the existing self.gpanel_buffer
-  local garbagePanels = PanelGenerator.privateGeneratePanels(20, self.width, self.levelData.colors, self.gpanel_buffer, not self.behaviours.allowAdjacentColors)
-  -- and then we append that result to the remaining buffer
-  self.gpanel_buffer = self.gpanel_buffer .. garbagePanels
-  -- that means the next 10 rows of garbage will use the same colors as the 10 rows after
-  -- that's a bug but it cannot be fixed without breaking replays
-  -- it is also hard to abuse as 
-  -- a) players would need to accurately track the 10 row cycles
-  -- b) "solve into the same thing" only applies to a limited degree:
-  --   a garbage panel row of 123456 solves into 1234 for ====00 but into 3456 for 00====
-  --   that means information may be incomplete and partial memorization may prove unreliable
-  -- c) garbage panels change every (10 + n * 20 rows) with n>0 in ℕ 
-  --    so the player needs to always survive 20 rows to start abusing
-  --    and can then only abuse for every 10 rows out of 20
-  -- overall it is to be expected that the strain of trying to memorize outweighs the gains
-  -- this bug should be fixed with the next breaking change to the engine
-
-  self.garbageGenCount = self.garbageGenCount + 1
-end
-
-function Stack:getGarbagePanelRow()
-  if string.len(self.gpanel_buffer) <= 10 * self.width then
-    self:refillGarbagePanelBuffer()
-  end
-  local garbagePanelRow = string.sub(self.gpanel_buffer, 1, 6)
-  self.gpanel_buffer = string.sub(self.gpanel_buffer, 7)
-  return garbagePanelRow
 end
 
 function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)

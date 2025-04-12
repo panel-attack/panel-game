@@ -157,14 +157,14 @@ end
 
 -- Represents an individual panel in a stack
 ---@class Panel
----@overload fun(id: integer, row: integer, column: integer, frameTimes: table<string, integer>): Panel
+---@overload fun(row: integer, column: integer, id: integer, frameTimes: table<string, integer>): Panel
 Panel = class(
 ---@param p Panel
-function(p, id, row, column, frameTimes)
+function(p, row, column, id, frameTimes)
   clear(p, true, true)
-  p.id = id
   p.row = row
   p.column = column
+  p.id = id
   p.frameTimes = frameTimes
 end
 )

@@ -2,7 +2,7 @@
 -- all  replays that do not finish correctly with the current engine are copied into a separate directory
 
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.data.Replay")
+local ReplayV3 = require("common.data.ReplayV3")
 local Match = require("common.engine.Match")
 local tableUtils = require("common.lib.tableUtils")
 
@@ -26,7 +26,7 @@ function verifier.bulkVerifyReplays(replayPath, outputPath)
       if verifier.versionOverride then
         replayTable.engineVersion = verifier.versionOverride
       end
-      local replay = Replay.createFromTable(replayTable, true)
+      local replay = ReplayV3.createFromTable(replayTable, true)
       if not replay then
         -- not sure, probably error or use a separate dir in the output path?
       else

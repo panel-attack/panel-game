@@ -116,7 +116,7 @@ function(self, allowIllegalStuff, treatMetalAsCombo)
   self:createSignal("chainEnded")
 end)
 
-function GarbageQueue:rollbackCopy(frame)
+function GarbageQueue:saveForRollback(frame)
   local copy = self.rollbackBuffer:getOldest()
   if copy then
     table.clear(copy.stagedGarbage)

@@ -21,8 +21,8 @@ local function getTimer(match)
     frames = stack.engine.game_stopwatch
   end
 
-  if match.timeLimit then
-    frames = (match.timeLimit * 60) - frames
+  if match.engine.timeLimit then
+    frames = (match.engine.timeLimit * 60) - frames
     if frames < 0 then
       frames = 0
     end
@@ -80,12 +80,6 @@ end
 function PortraitGame:drawMultibar(stack)
   local stop_time = stack.engine.stop_time
   local shake_time = stack.engine.shake_time
-
-  -- before the first move, display the stop time from the puzzle, not the stack
-  if stack.engine.puzzle and stack.engine.puzzle.puzzleType == "clear" and stack.engine.puzzle.moves == stack.engine.puzzle.remaining_moves then
-    stop_time = stack.engine.puzzle.stop_time
-    shake_time = stack.engine.puzzle.shake_time
-  end
 
   framePos = framePos or themes[config.theme].healthbar_frame_Pos
   barPos = barPos or themes[config.theme].multibar_Pos

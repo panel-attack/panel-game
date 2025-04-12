@@ -2,8 +2,7 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local ServerProtocol = require("common.network.ServerProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
-local GameModes = require("common.engine.GameModes")
--- heresy, remove once communication of levelData is established
+---@module "common.data.GameModes"
 local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
 local Signal = require("common.lib.signal")

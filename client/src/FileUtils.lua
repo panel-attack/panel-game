@@ -1,5 +1,4 @@
 local logger = require("common.lib.logger")
-local Replay = require("common.data.Replay")
 local tableUtils = require("common.lib.tableUtils")
 local system = require("client.src.system")
 
@@ -239,14 +238,12 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   love.filesystem.write(filePath .. "." .. format, data)
 end
 
----@param replay Replay
+---@param replay ReplayV3
 function fileUtils.saveReplay(replay)
   local path = replay:generatePath("/")
   local filename = replay:generateFileName()
-  -- TODO: This is for legacy support of the replay browser only;
-  -- as Replay is a common.data object, client should not use it to write client specific fields
-  Replay.lastPath = path
-  fileUtils.writeJson(path, filename .. ".json", replay)
+  GAME.lastReplayPath = path
+  fileUtils.writeJson(path, filename .. ".json", replay, replay.keyOrder)
 end
 
 ---@param files string[]
@@ -318,6 +315,8 @@ function fileUtils.write(path, filename, data)
   end
 end
 
+-- encodes the table into json and writes it to the filename at the given path
+-- throws an error on failure so it should be assumed the write always succeeds
 ---@param path string
 ---@param filename string
 ---@param tab table

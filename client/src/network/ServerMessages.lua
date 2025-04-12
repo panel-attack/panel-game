@@ -1,5 +1,5 @@
-local Replay = require("common.data.Replay")
-local GameModes = require("common.engine.GameModes")
+local ReplayV3 = require("common.data.ReplayV3")
+local GameModes = require("common.data.GameModes")
 -- this file forms an abstraction layer to translate the messages sent by the server to a format understood by the client
 -- the client should expect the formats specified in common/network/ServerProtocol which may extend to other standardised interop formats in common/data
 -- e.g. Replay or LevelData
@@ -90,21 +90,10 @@ function ServerMessages.sanitizeRoomMessage(message)
     end
     return { gameResult = message.content }
   elseif message.type == "matchStart" then
-    ---@type Replay
-    local replay = Replay.createFromTable(message.content, false)
-    local settings = {}
-    for i, player in ipairs(replay.players) do
-      settings[i] = shallowcpy(player.settings)
-      settings[i].publicId = player.publicId
-      settings[i].playerNumber = i
-    end
+    local replay = ReplayV3.createFromTable(message.content, false)
 
     return
     {
-      playerSettings = settings,
-      seed = replay.seed,
-      ranked = replay.ranked,
-      stageId = replay.stageId,
       replay = replay,
       match_start = true,
     }
@@ -161,7 +150,7 @@ function ServerMessages.sanitizeServerMessage(message)
     end
 
     if message.content.replay then
-      message.content.replay = Replay.createFromTable(message.content.replay, false)
+      message.content.replay = ReplayV3.createFromTable(message.content.replay, false)
     end
 
     return

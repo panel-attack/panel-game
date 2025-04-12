@@ -1,4 +1,5 @@
 local class = require("common.lib.class")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
 
 local dummyConfig = { ['DummyConfig'] = { Log = 4 } }
 
@@ -8,7 +9,7 @@ DummyCpu = class(function(self, stack)
 end)
 
 function DummyCpu.getInput(self)
-  return base64encode[21]
+  return KeyDataEncoding.base64encode[21]
 end
 
 function DummyCpu.setConfig(self, config)

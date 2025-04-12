@@ -1,15 +1,15 @@
 local consts = require("common.engine.consts")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
-local GameModes = require("common.engine.GameModes")
 local Puzzle = require("common.engine.Puzzle")
 local LevelPresets = require("common.data.LevelPresets")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
 
 local function puzzleTest()
   -- to stop rising
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
-  local puzzle = Puzzle(nil, nil, 1, "011010")
+  local puzzle = Puzzle("moves", false, 1, "011010")
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
-  stack:setPuzzleState(puzzle)
+  ---@cast stack Stack
 
   assert(stack.panels[1][1].color == 0, "wrong color")
   assert(stack.panels[1][2].color == 1, "wrong color")
@@ -26,10 +26,10 @@ end
 puzzleTest()
 
 local function clearPuzzleTest()
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"))
   local puzzle = Puzzle("clear", false, 0, "[============================][====]246260[====]600016514213466313451511124242", 60, 0)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
-  stack:setPuzzleState(puzzle)
+  ---@cast stack Stack
 
   assert(stack.panels[1][1].color == 1, "wrong color")
   assert(stack.panels[1][2].color == 2, "wrong color")
@@ -48,6 +48,7 @@ clearPuzzleTest()
 local function basicSwapTest()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
   local stack = match.stacks[1]
+---@cast stack Stack
 
   stack.do_countdown = false
 
@@ -69,6 +70,7 @@ local function moveAfterCountdownV46Test()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
   match:setEngineVersion(consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE)
   local stack = match.stacks[1]
+  ---@cast stack Stack
   stack.do_countdown = true
   assert(characters ~= nil, "no characters")
   local lastBlockedCursorMovementFrame = 33
@@ -86,9 +88,9 @@ moveAfterCountdownV46Test()
 
 local function testShakeFrames()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
-  match.seed = 1 -- so we consistently have a panel to swap
   match.engineVersion = consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE
   local stack = match.stacks[1]
+  ---@cast stack Stack
 
   -- imaginary garbage should crash
   assert(pcall(stack.shakeFrameForGarbageSize, 6, 0) == false)
@@ -131,16 +133,16 @@ testShakeFrames()
 
 
 local function swapStalling1Test1()
-  local match = StackReplayTestingUtils.createSinglePlayerMatch(GameModes.getPreset("ONE_PLAYER_PUZZLE"), "controller", LevelPresets.getModern(10))
   local puzzle = Puzzle("clear", false, 0, "[======================][====]246260[====]600016514213461336451511124242", 0, 0)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
+  ---@cast stack Stack
   stack.behaviours.swapStallingMode = 1
-  stack:setPuzzleState(puzzle)
 
-  local left = base64encode[3]
-  local down = base64encode[5]
-  local right = base64encode[2]
-  local swap = base64encode[17]
+  local left = KeyDataEncoding.left
+  local down = KeyDataEncoding.down
+  local right = KeyDataEncoding.right
+  local swap = KeyDataEncoding.swap
 
   local sequence1 = table.concat({
     -- +4 combo with the reds (color 1) in column 3

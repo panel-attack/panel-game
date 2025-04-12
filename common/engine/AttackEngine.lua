@@ -20,7 +20,7 @@ AttackPattern =
 )
 
 -- An attack engine sends attacks based on a set of rules.
----@class AttackEngine
+---@class AttackEngine : canRollback
 ---@field delayBeforeStart integer How many frame the AttackEngine waits before running. \n
 --- Note if this is changed after attack patterns are added their times won't be updated.
 ---@field delayBeforeRepeat integer How many frames the AttackEngine waits after a full run before starting over
@@ -31,8 +31,7 @@ AttackPattern =
 ---@field attackSettings table The format for serializing AttackPattern information
 ---@field clock integer  The clock to control the continuity of the sending process
 ---@field outgoingGarbage GarbageQueue The garbage queue attacks are added to
-local AttackEngine =
-  class(
+local AttackEngine = class(
   function(self, attackSettings, garbageQueue)
     self.delayBeforeStart = attackSettings.delayBeforeStart or 0
     self.delayBeforeRepeat = attackSettings.delayBeforeRepeat or 0
@@ -151,8 +150,8 @@ function AttackEngine.run(self)
   self.clock = self.clock + 1
 end
 
-function AttackEngine:rollbackCopy(frame)
-  self.outgoingGarbage:rollbackCopy(frame)
+function AttackEngine:saveForRollback(frame)
+  self.outgoingGarbage:saveForRollback(frame)
 end
 
 function AttackEngine:rollbackToFrame(frame)
