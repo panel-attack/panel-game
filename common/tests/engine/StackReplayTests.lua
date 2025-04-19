@@ -396,6 +396,18 @@ local function platformTest(waitFrames, useMatchSide)
   StackReplayTestingUtils:cleanup(match)
 end
 
+local function trainingModeGarbageTest()
+  local match = StackReplayTestingUtils:setupReplayWithPath(testReplayFolder .. "3x2TrainingModeGarbageMatch.json")
+  StackReplayTestingUtils:simulateMatchUntil(match, 383)
+  local stack = match.stacks[1]
+  assert(stack.panels[7][5].state == "matched")
+  assert(stack.panels[9][5].state == "matched")
+  assert(stack.panels[11][5].state == "matched")
+  assert(stack.panels[7][2].state == "matched")
+  assert(stack.panels[9][2].state == "matched")
+  assert(stack.panels[11][2].state == "matched")
+end
+
 local function platformFirstFrameTest()
   platformTest(66, true)
 end
@@ -471,3 +483,6 @@ test(platformFirstFrameFarSideTest)
 
 logger.info("running platformLastFrameFarSideTest")
 test(platformLastFrameFarSideTest)
+
+logger.info("running trainingModeGarbageTest")
+test(trainingModeGarbageTest)
