@@ -286,7 +286,7 @@ function Match:pushGarbageTo(stack)
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
         --  which may even include another rollback
-        if not self:rollbackToFrame(stack, oldestTransitTime) then
+        if not self:rollbackToFrame(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
           -- if we can't rollback, it's a desync
           self:abort()
         end

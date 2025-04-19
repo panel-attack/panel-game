@@ -286,7 +286,12 @@ end
 
 function GarbageQueue:popFinishedTransitsAt(clock)
   if Queue.peek(self.transitTimers) == clock then
+    -- regular garbage queues can only pop garbage for the exact clock time desired
     Queue.pop(self.transitTimers)
+    return self.garbageInTransit[clock]
+  elseif self.illegalStuffIsAllowed and Queue.peek(self.transitTimers) < clock then
+    -- but when illegal stuff is allowed (attack engines) they can also pop garbage that was supposed to be popped earlier
+    clock = Queue.pop(self.transitTimers)
     return self.garbageInTransit[clock]
   end
 end

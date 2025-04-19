@@ -108,8 +108,10 @@ function AttackEngine.run(self)
   end
 
   local totalAttackTimeBeforeRepeat = self.delayBeforeRepeat + highestStartTime - self.delayBeforeStart
-  local clock, transit = next(self.outgoingGarbage.garbageInTransit)
-  if self.disableQueueLimit or not clock or clock > self.clock then
+  -- assumption is that only things like combo storm don't disable the queue limit
+  -- as all garbage gets collected to a single timer thanks to the mechanic of the outgoing garbage queue having any value greater than 1 in the queue means
+  --  that the recipient is stalling acceptance so we shouldn't push more inside
+  if self.disableQueueLimit or self.outgoingGarbage.transitTimers:len() <= 6 then
     for i = 1, #self.attackPatterns do
       if self.clock >= self.attackPatterns[i].startTime then
         local difference = self.clock - self.attackPatterns[i].startTime
