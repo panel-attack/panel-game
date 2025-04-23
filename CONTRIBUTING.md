@@ -149,7 +149,7 @@ Using exiftool you may apply metadata in this way:
 exiftool -XMP-dc:Creator="AuthorName" -XMP-cc:AttributionName="AuthorName" -XMP-cc:License="https://creativecommons.org/licenses/by-sa/4.0/"  -XMP-dc:Rights="Copyright, AuthorName, Year. This work is licensed under the Creative Commons Attribution ShareAlike 4.0 International License. To view a copy of this license, visit https://creativecommons.org/licenses/by-sa/4.0/"  image.png
 ```
 
-In case of small files it would be appreciated if metadata added by image editors would be stripped which can be done by setting `xmp-group:all` to nothing such as `-EXIF= -XMP-xmp:all= -XMP-exif:all= -XMP-tiff:all= `.
+In case of small files it would be appreciated if metadata added by image editors would be stripped which can be done by setting `xmp-group:all` to nothing such as `-EXIF= -XMP-xmp:all= -XMP-exif:all= -XMP-tiff:all= -XMP-xmpMM:all= `.
 
 ##### Inspecting XMP metadata
 
