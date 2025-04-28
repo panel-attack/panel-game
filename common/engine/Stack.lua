@@ -1642,17 +1642,20 @@ function Stack:checkGameOver()
         elseif not self.rise_lock and self.behaviours.allowManualRaise and self.panels_in_top_row and self.manual_raise then
           return true
         end
-      elseif not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then
+      else
         if stackOverCondition == MatchRules.StackOverConditions.SWAPS then
-          if self.swapCount >= value then
-            return true
+          if not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then
+            if self.swapCount >= value then
+              return true
+            end
           end
         elseif stackOverCondition == MatchRules.StackOverConditions.CHAIN then
           if value == false then
-            if tableUtils.trueForAny(self.outgoingGarbage.history, isCompletedChain) then
-              -- the chain dropped
+            if self.panel_clear_starts > 1 then
+              -- We started more than one chain -> fail
               return true
-            elseif self.panels_cleared > 0 and self.chain_counter == 0 then
+            elseif self.panels_cleared > 0 and self.n_active_panels == 0 and self.n_prev_active_panels == 0 then          
+              -- We finished matches but haven't won -> fail
               return true
             end
           else

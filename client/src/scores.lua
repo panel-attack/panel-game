@@ -58,6 +58,14 @@ function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
   self:saveToFile()
 end
 
+function Scores:getLatestSuccessForPuzzleUUID(puzzleUUID)
+  local records = tableUtils.filter(self.puzzleRecords, function(record) return record.UUID == puzzleUUID and record.success == true end)
+  if #records == 0 then
+    return nil
+  end
+  return records[#records]
+end
+
 function Scores:getRecordsForPuzzleUUID(puzzleUUID)
   local records = tableUtils.filter(self.puzzleRecords, function(record) return record.UUID == puzzleUUID end)
 
@@ -86,14 +94,21 @@ function Scores:puzzleSuccessRateForUUID(puzzleUUID)
     return 0
   end
 
+  local limit = 5
+  local total = 0
   local wins = 0
-  for index, value in ipairs(records) do
-    if value.success then
+  for i = #records, 1, -1 do
+    total = total + 1
+    local record = records[i]
+    if record.success then
       wins = wins + 1
+    end
+    if total == limit then
+      break
     end
   end
 
-  local result = wins / #records
+  local result = wins / total
   return result
 end
 

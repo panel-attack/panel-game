@@ -129,7 +129,7 @@ function PuzzleMenu:refreshMenu()
 
   local filteredPuzzleSets = self.puzzleLibrary:getPuzzlesForPuzzleMenu()
   for index, puzzleSet in ipairs(filteredPuzzleSets) do
-    local name = puzzleSet.setName .. " Win Rate: " .. self.puzzleLibrary:puzzleSetGetWinRate(puzzleSet)
+    local name = puzzleSet.setName .. " Win Rate: " .. math.round(self.puzzleLibrary:puzzleSetGetWinRate(puzzleSet), 2)
     menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(name, nil, false, function() self:startGame(puzzleSet) end)
   end
 

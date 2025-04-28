@@ -85,6 +85,12 @@ function PuzzleLibrary:trainIntervalForStreak(streakCount)
   return 0
 end
 
+function PuzzleLibrary:trainIntervalForResults(streakCount, winRate)
+  local interval = self:trainIntervalForStreak(streakCount)
+  local result = interval * winRate
+  return result
+end
+
 function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
 
   local winStreak = self.puzzleResults:puzzleUUIDWinStreak(UUID)
@@ -92,15 +98,16 @@ function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
     return 0
   end
 
-  local records = self.puzzleResults:getRecordsForPuzzleUUID(UUID)
+  local successRecord = self.puzzleResults:getLatestSuccessForPuzzleUUID(UUID)
+  if successRecord == nil then
+    return 0
+  end
+  assert(successRecord.success == true)
+  assert(successRecord.timestamp > 0)
 
-  assert(#records > 0)
-  local latestRecord = records[#records]
-  assert(latestRecord.success)
-  assert(latestRecord.timestamp)
-
-  local trainInterval = self:trainIntervalForStreak(winStreak)
-  local nextTrainingDate = latestRecord.timestamp + trainInterval
+  local winRate = self.puzzleResults:puzzleSuccessRateForUUID(UUID)
+  local trainInterval = self:trainIntervalForResults(winStreak, winRate)
+  local nextTrainingDate = successRecord.timestamp + trainInterval
   return nextTrainingDate
 end
 
@@ -123,18 +130,35 @@ end
 
 function PuzzleLibrary:currentTrainingPuzzleSet()
 
+  local timedResults = {}
   local results = {}
   local currentTime = to_UTC(os.time())
   for _, puzzleSet in ipairs(self.puzzleSets) do
     if PuzzleLibrary.puzzleSetAllowedForTraining(puzzleSet) then
       for _, puzzle in ipairs(puzzleSet.puzzles) do
         local trainingDate = self:getNextTrainingDateForPuzzleUUID(puzzle.UUID)
+        local bucketDifference = math.ceil((trainingDate - currentTime) / DAY)
+        if trainingDate < currentTime then
+          bucketDifference = 0
+        end
+        if timedResults[bucketDifference] == nil then
+          timedResults[bucketDifference] = 0
+        end
+        timedResults[bucketDifference] = timedResults[bucketDifference] + 1
         if currentTime > trainingDate then
           results[#results+1] = puzzle
         end
       end
     end
   end
+
+  logger.debug("Training Puzzles Histogram")
+  local total = 0
+  for k, v in pairsSortedByKeys(timedResults) do
+    logger.debug(k .. " day has " .. v .. " puzzles")
+    total = total + v
+  end
+  logger.debug(total .. " total puzzles")
 
   local sortFunction = function(a,b) 
       local aTrainDate = self:getNextTrainingDateForPuzzleUUID(a.UUID)

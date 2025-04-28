@@ -81,7 +81,9 @@ function PuzzleGame:customGameOverSetup()
     self.player:setPuzzleIndex(self.player.settings.puzzleIndex + 1)
   else -- puzzle failed
     self.text = loc("pl_you_lose")
-    self:savePuzzleRecordResult(false)
+    if (self.match.aborted == nil or self.match.aborted == false) then
+      self:savePuzzleRecordResult(false)
+    end
   end
 end
 
