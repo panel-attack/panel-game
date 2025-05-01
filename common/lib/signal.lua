@@ -18,6 +18,7 @@ function Signal.turnIntoEmitter(t)
   t.createSignal = Signal.createSignal
   t.connectSignal = Signal.connectSignal
   t.disconnectSignal = Signal.disconnectSignal
+  t.disconnectSubscriber = Signal.disconnectSubscriber
 end
 
 -- adds a signal to the table that can be subscribed to via Signal.connectSignal
@@ -66,12 +67,24 @@ end
 
 -- normally we don't need to actively disconnect from a signal as subscriptions automatically get removed when their subscriber is garbage collected
 -- but in some scenarios we may want to actively unsubscribe
+---@param emitter Signal the emitter to unsubscribe from
+---@param signalName string the signal to unsubscribe from
+---@param subscriber table who is unsubscribing the signal
+---@param callback function? the specific callback to unsubscribe; unsubscribes all callbacks of the subscriber if nil
 function Signal.disconnectSignal(emitter, signalName, subscriber, callback)
   if callback and emitter.signalSubscriptions[signalName][subscriber] then
     local index = tableUtils.indexOf(emitter.signalSubscriptions[signalName][subscriber], callback)
     table.remove(emitter.signalSubscriptions[signalName][subscriber], index)
+  else
+    emitter.signalSubscriptions[signalName][subscriber] = nil
   end
-  emitter.signalSubscriptions[signalName][subscriber] = nil
+end
+
+function Signal.disconnectSubscriber(emitter, subscriber)
+  assert(emitter.emitsSignals and emitter.signalSubscriptions, "trying to clear signals from a non-emitter")
+  for signalName, _ in pairs(emitter.signalSubscriptions) do
+    emitter:disconnectSignal(signalName, subscriber)
+  end
 end
 
 return Signal

@@ -540,6 +540,7 @@ end
 
 function BattleRoom:shutdown()
   for _, player in ipairs(self.players) do
+    player:disconnectSubscriber(self)
     player:reset()
   end
   if self.match then

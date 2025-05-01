@@ -517,10 +517,13 @@ end
 
 function NetClient:logout()
   self.tcpClient:sendRequest(ClientMessages.logout())
-  love.timer.sleep(0.001)
+  love.timer.sleep(0.005)
   self.tcpClient:resetNetwork()
   self:setState(states.OFFLINE)
-  resetLobbyData(self)
+  GAME.localPlayer:disconnectSubscriber(GAME.netClient)
+  -- this is because the online updates are currently subscribed to the player itself
+  -- that should probably get changed because while mildly convenient it is unexpected for the interaction
+  GAME.localPlayer:disconnectSubscriber(GAME.localPlayer)
 end
 
 function NetClient:update()
