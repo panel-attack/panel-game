@@ -640,7 +640,7 @@ function ClientMatch:render()
     end
 
     -- Draw VS HUD
-    if self.stackInteraction == GameModes.StackInteractions.VERSUS then
+    if self.stackInteraction == GameModes.StackInteractions.VERSUS or self.replay.metadata.gameModeName == "VS" then
       if tableUtils.trueForAll(self.players, MatchParticipant.isHuman) or self.ranked then
         self:drawMatchType()
       end
