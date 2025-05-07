@@ -29,6 +29,7 @@ local logger = require("common.lib.logger")
 ---@field shockFrequency integer How many blocks need to be cleared to queue the next shock panel for panel generation
 ---@field shockCap integer How many shock panels can be queued at maximum; 0 disables shock blocks
 ---@field colors integer How many colors are used for panel generation
+---@field adjacentDenialFrequency number How frequently horizontally adjacent panels of the same color are rerolled during panel generation
 ---@field maxHealth integer Unconditional invincibility frames that run out while topped out with no other type of invincibility frames available
 ---@field stop StopData Dictionary of number values used to award stop time
 ---@field frameConstants FrameData Dictionary of number values used to determine panel physics 
@@ -54,6 +55,7 @@ function(self)
 
   -- how many colors are used for panel generation
   self.colors = 5
+  self.adjacentDenialFrequency = 0
 
   -- unconditional invincibility frames that run out while topped out with no other type of invincibility frames available
   -- may refill once no longer topped out
@@ -117,6 +119,7 @@ LevelData.STOP_FORMULAS = {
 ---@return boolean
 function LevelData.__eq(a, b)
   return a.colors == b.colors and
+         a.adjacentDenialFrequency == b.adjacentDenialFrequency and
          a.maxHealth == b.maxHealth and
          a.startingSpeed == b.startingSpeed and
          a.speedIncreaseMode == b.speedIncreaseMode and
@@ -176,6 +179,15 @@ function LevelData:setColorCount(colorCount)
     logger.warn("Tried to set invalid color count " .. tostring(colorCount))
   else
     self.colors = colorCount
+  end
+  return self
+end
+
+function LevelData:setAdjacentDenialFrequency(adjacentDenialFrequency)
+  if adjacentDenialFrequency < 0 or adjacentDenialFrequency > 1 then
+    logger.warn("Tried to set nonsensical adjacent color denial frequency " .. tostring(adjacentDenialFrequency))
+  else
+    self.adjacentDenialFrequency = adjacentDenialFrequency
   end
   return self
 end
@@ -265,6 +277,8 @@ function LevelData.validate(data)
   elseif not data.colors or type(data.colors) ~= "number" then
     return false
   elseif data.colors < 4 or data.colors > 7 then
+    return false
+  elseif data.adjacentDenialFrequency and (type(data.adjacentDenialFrequency) ~= "number" or data.adjacentDenialFrequency < 0) then
     return false
   elseif not data.maxHealth or type(data.maxHealth) ~= "number" then
     return false

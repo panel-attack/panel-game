@@ -18,7 +18,7 @@ local save = require("client.src.save")
 local fileUtils = require("client.src.FileUtils")
 local handleShortcuts = require("client.src.Shortcuts")
 local Player = require("client.src.Player")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local NetClient = require("client.src.network.NetClient")
 local StartUp = require("client.src.scenes.StartUp")
 local SoundController = require("client.src.music.SoundController")
@@ -49,6 +49,9 @@ end
 ---@field automaticScales number[]
 ---@field config UserConfig
 ---@field puzzleSets table<string, PuzzleSet>
+---@field lastReplayPath string?
+---@field crashTrace string?
+---@field theme Theme
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)

@@ -152,6 +152,10 @@ function tableUtils.getKeys(tab)
 end 
  
 -- returns the key for the given value, key is random if value occurs multiple times
+---@generic T
+---@param tab table<T, any>
+---@param element any
+---@return T
 function tableUtils.indexOf(tab, element)
   for key, value in pairs(tab) do
     if value == element then

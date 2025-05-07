@@ -1,7 +1,7 @@
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
@@ -10,8 +10,15 @@ local save = require("client.src.save")
 
 
 -- Challenge Mode is a particular play through of the challenge mode in the game, it contains all the settings for the mode.
-local ChallengeMode =
-  class(
+---@class ChallengeMode : BattleRoom
+---@field stages table
+---@field difficulty integer
+---@field difficultyName string
+---@field continues integer
+---@field expendedTime number
+---@field challengeComplete boolean
+---@field player ChallengeModePlayer
+local ChallengeMode = class(
   function(self, mode, gameScene, difficulty, stageIndex)
     self.stages = self:createStages(difficulty)
     self.difficulty = difficulty
@@ -212,8 +219,10 @@ function ChallengeMode:onMatchEnded(match)
 end
 
 function ChallengeMode:setStage(index)
+  logger.debug("Setting stage to index " .. index)
   self.stageIndex = index
   GAME.localPlayer:setLevel(self.stages[index].playerLevel)
+  GAME.localPlayer:setLevelData(levelPresets.getModern(GAME.localPlayer.settings.level))
 
   local stageSettings = self.stages[self.stageIndex]
   self.player:setAttackEngineSettings(stageSettings.attackSettings)

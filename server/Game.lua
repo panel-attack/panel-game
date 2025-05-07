@@ -1,15 +1,16 @@
 local class = require("common.lib.class")
-local GameModes = require("common.engine.GameModes")
-local Replay = require("common.data.Replay")
-local ReplayPlayer = require("common.data.ReplayPlayer")
-local LevelPresets = require("common.data.LevelPresets")
+local GameModes = require("common.data.GameModes")
 local logger = require("common.lib.logger")
+local StackBehaviours = require("common.data.StackBehaviours")
+local InputCompression = require("common.data.InputCompression")
+local ReplayV3 = require("common.data.ReplayV3")
+local LevelPresets    = require("common.data.LevelPresets")
 
 ---@class ServerGame
 ---@field id integer?
 ---@field seed integer
 ---@field players ServerPlayer[]
----@field replay Replay
+---@field replay ReplayV3
 ---@field winnerId integer?
 ---@field winnerIndex integer?
 ---@field ranked boolean
@@ -20,8 +21,12 @@ local Game = class(
 ---@param players ServerPlayer[]
 ---@param id integer?
 function(self, players, id)
-  self.seed = math.random(1,9999999)
+  self.seed = math.random(1, 9999999)
   self.players = players
+  self.inputs = {}
+  for i = 1, #players do
+    self.inputs[i] = {}
+  end
   self.id = id
   self.outcomeReports = {}
   self.complete = false
@@ -32,39 +37,77 @@ end)
 function Game.createFromRoomState(room)
   local game = Game(room.players)
 
-  game.replay = Replay(ENGINE_VERSION, game.seed, room.gameMode)
-  game.replay:setStage(room.stageId)
+  local roomIsRanked, reasons = room:rating_adjustment_approved()
+  game.ranked = roomIsRanked
 
-  game.inputs = {}
+  local replayPanelSource = {
+    sourceType = 3,
+    seed = game.seed,
+    shockEnabled = room.gameMode.stackInteraction ~= GameModes.StackInteractions.NONE,
+  }
+
+  local replay = ReplayV3(ENGINE_VERSION, room.gameMode.matchRules, replayPanelSource)
+  replay:setStage(room.stageId)
+  replay:setRanked(game.ranked)
+  replay.metadata.gameModeName = room.gameMode.name
+
   for i, player in ipairs(room.players) do
-    game.inputs[i] = {}
-    local replayPlayer = ReplayPlayer(player.name, player.publicPlayerID, true)
-    replayPlayer:setWins(room.win_counts[i])
-    replayPlayer:setCharacterId(player.character)
-    replayPlayer:setPanelId(player.panels_dir)
-    if player.levelData then
-      replayPlayer:setLevelData(player.levelData)
-    else
-      replayPlayer:setLevelData(LevelPresets.getModern(player.level))
-    end
-    replayPlayer:setInputMethod(player.inputMethod)
-    -- TODO: pack the adjacent color setting with level data or send it with player settings
-    -- this is not something for the server to decide, it should just take what it gets
-    if game.replay.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
-      replayPlayer:setAllowAdjacentColors(true)
-    else
-      replayPlayer:setAllowAdjacentColors(player.level < 8)
-    end
-    -- this is a display-only prop, the true info is stored in levelData
-    replayPlayer:setLevel(player.level)
+    ---@type ReplayStack
+    local stack = {
+      inputMethod = player.inputMethod,
+      inputs = "",
+      levelData = player.levelData or LevelPresets.getModern(player.level),
+      stackType = 1,
+      stackBehaviours = StackBehaviours.getDefault(),
+    }
 
-    game.replay:updatePlayer(i, replayPlayer)
+    replay.stacks[i] = stack
+
+    ---@type StackMetadata
+    local metadata = {
+      stackIndex = i,
+      characterId = player.character,
+      panelId = player.panels_dir,
+      name = player.name,
+      publicId = player.publicPlayerID,
+      wins = room.win_counts[i],
+    }
+
+    if stack.levelData.frameConstants.GARBAGE_HOVER then
+      metadata.level = player.level
+    else
+      -- TODO: https://github.com/panel-attack/panel-game/issues/602
+      metadata.difficulty = player.level
+    end
+
+    replay.metadata.stacks[i] = metadata
   end
 
-  local roomIsRanked, reasons = room:rating_adjustment_approved()
+  if room.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
+    for i, _ in ipairs(replay.stacks) do
+      replay.garbageFlows[#replay.garbageFlows+1] = {
+        source = i,
+        recipients = { i }
+      }
+    end
+  elseif room.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
+    logger.error("Attack engine game modes are not implemented yet")
+  elseif room.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
+    for i = 1, #replay.stacks do
+      local recipients = {}
+      for j = 1, #replay.stacks do
+        if i ~= j then
+          recipients[#recipients+1] = j
+        end
+      end
+      replay.garbageFlows[#replay.garbageFlows+1] = {
+        source = i,
+        recipients = recipients,
+      }
+    end
+  end
 
-  game.ranked = roomIsRanked
-  game.replay:setRanked(roomIsRanked)
+  game.replay = replay
 
   return game
 end
@@ -78,15 +121,18 @@ function Game:receiveInput(player, input)
 end
 
 ---@param compressInputs boolean
----@return Replay?
+---@return ReplayV3?
 function Game:getPartialReplay(compressInputs)
   if not self.replay then
     return nil
   else
-    for i, player in ipairs(self.replay.players) do
-      player.settings.inputs = table.concat(self.inputs[i])
-      if compressInputs then
-        player.settings.inputs = ReplayPlayer.compressInputString(player.settings.inputs)
+    for i, stack in ipairs(self.replay.stacks) do
+      if stack.stackType == 1 then
+        ---@cast stack ReplayStack
+        stack.inputs = table.concat(self.inputs[i])
+        if compressInputs then
+          stack.inputs = InputCompression.compressInputString(stack.inputs)
+        end
       end
     end
     return self.replay
@@ -145,20 +191,25 @@ end
 function Game:finalizeReplay(result)
   self.replay:setOutcome(result)
 
-  for i, player in ipairs(self.replay.players) do
-    player.settings.inputs = table.concat(self.inputs[i])
-    if COMPRESS_REPLAYS_ENABLED then
-      player.settings.inputs = ReplayPlayer.compressInputString(player.settings.inputs)
+  for i, stack in ipairs(self.replay.stacks) do
+    if stack.stackType == 1 then
+      ---@cast stack ReplayStack
+      stack.inputs = table.concat(self.inputs[i])
+      if COMPRESS_REPLAYS_ENABLED then
+        stack.inputs = InputCompression.compressInputString(stack.inputs)
+      end
     end
   end
 
   for i, player in ipairs(self.players) do
     if player.save_replays_publicly == "anonymously" then
-      self.replay.players[i].name = "anonymous"
-      if self.replay.players[i].publicId == self.replay.winnerId then
-        self.replay.winnerId = - i
+      local playerMetadata = self.replay.metadata.stacks[i]
+      ---@cast playerMetadata StackMetadata
+      playerMetadata.name = "anonymous"
+      playerMetadata.publicId = - i
+      if playerMetadata.publicId == self.replay.metadata.winnerId then
+        self.replay.metadata.winnerId = - i
       end
-      self.replay.players[i].publicId = - i
     end
   end
 end
@@ -171,7 +222,7 @@ function Game:setId(id)
   end
 
   if self.replay then
-    self.replay.gameId = self.id
+    self.replay.metadata.gameId = self.id
   end
 
   return self.id

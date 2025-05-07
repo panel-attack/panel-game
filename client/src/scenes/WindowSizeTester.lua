@@ -68,7 +68,7 @@ function WindowSizeTester:load()
       else
         -- in case the updateMode is made invalid by fullscreen/maximize, set the values back
         slider.value = width
-        slider.valueText:set(slider.value)
+        slider.valueText:set(tostring(slider.value))
       end
     end
   })
@@ -86,7 +86,7 @@ function WindowSizeTester:load()
       else
         -- in case the updateMode is made invalid by fullscreen/maximize, set the values back
         slider.value = height
-        slider.valueText:set(slider.value)
+        slider.valueText:set(tostring(slider.value))
       end
     end
   })
@@ -102,7 +102,7 @@ function WindowSizeTester:load()
         love.window.setPosition(slider.value, y)
       else
         slider.value = x
-        slider.valueText:set(slider.value)
+        slider.valueText:set(tostring(slider.value))
       end
     end
   })
@@ -118,7 +118,7 @@ function WindowSizeTester:load()
         love.window.setPosition(x, slider.value)
       else
         slider.value = y
-        slider.valueText:set(slider.value)
+        slider.valueText:set(tostring(slider.value))
       end
     end
   })

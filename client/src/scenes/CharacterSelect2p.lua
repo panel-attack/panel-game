@@ -41,11 +41,11 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.rankedSelection:setTitle("ss_ranked")
 
   local levelHeight
-  local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / #GAME.battleRoom.players - self.ui.panelSelection.height
+  local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / #self.battleRoom.players - self.ui.panelSelection.height
   local stageWidth
   local rankedWidth
 
-  if GAME.battleRoom.online then
+  if self.battleRoom.online then
     self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
     self.ui.grid:createElementAt(3, 2, 2, 1, "rankedSelection", self.ui.rankedSelection, nil, true)
     self.ui.grid:createElementAt(5, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)

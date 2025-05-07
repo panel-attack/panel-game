@@ -21,6 +21,7 @@ ReplayGame.name = "ReplayGame"
 
 function ReplayGame:togglePause()
   self.match:togglePause()
+  GAME.theme:playValidationSfx()
   if self.musicSource then
     if self.match.isPaused then
       SoundController:pauseMusic()
@@ -96,6 +97,7 @@ function ReplayGame:runGame()
     playbackSpeed = self.playbackSpeeds[self.playbackSpeedIndex]
   elseif input.isDown["Swap2"] or input.allKeys.isDown["escape"] then
     if self.match.isPaused then
+      GAME.theme:playCancelSfx()
       self.match:abort()
       GAME.navigationStack:pop()
     else

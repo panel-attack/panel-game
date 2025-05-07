@@ -1,22 +1,22 @@
-local logger = require("common.lib.logger")
-local GameModes = require("common.engine.GameModes")
+local LegacyGameModes = require("common.compatibility.LegacyGameModes")
 local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 require("common.lib.timezones")
-local tableUtils = require("common.lib.tableUtils")
-local ReplayPlayer = require("common.data.ReplayPlayer")
+local ReplayPlayer = require("common.compatibility.ReplayV2Player")
 local LevelPresets = require("common.data.LevelPresets")
 local LevelData = require("common.data.LevelData")
+local StackBehaviours = require("common.data.StackBehaviours")
+local InputCompression = require("common.data.InputCompression")
 
 local REPLAY_VERSION = 2
 
----@class Replay
+---@class ReplayV2
 ---@field timestamp number The time the replay got created as a system dependent timestamp
 ---@field engineVersion string The engine version the replay was generated with
 ---@field replayVersion number Indicates the version of the replay's data format
 ---@field seed number The seed to be used to for random functions
----@field gameMode GameMode Contains flags and fields determining the overall Match settings
----@field players ReplayPlayer[] The players that are/were part of the Match
+---@field gameMode LegacyGameMode Contains flags and fields determining the overall Match settings
+---@field players ReplayV2Player[] The players that are/were part of the Match
 ---@field ranked boolean? If the match counted towards the ladder
 ---@field stageId string? The stage that was picked for the match on the machine saving the replay
 ---@field duration number? How long the game took in frames
@@ -27,9 +27,9 @@ local REPLAY_VERSION = 2
 ---@field gameId number? The identifier for the game on the server it was played on
 
 -- A replay is a data recording of a Match
----@class Replay
----@overload fun(engineVersion: string, seed: number, gameMode: table, puzzle: table?): Replay
-local Replay = class(
+---@class ReplayV2
+---@overload fun(engineVersion: string, seed: number, gameMode: table, puzzle: table?): ReplayV2
+local ReplayV2 = class(
 function(self, engineVersion, seed, gameMode, puzzle)
     self.timestamp = to_UTC(os.time())
     self.engineVersion = engineVersion
@@ -48,22 +48,22 @@ function(self, engineVersion, seed, gameMode, puzzle)
   end
 )
 
-Replay.TYPE = "Replay"
+ReplayV2.TYPE = "Replay"
 
-function Replay:setRanked(ranked)
+function ReplayV2:setRanked(ranked)
   self.ranked = ranked
 end
 
-function Replay:setStage(stageId)
+function ReplayV2:setStage(stageId)
   self.stageId = stageId
 end
 
 -- set the duration in frames
-function Replay:setDuration(duration)
+function ReplayV2:setDuration(duration)
   self.duration = duration
 end
 
-function Replay:setOutcome(outcome)
+function ReplayV2:setOutcome(outcome)
   if outcome == nil then
     self.incomplete = true
     self.winnerIndex = nil
@@ -86,154 +86,29 @@ function Replay:setOutcome(outcome)
   self.completed = true
 end
 
-function Replay:setTimestamp(timestamp)
+function ReplayV2:setTimestamp(timestamp)
   self.timestamp = timestamp
 end
 
 -- adds or updates a replay player at the specified index
 -- replayPlayer is a table as defined by the ReplayPlayer class
-function Replay:updatePlayer(i, replayPlayer)
+function ReplayV2:updatePlayer(i, replayPlayer)
   self.players[i] = replayPlayer
-end
-
-function Replay:generatePath(pathSeparator)
-  local now = os.date("*t", self.timestamp)
-  local sep = pathSeparator
-  local path = "replays" .. sep .. "v" .. self.engineVersion .. sep .. string.format("%04d" .. sep .. "%02d" .. sep .. "%02d", now.year, now.month, now.day)
-
-  if self.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
-    if self.gameMode.timeLimit then
-      path = path .. sep .. "Time Attack"
-    else
-      path = path .. sep .. "Endless"
-    end
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
-    path = path .. sep .. "Vs Self"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-    path = path .. sep .. "Training"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
-    if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
-      path = path .. sep .. "Challenge Mode"
-    else
-      local names = {}
-      for i, player in ipairs(self.players) do
-        names[i] = player.name
-      end
-      -- sort player names alphabetically for folder name so we don't have a folder "a-vs-b" and also "b-vs-a"
-      table.sort(names)
-      path = path .. sep .. table.concat(names, "-vs-")
-    end
-  end
-
-  return path
-end
-
-function Replay:generateFileName()
-  local time = os.date("*t", self.timestamp)
-  local filename = "v" .. self.engineVersion .. "-"
-  filename = filename .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", time.year, time.month, time.day, time.hour, time.min, time.sec)
-
-  for _, player in ipairs(self.players) do
-    if player.human then
-      filename = filename .. "-" .. player.name
-      if player.settings.level then
-        filename = filename .. "-L" .. player.settings.level
-      elseif player.settings.difficulty then
-        filename = filename .. "-Spd" .. player.settings.levelData.startingSpeed
-        filename = filename .. "-Dif" .. player.settings.difficulty
-      end
-    elseif player.settings.difficulty then
-      filename = filename .. "-stage-" .. player.settings.difficulty .. "-" .. (player.settings.level or 0)
-    end
-  end
-
-  if self.gameMode.stackInteraction == GameModes.StackInteractions.NONE then
-    if self.gameMode.timeLimit then
-      filename = filename .. "-timeattack"
-    else
-      filename = filename .. "-endless"
-    end
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.SELF then
-    filename = filename .. "-vsSelf"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-    filename = filename .. "-training"
-  elseif self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
-    if tableUtils.trueForAny(self.players, function(p) return not p.human end) then
-      filename = filename .. "-challenge"
-    else
-      filename = filename .. "-VS-" .. (self.ranked and "ranked" or "casual")
-    end
-
-    if not self.incomplete then
-      if self.gameMode.stackInteraction == GameModes.StackInteractions.VERSUS then
-        if self.winnerIndex then
-          filename = filename .. "-P" .. self.winnerIndex .. "wins"
-        else
-          filename = filename .. "-draw"
-        end
-      end
-    end
-  end
-
-  if self.incomplete then
-    filename = filename .. "-INCOMPLETE"
-  end
-
-  return filename
-end
-
-function Replay.replayCanBeViewed(replay)
-  if replay.engineVersion > consts.ENGINE_VERSION then
-    -- replay is from a newer game version, we can't watch
-    -- or maybe we can but there is no way to verify we can
-    return false
-  elseif replay.engineVersion < consts.VERSION_MIN_VIEW then
-    -- there were breaking changes since the version the replay was recorded on
-    -- definitely can not watch
-    return false
-  else
-    -- can view this one
-    return true
-  end
-end
-
----@param match Match
----@param replay Replay
-function Replay.finalizeReplay(match, replay)
-  if not replay.completed then
-    for i = 1, #match.stacks do
-      if match.stacks[i].confirmedInput then
-        replay.players[i].settings.inputs = ReplayPlayer.compressInputString(table.concat(match.stacks[i].confirmedInput))
-      end
-    end
-
-    -- abort is functionally equivalent to #match.winners == 0
-    if match.aborted then
-      replay:setOutcome()
-    else
-      local winners = match:getWinners()
-      if #winners == 1 then
-        replay:setOutcome(tableUtils.indexOf(match.stacks, match.winners[1]))
-      elseif #winners > 1 then
-        replay:setOutcome(0)
-      end
-    end
-  end
 end
 
 -- creates a Replay from the table t which contains the deserialized data representation of a replay from network or file
 -- use the completed flag to indicate whether the replay is done (functionally equivalent to being loaded from file at this time)
 --   or whether it is in progress (functionally equivalent to getting the replay sent on joining a match as a spectator)
-function Replay.createFromTable(t, completed)
+function ReplayV2.createFromTable(t, completed)
   local replay
   if not t then
     -- there was a problem reading the file
     return replay
   else
     if not t.replayVersion then
-      replay = Replay.createFromLegacyReplay(t)
+      replay = ReplayV2.createFromLegacyReplay(t)
     elseif tonumber(t.replayVersion) == 2 then
-      replay = Replay.createFromV2Data(t)
+      replay = ReplayV2.createFromV2Data(t)
     end
     if completed ~= nil then
       replay.completed = completed
@@ -243,8 +118,8 @@ function Replay.createFromTable(t, completed)
   return replay
 end
 
-function Replay.createFromV2Data(replayData)
-  local replay = Replay(replayData.engineVersion, replayData.seed, replayData.gameMode)
+function ReplayV2.createFromV2Data(replayData)
+  local replay = ReplayV2(replayData.engineVersion, replayData.seed, replayData.gameMode)
   replay:setStage(replayData.stageId)
   replay:setRanked(replayData.ranked)
   replay:setDuration(replayData.duration)
@@ -260,11 +135,16 @@ function Replay.createFromV2Data(replayData)
         replayPlayer:setLevelData(player.settings.levelData)
       end
       replayPlayer:setInputMethod(player.settings.inputMethod)
-      replayPlayer:setInputs(ReplayPlayer.decompressInputString(player.settings.inputs))
+      replayPlayer:setInputs(InputCompression.decompressInputString(player.settings.inputs))
     else
       replayPlayer:setHealthSettings(player.settings.healthSettings)
     end
-    replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
+    if replayData.engineVersion == "047" or replayData.engineVersion == "048" then
+      replayPlayer:setBehaviours(StackBehaviours.getV048Default())
+      replayPlayer:setAllowAdjacentColors(player.settings.allowAdjacentColors)
+    else
+      replayPlayer:setBehaviours(player.settings.stackBehaviours)
+    end
     replayPlayer:setAttackEngineSettings(player.settings.attackEngineSettings)
     replayPlayer:setLevel(player.settings.level)
     replayPlayer:setDifficulty(player.settings.difficulty)
@@ -287,22 +167,22 @@ end
 -- they were however encoded in the filename
 -- since this is in common they'd have to be determined elsewhere and passed in as arguments
 -- if they are present in the data, the data takes priority over the arguments
-function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
+function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   local mode
   local gameMode
   if legacyReplay.vs then
     mode = "vs"
     if legacyReplay.vs.P2_char then
-      gameMode = GameModes.getPreset("TWO_PLAYER_VS")
+      gameMode = LegacyGameModes.getPreset("TWO_PLAYER_VS")
     else
-      gameMode = GameModes.getPreset("ONE_PLAYER_VS_SELF")
+      gameMode = LegacyGameModes.getPreset("ONE_PLAYER_VS_SELF")
     end
   elseif legacyReplay.time then
     mode = "time"
-    gameMode = GameModes.getPreset("ONE_PLAYER_TIME_ATTACK")
+    gameMode = LegacyGameModes.getPreset("ONE_PLAYER_TIME_ATTACK")
   elseif legacyReplay.endless then
     mode = "endless"
-    gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+    gameMode = LegacyGameModes.getPreset("ONE_PLAYER_ENDLESS")
   end
   local v1r = legacyReplay[mode]
   -- doCountdown used to be configurable client side for time attack / endless
@@ -315,7 +195,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   -- really bold assumption; serverside replays haven't been tracking engineVersion until very late into v047
   local engineVersion = legacyReplay.engineVersion or "046"
 
-  local replay = Replay(engineVersion, v1r.seed, gameMode)
+  local replay = ReplayV2(engineVersion, v1r.seed, gameMode)
   if legacyReplay.timestamp then
     replay:setTimestamp(legacyReplay.timestamp)
   elseif timestamp then
@@ -336,16 +216,16 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     p1:setInputMethod(v1r.inputMethod or "controller")
   end
 
-  p1:setInputs(ReplayPlayer.decompressInputString(v1r.in_buf))
+  p1:setInputs(InputCompression.decompressInputString(v1r.in_buf))
+  p1:setBehaviours(StackBehaviours.getV048Default())
 
   if v1r.P1_level then
     p1:setLevel(v1r.P1_level)
     -- suffices because modern endless/timeattack never had replays
-    p1:setAllowAdjacentColors(v1r.P1_level < 8)
     p1:setLevelData(LevelPresets.getModern(v1r.P1_level))
+    p1:setAllowAdjacentColors(v1r.P1_level < 8)
   else
     p1:setDifficulty(v1r.difficulty)
-    p1:setAllowAdjacentColors(true)
     local levelData = LevelPresets.getClassic(v1r.difficulty)
     levelData:setStartingSpeed(v1r.speed)
     if v1r.difficulty == 1 and mode == "endless" then
@@ -353,6 +233,7 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
       levelData:setColorCount(5)
     end
     p1:setLevelData(levelData)
+    p1:setAllowAdjacentColors(true)
   end
 
   replay:updatePlayer(1, p1)
@@ -364,12 +245,18 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     -- not saved in v1
     p2:setPanelId(config and config.panels or "pacci")
     p2:setInputMethod(v1r.P2_inputMethod or "controller")
-    p2:setInputs(ReplayPlayer.decompressInputString(v1r.I))
+    p2:setInputs(InputCompression.decompressInputString(v1r.I))
 
     -- presence of V2 means level and vs
+    p2:setBehaviours(StackBehaviours.getV048Default())
     p2:setLevel(v1r.P2_level)
-    p2:setAllowAdjacentColors(v1r.P2_level < 8)
     p2:setLevelData(LevelPresets.getModern(v1r.P2_level))
+    p2:setAllowAdjacentColors(v1r.P2_level < 8)
+    if v1r.P2_level < 8 then
+      p2.settings.levelData.adjacentDenialFrequency = 0
+    else
+      p2.settings.levelData.adjacentDenialFrequency = 1
+    end
 
     replay:updatePlayer(2, p2)
   end
@@ -393,4 +280,4 @@ function Replay.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   return replay
 end
 
-return Replay
+return ReplayV2

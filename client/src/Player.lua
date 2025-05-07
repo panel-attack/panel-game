@@ -1,5 +1,5 @@
 local class = require("common.lib.class")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 local LevelPresets = require("common.data.LevelPresets")
 local input = require("client.src.inputManager")
 local MatchParticipant = require("client.src.MatchParticipant")
@@ -8,40 +8,59 @@ local CharacterLoader = require("client.src.mods.CharacterLoader")
 local PlayerStack = require("client.src.PlayerStack")
 require("client.src.network.PlayerStack")
 local logger = require("common.lib.logger")
+local StackBehaviours = require("common.data.StackBehaviours")
 ---@module "common.data.LevelData"
+
+
+---@class PlayerSettings : ParticipantSettings
+---@field puzzleSet PuzzleSet?
+---@field puzzleIndex integer?
+---@field level integer
+---@field difficulty integer
+---@field speed integer
+---@field levelData LevelData
+---@field style Styles
+---@field wantsRanked boolean
+---@field inputMethod InputMethod
+
 
 -- A player is mostly a data representation of a Panel Attack player
 -- It holds data pertaining to their online status (like name, public id)
 -- It holds data pertaining to their client status (like character, stage, panels, level etc)
 -- Player implements a lot of setters that emit signals on changes, allowing other components to be notified about the changes by connecting a function to it
 -- Due to this, unless for a good reason, all properties on Player should be set using the setters
----@class Player : MatchParticipant, Signal
----@overload fun(name: string, publicId: integer, isLocal: boolean?)
+---@class Player : MatchParticipant
+---@field settings PlayerSettings
+---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
+---@param self Player
+---@param name string
+---@param publicId integer?
+---@param isLocal boolean?
 function(self, name, publicId, isLocal)
   ---@class Player
   self = self
   self.name = name
-  self.settings = {
-    -- these need to all be initialized so subscription works
-    -- the gist is that all settings inside here are modifiable clientside for local players as part of match setup
-    -- while everything outside settings is static or dictated server side
-    level = 1,
-    difficulty = 1,
-    speed = 1,
-    ---@type LevelData
-    levelData = LevelPresets.getModern(1),
-    style = GameModes.Styles.MODERN,
-    characterId = "",
-    stageId = "",
-    panelId = "",
-    wantsReady = false,
-    wantsRanked = true,
-    inputMethod = "controller",
-    attackEngineSettings = nil,
-    puzzleSet = nil,
-    puzzleIndex = nil
-  }
+  local settings = self.settings
+  -- these need to all be initialized so subscription works
+  -- the gist is that all settings inside here are modifiable clientside for local players as part of match setup
+  -- while everything outside settings is static or dictated server side
+  settings.level = 1
+  settings.difficulty = 1
+  settings.speed = 1
+  ---@type LevelData
+  settings.levelData = LevelPresets.getModern(1)
+  settings.style = GameModes.Styles.MODERN
+  settings.characterId = ""
+  settings.stageId = ""
+  settings.panelId = ""
+  settings.wantsReady = false
+  settings.wantsRanked = true
+  settings.inputMethod = "controller"
+  settings.attackEngineSettings = nil
+  settings.puzzleSet = nil
+  settings.puzzleIndex = nil
+
   -- planned for the future, players don't have public ids yet
   self.publicId = publicId or -1
   self.league = nil
@@ -60,7 +79,6 @@ function(self, name, publicId, isLocal)
   self:createSignal("styleChanged")
   self:createSignal("difficultyChanged")
   self:createSignal("startingSpeedChanged")
-  self:createSignal("colorCountChanged")
   self:createSignal("levelChanged")
   self:createSignal("levelDataChanged")
   self:createSignal("inputMethodChanged")
@@ -76,46 +94,28 @@ Player.TYPE = "Player"
 function Player:reset()
   MatchParticipant.reset(self)
   self:unrestrictInputs()
+  self.settings.puzzleSet = nil
+  self.settings.puzzleIndex = nil
 end
 
--- creates a stack for the given match according to the player's settings and returns it
--- the stack is also saved as a reference on player
-function Player:createStackFromSettings(match, which)
-  local args = {}
-  args.which = which
-  args.player_number = self.playerNumber
-  args.is_local = self.isLocal
-  args.panels_dir = self.settings.panelId
-  args.character = self.settings.characterId
+---@param engineStack Stack
+---@param match ClientMatch
+---@return PlayerStack
+function Player:createClientStack(engineStack, match)
+  local args = {
+    engine = engineStack,
+    player_number = self.playerNumber,
+    panels_dir = self.settings.panelId,
+    characterId = self.settings.characterId,
+    player = self,
+    match = match,
+  }
+
   if self.settings.style == GameModes.Styles.MODERN then
     args.level = self.settings.level
-    if match.stackInteraction == GameModes.StackInteractions.NONE then
-      args.allowAdjacentColors = true
-    else
-      args.allowAdjacentColors = args.level < 8
-    end
   else
     args.difficulty = self.settings.difficulty
-    args.allowAdjacentColors = true
   end
-
-  ---@type LevelData
-  args.levelData = self.settings.levelData
-
-  -- the client Player does not currently allow management of allowAdjacentColors
-  -- so it is determined above by looking at match and player properties
-  -- but it is tracked in replays and set for player in createFromReplayPlayer
-  -- so if the match is from a loaded replay, use it
-  if match.replay and self.settings.allowAdjacentColors ~= nil then
-    args.allowAdjacentColors = self.settings.allowAdjacentColors
-  end
-  args.inputMethod = self.settings.inputMethod
-  args.stackInteraction = match.stackInteraction
-  args.gameOverConditions = match.gameOverConditions
-  args.seed = match.seed
-  args.match = match
-
-  args.player = self
 
   self.stack = PlayerStack(args)
 
@@ -130,20 +130,6 @@ function Player:getRatingDiff()
   end
 end
 
-function Player:setPanels(panelId)
-  if panelId ~= self.settings.panelId then
-    if panels[panelId] then
-      self.settings.panelId = panelId
-    else
-      -- default back to config panels always
-      self.settings.panelId = config.panels
-    end
-    -- panels are always loaded so no loading is necessary
-
-    self:emitSignal("panelIdChanged", self.settings.panelId)
-  end
-end
-
 function Player:setWantsRanked(wantsRanked)
   if wantsRanked ~= self.settings.wantsRanked then
     self.settings.wantsRanked = wantsRanked
@@ -154,9 +140,6 @@ end
 function Player:setDifficulty(difficulty)
   if difficulty ~= self.settings.difficulty then
     self.settings.difficulty = difficulty
-    if self.settings.style == GameModes.Styles.CLASSIC then
-      self:setLevelData(LevelPresets.getClassic(difficulty))
-    end
     self:emitSignal("difficultyChanged", difficulty)
   end
 end
@@ -164,7 +147,6 @@ end
 ---@param levelData LevelData
 function Player:setLevelData(levelData)
   self.settings.levelData = levelData
-  self:setColorCount(levelData.colors)
   self:setSpeed(levelData.startingSpeed)
   self:emitSignal("levelDataChanged", levelData)
 end
@@ -177,20 +159,9 @@ function Player:setSpeed(speed)
   end
 end
 
-function Player:setColorCount(colorCount)
-  if colorCount ~= self.settings.colorCount or colorCount ~= self.settings.levelData.colors  then
-    self.settings.levelData.colors = colorCount
-    self.settings.colorCount = colorCount
-    self:emitSignal("colorCountChanged", colorCount)
-  end
-end
-
 function Player:setLevel(level)
   if level ~= self.settings.level then
     self.settings.level = level
-    if self.settings.style == GameModes.Styles.MODERN then
-      self:setLevelData(LevelPresets.getModern(level))
-    end
     self:emitSignal("levelChanged", level)
   end
 end
@@ -214,11 +185,9 @@ function Player:setStyle(style)
     if style == GameModes.Styles.MODERN then
       self:setLevelData(LevelPresets.getModern(self.settings.level or config.level))
     else
-      self:setLevelData(LevelPresets.getClassic(self.settings.difficulty or config.difficulty))
+      self:setLevelData(LevelPresets.getClassic(self.settings.difficulty or config.endless_difficulty))
       self:setSpeed(self.settings.speed)
     end
-    -- reset color count while we don't have an established caching mechanism for it
-    self:setColorCount(self.settings.levelData.colors)
     self:emitSignal("styleChanged", style)
   end
 end
@@ -283,7 +252,6 @@ function Player.getLocalPlayer()
   local player = Player(config.name, -1, true)
 
   player:setDifficulty(config.endless_difficulty)
-  player:setSpeed(config.endless_speed)
   player:setLevel(config.level)
   player:setCharacter(config.character)
   player:setStage(config.stage)
@@ -293,33 +261,33 @@ function Player.getLocalPlayer()
   player:setInputMethod(config.inputMethod)
   if config.endless_level then
     player:setStyle(GameModes.Styles.MODERN)
+    player:setLevelData(LevelPresets.getModern(player.settings.level))
   else
     player:setStyle(GameModes.Styles.CLASSIC)
+    player:setLevelData(LevelPresets.getClassic(player.settings.difficulty))
+    player:setSpeed(config.endless_speed)
   end
 
   return player
 end
 
-function Player.createFromReplayPlayer(replayPlayer, playerNumber)
-  local player = Player(replayPlayer.name, replayPlayer.publicId, false)
-
-  player.playerNumber = playerNumber
-  player:setWinCount(replayPlayer.wins)
-  player:setPanels(replayPlayer.settings.panelId)
-  player:setCharacter(replayPlayer.settings.characterId)
-  player:setInputMethod(replayPlayer.settings.inputMethod)
-  -- style will be obsolete for replays with style-independent levelData
-  if replayPlayer.settings.level then
+---@param stackMetadata StackMetadata
+---@return Player
+function Player.createFromReplayMetadata(stackMetadata)
+  local player = Player(stackMetadata.name, stackMetadata.publicId, false)
+  player.playerNumber = stackMetadata.stackIndex
+  player:setWinCount(stackMetadata.wins)
+  player:setPanels(stackMetadata.panelId)
+  player:setCharacter(stackMetadata.characterId)
+  if stackMetadata.level then
     player:setStyle(GameModes.Styles.MODERN)
-    player:setLevel(replayPlayer.settings.level)
+    player:setLevel(stackMetadata.level)
   else
     player:setStyle(GameModes.Styles.CLASSIC)
-    player:setDifficulty(replayPlayer.settings.difficulty)
+    player:setDifficulty(stackMetadata.difficulty)
   end
-  -- no matter what style / level / difficulty is actually selected, levelData should have gotten preloaded correctly
-  player:setLevelData(replayPlayer.settings.levelData)
-  player.settings.allowAdjacentColors = replayPlayer.settings.allowAdjacentColors
-  player:setAttackEngineSettings(replayPlayer.settings.attackEngineSettings)
+
+  -- see if things like inputMethod and levelData need to be loaded on the Player too - I think not
 
   return player
 end

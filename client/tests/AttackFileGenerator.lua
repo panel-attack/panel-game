@@ -1,7 +1,7 @@
 local logger = require("common.lib.logger")
 local separator = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 local fileUtils = require("client.src.FileUtils")
-local Replay = require("common.data.Replay")
+local ReplayV3 = require("common.data.ReplayV3")
 local Match = require("common.engine.Match")
 
 -- Helper debug functions for analyzing a set of replays and outputting attack files from them.
@@ -14,7 +14,7 @@ local function finishedMatchForPath(path)
     end
   )
 
-  local replay = Replay.createFromTable(fileUtils.readJsonFile(path), true)
+  local replay = ReplayV3.createFromTable(fileUtils.readJsonFile(path), true)
   local match = Match.createFromReplay(replay)
 
   assert(match ~= nil)

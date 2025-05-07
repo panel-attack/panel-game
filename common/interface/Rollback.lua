@@ -1,0 +1,4 @@
+---@class canRollback
+---@field rollbackToFrame fun(self: table, frame: integer): boolean?
+---@field rewindToFrame fun(self: table, frame: integer): boolean?
+---@field saveForRollback fun(self: table, frame: integer?)

@@ -10,15 +10,14 @@ local touchHandler = {
 }
 
 function touchHandler:touch(x, y)
-  local canvasX, canvasY = GAME:transform_coordinates(x, y)
   local activeScene = GAME.navigationStack:getActiveScene()
   -- if there is no active scene that implies an on-going scene switch, no interactions should be possible
   if activeScene then
     -- prevent multitouch
     if not self.touchedElement then
-      self.touchedElement = activeScene.uiRoot:getTouchedElement(canvasX, canvasY)
+      self.touchedElement = activeScene.uiRoot:getTouchedElement(x, y)
       if self.touchedElement and self.touchedElement.onTouch then
-        self.touchedElement:onTouch(canvasX, canvasY)
+        self.touchedElement:onTouch(x, y)
       end
     end
   end
@@ -28,8 +27,7 @@ function touchHandler:drag(x, y)
   if self.touchedElement then
     self.draggedThisFrame = true
     if self.touchedElement.onDrag then
-      local canvasX, canvasY = GAME:transform_coordinates(x, y)
-      self.touchedElement:onDrag(canvasX, canvasY)
+      self.touchedElement:onDrag(x, y)
     end
   end
 end
@@ -37,8 +35,7 @@ end
 function touchHandler:release(x, y)
   if self.touchedElement then
     if self.touchedElement.onRelease then
-      local canvasX, canvasY = GAME:transform_coordinates(x, y)
-      self.touchedElement:onRelease(canvasX, canvasY, self.holdTimer)
+      self.touchedElement:onRelease(x, y, self.holdTimer)
     end
     self.touchedElement = nil
     self.holdTimer = 0

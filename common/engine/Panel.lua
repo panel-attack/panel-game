@@ -157,14 +157,14 @@ end
 
 -- Represents an individual panel in a stack
 ---@class Panel
----@overload fun(id: integer, row: integer, column: integer, frameTimes: table<string, integer>): Panel
+---@overload fun(row: integer, column: integer, id: integer, frameTimes: table<string, integer>): Panel
 Panel = class(
 ---@param p Panel
-function(p, id, row, column, frameTimes)
+function(p, row, column, id, frameTimes)
   clear(p, true, true)
-  p.id = id
   p.row = row
   p.column = column
+  p.id = id
   p.frameTimes = frameTimes
 end
 )
@@ -688,9 +688,11 @@ deadState.update = function(panel, panels)
   -- dead is dead
 end
 
+-- returns true if this panel is allowed to be swapped based on its color, state and dont_swap flag
+-- a panel that is allowed to swap may still not be swappable for other reasons (see Stack.canSwap)
 ---@param self Panel
 ---@return boolean # if the panel can be swapped
-function Panel.canSwap(self)
+function Panel.allowsSwap(self)
   -- the panel was flagged as unswappable inside of the swap function
   -- this flag should honestly go die and the connected checks should be part of the Stack's canSwap func if possible
   if self.dont_swap then

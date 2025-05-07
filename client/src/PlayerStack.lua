@@ -8,10 +8,13 @@ local prof = require("common.lib.zoneProfiler")
 local EngineStack = require("common.engine.Stack")
 require("common.engine.checkMatches")
 local tableUtils = require("common.lib.tableUtils")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
+local TouchInputController = require("client.src.TouchInputController")
 local TouchInputDetector = require("client.src.TouchInputDetector")
 local logger = require("common.lib.logger")
 require("client.src.analytics")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local MatchRules      = require("common.data.MatchRules")
 ---@module "common.data.LevelData"
 
 local floor, min, max = math.floor, math.min, math.max
@@ -25,6 +28,7 @@ local floor, min, max = math.floor, math.min, math.max
 ---@field danger_timer integer Decides the bounce frame while the column is in danger, increments and stops according to certain rules
 ---@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column. \n
 ---@field analytic table
+---@field player Player
 
 -- A client side stack that wraps an engine Stack
 -- engine functionality is masked by wrapping the relevant functions and fields Match interfaces with
@@ -35,15 +39,18 @@ local PlayerStack = class(
 function(self, args)
   ---@class PlayerStack
   self = self
+  assert(args.player)
   self.player = args.player
   self.stackInteraction = args.stackInteraction
 
-  self.engine = EngineStack(args)
+  assert(self.engine.TYPE == "Stack")
+  self.engine.is_local = self.player.isLocal
   self.engine:connectSignal("panelLanded", self, self.onPanelLand)
   self.engine:connectSignal("panelPop", self, self.onPanelPop)
   self.engine:connectSignal("matched", self, self.onEngineMatched)
   self.engine:connectSignal("cursorMoved", self, self.onCursorMoved)
   self.engine:connectSignal("panelsSwapped", self, self.onPanelsSwapped)
+  self.engine:connectSignal("swapDenied", self, self.onSwapDenied)
   self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("newRow", self, self.onNewRow)
   self.engine:connectSignal("finishedRun", self, self.onRun)
@@ -61,8 +68,9 @@ function(self, args)
   self.difficulty = args.difficulty
   self.level = args.level
 
-  self.inputMethod = args.inputMethod or "controller"
+  self.inputMethod = self.engine.inputMethod
   if self.inputMethod == "touch" then
+    self.touchInputController = TouchInputController(self.engine)
     self.touchInputDetector = TouchInputDetector(self)
   end
 
@@ -133,8 +141,6 @@ function PlayerStack:onGameOver(engine)
       end
     end
   end
-
-  self.game_over_clock = self.engine.game_over_clock
 end
 
 ---@param panel Panel
@@ -226,6 +232,10 @@ function PlayerStack:onPanelsSwapped()
   self.analytic:register_swap()
 end
 
+function PlayerStack:onSwapDenied()
+  -- play an SFX
+end
+
 function PlayerStack:onGarbageMatched(garbagePanelCount)
   if self:canPlaySfx() then
     self.sfxGarbageMatch = true
@@ -233,7 +243,9 @@ function PlayerStack:onGarbageMatched(garbagePanelCount)
 end
 
 function PlayerStack:onNewRow(engine)
-
+  if engine.inputMethod == "touch" then
+    self.touchInputController:stackIsCreatingNewRow()
+  end
 end
 
 function PlayerStack:onRollback(engine)
@@ -770,7 +782,7 @@ function PlayerStack:drawDebug()
     end
 
     GraphicsUtil.print(loc("pl_cleared", (engine.panels_cleared or 0)), x, y + 165)
-    GraphicsUtil.print(loc("pl_metal", (engine.metal_panels_queued or 0)), x, y + 180)
+    GraphicsUtil.print(loc("pl_metal", (engine.metalPanelsQueued or 0)), x, y + 180)
 
     local input = engine.confirmedInput[engine.clock]
 
@@ -779,7 +791,7 @@ function PlayerStack:drawDebug()
       if engine.inputMethod == "touch" then
         iraise, _, _ = TouchDataEncoding.latinStringToTouchData(input, engine.width)
       else
-        iraise, iswap, iup, idown, ileft, iright = unpack(base64decode[input])
+        iraise, iswap, iup, idown, ileft, iright = unpack(KeyDataEncoding.base64decode[input])
       end
       local inputs_to_print = "inputs:"
       if iraise then
@@ -991,12 +1003,6 @@ function PlayerStack:drawMultibar()
   local stop_time = engine.stop_time
   local shake_time = engine.shake_time
 
-  -- before the first move, display the stop time from the puzzle, not the stack
-  if engine.puzzle and engine.puzzle.puzzleType == "clear" and engine.puzzle.moves == engine.puzzle.remaining_moves then
-    stop_time = engine.puzzle.stop_time
-    shake_time = engine.puzzle.shake_time
-  end
-
   if self.theme.multibar_is_absolute then
     -- absolute multibar is *only* supported for v3 themes
     self:drawAbsoluteMultibar(stop_time, shake_time, engine.pre_stop_time)
@@ -1207,15 +1213,14 @@ function PlayerStack:drawAnalyticData()
 end
 
 function PlayerStack:drawMoveCount()
-  -- draw outside of stack's frame canvas
-  if self.engine.puzzle then
-    self:drawLabel(self.assets.moves, themes[config.theme].moveLabel_Pos, themes[config.theme].moveLabel_Scale, false, true)
-    local moveNumber = math.abs(self.engine.puzzle.remaining_moves)
-    if self.engine.puzzle.puzzleType == "moves" then
-      moveNumber = self.engine.puzzle.remaining_moves
-    end
-    self:drawNumber(moveNumber, themes[config.theme].move_Pos, themes[config.theme].move_Scale, true)
+  local moveNumber
+  self:drawLabel(self.assets.moves, GAME.theme.moveLabel_Pos, GAME.theme.moveLabel_Scale, false, true)
+  if self.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
+    moveNumber = self.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] - self.engine.swapCount
+  else
+    moveNumber = self.engine.swapCount
   end
+  self:drawNumber(moveNumber, themes[config.theme].move_Pos, themes[config.theme].move_Scale, true)
 end
 
 local function shouldFlashForFrame(frame)
@@ -1592,8 +1597,9 @@ function PlayerStack:getAttackPatternData()
 end
 
 -- calculate which columns should bounce
-function PlayerStack:updateDangerBounce()
-  if self.engine.puzzle then
+function PlayerStack.updateDangerBounce(self)
+  if not self.engine.behaviours.passiveRaise then
+    -- no passive raise, no danger
     return
   end
 
@@ -1616,7 +1622,7 @@ function PlayerStack:updateDangerBounce()
   end
 
   if self.danger then
-    if self.engine.panels_in_top_row and self.engine.speed ~= 0 and not self.engine.puzzle then
+    if self.engine.panels_in_top_row and self.engine.speed ~= 0 then
       -- Player has topped out, panels hold the "flattened" frame
       self.danger_timer = 0
     elseif self.engine.stop_time == 0 then

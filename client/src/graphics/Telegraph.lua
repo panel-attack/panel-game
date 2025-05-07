@@ -1,6 +1,5 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
--- TODO: move graphics related functionality to client
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local TELEGRAPH_HEIGHT = 16
@@ -112,7 +111,7 @@ function Telegraph:renderAttack(sender, receiver, frameEarned, telegraphIndex, r
   local horizontalDirection = math.sign(destinationX - attackX)
 
   -- We can't guarantee every frame was rendered, so we must calculate the exact location regardless of how many frames happened.
-  -- TODO make this more performant?
+  -- todo make this more performant?
   -- it should be very possible to just precalculate the values although I think performance here isn't truly problematic either way
   for frame = 1, math.min(attackFrame - self:attackAnimationStartFrame(), #telegraph_attack_animation_speed) do
     attackX = attackX + telegraph_attack_animation[horizontalDirection][frame].dx
@@ -123,7 +122,7 @@ function Telegraph:renderAttack(sender, receiver, frameEarned, telegraphIndex, r
   --  that is mostly independent of where the attack goes after (except for choosing the side around which to loop)
   if attackFrame <= #telegraph_attack_animation_speed + self:attackAnimationStartFrame() then
     -- if we aren't past the loopy part yet, draw directly
-    -- TODO: tween the scale between sender and receiver scale
+    -- todo: tween the scale between sender and receiver scale
     GraphicsUtil.draw(character.telegraph_garbage_images["attack"], attackX * receiver.gfxScale, attackY * receiver.gfxScale, 0, attackScale, attackScale)
   else
     -- if we are, attackOriginX and attackOriginY are set to the end of the loopy animation now

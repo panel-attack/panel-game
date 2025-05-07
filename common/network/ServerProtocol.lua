@@ -164,15 +164,15 @@ local addToRoomTemplate = {
 }
 
 ---@param room Room
----@param replay Replay?
+---@param replay ReplayV3?
 function ServerProtocol.addToRoom(room, replay)
   local addToRoomMessage = addToRoomTemplate
   local content = addToRoomMessage.content
   content.roomNumber = room.roomNumber
   content.gameMode = room.gameMode
-  content.ranked = (replay and replay.ranked or room.ranked)
+  content.ranked = (replay and replay.metadata.ranked or room.ranked)
   content.replay = replay
-  content.stage = (replay and replay.stageId or nil)
+  content.stage = (replay and replay.metadata.stageId or nil)
   content.players = {}
 
   for i, player in ipairs(room.players) do
@@ -208,16 +208,16 @@ local spectateRequestGrantedTemplate = {
 -- effectively spectate grant is just a super set of create room and both can be summarized into addToRoom
 -- we need to keep them separate for the client to tell apart for now though
 ---@param room Room
----@param replay Replay?
+---@param replay ReplayV3?
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.spectateRequestGranted(room, replay)
   local spectateRequestGrantedMessage = spectateRequestGrantedTemplate
   local content = spectateRequestGrantedMessage.content
   content.roomNumber = room.roomNumber
   content.gameMode = room.gameMode
-  content.ranked = (replay and replay.ranked or room.ranked)
+  content.ranked = (replay and replay.metadata.ranked or room.ranked)
   content.replay = replay
-  content.stage = (replay and replay.stageId or nil)
+  content.stage = (replay and replay.metadata.stageId or nil)
   content.players = {}
 
   for i, player in ipairs(room.players) do
@@ -283,7 +283,7 @@ local matchStartTemplate = {
 }
 
 ---@param roomNumber integer
----@param replay Replay
+---@param replay ReplayV3
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.startMatch(roomNumber, replay)
   local startMatchMessage = matchStartTemplate

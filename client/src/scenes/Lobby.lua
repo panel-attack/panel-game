@@ -5,7 +5,7 @@ local logger = require("common.lib.logger")
 local util = require("common.lib.util")
 local NetClient = require("client.src.network.NetClient")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
-local GameModes = require("common.engine.GameModes")
+local GameModes = require("common.data.GameModes")
 
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
 local Lobby = class(function(self, sceneParams)
