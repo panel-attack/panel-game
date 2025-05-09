@@ -268,7 +268,6 @@ default_data/characters/Esme/Character Music
   https://h-v-b.bandcamp.com
 
 
-
 default_data/characters/Magellan/icon
 default_data/characters/Magellan/portrait
   Copyright (C) 2022 Gaster
@@ -297,7 +296,6 @@ themes/Panel Attack Modern/default/stage
   https://h-v-b.bandcamp.com
 
 
-
 default_data/characters/Rattles/icon
 default_data/characters/Rattles/portrait
   Copyright (C) 2025 Gaster
@@ -320,6 +318,34 @@ default_data/characters/Rattles/Character SFX
   License: CC BY-SA 4.0
 
 default_data/characters/Rattles/Character Music
+  Copyright (C) Hunter van Brocklin
+  License: CC BY-NC-SA 4.0
+  https://h-v-b.bandcamp.com
+
+
+default_data/characters/Madam Q/icon
+default_data/characters/Madam Q/portrait
+  Copyright (C) 2025 Gaster
+  License: CC BY-SA 4.0
+
+default_data/characters/Madam Q/telegraph/attack
+  Copyright (C) 2025 JamBox
+  License: CC BY-SA 4.0
+
+default_data/characters/Madam Q/telegraph/
+  Copyright (C) 2025 JamBox, Ace of Arrows
+  License: CC BY-SA 4.0
+
+default_data/characters/Madam Q/Garbage
+default_data/characters/Madam Q/burst
+  Copyright (C) 2025 JamBox, Donavin Draws
+  License: CC BY-SA 4.0
+
+default_data/characters/Madam Q/Character SFX
+  Copyright (C) 2025 D Casellian
+  License: CC BY-SA 4.0
+
+default_data/characters/Madam Q/Character Music
   Copyright (C) Hunter van Brocklin
   License: CC BY-NC-SA 4.0
   https://h-v-b.bandcamp.com

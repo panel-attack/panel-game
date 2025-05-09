@@ -50,6 +50,7 @@ end
 ---@field updater table?
 ---@field automaticScales number[]
 ---@field config UserConfig
+---@field puzzleSets table<string, PuzzleSet>
 ---@field lastReplayPath string?
 ---@field crashTrace string?
 ---@field theme Theme

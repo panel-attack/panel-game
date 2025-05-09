@@ -69,8 +69,6 @@ end
 
 local function testSimpleGameProcessing()
   local game = ServerGame({p2, p3})
-  p2.opponent = p3
-  p3.opponent = p2
   game.winnerId = p2.publicPlayerID
 
   local ratingChanges = leaderboard:processGameResult(game)
@@ -83,15 +81,11 @@ local function testSimpleGameProcessing()
   assert(leaderboard:getRating(p2) == ratingChanges[1].new)
   assert(leaderboard:getRating(p3) == ratingChanges[2].new)
 
-  p2.opponent = nil
-  p3.opponent = nil
 end
 
 local function testImpossibleGameProcessing()
   local game = ServerGame({p1, p4})
   game.winnerId = p1.publicPlayerID
-  p1.opponent = p4
-  p4.opponent = p1
 
   local ratingChanges = leaderboard:processGameResult(game)
 
@@ -99,7 +93,6 @@ local function testImpossibleGameProcessing()
 
   game = ServerGame({p1})
   game.winnerId = p1.publicPlayerID
-  p1.opponent = p1
 
   ratingChanges = leaderboard:processGameResult(game)
 
@@ -109,8 +102,6 @@ end
 local function testPlacementGameProcessing()
   local game = ServerGame({p4, p5})
   game.winnerId = p5.publicPlayerID
-  p4.opponent = p5
-  p5.opponent = p4
 
   local ratingChanges = leaderboard:processGameResult(game)
 

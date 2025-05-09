@@ -528,6 +528,7 @@ end
 
 function BattleRoom:shutdown()
   for _, player in ipairs(self.players) do
+    player:disconnectSubscriber(self)
     player:reset()
   end
   if self.match then
@@ -551,9 +552,13 @@ function BattleRoom:onMatchEnded(match)
     local winners = match:getWinners()
     -- apply wins and possibly statistical data up for collection
     if #winners == 1 then
-      -- increment win count on winning player if there is only one
-      winners[1]:incrementWinCount()
       winners[1].stack.character:playWinSfx()
+      if not self.online then
+        -- increment win count on winning player if there is only one
+        winners[1]:incrementWinCount()
+      -- else
+      -- in online play the win counts get updated by the server sending out the game result instead
+      end
     end
     if self.online and match:hasLocalPlayer() then
       GAME.netClient:reportLocalGameResult(winners)

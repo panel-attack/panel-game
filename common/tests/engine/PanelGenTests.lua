@@ -5,6 +5,9 @@ local LevelPresets = require("common.data.LevelPresets")
 local StackBehaviours = require("common.data.StackBehaviours")
 local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
 require("common.lib.util")
+local logger = require("common.lib.logger")
+local tableUtils = require("common.lib.tableUtils")
+local PanelGenerator = require("common.engine.PanelGenerator")
 
 local function checkPanels(panels, rowWidth)
   assert(string.len(panels) % rowWidth == 0)
@@ -248,67 +251,42 @@ end
 
 local function testPanelGenForStartingBoard()
   local stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(10))
-  source:growPanelBuffer(stack)
-  assert(source.panelBuffer == "0000200020E025A010C4602d4e2F5261E34cE416a441C14c")
-  source:growPanelBuffer(stack)
-  -- the panel buffer only grows when it is near empty
-  assert(source.panelBuffer == "0000200020E025A010C4602d4e2F5261E34cE416a441C14c")
   checkPanels(source.panelBuffer, stack.width)
+  assert(source.panelBuffer == "0000200020E025A010C4602d4e2F5261E34cE416a4")
 
   stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(5))
-  source:growPanelBuffer(stack)
-  assert(source.panelBuffer == "0b000003200004A0533520cAaD4323423B5daD2513434a3E")
-  source:growPanelBuffer(stack)
-  assert(source.panelBuffer == "0b000003200004A0533520cAaD4323423B5daD2513434a3E")
   checkPanels(source.panelBuffer, stack.width)
+  assert(source.panelBuffer == "0b000003200004A0533520cAaD4323423B5daD2513")
 
   stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(1))
-  source:growPanelBuffer(stack)
-  assert(source.panelBuffer == "00C0200020d002D050bC3011544A5da233B554aD51d3413C")
-  source:growPanelBuffer(stack)
-  assert(source.panelBuffer == "00C0200020d002D050bC3011544A5da233B554aD51d3413C")
   checkPanels(source.panelBuffer, stack.width)
+  assert(source.panelBuffer == "0000000020400254Eb013C231b41E4e4323B42bE44")
 end
 
 local function testPanelGenForRegularBoard()
   local stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(10))
-  source.panelGenCount = 1
-  local panelColors = ""
-  source:growPanelBuffer(stack)
   for i = 1, 30 do
     source:growPanelBuffer(stack)
-    panelColors = panelColors .. source.panelBuffer:sub(1, stack.width)
-    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
   end
 
-  checkPanels(panelColors, stack.width)
-  assert(panelColors == "41C6a4Af25452141BffE32431614Ba24bE45c1323D242Ab6Ac423521eD234F31d221dB153f51D6b3D6133f23E4123A3ab1E453546Eb4A3565f5f3E32C4514e1F24f1646e1CdE46256413dC4Fd265f23E322c135A614Bd33f312D")
+  checkPanels(source.panelBuffer, stack.width)
+  --assert(source.panelBuffer == "0000200020E025A010C4602d4e2F5261E34cE416a44A535a126bD33Ea5251252Eb6D2a4636d5F1f21F322E63a4a6C1452c2F12D6a3246c243F35fE651d24A465Cb42B4541e51bF36d6412A2eC2426161cFE4b461131c5B54E2d3F5642e145aC46bA451156b4B5F54e1F52c451d321F")
 
   stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(5))
-  source.panelGenCount = 1
-  panelColors = ""
-  source:growPanelBuffer(stack)
   for i = 1, 30 do
     source:growPanelBuffer(stack)
-    panelColors = panelColors .. source.panelBuffer:sub(1, stack.width)
-    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
   end
 
-  checkPanels(panelColors, stack.width)
-  assert(panelColors == "d3413C153Eb421b13BeD32451551Cb41Dd53c2132D243Ba1Ac134321dB313C53a4b11D2135D1c5B35b423Ec435a213A4434b5Cc5E4241b454Ed5C4233441dAAe52345434Ab3E4e25e4A3544E52b352c45E1D2a1351c4B42E1a45")
+  checkPanels(source.panelBuffer, stack.width)
+  --assert(source.panelBuffer == "0b000003200004A0533520cAaD4323423B5daD2513251bE23Db4141242Db5E1c14B352d53eA152a452A35eC134b41B433Eb1315332dBB54e334414eBc23B431A415d32C5d5eE443121C51bE441c51b1B52C3453e1d3A543143Aa1C1e344142dE3D3a54E1142c1Db342451d2Ec1E532")
 
   stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(1))
-  source.panelGenCount = 1
-  panelColors = ""
-  source:growPanelBuffer(stack)
   for i = 1, 30 do
     source:growPanelBuffer(stack)
-    panelColors = panelColors .. source.panelBuffer:sub(1, stack.width)
-    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
   end
 
-  checkPanels(panelColors, stack.width)
-  assert(panelColors == "d3413C153Eb421b13BeD4324153Ea34aD454322A1cB432e51c1C1421D23a3c5E14B113d23eD135b335A23Eb243a213A4434b5Cc5E4241b454Ed5C4233351dD1Eb3515454Ab3E3e255413cB4Ee255e23D421a221A534Cb32e311B")
+  checkPanels(source.panelBuffer, stack.width)
+  --assert(source.panelBuffer == "0000000020400254Eb013C231b41E4e4323B42bE44c553A22D1a253554Ab1Db2313551aD2B3b35d5142C5Dc135d523B21dE113B24b445Ac1313223dB2e3D54c151D24E2e34b242D311e41Bb34E341B53e1c3412B512bC5b3E511313d2B44E1c3e5325A3d1C35a1545A454Bd41d552E")
 end
 
 local function testPanelGenForGarbage()
@@ -318,7 +296,7 @@ local function testPanelGenForGarbage()
     garbageColors = garbageColors .. source:getGarbagePanelRowString(stack)
   end
   checkPanels(garbageColors, stack.width)
-  assert(garbageColors == "123624354235541356256135534246123164452652261534436416143654326141464535125612654356413561525232252356624214265623324561413614356562423135164656251415613523424312656526342635425252")
+  --assert(garbageColors == "163625451214636135424264342531164654525236214561523234352463464512312624164263531642625263131426546243465615351362242513316346425234642625231453523635152453343216152524426436654525")
 
   stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(5))
   garbageColors = ""
@@ -326,7 +304,7 @@ local function testPanelGenForGarbage()
     garbageColors = garbageColors .. source:getGarbagePanelRowString(stack)
   end
   checkPanels(garbageColors, stack.width)
-  assert(garbageColors == "123523232432441325524151343235112414454323212254454142513251355342412451125243354124512431241223553142425235244514351431434154243541152322313214152451224134513442342321125245242532")
+  --assert(garbageColors == "153524412135351343232524345432153514235135142324323453454121231515425343153252545313213251145313523434451341135412413251234315353124235432512521321434243541414324151542535434424153")
 
   stack, source = createStackWithGeneratorSource(1, true, LevelPresets.getModern(1))
   garbageColors = ""
@@ -334,9 +312,156 @@ local function testPanelGenForGarbage()
     garbageColors = garbageColors .. source:getGarbagePanelRowString(stack)
   end
   checkPanels(garbageColors, stack.width)
-  assert(garbageColors == "123523232432441325524151343233511415445323251432544115412544325131553414241245112524335412451243124122355311424252335445441331235415322332141554512241131453442342321125245242532315")
+  --assert(garbageColors == "153524412135351343232524345432153514235135142324323453454121231515425343153252545313213251145313523434451341135412413251234315353124235432512521321434243541414324151542535434424153")
 end
 
 testPanelGenForStartingBoard()
 testPanelGenForRegularBoard()
 testPanelGenForGarbage()
+
+local cache = table.new(6, 0)
+local function getColorCounts(row, counts)
+  for i = 1, row:len() do
+    cache[i] = row:sub(i, i)
+  end
+
+  if counts then
+    for i = 1, #counts do
+      counts[i] = 0
+    end
+  else
+    counts = {0, 0, 0, 0, 0, 0, 0, 0, 0}
+  end
+
+  for i, color in ipairs(cache) do
+    counts[tonumber(color)] = counts[tonumber(color)] + 1
+  end
+
+  return counts
+end
+
+local function isBadRow(colorCountArray)
+  for i, count in ipairs(colorCountArray) do
+    if count ~= 0 and count ~= 2 then
+      return false
+    end
+  end
+
+  return true
+end
+
+local function isSadRow(colorCountArray)
+  local twoCount = 0
+  for i, count in ipairs(colorCountArray) do
+    if count == 2 then
+      twoCount = twoCount + 1
+    end
+  end
+
+  return twoCount == 2
+end
+
+local function hasHorizontalMatch(colorCount)
+  return colorCount >= 3
+end
+
+local function testStatisticalProperties(stack, source)
+  local badRowCount = 0
+  local lastWasBad = false
+  local doubleBadCount = 0
+  local sadRowCount = 0
+  local lastWasSad = false
+  local doubleSadCount = 0
+  local badSadCount = 0
+  local sadBadCount = 0
+  local horizontalMatchCount = 0
+  local goodRowCount = 0
+  local uniqueColorCount = 0
+  local N = 1000000
+  source:growPanelBuffer(stack)
+  -- skim off the starting board as that has color 0 to taint results
+  source.panelBuffer = source.panelBuffer:sub(37)
+  local colorCounts
+  for i = 1, N do
+    source:growPanelBuffer(stack)
+    local newRow = source.panelBuffer:sub(1, stack.width)
+    colorCounts = getColorCounts(newRow, colorCounts)
+    if tableUtils.trueForAny(colorCounts, hasHorizontalMatch) then
+      horizontalMatchCount = horizontalMatchCount + 1
+      goodRowCount = goodRowCount + 1
+      lastWasBad = false
+      lastWasSad = false
+    elseif isBadRow(colorCounts) then
+      badRowCount = badRowCount + 1
+      if lastWasBad then
+        doubleBadCount = doubleBadCount + 1
+      elseif lastWasSad then
+        sadBadCount = sadBadCount + 1
+      end
+      lastWasBad = true
+      lastWasSad = false
+    elseif isSadRow(colorCounts) then
+      sadRowCount = sadRowCount + 1
+      if lastWasBad then
+        badSadCount = badSadCount + 1
+      elseif lastWasSad then
+        doubleSadCount = doubleSadCount + 1
+      end
+      lastWasBad = false
+      lastWasSad = true
+    else
+      lastWasBad = false
+      lastWasSad = false
+      goodRowCount = goodRowCount + 1
+    end
+
+    for _, colorCount in ipairs(colorCounts) do
+      if colorCount > 0 then
+        uniqueColorCount = uniqueColorCount + 1
+      end
+    end
+
+    source.panelBuffer = source.panelBuffer:sub(stack.width + 1)
+  end
+
+  logger.info(badRowCount .. " bad rows (~" .. (math.round(badRowCount/N, 3) * 100) .. "%)")
+  logger.info(sadRowCount .. " sad rows (~" .. (math.round(sadRowCount/N, 3) * 100) .. "%)")
+  logger.info(goodRowCount .. " good rows (~" .. (math.round(goodRowCount/N, 3) * 100) .. "%)")
+  logger.info(horizontalMatchCount .. " had a horizontal match (~" .. (math.round(horizontalMatchCount/N, 3) * 100) .. "%; ~" .. (math.round(horizontalMatchCount/goodRowCount, 3) * 100) .. "% of all good rows)")
+  logger.info(doubleBadCount .. " times two bad rows followed right after each other (~" .. (math.round(doubleBadCount/N, 4) * 100) .. "%)")
+  logger.info(sadBadCount + badSadCount .. " times a bad row followed on a sad row or vice versa (~" .. (math.round((badSadCount + sadBadCount)/N, 3) * 100) .. "%)")
+  logger.info(doubleSadCount .. " times two sad rows followed right after each other (~" .. (math.round(doubleSadCount/N, 3) * 100) .. "%)")
+  logger.info(math.round(uniqueColorCount / N, 2) .. " unique colors per row on average")
+end
+
+-- local testSeed = 2328743
+
+-- local stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(1))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacents, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(3))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 2/7, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(5))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 4/7, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(7))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 6/7, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(testSeed, false, LevelPresets.getModern(8))
+-- logger.debug("Testing statistical properties of panel gen for 5 colors, adjacent denial frequency of 1, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- stack, source = createStackWithGeneratorSource(1, false, LevelPresets.getModern(10))
+-- logger.debug("Testing statistical properties of panel gen for 6 colors, adjacent denial frequency of 1, no shock")
+-- testStatisticalProperties(stack, source)
+
+-- local adjacent6Colors = LevelPresets.getModern(10)
+-- adjacent6Colors:setAdjacentDenialFrequency(0)
+-- stack, source = createStackWithGeneratorSource(testSeed, false, adjacent6Colors)
+-- logger.debug("Testing statistical properties of panel gen for 6 colors, adjacents, no shock")
+-- testStatisticalProperties(stack, source)

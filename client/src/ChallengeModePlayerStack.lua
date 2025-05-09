@@ -154,10 +154,6 @@ end
 ---@param garbageTarget GarbageTarget
 function ChallengeModePlayerStack:setGarbageTarget(garbageTarget)
   ClientStack.setGarbageTarget(self, garbageTarget)
-  if self.engine.attackEngine then
-    -- the target needs to match the settings about shock garbage being sorted with 
-    self.engine.attackEngine:setGarbageTarget(garbageTarget)
-  end
 end
 
 function ChallengeModePlayerStack:drawScore()

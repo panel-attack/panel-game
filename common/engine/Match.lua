@@ -280,13 +280,13 @@ function Match:pushGarbageTo(stack)
   -- check if anyone wants to push garbage into the stack's queue
   for _, st in ipairs(self.garbageSources[stack]) do
     local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
-    if oldestTransitTime then
+    if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
       if stack.clock > oldestTransitTime then
         -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
         --  which may even include another rollback
-        if not self:rollbackToFrame(stack, oldestTransitTime) then
+        if not self:rollbackToFrame(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
           -- if we can't rollback, it's a desync
           self:abort()
         end
@@ -462,10 +462,13 @@ function Match.createFromReplay(replay)
   end
 
   for _, garbageFlow in ipairs(replay.garbageFlows) do
+    local senderStack = match.stacks[garbageFlow.source]
     for _, recipientIndex in ipairs(garbageFlow.recipients) do
       local recipientStack = match.stacks[recipientIndex]
       table.insert(match.garbageTargets[garbageFlow.source], recipientStack)
       table.insert(match.garbageSources[recipientStack], match.stacks[garbageFlow.source])
+      recipientStack.incomingGarbage.illegalStuffIsAllowed = senderStack.outgoingGarbage.illegalStuffIsAllowed
+      recipientStack.incomingGarbage.treatMetalAsCombo = senderStack.outgoingGarbage.treatMetalAsCombo
     end
   end
 
@@ -732,6 +735,9 @@ end
 ---@param source BaseStack
 ---@param target BaseStack
 function Match:addTarget(source, target)
+  target.incomingGarbage.illegalStuffIsAllowed = source.outgoingGarbage.illegalStuffIsAllowed
+  target.incomingGarbage.treatMetalAsCombo = source.outgoingGarbage.treatMetalAsCombo
+
   local index = tableUtils.indexOf(self.stacks, source)
 
   if not tableUtils.contains(self.garbageTargets[index], target) then

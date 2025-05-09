@@ -10,6 +10,8 @@ local RollbackBuffer       = require("common.engine.RollbackBuffer")
 ---@field allowAdjacentColorsOnStartingBoard boolean
 ---@field shockEnabled boolean
 ---@field rollbackBuffer RollbackBuffer
+---@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
+---@field garbageGenCount integer How many times the garbagePanelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@overload fun(seed: integer, shockEnabled: boolean): LegacyPanelSource
 local LegacyPanelSource = class(
 ---@param self LegacyPanelSource

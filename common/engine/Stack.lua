@@ -66,16 +66,13 @@ local PANELS_TO_NEXT_SPEED =
 
 ---@class PanelSource : canRollback
 ---@field generateStartingBoard fun(self: PanelSource, stack: Stack): string
----@field generatePanels fun(self: PanelSource, stack: Stack): string
 ---@field generateGarbagePanels fun(self: PanelSource, stack:Stack): string
 ---@field getStartingBoardHeight fun(self: PanelSource, stack: Stack): integer how many rows are to be generated at the start
 ---@field createNewRow fun(self: PanelSource, stack: Stack, row: integer) creates a new set of panels for the stack with the specified row index and writes it to the stack's panels array
 ---@field getGarbagePanelRowString fun(self: PanelSource, stack: Stack): string returns a string of color indices
 ---@field clone fun(self: PanelSource, stack: Stack): PanelSource creates a PanelSource that is tailored to the Stack's settings based on the template that is cloned from
 ---@field panelBuffer string alphanumeric string containing a buffer of panels to rise from below; string characters indicate possible metal positions
----@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbagePanelBuffer string numeric string containing a buffer of panels for garbage to turn into upon matching
----@field garbageGenCount integer How many times the garbagePanelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field toReplaySource fun(self: PanelSource): ReplayPanelSource
 ---@field TYPE string
 
@@ -169,6 +166,8 @@ local Stack = class(
 ---@param s Stack
 ---@param args {levelData: LevelData, stackSetupModifications: StackSetupModifications, panelSource: PanelSource, inputMethod: InputMethod, is_local: boolean, stackWinConditions: table<StackWinCondition, any>, stackOverCondition: table<StackOverCondition, any>}
   function(s, args)
+    s.width = 6
+    s.height = 12
     assert(args.levelData ~= nil)
     assert(args.stackSetupModifications ~= nil)
     assert(args.panelSource)
@@ -215,8 +214,6 @@ local Stack = class(
     s.highestGarbageIdMatched = 0
     s.panelsCreatedCount = 0
     s.panels = {}
-    s.width = 6
-    s.height = 12
     s.panelTemplate = s:createPanelTemplate()
 
     for i = 0, s.height do
@@ -960,6 +957,7 @@ function Stack:simulate()
   if self.behaviours.allowManualRaise then
     if self.manual_raise then
       if not self.rise_lock then
+        self.stop_time = 0
         if self.panels_in_top_row then
           if self:checkGameOver() then
             self:setGameOver()
@@ -976,7 +974,6 @@ function Stack:simulate()
             self.prevent_manual_raise = true
           end
           self.manual_raise_yet = true --ehhhh
-          self.stop_time = 0
         end
       elseif not self.manual_raise_yet then
         self.manual_raise = false
@@ -1642,20 +1639,17 @@ function Stack:checkGameOver()
         elseif not self.rise_lock and self.behaviours.allowManualRaise and self.panels_in_top_row and self.manual_raise then
           return true
         end
-      else
+      elseif not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then
         if stackOverCondition == MatchRules.StackOverConditions.SWAPS then
-          if not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then
-            if self.swapCount >= value then
-              return true
-            end
+          if self.swapCount >= value then
+            return true
           end
         elseif stackOverCondition == MatchRules.StackOverConditions.CHAIN then
           if value == false then
-            if self.panel_clear_starts > 1 then
-              -- We started more than one chain -> fail
+            if tableUtils.trueForAny(self.outgoingGarbage.history, isCompletedChain) then
+              -- the chain dropped
               return true
-            elseif self.panels_cleared > 0 and self.n_active_panels == 0 and self.n_prev_active_panels == 0 then          
-              -- We finished matches but haven't won -> fail
+            elseif self.panels_cleared > 0 and self.chain_counter == 0 then
               return true
             end
           else

@@ -33,28 +33,26 @@ PanelGenerator.PANEL_COLOR_TO_NUMBER = {
   ["1"] = 1, ["2"] = 2, ["3"] = 3, ["4"] = 4, ["5"] = 5, ["6"] = 6, ["7"] = 7, ["8"] = 8, ["9"] = 9, ["0"] = 0
 }
 
--- sets the seed for the PanelGenerators own random number generator
--- seed has to be a number
-function PanelGenerator:setSeed(seed)
-  if seed then
-    self.generatedCount = 0
-    self.seed = seed
-    self.rng:setSeed(seed)
-  end
-end
-
 function PanelGenerator:random(min, max)
   self.generatedCount = self.generatedCount + 1
   return self.rng:random(min, max)
+end
+
+function PanelGenerator:getState()
+  return self.rng:getState()
+end
+
+---@param state string
+function PanelGenerator:setState(state)
+  self.rng:setState(state)
 end
 
 -- generates panels for one row based on previousPanels
 ---@param rowWidth integer
 ---@param ncolors integer
 ---@param previousRow string
----@param assignMetalLocations boolean
 ---@return string newPanels
-function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMetalLocations)
+function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow)
   -- logger.info("generating panels with seed: " .. PanelGenerator.rng:getSeed() ..
   --              "\nbuffer: " .. previousPanels ..
   --              "\ncolors: " .. ncolors)
@@ -87,8 +85,10 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
       elseif (n > 1 and color == PanelGenerator.PANEL_COLOR_TO_NUMBER[string.sub(newPanels, -1, -1)]) then
         -- only allow horizontally adjacent colors with a certain frequency
         if self.adjacentDenialFrequency >= 1 then
-          nogood = true
           -- denying everything, no need to track numbers
+          nogood = true
+        elseif self.adjacentDenialFrequency == 0 then
+          nogood = false
         else
           -- a bit jank; frequency evaluates to NaN on the very first call of this function
           local frequency = self.adjacentDenied / (self.adjacentAccepted + self.adjacentDenied)
@@ -102,16 +102,11 @@ function PanelGenerator:generatePanels(rowWidth, ncolors, previousRow, assignMet
             nogood = false
           end
         end
-
       else
         nogood = false
       end
     end
     newPanels = newPanels .. tostring(color)
-  end
-
-  if assignMetalLocations then
-    newPanels = self:assignMetalLocations(newPanels, previousRow)
   end
   -- logger.debug(result)
   -- only return the new panels
@@ -123,7 +118,9 @@ end
 ---@return string rowString
 function PanelGenerator:assignMetalLocations(rowString, previousRowString)
   local rowWidth = rowString:len()
-  previousRowString = previousRowString or string.rep("0", rowWidth)
+  if not previousRowString or previousRowString == "" then
+    previousRowString = string.rep("0", rowWidth)
+  end
 
   local newString = ""
 

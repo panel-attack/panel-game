@@ -78,12 +78,6 @@ function AttackEngine:addAttackPatternsFromTable(attackPatternsTable)
   end
 end
 
-function AttackEngine:setGarbageTarget(garbageTarget)
-  self.garbageTarget = garbageTarget.engine
-  self.garbageTarget.incomingGarbage.illegalStuffIsAllowed = true
-  self.garbageTarget.incomingGarbage.treatMetalAsCombo = self.treatMetalAsCombo
-end
-
 -- Adds an attack pattern that happens repeatedly on a timer.
 -- width - the width of the attack
 -- height - the height of the attack
@@ -105,7 +99,6 @@ end
 local garbageList = {}
 function AttackEngine.run(self)
   table.clear(garbageList)
-  assert(self.garbageTarget, "No target set on attack engine")
 
   local highestStartTime = self.attackPatterns[#self.attackPatterns].startTime
 
@@ -115,7 +108,10 @@ function AttackEngine.run(self)
   end
 
   local totalAttackTimeBeforeRepeat = self.delayBeforeRepeat + highestStartTime - self.delayBeforeStart
-  if self.disableQueueLimit or self.garbageTarget.incomingGarbage:len() <= 72 then
+  -- assumption is that only things like combo storm don't disable the queue limit
+  -- as all garbage gets collected to a single timer thanks to the mechanic of the outgoing garbage queue having any value greater than 1 in the queue means
+  --  that the recipient is stalling acceptance so we shouldn't push more inside
+  if self.disableQueueLimit or self.outgoingGarbage.transitTimers:len() <= 6 then
     for i = 1, #self.attackPatterns do
       if self.clock >= self.attackPatterns[i].startTime then
         local difference = self.clock - self.attackPatterns[i].startTime

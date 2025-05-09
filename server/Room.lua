@@ -65,15 +65,6 @@ function(self, roomNumber, players, gameMode, leaderboard)
     player.player_number = i
   end
 
-  -- don't want this dependency but current leaderboard updates rely on it so keep it until getting there
-  for i, p1 in ipairs(self.players) do
-    for j, p2 in ipairs(self.players) do
-      if i ~= j then
-        p1.opponent = p2
-      end
-    end
-  end
-
   if self.leaderboard then
     self.ranked, self.rankedReasons = self:rating_adjustment_approved()
   else
@@ -91,7 +82,6 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self:createSignal("matchEnd")
 end
 )
-
 
 
 function Room:onPlayerSettingsUpdate(player)
@@ -251,8 +241,11 @@ function Room:broadcastInput(input, sender)
   self.game:receiveInput(sender, input)
 
   local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, input)
-  if sender.opponent then
-    sender.opponent:send(inputMessage)
+
+  for i, player in ipairs(self.players) do
+    if i ~= sender.player_number then
+      player:send(inputMessage)
+    end
   end
 
   if sender.player_number == 1 then
@@ -364,11 +357,12 @@ function Room:updateWinCounts(game)
   end
 end
 
+---@param sender ServerPlayer
 function Room:handleGameAbort(sender)
   if #self.players == 1 and self.players[1] == sender then
     logger.debug(sender.name .. " aborted the game")
     self:abortGame(sender)
-  elseif #self.players == 2 and tableUtils.contains(self.players, sender) then
+  elseif #self.players == 2 and tableUtils.trueForAny(self.players, function(p) return p.publicPlayerID == sender.publicPlayerID end) then
     -- aborts in multiplayer room are a bigger deal so we should log them as info
     logger.info(sender.name .. " aborted the game")
 
@@ -404,8 +398,9 @@ function Room:handleGameAbort(sender)
       --  the general occurence of the situation should be rare enough that consequences of abuse in this manner should be minimal
       --  as the abuser does only have control over their own connection to the server
     end
+  else
+    logger.warn(self.roomNumber .. ": Unexpected abort from player with publicID " .. sender.publicPlayerID)
   end
-
 end
 
 function Room:abortGame(sender)
