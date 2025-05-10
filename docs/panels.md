@@ -24,6 +24,10 @@ The id should be long and unique so that the game can properly distinguish betwe
 It is generally recommended to add your username to the id to ensure its uniqueness.  
 For example "panelhd_rings_mizunoketsuban" for a panel set featuring ring shapes by user Mizuno.
 
+## name
+
+The name shown for the panels in menus. If this is left out the id will be used so it should be set on all new panels.
+
 ## type
 
 How you supply your panel images. If no value is given, "single" is assumed.
