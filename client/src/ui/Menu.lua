@@ -17,7 +17,6 @@ local Menu = class(
   function(self, options)
     ---@class Menu
     self = self
-    self.TYPE = "VerticalScrollingButtonMenu"
 
     self.selectedIndex = 1
     self.yMin = self.y
@@ -42,6 +41,8 @@ local Menu = class(
   UIElement
 )
 
+Menu.TYPE = "VerticalScrollingButtonMenu"
+
 Menu.NAVIGATION_BUTTON_WIDTH = NAVIGATION_BUTTON_WIDTH
 Menu.BUTTON_HORIZONTAL_PADDING = 0
 Menu.BUTTON_VERTICAL_PADDING = 8
@@ -53,7 +54,8 @@ function Menu.createCenteredMenu(items)
     hAlign = "center",
     vAlign = "center",
     menuItems = items,
-    height = themes[config.theme].main_menu_max_height
+    height = themes[config.theme].main_menu_max_height,
+    layout = require(PATH .. ".Layouts.VerticalFlexLayout")
   })
 
   return menu

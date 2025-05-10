@@ -19,7 +19,7 @@ local SoundController = require("client.src.music.SoundController")
 local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
-    self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+    self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT, padding = 16})
     self.uiRoot.controlsWindow = true
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
@@ -72,6 +72,7 @@ end
 
 function Scene:refreshLocalization()
   self.uiRoot:refreshLocalization()
+  self.uiRoot.layout.resize(self.uiRoot, self.uiRoot.width, self.uiRoot.height)
 end
 
 function Scene:drawCommunityMessage()

@@ -1,6 +1,7 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local Label = require(PATH .. ".Label")
+local Button = require(PATH .. ".Button")
 local TextButton = require(PATH .. ".TextButton")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -53,25 +54,27 @@ end
 -- Creates a menu item with just a button
 function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
   assert(text ~= nil)
-  local BUTTON_WIDTH = 140
-  if translate == nil then
-    translate = true
+  local id
+  if translate == nil or translate then
+    id = text
+    text = nil
   end
-  local textButton = TextButton({
-    label = Label({
-      text = text,
-      replacements = replacements,
-      translate = translate,
-      hAlign = "center",
-      vAlign = "center"
-    }),
-    onClick = onClick, width = BUTTON_WIDTH
+  local label = Label({
+    id = id,
+    text = text,
+    replacements = replacements,
+    hAlign = "center",
+    vAlign = "center"
   })
+  local button = Button({
+    width = 140,
+    maxWidth = 300,
+    padding = 8,
+    onClick = onClick
+  })
+  button:addChild(label)
 
-  local menuItem = MenuItem.createMenuItem(textButton)
-  menuItem.textButton = textButton
-
-  return menuItem
+  return button
 end
 
 -- Creates a menu item with a label followed by a button

@@ -1,5 +1,9 @@
 -- use in tandem with Focusable.lua
 
+---@class FocusDirector
+---@field setFocus fun(director: table, focusable: table, callback: function?)
+---@field focused table?
+
 local function directsFocus(uiElement)
     uiElement.focused = nil
     uiElement.setFocus = function(table, focusable, callback)

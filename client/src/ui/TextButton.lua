@@ -17,12 +17,6 @@ local TextButton = class(function(self, options)
   self.label.hAlign = "center"
   self.label.vAlign = "center"
   self:addChild(self.label)
-
-  -- stretch to fit text
-  local width, height = self.label:getEffectiveDimensions()
-  self.width = math.max(width + TEXT_WIDTH_PADDING, self.width)
-  self.height = math.max(height + TEXT_HEIGHT_PADDING, self.height)
-
 end, Button)
 TextButton.TYPE = "TextButton"
 

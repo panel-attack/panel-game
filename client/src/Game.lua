@@ -1,3 +1,4 @@
+require("common.lib.stringExtensions")
 require("client.src.localization")
 require("common.lib.Queue")
 require("client.src.server_queue")

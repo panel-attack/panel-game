@@ -52,9 +52,12 @@ local ui = {
   ---@class UiElement
   UiElement = require(PATH .. ".UIElement"),
   ValueLabel = require(PATH .. ".ValueLabel"),
+  ---@see VerticalMenu
+  ---@type fun(options: ScrollContainerOptions): VerticalMenu
+  VerticalMenu = require(PATH .. ".VerticalMenu"),
 }
 
 -- the default layout
-ui.UiElement.layout = ui.Layouts.HorizontalFlexLayout
+ui.UiElement.layout = ui.Layouts.VerticalFlexLayout
 
 return ui

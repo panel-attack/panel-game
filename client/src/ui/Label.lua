@@ -4,37 +4,78 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class LabelOptions : UiElementOptions
----@field text string The raw text or localization key
----@field translate boolean? Whether the game looks for a localization for text or not
+---@field id string? The localization key; nil if there should be no translation
+---@field text string? The raw text; ignored if there is a localization key
 ---@field replacements string[]? Additional strings to perform string format on a localized key with parts marked for replacement
 ---@field fontSize integer? The size of the font
 ---@field wrap boolean? If the font should wrap around
 ---@field wrapRatio number? By which % of the unwrapped text the text should wrap
 
 ---@class Label : UiElement
----@field text string The raw text or localization key
----@field translate boolean Whether the game looks for a localization for text or not
+---@field id string? The localization key
 ---@field replacementTable string[]? Additional strings to perform string format on a localized key with parts marked for replacement
+---@field text string The raw text or localization key
+---@field font love.Font Cached font for recreating the love.Text on changes
 ---@field fontSize integer The size of the font
 ---@field wrap boolean If the font should wrap around
----@field wrapRatio number By which % of the unwrapped text the text should wrap
----@field font love.Font Cached font for recreating the love.Text on changes
----@field drawable love.Text Cached love.Text for redrawing
 ---@overload fun(options: LabelOptions): Label
 local Label = class(
   function(self, options)
+    self.id = options.id
+
+    if self.id then
+      self.replacementTable = options.replacements or {}
+      self.text = loc(self.id, unpack(self.replacementTable))
+    else
+      self.text = options.text or ""
+    end
+
     self.hAlign = options.hAlign or "left"
     self.vAlign = options.vAlign or "top"
 
-    self.hFill = options.hFill or true
-
-    self.wrap = options.wrap or false
-    self.wrapRatio = options.wrapRatio or 1
-
+    self.font = options.font or love.graphics.getFont()
     self.fontSize = options.fontSize or GraphicsUtil.fontSize
 
-    self:setText(options.text, options.replacements, options.translate)
+    local totalWidth = self.font:getWidth(self.text)
+    if options.wrap ~= nil then
+      self.wrap = options.wrap
+    else
+      self.wrap = true
+    end
 
+    local words = self.text:split()
+    local maxWordWidth = self.font:getWidth(words[1])
+    for i = 2, #words do
+      maxWordWidth = math.max(maxWordWidth, self.font:getWidth(words[i]))
+    end
+
+    if options.minWidth ~= nil then
+      self.minWidth = options.minWidth
+    else
+      if self.wrap then
+        self.minWidth = maxWordWidth
+      else
+        self.minWidth = totalWidth
+      end
+    end
+
+    self.width = options.width or totalWidth
+    self.maxWidth = options.maxWidth or totalWidth
+    self.minHeight = options.minHeight or self.font:getHeight()
+    self.height = options.height or self.font:getHeight()
+
+    if options.maxHeight ~= nil then
+      self.maxHeight = options.maxHeight
+    else
+      if self.wrap then
+        self.maxHeight = (#words * self.font:getHeight())
+      else
+        self.maxHeight = self.font:getHeight()
+      end
+    end
+
+    self.hFill = true
+    self.vFill = false
   end,
   UIElement
 )
@@ -44,88 +85,20 @@ function Label:getEffectiveDimensions()
   return self.drawable:getDimensions()
 end
 
-function Label:setText(text, replacementTable, translate)
-  if text == self.text and replacementTable == self.replacementTable and self.translate == translate then
-    return
-  end
-
-  -- whether we should translate the label or not
-  if translate ~= nil then
-    self.translate = translate
-  elseif self.translate == nil then
-    self.translate = true
-  end
-
-  if replacementTable then
-    -- list of parameters for translating the label (e.g. numbers/names to replace placeholders with)
-    self.replacementTable = replacementTable
-  elseif not self.replacementTable then
-    self.replacementTable = {}
-  end
-
-  if text then
-    self.text = text
-  end
-
-  if self.translate then
-    -- always need a new text cause the font might have changed
-    self.drawable = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize(self.fontSize), loc(self.text, unpack(self.replacementTable)))
-  else
-    if not self.drawable then
-      self.drawable = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize(self.fontSize), self.text)
-    end
-  end
-
-  self:refreshFormatting()
-
-  self.width = self.drawable:getWidth()
-  self.height = self.drawable:getHeight()
-end
-
-function Label:setWrap(wrapRatio, hAlign)
-  self.wrap = not not wrapRatio
-  self.wrapRatio = wrapRatio
-  self.hAlign = hAlign or self.hAlign
-  self:refreshFormatting()
-end
-
-function Label:refreshFormatting()
-  local text = self.text
-
-  if self.translate then
-    text = loc(self.text, unpack(self.replacementTable))
-  end
-
-  if self.wrap then
-    self.drawable:setf(text, self.wrapRatio * self.width, self.hAlign)
-    self.height = self.drawable:getHeight()
-  else
-    self.drawable:set(text)
-  end
-end
-
-function Label:onResize()
-  if self.wrap then
-    self.width = math.max(self.width, self.drawable:getWidth())
-  else
-    self.width = self.drawable:getWidth()
-  end
-  self.height = self.drawable:getHeight()
-  self:refreshFormatting()
-end
-
 function Label:refreshLocalization()
-  if self.translate then
-    local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
-
-    -- always need a new text cause the font might have changed
-    self.drawable = GraphicsUtil.newText(font, loc(self.text, unpack(self.replacementTable)))
-    self.width, self.height = self.drawable:getDimensions()
+  if self.id then
+    self.text = loc(self.text, unpack(self.replacementTable))
   end
 end
 
 function Label:drawSelf()
-  GraphicsUtil.drawClearText(self.drawable, math.round(self.x), math.round(self.y))
+  love.graphics.printf(self.text, self.x, self.y, self.width)
+end
+
+function Label:setMinHeightForWidth()
+  local refText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize(self.fontSize))
+  refText:setf(self.text, self.width, "left")
+  self.minHeight = refText:getHeight()
 end
 
 return Label

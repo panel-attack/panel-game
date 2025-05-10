@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class ScrollContainerOptions : UiElementOptions
 ---@field scrollOrientation ("vertical" | "horizontal" | nil)
@@ -76,13 +77,13 @@ function ScrollContainer:onTouch(x, y)
 end
 
 function ScrollContainer:onDrag(x, y)
-  if not self.touchedChild then
+  if not self.touchedChild or not self.touchedChild.onDrag then
     if self.scrollOrientation == "vertical" then
       self:setScrollOffset(self.originalOffset + (y - self.initialTouchY))
     elseif self.scrollOrientation == "horizontal" then
       self:setScrollOffset(self.originalOffset + (x - self.initialTouchX))
     end
-  elseif self.touchedChild.onDrag then
+  else
     x, y = getTranslatedOffset(self, x, y)
     self.touchedChild:onDrag(x, y)
   end
@@ -105,6 +106,7 @@ local loveMajor = love.getVersion()
 
 function ScrollContainer:draw()
   if self.isVisible then
+    UiElement.drawSelf(self)
     -- make a stencil according to width/height
     if loveMajor >= 12 then
       love.graphics.setStencilMode("draw", 1)
@@ -136,6 +138,26 @@ function ScrollContainer:draw()
     else
       love.graphics.setStencilTest()
     end
+
+    if self.scrollOrientation == "vertical" then
+      if self.maxScrollOffset > 0 then
+        if self.scrollOffset < 0 then
+          GraphicsUtil.print("^", self.x + self.width / 2 - GraphicsUtil.fontSize / 2, self.y - 20)
+        end
+        if math.abs(self.scrollOffset) < self.maxScrollOffset then
+          GraphicsUtil.print("v", self.x + self.width / 2 - GraphicsUtil.fontSize / 2, self.y + self.height + 8)
+        end
+      end
+    else
+      if self.maxScrollOffset > 0 then
+        if self.scrollOffset < 0 then
+          GraphicsUtil.print("<", self.x - 20, self.y + self.height / 2 - GraphicsUtil.fontSize / 2)
+        end
+        if math.abs(self.scrollOffset) < self.maxScrollOffset then
+          GraphicsUtil.print(">", self.x + self.width + 8, self.y + self.height / 2 - GraphicsUtil.fontSize / 2)
+        end
+      end
+    end
   end
 end
 
@@ -159,13 +181,16 @@ function ScrollContainer:getTouchedChildElement(x, y)
   end
 end
 
--- adds the uiElement and updates the maxScrollOffset if the addition extends the sensible scroll area 
-function ScrollContainer:addChild(uiElement)
-  UiElement.addChild(self, uiElement)
-  if self.scrollOrientation == "vertical" then
-    self.maxScrollOffset = math.max(self.maxScrollOffset, (uiElement.y + uiElement.height) - self.height)
+function ScrollContainer:onResize()
+  local lastChild = self.children[#self.children]
+  if lastChild then
+    if self.scrollOrientation == "vertical" then
+      self.maxScrollOffset = lastChild.y + lastChild.height - self.height + self.padding
+    else
+      self.maxScrollOffset = lastChild.x + lastChild.width - self.width + self.padding
+    end
   else
-    self.maxScrollOffset = math.max(self.maxScrollOffset, (uiElement.x + uiElement.width) - self.width)
+    self.maxScrollOffset = 0
   end
 end
 

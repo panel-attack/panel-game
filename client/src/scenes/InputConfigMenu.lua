@@ -53,7 +53,7 @@ end
 function InputConfigMenu:getKeyDisplayName(key)
   local keyDisplayName = key
   if key and string.match(key, ":") then
-    local controllerKeySplit = util.split(key, ":")
+    local controllerKeySplit = string.split(key, ":")
     local controllerName = shortenControllerName(joystickManager.guidToName[controllerKeySplit[1]] or "Unplugged Controller")
     keyDisplayName = string.format("%s (%s-%s)", controllerKeySplit[3], controllerName, controllerKeySplit[2])
   end

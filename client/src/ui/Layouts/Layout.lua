@@ -13,6 +13,10 @@ function Layout.resize(uiElement, width, height)
   uiElement.layout.updateHeights(uiElement, height)
 
   uiElement.layout.positionChildren(uiElement)
+
+  if uiElement.onResize then
+    uiElement:onResize()
+  end
 end
 
 ---@param uiElement UiElement
