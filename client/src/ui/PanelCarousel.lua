@@ -1,7 +1,6 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local Carousel = require(PATH .. ".Carousel")
 local class = require("common.lib.class")
-local Label = require(PATH .. ".Label")
 local StackPanel = require(PATH .. ".StackPanel")
 local ImageContainer = require(PATH .. ".ImageContainer")
 
@@ -23,14 +22,7 @@ function PanelCarousel:createPassenger(id)
   -- always add shock
   stackPanel:addElement(panelImages[8])
 
-  local overallStack = StackPanel({alignment = "top", hAlign = "center", vAlign = "center"})
-  local nameLabel = Label({text = panels[id].name or "", translate = false})
-  nameLabel.hAlign = "center"
-
-  overallStack:addElement(stackPanel)
-  overallStack:addElement(nameLabel)
-
-  return {id = id, uiElement = overallStack, panelImages = panelImages}
+  return {id = id, uiElement = stackPanel, panelImages = panelImages}
 end
 
 function PanelCarousel:setColorCount(count)
