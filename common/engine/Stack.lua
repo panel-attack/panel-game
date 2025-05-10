@@ -243,6 +243,7 @@ local Stack = class(
     s.n_active_panels = 0
     s.n_prev_active_panels = 0
     s.swappingPanelCount = 0
+    s.clearStartsCount = 0 -- The number of times a new clear was started that wasn't chaining
 
     -- Player input stuff:
     s.manual_raise = false
@@ -411,6 +412,7 @@ function Stack:rollbackCopy()
   copy.n_active_panels = self.n_active_panels
   copy.n_prev_active_panels = self.n_prev_active_panels
   copy.swappingPanelCount = self.swappingPanelCount
+  copy.clearStartsCount = self.clearStartsCount
   copy.rise_timer = self.rise_timer
   copy.manual_raise = self.manual_raise
   copy.manual_raise_yet = self.manual_raise_yet
@@ -468,6 +470,7 @@ local function internalRollbackToFrame(stack, frame)
   stack.n_active_panels = copy.n_active_panels
   stack.n_prev_active_panels = copy.n_prev_active_panels
   stack.swappingPanelCount = copy.swappingPanelCount
+  stack.clearStartsCount = copy.clearStartsCount
   stack.rise_timer = copy.rise_timer
   stack.manual_raise = copy.manual_raise
   stack.manual_raise_yet = copy.manual_raise_yet
@@ -1564,6 +1567,9 @@ function Stack:updateActivePanelCount()
   self.n_prev_active_panels = self.n_active_panels
   self.n_active_panels, self.swappingPanelCount = self:getActivePanelCount()
   --prof.pop("updateActivePanelCount")
+  if self.n_active_panels == 0 then
+    self.clearStartsCount = 0
+  end
 end
 
 ---@return integer activePanelCount
@@ -1650,6 +1656,8 @@ function Stack:checkGameOver()
               -- the chain dropped
               return true
             elseif self.panels_cleared > 0 and self.chain_counter == 0 then
+              return true
+            elseif self.clearStartsCount > 1 then
               return true
             end
           else
