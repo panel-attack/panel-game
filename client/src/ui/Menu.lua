@@ -80,7 +80,7 @@ function Menu:setMenuItems(menuItems)
   self:setSelectedIndex(1)
 end
 
-function Menu:layout()
+function Menu:updateLayout()
   self.upIndicator:setVisibility(false)
   self.downIndicator:setVisibility(false)
   self.allContentShowing = self.yOffset == 0
@@ -143,7 +143,7 @@ function Menu:addMenuItem(index, menuItem)
   if needsIncreasedIndex then
     self:setSelectedIndex(self.selectedIndex + 1)
   end
-  self:layout()
+  self:updateLayout()
 end
 
 function Menu:removeMenuItemAtIndex(index)
@@ -184,7 +184,7 @@ function Menu:removeMenuItem(menuItemId)
     self:setSelectedIndex(self.selectedIndex - 1)
   end
 
-  self:layout()
+  self:updateLayout()
   return menuItem
 end
 
@@ -215,7 +215,7 @@ function Menu:setSelectedIndex(index)
   if #self.menuItems > 0 then
     self.menuItems[self.selectedIndex]:setSelected(true)
   end
-  self:layout()
+  self:updateLayout()
 end
 
 function Menu:scrollUp()
@@ -291,7 +291,7 @@ function Menu:onDrag(x, y)
       else
         self.yOffset = math.min(self.totalHeight - self.height + 50, self.originalY - yOffset)
       end
-      self:layout()
+      self:updateLayout()
     end
   else
     self.touchedChild:onDrag(x, y)

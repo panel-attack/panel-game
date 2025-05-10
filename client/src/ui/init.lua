@@ -18,6 +18,10 @@ local ui = {
   ---@see Label
   ---@type fun(options: LabelOptions): Label
   Label = require(PATH .. ".Label"),
+  Layouts = {
+    HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout"),
+    VerticalFlexLayout = require(PATH .. ".Layouts.VerticalFlexLayout"),
+  },
   Leaderboard = require(PATH .. ".Leaderboard"),
   ---@see LevelSlider
   ---@type fun(options: SliderOptions): LevelSlider
@@ -45,8 +49,12 @@ local ui = {
   TextButton = require(PATH .. ".TextButton"),
   ---@see UiElement
   ---@type fun(options:UiElementOptions): UiElement
+  ---@class UiElement
   UiElement = require(PATH .. ".UIElement"),
   ValueLabel = require(PATH .. ".ValueLabel"),
 }
+
+-- the default layout
+ui.UiElement.layout = ui.Layouts.HorizontalFlexLayout
 
 return ui

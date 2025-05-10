@@ -20,6 +20,7 @@ local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
     self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+    self.uiRoot.controlsWindow = true
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main
