@@ -52,8 +52,11 @@ The contents of each puzzle file should be formatted something like this:
 Version should be 2 for now
 
 "Puzzle Sets" contains a list of all the puzzle sets
+It can contain a recursive set of "Puzzle Sets" for organization.
 
+"Puzzle Sets" is the recursive list of sets
 "Set Name" is the name of the set
+"Description" is a description of the set
 "Puzzles" is the list of all the puzzles
 
 "Puzzle Type" should be one of the following

@@ -24,7 +24,7 @@ local PuzzleMenu = class(
     self.randomColorButtons = nil
     self.menu = nil
     self.puzzleLabel = nil
-    self.puzzleLibrary = PuzzleLibrary(consts.PUZZLES_SAVE_DIRECTORY, GAME.scores)
+    self.puzzleLibrary = PuzzleLibrary(GAME.scores)
     self.battleRoom = sceneParams.battleRoom
 
     self:load(sceneParams)
@@ -127,13 +127,21 @@ function PuzzleMenu:refreshMenu()
     ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons),
   }
 
-  local filteredPuzzleSets = self.puzzleLibrary:getPuzzlesForPuzzleMenu()
-  for index, puzzleSet in ipairs(filteredPuzzleSets) do
-    local name = puzzleSet.setName .. " Win Rate: " .. math.round(self.puzzleLibrary:puzzleSetGetWinRate(puzzleSet), 2)
-    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(name, nil, false, function() self:startGame(puzzleSet) end)
+  local directory = consts.PUZZLES_SAVE_DIRECTORY
+
+  local puzzleSet = self.puzzleLibrary:puzzleSetFromPath(directory)
+  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function()
+      local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
+      self:startGame(flatPuzzleSet)
+    end)
+  for index, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
+    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(currentPuzzleSet.setName, nil, false, function() 
+      local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(currentPuzzleSet)
+      self:startGame(flatPuzzleSet)
+    end)
   end
 
-  local trainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSet()
+  local trainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSetForDirectory(directory)
   if #trainingPuzzleSet.puzzles > 0 then
     menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(trainingPuzzleSet.setName, nil, false, function() self:startGame(trainingPuzzleSet) end)
   end

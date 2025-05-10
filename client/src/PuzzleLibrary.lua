@@ -1,4 +1,5 @@
 local class = require("common.lib.class")
+local consts = require("common.engine.consts")
 local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
 local Puzzle = require("common.engine.Puzzle")
@@ -12,31 +13,80 @@ local tableUtils = require("common.lib.tableUtils")
 ---@field puzzleResults Scores
 local PuzzleLibrary =
   class(
-  function(self, path, puzzleResults)
-    self.puzzleSets = {}
-    self:loadPuzzlesFromDirectory(path)
+  function(self, puzzleResults)
     self.puzzleResults = puzzleResults
   end
 )
 
--- Loads all puzzles from the given directory
-function PuzzleLibrary:loadPuzzlesFromDirectory(path)
-  local puzzleFiles = FileUtils.getFilteredDirectoryItems(path) or {}
-  local count = 0
-  logger.debug("loading custom puzzles...")
-  for _, filename in pairs(puzzleFiles) do
-    logger.trace(filename)
-    if love.filesystem.getInfo(path .. "/" .. filename) and filename ~= "README.txt" then
-      local puzzleSets = PuzzleSet.loadFromFile(path .. "/" .. filename)
-      for _, puzzleSet in ipairs(puzzleSets) do
-        self.puzzleSets[#self.puzzleSets+1] = puzzleSet
-        count = count + 1
-      end
+-- Menu for puzzle set -> go into subset
+-- Play a puzzle set -> extract all puzzles in order
+-- Train a puzzle set -> same as play but in train order / filter
+
+
+-- Returns all puzzles from the given path as a puzzle set
+function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
+  local puzzleSet = PuzzleSet(subDirectory or "Puzzles", {}, {})
+
+  for _, currentFilename in ipairs(FileUtils.getFilteredDirectoryItems(fullPath, "file")) do
+    if currentFilename ~= "README.txt" then
+      local currentPuzzleSet = self:puzzleSetFromFile(fullPath .. "/" .. currentFilename)
+      puzzleSet.puzzleSets[#puzzleSet.puzzleSets+1] = currentPuzzleSet
     end
   end
-  logger.debug("loaded " .. count .. " puzzle sets")
+  for _, subDirectory in ipairs(FileUtils.getFilteredDirectoryItems(fullPath, "directory")) do
+    local currentPuzzleSet = self:puzzleSetFromPath(fullPath .. "/" .. subDirectory, subDirectory)
+    puzzleSet.puzzleSets[#puzzleSet.puzzleSets+1] = currentPuzzleSet
+  end
+
+  return puzzleSet
 end
 
+function PuzzleLibrary:puzzleSetFromFile(path)
+  local puzzleSet = PuzzleSet.loadFromFile(path)
+
+  return puzzleSet
+end
+
+function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
+  local result = PuzzleSet("Puzzles", {}, {})
+
+  if filter then
+    filter(puzzleSet)
+  end
+
+  if sort then
+    table.sort(puzzleSet.puzzles, sort)
+  end
+
+  for _, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
+    local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(currentPuzzleSet, filter, sort)
+    for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
+      result.puzzles[#result.puzzles+1] = puzzle
+    end
+  end
+
+  logger.trace("added flattened " .. puzzleSet.setName .. " " .. #puzzleSet.puzzles)
+  for _, currentPuzzle in ipairs(puzzleSet.puzzles) do
+    result.puzzles[#result.puzzles+1] = currentPuzzle
+  end
+
+  return result
+end
+
+
+function PuzzleLibrary:getPuzzlesForPuzzleSet(directory, filter, sort)
+
+  local puzzleSet = self:puzzleSetFromPath(directory)
+  if filter then
+    puzzleSet.puzzles = tableUtils.filter(puzzleSet.puzzles, filter)
+  end
+
+  if sort then
+    table.sort(puzzleSet.puzzles, sort)
+  end
+
+  return puzzleSet
+end
 
 -- writes the stock puzzles
 function PuzzleLibrary.writeDefaultPuzzles(defaultPuzzleDirectory, readmePath, savePuzzleDirectory)
@@ -120,35 +170,33 @@ local invalidSetsForTraining = {"Classic set 1",
     "Bagagle Mode",
     "Go Hard",
     "Ridiculous Mode"}
-function PuzzleLibrary.puzzleSetAllowedForTraining(puzzleSet)
+function PuzzleLibrary.filterPuzzleSetForTraining(puzzleSet)
   if tableUtils.contains(invalidSetsForTraining, puzzleSet.setName) then
-    return false
+    puzzleSet.puzzles = {}
+    puzzleSet.puzzleSets = {}
   end
-
-  return true
 end
 
-function PuzzleLibrary:currentTrainingPuzzleSet()
+function PuzzleLibrary:currentTrainingPuzzleSetForDirectory(directory)
 
+  local puzzleSet = self:puzzleSetFromPath(directory)
+  local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(puzzleSet, self.filterPuzzleSetForTraining)
   local timedResults = {}
   local results = {}
   local currentTime = to_UTC(os.time())
-  for _, puzzleSet in ipairs(self.puzzleSets) do
-    if PuzzleLibrary.puzzleSetAllowedForTraining(puzzleSet) then
-      for _, puzzle in ipairs(puzzleSet.puzzles) do
-        local trainingDate = self:getNextTrainingDateForPuzzleUUID(puzzle.UUID)
-        local bucketDifference = math.ceil((trainingDate - currentTime) / DAY)
-        if trainingDate < currentTime then
-          bucketDifference = 0
-        end
-        if timedResults[bucketDifference] == nil then
-          timedResults[bucketDifference] = 0
-        end
-        timedResults[bucketDifference] = timedResults[bucketDifference] + 1
-        if currentTime > trainingDate then
-          results[#results+1] = puzzle
-        end
-      end
+  for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
+    local trainingDate = self:getNextTrainingDateForPuzzleUUID(puzzle.UUID)
+    puzzle.trainingDate = trainingDate
+    local bucketDifference = math.ceil((trainingDate - currentTime) / DAY)
+    if trainingDate < currentTime then
+      bucketDifference = 0
+    end
+    if timedResults[bucketDifference] == nil then
+      timedResults[bucketDifference] = 0
+    end
+    timedResults[bucketDifference] = timedResults[bucketDifference] + 1
+    if currentTime > trainingDate then
+      results[#results+1] = puzzle
     end
   end
 
@@ -161,29 +209,16 @@ function PuzzleLibrary:currentTrainingPuzzleSet()
   logger.debug(total .. " total puzzles")
 
   local sortFunction = function(a,b) 
-      local aTrainDate = self:getNextTrainingDateForPuzzleUUID(a.UUID)
-      local bTrainDate = self:getNextTrainingDateForPuzzleUUID(b.UUID)
-      if aTrainDate == bTrainDate then
+      if a.trainingDate == b.trainingDate then
         return a.UUID < b.UUID
       end
-      return aTrainDate < bTrainDate
+      return a.trainingDate < b.trainingDate
     end
 
   table.sort(results, sortFunction)
 
   local puzzleSet = PuzzleSet("Training " .. #results, results)
   return puzzleSet
-end
-
-function PuzzleLibrary:getPuzzlesForPuzzleMenu()
-  local filteredPuzzleSets = tableUtils.filter(self.puzzleSets, function(puzzleSet) 
-    -- might want to filter this for now, but at least make a copy
-    return true
-  end)
-
-  table.sort(filteredPuzzleSets, function(a,b) return a.setName < b.setName end)
-
-  return filteredPuzzleSets
 end
 
 return PuzzleLibrary
