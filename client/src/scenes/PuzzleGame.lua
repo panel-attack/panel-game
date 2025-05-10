@@ -77,6 +77,7 @@ function PuzzleGame:customGameOverSetup()
   if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
     self:savePuzzleRecordResult(true)
+    self.player:setPuzzleIndex(self.player.settings.puzzleIndex + 1)
   else -- puzzle failed or manually reset
     self.text = loc("pl_you_lose")
     if (self.match.aborted == nil or self.match.aborted == false) then
