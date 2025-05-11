@@ -1,6 +1,9 @@
 {
-  "Version": 2,
+  "Version": 3,
   "Puzzle Sets": [
+    {
+    "Set Name": "Classic",
+    "Puzzle Sets": [ 
     {
       "Set Name": "Classic set 1",
       "Puzzles": [
@@ -390,105 +393,8 @@
           "Stack": "600006400002340001430001310033160021230"
         }
       ]
-    },
-    {
-      "Set Name": "Bagagle Mode",
-      "Puzzles": [
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "4000441101"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "223233"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "400000600000600046400"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "100001300033100"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "4200002400002400"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "2000024400043300211310"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "5000001200014500043420166350226232"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 1,
-          "Stack": "214365214365662622214365214365"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 2,
-          "Stack": "5000054550441310513350"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 3,
-          "Stack": "40000040000030000042000025200051200066500031320556512"
-        }
-      ]
-    },
-    {
-      "Set Name": "Go Hard",
-      "Puzzles": [
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 2,
-          "Stack": "002000001220019990091990"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 2,
-          "Stack": "29000092000029000091000019000019"
-        }
-      ]
-    },
-    {
-      "Set Name": "Ridiculous Mode",
-      "Puzzles": [
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 3,
-          "Stack": "010000019000199900911900991900"
-        },
-        {
-          "Puzzle Type": "moves",
-          "Do Countdown": false,
-          "Moves": 5,
-          "Stack": "032510036520646325641313412143112146325461131516131516416123442315632515"
-        }
-      ]
     }
+  ]
+}
   ]
 }

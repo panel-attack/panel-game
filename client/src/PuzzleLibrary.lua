@@ -29,8 +29,10 @@ function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
 
   for _, currentFilename in ipairs(FileUtils.getFilteredDirectoryItems(fullPath, "file")) do
     if currentFilename ~= "README.txt" then
-      local currentPuzzleSet = self:puzzleSetFromFile(fullPath .. "/" .. currentFilename)
-      puzzleSet.puzzleSets[#puzzleSet.puzzleSets+1] = currentPuzzleSet
+      local currentPuzzleSets = self:puzzleSetsFromFile(fullPath .. "/" .. currentFilename)
+      for _, currentPuzzleSet in ipairs(currentPuzzleSets) do
+        puzzleSet.puzzleSets[#puzzleSet.puzzleSets+1] = currentPuzzleSet
+      end
     end
   end
   for _, subDirectory in ipairs(FileUtils.getFilteredDirectoryItems(fullPath, "directory")) do
@@ -41,22 +43,14 @@ function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
   return puzzleSet
 end
 
-function PuzzleLibrary:puzzleSetFromFile(path)
-  local puzzleSet = PuzzleSet.loadFromFile(path)
+function PuzzleLibrary:puzzleSetsFromFile(path)
+  local puzzleSets = PuzzleSet.loadFromFile(path)
 
-  return puzzleSet
+  return puzzleSets
 end
 
 function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
   local result = PuzzleSet("Puzzles", {}, {})
-
-  if filter then
-    filter(puzzleSet)
-  end
-
-  if sort then
-    table.sort(puzzleSet.puzzles, sort)
-  end
 
   for _, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
     local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(currentPuzzleSet, filter, sort)
@@ -67,7 +61,18 @@ function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
 
   logger.trace("added flattened " .. puzzleSet.setName .. " " .. #puzzleSet.puzzles)
   for _, currentPuzzle in ipairs(puzzleSet.puzzles) do
+    local trainingDate = self:getNextTrainingDateForPuzzleUUID(currentPuzzle.UUID)
+    currentPuzzle.trainingDate = trainingDate
+    currentPuzzle.puzzleEverBeaten = self.puzzleResults:puzzleEverBeaten(currentPuzzle.UUID)
     result.puzzles[#result.puzzles+1] = currentPuzzle
+  end
+
+  if filter then
+    filter(result)
+  end
+
+  if sort then
+    table.sort(result.puzzles, sort)
   end
 
   return result
@@ -94,12 +99,12 @@ function PuzzleLibrary.writeDefaultPuzzles(defaultPuzzleDirectory, readmePath, s
     function()
       -- Until we have a way to disable the default puzzles, we shouldn't keep writing them if the user has their own puzzles.
       -- We will also need a way to handle new puzzles and updates to puzzles.
-      local puzzleFiles = FileUtils.getFilteredDirectoryItems(savePuzzleDirectory) or {}
-      if #puzzleFiles == 0 then
+      -- local puzzleFiles = FileUtils.getFilteredDirectoryItems(savePuzzleDirectory) or {}
+      -- if #puzzleFiles == 0 then
         love.filesystem.createDirectory(savePuzzleDirectory)
         FileUtils.recursiveCopy(defaultPuzzleDirectory, savePuzzleDirectory)
         FileUtils.copyFile(readmePath, savePuzzleDirectory .. "/README.txt")
-      end
+      -- end
     end
   )
 end
@@ -177,25 +182,21 @@ function PuzzleLibrary.filterPuzzleSetForTraining(puzzleSet)
   end
 end
 
-function PuzzleLibrary:currentTrainingPuzzleSetForDirectory(directory)
-
-  local puzzleSet = self:puzzleSetFromPath(directory)
+function PuzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
   local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(puzzleSet, self.filterPuzzleSetForTraining)
   local timedResults = {}
   local results = {}
   local currentTime = to_UTC(os.time())
   for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
-    local trainingDate = self:getNextTrainingDateForPuzzleUUID(puzzle.UUID)
-    puzzle.trainingDate = trainingDate
-    local bucketDifference = math.ceil((trainingDate - currentTime) / DAY)
-    if trainingDate < currentTime then
+    local bucketDifference = math.ceil((puzzle.trainingDate - currentTime) / DAY)
+    if puzzle.trainingDate < currentTime then
       bucketDifference = 0
     end
     if timedResults[bucketDifference] == nil then
       timedResults[bucketDifference] = 0
     end
     timedResults[bucketDifference] = timedResults[bucketDifference] + 1
-    if currentTime > trainingDate then
+    if currentTime > puzzle.trainingDate then
       results[#results+1] = puzzle
     end
   end

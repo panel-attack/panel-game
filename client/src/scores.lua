@@ -87,6 +87,22 @@ function Scores:puzzleUUIDWinStreak(puzzleUUID)
   return winStreak
 end
 
+function Scores:puzzleEverBeaten(puzzleUUID)
+  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
+
+  if #records == 0 then
+    return false
+  end
+  for i = #records, 1, -1 do
+    local record = records[i]
+    if record.success then
+      return true
+    end
+  end
+  
+  return false
+end
+
 function Scores:puzzleSuccessRateForUUID(puzzleUUID)
   local records = self:getRecordsForPuzzleUUID(puzzleUUID)
 

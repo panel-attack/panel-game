@@ -20,25 +20,31 @@ local PuzzleSet =
 ---@return PuzzleSet[]
 function PuzzleSet.loadFromFile(filePath)
   local data = FileUtils.readJsonFile(filePath)
-  local puzzleSet = nil
+  local puzzleSets = {}
 
   if data then
-    if data["Version"] == 2 then
+    if data["Version"] == 3 then
       for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
-        puzzleSet = PuzzleSet.loadV2(puzzleSetData)
+        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV3(puzzleSetData)
+      end
+    elseif data["Version"] == 2 then
+      for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
+        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV2(puzzleSetData)
       end
     elseif data["Version"] ~= 2 and data["Version"] then
       error("Puzzle " .. filePath .. " specifies invalid version " .. data["Version"])
     else -- old file format compatibility
       for setName, puzzleSet in pairs(data) do
-        puzzleSet = PuzzleSet.loadV1(setName, puzzleSet)
+        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV1(setName, puzzleSet)
       end
     end
   end
 
-  puzzleSet.fileSource = filePath
+  for _, puzzleSet in ipairs(puzzleSets) do
+    puzzleSet.fileSource = filePath
+  end
 
-  return puzzleSet
+  return puzzleSets
 end
 
 ---@return PuzzleSet
@@ -62,6 +68,22 @@ function PuzzleSet.loadV2(puzzleSetData)
   end
 
   return PuzzleSet(puzzleSetName, puzzles)
+end
+
+---@return PuzzleSet
+function PuzzleSet.loadV3(puzzleSetData)
+  local puzzleSetName = puzzleSetData["Set Name"]
+  local puzzleSet = PuzzleSet(puzzleSetName, {}, {})
+
+  for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
+    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"])
+    puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
+  end
+  for _, currentPuzzleSet in pairs(puzzleSetData["Puzzle Sets"] or {}) do
+    puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = PuzzleSet.loadV3(currentPuzzleSet)
+  end
+
+  return puzzleSet
 end
 
 return PuzzleSet

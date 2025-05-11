@@ -26,6 +26,8 @@ local PuzzleMenu = class(
     self.puzzleLabel = nil
     self.puzzleLibrary = PuzzleLibrary(GAME.scores)
     self.battleRoom = sceneParams.battleRoom
+    self.currentPuzzleSet = nil
+    self.currentLevel = 1
 
     self:load(sceneParams)
   end,
@@ -37,17 +39,21 @@ PuzzleMenu.name = "PuzzleMenu"
 local BUTTON_WIDTH = 60
 local BUTTON_HEIGHT = 25
 
-function PuzzleMenu:startGame(puzzleSet)
+function PuzzleMenu:startGame(puzzleSet, index)
+  if not index then
+    index = 1
+  end
+
   if config.puzzle_level ~= self.levelSlider.value or config.puzzle_randomColors ~= self.randomColorsButtons.value then
     logger.debug("saving settings...")
     write_conf_file()
   end
 
   GAME.theme:playValidationSfx()
-  GAME.localPlayer:setPuzzleSet(puzzleSet)
+  GAME.localPlayer:setPuzzleSet(puzzleSet, index)
 
   local player = self.battleRoom.players[1]
-  local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
+  local puzzle = player.settings.puzzleSet.puzzles[index]
   self.battleRoom:setGameMode(puzzle:toGameMode())
   player:setWantsReady(true)
 end
@@ -127,29 +133,66 @@ function PuzzleMenu:refreshMenu()
     ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons),
   }
 
-  local directory = consts.PUZZLES_SAVE_DIRECTORY
-
-  local puzzleSet = self.puzzleLibrary:puzzleSetFromPath(directory)
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function()
-      local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
-      self:startGame(flatPuzzleSet)
-    end)
-  for index, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
-    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(currentPuzzleSet.setName, nil, false, function() 
-      local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(currentPuzzleSet)
-      self:startGame(flatPuzzleSet)
-    end)
+  if self.currentPuzzleSet == nil then
+    local directory = consts.PUZZLES_SAVE_DIRECTORY
+    self:setCurrentPuzzleSet(self.puzzleLibrary:puzzleSetFromPath(directory))
   end
 
-  local trainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSetForDirectory(directory)
+  menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, 1, nil)
+
+  for _, currentPuzzleSet in ipairs(self.currentPuzzleSet.puzzleSets) do
+    menuOptions[#menuOptions + 1] = self:menuItemToViewPuzzleSet(currentPuzzleSet)
+  end
+
+  for index, currentPuzzle in ipairs(self.currentPuzzleSet.puzzles) do
+    menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, index, currentPuzzle)
+  end
+
+  local trainingPuzzleSet = self.currentTrainingPuzzleSet
   if #trainingPuzzleSet.puzzles > 0 then
     menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(trainingPuzzleSet.setName, nil, false, function() self:startGame(trainingPuzzleSet) end)
   end
   
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function() self:exit() end)
+  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
+      if self.currentLevel == 1 then
+        self:exit()
+      else
+        -- todo handle back one
+        self.currentLevel = 1
+        self.currentPuzzleSet = nil
+        self:refreshMenu()
+      end
+    end)
 
   self.menu = ui.Menu.createCenteredMenu(menuOptions)
   self.uiRoot:addChild(self.menu)
+end
+
+function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, flatPuzzleSet, index, puzzle)
+  local textString = loc("start")
+  if puzzle then
+    textString = loc("rp_browser_info_puzzle") .. " " .. index
+  end
+  if puzzle and puzzle.puzzleEverBeaten then
+    textString = textString .. " +"
+  end
+  return ui.MenuItem.createButtonMenuItem(textString, nil, false, function()
+    self:startGame(flatPuzzleSet, index)
+  end)
+end
+
+function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet)
+  return ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
+    self:setCurrentPuzzleSet(puzzleSet)
+    self.currentLevel = self.currentLevel + 1
+    self:refreshMenu()
+  end)
+end
+
+function PuzzleMenu:setCurrentPuzzleSet(puzzleSet)
+  self.currentPuzzleSet = puzzleSet
+  self.flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
+  self.currentTrainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
 end
 
 function PuzzleMenu:update(dt)
