@@ -349,6 +349,15 @@ function OptionsMenu:loadGeneralMenu()
 end
 
 function OptionsMenu:loadGraphicsMenu()
+  local menu = ui.VerticalMenu({
+    hAlign = "center",
+    minHeight = 480,
+    maxHeight = 540,
+    childGap = 8,
+    padding = 32,
+    width = 600,
+  })
+
   local themeIndex
   local themeLabels = {}
   for i, v in ipairs(themeIds) do
@@ -405,10 +414,10 @@ function OptionsMenu:loadGraphicsMenu()
     getFixedScaleSlider())
   local function updateFixedButtonGroupVisibility()
     if config.gameScaleType ~= "fixed" then
-      self.menus.graphicsMenu:removeMenuItem(fixedScaleSlider.id)
+      fixedScaleSlider:detach()
     else
-      if self.menus.graphicsMenu:containsMenuItemID(fixedScaleSlider.id) == false then
-        self.menus.graphicsMenu:addMenuItem(3, fixedScaleSlider)
+      if not fixedScaleSlider.parent then
+        menu:addChild(fixedScaleSlider, 3)
       end
     end
   end
@@ -465,20 +474,11 @@ function OptionsMenu:loadGraphicsMenu()
           self:switchToScreen("baseMenu")
         end)
 
-  local menu = ui.VerticalMenu({
-    hAlign = "center",
-    minHeight = 480,
-    maxHeight = 540,
-    childGap = 8,
-    padding = 32,
-    width = 600,
-  })
-
   menu:addChild(themeSelection)
   menu:addChild(scaleType)
 
   if config.gameScaleType == "fixed" then
-    menu:addMenuItem(3, fixedScaleSlider)
+    menu:addChild(fixedScaleSlider, 3)
   end
 
   menu:addChild(portraitDarkness)

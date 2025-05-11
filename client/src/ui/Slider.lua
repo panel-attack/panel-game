@@ -6,7 +6,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local handleRadius = 7.5
 local xPadding = 8
-local yPadding = -18
+local yPadding = 4
 local valueBackgroundPaddingX = 2
 local valueBackgroundPaddingY = -1 -- textHeight isn't a tight bounds
 local sliderBarThickness = 6
@@ -62,7 +62,8 @@ local Slider = class(
     local valueTextWidth, valueTextHeight = self.valueText:getDimensions()
     local textWidth, textHeight = self.maxText:getDimensions()
     self.width = self.tickLength * self:tickCount() + xPadding + math.max(xPadding, textWidth / 2)
-    self.height = 4 * 2 + handleRadius * 2 + valueTextHeight + textHeight
+    self.height = handleRadius * 2 + valueTextHeight + textHeight
+    self.minHeight = self.height
   end,
   UIElement
 )

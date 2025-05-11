@@ -129,11 +129,17 @@ local function onChildrenChanged(uiElement)
   end
 end
 
-function UIElement:addChild(uiElement)
+---@param uiElement UiElement
+---@param index integer?
+function UIElement:addChild(uiElement, index)
   if uiElement.parent then
     error("Tried to give a uiElement more than one parent")
   else
-    self.children[#self.children + 1] = uiElement
+    if index then
+      table.insert(self.children, index, uiElement)
+    else
+      self.children[#self.children + 1] = uiElement
+    end
     uiElement.parent = self
     onChildrenChanged(uiElement.parent)
   end
