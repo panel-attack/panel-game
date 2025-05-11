@@ -19,6 +19,7 @@ local ui = {
   ---@type fun(options: LabelOptions): Label
   Label = require(PATH .. ".Label"),
   Layouts = {
+    AdaptiveFlexLayout = require(PATH .. ".Layouts.AdaptiveFlexLayout"),
     HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout"),
     VerticalFlexLayout = require(PATH .. ".Layouts.VerticalFlexLayout"),
   },

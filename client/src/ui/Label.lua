@@ -110,6 +110,11 @@ function Label:drawSelf()
   GraphicsUtil.printf(self.text, self.x, self.y, self.width, self.hAlign, nil, nil, self.fontSize)
 end
 
+function Label:getPreferredWidth()
+  local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
+  return font:getWidth(self.text)
+end
+
 function Label:setMinHeightForWidth()
   self.minHeight = GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
 end

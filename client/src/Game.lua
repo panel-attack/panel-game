@@ -655,14 +655,19 @@ function Game:setLanguage(lang_code)
   end
   config.language_code = Localization.codes[Localization.lang_index]
 
+  local baseOffset = 0
+  if system.isMobileOS() or DEBUG_ENABLED then
+    baseOffset = 4
+  end
+
   if themes[config.theme] and themes[config.theme].font and themes[config.theme].font.path then
-    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, (themes[config.theme].font.size or 12) - 12, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, (themes[config.theme].font.size or 12) - 12 + baseOffset, self:newCanvasSnappedScale())
   elseif config.language_code == "JP" then
-    GraphicsUtil.setGlobalFont("client/assets/fonts/jp.ttf", 2, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont("client/assets/fonts/jp.ttf", 2 + baseOffset, self:newCanvasSnappedScale())
   elseif config.language_code == "TH" then
-    GraphicsUtil.setGlobalFont("client/assets/fonts/th.otf", 2, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont("client/assets/fonts/th.otf", 2 + baseOffset, self:newCanvasSnappedScale())
   else
-    GraphicsUtil.setGlobalFont(nil, 0, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont(nil, baseOffset, self:newCanvasSnappedScale())
   end
 
   Localization:refresh_global_strings()

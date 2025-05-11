@@ -5,7 +5,6 @@ local Button = require(PATH .. ".Button")
 local TextButton = require(PATH .. ".TextButton")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local system = require("client.src.system")
 local HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout")
 
 -- MenuItem is a specific UIElement that all children of Menu should be
@@ -25,10 +24,6 @@ function MenuItem.createMenuItem(label, item)
   local menuItem = UiElement({hAlign = "center", layout = HorizontalFlexLayout, childGap = 16, hFill = true})
 
   menuItem.width = label.width + (2 * MenuItem.PADDING)
-
-  if system.isMobileOS() or DEBUG_ENABLED then
-    label:setFontSize("big")
-  end
 
   label.vAlign = "center"
   label.hAlign = "right"
@@ -56,18 +51,14 @@ function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
     id = text
     text = nil
   end
-  local fontSize = "normal"
-  if system.isMobileOS() or DEBUG_ENABLED then
-    fontSize = "big"
-  end
+
   local label = Label({
     id = id,
     text = text,
     replacements = replacements,
     hAlign = "center",
     vAlign = "center",
-    wrap = false,
-    fontSize = fontSize
+    wrap = false
   })
   local button = Button({
     width = 140,

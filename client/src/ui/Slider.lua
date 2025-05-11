@@ -55,9 +55,9 @@ local Slider = class(
       self.hFill = true
     end
 
-    self.minText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.min))
-    self.maxText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.max))
-    self.valueText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.value))
+    self.minText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize("small"), tostring(self.min))
+    self.maxText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize("small"), tostring(self.max))
+    self.valueText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize("small"), tostring(self.value))
 
     local valueTextWidth, valueTextHeight = self.valueText:getDimensions()
     local textWidth, textHeight = self.maxText:getDimensions()

@@ -335,7 +335,7 @@ end
 ---@param halign string?
 ---@param color number[]?
 ---@param scale number?
----@param fontSize FontSize
+---@param fontSize FontSize?
 function GraphicsUtil.printf(str, x, y, limit, halign, color, scale, fontSize)
   x = x or 0
   y = y or 0
