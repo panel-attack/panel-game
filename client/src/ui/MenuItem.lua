@@ -6,6 +6,7 @@ local TextButton = require(PATH .. ".TextButton")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local system = require("client.src.system")
+local HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout")
 
 -- MenuItem is a specific UIElement that all children of Menu should be
 local MenuItem = class(function(self, options)
@@ -21,32 +22,28 @@ MenuItem.PADDING = 2
 function MenuItem.createMenuItem(label, item)
   assert(label ~= nil)
 
-  label.vAlign = "center"
-  label.x = MenuItem.PADDING
-
-  local menuItem = MenuItem({x = 0, y = 0})
+  local menuItem = UiElement({hAlign = "center", layout = HorizontalFlexLayout, childGap = 16, hFill = true})
 
   menuItem.width = label.width + (2 * MenuItem.PADDING)
 
   if system.isMobileOS() or DEBUG_ENABLED then
-    label.height = math.max(30, label.height + (2 * MenuItem.PADDING))
-    menuItem.height = math.max(30, label.height, item and item.height or 0)
-  else
-    menuItem.height = math.max(menuItem.height, math.max(label.height, item and item.height or 0) + (2 * MenuItem.PADDING))
+    label:setFontSize(18)
   end
 
+  label.vAlign = "center"
+  label.hAlign = "right"
+  label.hFill = true
+  menuItem:addChild(label)
   if item ~= nil then
-    local spaceBetween = 16
-    item.x = label.width + spaceBetween
     item.vAlign = "center"
-    if system.isMobileOS() or DEBUG_ENABLED then
-      item.height = math.max(30, item.height)
-    end
-    menuItem.width = item.x + item.width + MenuItem.PADDING
+    item.hAlign = "left"
+    item.hFill = true
     menuItem:addChild(item)
   end
-  menuItem:addChild(label)
 
+  menuItem.receiveInputs = function(i, inputs)
+    item:receiveInputs(inputs)
+  end
 
   return menuItem
 end
@@ -59,18 +56,26 @@ function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
     id = text
     text = nil
   end
+  local fontSize = 12
+  if system.isMobileOS() or DEBUG_ENABLED then
+    fontSize = 18
+  end
   local label = Label({
     id = id,
     text = text,
     replacements = replacements,
     hAlign = "center",
-    vAlign = "center"
+    vAlign = "center",
+    wrap = false,
+    fontSize = fontSize
   })
   local button = Button({
     width = 140,
     maxWidth = 300,
     padding = 8,
-    onClick = onClick
+    onClick = onClick,
+    hAlign = "center",
+    vAlign = "center",
   })
   button:addChild(label)
 
@@ -89,8 +94,18 @@ function MenuItem.createLabeledButtonMenuItem(labelText, labelTextReplacements, 
   if buttonTextTranslate == nil then
     buttonTextTranslate = true
   end
-
-  local label = Label({text = labelText, replacements = labelTextReplacements, translate = labelTextTranslate, vAlign = "center"})
+  assert(text ~= nil)
+  local id
+  if labelTextTranslate == nil or labelTextTranslate then
+    id = text
+    text = nil
+  end
+  local label = Label({
+    id = id,
+    text = text,
+    replacements = labelTextReplacements,
+    vAlign = "center"
+  })
   local textButton = TextButton({label = Label({text = buttonText, replacements = buttonTextReplacements, translate = buttonTextTranslate, hAlign = "center", vAlign = "center"}), onClick = buttonOnClick, width = BUTTON_WIDTH})
 
   local menuItem = MenuItem.createMenuItem(label, textButton)
@@ -101,38 +116,51 @@ end
 
 function MenuItem.createStepperMenuItem(text, replacements, translate, stepper)
   assert(text ~= nil)
-  assert(stepper ~= nil)
-  if translate == nil then
-    translate = true
+  local id
+  if translate == nil or translate then
+    id = text
+    text = nil
   end
-  local label = Label({text = text, replacements = replacements, translate = translate, vAlign = "center"})
-  local menuItem = MenuItem.createMenuItem(label, stepper)
-  
-  return menuItem
+  local label = Label({
+    id = id,
+    text = text,
+    replacements = replacements,
+    vAlign = "center"
+  })
+
+  return MenuItem.createMenuItem(label, stepper)
 end
 
 function MenuItem.createToggleButtonGroupMenuItem(text, replacements, translate, toggleButtonGroup)
   assert(text ~= nil)
-  assert(toggleButtonGroup ~= nil)
-  if translate == nil then
-    translate = true
+  local id
+  if translate == nil or translate then
+    id = text
+    text = nil
   end
-  local label = Label({text = text, replacements = replacements, translate = translate, vAlign = "center"})
-  local menuItem = MenuItem.createMenuItem(label, toggleButtonGroup)
-  
-  return menuItem
+  local label = Label({
+    id = id,
+    text = text,
+    replacements = replacements,
+    vAlign = "center"
+  })
+  return MenuItem.createMenuItem(label, toggleButtonGroup)
 end
 
 function MenuItem.createSliderMenuItem(text, replacements, translate, slider)
   assert(text ~= nil)
-  assert(slider ~= nil)
-  if translate == nil then
-    translate = true
+  local id
+  if translate == nil or translate then
+    id = text
+    text = nil
   end
-  local label = Label({text = text, replacements = replacements, translate = translate, vAlign = "center"})
-  local menuItem = MenuItem.createMenuItem(label, slider)
-  
-  return menuItem
+  local label = Label({
+    id = id,
+    text = text,
+    replacements = replacements,
+    vAlign = "center"
+  })
+  return MenuItem.createMenuItem(label, slider)
 end
 
 function MenuItem:setSelected(selected)

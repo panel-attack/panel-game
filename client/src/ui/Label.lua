@@ -33,8 +33,8 @@ local Label = class(
     self.hAlign = options.hAlign or "left"
     self.vAlign = options.vAlign or "top"
 
-    self.font = options.font or love.graphics.getFont()
     self.fontSize = options.fontSize or GraphicsUtil.fontSize
+    self.font = options.font or GraphicsUtil.getGlobalFontWithSize(self.fontSize)
 
     local totalWidth = self.font:getWidth(self.text)
     if options.wrap ~= nil then
@@ -60,7 +60,7 @@ local Label = class(
     end
 
     self.width = options.width or totalWidth
-    self.maxWidth = options.maxWidth or totalWidth
+    self.maxWidth = options.maxWidth or math.huge
     self.minHeight = options.minHeight or self.font:getHeight()
     self.height = options.height or self.font:getHeight()
 
@@ -81,23 +81,38 @@ local Label = class(
 )
 Label.TYPE = "Label"
 
-function Label:getEffectiveDimensions()
-  return self.drawable:getDimensions()
+function Label:setFontSize(fontSize)
+  self.fontSize = fontSize
+  self.font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
+  local totalWidth = self.font:getWidth(self.text)
+  self.width = totalWidth
+  self.maxWidth = math.huge
+  if not self.wrap then
+    self.minWidth = totalWidth
+  end
 end
 
 function Label:refreshLocalization()
   if self.id then
-    self.text = loc(self.text, unpack(self.replacementTable))
+    self.text = loc(self.id, unpack(self.replacementTable))
+  end
+  self.font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
+  local totalWidth = self.font:getWidth(self.text)
+  self.width = totalWidth
+  self.maxWidth = totalWidth
+  if not self.wrap then
+    self.minWidth = totalWidth
   end
 end
 
 function Label:drawSelf()
-  love.graphics.printf(self.text, self.x, self.y, self.width)
+  love.graphics.setFont(self.font)
+  love.graphics.printf(self.text, self.x, self.y, self.width, self.hAlign)
 end
 
 function Label:setMinHeightForWidth()
-  local refText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize(self.fontSize))
-  refText:setf(self.text, self.width, "left")
+  local refText = GraphicsUtil.newText(self.font)
+  refText:setf(self.text, self.width, self.hAlign)
   self.minHeight = refText:getHeight()
 end
 

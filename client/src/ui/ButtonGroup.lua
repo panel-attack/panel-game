@@ -3,6 +3,7 @@ local UIElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local tableUtils = require("common.lib.tableUtils")
+local HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout")
 
 local BUTTON_PADDING = 5
 
@@ -40,6 +41,7 @@ local function setButtons(self, buttons, values, selectedIndex)
        overallWidth = overallWidth + BUTTON_PADDING
     end
     button.onClick = genButtonGroupFn(self, button)
+    button.vAlign = "center"
     self:addChild(button)
     overallHeight = math.max(overallHeight, button.height)
   end
@@ -66,6 +68,12 @@ local ButtonGroup = class(
   function(self, options)
     self.selectedIndex = options.selectedIndex or 1
 
+    self.padding = options.padding or 4
+    self.childGap = options.childGap or 8
+    if options.hFill == nil then
+      self.hFill = true
+    end
+
     self.onChange = options.onChange or function() end
 
     setButtons(self, options.buttons, options.values, self.selectedIndex)
@@ -73,6 +81,7 @@ local ButtonGroup = class(
   UIElement
 )
 ButtonGroup.TYPE = "ButtonGroup"
+ButtonGroup.layout = HorizontalFlexLayout
 
 -- changes state for the button group
 -- updates the color of the selected button

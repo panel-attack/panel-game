@@ -11,7 +11,9 @@ function VerticalFlexLayout.getMinWidth(uiElement)
   local maxWidth = 0
 
   for _, child in ipairs(uiElement.children) do
-    maxWidth = math.max(maxWidth, child.width)
+    if child.isVisible then
+      maxWidth = math.max(maxWidth, child.width)
+    end
   end
 
   return w + maxWidth
@@ -22,7 +24,9 @@ function VerticalFlexLayout.getMinHeight(uiElement)
   local h = uiElement.padding * 2 + uiElement.childGap * (#uiElement.children - 1)
 
   for _, child in ipairs(uiElement.children) do
-    h = h + child.height
+    if child.isVisible then
+      h = h + child.height
+    end
   end
 
   return util.bound(uiElement.minHeight, h, uiElement.maxHeight)
@@ -37,7 +41,7 @@ function VerticalFlexLayout.growChildrenHeight(uiElement)
   local growables = {}
 
   for i, child in ipairs(uiElement.children) do
-    if child.vFill and child.height < child.maxHeight then
+    if child.isVisible and child.vFill and child.height < child.maxHeight then
       growables[#growables+1] = child
       child.newHeight = child.height
     end
@@ -123,33 +127,42 @@ end
 function VerticalFlexLayout.positionChildren(uiElement)
   local remainingHeight = uiElement.height - (uiElement.padding * 2 + uiElement.childGap * (#uiElement.children - 1))
   for _, child in ipairs(uiElement.children) do
-    remainingHeight = remainingHeight - child.height
+    if child.isVisible then
+      remainingHeight = remainingHeight - child.height
+    else
+      -- we subtracted the childgap for this child earlier
+      remainingHeight = remainingHeight + uiElement.childGap
+    end
   end
 
   local y = uiElement.padding
   for _, child in ipairs(uiElement.children) do
-    if child.vAlign == "top" then
-      child.y = y
-    elseif child.vAlign == "center" then
-      child.y = y + remainingHeight / 2
-    elseif child.vAlign == "right" then
-      child.y = y + remainingHeight
-    end
+    if child.isVisible then
+      if child.vAlign == "top" then
+        child.y = y
+      elseif child.vAlign == "center" then
+        child.y = y + remainingHeight / 2
+      elseif child.vAlign == "right" then
+        child.y = y + remainingHeight
+      end
 
-    if child.hAlign == "left" then
-      child.x = uiElement.padding
-    elseif child.hAlign == "center" then
-      child.x = (uiElement.width - child.width) / 2
-    elseif child.hAlign == "right" then
-      child.x = (uiElement.width - child.width) - uiElement.padding
+      if child.hAlign == "left" then
+        child.x = uiElement.padding
+      elseif child.hAlign == "center" then
+        child.x = (uiElement.width - child.width) / 2
+      elseif child.hAlign == "right" then
+        child.x = (uiElement.width - child.width) - uiElement.padding
+      end
+      child.x = math.round(child.x)
+      child.y = math.round(child.y)
+      y = y + uiElement.childGap + child.height
     end
-    child.x = math.round(child.x)
-    child.y = math.round(child.y)
-    y = y + uiElement.childGap + child.height
   end
 
   for _, child in ipairs(uiElement.children) do
-    child.layout.positionChildren(child)
+    if child.isVisible then
+      child.layout.positionChildren(child)
+    end
   end
 end
 

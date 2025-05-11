@@ -192,7 +192,7 @@ function UIElement:drawSelf()
   love.graphics.setColor(self.backgroundColor)
   love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
   love.graphics.setColor(1, 1, 1, 1)
-  love.graphics.print(self.width .. ", " .. self.height, self.x + 5, self.y + 5)
+  --love.graphics.print(self.width .. ", " .. self.height, self.x + 5, self.y + 5)
 end
 
 function UIElement:drawChildren()
@@ -207,18 +207,20 @@ end
 -- if you want to stop drawing an element, e.g. due to changing a subscreen, 
 --  the more opportune method is to simply remove it from the ui tree via detach()
 function UIElement:setVisibility(isVisible)
-  self.isVisible = isVisible
-  self:onVisibilityChanged()
+  if self.isVisible ~= isVisible then
+    self.isVisible = isVisible
+    self:onVisibilityChanged()
+  end
 end
 
 function UIElement:onVisibilityChanged()
+  if self.parent then
+    onChildrenChanged(self.parent)
+  end
 end
 
 function UIElement:setEnabled(isEnabled)
   self.isEnabled = isEnabled
-  for _, uiElement in ipairs(self.children) do
-    uiElement:setEnabled(isEnabled)
-  end
 end
 
 function UIElement:inBounds(x, y)

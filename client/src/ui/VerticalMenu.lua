@@ -36,7 +36,7 @@ function VerticalMenu:selectPrevious()
       break
     end
   end
-  self:keepVisible(-self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
+  self:keepVisible(self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
   GAME.theme:playMoveSfx()
 end
 
@@ -49,8 +49,18 @@ function VerticalMenu:selectNext()
       break
     end
   end
-  self:keepVisible(-self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
+  self:keepVisible(self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
   GAME.theme:playMoveSfx()
+end
+
+function VerticalMenu:selectLast()
+  for i = #self.children, 1, -1 do
+    local child = self.children[i]
+    if child.receiveInputs and child.isEnabled and child.isVisible then
+      self.selectedIndex = i
+      break
+    end
+  end
 end
 
 function VerticalMenu:receiveInputs(inputs, dt)
@@ -73,7 +83,7 @@ function VerticalMenu:receiveInputs(inputs, dt)
     self.focused:receiveInputs(inputs, dt)
   elseif inputs.isDown["MenuEsc"] then
     if self.selectedIndex ~= #self.children then
-      self:setSelectedIndex(#self.children)
+      self:selectLast()
       GAME.theme:playCancelSfx()
     else
       selectedElement:receiveInputs(inputs, dt)

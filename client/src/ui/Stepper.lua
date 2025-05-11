@@ -5,6 +5,7 @@ local Label = require(PATH .. ".Label")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout")
 
 local NAV_BUTTON_WIDTH = 25
 local EMPTY_STEPPER_WIDTH = 160
@@ -58,11 +59,13 @@ local Stepper = class(
   function(self, options)
     self.onChange = options.onChange or function() end
     self.selectedIndex = options.selectedIndex or 1
+    self.childGap = options.childGap or 8
 
     local navButtonWidth = 25
     self.leftButton = TextButton({
       width = navButtonWidth,
       vAlign = "center",
+      hAlign = "center",
       label = Label({text = "<", translate = false}),
       onClick = function(selfElement, inputSource, holdTime)
         setState(self, self.selectedIndex - 1)
@@ -71,24 +74,26 @@ local Stepper = class(
     self.rightButton = TextButton({
       width = navButtonWidth,
       vAlign = "center",
+      hAlign = "center",
       label = Label({text = ">", translate = false}),
       onClick = function(selfElement, inputSource, holdTime)
         setState(self, self.selectedIndex + 1)
       end
     })
     self:addChild(self.leftButton)
-    self:addChild(self.rightButton)
-
+    
     self.color = {.5, .5, 1, .7}
     self.borderColor = {.7, .7, 1, .7}
-
+    
     setLabels(self, options.labels, options.values, self.selectedIndex)
+    self:addChild(self.rightButton)
 
-    self.TYPE = "Stepper"
   end,
   UIElement
 )
 
+Stepper.TYPE = "Stepper"
+Stepper.layout = HorizontalFlexLayout
 Stepper.setLabels = setLabels
 Stepper.setState = setState
 
@@ -121,7 +126,7 @@ end
 
 -- Remove all attached labels, preserving the navigation buttons
 function Stepper:removeLabelChildren()
-  for i = #self.children, 3, -1 do
+  for i = #self.children - 1, 2, -1 do
     self.children[i]:detach()
   end
 end

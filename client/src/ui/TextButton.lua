@@ -16,6 +16,8 @@ local TextButton = class(function(self, options)
   self.label = options.label
   self.label.hAlign = "center"
   self.label.vAlign = "center"
+  self.hFill = true
+  self.padding = options.padding or 8
   self:addChild(self.label)
 end, Button)
 TextButton.TYPE = "TextButton"

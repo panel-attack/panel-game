@@ -55,7 +55,7 @@ function ModManagement:load()
   self.cursor.onMove = function(c)
     local newOffset = c.target.unitSize * (c.selectedGridPos.y - 1)
     if self.scrollContainer then
-      self.scrollContainer:keepVisible(-newOffset, c.target.unitSize)
+      self.scrollContainer:keepVisible(newOffset, c.target.unitSize)
     end
   end
 
