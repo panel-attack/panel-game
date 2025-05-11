@@ -6,12 +6,14 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Focusable = require(PATH .. ".Focusable")
 local FocusDirector = require(PATH .. ".FocusDirector")
 local input = require("client.src.inputManager")
+local VerticalScrollLayout = require(PATH .. ".Layouts.VerticalScrollLayout")
 
 ---@class VerticalMenu : ScrollContainer, Focusable
 local VerticalMenu = class(
 function(self, options)
   self.selectedIndex = nil
   self.scrollOrientation = "vertical"
+  self.layout = VerticalScrollLayout
 end,
 ScrollContainer)
 

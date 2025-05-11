@@ -115,25 +115,23 @@ function ModManagement:load()
     end
   )
 
-  local menuItems = {
-    self.manageCharactersButton,
-    self.manageStagesButton,
-    self.backButton
-  }
-
-  if system.supportsFileBrowserOpen() then
-    table.insert(menuItems, 3, self.openSaveDirectoryButton)
-  end
-
-  self.menu = ui.Menu({
-    menuItems = menuItems,
+  self.menu = ui.VerticalMenu({
     x = 100,
     y = 0,
     hAlign = "left",
     vAlign = "center",
-    width = 200,
-    height = 300,
+    minHeight = 480,
+    maxHeight = 540,
+    childGap = 8,
+    padding = 32,
   })
+
+  self.menu:addChild(self.manageCharactersButton)
+  self.menu:addChild(self.manageStagesButton)
+  if system.supportsFileBrowserOpen() then
+    self.menu:addChild(self.openSaveDirectoryButton)
+  end
+  self.menu:addChild(self.backButton)
 
   self.uiRoot:addChild(self.menu)
 end

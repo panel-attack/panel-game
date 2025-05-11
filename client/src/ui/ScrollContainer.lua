@@ -4,6 +4,8 @@ local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local logger = require("common.lib.logger")
+local VerticalScrollLayout = require(PATH .. ".Layouts.VerticalScrollLayout")
+local HorizontalScrollLayout = require(PATH .. ".Layouts.HorizontalScrollLayout")
 
 ---@class ScrollContainerOptions : UiElementOptions
 ---@field scrollOrientation ("vertical" | "horizontal" | nil)
@@ -19,6 +21,11 @@ local ScrollContainer = class(
 ---@param self ScrollContainer
 function(self, options)
   self.scrollOrientation = "vertical" or options.scrollOrientation
+  if self.scrollOrientation == "vertical" then
+    self.layout = VerticalScrollLayout
+  else
+    self.layout = HorizontalScrollLayout
+  end
   self.scrollOffset = 0
   self.maxScrollOffset = 0
 end,

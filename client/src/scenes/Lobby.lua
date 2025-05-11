@@ -13,7 +13,7 @@ local Lobby = class(function(self, sceneParams)
 
   -- ui
   self.leaderboard = ui.Leaderboard({isVisible = false, x = 200, hAlign = "center", vAlign = "center"})
-  self.lobbyMessage = ui.Label({text = "lb_select_player"})
+  self.lobbyMessage = ui.Label({id = "lb_select_player"})
   self.backgroundImg = themes[config.theme].images.bg_main
   self.lobbyMenu = nil
   self.lobbyMenuXoffsetMap = {
@@ -58,34 +58,47 @@ function Lobby:load(sceneParams)
 end
 
 function Lobby:initLobbyMenu()
-  local menuItems = {
-    ui.MenuItem.createMenuItem(self.lobbyMessage),
-    ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
-      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_ENDLESS"))
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
-      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"))
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
-      if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
-        GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
-        GAME.netClient:sendPlayerSettings(GAME.localPlayer)
-      end
-      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
-    end),
-    ui.MenuItem.createButtonMenuItem("lb_show_board", nil, nil, function()
-      if self.leaderboard.hasFocus then
-        self.leaderboard:yieldFocus()
-      else
-        self:toggleLeaderboard()
-      end
-    end),
-    ui.MenuItem.createButtonMenuItem("lb_back", nil, nil, exitMenu)
-  }
-  self.leaderboardToggleLabel = menuItems[5].textButton.children[1]
+  local lobbyMessage = ui.MenuItem.createMenuItem(self.lobbyMessage)
+  local endless = ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
+    GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_ENDLESS"))
+  end)
+  local time = ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
+    GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"))
+  end)
+  local vsSelf = ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
+    if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
+      GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
+      GAME.netClient:sendPlayerSettings(GAME.localPlayer)
+    end
+    GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
+  end)
+  local showLeaderboard = ui.MenuItem.createButtonMenuItem("lb_show_board", nil, nil, function()
+    if self.leaderboard.hasFocus then
+      self.leaderboard:yieldFocus()
+    else
+      self:toggleLeaderboard()
+    end
+  end)
+  local back = ui.MenuItem.createButtonMenuItem("lb_back", nil, nil, exitMenu)
+  self.leaderboardToggleLabel = showLeaderboard.children[1]
 
   self.lobbyMenuStartingUp = true
-  self.lobbyMenu = ui.Menu.createCenteredMenu(menuItems)
+  self.lobbyMenu = ui.VerticalMenu({
+    hAlign = "center",
+    minHeight = 480,
+    maxHeight = 840,
+    childGap = 8,
+    padding = 32,
+    width = 600,
+  })
+
+  self.lobbyMenu:addChild(lobbyMessage)
+  self.lobbyMenu:addChild(endless)
+  self.lobbyMenu:addChild(time)
+  self.lobbyMenu:addChild(vsSelf)
+  self.lobbyMenu:addChild(showLeaderboard)
+  self.lobbyMenu:addChild(back)
+
   self.lobbyMenu.x = self.lobbyMenuXoffsetMap[false]
 
   self.uiRoot:addChild(self.lobbyMenu)

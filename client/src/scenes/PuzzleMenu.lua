@@ -7,7 +7,7 @@ local LevelPresets      = require("common.data.LevelPresets")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
----@field menu Menu
+---@field menu VerticalMenu
 ---@field puzzleLabel Label
 ---@field levelSlider LevelSlider
 ---@field randomColorButtons ButtonGroup
@@ -70,8 +70,8 @@ function PuzzleMenu:load(sceneParams)
   self.randomColorsButtons = ui.ButtonGroup(
     {
       buttons = {
-        ui.TextButton({label = ui.Label({text = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-        ui.TextButton({label = ui.Label({text = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
       },
       values = {false, true},
       selectedIndex = config.puzzle_randomColors and 2 or 1,
@@ -85,8 +85,8 @@ function PuzzleMenu:load(sceneParams)
   self.randomlyFlipPuzzleButtons = ui.ButtonGroup(
     {
       buttons = {
-        ui.TextButton({label = ui.Label({text = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-        ui.TextButton({label = ui.Label({text = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
       },
       values = {false, true},
       selectedIndex = config.puzzle_randomFlipped and 2 or 1,
@@ -97,21 +97,30 @@ function PuzzleMenu:load(sceneParams)
     }
   )
 
-  local menuOptions = {
-    ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider),
-    ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons),
-    ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons),
-  }
+  local levelSelection = ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider)
+  local randomizeColors = ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons)
+  local randomFlip = ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons)
+  local back = ui.MenuItem.createButtonMenuItem("back", nil, nil, function() self:exit() end)
 
+  self.menu = ui.VerticalMenu({
+    hAlign = "center",
+    minHeight = 480,
+    maxHeight = 840,
+    childGap = 8,
+    padding = 32,
+    width = 600,
+  })
+
+  self.menu:addChild(levelSelection)
+  self.menu:addChild(randomizeColors)
+  self.menu:addChild(randomFlip)
   for puzzleSetName, puzzleSet in pairsSortedByKeys(GAME.puzzleSets) do
-    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(puzzleSetName, nil, false, function() self:startGame(puzzleSet) end)
+    self.menu:addChild(ui.MenuItem.createButtonMenuItem(puzzleSetName, nil, false, function() self:startGame(puzzleSet) end))
   end
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function() self:exit() end)
-
-  self.menu = ui.Menu.createCenteredMenu(menuOptions)
+  self.menu:addChild(back)
 
   local x, y = unpack(themes[config.theme].main_menu_screen_pos)
-  self.puzzleLabel = ui.Label({text = "pz_puzzles", x = x - 10, y = y - 40})
+  self.puzzleLabel = ui.Label({id = "pz_puzzles", x = x - 10, y = y - 40})
 
   self.uiRoot:addChild(self.menu)
   self.uiRoot:addChild(self.puzzleLabel)

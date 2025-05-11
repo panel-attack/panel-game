@@ -43,8 +43,8 @@ function WindowSizeTester:load()
   local maximizedLabel = ui.ValueLabel({valueFunction = function() return "Maximized: " .. tostring(love.window.isMaximized()) end})
   self.uiRoot.fullscreenSelection = ui.ButtonGroup({
     buttons = {
-      ui.TextButton({width = 60, label = ui.Label({text = "op_off"})}),
-      ui.TextButton({width = 60, label = ui.Label({text = "op_on"})})
+      ui.TextButton({width = 60, label = ui.Label({id = "op_off"})}),
+      ui.TextButton({width = 60, label = ui.Label({id = "op_on"})})
     },
     values = {false, true},
     selectedIndex = flags.fullscreen and 2 or 1,

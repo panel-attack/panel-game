@@ -94,7 +94,6 @@ function MenuItem.createLabeledButtonMenuItem(labelText, labelTextReplacements, 
   if buttonTextTranslate == nil then
     buttonTextTranslate = true
   end
-  assert(text ~= nil)
   local id
   if labelTextTranslate == nil or labelTextTranslate then
     id = text

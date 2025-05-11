@@ -30,7 +30,7 @@ function SetUserIdMenu:load(sceneParams)
   })
 
   self.confirmationButton = ui.TextButton({
-    label = ui.Label({text = "go_"}),
+    label = ui.Label({id = "go_"}),
     x = menuX,
     y = menuY + 60,
     vAlign = "top",

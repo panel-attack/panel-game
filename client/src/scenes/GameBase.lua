@@ -178,32 +178,31 @@ function GameBase:load()
   self.backgroundImage = UpdatingImage(self.stage.images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
   self.stageTrack = self:getStageTrack()
 
-  local pauseMenuItems = {
-    ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
-      GAME.theme:playValidationSfx()
-      self.pauseMenu:setVisibility(false)
-      self.match:togglePause()
-      if self.stageTrack and self.pauseState.musicWasPlaying then
-        SoundController:playMusic(self.stageTrack)
-      end
-      self:initializeFrameInfo()
-    end),
-    ui.MenuItem.createButtonMenuItem("back", nil, true, function()
-      GAME.theme:playCancelSfx()
-      self.match:abort()
-      self:startNextScene()
-    end),
-  }
+  local resume = ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
+    GAME.theme:playValidationSfx()
+    self.pauseMenu:setVisibility(false)
+    self.match:togglePause()
+    if self.stageTrack and self.pauseState.musicWasPlaying then
+      SoundController:playMusic(self.stageTrack)
+    end
+    self:initializeFrameInfo()
+  end)
+  local back = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
+    GAME.theme:playCancelSfx()
+    self.match:abort()
+    self:startNextScene()
+  end)
 
-  self.pauseMenu = ui.Menu({
-    x = 0,
-    y = 0,
+  self.pauseMenu = ui.VerticalMenu({
     hAlign = "center",
-    vAlign = "center",
-    menuItems = pauseMenuItems,
-    height = 200
+    minHeight = 480,
+    maxHeight = 540,
+    childGap = 8,
+    padding = 32,
+    isVisible = false,
   })
-  self.pauseMenu:setVisibility(false)
+  self.pauseMenu:addChild(resume)
+  self.pauseMenu:addChild(back)
   self.uiRoot:addChild(self.pauseMenu)
 
   leftover_time = 1 / 120

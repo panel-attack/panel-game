@@ -159,7 +159,7 @@ function CharacterSelect:createReadyButton()
   local readyButton = ui.TextButton({
     hFill = true,
     vFill = true,
-    label = ui.Label({text = "ready"}),
+    label = ui.Label({id = "ready"}),
     backgroundColor = {1, 1, 1, 0},
     outlineColor = {1, 1, 1, 1}
   })
@@ -184,7 +184,7 @@ function CharacterSelect:createLeaveButton()
   leaveButton = ui.TextButton({
     hFill = true,
     vFill = true,
-    label = ui.Label({text = "leave"}),
+    label = ui.Label({id = "leave"}),
     backgroundColor = {1, 1, 1, 0},
     outlineColor = {1, 1, 1, 1},
     onClick = function()
@@ -760,7 +760,7 @@ function CharacterSelect:createPlayerInfo(player)
 
   stackPanel.winrateLabel = ui.Label({
     x = 4,
-    text = "ss_winrate"
+    id = "ss_winrate"
   })
 
   stackPanel.winrateValueLabel = ui.Label({
@@ -877,10 +877,10 @@ end
 
 function CharacterSelect:createDifficultyCarousel(player, height)
   local passengers = {
-    { id = 1, uiElement = ui.Label({text = "easy", vAlign = "center", hAlign = "center"})},
-    { id = 2, uiElement = ui.Label({text = "normal", vAlign = "center", hAlign = "center"})},
-    { id = 3, uiElement = ui.Label({text = "hard", vAlign = "center", hAlign = "center"})},
-    { id = 4, uiElement = ui.Label({text = "ss_ex_mode", vAlign = "center", hAlign = "center"})},
+    { id = 1, uiElement = ui.Label({id = "easy", vAlign = "center", hAlign = "center"})},
+    { id = 2, uiElement = ui.Label({id = "normal", vAlign = "center", hAlign = "center"})},
+    { id = 3, uiElement = ui.Label({id = "hard", vAlign = "center", hAlign = "center"})},
+    { id = 4, uiElement = ui.Label({id = "ss_ex_mode", vAlign = "center", hAlign = "center"})},
   }
   local difficultyCarousel = ui.Carousel({
     isEnabled = player.isLocal,

@@ -32,7 +32,7 @@ function ChallengeModeMenu:load(sceneParams)
   local difficultyLabels = {}
   local challengeModes = {}
   for i = 1, ChallengeMode.numDifficulties do
-    table.insert(difficultyLabels, ui.Label({text = "challenge_difficulty_" .. i}))
+    table.insert(difficultyLabels, ui.Label({id = "challenge_difficulty_" .. i}))
     table.insert(challengeModes, i)
   end
 
@@ -48,15 +48,25 @@ function ChallengeModeMenu:load(sceneParams)
     }
   )
 
-  local menuItems = {
-    ui.MenuItem.createStepperMenuItem("difficulty", nil, nil, difficultyStepper),
-    ui.MenuItem.createButtonMenuItem("go_", nil, nil, function()
-      self:goToCharacterSelect(difficultyStepper.value)
-    end),
-    ui.MenuItem.createButtonMenuItem("back", nil, nil, exitMenu)
-  }
+  local challengeModeDifficulty = ui.MenuItem.createStepperMenuItem("difficulty", nil, nil, difficultyStepper)
+  local go = ui.MenuItem.createButtonMenuItem("go_", nil, nil, function()
+    self:goToCharacterSelect(difficultyStepper.value)
+  end)
+  local back = ui.MenuItem.createButtonMenuItem("back", nil, nil, exitMenu)
 
-  self.menu = ui.Menu.createCenteredMenu(menuItems)
+  self.menu = ui.VerticalMenu({
+    hAlign = "center",
+    minHeight = 480,
+    maxHeight = 540,
+    childGap = 8,
+    padding = 32,
+    width = 600,
+  })
+
+  self.menu:addChild(challengeModeDifficulty)
+  self.menu:addChild(go)
+  self.menu:addChild(back)
+
   self.uiRoot:addChild(self.menu)
 end
 

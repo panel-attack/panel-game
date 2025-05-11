@@ -26,7 +26,6 @@ local ui = {
   ---@see LevelSlider
   ---@type fun(options: SliderOptions): LevelSlider
   LevelSlider = require(PATH .. ".LevelSlider"),
-  Menu = require(PATH .. ".Menu"),
   MenuItem = require(PATH .. ".MenuItem"),
   MultiPlayerSelectionWrapper = require(PATH .. ".MultiPlayerSelectionWrapper"),
   PagedUniGrid = require(PATH .. ".PagedUniGrid"),

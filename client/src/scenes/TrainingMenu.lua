@@ -9,9 +9,7 @@ local save = require("client.src.save")
 
 local TrainingMenu = class(
   function (self, sceneParams)
-    self.backgroundImg = themes[config.theme].images.bg_main
     self.keepMusic = true
-    self.menu = nil -- set in load
     self:load(sceneParams)
   end,
   Scene
@@ -84,39 +82,52 @@ function TrainingMenu:load(sceneParams)
   )
 
   local widthSlider = ui.Slider({
-    min = 1, 
-    max = 6, 
+    min = 1,
+    max = 6,
     value = 1,
     tickLength = 15,
     onValueChange = function() garbagePatternStepper:setState(1) end
   })
 
   local heightSlider = ui.Slider({
-    min = 1, 
-    max = 99, 
+    min = 1,
+    max = 99,
     value = 1,
     onValueChange = function() garbagePatternStepper:setState(1) end
   })
 
-  local menuItems = {
-    ui.MenuItem.createStepperMenuItem("Garbage Pattern", nil, false, garbagePatternStepper),
-    ui.MenuItem.createSliderMenuItem("width", nil, nil, widthSlider),
-    ui.MenuItem.createSliderMenuItem("height", nil, nil, heightSlider),
-    ui.MenuItem.createButtonMenuItem("go_", nil, nil, function() self:goToCharacterSelect(garbagePatternStepper.value, widthSlider.value, heightSlider.value) end),
-    ui.MenuItem.createButtonMenuItem("back", nil, nil, exitMenu)
-  }
 
-  self.menu = ui.Menu.createCenteredMenu(menuItems)
+    local presets = ui.MenuItem.createStepperMenuItem("Garbage Pattern", nil, false, garbagePatternStepper)
+    local width = ui.MenuItem.createSliderMenuItem("width", nil, nil, widthSlider)
+    local height = ui.MenuItem.createSliderMenuItem("height", nil, nil, heightSlider)
+    local go = ui.MenuItem.createButtonMenuItem("go_", nil, nil, function() self:goToCharacterSelect(garbagePatternStepper.value, widthSlider.value, heightSlider.value) end)
+    local back = ui.MenuItem.createButtonMenuItem("back", nil, nil, exitMenu)
+
+  self.menu = ui.VerticalMenu({
+    hAlign = "center",
+    minHeight = 480,
+    maxHeight = 540,
+    childGap = 8,
+    padding = 32,
+    width = 600,
+  })
+
+  self.menu:addChild(presets)
+  self.menu:addChild(width)
+  self.menu:addChild(height)
+  self.menu:addChild(go)
+  self.menu:addChild(back)
+
   self.uiRoot:addChild(self.menu)
 end
 
 function TrainingMenu:update(dt)
-  self.backgroundImg:update(dt)
+  GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 end
 
 function TrainingMenu:draw()
-  self.backgroundImg:draw()
+  GAME.theme.images.bg_main:draw()
   self.uiRoot:draw()
 end
 
