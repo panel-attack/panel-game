@@ -214,7 +214,7 @@ function PortraitGame:flipToPortrait()
       stack.origin_x = stack.frameOriginX / stack.gfxScale
 
       -- create a raise button that interacts with the touch controller
-      local raiseButton = ui.TextButton({label = ui.Label({id = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
+      local raiseButton = ui.TextButton({label = ui.Label({id = "raise", fontSize = "big"}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
         stack.touchInputDetector.touchingRaise = true

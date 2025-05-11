@@ -16,7 +16,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field replacementTable string[]? Additional strings to perform string format on a localized key with parts marked for replacement
 ---@field text string The raw text or localization key
 ---@field font love.Font Cached font for recreating the love.Text on changes
----@field fontSize integer The size of the font
+---@field fontSize FontSize The size of the font
 ---@field wrap boolean If the font should wrap around
 ---@overload fun(options: LabelOptions): Label
 local Label = class(
@@ -33,10 +33,10 @@ local Label = class(
     self.hAlign = options.hAlign or "left"
     self.vAlign = options.vAlign or "top"
 
-    self.fontSize = options.fontSize or GraphicsUtil.fontSize
-    self.font = options.font or GraphicsUtil.getGlobalFontWithSize(self.fontSize)
+    self.fontSize = options.fontSize or "normal"
+    local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
 
-    local totalWidth = self.font:getWidth(self.text)
+    local totalWidth = font:getWidth(self.text)
     if options.wrap ~= nil then
       self.wrap = options.wrap
     else
@@ -44,9 +44,9 @@ local Label = class(
     end
 
     local words = self.text:split()
-    local maxWordWidth = self.font:getWidth(words[1])
+    local maxWordWidth = font:getWidth(words[1])
     for i = 2, #words do
-      maxWordWidth = math.max(maxWordWidth, self.font:getWidth(words[i]))
+      maxWordWidth = math.max(maxWordWidth, font:getWidth(words[i]))
     end
 
     if options.minWidth ~= nil then
@@ -61,16 +61,16 @@ local Label = class(
 
     self.width = options.width or totalWidth
     self.maxWidth = options.maxWidth or math.huge
-    self.minHeight = options.minHeight or self.font:getHeight()
-    self.height = options.height or self.font:getHeight()
+    self.minHeight = options.minHeight or font:getHeight()
+    self.height = options.height or font:getHeight()
 
     if options.maxHeight ~= nil then
       self.maxHeight = options.maxHeight
     else
       if self.wrap then
-        self.maxHeight = (#words * self.font:getHeight())
+        self.maxHeight = (#words * font:getHeight())
       else
-        self.maxHeight = self.font:getHeight()
+        self.maxHeight = font:getHeight()
       end
     end
 
@@ -81,10 +81,11 @@ local Label = class(
 )
 Label.TYPE = "Label"
 
+---@param fontSize FontSize
 function Label:setFontSize(fontSize)
   self.fontSize = fontSize
-  self.font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
-  local totalWidth = self.font:getWidth(self.text)
+  local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
+  local totalWidth = font:getWidth(self.text)
   self.width = totalWidth
   self.maxWidth = math.huge
   if not self.wrap then
@@ -96,8 +97,8 @@ function Label:refreshLocalization()
   if self.id then
     self.text = loc(self.id, unpack(self.replacementTable))
   end
-  self.font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
-  local totalWidth = self.font:getWidth(self.text)
+  local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
+  local totalWidth = font:getWidth(self.text)
   self.width = totalWidth
   self.maxWidth = totalWidth
   if not self.wrap then
@@ -106,14 +107,11 @@ function Label:refreshLocalization()
 end
 
 function Label:drawSelf()
-  love.graphics.setFont(self.font)
-  love.graphics.printf(self.text, self.x, self.y, self.width, self.hAlign)
+  GraphicsUtil.printf(self.text, self.x, self.y, self.width, self.hAlign, nil, nil, self.fontSize)
 end
 
 function Label:setMinHeightForWidth()
-  local refText = GraphicsUtil.newText(self.font)
-  refText:setf(self.text, self.width, self.hAlign)
-  self.minHeight = refText:getHeight()
+  self.minHeight = GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
 end
 
 return Label

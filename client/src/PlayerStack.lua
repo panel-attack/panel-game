@@ -1116,7 +1116,7 @@ function PlayerStack:drawAnalyticData()
   local icon_width
   local icon_height
 
-  local font = GraphicsUtil.getGlobalFontWithSize(GraphicsUtil.fontSize + fontIncrement)
+  local font = GraphicsUtil.getGlobalFontWithSize("big")
   GraphicsUtil.setFont(font)
   -- Background
   GraphicsUtil.drawRectangle("fill", x - backgroundPadding , y - backgroundPadding, width, height, 0, 0, 0, 0.5)

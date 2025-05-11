@@ -48,7 +48,7 @@ function SetUserIdMenu:load(sceneParams)
     hAlign = "center",
     vAlign = "bottom",
     y = -50,
-    fontSize = 20,
+    fontSize = "big",
   })
 
   self.idInputField:setFocus(0, 0)

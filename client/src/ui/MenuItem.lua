@@ -27,7 +27,7 @@ function MenuItem.createMenuItem(label, item)
   menuItem.width = label.width + (2 * MenuItem.PADDING)
 
   if system.isMobileOS() or DEBUG_ENABLED then
-    label:setFontSize(18)
+    label:setFontSize("big")
   end
 
   label.vAlign = "center"
@@ -56,9 +56,9 @@ function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
     id = text
     text = nil
   end
-  local fontSize = 12
+  local fontSize = "normal"
   if system.isMobileOS() or DEBUG_ENABLED then
-    fontSize = 18
+    fontSize = "big"
   end
   local label = Label({
     id = id,

@@ -21,7 +21,7 @@ local StartUp = class(function(scene, sceneParams)
     logger.debug(scene.migrationMessage)
   end
 
-  love.graphics.setFont(GraphicsUtil.getGlobalFontWithSize(GraphicsUtil.fontSize + 10))
+  love.graphics.setFont(GraphicsUtil.getGlobalFontWithSize("big"))
 end, Scene)
 
 StartUp.name = "StartUp"

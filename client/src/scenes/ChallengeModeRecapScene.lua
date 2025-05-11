@@ -54,14 +54,14 @@ function ChallengeModeRecapScene:draw()
 
   local limit = consts.CANVAS_WIDTH
   local message = "Congratulations!\n You beat " .. self.challengeMode.difficultyName .. "!"
-  GraphicsUtil.printf(message, 0, drawY, limit, "center", nil, nil, 30)
+  GraphicsUtil.printf(message, 0, drawY, limit, "center", nil, nil, "gigantic")
   self.uiRoot:draw()
 
   local limit = 400
   drawY = drawY + 120
-  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, "medium")
   drawY = drawY + 20
-  GraphicsUtil.printf(self.challengeMode.continues, drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(self.challengeMode.continues, drawX - limit / 2, drawY, limit, "center", nil, nil, "medium")
 
   local font = GraphicsUtil.getGlobalFont()
   GraphicsUtil.print(loc("continue_button"), (consts.CANVAS_WIDTH - font:getWidth(loc("continue_button"))) / 2, consts.CANVAS_HEIGHT - 60)

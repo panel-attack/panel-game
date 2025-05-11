@@ -1,13 +1,26 @@
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local FileUtils = require("client.src.FileUtils")
+local util = require("common.lib.util")
+
+---@enum (key) FontSize
+local fontSizes = {
+  small = 8,
+  normal = 12,
+  medium = 16,
+  big = 20,
+  huge = 30,
+  gigantic = 42,
+}
 
 -- Utility methods for drawing
 local GraphicsUtil = {
   fontFile = nil,
-  fontSize = 12,
+  fontSizeDelta = 0,
   fontDpiScale = 1,
   fontCache = {},
+  ---@type table<love.Font, love.Text>
+  textCache = util.getWeaklyKeyedTable(),
   quadPool = {}
 }
 
@@ -233,24 +246,36 @@ local function privateMakeFont(fontPath, size, dpiScale)
 end
 
 -- Creates a new font based on the current font and a delta
+---@param fontSize FontSize
 function GraphicsUtil.getGlobalFontWithSize(fontSize)
-  local f = GraphicsUtil.fontCache[fontSize]
+  local realSize = GraphicsUtil.getEffectiveFontSize(fontSize)
+  local f = GraphicsUtil.fontCache[realSize]
   if not f or f:getDPIScale() ~= GraphicsUtil.fontDpiScale then
-    f = privateMakeFont(GraphicsUtil.fontFile, fontSize, GraphicsUtil.fontDpiScale)
-    GraphicsUtil.fontCache[fontSize] = f
+    f = privateMakeFont(GraphicsUtil.fontFile, realSize, GraphicsUtil.fontDpiScale)
+    GraphicsUtil.fontCache[realSize] = f
   end
   return f
 end
 
-function GraphicsUtil.setGlobalFont(filepath, size, dpiScale)
+---@param fontSize FontSize
+---@return integer
+function GraphicsUtil.getEffectiveFontSize(fontSize)
+  return fontSizes[fontSize] + GraphicsUtil.fontSizeDelta
+end
+
+---@param filepath string
+---@param fontSizeDelta integer?
+---@param dpiScale number?
+function GraphicsUtil.setGlobalFont(filepath, fontSizeDelta, dpiScale)
   GraphicsUtil.setFontDpiScale(dpiScale)
   GraphicsUtil.fontCache = {}
   GraphicsUtil.fontFile = filepath
-  GraphicsUtil.fontSize = size
-  local createdFont = GraphicsUtil.getGlobalFontWithSize(size)
+  GraphicsUtil.fontSizeDelta = fontSizeDelta or 0
+  local createdFont = GraphicsUtil.getGlobalFontWithSize("normal")
   love.graphics.setFont(createdFont)
 end
 
+---@param dpiScale number?
 function GraphicsUtil.setFontDpiScale(dpiScale)
   if dpiScale and tonumber(dpiScale) then
     GraphicsUtil.fontDpiScale = dpiScale
@@ -259,7 +284,21 @@ end
 
 -- Returns the current global font
 function GraphicsUtil.getGlobalFont()
-  return GraphicsUtil.getGlobalFontWithSize(GraphicsUtil.fontSize)
+  return GraphicsUtil.getGlobalFontWithSize("normal")
+end
+
+---@param fontSize FontSize
+---@param text string
+---@param limit number
+---@param hAlign ("left" | "center" | "right")
+function GraphicsUtil.getTextHeightForWidth(fontSize, text, limit, hAlign)
+  local font = GraphicsUtil.getGlobalFontWithSize(fontSize)
+  if not GraphicsUtil.textCache[font] then
+    GraphicsUtil.textCache[font] = GraphicsUtil.newText(font)
+  end
+  local t = GraphicsUtil.textCache[font]
+  t:setf(text, limit, hAlign)
+  return t:getHeight()
 end
 
 function GraphicsUtil.setFont(font)
@@ -289,17 +328,26 @@ function GraphicsUtil.print(str, x, y, color, scale)
 end
 
 -- Draws a font with a given font delta from the standard font
-function GraphicsUtil.printf(str, x, y, limit, halign, color, scale, font_delta_size)
+---@param str string
+---@param x number
+---@param y number
+---@param limit number?
+---@param halign string?
+---@param color number[]?
+---@param scale number?
+---@param fontSize FontSize
+function GraphicsUtil.printf(str, x, y, limit, halign, color, scale, fontSize)
   x = x or 0
   y = y or 0
   scale = scale or 1
   color = color or nil
   limit = limit or consts.CANVAS_WIDTH
-  font_delta_size = font_delta_size or 0
+  fontSize = fontSize or "normal"
   halign = halign or "left"
   GraphicsUtil.setColor(0, 0, 0, 1)
-  if font_delta_size ~= 0 then
-    GraphicsUtil.setFont(GraphicsUtil.getGlobalFontWithSize(GraphicsUtil.fontSize + font_delta_size))
+  local font = GraphicsUtil.getGlobalFontWithSize(fontSize)
+  if font ~= love.graphics.getFont() then
+    GraphicsUtil.setFont(font)
   end
   love.graphics.printf(str, x+1, y+1, limit, halign, 0, scale)
 
@@ -310,9 +358,6 @@ function GraphicsUtil.printf(str, x, y, limit, halign, color, scale, font_delta_
   GraphicsUtil.setColor(r,g,b,a)
   love.graphics.printf(str, x, y, limit, halign, 0, scale)
 
-  if font_delta_size ~= 0 then
-    GraphicsUtil.setFont(GraphicsUtil.getGlobalFont())
-  end
   GraphicsUtil.setColor(1,1,1,1)
 end
 

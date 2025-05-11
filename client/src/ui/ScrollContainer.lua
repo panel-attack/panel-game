@@ -158,22 +158,21 @@ function ScrollContainer:draw()
       love.graphics.setStencilTest()
     end
 
-    if self.scrollOrientation == "vertical" then
-      if self.maxScrollOffset > 0 then
+    if self.maxScrollOffset > 0 then
+      local fontSize = GraphicsUtil.getEffectiveFontSize("normal")
+      if self.scrollOrientation == "vertical" then
         if self.scrollOffset < 0 then
-          GraphicsUtil.print("^", self.x + self.width / 2 - GraphicsUtil.fontSize / 2, self.y - 20)
+          GraphicsUtil.print("^", self.x + self.width / 2 - fontSize / 2, self.y - 20)
         end
         if math.abs(self.scrollOffset) < self.maxScrollOffset then
-          GraphicsUtil.print("v", self.x + self.width / 2 - GraphicsUtil.fontSize / 2, self.y + self.height + 8)
+          GraphicsUtil.print("v", self.x + self.width / 2 - fontSize  / 2, self.y + self.height + 8)
         end
-      end
-    else
-      if self.maxScrollOffset > 0 then
+      else
         if self.scrollOffset < 0 then
-          GraphicsUtil.print("<", self.x - 20, self.y + self.height / 2 - GraphicsUtil.fontSize / 2)
+          GraphicsUtil.print("<", self.x - 20, self.y + self.height / 2 - fontSize / 2)
         end
         if math.abs(self.scrollOffset) < self.maxScrollOffset then
-          GraphicsUtil.print(">", self.x + self.width + 8, self.y + self.height / 2 - GraphicsUtil.fontSize / 2)
+          GraphicsUtil.print(">", self.x + self.width + 8, self.y + self.height / 2 - fontSize / 2)
         end
       end
     end

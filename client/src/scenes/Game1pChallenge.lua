@@ -78,21 +78,21 @@ end
 
 function Game1pChallenge:drawDifficultyName(drawX, drawY)
   local limit = 400
-  GraphicsUtil.printf(loc("difficulty"), drawX - limit / 2, drawY, limit, "center", nil, nil, 10)
-  GraphicsUtil.printf(GAME.battleRoom.difficultyName, drawX - limit / 2, drawY + 26, limit, "center", nil, nil, 10)
+  GraphicsUtil.printf(loc("difficulty"), drawX - limit / 2, drawY, limit, "center", nil, nil, "big")
+  GraphicsUtil.printf(GAME.battleRoom.difficultyName, drawX - limit / 2, drawY + 26, limit, "center", nil, nil, "big")
 end
 
 function Game1pChallenge:drawStageInfo(drawX, drawY)
   local limit = 400
-  GraphicsUtil.printf("Stage", drawX - limit / 2, drawY, limit, "center", nil, nil, 10)
+  GraphicsUtil.printf("Stage", drawX - limit / 2, drawY, limit, "center", nil, nil, "big")
   GraphicsUtil.drawPixelFont(self.stageIndex, themes[config.theme].fontMaps.numbers[2], drawX, drawY + 26,
                            themes[config.theme].win_Scale, themes[config.theme].win_Scale, "center", 0)
 end
 
 function Game1pChallenge:drawContinueInfo(drawX, drawY)
   local limit = 400
-  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
-  GraphicsUtil.printf(GAME.battleRoom.continues, drawX - limit / 2, drawY + 20, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, "medium")
+  GraphicsUtil.printf(GAME.battleRoom.continues, drawX - limit / 2, drawY + 20, limit, "center", nil, nil, "medium")
 end
 
 return Game1pChallenge

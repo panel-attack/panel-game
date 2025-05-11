@@ -367,7 +367,7 @@ function OptionsMenu:loadGraphicsMenu()
       config.theme = value
       GAME.theme = themes[value]
       SoundController:stopMusic()
-      GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size)
+      GraphicsUtil.setGlobalFont(themes[config.theme].font.path, (themes[config.theme].font.size or 12) - 12)
       self:updateMenuLanguage()
       self.backgroundImage = themes[config.theme].images.bg_main
       self:applyMusic()

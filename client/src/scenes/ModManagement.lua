@@ -32,7 +32,7 @@ function ModManagement:load()
   self.headerLabel = ui.Label({
     text = "placeholder",
     hAlign = "center",
-    fontSize = 16,
+    fontSize = "medium",
   })
 
   self.headLine = self:loadGridHeader()

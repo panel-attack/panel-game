@@ -265,7 +265,7 @@ function love.errorhandler(msg)
   end
 
   love.graphics.reset()
-  local s, font = pcall(GraphicsUtil.getGlobalFontWithSize, GraphicsUtil.fontSize + 4)
+  local s, font = pcall(GraphicsUtil.getGlobalFontWithSize, "medium")
   if s then
     love.graphics.setFont(font)
   else

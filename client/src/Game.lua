@@ -429,7 +429,7 @@ function Game:drawScaleInfo()
     if consts.CANVAS_WIDTH * self.canvasXScale > newPixelWidth then
       scaleString = scaleString .. " Clipped "
     end
-    love.graphics.printf(scaleString, GraphicsUtil.getGlobalFontWithSize(30), 5, 5, 2000, "left")
+    love.graphics.printf(scaleString, GraphicsUtil.getGlobalFontWithSize("huge"), 5, 5, 2000, "left")
   end
 end
 
@@ -643,7 +643,7 @@ function Game:drawLoadingString(loadingString)
   local y = consts.CANVAS_HEIGHT/2 - textHeight/2
   local backgroundPadding = 10
   GraphicsUtil.drawRectangle("fill", consts.CANVAS_WIDTH / 2 - (textMaxWidth / 2) , y - backgroundPadding, textMaxWidth, textHeight, 0, 0, 0, 0.5)
-  GraphicsUtil.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", nil, nil, 10)
+  GraphicsUtil.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", nil, nil, "big")
 end
 
 function Game:setLanguage(lang_code)
@@ -656,13 +656,13 @@ function Game:setLanguage(lang_code)
   config.language_code = Localization.codes[Localization.lang_index]
 
   if themes[config.theme] and themes[config.theme].font and themes[config.theme].font.path then
-    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, (themes[config.theme].font.size or 12) - 12, self:newCanvasSnappedScale())
   elseif config.language_code == "JP" then
-    GraphicsUtil.setGlobalFont("client/assets/fonts/jp.ttf", 14, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont("client/assets/fonts/jp.ttf", 2, self:newCanvasSnappedScale())
   elseif config.language_code == "TH" then
-    GraphicsUtil.setGlobalFont("client/assets/fonts/th.otf", 14, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont("client/assets/fonts/th.otf", 2, self:newCanvasSnappedScale())
   else
-    GraphicsUtil.setGlobalFont(nil, 12, self:newCanvasSnappedScale())
+    GraphicsUtil.setGlobalFont(nil, 0, self:newCanvasSnappedScale())
   end
 
   Localization:refresh_global_strings()

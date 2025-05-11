@@ -873,7 +873,7 @@ function theme_init()
 
   themes[config.theme]:load()
   if themes[config.theme].font.path then
-    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size)
+    GraphicsUtil.setGlobalFont(themes[config.theme].font.path, (themes[config.theme].font.size or 12) - 12)
   end
 end
 

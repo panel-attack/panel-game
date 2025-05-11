@@ -200,7 +200,11 @@ function ClientStack:drawNumber(number, themePositionOffset, scale, cameFromLega
   GraphicsUtil.drawPixelFont(number, self.assets.numberPixelFont, x, y, scale, scale, "center", 0)
 end
 
-function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
+---@param str string
+---@param themePositionOffset number[]
+---@param cameFromLegacyScoreOffset boolean
+---@param fontSize FontSize
+function ClientStack:drawString(str, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
@@ -217,12 +221,7 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
     end
   end
 
-  if fontSize == nil then
-    fontSize = GraphicsUtil.fontSize
-  end
-  local fontDelta = fontSize - GraphicsUtil.fontSize
-
-  GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
+  GraphicsUtil.printf(str, x, y, limit, alignment, nil, nil, fontSize)
 end
 
 -- Positions the stack draw position for the given player
@@ -396,14 +395,14 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
     end
 
     if remainingSeconds > 0 then
-      self:drawString(string.format("%." .. themes[config.theme].multibar_LeftoverTime_Decimals .. "f", remainingSeconds), overtimePos, false, 20)
+      self:drawString(string.format("%." .. themes[config.theme].multibar_LeftoverTime_Decimals .. "f", remainingSeconds), overtimePos, false, "big")
     end
   end
 end
 
 function ClientStack:drawPlayerName()
   local username = (self.player.name or "")
-  self:drawString(username, themes[config.theme].name_Pos, true, themes[config.theme].name_Font_Size)
+  self:drawString(username, themes[config.theme].name_Pos, true, "big")
 end
 
 function ClientStack:drawWinCount()
