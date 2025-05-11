@@ -194,9 +194,6 @@ function Scores.createFromScoreFile()
           if read_data.endless then scores.endless = read_data.endless end
           if read_data.puzzleRecords then
             local puzzleRecords = read_data.puzzleRecords
-            -- for index, record in ipairs(puzzleRecords) do
-            --   scores:addPuzzleRecord(record)
-            -- end
             scores.puzzleRecords = puzzleRecords
           end
         end
