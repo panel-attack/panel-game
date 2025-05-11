@@ -34,5 +34,17 @@ function Layout.positionChildren(uiElement)
   error("Layout does not implement positionChildren")
 end
 
+---@param uiElement UiElement
+---@return number
+function Layout.getMinWidth(uiElement)
+  error("FlexLayout does not implement getMinWidth")
+end
+
+---@param uiElement UiElement
+---@return number
+function Layout.getMinHeight(uiElement)
+  error("FlexLayout does not implement getMinHeight")
+end
+
 
 return Layout

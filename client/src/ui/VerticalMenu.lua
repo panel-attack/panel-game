@@ -103,6 +103,10 @@ function VerticalMenu:receiveInputs(inputs, dt)
   end
 end
 
+function VerticalMenu:setSelectedIndex(index)
+  self.selectedIndex = util.bound(1, index, #self.children)
+end
+
 function VerticalMenu:draw()
   ScrollContainer.draw(self)
   if self.selectedIndex then

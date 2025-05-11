@@ -4,40 +4,77 @@ local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
 
 local DesignHelper = class(function(self, sceneParams)
-  self:load(sceneParams)
+  --self:load(sceneParams)
 end, Scene)
 
 DesignHelper.name = "DesignHelper"
 
 function DesignHelper:load()
-  self:loadGrid()
-  --self:loadPanels()
-  --self:loadStages()
-  --self.grid:createElementAt(1, 2, 2, 1, "stage", self.stageCarousel)
-  self.rankedSelection = ui.StackPanel({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
-  local trueLabel = ui.Label({id = "ss_ranked", vAlign = "top", hAlign = "center"})
-  local falseLabel = ui.Label({id = "ss_casual", vAlign = "bottom", hAlign = "center"})
-  self.rankedSelection:addChild(trueLabel)
-  self.rankedSelection:addChild(falseLabel)
-  self.grid:createElementAt(3, 2, 2, 1, "ranked", self.rankedSelection)
-  self.rankedSelection:addElement(self:loadRankedSelection(96))
-  self.rankedSelection:addElement(self:loadRankedSelection(96))
-end
+  self.uiRoot.layout = ui.Layouts.VerticalFlexLayout
 
-function DesignHelper:loadGrid()
-  self.grid = ui.Grid({x = 180, y = 60, unitSize = 108, gridWidth = 9, gridHeight = 6, unitMargin = 6})
-  self.uiRoot:addChild(self.grid)
-  -- self.cursor = GridCursor({
-  --   grid = self.grid,
-  --   activeArea = {x1 = 1, y1 = 2, x2 = 9, y2 = 5},
-  --   translateSubGrids = true,
-  --   startPosition = {x = 9, y = 2},
-  --   playerNumber = 1
-  -- })
-  -- self.uiRoot:addChild(self.cursor)
-  -- self.cursor.escapeCallback = function()
-  --   SoundController:playSfx(themes[config.theme].sounds.menu_cancel)
-  -- end
+  local roomMode = ui.ButtonGroup({
+    childGap = 8,
+    padding = 8,
+    hAlign = "center",
+    --hFill = true,
+    backgroundColor = {1, 0, 0, 0.5},
+  })
+
+  roomMode:addChild(ui.Text({text = "Battle", hAlign = "center", vAlign = "center"}))
+  roomMode:addChild(ui.Text({text = "Arcade", hAlign = "center", vAlign = "center"}))
+
+  self.uiRoot:addChild(roomMode)
+
+  local gameMode = ui.HorizontalRadioSelector({
+    childGap = 8,
+    padding = 8,
+    backgroundColor = {0, 0, 1, 0.5},
+    hAlign = "center",
+  --  hFill = true,
+  })
+
+  gameMode:addChild(ui.Text({text = "VS", wrap = false}))
+  gameMode:addChild(ui.Text({text = "VS Self", wrap = false}))
+  gameMode:addChild(ui.Text({text = "Time Attack", wrap = false}))
+  gameMode:addChild(ui.Text({text = "Endless", wrap = false}))
+  gameMode:addChild(ui.Text({text = "Puzzle", wrap = false}))
+  gameMode:addChild(ui.Text({text = "Training", wrap = false}))
+  gameMode:addChild(ui.Text({text = "Line Clear", wrap = false}))
+
+  self.uiRoot:addChild(gameMode)
+
+  local subSelectionSelector = ui.UIElement({
+    childGap = 8,
+    padding = 8,
+    hFill = true,
+    backgroundColor = {0, 1, 0, 0.5}
+  })
+
+  subSelectionSelector:addChild(ui.Text({text = "Character", wrap = false}))
+  subSelectionSelector:addChild(ui.Text({text = "Stage", wrap = false}))
+  subSelectionSelector:addChild(ui.Text({text = "Panels", wrap = false}))
+  subSelectionSelector:addChild(ui.Text({text = "Ranked", wrap = false}))
+  subSelectionSelector:addChild(ui.Text({text = "Level", wrap = false}))
+  subSelectionSelector:addChild(ui.Text({text = "Input Selection", wrap = false}))
+  subSelectionSelector:addChild(ui.Text({text = "Puzzle", wrap = false}))
+  subSelectionSelector:addChild(ui.Text({text = "Attack File", wrap = false}))
+
+  self.uiRoot:addChild(subSelectionSelector)
+
+  local subSelection = ui.UIElement({
+    hFill = true,
+    minHeight = 400,
+    vFill = true,
+    padding = 8,
+    backgroundColor = {0.7, 0, 0.5, 1},
+  })
+
+  subSelection:addChild(ui.Text({}))
+
+  self.uiRoot:addChild(subSelection)
+
+  self.uiRoot:addChild(ui.Text({text = "Ready", hAlign = "center"}))
+  self.uiRoot:addChild(ui.Text({text = "Leave", hAlign = "center"}))
 end
 
 function DesignHelper:loadRankedSelection(width)
@@ -63,7 +100,7 @@ function DesignHelper:update()
 end
 
 function DesignHelper:draw()
-  self.grid:draw()
+  self.uiRoot:draw()
 end
 
 return DesignHelper

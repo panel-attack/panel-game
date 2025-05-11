@@ -23,7 +23,6 @@ function MultiPlayerSelectionWrapper:addElement(uiElement, player)
   end
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)
-  self:resize()
 end
 
 function MultiPlayerSelectionWrapper:insertElementAtIndex(uiElement, index, player)

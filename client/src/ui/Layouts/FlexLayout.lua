@@ -7,7 +7,9 @@ local FlexLayout = setmetatable({}, {__index = Layout})
 ---@param uiElement UiElement
 function FlexLayout.fitSizeWidth(uiElement)
   for _, child in ipairs(uiElement.children) do
-    child.layout.fitSizeWidth(child)
+    if child.layout.fitSizeWidth then
+      child.layout.fitSizeWidth(child)
+    end
   end
   local w = uiElement.layout.getMinWidth(uiElement)
   uiElement.width = math.max(w, uiElement.minWidth)
@@ -16,7 +18,9 @@ end
 ---@param uiElement UiElement
 function FlexLayout.fitSizeHeight(uiElement)
   for _, child in ipairs(uiElement.children) do
-    child.layout.fitSizeHeight(child)
+    if child.layout.fitSizeHeight then
+      child.layout.fitSizeHeight(child)
+    end
   end
   local h = uiElement.layout.getMinHeight(uiElement)
   uiElement.height = math.max(h, uiElement.minHeight)
@@ -36,18 +40,6 @@ function FlexLayout.updateHeights(uiElement, height)
     uiElement.height = math.max(height, uiElement.height)
   end
   uiElement.layout.growChildrenHeight(uiElement)
-end
-
----@param uiElement UiElement
----@return number
-function FlexLayout.getMinWidth(uiElement)
-  error("FlexLayout does not implement getMinWidth")
-end
-
----@param uiElement UiElement
----@return number
-function FlexLayout.getMinHeight(uiElement)
-  error("FlexLayout does not implement getMinHeight")
 end
 
 ---@param uiElement UiElement

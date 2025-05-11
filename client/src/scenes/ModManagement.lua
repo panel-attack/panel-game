@@ -75,7 +75,7 @@ function ModManagement:load()
       if self.scrollContainer then
         self.stackPanel:remove(self.scrollContainer)
       end
-      self.headerLabel:setText("characters")
+      self.headerLabel:setId("characters")
       self.scrollContainer = self:newScrollContainer()
       self.scrollContainer:addChild(self.characterGrid)
       self.stackPanel:addElement(self.scrollContainer)
@@ -92,7 +92,7 @@ function ModManagement:load()
       if self.scrollContainer then
         self.stackPanel:remove(self.scrollContainer)
       end
-      self.headerLabel:setText("stages")
+      self.headerLabel:setId("stages")
       self.scrollContainer = self:newScrollContainer()
       self.scrollContainer:addChild(self.stageGrid)
       self.stackPanel:addElement(self.scrollContainer)

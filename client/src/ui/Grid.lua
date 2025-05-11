@@ -3,6 +3,7 @@ local UiElement = require(PATH .. ".UIElement")
 local GridElement = require(PATH .. ".GridElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local StaticLayout = require(PATH .. ".Layouts.StaticLayout")
 
 local Grid = class(function(self, options)
   self.unitSize = options.unitSize
@@ -19,8 +20,10 @@ local Grid = class(function(self, options)
     --   self.grid[row][col] = {}
     -- end
   end
-  self.TYPE = "Grid"
 end, UiElement)
+
+Grid.TYPE = "Grid"
+Grid.layout = StaticLayout
 
 -- width and height are sizes relative to the unitSize of the grid
 -- id is a string identificator to indiate what kind of uiElement resides here

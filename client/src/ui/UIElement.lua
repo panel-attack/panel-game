@@ -133,7 +133,9 @@ end
 ---@param index integer?
 function UIElement:addChild(uiElement, index)
   if uiElement.parent then
-    error("Tried to give a uiElement more than one parent")
+    if uiElement.parent ~= self then
+      error("Tried to give a uiElement more than one parent")
+    end
   else
     if index then
       table.insert(self.children, index, uiElement)

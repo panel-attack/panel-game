@@ -812,9 +812,9 @@ function CharacterSelect:createRankedStatusPanel()
     vAlign = "top"
   })
   if self.battleRoom.ranked then
-    rankedStatus.rankedLabel:setText("ss_ranked")
+    rankedStatus.rankedLabel:setId("ss_ranked")
   else
-    rankedStatus.rankedLabel:setText("ss_casual")
+    rankedStatus.rankedLabel:setId("ss_casual")
   end
   rankedStatus.commentLabel = ui.Label({
     text = self.battleRoom.rankedComments or "",
@@ -827,11 +827,11 @@ function CharacterSelect:createRankedStatusPanel()
 
   rankedStatus.update = function(self, ranked, comments)
     if ranked then
-      rankedStatus.rankedLabel:setText("ss_ranked")
+      rankedStatus.rankedLabel:setId("ss_ranked")
     else
-      rankedStatus.rankedLabel:setText("ss_casual")
+      rankedStatus.rankedLabel:setId("ss_casual")
     end
-    rankedStatus.commentLabel:setText(comments, nil, false)
+    rankedStatus.commentLabel:setText(comments)
   end
 
   self.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.update)

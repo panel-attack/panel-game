@@ -83,7 +83,7 @@ end
 
 local function createToggleButtonGroup(configField, onChangeFn)
   return ui.ButtonGroup({
-    buttons = {ui.TextButton({width = 60, label = ui.Label({id =  "op_off"})}), ui.TextButton({width = 60, label = ui.Label({id =  "op_on"})})},
+    buttons = {ui.TextButton({width = 60, label = ui.Label({id = "op_off"})}), ui.TextButton({width = 60, label = ui.Label({id = "op_on"})})},
     values = {false, true},
     selectedIndex = config[configField] and 2 or 1,
     onChange = function(group, value)
@@ -232,8 +232,8 @@ function OptionsMenu:loadGeneralMenu()
   local saveReplaysPubliclyIndexMap = {["with my name"] = 1, ["anonymously"] = 2, ["not at all"] = 3}
   local publicReplayButtonGroup = ui.ButtonGroup({
     buttons = {
-      ui.TextButton({label = ui.Label({id =  "op_replay_public_with_name"})}),
-      ui.TextButton({label = ui.Label({id =  "op_replay_public_anonymously"})}), ui.TextButton({label = ui.Label({id =  "op_replay_public_no"})})
+      ui.TextButton({label = ui.Label({id = "op_replay_public_with_name"})}),
+      ui.TextButton({label = ui.Label({id = "op_replay_public_anonymously"})}), ui.TextButton({label = ui.Label({id = "op_replay_public_no"})})
     },
     values = {"with my name", "anonymously", "not at all"},
     selectedIndex = saveReplaysPubliclyIndexMap[config.save_replays_publicly],
@@ -426,7 +426,7 @@ function OptionsMenu:loadGraphicsMenu()
   end
 
   local scaleTypeData = {
-    {value = "auto", id =  "op_scale_auto"}, {value = "fit", id =  "op_scale_fit"}, {value = "fixed", id =  "op_scale_fixed"}
+    {value = "auto", id = "op_scale_auto"}, {value = "fit", id = "op_scale_fit"}, {value = "fixed", id = "op_scale_fixed"}
   }
   for index, value in ipairs(scaleTypeData) do
     value.index = index
@@ -498,8 +498,8 @@ function OptionsMenu:loadSoundMenu()
   local musicFrequencyIndexMap = {["stage"] = 1, ["often_stage"] = 2, ["either"] = 3, ["often_characters"] = 4, ["characters"] = 5}
   local musicFrequencyStepper = ui.Stepper({
     labels = {
-      ui.Label({id =  "op_only_stage"}), ui.Label({id =  "op_often_stage"}), ui.Label({id =  "op_stage_characters"}),
-      ui.Label({id =  "op_often_characters"}), ui.Label({id =  "op_only_characters"})
+      ui.Label({id = "op_only_stage"}), ui.Label({id = "op_often_stage"}), ui.Label({id = "op_stage_characters"}),
+      ui.Label({id = "op_often_characters"}), ui.Label({id = "op_only_characters"})
     },
     values = {"stage", "often_stage", "either", "often_characters", "characters"},
     selectedIndex = musicFrequencyIndexMap[config.use_music_from],

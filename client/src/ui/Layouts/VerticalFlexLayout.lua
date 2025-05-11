@@ -108,7 +108,9 @@ function VerticalFlexLayout.growChildrenHeight(uiElement)
   end
 
   for _, child in ipairs(uiElement.children) do
-    child.layout.growChildrenHeight(child)
+    if child.layout.growChildrenHeight then
+      child.layout.growChildrenHeight(child)
+    end
   end
 end
 
@@ -118,7 +120,9 @@ function VerticalFlexLayout.growChildrenWidth(uiElement)
     if child.hFill then
       child.width = math.min(uiElement.width - uiElement.padding * 2, child.maxWidth)
     end
-    child.layout.growChildrenWidth(child)
+    if child.layout.growChildrenWidth then
+      child.layout.growChildrenWidth(child)
+    end
   end
 end
 

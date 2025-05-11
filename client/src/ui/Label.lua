@@ -81,28 +81,56 @@ local Label = class(
 )
 Label.TYPE = "Label"
 
----@param fontSize FontSize
-function Label:setFontSize(fontSize)
-  self.fontSize = fontSize
+function Label:recalculateSizes()
   local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
+  local words = self.text:split()
+  local maxWordWidth = font:getWidth(words[1])
+  for i = 2, #words do
+    maxWordWidth = math.max(maxWordWidth, font:getWidth(words[i]))
+  end
+
+  self.minHeight = font:getHeight()
+  if self.wrap then
+    self.maxHeight = (#words * font:getHeight())
+  else
+    self.maxHeight = self.minHeight
+  end
   local totalWidth = font:getWidth(self.text)
   self.width = totalWidth
   self.maxWidth = math.huge
   if not self.wrap then
+    self.minWidth = maxWordWidth
+  else
     self.minWidth = totalWidth
   end
+end
+
+---@param fontSize FontSize
+function Label:setFontSize(fontSize)
+  self.fontSize = fontSize
+  self:recalculateSizes()
+end
+
+---@param id string
+---@param replacements table?
+function Label:setId(id, replacements)
+  self.id = id
+  self.replacementTable = replacements or {}
+  self.text = loc(self.id, unpack(self.replacementTable))
+  self:recalculateSizes()
+end
+
+---@param text string
+function Label:setText(text)
+  self.text = text
+  self:recalculateSizes()
 end
 
 function Label:refreshLocalization()
   if self.id then
     self.text = loc(self.id, unpack(self.replacementTable))
   end
-  local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
-  local totalWidth = font:getWidth(self.text)
-  self.width = totalWidth
-  if not self.wrap then
-    self.minWidth = totalWidth
-  end
+  self:recalculateSizes()
 end
 
 function Label:drawSelf()

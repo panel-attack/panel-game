@@ -111,11 +111,11 @@ end
 function Lobby:toggleLeaderboard()
   GAME.theme:playMoveSfx()
   if not self.leaderboard.isVisible then
-    self.leaderboardToggleLabel:setText("lb_hide_board")
+    self.leaderboardToggleLabel:setId("lb_hide_board")
     GAME.netClient:requestLeaderboard()
     self.lobbyMenu:setFocus(self.leaderboard, function() self:toggleLeaderboard() end)
   else
-    self.leaderboardToggleLabel:setText("lb_show_board")
+    self.leaderboardToggleLabel:setId("lb_show_board")
   end
   self.leaderboard:setVisibility(not self.leaderboard.isVisible)
   self.lobbyMenu.x = self.lobbyMenuXoffsetMap[self.leaderboard.isVisible]
@@ -157,13 +157,13 @@ end
 -- rebuilds the UI based on the new lobby information
 function Lobby:onLobbyStateUpdate(lobbyState)
   local previousText
-  if self.lobbyMenu.menuItems[self.lobbyMenu.selectedIndex].textButton then
-    previousText = self.lobbyMenu.menuItems[self.lobbyMenu.selectedIndex].textButton.children[1].text
+  if self.lobbyMenu.children[self.lobbyMenu.selectedIndex].children[1] then
+    previousText = self.lobbyMenu.children[self.lobbyMenu.selectedIndex].children[1].text
   end
   local desiredIndex = self.lobbyMenu.selectedIndex
 
   -- cleanup previous lobby menu
-  while #self.lobbyMenu.menuItems > 6 do
+  while #self.lobbyMenu.children > 6 do
     self.lobbyMenu:removeMenuItemAtIndex(2)
   end
   self.lobbyMenu:setSelectedIndex(1)
@@ -177,7 +177,7 @@ function Lobby:onLobbyStateUpdate(lobbyState)
       if lobbyState.willingPlayers[v] then
         unmatchedPlayer = unmatchedPlayer .. " " .. loc("lb_received")
       end
-      self.lobbyMenu:addMenuItem(2, ui.MenuItem.createButtonMenuItem(unmatchedPlayer, nil, false, self:requestGameFunction(v)))
+      self.lobbyMenu:addChild(ui.MenuItem.createButtonMenuItem(unmatchedPlayer, nil, false, self:requestGameFunction(v)), 2)
     end
   end
   for _, room in ipairs(lobbyState.spectatableRooms) do
@@ -185,10 +185,10 @@ function Lobby:onLobbyStateUpdate(lobbyState)
       local playerA = room.a .. self:playerRatingString(room.a)
       local playerB = room.b .. self:playerRatingString(room.b)
       local roomName = loc("lb_spectate") .. " " .. playerA .. " vs " .. playerB .. " (" .. room.state .. ")"
-      self.lobbyMenu:addMenuItem(2, ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)))
+      self.lobbyMenu:addChild(ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)), 2)
     else
       local roomName = loc("lb_spectate") .. " " .. room.name .. " (" .. room.state .. ")"
-      self.lobbyMenu:addMenuItem(2, ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)))
+      self.lobbyMenu:addChild(ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)), 2)
     end
   end
 
@@ -196,13 +196,13 @@ function Lobby:onLobbyStateUpdate(lobbyState)
     self.lobbyMenu:setSelectedIndex(2)
     self.lobbyMenuStartingUp = false
   else
-    for i = 1, #self.lobbyMenu.menuItems do
-      if self.lobbyMenu.menuItems[i].textButton and self.lobbyMenu.menuItems[i].textButton.children[1].text == previousText then
+    for i = 1, #self.lobbyMenu.children do
+      if self.lobbyMenu.children[i].children[1] and self.lobbyMenu.children[i].children[1].text == previousText then
         desiredIndex = i
         break
       end
     end
-    self.lobbyMenu:setSelectedIndex(util.bound(2, desiredIndex, #self.lobbyMenu.menuItems))
+    self.lobbyMenu:setSelectedIndex(util.bound(2, desiredIndex, #self.lobbyMenu.children))
   end
 end
 
@@ -218,9 +218,9 @@ function Lobby:update(dt)
   else
     if GAME.timer > GAME.netClient.loginTime + 5 then
       if #GAME.netClient.lobbyData.players == 1 then
-        self.lobbyMessage:setText("lb_alone", nil, true)
+        self.lobbyMessage:setId("lb_alone")
       else
-        self.lobbyMessage:setText("lb_select_player", nil, true)
+        self.lobbyMessage:setId("lb_select_player")
       end
     end
     self.lobbyMenu:receiveInputs()
@@ -246,7 +246,7 @@ end
 
 function Lobby:onLoginFinish(result)
   if result.loggedIn then
-    self.lobbyMessage:setText(result.message, nil, false)
+    self.lobbyMessage:setText(result.message)
   else
     local messageTransition = MessageTransition(love.timer.getTime(), 5, result.message)
     GAME.navigationStack:pop(messageTransition)

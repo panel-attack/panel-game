@@ -672,7 +672,7 @@ function ClientMatch:draw_pause()
     GraphicsUtil.draw(image, x, y, 0, scale, scale, xOffset, yOffset)
   end
   local y = 260
-  GraphicsUtil.printf(loc("pause"), 0, y, consts.CANVAS_WIDTH, "center", nil, 1, 10)
+  GraphicsUtil.printf(loc("pause"), 0, y, consts.CANVAS_WIDTH, "center", nil, 1, "big")
   GraphicsUtil.printf(loc("pl_pause_help"), 0, y + 30, consts.CANVAS_WIDTH, "center", nil, 1)
 end
 

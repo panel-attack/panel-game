@@ -40,10 +40,9 @@ function MenuItem.createMenuItem(label, item)
     item.hAlign = "left"
     item.hFill = true
     menuItem:addChild(item)
-  end
-
-  menuItem.receiveInputs = function(i, inputs)
-    item:receiveInputs(inputs)
+    menuItem.receiveInputs = function(i, inputs)
+      item:receiveInputs(inputs)
+    end
   end
 
   return menuItem
