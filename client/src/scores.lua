@@ -2,6 +2,7 @@ local levelPresets = require("common.data.LevelPresets")
 local fileUtils = require("client.src.FileUtils")
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
+local logger = require("common.lib.logger")
 
 -- 1 had only vs scores in an incompatible format
 -- 2 has vs self, time attack, endless
@@ -46,6 +47,13 @@ Scores =
   end
 )
 
+function Scores:addPuzzleRecord(puzzleRecord)
+  if self.puzzleRecords[puzzleRecord.UUID] == nil then
+    self.puzzleRecords[puzzleRecord.UUID] = {}
+  end
+  self.puzzleRecords[puzzleRecord.UUID][#self.puzzleRecords[puzzleRecord.UUID]+1] = puzzleRecord
+end
+
 function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
   assert(puzzle.UUID ~= nil)
   local puzzleRecord = {}
@@ -54,22 +62,37 @@ function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
   puzzleRecord.timestamp = timestamp
   puzzleRecord.success = success
 
-  self.puzzleRecords[#self.puzzleRecords+1] = puzzleRecord
+  self:addPuzzleRecord(puzzleRecord)
   self:saveToFile()
 end
 
+function Scores:getRecordsForPuzzleUUID(puzzleUUID)
+  return self.puzzleRecords[puzzleUUID] or {}
+end
+
+function Scores:getNRecordsMatchingFilterForPuzzleUUID(n, filter, puzzleUUID)
+
+  local filteredTable = {}
+  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
+  for i = #records, 1, -1 do
+    local value = records[i]
+    if filter(value) then
+      filteredTable[#filteredTable+1] = value
+      if #filteredTable >= n then
+        break
+      end
+    end
+  end
+
+  return filteredTable
+end
+
 function Scores:getLatestSuccessForPuzzleUUID(puzzleUUID)
-  local records = tableUtils.filter(self.puzzleRecords, function(record) return record.UUID == puzzleUUID and record.success == true end)
+  local records = self:getNRecordsMatchingFilterForPuzzleUUID(1, function(record) return record.success == true end, puzzleUUID)
   if #records == 0 then
     return nil
   end
   return records[#records]
-end
-
-function Scores:getRecordsForPuzzleUUID(puzzleUUID)
-  local records = tableUtils.filter(self.puzzleRecords, function(record) return record.UUID == puzzleUUID end)
-
-  return records
 end
 
 function Scores:puzzleUUIDWinStreak(puzzleUUID)
@@ -88,43 +111,19 @@ function Scores:puzzleUUIDWinStreak(puzzleUUID)
 end
 
 function Scores:puzzleEverBeaten(puzzleUUID)
-  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
-
-  if #records == 0 then
-    return false
-  end
-  for i = #records, 1, -1 do
-    local record = records[i]
-    if record.success then
-      return true
-    end
-  end
-  
-  return false
+  return self:getLatestSuccessForPuzzleUUID(puzzleUUID) ~= nil
 end
 
 function Scores:puzzleSuccessRateForUUID(puzzleUUID)
-  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
+  local records = self:getNRecordsMatchingFilterForPuzzleUUID(5, function(record) return true end, puzzleUUID)
 
   if #records == 0 then
     return 0
   end
 
-  local limit = 5
-  local total = 0
-  local wins = 0
-  for i = #records, 1, -1 do
-    total = total + 1
-    local record = records[i]
-    if record.success then
-      wins = wins + 1
-    end
-    if total == limit then
-      break
-    end
-  end
+  local winRecords = self:getNRecordsMatchingFilterForPuzzleUUID(5, function(record) return record.success end, puzzleUUID)
 
-  local result = wins / total
+  local result = #winRecords / #records
   return result
 end
 
@@ -193,7 +192,13 @@ function Scores.createFromScoreFile()
           if read_data.vsSelf then scores.vsSelf = read_data.vsSelf end
           if read_data.timeAttack1P then scores.timeAttack1P = read_data.timeAttack1P end
           if read_data.endless then scores.endless = read_data.endless end
-          if read_data.puzzleRecords then scores.puzzleRecords = read_data.puzzleRecords end
+          if read_data.puzzleRecords then
+            local puzzleRecords = read_data.puzzleRecords
+            -- for index, record in ipairs(puzzleRecords) do
+            --   scores:addPuzzleRecord(record)
+            -- end
+            scores.puzzleRecords = puzzleRecords
+          end
         end
       end
     end

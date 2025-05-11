@@ -15,6 +15,8 @@ local LevelPresets      = require("common.data.LevelPresets")
 ---@field levelSlider LevelSlider
 ---@field randomColorButtons ButtonGroup
 ---@field battleRoom BattleRoom
+---@field rootPuzzleSet table
+---@field currentPuzzleSetIndices table<integer, integer> integer index into sub puzzle sets
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -26,8 +28,8 @@ local PuzzleMenu = class(
     self.puzzleLabel = nil
     self.puzzleLibrary = PuzzleLibrary(GAME.scores)
     self.battleRoom = sceneParams.battleRoom
-    self.currentPuzzleSet = nil
-    self.currentLevel = 1
+    self.rootPuzzleSet = nil
+    self.currentPuzzleSetIndices = {}
 
     self:load(sceneParams)
   end,
@@ -66,6 +68,7 @@ end
 
 
 function PuzzleMenu:refresh()
+  self:updateCurrentPuzzleSet()
   self:refreshMenu()
 end
 
@@ -134,14 +137,13 @@ function PuzzleMenu:refreshMenu()
   }
 
   if self.currentPuzzleSet == nil then
-    local directory = consts.PUZZLES_SAVE_DIRECTORY
-    self:setCurrentPuzzleSet(self.puzzleLibrary:puzzleSetFromPath(directory))
+    self:updateCurrentPuzzleSet()
   end
 
   menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, 1, nil)
 
-  for _, currentPuzzleSet in ipairs(self.currentPuzzleSet.puzzleSets) do
-    menuOptions[#menuOptions + 1] = self:menuItemToViewPuzzleSet(currentPuzzleSet)
+  for index, currentPuzzleSet in ipairs(self.currentPuzzleSet.puzzleSets) do
+    menuOptions[#menuOptions + 1] = self:menuItemToViewPuzzleSet(currentPuzzleSet, index)
   end
 
   for index, currentPuzzle in ipairs(self.currentPuzzleSet.puzzles) do
@@ -154,12 +156,12 @@ function PuzzleMenu:refreshMenu()
   end
   
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-      if self.currentLevel == 1 then
+      GAME.theme:playCancelSfx()
+      if #self.currentPuzzleSetIndices == 0 then
         self:exit()
       else
-        -- todo handle back one
-        self.currentLevel = 1
-        self.currentPuzzleSet = nil
+        table.remove(self.currentPuzzleSetIndices)
+        self:updateCurrentPuzzleSet()
         self:refreshMenu()
       end
     end)
@@ -181,18 +183,27 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, flatPuzzleSet, index, puz
   end)
 end
 
-function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet)
+function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, index)
   return ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
-    self:setCurrentPuzzleSet(puzzleSet)
-    self.currentLevel = self.currentLevel + 1
+    GAME.theme:playValidationSfx()
+    self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
+    self:updateCurrentPuzzleSet()
     self:refreshMenu()
   end)
 end
 
-function PuzzleMenu:setCurrentPuzzleSet(puzzleSet)
-  self.currentPuzzleSet = puzzleSet
-  self.flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
-  self.currentTrainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
+function PuzzleMenu:updateCurrentPuzzleSet()
+  if self.rootPuzzleSet == nil then
+    local directory = consts.PUZZLES_SAVE_DIRECTORY
+    self.rootPuzzleSet = self.puzzleLibrary:puzzleSetFromPath(directory)
+  end
+
+  self.currentPuzzleSet = self.rootPuzzleSet
+  for index, value in ipairs(self.currentPuzzleSetIndices) do
+    self.currentPuzzleSet = self.currentPuzzleSet.puzzleSets[value]
+  end
+  self.flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(self.currentPuzzleSet)
+  self.currentTrainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(self.currentPuzzleSet)
 end
 
 function PuzzleMenu:update(dt)
