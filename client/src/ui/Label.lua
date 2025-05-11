@@ -100,7 +100,6 @@ function Label:refreshLocalization()
   local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
   local totalWidth = font:getWidth(self.text)
   self.width = totalWidth
-  self.maxWidth = totalWidth
   if not self.wrap then
     self.minWidth = totalWidth
   end

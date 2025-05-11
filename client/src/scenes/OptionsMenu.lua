@@ -355,7 +355,10 @@ function OptionsMenu:loadGraphicsMenu()
     maxHeight = 540,
     childGap = 8,
     padding = 32,
-    width = 600,
+    minWidth = 600,
+    maxWidth = 900,
+    hFill = true,
+    backgroundColor = {1, 0, 0, 0.4}
   })
 
   local themeIndex

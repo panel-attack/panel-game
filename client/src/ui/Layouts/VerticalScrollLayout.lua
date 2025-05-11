@@ -1,8 +1,19 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local VerticalFlexLayout = require(PATH ..".VerticalFlexLayout")
+local util = require("common.lib.util")
 
 ---@class VerticalScrollLayout : VerticalFlexLayout
 local VerticalScrollLayout = setmetatable({}, {__index = VerticalFlexLayout})
+
+function VerticalScrollLayout.getMinHeight(uiElement)
+  return util.bound(uiElement.minHeight, VerticalFlexLayout.getMinHeight(uiElement), uiElement.maxHeight)
+end
+
+function VerticalScrollLayout.growChildrenHeight(uiElement)
+  for _, child in ipairs(uiElement.children) do
+    child.layout.growChildrenHeight(child)
+  end
+end
 
 ---@param uiElement UiElement
 function VerticalScrollLayout.positionChildren(uiElement)

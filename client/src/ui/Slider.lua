@@ -6,7 +6,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local handleRadius = 7.5
 local xPadding = 8
-local yPadding = 4
+local yPadding = 2
 local valueBackgroundPaddingX = 2
 local valueBackgroundPaddingY = -1 -- textHeight isn't a tight bounds
 local sliderBarThickness = 6

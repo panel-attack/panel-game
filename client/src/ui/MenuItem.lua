@@ -21,7 +21,13 @@ MenuItem.PADDING = 2
 function MenuItem.createMenuItem(label, item)
   assert(label ~= nil)
 
-  local menuItem = UiElement({hAlign = "center", layout = HorizontalFlexLayout, childGap = 16, hFill = true})
+  local menuItem = UiElement({
+    hAlign = "center",
+    layout = HorizontalFlexLayout,
+    childGap = 16,
+    hFill = true,
+    backgroundColor = {math.random(), math.random(), math.random(), 0.4}
+  })
 
   menuItem.width = label.width + (2 * MenuItem.PADDING)
 

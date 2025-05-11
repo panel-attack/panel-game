@@ -1,6 +1,5 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local FlexLayout = require(PATH ..".FlexLayout")
-local util = require("common.lib.util")
 
 ---@class HorizontalFlexLayout : FlexLayout
 local HorizontalFlexLayout = setmetatable({}, {__index = FlexLayout})
@@ -15,7 +14,7 @@ function HorizontalFlexLayout.getMinWidth(uiElement)
     end
   end
 
-  return util.bound(uiElement.minWidth, w, uiElement.maxWidth)
+  return w
 end
 
 ---@param uiElement UiElement

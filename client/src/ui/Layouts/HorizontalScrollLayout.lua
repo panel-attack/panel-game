@@ -1,8 +1,19 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local HorizontalFlexLayout = require(PATH ..".HorizontalFlexLayout")
+local util = require("common.lib.util")
 
 ---@class HorizontalScrollLayout : HorizontalFlexLayout
 local HorizontalScrollLayout = setmetatable({}, {__index = HorizontalFlexLayout})
+
+function HorizontalScrollLayout.getMinWidth(uiElement)
+  return util.bound(uiElement.minWidth, HorizontalFlexLayout.getMinWidth(uiElement), uiElement.maxWidth)
+end
+
+function HorizontalScrollLayout.growChildrenWidth(uiElement)
+  for _, child in ipairs(uiElement.children) do
+    child.layout.growChildrenWidth(child)
+  end
+end
 
 ---@param uiElement UiElement
 function HorizontalScrollLayout.positionChildren(uiElement)

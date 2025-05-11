@@ -198,7 +198,7 @@ function UIElement:drawSelf()
   love.graphics.setColor(self.backgroundColor)
   love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
   love.graphics.setColor(1, 1, 1, 1)
-  --love.graphics.print(self.width .. ", " .. self.height, self.x + 5, self.y + 5)
+  love.graphics.print(self.width .. ", " .. self.height, self.x + 5, self.y + 5)
 end
 
 function UIElement:drawChildren()

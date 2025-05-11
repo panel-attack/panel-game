@@ -1,6 +1,5 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local FlexLayout = require(PATH ..".FlexLayout")
-local util = require("common.lib.util")
 
 ---@class VerticalFlexLayout : FlexLayout
 local VerticalFlexLayout = setmetatable({}, {__index = FlexLayout})
@@ -29,7 +28,7 @@ function VerticalFlexLayout.getMinHeight(uiElement)
     end
   end
 
-  return util.bound(uiElement.minHeight, h, uiElement.maxHeight)
+  return h
 end
 
 ---@param uiElement UiElement
