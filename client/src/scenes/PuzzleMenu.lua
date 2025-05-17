@@ -117,10 +117,6 @@ function PuzzleMenu:load(sceneParams)
 
   self.uiRoot:addChild(self.menu)
   self.uiRoot:addChild(self.puzzleLabel)
-
-  local name, puzzleSet = next(GAME.puzzleSets)
-  local puzzle = puzzleSet.puzzles[1]
-  self.puzzlePreviewStack = self:getDisplayStack(puzzle)
 end
 
 function PuzzleMenu:update(dt)
@@ -129,7 +125,6 @@ end
 
 function PuzzleMenu:draw()
   themes[config.theme].images.bg_main:draw()
-  self.puzzlePreviewStack:render(false)
   self.uiRoot:draw()
 end
 
