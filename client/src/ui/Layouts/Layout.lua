@@ -1,6 +1,11 @@
+---@enum LayoutCharacteristic
+local LayoutCharacteristics = { none = "none", horizontal = "horizontal", vertical = "vertical"}
 
 ---@class Layout
-local Layout = {}
+---@field characteristic LayoutCharacteristic
+local Layout = {
+  characteristic = LayoutCharacteristics.none
+}
 
 ---@param uiElement UiElement
 ---@param width number?

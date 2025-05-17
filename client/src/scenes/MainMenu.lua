@@ -29,6 +29,10 @@ local PuzzleGame = require("client.src.scenes.PuzzleGame")
 local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
+  self.cursor = ui.Cursor({
+    target = self.menu,
+    cursorImage = GAME.theme:getGridCursor(1)
+  })
   self.uiRoot:addChild(self.menu)
 end, Scene)
 
@@ -182,7 +186,7 @@ end
 
 function MainMenu:update(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.menu:receiveInputs()
+  self.cursor:receiveInputs()
 
   self:checkForUpdates()
 end

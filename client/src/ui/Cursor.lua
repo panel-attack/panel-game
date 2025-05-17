@@ -1,0 +1,158 @@
+local PATH = (...):gsub('%.[^%.]+$', '')
+local UiElement = require(PATH .. ".UIElement")
+local class = require("common.lib.class")
+local FocusDirector = require(PATH .. ".FocusDirector")
+local consts = require("common.engine.consts")
+
+---@class Cursor : FocusDirector, UiElement
+---@field hovered UiElement
+---@field target UiElement
+---@field hoveredIndex integer
+---@field cursorImage love.Texture
+---@field escapeCallback fun(self: Cursor)
+local Cursor = class(
+function(self, options)
+  if options.escapeCallback then
+    self.escapeCallback = options.escapeCallback
+  end
+  self:setTarget(options.target)
+  if options.hoveredIndex then
+    self.hoveredIndex = options.hoveredIndex
+  else
+    self.hoveredIndex = 0
+    self:moveToNext()
+  end
+  self.cursorImage = options.cursorImage
+end,
+UiElement)
+
+FocusDirector(Cursor)
+
+function Cursor:moveToNext()
+  if self.target then
+    for i = self.hoveredIndex + 1, self.hoveredIndex + #self.target.children do
+      local index = wrap(1, i, #self.target.children)
+      local child = self.target.children[index]
+      if child.receiveInputs and child.isEnabled and child.isVisible then
+        self.hoveredIndex = index
+        self.hovered = self.target.children[self.hoveredIndex]
+        break
+      end
+    end
+  end
+end
+
+function Cursor:moveToPrevious()
+  if self.target then
+    for i = self.hoveredIndex - 1, self.hoveredIndex - #self.target.children, -1 do
+      local index = wrap(1, i, #self.target.children)
+      local child = self.target.children[index]
+      if child.receiveInputs and child.isEnabled and child.isVisible then
+        self.hoveredIndex = index
+        self.hovered = self.target.children[self.hoveredIndex]
+        break
+      end
+    end
+  end
+end
+
+function Cursor:getLastIndex()
+  for i = #self.target.children, 1, -1 do
+    local child = self.target.children[i]
+    if child.receiveInputs and child.isEnabled and child.isVisible then
+      return i
+    end
+  end
+end
+
+function Cursor:moveToLast()
+  self.hoveredIndex = self:getLastIndex()
+  self.hovered = self.target.children[self.hoveredIndex]
+end
+
+function Cursor:receiveInputs(inputs, dt)
+  if self.target then
+    if self.focused then
+      self.focused:receiveInputs(inputs, dt, self.player)
+    elseif inputs.isDown.Swap2 then
+      GAME.theme:playCancelSfx()
+      self:escapeCallback()
+    elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      if self.target.layout.characteristic == "horizontal" then
+        GAME.theme:playMoveSfx()
+        self:moveToPrevious()
+      elseif self.hovered.receiveInputs then
+        self.hovered:receiveInputs(inputs, dt)
+      else
+        GAME.theme:playCancelSfx()
+      end
+    elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      if self.target.layout.characteristic == "horizontal" then
+        GAME.theme:playMoveSfx()
+        self:moveToNext()
+      elseif self.hovered.receiveInputs then
+        self.hovered:receiveInputs(inputs, dt)
+      else
+        GAME.theme:playCancelSfx()
+      end
+    elseif inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      if self.target.layout.characteristic == "vertical" then
+        GAME.theme:playMoveSfx()
+        self:moveToPrevious()
+      elseif self.hovered.receiveInputs then
+        self.hovered:receiveInputs(inputs, dt)
+      else
+        GAME.theme:playCancelSfx()
+      end
+    elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
+      if self.target.layout.characteristic == "vertical" then
+        GAME.theme:playMoveSfx()
+        self:moveToNext()
+      elseif self.hovered.receiveInputs then
+        self.hovered:receiveInputs(inputs, dt)
+      else
+        GAME.theme:playCancelSfx()
+      end
+    elseif inputs.isDown.Swap1 or inputs.isDown.Start then
+      if self.hovered.isFocusable then
+        GAME.theme:playValidationSfx()
+        self:setFocus(self.hovered)
+      elseif self.hovered.receiveInputs then
+        self.hovered:receiveInputs(inputs, dt)
+      else
+        GAME.theme:playCancelSfx()
+      end
+    end
+  end
+end
+
+function Cursor:setTarget(uiElement)
+  self.target = uiElement
+  if uiElement.isFocusable then
+    self:setFocus(self.target)
+  end
+end
+
+function Cursor:drawSelf()
+  if not self.focused then
+    local x, y = self.hovered:getScreenPos()
+    local imageWidth, imageHeight = self.cursorImage:getDimensions()
+    local xScale = self.hovered.width / imageWidth
+    local yScale = self.hovered.height / imageHeight
+    love.graphics.draw(self.cursorImage, x, y, 0, xScale, yScale)
+  end
+end
+
+function Cursor:escapeCallback()
+  if self.hoveredIndex == self:getLastIndex() then
+    if self.focused then
+      self.focused:yieldFocus()
+    else
+      GAME.navigationStack:pop()
+    end
+  else
+    self:moveToLast()
+  end
+end
+
+return Cursor

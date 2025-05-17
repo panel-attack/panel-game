@@ -63,6 +63,7 @@ function VerticalMenu:selectLast()
       break
     end
   end
+  self:keepVisible(self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
 end
 
 function VerticalMenu:receiveInputs(inputs, dt)
@@ -107,11 +108,16 @@ function VerticalMenu:setSelectedIndex(index)
   self.selectedIndex = util.bound(1, index, #self.children)
 end
 
-function VerticalMenu:draw()
-  ScrollContainer.draw(self)
-  if self.selectedIndex then
-    local selected = self.children[self.selectedIndex]
-    love.graphics.print(">", self.x + selected.x - 10, self.y + self.scrollOffset + selected.y)
+function VerticalMenu:drawChildren()
+  for i, uiElement in ipairs(self.children) do
+    if uiElement.isVisible then
+      if i == self.selectedIndex then
+        GraphicsUtil.setColor(0.6, 0.6, 1, 0.5)
+        love.graphics.rectangle("fill", uiElement.x, uiElement.y, uiElement.width, uiElement.height)
+        love.graphics.rectangle("line", uiElement.x, uiElement.y, uiElement.width, uiElement.height)
+      end
+      uiElement:draw()
+    end
   end
 end
 

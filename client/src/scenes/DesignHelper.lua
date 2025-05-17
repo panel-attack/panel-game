@@ -86,8 +86,8 @@ function DesignHelper:load()
   local stageButton = ui.Button({
     hAlign = "center",
     vAlign = "center",
-    minWidth = 64,
-    minHeight = 64,
+    minWidth = 84,
+    minHeight = 84,
     backgroundColor = {1, 1, 1, 0},
   })
   local stageImage = ui.ImageContainer({
@@ -110,12 +110,12 @@ function DesignHelper:load()
   local panelButton = ui.Button({
     hAlign = "center",
     vAlign = "center",
-    minWidth = 64,
-    minHeight = 64,
+    minWidth = 84,
+    minHeight = 84,
     backgroundColor = {1, 1, 1, 0},
   })
 
-  local panelSize = 24
+  local panelSize = 28
   local panelContainer = ui.UiElement({
     layout = ui.Layouts.HorizontalWrapLayout,
     maxWidth = 3 * panelSize
@@ -147,8 +147,8 @@ function DesignHelper:load()
   local levelButton = ui.Button({
     hAlign = "center",
     vAlign = "center",
-    minWidth = 64,
-    minHeight = 64,
+    minWidth = 84,
+    minHeight = 84,
     backgroundColor = {1, 1, 1, 0},
   })
   local levelImage = ui.ImageContainer({
@@ -163,12 +163,30 @@ function DesignHelper:load()
   subSelectionSelector:addChild(characterSelectionSelector)
   subSelectionSelector:addChild(stageSelectionSelector)
   subSelectionSelector:addChild(panelSelectionSelector)
-  subSelectionSelector:addChild(ui.Label({text = "Ranked"}))
+  --subSelectionSelector:addChild(ui.Label({text = "Ranked"}))
   subSelectionSelector:addChild(levelSelectionSelector)
-  subSelectionSelector:addChild(ui.Label({text = "Input Selection"}))
-  subSelectionSelector:addChild(ui.Label({text = "Puzzle"}))
-  subSelectionSelector:addChild(ui.Label({text = "Attack File"}))
+  --subSelectionSelector:addChild(ui.Label({text = "Input Selection"}))
+  --subSelectionSelector:addChild(ui.Label({text = "Puzzle"}))
+  --subSelectionSelector:addChild(ui.Label({text = "Attack File"}))
+  
+  local readyButton = ui.Button({
+    hAlign = "center",
+    vAlign = "center",
+    minWidth = 84,
+    minHeight = 84,
+  })
+  readyButton:addChild(ui.Label({id = "ready", hAlign = "center", vAlign = "center"}))
 
+  local leaveButton = ui.Button({
+    hAlign = "center",
+    vAlign = "center",
+    minWidth = 84,
+    minHeight = 84,
+  })
+  leaveButton:addChild(ui.Label({id = "leave", hAlign = "center", vAlign = "center"}))
+
+  subSelectionSelector:addChild(readyButton)
+  subSelectionSelector:addChild(leaveButton)
   self.uiRoot:addChild(subSelectionSelector)
 
   local subSelection = ui.UiElement({
@@ -179,12 +197,7 @@ function DesignHelper:load()
     backgroundColor = {0.7, 0, 0.5, 1},
   })
 
-  --subSelection:addChild(ui.Label({}))
-
   self.uiRoot:addChild(subSelection)
-
-  self.uiRoot:addChild(ui.Label({text = "Ready", hAlign = "center"}))
-  self.uiRoot:addChild(ui.Label({text = "Leave", hAlign = "center"}))
 end
 
 function DesignHelper:loadRankedSelection(width)
