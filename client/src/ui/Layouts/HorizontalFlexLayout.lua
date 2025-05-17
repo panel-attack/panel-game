@@ -31,6 +31,9 @@ function HorizontalFlexLayout.getMinHeight(uiElement)
   return h + maxHeight
 end
 
+local growables = {}
+local shrinkables = {}
+
 ---@param uiElement UiElement
 function HorizontalFlexLayout.growChildrenWidth(uiElement)
   if #uiElement.children == 0 then
@@ -39,64 +42,128 @@ function HorizontalFlexLayout.growChildrenWidth(uiElement)
 
   local remainingWidth = uiElement.width - uiElement.layout.getMinWidth(uiElement)
 
-  local growables = {}
+  if remainingWidth >= 1 then
+    table.clear(growables)
 
-  for i, child in ipairs(uiElement.children) do
-    if child.isVisible and child.hFill and child.newWidth < child.maxWidth then
-      growables[#growables+1] = child
+    for i, child in ipairs(uiElement.children) do
+      if child.isVisible and child.hFill and child.newWidth < child.maxWidth then
+        growables[#growables+1] = child
+      end
     end
-  end
 
-  if #growables > 0 then
+    if #growables > 0 then
 
-    while #growables > 0 and remainingWidth > 0 do
-      local smallest = growables[1].newWidth
-      local secondSmallest = math.huge
-      -- if growables[1] is already the smallest, it will increment the counter at some point within the loop so we can't count it yet
-      local smallestCount = 1
+      while #growables > 0 and remainingWidth > 0 do
+        local smallest = growables[1].newWidth
+        local secondSmallest = math.huge
+        -- if growables[1] is already the smallest, it will increment the counter at some point within the loop so we can't count it yet
+        local smallestCount = 1
 
-      for i = 2, #growables do
-        local growable = growables[i]
-        if growable.newWidth < smallest then
-          secondSmallest = smallest
-          smallest = growable.newWidth
-          smallestCount = 1
-        elseif growable.newWidth > smallest then
-          secondSmallest = math.min(secondSmallest, growable.newWidth)
+        for i = 2, #growables do
+          local growable = growables[i]
+          if growable.newWidth < smallest then
+            secondSmallest = smallest
+            smallest = growable.newWidth
+            smallestCount = 1
+          elseif growable.newWidth > smallest then
+            secondSmallest = math.min(secondSmallest, growable.newWidth)
+          else
+            smallestCount = smallestCount + 1
+          end
+        end
+
+        local delta = secondSmallest - smallest
+        local widthToAdd = math.min(delta, remainingWidth / smallestCount)
+
+        if delta * smallestCount >= remainingWidth then
+          for _, growable in ipairs(growables) do
+            if growable.newWidth == smallest then
+              local toAdd = math.min(widthToAdd, growable.maxWidth - growable.newWidth)
+              growable.newWidth = growable.newWidth + toAdd
+              remainingWidth = remainingWidth - toAdd
+            end
+          end
+          if remainingWidth < 1 then
+            -- we could run into floating point shenanigans here
+            remainingWidth = 0
+          end
         else
-          smallestCount = smallestCount + 1
-        end
-      end
-
-      local delta = secondSmallest - smallest
-      local widthToAdd = math.min(delta, remainingWidth / smallestCount)
-
-      if delta * smallestCount >= remainingWidth then
-        for _, growable in ipairs(growables) do
-          if growable.newWidth == smallest then
-            local toAdd = math.min(widthToAdd, growable.maxWidth - growable.newWidth)
-            growable.newWidth = growable.newWidth + toAdd
-            remainingWidth = remainingWidth - toAdd
+          for _, growable in ipairs(growables) do
+            if growable.newWidth == smallest then
+              local toAdd = math.min(widthToAdd, growable.maxWidth - growable.newWidth)
+              growable.newWidth = growable.newWidth + toAdd
+              remainingWidth = remainingWidth - toAdd
+            end
           end
         end
-        if remainingWidth < 1 then
-          -- we could run into floating point shenanigans here
-          remainingWidth = 0
-        end
-      else
-        for _, growable in ipairs(growables) do
-          if growable.newWidth == smallest then
-            local toAdd = math.min(widthToAdd, growable.maxWidth - growable.newWidth)
-            growable.newWidth = growable.newWidth + toAdd
-            remainingWidth = remainingWidth - toAdd
+
+        for i = #growables, 1, -1 do
+          local growable = growables[i]
+          if growable.newWidth >= growable.maxWidth then
+            table.remove(growables, i)
           end
         end
       end
+    end
+  elseif remainingWidth <= 1 then
+    table.clear(shrinkables)
 
-      for i = #growables, 1, -1 do
-        local growable = growables[i]
-        if growable.newWidth >= growable.maxWidth then
-          table.remove(growables, i)
+    for i, child in ipairs(uiElement.children) do
+      if child.isVisible and child.hFill and child.newWidth > child.minWidth then
+        shrinkables[#shrinkables+1] = child
+      end
+    end
+
+    if #shrinkables > 0 then
+      while #shrinkables > 0 and remainingWidth < 0 do
+        local biggest = shrinkables[1].newWidth
+        local secondBiggest = 0
+        -- if growables[1] is already the smallest, it will increment the counter at some point within the loop so we can't count it yet
+        local biggestCount = 1
+
+        for i = 2, #shrinkables do
+          local shrinkable = shrinkables[i]
+          if shrinkable.newWidth > biggest then
+            secondBiggest = biggest
+            biggest = shrinkable.newWidth
+            biggestCount = 1
+          elseif shrinkable.newWidth < biggest then
+            secondBiggest = math.max(secondBiggest, shrinkable.newWidth)
+          else
+            biggestCount = biggestCount + 1
+          end
+        end
+
+        local delta = secondBiggest - biggest
+        local widthToSubtract = math.min(delta, math.abs(remainingWidth / biggestCount))
+
+        if delta * biggestCount >= -remainingWidth then
+          for _, shrinkable in ipairs(shrinkables) do
+            if shrinkable.newWidth == biggest then
+              local toSubtract = math.min(widthToSubtract, shrinkable.newWidth - shrinkable.minWidth)
+              shrinkable.newWidth = shrinkable.newWidth - toSubtract
+              remainingWidth = remainingWidth + toSubtract
+            end
+          end
+          if remainingWidth < 1 then
+            -- we could run into floating point shenanigans here
+            remainingWidth = 0
+          end
+        else
+          for _, shrinkable in ipairs(shrinkables) do
+            if shrinkable.newWidth == biggest then
+              local toSubtract = math.min(widthToSubtract, shrinkable.newWidth - shrinkable.minWidth)
+              shrinkable.newWidth = shrinkable.newWidth - toSubtract
+              remainingWidth = remainingWidth + toSubtract
+            end
+          end
+        end
+
+        for i = #shrinkables, 1, -1 do
+          local shrinkable = shrinkables[i]
+          if shrinkable.newWidth <= shrinkable.minWidth then
+            table.remove(shrinkables, i)
+          end
         end
       end
     end
