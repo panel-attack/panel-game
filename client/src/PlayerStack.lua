@@ -938,9 +938,7 @@ function PlayerStack:render(matchEnded)
   self:drawFrame()
   self:drawWall(shakeOffset, self.engine.height)
   -- Draw the cursor
-  if self:game_ended() == false then
-    self:render_cursor(shakeOffset, matchEnded)
-  end
+  self:render_cursor(shakeOffset, matchEnded)
   self:drawCountdown()
   self:resetDrawArea()
 
@@ -992,7 +990,7 @@ function PlayerStack:render_cursor(shake, matchEnded)
   local scale_y = 24 / cursor.image:getHeight()
   local xPosition = (engine.cur_col - 1) * panelWidth
 
-  if matchEnded then
+  if self:game_ended() or matchEnded then
     GraphicsUtil.setColor(1, 1, 1, 0.3)
   end
 
@@ -1003,9 +1001,7 @@ function PlayerStack:render_cursor(shake, matchEnded)
     drawGfxScaled(self, cursor.image, xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   end
 
-  if matchEnded then
-    GraphicsUtil.setColor(1, 1, 1, 1)
-  end
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 -- Draw the stop time and healthbars
