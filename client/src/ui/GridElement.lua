@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local StaticLayout = require(PATH .. ".Layouts.StaticLayout")
 
 local GridElement = class(function(gridElement, options)
   if options.content then
@@ -23,6 +24,8 @@ local GridElement = class(function(gridElement, options)
   end
   gridElement.TYPE = "GridElement"
 end, UiElement)
+
+GridElement.layout = StaticLayout
 
 function GridElement:drawSelf()
   if self.drawBorders then

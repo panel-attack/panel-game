@@ -109,21 +109,21 @@ local UIElement = class(
 
 UIElement.TYPE = "UIElement"
 
-local function onChildrenChanged(uiElement)
-  if uiElement.parent then
+function UIElement:onChildrenChanged()
+  if self.parent then
     -- resizing segments does not make much sense if the segments have to be resized later anyway
     -- so bubble just straight up
-    onChildrenChanged(uiElement.parent)
+    self.parent:onChildrenChanged()
   else
     -- and then only resize from the root element
-    local oWidth = uiElement.width
-    local oHeight = uiElement.height
+    local oWidth = self.width
+    local oHeight = self.height
 
-    uiElement.layout.resize(uiElement)
+    self.layout.resize(self)
 
-    if uiElement.controlsWindow then
-      if oWidth ~= uiElement.width or oHeight ~= uiElement.height then
-        love.window.updateMode(uiElement.width, uiElement.height, {})
+    if self.controlsWindow then
+      if oWidth ~= self.width or oHeight ~= self.height then
+        love.window.updateMode(self.width, self.height, {})
       end
     end
   end
@@ -143,7 +143,7 @@ function UIElement:addChild(uiElement, index)
       self.children[#self.children + 1] = uiElement
     end
     uiElement.parent = self
-    onChildrenChanged(uiElement.parent)
+    self:onChildrenChanged()
   end
 end
 

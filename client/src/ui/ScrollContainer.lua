@@ -199,7 +199,7 @@ function ScrollContainer:getTouchedChildElement(x, y)
   end
 end
 
-function ScrollContainer:onResize()
+function ScrollContainer:recalculateMaxScrollOffset()
   local lastChild = self.children[#self.children]
   if lastChild then
     if self.scrollOrientation == "vertical" then
@@ -210,6 +210,10 @@ function ScrollContainer:onResize()
   else
     self.maxScrollOffset = 0
   end
+end
+
+function ScrollContainer:onResize()
+  self:recalculateMaxScrollOffset()
 end
 
 return ScrollContainer
