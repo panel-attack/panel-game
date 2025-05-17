@@ -204,13 +204,12 @@ function PortraitGame:flipToPortrait()
     if player.isLocal and player.human and player.settings.inputMethod == "touch" then
       -- modify the stack to use a higher gfxScale instead of the usual 3
       local stack = player.stack
-      stack.gfxScale = 5
+      stack:setGraphicsScale(5)
       -- force center it horizontally
       stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2) / stack.gfxScale
       -- and anchor at the bottom
       stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack:canvasHeight()) / stack.gfxScale
-      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
-      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
+      stack:setOrigin(stack.frameOriginX + stack.panelOriginXOffset, stack.frameOriginY + stack.panelOriginYOffset)
       stack.origin_x = stack.frameOriginX / stack.gfxScale
 
       -- create a raise button that interacts with the touch controller
@@ -231,12 +230,11 @@ function PortraitGame:flipToPortrait()
       self.uiRoot:addChild(raiseButton)
     else
       local stack = player.stack
-      stack.gfxScale = 1
+      stack:setGraphicsScale(1)
       stack.canvas = true
       stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
       stack.frameOriginY = 10
-      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
-      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
+      stack:setOrigin(stack.frameOriginX + stack.panelOriginXOffset, stack.frameOriginY + stack.panelOriginYOffset)
       stack.origin_x = stack.frameOriginX / stack.gfxScale
     end
   end
@@ -254,7 +252,7 @@ function PortraitGame:returnToLandscape()
   end
   for _, player in ipairs(self.match.players) do
     if player.isLocal and player.human and player.settings.inputMethod == "touch" then
-      player.stack.gfxScale = 3
+      player.stack:setGraphicsScale(3)
     end
   end
 end

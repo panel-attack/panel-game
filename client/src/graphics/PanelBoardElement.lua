@@ -13,20 +13,34 @@ local UIElement = require("client.src.ui.UIElement")
 ---@field danger_timer integer Decides the bounce frame while the column is in danger, increments and stops according to certain rules
 ---@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column. \n
 local PanelBoardElement = class(
-function(self, engine, theme, panelSet, width, height, scale)
+function(self, engine, theme, panelSet, garbageImages, shockGarbageImages, scale)
   ---@class PanelBoardElement
   self = self
   self.engine = engine
   self.theme = theme
   self.panelSet = panelSet
-  self.width = width
-  self.height = height
+  self.garbageImages = garbageImages
+  self.shockGarbageImages = shockGarbageImages
   self.scale = scale
   self.danger = false
   self.danger_col = {false, false, false, false, false, false}
   self.danger_timer = 0
+  self.currentShakeOffset = 0
+  self.width = engine.width * 16 * self.scale
+  self.height = 12 * 16 * self.scale
 end,
 UIElement)
+
+function PanelBoardElement:setPosition(x, y)
+  self.x = x
+  self.y = y
+end
+
+function PanelBoardElement:updateAfterEngineRun(currentShakeOffset, shouldRenderCursor)
+  self.currentShakeOffset = currentShakeOffset
+  self.shouldRenderCursor = shouldRenderCursor
+  self:updateDangerBounce()
+end
 
 -- calculate which columns should bounce
 function PanelBoardElement:updateDangerBounce()
@@ -85,19 +99,20 @@ local function drawQuadGfxScaled(stack, image, quad, x, y, rotation, xScale, ySc
   GraphicsUtil.drawQuad(image, quad, x * stack.scale, y * stack.scale, rotation, xScale * stack.scale, yScale * stack.scale, xOffset, yOffset)
 end
 
-function PanelBoardElement:drawDebugPanels(shakeOffset)
+function PanelBoardElement:drawDebugPanels()
   if not config.debug_mode then
     return
   end
 
   local engine = self.engine
   local mouseX, mouseY = GAME:transform_coordinates(love.mouse.getPosition())
+  mouseX, mouseY = love.graphics.inverseTransformPoint( mouseX, mouseY )
 
   for row = 0, math.min(engine.height + 1, #engine.panels) do
     for col = 1, engine.width do
       local panel = engine.panels[row][col]
       local draw_x = (4 + (col - 1) * 16) * self.scale
-      local draw_y = (4 + (11 - (row)) * 16 + engine.displacement - shakeOffset) * self.scale
+      local draw_y = (4 + (11 - (row)) * 16 + engine.displacement - self.currentShakeOffset) * self.scale
 
       -- Require hovering over a stack to show details
       if mouseX >= self.x * self.scale and mouseX <= (self.x + engine.width * 16) * self.scale then
@@ -131,18 +146,24 @@ function PanelBoardElement:drawDebugPanels(shakeOffset)
   end
 end
 
-function PanelBoardElement:render(renderCursor, garbageImages, shockGarbageImages, shakeOffset)
-  self:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
+function PanelBoardElement:drawSelf()
+  love.graphics.push("transform")
+  love.graphics.translate(self.x, self.y)
+
+  self:drawPanels()
   -- Draw the cursor
-  if renderCursor then
-    self:renderCursor(shakeOffset)
+  if self.shouldRenderCursor then
+    self:renderCursor()
   end
 
-  self:drawDebugPanels(shakeOffset)
+  self:drawDebugPanels()
+
+  love.graphics.pop()
 end
 
 -- Draw the stacks cursor
-function PanelBoardElement:renderCursor(shake)
+function PanelBoardElement:renderCursor()
+  local shake = self.currentShakeOffset
   local engine = self.engine
   if engine.inputMethod == "touch" then
     if engine.cur_row == 0 and engine.cur_col == 0 then
@@ -233,9 +254,12 @@ function PanelBoardElement:drawGarbageBlock(bottomRightPanel, drawX, drawY, garb
   drawGfxScaled(self, imgs.botright, drawX + halfPanelSize, drawY + panelSize - 3, 0, cornerWidth / corner_w, cornerHeight / corner_h)
 end
 
-function PanelBoardElement:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
+function PanelBoardElement:drawPanels()
   local panelSet = self.panelSet
   panelSet:prepareDraw()
+  local garbageImages = self.garbageImages
+  local shockGarbageImages = self.shockGarbageImages
+  local shakeOffset = self.currentShakeOffset
 
   local metal_w, metal_h = shockGarbageImages.mid:getDimensions()
   local metall_w, metall_h = shockGarbageImages.left:getDimensions()

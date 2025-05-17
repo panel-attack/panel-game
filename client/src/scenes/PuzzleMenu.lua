@@ -1,4 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
+local PanelBoardElement = require("client.src.graphics.PanelBoardElement")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
@@ -7,6 +8,7 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelPresets      = require("common.data.LevelPresets")
+local ClientMatch = require("client.src.ClientMatch")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
@@ -41,7 +43,7 @@ PuzzleMenu.name = "PuzzleMenu"
 local BUTTON_WIDTH = 60
 local BUTTON_HEIGHT = 25
 
-function PuzzleMenu:startGame(puzzleSet, index)
+function PuzzleMenu:setupPuzzleSet(puzzleSet, index)
   if not index then
     index = 1
   end
@@ -51,13 +53,18 @@ function PuzzleMenu:startGame(puzzleSet, index)
     write_conf_file()
   end
 
-  GAME.theme:playValidationSfx()
   GAME.localPlayer:setPuzzleSet(puzzleSet, index)
 
   local player = self.battleRoom.players[1]
   local puzzle = player.settings.puzzleSet.puzzles[index]
   self.battleRoom:setGameMode(puzzle:toGameMode())
+end
+
+function PuzzleMenu:startGame(puzzleSet, index)
+  self:setupPuzzleSet(puzzleSet, index)
+  local player = self.battleRoom.players[1]
   player:setWantsReady(true)
+  GAME.theme:playValidationSfx()
 end
 
 function PuzzleMenu:exit()
@@ -136,6 +143,10 @@ function PuzzleMenu:refreshMenu()
     ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons),
   }
 
+  for index, value in ipairs(menuOptions) do
+    value.onSelectedFunction = self:clearPreviewFunction()
+  end
+
   if self.currentPuzzleSet == nil then
     self:updateCurrentPuzzleSet()
   end
@@ -152,7 +163,7 @@ function PuzzleMenu:refreshMenu()
 
   local trainingPuzzleSet = self.currentTrainingPuzzleSet
   if #trainingPuzzleSet.puzzles > 0 then
-    menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem(trainingPuzzleSet.setName, nil, false, function() self:startGame(trainingPuzzleSet) end)
+    menuOptions[#menuOptions + 1] = self:menuItemToTrainPuzzleSet(trainingPuzzleSet)
   end
   
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
@@ -170,6 +181,35 @@ function PuzzleMenu:refreshMenu()
   self.uiRoot:addChild(self.menu)
 end
 
+function PuzzleMenu:setPreviewPanelBoard(panelBoardElement)
+  if self.panelBoardElement then
+    self.panelBoardElement:detach()
+  end
+  self.panelBoardElement = panelBoardElement
+  if self.panelBoardElement then
+    self.panelBoardElement.x = 800
+    self.panelBoardElement.y = 0
+    self.uiRoot:addChild(self.panelBoardElement)
+  end
+end
+
+function PuzzleMenu:clearPreviewFunction()
+  return function ()
+    self:setPreviewPanelBoard(nil)
+  end
+end
+
+function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, index)
+  local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
+  return function ()
+    self:setupPuzzleSet(flatPuzzleSet, index)
+    local match = ClientMatch.createFromBattleRoom(self.battleRoom)
+    match:start()
+    local engine = match.stacks[1]
+    self:setPreviewPanelBoard(PanelBoardElement(engine.engine, GAME.theme, panels[GAME.localPlayer.settings.panelId], characters[GAME.localPlayer.settings.characterId].images, panels[GAME.localPlayer.settings.panelId].images.metals, 3))
+  end
+end
+
 function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, flatPuzzleSet, index, puzzle)
   local textString = loc("start")
   if puzzle then
@@ -178,18 +218,37 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, flatPuzzleSet, index, puz
   if puzzle and puzzle.puzzleEverBeaten then
     textString = textString .. " +"
   end
-  return ui.MenuItem.createButtonMenuItem(textString, nil, false, function()
+  local result = ui.MenuItem.createButtonMenuItem(textString, nil, false, function()
     self:startGame(flatPuzzleSet, index)
   end)
+
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(flatPuzzleSet, index)
+
+  return result
 end
 
 function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, index)
-  return ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
+  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
     GAME.theme:playValidationSfx()
     self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
     self:updateCurrentPuzzleSet()
     self:refreshMenu()
   end)
+
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, 1)
+
+  return result
+end
+
+function PuzzleMenu:menuItemToTrainPuzzleSet(puzzleSet)
+  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
+    -- GAME.theme:playValidationSfx()
+    self:startGame(puzzleSet)
+  end)
+
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, 1)
+
+  return result
 end
 
 function PuzzleMenu:updateCurrentPuzzleSet()

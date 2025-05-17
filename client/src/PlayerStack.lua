@@ -78,7 +78,8 @@ function(self, args)
   self.multiBarFrameCount = self:calculateMultibarFrameCount()
 
   -- graphics
-  self.panelBoardElement = PanelBoardElement(self.engine, self.theme, panels[self.panels_dir], 0, 0, self.gfxScale)
+  local garbageImages, shockGarbageImages = self:garbageAndShockGarbageImages()
+  self.panelBoardElement = PanelBoardElement(self.engine, self.theme, panels[self.panels_dir], garbageImages, shockGarbageImages, self.gfxScale)
   -- sfx
   -- index used for picking a pop sound
   self.poppedPanelIndex = 1
@@ -100,6 +101,18 @@ function(self, args)
 end,
 ClientStack)
 
+function PlayerStack:garbageAndShockGarbageImages()
+  -- functionally, the garbage target being the source of the images for garbage landing on this stack is possible but not a given
+  -- there is technically no guarantee that the target we're sending towards is also sending to us
+  -- at the moment however this is the case so let's take it for granted until then
+  local panelsDir = self.panels_dir
+  local character = self.character
+  if self.garbageSource then
+    character = self.garbageSource.character
+    panelsDir = self.garbageSource.panels_dir
+  end
+  return character.images, panels[panelsDir].images.metals
+end
 
 -------------------------------------------
 --- Callbacks from engine subscriptions ---
@@ -275,7 +288,7 @@ function PlayerStack:onRun()
   -- these were previously at the start of Stack:run
   -- so by putting them at the end, order is restored
   self.popSizeThisFrame = "small"
-  self.panelBoardElement:updateDangerBounce()
+  self.panelBoardElement:updateAfterEngineRun(self:currentShakeOffset(), self:game_ended() == false)
   self:updateDangerMusic()
 
   -- we don't want to refresh analytics display every frame to prevent rapid flickering, only once per second
@@ -387,7 +400,7 @@ end
 local shakeOffsetData = calculateShakeData()
 
 function PlayerStack:currentShakeOffset()
-  return self:shakeOffsetForShakeFrames(self.engine.shake_time, self.engine.prev_shake_time)
+  return self:shakeOffsetForShakeFrames(self.engine.shake_time, self.engine.prev_shake_time) / self.gfxScale
 end
 
 local function privateShakeOffsetForShakeFrames(frames, shakeIntensity, gfxScale)
@@ -417,6 +430,19 @@ function PlayerStack:shakeOffsetForShakeFrames(frames, previousShakeTime, shakeI
     result = math.integerAwayFromZero((result + previousOffset) / 2)
   end
   return result
+end
+
+function PlayerStack:setOrigin(x, y)
+  self.panelOriginX = x
+  self.panelOriginY = y
+  -- self.panelBoardElement:setPosition(x, y) -- not until we move everything to elements so we can layer right
+end
+
+function PlayerStack:setGraphicsScale(scale)
+  self.gfxScale = scale
+  if self.panelBoardElement then
+    self.panelBoardElement.scale = scale
+  end
 end
 
 function PlayerStack:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
@@ -877,12 +903,10 @@ function PlayerStack.render(self)
     shockGarbageImages = panels[self.garbageSource.panels_dir].images.metals
   end
 
-  local shakeOffset = self:currentShakeOffset() / self.gfxScale
+  local shakeOffset = self:currentShakeOffset() 
 
-  -- Temporary until elements are setup better at start
-  self.panelBoardElement.x = self.panelOriginX
-  self.panelBoardElement.y = self.panelOriginY
-  self.panelBoardElement:render(self:game_ended() == false, garbageImages, shockGarbageImages, shakeOffset)
+  assert(self.panelBoardElement.currentShakeOffset == self:currentShakeOffset())
+  self.panelBoardElement:draw() -- until we move everything to elements, we need to manually draw in the right order
   self:drawFrame()
   self:drawWall(shakeOffset, self.engine.height)
   self:drawCountdown()

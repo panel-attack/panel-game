@@ -64,7 +64,7 @@ function(self, args)
   -- also relevant for the touch input controller method besides general drawing
   self.baseWidth = 104
   self.baseHeight = 204
-  self.gfxScale = 3
+  self:setGraphicsScale(3)
   -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
   self.canvas = true
@@ -253,8 +253,7 @@ function ClientStack:moveForRenderIndex(renderIndex)
   self.frameOriginX = frameOriginNonScaled / self.gfxScale -- The left X value where the frame is drawn
   self.frameOriginY = 108 / self.gfxScale
 
-  self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
-  self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
+  self:setOrigin(self.frameOriginX + self.panelOriginXOffset, self.frameOriginY + self.panelOriginYOffset)
 
   self:assignAssets(GAME.theme:getIngameAssetPack(self.renderIndex))
 end
