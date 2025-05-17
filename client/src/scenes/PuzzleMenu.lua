@@ -4,6 +4,8 @@ local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelPresets      = require("common.data.LevelPresets")
+local consts = require("common.engine.consts")
+local Stack = require("common.engine.Stack")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
@@ -115,6 +117,10 @@ function PuzzleMenu:load(sceneParams)
 
   self.uiRoot:addChild(self.menu)
   self.uiRoot:addChild(self.puzzleLabel)
+
+  local name, puzzleSet = next(GAME.puzzleSets)
+  local puzzle = puzzleSet.puzzles[1]
+  self.puzzlePreviewStack = self:getDisplayStack(puzzle)
 end
 
 function PuzzleMenu:update(dt)
@@ -123,7 +129,31 @@ end
 
 function PuzzleMenu:draw()
   themes[config.theme].images.bg_main:draw()
+  self.puzzlePreviewStack:render(false)
   self.uiRoot:draw()
+end
+
+---@param puzzle Puzzle
+function PuzzleMenu:getDisplayStack(puzzle)
+  local gameMode = puzzle:toGameMode()
+  local args = {
+    which = 1,
+    levelData = LevelPresets.getModern(config.puzzle_level or 5),
+    is_local = false,
+    stackOverConditions = gameMode.matchRules.stackOverConditions,
+    stackWinConditions = gameMode.matchRules.stackWinConditions,
+    panelSource = puzzle:toPanelSource(),
+    inputMethod = "controller",
+    stackSetupModifications = gameMode.matchRules.stackSetupModifications or {},
+    engineVersion = consts.ENGINE_VERSION,
+  }
+  local engineStack = Stack(args)
+
+  local playerStack = GAME.localPlayer:createClientStack(engineStack)
+  playerStack:moveForRenderIndex(2)
+  engineStack:starting_state()
+
+  return playerStack
 end
 
 return PuzzleMenu
