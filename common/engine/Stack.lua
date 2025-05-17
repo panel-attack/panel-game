@@ -637,7 +637,7 @@ function Stack:swapQueued()
 end
 
 -- create the initial board
-function Stack:starting_state(n)
+function Stack:starting_state()
   local rowCount = self.panelSource:getStartingBoardHeight(self)
   -- +1 because the new row spawns in row 0 but we want the bottom row of the starting board in row 1
   for i = 1, rowCount + 1 do

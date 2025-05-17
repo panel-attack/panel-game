@@ -910,7 +910,8 @@ function PlayerStack:drawDebugPanels(shakeOffset)
 end
 
 -- Renders the player's stack on screen
-function PlayerStack.render(self)
+---@param matchEnded boolean?
+function PlayerStack:render(matchEnded)
   prof.push("Stack:render")
   if self.canvas == nil then
     return
@@ -937,9 +938,7 @@ function PlayerStack.render(self)
   self:drawFrame()
   self:drawWall(shakeOffset, self.engine.height)
   -- Draw the cursor
-  if self:game_ended() == false then
-    self:render_cursor(shakeOffset)
-  end
+  self:render_cursor(shakeOffset, matchEnded)
   self:drawCountdown()
   self:resetDrawArea()
 
@@ -966,7 +965,9 @@ function PlayerStack:drawRating()
 end
 
 -- Draw the stacks cursor
-function PlayerStack:render_cursor(shake)
+---@param shake integer
+---@param matchEnded boolean?
+function PlayerStack:render_cursor(shake, matchEnded)
   local engine = self.engine
   if engine.inputMethod == "touch" then
     if engine.cur_row == 0 and engine.cur_col == 0 then
@@ -989,12 +990,18 @@ function PlayerStack:render_cursor(shake)
   local scale_y = 24 / cursor.image:getHeight()
   local xPosition = (engine.cur_col - 1) * panelWidth
 
+  if self:game_ended() or matchEnded then
+    GraphicsUtil.setColor(1, 1, 1, 0.3)
+  end
+
   if self.inputMethod == "touch" then
     drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[1], xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
     drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[2], xPosition + 12, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   else
     drawGfxScaled(self, cursor.image, xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   end
+
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 -- Draw the stop time and healthbars
