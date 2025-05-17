@@ -12,7 +12,7 @@ function FlexLayout.fitSizeWidth(uiElement)
     end
   end
   local w = uiElement.layout.getMinWidth(uiElement)
-  uiElement.width = math.max(w, uiElement.minWidth)
+  uiElement.newWidth = math.max(w, uiElement:getBaseWidth())
 end
 
 ---@param uiElement UiElement
@@ -23,22 +23,32 @@ function FlexLayout.fitSizeHeight(uiElement)
     end
   end
   local h = uiElement.layout.getMinHeight(uiElement)
-  uiElement.height = math.max(h, uiElement.minHeight)
+  uiElement.newHeight = math.max(h, uiElement:getBaseHeight())
 end
 
 function FlexLayout.updateWidths(uiElement, width)
-  uiElement.layout.fitSizeWidth(uiElement)
-  if width then
-    uiElement.width = math.max(width, uiElement.width)
+  if not uiElement.newWidth then
+    uiElement.layout.fitSizeWidth(uiElement)
   end
+  if width then
+    uiElement.width = math.max(width, uiElement.newWidth)
+  else
+    uiElement.width = uiElement.newWidth
+  end
+  uiElement.newWidth = nil
   uiElement.layout.growChildrenWidth(uiElement)
 end
 
 function FlexLayout.updateHeights(uiElement, height)
-  uiElement.layout.fitSizeHeight(uiElement)
-  if height then
-    uiElement.height = math.max(height, uiElement.height)
+  if not uiElement.newHeight then
+    uiElement.layout.fitSizeHeight(uiElement)
   end
+  if height then
+    uiElement.height = math.max(height, uiElement.newHeight)
+  else
+    uiElement.height = uiElement.newHeight
+  end
+  uiElement.newHeight = nil
   uiElement.layout.growChildrenHeight(uiElement)
 end
 

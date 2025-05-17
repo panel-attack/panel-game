@@ -10,7 +10,7 @@ function HorizontalFlexLayout.getMinWidth(uiElement)
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      w = w + child.width
+      w = w + child.newWidth
     end
   end
 
@@ -24,7 +24,7 @@ function HorizontalFlexLayout.getMinHeight(uiElement)
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      maxHeight = math.max(maxHeight, child.height)
+      maxHeight = math.max(maxHeight, child.newHeight)
     end
   end
 
@@ -37,17 +37,17 @@ function HorizontalFlexLayout.growChildrenWidth(uiElement)
     return
   end
 
+  local remainingWidth = uiElement.width - uiElement.layout.getMinWidth(uiElement)
+
   local growables = {}
 
   for i, child in ipairs(uiElement.children) do
-    if child.isVisible and child.hFill and child.width < child.maxWidth then
+    if child.isVisible and child.hFill and child.newWidth < child.maxWidth then
       growables[#growables+1] = child
-      child.newWidth = child.width
     end
   end
 
   if #growables > 0 then
-    local remainingWidth = uiElement.width - uiElement.layout.getMinWidth(uiElement)
 
     while #growables > 0 and remainingWidth > 0 do
       local smallest = growables[1].newWidth
@@ -96,20 +96,9 @@ function HorizontalFlexLayout.growChildrenWidth(uiElement)
       for i = #growables, 1, -1 do
         local growable = growables[i]
         if growable.newWidth >= growable.maxWidth then
-          growable.width = growable.newWidth
           table.remove(growables, i)
         end
       end
-    end
-
-    for _, growable in ipairs(growables) do
-      growable.width = growable.newWidth
-    end
-  end
-
-  for _, child in ipairs(uiElement.children) do
-    if child.layout.growChildrenWidth then
-      child.layout.growChildrenWidth(child)
     end
   end
 end
@@ -118,7 +107,7 @@ end
 function HorizontalFlexLayout.growChildrenHeight(uiElement)
   for _, child in ipairs(uiElement.children) do
     if child.vFill then
-      child.height = math.min(uiElement.height - uiElement.padding * 2, child.maxHeight)
+      child.newHeight = math.min(uiElement.height - uiElement.padding * 2, child.maxHeight)
     end
     if child.layout.growChildrenHeight then
       child.layout.growChildrenHeight(child)

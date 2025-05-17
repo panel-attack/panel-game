@@ -10,9 +10,7 @@ function HorizontalScrollLayout.getMinWidth(uiElement)
 end
 
 function HorizontalScrollLayout.growChildrenWidth(uiElement)
-  for _, child in ipairs(uiElement.children) do
-    child.layout.growChildrenWidth(child)
-  end
+  -- no growing because we scroll in this direction
 end
 
 ---@param uiElement UiElement

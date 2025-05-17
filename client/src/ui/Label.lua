@@ -36,43 +36,18 @@ local Label = class(
     self.fontSize = options.fontSize or "normal"
     local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
 
-    local totalWidth = font:getWidth(self.text)
     if options.wrap ~= nil then
       self.wrap = options.wrap
     else
       self.wrap = true
     end
+    -- min sizes are set with this function
+    self:recalculateSizes()
 
-    local words = self.text:split()
-    local maxWordWidth = font:getWidth(words[1])
-    for i = 2, #words do
-      maxWordWidth = math.max(maxWordWidth, font:getWidth(words[i]))
-    end
-
-    if options.minWidth ~= nil then
-      self.minWidth = options.minWidth
-    else
-      if self.wrap then
-        self.minWidth = maxWordWidth
-      else
-        self.minWidth = totalWidth
-      end
-    end
-
-    self.width = options.width or totalWidth
+    self.width = options.width or self.preferredWidth
     self.maxWidth = options.maxWidth or math.huge
-    self.minHeight = options.minHeight or font:getHeight()
     self.height = options.height or font:getHeight()
-
-    if options.maxHeight ~= nil then
-      self.maxHeight = options.maxHeight
-    else
-      if self.wrap then
-        self.maxHeight = (#words * font:getHeight())
-      else
-        self.maxHeight = font:getHeight()
-      end
-    end
+    self.maxHeight = options.maxHeight or math.huge
 
     self.hFill = true
     self.vFill = false
@@ -90,18 +65,11 @@ function Label:recalculateSizes()
   end
 
   self.minHeight = font:getHeight()
+  self.preferredWidth = font:getWidth(self.text)
   if self.wrap then
-    self.maxHeight = (#words * font:getHeight())
-  else
-    self.maxHeight = self.minHeight
-  end
-  local totalWidth = font:getWidth(self.text)
-  self.width = totalWidth
-  self.maxWidth = math.huge
-  if not self.wrap then
     self.minWidth = maxWordWidth
   else
-    self.minWidth = totalWidth
+    self.minWidth = self.preferredWidth
   end
 end
 
@@ -144,6 +112,10 @@ end
 
 function Label:setMinHeightForWidth()
   self.minHeight = GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
+end
+
+function Label:getBaseWidth()
+  return self.preferredWidth
 end
 
 return Label

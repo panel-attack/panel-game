@@ -10,9 +10,7 @@ function VerticalScrollLayout.getMinHeight(uiElement)
 end
 
 function VerticalScrollLayout.growChildrenHeight(uiElement)
-  for _, child in ipairs(uiElement.children) do
-    child.layout.growChildrenHeight(child)
-  end
+  -- no growing because we scroll in this direction
 end
 
 ---@param uiElement UiElement

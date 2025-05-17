@@ -1,4 +1,5 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
+local Layout = require(PATH .. ".Layout")
 local VerticalFlexLayout = require(PATH ..".VerticalFlexLayout")
 local HorizontalFlexLayout = require(PATH ..".HorizontalFlexLayout")
 
@@ -15,18 +16,7 @@ function AdaptiveFlexLayout.resize(uiElement, width, height)
     end
   end
 
-  uiElement.layout.updateWidths(uiElement, width)
-
-  -- transform width to height for width-to-height supporting uiElements based on the width pass
-  uiElement:setMinHeightForWidth()
-
-  uiElement.layout.updateHeights(uiElement, height)
-
-  uiElement.layout.positionChildren(uiElement)
-
-  if uiElement.onResize then
-    uiElement:onResize()
-  end
+  Layout.resize(uiElement, width, height)
 end
 
 return AdaptiveFlexLayout

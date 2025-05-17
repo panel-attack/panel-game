@@ -153,7 +153,7 @@ function UIElement:detach()
       if child.id == self.id then
         table.remove(self.parent.children, i)
         self:onDetach()
-        onChildrenChanged(self.parent)
+        self.parent:onChildrenChanged()
         self.parent = nil
         break
       end
@@ -223,7 +223,7 @@ end
 
 function UIElement:onVisibilityChanged()
   if self.parent then
-    onChildrenChanged(self.parent)
+    self.parent:onChildrenChanged()
   end
 end
 
@@ -263,6 +263,14 @@ function UIElement:setMinHeightForWidth()
   for i, child in ipairs(self.children) do
     child:setMinHeightForWidth()
   end
+end
+
+function UIElement:getBaseWidth()
+  return self.minWidth
+end
+
+function UIElement:getBaseHeight()
+  return self.minHeight
 end
 
 return UIElement

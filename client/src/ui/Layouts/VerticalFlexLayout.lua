@@ -11,7 +11,7 @@ function VerticalFlexLayout.getMinWidth(uiElement)
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      maxWidth = math.max(maxWidth, child.width)
+      maxWidth = math.max(maxWidth, child.newWidth)
     end
   end
 
@@ -24,7 +24,7 @@ function VerticalFlexLayout.getMinHeight(uiElement)
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      h = h + child.height
+      h = h + child.newHeight
     end
   end
 
@@ -40,9 +40,8 @@ function VerticalFlexLayout.growChildrenHeight(uiElement)
   local growables = {}
 
   for i, child in ipairs(uiElement.children) do
-    if child.isVisible and child.vFill and child.height < child.maxHeight then
+    if child.isVisible and child.vFill and child.newHeight < child.maxHeight then
       growables[#growables+1] = child
-      child.newHeight = child.height
     end
   end
 
@@ -101,16 +100,6 @@ function VerticalFlexLayout.growChildrenHeight(uiElement)
         end
       end
     end
-
-    for _, growable in ipairs(growables) do
-      growable.height = growable.newHeight
-    end
-  end
-
-  for _, child in ipairs(uiElement.children) do
-    if child.layout.growChildrenHeight then
-      child.layout.growChildrenHeight(child)
-    end
   end
 end
 
@@ -118,10 +107,7 @@ end
 function VerticalFlexLayout.growChildrenWidth(uiElement)
   for _, child in ipairs(uiElement.children) do
     if child.hFill then
-      child.width = math.min(uiElement.width - uiElement.padding * 2, child.maxWidth)
-    end
-    if child.layout.growChildrenWidth then
-      child.layout.growChildrenWidth(child)
+      child.newWidth = math.min(uiElement.width - uiElement.padding * 2, child.maxWidth)
     end
   end
 end
@@ -159,12 +145,6 @@ function VerticalFlexLayout.positionChildren(uiElement)
       child.x = math.round(child.x)
       child.y = math.round(child.y)
       y = y + uiElement.childGap + child.height
-    end
-  end
-
-  for _, child in ipairs(uiElement.children) do
-    if child.isVisible then
-      child.layout.positionChildren(child)
     end
   end
 end

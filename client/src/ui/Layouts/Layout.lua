@@ -12,6 +12,10 @@ function Layout.resize(uiElement, width, height)
 
   uiElement.layout.updateHeights(uiElement, height)
 
+  for i, child in ipairs(uiElement.children) do
+    child.layout.resize(child, child.newWidth, child.newHeight)
+  end
+
   uiElement.layout.positionChildren(uiElement)
 
   if uiElement.onResize then
