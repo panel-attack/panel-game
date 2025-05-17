@@ -211,7 +211,7 @@ function ClientStack:drawString(str, themePositionOffset, cameFromLegacyScoreOff
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
 
-  local limit = consts.CANVAS_WIDTH - x
+  local limit = love.graphics.getWidth() - x
   local alignment = "left"
   if themes[config.theme]:offsetsAreFixed() then
     if self.renderIndex == 1 then
@@ -235,7 +235,7 @@ function ClientStack:moveForRenderIndex(renderIndex)
     self.mirror_x = -1
     self.multiplication = 1
   end
-  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local centerX = love.graphics.getWidth() / 2
   local stackWidth = self:canvasWidth()
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement

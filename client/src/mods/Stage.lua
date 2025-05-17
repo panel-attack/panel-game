@@ -129,7 +129,7 @@ function stages_reload_graphics()
         stages[match.stageId]:graphics_init(true, false)
         -- for reasons, this is not drawn directly from the stage but from background image
         -- so override this while in a match
-        GAME.backgroundImage = UpdatingImage(stages[match.stageId].images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+        GAME.backgroundImage = UpdatingImage(stages[match.stageId].images.background, false, 0, 0, love.graphics.getDimensions())
       end
     end
   end

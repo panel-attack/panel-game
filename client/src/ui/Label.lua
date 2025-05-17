@@ -111,11 +111,15 @@ function Label:getPreferredWidth()
 end
 
 function Label:setMinHeightForWidth()
-  self.minHeight = GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
+  --self.minHeight = GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
 end
 
 function Label:getBaseWidth()
   return self.preferredWidth
+end
+
+function Label:getBaseHeight()
+  return GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
 end
 
 return Label

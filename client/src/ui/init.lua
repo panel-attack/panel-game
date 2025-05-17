@@ -21,6 +21,7 @@ local ui = {
   Layouts = {
     AdaptiveFlexLayout = require(PATH .. ".Layouts.AdaptiveFlexLayout"),
     HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout"),
+    HorizontalWrapLayout = require(PATH .. ".Layouts.HorizontalWrapLayout"),
     VerticalFlexLayout = require(PATH .. ".Layouts.VerticalFlexLayout"),
   },
   Leaderboard = require(PATH .. ".Leaderboard"),

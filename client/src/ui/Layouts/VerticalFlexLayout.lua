@@ -95,7 +95,6 @@ function VerticalFlexLayout.growChildrenHeight(uiElement)
       for i = #growables, 1, -1 do
         local growable = growables[i]
         if growable.newHeight >= growable.maxHeight then
-          growable.height = growable.newHeight
           table.remove(growables, i)
         end
       end
@@ -131,7 +130,7 @@ function VerticalFlexLayout.positionChildren(uiElement)
         child.y = y
       elseif child.vAlign == "center" then
         child.y = y + remainingHeight / 2
-      elseif child.vAlign == "right" then
+      elseif child.vAlign == "bottom" then
         child.y = y + remainingHeight
       end
 

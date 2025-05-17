@@ -20,7 +20,7 @@ local HorizontalScrollLayout = require(PATH .. ".Layouts.HorizontalScrollLayout"
 local ScrollContainer = class(
 ---@param self ScrollContainer
 function(self, options)
-  self.scrollOrientation = "vertical" or options.scrollOrientation
+  self.scrollOrientation = options.scrollOrientation or "vertical"
   if self.scrollOrientation == "vertical" then
     self.layout = VerticalScrollLayout
   else
@@ -214,6 +214,14 @@ end
 
 function ScrollContainer:onResize()
   self:recalculateMaxScrollOffset()
+end
+
+function ScrollContainer:getBaseHeight()
+  return self.minHeight
+end
+
+function ScrollContainer:getBaseWidth()
+  return self.minWidth
 end
 
 return ScrollContainer

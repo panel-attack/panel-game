@@ -67,9 +67,9 @@ end
 function StartUp:drawLoadingString(loadingString)
   local textHeight = 40
   local x = 0
-  local y = consts.CANVAS_HEIGHT / 2 - textHeight / 2
+  local y = love.graphics.getHeight() / 2 - textHeight / 2
   GraphicsUtil.setColor(1, 1, 1, 1)
-  love.graphics.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", 0, 1)
+  love.graphics.printf(loadingString, x, y, love.graphics.getWidth(), "center", 0, 1)
 end
 
 function StartUp:draw()

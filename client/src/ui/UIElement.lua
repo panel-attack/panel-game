@@ -24,7 +24,7 @@ local class = require("common.lib.class")
 ---@field padding number
 ---@field childGap number
 ---@field id integer unique identifier of the element
----@field layout FlexLayout
+---@field layout Layout
 ---@field onTouch function? touch callback for when the element is being touched
 ---@field onDrag function? touch callback for when the mouse touching the element is dragged across the screen
 ---@field onRelease function? touch callback for when the mouse touching the element is released
@@ -46,7 +46,7 @@ local class = require("common.lib.class")
 ---@field vFill boolean? if the element's height should fill out the entire parent's height
 ---@field isVisible boolean? if the element is currently visible for rendering (also disables touch interaction)
 ---@field isEnabled boolean? if the element is currently eligible for touch interaction
----@field layout FlexLayout?
+---@field layout Layout?
 ---@field backgroundColor color?
 ---@field padding number?
 ---@field childGap number?
@@ -69,6 +69,7 @@ local UIElement = class(
     self.layout = options.layout
     self.padding = options.padding or 0
     self.childGap = options.childGap or 0
+    self.wraps = options.wraps or false
 
     -- ui dimensions
     self.minWidth = options.minWidth or options.width or 0
@@ -260,9 +261,21 @@ function UIElement:getTouchedElement(x, y)
 end
 
 function UIElement:setMinHeightForWidth()
-  for i, child in ipairs(self.children) do
-    child:setMinHeightForWidth()
-  end
+  -- local childrenInCurrentRow = 0
+  -- local rowCount = 1
+  -- local width = self.padding
+  -- for i, child in ipairs(self.children) do
+  --   if width + child.width + self.padding + childrenInCurrentRow * self.childGap > self.width then
+  --     rowCount = rowCount + 1
+  --     width = self.padding + child.width
+  --     childrenInCurrentRow = 1
+  --   else
+  --     childrenInCurrentRow = childrenInCurrentRow + 1
+  --     width = width + child.width
+  --   end
+  -- end
+
+  -- return self.minHeight * rowCount
 end
 
 function UIElement:getBaseWidth()
@@ -270,7 +283,25 @@ function UIElement:getBaseWidth()
 end
 
 function UIElement:getBaseHeight()
-  return self.minHeight
+  -- if self.wraps then
+  --   local childrenInCurrentRow = 0
+  --   local rowCount = 1
+  --   local width = self.padding
+  --   for i, child in ipairs(self.children) do
+  --     if width + child.width + self.padding + childrenInCurrentRow * self.childGap > self.width then
+  --       rowCount = rowCount + 1
+  --       width = self.padding + child.width
+  --       childrenInCurrentRow = 1
+  --     else
+  --       childrenInCurrentRow = childrenInCurrentRow + 1
+  --       width = width + child.width
+  --     end
+  --   end
+
+  --   return self.minHeight * rowCount
+  -- else
+    return self.minHeight
+  --end
 end
 
 return UIElement

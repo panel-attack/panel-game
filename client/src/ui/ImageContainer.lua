@@ -13,6 +13,8 @@ end, UiElement)
 function ImageContainer:setImage(image, width, height, scale)
   self.image = image
   self.imageWidth, self.imageHeight = self.image:getDimensions()
+  self.minWidth = math.max(self.imageWidth, self.minWidth)
+  self.minHeight = math.max(self.imageHeight, self.minHeight)
 
   if self.hFill and self.vFill then
     self.scale = math.min(self.width / self.imageWidth, self.height / self.imageHeight)
@@ -38,8 +40,8 @@ end
 
 function ImageContainer:onResize()
   self.scale = math.min(self.width / self.imageWidth, self.height / self.imageHeight)
-  self.width = self.imageWidth * self.scale
-  self.height = self.imageHeight * self.scale
+  -- self.width = self.imageWidth * self.scale
+  -- self.height = self.imageHeight * self.scale
 end
 
 function ImageContainer:drawSelf()

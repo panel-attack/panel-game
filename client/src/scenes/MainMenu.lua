@@ -192,10 +192,11 @@ function MainMenu:draw()
   self.uiRoot:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
+  local screenWidth = love.graphics.getWidth()
 
   local loveString = system.loveVersionString()
   if loveString == "11.3.0" then
-    GraphicsUtil.printf(loc("love_version_warning"), -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+    GraphicsUtil.printf(loc("love_version_warning"), -5, infoYPosition, screenWidth, "right")
     infoYPosition = infoYPosition - fontHeight
   end
 
@@ -210,7 +211,7 @@ function MainMenu:draw()
         version = "PA Version: " .. GAME.updater.activeReleaseStream.name .. " " .. (GAME.updater.activeVersion and GAME.updater.activeVersion.version or "dev")
       end
     end
-    GraphicsUtil.printf(version, -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+    GraphicsUtil.printf(version, -5, infoYPosition, screenWidth, "right")
     infoYPosition = infoYPosition - fontHeight
 
 
@@ -227,7 +228,7 @@ function MainMenu:draw()
     end
 
     if showUpdaterUpdateWarning then
-      GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+      GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, screenWidth, "right")
       infoYPosition = infoYPosition - fontHeight
     end
   end

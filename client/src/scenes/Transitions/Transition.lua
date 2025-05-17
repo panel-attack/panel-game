@@ -21,7 +21,7 @@ local Transition = class(function(transition, startTime, duration)
   -- these are set by the navigationStack
   transition.oldScene = nil
   transition.newScene = nil
-  transition.uiRoot = UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+  transition.uiRoot = UiElement({x = 0, y = 0, width = love.graphics.getWidth(), height = love.graphics.getWidth()})
 
 end)
 

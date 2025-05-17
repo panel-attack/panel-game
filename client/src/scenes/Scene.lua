@@ -22,8 +22,8 @@ local Scene = class(
     self.uiRoot = ui.UiElement({
       x = 0,
       y = 0,
-      width = consts.CANVAS_WIDTH,
-      height = consts.CANVAS_HEIGHT,
+      width = love.graphics.getWidth(),
+      height = love.graphics.getHeight(),
       padding = 16,
       layout = ui.Layouts.AdaptiveFlexLayout
     })
@@ -85,7 +85,7 @@ end
 function Scene:drawCommunityMessage()
   -- Draw the community message
   if not config.debug_mode then
-    GraphicsUtil.printf(join_community_msg or "", 0, (668 / 720) * GAME.globalCanvas:getHeight(), GAME.globalCanvas:getWidth(), "center")
+    GraphicsUtil.printf(join_community_msg or "", 0, (668 / 720) * love.graphics.getHeight(), love.graphics.getWidth(), "center")
   end
 end
 

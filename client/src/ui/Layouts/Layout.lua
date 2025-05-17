@@ -1,3 +1,4 @@
+
 ---@class Layout
 local Layout = {}
 
@@ -6,7 +7,6 @@ local Layout = {}
 ---@param height number?
 function Layout.resize(uiElement, width, height)
   uiElement.layout.updateWidths(uiElement, width)
-
   -- transform width to height for width-to-height supporting uiElements based on the width pass
   uiElement:setMinHeightForWidth()
 

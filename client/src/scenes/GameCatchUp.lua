@@ -102,11 +102,12 @@ function GameCatchUp:update(dt)
 end
 
 function GameCatchUp:draw()
+  local w, h = love.graphics.getDimensions()
   local match = self.match
   GraphicsUtil.setColor(1, 1, 1, 1)
-  GraphicsUtil.drawRectangle("line", consts.CANVAS_WIDTH / 4 - 5, consts.CANVAS_HEIGHT / 2 - 25, consts.CANVAS_WIDTH / 2 + 10, 50)
-  GraphicsUtil.drawRectangle("fill", consts.CANVAS_WIDTH / 4, consts.CANVAS_HEIGHT / 2 - 20, consts.CANVAS_WIDTH / 2 * self.progress, 40)
-  GraphicsUtil.printf("Catching up: " .. match.engine.clock .. " out of " .. #match.stacks[1].engine.confirmedInput .. " frames", 0, 500, consts.CANVAS_WIDTH, "center")
+  GraphicsUtil.drawRectangle("line", w / 4 - 5, h / 2 - 25, w / 2 + 10, 50)
+  GraphicsUtil.drawRectangle("fill", w / 4, h / 2 - 20, w / 2 * self.progress, 40)
+  GraphicsUtil.printf("Catching up: " .. match.engine.clock .. " out of " .. #match.stacks[1].engine.confirmedInput .. " frames", 0, 500, w, "center")
 end
 
 return GameCatchUp

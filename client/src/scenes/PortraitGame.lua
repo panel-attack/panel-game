@@ -138,7 +138,7 @@ function PortraitGame:drawMultibar(stack)
         local x = math.floor((stack.frameOriginX + stack.panelOriginXOffset + overtimePos[1] / 3) * stack.gfxScale)
         local y = stack.panelOriginY * stack.gfxScale
 
-        local limit = GAME.globalCanvas:getWidth() - x
+        local limit = love.graphics.getWidth() - x
         local alignment = "right"
         limit = x - GraphicsUtil.getGlobalFont():getWidth(formattedSeconds) / 2
         x = 0
@@ -189,8 +189,6 @@ function PortraitGame:draw()
 end
 
 function PortraitGame:flipToPortrait()
-  -- recreate the global canvas in portrait dimensions
-  GAME.globalCanvas = love.graphics.newCanvas(consts.CANVAS_HEIGHT, consts.CANVAS_WIDTH, {dpiscale=GAME:newCanvasSnappedScale()})
 
   local width, height, _ = love.window.getMode()
   if system.isMobileOS() or DEBUG_ENABLED then
@@ -206,9 +204,9 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 5
       -- force center it horizontally
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2) / stack.gfxScale
+      stack.frameOriginX = (love.graphics.getWidth() / 2 - stack:canvasWidth() / 2) / stack.gfxScale
       -- and anchor at the bottom
-      stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack:canvasHeight()) / stack.gfxScale
+      stack.frameOriginY = (love.graphics.getHeight() - stack:canvasHeight()) / stack.gfxScale
       stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
       stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
       stack.origin_x = stack.frameOriginX / stack.gfxScale
@@ -233,7 +231,7 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 1
       stack.canvas = true
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
+      stack.frameOriginX = (love.graphics.getWidth() - stack:canvasWidth()) - 12
       stack.frameOriginY = 10
       stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
       stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
@@ -243,8 +241,6 @@ function PortraitGame:flipToPortrait()
 end
 
 function PortraitGame:returnToLandscape()
-  -- recreate the global canvas in landscape dimensions
-  GAME.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=GAME:newCanvasSnappedScale()})
   -- flip the window dimensions to landscape
   local width, height, _ = love.window.getMode()
   if system.isMobileOS() or DEBUG_ENABLED then

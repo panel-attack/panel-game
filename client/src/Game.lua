@@ -40,7 +40,6 @@ end
 ---@class PanelAttack
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
----@field globalCanvas love.Canvas
 ---@field muteSound boolean
 ---@field rich_presence table
 ---@field input table
@@ -65,7 +64,7 @@ local Game = class(
     self.puzzleSets = {} -- all the puzzles loaded into the game
     self.netClient = NetClient()
     self.server_queue = ServerQueue()
-    self.main_menu_screen_pos = {consts.CANVAS_WIDTH / 2 - 108 + 50, consts.CANVAS_HEIGHT / 2 - 111}
+    self.main_menu_screen_pos = {love.graphics.getWidth() / 2 - 108 + 50, love.graphics.getHeight() / 2 - 111}
     self.config = config
     self.localization = Localization
     self.replay = {}
@@ -79,9 +78,6 @@ local Game = class(
     self.canvasXScale = 1
     self.canvasYScale = 1
     self.backgroundColor = { 0.0, 0.0, 0.0 }
-
-    -- depends on canvasXScale
-    self.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=newCanvasSnappedScale(self)})
 
     self.automaticScales = {1, 1.5, 2, 2.5, 3}
     -- specifies a time that is compared against self.timer to determine if GameScale should be shown
@@ -127,7 +123,6 @@ function Game:load()
 
   self.navigationStack = require("client.src.NavigationStack")
   self.navigationStack:push(StartUp({setupRoutine = self.setupRoutine}))
-  self.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=GAME:newCanvasSnappedScale()})
 end
 
 local function detectHardwareProblems()
@@ -393,25 +388,13 @@ function Game:update(dt)
 end
 
 function Game:draw()
-  -- Setting the canvas means everything we draw is drawn to the canvas instead of the screen
-  love.graphics.setCanvas({self.globalCanvas, stencil = true})
   love.graphics.setBackgroundColor(unpack(self.backgroundColor))
   love.graphics.clear()
 
-  -- With this, self.globalCanvas is clear and set as our active canvas everything is being drawn to
   self.navigationStack:draw()
 
   self:drawFPS()
   self:drawScaleInfo()
-
-  -- resetting the canvas means everything we draw is drawn to the screen
-  love.graphics.setCanvas()
-
-  love.graphics.setBlendMode("alpha", "premultiplied")
-  -- now we draw the finished canvas at scale
-  -- this way we don't have to worry about scaling singular elements, just draw everything at 1280x720 to the canvas
-  love.graphics.draw(self.globalCanvas, self.canvasX, self.canvasY, 0, self.canvasXScale, self.canvasYScale, self.globalCanvas:getWidth() / 2, self.globalCanvas:getHeight() / 2)
-  love.graphics.setBlendMode("alpha", "alphamultiply")
 end
 
 function Game:drawFPS()
@@ -423,10 +406,10 @@ end
 
 function Game:drawScaleInfo()
   if self.showGameScaleUntil > self.timer then
-    local scaleString = "Scale: " .. self.canvasXScale .. " (" .. consts.CANVAS_WIDTH * self.canvasXScale .. " x " .. consts.CANVAS_HEIGHT * self.canvasYScale .. ")"
+    local scaleString = "Scale: " .. self.canvasXScale .. " (" .. love.graphics.getWidth() * self.canvasXScale .. " x " .. love.graphics.getHeight() * self.canvasYScale .. ")"
     local newPixelWidth = love.graphics.getWidth()
 
-    if consts.CANVAS_WIDTH * self.canvasXScale > newPixelWidth then
+    if love.graphics.getWidth() * self.canvasXScale > newPixelWidth then
       scaleString = scaleString .. " Clipped "
     end
     love.graphics.printf(scaleString, GraphicsUtil.getGlobalFontWithSize("huge"), 5, 5, 2000, "left")
@@ -572,7 +555,7 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
 
   if config.gameScaleType == "fit" then
     local w, h
-    local canvasWidth, canvasHeight = self.globalCanvas:getDimensions()
+    local canvasWidth, canvasHeight = love.graphics.getDimensions()
     if newWindowHeight / canvasHeight > newWindowWidth / canvasWidth then
       w = newWindowWidth
       h = canvasHeight * newWindowWidth / canvasWidth
@@ -591,7 +574,7 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
     local newScale = 0.5
     for i= #availableScales, 1, -1 do
       local scale = availableScales[i]
-      if (newWindowWidth >= self.globalCanvas:getWidth() * scale and newWindowHeight >= self.globalCanvas:getHeight() * scale) then
+      if (newWindowWidth >= love.graphics.getWidth() * scale and newWindowHeight >= love.graphics.getHeight() * scale) then
         newScale = scale
         break
       end
@@ -612,7 +595,6 @@ function Game:refreshCanvasAndImagesForNewScale()
   self:drawLoadingString(loc("ld_characters"))
   coroutine.yield()
 
-  self.globalCanvas = love.graphics.newCanvas(GAME.globalCanvas:getWidth(), GAME.globalCanvas:getHeight(), {dpiscale=self:newCanvasSnappedScale()})
   -- We need to reload all assets and fonts to get the new scaling info and filters
 
   -- Reload theme to get the new resolution assets
@@ -631,7 +613,7 @@ end
 
 -- Transform from window coordinates to game coordinates
 function Game:transform_coordinates(x, y)
-  local newX, newY = (x - self.canvasX) / self.canvasXScale + self.globalCanvas:getWidth() / 2, (y - self.canvasY) / self.canvasYScale + self.globalCanvas:getHeight() / 2
+  local newX, newY = (x - self.canvasX) / self.canvasXScale + love.graphics.getWidth() / 2, (y - self.canvasY) / self.canvasYScale + love.graphics.getHeight() / 2
   return newX, newY
 end
 
@@ -640,10 +622,10 @@ function Game:drawLoadingString(loadingString)
   local textMaxWidth = 300
   local textHeight = 40
   local x = 0
-  local y = consts.CANVAS_HEIGHT/2 - textHeight/2
+  local y = love.graphics.getHeight()/2 - textHeight/2
   local backgroundPadding = 10
-  GraphicsUtil.drawRectangle("fill", consts.CANVAS_WIDTH / 2 - (textMaxWidth / 2) , y - backgroundPadding, textMaxWidth, textHeight, 0, 0, 0, 0.5)
-  GraphicsUtil.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", nil, nil, "big")
+  GraphicsUtil.drawRectangle("fill", love.graphics.getWidth() / 2 - (textMaxWidth / 2) , y - backgroundPadding, textMaxWidth, textHeight, 0, 0, 0, 0.5)
+  GraphicsUtil.printf(loadingString, x, y, love.graphics.getWidth(), "center", nil, nil, "big")
 end
 
 function Game:setLanguage(lang_code)

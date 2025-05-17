@@ -18,7 +18,7 @@ function BlackFadeTransition:draw()
     self.newScene:draw()
   end
   GraphicsUtil.setColor(0, 0, 0, alpha)
-  GraphicsUtil.drawRectangle("fill", 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  GraphicsUtil.drawRectangle("fill", 0, 0, love.graphics.getDimensions())
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 

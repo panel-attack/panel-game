@@ -341,7 +341,7 @@ function GraphicsUtil.printf(str, x, y, limit, halign, color, scale, fontSize)
   y = y or 0
   scale = scale or 1
   color = color or nil
-  limit = limit or consts.CANVAS_WIDTH
+  limit = limit or love.graphics.getWidth()
   fontSize = fontSize or "normal"
   halign = halign or "left"
   GraphicsUtil.setColor(0, 0, 0, 1)

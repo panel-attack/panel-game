@@ -313,17 +313,18 @@ function Theme:loadFont()
 end
 
 function Theme:loadMenuGraphics()
-  self.images.bg_main = UpdatingImage(self:load_theme_img("background/main"), self.bg_main_is_tiled, self.bg_main_speed_x, self.bg_main_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  local width, height = love.graphics.getDimensions()
+  self.images.bg_main = UpdatingImage(self:load_theme_img("background/main"), self.bg_main_is_tiled, self.bg_main_speed_x, self.bg_main_speed_y, width, height)
 
   self:loadFont()
 
   local titleImage = self:load_theme_img("background/title", false)
   if titleImage then
-    self.images.bg_title = UpdatingImage(titleImage, self.bg_title_is_tiled, self.bg_title_speed_x, self.bg_title_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+    self.images.bg_title = UpdatingImage(titleImage, self.bg_title_is_tiled, self.bg_title_speed_x, self.bg_title_speed_y, width, height)
   end
 
-  self.images.bg_select_screen = UpdatingImage(self:load_theme_img("background/select_screen"), self.bg_select_screen_is_tiled, self.bg_select_screen_speed_x, self.bg_select_screen_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
-  self.images.bg_readme = UpdatingImage(self:load_theme_img("background/readme"), self.bg_readme_is_tiled, self.bg_readme_speed_x, self.bg_readme_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  self.images.bg_select_screen = UpdatingImage(self:load_theme_img("background/select_screen"), self.bg_select_screen_is_tiled, self.bg_select_screen_speed_x, self.bg_select_screen_speed_y, width, height)
+  self.images.bg_readme = UpdatingImage(self:load_theme_img("background/readme"), self.bg_readme_is_tiled, self.bg_readme_speed_x, self.bg_readme_speed_y, width, height)
   self.images.IMG_bug = self:load_theme_img("bug")
 end
 
@@ -393,6 +394,7 @@ function Theme:loadSelectionGraphics()
 end
 
 function Theme:loadIngameGraphics()
+  local width, height = love.graphics.getDimensions()
   local bgOverlay = self:load_theme_img("background/bg_overlay")
   local fgOverlay = self:load_theme_img("background/fg_overlay")
   if bgOverlay then
@@ -400,8 +402,8 @@ function Theme:loadIngameGraphics()
       image = bgOverlay,
       hAlign = "center",
       vAlign = "center",
-      width = consts.CANVAS_WIDTH,
-      height = consts.CANVAS_HEIGHT
+      width = width,
+      height = height
     })
   end
 
@@ -410,8 +412,8 @@ function Theme:loadIngameGraphics()
       image = fgOverlay,
       hAlign = "center",
       vAlign = "center",
-      width = consts.CANVAS_WIDTH,
-      height = consts.CANVAS_HEIGHT
+      width = width,
+      height = height
     })
   end
 
@@ -774,12 +776,11 @@ function Theme:final_init()
   if self.images.bg_title then
     menuYPadding = 100
     self.main_menu_screen_pos = {532, menuYPadding}
-    self.main_menu_y_max = consts.CANVAS_HEIGHT - menuYPadding
   else
     self.main_menu_screen_pos = {532, 249}
-    self.main_menu_y_max = consts.CANVAS_HEIGHT - menuYPadding
     self.centerMenusVertically = false
   end
+  self.main_menu_y_max = love.graphics.getHeight() - menuYPadding
   self.main_menu_max_height = (self.main_menu_y_max - self.main_menu_screen_pos[2])
   self.main_menu_y_center = self.main_menu_screen_pos[2] + (self.main_menu_max_height / 2)
 

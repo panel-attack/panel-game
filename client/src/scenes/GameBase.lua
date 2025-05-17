@@ -175,7 +175,7 @@ function GameBase:load()
   self.match:connectSignal("countdownEnded", self, self.onGameStart)
 
   self.stage = stages[self.match.stageId]
-  self.backgroundImage = UpdatingImage(self.stage.images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  self.backgroundImage = UpdatingImage(self.stage.images.background, false, 0, 0, love.graphics.getDimensions())
   self.stageTrack = self:getStageTrack()
 
   local resume = ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()

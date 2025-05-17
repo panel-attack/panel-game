@@ -9,7 +9,7 @@ local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapSce
 local Game1pChallenge = class(function(self, sceneParams)
   self.totalTimeQuads = {}
   self.stageIndex = GAME.battleRoom.stageIndex
-  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 280}, GAME.battleRoom, GAME.battleRoom.stageIndex)
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = love.graphics.getWidth() / 2, y = 280}, GAME.battleRoom, GAME.battleRoom.stageIndex)
   self.uiRoot:addChild(self.timeSplitElement)
 
 end, GameBase)
@@ -42,10 +42,10 @@ end
 
 function Game1pChallenge:drawHUD()
   if GAME.battleRoom then
-    local drawX = consts.CANVAS_WIDTH / 2
+    local drawX = love.graphics.getWidth() / 2
     local drawY = 110
     local width = 200
-    local height = consts.CANVAS_HEIGHT - drawY
+    local height = love.graphics.getHeight() - drawY
 
     -- Background
     GraphicsUtil.drawRectangle("fill", drawX - width / 2, drawY, width, height, 0, 0, 0, 0.5)

@@ -7,7 +7,7 @@ local RunTimeGraph = class(function(self)
   local valueCount = 60
   local width = valueCount * 8
   local height = 50
-  local x = consts.CANVAS_WIDTH - width
+  local x = love.graphics.getWidth() - width
   local y = 4
   local padding = 80
   self.graphs = {}
@@ -76,7 +76,7 @@ function RunTimeGraph:draw()
 
   -- in order to not sully the draw data of the actual game, the RunTimeGraph is drawn separately
   -- these transformations assure it uses the same game coordinates as love.draw
-  love.graphics.translate(GAME.canvasX - GAME.globalCanvas:getWidth() / 2 * GAME.canvasXScale, GAME.canvasY - GAME.globalCanvas:getHeight() / 2 * GAME.canvasYScale)
+  love.graphics.translate(GAME.canvasX - love.graphics.getWidth() / 2 * GAME.canvasXScale, GAME.canvasY - love.graphics.getHeight() / 2 * GAME.canvasYScale)
   love.graphics.scale(GAME.canvasXScale, GAME.canvasYScale)
 
   BarGraph.drawGraphs(self.graphs)

@@ -1101,9 +1101,10 @@ function PlayerStack:drawAnalyticData()
   local paddingToAnalytics = 16
   local width = 160
   local height = 600
+  local screenWidth = love.graphics.getWidth()
   local x = paddingToAnalytics + backgroundPadding
   if self.renderIndex == 2 then
-    x = consts.CANVAS_WIDTH - paddingToAnalytics - width + backgroundPadding
+    x = screenWidth - paddingToAnalytics - width + backgroundPadding
   end
   local y = self.frameOriginY * self.gfxScale + backgroundPadding
 
@@ -1123,7 +1124,7 @@ function PlayerStack:drawAnalyticData()
 
   -- Panels cleared
   panels[self.panels_dir]:drawPanelFrame(1, "face", x, y, iconSize)
-  GraphicsUtil.printf(analytic.data.destroyed_panels, x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+  GraphicsUtil.printf(analytic.data.destroyed_panels, x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
 
   y = y + nextIconIncrement
 
@@ -1132,21 +1133,21 @@ function PlayerStack:drawAnalyticData()
   -- Garbage sent
   icon_width, icon_height = self.character.images.face:getDimensions()
   GraphicsUtil.draw(self.character.images.face, x, y, 0, iconSize / icon_width, iconSize / icon_height)
-  GraphicsUtil.printf(analytic.data.sent_garbage_lines, x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+  GraphicsUtil.printf(analytic.data.sent_garbage_lines, x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
 
   y = y + nextIconIncrement
 
   -- GPM
   icon_width, icon_height = self.theme.images.IMG_gpm:getDimensions()
   GraphicsUtil.draw(self.theme.images.IMG_gpm, x, y, 0, iconSize / icon_width, iconSize / icon_height)
-  GraphicsUtil.printf(analytic.lastGPM .. "/m", x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+  GraphicsUtil.printf(analytic.lastGPM .. "/m", x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
 
   y = y + nextIconIncrement
 
   -- Moves
   icon_width, icon_height = self.theme.images.IMG_cursorCount:getDimensions()
   GraphicsUtil.draw(self.theme.images.IMG_cursorCount, x, y, 0, iconSize / icon_width, iconSize / icon_height)
-  GraphicsUtil.printf(analytic.data.move_count, x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+  GraphicsUtil.printf(analytic.data.move_count, x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
 
   y = y + nextIconIncrement
 
@@ -1155,7 +1156,7 @@ function PlayerStack:drawAnalyticData()
     icon_width, icon_height = self.theme.images.IMG_swap:getDimensions()
     GraphicsUtil.draw(self.theme.images.IMG_swap, x, y, 0, iconSize / icon_width, iconSize / icon_height)
   end
-  GraphicsUtil.printf(analytic.data.swap_count, x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+  GraphicsUtil.printf(analytic.data.swap_count, x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
 
   y = y + nextIconIncrement
 
@@ -1164,7 +1165,7 @@ function PlayerStack:drawAnalyticData()
     icon_width, icon_height = self.theme.images.IMG_apm:getDimensions()
     GraphicsUtil.draw(self.theme.images.IMG_apm, x, y, 0, iconSize / icon_width, iconSize / icon_height)
   end
-  GraphicsUtil.printf(analytic.lastAPM .. "/m", x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+  GraphicsUtil.printf(analytic.lastAPM .. "/m", x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
 
   y = y + nextIconIncrement
 
@@ -1182,7 +1183,7 @@ function PlayerStack:drawAnalyticData()
       if cardImage then
         icon_width, icon_height = cardImage:getDimensions()
         GraphicsUtil.draw(cardImage, x, y, 0, iconSize / icon_width, iconSize / icon_height)
-        GraphicsUtil.printf(analytic.data.reached_chains[i], x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+        GraphicsUtil.printf(analytic.data.reached_chains[i], x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
         y = y + nextIconIncrement
       end
     end
@@ -1191,7 +1192,7 @@ function PlayerStack:drawAnalyticData()
   if chainCountAboveLimit > 0 then
     local cardImage = self.theme:chainImage(0)
     GraphicsUtil.draw(cardImage, x, y, 0, iconSize / icon_width, iconSize / icon_height)
-    GraphicsUtil.printf(chainCountAboveLimit, x + iconToTextSpacing, y - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+    GraphicsUtil.printf(chainCountAboveLimit, x + iconToTextSpacing, y - 2, screenWidth, "left", nil, 1)
   end
 
   -- Draw the combo images
@@ -1203,7 +1204,7 @@ function PlayerStack:drawAnalyticData()
       if cardImage then
         icon_width, icon_height = cardImage:getDimensions()
         GraphicsUtil.draw(cardImage, xCombo, yCombo, 0, iconSize / icon_width, iconSize / icon_height)
-        GraphicsUtil.printf(analytic.data.used_combos[i], xCombo + iconToTextSpacing, yCombo - 2, consts.CANVAS_WIDTH, "left", nil, 1)
+        GraphicsUtil.printf(analytic.data.used_combos[i], xCombo + iconToTextSpacing, yCombo - 2, screenWidth, "left", nil, 1)
         yCombo = yCombo + nextIconIncrement
       end
     end
