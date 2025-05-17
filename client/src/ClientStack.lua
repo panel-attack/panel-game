@@ -478,8 +478,7 @@ function ClientStack:runGameOver()
   error("did not implement runGameOver")
 end
 
----@param matchEnded boolean?
-function ClientStack:render(matchEnded)
+function ClientStack:render()
   error("did not implement render")
 end
 

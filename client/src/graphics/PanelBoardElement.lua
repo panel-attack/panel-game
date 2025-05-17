@@ -36,9 +36,9 @@ function PanelBoardElement:setPosition(x, y)
   self.y = y
 end
 
-function PanelBoardElement:updateAfterEngineRun(currentShakeOffset, shouldRenderCursor)
+function PanelBoardElement:updateAfterEngineRun(currentShakeOffset, cursorShouldHaveTransparency)
   self.currentShakeOffset = currentShakeOffset
-  self.shouldRenderCursor = shouldRenderCursor
+  self.cursorShouldHaveTransparency = cursorShouldHaveTransparency
   self:updateDangerBounce()
 end
 
@@ -151,11 +151,7 @@ function PanelBoardElement:drawSelf()
   love.graphics.translate(self.x, self.y)
 
   self:drawPanels()
-  -- Draw the cursor
-  if self.shouldRenderCursor then
-    self:renderCursor()
-  end
-
+  self:renderCursor()
   self:drawDebugPanels()
 
   love.graphics.pop()
@@ -186,12 +182,18 @@ function PanelBoardElement:renderCursor()
   local scale_y = 24 / cursor.image:getHeight()
   local xPosition = (engine.cur_col - 1) * panelWidth
 
+  if self.cursorShouldHaveTransparency then
+    GraphicsUtil.setColor(1, 1, 1, 0.3)
+  end
+
   if engine.inputMethod == "touch" then
     drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[1], xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
     drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[2], xPosition + 12, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   else
     drawGfxScaled(self, cursor.image, xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   end
+
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 local function shouldFlashForFrame(frame)
