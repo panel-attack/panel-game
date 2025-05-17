@@ -9,6 +9,8 @@ local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelPresets      = require("common.data.LevelPresets")
 local ClientMatch = require("client.src.ClientMatch")
+local consts = require("common.engine.consts")
+local Stack = require("common.engine.Stack")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
@@ -202,10 +204,7 @@ end
 function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, index)
   local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
   return function ()
-    self:setupPuzzleSet(flatPuzzleSet, index)
-    local match = ClientMatch.createFromBattleRoom(self.battleRoom)
-    match:start()
-    local engine = match.stacks[1]
+    local engine = self:getDisplayStack(flatPuzzleSet.puzzles[index])
     self:setPreviewPanelBoard(PanelBoardElement(engine.engine, GAME.theme, panels[GAME.localPlayer.settings.panelId], characters[GAME.localPlayer.settings.characterId].images, panels[GAME.localPlayer.settings.panelId].images.metals, 3))
   end
 end
@@ -272,6 +271,29 @@ end
 function PuzzleMenu:draw()
   themes[config.theme].images.bg_main:draw()
   self.uiRoot:draw()
+end
+
+---@param puzzle Puzzle
+function PuzzleMenu:getDisplayStack(puzzle)
+  local gameMode = puzzle:toGameMode()
+  local args = {
+    which = 1,
+    levelData = LevelPresets.getModern(config.puzzle_level or 5),
+    is_local = false,
+    stackOverConditions = gameMode.matchRules.stackOverConditions,
+    stackWinConditions = gameMode.matchRules.stackWinConditions,
+    panelSource = puzzle:toPanelSource(),
+    inputMethod = "controller",
+    stackSetupModifications = gameMode.matchRules.stackSetupModifications or {},
+    engineVersion = consts.ENGINE_VERSION,
+  }
+  local engineStack = Stack(args)
+
+  local playerStack = GAME.localPlayer:createClientStack(engineStack)
+  playerStack:moveForRenderIndex(2)
+  engineStack:starting_state()
+
+  return playerStack
 end
 
 return PuzzleMenu

@@ -288,7 +288,7 @@ function PlayerStack:onRun()
   -- these were previously at the start of Stack:run
   -- so by putting them at the end, order is restored
   self.popSizeThisFrame = "small"
-  self.panelBoardElement:updateAfterEngineRun(self:currentShakeOffset(), self:game_ended() == false)
+  self.panelBoardElement:updateAfterEngineRun(self:currentShakeOffset(), self:game_ended())
   self:updateDangerMusic()
 
   -- we don't want to refresh analytics display every frame to prevent rapid flickering, only once per second
@@ -882,7 +882,7 @@ function PlayerStack:drawDebug()
 end
 
 -- Renders the player's stack on screen
-function PlayerStack.render(self)
+function PlayerStack:render()
   prof.push("Stack:render")
   if self.canvas == nil then
     return

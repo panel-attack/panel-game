@@ -28,6 +28,7 @@ require("client.src.BattleRoom")
 local prof = require("common.lib.zoneProfiler")
 local tableUtils = require("common.lib.tableUtils")
 local system = require("client.src.system")
+local ModController = require("client.src.mods.ModController")
 
 local RichPresence = require("client.lib.rich_presence.RichPresence")
 
@@ -255,6 +256,7 @@ function Game:setupRoutine()
   self:writeReleaseStreamDefinition()
 
   self:initializeLocalPlayer()
+  ModController:loadModFor(characters[GAME.localPlayer.settings.characterId], GAME.localPlayer, true)
 end
 
 -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate

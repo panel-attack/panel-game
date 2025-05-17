@@ -31,7 +31,6 @@ end
 ---@field multi_shakeQuad love.Quad
 ---@field danger_music boolean
 ---@field garbageSource ClientStack The stack the garbage assets are used from
----@field match ClientMatch
 ---@field assets IngameAssetPack
 ---@field renderIndex integer determines the position of the stack and how some elements are rendered
 ---@field player_number integer used for display ordering
@@ -45,7 +44,6 @@ function(self, args)
 
   assert(args.engine)
   assert(args.characterId)
-  assert(args.match)
 
   self.engine = args.engine
   -- player number according to the multiplayer server, for game outcome reporting 
@@ -53,7 +51,6 @@ function(self, args)
   self.is_local = args.player and args.player.isLocal or args.engine.is_local
   self.character = characters[args.characterId]
   self.theme = args.theme or themes[config.theme]
-  self.match = args.match
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -442,12 +439,7 @@ end
 
 ---@return boolean
 function ClientStack:game_ended()
-  if self.engine:game_ended() then
-    return true
-  else
-    -- for display we may also want to know if the match has ended
-    return self.match.engine.ended
-  end
+  return self.engine:game_ended()
 end
 
 ---@param assetPack IngameAssetPack
@@ -486,7 +478,8 @@ function ClientStack:runGameOver()
   error("did not implement runGameOver")
 end
 
-function ClientStack:render()
+---@param matchEnded boolean?
+function ClientStack:render(matchEnded)
   error("did not implement render")
 end
 
