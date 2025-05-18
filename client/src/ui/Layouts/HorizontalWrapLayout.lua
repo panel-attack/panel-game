@@ -6,7 +6,7 @@ local util = require("common.lib.util")
 local HorizontalWrapLayout = setmetatable({}, {__index = HorizontalFlexLayout})
 
 function HorizontalWrapLayout.getMinWidth(uiElement)
-  return util.bound(uiElement.minWidth, HorizontalFlexLayout.getMinWidth(uiElement), uiElement.maxWidth)
+  return util.bound(uiElement.minWidth, uiElement:getBaseWidth(), uiElement.maxWidth)
 end
 
 ---@param uiElement UiElement
@@ -26,8 +26,7 @@ function HorizontalWrapLayout.getMinHeight(uiElement)
         rowCount = rowCount + 1
         width = uiElement.padding + child.newWidth
         childrenInCurrentRow = 1
-        h = h + maxHeight
-        maxHeight = 0
+        maxHeight = child.newHeight
       else
         childrenInCurrentRow = childrenInCurrentRow + 1
         width = width + child.newWidth
@@ -37,6 +36,10 @@ function HorizontalWrapLayout.getMinHeight(uiElement)
   end
 
   uiElement.tempRows[rowCount] = maxHeight
+  h = h + (#uiElement.tempRows - 1) * uiElement.childGap
+  for i = 1, #uiElement.tempRows do
+    h = h + uiElement.tempRows[i]
+  end
 
   return h
 end

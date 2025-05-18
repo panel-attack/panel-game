@@ -55,6 +55,9 @@ local ui = {
   ---@type fun(options:UiElementOptions): UiElement
   ---@class UiElement
   UiElement = require(PATH .. ".UIElement"),
+  ---@see UniSizedContainer
+  ---@type fun(options:UiElementOptions): UniSizedContainer)
+  UniSizedContainer = require(PATH .. ".UniSizedContainer"),
   ValueLabel = require(PATH .. ".ValueLabel"),
   ---@see VerticalMenu
   ---@type fun(options: ScrollContainerOptions): VerticalMenu

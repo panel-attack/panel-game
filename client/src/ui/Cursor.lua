@@ -134,8 +134,8 @@ function Cursor:setTarget(uiElement)
 end
 
 function Cursor:drawSelf()
-  GraphicsUtil.setColor(0, 0, 0, 0.2)
-  love.graphics.rectangle("fill", self.target.x, self.target.y, self.target.width, self.target.height)
+  -- GraphicsUtil.setColor(0, 0, 0, 0.2)
+  -- love.graphics.rectangle("fill", self.target.x, self.target.y, self.target.width, self.target.height)
   GraphicsUtil.setColor(1, 1, 1, 0.2)
   local x, y = self.hovered:getScreenPos()
   love.graphics.rectangle("fill", x, y, self.hovered.width, self.hovered.height)

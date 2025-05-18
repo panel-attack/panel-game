@@ -351,6 +351,12 @@ function Game:updateMouseVisibility(dt)
 end
 
 function Game:handleResize(newWidth, newHeight)
+  local activeScene = GAME.navigationStack:getActiveScene()
+  if activeScene then
+    activeScene.uiRoot.minWidth = newWidth
+    activeScene.uiRoot.minHeight = newHeight
+    activeScene.uiRoot.layout.resize(activeScene.uiRoot, newWidth, newHeight)
+  end
   self:updateCanvasPositionAndScale(newWidth, newHeight)
   if self.battleRoom and self.battleRoom.match then
     self.needsAssetReload = true
