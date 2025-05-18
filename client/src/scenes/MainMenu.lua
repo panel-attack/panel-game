@@ -18,6 +18,7 @@ local SetNameMenu = require("client.src.scenes.SetNameMenu")
 local OptionsMenu = require("client.src.scenes.OptionsMenu")
 local DesignHelper = require("client.src.scenes.DesignHelper")
 local system = require("client.src.system")
+local inputs = require("client.src.inputManager")
 
 local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local EndlessGame = require("client.src.scenes.EndlessGame")
@@ -34,6 +35,7 @@ local MainMenu = class(function(self, sceneParams)
     cursorImage = GAME.theme:getGridCursor(1)
   })
   self.uiRoot:addChild(self.menu)
+  self.uiRoot:addChild(self.cursor)
 end, Scene)
 
 MainMenu.name = "MainMenu"
@@ -186,7 +188,7 @@ end
 
 function MainMenu:update(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.cursor:receiveInputs()
+  self.cursor:receiveInputs(inputs)
 
   self:checkForUpdates()
 end

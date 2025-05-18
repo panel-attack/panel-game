@@ -1,7 +1,7 @@
 local class = require("common.lib.class")
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
-local input = require("client.src.inputManager")
+local inputs = require("client.src.inputManager")
 local prof = require("common.lib.zoneProfiler")
 
 local DesignHelper = class(function(self, sceneParams)
@@ -26,6 +26,8 @@ function DesignHelper:load()
   roomMode:addChild(ui.Label({text = "Battle", hAlign = "center", vAlign = "center"}))
   roomMode:addChild(ui.Label({text = "Arcade", hAlign = "center", vAlign = "center"}))
 
+  roomMode.receiveInputs = function() end
+
   self.uiRoot:addChild(roomMode)
 
   local gameMode = ui.UiElement({
@@ -44,6 +46,8 @@ function DesignHelper:load()
   gameMode:addChild(ui.Label({text = "Puzzle"}))
   gameMode:addChild(ui.Label({text = "Training"}))
   gameMode:addChild(ui.Label({text = "Line Clear"}))
+
+  gameMode.receiveInputs = function() end
 
   self.uiRoot:addChild(gameMode)
 
@@ -197,7 +201,15 @@ function DesignHelper:load()
     backgroundColor = {0.7, 0, 0.5, 1},
   })
 
+  subSelectionSelector.receiveInputs = function() end
+  subSelection.receiveInputs = function() end
+
   self.uiRoot:addChild(subSelection)
+
+  self.cursor = ui.Cursor({
+    target = self.uiRoot,
+    hoveredIndex = 3,
+  })
 end
 
 function DesignHelper:loadRankedSelection(width)
@@ -216,13 +228,16 @@ function DesignHelper:loadStages()
   self.stageCarousel:loadCurrentStages()
 end
 
-function DesignHelper:update()
-  if input.isDown["MenuEsc"] then
+function DesignHelper:update(dt)
+  self.cursor:receiveInputs(inputs, dt)
+
+  if inputs.isDown["MenuEsc"] then
     GAME.navigationStack:pop()
   end
 end
 
 function DesignHelper:draw()
+  self.cursor:draw()
   self.uiRoot:draw()
 end
 

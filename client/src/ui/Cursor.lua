@@ -3,12 +3,12 @@ local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local FocusDirector = require(PATH .. ".FocusDirector")
 local consts = require("common.engine.consts")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class Cursor : FocusDirector, UiElement
 ---@field hovered UiElement
 ---@field target UiElement
 ---@field hoveredIndex integer
----@field cursorImage love.Texture
 ---@field escapeCallback fun(self: Cursor)
 local Cursor = class(
 function(self, options)
@@ -18,11 +18,11 @@ function(self, options)
   self:setTarget(options.target)
   if options.hoveredIndex then
     self.hoveredIndex = options.hoveredIndex
+    self.hovered = self.target.children[self.hoveredIndex]
   else
     self.hoveredIndex = 0
     self:moveToNext()
   end
-  self.cursorImage = options.cursorImage
 end,
 UiElement)
 
@@ -134,13 +134,12 @@ function Cursor:setTarget(uiElement)
 end
 
 function Cursor:drawSelf()
-  if not self.focused then
-    local x, y = self.hovered:getScreenPos()
-    local imageWidth, imageHeight = self.cursorImage:getDimensions()
-    local xScale = self.hovered.width / imageWidth
-    local yScale = self.hovered.height / imageHeight
-    love.graphics.draw(self.cursorImage, x, y, 0, xScale, yScale)
-  end
+  GraphicsUtil.setColor(0, 0, 0, 0.2)
+  love.graphics.rectangle("fill", self.target.x, self.target.y, self.target.width, self.target.height)
+  GraphicsUtil.setColor(1, 1, 1, 0.2)
+  local x, y = self.hovered:getScreenPos()
+  love.graphics.rectangle("fill", x, y, self.hovered.width, self.hovered.height)
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 function Cursor:escapeCallback()
