@@ -7,7 +7,7 @@ local PuzzleSet = require("client.src.PuzzleSet")
 local Scores = require("client.src.scores")
 local tableUtils = require("common.lib.tableUtils")
 
--- A puzzle collection is the set of all puzzles that can be queried and filtered for a subset.
+-- A puzzle collection is a set of all puzzles that can be queried and filtered for a subset.
 ---@class PuzzleLibrary
 ---@field puzzleSets table<integer, table> all the puzzle sets
 ---@field puzzleResults Scores
@@ -18,12 +18,8 @@ local PuzzleLibrary =
   end
 )
 
--- Menu for puzzle set -> go into subset
--- Play a puzzle set -> extract all puzzles in order
--- Train a puzzle set -> same as play but in train order / filter
-
-
--- Returns all puzzles from the given path as a puzzle set
+-- Returns all puzzles from the given path as a puzzle set.
+-- Puzzle sets are embedded recursively
 function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
   local puzzleSet = PuzzleSet(subDirectory or "Puzzles", {}, {})
 
@@ -43,12 +39,14 @@ function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
   return puzzleSet
 end
 
+-- Helper function to load from a puzzle file
 function PuzzleLibrary:puzzleSetsFromFile(path)
   local puzzleSets = PuzzleSet.loadFromFile(path)
 
   return puzzleSets
 end
 
+-- Creates a new puzzle set from a given puzzle set by recursively putting all the puzzles at the root level.
 function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
   local result = PuzzleSet("Puzzles", {}, {})
 
@@ -78,49 +76,21 @@ function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
   return result
 end
 
-
-function PuzzleLibrary:getPuzzlesForPuzzleSet(directory, filter, sort)
-
-  local puzzleSet = self:puzzleSetFromPath(directory)
-  if filter then
-    puzzleSet.puzzles = tableUtils.filter(puzzleSet.puzzles, filter)
-  end
-
-  if sort then
-    table.sort(puzzleSet.puzzles, sort)
-  end
-
-  return puzzleSet
-end
-
--- writes the stock puzzles
+-- writes the stock puzzles to the user's puzzle directory
 function PuzzleLibrary.writeDefaultPuzzles(defaultPuzzleDirectory, readmePath, savePuzzleDirectory)
   pcall(
     function()
-      -- Until we have a way to disable the default puzzles, we shouldn't keep writing them if the user has their own puzzles.
-      -- We will also need a way to handle new puzzles and updates to puzzles.
-      -- local puzzleFiles = FileUtils.getFilteredDirectoryItems(savePuzzleDirectory) or {}
-      -- if #puzzleFiles == 0 then
-        love.filesystem.createDirectory(savePuzzleDirectory)
-        FileUtils.recursiveCopy(defaultPuzzleDirectory, savePuzzleDirectory)
-        FileUtils.copyFile(readmePath, savePuzzleDirectory .. "/README.txt")
-      -- end
+      love.filesystem.createDirectory(savePuzzleDirectory)
+      FileUtils.recursiveCopy(defaultPuzzleDirectory, savePuzzleDirectory)
+      FileUtils.copyFile(readmePath, savePuzzleDirectory .. "/README.txt")
     end
   )
-end
-
-function PuzzleLibrary:puzzleSetGetWinRate(puzzleSet)
-  local result = 0
-  for index, puzzle in ipairs(puzzleSet.puzzles) do
-    local winRate = self.puzzleResults:puzzleSuccessRateForUUID(puzzle.UUID)
-    result = result + winRate
-  end
-  return result / #puzzleSet.puzzles
 end
 
 local ONE_HOUR = 60 * 60
 local ALMOST_A_DAY = ONE_HOUR * 23
 local DAY = ONE_HOUR * 24
+-- Returns how long until the next training given a win streak
 function PuzzleLibrary:trainIntervalForStreak(streakCount)
 
   if streakCount >= 10 then
@@ -140,12 +110,14 @@ function PuzzleLibrary:trainIntervalForStreak(streakCount)
   return 0
 end
 
+-- Returns a train inverval taking into account the win rate and streak count
 function PuzzleLibrary:trainIntervalForResults(streakCount, winRate)
   local interval = self:trainIntervalForStreak(streakCount)
   local result = interval * winRate
   return result
 end
 
+-- Returns the next timestamp this puzzle UUID should be trained
 function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
 
   local winStreak = self.puzzleResults:puzzleUUIDWinStreak(UUID)
@@ -182,6 +154,7 @@ function PuzzleLibrary.filterPuzzleSetForTraining(puzzleSet)
   end
 end
 
+-- Returns a set of puzzles to train given the reference puzzle set
 function PuzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
   local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(puzzleSet, self.filterPuzzleSetForTraining)
   local timedResults = {}

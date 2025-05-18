@@ -67,7 +67,6 @@ function PuzzleGame:startNextScene()
   end
 end
 
--- TODO: ideally this would be in the puzzle library
 function PuzzleGame:savePuzzleRecordResult(success)
   local inputs = InputCompression.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
   GAME.scores:savePuzzleRecord(self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex], inputs, to_UTC(os.time()), success)

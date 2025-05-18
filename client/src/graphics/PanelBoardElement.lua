@@ -6,7 +6,6 @@ local tableUtils = require("common.lib.tableUtils")
 local logger = require("common.lib.logger")
 local UIElement = require("client.src.ui.UIElement")
 
-
 -- A class for rendering the engines current panels at the given location
 ---@class PanelBoardElement
 ---@field danger boolean panels in the top row (danger); unlike panels_in_top_row I think this does not indicate a top out in all cases

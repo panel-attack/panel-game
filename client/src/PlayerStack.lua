@@ -903,9 +903,7 @@ function PlayerStack:render()
     shockGarbageImages = panels[self.garbageSource.panels_dir].images.metals
   end
 
-  local shakeOffset = self:currentShakeOffset() 
-
-  assert(self.panelBoardElement.currentShakeOffset == self:currentShakeOffset())
+  local shakeOffset = self:currentShakeOffset()
   self.panelBoardElement:draw() -- until we move everything to elements, we need to manually draw in the right order
   self:drawFrame()
   self:drawWall(shakeOffset, self.engine.height)

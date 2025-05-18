@@ -47,13 +47,7 @@ Scores =
   end
 )
 
-function Scores:addPuzzleRecord(puzzleRecord)
-  if self.puzzleRecords[puzzleRecord.UUID] == nil then
-    self.puzzleRecords[puzzleRecord.UUID] = {}
-  end
-  self.puzzleRecords[puzzleRecord.UUID][#self.puzzleRecords[puzzleRecord.UUID]+1] = puzzleRecord
-end
-
+-- Saves the given puzzle record to the scores file
 function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
   assert(puzzle.UUID ~= nil)
   local puzzleRecord = {}
@@ -61,15 +55,24 @@ function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
   puzzleRecord.inputs = inputs
   puzzleRecord.timestamp = timestamp
   puzzleRecord.success = success
+  
+  if self.puzzleRecords[puzzleRecord.UUID] == nil then
+    self.puzzleRecords[puzzleRecord.UUID] = {}
+  end
+  self.puzzleRecords[puzzleRecord.UUID][#self.puzzleRecords[puzzleRecord.UUID]+1] = puzzleRecord
 
-  self:addPuzzleRecord(puzzleRecord)
   self:saveToFile()
 end
 
+-- Returns all records for the given puzzle UUID
 function Scores:getRecordsForPuzzleUUID(puzzleUUID)
   return self.puzzleRecords[puzzleUUID] or {}
 end
 
+-- Returns up to the given number of records for a given puzzle UUID, only counting using the filter if one is given.
+---@param n integer the number of records to return
+---@param filter function? an optional filter function run on a record, return true if the record should be included
+---@param puzzleUUID string the puzzle UUID to search
 function Scores:getNRecordsMatchingFilterForPuzzleUUID(n, filter, puzzleUUID)
 
   local filteredTable = {}
@@ -87,6 +90,7 @@ function Scores:getNRecordsMatchingFilterForPuzzleUUID(n, filter, puzzleUUID)
   return filteredTable
 end
 
+-- Returns the latest record that succeed at this puzzle or nil if none
 function Scores:getLatestSuccessForPuzzleUUID(puzzleUUID)
   local records = self:getNRecordsMatchingFilterForPuzzleUUID(1, function(record) return record.success == true end, puzzleUUID)
   if #records == 0 then
@@ -95,6 +99,7 @@ function Scores:getLatestSuccessForPuzzleUUID(puzzleUUID)
   return records[#records]
 end
 
+-- Returns the number of times this puzzle has been won in a row
 function Scores:puzzleUUIDWinStreak(puzzleUUID)
   local records = self:getRecordsForPuzzleUUID(puzzleUUID)
 
@@ -110,10 +115,12 @@ function Scores:puzzleUUIDWinStreak(puzzleUUID)
   return winStreak
 end
 
+-- returns true if the puzzle has ever been beaten
 function Scores:puzzleEverBeaten(puzzleUUID)
   return self:getLatestSuccessForPuzzleUUID(puzzleUUID) ~= nil
 end
 
+-- Returns 0 if the puzzle has never been played, otherwise, the percentage of wins
 function Scores:puzzleSuccessRateForUUID(puzzleUUID)
   local records = self:getNRecordsMatchingFilterForPuzzleUUID(5, function(record) return true end, puzzleUUID)
 
