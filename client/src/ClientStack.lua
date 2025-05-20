@@ -65,7 +65,7 @@ function(self, args)
   self.baseHeight = 204
   self.panelOriginXOffset = 4
   self.panelOriginYOffset = 4
-  self:setGraphicsScale(3)
+  self.gfxScale = 3
   -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
   self.canvas = true

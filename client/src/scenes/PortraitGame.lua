@@ -204,11 +204,11 @@ function PortraitGame:flipToPortrait()
     if player.isLocal and player.human and player.settings.inputMethod == "touch" then
       -- modify the stack to use a higher gfxScale instead of the usual 3
       local stack = player.stack
-      stack:setGraphicsScale(5)
+      stack.gfxScale = 5
       -- force center it horizontally
-      local frameX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2) / stack.gfxScale
+      local frameX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2)
       -- and anchor at the bottom
-      local frameY = (GAME.globalCanvas:getHeight() - stack:canvasHeight()) / stack.gfxScale
+      local frameY = (GAME.globalCanvas:getHeight() - stack:canvasHeight())
       stack:moveToPosition(frameX, frameY)
 
       -- create a raise button that interacts with the touch controller
@@ -229,7 +229,7 @@ function PortraitGame:flipToPortrait()
       self.uiRoot:addChild(raiseButton)
     else
       local stack = player.stack
-      stack:setGraphicsScale(1)
+      stack.gfxScale = 1
       stack.canvas = true
       local frameX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
       local frameY = 10
@@ -250,7 +250,7 @@ function PortraitGame:returnToLandscape()
   end
   for _, player in ipairs(self.match.players) do
     if player.isLocal and player.human and player.settings.inputMethod == "touch" then
-      player.stack:setGraphicsScale(3)
+      player.stack.gfxScale = 3
     end
   end
 end

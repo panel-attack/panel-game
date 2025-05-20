@@ -436,15 +436,6 @@ function PlayerStack:shakeOffsetForShakeFrames(frames, previousShakeTime, shakeI
   return result
 end
 
-function PlayerStack:setOrigin(x, y)
-  self.panelOriginX = x
-  self.panelOriginY = y
-end
-
-function PlayerStack:setGraphicsScale(scale)
-  self.gfxScale = scale
-end
-
 function PlayerStack:enqueueCards(attackGfxOrigin, isChainLink, comboSize)
   if comboSize > 3 and isChainLink then
     -- we did a combo AND a chain; cards should not overlap so offset the chain card to one row above the combo card

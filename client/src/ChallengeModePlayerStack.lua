@@ -157,15 +157,6 @@ function ChallengeModePlayerStack:setGarbageTarget(garbageTarget)
   ClientStack.setGarbageTarget(self, garbageTarget)
 end
 
-function ChallengeModePlayerStack:setOrigin(x, y)
-  self.panelOriginX = x
-  self.panelOriginY = y
-end
-
-function ChallengeModePlayerStack:setGraphicsScale(scale)
-  self.gfxScale = scale
-end
-
 function ChallengeModePlayerStack:drawScore()
   -- no fake score for simulated stacks yet
   -- could be fun for fake 1p time attack vs later on, lol
