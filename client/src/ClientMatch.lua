@@ -631,7 +631,7 @@ function ClientMatch:render()
     for _, stack in ipairs(self.stacks) do
       -- don't render stacks that only have an attack engine
       if stack.player or stack.engine.healthEngine then
-        stack:render()
+        stack:render(self.engine.ended)
       end
 
       if stack.garbageTarget then

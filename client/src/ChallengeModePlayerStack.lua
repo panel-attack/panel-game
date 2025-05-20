@@ -127,7 +127,8 @@ function ChallengeModePlayerStack:canPlaySfx()
   return true
 end
 
-function ChallengeModePlayerStack:render()
+---@param matchEnded boolean?
+function ChallengeModePlayerStack:render(matchEnded)
   self:setDrawArea()
   self:drawCharacter()
   if self.engine.healthEngine then

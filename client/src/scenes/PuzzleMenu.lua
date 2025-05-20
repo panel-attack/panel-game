@@ -1,5 +1,4 @@
 local Scene = require("client.src.scenes.Scene")
-local PanelBoardElement = require("client.src.graphics.PanelBoardElement")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
@@ -9,7 +8,6 @@ local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelPresets      = require("common.data.LevelPresets")
 local ClientMatch = require("client.src.ClientMatch")
-local consts = require("common.engine.consts")
 local Stack = require("common.engine.Stack")
 
 -- Scene for the puzzle selection menu
@@ -21,6 +19,7 @@ local Stack = require("common.engine.Stack")
 ---@field battleRoom BattleRoom
 ---@field rootPuzzleSet table
 ---@field currentPuzzleSetIndices table<integer, integer> integer index into sub puzzle sets
+---@field puzzlePreviewStack PlayerStack
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -31,6 +30,7 @@ local PuzzleMenu = class(
     self.menu = nil
     self.puzzleLabel = nil
     self.puzzleLibrary = PuzzleLibrary(GAME.scores)
+    self.puzzlePreviewStack = nil
     self.battleRoom = sceneParams.battleRoom
     self.rootPuzzleSet = nil
     self.currentPuzzleSetIndices = {}
@@ -167,7 +167,7 @@ function PuzzleMenu:refreshMenu()
   if #trainingPuzzleSet.puzzles > 0 then
     menuOptions[#menuOptions + 1] = self:menuItemToTrainPuzzleSet(trainingPuzzleSet)
   end
-  
+
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
       GAME.theme:playCancelSfx()
       if #self.currentPuzzleSetIndices == 0 then
@@ -183,15 +183,12 @@ function PuzzleMenu:refreshMenu()
   self.uiRoot:addChild(self.menu)
 end
 
-function PuzzleMenu:setPreviewPanelBoard(panelBoardElement)
-  if self.panelBoardElement then
-    self.panelBoardElement:detach()
-  end
-  self.panelBoardElement = panelBoardElement
-  if self.panelBoardElement then
-    self.panelBoardElement.x = 800
-    self.panelBoardElement.y = 0
-    self.uiRoot:addChild(self.panelBoardElement)
+function PuzzleMenu:setPreviewPanelBoard(previewStack)
+  if previewStack then
+    previewStack:moveToPosition(800, 0)
+    self.puzzlePreviewStack = previewStack
+  else
+    self.puzzlePreviewStack = nil
   end
 end
 
@@ -202,10 +199,12 @@ function PuzzleMenu:clearPreviewFunction()
 end
 
 function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, index)
-  local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
-  return function ()
-    local engine = self:getDisplayStack(flatPuzzleSet.puzzles[index])
-    self:setPreviewPanelBoard(PanelBoardElement(engine.engine, GAME.theme, panels[GAME.localPlayer.settings.panelId], characters[GAME.localPlayer.settings.characterId].images, panels[GAME.localPlayer.settings.panelId].images.metals, 3))
+  if puzzleSet then
+    local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
+    return function ()
+      local stack = self:getDisplayStack(flatPuzzleSet.puzzles[index])
+      self:setPreviewPanelBoard(stack)
+    end
   end
 end
 
@@ -271,6 +270,9 @@ end
 function PuzzleMenu:draw()
   themes[config.theme].images.bg_main:draw()
   self.uiRoot:draw()
+  if self.puzzlePreviewStack then
+    self.puzzlePreviewStack:render()
+  end
 end
 
 ---@param puzzle Puzzle
@@ -290,7 +292,7 @@ function PuzzleMenu:getDisplayStack(puzzle)
   local engineStack = Stack(args)
 
   local playerStack = GAME.localPlayer:createClientStack(engineStack)
-  playerStack:moveForRenderIndex(2)
+  playerStack:moveForRenderIndex(1)
   engineStack:starting_state()
 
   return playerStack
