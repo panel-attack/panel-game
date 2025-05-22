@@ -596,11 +596,11 @@ function Theme:deinitializeGraphics()
       -- numbers have 1 more level of nesting so make a union of that and set it to fontMap
       local f = {}
       for i = 1, #fontMap do
-        for _, value in pairs(fontMap.charToQuad[i]) do
+        for _, value in pairs(fontMap[i].charToQuad) do
           f[#f + 1] = value
         end
       end
-      fontMap = f
+      fontMap = {charToQuad = f}
     end
 
     for _, value in pairs(fontMap.charToQuad) do
@@ -609,6 +609,8 @@ function Theme:deinitializeGraphics()
       end
     end
   end
+
+  self.fontMaps = nil
 end
 
 function Theme:graphics_init(full)
@@ -1095,6 +1097,22 @@ function Theme:getSelectionAssetPack(index)
   }
 
   return pack
+end
+
+function Theme:reload()
+  self:deinitializeGraphics()
+  self:json_init()
+  self:graphics_init(true)
+  self:final_init()
+
+  local activeScene = GAME.navigationStack:getActiveScene()
+  if activeScene and activeScene.match then
+    ---@type ClientMatch
+    local match = activeScene.match
+    for i, stack in ipairs(match.stacks) do
+      stack:assignAssets(self:getIngameAssetPack(stack.renderIndex))
+    end
+  end
 end
 
 return Theme

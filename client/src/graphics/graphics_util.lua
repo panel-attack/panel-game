@@ -8,6 +8,7 @@ local GraphicsUtil = {
   fontSize = 12,
   fontDpiScale = 1,
   fontCache = {},
+  ---@type love.Quad[]
   quadPool = {}
 }
 
@@ -31,7 +32,7 @@ function GraphicsUtil.createPixelFontMap(characters, atlas)
 
   for i = 1, characters:len() do
     local char = characters:sub(i, i)
-    pixelFontMap.charToQuad[char] = love.graphics.newQuad((i - 1) * charWidth, 0, charWidth, atlasHeight, atlasWidth, atlasHeight)
+    pixelFontMap.charToQuad[char] = GraphicsUtil:newRecycledQuad((i - 1) * charWidth, 0, charWidth, atlasHeight, atlasWidth, atlasHeight)
   end
 
   return pixelFontMap
@@ -175,7 +176,7 @@ function GraphicsUtil:newRecycledQuad(x, y, width, height, sw, sh)
     self.quadPool[#self.quadPool] = nil
     result:setViewport(x, y, width, height, sw, sh)
   end
-  
+
   return result
 end
 
