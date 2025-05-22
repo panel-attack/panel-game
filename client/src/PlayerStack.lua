@@ -103,19 +103,6 @@ function(self, args)
 end,
 ClientStack)
 
-function PlayerStack:garbageAndShockGarbageImages()
-  -- functionally, the garbage target being the source of the images for garbage landing on this stack is possible but not a given
-  -- there is technically no guarantee that the target we're sending towards is also sending to us
-  -- at the moment however this is the case so let's take it for granted until then
-  local panelsDir = self.panels_dir
-  local character = self.character
-  if self.garbageSource then
-    character = self.garbageSource.character
-    panelsDir = self.garbageSource.panels_dir
-  end
-  return character.images, panels[panelsDir].images.metals
-end
-
 -------------------------------------------
 --- Callbacks from engine subscriptions ---
 -------------------------------------------
@@ -404,7 +391,7 @@ end
 local shakeOffsetData = calculateShakeData()
 
 function PlayerStack:currentShakeOffset()
-  return self:shakeOffsetForShakeFrames(self.engine.shake_time, self.engine.prev_shake_time) / self.gfxScale
+  return self:shakeOffsetForShakeFrames(self.engine.shake_time, self.engine.prev_shake_time)
 end
 
 local function privateShakeOffsetForShakeFrames(frames, shakeIntensity, gfxScale)

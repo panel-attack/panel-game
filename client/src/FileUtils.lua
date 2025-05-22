@@ -35,6 +35,7 @@ end
 
 -- recursively goes down all folders and returns all non folder files as a tuple of directory and filename
 ---@param path string
+---@return {directory: string, filename: string}[]
 function fileUtils.getFilteredFilesRecursive(path)
   local results = {}
 
