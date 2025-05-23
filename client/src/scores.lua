@@ -51,15 +51,14 @@ Scores =
 function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
   assert(puzzle.UUID ~= nil)
   local puzzleRecord = {}
-  puzzleRecord.UUID = puzzle.UUID
   puzzleRecord.inputs = inputs
   puzzleRecord.timestamp = timestamp
   puzzleRecord.success = success
-  
-  if self.puzzleRecords[puzzleRecord.UUID] == nil then
-    self.puzzleRecords[puzzleRecord.UUID] = {}
+
+  if self.puzzleRecords[puzzle.UUID] == nil then
+    self.puzzleRecords[puzzle.UUID] = {}
   end
-  self.puzzleRecords[puzzleRecord.UUID][#self.puzzleRecords[puzzleRecord.UUID]+1] = puzzleRecord
+  self.puzzleRecords[puzzle.UUID][#self.puzzleRecords[puzzle.UUID]+1] = puzzleRecord
 
   self:saveToFile()
 end
