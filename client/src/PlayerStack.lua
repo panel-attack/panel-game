@@ -103,7 +103,6 @@ function(self, args)
 end,
 ClientStack)
 
-
 -------------------------------------------
 --- Callbacks from engine subscriptions ---
 -------------------------------------------
@@ -937,7 +936,6 @@ function PlayerStack:render(matchEnded)
   self:drawPanels(garbageImages, shockGarbageImages, shakeOffset)
   self:drawFrame()
   self:drawWall(shakeOffset, self.engine.height)
-  -- Draw the cursor
   self:render_cursor(shakeOffset, matchEnded)
   self:drawCountdown()
   self:resetDrawArea()
@@ -965,8 +963,6 @@ function PlayerStack:drawRating()
 end
 
 -- Draw the stacks cursor
----@param shake integer
----@param matchEnded boolean?
 function PlayerStack:render_cursor(shake, matchEnded)
   local engine = self.engine
   if engine.inputMethod == "touch" then

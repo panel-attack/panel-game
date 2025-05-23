@@ -206,12 +206,10 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 5
       -- force center it horizontally
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2) / stack.gfxScale
+      local frameX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2)
       -- and anchor at the bottom
-      stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack:canvasHeight()) / stack.gfxScale
-      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
-      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
-      stack.origin_x = stack.frameOriginX / stack.gfxScale
+      local frameY = (GAME.globalCanvas:getHeight() - stack:canvasHeight())
+      stack:moveToPosition(frameX, frameY)
 
       -- create a raise button that interacts with the touch controller
       local raiseButton = ui.TextButton({label = ui.Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
@@ -233,11 +231,9 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 1
       stack.canvas = true
-      stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
-      stack.frameOriginY = 10
-      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
-      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
-      stack.origin_x = stack.frameOriginX / stack.gfxScale
+      local frameX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
+      local frameY = 10
+      stack:moveToPosition(frameX, frameY)
     end
   end
 end

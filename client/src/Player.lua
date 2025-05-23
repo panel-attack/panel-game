@@ -190,12 +190,12 @@ function Player:setStyle(style)
   end
 end
 
-function Player:setPuzzleSet(puzzleSet)
+function Player:setPuzzleSet(puzzleSet, index)
   if puzzleSet ~= self.settings.puzzleSet then
     self.settings.puzzleSet = puzzleSet
     self:emitSignal("puzzleSetChanged", puzzleSet)
   end
-  self.settings.puzzleIndex = 1
+  self.settings.puzzleIndex = index
 end
 
 function Player:setPuzzleIndex(puzzleIndex)

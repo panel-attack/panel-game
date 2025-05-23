@@ -14,8 +14,10 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local analytics = require("client.src.analytics")
 local input = require("client.src.inputManager")
+local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local save = require("client.src.save")
 local fileUtils = require("client.src.FileUtils")
+local Scores = require("client.src.scores")
 local handleShortcuts = require("client.src.Shortcuts")
 local Player = require("client.src.Player")
 local GameModes = require("common.data.GameModes")
@@ -56,13 +58,12 @@ end
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
-    self.scores = require("client.src.scores")
+    self.scores = Scores.createFromScoreFile()
     self.input = input
     self.match = nil -- Match - the current match going on or nil if inbetween games
     self.battleRoom = nil -- BattleRoom - the current room being used for battles
     self.focused = true -- if the window is focused
     self.backgroundImage = nil -- the background image for the game, should always be set to something with the proper dimensions
-    self.puzzleSets = {} -- all the puzzles loaded into the game
     self.netClient = NetClient()
     self.server_queue = ServerQueue()
     self.main_menu_screen_pos = {consts.CANVAS_WIDTH / 2 - 108 + 50, consts.CANVAS_HEIGHT / 2 - 111}
@@ -104,9 +105,7 @@ local Game = class(
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  GAME.puzzleSets = {}
-  save.write_puzzles()
-  save.read_puzzles("puzzles")
+  PuzzleLibrary.writeDefaultPuzzles("client/assets/default_data/puzzles", "docs/puzzles.txt", consts.PUZZLES_SAVE_DIRECTORY)
 
   -- move to constructor
   self.updater = GAME_UPDATER or nil
@@ -231,8 +230,6 @@ function Game:setupRoutine()
   self:setLanguage(config.language_code)
 
   detectHardwareProblems()
-
-  fileUtils.copyFile("docs/puzzles.txt", "puzzles/README.txt")
 
   coroutine.yield(loc("ld_theme"))
   theme_init()
