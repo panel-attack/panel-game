@@ -128,7 +128,7 @@ function Scores:puzzleSuccessRateForUUID(puzzleUUID)
     return 0
   end
 
-  local winRecords = self:getNRecordsMatchingFilterForPuzzleUUID(5, function(record) return record.success end, puzzleUUID)
+  local winRecords = tableUtils.filter(records, function(record) return record.success end)
 
   local result = #winRecords / #records
   return result
