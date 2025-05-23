@@ -124,8 +124,6 @@ function Stack:checkMatches()
     local isChainLink = isNewChainLink(matchingPanels)
     if isChainLink then
       self:incrementChainCounter()
-    else
-      self.clearStartsCount = self.clearStartsCount + 1
     end
     -- interrupt any ongoing manual raise
     self.manual_raise = false
