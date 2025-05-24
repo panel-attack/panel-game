@@ -33,6 +33,24 @@ function fileUtils.getFilteredDirectoryItems(path, fileType)
   return results
 end
 
+-- recursively goes down all folders and returns all non folder files as a tuple of directory and filename
+---@param path string
+---@return {directory: string, filename: string}[]
+function fileUtils.getFilteredFilesRecursive(path)
+  local results = {}
+
+  for _, filename in ipairs(fileUtils.getFilteredDirectoryItems(path, "file")) do
+    results[#results+1] = {directory=path, filename=filename}
+  end
+  for _, subDirectory in ipairs(fileUtils.getFilteredDirectoryItems(path, "directory")) do
+    for _, record in ipairs(fileUtils.getFilteredFilesRecursive(path .. "/" .. subDirectory)) do
+      results[#results+1] = {directory=record.directory, filename=record.filename}
+    end
+  end
+
+  return results
+end
+
 function fileUtils.getFileNameWithoutExtension(filename)
   return filename:gsub("%..*", "")
 end

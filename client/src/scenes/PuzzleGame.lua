@@ -3,6 +3,7 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local InputCompression = require("common.data.InputCompression")
 local consts = require("common.engine.consts")
 local FileUtils = require("client.src.FileUtils")
 
@@ -40,6 +41,7 @@ function PuzzleGame:customRun()
   if (self.player.inputConfiguration and self.player.inputConfiguration.isDown["TauntUp"]) then
     if not self.match.ended and not self.match.isPaused then
       GAME.theme:playValidationSfx()
+      self:savePuzzleRecordResult(false)
       self.match:resetPuzzle()
     end
   end
@@ -65,12 +67,21 @@ function PuzzleGame:startNextScene()
   end
 end
 
+function PuzzleGame:savePuzzleRecordResult(success)
+  local inputs = InputCompression.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
+  GAME.scores:savePuzzleRecord(self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex], inputs, to_UTC(os.time()), success)
+end
+
 function PuzzleGame:customGameOverSetup()
   if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
+    self:savePuzzleRecordResult(true)
     self.player:setPuzzleIndex(self.player.settings.puzzleIndex + 1)
   else -- puzzle failed or manually reset
     self.text = loc("pl_you_lose")
+    if (self.match.aborted == nil or self.match.aborted == false) then
+      self:savePuzzleRecordResult(false)
+    end
   end
 end
 

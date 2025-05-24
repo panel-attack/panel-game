@@ -23,8 +23,14 @@ Puzzle = class(
     self.randomizeColors = false
     self.stopTime = stopTime
     self.shakeTime = shakeTime
+    self.UUID = Puzzle.getV1UUID(self)
   end
 )
+
+function Puzzle.getV1UUID(puzzle)
+  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.doCountdown) .. tostring(puzzle.moves) .. tostring(puzzle.stop_time) .. tostring(puzzle.shake_time)
+  return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+end
 
 function Puzzle.getPuzzleTypes()
   return { "moves", "chain", "clear" }

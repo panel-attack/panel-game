@@ -18,10 +18,7 @@ local function runSystemCommands()
     stages_reload_graphics()
   -- reload themes
   elseif input.allKeys.isDown["t"] then
-    themes[config.theme]:deinitializeGraphics()
-    themes[config.theme]:json_init()
-    themes[config.theme]:graphics_init(true)
-    themes[config.theme]:final_init()
+    GAME.theme:reload()
   end
 end
 
@@ -55,7 +52,8 @@ local function handleCopy()
     end
 
     if tableUtils.length(stacks) > 0 then
-      love.system.setClipboardText(json.encode(stacks))
+      local encodeArguments = {indent = true, keyorder = {"P1", "P2", "Player", "Stop", "Pre-Stop", "Shake", "Stack"}}
+      love.system.setClipboardText(json.encode(stacks, encodeArguments))
       return true
     end
   end

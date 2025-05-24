@@ -2,7 +2,7 @@ Custom Puzzles
 
 This guide will teach you how to make custom puzzle files for Panel Attack
 
-Puzzle files should be named something like WhateverName.txt and placed into your puzzles folder.
+Puzzle files should be named something like WhateverName.json and placed into your puzzles folder.
 ie. %appdata%\Panel Attack\puzzles
 Each puzzle file can contain as many puzzle sets as you like. Each set within a file can contain any number of 
 individual puzzles.
@@ -10,7 +10,7 @@ individual puzzles.
 The contents of each puzzle file should be formatted something like this:
 
 {
-  "Version": 2,
+  "Version": 3,
   "Puzzle Sets": [
     {
       "Set Name": "Name of Puzzle Set",
@@ -49,10 +49,9 @@ The contents of each puzzle file should be formatted something like this:
   ]
 }
 
-Version should be 2 for now
+Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzzle Sets" for organization purposes.
 
 "Puzzle Sets" contains a list of all the puzzle sets
-
 "Set Name" is the name of the set
 "Puzzles" is the list of all the puzzles
 

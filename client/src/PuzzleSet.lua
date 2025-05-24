@@ -9,9 +9,10 @@ local Puzzle = require("common.engine.Puzzle")
 ---@field fileSource string?
 local PuzzleSet =
   class(
-  function(self, setName, puzzles)
+  function(self, setName, puzzles, puzzleSets)
     self.setName = setName
-    self.puzzles = puzzles
+    self.puzzles = puzzles or {}
+    self.puzzleSets = puzzleSets or {}
   end
 )
 
@@ -22,7 +23,11 @@ function PuzzleSet.loadFromFile(filePath)
   local puzzleSets = {}
 
   if data then
-    if data["Version"] == 2 then
+    if data["Version"] == 3 then
+      for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
+        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV3(puzzleSetData)
+      end
+    elseif data["Version"] == 2 then
       for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
         puzzleSets[#puzzleSets+1] = PuzzleSet.loadV2(puzzleSetData)
       end
@@ -63,6 +68,22 @@ function PuzzleSet.loadV2(puzzleSetData)
   end
 
   return PuzzleSet(puzzleSetName, puzzles)
+end
+
+---@return PuzzleSet
+function PuzzleSet.loadV3(puzzleSetData)
+  local puzzleSetName = puzzleSetData["Set Name"]
+  local puzzleSet = PuzzleSet(puzzleSetName, {}, {})
+
+  for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
+    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"])
+    puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
+  end
+  for _, currentPuzzleSet in pairs(puzzleSetData["Puzzle Sets"] or {}) do
+    puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = PuzzleSet.loadV3(currentPuzzleSet)
+  end
+
+  return puzzleSet
 end
 
 return PuzzleSet

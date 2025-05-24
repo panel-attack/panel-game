@@ -1,12 +1,21 @@
 local levelPresets = require("common.data.LevelPresets")
 local fileUtils = require("client.src.FileUtils")
+local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
+local logger = require("common.lib.logger")
 
 -- 1 had only vs scores in an incompatible format
 -- 2 has vs self, time attack, endless
-local currentVersion = 2
+-- 3 has vs self, time attack, endless, puzzles
+local currentVersion = 3
 
 -- Holds on the current scores and records for game modes
+---@class Scores
+---@field version string
+---@field vsSelf table
+---@field timeAttack1P table
+---@field endless table
+---@field puzzleRecords table
 Scores =
   class(
   function(self)
@@ -33,8 +42,96 @@ Scores =
       self.endless[i]["record"] = 0
       self.endless[i]["last"] = 0
     end
+
+    self.puzzleRecords = {}
   end
 )
+
+-- Saves the given puzzle record to the scores file
+function Scores:savePuzzleRecord(puzzle, inputs, timestamp, success)
+  assert(puzzle.UUID ~= nil)
+  local puzzleRecord = {}
+  puzzleRecord.inputs = inputs
+  puzzleRecord.timestamp = timestamp
+  puzzleRecord.success = success
+
+  if self.puzzleRecords[puzzle.UUID] == nil then
+    self.puzzleRecords[puzzle.UUID] = {}
+  end
+  self.puzzleRecords[puzzle.UUID][#self.puzzleRecords[puzzle.UUID]+1] = puzzleRecord
+
+  self:saveToFile()
+end
+
+-- Returns all records for the given puzzle UUID
+function Scores:getRecordsForPuzzleUUID(puzzleUUID)
+  return self.puzzleRecords[puzzleUUID] or {}
+end
+
+-- Returns up to the given number of records for a given puzzle UUID, only counting using the filter if one is given.
+---@param n integer the number of records to return
+---@param filter function? an optional filter function run on a record, return true if the record should be included
+---@param puzzleUUID string the puzzle UUID to search
+function Scores:getNRecordsMatchingFilterForPuzzleUUID(n, filter, puzzleUUID)
+
+  local filteredTable = {}
+  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
+  for i = #records, 1, -1 do
+    local value = records[i]
+    if filter(value) then
+      filteredTable[#filteredTable+1] = value
+      if #filteredTable >= n then
+        break
+      end
+    end
+  end
+
+  return filteredTable
+end
+
+-- Returns the latest record that succeed at this puzzle or nil if none
+function Scores:getLatestSuccessForPuzzleUUID(puzzleUUID)
+  local records = self:getNRecordsMatchingFilterForPuzzleUUID(1, function(record) return record.success == true end, puzzleUUID)
+  if #records == 0 then
+    return nil
+  end
+  return records[#records]
+end
+
+-- Returns the number of times this puzzle has been won in a row
+function Scores:puzzleUUIDWinStreak(puzzleUUID)
+  local records = self:getRecordsForPuzzleUUID(puzzleUUID)
+
+  local winStreak = 0
+  for i = #records, 1, -1 do
+    local currentRecord = records[i]
+    if currentRecord.success == false then
+      break
+    end
+    winStreak = winStreak + 1
+  end
+
+  return winStreak
+end
+
+-- returns true if the puzzle has ever been beaten
+function Scores:puzzleEverBeaten(puzzleUUID)
+  return self:getLatestSuccessForPuzzleUUID(puzzleUUID) ~= nil
+end
+
+-- Returns 0 if the puzzle has never been played, otherwise, the percentage of wins
+function Scores:puzzleSuccessRateForUUID(puzzleUUID)
+  local records = self:getNRecordsMatchingFilterForPuzzleUUID(5, function(record) return true end, puzzleUUID)
+
+  if #records == 0 then
+    return 0
+  end
+
+  local winRecords = tableUtils.filter(records, function(record) return record.success end)
+
+  local result = #winRecords / #records
+  return result
+end
 
 function Scores.saveVsSelfScoreForLevel(self, score, level)
   self.vsSelf[level]["last"] = score
@@ -84,7 +181,7 @@ function Scores.recordEndlessForLevel(self, level)
   return self.endless[level]["record"]
 end
 
-local function read_score_file()
+function Scores.createFromScoreFile()
   local scores = Scores()
   pcall(
     function()
@@ -97,17 +194,20 @@ local function read_score_file()
         end
 
         -- Ignore the scores save file if its the old format
-        if scores.version == 1 then
-        elseif scores.version == currentVersion then
+        if scores.version == currentVersion then
           if read_data.vsSelf then scores.vsSelf = read_data.vsSelf end
           if read_data.timeAttack1P then scores.timeAttack1P = read_data.timeAttack1P end
           if read_data.endless then scores.endless = read_data.endless end
+          if read_data.puzzleRecords then
+            local puzzleRecords = read_data.puzzleRecords
+            scores.puzzleRecords = puzzleRecords
+          end
         end
       end
     end
   )
 
-  if scores.version == 1 then
+  if scores.version < currentVersion then
     scores.version = currentVersion
     scores:saveToFile()
   end
@@ -120,6 +220,4 @@ function Scores.saveToFile(self)
   end
 end
 
-local scores = read_score_file()
-
-return scores
+return Scores

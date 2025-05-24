@@ -99,16 +99,14 @@ function Player:reset()
 end
 
 ---@param engineStack Stack
----@param match ClientMatch
 ---@return PlayerStack
-function Player:createClientStack(engineStack, match)
+function Player:createClientStack(engineStack)
   local args = {
     engine = engineStack,
     player_number = self.playerNumber,
     panels_dir = self.settings.panelId,
     characterId = self.settings.characterId,
     player = self,
-    match = match,
   }
 
   if self.settings.style == GameModes.Styles.MODERN then
@@ -192,12 +190,12 @@ function Player:setStyle(style)
   end
 end
 
-function Player:setPuzzleSet(puzzleSet)
+function Player:setPuzzleSet(puzzleSet, index)
   if puzzleSet ~= self.settings.puzzleSet then
     self.settings.puzzleSet = puzzleSet
     self:emitSignal("puzzleSetChanged", puzzleSet)
   end
-  self.settings.puzzleIndex = 1
+  self.settings.puzzleIndex = index
 end
 
 function Player:setPuzzleIndex(puzzleIndex)

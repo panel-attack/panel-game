@@ -20,6 +20,8 @@ end
 ---@field baseWidth integer
 ---@field baseHeight integer
 ---@field gfxScale number scale factor for the entire Stack, default: 3
+---@field panelOriginXOffset integer how far the panel origin is offset relative to frame at scale 1
+---@field panelOriginYOffset integer how far the panel origin is offset relative to frame at scale 1
 ---@field canvas boolean if the stack is supposed to be drawn
 ---@field portraitFade number inverse opacity of the character portrait
 ---@field engine BaseStack the engine actually running the physics
@@ -31,7 +33,6 @@ end
 ---@field multi_shakeQuad love.Quad
 ---@field danger_music boolean
 ---@field garbageSource ClientStack The stack the garbage assets are used from
----@field match ClientMatch
 ---@field assets IngameAssetPack
 ---@field renderIndex integer determines the position of the stack and how some elements are rendered
 ---@field player_number integer used for display ordering
@@ -45,7 +46,6 @@ function(self, args)
 
   assert(args.engine)
   assert(args.characterId)
-  assert(args.match)
 
   self.engine = args.engine
   -- player number according to the multiplayer server, for game outcome reporting 
@@ -53,7 +53,6 @@ function(self, args)
   self.is_local = args.player and args.player.isLocal or args.engine.is_local
   self.character = characters[args.characterId]
   self.theme = args.theme or themes[config.theme]
-  self.match = args.match
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -64,6 +63,8 @@ function(self, args)
   -- also relevant for the touch input controller method besides general drawing
   self.baseWidth = 104
   self.baseHeight = 204
+  self.panelOriginXOffset = 4
+  self.panelOriginYOffset = 4
   self.gfxScale = 3
   -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
@@ -239,23 +240,28 @@ function ClientStack:moveForRenderIndex(renderIndex)
   local stackWidth = self:canvasWidth()
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement
-  self.panelOriginXOffset = 4
-  self.panelOriginYOffset = 4
 
-  local outerNonScaled = centerX - (outerStackXMovement * self.mirror_x)
-  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerNonScaled / self.gfxScale) -- The outer X value of the frame
+  local outerEdgeScaled = centerX - (outerStackXMovement * self.mirror_x)
 
-  local frameOriginNonScaled = outerNonScaled
+  local frameOriginEdgeScaled = outerEdgeScaled
   if self.mirror_x == -1 then
-    frameOriginNonScaled = outerNonScaled - stackWidth
+    frameOriginEdgeScaled = outerEdgeScaled - stackWidth
   end
-  self.frameOriginX = frameOriginNonScaled / self.gfxScale -- The left X value where the frame is drawn
-  self.frameOriginY = 108 / self.gfxScale
 
-  self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
-  self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
+  self:moveToPosition(frameOriginEdgeScaled, self.baseWidth + self.panelOriginXOffset)
+  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerEdgeScaled / self.gfxScale) -- The outer X value of the frame
 
   self:assignAssets(GAME.theme:getIngameAssetPack(self.renderIndex))
+end
+
+---@param x integer in screen coordinates
+---@param y integer in screen coordinates
+function ClientStack:moveToPosition(x, y)
+  self.frameOriginX = x / self.gfxScale
+  self.frameOriginY = y / self.gfxScale
+  self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
+  self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
+  self.origin_x = x / self.gfxScale
 end
 
 -- to be used in conjunction with resetDrawArea
@@ -442,12 +448,7 @@ end
 
 ---@return boolean
 function ClientStack:game_ended()
-  if self.engine:game_ended() then
-    return true
-  else
-    -- for display we may also want to know if the match has ended
-    return self.match.engine.ended
-  end
+  return self.engine:game_ended()
 end
 
 ---@param assetPack IngameAssetPack
@@ -486,7 +487,8 @@ function ClientStack:runGameOver()
   error("did not implement runGameOver")
 end
 
-function ClientStack:render()
+---@param matchEnded boolean?
+function ClientStack:render(matchEnded)
   error("did not implement render")
 end
 

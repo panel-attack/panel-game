@@ -325,7 +325,7 @@ function Panels:load()
   if self.sheetConfig.panic == nil then
     self.sheetConfig.panic = self.sheetConfig.danger
   end
-  
+
   self.scale = 16 / self.size
 
   self.quad = love.graphics.newQuad(0, 0, self.size, self.size, self.sheets[1])

@@ -160,6 +160,9 @@ end
 
 function MenuItem:setSelected(selected)
   self.selected = selected
+  if selected and self.onSelectedFunction then
+    self.onSelectedFunction()
+  end
 end
 
 
