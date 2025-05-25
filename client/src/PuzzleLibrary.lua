@@ -85,6 +85,14 @@ function PuzzleLibrary.writeDefaultPuzzles(defaultPuzzleDirectory, readmePath, s
       FileUtils.copyFile(readmePath, savePuzzleDirectory .. "/README.txt")
     end
   )
+  pcall(
+    function()
+      local oldPuzzleFile = savePuzzleDirectory .. "/stock (example).json"
+      if love.filesystem.exists(oldPuzzleFile) then
+        love.filesystem.remove(oldPuzzleFile)
+      end
+    end
+  )
 end
 
 local ONE_HOUR = 60 * 60
