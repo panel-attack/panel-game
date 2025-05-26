@@ -432,4 +432,12 @@ else
   GraphicsUtil.newText = love.graphics.newText
 end
 
+---@param width number # Window width.
+---@param height number # Window height.
+---@param settings {fullscreen: boolean, fullscreentype: love.FullscreenType, vsync: boolean, msaa: number, resizable: boolean, borderless: boolean, centered: boolean, display: number, minwidth: number, minheight: number, highdpi: boolean, x: number, y: number}? # The settings table with the following optional fields. Any field not filled in will use the current value that would be returned by love.window.getMode.
+---@return boolean success # True if successful, false otherwise.
+function GraphicsUtil.updateMode(width, height, settings)
+  return love.window.updateMode(width, height, settings or {})
+end
+
 return GraphicsUtil

@@ -1,5 +1,6 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local Layout = require(PATH ..".Layout")
+local util = require("common.lib.util")
 
 ---@class FlexLayout : Layout
 local FlexLayout = setmetatable({}, {__index = Layout})
@@ -11,8 +12,8 @@ function FlexLayout.fitSizeWidth(uiElement)
       child.layout.fitSizeWidth(child)
     end
   end
-  local w = uiElement.layout.getMinWidth(uiElement)
-  uiElement.newWidth = math.max(w, uiElement:getBaseWidth())
+  local w = uiElement.layout.getPreferredWidth(uiElement)
+  uiElement.newWidth = math.max(w, uiElement:getPreferredWidth(), uiElement.minWidth)
 end
 
 ---@param uiElement UiElement
@@ -23,23 +24,28 @@ function FlexLayout.fitSizeHeight(uiElement)
     end
   end
   local h = uiElement.layout.getMinHeight(uiElement)
-  uiElement.newHeight = math.max(h, uiElement:getBaseHeight())
+  uiElement.newHeight = math.max(h, uiElement.minHeight)
 end
 
-function FlexLayout.updateWidths(uiElement, width)
+function FlexLayout.setWidth(uiElement, width)
   if not uiElement.newWidth then
     uiElement.layout.fitSizeWidth(uiElement)
   end
+
   if width then
-    uiElement.width = math.max(width, uiElement.newWidth)
+    local minWidth = uiElement.layout.getMinWidth(uiElement)
+    if not uiElement.controlsWindow then
+      minWidth = math.max(minWidth, uiElement.minWidth)
+    end
+    uiElement.width = util.bound(minWidth, uiElement.newWidth, width)
   else
-    uiElement.width = uiElement.newWidth
+    uiElement.width = util.bound(uiElement.width, uiElement.newWidth, uiElement.maxWidth)
   end
+
   uiElement.newWidth = nil
-  uiElement.layout.growChildrenWidth(uiElement)
 end
 
-function FlexLayout.updateHeights(uiElement, height)
+function FlexLayout.setHeight(uiElement, height)
   if not uiElement.newHeight then
     uiElement.layout.fitSizeHeight(uiElement)
   end
@@ -49,17 +55,16 @@ function FlexLayout.updateHeights(uiElement, height)
     uiElement.height = uiElement.newHeight
   end
   uiElement.newHeight = nil
-  uiElement.layout.growChildrenHeight(uiElement)
 end
 
 ---@param uiElement UiElement
-function FlexLayout.growChildrenWidth(uiElement)
-  error("FlexLayout does not implement growChildrenWidth")
+function FlexLayout.finalizeChildrenWidths(uiElement)
+  error("FlexLayout does not implement finalizeChildrenWidths")
 end
 
 ---@param uiElement UiElement
-function FlexLayout.growChildrenHeight(uiElement)
-  error("FlexLayout does not implement growChildrenHeight")
+function FlexLayout.finalizeChildrenHeights(uiElement)
+  error("FlexLayout does not implement finalizeChildrenHeights")
 end
 
 return FlexLayout

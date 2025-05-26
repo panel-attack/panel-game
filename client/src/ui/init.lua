@@ -35,6 +35,9 @@ local ui = {
   MultiPlayerSelectionWrapper = require(PATH .. ".MultiPlayerSelectionWrapper"),
   PagedUniGrid = require(PATH .. ".PagedUniGrid"),
   PanelCarousel = require(PATH .. ".PanelCarousel"),
+  ---@see PassThroughElement
+  ---@type fun(options: UiElementOptions): PassThroughElement
+  PassThroughElement = require(PATH .. ".PassThroughElement"),
   ---@see PixelFontLabel
   ---@type fun(options: PixelFontLabelOptions): PixelFontLabel
   PixelFontLabel = require(PATH .. ".PixelFontLabel"),

@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UIElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local HorizontalWrapLayout = require(PATH .. ".Layouts.HorizontalWrapLayout")
 
 ---@class LabelOptions : UiElementOptions
 ---@field id string? The localization key; nil if there should be no translation
@@ -54,7 +55,9 @@ local Label = class(
   end,
   UIElement
 )
+
 Label.TYPE = "Label"
+Label.layout = HorizontalWrapLayout
 
 function Label:recalculateSizes()
   local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
@@ -106,19 +109,10 @@ function Label:drawSelf()
 end
 
 function Label:getPreferredWidth()
-  local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)
-  return font:getWidth(self.text)
-end
-
-function Label:setMinHeightForWidth()
-  --self.minHeight = GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
-end
-
-function Label:getBaseWidth()
   return self.preferredWidth
 end
 
-function Label:getBaseHeight()
+function Label:getMinHeight()
   return GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
 end
 

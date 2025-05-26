@@ -355,14 +355,17 @@ function Game:handleResize(newWidth, newHeight)
     activeScene.uiRoot.minWidth = newWidth
     activeScene.uiRoot.minHeight = newHeight
     activeScene.uiRoot.layout.resize(activeScene.uiRoot, newWidth, newHeight)
+    if activeScene.uiRoot.width ~= newWidth or activeScene.uiRoot.height ~= newHeight then
+      GraphicsUtil.updateMode(activeScene.uiRoot.width, activeScene.uiRoot.height)
+    end
   end
   self:updateCanvasPositionAndScale(newWidth, newHeight)
   if self.battleRoom and self.battleRoom.match then
     self.needsAssetReload = true
   else
-    self:refreshCanvasAndImagesForNewScale()
+    --self:refreshCanvasAndImagesForNewScale()
   end
-  self.showGameScaleUntil = self.timer + 5
+  --self.showGameScaleUntil = self.timer + 5
 end
 
 -- Called every few fractions of a second to update the game

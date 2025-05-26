@@ -38,7 +38,7 @@ function ImageContainer:setImage(image, width, height, scale)
   end
 end
 
-function ImageContainer:onResize()
+function ImageContainer:onResized()
   self.scale = math.min(self.width / self.imageWidth, self.height / self.imageHeight)
   -- self.width = self.imageWidth * self.scale
   -- self.height = self.imageHeight * self.scale

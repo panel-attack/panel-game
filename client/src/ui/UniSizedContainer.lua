@@ -5,6 +5,7 @@ local HorizontalWrapLayout = require(PATH .. ".Layouts.HorizontalWrapLayout")
 local Focusable = require(PATH .. ".Focusable")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local input = require("client.src.inputManager")
 
 ---@class UniSizedContainer : UiElement
 ---@field childrenWidth integer
@@ -53,6 +54,7 @@ function UniSizedContainer:moveToPreviousRow()
   local nextRow = wrap(1, self.selectedRow - 1, #self.rows)
   if self.rows[nextRow][self.selectedColumn] then
     self.selectedRow = nextRow
+    self.hovered = self.rows[self.selectedRow][self.selectedColumn]
     return true
   else
     return false
@@ -68,6 +70,7 @@ function UniSizedContainer:moveToNextRow()
   local nextRow = wrap(1, self.selectedRow + 1, #self.rows)
   if self.rows[nextRow][self.selectedColumn] then
     self.selectedRow = nextRow
+    self.hovered = self.rows[self.selectedRow][self.selectedColumn]
     return true
   else
     return false
@@ -81,6 +84,7 @@ function UniSizedContainer:moveToPrevious()
   end
 
   self.selectedColumn = wrap(1, self.selectedColumn - 1, #self.rows[self.selectedRow])
+  self.hovered = self.rows[self.selectedRow][self.selectedColumn]
   return true
 end
 
@@ -91,6 +95,7 @@ function UniSizedContainer:moveToNext()
   end
 
   self.selectedColumn = wrap(1, self.selectedColumn + 1, #self.rows[self.selectedRow])
+  self.hovered = self.rows[self.selectedRow][self.selectedColumn]
   return true
 end
 
@@ -130,7 +135,7 @@ function UniSizedContainer:receiveInputs(inputs, dt)
   end
 end
 
-function UniSizedContainer:onResize()
+function UniSizedContainer:onResized()
   if #self.children == 0 then
     return
   end
@@ -168,21 +173,62 @@ function UniSizedContainer:onResize()
 end
 
 function UniSizedContainer:drawSelf()
+  UiElement.drawSelf(self)
   if self.hasFocus then
     local selectedChild = self.rows[self.selectedRow][self.selectedColumn]
     local x, y = selectedChild:getScreenPos()
     GraphicsUtil.setColor(1, 1, 1, 0.2)
     love.graphics.rectangle("fill", x, y, selectedChild.width, selectedChild.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
+
+    if input.isDown["Left"] or input.isPressed["Left"] then
+      GraphicsUtil.printf("Left", 0, 0)
+    elseif input.isDown["Right"] or input.isPressed["Right"] then
+      GraphicsUtil.printf("Right", 0, 0)
+    elseif input.isDown["Up"] or input.isPressed["Up"] then
+      GraphicsUtil.printf("Up", 0, 0)
+    elseif input.isDown["Down"] or input.isPressed["Down"] then
+      GraphicsUtil.printf("Down", 0, 0)
+    end
   end
 end
 
-function UniSizedContainer:getBaseWidth()
-  return self.padding * 2 + self.childrenWidth
+function UniSizedContainer:getMinHeight()
+  local h = self.padding * 2
+  local maxHeight = 0
+  self.tempRows = {}
+
+  local childrenInCurrentRow = 0
+  local rowCount = 1
+  local width = self.padding
+  for i, child in ipairs(self.children) do
+    if child.isVisible then
+      maxHeight = math.max(maxHeight, child.minHeight, child.layout.getMinHeight(child))
+      if width + child.width + self.padding + childrenInCurrentRow * self.childGap > self.width then
+        self.tempRows[rowCount] = maxHeight
+        rowCount = rowCount + 1
+        width = self.padding + child.width
+        childrenInCurrentRow = 1
+        maxHeight = child.newHeight
+      else
+        childrenInCurrentRow = childrenInCurrentRow + 1
+        width = width + child.width
+      end
+      child.tempRow = rowCount
+    end
+  end
+
+  self.tempRows[rowCount] = maxHeight
+  h = h + (#self.tempRows - 1) * self.childGap
+  for i = 1, #self.tempRows do
+    h = h + self.tempRows[i]
+  end
+
+  return math.max(h, self.minHeight)
 end
 
-function UniSizedContainer:getBaseHeight()
-
+function UniSizedContainer:getPreferredWidth()
+  return self.padding * 2 + (self.childrenWidth + self.childGap) * #self.children - self.childGap
 end
 
 return UniSizedContainer

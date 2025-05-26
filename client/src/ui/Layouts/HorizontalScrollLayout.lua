@@ -9,7 +9,11 @@ function HorizontalScrollLayout.getMinWidth(uiElement)
   return util.bound(uiElement.minWidth, HorizontalFlexLayout.getMinWidth(uiElement), uiElement.maxWidth)
 end
 
-function HorizontalScrollLayout.growChildrenWidth(uiElement)
+function HorizontalScrollLayout.getPreferredWidth(uiElement)
+  return util.bound(uiElement.minWidth, HorizontalFlexLayout.getPreferredWidth(uiElement), uiElement.maxWidth)
+end
+
+function HorizontalScrollLayout.finalizeChildrenWidths(uiElement)
   -- no growing because we scroll in this direction
 end
 

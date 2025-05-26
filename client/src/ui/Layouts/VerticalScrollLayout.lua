@@ -9,7 +9,7 @@ function VerticalScrollLayout.getMinHeight(uiElement)
   return util.bound(uiElement.minHeight, VerticalFlexLayout.getMinHeight(uiElement), uiElement.maxHeight)
 end
 
-function VerticalScrollLayout.growChildrenHeight(uiElement)
+function VerticalScrollLayout.finalizeChildrenHeights(uiElement)
   -- no growing because we scroll in this direction
 end
 

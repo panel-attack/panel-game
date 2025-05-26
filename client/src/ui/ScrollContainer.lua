@@ -212,15 +212,11 @@ function ScrollContainer:recalculateMaxScrollOffset()
   end
 end
 
-function ScrollContainer:onResize()
+function ScrollContainer:onResized()
   self:recalculateMaxScrollOffset()
 end
 
-function ScrollContainer:getBaseHeight()
-  return self.minHeight
-end
-
-function ScrollContainer:getBaseWidth()
+function ScrollContainer:getPreferredWidth()
   return self.minWidth
 end
 

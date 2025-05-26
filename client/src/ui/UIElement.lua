@@ -1,17 +1,17 @@
 local class = require("common.lib.class")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@alias color { [1]: number, [2]: number, [3]: number, [4]: number }
 
 ---@class UiElement
 ---@field x number relative x offset to the parent element (canvas if no parent)
 ---@field y number relative y offset to the parent element (canvas if no parent)
----@field minWidth number
+---@field minWidth number the minimum width of the element, independent of children and layout
 ---@field width number width of the element for the sake of resizing children and touch hitboxes
 ---@field maxWidth number
----@field minHeight number
+---@field minHeight number the minimum height of the element, independent of children and layout
 ---@field height number height of the element for the sake of resizing children and touch hitboxes
 ---@field maxHeight number
----@field fixedHeight boolean
 ---@field hAlign ("left" | "center" | "right") determines the horizontal alignment relative to the parent
 ---@field vAlign ("top" | "center" | "bottom") determines the vertical alignment relative to the parent
 ---@field hFill boolean if the element's width should fill out the entire parent's width
@@ -29,6 +29,7 @@ local class = require("common.lib.class")
 ---@field onDrag function? touch callback for when the mouse touching the element is dragged across the screen
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
+---@field onResized function? layout callback for when a UIElement and all of its children have been resized and positioned
 ---@field [any] any
 
 ---@class UiElementOptions
@@ -120,11 +121,11 @@ function UIElement:onChildrenChanged()
     local oWidth = self.width
     local oHeight = self.height
 
-    self.layout.resize(self)
-
+    
     if self.controlsWindow then
+      self.layout.resize(self)
       if oWidth ~= self.width or oHeight ~= self.height then
-        love.window.updateMode(self.width, self.height, {})
+        GraphicsUtil.updateMode(self.width, self.height, {})
       end
     end
   end
@@ -260,48 +261,10 @@ function UIElement:getTouchedElement(x, y)
   end
 end
 
-function UIElement:setMinHeightForWidth()
-  -- local childrenInCurrentRow = 0
-  -- local rowCount = 1
-  -- local width = self.padding
-  -- for i, child in ipairs(self.children) do
-  --   if width + child.width + self.padding + childrenInCurrentRow * self.childGap > self.width then
-  --     rowCount = rowCount + 1
-  --     width = self.padding + child.width
-  --     childrenInCurrentRow = 1
-  --   else
-  --     childrenInCurrentRow = childrenInCurrentRow + 1
-  --     width = width + child.width
-  --   end
-  -- end
-
-  -- return self.minHeight * rowCount
-end
-
-function UIElement:getBaseWidth()
+--- defaults to minWidth; elements that can wrap have to override this getter with a function returning their preferred width
+---@return integer # the width the UIElement would prefer to take up if any space is available
+function UIElement:getPreferredWidth()
   return self.minWidth
-end
-
-function UIElement:getBaseHeight()
-  -- if self.wraps then
-  --   local childrenInCurrentRow = 0
-  --   local rowCount = 1
-  --   local width = self.padding
-  --   for i, child in ipairs(self.children) do
-  --     if width + child.width + self.padding + childrenInCurrentRow * self.childGap > self.width then
-  --       rowCount = rowCount + 1
-  --       width = self.padding + child.width
-  --       childrenInCurrentRow = 1
-  --     else
-  --       childrenInCurrentRow = childrenInCurrentRow + 1
-  --       width = width + child.width
-  --     end
-  --   end
-
-  --   return self.minHeight * rowCount
-  -- else
-    return self.minHeight
-  --end
 end
 
 return UIElement

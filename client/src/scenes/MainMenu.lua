@@ -157,10 +157,10 @@ function MainMenu:createMainMenu()
   end
   menuContainer:addChild(options)
   menuContainer:addChild(fullscreenToggle)
-  menuContainer:addChild(quit)
   if config.debugShowDesignHelper then
     menuContainer:addChild(designHelper)
   end
+  menuContainer:addChild(quit)
 
   return menuContainer
 end

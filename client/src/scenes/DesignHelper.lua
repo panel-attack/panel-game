@@ -75,13 +75,19 @@ function DesignHelper:load()
 
   self.uiRoot:addChild(gameMode)
 
+  local passThroughSelector = ui.PassThroughElement({
+    backgroundColor = {0, 1, 0, 0.5},
+    hAlign = "center",
+    hFill = true,
+  })
+
   local subSelectionSelector = ui.UniSizedContainer({
     childGap = 32,
     padding = 8,
-    hFill = true,
     backgroundColor = {0, 1, 0, 0.5},
     childrenWidth = 84,
     childrenHeight = 112,
+    hAlign = "center",
     --scrollOrientation = "horizontal",
   })
 
@@ -164,6 +170,8 @@ function DesignHelper:load()
 
   subSelectionSelector:addChild(readyButton)
   subSelectionSelector:addChild(leaveButton)
+  --passThroughSelector:addChild(subSelectionSelector)
+  --self.uiRoot:addChild(passThroughSelector)
   self.uiRoot:addChild(subSelectionSelector)
 
   local subSelection = ui.UiElement({
@@ -201,11 +209,10 @@ function DesignHelper:loadStages()
 end
 
 function DesignHelper:update(dt)
-  self.cursor:receiveInputs(inputs, dt)
-
   if inputs.isDown["MenuEsc"] and not self.cursor.focused then
     GAME.navigationStack:pop()
   end
+  self.cursor:receiveInputs(inputs, dt)
 end
 
 function DesignHelper:draw()

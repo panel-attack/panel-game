@@ -43,7 +43,7 @@ function love.load(args, rawArgs)
         love.window.restore()
       end
       local offset = math.ceil(desktopHeight / 32)
-      love.window.updateMode(desktopWidth, desktopHeight - offset, flags)
+      GraphicsUtil.updateMode(desktopWidth, desktopHeight - offset, flags)
       love.window.setPosition(x, offset, displayIndex)
     end
 

@@ -193,7 +193,7 @@ function PortraitGame:flipToPortrait()
   local width, height, _ = love.window.getMode()
   if system.isMobileOS() or DEBUG_ENABLED then
     -- flip the window dimensions to portrait
-    love.window.updateMode(height, width, {})
+    GraphicsUtil.updateMode(height, width, {})
     love.window.setFullscreen(true)
     --GAME:updateCanvasPositionAndScale(width, height)
   end
@@ -240,7 +240,7 @@ function PortraitGame:returnToLandscape()
   -- flip the window dimensions to landscape
   local width, height, _ = love.window.getMode()
   if system.isMobileOS() or DEBUG_ENABLED then
-    love.window.updateMode(height, width, {})
+    GraphicsUtil.updateMode(height, width, {})
     love.window.setFullscreen(false)
     --GAME:updateCanvasPositionAndScale(width, height)
   end

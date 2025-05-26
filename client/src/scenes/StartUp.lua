@@ -115,7 +115,7 @@ function StartUp:migrate()
   self.migrationPath = nil
   self.migrationMessage = nil
   readConfigFile(config)
-  love.window.updateMode(config.windowWidth, config.windowHeight,
+  GraphicsUtil.updateMode(config.windowWidth, config.windowHeight,
     {
       x = config.windowX,
       y = config.windowY,

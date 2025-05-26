@@ -5,13 +5,27 @@ local FlexLayout = require(PATH ..".FlexLayout")
 local VerticalFlexLayout = setmetatable({characteristic = "vertical"}, {__index = FlexLayout})
 
 ---@param uiElement UiElement
+---@return number # the minimum width of the element as dictated by its children
 function VerticalFlexLayout.getMinWidth(uiElement)
   local w = uiElement.padding * 2
   local maxWidth = 0
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      maxWidth = math.max(maxWidth, child.newWidth)
+      maxWidth = math.max(maxWidth, child.layout.getMinWidth(child))
+    end
+  end
+
+  return w + maxWidth
+end
+
+function VerticalFlexLayout.getPreferredWidth(uiElement)
+  local w = uiElement.padding * 2
+  local maxWidth = 0
+
+  for _, child in ipairs(uiElement.children) do
+    if child.isVisible then
+      maxWidth = math.max(maxWidth, child.layout.getMinWidth(child), child:getPreferredWidth())
     end
   end
 
@@ -32,7 +46,7 @@ function VerticalFlexLayout.getMinHeight(uiElement)
 end
 
 ---@param uiElement UiElement
-function VerticalFlexLayout.growChildrenHeight(uiElement)
+function VerticalFlexLayout.finalizeChildrenHeights(uiElement)
   if #uiElement.children == 0 then
     return
   end
@@ -103,10 +117,13 @@ function VerticalFlexLayout.growChildrenHeight(uiElement)
 end
 
 ---@param uiElement UiElement
-function VerticalFlexLayout.growChildrenWidth(uiElement)
+function VerticalFlexLayout.finalizeChildrenWidths(uiElement)
+  local maxWidth = uiElement.width - uiElement.padding * 2
   for _, child in ipairs(uiElement.children) do
     if child.hFill then
-      child.newWidth = math.min(uiElement.width - uiElement.padding * 2, child.maxWidth)
+      child.newWidth = math.min(maxWidth, child.maxWidth)
+    else
+      child.newWidth = math.min(maxWidth, child.newWidth)
     end
   end
 end
