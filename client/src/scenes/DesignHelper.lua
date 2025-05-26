@@ -75,12 +75,6 @@ function DesignHelper:load()
 
   self.uiRoot:addChild(gameMode)
 
-  local passThroughSelector = ui.PassThroughElement({
-    backgroundColor = {0, 1, 0, 0.5},
-    hAlign = "center",
-    hFill = true,
-  })
-
   local subSelectionSelector = ui.UniSizedContainer({
     childGap = 32,
     padding = 8,
@@ -171,9 +165,9 @@ function DesignHelper:load()
 
   subSelectionSelector:addChild(readyButton)
   subSelectionSelector:addChild(leaveButton)
-  passThroughSelector:addChild(subSelectionSelector)
-  self.uiRoot:addChild(passThroughSelector)
-  --self.uiRoot:addChild(subSelectionSelector)
+  --passThroughSelector:addChild(subSelectionSelector)
+  --self.uiRoot:addChild(passThroughSelector)
+  self.uiRoot:addChild(subSelectionSelector)
 
   local subSelection = ui.UiElement({
     hFill = true,

@@ -29,7 +29,9 @@ local Scene = class(
       height = love.graphics.getHeight(),
       maxHeight = maxHeight,
       padding = 16,
-      layout = ui.Layouts.AdaptiveFlexLayout
+      layout = ui.Layouts.AdaptiveFlexLayout,
+      hAlign = "center",
+      vAlign = "center",
     })
     self.uiRoot.controlsWindow = true
     -- scenes may specify theme music to use that is played once they are switched to

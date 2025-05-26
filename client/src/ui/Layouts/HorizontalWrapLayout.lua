@@ -32,13 +32,29 @@ function HorizontalWrapLayout.positionChildren(uiElement)
   if not uiElement.tempRows or #uiElement.tempRows == 1 then
     HorizontalFlexLayout.positionChildren(uiElement)
   else
-    local x = uiElement.padding
+    -- subtracting a childGap for every child, so compensating one in advance
+    local remainingWidth = uiElement.width - uiElement.padding * 2 + uiElement.childGap
+    for _, child in ipairs(uiElement.children) do
+      if child.isVisible and child.tempRow == 1 then
+        remainingWidth = remainingWidth - child.width - uiElement.childGap
+      end
+    end
+
+    local startX = uiElement.padding
+    if uiElement.hAlign == "left" then
+    elseif uiElement.hAlign == "center" then
+      startX = startX + remainingWidth / 2
+    elseif uiElement.hAlign == "right" then
+      startX = startX + remainingWidth
+    end
+
+    local x = startX
     local y = uiElement.padding
     local row = 1
     for _, child in ipairs(uiElement.children) do
       if child.isVisible then
         if child.tempRow > row then
-          x = uiElement.padding
+          x = startX
           y = y + uiElement.tempRows[row] + uiElement.childGap
           row = child.tempRow
         end

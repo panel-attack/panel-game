@@ -7,7 +7,12 @@ local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
 
+---@class UniSizedContainerOptions : UiElementOptions
+---@field childrenWidth integer
+---@field childrenHeight integer
+
 ---@class UniSizedContainer : UiElement
+---@operator call(UniSizedContainerOptions): UniSizedContainer
 ---@field childrenWidth integer
 ---@field childrenHeight integer
 ---@field selectedRow integer
@@ -20,9 +25,6 @@ function(self, options)
   self.childrenWidth = options.childrenWidth
   self.childrenHeight = options.childrenHeight
   self.minHeight = self.padding * 2 + self.childrenHeight
-
-  self.hAlignChildren = "left"
-  self.vAlignChildren = "top"
 
   self.selectedRow = 1
   self.selectedColumn = 1

@@ -10,6 +10,7 @@ local input = require("client.src.inputManager")
 ---@field onClick fun(button: Button?, input: table?, timeHeld: number?)?
 
 ---@class Button : UiElement
+---@operator call(ButtonOptions): Button
 ---@field backgroundColor number[]
 ---@field outlineColor number []
 ---@field onClick fun(button: Button?, input: table?, timeHeld: number?)

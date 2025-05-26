@@ -214,26 +214,26 @@ function HorizontalFlexLayout.positionChildren(uiElement)
   end
 
   local x = uiElement.padding
+
+  if uiElement.hAlign == "left" then
+  elseif uiElement.hAlign == "center" then
+    x = x + remainingWidth / 2
+  elseif uiElement.hAlign == "right" then
+    x = x + remainingWidth
+  end
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      if child.hAlign == "left" then
-        child.x = x
-      elseif child.hAlign == "center" then
-        child.x = x + remainingWidth / 2
-      elseif child.hAlign == "right" then
-        child.x = x + remainingWidth
-      end
+      child.x = math.round(x)
+      x = x + uiElement.childGap + child.width
 
-      if child.vAlign == "top" then
+      if uiElement.vAlign == "top" then
         child.y = uiElement.padding
-      elseif child.vAlign == "center" then
+      elseif uiElement.vAlign == "center" then
         child.y = (uiElement.height - child.height) / 2
-      elseif child.vAlign == "bottom" then
+      elseif uiElement.vAlign == "bottom" then
         child.y = (uiElement.height - child.height) - uiElement.padding
       end
-      child.x = math.round(child.x)
       child.y = math.round(child.y)
-      x = x + uiElement.childGap + child.width
     end
   end
 end

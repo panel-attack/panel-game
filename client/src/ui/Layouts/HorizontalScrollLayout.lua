@@ -24,11 +24,11 @@ function HorizontalScrollLayout.positionChildren(uiElement)
     if child.isVisible then
       child.x = x
 
-      if child.vAlign == "top" then
+      if uiElement.vAlign == "top" then
         child.y = uiElement.padding
-      elseif child.vAlign == "center" then
+      elseif uiElement.vAlign == "center" then
         child.y = (uiElement.height - child.height) / 2
-      elseif child.vAlign == "bottom" then
+      elseif uiElement.vAlign == "bottom" then
         child.y = (uiElement.height - child.height) - uiElement.padding
       end
       child.x = math.round(child.x)

@@ -141,21 +141,23 @@ function VerticalFlexLayout.positionChildren(uiElement)
   end
 
   local y = uiElement.padding
+
+  if uiElement.vAlign == "top" then
+  elseif uiElement.vAlign == "center" then
+    y = y + remainingHeight / 2
+  elseif uiElement.vAlign == "bottom" then
+    y = y + remainingHeight
+  end
+
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      if child.vAlign == "top" then
-        child.y = y
-      elseif child.vAlign == "center" then
-        child.y = y + remainingHeight / 2
-      elseif child.vAlign == "bottom" then
-        child.y = y + remainingHeight
-      end
+      child.y = y
 
-      if child.hAlign == "left" then
+      if uiElement.hAlign == "left" then
         child.x = uiElement.padding
-      elseif child.hAlign == "center" then
+      elseif uiElement.hAlign == "center" then
         child.x = (uiElement.width - child.width) / 2
-      elseif child.hAlign == "right" then
+      elseif uiElement.hAlign == "right" then
         child.x = (uiElement.width - child.width) - uiElement.padding
       end
       child.x = math.round(child.x)

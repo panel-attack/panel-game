@@ -5,6 +5,7 @@ local Focusable = require(PATH .. ".Focusable")
 
 --- A plain element with the main purpose of giving a container child an alignment without disrupting cursor focus
 ---@class PassThroughElement : UiElement, Focusable
+---@operator call(UiElementOptions):PassThroughElement
 local PassThroughElement = class(
 function (self, options)
 end,

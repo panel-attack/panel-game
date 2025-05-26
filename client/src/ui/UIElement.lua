@@ -58,6 +58,7 @@ local uniqueId = 0
 -- takes in a options table for setting default values
 -- all valid base options are defined in the constructor
 ---@class UiElement
+---@operator call(UiElementOptions): UiElement
 ---@overload fun(options: UiElementOptions): UiElement
 local UIElement = class(
   ---@param self UiElement

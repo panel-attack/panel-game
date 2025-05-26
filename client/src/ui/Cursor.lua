@@ -5,7 +5,12 @@ local FocusDirector = require(PATH .. ".FocusDirector")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+---@class CursorOptions
+---@field target UiElement
+---@field hoveredIndex integer?
+
 ---@class Cursor : FocusDirector, UiElement
+---@operator call(CursorOptions): Cursor
 ---@field hovered UiElement
 ---@field target UiElement
 ---@field hoveredIndex integer

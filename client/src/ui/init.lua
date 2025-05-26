@@ -1,16 +1,29 @@
 local PATH = (...):gsub('%.init$', '')
 
+--[[
+tag each with
+---@source relative path
+otherwise F12 on an import of ui elsewhere will lead to this file instead of the respective source file
+the "./" is assumed given for relative paths but it's still a path so adding the extension is necessary
+when addressing files in subdirectories (layouts) use forward slashes as the path separator
+https://luals.github.io/wiki/annotations/#source
+
+also tag with
+---@type
+so that you get intellisense
+]]
+
 local ui = {
-  ---@see BoolSelector
-  ---@type fun(options: BoolSelectorOptions): BoolSelector
+  ---@source BoolSelector.lua
+  ---@type BoolSelector
   BoolSelector = require(PATH .. ".BoolSelector"),
-  ---@see Button
-  ---@type fun(options: ButtonOptions): Button
+  ---@source Button.lua
+  ---@type Button
   Button = require(PATH .. ".Button"),
   ButtonGroup = require(PATH .. ".ButtonGroup"),
   Carousel = require(PATH .. ".Carousel"),
-  ---@see Cursor
-  ---@type fun(options: UiElementOptions): Cursor
+  ---@source Cursor.lua
+  ---@type Cursor
   Cursor = require(PATH .. ".Cursor"),
   Focusable = require(PATH .. ".Focusable"),
   FocusDirector = require(PATH .. ".FocusDirector"),
@@ -18,8 +31,8 @@ local ui = {
   GridCursor = require(PATH .. ".GridCursor"),
   ImageContainer = require(PATH .. ".ImageContainer"),
   InputField = require(PATH .. ".InputField"),
-  ---@see Label
-  ---@type fun(options: LabelOptions): Label
+  ---@source Label.lua
+  ---@type Label
   Label = require(PATH .. ".Label"),
   Layouts = {
     AdaptiveFlexLayout = require(PATH .. ".Layouts.AdaptiveFlexLayout"),
@@ -28,42 +41,44 @@ local ui = {
     VerticalFlexLayout = require(PATH .. ".Layouts.VerticalFlexLayout"),
   },
   Leaderboard = require(PATH .. ".Leaderboard"),
-  ---@see LevelSlider
-  ---@type fun(options: SliderOptions): LevelSlider
+  ---@source LevelSlider.lua
+  ---@type LevelSlider
   LevelSlider = require(PATH .. ".LevelSlider"),
+  ---@source MenuItem.lua
+  ---@type MenuItem
   MenuItem = require(PATH .. ".MenuItem"),
   MultiPlayerSelectionWrapper = require(PATH .. ".MultiPlayerSelectionWrapper"),
   PagedUniGrid = require(PATH .. ".PagedUniGrid"),
   PanelCarousel = require(PATH .. ".PanelCarousel"),
-  ---@see PassThroughElement
-  ---@type fun(options: UiElementOptions): PassThroughElement
+  ---@source PassThroughElement.lua
+  ---@type PassThroughElement
   PassThroughElement = require(PATH .. ".PassThroughElement"),
-  ---@see PixelFontLabel
-  ---@type fun(options: PixelFontLabelOptions): PixelFontLabel
+  ---@source PixelFontLabel.lua
+  ---@type PixelFontLabel
   PixelFontLabel = require(PATH .. ".PixelFontLabel"),
-  ---@see ScrollContainer
-  ---@type fun(options: ScrollContainerOptions): ScrollContainer
+  ---@source ScrollContainer.lua
+  ---@type ScrollContainer
   ScrollContainer = require(PATH .. ".ScrollContainer"),
   ScrollText = require(PATH .. ".ScrollText"),
-  ---@see Slider
-  ---@type fun(options: SliderOptions): Slider
+  ---@source Slider.lua
+  ---@type Slider
   Slider = require(PATH .. ".Slider"),
   StackPanel = require(PATH .. ".StackPanel"),
   StageCarousel = require(PATH .. ".StageCarousel"),
   Stepper = require(PATH .. ".Stepper"),
-  ---@see TextButton
-  ---@type fun(options: TextButtonOptions): TextButton
+  ---@source TextButton.lua
+  ---@type TextButton
   TextButton = require(PATH .. ".TextButton"),
-  ---@see UiElement
-  ---@type fun(options:UiElementOptions): UiElement
+  ---@source UiElement.lua
+  ---@type UiElement
   ---@class UiElement
   UiElement = require(PATH .. ".UIElement"),
-  ---@see UniSizedContainer
-  ---@type fun(options:UiElementOptions): UniSizedContainer)
+  ---@source UniSizedContainer.lua
+  ---@type UniSizedContainer
   UniSizedContainer = require(PATH .. ".UniSizedContainer"),
   ValueLabel = require(PATH .. ".ValueLabel"),
-  ---@see VerticalMenu
-  ---@type fun(options: ScrollContainerOptions): VerticalMenu
+  ---@source VerticalMenu.lua
+  ---@type VerticalMenu
   VerticalMenu = require(PATH .. ".VerticalMenu"),
 }
 

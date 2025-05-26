@@ -11,11 +11,10 @@ local HorizontalScrollLayout = require(PATH .. ".Layouts.HorizontalScrollLayout"
 ---@field scrollOrientation ("vertical" | "horizontal" | nil)
 
 ---@class ScrollContainer : UiElement
+---@operator call(ScrollContainerOptions): ScrollContainer
 ---@field scrollOrientation string "vertical" or "horizontal"
 ---@field scrollOffset number by how many pixels the children are translated in the orientation
 ---@field maxScrollOffset number maximum allowed value for scrollOffset the object will bound to
-
----@class ScrollContainer
 ---@overload fun(options: ScrollContainerOptions): ScrollContainer
 local ScrollContainer = class(
 ---@param self ScrollContainer

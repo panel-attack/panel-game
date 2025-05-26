@@ -5,6 +5,7 @@ local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class LevelSlider : Slider
+---@operator call(UiElementOptions): LevelSlider
 local LevelSlider = class(
   function(self, options)
     self.min = 1

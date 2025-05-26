@@ -9,6 +9,8 @@ local input = require("client.src.inputManager")
 local VerticalScrollLayout = require(PATH .. ".Layouts.VerticalScrollLayout")
 
 ---@class VerticalMenu : ScrollContainer, Focusable
+---@operator call(ScrollContainerOptions): VerticalMenu
+---@overload fun(options: ScrollContainerOptions): VerticalMenu
 local VerticalMenu = class(
 function(self, options)
   self.selectedIndex = nil

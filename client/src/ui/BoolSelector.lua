@@ -9,6 +9,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 --- A BoolSelector is a UIElement that shows if a setting is on or off and lets you toggle it.
 ---@class BoolSelector : UiElement
+---@operator call(BoolSelectorOptions): BoolSelector
 ---@field value boolean
 ---@field vertical boolean
 local BoolSelector = class(function(boolSelector, options)

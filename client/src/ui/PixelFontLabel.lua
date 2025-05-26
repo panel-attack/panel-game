@@ -11,6 +11,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field fontMap PixelFontMap?
 
 ---@class PixelFontLabel : UiElement
+---@operator call(PixelFontLabelOptions): PixelFontLabel
 ---@field text string
 ---@field charSpacing integer
 ---@field xScale number

@@ -12,6 +12,7 @@ local HorizontalWrapLayout = require(PATH .. ".Layouts.HorizontalWrapLayout")
 ---@field wrap boolean? If the font should wrap around
 
 ---@class Label : UiElement
+---@operator call(LabelOptions): Label
 ---@field id string? The localization key
 ---@field replacementTable string[]? Additional strings to perform string format on a localized key with parts marked for replacement
 ---@field text string The raw text or localization key

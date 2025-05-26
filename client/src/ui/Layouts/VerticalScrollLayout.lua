@@ -20,11 +20,11 @@ function VerticalScrollLayout.positionChildren(uiElement)
     if child.isVisible then
       child.y = y
 
-      if child.hAlign == "left" then
+      if uiElement.hAlign == "left" then
         child.x = uiElement.padding
-      elseif child.hAlign == "center" then
+      elseif uiElement.hAlign == "center" then
         child.x = (uiElement.width - child.width) / 2
-      elseif child.hAlign == "right" then
+      elseif uiElement.hAlign == "right" then
         child.x = (uiElement.width - child.width) - uiElement.padding
       end
       child.x = math.round(child.x)

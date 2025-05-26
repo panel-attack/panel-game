@@ -8,6 +8,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout")
 
 -- MenuItem is a specific UIElement that all children of Menu should be
+---@class MenuItem
 local MenuItem = class(function(self, options)
   self.selected = false
   self.TYPE = "MenuItem"

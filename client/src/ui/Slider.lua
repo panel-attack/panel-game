@@ -24,6 +24,7 @@ local sliderBarThickness = 6
 
 -- A horizontal Slider element
 ---@class Slider: UiElement
+---@operator call(SliderOptions): Slider
 ---@field min number minimum value
 ---@field max number maximum value
 ---@field tickLength integer how many pixels represent a value change of tickAmount

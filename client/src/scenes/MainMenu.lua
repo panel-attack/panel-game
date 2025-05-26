@@ -48,11 +48,12 @@ end
 function MainMenu:createMainMenu()
   local menuContainer = ui.VerticalMenu({
     hAlign = "center",
+    vAlign = "center",
     minHeight = 480,
     maxHeight = 540,
     childGap = 8,
     padding = 32,
-    backgroundColor = {1, 0, 0, 0.2}
+    backgroundColor = {1, 0, 0, 0.2},
   })
 
   local endless = ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
