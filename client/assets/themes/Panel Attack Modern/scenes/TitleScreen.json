@@ -1,0 +1,154 @@
+{
+  "images": [
+    {
+      "id": "gear0Main",
+      "filePath": "Gear0-1",
+      "layer": 0,
+      "anchor": "center",
+      "initialPosition": {
+        "x": 640,
+        "y": 360
+      },
+      "animationTracks": [
+        {
+          "trackId": "slowSpin",
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "rotation": 6.28318
+              },
+              "durationSeconds": 20,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "logoShadow",
+      "filePath": "PanelAttackLogoLayer0",
+      "layer": 0,
+      "anchor": "center",
+      "initialPosition": {
+        "x": 640,
+        "y": 360
+      },
+      "animationTracks": []
+    },
+    {
+      "id": "logoMid",
+      "filePath": "PanelAttackLogoLayer2",
+      "layer": 2,
+      "anchor": "center",
+      "initialPosition": {
+        "x": 640,
+        "y": 360
+      },
+      "animationTracks": [
+        {
+          "trackId": "subtlePulse",
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scale": 1.05
+              },
+              "durationSeconds": 1,
+              "easeType": "quadinout",
+              "yoyo": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gear3Left",
+      "filePath": "Gear3-1",
+      "layer": 3,
+      "anchor": "center",
+      "initialPosition": {
+        "x": 540,
+        "y": 360
+      },
+      "animationTracks": [
+        {
+          "trackId": "mediumSpin",
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "rotation": -6.28318
+              },
+              "durationSeconds": 15,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gear3Right",
+      "filePath": "Gear3-2",
+      "layer": 3,
+      "anchor": "center",
+      "initialPosition": {
+        "x": 740,
+        "y": 360
+      },
+      "animationTracks": [
+        {
+          "trackId": "mediumSpinOpposite",
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "rotation": 6.28318
+              },
+              "durationSeconds": 12,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    
+    {
+      "id": "logoTop",
+      "filePath": "PanelAttackLogoLayer4",
+      "layer": 4,
+      "anchor": "center",
+      "initialPosition": {
+        "x": 640,
+        "y": 360
+      },
+      "animationTracks": []
+    },
+    
+    {
+      "id": "gear5Front",
+      "filePath": "Gear5-1",
+      "layer": 5,
+      "anchor": "center",
+      "initialPosition": {
+        "x": 640,
+        "y": 360
+      },
+      "animationTracks": [
+        {
+          "trackId": "fastSpin",
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "rotation": 6.28318
+              },
+              "durationSeconds": 8,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
