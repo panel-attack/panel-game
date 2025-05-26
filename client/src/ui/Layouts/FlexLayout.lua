@@ -32,14 +32,18 @@ function FlexLayout.setWidth(uiElement, width)
     uiElement.layout.fitSizeWidth(uiElement)
   end
 
+  local minWidth = uiElement.layout.getMinWidth(uiElement)
+  if not uiElement.controlsWindow then
+    minWidth = math.max(minWidth, uiElement.minWidth)
+  end
   if width then
-    local minWidth = uiElement.layout.getMinWidth(uiElement)
-    if not uiElement.controlsWindow then
-      minWidth = math.max(minWidth, uiElement.minWidth)
+    if width > minWidth then
+      uiElement.width = util.bound(minWidth, uiElement.newWidth, width)
+    else
+      uiElement.width =  math.max(minWidth, uiElement.newWidth)
     end
-    uiElement.width = util.bound(minWidth, uiElement.newWidth, width)
   else
-    uiElement.width = util.bound(uiElement.width, uiElement.newWidth, uiElement.maxWidth)
+    uiElement.width = util.bound(minWidth, uiElement.newWidth, uiElement.maxWidth)
   end
 
   uiElement.newWidth = nil

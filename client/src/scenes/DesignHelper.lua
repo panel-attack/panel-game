@@ -113,26 +113,27 @@ function DesignHelper:load()
 
   local panelSelectionSelector, panelButton = getSelectorTemplate("panels")
 
-  -- local panelSize = 28
-  -- local panelContainer = ui.UiElement({
-  --   layout = ui.Layouts.HorizontalWrapLayout,
-  --   maxWidth = 3 * panelSize
-  -- })
+  local panelSize = 28
+  local panelContainer = ui.UniSizedContainer({
+    maxWidth = 3 * panelSize,
+    childrenWidth = panelSize,
+    childrenHeight = panelSize,
+  })
 
-  -- for color = 1, 8 do
-  --   local panelImage = ui.ImageContainer({
-  --     image = panels[GAME.localPlayer.settings.panelId].displayIcons[color],
-  --     width = panelSize,
-  --     height = panelSize,
-  --   })
-  --   panelContainer:addChild(panelImage)
-  -- end
-  -- panelContainer:addChild(ui.ImageContainer({
-  --   image = panels[GAME.localPlayer.settings.panelId].greyPanel,
-  --   width = panelSize,
-  --   height = panelSize,
-  -- }))
-  --panelButton:addChild(panelContainer)
+  for color = 1, 8 do
+    local panelImage = ui.ImageContainer({
+      image = panels[GAME.localPlayer.settings.panelId].displayIcons[color],
+      width = panelSize,
+      height = panelSize,
+    })
+    panelContainer:addChild(panelImage)
+  end
+  panelContainer:addChild(ui.ImageContainer({
+    image = panels[GAME.localPlayer.settings.panelId].greyPanel,
+    width = panelSize,
+    height = panelSize,
+  }))
+  panelButton:addChild(panelContainer)
 
   local levelImage = ui.ImageContainer({
     image = GAME.theme.images.IMG_levels[GAME.localPlayer.settings.level or 1],
@@ -170,9 +171,9 @@ function DesignHelper:load()
 
   subSelectionSelector:addChild(readyButton)
   subSelectionSelector:addChild(leaveButton)
-  --passThroughSelector:addChild(subSelectionSelector)
-  --self.uiRoot:addChild(passThroughSelector)
-  self.uiRoot:addChild(subSelectionSelector)
+  passThroughSelector:addChild(subSelectionSelector)
+  self.uiRoot:addChild(passThroughSelector)
+  --self.uiRoot:addChild(subSelectionSelector)
 
   local subSelection = ui.UiElement({
     hFill = true,

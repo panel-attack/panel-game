@@ -53,11 +53,16 @@ function HorizontalFlexLayout.finalizeChildrenWidths(uiElement)
     return
   end
 
-  local remainingWidth = uiElement.width
+  local remainingWidth = uiElement.width - uiElement.padding * 2
 
   for _, child in ipairs(uiElement.children) do
-    remainingWidth = remainingWidth - child.newWidth
+    if uiElement.isVisible then
+      remainingWidth = remainingWidth - child.newWidth
+      remainingWidth = remainingWidth - uiElement.childGap
+    end
   end
+
+  remainingWidth = remainingWidth + uiElement.childGap
 
   if remainingWidth >= 1 then
     table.clear(growables)

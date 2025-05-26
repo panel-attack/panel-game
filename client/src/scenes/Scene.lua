@@ -19,11 +19,15 @@ local SoundController = require("client.src.music.SoundController")
 local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
+    local _, _, flags = love.window.getMode()
+    local maxWidth, maxHeight = love.window.getDesktopDimensions(flags.display)
     self.uiRoot = ui.UiElement({
       x = 0,
       y = 0,
       width = love.graphics.getWidth(),
+      maxWidth = maxWidth,
       height = love.graphics.getHeight(),
+      maxHeight = maxHeight,
       padding = 16,
       layout = ui.Layouts.AdaptiveFlexLayout
     })
