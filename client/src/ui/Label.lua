@@ -31,8 +31,8 @@ local Label = class(
       self.text = options.text or ""
     end
 
-    self.hAlign = options.hAlign or "left"
-    self.vAlign = options.vAlign or "top"
+    self.hAlign = options.hAlign or "center"
+    self.vAlign = options.vAlign or "center"
 
     self.fontSize = options.fontSize or "normal"
     local font = GraphicsUtil.getGlobalFontWithSize(self.fontSize)

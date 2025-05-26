@@ -13,7 +13,9 @@ DesignHelper.name = "DesignHelper"
 local function getSelectorTemplate(id)
   local selector = ui.UiElement({
     layout = ui.Layouts.VerticalFlexLayout,
+    childGap = 4,
     vAlign = "center",
+    hAlign = "center",
     vFill = true,
   })
   local button = ui.Button({
@@ -23,11 +25,7 @@ local function getSelectorTemplate(id)
     minHeight = 84,
     backgroundColor = {1, 1, 1, 0},
   })
-  local label = ui.Label({
-    id = id,
-    hAlign = "center",
-    vAlign = "bottom"
-  })
+  local label = ui.Label({id = id})
   selector:addChild(button)
   selector:addChild(label)
 
@@ -79,9 +77,10 @@ function DesignHelper:load()
     childGap = 32,
     padding = 8,
     backgroundColor = {0, 1, 0, 0.5},
-    childrenWidth = 84,
+    childrenWidth = 112,
     childrenHeight = 112,
     hAlign = "center",
+    vAlign = "center",
     --scrollOrientation = "horizontal",
   })
 
@@ -147,21 +146,25 @@ function DesignHelper:load()
   --subSelectionSelector:addChild(ui.Label({text = "Puzzle"}))
   --subSelectionSelector:addChild(ui.Label({text = "Attack File"}))
 
-  local readyButton = ui.Button({
+  local readyButton = ui.TextButton({
+    label = ui.Label({id = "ready"}),
     hAlign = "center",
     vAlign = "center",
     minWidth = 84,
     minHeight = 84,
+    maxWidth = 84,
+    maxHeight = 84,
   })
-  readyButton:addChild(ui.Label({id = "ready", hAlign = "center", vAlign = "center"}))
 
-  local leaveButton = ui.Button({
+  local leaveButton = ui.TextButton({
+    label = ui.Label({id = "leave"}),
     hAlign = "center",
     vAlign = "center",
     minWidth = 84,
     minHeight = 84,
+    maxWidth = 84,
+    maxHeight = 84,
   })
-  leaveButton:addChild(ui.Label({id = "leave", hAlign = "center", vAlign = "center"}))
 
   subSelectionSelector:addChild(readyButton)
   subSelectionSelector:addChild(leaveButton)

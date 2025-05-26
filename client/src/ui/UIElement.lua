@@ -122,9 +122,14 @@ function UIElement:onChildrenChanged()
     local oWidth = self.width
     local oHeight = self.height
 
-    
+    -- if DEBUG_ENABLED then
+    --   self.layout.resize(self)
+    -- end
+
     if self.controlsWindow then
-      self.layout.resize(self)
+      --if not DEBUG_ENABLED then
+        self.layout.resize(self)
+      --end
       if oWidth ~= self.width or oHeight ~= self.height then
         GraphicsUtil.updateMode(self.width, self.height, {})
       end
@@ -203,7 +208,13 @@ function UIElement:drawSelf()
   love.graphics.setColor(self.backgroundColor)
   love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
   love.graphics.setColor(1, 1, 1, 1)
-  love.graphics.print(self.width .. ", " .. self.height, self.x + 5, self.y + 5)
+  --if self.padding > 0 then
+    -- love.graphics.rectangle("line", self.x + self.padding, self.y + self.padding, 1, self.height - self.padding * 2)
+    -- love.graphics.rectangle("line", self.x + self.padding, self.y + self.padding, self.width - self.padding * 2, 1)
+    -- love.graphics.rectangle("line", self.x + self.width - self.padding, self.y + self.padding, 1, self.height - self.padding * 2)
+    -- love.graphics.rectangle("line", self.x + self.padding, self.y + self.height - self.padding, self.width - self.padding *2, 1)
+  --end
+  --love.graphics.print(self.width .. ", " .. self.height, self.x + 5, self.y + 5)
 end
 
 function UIElement:drawChildren()

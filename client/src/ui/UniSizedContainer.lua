@@ -41,8 +41,6 @@ function UniSizedContainer:addChild(uiElement, index)
   uiElement.maxWidth = self.childrenWidth
   uiElement.minHeight = self.childrenHeight
   uiElement.maxHeight = math.min(self.childrenHeight, uiElement.maxHeight)
-  uiElement.hAlign = self.hAlignChildren
-  uiElement.vAlign = self.vAlignChildren
 
   UiElement.addChild(self, uiElement, index)
 end

@@ -40,7 +40,7 @@ function FlexLayout.setWidth(uiElement, width)
     if width > minWidth then
       uiElement.width = util.bound(minWidth, uiElement.newWidth, width)
     else
-      uiElement.width =  math.max(minWidth, uiElement.newWidth)
+      uiElement.width = minWidth
     end
   else
     uiElement.width = util.bound(minWidth, uiElement.newWidth, uiElement.maxWidth)
