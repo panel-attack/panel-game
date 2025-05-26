@@ -12,74 +12,88 @@ local START_OPACITY = 0.5
 
 local scenePath = themes[config.theme].path .. "/scenes/"
 local spriteData  = fileUtils.readJsonFile(scenePath .. "TitleScreen.json")
-local drawableMap = {}
 
-local function applyAnimationTracks(drawable)
-  local imageInfo = drawable.animationData
-  if imageInfo.animationTracks then
-    for _, track in ipairs(imageInfo.animationTracks) do
-      local previousTween = nil
-      local target        = drawableMap[imageInfo.id]
+local drawables = {}   -- flat list after recursion ✔ draw-order sorts once
 
-      for stepIndex, step in ipairs(track.steps) do
-        -- First link in the chain
-        if stepIndex == 1 then
-          previousTween = Flux.to(target, step.durationSeconds,
-                                  step.animateProperties)
-        else
-          previousTween = previousTween:after(target,
-                                               step.durationSeconds,
-                                               step.animateProperties)
-        end
+local function anchorOffset(drawable, anchor)
+  local w, h = drawable.width, drawable.height
+  local map = {
+    topLeft={0,0}, topCenter={w/2,0}, topRight={w,0},
+    centerLeft={0,h/2}, center={w/2,h/2}, centerRight={w,h/2},
+    bottomLeft={0,h}, bottomCenter={w/2,h}, bottomRight={w,h}
+  }
+  return (map[anchor])[1], (map[anchor])[2]
+end
 
-        previousTween:ease(step.easeType)
-                     :delay(step.delaySeconds or 0)
-
-        -- inline yoyo = append reverse tween
-        if step.yoyo then
-          local reverseProps = {}
-          for k, v in pairs(step.animateProperties) do
-            reverseProps[k] = target[k] -- value **before** tween starts
-          end
-          previousTween = previousTween:after(target,
-                                               step.durationSeconds,
-                                               reverseProps)
-                                       :ease(step.easeType)
-        end
-      end
-
-      -- Loop the whole track?
-      if track.loopTrack then
-        previousTween:oncomplete(function() applyAnimationTracks(drawable) end)
-      end
+local function buildTrack(target, track)
+  local prev
+  for i,step in ipairs(track.steps) do
+    local tween
+    if i == 1 then
+      tween = Flux.to(target, step.durationSeconds,
+                              step.animateProperties)
+    else
+      tween = tween:after(target,
+                                            step.durationSeconds,
+                                            step.animateProperties)
     end
+    tween:ease(step.easeType):delay(step.delaySeconds or 0)
+    if step.yoyo then
+      local rev = {}
+      for k in pairs(step.animateProperties) do rev[k] = target[k] end
+      tween = tween:after(target, step.durationSeconds, rev):ease(step.easeType)
+    end
+    prev = tween
+  end
+  if track.loopTrack then
+    prev:oncomplete(function() buildTrack(target, track) end)
   end
 end
 
-for _, imageInfo in ipairs(spriteData.images) do
-  local texture = GraphicsUtil.loadImageFromSupportedExtensions(scenePath .. imageInfo.filePath)
-
-  drawableMap[imageInfo.id] = {
-    texture      = texture,
-    x = imageInfo.initialPosition.x,
-    y = imageInfo.initialPosition.y,
-    rotation = imageInfo.initialRotation or 0,
-    scale = imageInfo.initialScale or 1,
-    alpha = 1,
-    animationData = imageInfo
+local function loadNode(node, parent)
+  local obj = {
+    id       = node.id,
+    parent   = parent,
+    x        = node.localPosition and node.localPosition.x or 0,
+    y        = node.localPosition and node.localPosition.y or 0,
+    width    = node.size and node.size.width or 0,
+    height   = node.size and node.size.height or 0,
+    rotation = node.initialRotation or 0,
+    scale    = node.initialScale or 1,
+    alpha    = 1,
+    layer    = node.layer or 0,
+    anchor   = node.anchor or "center",
+    pivot    = node.pivot or "center"
   }
+  if node.filePath then
+    local texture = GraphicsUtil.loadImageFromSupportedExtensions(scenePath .. node.filePath)
+    if texture then
+      obj.texture = texture
+      obj.width = texture:getWidth()
+      obj.height = texture:getHeight()
+    end
+  end
+  table.insert(drawables, obj)
 
-  applyAnimationTracks(drawableMap[imageInfo.id])
+  for _,track in ipairs(node.animationTracks or {}) do buildTrack(obj, track) end
+  for _,child in ipairs(node.children or {}) do loadNode(child, obj) end
 end
 
-local function anchorOffset(texture, anchor)
-  local w, h = texture:getWidth(), texture:getHeight()
-  local map = {
-    topLeft      = {0,     0},     topCenter    = {w/2, 0},   topRight     = {w,   0},
-    centerLeft   = {0,   h/2},     center       = {w/2, h/2}, centerRight  = {w, h/2},
-    bottomLeft   = {0,     h},     bottomCenter = {w/2, h},   bottomRight  = {w,   h}
-  }
-  return (map[anchor] or map.center)[1], (map[anchor] or map.center)[2]
+loadNode(spriteData, nil)
+table.sort(drawables, function(a,b) return a.layer < b.layer end)
+
+local function objectTransform(obj)
+  local ax, ay = anchorOffset(obj, obj.anchor)
+  return obj.x - ax, obj.y - ay, obj.rotation, obj.scale
+end
+
+local function worldTransform(obj)
+  if not obj.parent then
+    return objectTransform(obj)
+  end
+  local px, py, prot, pscale = worldTransform(obj.parent)
+  local ox, oy, oprot, oscale = objectTransform(obj)
+  return px + ox, py + oy, prot + oprot, pscale * oscale
 end
 
 -- The title screen scene
@@ -122,22 +136,42 @@ end
 
 function TitleScreen:update(dt)
   self.backgroundImg:update(dt)
-  local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
-  if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then
-    GAME.theme:playValidationSfx()
-    self.animation:stop()
-    GAME.navigationStack:replace(MainMenu())
-  end
+  -- local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
+  -- if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then
+  --   GAME.theme:playValidationSfx()
+  --   self.animation:stop()
+  --   GAME.navigationStack:replace(MainMenu())
+  -- end
 end
 
 function TitleScreen:draw()
   -- self.backgroundImg:draw()
   self:titleDrawPressStart(((math.sin(5 * love.timer.getTime()) / 2 + .5) ^ .5) / 2 + .5)
 
-  for _, d in pairs(drawableMap) do
-    local ox, oy = anchorOffset(d.texture, d.anchor or "center")
-    love.graphics.setColor(1,1,1,d.alpha or 1)
-    love.graphics.draw(d.texture, d.x, d.y, d.rotation, d.scale, d.scale, ox, oy)
+  for _,d in ipairs(drawables) do
+    if d.texture then
+      local px, py = anchorOffset(d, d.pivot)
+      local wx, wy, wrot, wscale = worldTransform(d)
+
+      love.graphics.push()
+
+      love.graphics.setColor(1,1,1,d.alpha)
+
+      love.graphics.translate(wx, wy)
+
+      -- 2) shift so *pivot* becomes the origin
+      love.graphics.translate(px, py)
+
+      -- 3) apply rotation & scale around that pivot
+      love.graphics.rotate(wrot)
+      love.graphics.scale(wscale, wscale)
+
+      -- 4) shift back, then draw so (0,0) is sprite top-left
+      love.graphics.translate(-px, -py)
+      love.graphics.draw(d.texture, 0, 0)
+
+      love.graphics.pop()
+    end
   end
 end
 

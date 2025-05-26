@@ -1,13 +1,39 @@
 {
-  "images": [
+  "id": "logoAssembly",
+  "anchor": "center",
+  "localPosition": {
+    "x": 640,
+    "y": 360
+  },
+  "size": {
+    "width": 584,
+    "height": 416
+  }
+  "animationTracks": [
+    {
+      "trackId": "bob",
+      "loopTrack": true,
+      "steps": [
+        {
+          "animateProperties": {
+            "y": 360
+          },
+          "durationSeconds": 2,
+          "easeType": "quadinout",
+          "yoyo": true
+        }
+      ]
+    }
+  ],
+  "children": [
     {
       "id": "gear0Main",
       "filePath": "Gear0-1",
       "layer": 0,
-      "anchor": "center",
-      "initialPosition": {
-        "x": 640,
-        "y": 360
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 98,
+        "y": 240
       },
       "animationTracks": [
         {
@@ -26,61 +52,69 @@
       ]
     },
     {
-      "id": "logoShadow",
-      "filePath": "PanelAttackLogoLayer0",
+      "id": "gear0Main",
+      "filePath": "Gear0-1",
       "layer": 0,
-      "anchor": "center",
-      "initialPosition": {
-        "x": 640,
-        "y": 360
-      },
-      "animationTracks": []
-    },
-    {
-      "id": "logoMid",
-      "filePath": "PanelAttackLogoLayer2",
-      "layer": 2,
-      "anchor": "center",
-      "initialPosition": {
-        "x": 640,
-        "y": 360
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 394,
+        "y": 240
       },
       "animationTracks": [
         {
-          "trackId": "subtlePulse",
+          "trackId": "slowSpin",
           "loopTrack": true,
           "steps": [
             {
               "animateProperties": {
-                "scale": 1.05
+                "rotation": 6.28318
               },
-              "durationSeconds": 1,
-              "easeType": "quadinout",
-              "yoyo": true
+              "durationSeconds": 20,
+              "easeType": "linear"
             }
           ]
         }
       ]
     },
     {
+      "id": "mainLogo",
+      "filePath": "PanelAttackLogoLayer0",
+      "layer": 0,
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "logoMid",
+      "filePath": "PanelAttackLogoLayer2",
+      "layer": 2,
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 0,
+        "y": 0
+      },
+    },
+    {
       "id": "gear3Left",
       "filePath": "Gear3-1",
       "layer": 3,
-      "anchor": "center",
-      "initialPosition": {
-        "x": 540,
-        "y": 360
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 206,
+        "y": 312
       },
       "animationTracks": [
         {
-          "trackId": "mediumSpin",
+          "trackId": "spinL",
           "loopTrack": true,
           "steps": [
             {
               "animateProperties": {
                 "rotation": -6.28318
               },
-              "durationSeconds": 15,
+              "durationSeconds": 12,
               "easeType": "linear"
             }
           ]
@@ -91,14 +125,14 @@
       "id": "gear3Right",
       "filePath": "Gear3-2",
       "layer": 3,
-      "anchor": "center",
-      "initialPosition": {
-        "x": 740,
-        "y": 360
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 320,
+        "y": 312
       },
       "animationTracks": [
         {
-          "trackId": "mediumSpinOpposite",
+          "trackId": "spinR",
           "loopTrack": true,
           "steps": [
             {
@@ -112,27 +146,24 @@
         }
       ]
     },
-    
     {
       "id": "logoTop",
       "filePath": "PanelAttackLogoLayer4",
       "layer": 4,
-      "anchor": "center",
-      "initialPosition": {
-        "x": 640,
-        "y": 360
-      },
-      "animationTracks": []
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 0,
+        "y": 0
+      }
     },
-    
     {
       "id": "gear5Front",
       "filePath": "Gear5-1",
       "layer": 5,
-      "anchor": "center",
-      "initialPosition": {
-        "x": 640,
-        "y": 360
+      "anchor": "topLeft",
+      "localPosition": {
+        "x": 0,
+        "y": 0
       },
       "animationTracks": [
         {
