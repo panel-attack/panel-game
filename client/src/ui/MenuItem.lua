@@ -24,6 +24,7 @@ function MenuItem.createMenuItem(label, item)
 
   local menuItem = UiElement({
     hAlign = "center",
+    vAlign = "center",
     layout = HorizontalFlexLayout,
     childGap = 16,
     hFill = true,

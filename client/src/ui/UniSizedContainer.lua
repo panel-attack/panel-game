@@ -147,7 +147,7 @@ function UniSizedContainer:onResized()
 
   local rowIndex = 1
   local rows = {{}}
-  local yOffset = self.padding
+  local yOffset = self.children[1].y
   for i, child in ipairs(self.children) do
     if child.y > yOffset then
       yOffset = child.y

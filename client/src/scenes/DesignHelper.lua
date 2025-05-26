@@ -57,6 +57,7 @@ function DesignHelper:load()
     padding = 8,
     backgroundColor = {0, 0, 1, 0.5},
     hAlign = "center",
+    vAlign = "center",
     layout = ui.Layouts.HorizontalFlexLayout,
   --  hFill = true,
   })
@@ -111,6 +112,8 @@ function DesignHelper:load()
     maxWidth = 3 * panelSize,
     childrenWidth = panelSize,
     childrenHeight = panelSize,
+    hAlign = "center",
+    vAlign = "center",
   })
 
   for color = 1, 8 do
@@ -126,6 +129,8 @@ function DesignHelper:load()
     width = panelSize,
     height = panelSize,
   }))
+  panelButton.padding = 4
+  panelSelectionSelector.childGap = 0
   panelButton:addChild(panelContainer)
 
   local levelImage = ui.ImageContainer({
