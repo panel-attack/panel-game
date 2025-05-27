@@ -18,6 +18,7 @@ local input = require("client.src.inputManager")
 ---@field selectedRow integer
 ---@field selectedColumn integer
 ---@field rows UiElement[][]
+---@overload fun(options: UniSizedContainerOptions): UniSizedContainer
 local UniSizedContainer = class(
 function(self, options)
   assert(options.childrenHeight and options.childrenWidth)
@@ -54,7 +55,6 @@ function UniSizedContainer:moveToPreviousRow()
   local nextRow = wrap(1, self.selectedRow - 1, #self.rows)
   if self.rows[nextRow][self.selectedColumn] then
     self.selectedRow = nextRow
-    self.hovered = self.rows[self.selectedRow][self.selectedColumn]
     return true
   else
     return false
@@ -70,7 +70,6 @@ function UniSizedContainer:moveToNextRow()
   local nextRow = wrap(1, self.selectedRow + 1, #self.rows)
   if self.rows[nextRow][self.selectedColumn] then
     self.selectedRow = nextRow
-    self.hovered = self.rows[self.selectedRow][self.selectedColumn]
     return true
   else
     return false
@@ -84,7 +83,6 @@ function UniSizedContainer:moveToPrevious()
   end
 
   self.selectedColumn = wrap(1, self.selectedColumn - 1, #self.rows[self.selectedRow])
-  self.hovered = self.rows[self.selectedRow][self.selectedColumn]
   return true
 end
 
@@ -95,7 +93,6 @@ function UniSizedContainer:moveToNext()
   end
 
   self.selectedColumn = wrap(1, self.selectedColumn + 1, #self.rows[self.selectedRow])
-  self.hovered = self.rows[self.selectedRow][self.selectedColumn]
   return true
 end
 
@@ -123,12 +120,12 @@ function UniSizedContainer:receiveInputs(inputs, dt)
     if self:moveToNextRow() then
       GAME.theme:playMoveSfx()
     end
-  elseif inputs.isDown.Swap1 or inputs.isDown.Start then
-    if self.hovered.isFocusable then
+  elseif inputs.isDown.Swap1 or inputs.isDown.Start or inputs.isPressed.Swap1 or inputs.isPressed.Start then
+    if self.rows[self.selectedRow][self.selectedColumn].isFocusable then
       GAME.theme:playValidationSfx()
-      self:setFocus(self.hovered)
-    elseif self.hovered.receiveInputs then
-      self.hovered:receiveInputs(inputs, dt)
+      self:setFocus(self.rows[self.selectedRow][self.selectedColumn])
+    elseif self.rows[self.selectedRow][self.selectedColumn].receiveInputs then
+      self.rows[self.selectedRow][self.selectedColumn]:receiveInputs(inputs, dt)
     else
       GAME.theme:playCancelSfx()
     end

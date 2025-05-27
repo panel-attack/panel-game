@@ -3,7 +3,7 @@ local PATH = (...):gsub('%.init$', '')
 --[[
 tag each with
 ---@source relative path
-otherwise F12 on an import of ui elsewhere will lead to this file instead of the respective source file
+that way "Go to source" on an import of ui elsewhere will lead to the respective source instead of this one
 the "./" is assumed given for relative paths but it's still a path so adding the extension is necessary
 when addressing files in subdirectories (layouts) use forward slashes as the path separator
 https://luals.github.io/wiki/annotations/#source
@@ -22,6 +22,9 @@ local ui = {
   Button = require(PATH .. ".Button"),
   ButtonGroup = require(PATH .. ".ButtonGroup"),
   Carousel = require(PATH .. ".Carousel"),
+  ---@source CharacterButton.lua
+  ---@type CharacterButton
+  CharacterButton = require(PATH .. ".CharacterButton"),
   ---@source Cursor.lua
   ---@type Cursor
   Cursor = require(PATH .. ".Cursor"),

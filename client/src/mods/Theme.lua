@@ -357,11 +357,15 @@ local function loadPlayerNumberIcons(theme)
   return theme.images.IMG_players
 end
 
-function Theme:loadSelectionGraphics()
+function Theme:loadFlags()
   self.images.flags = {}
   for _, flag in ipairs(flags) do
     self.images.flags[flag] = self:load_theme_img("flags/" .. flag)
   end
+end
+
+function Theme:loadSelectionGraphics()
+  self:loadFlags()
 
   self.images.IMG_level_cursor = self:load_theme_img("level/level_cursor")
   self.images.IMG_levels = {}
@@ -1098,6 +1102,20 @@ function Theme:getSelectionAssetPack(index)
   }
 
   return pack
+end
+
+---@param flagName string?
+---@return love.Texture?
+function Theme:getFlag(flagName)
+  if not flagName then
+    return nil
+  end
+
+  if not self.images.flags then
+    self:loadFlags()
+  end
+
+  return self.images.flags[flagName]
 end
 
 function Theme:reload()

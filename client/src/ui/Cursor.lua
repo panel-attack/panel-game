@@ -131,20 +131,34 @@ function Cursor:receiveInputs(inputs, dt)
   end
 end
 
-function Cursor:setTarget(uiElement)
+---@param uiElement UiElement
+---@param hoveredIndex integer?
+function Cursor:setTarget(uiElement, hoveredIndex)
+  if self.target ~= uiElement then
+    self.hovered = nil
+  end
   self.target = uiElement
   if uiElement.isFocusable then
     self:setFocus(self.target)
+    if hoveredIndex then
+      self.hoveredIndex = hoveredIndex
+      self.hovered = self.target.children[self.hoveredIndex]
+    else
+      self.hoveredIndex = 0
+      self:moveToNext()
+    end
   end
 end
 
 function Cursor:drawSelf()
   -- GraphicsUtil.setColor(0, 0, 0, 0.2)
   -- love.graphics.rectangle("fill", self.target.x, self.target.y, self.target.width, self.target.height)
-  GraphicsUtil.setColor(1, 1, 1, 0.2)
-  local x, y = self.hovered:getScreenPos()
-  love.graphics.rectangle("fill", x, y, self.hovered.width, self.hovered.height)
-  GraphicsUtil.setColor(1, 1, 1, 1)
+  if self.hovered then
+    GraphicsUtil.setColor(1, 1, 1, 0.2)
+    local x, y = self.hovered:getScreenPos()
+    love.graphics.rectangle("fill", x, y, self.hovered.width, self.hovered.height)
+    GraphicsUtil.setColor(1, 1, 1, 1)
+  end
 end
 
 function Cursor:escapeCallback()

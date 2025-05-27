@@ -28,11 +28,30 @@ local function getSelectorTemplate(id)
   local label = ui.Label({id = id})
   selector:addChild(button)
   selector:addChild(label)
+  selector.receiveInputs = function(selector, input, dt)
+    button:receiveInputs(input, dt)
+  end
 
   return selector, button
 end
 
+local function createCharacterSelect()
+  local characterSelect = ui.UniSizedContainer({
+    childrenWidth = 84,
+    childrenHeight = 84,
+    childGap = 16
+  })
+
+  for i, characterId in ipairs(visibleCharacters) do
+    local button = ui.CharacterButton({character = characters[characterId]})
+    characterSelect:addChild(button)
+  end
+
+  return characterSelect
+end
+
 function DesignHelper:load()
+  self.characterSelect = createCharacterSelect()
   self.uiRoot.layout = ui.Layouts.VerticalFlexLayout
   self.uiRoot.childGap = 8
 
@@ -94,6 +113,9 @@ function DesignHelper:load()
   })
   local characterSelectionSelector, characterButton = getSelectorTemplate("character")
   characterButton:addChild(characterImage)
+  characterButton.onClick = function()
+    self:focusCharacterSelect()
+  end
 
   local stageImage = ui.ImageContainer({
     image = stages[GAME.localPlayer.settings.selectedStageId].images.thumbnail,
@@ -177,7 +199,7 @@ function DesignHelper:load()
   --self.uiRoot:addChild(passThroughSelector)
   self.uiRoot:addChild(subSelectionSelector)
 
-  local subSelection = ui.UiElement({
+  self.subSelection = ui.UiElement({
     hFill = true,
     minHeight = 200,
     vFill = true,
@@ -185,9 +207,9 @@ function DesignHelper:load()
     backgroundColor = {0, 1, 0, 0.5}--{0.7, 0, 0.5, 1},
   })
 
-  subSelection.receiveInputs = function() end
+  self.subSelection.receiveInputs = function() end
 
-  self.uiRoot:addChild(subSelection)
+  self.uiRoot:addChild(self.subSelection)
 
   self.cursor = ui.Cursor({
     target = self.uiRoot,
@@ -216,6 +238,16 @@ function DesignHelper:update(dt)
     GAME.navigationStack:pop()
   end
   self.cursor:receiveInputs(inputs, dt)
+end
+
+function DesignHelper:focusCharacterSelect()
+  self.characterSelect.yieldFocus = function(characterSelect)
+    self.cursor:setTarget(self.uiRoot, 3)
+    characterSelect.yieldFocus = nil
+  end
+
+  self.subSelection:addChild(self.characterSelect)
+  self.cursor:setTarget(self.characterSelect)
 end
 
 function DesignHelper:draw()

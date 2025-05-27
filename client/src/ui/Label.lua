@@ -116,4 +116,8 @@ function Label:getMinHeight()
   return GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
 end
 
+function Label:addChild()
+  error("Labels cannot have children")
+end
+
 return Label
