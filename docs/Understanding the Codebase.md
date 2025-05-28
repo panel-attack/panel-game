@@ -322,7 +322,7 @@ You may find some of these to be rather unfit for the general purposes their nam
 
 The standard layouts for Panel Attack are akin to a FlexBox and the goal of layouts is to provide a way to design UI for scenes so that they provide a good experience on desktop while still being a functional compromise in portrait mode dimensions on mobile.
 
-To achieve this, layouting is implemented as mostly separated from UIElements themselves and the layout of most UIElements can be changed just by assigning it a different static layout table.
+To achieve this, the layout logic is implemented as mostly separated from UIElements themselves and the layout of most UIElements can be changed just by assigning it a different static layout table.
 
 There are some exceptions to this as some UIElements are built with a specific orientation in mind while providing extra functionality.
 Examples of this include:
@@ -332,7 +332,7 @@ You can still change the orientation and layout but usually the contents are des
 - Horizontally oriented containers that automatically wrap around as their width reduces  
 As they already adjust to portrait dimensions on their own, there is no good reason to change the layout
 
-Layouting always originates from the UIElement at the root and only if it is marked with `controlsWindow = true`.
+Layout updates always originate from the UIElement at the root and only if it is marked with `controlsWindow = true`.
 
 The biggest design points to note are the following:
 
@@ -356,7 +356,7 @@ For future reference and the creation of new layouts, a brief overview on how th
 The first core problem of automatic layout with an arbitrary resolution is that you have to know how big your widgets are before you can start placing them.
 The second core problem is wrapping. Text and other tailor-made widgets can trade width for height.
 
-To address these problems, layouting follows a multi-step process in which each step traverses and works the entire UI tree before going to the next step.
+To address these problems, the layout logic follows a multi-step process in which each step traverses and works the entire UI tree before going to the next step.
 
 The first core problem has led to the introduction of a bunch more fields and functions to determine size:
 
