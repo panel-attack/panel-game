@@ -1,5 +1,5 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local Button = require(PATH .. ".Button")
+local import = require("common.lib.import")
+local Button = import("./Button")
 local class = require("common.lib.class")
 
 ---@class TextButtonOptions : ButtonOptions

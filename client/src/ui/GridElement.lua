@@ -1,8 +1,8 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local StaticLayout = require(PATH .. ".Layouts.StaticLayout")
+local StaticLayout = import("./Layouts.StaticLayout")
 
 local GridElement = class(function(gridElement, options)
   if options.content then

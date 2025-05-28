@@ -1,5 +1,5 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local Slider = require(PATH .. ".Slider")
+local import = require("common.lib.import")
+local Slider = import("./Slider")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")

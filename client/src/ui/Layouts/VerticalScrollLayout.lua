@@ -1,4 +1,4 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
+local import = require("common.lib.import")
 local VerticalFlexLayout = require(PATH ..".VerticalFlexLayout")
 local util = require("common.lib.util")
 

@@ -1,6 +1,6 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
+local import = require("common.lib.import")
 
-local UiElement = require(PATH .. ".UIElement")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 

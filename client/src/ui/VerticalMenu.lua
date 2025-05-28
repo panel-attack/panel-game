@@ -1,14 +1,14 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
+local import = require("common.lib.import")
 PATH = "client.src.ui"
-local ScrollContainer = require(PATH .. ".ScrollContainer")
+local ScrollContainer = import("./ScrollContainer")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local Focusable = require(PATH .. ".Focusable")
-local FocusDirector = require(PATH .. ".FocusDirector")
+local Focusable = import("./Focusable")
+local FocusDirector = import("./FocusDirector")
 local input = require("client.src.inputManager")
-local VerticalScrollLayout = require(PATH .. ".Layouts.VerticalScrollLayout")
-local CursorNavigable = require(PATH .. ".CursorNavigable")
+local VerticalScrollLayout = import("./Layouts.VerticalScrollLayout")
+local CursorNavigable = import("./CursorNavigable")
 
 ---@class VerticalMenu : ScrollContainer, Focusable
 ---@operator call(ScrollContainerOptions): VerticalMenu

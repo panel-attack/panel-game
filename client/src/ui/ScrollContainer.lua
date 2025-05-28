@@ -1,11 +1,11 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local logger = require("common.lib.logger")
-local VerticalScrollLayout = require(PATH .. ".Layouts.VerticalScrollLayout")
-local HorizontalScrollLayout = require(PATH .. ".Layouts.HorizontalScrollLayout")
+local VerticalScrollLayout = import("./Layouts.VerticalScrollLayout")
+local HorizontalScrollLayout = import("./Layouts.HorizontalScrollLayout")
 
 ---@class ScrollContainerOptions : UiElementOptions
 ---@field scrollOrientation ("vertical" | "horizontal" | nil)

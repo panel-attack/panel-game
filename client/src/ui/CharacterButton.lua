@@ -1,6 +1,6 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
+local import = require("common.lib.import")
 local class = require("common.lib.class")
-local Button = require(PATH .. ".Button")
+local Button = import("./Button")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 

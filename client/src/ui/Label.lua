@@ -1,8 +1,8 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UIElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UIElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local HorizontalWrapLayout = require(PATH .. ".Layouts.HorizontalWrapLayout")
+local HorizontalWrapLayout = import("./Layouts.HorizontalWrapLayout")
 
 ---@class LabelOptions : UiElementOptions
 ---@field id string? The localization key; nil if there should be no translation

@@ -1,9 +1,9 @@
 local utf8 = require("common.lib.utf8Additions")
 local util = require("common.lib.util")
 
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UIElement = require(PATH .. ".UIElement")
-local inputFieldManager = require(PATH .. ".inputFieldManager")
+local import = require("common.lib.import")
+local UIElement = import("./UIElement")
+local inputFieldManager = import("./inputFieldManager")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 

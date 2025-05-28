@@ -21,7 +21,7 @@
 
     "hint.semicolon": "Disable",
 
-    "misc.parameters": ["--develop=true"],
+    //"misc.parameters": ["--develop=true"],
 
     "runtime.plugin": "common/lib/luaLsPlugin.lua",
     "workspace.checkThirdParty": false,

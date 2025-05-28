@@ -1,4 +1,4 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
+local import = require("common.lib.import")
 local FlexLayout = require(PATH ..".FlexLayout")
 
 ---@class VerticalFlexLayout : FlexLayout

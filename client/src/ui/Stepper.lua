@@ -1,11 +1,11 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UIElement = require(PATH .. ".UIElement")
-local TextButton = require(PATH .. ".TextButton")
-local Label = require(PATH .. ".Label")
+local import = require("common.lib.import")
+local UIElement = import("./UIElement")
+local TextButton = import("./TextButton")
+local Label = import("./Label")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout")
+local HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout")
 
 local NAV_BUTTON_WIDTH = 25
 

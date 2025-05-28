@@ -1,9 +1,10 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local Layout = require(PATH .. ".Layout")
-local VerticalFlexLayout = require(PATH ..".VerticalFlexLayout")
-local HorizontalFlexLayout = require(PATH ..".HorizontalFlexLayout")
+local import = require("common.lib.import")
+local Layout = import("./Layout")
+local VerticalFlexLayout = import("./VerticalFlexLayout")
+local HorizontalFlexLayout = import("./HorizontalFlexLayout")
 
 ---@class AdaptiveFlexLayout : FlexLayout
+---@diagnostic disable-next-line: assign-type-mismatch
 local AdaptiveFlexLayout = setmetatable({}, {__index = HorizontalFlexLayout})
 
 function AdaptiveFlexLayout.resize(uiElement, width, height)

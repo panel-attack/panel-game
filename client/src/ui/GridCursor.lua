@@ -1,10 +1,10 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
-local directsFocus = require(PATH .. ".FocusDirector")
+local directsFocus = import("./FocusDirector")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local StaticLayout = require(PATH .. ".Layouts.StaticLayout")
+local StaticLayout = import("./Layouts.StaticLayout")
 
 -- create a new cursor that can navigate on the specified grid
 -- grid: the target grid that is navigated on

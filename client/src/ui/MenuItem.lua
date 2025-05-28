@@ -1,11 +1,11 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
-local Label = require(PATH .. ".Label")
-local Button = require(PATH .. ".Button")
-local TextButton = require(PATH .. ".TextButton")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
+local Label = import("./Label")
+local Button = import("./Button")
+local TextButton = import("./TextButton")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout")
+local HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout")
 
 -- MenuItem is a specific UIElement that all children of Menu should be
 ---@class MenuItem

@@ -1,5 +1,4 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
----@diagnostic disable-next-line: unused-local
 local import = require("common.lib.import")
 
 --[[
@@ -18,11 +17,12 @@ so that you get intellisense
 local ui = {
   ---@source BoolSelector.lua
   ---@type BoolSelector
-  BoolSelector = import("./BoolSelector"),
+  BoolSelector = require(PATH ..".BoolSelector"),
   ---@source Button.lua
   ---@type Button
   Button = import("./Button"),
-  ButtonGroup = import(PATH .. ".ButtonGroup"),
+  ---@source ButtonGroup.lua
+  ButtonGroup = import("./ButtonGroup"),
   Carousel = import("./Carousel"),
   ---@source CharacterButton.lua
   ---@type CharacterButton
@@ -34,15 +34,21 @@ local ui = {
   FocusDirector = import("./FocusDirector"),
   Grid = import("./Grid"),
   GridCursor = import("./GridCursor"),
+  ---@source ImageContainer.lua
   ImageContainer = import("./ImageContainer"),
+  ---@source InputField.lua
   InputField = import("./InputField"),
   ---@source Label.lua
   ---@type Label
   Label = import("./Label"),
   Layouts = {
+    ---@source Layouts/AdaptiveFlexLayout.lua
     AdaptiveFlexLayout = import("./Layouts.AdaptiveFlexLayout"),
+    ---@source Layouts/HorizontalFlexLayout.lua
     HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout"),
+    ---@source Layouts/HorizontalWrapLayout.lua
     HorizontalWrapLayout = import("./Layouts.HorizontalWrapLayout"),
+    ---@source Layouts/VerticalFlexLayout.lua
     VerticalFlexLayout = import("./Layouts.VerticalFlexLayout"),
   },
   Leaderboard = import("./Leaderboard"),

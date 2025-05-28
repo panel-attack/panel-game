@@ -1,4 +1,4 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
+local import = require("common.lib.import")
 local Layout = require(PATH ..".Layout")
 
 ---@class StaticLayout : Layout

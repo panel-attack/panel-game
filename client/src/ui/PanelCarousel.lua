@@ -1,8 +1,8 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local Carousel = require(PATH .. ".Carousel")
+local import = require("common.lib.import")
+local Carousel = import("./Carousel")
 local class = require("common.lib.class")
-local StackPanel = require(PATH .. ".StackPanel")
-local ImageContainer = require(PATH .. ".ImageContainer")
+local StackPanel = import("./StackPanel")
+local ImageContainer = import("./ImageContainer")
 
 local PanelCarousel = class(function(carousel, options)
   carousel.colorCount = 5
