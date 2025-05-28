@@ -646,7 +646,7 @@ function Game:setLanguage(lang_code)
   config.language_code = Localization.codes[Localization.lang_index]
 
   local baseOffset = 0
-  if system.isMobileOS() or DEBUG_ENABLED then
+  if system.isMobileOS() then
     baseOffset = 4
   end
 
