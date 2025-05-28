@@ -33,7 +33,7 @@ local inputKeys = {
 ---@field isDown table<InputKeys, number>
 ---@field isPressed table<InputKeys, number>
 ---@field isUp table<InputKeys, number>
----@field isPressedWithRepeat fun(inputs: KeyConfiguration, key: InputKeys, delay: number, repeatPeriod: number): boolean
+---@field isPressedWithRepeat fun(inputs: KeyConfiguration, key: InputKeys, delay: number?, repeatPeriod: number?): boolean
 
 -- table containing the set of keys in various states 
 -- base structure: 

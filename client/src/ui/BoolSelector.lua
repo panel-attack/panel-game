@@ -1,5 +1,5 @@
 local import = require("common.lib.import")
-
+local addCursorInteractionInterface = import("./CursorInteractable")
 local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -19,6 +19,7 @@ end,
 UiElement)
 
 BoolSelector.TYPE = "BoolSelector"
+addCursorInteractionInterface(BoolSelector)
 
 function BoolSelector:onTouch(x, y)
 end
@@ -32,27 +33,30 @@ function BoolSelector:onSelect(boolSelector, selector)
   self:setValue(not self.value)
 end
 
-function BoolSelector:receiveInputs(input)
-  if self.isFocusable then
-    if (input:isPressedWithRepeat("Right") and self.vertical == false) or
-        (input:isPressedWithRepeat("Up") and self.vertical) then
-        self:setValue(true)
-    elseif (input:isPressedWithRepeat("Left") and self.vertical == false) or
-    (input:isPressedWithRepeat("Down") and self.vertical) then
-      self:setValue(false)
-    elseif input.isDown["Swap1"] then
-      GAME.theme:playValidationSfx()
-      self:yieldFocus()
-    elseif input.isDown["Swap2"] then
-      GAME.theme:playCancelSfx()
-      self:yieldFocus()
-    end
-  else 
+---@param cursor Cursor
+---@param dt number?
+function BoolSelector:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
+  -- if self.isFocusable then
+  --   if (input:isPressedWithRepeat("Right") and self.vertical == false) or
+  --       (input:isPressedWithRepeat("Up") and self.vertical) then
+  --       self:setValue(true)
+  --   elseif (input:isPressedWithRepeat("Left") and self.vertical == false) or
+  --   (input:isPressedWithRepeat("Down") and self.vertical) then
+  --     self:setValue(false)
+  --   elseif input.isDown["Swap1"] then
+  --     GAME.theme:playValidationSfx()
+  --     self:yieldFocus()
+  --   elseif input.isDown["Swap2"] then
+  --     GAME.theme:playCancelSfx()
+  --     self:yieldFocus()
+  --   end
+  -- else 
     if input.isDown["Swap1"] then
       GAME.theme:playValidationSfx()
       self:setValue(not self.value)
     end
-  end
+  --end
 end
 
 function BoolSelector:setValue(value)

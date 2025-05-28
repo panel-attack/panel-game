@@ -42,21 +42,28 @@ end
 
 -- update the scroll offset so the element with passed scroll offset + size remains visible
 -- usually we want a cursor type of object to call this on move to automatically advance the scrollContainer
----@param offset number the offset of the element to be kept visible
----@param size number the size of the element to be kept visible
-function ScrollContainer:keepVisible(offset, size)
-  logger.debug("Firing ScrollContainer.keepVisible")
+---@param cursor Cursor
+function ScrollContainer:keepVisible(cursor)
+  local hoveredElement = cursor.focusToHover[self]
+  local offset -- the offset of the element to be kept visible
+  local size -- the size of the element to be kept visible
+  local refSize
+  if self.scrollOrientation == "horizontal" then
+    offset = hoveredElement.x
+    size = hoveredElement.width
+    refSize = self.width
+  else
+    offset = hoveredElement.y
+    size = hoveredElement.height
+    refSize = self.height
+  end
+  logger.debug("Firing ScrollContiner.keepVisible")
   -- weird implementation detail that with scrolling scrolloffset goes negative
   -- childGap is added to guarantee some whitespace if the container is built around it
   offset = -offset + self.childGap / 2
   size = size + self.childGap
   -- with increasing negative value we scroll further down/right
-  local refSize
-  if self.scrollOrientation == "vertical" then
-    refSize = self.height
-  else
-    refSize = self.width
-  end
+
   if self.scrollOffset - refSize > offset - size then
     self:setScrollOffset(offset - size + refSize)
   elseif offset > self.scrollOffset then
@@ -218,6 +225,10 @@ end
 
 function ScrollContainer:getPreferredWidth()
   return self.minWidth
+end
+
+function ScrollContainer:getScreenPos()
+
 end
 
 return ScrollContainer

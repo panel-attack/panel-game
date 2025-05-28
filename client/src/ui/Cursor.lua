@@ -1,139 +1,96 @@
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local input = require("client.src.inputManager")
 
 ---@class CursorOptions
 ---@field target UiElement
----@field keyInput KeyConfiguration
----@field hoveredIndex integer?
+---@field keyInput KeyConfiguration?
 
----@class Cursor : FocusDirector, UiElement
+---@class Cursor
 ---@operator call(CursorOptions): Cursor
+---@overload fun(target: CursorNavigable | UiElement, keyInput: KeyConfiguration?): Cursor
 ---@field keyInput KeyConfiguration
----@field focusStack (UiElement | CursorNavigable)[]
----@field hovered UiElement
----@field focused UiElement | CursorNavigable
----@field hoveredIndex integer
----@field escapeCallback fun(self: Cursor)
+---@field focusStack CursorNavigable[] A stack of focused UiElement, new elements go on top, as focus is released it goes back down
+---@field focusToHover table<CursorNavigable, UiElement | CursorInteractable> Persists the last hovered element for each navigable UiElement so that the last position can be reconstructed when focus is released
+---@field focused CursorNavigable The navigable UiElement that is currently consuming the cursor's inputs
 local Cursor = class(
-function(self, options)
-  self.keyInput = options.keyInput
-  self.focusStack = {}
-
-  if options.escapeCallback then
-    self.escapeCallback = options.escapeCallback
-  end
-  self:setFocus(options.target)
+function(self, target, keyInput)
+  self.keyInput = keyInput or input
+  self:setFocus(target)
 end)
 
-
+---@param currentFocus UiElement | CursorNavigable
+---@param newFocus UiElement | CursorNavigable
 function Cursor:moveFocus(currentFocus, newFocus)
   self:releaseFocus(currentFocus)
   self:deepenFocus(newFocus)
 end
 
 ---@param uiElement UiElement | CursorNavigable
-function Cursor:setFocus(uiElement, callback)
-  if self.focused then
-    self.focused.cursor = nil
-  end
-  uiElement:receiveFocus(self)
-  self.focused = uiElement
+function Cursor:setFocus(uiElement)
   self.focusStack = {}
+  self.focusToHover = {}
+  self.focused = uiElement
+  self.focusStack = { uiElement }
+  uiElement:receiveFocus(self)
 end
 
 ---@param uiElement UiElement | CursorNavigable
 function Cursor:deepenFocus(uiElement)
-  self.focusStack[#self.focusStack+1] = self.focused
-  self.focused.cursor = nil
+  self.focusToHover[self.focused]:setHover(self, false)
+
+  self.focusStack[#self.focusStack+1] = uiElement
   self.focused = uiElement
-  self.focused.cursor = self
+  uiElement:receiveFocus(self)
 end
 
----@param uiElement UiElement
+---@param uiElement UiElement | CursorNavigable
 function Cursor:releaseFocus(uiElement)
-  for i = #self.focusStack, 2, -1 do
-    local focused = self.focusStack[i]
-    self.focusStack[i] = nil
-    if focused.cursor then
-      focused.cursor = nil
-      focused.hoveredElement = nil
+  if #self.focusStack >= 1 then
+    for i = #self.focusStack, 2, -1 do
+      local focused = self.focusStack[i]
+      local hovered = self.focusToHover[focused]
+      self.focusStack[i] = nil
+      self.focusToHover[focused] = nil
+      hovered:setHover(self, false)
+      if focused == uiElement then
+        break
+      end
     end
-    if focused == uiElement then
-      break
+    if uiElement.onYield then
+      uiElement:onYield()
     end
-  end
 
-  self.focused = table.remove(self.focusStack, #self.focusStack)
-end
-
-
-function Cursor:getLastIndex()
-  for i = #self.focused.children, 1, -1 do
-    local child = self.focused.children[i]
-    if child.receiveInputs and child.isEnabled and child.isVisible then
-      return i
-    end
+    self.focused = self.focusStack[#self.focusStack]
+    self.focusToHover[self.focused]:setHover(self, true)
   end
 end
 
-function Cursor:moveToLast()
-  self.hoveredIndex = self:getLastIndex()
-  self.hovered = self.focused.children[self.hoveredIndex]
+function Cursor:updateHover(focused, newHovered)
+  local currentHovered = self.focusToHover[focused]
+  self.focusToHover[focused] = newHovered
+  if focused == self.focused then
+    if currentHovered then
+      currentHovered:setHover(self, false)
+    end
+    newHovered:setHover(self, true)
+  end
 end
-
 
 function Cursor:receiveInputs(dt)
-  local focused = self.focused
-  local hoveredElement = self.focused.hoveredElement
-  self.focused:processCursorInput(dt)
-  if self.focused.hoveredElement ~= hoveredElement then
-    hoveredElement.cursorFocus = false
-    if focused == self.focused then
-      --self.focused.hoveredElement.
-    end
-  end
+  self.focused:receiveInputs(self, dt)
 end
 
----@param uiElement UiElement
----@param hoveredIndex integer?
-function Cursor:setTarget(uiElement, hoveredIndex)
-  if self.focused ~= uiElement then
-    self.hovered = nil
-  end
-  self.focused = uiElement
-  if uiElement.isFocusable then
-    self:setFocus(self.focused)
-    if hoveredIndex then
-      self.hoveredIndex = hoveredIndex
-      self.hovered = self.focused.children[self.hoveredIndex]
-    else
-      self.hoveredIndex = 0
-      self:moveToNext()
-    end
-  end
-end
-
-function Cursor:drawSelf()
+function Cursor:draw()
   -- GraphicsUtil.setColor(0, 0, 0, 0.2)
   -- love.graphics.rectangle("fill", self.target.x, self.target.y, self.target.width, self.target.height)
-  if self.hovered then
+  if self.focused then
+    local uiElement = self.focusToHover[self.focused]
     GraphicsUtil.setColor(1, 1, 1, 0.2)
-    local x, y = self.hovered:getScreenPos()
-    love.graphics.rectangle("fill", x, y, self.hovered.width, self.hovered.height)
+    local x, y = uiElement:getScreenPos()
+    love.graphics.rectangle("fill", x, y, uiElement.width, uiElement.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
-  end
-end
-
-function Cursor:escapeCallback()
-  if self.hoveredIndex == self:getLastIndex() then
-    if self.focused then
-      self.focused:yieldFocus()
-    else
-      GAME.navigationStack:pop()
-    end
-  else
-    self:moveToLast()
   end
 end
 

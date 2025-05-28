@@ -6,10 +6,12 @@ local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout")
+local addCursorInteractionInterface = import("./CursorInteractable")
 
 local NAV_BUTTON_WIDTH = 25
 
 -- UIElement representing a scrolling list of options
+---@class Stepper : UiElement, CursorInteractable
 local Stepper = class(
   function(self, options)
     self.onChange = options.onChange or function() end
@@ -52,6 +54,8 @@ local Stepper = class(
 
 Stepper.TYPE = "Stepper"
 Stepper.layout = HorizontalFlexLayout
+addCursorInteractionInterface(Stepper)
+
 function Stepper:setLabels(labels, values, selectedIndex)
   self.selectedIndex = selectedIndex
   self.values = values
@@ -91,7 +95,10 @@ function Stepper.setState(self, i)
   self.onChange(self.value)
 end
 
-function Stepper:receiveInputs(input)
+---@param cursor Cursor
+---@param dt number?
+function Stepper:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
   if input:isPressedWithRepeat("Left") then
     self:setState(self.selectedIndex - 1)
   elseif input:isPressedWithRepeat("Right") then

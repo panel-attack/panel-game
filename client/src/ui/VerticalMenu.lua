@@ -1,14 +1,11 @@
 local import = require("common.lib.import")
-PATH = "client.src.ui"
 local ScrollContainer = import("./ScrollContainer")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local Focusable = import("./Focusable")
-local FocusDirector = import("./FocusDirector")
-local input = require("client.src.inputManager")
 local VerticalScrollLayout = import("./Layouts.VerticalScrollLayout")
-local CursorNavigable = import("./CursorNavigable")
+local tableUtils = require("common.lib.tableUtils")
+local addCursorNavigationInterface = import("./CursorNavigable")
 
 ---@class VerticalMenu : ScrollContainer, Focusable
 ---@operator call(ScrollContainerOptions): VerticalMenu
@@ -22,91 +19,83 @@ function(self, options)
 end,
 ScrollContainer)
 
-CursorNavigable(VerticalMenu)
+VerticalMenu.TYPE = "VerticalMenu"
+addCursorNavigationInterface(VerticalMenu)
 
-Focusable(VerticalMenu)
-FocusDirector(VerticalMenu)
-
-function VerticalMenu:setInitialFocus()
-  for i, child in ipairs(self.children) do
-    if child.receiveInputs and child.isEnabled and child.isVisible then
-      self.selectedIndex = i
-      break
-    end
-  end
-end
-
-function VerticalMenu:selectPrevious()
-  for i = self.selectedIndex - 1, self.selectedIndex - #self.children, -1 do
+---@param cursor Cursor
+function VerticalMenu:selectPrevious(cursor)
+  local hoveredIndex = tableUtils.indexOf(self.children, cursor.focusToHover[self])
+  for i = hoveredIndex - 1, hoveredIndex - #self.children, -1 do
     local index = wrap(1, i, #self.children)
     local child = self.children[index]
     if child.receiveInputs and child.isEnabled and child.isVisible then
-      self.selectedIndex = index
+      cursor:updateHover(self, self.children[index])
       break
     end
   end
-  self:keepVisible(self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
+  self:keepVisible(cursor)
   GAME.theme:playMoveSfx()
 end
 
-function VerticalMenu:selectNext()
-  for i = self.selectedIndex + 1, self.selectedIndex + #self.children do
+---@param cursor Cursor
+function VerticalMenu:selectNext(cursor)
+  local hoveredIndex = tableUtils.indexOf(self.children, cursor.focusToHover[self])
+  for i = hoveredIndex + 1, hoveredIndex + #self.children do
     local index = wrap(1, i, #self.children)
     local child = self.children[index]
     if child.receiveInputs and child.isEnabled and child.isVisible then
-      self.selectedIndex = index
+      cursor:updateHover(self, self.children[index])
       break
     end
   end
-  self:keepVisible(self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
+  self:keepVisible(cursor)
   GAME.theme:playMoveSfx()
 end
 
-function VerticalMenu:selectLast()
+---@param cursor Cursor
+function VerticalMenu:selectLast(cursor)
+  cursor:updateHover(self, self:getLast())
+  self:keepVisible(cursor)
+end
+
+---@return CursorInteractable | UiElement
+function VerticalMenu:getLast()
   for i = #self.children, 1, -1 do
     local child = self.children[i]
     if child.receiveInputs and child.isEnabled and child.isVisible then
-      self.selectedIndex = i
-      break
+      return child
     end
   end
-  self:keepVisible(self.children[self.selectedIndex].y, self.children[self.selectedIndex].height)
+
+  return self.children[1]
 end
 
-function VerticalMenu:receiveInputs(inputs, dt)
-  if not self.selectedIndex then
-    self:setInitialFocus()
-  end
-
+---@param cursor Cursor
+---@param dt number?
+function VerticalMenu:receiveInputs(cursor, dt)
   if not self.isEnabled then
     return
   end
 
-  if not inputs then
-    -- if we don't get inputs passed, use the global input table
-    inputs = input
-  end
+  local inputs = cursor.keyInput
+  local selectedElement = cursor.focusToHover[self]
 
-  local selectedElement = self.children[self.selectedIndex]
-
-  if self.focused then
-    self.focused:receiveInputs(inputs, dt)
-  elseif inputs.isDown["MenuEsc"] then
-    if self.selectedIndex ~= #self.children then
-      self:selectLast()
+  if inputs.isDown["MenuEsc"] then
+    if self:getLast() ~= selectedElement then
+      self:selectLast(cursor)
       GAME.theme:playCancelSfx()
     else
-      selectedElement:receiveInputs(inputs, dt)
+      selectedElement:receiveInputs(cursor, dt)
     end
   elseif inputs:isPressedWithRepeat("MenuUp") then
-    self:selectPrevious()
+    self:selectPrevious(cursor)
   elseif inputs:isPressedWithRepeat("MenuDown") then
-    self:selectNext()
+    self:selectNext(cursor)
   else
-    if inputs.isDown["MenuSelect"] and selectedElement.isFocusable then
-      self:setFocus(selectedElement)
+    if inputs.isDown["MenuSelect"] and selectedElement.isNavigable then
+      self:deepenFocus(selectedElement)
     else
-      selectedElement:receiveInputs(inputs, dt)
+      selectedElement:receiveInputs(cursor, dt)
     end
   end
 end

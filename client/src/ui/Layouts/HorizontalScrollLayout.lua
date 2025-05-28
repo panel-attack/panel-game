@@ -1,5 +1,5 @@
 local import = require("common.lib.import")
-local HorizontalFlexLayout = require(PATH ..".HorizontalFlexLayout")
+local HorizontalFlexLayout = import("./HorizontalFlexLayout")
 local util = require("common.lib.util")
 
 ---@class HorizontalScrollLayout : HorizontalFlexLayout

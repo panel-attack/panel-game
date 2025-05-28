@@ -3,13 +3,14 @@ local UIElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
+local addCursorInteractionInterface = import("./CursorInteractable")
 
 ---@class ButtonOptions : UiElementOptions
 ---@field backgroundColor number[]?
 ---@field outlineColor number[]?
 ---@field onClick fun(button: Button?, input: table?, timeHeld: number?)?
 
----@class Button : UiElement
+---@class Button : UiElement, CursorInteractable
 ---@operator call(ButtonOptions): Button
 ---@field backgroundColor number[]
 ---@field outlineColor number []
@@ -28,6 +29,7 @@ local Button = class(
 )
 
 Button.TYPE = "Button"
+addCursorInteractionInterface(Button)
 
 function Button:onTouch(x, y)
   self.backgroundColor[4] = 1
@@ -41,7 +43,10 @@ function Button:onRelease(x, y, timeHeld)
   end
 end
 
-function Button:receiveInputs(input)
+---@param cursor Cursor
+---@param dt number
+function Button:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
   if input.isDown["MenuSelect"] then
     self:onClick(input)
     -- this is a really stupid way to make sure you can activate back buttons with escape

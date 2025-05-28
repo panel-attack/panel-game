@@ -3,6 +3,7 @@ local UIElement = import("./UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local addCursorInteractionInterface = import("./CursorInteractable")
 
 local handleRadius = 7.5
 local xPadding = 8
@@ -23,7 +24,7 @@ local sliderBarThickness = 6
 ---@field height nil height is calculated internally based on min, max, tickLength and tickAmount
 
 -- A horizontal Slider element
----@class Slider: UiElement
+---@class Slider: UiElement, CursorInteractable
 ---@operator call(SliderOptions): Slider
 ---@field min number minimum value
 ---@field max number maximum value
@@ -70,6 +71,7 @@ local Slider = class(
   UIElement
 )
 Slider.TYPE = "Slider"
+addCursorInteractionInterface(Slider)
 
 function Slider:onTouch(x, y)
   self:setValueFromPos(x, false)
@@ -83,7 +85,10 @@ function Slider:onRelease(x, y)
   self:setValueFromPos(x, true)
 end
 
-function Slider:receiveInputs(input)
+---@param cursor Cursor
+---@param dt number?
+function Slider:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
   if input:isPressedWithRepeat("Left") then
     self:setValue(self.value - self.tickAmount, true)
   elseif input:isPressedWithRepeat("Right") then

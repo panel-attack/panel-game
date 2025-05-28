@@ -6,6 +6,7 @@ local TextButton = import("./TextButton")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout")
+local addCursorInteractionInterface = import("./CursorInteractable")
 
 -- MenuItem is a specific UIElement that all children of Menu should be
 ---@class MenuItem
@@ -19,6 +20,9 @@ MenuItem.PADDING = 2
 
 -- Takes a label and an optional extra element and makes and combines them into a menu item
 -- which is suitable for inserting into a menu
+---@param label Label
+---@param item UiElement
+---@return UiElement | CursorInteractable
 function MenuItem.createMenuItem(label, item)
   assert(label ~= nil)
 
@@ -42,9 +46,9 @@ function MenuItem.createMenuItem(label, item)
     item.hAlign = "left"
     item.hFill = true
     menuItem:addChild(item)
-    menuItem.receiveInputs = function(i, inputs)
-      item:receiveInputs(inputs)
-    end
+    addCursorInteractionInterface(menuItem, function(self, cursor, dt)
+      item:receiveInputs(cursor, dt)
+    end)
   end
 
   return menuItem

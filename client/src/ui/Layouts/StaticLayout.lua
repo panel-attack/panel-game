@@ -1,5 +1,5 @@
 local import = require("common.lib.import")
-local Layout = require(PATH ..".Layout")
+local Layout = import("./Layout")
 
 ---@class StaticLayout : Layout
 local StaticLayout = setmetatable({}, {__index = Layout})

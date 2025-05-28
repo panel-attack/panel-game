@@ -30,12 +30,8 @@ local PuzzleGame = require("client.src.scenes.PuzzleGame")
 local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
-  self.cursor = ui.Cursor({
-    target = self.menu,
-    cursorImage = GAME.theme:getGridCursor(1)
-  })
+  self.cursor = ui.Cursor(self.menu)
   self.uiRoot:addChild(self.menu)
-  self.uiRoot:addChild(self.cursor)
 end, Scene)
 
 MainMenu.name = "MainMenu"
@@ -189,7 +185,7 @@ end
 
 function MainMenu:update(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.cursor:receiveInputs(inputs)
+  self.cursor:receiveInputs(dt)
 
   self:checkForUpdates()
 end
@@ -197,6 +193,7 @@ end
 function MainMenu:draw()
   GAME.theme.images.bg_main:draw()
   self.uiRoot:draw()
+  self.cursor:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
   local screenWidth = love.graphics.getWidth()

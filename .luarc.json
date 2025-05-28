@@ -21,9 +21,11 @@
 
     "hint.semicolon": "Disable",
 
-    //"misc.parameters": ["--develop=true"],
-
     "runtime.plugin": "common/lib/luaLsPlugin.lua",
+
+    // to support mixin union types where a table is both types rather than just one
+    "type.weakUnionCheck": true,
+
     "workspace.checkThirdParty": false,
     "workspace.ignoreDir": [
         ".vscode",

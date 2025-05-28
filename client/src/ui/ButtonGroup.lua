@@ -1,4 +1,5 @@
 local import = require("common.lib.import")
+local addCursorInteractionInterface = import("./CursorInteractable")
 local UIElement = import("./UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
@@ -82,6 +83,7 @@ local ButtonGroup = class(
 )
 ButtonGroup.TYPE = "ButtonGroup"
 ButtonGroup.layout = HorizontalFlexLayout
+addCursorInteractionInterface(ButtonGroup)
 
 -- changes state for the button group
 -- updates the color of the selected button
@@ -94,7 +96,10 @@ function ButtonGroup:buttonClicked(button)
   self.selectedIndex = i
 end
 
-function ButtonGroup:receiveInputs(input)
+---@param cursor Cursor
+---@param dt number?
+function ButtonGroup:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
   if input:isPressedWithRepeat("Left") then
     self:setActiveButton(self.selectedIndex - 1)
   elseif input:isPressedWithRepeat("Right") then

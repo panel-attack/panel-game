@@ -1,4 +1,3 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
 local import = require("common.lib.import")
 
 --[[
@@ -17,7 +16,7 @@ so that you get intellisense
 local ui = {
   ---@source BoolSelector.lua
   ---@type BoolSelector
-  BoolSelector = require(PATH ..".BoolSelector"),
+  BoolSelector = import("./BoolSelector"),
   ---@source Button.lua
   ---@type Button
   Button = import("./Button"),
@@ -30,6 +29,10 @@ local ui = {
   ---@source Cursor.lua
   ---@type Cursor
   Cursor = import("./Cursor"),
+  ---@source CursorInteractable
+  CursorInteractable = import("./CursorInteractable"),
+  ---@source CursorNavigable.lua
+  CursorNavigable = import("./CursorNavigable"),
   Focusable = import("./Focusable"),
   FocusDirector = import("./FocusDirector"),
   Grid = import("./Grid"),

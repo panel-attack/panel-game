@@ -1,5 +1,5 @@
 local import = require("common.lib.import")
-local FlexLayout = require(PATH ..".FlexLayout")
+local FlexLayout = import("./FlexLayout")
 
 ---@class VerticalFlexLayout : FlexLayout
 local VerticalFlexLayout = setmetatable({characteristic = "vertical"}, {__index = FlexLayout})

@@ -8,7 +8,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
 local CursorNavigable = require("client.src.ui.CursorNavigable")
 
----@class UniSizedContainerOptions : UiElementOptions
+---@class UniSizedContainerOptions : UiElementOptions, CursorNavigableOptions
 ---@field childrenWidth integer
 ---@field childrenHeight integer
 
@@ -20,7 +20,6 @@ local CursorNavigable = require("client.src.ui.CursorNavigable")
 ---@field selectedColumn integer
 ---@field rows UiElement[][]
 ---@overload fun(options: UniSizedContainerOptions): UniSizedContainer
----@type UniSizedContainer
 local UniSizedContainer = class(
 function(self, options)
   assert(options.childrenHeight and options.childrenWidth)
@@ -49,8 +48,9 @@ function UniSizedContainer:addChild(uiElement, index)
   UiElement.addChild(self, uiElement, index)
 end
 
+---@param cursor Cursor
 ---@return boolean? # if the movement was successful
-function UniSizedContainer:moveToPreviousRow()
+function UniSizedContainer:moveToPreviousRow(cursor)
   if not self.rows or #self.rows == 1 then
     return false
   end
@@ -58,14 +58,16 @@ function UniSizedContainer:moveToPreviousRow()
   local nextRow = wrap(1, self.selectedRow - 1, #self.rows)
   if self.rows[nextRow][self.selectedColumn] then
     self.selectedRow = nextRow
+    cursor:updateHover(self, self.rows[self.selectedRow][self.selectedColumn])
     return true
   else
     return false
   end
 end
 
+---@param cursor Cursor
 ---@return boolean? # if the movement was successful
-function UniSizedContainer:moveToNextRow()
+function UniSizedContainer:moveToNextRow(cursor)
   if not self.rows or #self.rows == 1 then
     return false
   end
@@ -73,67 +75,76 @@ function UniSizedContainer:moveToNextRow()
   local nextRow = wrap(1, self.selectedRow + 1, #self.rows)
   if self.rows[nextRow][self.selectedColumn] then
     self.selectedRow = nextRow
+    cursor:updateHover(self, self.rows[self.selectedRow][self.selectedColumn])
     return true
   else
     return false
   end
 end
 
+---@param cursor Cursor
 ---@return boolean? # if the movement was successful
-function UniSizedContainer:moveToPrevious()
+function UniSizedContainer:moveToPrevious(cursor)
   if not self.rows or not self.rows[self.selectedRow] or #self.rows[self.selectedRow] == 1 then
     return false
   end
 
   self.selectedColumn = wrap(1, self.selectedColumn - 1, #self.rows[self.selectedRow])
+  cursor:updateHover(self, self.rows[self.selectedRow][self.selectedColumn])
   return true
 end
 
+---@param cursor Cursor
 ---@return boolean? # if the movement was successful
-function UniSizedContainer:moveToNext()
+function UniSizedContainer:moveToNext(cursor)
   if not self.rows or not self.rows[self.selectedRow] or #self.rows[self.selectedRow] == 1 then
     return false
   end
 
   self.selectedColumn = wrap(1, self.selectedColumn + 1, #self.rows[self.selectedRow])
+  cursor:updateHover(self, self.rows[self.selectedRow][self.selectedColumn])
   return true
 end
 
-function UniSizedContainer:receiveInputs(inputs, dt)
+---@param cursor Cursor
+---@param dt number?
+function UniSizedContainer:receiveInputs(cursor, dt)
+  local inputs = cursor.keyInput
   if inputs.isDown.Swap2 then
     GAME.theme:playCancelSfx()
-    self.cursor:releaseFocus(self)
+    cursor:releaseFocus(self)
   elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    if self:moveToPrevious() then
+    if self:moveToPrevious(cursor) then
       GAME.theme:playMoveSfx()
+    else
+      GAME.theme:playCancelSfx()
     end
   elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    if self:moveToNext() then
+    if self:moveToNext(cursor) then
       GAME.theme:playMoveSfx()
+    else
+      GAME.theme:playCancelSfx()
     end
   elseif inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    if self:moveToPreviousRow() then
+    if self:moveToPreviousRow(cursor) then
       GAME.theme:playMoveSfx()
+    else
+      GAME.theme:playCancelSfx()
     end
   elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-    if self:moveToNextRow() then
+    if self:moveToNextRow(cursor) then
       GAME.theme:playMoveSfx()
+    else
+      GAME.theme:playCancelSfx()
     end
-  elseif self.rows[self.selectedRow][self.selectedColumn].isFocusable then
-    if inputs.isDown.Swap1 or inputs.isDown.Start then
-      GAME.theme:playValidationSfx()
-      self.cursor:deepenFocus(self.rows[self.selectedRow][self.selectedColumn])
-    end
+  elseif self.rows[self.selectedRow][self.selectedColumn].isNavigable and (inputs.isDown.Swap1 or inputs.isDown.Start) then
+    GAME.theme:playValidationSfx()
+    cursor:deepenFocus(self.rows[self.selectedRow][self.selectedColumn])
   elseif self.rows[self.selectedRow][self.selectedColumn].receiveInputs then
-    self.rows[self.selectedRow][self.selectedColumn]:receiveInputs(inputs, dt)
+    self.rows[self.selectedRow][self.selectedColumn]:receiveInputs(cursor, dt)
   else
     GAME.theme:playCancelSfx()
   end
-end
-
-function UniSizedContainer:processCursorInput(dt)
-  local inputs = self.cursor.keyInput
-  self:receiveInputs(inputs, dt)
 end
 
 function UniSizedContainer:onResized()

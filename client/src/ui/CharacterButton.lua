@@ -123,7 +123,10 @@ function CharacterButton:onRelease(x, y, timeHeld)
   self.holdTime = 0
 end
 
-function CharacterButton:receiveInputs(inputs, dt)
+---@param cursor Cursor
+---@param dt number?
+function CharacterButton:receiveInputs(cursor, dt)
+  local inputs = cursor.keyInput
   if not self.holding then
     if inputs.isDown.Swap1 then
       self.holding = true

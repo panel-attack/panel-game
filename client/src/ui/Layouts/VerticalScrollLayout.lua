@@ -1,5 +1,5 @@
 local import = require("common.lib.import")
-local VerticalFlexLayout = require(PATH ..".VerticalFlexLayout")
+local VerticalFlexLayout = import("./VerticalFlexLayout")
 local util = require("common.lib.util")
 
 ---@class VerticalScrollLayout : VerticalFlexLayout

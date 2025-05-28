@@ -28,18 +28,24 @@ local function getSelectorTemplate(id)
   local label = ui.Label({id = id})
   selector:addChild(button)
   selector:addChild(label)
-  selector.receiveInputs = function(selector, input, dt)
-    button:receiveInputs(input, dt)
+  selector.receiveInputs = function(selector, cursor, dt)
+    button:receiveInputs(cursor, dt)
   end
 
   return selector, button
 end
 
-local function createCharacterSelect()
+local function createCharacterSelect(scene)
   local characterSelect = ui.UniSizedContainer({
     childrenWidth = 84,
     childrenHeight = 84,
-    childGap = 16
+    childGap = 16,
+    onFocus = function (self)
+      scene.subSelection:addChild(self)
+    end,
+    onYield = function (self)
+      self:detach()
+    end
   })
 
   for i, characterId in ipairs(visibleCharacters) do
@@ -54,6 +60,7 @@ function DesignHelper:load()
   self.characterSelect = createCharacterSelect()
   self.uiRoot.layout = ui.Layouts.VerticalFlexLayout
   self.uiRoot.childGap = 8
+  ui.CursorNavigable(self.uiRoot)
 
   local roomMode = ui.UiElement({
     childGap = 8,
@@ -114,7 +121,7 @@ function DesignHelper:load()
   local characterSelectionSelector, characterButton = getSelectorTemplate("character")
   characterButton:addChild(characterImage)
   characterButton.onClick = function()
-    self:focusCharacterSelect()
+    self.cursor:deepenFocus(self.characterSelect)
   end
 
   local stageImage = ui.ImageContainer({
@@ -211,10 +218,7 @@ function DesignHelper:load()
 
   self.uiRoot:addChild(self.subSelection)
 
-  self.cursor = ui.Cursor({
-    target = self.uiRoot,
-    hoveredIndex = 3,
-  })
+  self.cursor = ui.Cursor(self.uiRoot)
 end
 
 function DesignHelper:loadRankedSelection(width)
@@ -237,17 +241,7 @@ function DesignHelper:update(dt)
   if inputs.isDown["MenuEsc"] and not self.cursor.focused then
     GAME.navigationStack:pop()
   end
-  self.cursor:receiveInputs(inputs, dt)
-end
-
-function DesignHelper:focusCharacterSelect()
-  self.characterSelect.yieldFocus = function(characterSelect)
-    self.cursor:setTarget(self.uiRoot, 3)
-    characterSelect.yieldFocus = nil
-  end
-
-  self.subSelection:addChild(self.characterSelect)
-  self.cursor:setTarget(self.characterSelect)
+  self.cursor:receiveInputs(dt)
 end
 
 function DesignHelper:draw()

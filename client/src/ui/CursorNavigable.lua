@@ -1,117 +1,114 @@
 local consts = require("common.engine.consts")
 local tableUtils = require("common.lib.tableUtils")
+local import = require("common.lib.import")
+local addCursorInteractionInterface = import("./CursorInteractable")
 
----@class CursorNavigable
+---@class CursorNavigableOptions
+---@field onFocus fun(cursorNavigable: CursorNavigable | UiElement)?
+---@field onYield fun(cursorNavigable: CursorNavigable | UiElement)?
+
+---@class CursorNavigable : CursorInteractable
+---@field isNavigable boolean
 ---@field receiveFocus fun(cursorNavigable: CursorNavigable | UiElement, cursor: Cursor)
----@field processCursorInput fun(cursorNavigable: CursorNavigable | UiElement, dt)
----@field receiveInputs fun(cursorNavigable: CursorNavigable | UiElement, inputs: KeyConfiguration, dt: number?)
----@field moveToNext fun(cursorNavigable: CursorNavigable | UiElement)
----@field moveToPrevious fun(cursorNavigable: CursorNavigable | UiElement)
----@field interactsWithCursor boolean
----@field isFocusable boolean
----@field cursor Cursor?
----@field hoveredElement UiElement?
+---@field receiveInputs fun(cursorNavigable: CursorNavigable | UiElement, cursor: Cursor, dt: number?)
+---@field moveToNext fun(cursorNavigable: CursorNavigable | UiElement, cursor: Cursor)
+---@field moveToPrevious fun(cursorNavigable: CursorNavigable | UiElement, cursor: Cursor)
+---@field onFocus fun(cursorNavigable: CursorNavigable | UiElement)?
+---@field onYield fun(cursorNavigable: CursorNavigable | UiElement)?
 
-
+---@param cursorNavigable CursorNavigable | UiElement
+---@param cursor Cursor
 local function receiveFocus(cursorNavigable, cursor)
   cursorNavigable.cursor = cursor
-  if not cursorNavigable.hoveredElement then
-    for i, child in ipairs(cursorNavigable.children) do
-      if child.isVisible and child.isEnabled then
-        cursorNavigable.hoveredElement = child
-        break
-      end
+  for i, child in ipairs(cursorNavigable.children) do
+    if child.receiveInputs and child.isVisible and child.isEnabled then
+      cursor:updateHover(cursorNavigable, child)
+      break
     end
+  end
+  if cursorNavigable.onFocus then
+    cursorNavigable:onFocus()
   end
 end
 
 ---@param cursorNavigable CursorNavigable | UiElement
-local function moveToNext(cursorNavigable)
-  local hoveredIndex = tableUtils.indexOf(cursorNavigable.children, cursorNavigable.hoveredElement)
+---@param cursor Cursor
+local function moveToNext(cursorNavigable, cursor)
+  local hoveredIndex = tableUtils.indexOf(cursorNavigable.children, cursor.focusToHover[cursorNavigable])
   for i = hoveredIndex + 1, hoveredIndex + #cursorNavigable.children do
     local index = wrap(1, i, #cursorNavigable.children)
     local child = cursorNavigable.children[index]
     if child.receiveInputs and child.isEnabled and child.isVisible then
-      hoveredIndex = index
-      cursorNavigable.hoveredElement = cursorNavigable.children[hoveredIndex]
+      cursor:updateHover(cursorNavigable, child)
       break
     end
   end
 end
 
 ---@param cursorNavigable CursorNavigable | UiElement
-local function moveToPrevious(cursorNavigable)
-  local hoveredIndex = tableUtils.indexOf(cursorNavigable.children, cursorNavigable.hoveredElement)
+---@param cursor Cursor
+local function moveToPrevious(cursorNavigable, cursor)
+  local hoveredIndex = tableUtils.indexOf(cursorNavigable.children, cursor.focusToHover[cursorNavigable])
   for i = hoveredIndex - 1, hoveredIndex - #cursorNavigable.children, -1 do
     local index = wrap(1, i, #cursorNavigable.children)
     local child = cursorNavigable.children[index]
     if child.receiveInputs and child.isEnabled and child.isVisible then
-      hoveredIndex = index
-      cursorNavigable.hoveredElement = cursorNavigable.children[hoveredIndex]
+      cursor:updateHover(cursorNavigable, child)
       break
     end
   end
 end
 
 ---@param cursorNavigable CursorNavigable | UiElement
----@param inputs KeyConfiguration
+---@param cursor Cursor
 ---@param dt number
-local function defaultReceiveInputs(cursorNavigable, inputs, dt)
+local function defaultReceiveInputs(cursorNavigable, cursor, dt)
+  local inputs = cursor.keyInput
   if inputs.isDown.Swap2 then
     GAME.theme:playCancelSfx()
-    cursorNavigable:escapeCallback()
+    cursor:releaseFocus(cursorNavigable)
+  elseif cursor.focusToHover[cursorNavigable].isNavigable and (inputs.isDown.Swap1 or inputs.isDown.Start) then
+    GAME.theme:playValidationSfx()
+    cursor:deepenFocus(cursor.focusToHover[cursorNavigable])
   elseif cursorNavigable.layout.characteristic == "horizontal" then
     if inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
       GAME.theme:playMoveSfx()
-      cursorNavigable:moveToPrevious()
+      cursorNavigable:moveToPrevious(cursor)
     elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
         GAME.theme:playMoveSfx()
-        cursorNavigable:moveToNext()
+        cursorNavigable:moveToNext(cursor)
+    elseif cursor.focusToHover[cursorNavigable].receiveInputs then
+      cursor.focusToHover[cursorNavigable]:receiveInputs(inputs, dt)
     end
   elseif cursorNavigable.layout.characteristic == "vertical" then
     if inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
       GAME.theme:playMoveSfx()
-      cursorNavigable:moveToPrevious()
+      cursorNavigable:moveToPrevious(cursor)
     elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
       GAME.theme:playMoveSfx()
-      cursorNavigable:moveToNext()
+      cursorNavigable:moveToNext(cursor)
+    elseif cursor.focusToHover[cursorNavigable].receiveInputs then
+      cursor.focusToHover[cursorNavigable]:receiveInputs(inputs, dt)
     end
-  elseif cursorNavigable.hoveredElement.isFocusable then
-    if inputs.isDown.Swap1 or inputs.isDown.Start then
-      GAME.theme:playValidationSfx()
-      cursorNavigable:setFocus(cursorNavigable.hovered)
-    end
-  elseif cursorNavigable.hovered.receiveInputs then
-    cursorNavigable.hovered:receiveInputs(inputs, dt)
   else
     GAME.theme:playCancelSfx()
-  end
-end
-
----@param cursorNavigable CursorNavigable | UiElement
----@param dt number
-local function processCursorInput(cursorNavigable, dt)
-  if cursorNavigable.cursor then
-    cursorNavigable:receiveInputs(cursorNavigable.cursor.keyInput, dt)
-  else
-    error("Tried to process cursor inputs without a cursor")
   end
 end
 
 --[[ 
 when adding it to a class instead of a single element: <br>
-- make sure to annotate the class table as its own type using ---@type to get rid of the warning<br>
 - have the class definition inherit CursorNavigable <br>
-- you can discard the return value; it is only returned so that when doing it for an instance LuaLS can easily infer the new union type
+- discard the return value; it is only returned so that when doing it for an instance, LuaLS can easily infer the new union type
 ]]
 ---@param uiElement UiElement
+---@param receiveInputs fun(cursorNavigable: CursorNavigable | UiElement, cursor: Cursor, dt: number?)?
 ---@return UiElement | CursorNavigable
-local function addCursorNavigationInterface(uiElement)
-  uiElement.processCursorInput = processCursorInput
+local function addCursorNavigationInterface(uiElement, receiveInputs)
+  addCursorInteractionInterface(uiElement, receiveInputs or defaultReceiveInputs)
   uiElement.receiveFocus = receiveFocus
   uiElement.moveToNext = moveToNext
   uiElement.moveToPrevious = moveToPrevious
-  uiElement.receiveInputs = defaultReceiveInputs
+  uiElement.isNavigable = true
 
   ---@cast uiElement +CursorNavigable
   return uiElement
