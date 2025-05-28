@@ -1,69 +1,76 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
-local FocusDirector = require(PATH .. ".FocusDirector")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class CursorOptions
 ---@field target UiElement
+---@field keyInput KeyConfiguration
 ---@field hoveredIndex integer?
 
 ---@class Cursor : FocusDirector, UiElement
 ---@operator call(CursorOptions): Cursor
+---@field keyInput KeyConfiguration
+---@field focusStack (UiElement | CursorNavigable)[]
 ---@field hovered UiElement
----@field target UiElement
+---@field focused UiElement | CursorNavigable
 ---@field hoveredIndex integer
 ---@field escapeCallback fun(self: Cursor)
 local Cursor = class(
 function(self, options)
+  self.keyInput = options.keyInput
+  self.focusStack = {}
+
   if options.escapeCallback then
     self.escapeCallback = options.escapeCallback
   end
-  self:setTarget(options.target)
-  if options.hoveredIndex then
-    self.hoveredIndex = options.hoveredIndex
-    self.hovered = self.target.children[self.hoveredIndex]
-  else
-    self.hoveredIndex = 0
-    self:moveToNext()
-  end
-end,
-UiElement)
+  self:setFocus(options.target)
+end)
 
-FocusDirector(Cursor)
 
-function Cursor:moveToNext()
-  if self.target then
-    for i = self.hoveredIndex + 1, self.hoveredIndex + #self.target.children do
-      local index = wrap(1, i, #self.target.children)
-      local child = self.target.children[index]
-      if child.receiveInputs and child.isEnabled and child.isVisible then
-        self.hoveredIndex = index
-        self.hovered = self.target.children[self.hoveredIndex]
-        break
-      end
-    end
-  end
+function Cursor:moveFocus(currentFocus, newFocus)
+  self:releaseFocus(currentFocus)
+  self:deepenFocus(newFocus)
 end
 
-function Cursor:moveToPrevious()
-  if self.target then
-    for i = self.hoveredIndex - 1, self.hoveredIndex - #self.target.children, -1 do
-      local index = wrap(1, i, #self.target.children)
-      local child = self.target.children[index]
-      if child.receiveInputs and child.isEnabled and child.isVisible then
-        self.hoveredIndex = index
-        self.hovered = self.target.children[self.hoveredIndex]
-        break
-      end
+---@param uiElement UiElement | CursorNavigable
+function Cursor:setFocus(uiElement, callback)
+  if self.focused then
+    self.focused.cursor = nil
+  end
+  uiElement:receiveFocus(self)
+  self.focused = uiElement
+  self.focusStack = {}
+end
+
+---@param uiElement UiElement | CursorNavigable
+function Cursor:deepenFocus(uiElement)
+  self.focusStack[#self.focusStack+1] = self.focused
+  self.focused.cursor = nil
+  self.focused = uiElement
+  self.focused.cursor = self
+end
+
+---@param uiElement UiElement
+function Cursor:releaseFocus(uiElement)
+  for i = #self.focusStack, 2, -1 do
+    local focused = self.focusStack[i]
+    self.focusStack[i] = nil
+    if focused.cursor then
+      focused.cursor = nil
+      focused.hoveredElement = nil
+    end
+    if focused == uiElement then
+      break
     end
   end
+
+  self.focused = table.remove(self.focusStack, #self.focusStack)
 end
+
 
 function Cursor:getLastIndex()
-  for i = #self.target.children, 1, -1 do
-    local child = self.target.children[i]
+  for i = #self.focused.children, 1, -1 do
+    local child = self.focused.children[i]
     if child.receiveInputs and child.isEnabled and child.isVisible then
       return i
     end
@@ -72,61 +79,18 @@ end
 
 function Cursor:moveToLast()
   self.hoveredIndex = self:getLastIndex()
-  self.hovered = self.target.children[self.hoveredIndex]
+  self.hovered = self.focused.children[self.hoveredIndex]
 end
 
-function Cursor:receiveInputs(inputs, dt)
-  if self.target then
-    if self.focused then
-      self.focused:receiveInputs(inputs, dt, self.player)
-    elseif inputs.isDown.Swap2 then
-      GAME.theme:playCancelSfx()
-      self:escapeCallback()
-    elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      if self.target.layout.characteristic == "horizontal" then
-        GAME.theme:playMoveSfx()
-        self:moveToPrevious()
-      elseif self.hovered.receiveInputs then
-        self.hovered:receiveInputs(inputs, dt)
-      else
-        GAME.theme:playCancelSfx()
-      end
-    elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      if self.target.layout.characteristic == "horizontal" then
-        GAME.theme:playMoveSfx()
-        self:moveToNext()
-      elseif self.hovered.receiveInputs then
-        self.hovered:receiveInputs(inputs, dt)
-      else
-        GAME.theme:playCancelSfx()
-      end
-    elseif inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      if self.target.layout.characteristic == "vertical" then
-        GAME.theme:playMoveSfx()
-        self:moveToPrevious()
-      elseif self.hovered.receiveInputs then
-        self.hovered:receiveInputs(inputs, dt)
-      else
-        GAME.theme:playCancelSfx()
-      end
-    elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
-      if self.target.layout.characteristic == "vertical" then
-        GAME.theme:playMoveSfx()
-        self:moveToNext()
-      elseif self.hovered.receiveInputs then
-        self.hovered:receiveInputs(inputs, dt)
-      else
-        GAME.theme:playCancelSfx()
-      end
-    elseif inputs.isDown.Swap1 or inputs.isDown.Start then
-      if self.hovered.isFocusable then
-        GAME.theme:playValidationSfx()
-        self:setFocus(self.hovered)
-      elseif self.hovered.receiveInputs then
-        self.hovered:receiveInputs(inputs, dt)
-      else
-        GAME.theme:playCancelSfx()
-      end
+
+function Cursor:receiveInputs(dt)
+  local focused = self.focused
+  local hoveredElement = self.focused.hoveredElement
+  self.focused:processCursorInput(dt)
+  if self.focused.hoveredElement ~= hoveredElement then
+    hoveredElement.cursorFocus = false
+    if focused == self.focused then
+      --self.focused.hoveredElement.
     end
   end
 end
@@ -134,15 +98,15 @@ end
 ---@param uiElement UiElement
 ---@param hoveredIndex integer?
 function Cursor:setTarget(uiElement, hoveredIndex)
-  if self.target ~= uiElement then
+  if self.focused ~= uiElement then
     self.hovered = nil
   end
-  self.target = uiElement
+  self.focused = uiElement
   if uiElement.isFocusable then
-    self:setFocus(self.target)
+    self:setFocus(self.focused)
     if hoveredIndex then
       self.hoveredIndex = hoveredIndex
-      self.hovered = self.target.children[self.hoveredIndex]
+      self.hovered = self.focused.children[self.hoveredIndex]
     else
       self.hoveredIndex = 0
       self:moveToNext()

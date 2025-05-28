@@ -19,6 +19,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field holdTime number
 ---@field superSelectVisible boolean
 ---@overload fun(options: CharacterButtonOptions): CharacterButton
+---@type CharacterButton
 local CharacterButton = class(
 ---@param self CharacterButton
 ---@param options CharacterButtonOptions

@@ -21,6 +21,9 @@
 
     "hint.semicolon": "Disable",
 
+    "misc.parameters": ["--develop=true"],
+
+    "runtime.plugin": "common/lib/luaLsPlugin.lua",
     "workspace.checkThirdParty": false,
     "workspace.ignoreDir": [
         ".vscode",
@@ -34,6 +37,9 @@
         "${3rd}/love2d/library",
         "common/lib/socket.lua",
         "common/lib/dkjson.lua",
-        "common/lib/csprng.lua"
+        "common/lib/csprng.lua",
+        "common/lib/luaLsPlugin.lua",
+        "common/lib/import.lua",
+        "${addons}/lsqlite3/module/library"
     ]
 }

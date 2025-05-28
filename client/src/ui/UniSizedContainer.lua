@@ -6,12 +6,13 @@ local Focusable = require(PATH .. ".Focusable")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
+local CursorNavigable = require("client.src.ui.CursorNavigable")
 
 ---@class UniSizedContainerOptions : UiElementOptions
 ---@field childrenWidth integer
 ---@field childrenHeight integer
 
----@class UniSizedContainer : UiElement
+---@class UniSizedContainer : UiElement, CursorNavigable
 ---@operator call(UniSizedContainerOptions): UniSizedContainer
 ---@field childrenWidth integer
 ---@field childrenHeight integer
@@ -19,6 +20,7 @@ local input = require("client.src.inputManager")
 ---@field selectedColumn integer
 ---@field rows UiElement[][]
 ---@overload fun(options: UniSizedContainerOptions): UniSizedContainer
+---@type UniSizedContainer
 local UniSizedContainer = class(
 function(self, options)
   assert(options.childrenHeight and options.childrenWidth)
@@ -32,7 +34,8 @@ function(self, options)
 end,
 UiElement)
 
-Focusable(UniSizedContainer)
+CursorNavigable(UniSizedContainer)
+UniSizedContainer.TYPE = "UniSizedContainer"
 UniSizedContainer.layout = HorizontalWrapLayout
 
 ---@param uiElement UiElement
@@ -97,13 +100,9 @@ function UniSizedContainer:moveToNext()
 end
 
 function UniSizedContainer:receiveInputs(inputs, dt)
-  if self.focused then
-    self.focused:receiveInputs(inputs, dt, self.player)
-  elseif inputs.isDown.Swap2 then
-    if self.yieldFocus then
-      GAME.theme:playCancelSfx()
-      self:yieldFocus()
-    end
+  if inputs.isDown.Swap2 then
+    GAME.theme:playCancelSfx()
+    self.cursor:releaseFocus(self)
   elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
     if self:moveToPrevious() then
       GAME.theme:playMoveSfx()
@@ -120,16 +119,21 @@ function UniSizedContainer:receiveInputs(inputs, dt)
     if self:moveToNextRow() then
       GAME.theme:playMoveSfx()
     end
-  elseif inputs.isDown.Swap1 or inputs.isDown.Start or inputs.isPressed.Swap1 or inputs.isPressed.Start then
-    if self.rows[self.selectedRow][self.selectedColumn].isFocusable then
+  elseif self.rows[self.selectedRow][self.selectedColumn].isFocusable then
+    if inputs.isDown.Swap1 or inputs.isDown.Start then
       GAME.theme:playValidationSfx()
-      self:setFocus(self.rows[self.selectedRow][self.selectedColumn])
-    elseif self.rows[self.selectedRow][self.selectedColumn].receiveInputs then
-      self.rows[self.selectedRow][self.selectedColumn]:receiveInputs(inputs, dt)
-    else
-      GAME.theme:playCancelSfx()
+      self.cursor:deepenFocus(self.rows[self.selectedRow][self.selectedColumn])
     end
+  elseif self.rows[self.selectedRow][self.selectedColumn].receiveInputs then
+    self.rows[self.selectedRow][self.selectedColumn]:receiveInputs(inputs, dt)
+  else
+    GAME.theme:playCancelSfx()
   end
+end
+
+function UniSizedContainer:processCursorInput(dt)
+  local inputs = self.cursor.keyInput
+  self:receiveInputs(inputs, dt)
 end
 
 function UniSizedContainer:onResized()

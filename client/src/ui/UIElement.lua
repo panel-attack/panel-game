@@ -30,6 +30,8 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
 ---@field onResized function? layout callback for when a UIElement and all of its children have been resized and positioned
+---@field cursorFocus boolean?
+---@field mouseFocus boolean?
 ---@field [any] any
 
 ---@class UiElementOptions
@@ -255,6 +257,10 @@ function UIElement:isTouchable()
   or self.onHold
   or self.onDrag
   or self.onRelease
+end
+
+function UIElement:isFocused()
+  return self.cursorFocus or self.mouseFocus
 end
 
 function UIElement:getTouchedElement(x, y)

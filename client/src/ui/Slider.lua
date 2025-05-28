@@ -38,6 +38,7 @@ local sliderBarThickness = 6
 ---@field isFocusable boolean? only present if the individual object has been marked as focusable
 ---@field yieldFocus fun()? only present if the individual object has been marked as focusable, yields focus back to the parent element
 ---@overload fun(options: SliderOptions): Slider
+---@type Slider
 local Slider = class(
 ---@param self Slider
 ---@param options SliderOptions

@@ -1,4 +1,5 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
+PATH = "client.src.ui"
 local ScrollContainer = require(PATH .. ".ScrollContainer")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
@@ -7,10 +8,12 @@ local Focusable = require(PATH .. ".Focusable")
 local FocusDirector = require(PATH .. ".FocusDirector")
 local input = require("client.src.inputManager")
 local VerticalScrollLayout = require(PATH .. ".Layouts.VerticalScrollLayout")
+local CursorNavigable = require(PATH .. ".CursorNavigable")
 
 ---@class VerticalMenu : ScrollContainer, Focusable
 ---@operator call(ScrollContainerOptions): VerticalMenu
 ---@overload fun(options: ScrollContainerOptions): VerticalMenu
+---@type VerticalMenu
 local VerticalMenu = class(
 function(self, options)
   self.selectedIndex = nil
@@ -18,6 +21,8 @@ function(self, options)
   self.layout = VerticalScrollLayout
 end,
 ScrollContainer)
+
+CursorNavigable(VerticalMenu)
 
 Focusable(VerticalMenu)
 FocusDirector(VerticalMenu)

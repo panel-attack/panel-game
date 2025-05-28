@@ -16,6 +16,7 @@ local HorizontalScrollLayout = require(PATH .. ".Layouts.HorizontalScrollLayout"
 ---@field scrollOffset number by how many pixels the children are translated in the orientation
 ---@field maxScrollOffset number maximum allowed value for scrollOffset the object will bound to
 ---@overload fun(options: ScrollContainerOptions): ScrollContainer
+---@type ScrollContainer
 local ScrollContainer = class(
 ---@param self ScrollContainer
 function(self, options)

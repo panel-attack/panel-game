@@ -1,4 +1,6 @@
-local PATH = (...):gsub('%.init$', '')
+local PATH = (...):gsub('%.[^%.]+$', '')
+---@diagnostic disable-next-line: unused-local
+local import = require("common.lib.import")
 
 --[[
 tag each with
@@ -16,73 +18,70 @@ so that you get intellisense
 local ui = {
   ---@source BoolSelector.lua
   ---@type BoolSelector
-  BoolSelector = require(PATH .. ".BoolSelector"),
+  BoolSelector = import("./BoolSelector"),
   ---@source Button.lua
   ---@type Button
-  Button = require(PATH .. ".Button"),
-  ButtonGroup = require(PATH .. ".ButtonGroup"),
-  Carousel = require(PATH .. ".Carousel"),
+  Button = import("./Button"),
+  ButtonGroup = import(PATH .. ".ButtonGroup"),
+  Carousel = import("./Carousel"),
   ---@source CharacterButton.lua
   ---@type CharacterButton
-  CharacterButton = require(PATH .. ".CharacterButton"),
+  CharacterButton = import("./CharacterButton"),
   ---@source Cursor.lua
   ---@type Cursor
-  Cursor = require(PATH .. ".Cursor"),
-  Focusable = require(PATH .. ".Focusable"),
-  FocusDirector = require(PATH .. ".FocusDirector"),
-  Grid = require(PATH .. ".Grid"),
-  GridCursor = require(PATH .. ".GridCursor"),
-  ImageContainer = require(PATH .. ".ImageContainer"),
-  InputField = require(PATH .. ".InputField"),
+  Cursor = import("./Cursor"),
+  Focusable = import("./Focusable"),
+  FocusDirector = import("./FocusDirector"),
+  Grid = import("./Grid"),
+  GridCursor = import("./GridCursor"),
+  ImageContainer = import("./ImageContainer"),
+  InputField = import("./InputField"),
   ---@source Label.lua
   ---@type Label
-  Label = require(PATH .. ".Label"),
+  Label = import("./Label"),
   Layouts = {
-    AdaptiveFlexLayout = require(PATH .. ".Layouts.AdaptiveFlexLayout"),
-    HorizontalFlexLayout = require(PATH .. ".Layouts.HorizontalFlexLayout"),
-    HorizontalWrapLayout = require(PATH .. ".Layouts.HorizontalWrapLayout"),
-    VerticalFlexLayout = require(PATH .. ".Layouts.VerticalFlexLayout"),
+    AdaptiveFlexLayout = import("./Layouts.AdaptiveFlexLayout"),
+    HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout"),
+    HorizontalWrapLayout = import("./Layouts.HorizontalWrapLayout"),
+    VerticalFlexLayout = import("./Layouts.VerticalFlexLayout"),
   },
-  Leaderboard = require(PATH .. ".Leaderboard"),
+  Leaderboard = import("./Leaderboard"),
   ---@source LevelSlider.lua
   ---@type LevelSlider
-  LevelSlider = require(PATH .. ".LevelSlider"),
+  LevelSlider = import("./LevelSlider"),
   ---@source MenuItem.lua
   ---@type MenuItem
-  MenuItem = require(PATH .. ".MenuItem"),
-  MultiPlayerSelectionWrapper = require(PATH .. ".MultiPlayerSelectionWrapper"),
-  PagedUniGrid = require(PATH .. ".PagedUniGrid"),
-  PanelCarousel = require(PATH .. ".PanelCarousel"),
-  ---@source PassThroughElement.lua
-  ---@type PassThroughElement
-  PassThroughElement = require(PATH .. ".PassThroughElement"),
+  MenuItem = import("./MenuItem"),
+  MultiPlayerSelectionWrapper = import("./MultiPlayerSelectionWrapper"),
+  PagedUniGrid = import("./PagedUniGrid"),
+  PanelCarousel = import("./PanelCarousel"),
   ---@source PixelFontLabel.lua
   ---@type PixelFontLabel
-  PixelFontLabel = require(PATH .. ".PixelFontLabel"),
+  PixelFontLabel = import("./PixelFontLabel"),
   ---@source ScrollContainer.lua
   ---@type ScrollContainer
-  ScrollContainer = require(PATH .. ".ScrollContainer"),
-  ScrollText = require(PATH .. ".ScrollText"),
+  ScrollContainer = import("./ScrollContainer"),
+  ScrollText = import("./ScrollText"),
   ---@source Slider.lua
   ---@type Slider
-  Slider = require(PATH .. ".Slider"),
-  StackPanel = require(PATH .. ".StackPanel"),
-  StageCarousel = require(PATH .. ".StageCarousel"),
-  Stepper = require(PATH .. ".Stepper"),
+  Slider = import("./Slider"),
+  StackPanel = import("./StackPanel"),
+  StageCarousel = import("./StageCarousel"),
+  Stepper = import("./Stepper"),
   ---@source TextButton.lua
   ---@type TextButton
-  TextButton = require(PATH .. ".TextButton"),
+  TextButton = import("./TextButton"),
   ---@source UiElement.lua
   ---@type UiElement
   ---@class UiElement
-  UiElement = require(PATH .. ".UIElement"),
+  UiElement = import("./UIElement"),
   ---@source UniSizedContainer.lua
   ---@type UniSizedContainer
-  UniSizedContainer = require(PATH .. ".UniSizedContainer"),
-  ValueLabel = require(PATH .. ".ValueLabel"),
+  UniSizedContainer = import("./UniSizedContainer"),
+  ValueLabel = import("./ValueLabel"),
   ---@source VerticalMenu.lua
   ---@type VerticalMenu
-  VerticalMenu = require(PATH .. ".VerticalMenu"),
+  VerticalMenu = import("./VerticalMenu"),
 }
 
 -- the default layout

@@ -20,6 +20,7 @@ local HorizontalWrapLayout = require(PATH .. ".Layouts.HorizontalWrapLayout")
 ---@field fontSize FontSize The size of the font
 ---@field wrap boolean If the font should wrap around
 ---@overload fun(options: LabelOptions): Label
+---@type Label
 local Label = class(
   function(self, options)
     self.id = options.id

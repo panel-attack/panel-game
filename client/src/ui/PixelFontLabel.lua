@@ -19,6 +19,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field fontMap PixelFontMap
 ---@field charDistanceScaled number
 ---@overload fun(options: PixelFontLabelOptions): PixelFontLabel
+---@type PixelFontLabel
 local PixelFontLabel = class(
 ---@param self PixelFontLabel
 ---@param options PixelFontLabelOptions
