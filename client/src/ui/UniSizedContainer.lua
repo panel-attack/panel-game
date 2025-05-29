@@ -30,6 +30,9 @@ function(self, options)
 
   self.selectedRow = 1
   self.selectedColumn = 1
+
+  self.onFocus = options.onFocus
+  self.onYield = options.onYield
 end,
 UiElement)
 

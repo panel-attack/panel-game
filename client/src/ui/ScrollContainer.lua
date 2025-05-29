@@ -75,9 +75,9 @@ end
 local function getTranslatedOffset(scrollContainer, x, y)
   local translatedX, translatedY = x, y
   if scrollContainer.scrollOrientation == "vertical" then
-    translatedY = translatedY + scrollContainer.scrollOffset
+    translatedY = translatedY - scrollContainer.scrollOffset
   else
-    translatedX = translatedX + scrollContainer.scrollOffset
+    translatedX = translatedX - scrollContainer.scrollOffset
   end
   return translatedX, translatedY
 end
@@ -92,9 +92,12 @@ function ScrollContainer:onTouch(x, y)
 
   local realTouchedElement = self:getTouchedChildElement(x, y)
   if realTouchedElement then
+    local sX, sY = self:getScreenPos()
+    logger.debug("ScrollContainer screenPos: " .. sX .. "|" .. sY)
+    logger.debug("touchChild coordinates: " .. realTouchedElement.x .. "|" .. realTouchedElement.y)
     self.touchedChild = realTouchedElement
     if self.touchedChild.onTouch then
-      x, y = getTranslatedOffset(self, x, y)
+      logger.debug("scroll translated touch coordinates: " .. x .. "|" .. y)
       self.touchedChild:onTouch(x, y)
     end
   end
@@ -110,7 +113,6 @@ function ScrollContainer:onDrag(x, y)
       self:setScrollOffset(self.originalOffset + (x - self.initialTouchX))
     end
   else
-    x, y = getTranslatedOffset(self, x, y)
     self.touchedChild:onDrag(x, y)
   end
 end
@@ -121,7 +123,6 @@ function ScrollContainer:onRelease(x, y, duration)
 
   if self.touchedChild then
     if self.touchedChild.onRelease then
-      x, y = getTranslatedOffset(self, x, y)
       self.touchedChild:onRelease(x, y)
     end
     self.touchedChild = nil
@@ -196,7 +197,6 @@ end
 
 -- in order for the "offscreen" children to pass the inBounds check, the touch coordinates get corrected by the scroll offset before recursing down the ui
 function ScrollContainer:getTouchedChildElement(x, y)
-  x, y = getTranslatedOffset(self, x, y)
   local touchedElement
   for i = 1, #self.children do
     touchedElement = self.children[i]:getTouchedElement(x, y)
@@ -238,10 +238,9 @@ function ScrollContainer:getScreenPos(whoIsAsking)
   y = y + self.y
 
   if whoIsAsking and whoIsAsking.parent and whoIsAsking.parent == self then
-    --local xOffset, yOffset = getTranslatedOffset(self, 0, 0)
-    --x = x - xOffset
-    --y = y - yOffset
-    x, y = getTranslatedOffset(self, x, y)
+    local xOffset, yOffset = getTranslatedOffset(self, 0, 0)
+    x = x - xOffset
+    y = y - yOffset
   end
 
   return x, y

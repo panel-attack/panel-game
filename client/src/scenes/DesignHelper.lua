@@ -28,9 +28,9 @@ local function getSelectorTemplate(id)
   local label = ui.Label({id = id})
   selector:addChild(button)
   selector:addChild(label)
-  selector.receiveInputs = function(selector, cursor, dt)
+  ui.CursorInteractable(selector, function(selector, cursor, dt)
     button:receiveInputs(cursor, dt)
-  end
+  end)
 
   return selector, button
 end
@@ -57,7 +57,7 @@ local function createCharacterSelect(scene)
 end
 
 function DesignHelper:load()
-  self.characterSelect = createCharacterSelect()
+  self.characterSelect = createCharacterSelect(self)
   self.uiRoot.layout = ui.Layouts.VerticalFlexLayout
   self.uiRoot.childGap = 8
   ui.CursorNavigable(self.uiRoot)
@@ -74,7 +74,7 @@ function DesignHelper:load()
   roomMode:addChild(ui.Label({text = "Battle", hAlign = "center", vAlign = "center"}))
   roomMode:addChild(ui.Label({text = "Arcade", hAlign = "center", vAlign = "center"}))
 
-  roomMode.receiveInputs = function() end
+  ui.CursorInteractable(roomMode, function() end)
 
   self.uiRoot:addChild(roomMode)
 
@@ -96,7 +96,7 @@ function DesignHelper:load()
   gameMode:addChild(ui.Label({text = "Training"}))
   gameMode:addChild(ui.Label({text = "Line Clear"}))
 
-  gameMode.receiveInputs = function() end
+  ui.CursorInteractable(gameMode, function() end)
 
   self.uiRoot:addChild(gameMode)
 
@@ -214,7 +214,7 @@ function DesignHelper:load()
     backgroundColor = {0, 1, 0, 0.5}--{0.7, 0, 0.5, 1},
   })
 
-  self.subSelection.receiveInputs = function() end
+  ui.CursorInteractable(self.subSelection, function() end)
 
   self.uiRoot:addChild(self.subSelection)
 

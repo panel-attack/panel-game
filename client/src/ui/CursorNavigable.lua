@@ -19,15 +19,15 @@ local addCursorInteractionInterface = import("./CursorInteractable")
 ---@param cursorNavigable CursorNavigable | UiElement
 ---@param cursor Cursor
 local function receiveFocus(cursorNavigable, cursor)
-  cursorNavigable.cursor = cursor
+  if cursorNavigable.onFocus then
+    cursorNavigable:onFocus()
+  end
+
   for i, child in ipairs(cursorNavigable.children) do
     if child.receiveInputs and child.isVisible and child.isEnabled then
       cursor:updateHover(cursorNavigable, child)
       break
     end
-  end
-  if cursorNavigable.onFocus then
-    cursorNavigable:onFocus()
   end
 end
 
@@ -78,7 +78,8 @@ local function defaultReceiveInputs(cursorNavigable, cursor, dt)
         GAME.theme:playMoveSfx()
         cursorNavigable:moveToNext(cursor)
     elseif cursor.focusToHover[cursorNavigable].receiveInputs then
-      cursor.focusToHover[cursorNavigable]:receiveInputs(inputs, dt)
+      local hovered = cursor.focusToHover[cursorNavigable]
+      hovered:receiveInputs(cursor, dt)
     end
   elseif cursorNavigable.layout.characteristic == "vertical" then
     if inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
@@ -88,7 +89,8 @@ local function defaultReceiveInputs(cursorNavigable, cursor, dt)
       GAME.theme:playMoveSfx()
       cursorNavigable:moveToNext(cursor)
     elseif cursor.focusToHover[cursorNavigable].receiveInputs then
-      cursor.focusToHover[cursorNavigable]:receiveInputs(inputs, dt)
+      local hovered = cursor.focusToHover[cursorNavigable]
+      hovered:receiveInputs(cursor, dt)
     end
   else
     GAME.theme:playCancelSfx()
