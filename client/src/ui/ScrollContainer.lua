@@ -75,9 +75,9 @@ end
 local function getTranslatedOffset(scrollContainer, x, y)
   local translatedX, translatedY = x, y
   if scrollContainer.scrollOrientation == "vertical" then
-    translatedY = translatedY - scrollContainer.scrollOffset
+    translatedY = translatedY + scrollContainer.scrollOffset
   else
-    translatedX = translatedX - scrollContainer.scrollOffset
+    translatedX = translatedX + scrollContainer.scrollOffset
   end
   return translatedX, translatedY
 end
@@ -227,8 +227,24 @@ function ScrollContainer:getPreferredWidth()
   return self.minWidth
 end
 
-function ScrollContainer:getScreenPos()
+---@param whoIsAsking table?
+function ScrollContainer:getScreenPos(whoIsAsking)
+  local x, y = 0, 0
+  if self.parent then
+    x, y = self.parent:getScreenPos(self)
+  end
 
+  x = x + self.x
+  y = y + self.y
+
+  if whoIsAsking and whoIsAsking.parent and whoIsAsking.parent == self then
+    --local xOffset, yOffset = getTranslatedOffset(self, 0, 0)
+    --x = x - xOffset
+    --y = y - yOffset
+    x, y = getTranslatedOffset(self, x, y)
+  end
+
+  return x, y
 end
 
 return ScrollContainer

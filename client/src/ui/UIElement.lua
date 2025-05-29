@@ -175,10 +175,11 @@ end
 function UIElement:onDetach()
 end
 
-function UIElement:getScreenPos()
+---@param whoIsAsking table?
+function UIElement:getScreenPos(whoIsAsking)
   local x, y = 0, 0
   if self.parent then
-    x, y = self.parent:getScreenPos()
+    x, y = self.parent:getScreenPos(self)
   end
 
   return x + self.x, y + self.y
