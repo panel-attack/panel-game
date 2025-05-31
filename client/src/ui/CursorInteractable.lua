@@ -26,7 +26,8 @@ local function isHovered(cursorInteractable)
   end
 end
 
-
+-- always call this on an instance, not the class
+-- that is to make sure that the per-instance fields are set on the instance
 ---@param uiElement UiElement
 ---@param receiveInputs fun(cursorInteractable: CursorInteractable | UiElement, cursor: Cursor, dt: number?)
 ---@return UiElement | CursorInteractable

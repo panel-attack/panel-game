@@ -97,11 +97,8 @@ local function defaultReceiveInputs(cursorNavigable, cursor, dt)
   end
 end
 
---[[ 
-when adding it to a class instead of a single element: <br>
-- have the class definition inherit CursorNavigable <br>
-- discard the return value; it is only returned so that when doing it for an instance, LuaLS can easily infer the new union type
-]]
+-- always call this on an instance, not the class
+-- that is to make sure that the per-instance fields are set on the instance
 ---@param uiElement UiElement
 ---@param receiveInputs fun(cursorNavigable: CursorNavigable | UiElement, cursor: Cursor, dt: number?)?
 ---@return UiElement | CursorNavigable

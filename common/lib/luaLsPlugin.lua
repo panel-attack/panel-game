@@ -1,4 +1,7 @@
 --[[
+A plugin for the language server to resolve the import libraries requires
+Intellisense becomes available for the returned types despite them technically being just a lua function call
+
 MIT License
 
 Copyright (c) 2024 Elmārs Āboliņš, including code from Justin van der Leij

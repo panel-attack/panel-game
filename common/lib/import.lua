@@ -1,4 +1,8 @@
 --[[
+A library to provide a relative require.
+Makes sense to use wherever we have grouped files that assuredly only ever move together.
+Otherwise require is probably still better.
+
 MIT License
 
 Copyright (c) 2023 Justin van der Leij

@@ -92,12 +92,8 @@ function ScrollContainer:onTouch(x, y)
 
   local realTouchedElement = self:getTouchedChildElement(x, y)
   if realTouchedElement then
-    local sX, sY = self:getScreenPos()
-    logger.debug("ScrollContainer screenPos: " .. sX .. "|" .. sY)
-    logger.debug("touchChild coordinates: " .. realTouchedElement.x .. "|" .. realTouchedElement.y)
     self.touchedChild = realTouchedElement
     if self.touchedChild.onTouch then
-      logger.debug("scroll translated touch coordinates: " .. x .. "|" .. y)
       self.touchedChild:onTouch(x, y)
     end
   end
@@ -237,6 +233,8 @@ function ScrollContainer:getScreenPos(whoIsAsking)
   x = x + self.x
   y = y + self.y
 
+  -- for children the scrolloffset needs to be applied, otherwise not;
+  -- as whoIsAsking is recursively calling upwards, whoIsAsking will be a direct child even if the call originates from further down in the tree
   if whoIsAsking and whoIsAsking.parent and whoIsAsking.parent == self then
     local xOffset, yOffset = getTranslatedOffset(self, 0, 0)
     x = x - xOffset
