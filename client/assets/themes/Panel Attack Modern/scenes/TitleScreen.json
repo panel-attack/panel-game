@@ -8,23 +8,7 @@
   "size": {
     "width": 584,
     "height": 416
-  }
-  "animationTracks": [
-    {
-      "trackId": "bob",
-      "loopTrack": true,
-      "steps": [
-        {
-          "animateProperties": {
-            "y": 360
-          },
-          "durationSeconds": 2,
-          "easeType": "quadinout",
-          "yoyo": true
-        }
-      ]
-    }
-  ],
+  },
   "children": [
     {
       "id": "gear0Main",
@@ -52,7 +36,7 @@
       ]
     },
     {
-      "id": "gear0Main",
+      "id": "gear1Main",
       "filePath": "Gear0-1",
       "layer": 0,
       "anchor": "topLeft",
@@ -94,7 +78,7 @@
       "localPosition": {
         "x": 0,
         "y": 0
-      },
+      }
     },
     {
       "id": "gear3Left",
@@ -162,8 +146,8 @@
       "layer": 5,
       "anchor": "topLeft",
       "localPosition": {
-        "x": 0,
-        "y": 0
+        "x": 254,
+        "y": 24
       },
       "animationTracks": [
         {
