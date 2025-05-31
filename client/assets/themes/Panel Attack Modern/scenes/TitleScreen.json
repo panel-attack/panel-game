@@ -12,24 +12,103 @@
   "children": [
     {
       "id": "gear0Main",
-      "filePath": "Gear0-1",
       "layer": 0,
       "anchor": "topLeft",
       "localPosition": {
-        "x": 98,
-        "y": 240
+        "x": 0,
+        "y": 0
       },
-      "animationTracks": [
+      "children": [
         {
-          "trackId": "slowSpin",
-          "loopTrack": true,
-          "steps": [
+          "filePath": "Gear0",
+          "layer": 0,
+          "anchor": "topLeft",
+          "localPosition": {
+            "x": 0,
+            "y": 0
+          },
+          "animationTracks": [
             {
-              "animateProperties": {
-                "rotation": 6.28318
-              },
-              "durationSeconds": 20,
-              "easeType": "linear"
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "rotation": 6.28318
+                  },
+                  "durationSeconds": 20,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "Gear1",
+          "layer": 1,
+          "anchor": "topLeft",
+          "localPosition": {
+            "x": 0,
+            "y": 0
+          },
+          "animationTracks": [
+            {
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "rotation": 6.28318
+                  },
+                  "durationSeconds": 20,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "gear0Main",
+          "filePath": "Gear2",
+          "layer": 2,
+          "anchor": "topLeft",
+          "localPosition": {
+            "x": 0,
+            "y": 0
+          },
+          "animationTracks": [
+            {
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "rotation": 6.28318
+                  },
+                  "durationSeconds": 20,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "Gear3",
+          "layer": 3,
+          "anchor": "topLeft",
+          "localPosition": {
+            "x": 0,
+            "y": 0
+          },
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.8
+                  },
+                  "durationSeconds": 1,
+                  "easeType": "quadinout"
+                }
+              ]
             }
           ]
         }
