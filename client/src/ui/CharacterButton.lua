@@ -65,6 +65,7 @@ local super_select_pixelcode = [[
       }
   ]]
 
+CharacterButton.stageIconScale = 0.4
 CharacterButton.padding = 2
 CharacterButton.superSelectShader = love.graphics.newShader(super_select_pixelcode)
 
@@ -167,8 +168,10 @@ function CharacterButton:drawSelf()
   local imageWidth, imageHeight = self.characterIcon:getDimensions()
   local scale = math.min(self.width / imageWidth, self.height / imageHeight)
 
-  GraphicsUtil.draw(self.characterIcon, self.x, self.y, 0, scale, scale)
-  GraphicsUtil.printf(self.displayName, self.x, self.y, self.width, "center", nil, nil, getFontSizeByScale(scale))
+  love.graphics.push("transform")
+  love.graphics.translate(self.x, self.y)
+  GraphicsUtil.draw(self.characterIcon, 0, 0, 0, scale, scale)
+  GraphicsUtil.printf(self.displayName, 0, 0, self.width, "center", nil, nil, getFontSizeByScale(scale))
 
   local bottomOffset = self.height - CharacterButton.padding * scale
 
@@ -179,28 +182,26 @@ function CharacterButton:drawSelf()
 
   if self.panelIcon then
     imageWidth, imageHeight = self.panelIcon:getDimensions()
-    GraphicsUtil.draw(self.panelIcon, self.x + CharacterButton.padding * scale, bottomOffset, 0, scale, scale, imageWidth, imageHeight)
+    GraphicsUtil.draw(self.panelIcon, CharacterButton.padding * scale, bottomOffset, 0, scale, scale, 0, imageHeight)
   end
 
   if self.stageIcon then
     imageWidth, imageHeight = self.stageIcon:getDimensions()
-    local leftOffset = self.width / 2 - imageWidth / 2
-    love.graphics.push("transform")
-    love.graphics.translate(leftOffset, bottomOffset)
-    GraphicsUtil.draw(self.stageIcon, 0, 0, 0, scale, scale, imageWidth / 2, imageHeight)
-    love.graphics.rectangle("line", - imageWidth / 2 * scale, -imageHeight * scale, imageWidth * scale, imageHeight * scale)
-    love.graphics.pop()
+    local stageScale = scale * CharacterButton.stageIconScale
+    GraphicsUtil.draw(self.stageIcon, self.width / 2, bottomOffset, 0, stageScale, stageScale, imageWidth / 2, imageHeight)
+    love.graphics.rectangle("line", (self.width / 2 - imageWidth * stageScale / 2), bottomOffset - imageHeight * stageScale, imageWidth * stageScale, imageHeight * stageScale)
   end
 
   if self.superSelectVisible then
     imageWidth, imageHeight = GAME.theme.images.IMG_super:getDimensions()
     scale = math.min(self.width / imageWidth, self.height / imageHeight)
     GraphicsUtil.setShader(CharacterButton.superSelectShader)
-    GraphicsUtil.draw(GAME.theme.images.IMG_super, self.x + self.width / 2, self.y + self.height / 2, 0, scale, scale, imageWidth / 2, imageHeight / 2)
+    GraphicsUtil.draw(GAME.theme.images.IMG_super, self.width / 2, self.height / 2, 0, scale, scale, imageWidth / 2, imageHeight / 2)
     GraphicsUtil.setShader()
   end
 
-  GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+  GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
+  love.graphics.pop()
 end
 
 return CharacterButton
