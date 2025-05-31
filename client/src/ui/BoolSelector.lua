@@ -15,11 +15,11 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local BoolSelector = class(function(boolSelector, options)
   boolSelector.value = options.startValue or false
   boolSelector.vertical = false
+  addCursorInteractionInterface(boolSelector, boolSelector.receiveInputs)
 end,
 UiElement)
 
 BoolSelector.TYPE = "BoolSelector"
-addCursorInteractionInterface(BoolSelector)
 
 function BoolSelector:onTouch(x, y)
 end

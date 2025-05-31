@@ -8,13 +8,6 @@
 
 ---@param cursorInteractable CursorInteractable | UiElement
 ---@param cursor Cursor
----@param dt number
-local function defaultReceiveInputs(cursorInteractable, cursor, dt)
-  error("UiElement of type " .. (cursorInteractable.TYPE or "unknown") .. " does not implement receiveInputs")
-end
-
----@param cursorInteractable CursorInteractable | UiElement
----@param cursor Cursor
 ---@param hovering boolean
 local function setHover(cursorInteractable, cursor, hovering)
   if not hovering then
@@ -35,13 +28,15 @@ end
 
 
 ---@param uiElement UiElement
----@param receiveInputs fun(cursorInteractable: CursorInteractable | UiElement, cursor: Cursor, dt: number?)?
+---@param receiveInputs fun(cursorInteractable: CursorInteractable | UiElement, cursor: Cursor, dt: number?)
 ---@return UiElement | CursorInteractable
 local function addCursorInteractionInterface(uiElement, receiveInputs)
   uiElement.hoveringCursors = {}
   uiElement.setHover = setHover
   uiElement.isHovered = isHovered
-  uiElement.receiveInputs = receiveInputs or defaultReceiveInputs
+  if not uiElement.receiveInputs or uiElement.receiveInputs ~= receiveInputs then
+    uiElement.receiveInputs = receiveInputs
+  end
   uiElement.isNavigable = false
 
   ---@cast uiElement +CursorInteractable

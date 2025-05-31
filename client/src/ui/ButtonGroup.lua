@@ -78,12 +78,12 @@ local ButtonGroup = class(
     self.onChange = options.onChange or function() end
 
     setButtons(self, options.buttons, options.values, self.selectedIndex)
+    addCursorInteractionInterface(self, self.receiveInputs)
   end,
   UIElement
 )
 ButtonGroup.TYPE = "ButtonGroup"
 ButtonGroup.layout = HorizontalFlexLayout
-addCursorInteractionInterface(ButtonGroup)
 
 -- changes state for the button group
 -- updates the color of the selected button

@@ -9,6 +9,7 @@ local addCursorInteractionInterface = import("./CursorInteractable")
 ---@field backgroundColor number[]?
 ---@field outlineColor number[]?
 ---@field onClick fun(button: Button?, input: table?, timeHeld: number?)?
+---@field receiveInputs fun(button: Button, cursor: Cursor, dt: number?)?
 
 ---@class Button : UiElement, CursorInteractable
 ---@operator call(ButtonOptions): Button
@@ -24,12 +25,13 @@ local Button = class(
     self.onClick = options.onClick or function()
       GAME.theme:playValidationSfx()
     end
+
+    addCursorInteractionInterface(self, options.receiveInputs or self.receiveInputs)
   end,
   UIElement
 )
 
 Button.TYPE = "Button"
-addCursorInteractionInterface(Button)
 
 function Button:onTouch(x, y)
   self.backgroundColor[4] = 1

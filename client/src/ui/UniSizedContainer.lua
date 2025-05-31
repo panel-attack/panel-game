@@ -6,7 +6,7 @@ local Focusable = import("./Focusable")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
-local CursorNavigable = require("client.src.ui.CursorNavigable")
+local addCursorNavigationInterface = import("./CursorNavigable")
 
 ---@class UniSizedContainerOptions : UiElementOptions, CursorNavigableOptions
 ---@field childrenWidth integer
@@ -31,12 +31,12 @@ function(self, options)
   self.selectedRow = 1
   self.selectedColumn = 1
 
+  addCursorNavigationInterface(self, self.receiveInputs)
   self.onFocus = options.onFocus
   self.onYield = options.onYield
 end,
 UiElement)
 
-CursorNavigable(UniSizedContainer)
 UniSizedContainer.TYPE = "UniSizedContainer"
 UniSizedContainer.layout = HorizontalWrapLayout
 

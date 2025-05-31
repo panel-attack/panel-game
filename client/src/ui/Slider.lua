@@ -67,11 +67,12 @@ local Slider = class(
     self.width = self.tickLength * self:tickCount() + xPadding + math.max(xPadding, textWidth / 2)
     self.height = handleRadius * 2 + valueTextHeight + textHeight
     self.minHeight = self.height
+
+    addCursorInteractionInterface(self, self.receiveInputs)
   end,
   UIElement
 )
 Slider.TYPE = "Slider"
-addCursorInteractionInterface(Slider)
 
 function Slider:onTouch(x, y)
   self:setValueFromPos(x, false)

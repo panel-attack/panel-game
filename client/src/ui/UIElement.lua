@@ -260,10 +260,6 @@ function UIElement:isTouchable()
   or self.onRelease
 end
 
-function UIElement:isFocused()
-  return self.cursorFocus or self.mouseFocus
-end
-
 function UIElement:getTouchedElement(x, y)
   if self.isVisible and self.isEnabled and self:inBounds(x, y) then
     local touchedElement

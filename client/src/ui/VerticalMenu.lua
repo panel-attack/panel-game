@@ -16,11 +16,11 @@ function(self, options)
   self.selectedIndex = nil
   self.scrollOrientation = "vertical"
   self.layout = VerticalScrollLayout
+  addCursorNavigationInterface(self, self.receiveInputs)
 end,
 ScrollContainer)
 
 VerticalMenu.TYPE = "VerticalMenu"
-addCursorNavigationInterface(VerticalMenu)
 
 ---@param cursor Cursor
 function VerticalMenu:selectPrevious(cursor)

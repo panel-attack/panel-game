@@ -48,13 +48,14 @@ local Stepper = class(
     self:setLabels(options.labels, options.values, self.selectedIndex)
     self.color = {.5, .5, 1, .7}
     self.borderColor = {.7, .7, 1, .7}
+
+    addCursorInteractionInterface(self, self.receiveInputs)
   end,
   UIElement
 )
 
 Stepper.TYPE = "Stepper"
 Stepper.layout = HorizontalFlexLayout
-addCursorInteractionInterface(Stepper)
 
 function Stepper:setLabels(labels, values, selectedIndex)
   self.selectedIndex = selectedIndex
