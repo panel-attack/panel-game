@@ -224,6 +224,8 @@ function ScrollContainer:getPreferredWidth()
 end
 
 ---@param whoIsAsking table?
+---@return integer x
+---@return integer y
 function ScrollContainer:getScreenPos(whoIsAsking)
   local x, y = 0, 0
   if self.parent then

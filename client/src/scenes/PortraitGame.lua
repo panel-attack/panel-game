@@ -1,6 +1,6 @@
 local GameBase = require("client.src.scenes.GameBase")
 local class = require("common.lib.class")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local Telegraph = require("client.src.graphics.Telegraph")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ui = require("client.src.ui")

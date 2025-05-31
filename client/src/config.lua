@@ -1,7 +1,7 @@
 json = require("common.lib.dkjson")
 local util = require("common.lib.util")
 local fileUtils = require("client.src.FileUtils")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 require("client.src.globals")
 
 -- Default configuration values

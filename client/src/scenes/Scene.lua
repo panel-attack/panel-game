@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")

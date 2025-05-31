@@ -2,7 +2,7 @@ local import = require("common.lib.import")
 local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local directsFocus = import("./FocusDirector")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local StaticLayout = import("./Layouts.StaticLayout")
 

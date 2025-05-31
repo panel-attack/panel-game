@@ -1,4 +1,4 @@
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local fileUtils = require("client.src.FileUtils")
 local Theme = require("client.src.mods.Theme")
 

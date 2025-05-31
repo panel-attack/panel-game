@@ -1,7 +1,7 @@
 local Character = require("client.src.mods.Character")
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local ModLoader = require("client.src.mods.ModLoader")
 
 local CharacterLoader = {}

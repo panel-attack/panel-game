@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local Transition = require("client.src.scenes.Transitions.Transition")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local BlackFadeTransition = class(function(transition, startTime, duration, easing)

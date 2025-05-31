@@ -4,7 +4,7 @@ local StackPanel = import("./StackPanel")
 local Label = import("./Label")
 local ImageContainer = import("./ImageContainer")
 local class = require("common.lib.class")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local Stage = require("client.src.mods.Stage")
 
 local StageCarousel = class(function(carousel, options)

@@ -4,7 +4,7 @@ local tableUtils = require("common.lib.tableUtils")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local InputCompression = require("common.data.InputCompression")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local FileUtils = require("client.src.FileUtils")
 
 -- Scene for a puzzle mode instance of the game

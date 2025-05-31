@@ -1,5 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
 local PuzzleLibrary = require("client.src.PuzzleLibrary")

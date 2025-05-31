@@ -1,5 +1,5 @@
 local BarGraph = require("client.lib.BarGraph")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local class = require("common.lib.class")
 
 local RunTimeGraph = class(function(self)

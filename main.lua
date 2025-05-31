@@ -11,7 +11,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.zoneProfiler")
 local ReplayV3 = require("common.data.ReplayV3")
 require("common.lib.util")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local system = require("client.src.system")
 
 local Game = require("client.src.Game")

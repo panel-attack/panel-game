@@ -3,7 +3,7 @@ local ModController = require("client.src.mods.ModController")
 local Player = require("client.src.Player")
 local StageLoader = require("client.src.mods.StageLoader")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local Stage = require("client.src.mods.Stage")
 
 -- caveat: this test is not as effective if you have no character bundles installed

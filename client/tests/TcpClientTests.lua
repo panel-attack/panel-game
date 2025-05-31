@@ -1,5 +1,5 @@
 local TcpClient = require("client.src.network.TcpClient")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local ClientMessages = require("common.network.ClientProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 

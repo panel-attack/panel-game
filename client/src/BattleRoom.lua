@@ -11,7 +11,7 @@ local ClientMatch = require("client.src.ClientMatch")
 local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local system = require("client.src.system")
 local GeneratorSource = require("common.engine.GeneratorSource")
 

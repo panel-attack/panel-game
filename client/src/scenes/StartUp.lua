@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local Scene = require("client.src.scenes.Scene")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local logger = require("common.lib.logger")
 local fileUtils = require("client.src.FileUtils")

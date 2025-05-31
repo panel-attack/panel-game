@@ -1,4 +1,4 @@
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local input = require("client.src.inputManager")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
@@ -322,15 +322,6 @@ function CharacterSelect:getCharacterButtons()
       end
       GAME.theme:playValidationSfx()
       if character then
-        if character:canSuperSelect() and holdTime > consts.SUPER_SELECTION_START + consts.SUPER_SELECTION_DURATION then
-          -- super select
-          if character.panels and panels[character.panels] then
-            player:setPanels(character.panels)
-          end
-          if character.stage and stages[character.stage] then
-            player:setStage(character.stage)
-          end
-        end
         character:playSelectionSfx()
       end
       player:setCharacter(selfElement.characterId)
@@ -348,20 +339,7 @@ function CharacterSelect:getCharacterButtons()
 end
 
 local function updateSuperSelectShader(image, timer)
-  if timer > consts.SUPER_SELECTION_START then
-    if image.isVisible == false then
-      image:setVisibility(true)
-    end
-    local progress = (timer - consts.SUPER_SELECTION_START) / consts.SUPER_SELECTION_DURATION
-    if progress <= 1 then
-      image.shader:send("percent", progress)
-    end
-  else
-    if image.isVisible then
-      image:setVisibility(false)
-    end
-    image.shader:send("percent", 0)
-  end
+  
 end
 
 ---@param characterButton Button

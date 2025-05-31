@@ -1,8 +1,11 @@
 local import = require("common.lib.import")
 local class = require("common.lib.class")
 local Button = import("./Button")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+
+local SUPER_SELECTION_DURATION = 0.5 -- time held in seconds at which super select actually happens
+local SUPER_SELECTION_START = 0.1 -- time held in seconds at which super select is considered started
 
 ---@class CharacterButtonOptions : ButtonOptions
 ---@field character Character
@@ -66,11 +69,11 @@ CharacterButton.padding = 2
 CharacterButton.superSelectShader = love.graphics.newShader(super_select_pixelcode)
 
 function CharacterButton:updateSuperSelectShader(timer)
-  if timer > consts.SUPER_SELECTION_START then
+  if timer > SUPER_SELECTION_START then
     if self.superSelectVisible == false then
       self.superSelectVisible = true
     end
-    local progress = (timer - consts.SUPER_SELECTION_START) / consts.SUPER_SELECTION_DURATION
+    local progress = (timer - SUPER_SELECTION_START) / SUPER_SELECTION_DURATION
     if progress <= 1 then
       CharacterButton.superSelectShader:send("percent", progress)
     end
@@ -95,7 +98,7 @@ function CharacterButton:action(inputSource, holdTime)
   else
     local player = inputSource.player
     GAME.theme:playValidationSfx()
-    if character:canSuperSelect() and holdTime > consts.SUPER_SELECTION_START + consts.SUPER_SELECTION_DURATION then
+    if character:canSuperSelect() and holdTime > SUPER_SELECTION_START + SUPER_SELECTION_DURATION then
       -- super select
       if character.panels and panels[character.panels] then
         player:setPanels(character.panels)

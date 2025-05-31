@@ -1,5 +1,5 @@
 local Stage = require("client.src.mods.Stage")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local tableUtils = require("common.lib.tableUtils")
 local logger = require("common.lib.logger")
 local ModLoader = require("client.src.mods.ModLoader")

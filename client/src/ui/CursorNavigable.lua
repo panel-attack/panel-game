@@ -1,4 +1,4 @@
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local tableUtils = require("common.lib.tableUtils")
 local import = require("common.lib.import")
 local addCursorInteractionInterface = import("./CursorInteractable")

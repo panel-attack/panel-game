@@ -1,5 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
