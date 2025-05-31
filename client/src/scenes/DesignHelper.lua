@@ -36,28 +36,35 @@ local function getSelectorTemplate(id)
 end
 
 local function createCharacterSelect(scene)
-  local characterSelect = ui.UniSizedContainer({
+  local scrollContainer = ui.ScrollContainer({
+    scrollOrientation = "vertical",
+    hFill = true,
+    vFill = true,
+    maxHeight = 800,
+    --maxWidth = 1000,
+  })
+
+  scene.characterSelect = ui.UniSizedContainer({
     childrenWidth = 84,
     childrenHeight = 84,
     childGap = 16,
-    onFocus = function (self)
-      scene.subSelection:addChild(self)
-    end,
     onYield = function (self)
-      self:detach()
+      scene.characterSelectContainer:detach()
     end
   })
 
   for i, characterId in ipairs(visibleCharacters) do
     local button = ui.CharacterButton({character = characters[characterId]})
-    characterSelect:addChild(button)
+    scene.characterSelect:addChild(button)
   end
 
-  return characterSelect
+  scrollContainer:addChild(scene.characterSelect)
+
+  return scrollContainer
 end
 
 function DesignHelper:load()
-  self.characterSelect = createCharacterSelect(self)
+  self.characterSelectContainer = createCharacterSelect(self)
   self.uiRoot.layout = ui.Layouts.VerticalFlexLayout
   self.uiRoot.childGap = 8
   ui.CursorNavigable(self.uiRoot)
@@ -121,6 +128,7 @@ function DesignHelper:load()
   local characterSelectionSelector, characterButton = getSelectorTemplate("character")
   characterButton:addChild(characterImage)
   characterButton.onClick = function()
+    self.subSelection:addChild(self.characterSelectContainer)
     self.cursor:deepenFocus(self.characterSelect)
   end
 

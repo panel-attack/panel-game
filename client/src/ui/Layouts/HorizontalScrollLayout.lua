@@ -36,12 +36,6 @@ function HorizontalScrollLayout.positionChildren(uiElement)
       x = x + uiElement.childGap + child.width
     end
   end
-
-  for _, child in ipairs(uiElement.children) do
-    if child.isVisible then
-      child.layout.positionChildren(child)
-    end
-  end
 end
 
 return HorizontalScrollLayout
