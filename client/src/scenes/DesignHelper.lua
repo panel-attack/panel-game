@@ -41,6 +41,7 @@ local function createCharacterSelect(scene)
     hFill = true,
     vFill = true,
     maxHeight = 800,
+    hAlign = "center",
     --maxWidth = 1000,
   })
 
@@ -215,6 +216,7 @@ function DesignHelper:load()
   self.uiRoot:addChild(subSelectionSelector)
 
   self.subSelection = ui.UiElement({
+    hAlign = "center",
     hFill = true,
     minHeight = 200,
     vFill = true,

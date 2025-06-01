@@ -65,9 +65,10 @@ local super_select_pixelcode = [[
       }
   ]]
 
-CharacterButton.stageIconScale = 0.4
+CharacterButton.superSelectScale = 0.1904
 CharacterButton.padding = 2
 CharacterButton.superSelectShader = love.graphics.newShader(super_select_pixelcode)
+CharacterButton.standardSize = 84
 
 function CharacterButton:updateSuperSelectShader(timer)
   if timer > SUPER_SELECTION_START then
@@ -171,25 +172,31 @@ function CharacterButton:drawSelf()
   love.graphics.push("transform")
   love.graphics.translate(self.x, self.y)
   GraphicsUtil.draw(self.characterIcon, 0, 0, 0, scale, scale)
-  GraphicsUtil.printf(self.displayName, 0, 0, self.width, "center", nil, nil, getFontSizeByScale(scale))
+  GraphicsUtil.printf(self.displayName, 0, 0, self.width, "center", nil, nil, getFontSizeByScale(self.width / CharacterButton.standardSize))
 
+  local leftOffset = CharacterButton.padding * scale
+  local rightOffset = self.width - CharacterButton.padding * scale
   local bottomOffset = self.height - CharacterButton.padding * scale
+
 
   if self.flagIcon then
     imageWidth, imageHeight = self.flagIcon:getDimensions()
-    GraphicsUtil.draw(self.flagIcon, self.width - CharacterButton.padding * scale, bottomOffset, 0, scale, scale, imageWidth, imageHeight)
+    scale = math.round(self.width * CharacterButton.superSelectScale) / imageWidth
+    GraphicsUtil.draw(self.flagIcon, rightOffset, bottomOffset, 0, scale, scale, imageWidth, imageHeight)
   end
 
   if self.panelIcon then
     imageWidth, imageHeight = self.panelIcon:getDimensions()
-    GraphicsUtil.draw(self.panelIcon, CharacterButton.padding * scale, bottomOffset, 0, scale, scale, 0, imageHeight)
+    scale = math.round(self.width * CharacterButton.superSelectScale) / imageWidth
+    GraphicsUtil.draw(self.panelIcon, leftOffset, bottomOffset, 0, scale, scale, 0, imageHeight)
   end
 
   if self.stageIcon then
     imageWidth, imageHeight = self.stageIcon:getDimensions()
-    local stageScale = scale * CharacterButton.stageIconScale
-    GraphicsUtil.draw(self.stageIcon, self.width / 2, bottomOffset, 0, stageScale, stageScale, imageWidth / 2, imageHeight)
-    love.graphics.rectangle("line", (self.width / 2 - imageWidth * stageScale / 2), bottomOffset - imageHeight * stageScale, imageWidth * stageScale, imageHeight * stageScale)
+    local xScale = math.round(self.width * CharacterButton.superSelectScale * 2) / imageWidth
+    local yScale = math.round(self.width * CharacterButton.superSelectScale) / imageHeight
+    GraphicsUtil.draw(self.stageIcon, self.width / 2, bottomOffset, 0, xScale, yScale, imageWidth / 2, imageHeight)
+    love.graphics.rectangle("line", (self.width / 2 - imageWidth * xScale / 2), bottomOffset - imageHeight * yScale, imageWidth * xScale, imageHeight * yScale)
   end
 
   if self.superSelectVisible then
