@@ -116,8 +116,12 @@ end
 
 function AnimationLoader.loadFromFile(rootPath, filePath)
   local results = {}
-  local spriteData  = FileUtils.readJsonFile(filePath)
-  results[#results+1] = loadNode(rootPath, spriteData, nil)
+  local animationData  = FileUtils.readJsonFile(filePath)
+  if animationData then
+    for _, data in ipairs(animationData) do
+      results[#results+1] = loadNode(rootPath, data, nil)
+    end
+  end
   return results
 end
 

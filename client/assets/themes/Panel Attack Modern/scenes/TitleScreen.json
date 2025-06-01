@@ -1,4 +1,4 @@
-{
+{ [
   "id": "logoAssembly",
   "anchor": "center",
   "localPosition": {
@@ -647,5 +647,5 @@
         }
       ]
     }
-  ]
+  ]]
 }
