@@ -65,7 +65,7 @@ local super_select_pixelcode = [[
       }
   ]]
 
-CharacterButton.superSelectScale = 0.1904
+CharacterButton.extraIconScale = 0.1904
 CharacterButton.padding = 2
 CharacterButton.superSelectShader = love.graphics.newShader(super_select_pixelcode)
 CharacterButton.standardSize = 84
@@ -181,22 +181,24 @@ function CharacterButton:drawSelf()
 
   if self.flagIcon then
     imageWidth, imageHeight = self.flagIcon:getDimensions()
-    scale = math.round(self.width * CharacterButton.superSelectScale) / imageWidth
+    scale = math.round(self.width * CharacterButton.extraIconScale) / imageWidth
     GraphicsUtil.draw(self.flagIcon, rightOffset, bottomOffset, 0, scale, scale, imageWidth, imageHeight)
   end
 
   if self.panelIcon then
     imageWidth, imageHeight = self.panelIcon:getDimensions()
-    scale = math.round(self.width * CharacterButton.superSelectScale) / imageWidth
+    scale = math.round(self.width * CharacterButton.extraIconScale) / imageWidth
     GraphicsUtil.draw(self.panelIcon, leftOffset, bottomOffset, 0, scale, scale, 0, imageHeight)
   end
 
-  if self.stageIcon then
+  if self.stageIcon and self:isHovered() then
     imageWidth, imageHeight = self.stageIcon:getDimensions()
-    local xScale = math.round(self.width * CharacterButton.superSelectScale * 2) / imageWidth
-    local yScale = math.round(self.width * CharacterButton.superSelectScale) / imageHeight
+    local xScale = math.round(self.width * CharacterButton.extraIconScale * 2) / imageWidth
+    local yScale = math.round(self.width * CharacterButton.extraIconScale) / imageHeight
     GraphicsUtil.draw(self.stageIcon, self.width / 2, bottomOffset, 0, xScale, yScale, imageWidth / 2, imageHeight)
+    love.graphics.setLineWidth(0.5)
     love.graphics.rectangle("line", (self.width / 2 - imageWidth * xScale / 2), bottomOffset - imageHeight * yScale, imageWidth * xScale, imageHeight * yScale)
+    love.graphics.setLineWidth(1)
   end
 
   if self.superSelectVisible then
