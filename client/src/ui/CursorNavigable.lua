@@ -63,13 +63,14 @@ end
 ---@param cursor Cursor
 ---@param dt number
 local function defaultReceiveInputs(cursorNavigable, cursor, dt)
+  local selected = cursor.focusToHover[cursorNavigable]
   local inputs = cursor.keyInput
   if inputs.isDown.Swap2 then
     GAME.theme:playCancelSfx()
     cursor:releaseFocus(cursorNavigable)
-  elseif cursor.focusToHover[cursorNavigable].isNavigable and (inputs.isDown.Swap1 or inputs.isDown.Start) then
+  elseif selected.isNavigable and (inputs.isDown.Swap1 or inputs.isDown.Start) then
     GAME.theme:playValidationSfx()
-    cursor:deepenFocus(cursor.focusToHover[cursorNavigable])
+    cursor:deepenFocus(selected)
   elseif cursorNavigable.layout.characteristic == "horizontal" then
     if inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
       GAME.theme:playMoveSfx()
@@ -77,9 +78,8 @@ local function defaultReceiveInputs(cursorNavigable, cursor, dt)
     elseif inputs:isPressedWithRepeat("Right", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
         GAME.theme:playMoveSfx()
         cursorNavigable:moveToNext(cursor)
-    elseif cursor.focusToHover[cursorNavigable].receiveInputs then
-      local hovered = cursor.focusToHover[cursorNavigable]
-      hovered:receiveInputs(cursor, dt)
+    elseif selected.receiveInputs and not selected.isNavigable then
+      selected:receiveInputs(cursor, dt)
     end
   elseif cursorNavigable.layout.characteristic == "vertical" then
     if inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
@@ -88,9 +88,8 @@ local function defaultReceiveInputs(cursorNavigable, cursor, dt)
     elseif inputs:isPressedWithRepeat("Down", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
       GAME.theme:playMoveSfx()
       cursorNavigable:moveToNext(cursor)
-    elseif cursor.focusToHover[cursorNavigable].receiveInputs then
-      local hovered = cursor.focusToHover[cursorNavigable]
-      hovered:receiveInputs(cursor, dt)
+    elseif selected.receiveInputs and not selected.isNavigable then
+      selected:receiveInputs(cursor, dt)
     end
   else
     GAME.theme:playCancelSfx()
@@ -105,8 +104,12 @@ end
 local function addCursorNavigationInterface(uiElement, receiveInputs)
   addCursorInteractionInterface(uiElement, receiveInputs or defaultReceiveInputs)
   uiElement.receiveFocus = receiveFocus
-  uiElement.moveToNext = moveToNext
-  uiElement.moveToPrevious = moveToPrevious
+  if not uiElement.moveToNext then
+    uiElement.moveToNext = moveToNext
+  end
+  if not uiElement.moveToPrevious then
+    uiElement.moveToPrevious = moveToPrevious
+  end
   uiElement.isNavigable = true
 
   ---@cast uiElement +CursorNavigable

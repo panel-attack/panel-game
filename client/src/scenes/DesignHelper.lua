@@ -228,7 +228,7 @@ function DesignHelper:load()
 
   self.uiRoot:addChild(self.subSelection)
 
-  self.cursor = ui.Cursor(self.uiRoot)
+  self.cursor = ui.ImageCursor(self.uiRoot, nil, GAME.theme:getGridCursor(1)[1])
 end
 
 function DesignHelper:loadRankedSelection(width)
@@ -255,8 +255,8 @@ function DesignHelper:update(dt)
 end
 
 function DesignHelper:draw()
-  self.cursor:draw()
   self.uiRoot:draw()
+  self.cursor:draw()
 end
 
 return DesignHelper

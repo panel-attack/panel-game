@@ -39,6 +39,8 @@ local ui = {
   GridCursor = import("./GridCursor"),
   ---@source ImageContainer.lua
   ImageContainer = import("./ImageContainer"),
+  ---@source ImageCursor.lua
+  ImageCursor = import("./ImageCursor"),
   ---@source InputField.lua
   InputField = import("./InputField"),
   ---@source Label.lua
