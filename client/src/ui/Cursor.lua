@@ -87,10 +87,12 @@ function Cursor:draw()
   -- love.graphics.rectangle("fill", self.target.x, self.target.y, self.target.width, self.target.height)
   if self.focused then
     local uiElement = self.focusToHover[self.focused]
-    GraphicsUtil.setColor(1, 1, 1, 0.2)
-    local x, y = uiElement:getScreenPos()
-    love.graphics.rectangle("fill", x, y, uiElement.width, uiElement.height)
-    GraphicsUtil.setColor(1, 1, 1, 1)
+    if not uiElement.receiveInputs then
+      GraphicsUtil.setColor(1, 1, 1, 0.2)
+      local x, y = uiElement:getScreenPos()
+      love.graphics.rectangle("fill", x, y, uiElement.width, uiElement.height)
+      GraphicsUtil.setColor(1, 1, 1, 1)
+    end
   end
 end
 

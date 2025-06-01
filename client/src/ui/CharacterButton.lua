@@ -3,6 +3,7 @@ local class = require("common.lib.class")
 local Button = import("./Button")
 local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local input = require("client.src.inputManager")
 
 local SUPER_SELECTION_DURATION = 0.5 -- time held in seconds at which super select actually happens
 local SUPER_SELECTION_START = 0.1 -- time held in seconds at which super select is considered started

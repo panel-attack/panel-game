@@ -17,6 +17,9 @@ function(self, options)
   self.scrollOrientation = "vertical"
   self.layout = VerticalScrollLayout
   addCursorNavigationInterface(self, self.receiveInputs)
+
+  self.onYield = options.onYield
+  self.onFocus = options.onFocus
 end,
 ScrollContainer)
 

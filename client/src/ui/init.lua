@@ -66,6 +66,8 @@ local ui = {
   MultiPlayerSelectionWrapper = import("./MultiPlayerSelectionWrapper"),
   PagedUniGrid = import("./PagedUniGrid"),
   PanelCarousel = import("./PanelCarousel"),
+  ---@source PanelSetButton.lua
+  PanelSetButton = import("./PanelSetButton"),
   ---@source PixelFontLabel.lua
   ---@type PixelFontLabel
   PixelFontLabel = import("./PixelFontLabel"),

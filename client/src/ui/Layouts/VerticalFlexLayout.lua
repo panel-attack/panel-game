@@ -42,7 +42,11 @@ function VerticalFlexLayout.getMinHeight(uiElement)
     end
   end
 
-  return h
+  if uiElement.getMinHeight then
+    return math.max(h, uiElement:getMinHeight())
+  else
+    return h
+  end
 end
 
 ---@param uiElement UiElement

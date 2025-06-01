@@ -16,6 +16,9 @@ function touchHandler:touch(x, y)
     if not self.touchedElement then
       self.touchedElement = activeScene.uiRoot:getTouchedElement(x, y)
       if self.touchedElement and self.touchedElement.onTouch then
+        if self.touchedElement.hoveringCursors then
+          self.touchedElement.hoveringCursors["mouse"] = true
+        end
         self.touchedElement:onTouch(x, y)
       end
     end
@@ -34,6 +37,9 @@ end
 function touchHandler:release(x, y)
   if self.touchedElement then
     if self.touchedElement.onRelease then
+      if self.touchedElement.hoveringCursors then
+        self.touchedElement.hoveringCursors["mouse"] = nil
+      end
       self.touchedElement:onRelease(x, y, self.holdTimer)
     end
     self.touchedElement = nil

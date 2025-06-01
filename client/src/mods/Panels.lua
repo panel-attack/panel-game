@@ -52,8 +52,19 @@ local DEFAULT_PANEL_ANIM =
 
 -- The class representing the panel image data
 -- Not to be confused with "Panel" which is one individual panel in the game stack model
-Panels =
-  class(
+---@class PanelSet
+---@field path string
+---@field id string
+---@field name string
+---@field size integer
+---@field images {metals: {left: love.Texture, mid: love.Texture, right: love.Texture, flash: love.Texture}}
+---@field sheets love.Texture[]
+---@field sheetConfig table<string, any>
+---@field batches love.SpriteBatch[]
+local Panels = class(
+---@param self PanelSet
+---@param full_path string
+---@param folder_name string
   function(self, full_path, folder_name)
     self.path = full_path -- string | path to the panels folder content
     self.id = folder_name -- string | id of the panel set, is also the name of its folder by default, may change in json_init
@@ -595,19 +606,21 @@ function Panels:getDrawProps(panel, x, y, dangerCol, dangerTimer, stopTime)
   return conf, frame, x, y
 end
 
--- adds the panel to a batch for later drawing
--- x, y: relative coordinates on the stack canvas
--- clock: Stack.clock to calculate animation frames
--- danger: nil - no danger, false - regular danger, true - panic
--- dangerTimer: remaining time for which the danger animation continues 
--- stopTime: the remaining stop time
-function Panels:addToDraw(panel, x, y, stackScale, danger, dangerTimer, stopTime)
+-- adds the panel to a batch for later drawing or, if color 9, draws it directly
+---@param panel Panel
+---@param x integer relative x coordinate to the parent / stack
+---@param y integer relative y coordinate to the parent / stack
+---@param stackScale number
+---@param dangerCol boolean[] danger state per column, true if the column touches top
+---@param dangerTimer integer
+---@param stopTime integer
+function Panels:addToDraw(panel, x, y, stackScale, dangerCol, dangerTimer, stopTime)
   if panel.color == 9 then
     love.graphics.draw(self.greyPanel, x * stackScale, y * stackScale, 0, self.scale * stackScale)
   else
     local batch = self.batches[panel.color]
     local conf, frame
-    conf, frame, x, y = self:getDrawProps(panel, x, y, danger, dangerTimer, stopTime)
+    conf, frame, x, y = self:getDrawProps(panel, x, y, dangerCol, dangerTimer, stopTime)
 
     if conf then
       self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size)

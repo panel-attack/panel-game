@@ -41,7 +41,13 @@ function HorizontalFlexLayout.getMinHeight(uiElement)
     end
   end
 
-  return h + maxHeight
+  h = h + maxHeight
+
+  if uiElement.getMinHeight then
+    return math.max(h, uiElement:getMinHeight())
+  else
+    return h
+  end
 end
 
 local growables = {}

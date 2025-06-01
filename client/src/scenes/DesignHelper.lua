@@ -64,8 +64,36 @@ local function createCharacterSelect(scene)
   return scrollContainer
 end
 
+local function createPanelSetSelect(scene)
+  scene.panelSetSelect = ui.VerticalMenu({
+    childGap = 8,
+    hFill = true,
+    vFill = true,
+    maxHeight = 800,
+    hAlign = "center",
+    onYield = function (self)
+      self:detach()
+    end
+  })
+
+  for panelSetId, panelSet in pairs(panels) do
+    local button = ui.PanelSetButton({panelSet = panelSet, hFill = true, maxWidth = 48 * 9})
+    scene.panelSetSelect:addChild(button)
+  end
+
+  -- alphabetical order I guess?
+  table.sort(scene.panelSetSelect.children, function(a, b)
+    return a.panelSet.id < b.panelSet.id
+  end)
+
+  scene.panelSetSelect:addChild(ui.TextButton({label = ui.Label({id = "back"}), onClick = function() scene.cursor:releaseFocus(scene.panelSetSelect) end}))
+
+  return scene.panelSetSelect
+end
+
 function DesignHelper:load()
   self.characterSelectContainer = createCharacterSelect(self)
+  self.panelSetSelect = createPanelSetSelect(self)
   self.uiRoot.layout = ui.Layouts.VerticalFlexLayout
   self.uiRoot.childGap = 8
   ui.CursorNavigable(self.uiRoot)
@@ -170,6 +198,10 @@ function DesignHelper:load()
   panelButton.padding = 4
   panelSelectionSelector.childGap = 0
   panelButton:addChild(panelContainer)
+  panelButton.onClick = function()
+    self.subSelection:addChild(self.panelSetSelect)
+    self.cursor:deepenFocus(self.panelSetSelect)
+  end
 
   local levelImage = ui.ImageContainer({
     image = GAME.theme.images.IMG_levels[GAME.localPlayer.settings.level or 1],
