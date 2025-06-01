@@ -52,6 +52,9 @@ end
 
 ---@param uiElement UiElement
 function Layout.updateHeights(uiElement, height)
+  if uiElement.debug then
+    local phi = 5
+  end
   uiElement.layout.setHeight(uiElement, height)
   uiElement.layout.finalizeChildrenHeights(uiElement)
 

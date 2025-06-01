@@ -352,6 +352,10 @@ end
 function Game:handleResize(newWidth, newHeight)
   local activeScene = GAME.navigationStack:getActiveScene()
   if activeScene then
+    local _, _, flags = love.window.getMode()
+    local screenWidth, screenHeight = love.window.getDesktopDimensions(flags.display)
+    newWidth = math.min(newWidth, screenWidth)
+    newHeight = math.min(newHeight, screenHeight)
     activeScene.uiRoot.minWidth = newWidth
     activeScene.uiRoot.minHeight = newHeight
     activeScene.uiRoot.layout.resize(activeScene.uiRoot, newWidth, newHeight)

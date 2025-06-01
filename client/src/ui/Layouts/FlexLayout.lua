@@ -54,9 +54,9 @@ function FlexLayout.setHeight(uiElement, height)
     uiElement.layout.fitSizeHeight(uiElement)
   end
   if height then
-    uiElement.height = math.max(height, uiElement.newHeight)
+    uiElement.height = math.min(math.max(height, uiElement.newHeight), uiElement.maxHeight)
   else
-    uiElement.height = uiElement.newHeight
+    uiElement.height = math.min(uiElement.newHeight, uiElement.maxHeight)
   end
   uiElement.newHeight = nil
 end
