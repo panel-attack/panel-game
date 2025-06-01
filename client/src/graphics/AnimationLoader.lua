@@ -72,7 +72,7 @@ local function buildTrackStep(target, track, currentStep, stepAmount)
   end)
 end
 
-local function loadNode(rootPath, node, parent, drawables)
+local function loadNode(rootPath, node, parent)
   local obj = {
     id       = node.id,
     parent   = parent,
@@ -80,14 +80,21 @@ local function loadNode(rootPath, node, parent, drawables)
     y        = node.localPosition and node.localPosition.y or 0,
     width    = node.size and node.size.width or 0,
     height   = node.size and node.size.height or 0,
-    rotation = node.initialRotation or 0,
-    scale    = node.initialScale or 1,
+    rotation = node.rotation or 0,
+    scale    = node.scale or 1,
     alpha    = node.alpha or 1,
-    layer    = node.layer or 0,
+    blendMode = node.blendMode or "alpha",
+    alphaMode = node.alphaMode or "alphamultiply",
+    stencil = node.stencil == true or false,
+    tint     = node.tint or {1, 1, 1},
     anchor   = node.anchor or "center",
     pivot    = node.pivot or "center",
     animationTracks = node.animationTracks or {}
   }
+  if parent then
+    parent.children[#parent.children+1] = obj
+  end
+  obj.children = {}
   if node.filePath then
     local texture = GraphicsUtil.loadImageFromSupportedExtensions(rootPath .. node.filePath)
     if texture then
@@ -96,36 +103,27 @@ local function loadNode(rootPath, node, parent, drawables)
       obj.height = texture:getHeight()
     end
   end
-  table.insert(drawables, obj)
 
   for _,track in ipairs(node.animationTracks or {}) do
     buildTrackStep(obj, track, 1, 1)
   end
   for _,child in ipairs(node.children or {}) do
-    loadNode(rootPath, child, obj, drawables)
+    loadNode(rootPath, child, obj)
   end
+
+  return obj
 end
 
 function AnimationLoader.loadFromFile(rootPath, filePath)
   local results = {}
   local spriteData  = FileUtils.readJsonFile(filePath)
-  loadNode(rootPath, spriteData, nil, results)
-  table.sort(results, function(a,b) return a.layer < b.layer end)
+  results[#results+1] = loadNode(rootPath, spriteData, nil)
   return results
 end
 
-local function objectTransform(obj)
+function AnimationLoader.objectTransform(obj)
   local ax, ay = AnimationLoader.anchorOffset(obj, obj.anchor)
   return obj.x - ax, obj.y - ay, obj.rotation, obj.scale
-end
-
-function AnimationLoader.worldTransform(obj)
-  if not obj.parent then
-    return objectTransform(obj)
-  end
-  local px, py, prot, pscale = AnimationLoader.worldTransform(obj.parent)
-  local ox, oy, oprot, oscale = objectTransform(obj)
-  return px + ox, py + oy, prot + oprot, pscale * oscale
 end
 
 return AnimationLoader

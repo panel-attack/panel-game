@@ -60,28 +60,69 @@ function TitleScreen:update(dt)
   -- end
 end
 
+local alphaDiscardShader = love.graphics.newShader([[
+    vec4 effect(vec4 tintColor, Image tex, vec2 texCoord, vec2 screenCoord)
+    {
+        vec4 pixelColor = Texel(tex, texCoord);
+
+        // throw away fragments whose final alpha would be zero
+        if (pixelColor.a * tintColor.a <= 0.0)
+        {
+            discard;
+        }
+
+        return vec4(0.0);         // colour does not matter in stencil pass
+    }
+]])
+
+function TitleScreen:drawNode(d, parent)
+    love.graphics.push("all")
+
+    local px, py = AnimationLoader.anchorOffset(d, d.pivot)
+    local wx, wy, wrot, wscale = AnimationLoader.objectTransform(d)
+
+    love.graphics.translate(wx, wy)
+
+    love.graphics.translate(px, py)
+    love.graphics.rotate(wrot)
+    love.graphics.scale(wscale, wscale)
+    love.graphics.translate(-px, -py)
+
+    if d.texture then
+      if d.stencil then
+        assert(d.parent, "To use a stencil you need siblings")
+        love.graphics.stencil(function()
+          love.graphics.setShader(alphaDiscardShader)
+          for _, sibling in ipairs(parent.children) do
+            if sibling == d then
+              break
+            end
+            self:drawNode(sibling, nil)
+          end
+          love.graphics.setShader()
+        end, "replace", 1, false)
+        love.graphics.setStencilTest("equal", 1)
+      end
+      
+      love.graphics.setBlendMode(d.blendMode, d.alphaMode)
+      love.graphics.setColor(d.tint[1], d.tint[2], d.tint[3], d.alpha)
+      love.graphics.draw(d.texture, 0, 0)
+      love.graphics.setStencilTest()
+    end
+
+    for _, child in ipairs(d.children) do
+      self:drawNode(child, d)
+    end
+
+    love.graphics.pop()
+end
+
 function TitleScreen:draw()
   self.backgroundImg:draw()
   self:titleDrawPressStart(((math.sin(5 * love.timer.getTime()) / 2 + .5) ^ .5) / 2 + .5)
 
-
   for _,d in ipairs(self.drawables) do
-    if d.texture then
-      love.graphics.push()
-
-      local px, py = AnimationLoader.anchorOffset(d, d.pivot)
-      local wx, wy, wrot, wscale = AnimationLoader.worldTransform(d)
-
-      love.graphics.setColor(1,1,1,d.alpha)
-      love.graphics.translate(wx, wy)
-      love.graphics.translate(px, py)
-      love.graphics.rotate(wrot)
-      love.graphics.scale(wscale, wscale)
-      love.graphics.translate(-px, -py)
-      love.graphics.draw(d.texture, 0, 0)
-
-      love.graphics.pop()
-    end
+    self:drawNode(d)
   end
 end
 
