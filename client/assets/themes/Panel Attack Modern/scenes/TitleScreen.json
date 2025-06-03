@@ -1,7 +1,7 @@
-{ [
+{ "drawables":  [ {
   "id": "logoAssembly",
   "anchor": "center",
-  "localPosition": {
+  "position": {
     "x": 640,
     "y": 290
   },
@@ -13,7 +13,7 @@
     {
       "id": "backgroundBottomLeftGear",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 98,
         "y": 240
       },
@@ -21,7 +21,7 @@
         {
           "filePath": "Gear0",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -43,7 +43,7 @@
         {
           "filePath": "Gear1",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -65,7 +65,7 @@
         {
           "filePath": "Gear2",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -92,7 +92,7 @@
         {
           "filePath": "Gear3",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -119,7 +119,7 @@
           "stencil": true,
           "alpha": 0.3,
           "blendMode": "add",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
@@ -129,7 +129,7 @@
     {
       "id": "backgroundBottomRightGear",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 394,
         "y": 240
       },
@@ -137,7 +137,7 @@
         {
           "filePath": "Gear0",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -159,7 +159,7 @@
         {
           "filePath": "Gear1",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -181,7 +181,7 @@
         {
           "filePath": "Gear2",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -208,7 +208,7 @@
         {
           "filePath": "Gear3",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -235,7 +235,7 @@
           "stencil": true,
           "alpha": 0.3,
           "blendMode": "add",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
@@ -246,7 +246,7 @@
       "id": "mainLogo",
       "filePath": "PanelAttackLogoLayer0",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 0,
         "y": 0
       }
@@ -255,7 +255,7 @@
       "id": "logoMid",
       "filePath": "PanelAttackLogoLayer2",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 0,
         "y": 0
       }
@@ -263,7 +263,7 @@
     {
       "id": "ForegroundLeftGear",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 208,
         "y": 312
       },
@@ -272,7 +272,7 @@
         {
           "filePath": "Gear0",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -294,7 +294,7 @@
         {
           "filePath": "Gear1",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -316,7 +316,7 @@
         {
           "filePath": "Gear2",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -344,7 +344,7 @@
           "filePath": "Circle",
           "anchor": "topLeft",
           "scale": 1.4,
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
@@ -352,7 +352,7 @@
         {
           "filePath": "Gear3",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -379,7 +379,7 @@
           "stencil": true,
           "alpha": 0.3,
           "blendMode": "add",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
@@ -389,7 +389,7 @@
     {
       "id": "ForegroundRighGear",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 320,
         "y": 312
       },
@@ -398,7 +398,7 @@
         {
           "filePath": "Gear0",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -420,7 +420,7 @@
         {
           "filePath": "Gear1",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -442,7 +442,7 @@
         {
           "filePath": "Gear2",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -470,7 +470,7 @@
           "filePath": "X",
           "anchor": "topLeft",
           "scale": 1.4,
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
@@ -478,7 +478,7 @@
         {
           "filePath": "Gear3",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -505,7 +505,7 @@
           "stencil": true,
           "alpha": 0.3,
           "blendMode": "add",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
@@ -516,7 +516,7 @@
       "id": "logoTop",
       "filePath": "PanelAttackLogoLayer4",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 0,
         "y": 0
       }
@@ -524,7 +524,7 @@
     {
       "id": "ForegroundTopGear",
       "anchor": "topLeft",
-      "localPosition": {
+      "position": {
         "x": 258,
         "y": 24
       },
@@ -533,7 +533,7 @@
         {
           "filePath": "Gear0",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -555,7 +555,7 @@
         {
           "filePath": "Gear1",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -577,7 +577,7 @@
         {
           "filePath": "Gear2",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -605,7 +605,7 @@
           "filePath": "HourGlass",
           "anchor": "topLeft",
           "scale": 1.4,
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
@@ -613,7 +613,7 @@
         {
           "filePath": "Gear3",
           "anchor": "topLeft",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           },
@@ -640,12 +640,12 @@
           "stencil": true,
           "alpha": 0.3,
           "blendMode": "add",
-          "localPosition": {
+          "position": {
             "x": 0,
             "y": 0
           }
         }
       ]
     }
-  ]]
+  ]}]
 }

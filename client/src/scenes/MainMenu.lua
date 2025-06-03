@@ -2,6 +2,7 @@ local Scene = require("client.src.scenes.Scene")
 local consts = require("common.engine.consts")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local AnimationLoader = require("client.src.graphics.AnimationLoader")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local EndlessMenu = require("client.src.scenes.EndlessMenu")
@@ -30,6 +31,8 @@ local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
   self.uiRoot:addChild(self.menu)
+  local scenePath = themes[config.theme].path .. "/scenes/"
+  self.drawables = AnimationLoader.loadFromFile(scenePath, scenePath .. "MainMenu.json")
 end, Scene)
 
 MainMenu.name = "MainMenu"
@@ -150,14 +153,16 @@ function MainMenu:checkForUpdates()
 end
 
 function MainMenu:update(dt)
-  GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
 function MainMenu:draw()
-  GAME.theme.images.bg_main:draw()
+  for _,d in ipairs(self.drawables) do
+    AnimationLoader.drawNode(d)
+  end
+  
   self.uiRoot:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2

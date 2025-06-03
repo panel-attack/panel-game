@@ -3,6 +3,21 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local FileUtils = require("client.src.FileUtils")
 local Flux = require("client.lib.flux.flux")
 
+-- Shader used for clipping using a stencil pass
+local alphaDiscardShader = love.graphics.newShader([[
+    vec4 effect(vec4 tintColor, Image tex, vec2 texCoord, vec2 screenCoord)
+    {
+        vec4 pixelColor = Texel(tex, texCoord);
+
+        if (pixelColor.a * tintColor.a <= 0.0)
+        {
+            discard;
+        }
+
+        return vec4(0.0);
+    }
+]])
+
 -- A class that loads images from a animation file and sets up their animations.
 ---@class AnimationLoader
 ---@field [string] any
@@ -76,8 +91,8 @@ local function loadNode(rootPath, node, parent)
   local obj = {
     id       = node.id,
     parent   = parent,
-    x        = node.localPosition and node.localPosition.x or 0,
-    y        = node.localPosition and node.localPosition.y or 0,
+    x        = node.position and node.position.x or 0,
+    y        = node.position and node.position.y or 0,
     width    = node.size and node.size.width or 0,
     height   = node.size and node.size.height or 0,
     rotation = node.rotation or 0,
@@ -87,7 +102,7 @@ local function loadNode(rootPath, node, parent)
     alphaMode = node.alphaMode or "alphamultiply",
     stencil = node.stencil == true or false,
     tint     = node.tint or {1, 1, 1},
-    anchor   = node.anchor or "center",
+    anchor   = node.anchor or "topLeft",
     pivot    = node.pivot or "center",
     animationTracks = node.animationTracks or {}
   }
@@ -101,6 +116,13 @@ local function loadNode(rootPath, node, parent)
       obj.texture = texture
       obj.width = texture:getWidth()
       obj.height = texture:getHeight()
+      if node.wrap == "repeat" then
+        obj.scrollX = 0
+        obj.scrollY = 0
+        obj.texture:setWrap("repeat", "repeat")
+        obj.texture:setFilter("nearest", "nearest")
+        obj.quad = love.graphics.newQuad(obj.scrollX, obj.scrollY, obj.width, obj.height, obj.width, obj.height)
+      end
     end
   end
 
@@ -118,7 +140,7 @@ function AnimationLoader.loadFromFile(rootPath, filePath)
   local results = {}
   local animationData  = FileUtils.readJsonFile(filePath)
   if animationData then
-    for _, data in ipairs(animationData) do
+    for _, data in ipairs(animationData.drawables) do
       results[#results+1] = loadNode(rootPath, data, nil)
     end
   end
@@ -128,6 +150,54 @@ end
 function AnimationLoader.objectTransform(obj)
   local ax, ay = AnimationLoader.anchorOffset(obj, obj.anchor)
   return obj.x - ax, obj.y - ay, obj.rotation, obj.scale
+end
+
+
+function AnimationLoader.drawNode(d, parent)
+    love.graphics.push("all")
+
+    local px, py = AnimationLoader.anchorOffset(d, d.pivot)
+    local wx, wy, wrot, wscale = AnimationLoader.objectTransform(d)
+
+    love.graphics.translate(wx, wy)
+
+    love.graphics.translate(px, py)
+    love.graphics.rotate(wrot)
+    love.graphics.scale(wscale, wscale)
+    love.graphics.translate(-px, -py)
+
+    if d.texture then
+      if d.stencil then
+        assert(d.parent, "To use a stencil you need siblings")
+        love.graphics.stencil(function()
+          love.graphics.setShader(alphaDiscardShader)
+          for _, sibling in ipairs(parent.children) do
+            if sibling == d then
+              break
+            end
+            AnimationLoader.drawNode(sibling, nil)
+          end
+          love.graphics.setShader()
+        end, "replace", 1, false)
+        love.graphics.setStencilTest("equal", 1)
+      end
+
+      love.graphics.setBlendMode(d.blendMode, d.alphaMode)
+      love.graphics.setColor(d.tint[1], d.tint[2], d.tint[3], d.alpha)
+      if d.quad then
+        d.quad:setViewport(d.scrollX, d.scrollY, d.width, d.height)
+        love.graphics.draw(d.texture, d.quad, 0, 0)
+      else
+        love.graphics.draw(d.texture, 0, 0)
+      end
+      love.graphics.setStencilTest()
+    end
+
+    for _, child in ipairs(d.children) do
+      AnimationLoader.drawNode(child, d)
+    end
+
+    love.graphics.pop()
 end
 
 return AnimationLoader

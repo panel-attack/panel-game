@@ -1,0 +1,237 @@
+{
+  "drawables": [
+    {
+      "filePath": "MainMenuCity0"
+    },
+    {
+      "filePath": "MainMenuCityStars",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "wrap": "repeat",
+      "alpha": 0.9,
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "alpha": 1
+              },
+              "durationSeconds": 1,
+              "easeType": "quadinout"
+            },
+            {
+              "animateProperties": {
+                "alpha": 0.9
+              },
+              "durationSeconds": 1,
+              "easeType": "quadinout"
+            },
+            {
+              "animateProperties": {
+                "alpha": 0.9
+              },
+              "durationSeconds": 3,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCity1"
+    },
+    {
+      "filePath": "MainMenuCity2"
+    },
+    {
+      "filePath": "MainMenuCity7",
+      "position": {
+        "x": 0,
+        "y": 10
+      },
+      "wrap": "repeat",
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 20,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCity4"
+    },
+    {
+      "filePath": "Crystal",
+      "tint": [
+        0.8,
+        0.8,
+        1
+      ],
+      "anchor": "center",
+      "scale": 0.2,
+      "position": {
+        "x": 1049,
+        "y": 450
+      },
+      "animationTracks": [
+        {
+          "yoyo": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "y": 456
+              },
+              "durationSeconds": 4,
+              "easeType": "quadinout"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "Glyph",
+      "tint": [
+        0.999,
+        0.1,
+        0.1
+      ],
+      "anchor": "center",
+      "scale": 1,
+      "position": {
+        "x": 1176,
+        "y": 320
+      },
+      "animationTracks": [
+        {
+          "yoyo": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "alpha": 0.8
+              },
+              "durationSeconds": 4,
+              "easeType": "quadinout"
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "filePath": "GlyphCircle",
+          "anchor": "center",
+          "position": {
+            "x": 21,
+            "y": 54
+          },
+          "tint": [
+            0.999,
+            0.1,
+            0.1
+          ],
+          "animationTracks": [
+            {
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "scale": 1.1,
+                    "rotation": 6.28318,
+                    "alpha": 0.8
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "Crystal",
+      "tint": [
+        0.6,
+        0.999,
+        0.6
+      ],
+      "anchor": "center",
+      "scale": 0.2,
+      "position": {
+        "x": 292,
+        "y": 254
+      },
+      "animationTracks": [
+        {
+          "yoyo": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "y": 260
+              },
+              "durationSeconds": 4,
+              "easeType": "quadinout"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCity7",
+      "wrap": "repeat",
+      "position": {
+        "x": 0,
+        "y": 100
+      },
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 25,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCity6"
+    },
+    {
+      "filePath": "MainMenuCity7",
+      "wrap": "repeat",
+      "position": {
+        "x": 0,
+        "y": 300
+      },
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 30,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
