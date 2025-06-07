@@ -136,11 +136,146 @@ local function loadNode(rootPath, node, parent)
   return obj
 end
 
+function AnimationLoader.applyOverridesRecursively(destinationTable, overridesTable)
+    for key, overrideValue in pairs(overridesTable) do
+        local destinationValue = destinationTable[key]
+
+        if type(overrideValue) == "table"
+        and type(destinationValue) == "table" then
+            AnimationLoader.applyOverridesRecursively(destinationValue, overrideValue)
+        else
+            destinationTable[key] = overrideValue
+        end
+    end
+end
+
+function AnimationLoader.cloneNodeWithOverrides(sourceNode, overridesTable)
+    local clonedNode = deepcpy(sourceNode)
+
+    if overridesTable ~= nil then
+        AnimationLoader.applyOverridesRecursively(clonedNode, overridesTable)
+    end
+
+    return clonedNode
+end
+
+function AnimationLoader.indexNodesRecursively(nodeTable, filePath, idLookupTable)
+    if nodeTable.id ~= nil then
+        local qualifiedId = filePath .. "#" .. nodeTable.id
+
+        if idLookupTable[qualifiedId] ~= nil then
+            error("Duplicate id detected: " .. qualifiedId)
+        end
+
+        idLookupTable[qualifiedId] = nodeTable
+    end
+
+    if nodeTable.children ~= nil then
+        for _, childNode in ipairs(nodeTable.children) do
+            AnimationLoader.indexNodesRecursively(childNode, filePath, idLookupTable)
+        end
+    end
+end
+
+function AnimationLoader.readFileAndCollectIds(filePath, loadedFileTables, idLookupTable)
+    if loadedFileTables[filePath] ~= nil then
+        return
+    end
+
+    local sceneTable  = FileUtils.readJsonFile(filePath)
+
+    sceneTable.filePath = filePath
+    loadedFileTables[filePath] = sceneTable
+
+    if sceneTable then
+      if sceneTable.drawables ~= nil then
+          for _, drawableNode in ipairs(sceneTable.drawables) do
+              AnimationLoader.indexNodesRecursively(drawableNode, filePath, idLookupTable)
+          end
+      end
+
+      if sceneTable.imports ~= nil then
+          local directoryPart = filePath:match("(.*/)") or ""
+
+          for _, relativePath in ipairs(sceneTable.imports) do
+              local fullImportPath = directoryPart .. relativePath
+              AnimationLoader.readFileAndCollectIds(fullImportPath, loadedFileTables, idLookupTable)
+          end
+      end
+    end
+end
+
+function AnimationLoader.resolveRefsRecursively(nodeTable, idLookupTable, visitedTables, filePath, rootPath)
+    if type(nodeTable) ~= "table" then
+        return
+    end
+
+    if nodeTable.ref ~= nil then
+        if visitedTables[nodeTable] ~= nil then
+            error("Circular ref detected at " .. tostring(nodeTable.ref))
+        end
+
+        visitedTables[nodeTable] = true
+
+        local sourceNode = idLookupTable[rootPath .. "#" .. nodeTable.ref]
+
+        if sourceNode == nil then
+          sourceNode = idLookupTable[filePath .. "#" .. nodeTable.ref]
+        end
+
+        if sourceNode == nil then
+            error("Unknown ref: " .. tostring(nodeTable.ref))
+        end
+
+        local clonedNode = AnimationLoader.cloneNodeWithOverrides(
+            sourceNode,
+            nodeTable.overrides
+        )
+
+        for key in pairs(nodeTable) do
+            nodeTable[key] = nil
+        end
+
+        for key, value in pairs(clonedNode) do
+            nodeTable[key] = value
+        end
+    end
+
+    if nodeTable.children ~= nil then
+        for _, childNode in ipairs(nodeTable.children) do
+            AnimationLoader.resolveRefsRecursively(childNode, idLookupTable, visitedTables)
+        end
+    end
+end
+
+function AnimationLoader.loadScene(rootFilePath)
+    local loadedFileTables = {}   -- filePath → parsed table
+    local idLookupTable   = {}    -- "file#id" → node table
+
+    AnimationLoader.readFileAndCollectIds(rootFilePath, loadedFileTables, idLookupTable)
+
+    local rootSceneTable = loadedFileTables[rootFilePath]
+
+    AnimationLoader.resolveRefsRecursively(rootSceneTable, idLookupTable, {})
+
+    return rootSceneTable
+end
+
 function AnimationLoader.loadFromFile(rootPath, filePath)
+  local loadedFileTables = {}   -- filePath → parsed table
+  local idLookupTable   = {}    -- "file#id" → node table
+
+  AnimationLoader.readFileAndCollectIds(filePath, loadedFileTables, idLookupTable)
+
+  local rootSceneTable = loadedFileTables[filePath]
+
+  for _, drawable in ipairs(rootSceneTable.drawables) do
+    AnimationLoader.resolveRefsRecursively(drawable, idLookupTable, {}, filePath, rootPath)
+  end
+
   local results = {}
-  local animationData  = FileUtils.readJsonFile(filePath)
-  if animationData then
-    for _, data in ipairs(animationData.drawables) do
+  if rootSceneTable then
+    for _, data in ipairs(rootSceneTable.drawables) do
       results[#results+1] = loadNode(rootPath, data, nil)
     end
   end
