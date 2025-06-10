@@ -25,10 +25,12 @@ end, Scene)
 
 OptionsMenu.name = "OptionsMenu"
 
-local SCROLL_STEP = 14
-
 function OptionsMenu:loadScreens()
   local menus = {}
+
+  local function onMenuDetach(menu)
+    self.cursor:releaseFocus(menu)
+  end
 
   menus.baseMenu = self:loadBaseMenu()
   menus.generalMenu = self:loadGeneralMenu()
@@ -38,12 +40,12 @@ function OptionsMenu:loadScreens()
   menus.aboutMenu = self:loadAboutMenu()
   menus.modifyUserIdMenu = self:loadModifyUserIdMenu()
   menus.systemInfo = self:loadInfoScreen(self:getSystemInfo())
-  menus.aboutThemes = self:loadInfoScreen(save.read_txt_file("docs/themes.md"))
-  menus.aboutCharacters = self:loadInfoScreen(save.read_txt_file("docs/characters.md"))
-  menus.aboutStages = self:loadInfoScreen(save.read_txt_file("docs/stages.md"))
-  menus.aboutPanels = self:loadInfoScreen(save.read_txt_file("docs/panels.md"))
-  menus.aboutAttackFiles = self:loadInfoScreen(save.read_txt_file("docs/training.txt"))
-  menus.installingMods = self:loadInfoScreen(save.read_txt_file("docs/installMods.md"))
+
+  for menuName, menu in pairs(menus) do
+    if menuName ~= "baseMenu" then
+      menu.onDetach = onMenuDetach
+    end
+  end
 
   if #menus.modifyUserIdMenu.children == 1 then
     menus.modifyUserIdMenu:detach()
@@ -76,8 +78,15 @@ function OptionsMenu:updateMenuLanguage()
 end
 
 function OptionsMenu:switchToScreen(screenName)
-  self.menus[self.activeMenuName]:detach()
-  self.uiRoot:addChild(self.menus[screenName])
+  local oldMenu = self.menus[self.activeMenuName]
+  local newMenu = self.menus[screenName]
+  oldMenu:detach()
+  if not self.cursor.focusToHover[newMenu] then
+    self.cursor:deepenFocus(newMenu)
+  else
+    self.cursor:releaseFocus(oldMenu)
+  end
+  self.uiRoot:addChild(newMenu)
   self.activeMenuName = screenName
 end
 
@@ -680,15 +689,17 @@ function OptionsMenu:load()
 
   self.backgroundImage = themes[config.theme].images.bg_main
   self.uiRoot:addChild(self.menus.baseMenu)
+  self.cursor = ui.Cursor(self.menus.baseMenu)
 end
 
 function OptionsMenu:update(dt)
   self.backgroundImage:update(dt)
-  self.menus[self.activeMenuName]:receiveInputs(inputManager)
+  self.cursor:receiveInputs(dt)
 end
 
 function OptionsMenu:draw()
   self.backgroundImage:draw()
+  self.cursor:draw()
   self.uiRoot:draw()
 end
 

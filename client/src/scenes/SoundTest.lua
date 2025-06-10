@@ -213,6 +213,7 @@ function SoundTest:load()
   self.soundTestMenu:addChild(back)
 
   self.uiRoot:addChild(self.soundTestMenu)
+  self.cursor = ui.Cursor(self.soundTestMenu)
 
   self.backgroundImg = themes[config.theme].images.bg_main
 
@@ -227,12 +228,13 @@ function SoundTest:load()
 end
 
 function SoundTest:update(dt)
-  self.soundTestMenu:receiveInputs()
+  self.cursor:receiveInputs(dt)
   self.backgroundImg:update(dt)
 end
 
 function SoundTest:draw()
   self.backgroundImg:draw()
+  self.cursor:draw()
   self.uiRoot:draw()
 end
 

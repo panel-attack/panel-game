@@ -8,15 +8,16 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout")
 local addCursorInteractionInterface = import("./CursorInteractable")
 
--- MenuItem is a specific UIElement that all children of Menu should be
----@class MenuItem
+-- MenuItem is a wrapper UIElement that bundles a label element with another interactable UIElement and passes through inputs to that second element
+---@class MenuItem : UiElement, CursorInteractable
 local MenuItem = class(function(self, options)
-  self.selected = false
-  self.TYPE = "MenuItem"
+  addCursorInteractionInterface(self, self.receiveInputs)
 end,
 UiElement)
 
+MenuItem.TYPE = "MenuItem"
 MenuItem.PADDING = 2
+MenuItem.layout = HorizontalFlexLayout
 
 -- Takes a label and an optional extra element and makes and combines them into a menu item
 -- which is suitable for inserting into a menu
@@ -26,7 +27,7 @@ MenuItem.PADDING = 2
 function MenuItem.createMenuItem(label, item)
   assert(label ~= nil)
 
-  local menuItem = UiElement({
+  local menuItem = MenuItem({
     hAlign = "center",
     vAlign = "center",
     layout = HorizontalFlexLayout,
@@ -42,19 +43,16 @@ function MenuItem.createMenuItem(label, item)
   label.hFill = true
   menuItem:addChild(label)
   if item ~= nil then
-    item.vAlign = "center"
-    item.hAlign = "left"
     item.hFill = true
+    item.vAlign = "center"
     menuItem:addChild(item)
-    addCursorInteractionInterface(menuItem, function(self, cursor, dt)
-      item:receiveInputs(cursor, dt)
-    end)
+    menuItem.item = item
   end
 
   return menuItem
 end
 
--- Creates a menu item with just a button
+-- Creates just a button as buttons already have their own hover draw
 function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
   assert(text ~= nil)
   local id
@@ -109,10 +107,7 @@ function MenuItem.createLabeledButtonMenuItem(labelText, labelTextReplacements, 
   })
   local textButton = TextButton({label = Label({text = buttonText, replacements = buttonTextReplacements, translate = buttonTextTranslate, hAlign = "center", vAlign = "center"}), onClick = buttonOnClick, width = BUTTON_WIDTH})
 
-  local menuItem = MenuItem.createMenuItem(label, textButton)
-  menuItem.textButton = textButton
-
-  return menuItem
+  return MenuItem.createMenuItem(label, textButton)
 end
 
 function MenuItem.createStepperMenuItem(text, replacements, translate, stepper)
@@ -164,14 +159,6 @@ function MenuItem.createSliderMenuItem(text, replacements, translate, slider)
   return MenuItem.createMenuItem(label, slider)
 end
 
-function MenuItem:setSelected(selected)
-  self.selected = selected
-  if selected and self.onSelectedFunction then
-    self.onSelectedFunction()
-  end
-end
-
-
 local DEFAULT_BACKGROUND_COLOR = {1, 1, 1}
 local SELECTED_BACKGROUND_COLOR = {0.6, 0.6, 1}
 local DEFAULT_BORDER_COLOR = {1, 1, 1}
@@ -179,7 +166,7 @@ local SELECTED_BORDER_COLOR = {0.6, 0.6, 1}
 
 function MenuItem:drawSelf()
   local baseOpacity = 0.15
-  if self.selected then
+  if next(self.hoveringCursors) then
     local selectedAdditionalOpacity = 0.5
     local fillOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 16 + baseOpacity + selectedAdditionalOpacity
     local borderOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 4 + baseOpacity + selectedAdditionalOpacity
@@ -191,13 +178,9 @@ function MenuItem:drawSelf()
   end
 end
 
--- inputs as a passthrough in case we ever implement player specific menus
-function MenuItem:receiveInputs(inputs)
-  for _, child in ipairs(self.children) do
-    if child.receiveInputs then
-      child:receiveInputs(inputs)
-      return
-    end
+function MenuItem:receiveInputs(cursor, dt)
+  if self.item then
+    self.item:receiveInputs(cursor, dt)
   end
 end
 
