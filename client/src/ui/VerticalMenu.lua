@@ -3,6 +3,7 @@ local ScrollContainer = import("./ScrollContainer")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local VerticalFlexLayout = import("./Layouts.VerticalFlexLayout")
 local VerticalScrollLayout = import("./Layouts.VerticalScrollLayout")
 local tableUtils = require("common.lib.tableUtils")
 local addCursorNavigationInterface = import("./CursorNavigable")
@@ -116,6 +117,15 @@ function VerticalMenu:drawChildren()
         love.graphics.rectangle("line", uiElement.x, uiElement.y, uiElement.width, uiElement.height)
       end
       uiElement:draw()
+    end
+  end
+end
+
+function VerticalMenu:onResized()
+  ScrollContainer.onResized(self)
+  for _, child in ipairs(self.children) do
+    for cursor, _ in pairs(child.hoveringCursors) do
+      self:keepVisible(cursor)
     end
   end
 end

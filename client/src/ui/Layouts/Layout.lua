@@ -53,9 +53,9 @@ end
 ---@param uiElement UiElement
 function Layout.updateHeights(uiElement, height)
   -- about the most reasonable way to troubleshoot why a certain element is laid out in an expected way
-  -- if uiElement.debug then
-  --   local phi = 5
-  -- end
+  if uiElement.debug then
+    local phi = 5
+  end
   uiElement.layout.setHeight(uiElement, height)
   uiElement.layout.finalizeChildrenHeights(uiElement)
 
@@ -105,6 +105,13 @@ end
 function Layout.getPreferredWidth(uiElement)
   error("Layout does not implement getPreferredWidth")
 end
+
+---@param uiElement UiElement
+---@return number # the preferred height of the element based on the preferred heights of its children
+function Layout.getPreferredHeight(uiElement)
+  error("Layout does not implement getPreferredHeight")
+end
+
 
 
 return Layout

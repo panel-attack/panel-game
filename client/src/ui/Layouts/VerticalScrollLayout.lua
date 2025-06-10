@@ -6,7 +6,7 @@ local util = require("common.lib.util")
 local VerticalScrollLayout = setmetatable({}, {__index = VerticalFlexLayout})
 
 function VerticalScrollLayout.getMinHeight(uiElement)
-  return util.bound(uiElement.minHeight, VerticalFlexLayout.getMinHeight(uiElement), uiElement.maxHeight)
+  return uiElement.minHeight
 end
 
 function VerticalScrollLayout.finalizeChildrenHeights(uiElement)

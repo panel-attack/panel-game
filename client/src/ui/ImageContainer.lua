@@ -40,8 +40,6 @@ end
 
 function ImageContainer:onResized()
   self.scale = math.min(self.width / self.imageWidth, self.height / self.imageHeight)
-  -- self.width = self.imageWidth * self.scale
-  -- self.height = self.imageHeight * self.scale
 end
 
 function ImageContainer:drawSelf()

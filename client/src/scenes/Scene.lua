@@ -34,7 +34,7 @@ local Scene = class(
       vAlign = "center",
     })
     self.uiRoot.controlsWindow = true
-    self.uiRoot.debug = true
+    -- self.uiRoot.debug = true
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main

@@ -8,28 +8,28 @@ local VerticalFlexLayout = setmetatable({characteristic = "vertical"}, {__index 
 ---@return number # the minimum width of the element as dictated by its children
 function VerticalFlexLayout.getMinWidth(uiElement)
   local w = uiElement.padding * 2
-  local maxWidth = 0
+  local maxChildWidth = 0
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      maxWidth = math.max(maxWidth, child.layout.getMinWidth(child))
+      maxChildWidth = math.max(maxChildWidth, child.layout.getMinWidth(child))
     end
   end
 
-  return w + maxWidth
+  return w + maxChildWidth
 end
 
 function VerticalFlexLayout.getPreferredWidth(uiElement)
   local w = uiElement.padding * 2
-  local maxWidth = 0
+  local maxChildWidth = 0
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      maxWidth = math.max(maxWidth, child.layout.getMinWidth(child), child:getPreferredWidth())
+      maxChildWidth = math.max(maxChildWidth, child.layout.getMinWidth(child), child:getPreferredWidth())
     end
   end
 
-  return w + maxWidth
+  return w + maxChildWidth
 end
 
 ---@param uiElement UiElement
@@ -38,7 +38,7 @@ function VerticalFlexLayout.getMinHeight(uiElement)
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      h = h + child.newHeight + uiElement.childGap
+      h = h + math.max(child.layout.getMinHeight(child), child.minHeight) + uiElement.childGap
     end
   end
 
@@ -49,6 +49,18 @@ function VerticalFlexLayout.getMinHeight(uiElement)
   else
     return h
   end
+end
+
+function VerticalFlexLayout.getPreferredHeight(uiElement)
+  local h = uiElement.padding * 2 + uiElement.childGap * (#uiElement.children - 1)
+
+  for _, child in ipairs(uiElement.children) do
+    if child.isVisible then
+      h = h + math.max(child.layout.getMinHeight(child), child:getPreferredHeight())
+    end
+  end
+
+  return h
 end
 
 local growables = {}

@@ -128,8 +128,10 @@ function UIElement:onChildrenChanged()
 
     if self.controlsWindow then
       --if not DEBUG_ENABLED then
-        self.layout.resize(self)
+      -- we want to keep window size if possible
+      self.layout.resize(self, self.width, self.height)
       --end
+      -- but if it changed (due to the min size increasing with the added element), resize the window so everything fits
       if oWidth ~= self.width or oHeight ~= self.height then
         GraphicsUtil.updateMode(self.width, self.height, {})
       end
@@ -280,6 +282,12 @@ end
 ---@return integer # the width the UIElement would prefer to take up if any space is available
 function UIElement:getPreferredWidth()
   return self.minWidth
+end
+
+--- defaults to minHeight; elements that can wrap have to override this getter with a function returning their preferred height
+---@return integer # the height the UIElement would prefer to take up if any space is available
+function UIElement:getPreferredHeight()
+  return self.minHeight
 end
 
 return UIElement

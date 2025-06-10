@@ -13,6 +13,10 @@ local tableUtils = require("common.lib.tableUtils")
 ---@field childrenWidth integer
 ---@field childrenHeight integer
 
+-- a layout and navigation focused container that arranges children horizontally <br>
+-- when not enough width available it will automatically wrap around further elements to the next row <br>
+-- due to all children being forced to the same size, it can automatically adjust navigation to offer grid-like navigation
+--  but it's not a real grid!
 ---@class UniSizedContainer : UiElement, CursorNavigable
 ---@operator call(UniSizedContainerOptions): UniSizedContainer
 ---@field childrenWidth integer

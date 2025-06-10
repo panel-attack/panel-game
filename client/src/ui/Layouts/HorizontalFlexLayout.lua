@@ -33,21 +33,34 @@ end
 ---@param uiElement UiElement
 function HorizontalFlexLayout.getMinHeight(uiElement)
   local h = uiElement.padding * 2
-  local maxHeight = 0
+  local maxChildHeight = 0
 
   for _, child in ipairs(uiElement.children) do
     if child.isVisible then
-      maxHeight = math.max(maxHeight, child.newHeight)
+      maxChildHeight = math.max(maxChildHeight, child.newHeight)
     end
   end
 
-  h = h + maxHeight
+  h = h + maxChildHeight
 
   if uiElement.getMinHeight then
     return math.max(h, uiElement:getMinHeight())
   else
     return h
   end
+end
+
+function HorizontalFlexLayout.getPreferredHeight(uiElement)
+  local h = uiElement.padding * 2
+  local maxChildHeight = 0
+
+  for _, child in ipairs(uiElement.children) do
+    if child.isVisible then
+      maxChildHeight = math.max(maxChildHeight, child.layout.getMinHeight(child), child:getPreferredHeight())
+    end
+  end
+
+  return h + maxChildHeight
 end
 
 local growables = {}

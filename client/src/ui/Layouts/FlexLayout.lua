@@ -23,8 +23,8 @@ function FlexLayout.fitSizeHeight(uiElement)
       child.layout.fitSizeHeight(child)
     end
   end
-  local h = uiElement.layout.getMinHeight(uiElement)
-  uiElement.newHeight = math.max(h, uiElement.minHeight)
+  local h = uiElement.layout.getPreferredHeight(uiElement)
+  uiElement.newHeight = math.max(h, uiElement:getPreferredHeight(), uiElement.minHeight)
 end
 
 function FlexLayout.setWidth(uiElement, width)
@@ -53,11 +53,16 @@ function FlexLayout.setHeight(uiElement, height)
   if not uiElement.newHeight then
     uiElement.layout.fitSizeHeight(uiElement)
   end
+
   local minHeight = uiElement.layout.getMinHeight(uiElement)
   if height then
-    uiElement.height = math.min(math.max(height, uiElement.newHeight), uiElement.maxHeight)
+    if height > minHeight then
+      uiElement.height = util.bound(minHeight, uiElement.newHeight, height)
+    else
+      uiElement.height = minHeight
+    end
   else
-    uiElement.height = math.min(uiElement.newHeight, uiElement.maxHeight)
+    uiElement.height = util.bound(minHeight, uiElement.newHeight, uiElement.maxHeight)
   end
   uiElement.newHeight = nil
 end

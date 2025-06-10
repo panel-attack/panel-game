@@ -245,8 +245,6 @@ function DesignHelper:load()
 
   subSelectionSelector:addChild(readyButton)
   subSelectionSelector:addChild(leaveButton)
-  --passThroughSelector:addChild(subSelectionSelector)
-  --self.uiRoot:addChild(passThroughSelector)
   self.uiRoot:addChild(subSelectionSelector)
 
   self.subSelection = ui.UiElement({
@@ -258,8 +256,6 @@ function DesignHelper:load()
     backgroundColor = {0, 1, 0, 0.5},--{0.7, 0, 0.5, 1},
   })
   self.subSelection.debug = true
-
-  ui.CursorInteractable(self.subSelection, function() end)
 
   self.uiRoot:addChild(self.subSelection)
 
