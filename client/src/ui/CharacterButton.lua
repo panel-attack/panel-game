@@ -210,7 +210,9 @@ function CharacterButton:drawSelf()
     GraphicsUtil.setShader()
   end
 
+  GraphicsUtil.setColor(1, 1, 1, 0.4)
   GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
+  GraphicsUtil.setColor(1, 1, 1, 1)
   love.graphics.pop()
 end
 

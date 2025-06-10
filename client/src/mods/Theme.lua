@@ -898,7 +898,7 @@ end
 
 ---@param index integer?
 ---@return love.Texture[]
-function Theme:getGridCursor(index)
+function Theme:getCursorImages(index)
   index = index or 1
   if not (self.images.IMG_char_sel_cursors and self.images.IMG_char_sel_cursors[index]) then
     loadGridCursors(self)
@@ -1098,7 +1098,7 @@ end
 function Theme:getSelectionAssetPack(index)
   local pack = {
     playerNumberIcon = self:getPlayerNumberIcon(index),
-    gridCursor = self:getGridCursor(index),
+    gridCursor = self:getCursorImages(index),
   }
 
   return pack

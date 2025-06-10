@@ -7,18 +7,12 @@ that way "Go to source" on an import of ui elsewhere will lead to the respective
 the "./" is assumed given for relative paths but it's still a path so adding the extension is necessary
 when addressing files in subdirectories (layouts) use forward slashes as the path separator
 https://luals.github.io/wiki/annotations/#source
-
-also tag with
----@type
-so that you get intellisense
 ]]
 
 local ui = {
   ---@source BoolSelector.lua
-  ---@type BoolSelector
   BoolSelector = import("./BoolSelector"),
   ---@source Button.lua
-  ---@type Button
   Button = import("./Button"),
   ---@source ButtonGroup.lua
   ButtonGroup = import("./ButtonGroup"),

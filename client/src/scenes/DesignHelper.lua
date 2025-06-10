@@ -70,7 +70,7 @@ local function createPanelSetSelect(scene)
     childGap = 8,
     minHeight = 400,
     hFill = true,
-    vFill = true,
+    --vFill = true,
     maxHeight = 800,
     hAlign = "center",
     onYield = function (self)
@@ -263,7 +263,7 @@ function DesignHelper:load()
 
   self.uiRoot:addChild(self.subSelection)
 
-  self.cursor = ui.ImageCursor(self.uiRoot, nil, GAME.theme:getGridCursor(1)[1])
+  self.cursor = ui.ImageCursor(self.uiRoot, nil, GAME.theme:getCursorImages(1))
 end
 
 function DesignHelper:loadRankedSelection(width)

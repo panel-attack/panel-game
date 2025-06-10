@@ -52,9 +52,10 @@ end
 
 ---@param uiElement UiElement
 function Layout.updateHeights(uiElement, height)
-  if uiElement.debug then
-    local phi = 5
-  end
+  -- about the most reasonable way to troubleshoot why a certain element is laid out in an expected way
+  -- if uiElement.debug then
+  --   local phi = 5
+  -- end
   uiElement.layout.setHeight(uiElement, height)
   uiElement.layout.finalizeChildrenHeights(uiElement)
 
