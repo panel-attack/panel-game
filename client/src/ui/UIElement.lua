@@ -30,6 +30,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
 ---@field onResized function? layout callback for when a UIElement and all of its children have been resized and positioned
+---@field onDetach function? callback for when a UIElement detaches from its parent (aka the parent loses its child)
 ---@field [any] any
 
 ---@class UiElementOptions
@@ -112,11 +113,12 @@ local UIElement = class(
 
 UIElement.TYPE = "UIElement"
 
-function UIElement:onChildrenChanged()
+---@param self UiElement
+local function onChildrenChanged(self)
   if self.parent then
     -- resizing segments does not make much sense if the segments have to be resized later anyway
     -- so bubble just straight up
-    self.parent:onChildrenChanged()
+    onChildrenChanged(self.parent)
   else
     -- and then only resize from the root element
     local oWidth = self.width
@@ -153,7 +155,7 @@ function UIElement:addChild(uiElement, index)
       self.children[#self.children + 1] = uiElement
     end
     uiElement.parent = self
-    self:onChildrenChanged()
+    onChildrenChanged(self)
   end
 end
 
@@ -162,17 +164,16 @@ function UIElement:detach()
     for i, child in ipairs(self.parent.children) do
       if child.id == self.id then
         table.remove(self.parent.children, i)
-        self:onDetach()
-        self.parent:onChildrenChanged()
+        if self.onDetach then
+          self:onDetach()
+        end
+        onChildrenChanged(self.parent)
         self.parent = nil
         break
       end
     end
     return self
   end
-end
-
-function UIElement:onDetach()
 end
 
 ---@param whoIsAsking table?
@@ -242,7 +243,7 @@ end
 
 function UIElement:onVisibilityChanged()
   if self.parent then
-    self.parent:onChildrenChanged()
+    onChildrenChanged(self.parent)
   end
 end
 
@@ -288,6 +289,16 @@ end
 ---@return integer # the height the UIElement would prefer to take up if any space is available
 function UIElement:getPreferredHeight()
   return self.minHeight
+end
+
+--- Use this function to change the layout of an UIElement after its creation <br>
+--- will trigger a layout update of the UI tree
+---@param layout Layout
+function UIElement:setLayout(layout)
+  if self.layout ~= layout then
+    self.layout = layout
+    onChildrenChanged(self.parent)
+  end
 end
 
 return UIElement
