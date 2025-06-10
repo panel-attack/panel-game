@@ -362,7 +362,7 @@ The first core problem has led to the introduction of a bunch more fields and fu
 
 - minWidth, minHeight, defaults to 0
 - maxWidth, maxHeight, defaults to math.inf
-- getPreferredWidth()
+- getPreferredWidth(), getPreferredHeight()
 - hFill, vFill
 
 There are some more subtle problems hidden in this but the baseline is that the width of an element does not depend on its height but as per core problem #2 the height may depend on its width.  
@@ -385,11 +385,10 @@ If the delta is negative, it is distributed between all children that have a low
 
 By traversing downwards, the extra width compared to the initial estimate is thus spent where possible and `newWidth` is finalized as `width`.
 
-For height the same steps are essentially repeated with the exception that there is no corresponding `getPreferredHeight()` function and instead all elements start at their minimum height. For wrappable elements their width-based minimum height is accessed through a `getMinHeight()` function that is only required by the HorizontalWrapLayout.
-Correspondingly, the delta for `newHeight` to `height` will always be positive.
+For height the same steps are essentially repeated. For wrappable elements their width-based minimum height is accessed through a `getMinHeight()` function that is only required by the HorizontalWrapLayout but the exact implementation of this width-to-height mechanism might change later.
 
 To sum up, a valid and desirable estimate is first made for widths, than corrected with the true width using only operations that are known to be valid so the final outcome is guaranteed to be valid and related to the window size.
-The same happens for height with consideration to the width values.
+The same happens for height with special consideration to the width values.
 
 In the following positioning step, each parent assigns `x` and `y` to its children according to its layout. The values are relative to the parent.
 
