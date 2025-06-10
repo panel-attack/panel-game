@@ -170,8 +170,6 @@ function CharacterButton:drawSelf()
   local imageWidth, imageHeight = self.characterIcon:getDimensions()
   local scale = math.min(self.width / imageWidth, self.height / imageHeight)
 
-  love.graphics.push("transform")
-  love.graphics.translate(self.x, self.y)
   GraphicsUtil.draw(self.characterIcon, 0, 0, 0, scale, scale)
   GraphicsUtil.printf(self.displayName, 0, 0, self.width, "center", nil, nil, getFontSizeByScale(self.width / CharacterButton.standardSize))
 
@@ -213,7 +211,6 @@ function CharacterButton:drawSelf()
   GraphicsUtil.setColor(1, 1, 1, 0.4)
   GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
   GraphicsUtil.setColor(1, 1, 1, 1)
-  love.graphics.pop()
 end
 
 return CharacterButton

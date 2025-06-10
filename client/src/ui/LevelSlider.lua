@@ -35,10 +35,10 @@ function LevelSlider:drawSelf()
   for i, level_img in ipairs(themes[config.theme].images.IMG_levels) do
     local img = i <= self.value and level_img or
       themes[config.theme].images.IMG_levels_unfocus[i]
-      GraphicsUtil.draw(img, self.x + (i - 1) * self.tickLength, self.y, 0, self.tickLength / img:getWidth(), self.tickLength / img:getHeight(), 0, 0)
+      GraphicsUtil.draw(img, (i - 1) * self.tickLength, 0, 0, self.tickLength / img:getWidth(), self.tickLength / img:getHeight(), 0, 0)
   end
   local cursor_image = themes[config.theme].images.IMG_level_cursor
-  GraphicsUtil.draw(cursor_image, self.x + (self.value - 1 + .5) * self.tickLength, self.y + self.tickLength, 0, 1, 1, cursor_image:getWidth() / 2, 0)
+  GraphicsUtil.draw(cursor_image, (self.value - 1 + .5) * self.tickLength, self.tickLength, 0, 1, 1, cursor_image:getWidth() / 2, 0)
 end
 
 return LevelSlider

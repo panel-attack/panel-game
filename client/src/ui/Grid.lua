@@ -77,18 +77,18 @@ end
 function Grid:drawSelf()
   if DEBUG_ENABLED then
     GraphicsUtil.setColor(1, 1, 1, 0.5)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
     -- draw all units
-    local right = self.x + self.width
-    local bottom = self.y + self.height
+    local right = self.width
+    local bottom = self.height
     for i = 1, self.gridHeight - 1 do
-      local y = self.y + self.unitSize * i
-      GraphicsUtil.drawStraightLine(self.x, y, right, y, 1, 1, 1, 0.5)
+      local y = self.unitSize * i
+      GraphicsUtil.drawStraightLine(0, y, right, y, 1, 1, 1, 0.5)
     end
     for i = 1, self.gridWidth - 1 do
-      local x = self.x + self.unitSize * i
-      GraphicsUtil.drawStraightLine(x, self.y, x, bottom, 1, 1, 1, 0.5)
+      local x = self.unitSize * i
+      GraphicsUtil.drawStraightLine(x, 0, x, bottom, 1, 1, 1, 0.5)
     end
   end
 end

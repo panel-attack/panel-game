@@ -129,7 +129,6 @@ local loveMajor = love.getVersion()
 
 function ScrollContainer:draw()
   if self.isVisible then
-    UiElement.drawSelf(self)
     -- make a stencil according to width/height
     if loveMajor >= 12 then
       love.graphics.setStencilMode("draw", 1)
@@ -151,6 +150,7 @@ function ScrollContainer:draw()
     else
       love.graphics.translate(self.x + self.scrollOffset, self.y)
     end
+    UiElement.drawSelf(self)
     -- and then just render everything
     -- by combining stencil + translate only the elements positioned within the stencil after the translate get drawn
     self:drawChildren()

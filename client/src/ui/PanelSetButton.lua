@@ -55,8 +55,6 @@ end
 
 function PanelButton:drawSelf()
   self.panelSet:prepareDraw()
-  love.graphics.push("transform")
-  love.graphics.translate(self.x, self.y)
   local width = math.floor(self.width / 9)
 
   if self:isHovered() then
@@ -78,8 +76,6 @@ function PanelButton:drawSelf()
   self.panelSet:drawBatch()
 
   GraphicsUtil.printf(self.panelSet.name or self.panelSet.id, 0, width + 4, self.width, "center", nil, nil, "normal")
-
-  love.graphics.pop()
 end
 
 

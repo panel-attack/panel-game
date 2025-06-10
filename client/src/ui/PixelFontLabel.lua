@@ -59,10 +59,10 @@ function PixelFontLabel:drawSelf()
   for i = 1, self.text:len(), 1 do
     local char = self.text:sub(i, i)
     if char ~= " " then
-      local characterX = self.x + ((i - 1) * self.charDistanceScaled)
+      local characterX = ((i - 1) * self.charDistanceScaled)
 
       -- Render it at the proper digit location
-      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap.charToQuad[char], characterX, self.y, 0, self.xScale, self.yScale)
+      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap.charToQuad[char], characterX, 0, 0, self.xScale, self.yScale)
     end
   end
 end

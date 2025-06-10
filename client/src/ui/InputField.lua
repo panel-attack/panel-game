@@ -69,12 +69,12 @@ end
 
 function InputField:getCursorPos()
   if self.offset == 0 then
-    return self.x + textOffset
+    return textOffset
   end
 
   local byteoffset = utf8.offset(self.value, self.offset)
   local text = string.sub(self.value, 1, byteoffset)
-  return self.x + textOffset + GraphicsUtil.newText(love.graphics.getFont(), text):getWidth()
+  return textOffset + GraphicsUtil.newText(love.graphics.getFont(), text):getWidth()
 end
 
 function InputField:unfocus()
@@ -138,22 +138,22 @@ local valueColor = {1, 1, 1, 1}
 local placeholderColor = {.5, .5, .5, 1}
 function InputField:drawSelf()
   GraphicsUtil.setColor(self.outlineColor)
-  GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+  GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
   GraphicsUtil.setColor(self.backgroundColor)
-  GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height)
+  GraphicsUtil.drawRectangle("fill", 0, 0, self.width, self.height)
 
   local text = self.value ~= "" and self.text or self.placeholderText
   local textColor = self.value ~= "" and valueColor or placeholderColor
   local textHeight = text:getHeight()
 
   GraphicsUtil.setColor(textColor)
-  GraphicsUtil.draw(text, self.x + textOffset, self.y + (self.height - textHeight) / 2, 0, 1, 1)
+  GraphicsUtil.draw(text, textOffset, (self.height - textHeight) / 2, 0, 1, 1)
 
   if self.hasFocus then
     local cursorFlashPeriod = .5
     if (math.floor(love.timer.getTime() / cursorFlashPeriod)) % 2 == 0 then
       GraphicsUtil.setColor(1, 1, 1, 1)
-      GraphicsUtil.draw(textCursor, self:getCursorPos(), self.y + (self.height - textHeight) / 2, 0, 1, 1)
+      GraphicsUtil.draw(textCursor, self:getCursorPos(), (self.height - textHeight) / 2, 0, 1, 1)
     end
   end
   GraphicsUtil.setColor(1, 1, 1, 1)

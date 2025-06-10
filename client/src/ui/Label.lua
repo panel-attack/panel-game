@@ -106,7 +106,7 @@ function Label:refreshLocalization()
 end
 
 function Label:drawSelf()
-  GraphicsUtil.printf(self.text, self.x, self.y, self.width, self.hAlign, nil, nil, self.fontSize)
+  GraphicsUtil.printf(self.text, 0, 0, self.width, self.hAlign, nil, nil, self.fontSize)
 end
 
 function Label:getPreferredWidth()

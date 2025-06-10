@@ -103,7 +103,7 @@ end
 function PagedUniGrid:drawSelf()
   if DEBUG_ENABLED then
     GraphicsUtil.setColor(1, 0, 0, 1)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 end

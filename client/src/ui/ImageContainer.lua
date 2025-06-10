@@ -43,12 +43,12 @@ function ImageContainer:onResized()
 end
 
 function ImageContainer:drawSelf()
-  GraphicsUtil.draw(self.image, self.x, self.y, 0, self.scale, self.scale)
+  GraphicsUtil.draw(self.image, 0, 0, 0, self.scale, self.scale)
 
   if self.drawBorders then
     -- border is just drawn on top, not around
     GraphicsUtil.setColor(self.outlineColor)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 end

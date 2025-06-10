@@ -161,27 +161,27 @@ function Slider:drawSelf()
 
   -- Slider bar
   GraphicsUtil.setColor(gray, gray, gray, alpha)
-  GraphicsUtil.drawRectangle("fill", self.x + xPadding, self.y + yPadding + valueTextHeight, barWidth, sliderBarThickness)
+  GraphicsUtil.drawRectangle("fill", xPadding, yPadding + valueTextHeight, barWidth, sliderBarThickness)
 
   -- Slider circle
   GraphicsUtil.setColor(unpack(SLIDER_CIRCLE_COLOR))
-  love.graphics.circle("fill", currentX, self.y + yPadding + valueTextHeight + sliderBarThickness / 2, handleRadius, 32)
+  love.graphics.circle("fill", currentX, yPadding + valueTextHeight + sliderBarThickness / 2, handleRadius, 32)
 
   -- Value background
   GraphicsUtil.setColor(gray, gray, gray, alpha)
-  GraphicsUtil.drawRectangle("fill", currentX - valueTextWidth / 2 - valueBackgroundPaddingX, self.y + yPadding - valueBackgroundPaddingY, valueTextWidth + valueBackgroundPaddingX*2, valueTextHeight + valueBackgroundPaddingY*2)
+  GraphicsUtil.drawRectangle("fill", currentX - valueTextWidth / 2 - valueBackgroundPaddingX, yPadding - valueBackgroundPaddingY, valueTextWidth + valueBackgroundPaddingX*2, valueTextHeight + valueBackgroundPaddingY*2)
 
   -- Value centered at top
   GraphicsUtil.setColor(1, 1, 1, 1)
-  GraphicsUtil.draw(self.valueText, currentX - valueTextWidth / 2, self.y + yPadding, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.valueText, currentX - valueTextWidth / 2, yPadding, 0, 1, 1, 0, 0)
 
   GraphicsUtil.setColor(lightGray, lightGray, lightGray, 1)
 
   local textWidth, textHeight = self.minText:getDimensions()
-  GraphicsUtil.draw(self.minText, self.x + xPadding - textWidth / 2, self.y + yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.minText, xPadding - textWidth / 2, yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
 
   textWidth, textHeight = self.maxText:getDimensions()
-  GraphicsUtil.draw(self.maxText, self.x + xPadding + barWidth - textWidth / 2, self.y + yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.maxText, xPadding + barWidth - textWidth / 2, yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
 
   GraphicsUtil.setColor(1, 1, 1, 1)
 

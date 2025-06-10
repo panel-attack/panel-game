@@ -183,11 +183,11 @@ function MenuItem:drawSelf()
     local selectedAdditionalOpacity = 0.5
     local fillOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 16 + baseOpacity + selectedAdditionalOpacity
     local borderOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 4 + baseOpacity + selectedAdditionalOpacity
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, SELECTED_BACKGROUND_COLOR[1], SELECTED_BACKGROUND_COLOR[2], SELECTED_BACKGROUND_COLOR[3], fillOpacity)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, SELECTED_BORDER_COLOR[1], SELECTED_BORDER_COLOR[2], SELECTED_BORDER_COLOR[3], borderOpacity)
+    GraphicsUtil.drawRectangle("fill", 0, 0, self.width, self.height, SELECTED_BACKGROUND_COLOR[1], SELECTED_BACKGROUND_COLOR[2], SELECTED_BACKGROUND_COLOR[3], fillOpacity)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height, SELECTED_BORDER_COLOR[1], SELECTED_BORDER_COLOR[2], SELECTED_BORDER_COLOR[3], borderOpacity)
   else
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, DEFAULT_BACKGROUND_COLOR[1], DEFAULT_BACKGROUND_COLOR[2], DEFAULT_BACKGROUND_COLOR[3], baseOpacity)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, DEFAULT_BORDER_COLOR[1], DEFAULT_BORDER_COLOR[2], DEFAULT_BORDER_COLOR[3], baseOpacity)
+    GraphicsUtil.drawRectangle("fill", 0, 0, self.width, self.height, DEFAULT_BACKGROUND_COLOR[1], DEFAULT_BACKGROUND_COLOR[2], DEFAULT_BACKGROUND_COLOR[3], baseOpacity)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height, DEFAULT_BORDER_COLOR[1], DEFAULT_BORDER_COLOR[2], DEFAULT_BORDER_COLOR[3], baseOpacity)
   end
 end
 

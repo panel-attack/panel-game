@@ -62,13 +62,13 @@ function Button:drawBackground()
   else
     GraphicsUtil.setColor(self.backgroundColor)
   end
-  GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height)
+  GraphicsUtil.drawRectangle("fill", 0, 0, self.width, self.height)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 function Button:drawOutline()
   GraphicsUtil.setColor(self.outlineColor)
-  GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+  GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 

@@ -29,7 +29,7 @@ GridElement.layout = StaticLayout
 
 function GridElement:drawSelf()
   if self.drawBorders then
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
   end
 end
 

@@ -197,12 +197,12 @@ end
 
 function UIElement:draw()
   if self.isVisible then
+    love.graphics.push("transform")
+    love.graphics.translate(self.x, self.y)
     self:drawSelf()
     -- if DEBUG_ENABLED then
     --   GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, 1, 1, 1, 0.5)
     -- end
-    love.graphics.push("transform")
-    love.graphics.translate(self.x, self.y)
     self:drawChildren()
     love.graphics.pop()
   end
@@ -212,15 +212,15 @@ end
 -- implementation is optional so layout elements don't have to
 function UIElement:drawSelf()
   love.graphics.setColor(self.backgroundColor)
-  love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+  love.graphics.rectangle("fill", 0, 0, self.width, self.height)
   love.graphics.setColor(1, 1, 1, 1)
   --if self.padding > 0 then
-    -- love.graphics.rectangle("line", self.x + self.padding, self.y + self.padding, 1, self.height - self.padding * 2)
-    -- love.graphics.rectangle("line", self.x + self.padding, self.y + self.padding, self.width - self.padding * 2, 1)
-    -- love.graphics.rectangle("line", self.x + self.width - self.padding, self.y + self.padding, 1, self.height - self.padding * 2)
-    -- love.graphics.rectangle("line", self.x + self.padding, self.y + self.height - self.padding, self.width - self.padding *2, 1)
+    -- love.graphics.rectangle("line", self.padding, self.padding, 1, self.height - self.padding * 2)
+    -- love.graphics.rectangle("line", self.padding, elf.padding, self.width - self.padding * 2, 1)
+    -- love.graphics.rectangle("line", self.width - self.padding, self.padding, 1, self.height - self.padding * 2)
+    -- love.graphics.rectangle("line", self.padding, self.height - self.padding, self.width - self.padding *2, 1)
   --end
-  --love.graphics.print(self.width .. ", " .. self.height, self.x + 5, self.y + 5)
+  --love.graphics.print(self.width .. ", " .. self.height, 5, 5)
 end
 
 function UIElement:drawChildren()
