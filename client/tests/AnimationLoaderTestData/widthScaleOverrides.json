@@ -1,0 +1,29 @@
+{
+  "drawables": [
+    {
+      "id": "BaseElement",
+      "filePath": "base_image",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "size": {
+        "width": 64,
+        "height": 64
+      },
+      "xScale": 1.0,
+      "yScale": 1.0,
+      "alpha": 1.0
+    },
+    {
+      "ref": "BaseElement",
+      "overrides": {
+        "size": {
+          "width": 128
+        },
+        "xScale": 2.0,
+        "yScale": 0.5
+      }
+    }
+  ]
+}

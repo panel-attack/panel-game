@@ -263,169 +263,202 @@
       ]
     },
 
+
+    
+
     {
       "ref" : "WindowBack",
       "overrides" : {
-        "width" : 17,
         "position" : {
           "x" : 1112,
           "y" : 216
         },
-        "height" : 25
+        "size" : {
+          "width" : 17,
+          "height" : 25
+        }
       }
     },
     {
       "ref" : "WindowMid",
       "overrides" : {
-        "width" : 14,
         "position" : {
           "x" : 906,
           "y" : 350
         },
-        "height" : 24
+        "size" : {
+          "width" : 14,
+          "height" : 24
+        }
       }
     },
     {
       "ref" : "WindowFront",
       "overrides" : {
-        "width" : 11,
         "position" : {
           "x" : 1182,
           "y" : 518
         },
-        "height" : 21
+        "size" : {
+          "width" : 11,
+          "height" : 21
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 1118,
           "y" : 416
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 910,
           "y" : 524
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 933,
           "y" : 524
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 958,
           "y" : 524
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 992,
           "y" : 518
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 888,
           "y" : 524
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 936,
           "y" : 446
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 9,
         "position" : {
           "x" : 980,
           "y" : 468
         },
-        "height" : 15
+        "size" : {
+          "width" : 9,
+          "height" : 15
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 15,
         "position" : {
           "x" : 1086,
           "y" : 586
         },
-        "height" : 25
+        "size" : {
+          "width" : 15,
+          "height" : 25
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 14,
         "position" : {
           "x" : 1050,
           "y" : 586
         },
-        "height" : 23
+        "size" : {
+          "width" : 14,
+          "height" : 23
+        }
       }
     },
     {
       "ref" : "Window",
       "overrides" : {
-        "width" : 15,
         "position" : {
           "x" : 1012,
           "y" : 586
         },
-        "height" : 25
+        "size" : {
+          "width" : 15,
+          "height" : 25
+        }
       }
     },
     {
       "ref" : "WindowFront",
       "overrides" : {
-        "width" : 11,
         "position" : {
           "x" : 1048,
           "y" : 530
         },
-        "height" : 21
+        "size" : {
+          "width" : 11,
+          "height" : 21
+        }
       }
     }
   ]

@@ -171,6 +171,33 @@ local function testLoadingNestedFileReferences()
   print("✓ Nested file references test passed")
 end
 
+-- Test width and scale overrides
+local function testWidthAndScaleOverrides()
+  print("Testing width and scale overrides...")
+  
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "widthScaleOverrides.json")
+  
+  assertEqual(#results, 2, "Should load exactly two drawables")
+  
+  local base = results[1]
+  local overridden = results[2]
+  
+  assertEqual(base.id, "BaseElement", "Base ID should match")
+  assertEqual(base.width, 64, "Base width should be 64")
+  assertEqual(base.height, 64, "Base height should be 64")
+  assertApproxEqual(base.xScale, 1.0, nil, "Base xScale should be 1.0")
+  assertApproxEqual(base.yScale, 1.0, nil, "Base yScale should be 1.0")
+  
+  -- Check that width and scale overrides were applied correctly
+  assertEqual(overridden.width, 128, "Overridden width should be 128")
+  assertEqual(overridden.height, 64, "Overridden height should remain 64 (not overridden)")
+  assertApproxEqual(overridden.xScale, 2.0, nil, "Overridden xScale should be 2.0")
+  assertApproxEqual(overridden.yScale, 0.5, nil, "Overridden yScale should be 0.5")
+  
+  print("✓ Width and scale overrides test passed")
+end
+
 -- Run all tests
 local function runAllTests()
   print("Running AnimationLoader tests...")
@@ -181,6 +208,7 @@ local function runAllTests()
   testLoadingRefWithOverrides()
   testLoadingRefToDifferentFile()
   testLoadingNestedFileReferences()
+  testWidthAndScaleOverrides()
   
   print("=" .. string.rep("=", 50))
   print("✓ All AnimationLoader tests passed!")
