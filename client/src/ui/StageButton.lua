@@ -4,6 +4,7 @@ local Button = import("./Button")
 local Label = import("./Label")
 local Image = import("./ImageContainer")
 local VerticalFlexLayout = import("./Layouts/VerticalFlexLayout")
+local UiElement = import("./UIElement")
 
 ---@class StageButtonOptions : ButtonOptions
 ---@field stage Stage
@@ -19,25 +20,29 @@ function(self, options)
   self.stage = options.stage
 
   self.childGap = 4
+  self.debug = true
 
   self.hAlign = "center"
   self.vAlign = "center"
+
+  --self.backgroundColor = {0.7, 0.3, 0.2, 0.6}
 
   self.image = Image({
     image = self.stage.images.thumbnail,
     hFill = true,
     vFill = true,
     hAlign = "center",
-    vAlign = "center",
-    backgroundColor = {0.2, 0.7, 0.3, 0.6}
+    vAlign = "bottom",
+    --backgroundColor = {0.2, 0.7, 0.3, 0.6},
+    forceIntegerScaling = true,
   })
 
   self.label = Label({
     text = self.stage.display_name,
     hAlign = "center",
-    vAlign = "center",
+    vAlign = "top",
     vFill = true,
-    backgroundColor = {0.2, 0.1, 0.7, 0.6}
+    --backgroundColor = {0.2, 0.1, 0.7, 0.6}
   })
 
   self:addChild(self.image)
@@ -59,7 +64,7 @@ function StageButton:action(inputSource)
 end
 
 function StageButton:drawSelf()
-
+  UiElement.drawSelf(self)
 end
 
 return StageButton

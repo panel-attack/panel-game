@@ -52,7 +52,6 @@ local Label = class(
     self.maxHeight = options.maxHeight or math.huge
 
     self.hFill = true
-    self.vFill = false
   end,
   UIElement
 )
