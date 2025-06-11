@@ -1,0 +1,432 @@
+{
+  "drawables": [
+    {
+      "id": "Window",
+      "filePath": "WindowBackground",
+      "anchor": "center",
+      "position": {
+        "x": 190,
+        "y": 460
+      },
+      "xScale": 0.5,
+      "yScale": 0.5,
+      "children": [
+        {
+          "filePath": "WindowGlass"
+        },
+        {
+          "filePath": "WindowLight",
+          "tint": [
+            0.8235294118,
+            0.5882352941,
+            0.1764705882
+          ],
+          "alpha": 0.4,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.8
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "WindowFrame"
+        },
+        {
+          "filePath": "WindowGlow",
+          "tint": [
+            0.99,
+            0.8235294118,
+            0.3921568627
+          ],
+          "alpha": 0.7,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.9
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "WindowBack",
+      "filePath": "WindowBackground2",
+      "anchor": "center",
+      "position": {
+        "x": 300,
+        "y": 300
+      },
+      "children": [
+        {
+          "filePath": "WindowGlass2"
+        },
+        {
+          "filePath": "WindowLight2",
+          "tint": [
+            0.4,
+            0.5,
+            0.55
+          ],
+          "alpha": 0.4,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.5
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "WindowFrame2"
+        },
+        {
+          "filePath": "WindowGlow2",
+          "tint": [
+            0.72,
+            0.8,
+            0.83
+          ],
+          "alpha": 0.55,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.6
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "WindowMid",
+      "filePath": "WindowBackground2",
+      "anchor": "center",
+      "position": {
+        "x": 400,
+        "y": 300
+      },
+      "children": [
+        {
+          "filePath": "WindowGlass2"
+        },
+        {
+          "filePath": "WindowLight2",
+          "tint": [
+            0.5882352941,
+            0.4235294118,
+            0.1529411765
+          ],
+          "alpha": 0.55,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.65
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "WindowFrame2"
+        },
+        {
+          "filePath": "WindowGlow2",
+          "tint": [
+            0.8941176471,
+            0.7019607843,
+            0.2862745098
+          ],
+          "alpha": 0.55,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.75
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "WindowFront",
+      "filePath": "WindowBackground2",
+      "anchor": "center",
+      "position": {
+        "x": 500,
+        "y": 300
+      },
+      "children": [
+        {
+          "filePath": "WindowGlass2"
+        },
+        {
+          "filePath": "WindowLight2",
+          "tint": [
+            0.8235294118,
+            0.5882352941,
+            0.1764705882
+          ],
+          "alpha": 0.4,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.8
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "WindowFrame2"
+        },
+        {
+          "filePath": "WindowGlow2",
+          "tint": [
+            0.99,
+            0.8235294118,
+            0.3921568627
+          ],
+          "alpha": 0.7,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.9
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "ref" : "WindowBack",
+      "overrides" : {
+        "width" : 17,
+        "position" : {
+          "x" : 1112,
+          "y" : 216
+        },
+        "height" : 25
+      }
+    },
+    {
+      "ref" : "WindowMid",
+      "overrides" : {
+        "width" : 14,
+        "position" : {
+          "x" : 906,
+          "y" : 350
+        },
+        "height" : 24
+      }
+    },
+    {
+      "ref" : "WindowFront",
+      "overrides" : {
+        "width" : 11,
+        "position" : {
+          "x" : 1182,
+          "y" : 518
+        },
+        "height" : 21
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 1118,
+          "y" : 416
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 910,
+          "y" : 524
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 933,
+          "y" : 524
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 958,
+          "y" : 524
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 992,
+          "y" : 518
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 888,
+          "y" : 524
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 936,
+          "y" : 446
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 9,
+        "position" : {
+          "x" : 980,
+          "y" : 468
+        },
+        "height" : 15
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 15,
+        "position" : {
+          "x" : 1086,
+          "y" : 586
+        },
+        "height" : 25
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 14,
+        "position" : {
+          "x" : 1050,
+          "y" : 586
+        },
+        "height" : 23
+      }
+    },
+    {
+      "ref" : "Window",
+      "overrides" : {
+        "width" : 15,
+        "position" : {
+          "x" : 1012,
+          "y" : 586
+        },
+        "height" : 25
+      }
+    },
+    {
+      "ref" : "WindowFront",
+      "overrides" : {
+        "width" : 11,
+        "position" : {
+          "x" : 1048,
+          "y" : 530
+        },
+        "height" : 21
+      }
+    }
+  ]
+}

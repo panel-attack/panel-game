@@ -28,13 +28,31 @@ local AnimationLoader =
 )
 
 function AnimationLoader.anchorOffset(drawable, anchor)
+  if anchor == "topLeft" then
+    return 0, 0
+  end
+  
   local w, h = drawable.width, drawable.height
-  local map = {
-    topLeft={0,0}, topCenter={w/2,0}, topRight={w,0},
-    centerLeft={0,h/2}, center={w/2,h/2}, centerRight={w,h/2},
-    bottomLeft={0,h}, bottomCenter={w/2,h}, bottomRight={w,h}
-  }
-  return (map[anchor])[1], (map[anchor])[2]
+  
+  if anchor == "topCenter" then
+    return w/2, 0
+  elseif anchor == "topRight" then
+    return w, 0
+  elseif anchor == "centerLeft" then
+    return 0, h/2
+  elseif anchor == "center" then
+    return w/2, h/2
+  elseif anchor == "centerRight" then
+    return w, h/2
+  elseif anchor == "bottomLeft" then
+    return 0, h
+  elseif anchor == "bottomCenter" then
+    return w/2, h
+  elseif anchor == "bottomRight" then
+    return w, h
+  else
+    return 0, 0  -- fallback to topLeft
+  end
 end
 
 local function buildTrackStep(target, track, currentStep, stepAmount)
@@ -93,18 +111,20 @@ local function loadNode(rootPath, node, parent)
     parent   = parent,
     x        = node.position and node.position.x or 0,
     y        = node.position and node.position.y or 0,
-    width    = node.size and node.size.width or 0,
-    height   = node.size and node.size.height or 0,
+    width    = node.size and node.size.width,
+    height   = node.size and node.size.height,
     rotation = node.rotation or 0,
-    scale    = node.scale or 1,
+    xScale    = node.xScale,
+    yScale    = node.yScale,
     alpha    = node.alpha or 1,
     blendMode = node.blendMode or "alpha",
     alphaMode = node.alphaMode or "alphamultiply",
     stencil = node.stencil == true or false,
     tint     = node.tint or {1, 1, 1},
     anchor   = node.anchor or "topLeft",
-    pivot    = node.pivot or "center",
-    animationTracks = node.animationTracks or {}
+    pivot    = node.pivot,
+    animationTracks = node.animationTracks or {},
+    ref = node.ref
   }
   if parent then
     parent.children[#parent.children+1] = obj
@@ -114,8 +134,12 @@ local function loadNode(rootPath, node, parent)
     local texture = GraphicsUtil.loadImageFromSupportedExtensions(rootPath .. node.filePath)
     if texture then
       obj.texture = texture
-      obj.width = texture:getWidth()
-      obj.height = texture:getHeight()
+      if obj.width == nil then
+        obj.width = texture:getWidth()
+      end
+      if obj.height == nil then
+        obj.height = texture:getHeight()
+      end
       if node.wrap == "repeat" then
         obj.scrollX = 0
         obj.scrollY = 0
@@ -125,6 +149,32 @@ local function loadNode(rootPath, node, parent)
       end
     end
   end
+
+  if obj.pivot == nil then
+    if obj.texture then
+      obj.pivot = "center"
+    else
+      obj.pivot = "topLeft" -- Allows containers to work if they don't set height and width
+    end
+  end
+
+  if obj.xScale == nil then
+    if obj.texture then
+      obj.xScale = obj.width / obj.texture:getWidth()
+    else 
+      obj.xScale = 1
+    end
+  end
+  if obj.yScale == nil then
+    if obj.texture then
+      obj.yScale = obj.height / obj.texture:getHeight()
+    else 
+      obj.yScale = 1
+    end
+  end
+
+  assert(obj.anchor == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left anchor")
+  assert(obj.pivot == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left pivot")
 
   for _,track in ipairs(node.animationTracks or {}) do
     buildTrackStep(obj, track, 1, 1)
@@ -150,6 +200,7 @@ function AnimationLoader.applyOverridesRecursively(destinationTable, overridesTa
 end
 
 function AnimationLoader.cloneNodeWithOverrides(sourceNode, overridesTable)
+    assert(sourceNode and sourceNode.id)
     local clonedNode = deepcpy(sourceNode)
 
     if overridesTable ~= nil then
@@ -159,9 +210,15 @@ function AnimationLoader.cloneNodeWithOverrides(sourceNode, overridesTable)
     return clonedNode
 end
 
-function AnimationLoader.indexNodesRecursively(nodeTable, filePath, idLookupTable)
+-- Loads all files referenced and records a map of ID's to their nodes
+function AnimationLoader.indexNodesRecursively(nodeTable, filePath, idLookupTable, loadedFileTables)
+    if nodeTable.ref ~= nil and nodeTable.ref:match("%.json$") then
+      local directoryPart = filePath:match("(.*/)") or ""
+      local referencedFilePath = directoryPart .. nodeTable.ref
+      AnimationLoader.readFileAndCollectIdsRecursively(referencedFilePath, loadedFileTables, idLookupTable)
+    end
     if nodeTable.id ~= nil then
-        local qualifiedId = filePath .. "#" .. nodeTable.id
+        local qualifiedId = nodeTable.id
 
         if idLookupTable[qualifiedId] ~= nil then
             error("Duplicate id detected: " .. qualifiedId)
@@ -172,12 +229,12 @@ function AnimationLoader.indexNodesRecursively(nodeTable, filePath, idLookupTabl
 
     if nodeTable.children ~= nil then
         for _, childNode in ipairs(nodeTable.children) do
-            AnimationLoader.indexNodesRecursively(childNode, filePath, idLookupTable)
+            AnimationLoader.indexNodesRecursively(childNode, filePath, idLookupTable, loadedFileTables)
         end
     end
 end
 
-function AnimationLoader.readFileAndCollectIds(filePath, loadedFileTables, idLookupTable)
+function AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTables, idLookupTable)
     if loadedFileTables[filePath] ~= nil then
         return
     end
@@ -190,87 +247,91 @@ function AnimationLoader.readFileAndCollectIds(filePath, loadedFileTables, idLoo
     if sceneTable then
       if sceneTable.drawables ~= nil then
           for _, drawableNode in ipairs(sceneTable.drawables) do
-              AnimationLoader.indexNodesRecursively(drawableNode, filePath, idLookupTable)
-          end
-      end
-
-      if sceneTable.imports ~= nil then
-          local directoryPart = filePath:match("(.*/)") or ""
-
-          for _, relativePath in ipairs(sceneTable.imports) do
-              local fullImportPath = directoryPart .. relativePath
-              AnimationLoader.readFileAndCollectIds(fullImportPath, loadedFileTables, idLookupTable)
+              AnimationLoader.indexNodesRecursively(drawableNode, filePath, idLookupTable, loadedFileTables)
           end
       end
     end
 end
 
-function AnimationLoader.resolveRefsRecursively(nodeTable, idLookupTable, visitedTables, filePath, rootPath)
+function AnimationLoader.resolveNodeReference(nodeTable, idLookupTable, filePath, rootPath)
+    local sourceNode = idLookupTable[nodeTable.ref]
+
+    if sourceNode == nil then
+        sourceNode = idLookupTable[nodeTable.id]
+    end
+    
+    if sourceNode == nil then
+        error("Unknown ref: " .. tostring(nodeTable.ref))
+    end
+
+    local clonedNode = AnimationLoader.cloneNodeWithOverrides(
+        sourceNode,
+        nodeTable.overrides
+    )
+
+    local originalRef = nodeTable.ref
+    
+    for key in pairs(nodeTable) do
+        nodeTable[key] = nil
+    end
+
+    for key, value in pairs(clonedNode) do
+        nodeTable[key] = value
+    end
+    
+    if originalRef then
+        nodeTable.ref = originalRef
+    end
+end
+
+function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idLookupTable, visitedTables, filePath, rootPath)
     if type(nodeTable) ~= "table" then
         return
     end
 
+    if visitedTables[nodeTable] ~= nil then
+        error("Circular ref detected at " .. tostring(nodeTable.ref))
+    end
+
+    visitedTables[nodeTable] = true
+
     if nodeTable.ref ~= nil then
-        if visitedTables[nodeTable] ~= nil then
-            error("Circular ref detected at " .. tostring(nodeTable.ref))
-        end
 
-        visitedTables[nodeTable] = true
+        -- Check if this is a file reference (ends with .json)
+        if nodeTable.ref:match("%.json$") then
+            local directoryPart = filePath:match("(.*/)") or ""
+            local referencedFilePath = directoryPart .. nodeTable.ref
+            local referencedFileTable = loadedFileTables[referencedFilePath]
 
-        local sourceNode = idLookupTable[rootPath .. "#" .. nodeTable.ref]
-
-        if sourceNode == nil then
-          sourceNode = idLookupTable[filePath .. "#" .. nodeTable.ref]
-        end
-
-        if sourceNode == nil then
-            error("Unknown ref: " .. tostring(nodeTable.ref))
-        end
-
-        local clonedNode = AnimationLoader.cloneNodeWithOverrides(
-            sourceNode,
-            nodeTable.overrides
-        )
-
-        for key in pairs(nodeTable) do
-            nodeTable[key] = nil
-        end
-
-        for key, value in pairs(clonedNode) do
-            nodeTable[key] = value
+            nodeTable.ref = nil
+            nodeTable.children = referencedFileTable.drawables
+            -- fall through to children now
+        else
+            AnimationLoader.resolveNodeReference(nodeTable, idLookupTable, filePath, rootPath)
         end
     end
 
     if nodeTable.children ~= nil then
         for _, childNode in ipairs(nodeTable.children) do
-            AnimationLoader.resolveRefsRecursively(childNode, idLookupTable, visitedTables)
+            AnimationLoader.resolveRefsRecursively(childNode, loadedFileTables, idLookupTable, visitedTables, filePath, rootPath)
         end
     end
 end
 
-function AnimationLoader.loadScene(rootFilePath)
-    local loadedFileTables = {}   -- filePath → parsed table
-    local idLookupTable   = {}    -- "file#id" → node table
-
-    AnimationLoader.readFileAndCollectIds(rootFilePath, loadedFileTables, idLookupTable)
-
-    local rootSceneTable = loadedFileTables[rootFilePath]
-
-    AnimationLoader.resolveRefsRecursively(rootSceneTable, idLookupTable, {})
-
-    return rootSceneTable
-end
-
+-- Loads all drawables for a animation file.
+-- First all files are loaded from JSON and indexed
+-- Then all references are resolved.
+-- Finally once the full data structure is setup, it is converted into separate drawable objects.
 function AnimationLoader.loadFromFile(rootPath, filePath)
   local loadedFileTables = {}   -- filePath → parsed table
-  local idLookupTable   = {}    -- "file#id" → node table
+  local idLookupTable   = {}    -- "id" → node table
 
-  AnimationLoader.readFileAndCollectIds(filePath, loadedFileTables, idLookupTable)
+  AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTables, idLookupTable)
 
   local rootSceneTable = loadedFileTables[filePath]
 
   for _, drawable in ipairs(rootSceneTable.drawables) do
-    AnimationLoader.resolveRefsRecursively(drawable, idLookupTable, {}, filePath, rootPath)
+    AnimationLoader.resolveRefsRecursively(drawable, loadedFileTables, idLookupTable, {}, filePath, rootPath)
   end
 
   local results = {}
@@ -284,7 +345,7 @@ end
 
 function AnimationLoader.objectTransform(obj)
   local ax, ay = AnimationLoader.anchorOffset(obj, obj.anchor)
-  return obj.x - ax, obj.y - ay, obj.rotation, obj.scale
+  return obj.x - ax, obj.y - ay, obj.rotation, obj.xScale, obj.yScale
 end
 
 
@@ -292,13 +353,13 @@ function AnimationLoader.drawNode(d, parent)
     love.graphics.push("all")
 
     local px, py = AnimationLoader.anchorOffset(d, d.pivot)
-    local wx, wy, wrot, wscale = AnimationLoader.objectTransform(d)
+    local wx, wy, wrot, xScale, yScale = AnimationLoader.objectTransform(d)
 
     love.graphics.translate(wx, wy)
 
     love.graphics.translate(px, py)
     love.graphics.rotate(wrot)
-    love.graphics.scale(wscale, wscale)
+    love.graphics.scale(xScale, yScale)
     love.graphics.translate(-px, -py)
 
     if d.texture then

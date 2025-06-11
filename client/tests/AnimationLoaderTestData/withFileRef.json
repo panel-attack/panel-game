@@ -1,0 +1,31 @@
+{
+  "drawables": [
+    {
+      "id": "LocalElement",
+      "filePath": "local_image",
+      "position": {
+        "x": 75,
+        "y": 125
+      },
+      "size": {
+        "width": 40,
+        "height": 40
+      },
+      "alpha": 0.7,
+      "tint": [1.0, 0.8, 0.6]
+    },
+    {
+      "ref": "externalRef.json"
+    },
+    {
+      "ref": "ExternalElement",
+      "overrides": {
+        "position": {
+          "x": 300,
+          "y": 400
+        },
+        "tint": [0.5, 1.0, 0.5]
+      }
+    }
+  ]
+}
