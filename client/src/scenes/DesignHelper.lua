@@ -55,12 +55,51 @@ local function createCharacterSelect(scene)
     end
   })
 
+  local releaseFocus = function()
+    scene.cursor:releaseFocus(scene.characterSelect)
+  end
+
   for i, characterId in ipairs(visibleCharacters) do
     local button = ui.CharacterButton({character = characters[characterId]})
+    button.onAction = releaseFocus
     scene.characterSelect:addChild(button)
   end
 
   scrollContainer:addChild(scene.characterSelect)
+
+  return scrollContainer
+end
+
+local function createStageSelect(scene)
+  local scrollContainer = ui.ScrollContainer({
+    scrollOrientation = "vertical",
+    minHeight = 400,
+    hFill = true,
+    vFill = true,
+    maxHeight = 800,
+    hAlign = "center",
+  })
+
+  scene.stageSelect = ui.UniSizedContainer({
+    childrenWidth = 112,
+    childrenHeight = 84,
+    childGap = 16,
+    onYield = function (self)
+      scene.stageSelectContainer:detach()
+    end
+  })
+
+  local releaseFocus = function()
+    scene.cursor:releaseFocus(scene.stageSelect)
+  end
+
+  for i, stageId in ipairs(visibleStages) do
+    local button = ui.StageButton({stage = stages[stageId]})
+    button.onAction = releaseFocus
+    scene.stageSelect:addChild(button)
+  end
+
+  scrollContainer:addChild(scene.stageSelect)
 
   return scrollContainer
 end
@@ -88,13 +127,17 @@ local function createPanelSetSelect(scene)
     return a.panelSet.id < b.panelSet.id
   end)
 
-  scene.panelSetSelect:addChild(ui.TextButton({label = ui.Label({id = "back"}), onClick = function() scene.cursor:releaseFocus(scene.panelSetSelect) end}))
+  scene.panelSetSelect:addChild(ui.TextButton({
+    label = ui.Label({id = "back"}),
+    action = function() scene.cursor:releaseFocus(scene.panelSetSelect) end
+  }))
 
   return scene.panelSetSelect
 end
 
 function DesignHelper:load()
   self.characterSelectContainer = createCharacterSelect(self)
+  self.stageSelectContainer = createStageSelect(self)
   self.panelSetSelect = createPanelSetSelect(self)
   self.uiRoot.layout = ui.Layouts.VerticalFlexLayout
   self.uiRoot.childGap = 8
@@ -158,7 +201,7 @@ function DesignHelper:load()
   })
   local characterSelectionSelector, characterButton = getSelectorTemplate("character")
   characterButton:addChild(characterImage)
-  characterButton.onClick = function()
+  characterButton.action = function()
     self.subSelection:addChild(self.characterSelectContainer)
     self.cursor:deepenFocus(self.characterSelect)
   end
@@ -172,6 +215,10 @@ function DesignHelper:load()
   })
   local stageSelectionSelector, stageButton = getSelectorTemplate("stage")
   stageButton:addChild(stageImage)
+  stageButton.action = function()
+    self.subSelection:addChild(self.stageSelectContainer)
+    self.cursor:deepenFocus(self.stageSelect)
+  end
 
   local panelSelectionSelector, panelButton = getSelectorTemplate("panels")
 
@@ -200,7 +247,7 @@ function DesignHelper:load()
   panelButton.padding = 4
   panelSelectionSelector.childGap = 0
   panelButton:addChild(panelContainer)
-  panelButton.onClick = function()
+  panelButton.action = function()
     self.subSelection:addChild(self.panelSetSelect)
     self.cursor:deepenFocus(self.panelSetSelect)
   end

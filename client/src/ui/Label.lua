@@ -8,7 +8,7 @@ local HorizontalWrapLayout = import("./Layouts.HorizontalWrapLayout")
 ---@field id string? The localization key; nil if there should be no translation
 ---@field text string? The raw text; ignored if there is a localization key
 ---@field replacements string[]? Additional strings to perform string format on a localized key with parts marked for replacement
----@field fontSize integer? The size of the font
+---@field fontSize FontSize? The size of the font
 ---@field wrap boolean? If the font should wrap around
 
 ---@class Label : UiElement
@@ -106,7 +106,14 @@ function Label:refreshLocalization()
 end
 
 function Label:drawSelf()
-  GraphicsUtil.printf(self.text, 0, 0, self.width, self.hAlign, nil, nil, self.fontSize)
+  UIElement.drawSelf(self)
+  local y = 0
+  if self.vAlign == "center" then
+    y = self.height / 2 - GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign) / 2
+  elseif self.vAlign == "bottom" then
+    y = self.height - GraphicsUtil.getTextHeightForWidth(self.fontSize, self.text, self.width, self.hAlign)
+  end
+  GraphicsUtil.printf(self.text, 0, y, self.width, self.hAlign, nil, nil, self.fontSize)
 end
 
 function Label:getPreferredWidth()

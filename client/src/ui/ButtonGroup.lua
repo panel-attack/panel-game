@@ -10,13 +10,13 @@ local BUTTON_PADDING = 5
 
 -- UIElement representing a set of buttons which share state (think radio buttons)
 
--- forced override for each of the button's onClick function
+-- forced override for each of the button's action function
 -- this allows buttons to have individual custom behaviour while also triggering the global state change
 local function genButtonGroupFn(self, button)
-  local onClick = button.onClick
+  local action = button.action
   return function(b, inputSource, holdTime)
     self:buttonClicked(b)
-    onClick(b, inputSource, holdTime)
+    action(b, inputSource, holdTime)
     self:onChange(self.value)
   end
 end
@@ -41,7 +41,7 @@ local function setButtons(self, buttons, values, selectedIndex)
        button.x = self.buttons[i - 1].x + self.buttons[i - 1].width + BUTTON_PADDING
        overallWidth = overallWidth + BUTTON_PADDING
     end
-    button.onClick = genButtonGroupFn(self, button)
+    button.action = genButtonGroupFn(self, button)
     button.vAlign = "center"
     self:addChild(button)
     overallHeight = math.max(overallHeight, button.height)
@@ -55,7 +55,7 @@ end
 local function setActiveButton(self, selectedIndex)
   local newIndex = util.bound(1, selectedIndex, #self.buttons)
   if self.selectedIndex ~= newIndex then
-    self.buttons[newIndex]:onClick(nil, 0)
+    self.buttons[newIndex]:action(nil, 0)
   end
 end
 

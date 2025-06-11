@@ -24,7 +24,7 @@ local Stepper = class(
       vAlign = "center",
       hAlign = "center",
       label = Label({text = "<"}),
-      onClick = function(selfElement, inputSource, holdTime)
+      action = function(selfElement, inputSource, holdTime)
         self:setState(self.selectedIndex - 1)
       end
     })
@@ -37,7 +37,7 @@ local Stepper = class(
       vAlign = "center",
       hAlign = "center",
       label = Label({text = ">"}),
-      onClick = function(selfElement, inputSource, holdTime)
+      action = function(selfElement, inputSource, holdTime)
         self:setState(self.selectedIndex + 1)
       end
     })

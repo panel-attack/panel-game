@@ -309,7 +309,7 @@ function OptionsMenu:loadGeneralMenu()
           ---@cast index integer
           index = util.bound(1, index, #group.buttons)
           -- simulate changing to the button that replaces the one that got removed due to no attached versions
-          group.buttons[index]:onClick(nil, 0)
+          group.buttons[index]:action(nil, 0)
         end
       end
     })

@@ -32,6 +32,7 @@ local ui = {
   Grid = import("./Grid"),
   GridCursor = import("./GridCursor"),
   ---@source ImageContainer.lua
+  ---@type Image
   ImageContainer = import("./ImageContainer"),
   ---@source ImageCursor.lua
   ImageCursor = import("./ImageCursor"),
@@ -73,6 +74,9 @@ local ui = {
   ---@type Slider
   Slider = import("./Slider"),
   StackPanel = import("./StackPanel"),
+  ---@source StageButton.lua
+  ---@type StageButton
+  StageButton = import("./StageButton"),
   StageCarousel = import("./StageCarousel"),
   Stepper = import("./Stepper"),
   ---@source TextButton.lua

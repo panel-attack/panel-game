@@ -125,6 +125,7 @@ function CharacterButton:onRelease(x, y, timeHeld)
   self:updateSuperSelectShader(0)
   if self:inBounds(x, y) then
     self:action(input.mouse, timeHeld)
+    self:onAction()
   end
   self.holdTime = 0
 end
@@ -144,6 +145,7 @@ function CharacterButton:receiveInputs(cursor, dt)
     else
       -- apply the actual click on release with the held time and reset it afterwards
       self:action(inputs, self.holdTime)
+      self:onAction()
       self.holdTime = 0
       self.holding = false
     end

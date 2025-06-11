@@ -37,6 +37,8 @@ function (self, options)
 end,
 Button)
 
+PanelButton.TYPE = "PanelButton"
+
 ---@param inputSource table
 function PanelButton:action(inputSource)
   ---@type MatchParticipant

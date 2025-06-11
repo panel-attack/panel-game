@@ -3,12 +3,28 @@ local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
-local ImageContainer = class(function(self, options)
+---@class ImageOptions : UiElementOptions
+---@field image love.Texture
+---@field scalePower integer the power of scale to which the element snaps, e.g. if it's 2, only allow scale 0.25, 0.5, 1, 2, 4, 8
+
+---@class Image : UiElement
+---@operator call(ImageOptions): Image
+---@overload fun(options: ImageOptions): Image
+---@field image love.Texture
+---@field drawBorders boolean
+---@field outlineColor color
+local ImageContainer = class(
+function(self, options)
   self.drawBorders = options.drawBorders or false
   self.outlineColor = options.outlineColor or {1, 1, 1, 1}
 
+  self.scalePower = options.scalePower or 2
+
   self:setImage(options.image, options.width, options.height, options.scale)
-end, UiElement)
+end,
+UiElement)
+
+ImageContainer.TYPE = "Image"
 
 function ImageContainer:setImage(image, width, height, scale)
   self.image = image
@@ -39,11 +55,12 @@ function ImageContainer:setImage(image, width, height, scale)
 end
 
 function ImageContainer:onResized()
-  self.scale = math.min(self.width / self.imageWidth, self.height / self.imageHeight)
+  self.scale = math.floor(math.min(self.width / self.imageWidth, self.height / self.imageHeight))
 end
 
 function ImageContainer:drawSelf()
-  GraphicsUtil.draw(self.image, 0, 0, 0, self.scale, self.scale)
+  local x, y = GraphicsUtil.getAlignmentOffset(self, {width = self.imageWidth * self.scale, height = self.imageHeight * self.scale})
+  GraphicsUtil.draw(self.image, x, y, 0, self.scale, self.scale)
 
   if self.drawBorders then
     -- border is just drawn on top, not around

@@ -53,7 +53,7 @@ function MenuItem.createMenuItem(label, item)
 end
 
 -- Creates just a button as buttons already have their own hover draw
-function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
+function MenuItem.createButtonMenuItem(text, replacements, translate, action)
   assert(text ~= nil)
   local id
   if translate == nil or translate then
@@ -73,7 +73,7 @@ function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
     width = 140,
     maxWidth = 300,
     padding = 8,
-    onClick = onClick,
+    action = action,
     hAlign = "center",
     vAlign = "center",
   })
@@ -105,7 +105,17 @@ function MenuItem.createLabeledButtonMenuItem(labelText, labelTextReplacements, 
     replacements = labelTextReplacements,
     vAlign = "center"
   })
-  local textButton = TextButton({label = Label({text = buttonText, replacements = buttonTextReplacements, translate = buttonTextTranslate, hAlign = "center", vAlign = "center"}), onClick = buttonOnClick, width = BUTTON_WIDTH})
+  local textButton = TextButton({
+    label = Label({
+      text = buttonText,
+      replacements = buttonTextReplacements,
+      translate = buttonTextTranslate,
+      hAlign = "center",
+      vAlign = "center"
+    }),
+    action = buttonOnClick,
+    width = BUTTON_WIDTH
+  })
 
   return MenuItem.createMenuItem(label, textButton)
 end

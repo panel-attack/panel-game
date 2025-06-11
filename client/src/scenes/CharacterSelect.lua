@@ -165,7 +165,7 @@ function CharacterSelect:createReadyButton()
   })
 
   -- assign player generic callback
-  readyButton.onClick = function(self, inputSource, holdTime)
+  readyButton.action = function(self, inputSource, holdTime)
     local player
     if inputSource and inputSource.player then
       player = inputSource.player
@@ -174,7 +174,7 @@ function CharacterSelect:createReadyButton()
     end
     player:setWantsReady(not player.settings.wantsReady)
   end
-  readyButton.onSelect = readyButton.onClick
+  readyButton.onSelect = readyButton.action
 
   return readyButton
 end
@@ -187,12 +187,12 @@ function CharacterSelect:createLeaveButton()
     label = ui.Label({id = "leave"}),
     backgroundColor = {1, 1, 1, 0},
     outlineColor = {1, 1, 1, 1},
-    onClick = function()
+    action = function()
         GAME.theme:playCancelSfx()
         self:leave()
       end
   })
-  leaveButton.onSelect = leaveButton.onClick
+  leaveButton.onSelect = leaveButton.action
 
   return leaveButton
 end
@@ -310,7 +310,7 @@ function CharacterSelect:getCharacterButtons()
   -- assign player generic callbacks
   for i = 1, #characterButtons do
     local characterButton = characterButtons[i]
-    characterButton.onClick = function(selfElement, inputSource, holdTime)
+    characterButton.action = function(selfElement, inputSource, holdTime)
       local character = characters[selfElement.characterId]
       local player
       if inputSource and inputSource.player then
@@ -331,7 +331,7 @@ function CharacterSelect:getCharacterButtons()
     if characters[characterButton.characterId] and characters[characterButton.characterId]:canSuperSelect() then
       self.applySuperSelectInteraction(characterButton)
     else
-      characterButton.onSelect = characterButton.onClick
+      characterButton.onSelect = characterButton.action
     end
   end
 
@@ -371,7 +371,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   characterButton.onRelease = function(self, x, y, timeHeld)
     self.updateSuperSelectShader(self.superSelectImage, 0)
     if self:inBounds(x, y) then
-      self:onClick(input.mouse, timeHeld)
+      self:action(input.mouse, timeHeld)
     end
   end
 
@@ -386,7 +386,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
     else
       self:yieldFocus()
       -- apply the actual click on release with the held time and reset it afterwards
-      self:onClick(inputs, self.holdTime)
+      self:action(inputs, self.holdTime)
       self.holdTime = 0
     end
     self.updateSuperSelectShader(self.superSelectImage, self.holdTime)

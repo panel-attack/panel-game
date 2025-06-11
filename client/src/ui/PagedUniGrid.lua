@@ -50,7 +50,7 @@ local PagedUniGrid = class(function(self, options)
     vAlign = "top",
     width = self.unitSize / 2,
     height = self.unitSize / 2,
-    onClick = function(selfElement, inputSource, holdTime) self:turnPage(-1) end,
+    action = function(selfElement, inputSource, holdTime) self:turnPage(-1) end,
   })
   self.pageTurnButtons.right = TextButton({
     label = Label({text = ">", translate = false}),
@@ -58,7 +58,7 @@ local PagedUniGrid = class(function(self, options)
     vAlign = "top",
     width = self.unitSize / 2,
     height = self.unitSize / 2,
-    onClick = function(selfElement, inputSource, holdTime) self:turnPage(1) end,
+    action = function(selfElement, inputSource, holdTime) self:turnPage(1) end,
   })
   addNewPage(self)
   goToPage(self, 1)

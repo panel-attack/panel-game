@@ -34,7 +34,7 @@ function SetUserIdMenu:load(sceneParams)
     x = menuX,
     y = menuY + 60,
     vAlign = "top",
-    onClick = function() self:confirmId() end
+    action = function() self:confirmId() end
   })
 
   self.warningLabel = ui.Label({
