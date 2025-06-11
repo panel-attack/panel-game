@@ -1,4 +1,4 @@
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Scene = require("client.src.scenes.Scene")
 local class = require("common.lib.class")
@@ -20,7 +20,7 @@ local ChallengeModeRecapScene = class(
 function(self, sceneParams)
   self.backgroundImg = GAME.theme.images.bg_main
   self.challengeMode = sceneParams.challengeMode
-  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 200}, self.challengeMode)
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = love.graphics.getWidth() / 2, y = 200}, self.challengeMode)
   self.uiRoot:addChild(self.timeSplitElement)
   self.recapStartTime = love.timer.getTime()
   self.minDisplayTime = 2 -- the minimum amount of seconds the scene will be displayed for
@@ -48,23 +48,23 @@ end
 
 function ChallengeModeRecapScene:draw()
   self.backgroundImg:draw()
-
-  local drawX = consts.CANVAS_WIDTH / 2
+  local width, height = love.graphics.getDimensions()
+  local drawX = width / 2
   local drawY = 20
 
-  local limit = consts.CANVAS_WIDTH
+  local limit = width
   local message = "Congratulations!\n You beat " .. self.challengeMode.difficultyName .. "!"
-  GraphicsUtil.printf(message, 0, drawY, limit, "center", nil, nil, 30)
+  GraphicsUtil.printf(message, 0, drawY, limit, "center", nil, nil, "gigantic")
   self.uiRoot:draw()
 
   local limit = 400
   drawY = drawY + 120
-  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, "medium")
   drawY = drawY + 20
-  GraphicsUtil.printf(self.challengeMode.continues, drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(self.challengeMode.continues, drawX - limit / 2, drawY, limit, "center", nil, nil, "medium")
 
   local font = GraphicsUtil.getGlobalFont()
-  GraphicsUtil.print(loc("continue_button"), (consts.CANVAS_WIDTH - font:getWidth(loc("continue_button"))) / 2, consts.CANVAS_HEIGHT - 60)
+  GraphicsUtil.print(loc("continue_button"), (width - font:getWidth(loc("continue_button"))) / 2, height - 60)
 end
 
 return ChallengeModeRecapScene

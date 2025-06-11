@@ -1,5 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
 local PuzzleLibrary = require("client.src.PuzzleLibrary")
@@ -12,7 +12,7 @@ local Stack = require("common.engine.Stack")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
----@field menu Menu
+---@field menu VerticalMenu
 ---@field puzzleLabel Label
 ---@field levelSlider LevelSlider
 ---@field randomColorButtons ButtonGroup
@@ -97,8 +97,8 @@ function PuzzleMenu:load(sceneParams)
   self.randomColorsButtons = ui.ButtonGroup(
     {
       buttons = {
-        ui.TextButton({label = ui.Label({text = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-        ui.TextButton({label = ui.Label({text = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
       },
       values = {false, true},
       selectedIndex = config.puzzle_randomColors and 2 or 1,
@@ -112,8 +112,8 @@ function PuzzleMenu:load(sceneParams)
   self.randomlyFlipPuzzleButtons = ui.ButtonGroup(
     {
       buttons = {
-        ui.TextButton({label = ui.Label({text = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-        ui.TextButton({label = ui.Label({text = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({id = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
       },
       values = {false, true},
       selectedIndex = config.puzzle_randomFlipped and 2 or 1,

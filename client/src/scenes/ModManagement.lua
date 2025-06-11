@@ -3,7 +3,7 @@ local class = require("common.lib.class")
 local ui = require("client.src.ui")
 local inputs = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local SoundController = require("client.src.music.SoundController")
 local system = require("client.src.system")
@@ -32,7 +32,7 @@ function ModManagement:load()
   self.headerLabel = ui.Label({
     text = "placeholder",
     hAlign = "center",
-    fontSize = 16,
+    fontSize = "medium",
   })
 
   self.headLine = self:loadGridHeader()
@@ -55,7 +55,7 @@ function ModManagement:load()
   self.cursor.onMove = function(c)
     local newOffset = c.target.unitSize * (c.selectedGridPos.y - 1)
     if self.scrollContainer then
-      self.scrollContainer:keepVisible(-newOffset, c.target.unitSize)
+      self.scrollContainer:keepVisible(newOffset, c.target.unitSize)
     end
   end
 
@@ -75,7 +75,7 @@ function ModManagement:load()
       if self.scrollContainer then
         self.stackPanel:remove(self.scrollContainer)
       end
-      self.headerLabel:setText("characters")
+      self.headerLabel:setId("characters")
       self.scrollContainer = self:newScrollContainer()
       self.scrollContainer:addChild(self.characterGrid)
       self.stackPanel:addElement(self.scrollContainer)
@@ -92,7 +92,7 @@ function ModManagement:load()
       if self.scrollContainer then
         self.stackPanel:remove(self.scrollContainer)
       end
-      self.headerLabel:setText("stages")
+      self.headerLabel:setId("stages")
       self.scrollContainer = self:newScrollContainer()
       self.scrollContainer:addChild(self.stageGrid)
       self.stackPanel:addElement(self.scrollContainer)
@@ -115,25 +115,23 @@ function ModManagement:load()
     end
   )
 
-  local menuItems = {
-    self.manageCharactersButton,
-    self.manageStagesButton,
-    self.backButton
-  }
-
-  if system.supportsFileBrowserOpen() then
-    table.insert(menuItems, 3, self.openSaveDirectoryButton)
-  end
-
-  self.menu = ui.Menu({
-    menuItems = menuItems,
+  self.menu = ui.VerticalMenu({
     x = 100,
     y = 0,
     hAlign = "left",
     vAlign = "center",
-    width = 200,
-    height = 300,
+    minHeight = 480,
+    maxHeight = 540,
+    childGap = 8,
+    padding = 32,
   })
+
+  self.menu:addChild(self.manageCharactersButton)
+  self.menu:addChild(self.manageStagesButton)
+  if system.supportsFileBrowserOpen() then
+    self.menu:addChild(self.openSaveDirectoryButton)
+  end
+  self.menu:addChild(self.backButton)
 
   self.uiRoot:addChild(self.menu)
 end

@@ -1,6 +1,6 @@
 local GameBase = require("client.src.scenes.GameBase")
 local input = require("client.src.inputManager")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local util = require("common.lib.util")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -114,7 +114,7 @@ ReplayGame.runGameOver = ReplayGame.runGame
 function ReplayGame:customDraw()
   local textPos = themes[config.theme].gameover_text_Pos
   local playbackText = self.playbackSpeeds[self.playbackSpeedIndex] .. "x"
-  GraphicsUtil.printf(playbackText, textPos[0], textPos[1], consts.CANVAS_WIDTH, "center", nil, 1, 10)
+  GraphicsUtil.printf(playbackText, textPos[0], textPos[1], love.graphics.getWidth(), "center", nil, 1, "big")
 end
 
 function ReplayGame:drawHUD()

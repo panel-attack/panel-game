@@ -1,5 +1,5 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -51,7 +51,6 @@ end
 function StackPanel:addElement(uiElement)
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)
-  self:resize()
 end
 
 
@@ -117,7 +116,7 @@ end
 function StackPanel:drawSelf()
   if DEBUG_ENABLED then
     GraphicsUtil.setColor(1, 0, 0, 0.7)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 end

@@ -1,5 +1,5 @@
 local class = require("common.lib.class")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 local CharacterLoader = require("client.src.mods.CharacterLoader")

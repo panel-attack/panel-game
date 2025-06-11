@@ -1,6 +1,6 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local addCursorInteractionInterface = import("./CursorInteractable")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
@@ -9,11 +9,13 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 --- A BoolSelector is a UIElement that shows if a setting is on or off and lets you toggle it.
 ---@class BoolSelector : UiElement
+---@operator call(BoolSelectorOptions): BoolSelector
 ---@field value boolean
 ---@field vertical boolean
 local BoolSelector = class(function(boolSelector, options)
   boolSelector.value = options.startValue or false
   boolSelector.vertical = false
+  addCursorInteractionInterface(boolSelector, boolSelector.receiveInputs)
 end,
 UiElement)
 
@@ -31,27 +33,30 @@ function BoolSelector:onSelect(boolSelector, selector)
   self:setValue(not self.value)
 end
 
-function BoolSelector:receiveInputs(input)
-  if self.isFocusable then
-    if (input:isPressedWithRepeat("Right") and self.vertical == false) or
-        (input:isPressedWithRepeat("Up") and self.vertical) then
-        self:setValue(true)
-    elseif (input:isPressedWithRepeat("Left") and self.vertical == false) or
-    (input:isPressedWithRepeat("Down") and self.vertical) then
-      self:setValue(false)
-    elseif input.isDown["Swap1"] then
-      GAME.theme:playValidationSfx()
-      self:yieldFocus()
-    elseif input.isDown["Swap2"] then
-      GAME.theme:playCancelSfx()
-      self:yieldFocus()
-    end
-  else 
+---@param cursor Cursor
+---@param dt number?
+function BoolSelector:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
+  -- if self.isFocusable then
+  --   if (input:isPressedWithRepeat("Right") and self.vertical == false) or
+  --       (input:isPressedWithRepeat("Up") and self.vertical) then
+  --       self:setValue(true)
+  --   elseif (input:isPressedWithRepeat("Left") and self.vertical == false) or
+  --   (input:isPressedWithRepeat("Down") and self.vertical) then
+  --     self:setValue(false)
+  --   elseif input.isDown["Swap1"] then
+  --     GAME.theme:playValidationSfx()
+  --     self:yieldFocus()
+  --   elseif input.isDown["Swap2"] then
+  --     GAME.theme:playCancelSfx()
+  --     self:yieldFocus()
+  --   end
+  -- else 
     if input.isDown["Swap1"] then
       GAME.theme:playValidationSfx()
       self:setValue(not self.value)
     end
-  end
+  --end
 end
 
 function BoolSelector:setValue(value)
@@ -76,7 +81,7 @@ local fakeCenteredChild = {hAlign = "center", vAlign = "center", width = totalWi
 function BoolSelector:drawSelf()
   if DEBUG_ENABLED then
     GraphicsUtil.setColor(0, 0, 1, 1)
-    GraphicsUtil.drawRectangle("line", self.x + 1, self.y + 1, self.width - 2, self.height - 2)
+    GraphicsUtil.drawRectangle("line", 1, 1, self.width - 2, self.height - 2)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 

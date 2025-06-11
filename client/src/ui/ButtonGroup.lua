@@ -1,20 +1,22 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UIElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local addCursorInteractionInterface = import("./CursorInteractable")
+local UIElement = import("./UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local tableUtils = require("common.lib.tableUtils")
+local HorizontalFlexLayout = import("./Layouts.HorizontalFlexLayout")
 
 local BUTTON_PADDING = 5
 
 -- UIElement representing a set of buttons which share state (think radio buttons)
 
--- forced override for each of the button's onClick function
+-- forced override for each of the button's action function
 -- this allows buttons to have individual custom behaviour while also triggering the global state change
 local function genButtonGroupFn(self, button)
-  local onClick = button.onClick
+  local action = button.action
   return function(b, inputSource, holdTime)
     self:buttonClicked(b)
-    onClick(b, inputSource, holdTime)
+    action(b, inputSource, holdTime)
     self:onChange(self.value)
   end
 end
@@ -39,7 +41,8 @@ local function setButtons(self, buttons, values, selectedIndex)
        button.x = self.buttons[i - 1].x + self.buttons[i - 1].width + BUTTON_PADDING
        overallWidth = overallWidth + BUTTON_PADDING
     end
-    button.onClick = genButtonGroupFn(self, button)
+    button.action = genButtonGroupFn(self, button)
+    button.vAlign = "center"
     self:addChild(button)
     overallHeight = math.max(overallHeight, button.height)
   end
@@ -52,7 +55,7 @@ end
 local function setActiveButton(self, selectedIndex)
   local newIndex = util.bound(1, selectedIndex, #self.buttons)
   if self.selectedIndex ~= newIndex then
-    self.buttons[newIndex]:onClick(nil, 0)
+    self.buttons[newIndex]:action(nil, 0)
   end
 end
 
@@ -66,13 +69,21 @@ local ButtonGroup = class(
   function(self, options)
     self.selectedIndex = options.selectedIndex or 1
 
+    self.padding = options.padding or 4
+    self.childGap = options.childGap or 8
+    if options.hFill == nil then
+      self.hFill = true
+    end
+
     self.onChange = options.onChange or function() end
 
     setButtons(self, options.buttons, options.values, self.selectedIndex)
+    addCursorInteractionInterface(self, self.receiveInputs)
   end,
   UIElement
 )
 ButtonGroup.TYPE = "ButtonGroup"
+ButtonGroup.layout = HorizontalFlexLayout
 
 -- changes state for the button group
 -- updates the color of the selected button
@@ -85,7 +96,10 @@ function ButtonGroup:buttonClicked(button)
   self.selectedIndex = i
 end
 
-function ButtonGroup:receiveInputs(input)
+---@param cursor Cursor
+---@param dt number?
+function ButtonGroup:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
   if input:isPressedWithRepeat("Left") then
     self:setActiveButton(self.selectedIndex - 1)
   elseif input:isPressedWithRepeat("Right") then

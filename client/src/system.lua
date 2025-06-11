@@ -12,6 +12,10 @@ function system.isMobileOS()
     return true
   end
 
+  if SIMULATE_MOBILE_OS then
+    return true
+  end
+
   return false
 end
 

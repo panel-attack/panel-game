@@ -1,3 +1,4 @@
+require("common.lib.stringExtensions")
 local tableUtils = require("common.lib.tableUtils")
 local pairs, type, setmetatable, getmetatable = pairs, type, setmetatable, getmetatable
 
@@ -193,21 +194,6 @@ function frames_to_time_string(frame_count, include_centiseconds)
   return ret
 end
 
--- split the input string on some separator, returns table
----@param inputstr string
----@param sep string?
----@return string[]?
-function util.split(inputstr, sep)
-  sep = sep or "%s"
-  local t = {}
-  for field, s in string.gmatch(inputstr, "([^" .. sep .. "]*)(" .. sep .. "?)") do
-    table.insert(t, field)
-    if s == "" then
-      return t
-    end
-  end
-end
-
 -- Remove white space from the ends of a string
 ---@param s string
 ---@return string trimmed
@@ -281,7 +267,7 @@ function util.addToCPath(path)
   -- Example: luasocket's dynamic core library's entry point is
   --  luaopen_socket_core
   -- meaning it has to be required as "socket.core", otherwise it cannot be opened
-  local cPathDirs = util.split(package.cpath, ";")
+  local cPathDirs = string.split(package.cpath, ";")
   local fileExtension = string.sub(cPathDirs[1], -4)
   if fileExtension == "?.so" then
     path = path:gsub("%?%?", "?.so")

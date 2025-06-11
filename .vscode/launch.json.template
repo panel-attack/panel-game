@@ -24,6 +24,9 @@
           // the profiler itself preallocates a lot of memory to reduce the odds of it causing spikes in frame time / memory alloc on its own
           //,"profileFrameTimes"
           //,"profileMemory"
+
+          // to make the game take code branches intended specifically for mobile devices (e.g. increased font size)
+          //,"simulateMobileOS"
         ]
       },
       // using the testLauncher.lua file to only run tests

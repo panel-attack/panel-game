@@ -21,6 +21,11 @@
 
     "hint.semicolon": "Disable",
 
+    "runtime.plugin": "common/lib/luaLsPlugin.lua",
+
+    // to support mixin union types where a table is both types rather than just one
+    "type.weakUnionCheck": true,
+
     "workspace.checkThirdParty": false,
     "workspace.ignoreDir": [
         ".vscode",
@@ -34,6 +39,9 @@
         "${3rd}/love2d/library",
         "common/lib/socket.lua",
         "common/lib/dkjson.lua",
-        "common/lib/csprng.lua"
+        "common/lib/csprng.lua",
+        "common/lib/luaLsPlugin.lua",
+        "common/lib/import.lua",
+        "${addons}/lsqlite3/module/library"
     ]
 }

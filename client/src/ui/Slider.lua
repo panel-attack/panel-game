@@ -1,8 +1,9 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UIElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UIElement = import("./UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local addCursorInteractionInterface = import("./CursorInteractable")
 
 local handleRadius = 7.5
 local xPadding = 8
@@ -23,7 +24,8 @@ local sliderBarThickness = 6
 ---@field height nil height is calculated internally based on min, max, tickLength and tickAmount
 
 -- A horizontal Slider element
----@class Slider: UiElement
+---@class Slider: UiElement, CursorInteractable
+---@operator call(SliderOptions): Slider
 ---@field min number minimum value
 ---@field max number maximum value
 ---@field tickLength integer how many pixels represent a value change of tickAmount
@@ -37,6 +39,7 @@ local sliderBarThickness = 6
 ---@field isFocusable boolean? only present if the individual object has been marked as focusable
 ---@field yieldFocus fun()? only present if the individual object has been marked as focusable, yields focus back to the parent element
 ---@overload fun(options: SliderOptions): Slider
+---@type Slider
 local Slider = class(
 ---@param self Slider
 ---@param options SliderOptions
@@ -51,14 +54,21 @@ local Slider = class(
     self.value = self:getBoundedValue(value) -- don't use set value as not everything is setup yet
     self.onlyChangeOnRelease = options.onlyChangeOnRelease or false
 
-    self.minText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.min))
-    self.maxText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.max))
-    self.valueText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.value))
+    if options.hFill == nil then
+      self.hFill = true
+    end
+
+    self.minText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize("small"), tostring(self.min))
+    self.maxText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize("small"), tostring(self.max))
+    self.valueText = GraphicsUtil.newText(GraphicsUtil.getGlobalFontWithSize("small"), tostring(self.value))
 
     local valueTextWidth, valueTextHeight = self.valueText:getDimensions()
     local textWidth, textHeight = self.maxText:getDimensions()
     self.width = self.tickLength * self:tickCount() + xPadding + math.max(xPadding, textWidth / 2)
-    self.height = yPadding * 2 + handleRadius * 2 + valueTextHeight + textHeight
+    self.height = handleRadius * 2 + valueTextHeight + textHeight
+    self.minHeight = self.height
+
+    addCursorInteractionInterface(self, self.receiveInputs)
   end,
   UIElement
 )
@@ -76,7 +86,10 @@ function Slider:onRelease(x, y)
   self:setValueFromPos(x, true)
 end
 
-function Slider:receiveInputs(input)
+---@param cursor Cursor
+---@param dt number?
+function Slider:receiveInputs(cursor, dt)
+  local input = cursor.keyInput
   if input:isPressedWithRepeat("Left") then
     self:setValue(self.value - self.tickAmount, true)
   elseif input:isPressedWithRepeat("Right") then
@@ -148,27 +161,27 @@ function Slider:drawSelf()
 
   -- Slider bar
   GraphicsUtil.setColor(gray, gray, gray, alpha)
-  GraphicsUtil.drawRectangle("fill", self.x + xPadding, self.y + yPadding + valueTextHeight, barWidth, sliderBarThickness)
+  GraphicsUtil.drawRectangle("fill", xPadding, yPadding + valueTextHeight, barWidth, sliderBarThickness)
 
   -- Slider circle
   GraphicsUtil.setColor(unpack(SLIDER_CIRCLE_COLOR))
-  love.graphics.circle("fill", currentX, self.y + yPadding + valueTextHeight + sliderBarThickness / 2, handleRadius, 32)
+  love.graphics.circle("fill", currentX, yPadding + valueTextHeight + sliderBarThickness / 2, handleRadius, 32)
 
   -- Value background
   GraphicsUtil.setColor(gray, gray, gray, alpha)
-  GraphicsUtil.drawRectangle("fill", currentX - valueTextWidth / 2 - valueBackgroundPaddingX, self.y + yPadding - valueBackgroundPaddingY, valueTextWidth + valueBackgroundPaddingX*2, valueTextHeight + valueBackgroundPaddingY*2)
+  GraphicsUtil.drawRectangle("fill", currentX - valueTextWidth / 2 - valueBackgroundPaddingX, yPadding - valueBackgroundPaddingY, valueTextWidth + valueBackgroundPaddingX*2, valueTextHeight + valueBackgroundPaddingY*2)
 
   -- Value centered at top
   GraphicsUtil.setColor(1, 1, 1, 1)
-  GraphicsUtil.draw(self.valueText, currentX - valueTextWidth / 2, self.y + yPadding, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.valueText, currentX - valueTextWidth / 2, yPadding, 0, 1, 1, 0, 0)
 
   GraphicsUtil.setColor(lightGray, lightGray, lightGray, 1)
 
   local textWidth, textHeight = self.minText:getDimensions()
-  GraphicsUtil.draw(self.minText, self.x + xPadding - textWidth / 2, self.y + yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.minText, xPadding - textWidth / 2, yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
 
   textWidth, textHeight = self.maxText:getDimensions()
-  GraphicsUtil.draw(self.maxText, self.x + xPadding + barWidth - textWidth / 2, self.y + yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
+  GraphicsUtil.draw(self.maxText, xPadding + barWidth - textWidth / 2, yPadding + sliderBarThickness + textHeight, 0, 1, 1, 0, 0)
 
   GraphicsUtil.setColor(1, 1, 1, 1)
 

@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local Scene = require("client.src.scenes.Scene")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local logger = require("common.lib.logger")
 local fileUtils = require("client.src.FileUtils")
@@ -21,7 +21,7 @@ local StartUp = class(function(scene, sceneParams)
     logger.debug(scene.migrationMessage)
   end
 
-  love.graphics.setFont(GraphicsUtil.getGlobalFontWithSize(GraphicsUtil.fontSize + 10))
+  love.graphics.setFont(GraphicsUtil.getGlobalFontWithSize("big"))
 end, Scene)
 
 StartUp.name = "StartUp"
@@ -67,9 +67,9 @@ end
 function StartUp:drawLoadingString(loadingString)
   local textHeight = 40
   local x = 0
-  local y = consts.CANVAS_HEIGHT / 2 - textHeight / 2
+  local y = love.graphics.getHeight() / 2 - textHeight / 2
   GraphicsUtil.setColor(1, 1, 1, 1)
-  love.graphics.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", 0, 1)
+  love.graphics.printf(loadingString, x, y, love.graphics.getWidth(), "center", 0, 1)
 end
 
 function StartUp:draw()
@@ -115,7 +115,7 @@ function StartUp:migrate()
   self.migrationPath = nil
   self.migrationMessage = nil
   readConfigFile(config)
-  love.window.updateMode(config.windowWidth, config.windowHeight,
+  GraphicsUtil.updateMode(config.windowWidth, config.windowHeight,
     {
       x = config.windowX,
       y = config.windowY,

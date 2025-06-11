@@ -1,5 +1,5 @@
 local class = require("common.lib.class")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
@@ -201,14 +201,18 @@ function ClientStack:drawNumber(number, themePositionOffset, scale, cameFromLega
   GraphicsUtil.drawPixelFont(number, self.assets.numberPixelFont, x, y, scale, scale, "center", 0)
 end
 
-function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
+---@param str string
+---@param themePositionOffset number[]
+---@param cameFromLegacyScoreOffset boolean
+---@param fontSize FontSize
+function ClientStack:drawString(str, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
 
-  local limit = consts.CANVAS_WIDTH - x
+  local limit = love.graphics.getWidth() - x
   local alignment = "left"
   if themes[config.theme]:offsetsAreFixed() then
     if self.renderIndex == 1 then
@@ -218,12 +222,7 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
     end
   end
 
-  if fontSize == nil then
-    fontSize = GraphicsUtil.fontSize
-  end
-  local fontDelta = fontSize - GraphicsUtil.fontSize
-
-  GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
+  GraphicsUtil.printf(str, x, y, limit, alignment, nil, nil, fontSize)
 end
 
 -- Positions the stack draw position for the given player
@@ -237,7 +236,7 @@ function ClientStack:moveForRenderIndex(renderIndex)
     self.mirror_x = -1
     self.multiplication = 1
   end
-  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local centerX = love.graphics.getWidth() / 2
   local stackWidth = self:canvasWidth()
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement
@@ -402,14 +401,14 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
     end
 
     if remainingSeconds > 0 then
-      self:drawString(string.format("%." .. themes[config.theme].multibar_LeftoverTime_Decimals .. "f", remainingSeconds), overtimePos, false, 20)
+      self:drawString(string.format("%." .. themes[config.theme].multibar_LeftoverTime_Decimals .. "f", remainingSeconds), overtimePos, false, "big")
     end
   end
 end
 
 function ClientStack:drawPlayerName()
   local username = (self.player.name or "")
-  self:drawString(username, themes[config.theme].name_Pos, true, themes[config.theme].name_Font_Size)
+  self:drawString(username, themes[config.theme].name_Pos, true, "big")
 end
 
 function ClientStack:drawWinCount()

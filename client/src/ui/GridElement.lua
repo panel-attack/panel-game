@@ -1,7 +1,8 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local StaticLayout = import("./Layouts.StaticLayout")
 
 local GridElement = class(function(gridElement, options)
   if options.content then
@@ -24,9 +25,11 @@ local GridElement = class(function(gridElement, options)
   gridElement.TYPE = "GridElement"
 end, UiElement)
 
+GridElement.layout = StaticLayout
+
 function GridElement:drawSelf()
   if self.drawBorders then
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
   end
 end
 

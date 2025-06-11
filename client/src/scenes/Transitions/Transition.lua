@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 
 -- A transition, or more specifically a scene transition represents an object that handles going from one scene to the next
 -- For the duration of handover, the transition is responsible for handling both update and draw calls on the scenes
@@ -21,7 +21,7 @@ local Transition = class(function(transition, startTime, duration)
   -- these are set by the navigationStack
   transition.oldScene = nil
   transition.newScene = nil
-  transition.uiRoot = UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+  transition.uiRoot = UiElement({x = 0, y = 0, width = love.graphics.getWidth(), height = love.graphics.getWidth()})
 
 end)
 

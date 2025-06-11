@@ -35,6 +35,8 @@ function developerTools.processArgs(args)
       -- drop the updater directory of the updater in for debugging purposes
       GAME_UPDATER_STATES = { idle = 0, checkingForUpdates = 1, downloading = 2}
       GAME_UPDATER = require("updater.gameUpdater")
+    elseif value == "simulateMobileOS" then
+      SIMULATE_MOBILE_OS = true
     else
       for match in string.gmatch(value, "user%-id=(.*)") do
         CUSTOM_USER_ID = match

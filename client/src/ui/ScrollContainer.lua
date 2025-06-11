@@ -1,22 +1,31 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
+local logger = require("common.lib.logger")
+local VerticalScrollLayout = import("./Layouts.VerticalScrollLayout")
+local HorizontalScrollLayout = import("./Layouts.HorizontalScrollLayout")
 
 ---@class ScrollContainerOptions : UiElementOptions
 ---@field scrollOrientation ("vertical" | "horizontal" | nil)
 
 ---@class ScrollContainer : UiElement
+---@operator call(ScrollContainerOptions): ScrollContainer
 ---@field scrollOrientation string "vertical" or "horizontal"
 ---@field scrollOffset number by how many pixels the children are translated in the orientation
 ---@field maxScrollOffset number maximum allowed value for scrollOffset the object will bound to
-
----@class ScrollContainer
 ---@overload fun(options: ScrollContainerOptions): ScrollContainer
+---@type ScrollContainer
 local ScrollContainer = class(
 ---@param self ScrollContainer
 function(self, options)
-  self.scrollOrientation = "vertical" or options.scrollOrientation
+  self.scrollOrientation = options.scrollOrientation or "vertical"
+  if self.scrollOrientation == "vertical" then
+    self.layout = VerticalScrollLayout
+  else
+    self.layout = HorizontalScrollLayout
+  end
   self.scrollOffset = 0
   self.maxScrollOffset = 0
 end,
@@ -26,21 +35,35 @@ ScrollContainer.TYPE = "ScrollContainer"
 -- bounds the scrollOffset of the container to the desired value between 0 and -maxScrollOffset
 ---@param value number desired scrollOffset value
 function ScrollContainer:setScrollOffset(value)
+  logger.debug("Firing ScrollContainer.setScrollOffset " .. tostring(value))
+  logger.debug("maxScrollOffset " .. tostring(self.maxScrollOffset))
   self.scrollOffset = util.bound(-self.maxScrollOffset, value, 0)
 end
 
 -- update the scroll offset so the element with passed scroll offset + size remains visible
 -- usually we want a cursor type of object to call this on move to automatically advance the scrollContainer
----@param offset number the offset of the element to be kept visible
----@param size number the size of the element to be kept visible
-function ScrollContainer:keepVisible(offset, size)
-  -- with increasing negative value we scroll further down/right
+---@param cursor Cursor
+function ScrollContainer:keepVisible(cursor)
+  local hoveredElement = cursor.focusToHover[self]
+  local offset -- the offset of the element to be kept visible
+  local size -- the size of the element to be kept visible
   local refSize
-  if self.scrollOrientation == "vertical" then
-    refSize = self.height
-  else
+  if self.scrollOrientation == "horizontal" then
+    offset = hoveredElement.x
+    size = hoveredElement.width
     refSize = self.width
+  else
+    offset = hoveredElement.y
+    size = hoveredElement.height
+    refSize = self.height
   end
+  logger.debug("Firing ScrollContiner.keepVisible")
+  -- weird implementation detail that with scrolling scrolloffset goes negative
+  -- childGap is added to guarantee some whitespace if the container is built around it
+  offset = -offset + self.childGap / 2
+  size = size + self.childGap
+  -- with increasing negative value we scroll further down/right
+
   if self.scrollOffset - refSize > offset - size then
     self:setScrollOffset(offset - size + refSize)
   elseif offset > self.scrollOffset then
@@ -60,41 +83,42 @@ local function getTranslatedOffset(scrollContainer, x, y)
 end
 
 function ScrollContainer:onTouch(x, y)
+  logger.debug("Firing ScrollContainer.onTouch")
+  self.initialTouchX = x
+  self.initialTouchY = y
+  logger.debug("initialTouchY: " .. self.initialTouchY)
+  self.originalOffset = self.scrollOffset
+  logger.debug("originalOffset: " .. self.originalOffset)
+
   local realTouchedElement = self:getTouchedChildElement(x, y)
   if realTouchedElement then
     self.touchedChild = realTouchedElement
     if self.touchedChild.onTouch then
-      x, y = getTranslatedOffset(self, x, y)
       self.touchedChild:onTouch(x, y)
     end
-  else
-    self.scrolling = true
-    self.initialTouchX = x
-    self.initialTouchY = y
-    self.originalOffset = self.scrollOffset
   end
 end
 
 function ScrollContainer:onDrag(x, y)
-  if not self.touchedChild then
+  logger.debug("Firing ScrollContainer.onDrag")
+  logger.debug("y: " .. y)
+  if not self.touchedChild or not self.touchedChild.onDrag then
     if self.scrollOrientation == "vertical" then
       self:setScrollOffset(self.originalOffset + (y - self.initialTouchY))
     elseif self.scrollOrientation == "horizontal" then
       self:setScrollOffset(self.originalOffset + (x - self.initialTouchX))
     end
-  elseif self.touchedChild.onDrag then
-    x, y = getTranslatedOffset(self, x, y)
+  else
     self.touchedChild:onDrag(x, y)
   end
 end
 
 function ScrollContainer:onRelease(x, y, duration)
-  if not self.touchedChild then
-    self:onDrag(x, y)
-    self.scrolling = false
-  else
+  logger.debug("Firing ScrollContainer.onRelease")
+  self:onDrag(x, y)
+
+  if self.touchedChild then
     if self.touchedChild.onRelease then
-      x, y = getTranslatedOffset(self, x, y)
       self.touchedChild:onRelease(x, y)
     end
     self.touchedChild = nil
@@ -126,6 +150,7 @@ function ScrollContainer:draw()
     else
       love.graphics.translate(self.x + self.scrollOffset, self.y)
     end
+    UiElement.drawSelf(self)
     -- and then just render everything
     -- by combining stencil + translate only the elements positioned within the stencil after the translate get drawn
     self:drawChildren()
@@ -135,6 +160,25 @@ function ScrollContainer:draw()
       love.graphics.setStencilMode()
     else
       love.graphics.setStencilTest()
+    end
+
+    if self.maxScrollOffset > 0 then
+      local fontSize = GraphicsUtil.getEffectiveFontSize("normal")
+      if self.scrollOrientation == "vertical" then
+        if self.scrollOffset < 0 then
+          GraphicsUtil.print("^", self.x + self.width / 2 - fontSize / 2, self.y - 20)
+        end
+        if math.abs(self.scrollOffset) < self.maxScrollOffset then
+          GraphicsUtil.print("v", self.x + self.width / 2 - fontSize  / 2, self.y + self.height + 8)
+        end
+      else
+        if self.scrollOffset < 0 then
+          GraphicsUtil.print("<", self.x - 20, self.y + self.height / 2 - fontSize / 2)
+        end
+        if math.abs(self.scrollOffset) < self.maxScrollOffset then
+          GraphicsUtil.print(">", self.x + self.width + 8, self.y + self.height / 2 - fontSize / 2)
+        end
+      end
     end
   end
 end
@@ -149,7 +193,6 @@ end
 
 -- in order for the "offscreen" children to pass the inBounds check, the touch coordinates get corrected by the scroll offset before recursing down the ui
 function ScrollContainer:getTouchedChildElement(x, y)
-  x, y = getTranslatedOffset(self, x, y)
   local touchedElement
   for i = 1, #self.children do
     touchedElement = self.children[i]:getTouchedElement(x, y)
@@ -159,14 +202,48 @@ function ScrollContainer:getTouchedChildElement(x, y)
   end
 end
 
--- adds the uiElement and updates the maxScrollOffset if the addition extends the sensible scroll area 
-function ScrollContainer:addChild(uiElement)
-  UiElement.addChild(self, uiElement)
-  if self.scrollOrientation == "vertical" then
-    self.maxScrollOffset = math.max(self.maxScrollOffset, (uiElement.y + uiElement.height) - self.height)
+function ScrollContainer:recalculateMaxScrollOffset()
+  local lastChild = self.children[#self.children]
+  if lastChild then
+    if self.scrollOrientation == "vertical" then
+      self.maxScrollOffset = math.max(0, lastChild.y + lastChild.height - self.height + self.padding)
+    else
+      self.maxScrollOffset = math.max(0, lastChild.x + lastChild.width - self.width + self.padding)
+    end
   else
-    self.maxScrollOffset = math.max(self.maxScrollOffset, (uiElement.x + uiElement.width) - self.width)
+    self.maxScrollOffset = 0
   end
+end
+
+function ScrollContainer:onResized()
+  self:recalculateMaxScrollOffset()
+end
+
+function ScrollContainer:getPreferredWidth()
+  return self.minWidth
+end
+
+---@param whoIsAsking table?
+---@return integer x
+---@return integer y
+function ScrollContainer:getScreenPos(whoIsAsking)
+  local x, y = 0, 0
+  if self.parent then
+    x, y = self.parent:getScreenPos(self)
+  end
+
+  x = x + self.x
+  y = y + self.y
+
+  -- for children the scrolloffset needs to be applied, otherwise not;
+  -- as whoIsAsking is recursively calling upwards, whoIsAsking will be a direct child even if the call originates from further down in the tree
+  if whoIsAsking and whoIsAsking.parent and whoIsAsking.parent == self then
+    local xOffset, yOffset = getTranslatedOffset(self, 0, 0)
+    x = x - xOffset
+    y = y - yOffset
+  end
+
+  return x, y
 end
 
 return ScrollContainer

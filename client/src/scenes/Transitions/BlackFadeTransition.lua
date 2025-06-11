@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local Transition = require("client.src.scenes.Transitions.Transition")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local BlackFadeTransition = class(function(transition, startTime, duration, easing)
@@ -18,7 +18,7 @@ function BlackFadeTransition:draw()
     self.newScene:draw()
   end
   GraphicsUtil.setColor(0, 0, 0, alpha)
-  GraphicsUtil.drawRectangle("fill", 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  GraphicsUtil.drawRectangle("fill", 0, 0, love.graphics.getDimensions())
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 

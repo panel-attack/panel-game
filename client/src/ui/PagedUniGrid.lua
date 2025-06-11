@@ -1,8 +1,8 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
-local Label = require(PATH .. ".Label")
-local TextButton = require(PATH .. ".TextButton")
-local Grid = require(PATH .. ".Grid")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
+local Label = import("./Label")
+local TextButton = import("./TextButton")
+local Grid = import("./Grid")
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -50,7 +50,7 @@ local PagedUniGrid = class(function(self, options)
     vAlign = "top",
     width = self.unitSize / 2,
     height = self.unitSize / 2,
-    onClick = function(selfElement, inputSource, holdTime) self:turnPage(-1) end,
+    action = function(selfElement, inputSource, holdTime) self:turnPage(-1) end,
   })
   self.pageTurnButtons.right = TextButton({
     label = Label({text = ">", translate = false}),
@@ -58,7 +58,7 @@ local PagedUniGrid = class(function(self, options)
     vAlign = "top",
     width = self.unitSize / 2,
     height = self.unitSize / 2,
-    onClick = function(selfElement, inputSource, holdTime) self:turnPage(1) end,
+    action = function(selfElement, inputSource, holdTime) self:turnPage(1) end,
   })
   addNewPage(self)
   goToPage(self, 1)
@@ -103,7 +103,7 @@ end
 function PagedUniGrid:drawSelf()
   if DEBUG_ENABLED then
     GraphicsUtil.setColor(1, 0, 0, 1)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 end

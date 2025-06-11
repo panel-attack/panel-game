@@ -1,8 +1,9 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
-local GridElement = require(PATH .. ".GridElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
+local GridElement = import("./GridElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local StaticLayout = import("./Layouts.StaticLayout")
 
 local Grid = class(function(self, options)
   self.unitSize = options.unitSize
@@ -19,8 +20,10 @@ local Grid = class(function(self, options)
     --   self.grid[row][col] = {}
     -- end
   end
-  self.TYPE = "Grid"
 end, UiElement)
+
+Grid.TYPE = "Grid"
+Grid.layout = StaticLayout
 
 -- width and height are sizes relative to the unitSize of the grid
 -- id is a string identificator to indiate what kind of uiElement resides here
@@ -74,18 +77,18 @@ end
 function Grid:drawSelf()
   if DEBUG_ENABLED then
     GraphicsUtil.setColor(1, 1, 1, 0.5)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
     -- draw all units
-    local right = self.x + self.width
-    local bottom = self.y + self.height
+    local right = self.width
+    local bottom = self.height
     for i = 1, self.gridHeight - 1 do
-      local y = self.y + self.unitSize * i
-      GraphicsUtil.drawStraightLine(self.x, y, right, y, 1, 1, 1, 0.5)
+      local y = self.unitSize * i
+      GraphicsUtil.drawStraightLine(0, y, right, y, 1, 1, 1, 0.5)
     end
     for i = 1, self.gridWidth - 1 do
-      local x = self.x + self.unitSize * i
-      GraphicsUtil.drawStraightLine(x, self.y, x, bottom, 1, 1, 1, 0.5)
+      local x = self.unitSize * i
+      GraphicsUtil.drawStraightLine(x, 0, x, bottom, 1, 1, 1, 0.5)
     end
   end
 end

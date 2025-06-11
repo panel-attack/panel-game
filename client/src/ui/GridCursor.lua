@@ -1,9 +1,10 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
-local directsFocus = require(PATH .. ".FocusDirector")
-local consts = require("common.engine.consts")
+local directsFocus = import("./FocusDirector")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local StaticLayout = import("./Layouts.StaticLayout")
 
 -- create a new cursor that can navigate on the specified grid
 -- grid: the target grid that is navigated on
@@ -38,9 +39,10 @@ local GridCursor = class(function(self, options)
   self.trapped = false
   self.drawClock = 0
 
-  self.TYPE = "GridCursor"
 end, UiElement)
 
+GridCursor.TYPE = "GridCursor"
+GridCursor.layout = StaticLayout
 GridCursor.directions = {up = {x = 0, y = -1}, down = {x = 0, y = 1}, left = {x = -1, y = 0}, right = {x = 1, y = 0}}
 
 function GridCursor:setTarget(grid, startPosition, activeArea)

@@ -1,5 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
@@ -18,6 +18,7 @@ local SetNameMenu = require("client.src.scenes.SetNameMenu")
 local OptionsMenu = require("client.src.scenes.OptionsMenu")
 local DesignHelper = require("client.src.scenes.DesignHelper")
 local system = require("client.src.system")
+local inputs = require("client.src.inputManager")
 
 local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local EndlessGame = require("client.src.scenes.EndlessGame")
@@ -29,6 +30,7 @@ local PuzzleGame = require("client.src.scenes.PuzzleGame")
 local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
+  self.cursor = ui.Cursor(self.menu)
   self.uiRoot:addChild(self.menu)
 end, Scene)
 
@@ -40,92 +42,124 @@ local function switchToScene(sceneName, transition)
 end
 
 function MainMenu:createMainMenu()
+  local menuContainer = ui.VerticalMenu({
+    hAlign = "center",
+    vAlign = "center",
+    minHeight = 480,
+    maxHeight = 540,
+    childGap = 8,
+    padding = 32,
+    backgroundColor = {1, 0, 0, 0.2},
+  })
 
-  local menuItems = {ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"), EndlessGame)
-      if GAME.battleRoom then
-        switchToScene(EndlessMenu({battleRoom = GAME.battleRoom}))
-      end
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_PUZZLE"), PuzzleGame)
-      if GAME.battleRoom then
-        switchToScene(PuzzleMenu({battleRoom = GAME.battleRoom}))
-      end
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"), TimeAttackGame)
-      if GAME.battleRoom then
-        switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
-      end
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
-      if GAME.battleRoom then
-        switchToScene(CharacterSelectVsSelf({battleRoom = GAME.battleRoom}))
-      end
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_training", nil, nil, function()
-      switchToScene(TrainingMenu())
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_challenge_mode", nil, nil, function()
-      switchToScene(ChallengeModeMenu())
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
-      switchToScene(Lobby({serverIp = "panelattack.com"}))
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
-      if GAME.battleRoom then
-        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
-      end
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
-      switchToScene(ReplayBrowser())
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_configure", nil, nil, function()
-      switchToScene(InputConfigMenu())
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_set_name", nil, nil, function()
-      switchToScene(SetNameMenu())
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_options", nil, nil, function()
-      switchToScene(OptionsMenu())
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_fullscreen", {"\n(Alt+Enter)"}, nil, function()
-      GAME.theme:playValidationSfx()
-      GAME:toggleFullscreen()
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end )
-  }
-
-  local menu = ui.Menu.createCenteredMenu(menuItems)
-
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
-                        }
-
-  local function addDebugMenuItems()
-    if config.debugShowServers then
-      for i, menuItem in ipairs(debugMenuItems) do
-        menu:addMenuItem(i + 7, menuItem)
-      end
+  local endless = ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
+    GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"), EndlessGame)
+    if GAME.battleRoom then
+      switchToScene(EndlessMenu({battleRoom = GAME.battleRoom}))
     end
-    if config.debugShowDesignHelper then
-      menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
-          switchToScene(DesignHelper())
-        end))
+  end)
+
+  local puzzle = ui.MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
+    GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_PUZZLE"), PuzzleGame)
+    if GAME.battleRoom then
+      switchToScene(PuzzleMenu({battleRoom = GAME.battleRoom}))
     end
+  end)
+
+  local time = ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
+    GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"), TimeAttackGame)
+    if GAME.battleRoom then
+      switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
+    end
+  end)
+
+  local vsSelf = ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
+    GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
+    if GAME.battleRoom then
+      switchToScene(CharacterSelectVsSelf({battleRoom = GAME.battleRoom}))
+    end
+  end)
+  local training = ui.MenuItem.createButtonMenuItem("mm_1_training", nil, nil, function()
+    switchToScene(TrainingMenu())
+  end)
+
+  local challenge = ui.MenuItem.createButtonMenuItem("mm_1_challenge_mode", nil, nil, function()
+    switchToScene(ChallengeModeMenu())
+  end)
+
+  local vsOnline = ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
+    switchToScene(Lobby({serverIp = "panelattack.com"}))
+  end)
+
+  local vsLocal = ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
+    GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
+    if GAME.battleRoom then
+      switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
+    end
+  end)
+
+  local betaServer = ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function()
+    switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569}))
+  end)
+
+  local localServer = ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function()
+    switchToScene(Lobby({serverIp = "Localhost"}))
+  end)
+
+  local replayBrowser = ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
+    switchToScene(ReplayBrowser())
+  end)
+
+  local inputConfig = ui.MenuItem.createButtonMenuItem("mm_configure", nil, nil, function()
+    switchToScene(InputConfigMenu())
+  end)
+
+  local setName = ui.MenuItem.createButtonMenuItem("mm_set_name", nil, nil, function()
+    switchToScene(SetNameMenu())
+  end)
+
+  local options = ui.MenuItem.createButtonMenuItem("mm_options", nil, nil, function()
+    switchToScene(OptionsMenu())
+  end)
+
+  local fullscreenToggle = ui.MenuItem.createButtonMenuItem("mm_fullscreen", {"\n(Alt+Enter)"}, nil, function()
+    GAME.theme:playValidationSfx()
+    GAME:toggleFullscreen()
+  end)
+
+  local quit = ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function()
+    love.event.quit()
+  end)
+
+  local designHelper = ui.MenuItem.createButtonMenuItem("Design Helper", nil, false, function()
+    switchToScene(DesignHelper())
+  end)
+
+  menuContainer:addChild(endless)
+  menuContainer:addChild(puzzle)
+  menuContainer:addChild(time)
+  menuContainer:addChild(vsSelf)
+  menuContainer:addChild(training)
+  menuContainer:addChild(challenge)
+  menuContainer:addChild(vsOnline)
+  menuContainer:addChild(vsLocal)
+  if config.debugShowServers then
+    menuContainer:addChild(betaServer)
+    menuContainer:addChild(localServer)
   end
-
-  local function removeDebugMenuItems()
-    for i, menuItem in ipairs(debugMenuItems) do
-      menu:removeMenuItem(menuItem[1].id)
-    end
+  menuContainer:addChild(replayBrowser)
+  menuContainer:addChild(inputConfig)
+  if config.name == "" then
+    menuContainer:addChild(setName)
   end
+  menuContainer:addChild(options)
+  menuContainer:addChild(fullscreenToggle)
+  if config.debugShowDesignHelper then
+    menuContainer:addChild(designHelper)
+  end
+  menuContainer:addChild(quit)
 
-  addDebugMenuItems()
-  return menu
+  return menuContainer
 end
 
 local nextUpdate = 900
@@ -151,7 +185,7 @@ end
 
 function MainMenu:update(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.menu:receiveInputs()
+  self.cursor:receiveInputs(dt)
 
   self:checkForUpdates()
 end
@@ -159,12 +193,14 @@ end
 function MainMenu:draw()
   GAME.theme.images.bg_main:draw()
   self.uiRoot:draw()
+  self.cursor:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
+  local screenWidth = love.graphics.getWidth()
 
   local loveString = system.loveVersionString()
   if loveString == "11.3.0" then
-    GraphicsUtil.printf(loc("love_version_warning"), -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+    GraphicsUtil.printf(loc("love_version_warning"), -5, infoYPosition, screenWidth, "right")
     infoYPosition = infoYPosition - fontHeight
   end
 
@@ -179,7 +215,7 @@ function MainMenu:draw()
         version = "PA Version: " .. GAME.updater.activeReleaseStream.name .. " " .. (GAME.updater.activeVersion and GAME.updater.activeVersion.version or "dev")
       end
     end
-    GraphicsUtil.printf(version, -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+    GraphicsUtil.printf(version, -5, infoYPosition, screenWidth, "right")
     infoYPosition = infoYPosition - fontHeight
 
 
@@ -196,7 +232,7 @@ function MainMenu:draw()
     end
 
     if showUpdaterUpdateWarning then
-      GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, consts.CANVAS_WIDTH, "right")
+      GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, screenWidth, "right")
       infoYPosition = infoYPosition - fontHeight
     end
   end

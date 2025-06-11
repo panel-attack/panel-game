@@ -104,10 +104,21 @@ end
 
 -- returns true if the table contains the given element or an identical copy of it, otherwise false 
 -- may result in a deathloop if there are recursive references
-function tableUtils.contains(tab, element)
-  for _, value in pairs(tab) do
-    if deep_content_equal(value, element) then
-      return true
+---@param tab table
+---@param element any
+---@param referenceEquality boolean? if true, don't check equality by content for tables but instead check equality by reference only ("===" in other languages)
+function tableUtils.contains(tab, element, referenceEquality)
+  if referenceEquality then
+    for _, value in pairs(tab) do
+      if value == element then
+        return true
+      end
+    end
+  else
+    for _, value in pairs(tab) do
+      if deep_content_equal(value, element) then
+        return true
+      end
     end
   end
 

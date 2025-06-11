@@ -11,7 +11,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.zoneProfiler")
 local ReplayV3 = require("common.data.ReplayV3")
 require("common.lib.util")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local system = require("client.src.system")
 
 local Game = require("client.src.Game")
@@ -43,7 +43,7 @@ function love.load(args, rawArgs)
         love.window.restore()
       end
       local offset = math.ceil(desktopHeight / 32)
-      love.window.updateMode(desktopWidth, desktopHeight - offset, flags)
+      GraphicsUtil.updateMode(desktopWidth, desktopHeight - offset, flags)
       love.window.setPosition(x, offset, displayIndex)
     end
 
@@ -265,7 +265,7 @@ function love.errorhandler(msg)
   end
 
   love.graphics.reset()
-  local s, font = pcall(GraphicsUtil.getGlobalFontWithSize, GraphicsUtil.fontSize + 4)
+  local s, font = pcall(GraphicsUtil.getGlobalFontWithSize, "medium")
   if s then
     love.graphics.setFont(font)
   else

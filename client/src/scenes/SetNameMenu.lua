@@ -18,7 +18,7 @@ SetNameMenu.name = "SetNameMenu"
 function SetNameMenu:load()
   local x, y = unpack(themes[config.theme].main_menu_screen_pos)
   self.promptLabel = ui.Label({
-    text = "op_enter_name",
+    id = "op_enter_name",
     vAlign = "top",
     hAlign = "center",
     y = y
@@ -57,11 +57,11 @@ function SetNameMenu:load()
   self.uiRoot:addChild(self.nameLengthLabel)
 
   self.confirmationButton = ui.TextButton({
-    label = ui.Label({text = "mm_set_name"}),
+    label = ui.Label({id = "mm_set_name"}),
     y = y + 100,
     vAlign = "top",
     hAlign = "center",
-    onClick = function(selfElement, inputSource, holdTime)
+    action = function(selfElement, inputSource, holdTime)
       self:confirmName()
     end
   })
@@ -87,7 +87,7 @@ end
 function SetNameMenu:update(dt)
   self.backgroundImg:update(dt)
   if self.validationLabel.text ~= "" and self.nameField.value ~= "" then
-    self.validationLabel:setText("", nil, false)
+    self.validationLabel:setText("")
   end
 
   if input.allKeys.isDown["return"] then
@@ -102,7 +102,7 @@ function SetNameMenu:update(dt)
   if self.nameField.hasFocus then
     self.nameLengthLabel:setText("(" .. self.nameField.value:len() .. "/" .. NAME_LENGTH_LIMIT .. ")")
     if self.nameField.value == "" then
-      self.validationLabel:setText("op_username_blank_warning", nil, true)
+      self.validationLabel:setId("op_username_blank_warning")
     end
     self.confirmationButton:setEnabled(self.nameField.value ~= "")
   end

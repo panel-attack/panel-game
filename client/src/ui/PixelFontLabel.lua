@@ -1,5 +1,5 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
@@ -11,6 +11,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field fontMap PixelFontMap?
 
 ---@class PixelFontLabel : UiElement
+---@operator call(PixelFontLabelOptions): PixelFontLabel
 ---@field text string
 ---@field charSpacing integer
 ---@field xScale number
@@ -18,6 +19,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field fontMap PixelFontMap
 ---@field charDistanceScaled number
 ---@overload fun(options: PixelFontLabelOptions): PixelFontLabel
+---@type PixelFontLabel
 local PixelFontLabel = class(
 ---@param self PixelFontLabel
 ---@param options PixelFontLabelOptions
@@ -57,10 +59,10 @@ function PixelFontLabel:drawSelf()
   for i = 1, self.text:len(), 1 do
     local char = self.text:sub(i, i)
     if char ~= " " then
-      local characterX = self.x + ((i - 1) * self.charDistanceScaled)
+      local characterX = ((i - 1) * self.charDistanceScaled)
 
       -- Render it at the proper digit location
-      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap.charToQuad[char], characterX, self.y, 0, self.xScale, self.yScale)
+      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap.charToQuad[char], characterX, 0, 0, self.xScale, self.yScale)
     end
   end
 end

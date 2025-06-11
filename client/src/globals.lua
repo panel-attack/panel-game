@@ -1,4 +1,4 @@
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 score_mode = consts.SCOREMODE_TA
 
 GARBAGE_TRANSIT_TIME = 45 -- the amount of time the garbage attack animation plays before getting to the telegraph

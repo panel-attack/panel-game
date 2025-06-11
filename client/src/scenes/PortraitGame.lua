@@ -1,6 +1,6 @@
 local GameBase = require("client.src.scenes.GameBase")
 local class = require("common.lib.class")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local Telegraph = require("client.src.graphics.Telegraph")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ui = require("client.src.ui")
@@ -36,7 +36,7 @@ function PortraitGame:customLoad()
   self.uiRoot.height = consts.CANVAS_WIDTH
 
   local communityMessage = ui.Label({
-    text = "join_community",
+    id = "join_community",
     replacements = {"\ndiscord." .. consts.SERVER_LOCATION},
     translate = true,
     hAlign = "center",
@@ -138,7 +138,7 @@ function PortraitGame:drawMultibar(stack)
         local x = math.floor((stack.frameOriginX + stack.panelOriginXOffset + overtimePos[1] / 3) * stack.gfxScale)
         local y = stack.panelOriginY * stack.gfxScale
 
-        local limit = GAME.globalCanvas:getWidth() - x
+        local limit = love.graphics.getWidth() - x
         local alignment = "right"
         limit = x - GraphicsUtil.getGlobalFont():getWidth(formattedSeconds) / 2
         x = 0
@@ -189,13 +189,11 @@ function PortraitGame:draw()
 end
 
 function PortraitGame:flipToPortrait()
-  -- recreate the global canvas in portrait dimensions
-  GAME.globalCanvas = love.graphics.newCanvas(consts.CANVAS_HEIGHT, consts.CANVAS_WIDTH, {dpiscale=GAME:newCanvasSnappedScale()})
 
   local width, height, _ = love.window.getMode()
-  if system.isMobileOS() or DEBUG_ENABLED then
+  if system.isMobileOS() then
     -- flip the window dimensions to portrait
-    love.window.updateMode(height, width, {})
+    GraphicsUtil.updateMode(height, width, {})
     love.window.setFullscreen(true)
     --GAME:updateCanvasPositionAndScale(width, height)
   end
@@ -206,13 +204,13 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 5
       -- force center it horizontally
-      local frameX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2)
+      local frameX = (love.graphics.getWidth() / 2 - stack:canvasWidth() / 2)
       -- and anchor at the bottom
-      local frameY = (GAME.globalCanvas:getHeight() - stack:canvasHeight())
+      local frameY = (love.graphics.getHeight() - stack:canvasHeight())
       stack:moveToPosition(frameX, frameY)
 
       -- create a raise button that interacts with the touch controller
-      local raiseButton = ui.TextButton({label = ui.Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
+      local raiseButton = ui.TextButton({label = ui.Label({id = "raise", fontSize = "big"}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
         stack.touchInputDetector.touchingRaise = true
@@ -231,7 +229,7 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 1
       stack.canvas = true
-      local frameX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
+      local frameX = (love.graphics.getWidth() - stack:canvasWidth()) - 12
       local frameY = 10
       stack:moveToPosition(frameX, frameY)
     end
@@ -239,12 +237,10 @@ function PortraitGame:flipToPortrait()
 end
 
 function PortraitGame:returnToLandscape()
-  -- recreate the global canvas in landscape dimensions
-  GAME.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=GAME:newCanvasSnappedScale()})
   -- flip the window dimensions to landscape
   local width, height, _ = love.window.getMode()
-  if system.isMobileOS() or DEBUG_ENABLED then
-    love.window.updateMode(height, width, {})
+  if system.isMobileOS() then
+    GraphicsUtil.updateMode(height, width, {})
     love.window.setFullscreen(false)
     --GAME:updateCanvasPositionAndScale(width, height)
   end

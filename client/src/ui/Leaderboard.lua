@@ -1,7 +1,7 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
-local Label = require(PATH .. ".Label")
-local Focusable = require(PATH .. ".Focusable")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
+local Label = import("./Label")
+local Focusable = import("./Focusable")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 

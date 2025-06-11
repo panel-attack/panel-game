@@ -1,4 +1,4 @@
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local logger = require("common.lib.logger")
 local FileGroup = require("client.src.FileGroup")
 local fileUtils = require("client.src.FileUtils")

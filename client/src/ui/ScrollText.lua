@@ -1,6 +1,6 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
-local Focusable = require(PATH .. ".Focusable")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
+local Focusable = import("./Focusable")
 local class = require("common.lib.class")
 
 -- technically this value should be derived from the font size set for the label

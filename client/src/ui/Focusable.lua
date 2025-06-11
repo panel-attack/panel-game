@@ -1,5 +1,11 @@
 -- use in tandem with FocusDirector.lua
 
+---@class Focusable
+---@field receiveInputs fun(any, table, number?)
+---@field isFocusable boolean
+---@field hasFocus boolean?
+---@field yieldFocus fun()?
+
 local function focusable(uiElement)
   uiElement.isFocusable = true
   uiElement.hasFocus = false

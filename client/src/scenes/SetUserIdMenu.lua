@@ -30,11 +30,11 @@ function SetUserIdMenu:load(sceneParams)
   })
 
   self.confirmationButton = ui.TextButton({
-    label = ui.Label({text = "go_"}),
+    label = ui.Label({id = "go_"}),
     x = menuX,
     y = menuY + 60,
     vAlign = "top",
-    onClick = function() self:confirmId() end
+    action = function() self:confirmId() end
   })
 
   self.warningLabel = ui.Label({
@@ -48,7 +48,7 @@ function SetUserIdMenu:load(sceneParams)
     hAlign = "center",
     vAlign = "bottom",
     y = -50,
-    fontSize = 20,
+    fontSize = "big",
   })
 
   self.idInputField:setFocus(0, 0)

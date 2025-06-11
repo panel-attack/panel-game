@@ -1,6 +1,6 @@
-local PATH = (...):gsub('%.[^%.]+$', '')
-local UiElement = require(PATH .. ".UIElement")
-local Focusable = require(PATH .. ".Focusable")
+local import = require("common.lib.import")
+local UiElement = import("./UIElement")
+local Focusable = import("./Focusable")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
@@ -88,7 +88,7 @@ end
 
 function Carousel:drawSelf()
   if DEBUG_ENABLED then
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.width, self.height)
   end
 end
 

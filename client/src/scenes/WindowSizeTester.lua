@@ -43,8 +43,8 @@ function WindowSizeTester:load()
   local maximizedLabel = ui.ValueLabel({valueFunction = function() return "Maximized: " .. tostring(love.window.isMaximized()) end})
   self.uiRoot.fullscreenSelection = ui.ButtonGroup({
     buttons = {
-      ui.TextButton({width = 60, label = ui.Label({text = "op_off"})}),
-      ui.TextButton({width = 60, label = ui.Label({text = "op_on"})})
+      ui.TextButton({width = 60, label = ui.Label({id = "op_off"})}),
+      ui.TextButton({width = 60, label = ui.Label({id = "op_on"})})
     },
     values = {false, true},
     selectedIndex = flags.fullscreen and 2 or 1,
@@ -126,7 +126,7 @@ function WindowSizeTester:load()
   grid:createElementAt(1, 1, 20, 1, "desktopDimensions", desktopSizeLabel)
   grid:createElementAt(1, 2, 20, 1, "maximized", maximizedLabel)
   grid:createElementAt(1, 3, 20, 1, nil, ui.TextButton({label = ui.Label({text = "maximize", translate = false}),
-  onClick = function() love.window.maximize() end}))
+  action = function() love.window.maximize() end}))
   grid:createElementAt(1, 4, 2, 1, nil, ui.Label({text = "fullscreen", translate = false}))
   grid:createElementAt(3, 4, 20, 1, "fullscreen", self.uiRoot.fullscreenSelection)
   grid:createElementAt(1, 5, 2, 1, nil, ui.Label({text = "width", translate = false}))
@@ -139,7 +139,7 @@ function WindowSizeTester:load()
   grid:createElementAt(3, 8, 20, 1, "y", self.uiRoot.ySlider)
   grid:createElementAt(1, 9, 20, 1, "back", ui.TextButton({
     label = ui.Label({text = "back"}),
-    onClick =
+    action =
     function()
       love.resize = self.originalResize
       GAME.navigationStack:pop()

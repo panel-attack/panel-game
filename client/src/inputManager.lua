@@ -1,7 +1,15 @@
 local tableUtils = require("common.lib.tableUtils")
 local joystickManager = require("common.lib.joystickManager")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local logger = require("common.lib.logger")
+
+---@alias InputKeys ("Up" | "Down" | "Left" | "Right" | "Swap1" | "Swap2" | "TauntUp" | "TauntDown" | "Raise1" | "Raise2" | "Start" | "MenuUp" | "MenuDown" | "MenuLeft" | "MenuRight" | "MenuEsc" | "MenuSelect")
+
+---@class KeyConfiguration
+---@field isDown table<InputKeys, number>
+---@field isPressed table<InputKeys, number>
+---@field isUp table<InputKeys, number>
+---@field isPressedWithRepeat fun(inputs: KeyConfiguration, key: InputKeys, delay: number?, repeatPeriod: number?): boolean
 
 -- table containing the set of keys in various states 
 -- base structure: 
@@ -21,6 +29,7 @@ local inputManager = {
   isUp = {},
   allKeys = {isDown = {}, isPressed = {}, isUp = {}},
   mouse = {isDown = {}, isPressed = {}, isUp = {}, x = 0, y = 0},
+  ---@type KeyConfiguration[]
   inputConfigurations = {},
   maxConfigurations = 8,
   defaultKeys = {
@@ -58,7 +67,6 @@ local menuReservedKeysMap = {
   MenuPrevPage = {{"pagedown"}, {"Raise2"}},
   MenuBack = {{"backspace"}, {}},
   MenuSelect = {{"return", "kpenter", "z"}, {"Swap1", "Start"}},
-  FrameAdvance = {{"\\"}, {"TauntUp"}}
 }
 
 -- useful alternate representations of the above information

@@ -85,6 +85,8 @@ The exact startup mechanism differs a bit based on the system due to specific is
 
 You can find the current updater at https://github.com/panel-attack/panel-updater with its own documentation.
 
+For developing or troubleshooting updater related things, copy the updater's `updater` directory into this directory and pass `updaterTest` as an extra argument to love.
+
 ## Broad Client Structure 
 
 Panel Attack has many files, maybe too many and not all of them are in an intuitive place.  
@@ -201,40 +203,61 @@ In the current iteration GameModes are thought to be mainly defined by a set of 
 #### Stack Interactions
 Defining how the stacks interact with each other.  
 The currently possible settings are  
+
 - NONE, if garbage is not sent anywhere, nor is any received
 - VERSUS, if garbage is sent to another stack and received from another stack
 - SELF, if garbage is sent to yourself
 - ATTACK_ENGINE, if garbage is sent by an attack engine
 
-#### Game Win Conditions
-These define a set of zero or more conditions that cause a `Stack` to stop running as soon as one is met.  
+#### Stack Win Conditions
+These define a set of zero or more conditions that cause a `Stack` to stop running in a winning state as soon as one is met.  
 The currently possible settings are  
-- NO_MATCHABLE_PANELS, if there are no remaining panels of color 1-8
-- NO_MATCHABLE_GARBAGE, if there is no unmatched garbage left on the board
 
-#### Game Over Conditions
-These define a set of zero or more conditions that cause a `Stack` to go game over as soon as one is met.  
+- MATCHABLE_PANELS, which can be set to an integer. If that number of matchable panels is left on the board, the stack wins.
+- MATCHABLE_GARBAGE_PANELS, same as MATCHABLE_PANELS, except it refers to only unmatched panels making up garbage.
+- SCORE, this is not implemented yet but the idea is that once the Stack reaches a certain score it wins, e.g. for 99999 point racing.
+
+#### Stack Over Conditions
+These define a set of zero or more conditions that cause a `Stack` to stop running in a losing state as soon as one is met.  
 The currently possible settings are  
-- NEGATIVE_HEALTH, results in game over if `health` reaches 0
-- NO_MOVES_LEFT, results in game over if the amount of available moves for a puzzle has been met
-- CHAIN_DROPPED, results in game over if the active chain was dropped
+
+- HEALTH, which can be set to an integer. If the stack's `health` is equal or smaller, the stack loses.
+- SWAPS, which can be set to an integer. If the stack's `swapCount` property equals or exceeds that number, the stack loses.
+- CHAIN, which can be set to a boolean. When set to false, the stack loses upon dropping its chain. When set to true, the stack loses upon forming a chain.
 
 #### Match Win Conditions
+
 These define a set of zero or more conditions to determine a winner between multiple Stacks inside a Match.  
+All match win conditions are defined through comparative statements between all players in a game.
+
+- HIGHEST means that the stack with the highest number wins and generally higher is better if there are more than 2 players.
+- LOWEST means that the stack with the lowest number wins and generally lower is better if there are more than 2 players.
+
 The currently possible settings are  
-- LAST_ALIVE, the last stack alive wins, typically used with no conditions for game win on the Stack level
-- SCORE, the stack with the highest score wins
-- TIME, the stack with the lowest clock time wins
+
+- GAME_OVER_CLOCK, this is suitable for elimination and VS game modes; not having went game over is considered as infinity
+- TIME, this is suitable for non-elimination modes like score races where generally all stacks are expected to survive
+- SCORE
 
 Match win conditions are order sensitive and are evaluated until the last one while a tie is present.  
 Example:  
-In a hypothetical 99999 point race capped to 10 minutes with the match win condition { SCORE, LAST_ALIVE, TIME }, player 1 and player 2 manage to reach 99999 points before time is up, player 3 self destructs at 72000 points before time is up while player 4 only manages to reach 43000 points when time is up.
+In a hypothetical 99999 point race capped to 10 minutes with the match win condition { SCORE, GAME_OVER_CLOCK, TIME }, player 1 and player 2 manage to reach 99999 points before time is up, player 3 self destructs at 72000 points before time is up while player 4 only manages to reach 43000 points when time is up.
 First SCORE is evaluated. Player 3 and player 4 are both eliminated as potential winners because player 1 and 2 beat them in points.  
-Second LAST_ALIVE is evaluated. Both player 1 and 2 finished in a winning state so they aren't game over, they are still tied.  
+Second GAME_OVER_CLOCK is evaluated. Both player 1 and 2 finished in a winning state so they aren't game over, they are still tied.  
 Finally TIME is evaluated, player 2 has a lower clock time than player 1 so they are determined winner.  
 In the future each condition should also act as a tiebreaker so that player 3 would be determined to beat player 4 because they win in the score win condition.
 
-Besides the LAST_ALIVE they're not in use so the existing implementations may actually not work.
+Besides the GAME_OVER_CLOCK they're not in use so the existing implementations may actually not work.
+
+#### Match End Conditions
+
+These define a set of conditions that cause the `Match` to conclude the moment one of them is met.
+
+- STACKS_ACTIVE, which can be set to an integer. The moment the amount of Stack's still playing equals or falls below that number, the game finishes.
+A stack is considered active when it has neither met a Stack Win, nor a Stack Over condition.
+- TIME_LIMIT, which can be set to an integer. This causes the match to stop simulating Stacks the moment they reach that frame number. Once all have reached it, the match ends.
+
+If you have a TIME_LIMIT you usually want at least STACKS_ACTIVE = 0 as an extra condition, otherwise if everyone loses before the time limit is up you will get a bricked match that never ends.
 
 #### Stack behaviours
 Stack possesses certain behaviour flags under its `behaviours` table that can toggle major functions.  
@@ -259,12 +282,13 @@ If you read the comments for `Stack.simulate`, you may notice a suspicious absen
 
 ### Replays and Interoperability
 
-common/data defines some classes and functions that serve as interop between server and client.
+common/data defines some classes and functions that create, represent or modify data that is used to exchange information between server and client.
 
 Currently these are:
-Replay, ReplayPlayer, LevelData, LevelPresets and TouchDataEncoding and (yet to be moved there) GameModes.
+GameModes, StackBehaviours, ReplayV3, LevelData, LevelPresets, InputCompression, KeyDataEncoding and TouchDataEncoding and (yet to be moved there) GameModes.
 
-If client or server have further needs than these classes provide, they should generally aim to create their own components that do not inherit from these to guarantee that client and server internals can be edited and refactored without impacting networking.
+If client or server have domain specific needs that go beyond what these classes provide, they should generally aim to create their own components that do not inherit from these to guarantee that client and server internals can be edited and refactored without impacting networking.
+It's a lot of boilerplate but ultimately it guarantees that you don't change something on the client and suddenly have to update the server for a completely unrelated client feature and lets the maintainer sleep at night.
 
 Besides these standard formats that are used in communication, both client and server implement an abstraction layer called ClientMessages or ServerMessages respectively whose sole responsibility it is to convert incoming messages to a format the recipient understands.
 
@@ -288,36 +312,111 @@ All scenes have an `uiRoot` that is traversed by the touch handler through `UIEl
 ### UIElement composite
 
 For general menu design, UIElements should be used.  
-There is a lot to say about UIElements and nothing at the same time.  
+There is a lot to say about UIElements and nothing at the same time because the implementations are...rather individual and sometimes quirky.  
 There are some generic UIElements with very basic functionality such as Button, Label, Slider, Stepper.  
-There are some UIElements for layouting such as Grid, StackPanel or ScrollContainer.  
+There are some UIElements for organizing a layout such as UniSizedContainer or ScrollContainer.  
 There are some rather specific UIElements for certain purposes such as LevelSlider, StageCarousel or MultiPlayerSelectionWrapper.  
 You may find some of these to be rather unfit for the general purposes their names imply and some are in need of a rewrite.
 
-Via UIElement the composite tree supports the use of alignments and horizontal and vertical fill flags to automatically position and size a UIElement relative to its parent.  
-For example to have an element centered within its parent you would choose `hAlign = "center"`, `vAlign = "center"`, `x = 0`, `y = 0`.
-Note that this comes with some limitations, e.g. if your top level element does not specify a width and the child wants to horizontally fill its parent, this won't work, even if children of the child have a size they would want to fill out. Meaning to say, the top level element in a tree needs sane settings for x, y, width, height and may not use any of the align/fill settings.  
-This is realised on `Scene`s by having a standard `uiRoot` which is just a basic UIElement with canvas size that provides a container to add all other UIElements to.
+### Layout
 
-If you can, don't use `Menu` for now, a menu redesign is planned and it will likely die with it.  
+The standard layouts for Panel Attack are akin to a FlexBox and the goal of layouts is to provide a way to design UI for scenes so that they provide a good experience on desktop while still being a functional compromise in portrait mode dimensions on mobile.
 
-#### Internal working
+To achieve this, the layout logic is implemented as mostly separated from UIElements themselves and the layout of most UIElements can be changed just by assigning it a different static layout table.
 
-The way the relative positioning works is that each element has its `drawSelf` function.  
-Each element is called via `UIElement.draw` however which first calls `drawSelf` and then calls the predefined `UIElement.drawChildren` that manages the offset for each child with the alignment before calling `draw` on it.  
-This mechanism is mainly intended for the children to be able to be drawn on their own without relying on their parent.  
-While this is the default, both `draw` and `drawChildren` can be overwritten for a certain element to have it exert more fine control over how its children are drawn.  
-Given that functions are overridable on ANY table, even individual ones, it is however also possible to simply overwrite the respective child's `drawSelf` function to rely on its parent instead which can be the easier approach as it allows use of alignments + relative offset without extra setup.
+There are some exceptions to this as some UIElements are built with a specific orientation in mind while providing extra functionality.
+Examples of this include:
+
+- ScrollContainers  
+You can still change the orientation and layout but usually the contents are designed with the dimensions in mind and thus changing layout orientation will look bad
+- Horizontally oriented containers that automatically wrap around as their width reduces  
+As they already adjust to portrait dimensions on their own, there is no good reason to change the layout
+
+Layout updates always originate from the UIElement at the root and only if it is marked with `controlsWindow = true`.
+
+The biggest design points to note are the following:
+
+1. `x` and `y` are generally managed by the Layout. Placement of children depends on their order within the parent's `children` table.  
+There are some exceptions to this, some layouts will not perform any placement so you can still manually place but these Layouts will never be the default for any UIElement so you have to go out of your way to do it.
+2. Alignment of children is based on the parent. That means to center a Button within a UIElement, the UIElement needs to be center aligned, not the Button. The previous iteration based alignment on the children so don't trip over this!
+
+#### General layout idea
+
+A general idea for organizing menu layout is the following:
+
+The root level UIElement that controls the window dimensions and reacts to resizes uses an `AdaptiveFlexLayout` that automatically changes its layout between horizontal and vertical orientation based on its dimensions.  
+The root level UIElement has two children that use a `VerticalFlexLayout` each.  
+The first child is used for navigation and controls, the second displays info / preview information.  
+When in portrait dimensions, the root UIElement utilizes a vertical layout so that the display is a little akin to the Nintendo DS with two "screens".
+
+#### Layout mechanism
+
+For future reference and the creation of new layouts, a brief overview on how the Layout/FlexLayout works.
+
+The first core problem of automatic layout with an arbitrary resolution is that you have to know how big your widgets are before you can start placing them.
+The second core problem is wrapping. Text and other tailor-made widgets can trade width for height.
+
+To address these problems, the layout logic follows a multi-step process in which each step traverses and works the entire UI tree before going to the next step.
+
+The first core problem has led to the introduction of a bunch more fields and functions to determine size:
+
+- minWidth, minHeight, defaults to 0
+- maxWidth, maxHeight, defaults to math.inf
+- getPreferredWidth(), getPreferredHeight()
+- hFill, vFill
+
+There are some more subtle problems hidden in this but the baseline is that the width of an element does not depend on its height but as per core problem #2 the height may depend on its width.  
+That means we first need to find out how wide an element is. 
+The only true answer at the start is "we don't know yet" so each UIElement is initialized with a temporary `newWidth` property that is not necessarily the final result but forms a meaningful basis for following calculations.
+For any type of container that contains more than one child, the size also depends on the children so `newWidth` is assigned by recursively drilling down to the leaf nodes to set their `newWidth` first and calculating the parent with the children's information as it returns from the recursion until `newWidth` is assigned for the entire tree.
+
+At first each element's `newWidth` defaults to the highest of the following values:
+- the UIElement's `minWidth` property
+- the preferred width required by the children in accordance with the layout
+in a vertical layout it would depend on the `newWidth` of the widest element only but in a horizontal it would be a sum
+- the preferred width of the UIElement itself; this defaults to the UIElement's `minWidth` property but in particular wrappable elements like Labels will instead return their width in an unwrapped state.
+
+Now each element has a valid `newWidth` that makes sense but does not have a relation to the window size yet.
+
+The root element also has preliminary `newWidth` and with the delta of that value to the actual window width we can adjust the existing `newWidth` values in a top-down traversal:
+
+If the delta is positive, it is distributed between all children with the `hFill` property that have not reached their `maxWidth` yet.  
+If the delta is negative, it is distributed between all children that have a lower `minWidth` than `newWidth`, starting with the widest element. This will typically hit wrappables that return a preferred width much higher than their minimum width. (Note: it should also consider minWidth based on children on top of the property which it does not do right now).
+
+By traversing downwards, the extra width compared to the initial estimate is thus spent where possible and `newWidth` is finalized as `width`.
+
+For height the same steps are essentially repeated. For wrappable elements their width-based minimum height is accessed through a `getMinHeight()` function that is only required by the HorizontalWrapLayout but the exact implementation of this width-to-height mechanism might change later.
+
+To sum up, a valid and desirable estimate is first made for widths, than corrected with the true width using only operations that are known to be valid so the final outcome is guaranteed to be valid and related to the window size.
+The same happens for height with special consideration to the width values.
+
+In the following positioning step, each parent assigns `x` and `y` to its children according to its layout. The values are relative to the parent.
+
+As the final step the tree is once more traversed recursively to call optional callbacks on each UIElement to signify that resizing finished.
+This is so that layout oriented UIElements that provide navigation options can make adjustments to how inputs affect selection.
+
+
+#### Drawing
+
+The layout logic assigns `x` and `y` positions that are relative to its parent.
+
+Each element is called via `UIElement.draw` which first calls `drawSelf`, then performs a coordinate translation and finally calls the predefined `UIElement.drawChildren` that just calls `draw` on all visible children.  
+This mechanism is mainly intended for the children to be able to be drawn directly using `self.x` and `self.y` without relying on their parent.  
+While this is the default, both `draw` and `drawChildren` can be overwritten for any class to have it exert more fine control over how its children are drawn.  
+Notably, since all of these functions reside on metatables, they can also be shadowed on a per-instance basis for tailor-made behaviour.
+
 
 ## Localization
 
 We have a cool localization.csv file. In the first column is the codename of a string, then the traductions into the different languages.  
 When adding text to the game, we can reference it by `loc(codename)` so that the loc function can automatically fetch the correct string based on the language configuration.  
-For text that is properly embedded within the new UI structure, `Label`s are used for display. `Label` possesses a `translate` attribute that defaults to `true` if not explicitly passed as `false` so that the codenames for the strings can often be passed directly.  
+For text that is properly embedded within the new UI structure, `Label`s are used for display. `Label` have to be initialized with either an `id` or a `text`.
+When using an `id` the `loc` function is used to fill the `Label`'s `text` property. Otherwise the text is filled directly and is not being translated.
 If there are placeholders in a localized string, the `replacements` field can be passed with the values that should be used as replacements.  
 If you add new localization entries please make sure to **always** add them at the bottom. There is a google doc we pull from where non-developers can submit changes / new localizations and it spoils any syncing attempt if we get new entries in the middle of the file.
 
 ## Mods and Assets
+
 The default assets can be found in the `client/assets folder`.  
 `client/assets/default_data` contains mods that ship with the game while the other directories contain fallbacks for user mods that don't provide certain assets.
 Each graphic asset type has its own file for managing the loading process in `client/src/mods`:  
@@ -326,6 +425,7 @@ Loading of characters and stages is described in the next section. Panels always
 For characters, panels and stages, a table with id by index and a table with the actual mod by id is created for global access.  
 
 ### Mod loading
+
 PA has a (still experimental) `ModController` component that tries to automatically load balance the loaded mods.  
 `ModController:loadModFor` is a function that lazy loads a mod for a certain user (this can be a player or match) and holds a table with mods that have been loaded.  
 Additionally each mod also holds by who it is loaded via weak tables.  
@@ -353,7 +453,7 @@ Draws a bar graph used for per frame value display in debug mode with FPS counte
 ### [batteries](https://github.com/1bardesign/batteries)
 
 A powerful library seeking to fill in the huge gaps in Lua's own standard library.  
-In Panel Attack we only use the standalone `manual_gc.lua` which offers some functionality for manually collecting garbage on the client.
+In Panel Attack we used to use the standalone `manual_gc.lua` which offers some functionality for manually collecting garbage on the client.  
 
 ### common
 

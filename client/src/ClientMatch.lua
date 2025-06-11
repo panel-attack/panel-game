@@ -3,7 +3,7 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local StageLoader = require("client.src.mods.StageLoader")
 local ModController = require("client.src.mods.ModController")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.data.GameModes")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
@@ -562,7 +562,7 @@ end
 function ClientMatch:drawCommunityMessage()
   -- Draw the community message
   if not config.debug_mode then
-    GraphicsUtil.printf(join_community_msg or "", 0, 668, consts.CANVAS_WIDTH, "center")
+    GraphicsUtil.printf(join_community_msg or "", 0, 668, love.graphics.getWidth(), "center")
   end
 end
 
@@ -593,8 +593,8 @@ function ClientMatch:render()
         -- let the spectator know the game is about to die
         local iconSize = 60
         local icon_width, icon_height = themes[config.theme].images.IMG_bug:getDimensions()
-        local x = (consts.CANVAS_WIDTH / 2) - (iconSize / 2)
-        local y = (consts.CANVAS_HEIGHT / 2) - (iconSize / 2)
+        local x = (love.graphics.getWidth() / 2) - (iconSize / 2)
+        local y = (love.graphics.getHeight() / 2) - (iconSize / 2)
         GraphicsUtil.draw(themes[config.theme].images.IMG_bug, x, y, 0, iconSize / icon_width, iconSize / icon_height)
       end
     end
@@ -660,20 +660,21 @@ end
 
   -- Draw the pause menu
 function ClientMatch:draw_pause()
+  local width, height = love.graphics.getDimensions()
   if not self.renderDuringPause then
     local image = themes[config.theme].images.pause
-    local scale = consts.CANVAS_WIDTH / math.max(image:getWidth(), image:getHeight()) -- keep image ratio
+    local scale = width / math.max(image:getWidth(), image:getHeight()) -- keep image ratio
     -- adjust coordinates to be centered
-    local x = consts.CANVAS_WIDTH / 2
-    local y = consts.CANVAS_HEIGHT / 2
+    local x = width / 2
+    local y = height / 2
     local xOffset = math.floor(image:getWidth() * 0.5)
     local yOffset = math.floor(image:getHeight() * 0.5)
 
     GraphicsUtil.draw(image, x, y, 0, scale, scale, xOffset, yOffset)
   end
   local y = 260
-  GraphicsUtil.printf(loc("pause"), 0, y, consts.CANVAS_WIDTH, "center", nil, 1, 10)
-  GraphicsUtil.printf(loc("pl_pause_help"), 0, y + 30, consts.CANVAS_WIDTH, "center", nil, 1)
+  GraphicsUtil.printf(loc("pause"), 0, y, width, "center", nil, 1, "big")
+  GraphicsUtil.printf(loc("pl_pause_help"), 0, y + 30, width, "center", nil, 1)
 end
 
 function ClientMatch:getWinners()

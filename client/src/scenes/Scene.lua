@@ -1,6 +1,6 @@
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
-local consts = require("common.engine.consts")
+local consts = require("client.src.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
@@ -19,7 +19,22 @@ local SoundController = require("client.src.music.SoundController")
 local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
-    self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+    local _, _, flags = love.window.getMode()
+    local maxWidth, maxHeight = love.window.getDesktopDimensions(flags.display)
+    self.uiRoot = ui.UiElement({
+      x = 0,
+      y = 0,
+      width = love.graphics.getWidth(),
+      maxWidth = maxWidth,
+      height = love.graphics.getHeight(),
+      maxHeight = maxHeight,
+      padding = 16,
+      layout = ui.Layouts.AdaptiveFlexLayout,
+      hAlign = "center",
+      vAlign = "center",
+    })
+    self.uiRoot.controlsWindow = true
+    -- self.uiRoot.debug = true
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main
@@ -71,12 +86,13 @@ end
 
 function Scene:refreshLocalization()
   self.uiRoot:refreshLocalization()
+  self.uiRoot.layout.resize(self.uiRoot, self.uiRoot.width, self.uiRoot.height)
 end
 
 function Scene:drawCommunityMessage()
   -- Draw the community message
   if not config.debug_mode then
-    GraphicsUtil.printf(join_community_msg or "", 0, (668 / 720) * GAME.globalCanvas:getHeight(), GAME.globalCanvas:getWidth(), "center")
+    GraphicsUtil.printf(join_community_msg or "", 0, (668 / 720) * love.graphics.getHeight(), love.graphics.getWidth(), "center")
   end
 end
 
