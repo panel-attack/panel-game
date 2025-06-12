@@ -16,8 +16,6 @@
       "anchor": "center",
       "pivot": "center",
       "rotation": 0.5,
-      "xScale": 1.2,
-      "yScale": 0.9,
       "blendMode": "add",
       "alphaMode": "premultiplied"
     }

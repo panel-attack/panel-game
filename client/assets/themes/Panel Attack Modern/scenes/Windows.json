@@ -2,14 +2,13 @@
   "drawables": [
     {
       "id": "Window",
+      "templateOnly": true,
       "filePath": "WindowBackground",
       "anchor": "center",
       "position": {
         "x": 190,
         "y": 460
       },
-      "xScale": 0.5,
-      "yScale": 0.5,
       "children": [
         {
           "filePath": "WindowGlass"
@@ -72,7 +71,7 @@
       "filePath": "WindowBackground2",
       "anchor": "center",
       "position": {
-        "x": 300,
+        "x": 0,
         "y": 300
       },
       "children": [
@@ -134,6 +133,7 @@
     },
     {
       "id": "WindowMid",
+      "templateOnly": true,
       "filePath": "WindowBackground2",
       "anchor": "center",
       "position": {
@@ -199,6 +199,7 @@
     },
     {
       "id": "WindowFront",
+      "templateOnly": true,
       "filePath": "WindowBackground2",
       "anchor": "center",
       "position": {
@@ -262,202 +263,203 @@
         }
       ]
     },
-
-
-    
-
     {
-      "ref" : "WindowBack",
-      "overrides" : {
-        "position" : {
-          "x" : 1112,
-          "y" : 216
+      "ref": "WindowMid",
+      "overrides": {
+        "position": {
+          "x": 906,
+          "y": 350
         },
-        "size" : {
-          "width" : 17,
-          "height" : 25
+        "size": {
+          "width": 14,
+          "height": 24
         }
       }
     },
     {
-      "ref" : "WindowMid",
-      "overrides" : {
-        "position" : {
-          "x" : 906,
-          "y" : 350
+      "ref": "WindowFront",
+      "overrides": {
+        "position": {
+          "x": 1182,
+          "y": 518
         },
-        "size" : {
-          "width" : 14,
-          "height" : 24
+        "size": {
+          "width": 11,
+          "height": 21
+        },
+        "children": [
+          {},
+          {
+            "tint": [
+              0.8235294118,
+              0.5882352941,
+              0.99
+            ]
+          },
+          {},
+          {
+            "tint": [
+              0.8235294118,
+              0.5882352941,
+              0.99
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 1118,
+          "y": 416
+        },
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "WindowFront",
-      "overrides" : {
-        "position" : {
-          "x" : 1182,
-          "y" : 518
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 910,
+          "y": 524
         },
-        "size" : {
-          "width" : 11,
-          "height" : 21
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 1118,
-          "y" : 416
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 933,
+          "y": 524
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 910,
-          "y" : 524
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 958,
+          "y": 524
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 933,
-          "y" : 524
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 992,
+          "y": 518
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 958,
-          "y" : 524
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 888,
+          "y": 524
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 992,
-          "y" : 518
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 936,
+          "y": 446
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 888,
-          "y" : 524
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 980,
+          "y": 468
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 9,
+          "height": 15
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 936,
-          "y" : 446
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 1086,
+          "y": 586
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 15,
+          "height": 25
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 980,
-          "y" : 468
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 1050,
+          "y": 586
         },
-        "size" : {
-          "width" : 9,
-          "height" : 15
+        "size": {
+          "width": 14,
+          "height": 23
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 1086,
-          "y" : 586
+      "ref": "Window",
+      "overrides": {
+        "position": {
+          "x": 1012,
+          "y": 586
         },
-        "size" : {
-          "width" : 15,
-          "height" : 25
+        "size": {
+          "width": 15,
+          "height": 25
         }
       }
     },
     {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 1050,
-          "y" : 586
+      "ref": "WindowFront",
+      "overrides": {
+        "position": {
+          "x": 1048,
+          "y": 530
         },
-        "size" : {
-          "width" : 14,
-          "height" : 23
-        }
-      }
-    },
-    {
-      "ref" : "Window",
-      "overrides" : {
-        "position" : {
-          "x" : 1012,
-          "y" : 586
-        },
-        "size" : {
-          "width" : 15,
-          "height" : 25
-        }
-      }
-    },
-    {
-      "ref" : "WindowFront",
-      "overrides" : {
-        "position" : {
-          "x" : 1048,
-          "y" : 530
-        },
-        "size" : {
-          "width" : 11,
-          "height" : 21
+        "size": {
+          "width": 11,
+          "height": 21
         }
       }
     }

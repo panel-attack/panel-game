@@ -106,6 +106,8 @@ local function buildTrackStep(target, track, currentStep, stepAmount)
 end
 
 local function loadNode(rootPath, node, parent)
+  assert((node.size == nil or node.size.width == nil) or node.xScale == nil, "Node has both xScale and width set, pick only one way to specify the width")
+  assert((node.size == nil or node.size.height == nil) or node.yScale == nil, "Node has both yScale and height set, pick only one way to specify the height")
   local obj = {
     id       = node.id,
     parent   = parent,
@@ -132,19 +134,24 @@ local function loadNode(rootPath, node, parent)
   obj.children = {}
   if node.filePath then
     local texture = GraphicsUtil.loadImageFromSupportedExtensions(rootPath .. node.filePath)
+    assert(texture, "couldn't load image for animation filepath " .. rootPath .. node.filePath)
     if texture then
       obj.texture = texture
-      if obj.width == nil then
-        obj.width = texture:getWidth()
+      local textureWidth = texture:getWidth()
+      local textureHeight = texture:getHeight()
+      if obj.width then
+        obj.xScale = obj.width / textureWidth
       end
-      if obj.height == nil then
-        obj.height = texture:getHeight()
+      obj.width = textureWidth
+      if obj.height then
+        obj.yScale = obj.height / textureHeight
       end
+      obj.height = textureHeight
+
       if node.wrap == "repeat" then
         obj.scrollX = 0
         obj.scrollY = 0
         obj.texture:setWrap("repeat", "repeat")
-        obj.texture:setFilter("nearest", "nearest")
         obj.quad = love.graphics.newQuad(obj.scrollX, obj.scrollY, obj.width, obj.height, obj.width, obj.height)
       end
     end
@@ -159,28 +166,22 @@ local function loadNode(rootPath, node, parent)
   end
 
   if obj.xScale == nil then
-    if obj.texture then
-      obj.xScale = obj.width / obj.texture:getWidth()
-    else 
-      obj.xScale = 1
-    end
+    obj.xScale = 1
   end
   if obj.yScale == nil then
-    if obj.texture then
-      obj.yScale = obj.height / obj.texture:getHeight()
-    else 
-      obj.yScale = 1
-    end
+    obj.yScale = 1
   end
 
   assert(obj.anchor == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left anchor")
   assert(obj.pivot == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left pivot")
-
   for _,track in ipairs(node.animationTracks or {}) do
     buildTrackStep(obj, track, 1, 1)
   end
   for _,child in ipairs(node.children or {}) do
-    loadNode(rootPath, child, obj)
+    -- Skip children marked as templateOnly unless they are references
+    if child.ref ~= nil or not child.templateOnly then
+      loadNode(rootPath, child, obj)
+    end
   end
 
   return obj
@@ -281,6 +282,7 @@ function AnimationLoader.resolveNodeReference(nodeTable, idLookupTable, filePath
     
     if originalRef then
         nodeTable.ref = originalRef
+        nodeTable.templateOnly = nil
     end
 end
 
@@ -337,7 +339,10 @@ function AnimationLoader.loadFromFile(rootPath, filePath)
   local results = {}
   if rootSceneTable then
     for _, data in ipairs(rootSceneTable.drawables) do
-      results[#results+1] = loadNode(rootPath, data, nil)
+      -- Skip elements marked as templateOnly unless they are references
+      if data.ref ~= nil or not data.templateOnly then
+        results[#results+1] = loadNode(rootPath, data, nil)
+      end
     end
   end
   return results

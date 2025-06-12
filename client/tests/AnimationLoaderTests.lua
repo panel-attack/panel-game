@@ -28,14 +28,12 @@ local function testBasicJSONLoading()
   assertEqual(drawable.id, "BasicElement", "ID should match")
   assertEqual(drawable.x, 100, "X position should match")
   assertEqual(drawable.y, 200, "Y position should match")
-  assertEqual(drawable.width, 50, "Width should match")
-  assertEqual(drawable.height, 75, "Height should match")
   assertApproxEqual(drawable.alpha, 0.8, nil, "Alpha should match")
   assertEqual(drawable.anchor, "center", "Anchor should match")
   assertEqual(drawable.pivot, "center", "Pivot should match")
   assertApproxEqual(drawable.rotation, 0.5, nil, "Rotation should match")
-  assertApproxEqual(drawable.xScale, 1.2, nil, "X scale should match")
-  assertApproxEqual(drawable.yScale, 0.9, nil, "Y scale should match")
+  assertApproxEqual(drawable.xScale, 0.781, nil, "X scale should match")
+  assertApproxEqual(drawable.yScale, 1.171875, nil, "Y scale should match")
   assertEqual(drawable.blendMode, "add", "Blend mode should match")
   assertEqual(drawable.alphaMode, "premultiplied", "Alpha mode should match")
   
@@ -171,31 +169,102 @@ local function testLoadingNestedFileReferences()
   print("✓ Nested file references test passed")
 end
 
--- Test width and scale overrides
-local function testWidthAndScaleOverrides()
-  print("Testing width and scale overrides...")
+-- Test templateOnly property
+local function testTemplateOnly()
+  print("Testing templateOnly property...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "widthScaleOverrides.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "templateOnly.json")
   
-  assertEqual(#results, 2, "Should load exactly two drawables")
+  -- Should only load 2 drawables: NormalElement and the referenced Template
+  -- The Template itself should not be loaded directly because templateOnly=true
+  assertEqual(#results, 2, "Should load exactly two drawables (normal element + referenced template)")
   
-  local base = results[1]
-  local overridden = results[2]
+  local normalElement = results[1]
+  local referencedTemplate = results[2]
   
-  assertEqual(base.id, "BaseElement", "Base ID should match")
-  assertEqual(base.width, 64, "Base width should be 64")
-  assertEqual(base.height, 64, "Base height should be 64")
-  assertApproxEqual(base.xScale, 1.0, nil, "Base xScale should be 1.0")
-  assertApproxEqual(base.yScale, 1.0, nil, "Base yScale should be 1.0")
+  -- First drawable should be the normal element (not template-only)
+  assertEqual(normalElement.id, "NormalElement", "First element should be NormalElement")
+  assertEqual(normalElement.x, 200, "Normal element X should match")
+  assertEqual(normalElement.y, 200, "Normal element Y should match")
+  assertEqual(normalElement.width, 64, "Normal element width should match")
+  assertEqual(normalElement.height, 64, "Normal element height should match")
   
-  -- Check that width and scale overrides were applied correctly
-  assertEqual(overridden.width, 128, "Overridden width should be 128")
-  assertEqual(overridden.height, 64, "Overridden height should remain 64 (not overridden)")
-  assertApproxEqual(overridden.xScale, 2.0, nil, "Overridden xScale should be 2.0")
-  assertApproxEqual(overridden.yScale, 0.5, nil, "Overridden yScale should be 0.5")
+  -- Check children of normal element - should only have 2 children (NormalChild + referenced ChildTemplate)
+  -- ChildTemplate itself should not be loaded because templateOnly=true
+  assertEqual(#normalElement.children, 2, "Normal element should have 2 children (normal child + referenced child template)")
   
-  print("✓ Width and scale overrides test passed")
+  local normalChild = normalElement.children[1]
+  local referencedChildTemplate = normalElement.children[2]
+  
+  assertEqual(normalChild.id, "NormalChild", "First child should be NormalChild")
+  assertEqual(normalChild.x, 20, "Normal child X should match")
+  assertEqual(normalChild.y, 20, "Normal child Y should match")
+  
+  assertEqual(referencedChildTemplate.ref, "ChildTemplate", "Second child should reference ChildTemplate")
+  assertEqual(referencedChildTemplate.x, 30, "Referenced child template X should be overridden")
+  assertEqual(referencedChildTemplate.y, 30, "Referenced child template Y should be overridden")
+  
+  -- Second drawable should be the referenced template with overrides applied
+  assertEqual(referencedTemplate.ref, "Template", "Second element should reference Template")
+  assertEqual(referencedTemplate.x, 300, "Referenced template X should be overridden")
+  assertEqual(referencedTemplate.y, 300, "Referenced template Y should be overridden")
+  assertApproxEqual(referencedTemplate.alpha, 0.8, nil, "Referenced template alpha should match template")
+  
+  print("✓ TemplateOnly test passed")
+end
+
+-- Test that anchor is preserved when overriding x position of a template
+local function testAnchorPreservationWithXOverride()
+  print("Testing anchor preservation with x position override...")
+  
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "anchorOverrideTest.json")
+  
+  -- Should load exactly two drawables (the referenced templates with overrides)
+  -- The template itself should not be loaded because templateOnly=true
+  assertEqual(#results, 2, "Should load exactly two drawables (referenced templates)")
+  
+  local firstOverride = results[1]
+  local secondOverride = results[2]
+  
+  -- Test first override: only x position changed
+  assertEqual(firstOverride.ref, "CenterAnchorTemplate", "First should reference CenterAnchorTemplate")
+  assertEqual(firstOverride.x, 250, "X position should be overridden to 250")
+  assertEqual(firstOverride.y, 100, "Y position should remain 100 (not overridden)")
+  assertEqual(firstOverride.width, 64, "Width should match template")
+  assertEqual(firstOverride.height, 64, "Height should match template")
+  assertEqual(firstOverride.anchor, "center", "Anchor should remain 'center' from template")
+  assertApproxEqual(firstOverride.alpha, 0.9, nil, "Alpha should match template")
+  
+  -- Verify that the anchor offset calculation works correctly with the new x position
+  local anchorOffsetX, anchorOffsetY = AnimationLoader.anchorOffset(firstOverride, firstOverride.anchor)
+  assertEqual(anchorOffsetX, 32, "Anchor offset X should be width/2 for center anchor")
+  assertEqual(anchorOffsetY, 32, "Anchor offset Y should be height/2 for center anchor")
+  
+  -- Verify that the object transform calculation uses the correct anchor with the new x position
+  local transformX, transformY = AnimationLoader.objectTransform(firstOverride)
+  assertEqual(transformX, 218, "Transform X should be x - anchorOffsetX (250 - 32)")
+  assertEqual(transformY, 68, "Transform Y should be y - anchorOffsetY (100 - 32)")
+  
+  -- Test second override: both position and size changed (like the Windows.json case)
+  assertEqual(secondOverride.ref, "CenterAnchorTemplate", "Second should reference CenterAnchorTemplate")
+  assertEqual(secondOverride.x, 0, "X position should be overridden to 0")
+  assertEqual(secondOverride.y, 216, "Y position should be overridden to 216")
+  assertEqual(secondOverride.anchor, "center", "Anchor should remain 'center' from template")
+  assertApproxEqual(secondOverride.alpha, 0.9, nil, "Alpha should match template")
+  
+  -- Verify that the anchor offset calculation works correctly with the new size
+  local anchorOffsetX2, anchorOffsetY2 = AnimationLoader.anchorOffset(secondOverride, secondOverride.anchor)
+  assertApproxEqual(anchorOffsetX2, 32, nil, "Anchor offset X should be width/2 for center anchor (64/2)")
+  assertApproxEqual(anchorOffsetY2, 32, nil, "Anchor offset Y should be height/2 for center anchor (64/2)")
+  
+  -- Verify that the object transform calculation uses the correct anchor with the new position and size
+  local transformX2, transformY2 = AnimationLoader.objectTransform(secondOverride)
+  assertApproxEqual(transformX2, -32, nil, "Transform X should be x - anchorOffsetX (0 - 32)")
+  assertApproxEqual(transformY2, 184, nil, "Transform Y should be y - anchorOffsetY (216 - 32)")
+  
+  print("✓ Anchor preservation with x position override test passed")
 end
 
 -- Run all tests
@@ -208,7 +277,8 @@ local function runAllTests()
   testLoadingRefWithOverrides()
   testLoadingRefToDifferentFile()
   testLoadingNestedFileReferences()
-  testWidthAndScaleOverrides()
+  testTemplateOnly()
+  testAnchorPreservationWithXOverride()
   
   print("=" .. string.rep("=", 50))
   print("✓ All AnimationLoader tests passed!")

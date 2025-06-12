@@ -2,7 +2,7 @@
   "drawables": [
     {
       "id": "NestedElement",
-      "filePath": "nested_image",
+      "filePath": "test_image",
       "position": {
         "x": 500,
         "y": 600

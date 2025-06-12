@@ -2,7 +2,7 @@
   "drawables": [
     {
       "id": "LocalElement",
-      "filePath": "local_image",
+      "filePath": "test_image",
       "position": {
         "x": 75,
         "y": 125

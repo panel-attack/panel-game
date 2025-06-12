@@ -1,0 +1,75 @@
+{
+  "drawables": [
+    {
+      "id": "Template",
+      "templateOnly": true,
+      "filePath": "test_image",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "alpha": 0.8
+    },
+    {
+      "id": "NormalElement",
+      "filePath": "test_image",
+      "position": {
+        "x": 200,
+        "y": 200
+      },
+      "size": {
+        "width": 64,
+        "height": 64
+      },
+      "children": [
+        {
+          "id": "ChildTemplate",
+          "templateOnly": true,
+          "filePath": "test_image",
+          "position": {
+            "x": 10,
+            "y": 10
+          },
+          "size": {
+            "width": 16,
+            "height": 16
+          }
+        },
+        {
+          "id": "NormalChild",
+          "filePath": "test_image",
+          "position": {
+            "x": 20,
+            "y": 20
+          },
+          "size": {
+            "width": 24,
+            "height": 24
+          }
+        },
+        {
+          "ref": "ChildTemplate",
+          "overrides": {
+            "position": {
+              "x": 30,
+              "y": 30
+            }
+          }
+        }
+      ]
+    },
+    {
+      "ref": "Template",
+      "overrides": {
+        "position": {
+          "x": 300,
+          "y": 300
+        }
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "drawables": [
     {
       "id": "BaseElement",
-      "filePath": "base_image",
+      "filePath": "test_image",
       "position": {
         "x": 10,
         "y": 20
