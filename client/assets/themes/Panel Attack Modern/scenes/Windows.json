@@ -68,6 +68,7 @@
     },
     {
       "id": "WindowBack",
+      "templateOnly": true,
       "filePath": "WindowBackground2",
       "anchor": "center",
       "position": {

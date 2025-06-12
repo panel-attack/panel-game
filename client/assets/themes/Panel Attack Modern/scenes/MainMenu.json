@@ -68,9 +68,9 @@
       "id": "Glyph",
       "filePath": "Glyph",
       "tint": [
+        0.2,
         0.999,
-        0.1,
-        0.1
+        0.2
       ],
       "anchor": "center",
       "xScale": 1,
@@ -102,9 +102,9 @@
             "y": 54
           },
           "tint": [
+            0.2,
             0.999,
-            0.1,
-            0.1
+            0.2
           ],
           "animationTracks": [
             {
