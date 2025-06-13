@@ -3,37 +3,22 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local FileUtils = require("client.src.FileUtils")
 local Flux = require("client.lib.flux.flux")
 
--- Shader used for clipping using a stencil pass
-local alphaDiscardShader = love.graphics.newShader([[
-    vec4 effect(vec4 tintColor, Image tex, vec2 texCoord, vec2 screenCoord)
-    {
-        vec4 pixelColor = Texel(tex, texCoord);
-
-        if (pixelColor.a * tintColor.a <= 0.0)
-        {
-            discard;
-        }
-
-        return vec4(0.0);
-    }
-]])
-
--- A class that loads images from a animation file and sets up their animations.
+-- A class that loads a heirarchy of images and animations from an animation file and returns the drawable objects. Animations are setup to update with the flux engine.
 ---@class AnimationLoader
----@field [string] any
 local AnimationLoader =
   class(
   function(self)
   end
 )
 
+-- Returns the offset to apply for the drawable and it's given anchor.
 function AnimationLoader.anchorOffset(drawable, anchor)
   if anchor == "topLeft" then
     return 0, 0
   end
-  
+
   local w, h = drawable.width, drawable.height
-  
+
   if anchor == "topCenter" then
     return w/2, 0
   elseif anchor == "topRight" then
@@ -55,6 +40,7 @@ function AnimationLoader.anchorOffset(drawable, anchor)
   end
 end
 
+-- Builds the flux animation for the given track step on the target
 local function buildTrackStep(target, track, currentStep, stepAmount)
   local step = track.steps[currentStep]
   local targetProperties
@@ -105,36 +91,39 @@ local function buildTrackStep(target, track, currentStep, stepAmount)
   end)
 end
 
-local function loadNode(rootPath, node, parent)
-  assert((node.size == nil or node.size.width == nil) or node.xScale == nil, "Node has both xScale and width set, pick only one way to specify the width")
-  assert((node.size == nil or node.size.height == nil) or node.yScale == nil, "Node has both yScale and height set, pick only one way to specify the height")
-  local obj = {
-    id       = node.id,
-    parent   = parent,
-    x        = node.position and node.position.x or 0,
-    y        = node.position and node.position.y or 0,
-    width    = node.size and node.size.width,
-    height   = node.size and node.size.height,
-    rotation = node.rotation or 0,
-    xScale    = node.xScale,
-    yScale    = node.yScale,
-    alpha    = node.alpha or 1,
-    blendMode = node.blendMode or "alpha",
-    alphaMode = node.alphaMode or "alphamultiply",
-    stencil = node.stencil == true or false,
-    tint     = node.tint or {1, 1, 1},
-    anchor   = node.anchor or "topLeft",
-    pivot    = node.pivot,
-    animationTracks = node.animationTracks or {},
-    ref = node.ref
-  }
-  if parent then
-    parent.children[#parent.children+1] = obj
+-- Loads one drawable from the given file directory root and the given animation data.
+-- @return table the drawable or nil if it didn't need to be loaded
+local function loadDrawables(rootPath, animationData)
+  if animationData.ref == nil and animationData.templateOnly then
+    -- Skip templateOnly items unless they are references
+    return nil
   end
+
+  assert((animationData.size == nil or animationData.size.width == nil) or animationData.xScale == nil, "Node has both xScale and width set, pick only one way to specify the width")
+  assert((animationData.size == nil or animationData.size.height == nil) or animationData.yScale == nil, "Node has both yScale and height set, pick only one way to specify the height")
+  local obj = {
+    id = animationData.id,
+    x = animationData.position and animationData.position.x or 0,
+    y = animationData.position and animationData.position.y or 0,
+    width = animationData.size and animationData.size.width,
+    height = animationData.size and animationData.size.height,
+    rotation = animationData.rotation or 0,
+    xScale = animationData.xScale,
+    yScale = animationData.yScale,
+    alpha = animationData.alpha or 1,
+    blendMode = animationData.blendMode or "alpha",
+    alphaMode = animationData.alphaMode or "alphamultiply",
+    stencil = animationData.stencil == true or false,
+    tint = animationData.tint or {1, 1, 1},
+    anchor = animationData.anchor or "topLeft",
+    pivot = animationData.pivot,
+    animationTracks = animationData.animationTracks or {},
+    ref = animationData.ref
+  }
   obj.children = {}
-  if node.filePath then
-    local texture = GraphicsUtil.loadImageFromSupportedExtensions(rootPath .. node.filePath)
-    assert(texture, "couldn't load image for animation filepath " .. rootPath .. node.filePath)
+  if animationData.filePath then
+    local texture = GraphicsUtil.loadImageFromSupportedExtensions(rootPath .. animationData.filePath)
+    assert(texture, "couldn't load image for animation filepath " .. rootPath .. animationData.filePath)
     if texture then
       obj.texture = texture
       local textureWidth = texture:getWidth()
@@ -148,7 +137,7 @@ local function loadNode(rootPath, node, parent)
       end
       obj.height = textureHeight
 
-      if node.wrap == "repeat" then
+      if animationData.wrap == "repeat" then
         obj.scrollX = 0
         obj.scrollY = 0
         obj.texture:setWrap("repeat", "repeat")
@@ -174,13 +163,13 @@ local function loadNode(rootPath, node, parent)
 
   assert(obj.anchor == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left anchor")
   assert(obj.pivot == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left pivot")
-  for _,track in ipairs(node.animationTracks or {}) do
+  for _,track in ipairs(animationData.animationTracks or {}) do
     buildTrackStep(obj, track, 1, 1)
   end
-  for _,child in ipairs(node.children or {}) do
-    -- Skip children marked as templateOnly unless they are references
-    if child.ref ~= nil or not child.templateOnly then
-      loadNode(rootPath, child, obj)
+  for _, childData in ipairs(animationData.children or {}) do
+    local drawable = loadDrawables(rootPath, childData)
+    if drawable then
+      obj.children[#obj.children+1] = drawable
     end
   end
 
@@ -321,32 +310,52 @@ function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idL
 end
 
 -- Loads all drawables for a animation file.
--- First all files are loaded from JSON and indexed
--- Then all references are resolved.
--- Finally once the full data structure is setup, it is converted into separate drawable objects.
+-- @param rootPath String the full directory to the file to load
+-- @param fillPath String just the file name part of the file to load
+-- @return table an array of drawables representing all the objects with flux animations setup
 function AnimationLoader.loadFromFile(rootPath, filePath)
   local loadedFileTables = {}   -- filePath → parsed table
   local idLookupTable   = {}    -- "id" → node table
 
+  -- First all files are loaded from JSON and indexed
   AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTables, idLookupTable)
 
-  local rootSceneTable = loadedFileTables[filePath]
+  local rootData = loadedFileTables[filePath]
 
-  for _, drawable in ipairs(rootSceneTable.drawables) do
+  -- Then all references are resolved with overrides applied
+  for _, drawable in ipairs(rootData.drawables) do
     AnimationLoader.resolveRefsRecursively(drawable, loadedFileTables, idLookupTable, {}, filePath, rootPath)
   end
 
-  local results = {}
-  if rootSceneTable then
-    for _, data in ipairs(rootSceneTable.drawables) do
-      -- Skip elements marked as templateOnly unless they are references
-      if data.ref ~= nil or not data.templateOnly then
-        results[#results+1] = loadNode(rootPath, data, nil)
+  -- Finally once the full data structure is setup, it is converted into separate drawable objects.
+  local drawables = {}
+  if rootData then
+    for _, data in ipairs(rootData.drawables) do
+      local drawable = loadDrawables(rootPath, data)
+      if drawable then
+        drawables[#drawables+1] = drawable
       end
     end
   end
-  return results
+  return drawables
 end
+
+-- DRAWING CODE
+
+-- Shader used for clipping using a stencil pass
+local alphaDiscardShader = love.graphics.newShader([[
+    vec4 effect(vec4 tintColor, Image tex, vec2 texCoord, vec2 screenCoord)
+    {
+        vec4 pixelColor = Texel(tex, texCoord);
+
+        if (pixelColor.a * tintColor.a <= 0.0)
+        {
+            discard;
+        }
+
+        return vec4(0.0);
+    }
+]])
 
 function AnimationLoader.objectTransform(obj)
   local ax, ay = AnimationLoader.anchorOffset(obj, obj.anchor)
@@ -369,7 +378,7 @@ function AnimationLoader.drawNode(d, parent)
 
     if d.texture then
       if d.stencil then
-        assert(d.parent, "To use a stencil you need siblings")
+        assert(parent, "To use a stencil you need siblings")
         love.graphics.stencil(function()
           love.graphics.setShader(alphaDiscardShader)
           for _, sibling in ipairs(parent.children) do

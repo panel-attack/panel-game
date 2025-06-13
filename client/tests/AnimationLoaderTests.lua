@@ -270,7 +270,6 @@ end
 -- Run all tests
 local function runAllTests()
   print("Running AnimationLoader tests...")
-  print("=" .. string.rep("=", 50))
   
   testBasicJSONLoading()
   testLoadingRef()
@@ -280,7 +279,6 @@ local function runAllTests()
   testTemplateOnly()
   testAnchorPreservationWithXOverride()
   
-  print("=" .. string.rep("=", 50))
   print("✓ All AnimationLoader tests passed!")
 end
 
