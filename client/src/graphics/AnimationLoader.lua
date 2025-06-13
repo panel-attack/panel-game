@@ -51,6 +51,7 @@ local function buildTrackStep(target, track, currentStep, stepAmount)
   end
   local tween = Flux.to(target, step.durationSeconds,
                           targetProperties)
+  target.fluxTweens[#target.fluxTweens+1] = tween
 
   -- Save off the previous properties on the track in case they are needed for looping or yoyo
   if stepAmount > 0 then
@@ -163,6 +164,8 @@ local function loadDrawables(rootPath, animationData)
 
   assert(obj.anchor == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left anchor")
   assert(obj.pivot == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left pivot")
+
+  obj.fluxTweens = {}
   for _,track in ipairs(animationData.animationTracks or {}) do
     buildTrackStep(obj, track, 1, 1)
   end
@@ -338,6 +341,15 @@ function AnimationLoader.loadFromFile(rootPath, filePath)
     end
   end
   return drawables
+end
+
+function AnimationLoader.stopFluxTweensOnDrawable(drawable)
+    for _, tween in ipairs(drawable.fluxTweens) do
+      tween:stop()
+    end
+    for _, child in ipairs(drawable.children) do
+      AnimationLoader.stopFluxTweensOnDrawable(child)
+    end
 end
 
 -- DRAWING CODE

@@ -26,13 +26,15 @@ local VsSelfGame = require("client.src.scenes.VsSelfGame")
 local GameBase = require("client.src.scenes.GameBase")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 
+  local SCENE_PATH = themes[config.theme].path .. "/scenes/"
+local SCENE_FILENAME = "MainMenu.json"
+
 -- Scene for the main menu
 local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
   self.uiRoot:addChild(self.menu)
-  local scenePath = themes[config.theme].path .. "/scenes/"
-  self.drawables = AnimationLoader.loadFromFile(scenePath, scenePath .. "MainMenu.json")
+  self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
 end, Scene)
 
 MainMenu.name = "MainMenu"
@@ -204,6 +206,20 @@ function MainMenu:draw()
       GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, consts.CANVAS_WIDTH, "right")
       infoYPosition = infoYPosition - fontHeight
     end
+  end
+end
+
+function MainMenu:sceneDidDissappear()
+  for _,d in ipairs(self.drawables) do
+    AnimationLoader.stopFluxTweensOnDrawable(d)
+  end
+  self.drawables = {}
+end
+
+
+function MainMenu:refresh()
+  if #self.drawables == 0 then
+    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
   end
 end
 

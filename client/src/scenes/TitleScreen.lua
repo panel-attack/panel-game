@@ -9,6 +9,8 @@ local AnimationLoader = require("client.src.graphics.AnimationLoader")
 local Flux = require("client.lib.flux.flux")
 
 local START_OPACITY = 0.5
+local SCENE_PATH = themes[config.theme].path .. "/scenes/"
+local SCENE_FILENAME = "TitleScreen.json"
 
 -- The title screen scene
 local TitleScreen = class(
@@ -16,8 +18,7 @@ local TitleScreen = class(
     self.backgroundImg = themes[config.theme].images.bg_main
     self.music = "title_screen"
     self.opacity = START_OPACITY
-    local scenePath = themes[config.theme].path .. "/scenes/"
-    self.drawables = AnimationLoader.loadFromFile(scenePath, scenePath .. "TitleScreen.json")
+    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
     self.direction = 1
     self.animation = nil
     self:startAnimation()
@@ -65,6 +66,20 @@ function TitleScreen:draw()
 
   for _,d in ipairs(self.drawables) do
     AnimationLoader.drawNode(d)
+  end
+end
+
+function TitleScreen:sceneDidDissappear()
+  for _,d in ipairs(self.drawables) do
+    AnimationLoader.stopFluxTweensOnDrawable(d)
+  end
+  self.drawables = {}
+end
+
+
+function TitleScreen:refresh()
+  if #self.drawables == 0 then
+    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
   end
 end
 
