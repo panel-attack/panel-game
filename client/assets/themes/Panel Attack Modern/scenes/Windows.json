@@ -1,6 +1,67 @@
 {
   "drawables": [
     {
+      "id": "DoubleWindow",
+      "templateOnly": true,
+      "filePath": "DoubleWindowBackground",
+      "children": [
+        {
+          "filePath": "DoubleWindowGlass"
+        },
+        {
+          "filePath": "DoubleWindowLight",
+          "tint": [
+            0.8862745098,
+            0.6196078431,
+            0.09019607843
+          ],
+          "alpha": 0.4,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.8
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "DoubleWindowFrame"
+        },
+        {
+          "filePath": "DoubleWindowGlow",
+          "tint": [
+            0.8862745098,
+            0.6196078431,
+            0.09019607843
+          ],
+          "alpha": 0.7,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.9
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "Window",
       "templateOnly": true,
       "filePath": "WindowBackground",
@@ -309,15 +370,20 @@
       }
     },
     {
-      "ref": "Window",
+      "ref": "DoubleWindow",
+      "id": "DoubleWindowFront",
+      "templateOnly": true,
+      "overrides": {
+        "xScale": 0.8,
+        "yScale": 0.8
+      }
+    },
+    {
+      "ref": "DoubleWindowFront",
       "overrides": {
         "position": {
-          "x": 1118,
-          "y": 416
-        },
-        "size": {
-          "width": 9,
-          "height": 15
+          "x": 176,
+          "y": 370
         }
       }
     },

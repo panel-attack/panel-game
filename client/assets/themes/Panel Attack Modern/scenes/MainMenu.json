@@ -7,10 +7,7 @@
       "ref": "Stars.json"
     },
     {
-      "filePath": "MainMenuCityBack"
-    },
-    {
-      "filePath": "MainMenuCityFog",
+      "filePath": "MainMenuCityFog1",
       "position": {
         "x": 0,
         "y": 10
@@ -24,7 +21,7 @@
               "animateProperties": {
                 "scrollX": 1280
               },
-              "durationSeconds": 20,
+              "durationSeconds": 50,
               "easeType": "linear"
             }
           ]
@@ -32,10 +29,36 @@
       ]
     },
     {
-      "filePath": "MainMenuCityMiddle"
+      "filePath": "MainMenuCityBackBuildings"
+    },
+    {
+      "filePath": "MainMenuCityFog2",
+      "position": {
+        "x": 0,
+        "y": 100
+      },
+      "wrap": "repeat",
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 40,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCityMiddleBuildings"
     },
     {
       "id": "Crystal",
+      "templateOnly": true,
       "filePath": "Crystal",
       "tint": [
         0.8,
@@ -46,7 +69,7 @@
       "xScale": 0.2,
       "yScale": 0.2,
       "position": {
-        "x": 1049,
+        "x": 549,
         "y": 450
       },
       "animationTracks": [
@@ -76,8 +99,8 @@
       "xScale": 1,
       "yScale": 1,
       "position": {
-        "x": 1176,
-        "y": 320
+        "x": 1106,
+        "y": 240
       },
       "animationTracks": [
         {
@@ -130,8 +153,8 @@
       "ref": "Crystal",
       "overrides": {
         "position": {
-          "x": 292,
-          "y": 254
+          "x": 201,
+          "y": 244
         },
         "tint": [
           0.6,
@@ -143,7 +166,7 @@
             "steps": [
               {
                 "animateProperties": {
-                  "y": 260
+                  "y": 240
                 }
               }
             ]
@@ -155,8 +178,8 @@
       "ref": "Glyph",
       "overrides": {
         "position": {
-          "x": 292,
-          "y": 394
+          "x": 332,
+          "y": 224
         },
         "tint": [
           0.6,
@@ -184,40 +207,12 @@
       }
     },
     {
-      "filePath": "MainMenuCityFog",
-      "wrap": "repeat",
+      "filePath": "MainMenuCityFog3",
       "position": {
         "x": 0,
-        "y": 100
+        "y": 200
       },
-      "animationTracks": [
-        {
-          "loopTrack": true,
-          "steps": [
-            {
-              "animateProperties": {
-                "scrollX": 1280
-              },
-              "durationSeconds": 25,
-              "easeType": "linear"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "filePath": "MainMenuCityFront"
-    },
-    {
-      "ref": "Windows.json"
-    },
-    {
-      "filePath": "MainMenuCityFog",
       "wrap": "repeat",
-      "position": {
-        "x": 0,
-        "y": 300
-      },
       "animationTracks": [
         {
           "loopTrack": true,
@@ -227,6 +222,34 @@
                 "scrollX": 1280
               },
               "durationSeconds": 30,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCityFrontBuildings"
+    },
+    {
+      "ref": "Windows.json"
+    },
+    {
+      "filePath": "MainMenuCityFog4",
+      "position": {
+        "x": 0,
+        "y": 300
+      },
+      "wrap": "repeat",
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 20,
               "easeType": "linear"
             }
           ]

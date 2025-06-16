@@ -119,7 +119,7 @@ local function loadDrawables(rootPath, animationData)
     anchor = animationData.anchor or "topLeft",
     pivot = animationData.pivot,
     animationTracks = animationData.animationTracks or {},
-    ref = animationData.ref
+    originalRef = animationData.originalRef
   }
   obj.children = {}
   if animationData.filePath then
@@ -246,36 +246,46 @@ function AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTa
     end
 end
 
-function AnimationLoader.resolveNodeReference(nodeTable, idLookupTable, filePath, rootPath)
-    local sourceNode = idLookupTable[nodeTable.ref]
-
-    if sourceNode == nil then
-        sourceNode = idLookupTable[nodeTable.id]
+-- Changes the nodeTable so it has all the same properties as the reference with overrides applied. Recursive.
+function AnimationLoader.resolveNodeReference(nodeTable, idLookupTable)
+    if nodeTable.ref == nil then
+      return -- nothing to resolve
     end
+
+    local originalRef = nodeTable.ref
+    local sourceNode = idLookupTable[originalRef]
     
     if sourceNode == nil then
-        error("Unknown ref: " .. tostring(nodeTable.ref))
+        error("Unknown ref: " .. tostring(originalRef))
+    end
+
+    -- Validate the reference doesn't have invalid keys, the user likely intended overrides.
+    for key in pairs(nodeTable) do
+      assert(key == "id" or
+      key == "ref" or
+      key == "overrides" or
+      key == "templateOnly", "Reference has unexpected key " .. key .. " did you mean to override instead?")
+    end
+
+    if sourceNode.ref then
+      AnimationLoader.resolveNodeReference(sourceNode, idLookupTable)
     end
 
     local clonedNode = AnimationLoader.cloneNodeWithOverrides(
         sourceNode,
         nodeTable.overrides
     )
-
-    local originalRef = nodeTable.ref
-    
-    for key in pairs(nodeTable) do
-        nodeTable[key] = nil
-    end
+    clonedNode.id = nodeTable.id
 
     for key, value in pairs(clonedNode) do
+      if key ~= "templateOnly" then
         nodeTable[key] = value
+      end
     end
+    nodeTable.overrides = nil
+    nodeTable.ref = nil
+    nodeTable.originalRef = originalRef
     
-    if originalRef then
-        nodeTable.ref = originalRef
-        nodeTable.templateOnly = nil
-    end
 end
 
 function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idLookupTable, visitedTables, filePath, rootPath)
@@ -301,7 +311,7 @@ function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idL
             nodeTable.children = referencedFileTable.drawables
             -- fall through to children now
         else
-            AnimationLoader.resolveNodeReference(nodeTable, idLookupTable, filePath, rootPath)
+            AnimationLoader.resolveNodeReference(nodeTable, idLookupTable)
         end
     end
 

@@ -59,7 +59,7 @@ local function testLoadingRef()
   local referenced = results[2]
   
   assertEqual(original.id, "OriginalElement", "Original ID should match")
-  assertEqual(referenced.ref, "OriginalElement", "Referenced element should have ref property")
+  assertEqual(referenced.originalRef, "OriginalElement", "Referenced element should have ref property")
   
   -- Both should have the same properties (reference should be resolved)
   assertEqual(original.x, referenced.x, "X positions should match")
@@ -83,7 +83,7 @@ local function testLoadingRefWithOverrides()
   local overridden = results[2]
   
   assertEqual(base.id, "BaseElement", "Base ID should match")
-  assertEqual(overridden.ref, "BaseElement", "Overridden element should have ref property")
+  assertEqual(overridden.originalRef, "BaseElement", "Overridden element should have ref property")
   
   -- Check that overrides were applied
   assertEqual(overridden.x, 200, "Overridden X position should match")
@@ -128,7 +128,7 @@ local function testLoadingRefToDifferentFile()
   assertEqual(externalFileRef.children[1].id, "ExternalElement", "Child should be the external element")
   
   -- Check that the overridden external element has the correct properties
-  assertEqual(overriddenExternal.ref, "ExternalElement", "Should reference ExternalElement")
+  assertEqual(overriddenExternal.originalRef, "ExternalElement", "Should reference ExternalElement")
   assertEqual(overriddenExternal.x, 300, "Overridden X should match")
   assertEqual(overriddenExternal.y, 400, "Overridden Y should match")
   assertApproxEqual(overriddenExternal.tint[1], 0.5, nil, "Overridden tint red should match")
@@ -164,7 +164,7 @@ local function testLoadingNestedFileReferences()
   assertEqual(localElement.id, "LocalElement", "Nested local element should be present")
   assertEqual(#externalFileRef.children, 1, "Nested external file ref should have children")
   assertEqual(externalFileRef.children[1].id, "ExternalElement", "Deeply nested element should be present")
-  assertEqual(overriddenExternal.ref, "ExternalElement", "Nested override should reference correct element")
+  assertEqual(overriddenExternal.originalRef, "ExternalElement", "Nested override should reference correct element")
   
   print("✓ Nested file references test passed")
 end
@@ -201,12 +201,12 @@ local function testTemplateOnly()
   assertEqual(normalChild.x, 20, "Normal child X should match")
   assertEqual(normalChild.y, 20, "Normal child Y should match")
   
-  assertEqual(referencedChildTemplate.ref, "ChildTemplate", "Second child should reference ChildTemplate")
+  assertEqual(referencedChildTemplate.originalRef, "ChildTemplate", "Second child should reference ChildTemplate")
   assertEqual(referencedChildTemplate.x, 30, "Referenced child template X should be overridden")
   assertEqual(referencedChildTemplate.y, 30, "Referenced child template Y should be overridden")
   
   -- Second drawable should be the referenced template with overrides applied
-  assertEqual(referencedTemplate.ref, "Template", "Second element should reference Template")
+  assertEqual(referencedTemplate.originalRef, "Template", "Second element should reference Template")
   assertEqual(referencedTemplate.x, 300, "Referenced template X should be overridden")
   assertEqual(referencedTemplate.y, 300, "Referenced template Y should be overridden")
   assertApproxEqual(referencedTemplate.alpha, 0.8, nil, "Referenced template alpha should match template")
@@ -229,7 +229,7 @@ local function testAnchorPreservationWithXOverride()
   local secondOverride = results[2]
   
   -- Test first override: only x position changed
-  assertEqual(firstOverride.ref, "CenterAnchorTemplate", "First should reference CenterAnchorTemplate")
+  assertEqual(firstOverride.originalRef, "CenterAnchorTemplate", "First should reference CenterAnchorTemplate")
   assertEqual(firstOverride.x, 250, "X position should be overridden to 250")
   assertEqual(firstOverride.y, 100, "Y position should remain 100 (not overridden)")
   assertEqual(firstOverride.width, 64, "Width should match template")
@@ -248,7 +248,7 @@ local function testAnchorPreservationWithXOverride()
   assertEqual(transformY, 68, "Transform Y should be y - anchorOffsetY (100 - 32)")
   
   -- Test second override: both position and size changed (like the Windows.json case)
-  assertEqual(secondOverride.ref, "CenterAnchorTemplate", "Second should reference CenterAnchorTemplate")
+  assertEqual(secondOverride.originalRef, "CenterAnchorTemplate", "Second should reference CenterAnchorTemplate")
   assertEqual(secondOverride.x, 0, "X position should be overridden to 0")
   assertEqual(secondOverride.y, 216, "Y position should be overridden to 216")
   assertEqual(secondOverride.anchor, "center", "Anchor should remain 'center' from template")
@@ -267,6 +267,40 @@ local function testAnchorPreservationWithXOverride()
   print("✓ Anchor preservation with x position override test passed")
 end
 
+
+-- Test that anchor is preserved when overriding x position of a template
+local function testLoadingReferenceToReference()
+  print("Testing reference to a reference...")
+  
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "referenceToReferenceTest.json")
+  
+  -- Should load exactly two drawables (the referenced templates with overrides)
+  -- The template itself should not be loaded because templateOnly=true
+  assertEqual(#results, 3, "Should load exactly 3 drawables")
+  
+  local drawable = results[1]
+  local firstOverride = results[2]
+  local secondOverride = results[3]
+  
+  assertEqual(drawable.id, "Element")
+  assertEqual(drawable.originalRef, nil)
+  assertEqual(drawable.x, 100)
+  assertEqual(drawable.y, 100)
+
+  assertEqual(firstOverride.id, "Element2")
+  assertEqual(firstOverride.originalRef, "Element")
+  assertEqual(firstOverride.x, 200)
+  assertEqual(firstOverride.y, 100)
+  
+  assertEqual(secondOverride.id, nil)
+  assertEqual(secondOverride.originalRef, "Element2")
+  assertEqual(secondOverride.x, 200)
+  assertEqual(secondOverride.y, 200)
+
+  print("✓ Testing reference to a reference")
+end
+
 -- Run all tests
 local function runAllTests()
   print("Running AnimationLoader tests...")
@@ -278,6 +312,7 @@ local function runAllTests()
   testLoadingNestedFileReferences()
   testTemplateOnly()
   testAnchorPreservationWithXOverride()
+  testLoadingReferenceToReference()
   
   print("✓ All AnimationLoader tests passed!")
 end
