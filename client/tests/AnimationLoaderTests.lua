@@ -107,6 +107,21 @@ local function testLoadingRefWithOverrides()
   print("✓ Reference with overrides test passed")
 end
 
+-- Test loading a reference to one element in a different file
+local function testLoadingRefToElementInDifferentFile()
+  print("Testing loading reference to element in different file...")
+  
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "externalRefToElement.json")
+  
+  assertEqual(#results, 1)
+  
+  local localElement = results[1]
+  assertEqual(localElement.originalRef, "ExternalElement")
+  
+  print("✓ Reference to element in different file test passed")
+end
+
 -- Test loading a reference that references a different file
 local function testLoadingRefToDifferentFile()
   print("Testing loading reference to different file...")
@@ -308,6 +323,7 @@ local function runAllTests()
   testBasicJSONLoading()
   testLoadingRef()
   testLoadingRefWithOverrides()
+  testLoadingRefToElementInDifferentFile()
   testLoadingRefToDifferentFile()
   testLoadingNestedFileReferences()
   testTemplateOnly()

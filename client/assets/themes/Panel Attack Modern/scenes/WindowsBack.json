@@ -1,0 +1,203 @@
+{
+  "drawables": [
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 878,
+          "y" : 458
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 858,
+          "y" : 458
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 838,
+          "y" : 458
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 878,
+          "y" : 424
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 858,
+          "y" : 424
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 838,
+          "y" : 424
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 878,
+          "y" : 388
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 858,
+          "y" : 388
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 369,
+          "y" : 393
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 399,
+          "y" : 393
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 434,
+          "y" : 393
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#DoubleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 567,
+          "y" : 476
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#DoubleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 522,
+          "y" : 476
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 464,
+          "y" : 393
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 1254,
+          "y" : 323
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 1209,
+          "y" : 323
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 1169,
+          "y" : 323
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 1034,
+          "y" : 292
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 61,
+          "y" : 238
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 269,
+          "y" : 328
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#WindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 504,
+          "y" : 288
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowBack",
+      "overrides" : {
+        "position" : {
+          "x" : 838,
+          "y" : 388
+        }
+      }
+    }
+  
+  ]
+}

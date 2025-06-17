@@ -1,9 +1,99 @@
 {
   "drawables": [
     {
+      "id": "SingleWindow",
+      "templateOnly": true,
+      "filePath": "SingleWindowBackground",
+      "anchor": "center",
+      "children": [
+        {
+          "filePath": "SingleWindowGlass"
+        },
+        {
+          "filePath": "SingleWindowLight",
+          "tint": [
+            0.8862745098,
+            0.6196078431,
+            0.09019607843
+          ],
+          "alpha": 0.4,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.8
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "SingleWindowFrame"
+        },
+        {
+          "filePath": "SingleWindowGlow",
+          "tint": [
+            0.8862745098,
+            0.6196078431,
+            0.09019607843
+          ],
+          "alpha": 0.7,
+          "blendMode": "add",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.9
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SingleWindowFront",
+      "ref": "SingleWindow",
+      "templateOnly": true,
+      "overrides": {
+        "xScale": 0.5,
+        "yScale": 0.5
+      }
+    },
+    {
+      "id": "SingleWindowMid",
+      "ref": "SingleWindow",
+      "templateOnly": true,
+      "overrides": {
+        "xScale": 0.4,
+        "yScale": 0.4
+      }
+    },
+    {
+      "id": "SingleWindowBack",
+      "ref": "SingleWindow",
+      "templateOnly": true,
+      "overrides": {
+        "xScale": 0.3,
+        "yScale": 0.3
+      }
+    },
+    {
       "id": "DoubleWindow",
       "templateOnly": true,
       "filePath": "DoubleWindowBackground",
+      "anchor": "center",
       "children": [
         {
           "filePath": "DoubleWindowGlass"
@@ -60,6 +150,33 @@
           ]
         }
       ]
+    },
+    {
+      "id": "DoubleWindowFront",
+      "ref": "DoubleWindow",
+      "templateOnly": true,
+      "overrides": {
+        "xScale": 0.8,
+        "yScale": 0.8
+      }
+    },
+    {
+      "id": "DoubleWindowMid",
+      "ref": "DoubleWindow",
+      "templateOnly": true,
+      "overrides": {
+        "xScale": 0.8,
+        "yScale": 0.8
+      }
+    },
+    {
+      "id": "DoubleWindowBack",
+      "ref": "DoubleWindow",
+      "templateOnly": true,
+      "overrides": {
+        "xScale": 0.8,
+        "yScale": 0.8
+      }
     },
     {
       "id": "Window",
@@ -128,213 +245,38 @@
       ]
     },
     {
-      "id": "WindowBack",
+      "id": "WindowFront",
+      "ref": "Window",
       "templateOnly": true,
-      "filePath": "WindowBackground2",
-      "anchor": "center",
-      "position": {
-        "x": 0,
-        "y": 300
-      },
-      "children": [
-        {
-          "filePath": "WindowGlass2"
-        },
-        {
-          "filePath": "WindowLight2",
-          "tint": [
-            0.4,
-            0.5,
-            0.55
-          ],
-          "alpha": 0.4,
-          "blendMode": "add",
-          "animationTracks": [
-            {
-              "yoyo": true,
-              "steps": [
-                {
-                  "animateProperties": {
-                    "alpha": 0.5
-                  },
-                  "durationSeconds": 2,
-                  "easeType": "linear"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "filePath": "WindowFrame2"
-        },
-        {
-          "filePath": "WindowGlow2",
-          "tint": [
-            0.72,
-            0.8,
-            0.83
-          ],
-          "alpha": 0.55,
-          "blendMode": "add",
-          "animationTracks": [
-            {
-              "yoyo": true,
-              "steps": [
-                {
-                  "animateProperties": {
-                    "alpha": 0.6
-                  },
-                  "durationSeconds": 2,
-                  "easeType": "linear"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      "overrides": {
+        "xScale": 0.5,
+        "yScale": 0.5
+      }
     },
     {
       "id": "WindowMid",
+      "ref": "Window",
       "templateOnly": true,
-      "filePath": "WindowBackground2",
-      "anchor": "center",
-      "position": {
-        "x": 400,
-        "y": 300
-      },
-      "children": [
-        {
-          "filePath": "WindowGlass2"
-        },
-        {
-          "filePath": "WindowLight2",
-          "tint": [
-            0.5882352941,
-            0.4235294118,
-            0.1529411765
-          ],
-          "alpha": 0.55,
-          "blendMode": "add",
-          "animationTracks": [
-            {
-              "yoyo": true,
-              "steps": [
-                {
-                  "animateProperties": {
-                    "alpha": 0.65
-                  },
-                  "durationSeconds": 2,
-                  "easeType": "linear"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "filePath": "WindowFrame2"
-        },
-        {
-          "filePath": "WindowGlow2",
-          "tint": [
-            0.8941176471,
-            0.7019607843,
-            0.2862745098
-          ],
-          "alpha": 0.55,
-          "blendMode": "add",
-          "animationTracks": [
-            {
-              "yoyo": true,
-              "steps": [
-                {
-                  "animateProperties": {
-                    "alpha": 0.75
-                  },
-                  "durationSeconds": 2,
-                  "easeType": "linear"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      "overrides": {
+        "xScale": 0.4,
+        "yScale": 0.4
+      }
     },
     {
-      "id": "WindowFront",
+      "id": "WindowBack",
+      "ref": "Window",
       "templateOnly": true,
-      "filePath": "WindowBackground2",
-      "anchor": "center",
-      "position": {
-        "x": 500,
-        "y": 300
-      },
-      "children": [
-        {
-          "filePath": "WindowGlass2"
-        },
-        {
-          "filePath": "WindowLight2",
-          "tint": [
-            0.8235294118,
-            0.5882352941,
-            0.1764705882
-          ],
-          "alpha": 0.4,
-          "blendMode": "add",
-          "animationTracks": [
-            {
-              "yoyo": true,
-              "steps": [
-                {
-                  "animateProperties": {
-                    "alpha": 0.8
-                  },
-                  "durationSeconds": 2,
-                  "easeType": "linear"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "filePath": "WindowFrame2"
-        },
-        {
-          "filePath": "WindowGlow2",
-          "tint": [
-            0.99,
-            0.8235294118,
-            0.3921568627
-          ],
-          "alpha": 0.7,
-          "blendMode": "add",
-          "animationTracks": [
-            {
-              "yoyo": true,
-              "steps": [
-                {
-                  "animateProperties": {
-                    "alpha": 0.9
-                  },
-                  "durationSeconds": 2,
-                  "easeType": "linear"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      "overrides": {
+        "xScale": 0.3,
+        "yScale": 0.3
+      }
     },
     {
-      "ref": "WindowMid",
+      "ref": "SingleWindowMid",
       "overrides": {
         "position": {
           "x": 906,
           "y": 350
-        },
-        "size": {
-          "width": 14,
-          "height": 24
         }
       }
     },
@@ -344,10 +286,6 @@
         "position": {
           "x": 1182,
           "y": 518
-        },
-        "size": {
-          "width": 11,
-          "height": 21
         },
         "children": [
           {},
@@ -370,150 +308,92 @@
       }
     },
     {
-      "ref": "DoubleWindow",
-      "id": "DoubleWindowFront",
-      "templateOnly": true,
-      "overrides": {
-        "xScale": 0.8,
-        "yScale": 0.8
-      }
-    },
-    {
-      "ref": "DoubleWindowFront",
+      "ref": "DoubleWindowMid",
       "overrides": {
         "position": {
-          "x": 176,
-          "y": 370
+          "x": 202,
+          "y": 350
         }
       }
     },
     {
-      "ref": "Window",
+      "ref": "SingleWindowMid",
+      "overrides": {
+        "position": {
+          "x": 164,
+          "y": 360
+        }
+      }
+    },
+    {
+      "ref": "SingleWindowMid",
+      "overrides": {
+        "position": {
+          "x": 240,
+          "y": 360
+        }
+      }
+    },
+    {
+      "ref": "WindowMid",
       "overrides": {
         "position": {
           "x": 910,
           "y": 524
-        },
-        "size": {
-          "width": 9,
-          "height": 15
         }
       }
     },
     {
-      "ref": "Window",
+      "ref": "WindowMid",
       "overrides": {
         "position": {
           "x": 933,
           "y": 524
-        },
-        "size": {
-          "width": 9,
-          "height": 15
         }
       }
     },
     {
-      "ref": "Window",
+      "ref": "WindowMid",
       "overrides": {
         "position": {
           "x": 958,
           "y": 524
-        },
-        "size": {
-          "width": 9,
-          "height": 15
         }
       }
     },
     {
-      "ref": "Window",
+      "ref": "WindowMid",
       "overrides": {
         "position": {
           "x": 992,
           "y": 518
-        },
-        "size": {
-          "width": 9,
-          "height": 15
         }
       }
     },
     {
-      "ref": "Window",
+      "ref": "WindowMid",
       "overrides": {
         "position": {
           "x": 888,
           "y": 524
-        },
-        "size": {
-          "width": 9,
-          "height": 15
         }
       }
     },
     {
-      "ref": "Window",
+      "ref": "WindowMid",
       "overrides": {
         "position": {
           "x": 936,
           "y": 446
-        },
-        "size": {
-          "width": 9,
-          "height": 15
         }
       }
     },
     {
-      "ref": "Window",
+      "ref": "WindowMid",
       "overrides": {
         "position": {
           "x": 980,
           "y": 468
-        },
-        "size": {
-          "width": 9,
-          "height": 15
-        }
-      }
-    },
-    {
-      "ref": "Window",
-      "overrides": {
-        "position": {
-          "x": 1086,
-          "y": 586
-        },
-        "size": {
-          "width": 15,
-          "height": 25
-        }
-      }
-    },
-    {
-      "ref": "Window",
-      "overrides": {
-        "position": {
-          "x": 1050,
-          "y": 586
-        },
-        "size": {
-          "width": 14,
-          "height": 23
-        }
-      }
-    },
-    {
-      "ref": "Window",
-      "overrides": {
-        "position": {
-          "x": 1012,
-          "y": 586
-        },
-        "size": {
-          "width": 15,
-          "height": 25
         }
       }
     },
@@ -521,14 +401,112 @@
       "ref": "WindowFront",
       "overrides": {
         "position": {
-          "x": 1048,
+          "x": 1092,
+          "y": 586
+        }
+      }
+    },
+    {
+      "ref": "WindowFront",
+      "overrides": {
+        "position": {
+          "x": 1052,
+          "y": 586
+        }
+      }
+    },
+    {
+      "ref": "WindowFront",
+      "overrides": {
+        "position": {
+          "x": 1012,
+          "y": 586
+        }
+      }
+    },
+    {
+      "ref": "SingleWindowFront",
+      "overrides": {
+        "position": {
+          "x": 1050,
           "y": 530
-        },
-        "size": {
-          "width": 11,
-          "height": 21
+        }
+      }
+    },
+
+
+    {
+      "ref" : "SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 226,
+          "y" : 493
+        }
+      }
+    },
+    {
+      "ref" : "SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 202,
+          "y" : 493
+        }
+      }
+    },
+    {
+      "ref" : "DoubleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 326,
+          "y" : 563
+        }
+      }
+    },
+    {
+      "ref" : "SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 461,
+          "y" : 638
+        }
+      }
+    },
+    {
+      "ref" : "SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 76,
+          "y" : 533
+        }
+      }
+    },
+    {
+      "ref" : "SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 111,
+          "y" : 533
+        }
+      }
+    },
+    {
+      "ref" : "SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 146,
+          "y" : 533
+        }
+      }
+    },
+    {
+      "ref" : "DoubleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 1131,
+          "y" : 478
         }
       }
     }
+  
   ]
 }

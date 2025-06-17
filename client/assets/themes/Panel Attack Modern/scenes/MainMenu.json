@@ -32,6 +32,9 @@
       "filePath": "MainMenuCityBackBuildings"
     },
     {
+      "ref": "WindowsBack.json"
+    },
+    {
       "filePath": "MainMenuCityFog2",
       "position": {
         "x": 0,

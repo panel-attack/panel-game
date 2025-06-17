@@ -205,9 +205,10 @@ end
 
 -- Loads all files referenced and records a map of ID's to their nodes
 function AnimationLoader.indexNodesRecursively(nodeTable, filePath, idLookupTable, loadedFileTables)
-    if nodeTable.ref ~= nil and nodeTable.ref:match("%.json$") then
+    if nodeTable.ref ~= nil and nodeTable.ref:match("(.*%.json)#?") then
       local directoryPart = filePath:match("(.*/)") or ""
-      local referencedFilePath = directoryPart .. nodeTable.ref
+      local referencedFile = nodeTable.ref:match("(.*%.json)#?")
+      local referencedFilePath = directoryPart .. referencedFile
       AnimationLoader.readFileAndCollectIdsRecursively(referencedFilePath, loadedFileTables, idLookupTable)
     end
     if nodeTable.id ~= nil then
@@ -252,7 +253,12 @@ function AnimationLoader.resolveNodeReference(nodeTable, idLookupTable)
       return -- nothing to resolve
     end
 
-    local originalRef = nodeTable.ref
+    local originalRef = nodeTable.ref:match("#(.+)$")
+
+    if originalRef == nil then
+      originalRef = nodeTable.ref
+    end
+    assert(originalRef ~= nil)
     local sourceNode = idLookupTable[originalRef]
     
     if sourceNode == nil then
