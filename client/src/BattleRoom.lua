@@ -44,7 +44,7 @@ function(self, mode, gameScene)
   -- this is a bit naive but effective for now
   self.online = GAME.netClient:isConnected()
   if self.online then
-    GAME.netClient:connectSignal("disconnect", self, self.onDisconnect)
+    GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
   end
 
   Signal.turnIntoEmitter(self)
