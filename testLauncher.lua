@@ -70,6 +70,7 @@ local tests = {
   "common.tests.lib.utilTests",
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
+  "common.tests.data.InputCompressionTests",
 }
 
 local updateCount = 0

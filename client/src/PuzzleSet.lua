@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local FileUtils = require("client.src.FileUtils")
 local Puzzle = require("common.engine.Puzzle")
+local logger = require("common.lib.logger")
 
 -- A puzzle set is a set of puzzles, typically they have a common difficulty or theme.
 ---@class PuzzleSet
@@ -31,11 +32,28 @@ function PuzzleSet.loadFromFile(filePath)
       for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
         puzzleSets[#puzzleSets+1] = PuzzleSet.loadV2(puzzleSetData)
       end
-    elseif data["Version"] ~= 2 and data["Version"] then
-      error("Puzzle " .. filePath .. " specifies invalid version " .. data["Version"])
-    else -- old file format compatibility
-      for setName, puzzleSet in pairs(data) do
-        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV1(setName, puzzleSet)
+    elseif data["Version"] and type(data["Version"]) == "number" then
+      logger.warn("Puzzle " .. filePath .. " specifies invalid version " .. data["Version"])
+    else
+      -- old file format compatibility
+      -- the old file format actually has NO markers to identify it as a puzzle which means that we just have to try and import
+      local successCounter = 0
+      local result, error = pcall(function()
+        for setName, puzzleSet in pairs(data) do
+          if type(setName) == "string" and type(puzzleSet) == "table" then
+            local v1Set = PuzzleSet.loadV1(setName, puzzleSet)
+            if v1Set then
+              puzzleSets[#puzzleSets+1] = v1Set
+              successCounter = successCounter + 1
+            end
+          end
+        end
+      end)
+
+      if successCounter == 0 then
+        logger.warn("Failed to import invalid file " .. filePath .. " as a puzzle")
+      elseif result == false then
+        logger.warn("Encountered an error when trying to import puzzle file:\n" .. error)
       end
     end
   end
@@ -47,15 +65,21 @@ function PuzzleSet.loadFromFile(filePath)
   return puzzleSets
 end
 
----@return PuzzleSet
+---@return PuzzleSet?
 function PuzzleSet.loadV1(setName, puzzleSetData)
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData) do
-    local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
-    puzzles[#puzzles + 1] = puzzle
+    if type(puzzleData) == "table" and #puzzleData >= 2 and type(puzzleData[1]) == "string" and type(puzzleData[2]) == "number" then
+      local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
+      if puzzle:validate() then
+        puzzles[#puzzles + 1] = puzzle
+      end
+    end
   end
 
-  return PuzzleSet(setName, puzzles)
+  if #puzzles > 0 then
+    return PuzzleSet(setName, puzzles)
+  end
 end
 
 ---@return PuzzleSet
