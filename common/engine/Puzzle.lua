@@ -26,13 +26,8 @@ Puzzle = class(
   end
 )
 
-function Puzzle.getPuzzleTypes()
-  return { "moves", "chain", "clear" }
-end
-
-function Puzzle.getLegalCharacters()
-  return { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
-end
+Puzzle.PUZZLE_TYPES = { "moves", "chain", "clear" }
+Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
 
 ---@param width integer
 ---@param height integer
@@ -129,7 +124,7 @@ function Puzzle:validate()
   local pendingGarbageStartIndex = 0
   for i = 1, #self.stack do
     local char = string.sub(self.stack, i, i)
-    if not tableUtils.contains(Puzzle.getLegalCharacters(), char)
+    if not tableUtils.contains(Puzzle.LEGAL_CHARACTERS, char)
       and not tableUtils.contains(illegalCharacters, char) then
       table.insert(illegalCharacters, char)
     end
@@ -168,9 +163,9 @@ function Puzzle:validate()
     errMessage = errMessage .. "\nPuzzlestring contains invalid characters: " .. table.concat(illegalCharacters, ", ")
   end
 
-  if not tableUtils.contains(Puzzle.getPuzzleTypes(), self.puzzleType) then
+  if not tableUtils.contains(Puzzle.PUZZLE_TYPES, self.puzzleType) then
     errMessage = errMessage ..
-    "\nInvalid puzzle type detected, available puzzle types are: " .. table.concat(Puzzle.getPuzzleTypes(), ", ")
+    "\nInvalid puzzle type detected, available puzzle types are: " .. table.concat(Puzzle.PUZZLE_TYPES, ", ")
   end
 
   if string.lower(self.puzzleType) == "moves" and (not tonumber(self.moves) or tonumber(self.moves) < 1 ) then
