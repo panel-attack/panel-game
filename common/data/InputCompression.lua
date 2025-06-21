@@ -18,6 +18,22 @@ local function codePointIsDigit(codePoint)
   return false
 end
 
+local function codePointIsAlphabet(codePoint)
+  if codePoint < 65 then
+    return false
+  elseif codePoint > 123 then
+    return false
+  else
+    if codePoint < 92 then
+      return true
+    elseif codePoint > 97 then
+      return true
+    else
+      return false
+    end
+  end
+end
+
 ---@param inputs string
 ---@return string compressedInputs
 function InputCompression.compressInputString(inputs)
@@ -65,56 +81,114 @@ function InputCompression.compressInputString(inputs)
   return table.concat(compressedTable)
 end
 
+local readingStates = { uninitialized = 0, character = 1, count = 2, uncompressed = 3 }
+
+-- replaces the previous buggy decompressInputString
 ---@param inputs string
 ---@return string decompressedInputs
-function InputCompression.decompressInputString(inputs)
-  local previousCodePoint = nil
+function InputCompression.decompressInputString2(inputs)
+  -- reading state is based on the last character(s) to determine how we interpret the next one
+  local readingState = 0
   local inputChunks = {}
-  local numberString = nil
-  local characterCodePoint = nil
-  -- Go through the characters one by one, saving character and then the number sequence and after passing it writing out that many characters
-  for p, codePoint in utf8.codes(inputs) do
-    if p > 1 then
-      if codePointIsDigit(codePoint) then
-        local number = utf8.char(codePoint)
-        if numberString == nil then
-          characterCodePoint = previousCodePoint
-          numberString = ""
-        end
-        numberString = numberString .. number
+  local count = 0
+
+  for _, codePoint in utf8.codes(inputs) do
+    if readingState == readingStates.uninitialized then
+      -- uninitialized state means that we either haven't read anything yet
+      -- or the previous character was a magic character for closing an uncompressed segment
+      -- in either case we expect a character or the start of a new uncompressed segment
+
+      -- 40 is ( and indicates the start of an uncompressed segment of the same character
+      if codePoint == 40 then
+        readingState = readingStates.uncompressed
       else
-        if numberString ~= nil then
-          if codePointIsParenthesis(characterCodePoint) then
-            inputChunks[#inputChunks+1] = numberString
-          else
-            local character = utf8.char(characterCodePoint)
-            local repeatCount = tonumber(numberString)
-            inputChunks[#inputChunks+1] = string.rep(character, repeatCount)
-          end
-          numberString = nil
-        end
-        if previousCodePoint == codePoint then
-          -- Detected two consecutive letters or symbols in the inputs, the inputs are not compressed.
-          return inputs
+        readingState = readingStates.character
+        inputChunks[#inputChunks+1] = utf8.char(codePoint)
+      end
+    elseif readingState == readingStates.character then
+      -- when we have read a character we always expect a count next, anything else is invalid
+      if codePointIsDigit(codePoint) then
+        readingState = readingStates.count
+---@diagnostic disable-next-line: cast-local-type
+        count = tonumber(utf8.char(codePoint))
+      else
+        -- getting here means either getting a completely unexpected input or two repeated characters
+        -- two repeated inputs after another indicate non-compressed inputs
+        -- due to digits being both valid inputs and count indicators there is no way to differentiate the two
+        -- so we have to give up immediately
+        -- return inputs under the assumption that the input string is just not compressed rather than invalid
+        return inputs
+      end
+    elseif readingState == readingStates.count then
+      -- numbers stretch over multiple characters so concatenate for as long as there are numbers
+      if codePointIsDigit(codePoint) then
+        count = count * 10 + tonumber(utf8.char(codePoint))
+      else
+        -- otherwise apply the repeats of the previous character
+        inputChunks[#inputChunks+1] = string.rep(inputChunks[#inputChunks], count - 1)
+
+        -- 40 is ( and indicates the start of an uncompressed segment of the same character
+        if codePoint == 40 then
+          readingState = readingStates.uncompressed
         else
-          -- Nothing to do yet
+          readingState = readingStates.character
+          inputChunks[#inputChunks+1] = utf8.char(codePoint)
         end
       end
+    elseif readingState == readingStates.uncompressed then
+      -- 41 is ) and indicates the end of the uncompressed segment
+      if codePoint == 41 then
+        readingState = readingStates.uninitialized
+      else
+        -- in uncompressed segments we take any non ) character at face value
+        inputChunks[#inputChunks+1] = utf8.char(codePoint)
+      end
     end
-    previousCodePoint = codePoint
   end
 
-  local result
-  if numberString ~= nil then
-    local character = utf8.char(characterCodePoint)
-    local repeatCount = tonumber(numberString)
-    inputChunks[#inputChunks+1] = string.rep(character, repeatCount)
-    result = table.concat(inputChunks)
-  else
-    -- We never encountered a single number, this string wasn't compressed
-    result = inputs
+  if readingState == readingStates.count then
+    -- counts defer appending until the number is confirmed to be complete; end of input string is yet another count termination
+    inputChunks[#inputChunks+1] = string.rep(inputChunks[#inputChunks], count - 1)
   end
-  return result
+
+  return table.concat(inputChunks)
+end
+
+local function writeToCache(cache, character, count)
+  if tonumber(character) then
+    cache[#cache+1] = "(" .. string.rep(character, count) .. ")"
+  else
+    cache[#cache+1] = character .. count
+  end
+end
+
+--- convenience function to compress inputs directly from a table
+--- this saves doing a table.concat as well as juggling utf8 codepoints
+---@param inputs string[]
+---@return string compressedInputs
+function InputCompression.compressInputTable(inputs)
+  if #inputs == 0 then
+    return ""
+  end
+
+  local count = 1
+  local lastCharacter = inputs[1]
+  local cache = {}
+
+  for i = 2, #inputs do
+    local character = inputs[i]
+    if character == lastCharacter then
+      count = count + 1
+    else
+      writeToCache(cache, lastCharacter, count)
+      lastCharacter = character
+      count = 1
+    end
+  end
+
+  writeToCache(cache, lastCharacter, count)
+
+  return table.concat(cache)
 end
 
 return InputCompression

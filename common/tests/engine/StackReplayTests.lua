@@ -375,6 +375,7 @@ local function platformTest(waitFrames, useMatchSide)
   local puzzle = Puzzle("chain", false, 0, "3000994339949999994999999999999999999999999999999999", 60, 0)
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
+  ---@cast stack Stack
 
   assert(stack.panels[8][3].color == 4, "wrong color")
   assert(stack.panels[8][4].color == 3, "wrong color")
@@ -387,7 +388,7 @@ local function platformTest(waitFrames, useMatchSide)
   end
   compressedInputs = compressedInputs .. "Q1A80" -- do the platform, and wait for the chain
 
-  local fullInputs = InputCompression.decompressInputString(compressedInputs)
+  local fullInputs = InputCompression.decompressInputString2(compressedInputs)
   stack:receiveConfirmedInput(fullInputs) -- make the clear and then do the platform
   assert(#stack.confirmedInput > stack.clock)
   StackReplayTestingUtils:fullySimulateMatch(match)
