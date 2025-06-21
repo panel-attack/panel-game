@@ -396,7 +396,7 @@ function Match:createNewReplay()
         levelData = stack.levelData,
         stackBehaviours = stack.behaviours,
         inputMethod = stack.inputMethod,
-        inputs = InputCompression.compressInputString(table.concat(stack.confirmedInput))
+        inputs = InputCompression.compressInputTable(stack.confirmedInput)
       }
       replay.stacks[i] = replayStack
     elseif stack.TYPE == "SimulatedStack" then
@@ -704,7 +704,7 @@ function Match:createStackWithSettings(levelData, isLocal, inputMethod, inputs)
   self.garbageTargets[#self.stacks] = {}
   self.garbageSources[stack] = {}
   if inputs then
-    stack:receiveConfirmedInput(InputCompression.decompressInputString(inputs))
+    stack:receiveConfirmedInput(InputCompression.decompressInputString2(inputs))
   end
 
   return stack

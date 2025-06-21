@@ -1723,7 +1723,7 @@ function Stack:toReplayStack(stackIndex)
     levelData = self.levelData,
     stackBehaviours = self.behaviours,
     inputMethod = self.inputMethod,
-    inputs = InputCompression.compressInputString(table.concat(self.confirmedInput)),
+    inputs = InputCompression.compressInputTable(self.confirmedInput),
   }
 end
 

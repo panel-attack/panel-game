@@ -40,18 +40,6 @@ function love.load()
 end
 
 local tests = {
-  "server.tests.ServerTests",
-  "server.tests.LeaderboardTests",
-  "server.tests.RoomTests",
-  "server.tests.LoginTests",
-  "client.tests.FileUtilsTests",
-  "client.tests.ModControllerTests",
-  "client.tests.QueueTests",
-  "client.tests.ServerQueueTests",
-  "client.tests.SoundGroupTests",
-  "client.tests.TcpClientTests",
-  "client.tests.ThemeTests",
-  "client.tests.StackGraphicsTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.RollbackBufferTests",
@@ -71,6 +59,18 @@ local tests = {
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
   "common.tests.data.InputCompressionTests",
+  "server.tests.ServerTests",
+  "server.tests.LeaderboardTests",
+  "server.tests.RoomTests",
+  "server.tests.LoginTests",
+  "client.tests.FileUtilsTests",
+  "client.tests.ModControllerTests",
+  "client.tests.QueueTests",
+  "client.tests.ServerQueueTests",
+  "client.tests.SoundGroupTests",
+  "client.tests.TcpClientTests",
+  "client.tests.ThemeTests",
+  "client.tests.StackGraphicsTests",
 }
 
 local updateCount = 0
