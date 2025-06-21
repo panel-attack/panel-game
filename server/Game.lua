@@ -129,9 +129,10 @@ function Game:getPartialReplay(compressInputs)
     for i, stack in ipairs(self.replay.stacks) do
       if stack.stackType == 1 then
         ---@cast stack ReplayStack
-        stack.inputs = table.concat(self.inputs[i])
         if compressInputs then
-          stack.inputs = InputCompression.compressInputString(stack.inputs)
+          stack.inputs = InputCompression.compressInputTable(self.inputs[i])
+        else
+          stack.inputs = table.concat(self.inputs[i])
         end
       end
     end
@@ -194,9 +195,10 @@ function Game:finalizeReplay(result)
   for i, stack in ipairs(self.replay.stacks) do
     if stack.stackType == 1 then
       ---@cast stack ReplayStack
-      stack.inputs = table.concat(self.inputs[i])
       if COMPRESS_REPLAYS_ENABLED then
-        stack.inputs = InputCompression.compressInputString(stack.inputs)
+        stack.inputs = InputCompression.compressInputTable(self.inputs[i])
+      else
+        stack.inputs = table.concat(self.inputs[i])
       end
     end
   end

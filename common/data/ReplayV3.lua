@@ -232,7 +232,7 @@ function ReplayV3.finalizeReplay(match, replay)
     for i, stack in ipairs(match.stacks) do
       if stack.TYPE == "Stack" then
         ---@cast stack Stack
-        replay.stacks[i].inputs = InputCompression.compressInputString(table.concat(stack.confirmedInput))
+        replay.stacks[i].inputs = InputCompression.compressInputTable(stack.confirmedInput)
       end
     end
 
