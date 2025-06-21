@@ -139,21 +139,24 @@ function PuzzleMenu:refreshMenu()
     self.menu = nil
   end
 
-  local menuOptions = {
-    ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider),
-    ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons),
-    ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons),
-  }
+  local menuOptions = {}
 
-  for index, value in ipairs(menuOptions) do
-    value.onSelectedFunction = self:clearPreviewFunction()
+  if self:currentlyAtRootLevel() == false then
+    menuOptions[#menuOptions+1] = ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider)
+    menuOptions[#menuOptions+1] = ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons)
+    menuOptions[#menuOptions+1] = ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons)
+    for index, value in ipairs(menuOptions) do
+      value.onSelectedFunction = self:clearPreviewFunction()
+    end
   end
 
   if self.currentPuzzleSet == nil then
     self:updateCurrentPuzzleSet()
   end
 
-  menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, 1, nil)
+  if self:currentlyAtRootLevel() == false then
+    menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, 1, nil)
+  end
 
   for index, currentPuzzleSet in ipairs(self.currentPuzzleSet.puzzleSets) do
     menuOptions[#menuOptions + 1] = self:menuItemToViewPuzzleSet(currentPuzzleSet, index)
@@ -163,14 +166,16 @@ function PuzzleMenu:refreshMenu()
     menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, index, currentPuzzle)
   end
 
-  local trainingPuzzleSet = self.currentTrainingPuzzleSet
-  if #trainingPuzzleSet.puzzles > 0 then
-    menuOptions[#menuOptions + 1] = self:menuItemToTrainPuzzleSet(trainingPuzzleSet)
+  if self:currentlyAtRootLevel() == false then
+    local trainingPuzzleSet = self.currentTrainingPuzzleSet
+    if #trainingPuzzleSet.puzzles > 0 then
+      menuOptions[#menuOptions + 1] = self:menuItemToTrainPuzzleSet(trainingPuzzleSet)
+    end
   end
 
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
       GAME.theme:playCancelSfx()
-      if #self.currentPuzzleSetIndices == 0 then
+      if self:currentlyAtRootLevel() then
         self:exit()
       else
         table.remove(self.currentPuzzleSetIndices)
@@ -181,6 +186,10 @@ function PuzzleMenu:refreshMenu()
 
   self.menu = ui.Menu.createCenteredMenu(menuOptions)
   self.uiRoot:addChild(self.menu)
+end
+
+function PuzzleMenu:currentlyAtRootLevel()
+  return #self.currentPuzzleSetIndices == 0
 end
 
 function PuzzleMenu:setPreviewPanelBoard(previewStack)
