@@ -545,6 +545,7 @@ end
 
 -- a callback function that is getting registered to the ClientMatch's matchEnded signal
 -- may get unregistered from the match in case of abortion
+---@param match ClientMatch
 function BattleRoom:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1
 
