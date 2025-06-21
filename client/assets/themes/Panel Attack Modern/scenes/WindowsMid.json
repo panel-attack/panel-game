@@ -1,0 +1,104 @@
+{
+  "drawables": [
+    {
+      "ref": "Windows.json#SingleWindowMid",
+      "overrides": {
+        "position": {
+          "x": 906,
+          "y": 350
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#DoubleWindowMid",
+      "overrides": {
+        "position": {
+          "x": 202,
+          "y": 350
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#SingleWindowMid",
+      "overrides": {
+        "position": {
+          "x": 164,
+          "y": 360
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#SingleWindowMid",
+      "overrides": {
+        "position": {
+          "x": 240,
+          "y": 360
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowMid",
+      "overrides": {
+        "position": {
+          "x": 910,
+          "y": 524
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowMid",
+      "overrides": {
+        "position": {
+          "x": 933,
+          "y": 524
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowMid",
+      "overrides": {
+        "position": {
+          "x": 958,
+          "y": 524
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowMid",
+      "overrides": {
+        "position": {
+          "x": 992,
+          "y": 518
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowMid",
+      "overrides": {
+        "position": {
+          "x": 888,
+          "y": 524
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowMid",
+      "overrides": {
+        "position": {
+          "x": 936,
+          "y": 446
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowMid",
+      "overrides": {
+        "position": {
+          "x": 980,
+          "y": 468
+        }
+      }
+    }
+  
+  ]
+}

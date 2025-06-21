@@ -405,7 +405,10 @@ function AnimationLoader.drawNode(d, parent)
     love.graphics.translate(-px, -py)
 
     if d.texture then
-      if d.stencil then
+      local usesStencil = d.stencil
+      local usesBlendAlphaMode = d.blendMode ~= "alpha" or  d.alphaMode ~= "alphamultiply"
+
+      if usesStencil then
         assert(parent, "To use a stencil you need siblings")
         love.graphics.stencil(function()
           love.graphics.setShader(alphaDiscardShader)
@@ -420,7 +423,10 @@ function AnimationLoader.drawNode(d, parent)
         love.graphics.setStencilTest("equal", 1)
       end
 
-      love.graphics.setBlendMode(d.blendMode, d.alphaMode)
+      if usesBlendAlphaMode then
+        love.graphics.setBlendMode(d.blendMode, d.alphaMode)
+      end
+
       love.graphics.setColor(d.tint[1], d.tint[2], d.tint[3], d.alpha)
       if d.quad then
         d.quad:setViewport(d.scrollX, d.scrollY, d.width, d.height)
@@ -428,7 +434,14 @@ function AnimationLoader.drawNode(d, parent)
       else
         love.graphics.draw(d.texture, 0, 0)
       end
-      love.graphics.setStencilTest()
+
+      if usesBlendAlphaMode then
+        love.graphics.setBlendMode("alpha", "alphamultiply")
+      end
+
+      if usesStencil then
+        love.graphics.setStencilTest()
+      end
     end
 
     for _, child in ipairs(d.children) do

@@ -86,7 +86,25 @@
       "templateOnly": true,
       "overrides": {
         "xScale": 0.3,
-        "yScale": 0.3
+        "yScale": 0.3,
+        "children": [
+          {},
+          {
+            "tint": [
+              0.50,
+              0.37,
+              0.34
+            ]
+          },
+          {},
+          {
+            "tint": [
+              0.50,
+              0.37,
+              0.34
+            ]
+          }
+        ]
       }
     },
     {
@@ -165,8 +183,8 @@
       "ref": "DoubleWindow",
       "templateOnly": true,
       "overrides": {
-        "xScale": 0.8,
-        "yScale": 0.8
+        "xScale": 0.7,
+        "yScale": 0.7
       }
     },
     {
@@ -174,8 +192,26 @@
       "ref": "DoubleWindow",
       "templateOnly": true,
       "overrides": {
-        "xScale": 0.8,
-        "yScale": 0.8
+        "xScale": 0.6,
+        "yScale": 0.6,
+        "children": [
+          {},
+          {
+            "tint": [
+              0.50,
+              0.37,
+              0.34
+            ]
+          },
+          {},
+          {
+            "tint": [
+              0.50,
+              0.37,
+              0.34
+            ]
+          }
+        ]
       }
     },
     {
@@ -268,7 +304,25 @@
       "templateOnly": true,
       "overrides": {
         "xScale": 0.3,
-        "yScale": 0.3
+        "yScale": 0.3,
+        "children": [
+          {},
+          {
+            "tint": [
+              0.50,
+              0.37,
+              0.34
+            ]
+          },
+          {},
+          {
+            "tint": [
+              0.50,
+              0.37,
+              0.34
+            ]
+          }
+        ]
       }
     },
     {

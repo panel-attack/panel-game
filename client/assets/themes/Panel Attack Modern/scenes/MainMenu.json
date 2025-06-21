@@ -60,6 +60,9 @@
       "filePath": "MainMenuCityMiddleBuildings"
     },
     {
+      "ref": "WindowsMid.json"
+    },
+    {
       "id": "Crystal",
       "templateOnly": true,
       "filePath": "Crystal",
@@ -235,7 +238,7 @@
       "filePath": "MainMenuCityFrontBuildings"
     },
     {
-      "ref": "Windows.json"
+      "ref": "WindowsFront.json"
     },
     {
       "filePath": "MainMenuCityFog4",

@@ -1,0 +1,115 @@
+{
+  "drawables": [
+    {
+      "ref": "Windows.json#WindowFront",
+      "overrides": {
+        "position": {
+          "x": 1092,
+          "y": 586
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowFront",
+      "overrides": {
+        "position": {
+          "x": 1052,
+          "y": 586
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#WindowFront",
+      "overrides": {
+        "position": {
+          "x": 1012,
+          "y": 586
+        }
+      }
+    },
+    {
+      "ref": "Windows.json#SingleWindowFront",
+      "overrides": {
+        "position": {
+          "x": 1050,
+          "y": 530
+        }
+      }
+    },
+
+
+    {
+      "ref" : "Windows.json#SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 226,
+          "y" : 493
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 202,
+          "y" : 493
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#DoubleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 326,
+          "y" : 563
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 461,
+          "y" : 638
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 76,
+          "y" : 533
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 111,
+          "y" : 533
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#SingleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 146,
+          "y" : 533
+        }
+      }
+    },
+    {
+      "ref" : "Windows.json#DoubleWindowFront",
+      "overrides" : {
+        "position" : {
+          "x" : 1131,
+          "y" : 478
+        }
+      }
+    }
+  
+  ]
+}
