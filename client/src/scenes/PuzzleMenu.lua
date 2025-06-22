@@ -19,7 +19,7 @@ local Stack = require("common.engine.Stack")
 ---@field battleRoom BattleRoom
 ---@field rootPuzzleSet table
 ---@field currentPuzzleSetIndices table<integer, integer> integer index into sub puzzle sets
----@field puzzlePreviewStack PlayerStack
+---@field puzzlePreviewStack StackElement
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -82,6 +82,10 @@ function PuzzleMenu:refresh()
 end
 
 function PuzzleMenu:load(sceneParams)
+  self.puzzlePreviewStack = ui.StackElement({vAlign = "center", x = 800, y = 0})
+  self.uiRoot:addChild(self.puzzlePreviewStack)
+
+
   local tickLength = 16
   self.levelSlider = ui.LevelSlider({
       tickLength = tickLength,
@@ -128,7 +132,6 @@ function PuzzleMenu:load(sceneParams)
 
   local x, y = unpack(themes[config.theme].main_menu_screen_pos)
   self.puzzleLabel = ui.Label({text = "pz_puzzles", x = x - 10, y = y - 40})
-
   self.uiRoot:addChild(self.puzzleLabel)
 end
 
@@ -193,17 +196,12 @@ function PuzzleMenu:currentlyAtRootLevel()
 end
 
 function PuzzleMenu:setPreviewPanelBoard(previewStack)
-  if previewStack then
-    previewStack:moveToPosition(800, 0)
-    self.puzzlePreviewStack = previewStack
-  else
-    self.puzzlePreviewStack = nil
-  end
+  self.puzzlePreviewStack:setStack(previewStack)
 end
 
 function PuzzleMenu:clearPreviewFunction()
   return function ()
-    self:setPreviewPanelBoard(nil)
+    self.puzzlePreviewStack:setStack(nil)
   end
 end
 
@@ -212,7 +210,7 @@ function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, index)
     local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
     return function ()
       local stack = self:getDisplayStack(flatPuzzleSet.puzzles[index])
-      self:setPreviewPanelBoard(stack)
+      self.puzzlePreviewStack:setStack(stack)
     end
   end
 end
@@ -279,9 +277,6 @@ end
 function PuzzleMenu:draw()
   themes[config.theme].images.bg_main:draw()
   self.uiRoot:draw()
-  if self.puzzlePreviewStack then
-    self.puzzlePreviewStack:render()
-  end
 end
 
 ---@param puzzle Puzzle

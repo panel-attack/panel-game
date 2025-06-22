@@ -37,6 +37,8 @@ local ui = {
   ---@see Slider
   ---@type fun(options: SliderOptions): Slider
   Slider = require(PATH .. ".Slider"),
+  ---@source StackElement.lua
+  StackElement = require(PATH .. ".StackElement"),
   StackPanel = require(PATH .. ".StackPanel"),
   StageCarousel = require(PATH .. ".StageCarousel"),
   Stepper = require(PATH .. ".Stepper"),

@@ -910,13 +910,15 @@ end
 
 -- Renders the player's stack on screen
 ---@param matchEnded boolean?
-function PlayerStack:render(matchEnded)
+---@param xOffset integer? provides an additional x offset e.g. from translation as scissors only operates in screen/canvas coordinates
+---@param yOffset integer? provides an additional y offset e.g. from translation as scissors only operates in screen/canvas coordinates
+function PlayerStack:render(matchEnded, xOffset, yOffset)
   prof.push("Stack:render")
   if self.canvas == nil then
     return
   end
 
-  self:setDrawArea()
+  self:setDrawArea(xOffset, yOffset)
   self:drawCharacter()
   local garbageImages
   local shockGarbageImages
