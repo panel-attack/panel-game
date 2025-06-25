@@ -2,10 +2,12 @@
   "Version": 3,
   "Puzzle Sets": [
     {
-      "Set Name": "Classic",
+      "Set Name": "puzzle_set_name_classic",
+      "Description": "puzzle_set_description_classic",
       "Puzzle Sets": [
         {
-          "Set Name": "Classic set 1",
+          "Set Name": "puzzle_set_name_classic_set_1",
+          "Description": "puzzle_set_description_classic_set_1",
           "Puzzles": [
             {
               "Puzzle Type": "moves",
@@ -70,7 +72,8 @@
           ]
         },
         {
-          "Set Name": "Classic set 2",
+          "Set Name": "puzzle_set_name_classic_set_2",
+          "Description": "puzzle_set_description_classic_set_2",
           "Puzzles": [
             {
               "Puzzle Type": "moves",
@@ -135,7 +138,8 @@
           ]
         },
         {
-          "Set Name": "Classic set 3",
+          "Set Name": "puzzle_set_name_classic_set_3",
+          "Description": "puzzle_set_description_classic_set_3",
           "Puzzles": [
             {
               "Puzzle Type": "moves",
@@ -200,7 +204,8 @@
           ]
         },
         {
-          "Set Name": "Classic set 4",
+          "Set Name": "puzzle_set_name_classic_set_4",
+          "Description": "puzzle_set_description_classic_set_4",
           "Puzzles": [
             {
               "Puzzle Type": "moves",
@@ -265,7 +270,8 @@
           ]
         },
         {
-          "Set Name": "Classic set 5",
+          "Set Name": "puzzle_set_name_classic_set_5",
+          "Description": "puzzle_set_description_classic_set_5",
           "Puzzles": [
             {
               "Puzzle Type": "moves",
@@ -330,7 +336,8 @@
           ]
         },
         {
-          "Set Name": "Classic set 6",
+          "Set Name": "puzzle_set_name_classic_set_6",
+          "Description": "puzzle_set_description_classic_set_6",
           "Puzzles": [
             {
               "Puzzle Type": "moves",
@@ -397,13 +404,16 @@
       ]
     },
     {
-      "Set Name": "Missions",
+      "Set Name": "puzzle_set_name_mission",
+      "Description": "puzzle_set_description_mission",
       "Puzzle Sets": [
         {
-          "Set Name": "Beginner",
+          "Set Name": "puzzle_set_name_beginner",
+          "Description": "puzzles_set_description_beginner",
           "Puzzle Sets": [
             {
-              "Set Name": "Combos",
+              "Set Name": "puzzle_set_name_beginner_combos",
+              "Description": "puzzles_set_description_beginner_combos",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -444,7 +454,8 @@
               ]
             },
             {
-              "Set Name": "Chains",
+              "Set Name": "puzzle_set_name_beginner_chains",
+              "Description": "puzzles_set_description_beginner_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -475,10 +486,12 @@
           ]
         },
         {
-          "Set Name": "Novice",
+          "Set Name": "puzzle_set_name_novice",
+          "Description": "puzzles_set_description_novice",
           "Puzzle Sets": [
             {
-              "Set Name": "Combos",
+              "Set Name": "puzzle_set_name_novice_combos",
+              "Description": "puzzles_set_description_novice_combos",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -531,7 +544,8 @@
               ]
             },
             {
-              "Set Name": "Chains",
+              "Set Name": "puzzle_set_name_novice_chains",
+              "Description": "puzzles_set_description_novice_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -560,7 +574,8 @@
               ]
             },
             {
-              "Set Name": "Convert Horizontal Chains",
+              "Set Name": "puzzle_set_name_novice_convert_horizontal_chains",
+              "Description": "puzzles_set_description_novice_convert_horizontal_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -589,7 +604,8 @@
               ]
             },
             {
-              "Set Name": "Earthquake Chains",
+              "Set Name": "puzzle_set_name_novice_earthquake_chains",
+              "Description": "puzzles_set_description_novice_earthquake_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -648,7 +664,8 @@
               ]
             },
             {
-              "Set Name": "Deeper Earthquake Chains",
+              "Set Name": "puzzle_set_name_novice_deeper_earthquake_chains",
+              "Description": "puzzles_set_description_novice_deeper_earthquake_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -707,7 +724,8 @@
               ]
             },
             {
-              "Set Name": "Horizontal Chains From Tower",
+              "Set Name": "puzzle_set_name_novice_horizontal_chain_from_tower",
+              "Description": "puzzles_set_description_novice_horizontal_chain_from_tower",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -732,10 +750,12 @@
           ]
         },
         {
-          "Set Name": "Intermediate",
+          "Set Name": "puzzle_set_name_intermediate",
+          "Description": "puzzles_set_description_intermediate",
           "Puzzle Sets": [
             {
-              "Set Name": "Chains",
+              "Set Name": "puzzle_set_name_intermediate_chains",
+              "Description": "puzzles_set_description_intermediate_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -752,7 +772,8 @@
               ]
             },
             {
-              "Set Name": "Extended Horizontal Chains",
+              "Set Name": "puzzle_set_name_intermediate_extended_horizontal_chains",
+              "Description": "puzzles_set_description_intermediate_extended_horizontal_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -775,7 +796,8 @@
               ]
             },
             {
-              "Set Name": "Chains From Huge Tower",
+              "Set Name": "puzzle_set_name_intermediate_chains_from_huge_tower",
+              "Description": "puzzles_set_description_intermediate_chains_from_huge_tower",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -798,7 +820,8 @@
               ]
             },
             {
-              "Set Name": "Horizontal Chain From Side",
+              "Set Name": "puzzle_set_name_intermediate_horizontal_chain_from_side",
+              "Description": "puzzles_set_description_intermediate_horizontal_chain_from_side",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -815,7 +838,8 @@
               ]
             },
             {
-              "Set Name": "Pre Setup Combo Chains",
+              "Set Name": "puzzle_set_name_intermediate_pre_setup_combo_chains",
+              "Description": "puzzles_set_description_intermediate_pre_setup_combo_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -826,7 +850,8 @@
               ]
             },
             {
-              "Set Name": "Combo Chains",
+              "Set Name": "puzzle_set_name_intermediate_combo_chains",
+              "Description": "puzzles_set_description_intermediate_combo_chains",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -855,7 +880,8 @@
               ]
             },
             {
-              "Set Name": "Pre Setup Inserts",
+              "Set Name": "puzzle_set_name_intermediate_pre_setup_inserts",
+              "Description": "puzzle_set_description_intermediate_pre_setup_inserts",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -878,7 +904,8 @@
               ]
             },
             {
-              "Set Name": "Change Side Inserts",
+              "Set Name": "puzzle_set_name_intermediate_change_side_inserts",
+              "Description": "puzzle_set_description_intermediate_change_side_inserts",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -901,7 +928,8 @@
               ]
             },
             {
-              "Set Name": "Inserts",
+              "Set Name": "puzzle_set_name_intermediate_inserts",
+              "Description": "puzzle_set_description_intermediate_inserts",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -954,7 +982,8 @@
               ]
             },
             {
-              "Set Name": "Combo Chain Inserts",
+              "Set Name": "puzzle_set_name_intermediate_combo_chain_inserts",
+              "Description": "puzzle_set_description_intermediate_combo_chain_inserts",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -971,7 +1000,8 @@
               ]
             },
             {
-              "Set Name": "Removes",
+              "Set Name": "puzzle_set_name_intermediate_removes",
+              "Description": "puzzle_set_description_intermediate_removes",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -988,7 +1018,8 @@
               ]
             },
             {
-              "Set Name": "Openers",
+              "Set Name": "puzzle_set_name_intermediate_openers",
+              "Description": "puzzle_set_description_intermediate_openers",
               "Puzzles": [
                 {
                   "Puzzle Type": "chain",
@@ -1014,10 +1045,12 @@
           ]
         },
         {
-          "Set Name": "Advanced",
+          "Set Name": "puzzle_set_name_advanced",
+          "Description": "puzzle_set_description_advanced",
           "Puzzle Sets": [
             {
-              "Set Name": "Shoguns",
+              "Set Name": "puzzle_set_name_advanced_shoguns",
+              "Description": "puzzle_set_description_advanced_shoguns",
               "Puzzles": [
                 {
                   "Puzzle Type": "moves",
@@ -1082,7 +1115,8 @@
               ]
             },
             {
-              "Set Name": "Transitions 1",
+              "Set Name": "puzzle_set_name_advanced_transitions_1",
+              "Description": "puzzle_set_description_advanced_transitions_1",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1132,7 +1166,8 @@
               ]
             },
             {
-              "Set Name": "Transitions 2",
+              "Set Name": "puzzle_set_name_advanced_transitions_2",
+              "Description": "puzzle_set_description_advanced_transitions_2",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1155,7 +1190,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 1",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_1",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_1",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1192,7 +1228,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 2",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_2",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_2",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1233,7 +1270,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 3",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_3",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_3",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1290,7 +1328,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 4",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_4",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_4",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1351,7 +1390,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 5",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_5",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_5",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1455,7 +1495,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 6",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_6",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_6",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1530,7 +1571,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 7",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_7",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_7",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1577,7 +1619,8 @@
               ]
             },
             {
-              "Set Name": "Clear Puzzles 8",
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_8",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_8",
               "Puzzles": [
                 {
                   "Puzzle Type": "clear",
@@ -1657,22 +1700,108 @@
                   "Shake": 0
                 }
               ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "Set Name": "Frame Tricks",
-      "Puzzle Sets": [
-        {
-          "Set Name": "Hover Chains",
-          "Puzzles": [
+            },
             {
-              "Puzzle Type": "chain",
-              "Do Countdown": false,
-              "Moves": 0,
-              "Stack": "919999199999199999339399"
+              "Set Name": "puzzle_set_name_advanced_clear_puzzles_9",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_9",
+              "Puzzles": [
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "Stop": 60,
+                  "Shake": 0,
+                  "Stack": "000000[======================]000400012490095499499999999999",
+                  "GarbagePanelBuffer": "993535"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "Stop": 47,
+                  "Pre-Stop": 0,
+                  "Shake": 64,
+                  "Stack": "000[=][==========][====][==========][====]400250500250400434401421356112"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "Stop": 56,
+                  "Pre-Stop": 0,
+                  "Shake": 0,
+                  "Stack": "[====]000000000000000000[===]0000[=]000001000006000026000035500041630145161235"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "Stop": 75,
+                  "Pre-Stop": 0,
+                  "Shake": 30,
+                  "Stack": "[==========]600000210000550003450043313041116055"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "Stop": 46,
+                  "Pre-Stop": 0,
+                  "Shake": 20,
+                  "Stack": "0[===][==]00[=][=][====]546530[====]600002200003100002320001310051563364"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "Stop": 52,
+                  "Pre-Stop": 0,
+                  "Shake": 0,
+                  "Stack": "000000[==========][====]002000205000605600206600165402141402312305551546"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "CursorPosition": {
+                    "row": 4,
+                    "col": 4
+                  },
+                  "Stop": 43,
+                  "Pre-Stop": 0,
+                  "Shake": 42,
+                  "Stack": "[====]000000[====][================]000631564156213615344511612433515265232313"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "CursorPosition": {
+                    "row": 3,
+                    "col": 1
+                  },
+                  "Stop": 58,
+                  "Pre-Stop": 0,
+                  "Shake": 0,
+                  "Stack": "[=]000[====][==========]512631[====]006000134050514020652033522055523032"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "CursorPosition": {
+                    "row": 5,
+                    "col": 1
+                  },
+                  "Stop": 58,
+                  "Pre-Stop": 0,
+                  "Shake": 0,
+                  "Stack": "[==================================]011253[====]061499065199069329999999"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Do Countdown": false,
+                  "CursorPosition": {
+                    "row": 3,
+                    "col": 3
+                  },
+                  "Stop": 14,
+                  "Pre-Stop": 0,
+                  "Shake": 75,
+                  "Stack": "[====================================================]844003221204356501"
+                }
+              ]
             }
           ]
         }

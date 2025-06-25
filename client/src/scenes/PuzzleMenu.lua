@@ -13,13 +13,13 @@ local Stack = require("common.engine.Stack")
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
 ---@field menu Menu
----@field puzzleLabel Label
 ---@field levelSlider LevelSlider
 ---@field randomColorButtons ButtonGroup
 ---@field battleRoom BattleRoom
 ---@field rootPuzzleSet table
 ---@field currentPuzzleSetIndices table<integer, integer> integer index into sub puzzle sets
 ---@field puzzlePreviewStack StackElement
+---@field puzzleDescriptionLabel Label
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -28,9 +28,9 @@ local PuzzleMenu = class(
     self.levelSlider = nil
     self.randomColorButtons = nil
     self.menu = nil
-    self.puzzleLabel = nil
     self.puzzleLibrary = PuzzleLibrary(GAME.scores)
     self.puzzlePreviewStack = nil
+    self.puzzleDescriptionLabel = nil
     self.battleRoom = sceneParams.battleRoom
     self.rootPuzzleSet = nil
     self.currentPuzzleSetIndices = {}
@@ -82,9 +82,7 @@ function PuzzleMenu:refresh()
 end
 
 function PuzzleMenu:load(sceneParams)
-  self.puzzlePreviewStack = ui.StackElement({vAlign = "center", x = 800, y = 0})
-  self.uiRoot:addChild(self.puzzlePreviewStack)
-
+  self:updateCurrentPuzzleSet()
 
   local tickLength = 16
   self.levelSlider = ui.LevelSlider({
@@ -128,19 +126,60 @@ function PuzzleMenu:load(sceneParams)
     }
   )
 
-  self:refreshMenu()
+  self.puzzlePreviewStack = ui.StackElement({vAlign = "top", hAlign = "center", x = 0, y = 0, scale=2})
 
-  local x, y = unpack(themes[config.theme].main_menu_screen_pos)
-  self.puzzleLabel = ui.Label({text = "pz_puzzles", x = x - 10, y = y - 40})
-  self.uiRoot:addChild(self.puzzleLabel)
+  self.puzzleDescriptionLabel = ui.Label({text = "", x = 0, y = 0, width = 400, height = 100, fontSize = 20, translate = false})
+  self.puzzleDescriptionLabel:setFillColors(.2, .2, .2, .8)
+  self.puzzleDescriptionLabel:setStrokeColors(1, 1, 1, 1)
+  self.puzzleDescriptionLabel:setWrap(400, "left")
+
+  self:loadMenu()
+
+  self.previewStackPanel = ui.StackPanel(
+    {
+      alignment = "top",
+      width = 400, -- ideally this is determined by children
+      hAlign = "left",
+      vAlign = "center",
+      x = 0,
+      y = 0,
+    }
+  )
+  self:updatePuzzlePreviewStackForPuzzleSet(self.currentPuzzleSet, 1)
+
+  self.previewStackPanel:addElement(self.puzzlePreviewStack)
+  self.previewStackPanel:addElement(self.puzzleDescriptionLabel)
+
+  self.containerStackPanel = ui.StackPanel(
+    {
+      alignment = "left",
+      height = self.menu.height,
+      hAlign = "center",
+      vAlign = "center",
+      x = 0,
+      y = 0,
+    }
+  )
+
+  self.containerStackPanel:addElement(self.menu)
+  self.containerStackPanel:addElement(self.previewStackPanel)
+
+  self.uiRoot:addChild(self.containerStackPanel)
+  
 end
 
 function PuzzleMenu:refreshMenu()
 
   if self.menu then
-    self.menu:detach()
+    self.containerStackPanel:remove(self.menu)
     self.menu = nil
   end
+
+  self:loadMenu()
+  self.containerStackPanel:insertElementAtIndex(self.menu, 1)
+end
+
+function PuzzleMenu:loadMenu()
 
   local menuOptions = {}
 
@@ -151,10 +190,6 @@ function PuzzleMenu:refreshMenu()
     for index, value in ipairs(menuOptions) do
       value.onSelectedFunction = self:clearPreviewFunction()
     end
-  end
-
-  if self.currentPuzzleSet == nil then
-    self:updateCurrentPuzzleSet()
   end
 
   if self:currentlyAtRootLevel() == false then
@@ -176,7 +211,7 @@ function PuzzleMenu:refreshMenu()
     end
   end
 
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
+  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
       GAME.theme:playCancelSfx()
       if self:currentlyAtRootLevel() then
         self:exit()
@@ -187,30 +222,42 @@ function PuzzleMenu:refreshMenu()
       end
     end)
 
-  self.menu = ui.Menu.createCenteredMenu(menuOptions)
-  self.uiRoot:addChild(self.menu)
+  self.menu = ui.Menu({
+    x = 400,
+    y = 0,
+    hAlign = "center",
+    vAlign = "center",
+    menuItems = menuOptions,
+    height = themes[config.theme].main_menu_max_height
+  })
 end
 
 function PuzzleMenu:currentlyAtRootLevel()
   return #self.currentPuzzleSetIndices == 0
 end
 
-function PuzzleMenu:setPreviewPanelBoard(previewStack)
-  self.puzzlePreviewStack:setStack(previewStack)
+function PuzzleMenu:setPuzzleDescription(puzzleDescription)
+  self.puzzleDescriptionLabel:setText(puzzleDescription, nil, false)
 end
 
 function PuzzleMenu:clearPreviewFunction()
   return function ()
     self.puzzlePreviewStack:setStack(nil)
+    self:setPuzzleDescription(nil)
   end
+end
+
+function PuzzleMenu:updatePuzzlePreviewStackForPuzzleSet(puzzleSet, index)
+  local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
+  local stack = self:getDisplayStack(flatPuzzleSet.puzzles[index])
+  self.puzzlePreviewStack:setStack(stack)
 end
 
 function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, index)
   if puzzleSet then
-    local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
     return function ()
-      local stack = self:getDisplayStack(flatPuzzleSet.puzzles[index])
-      self.puzzlePreviewStack:setStack(stack)
+      self:updatePuzzlePreviewStackForPuzzleSet(puzzleSet, index)
+      self:setPuzzleDescription(puzzleSet.description)
     end
   end
 end
@@ -247,7 +294,6 @@ end
 
 function PuzzleMenu:menuItemToTrainPuzzleSet(puzzleSet)
   local result = ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
-    -- GAME.theme:playValidationSfx()
     self:startGame(puzzleSet)
   end)
 
@@ -258,8 +304,7 @@ end
 
 function PuzzleMenu:updateCurrentPuzzleSet()
   if self.rootPuzzleSet == nil then
-    local directory = consts.PUZZLES_SAVE_DIRECTORY
-    self.rootPuzzleSet = self.puzzleLibrary:puzzleSetFromPath(directory)
+    self.rootPuzzleSet = self.puzzleLibrary:getDefaultPuzzleSet()
   end
 
   self.currentPuzzleSet = self.rootPuzzleSet

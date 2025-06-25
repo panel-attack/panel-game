@@ -53,6 +53,7 @@ Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzz
 
 "Puzzle Sets" contains a list of all the puzzle sets
 "Set Name" is the name of the set
+"Description" is a description of the set that will be shown in game menus
 "Puzzles" is the list of all the puzzles
 
 "Puzzle Type" should be one of the following

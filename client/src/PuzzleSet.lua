@@ -9,8 +9,9 @@ local Puzzle = require("common.engine.Puzzle")
 ---@field fileSource string?
 local PuzzleSet =
   class(
-  function(self, setName, puzzles, puzzleSets)
+  function(self, setName, description, puzzles, puzzleSets)
     self.setName = setName
+    self.description = description or ""
     self.puzzles = puzzles or {}
     self.puzzleSets = puzzleSets or {}
   end
@@ -60,23 +61,25 @@ end
 
 ---@return PuzzleSet
 function PuzzleSet.loadV2(puzzleSetData)
-  local puzzleSetName = puzzleSetData["Set Name"]
+  local puzzleSetName = loc(puzzleSetData["Set Name"])
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData["Puzzles"]) do
     local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"])
     puzzles[#puzzles + 1] = puzzle
   end
 
-  return PuzzleSet(puzzleSetName, puzzles)
+  return PuzzleSet(puzzleSetName, nil, puzzles)
 end
 
 ---@return PuzzleSet
 function PuzzleSet.loadV3(puzzleSetData)
-  local puzzleSetName = puzzleSetData["Set Name"]
-  local puzzleSet = PuzzleSet(puzzleSetName, {}, {})
+  local puzzleSetName = loc(puzzleSetData["Set Name"])
+  local puzzleSetDescription = puzzleSetData["Description"]
+  puzzleSetDescription = puzzleSetDescription and loc(puzzleSetDescription) or nil
+  local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
   for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
-    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"])
+    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"], puzzleData["PanelBuffer"], puzzleData["GarbagePanelBuffer"])
     puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
   end
   for _, currentPuzzleSet in pairs(puzzleSetData["Puzzle Sets"] or {}) do

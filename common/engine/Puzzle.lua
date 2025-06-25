@@ -10,16 +10,20 @@ local MatchRules = require("common.data.MatchRules")
 ---@field doCountdown boolean
 ---@field moves integer
 ---@field stack string string representation of the panel colors
+---@field panelBuffer string
+---@field garbageBuffer string
 ---@field randomizeColors boolean
 ---@field stopTime integer?
 ---@field shakeTime integer?
----@overload fun(puzzleType: string, doCountdown: boolean, moves: integer?, stack: string, stopTime: integer?, shakeTime: integer?): Puzzle
+---@overload fun(puzzleType: string, doCountdown: boolean, moves: integer?, stack: string, stopTime: integer?, shakeTime: integer?, panelBuffer: string?, garbageBuffer: string?): Puzzle
 Puzzle = class(
-  function(self, puzzleType, doCountdown, moves, stack, stopTime, shakeTime)
+  function(self, puzzleType, doCountdown, moves, stack, stopTime, shakeTime, panelBuffer, garbageBuffer)
     self.puzzleType = puzzleType or "moves"
     self.doCountdown = doCountdown
     self.moves = moves or 0
     self.stack = string.gsub(stack, "%s+", "") -- Remove whitespace so files can be easier to read
+    self.panelBuffer = panelBuffer
+    self.garbageBuffer = garbageBuffer
     self.randomizeColors = false
     self.stopTime = stopTime
     self.shakeTime = shakeTime
@@ -64,8 +68,8 @@ function Puzzle:fillMissingPanelsInPuzzleString(width, height)
 end
 
 ---@param puzzleString string
----@return string puzzleString
-function Puzzle.randomizeColorsInPuzzleString(puzzleString)
+---@return string puzzleString, string panelBuffer, string garbageBuffer
+function Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbageBuffer)
   local colorArray = Panel.regularColorsArray()
   if puzzleString:find("7") then
     colorArray = Panel.extendedRegularColorsArray()
@@ -77,8 +81,10 @@ function Puzzle.randomizeColorsInPuzzleString(puzzleString)
   end
 
   puzzleString = puzzleString:gsub("%d", newColorOrder)
+  panelBuffer = panelBuffer and panelBuffer:gsub("%d", newColorOrder) or ""
+  garbageBuffer = garbageBuffer and garbageBuffer:gsub("%d", newColorOrder) or ""
 
-  return puzzleString
+  return puzzleString, panelBuffer, garbageBuffer
 end
 
 local unreverseMap = {}
@@ -276,18 +282,22 @@ end
 ---@return PuzzleSource
 function Puzzle:toPanelSource(randomize, flip)
   local puzzleString = self:fillMissingPanelsInPuzzleString(6, 12)
+  local panelBuffer = self.panelBuffer
+  local garbageBuffer = self.garbageBuffer
 
   if randomize then
-    puzzleString = Puzzle.randomizeColorsInPuzzleString(puzzleString)
+    puzzleString, panelBuffer, garbageBuffer = Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbageBuffer)
   end
 
   if flip then
     if math.random(2) == 1 then
       puzzleString = Puzzle.horizontallyFlipPuzzleString(puzzleString)
+      panelBuffer = Puzzle.horizontallyFlipPuzzleString(panelBuffer)
+      garbageBuffer = Puzzle.horizontallyFlipPuzzleString(garbageBuffer)
     end
   end
 
-  return PuzzleSource(puzzleString)
+  return PuzzleSource(puzzleString, panelBuffer, garbageBuffer)
 end
 
 return Puzzle

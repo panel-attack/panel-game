@@ -4,6 +4,8 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+-- StackElement is an element that draws a player stack
+-- Useful for previewing stacks or other effects on the player board
 ---@class StackElement : UiElement
 ---@field stack PlayerStack?
 ---@field scale number

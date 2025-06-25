@@ -101,8 +101,8 @@ function MainMenu:createMainMenu()
 
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
+  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
+                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
                         }
 
   local function addDebugMenuItems()

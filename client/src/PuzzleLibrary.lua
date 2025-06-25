@@ -12,28 +12,45 @@ local tableUtils = require("common.lib.tableUtils")
 ---@field puzzleSets table<integer, table> all the puzzle sets
 ---@field puzzleResults Scores
 local PuzzleLibrary =
-  class(
-  function(self, puzzleResults)
-    self.puzzleResults = puzzleResults
-  end
-)
+    class(
+      function(self, puzzleResults)
+        self.puzzleResults = puzzleResults
+      end
+    )
+
+function PuzzleLibrary:getDefaultPuzzleSet()
+  local directory = consts.PUZZLES_SAVE_DIRECTORY
+  local puzzleSets = self:puzzleSetFromPath(directory)
+
+  return puzzleSets
+end
 
 -- Returns all puzzles from the given path as a puzzle set.
 -- Puzzle sets are embedded recursively
 function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
-  local puzzleSet = PuzzleSet(subDirectory or "Puzzles", {}, {})
+  local puzzleSet = PuzzleSet(subDirectory or "Puzzles", nil, {}, {})
 
-  for _, currentFilename in ipairs(FileUtils.getFilteredDirectoryItems(fullPath, "file")) do
+  local puzzleFiles = FileUtils.getFilteredDirectoryItems(fullPath, "file")
+
+  table.sort(puzzleFiles, function(a, b)
+    if a == "Puzzles.json" then
+      return a < b
+    else
+      return true
+    end
+  end)
+  
+  for _, currentFilename in ipairs(puzzleFiles) do
     if currentFilename ~= "README.txt" then
       local currentPuzzleSets = self:puzzleSetsFromFile(fullPath .. "/" .. currentFilename)
       for _, currentPuzzleSet in ipairs(currentPuzzleSets) do
-        puzzleSet.puzzleSets[#puzzleSet.puzzleSets+1] = currentPuzzleSet
+        puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = currentPuzzleSet
       end
     end
   end
   for _, subDirectory in ipairs(FileUtils.getFilteredDirectoryItems(fullPath, "directory")) do
     local currentPuzzleSet = self:puzzleSetFromPath(fullPath .. "/" .. subDirectory, subDirectory)
-    puzzleSet.puzzleSets[#puzzleSet.puzzleSets+1] = currentPuzzleSet
+    puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = currentPuzzleSet
   end
 
   return puzzleSet
@@ -48,12 +65,12 @@ end
 
 -- Creates a new puzzle set from a given puzzle set by recursively putting all the puzzles at the root level.
 function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
-  local result = PuzzleSet("Puzzles", {}, {})
+  local result = PuzzleSet("Puzzles", nil, {}, {})
 
   for _, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
     local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(currentPuzzleSet, filter, sort)
     for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
-      result.puzzles[#result.puzzles+1] = puzzle
+      result.puzzles[#result.puzzles + 1] = puzzle
     end
   end
 
@@ -62,7 +79,7 @@ function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
     local trainingDate = self:getNextTrainingDateForPuzzleUUID(currentPuzzle.UUID)
     currentPuzzle.trainingDate = trainingDate
     currentPuzzle.puzzleEverBeaten = self.puzzleResults:puzzleEverBeaten(currentPuzzle.UUID)
-    result.puzzles[#result.puzzles+1] = currentPuzzle
+    result.puzzles[#result.puzzles + 1] = currentPuzzle
   end
 
   if filter then
@@ -100,7 +117,6 @@ local ALMOST_A_DAY = ONE_HOUR * 23
 local DAY = ONE_HOUR * 24
 -- Returns how long until the next training given a win streak
 function PuzzleLibrary:trainIntervalForStreak(streakCount)
-
   if streakCount >= 10 then
     return ALMOST_A_DAY + 30 * DAY
   elseif streakCount >= 5 then
@@ -127,7 +143,6 @@ end
 
 -- Returns the next timestamp this puzzle UUID should be trained
 function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
-
   local winStreak = self.puzzleResults:puzzleUUIDWinStreak(UUID)
   if winStreak == 0 then
     return 0
@@ -146,15 +161,15 @@ function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
   return nextTrainingDate
 end
 
-local invalidSetsForTraining = {"Classic set 1",
-    "Classic set 2",
-    "Classic set 3",
-    "Classic set 4",
-    "Classic set 5",
-    "Classic set 6",
-    "Bagagle Mode",
-    "Go Hard",
-    "Ridiculous Mode"}
+local invalidSetsForTraining = { "puzzle_name_classic_set_1",
+  "puzzle_name_classic_set_2",
+  "puzzle_name_classic_set_3",
+  "puzzle_name_classic_set_4",
+  "puzzle_name_classic_set_5",
+  "puzzle_name_classic_set_6",
+  "Bagagle Mode",
+  "Go Hard",
+  "Ridiculous Mode" }
 function PuzzleLibrary.filterPuzzleSetForTraining(puzzleSet)
   if tableUtils.contains(invalidSetsForTraining, puzzleSet.setName) then
     puzzleSet.puzzles = {}
@@ -178,7 +193,7 @@ function PuzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
     end
     timedResults[bucketDifference] = timedResults[bucketDifference] + 1
     if currentTime > puzzle.trainingDate then
-      results[#results+1] = puzzle
+      results[#results + 1] = puzzle
     end
   end
 
@@ -190,16 +205,18 @@ function PuzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
   end
   logger.debug(total .. " total puzzles")
 
-  local sortFunction = function(a,b) 
-      if a.trainingDate == b.trainingDate then
-        return a.UUID < b.UUID
-      end
-      return a.trainingDate < b.trainingDate
+  local sortFunction = function(a, b)
+    if a.trainingDate == b.trainingDate then
+      return a.UUID < b.UUID
     end
+    return a.trainingDate < b.trainingDate
+  end
 
   table.sort(results, sortFunction)
 
-  local puzzleSet = PuzzleSet("Training " .. #results, results)
+  local setName = loc("puzzle_training") .. " " .. #results
+  
+  local puzzleSet = PuzzleSet(setName, nil, results)
   return puzzleSet
 end
 
