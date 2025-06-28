@@ -868,7 +868,6 @@ end
 -- One run of the engine routine.
 function Stack:simulate()
   --prof.push("simulate 1")
-  local panels = self.panels
   local swapped_this_frame = nil
   table.clear(self.garbageLandedThisFrame)
   self:runCountDownIfNeeded()
@@ -975,7 +974,7 @@ function Stack:simulate()
             self.manual_raise = false
             self.rise_timer = 1
             if not self.prevent_manual_raise then
-              self.score = self.score + 1
+              self:addScore(1)
             end
             self.prevent_manual_raise = true
           end
@@ -1003,11 +1002,6 @@ function Stack:simulate()
     end
   end
   --prof.pop("chain update")
-
-  if (self.score > 99999) then
-    self.score = 99999
-  -- lol owned
-  end
 
   if not self:checkGameWin() then
     if self:checkGameOver() then
@@ -1459,7 +1453,7 @@ end
 ---@param panel Panel
 function Stack:onPop(panel)
   if not panel.isGarbage then
-    self.score = self.score + 10
+    self:addScore(10)
 
     self.panels_cleared = self.panels_cleared + 1
     if self.panels_cleared % self.levelData.shockFrequency == 0 then
@@ -1698,6 +1692,15 @@ function Stack:deinit()
         rollbackPanelBuffer[#rollbackPanelBuffer+1] = self.rollbackBuffer.buffer[i].panels[j]
       end
     end
+  end
+end
+
+---@param score integer
+function Stack:addScore(score)
+  self.score = self.score + score
+  if (self.score > 99999) then
+    self.score = 99999
+  -- lol owned
   end
 end
 
