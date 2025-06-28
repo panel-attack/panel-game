@@ -1,5 +1,17 @@
+--[[
+  WigglePay is named after a move that was coined by the community as "wiggling".
+  To wiggle means to chain swaps so rapidly that the passive raise of the stack is fully halted.
+  While physically intense, players with the required talents could stall death for several seconds without actually interacting with the stack.
+  Even more talented players could even move during a wiggle, thus potentially reaching solves they could not have with their legitimate invincibility frames alone.
+  This module adds functions that attach a health cost to each swap of a wiggle if and only if a wiggle is used to stall death (rather than a stack raise)
+  Notably swaps are only considered part of a wiggle if they repeat a swap between two panels that were already swapped to escape death once.
+  In that scenario, a set amount of health (swapStallingPunish) is subtracted from the Stack's health provided the player health would still be at least 1 afterwards.
+  If there is not enough health, the swap is denied instead.
+]]
 local WigglePay = {}
 
+---@param stack Stack
+---@return boolean # if the stack is in a state where swaps are the only thing keeping the player alive
 function WigglePay.isActive(stack)
   if stack.behaviours.swapStallingMode == 0 then
     return false
