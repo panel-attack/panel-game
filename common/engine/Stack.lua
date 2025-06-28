@@ -255,7 +255,7 @@ local Stack = class(
     s.cur_timer = 0 -- number of ticks for which a new direction's been pressed
     s.cursorDirection = nil -- the direction pressed
     s.cur_row = args.stackSetupModifications.startingRow or 7
-    s.cur_col = args.stackSetupModifications.startingCol or  3
+    s.cur_col = args.stackSetupModifications.startingCol or 3
     s.queuedSwapColumn = 0
     s.queuedSwapRow = 0
     if s.behaviours.passiveRaise then
@@ -535,10 +535,9 @@ local function internalRollbackToFrame(stack, frame)
   return true
 end
 
----@param self Stack
 ---@param frame integer the frame to rollback to if possible
 ---@return boolean success if rolling back succeeded
-function Stack.rollbackToFrame(self, frame)
+function Stack:rollbackToFrame(frame)
   local currentFrame = self.clock
 
   if internalRollbackToFrame(self, frame) then
@@ -575,7 +574,7 @@ end
 -- NOTE: the clock time is the save state for simulating right BEFORE that clock time is simulated
 function Stack:saveForRollback()
   prof.push("Stack:saveForRollback")
-  self:remove_extra_rows()
+  self:removeExtraRows()
   prof.push("Stack.rollbackCopy")
   self:rollbackCopy()
   prof.pop("Stack.rollbackCopy")
@@ -592,7 +591,7 @@ function Stack:saveForRollback()
   self:emitSignal("rollbackSaved", self.clock)
 end
 
-function Stack.toPuzzleInfo(self)
+function Stack:toPuzzleInfo()
   local puzzleInfo = {}
   puzzleInfo["Stop"] = self.stop_time
   puzzleInfo["Shake"] = self.shake_time
@@ -616,11 +615,11 @@ function Stack:hasMatchableGarbage()
   return false
 end
 
-function Stack.hasActivePanels(self)
+function Stack:hasActivePanels()
   return self.n_active_panels > 0 or self.n_prev_active_panels > 0
 end
 
-function Stack.has_falling_garbage(self)
+function Stack:hasFallingGarbage()
   for i = 1, self.height + 3 do --we shouldn't have to check quite 3 rows above height, but just to make sure...
     local panelRow = self.panels[i]
     for j = 1, self.width do
@@ -747,7 +746,7 @@ function Stack:shouldRun(runsSoFar)
 end
 
 -- Runs one step of the stack.
-function Stack.run(self)
+function Stack:run()
   prof.push("Stack:run")
 
   if self.is_local == false then
@@ -769,12 +768,12 @@ function Stack.run(self)
 end
 
 local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
-function Stack.idleInput(self)
+function Stack:idleInput()
   return (self.inputMethod == "touch" and touchIdleInput) or KeyDataEncoding.base64encode[1]
 end
 
 -- Grabs input from the buffer of inputs or from the controller and sends out to the network if needed.
-function Stack.setupInput(self)
+function Stack:setupInput()
   self.input_state = nil
 
   if self:game_ended() == false then
@@ -786,7 +785,7 @@ function Stack.setupInput(self)
   self:controls()
 end
 
-function Stack.receiveConfirmedInput(self, input)
+function Stack:receiveConfirmedInput(input)
   if utf8.len(input) == 1 then
     self.confirmedInput[#self.confirmedInput+1] = input
   else
@@ -796,7 +795,7 @@ function Stack.receiveConfirmedInput(self, input)
   --logger.debug("Player " .. self.which .. " got new input. Total length: " .. #self.confirmedInput)
 end
 
-function Stack.hasPanelsInTopRow(self)
+function Stack:hasPanelsInTopRow()
   local panelRow = self.panels[self.height]
   for idx = 1, self.width do
     if panelRow[idx]:dangerous() then
@@ -806,7 +805,7 @@ function Stack.hasPanelsInTopRow(self)
   return false
 end
 
-function Stack.updatePanels(self)
+function Stack:updatePanels()
   if self.do_countdown then
     return
   end
@@ -832,7 +831,7 @@ function Stack:shouldDropGarbage()
   else
     -- new garbage can't drop if the stack is full
     -- new garbage always drops one by one
-    if not self.panels_in_top_row and not self:has_falling_garbage() then
+    if not self.panels_in_top_row and not self:hasFallingGarbage() then
       if not self:hasActivePanels() then
         return true
       elseif garbage.isChain then
@@ -906,7 +905,7 @@ function Stack:simulate()
     --prof.pop("passive raise")
 
     --prof.push("reset stuff")
-    local hasFallingGarbage = self:has_falling_garbage()
+    local hasFallingGarbage = self:hasFallingGarbage()
     if not self.panels_in_top_row and not hasFallingGarbage then
       self.health = self.levelData.maxHealth
     end
@@ -977,7 +976,7 @@ function Stack:simulate()
         end
       elseif not self.manual_raise_yet then
         self.manual_raise = false
-      elseif self:has_falling_garbage() then
+      elseif self:hasFallingGarbage() then
         self.manual_raise = false
       end
     -- if the stack is rise locked when you press the raise button,
@@ -1013,9 +1012,9 @@ function Stack:simulate()
   self.outgoingGarbage:processStagedGarbageForClock(self.clock)
   --prof.pop("process staged garbage")
 
-  --prof.push("remove_extra_rows")
-  self:remove_extra_rows()
-  --prof.pop("remove_extra_rows")
+  --prof.push("removeExtraRows")
+  self:removeExtraRows()
+  --prof.pop("removeExtraRows")
 
   --prof.push("double-check panels_in_top_row")
   --double-check panels_in_top_row
@@ -1182,7 +1181,7 @@ end
 
 -- Sets the current stack as "lost"
 -- Also begins drawing game over effects
-function Stack.setGameOver(self)
+function Stack:setGameOver()
 
   if self.game_over_clock > 0 then
     -- it is possible that game over is set twice on the same frame
@@ -1320,7 +1319,7 @@ function Stack:swap(row, col)
 end
 
 -- Removes unneeded rows
-function Stack.remove_extra_rows(self)
+function Stack:removeExtraRows()
   local panels = self.panels
   for row = #panels, self.height + 1, -1 do
     local nonempty = false
@@ -1363,7 +1362,7 @@ function Stack:tryDropGarbage()
   return true
 end
 
-function Stack.getGarbageSpawnColumn(self, garbageWidth)
+function Stack:getGarbageSpawnColumn(garbageWidth)
   local columns = self.garbageSizeDropColumnMaps[garbageWidth]
   local index = self.currentGarbageDropColumnIndexes[garbageWidth]
   local spawnColumn = columns[index]
@@ -1372,7 +1371,7 @@ function Stack.getGarbageSpawnColumn(self, garbageWidth)
   return spawnColumn
 end
 
-function Stack.dropGarbage(self, width, height, isMetal)
+function Stack:dropGarbage(width, height, isMetal)
   -- garbage always drops in row 13
   local originRow = self.height + 1
   -- combo garbage will alternate it's spawn column
@@ -1495,7 +1494,7 @@ function Stack:createPanelAt(row, column)
 end
 
 ---@param panel Panel
-function Stack.onPop(self, panel)
+function Stack:onPop(panel)
   if not panel.isGarbage then
     self.score = self.score + 10
 
@@ -1509,14 +1508,14 @@ function Stack.onPop(self, panel)
 end
 
 ---@param panel Panel
-function Stack.onPopped(self, panel)
+function Stack:onPopped(panel)
   if self.panels_to_speedup then
     self.panels_to_speedup = self.panels_to_speedup - 1
   end
 end
 
 ---@param panel Panel
-function Stack.onLand(self, panel)
+function Stack:onLand(panel)
   -- need to emit signal before onGarbageLand because the panel is altered by onGarbageLand
   self:emitSignal("panelLanded", panel)
 
@@ -1526,7 +1525,7 @@ function Stack.onLand(self, panel)
 end
 
 ---@param panel Panel
-function Stack.onGarbageLand(self, panel)
+function Stack:onGarbageLand(panel)
   if panel.shake_time
     -- only parts of the garbage that are on the visible board can be considered for shake
     and panel.row <= self.height then
@@ -1546,7 +1545,7 @@ function Stack.onGarbageLand(self, panel)
   end
 end
 
-function Stack.hasChainingPanels(self)
+function Stack:hasChainingPanels()
   -- row 0 panels can never chain cause they're dimmed
   for row = 1, #self.panels do
     for col = 1, self.width do
