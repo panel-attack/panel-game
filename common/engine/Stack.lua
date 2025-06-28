@@ -1019,9 +1019,7 @@ function Stack:simulate()
   self.outgoingGarbage:processStagedGarbageForClock(self.clock)
   --prof.pop("process staged garbage")
 
-  --prof.push("removeExtraRows")
   self:removeExtraRows()
-  --prof.pop("removeExtraRows")
 
   prof.push("pop from incoming garbage q")
   if self:shouldDropGarbage() then
@@ -1300,21 +1298,18 @@ function Stack:swap(row, col)
   end
 end
 
--- Removes unneeded rows
+-- Removes unneeded rows from the top of the stack
 function Stack:removeExtraRows()
-  local panels = self.panels
-  for row = #panels, self.height + 1, -1 do
-    local nonempty = false
-    local panelRow = panels[row]
+  --prof.push("removeExtraRows")
+  for row = #self.panels, self.height + 1, -1 do
     for col = 1, self.width do
-      nonempty = nonempty or (panelRow[col].color ~= 0)
+      if self.panels[row][col].color ~= 0 then
+        return
+      end
     end
-    if nonempty then
-      break
-    else
-      panels[row] = nil
-    end
+    self.panels[row] = nil
   end
+  --prof.pop("removeExtraRows")
 end
 
 -- tries to drop a width x height garbage.
