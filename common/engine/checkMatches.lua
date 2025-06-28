@@ -833,7 +833,7 @@ function Stack:calculateStopTime(comboSize, toppedOut, isChain, chainCounter)
 end
 
 function Stack:awardStopTime(isChain, comboSize)
-  local stopTime = self:calculateStopTime(comboSize, self.panels_in_top_row, isChain, self.chain_counter)
+  local stopTime = self:calculateStopTime(comboSize, self:isToppedOut(), isChain, self.chain_counter)
   if stopTime > self.stop_time then
     self.stop_time = stopTime
   end

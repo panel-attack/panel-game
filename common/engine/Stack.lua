@@ -124,7 +124,6 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field score integer points incrementing on chain, combo, match, pop and manual raise according to certain rules
 ---@field chain_counter integer Number of the current chain links starting from 2; relevant for scoring and stop_time \n
 --- resets to 0 on chain end and sends garbage according to length
----@field panels_in_top_row boolean If there are panels in the top row of the stack; pre-condition for losing under the NEGATIVE_HEALTH game over condition
 ---@field n_active_panels integer How many panels are "active" on this frame; active panels prevent the stack from rising
 ---@field n_prev_active_panels integer How many panels were "active" on the previous frame; previous active panels prevent the stack from rising
 ---@field manual_raise boolean if true the stack is currently being manually raised; kept true until the raise has been completed
@@ -237,8 +236,6 @@ local Stack = class(
 
     s.score = 0
     s.chain_counter = 0
-
-    s.panels_in_top_row = false
 
     s.n_active_panels = 0
     s.n_prev_active_panels = 0
@@ -423,7 +420,6 @@ function Stack:rollbackCopy()
   copy.peak_shake_time = self.peak_shake_time
   copy.shake_time_on_frame = self.shake_time_on_frame
   copy.do_countdown = self.do_countdown
-  copy.panels_in_top_row = self.panels_in_top_row
   copy.has_risen = self.has_risen
   copy.metalPanelsQueued = self.metalPanelsQueued
   copy.panels_cleared = self.panels_cleared
@@ -480,7 +476,6 @@ local function internalRollbackToFrame(stack, frame)
   stack.peak_shake_time = copy.peak_shake_time
   stack.shake_time_on_frame = copy.shake_time_on_frame
   stack.do_countdown = copy.do_countdown
-  stack.panels_in_top_row = copy.panels_in_top_row
   stack.has_risen = copy.has_risen
   stack.metalPanelsQueued = copy.metalPanelsQueued
   stack.panels_cleared = copy.panels_cleared
@@ -620,10 +615,11 @@ function Stack:hasActivePanels()
 end
 
 function Stack:hasFallingGarbage()
-  for i = 1, self.height + 3 do --we shouldn't have to check quite 3 rows above height, but just to make sure...
-    local panelRow = self.panels[i]
-    for j = 1, self.width do
-      if panelRow and panelRow[j].isGarbage and panelRow[j].state == "falling" then
+  -- iterating top to bottom as finding falling garbage in upper rows is more likely
+  -- we shouldn't have to check quite 3 rows above height, but just to make sure...
+  for row = math.min(self.height + 3, #self.panels), 1, -1 do
+    for col = 1, self.width do
+      if self.panels[row][col].isGarbage and self.panels[row][col].state == "falling" then
         return true
       end
     end
@@ -795,10 +791,9 @@ function Stack:receiveConfirmedInput(input)
   --logger.debug("Player " .. self.which .. " got new input. Total length: " .. #self.confirmedInput)
 end
 
-function Stack:hasPanelsInTopRow()
-  local panelRow = self.panels[self.height]
-  for idx = 1, self.width do
-    if panelRow[idx]:dangerous() then
+function Stack:isToppedOut()
+  for col = 1, self.width do
+    if self.panels[self.height][col]:dangerous() then
       return true
     end
   end
@@ -828,27 +823,44 @@ function Stack:shouldDropGarbage()
 
   if not garbage then
     return false
-  else
+  elseif self:isToppedOut() then
     -- new garbage can't drop if the stack is full
+    return false
+  elseif self:hasFallingGarbage() then
     -- new garbage always drops one by one
-    if not self.panels_in_top_row and not self:hasFallingGarbage() then
-      if not self:hasActivePanels() then
-        return true
-      elseif garbage.isChain then
-        -- drop chain garbage higher than 1 row immediately
-        return garbage.height > 1
-      else
-        -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
-        -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
-        -- and because of that hack, we need to do another hack here and allow n-height combo garbage
-        -- technically garbage should get fixed garbageQueue side though so we should not reach here
-        if garbage.height > 1 then
-          logger.debug("Reached the cursed path")
-          return true
-        else
-          return false
+    return false
+  else
+    -- Verify that there are no panels in the way above the stack
+    for i = self.height + 1, #self.panels do
+      if self.panels[i] then
+        for j = 1, self.width do
+          if self.panels[i][j] then
+            if self.panels[i][j].color ~= 0 then
+              -- using warn logging here because of suspicion that this code is never reached
+              logger.warn("Aborting garbage drop: panel found at row " .. tostring(i) .. " column " .. tostring(j))
+              return false
+            end
+          end
         end
       end
+    end
+  end
+
+  if not self:hasActivePanels() then
+    return true
+  elseif garbage.isChain then
+    -- drop chain garbage higher than 1 row immediately
+    return garbage.height > 1
+  else
+    if garbage.height > 1 then
+      -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
+      -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
+      -- and because of that hack, we need to do another hack here and allow n-height combo garbage
+      -- technically garbage should get fixed garbageQueue side though so we should not reach here
+      logger.debug("Reached the cursed path")
+      return true
+    else
+      return false
     end
   end
 end
@@ -860,10 +872,6 @@ function Stack:simulate()
   local swapped_this_frame = nil
   table.clear(self.garbageLandedThisFrame)
   self:runCountDownIfNeeded()
-
-  --prof.push("simulate danger updates")
-  self.panels_in_top_row = self:hasPanelsInTopRow()
-  --prof.pop("simulate danger updates")
 
   if self.swapCount >= self.behaviours.startTimersWithSwapCount then
     --prof.push("shake time updates")
@@ -905,8 +913,7 @@ function Stack:simulate()
     --prof.pop("passive raise")
 
     --prof.push("reset stuff")
-    local hasFallingGarbage = self:hasFallingGarbage()
-    if not self.panels_in_top_row and not hasFallingGarbage then
+    if not self:isToppedOut() and not self:hasFallingGarbage() then
       self.health = self.levelData.maxHealth
     end
 
@@ -957,7 +964,7 @@ function Stack:simulate()
     if self.manual_raise then
       if not self.rise_lock then
         self.stop_time = 0
-        if self.panels_in_top_row then
+        if self:isToppedOut() then
           if self:checkGameOver() then
             self:setGameOver()
           end
@@ -1015,31 +1022,6 @@ function Stack:simulate()
   --prof.push("removeExtraRows")
   self:removeExtraRows()
   --prof.pop("removeExtraRows")
-
-  --prof.push("double-check panels_in_top_row")
-  --double-check panels_in_top_row
-
-  self.panels_in_top_row = false
-  -- If any dangerous panels are in the top row, garbage should not fall.
-  for col_idx = 1, self.width do
-    if panels[self.height][col_idx]:dangerous() then
-      self.panels_in_top_row = true
-      break
-    end
-  end
-  --prof.pop("double-check panels_in_top_row")
-
-  --prof.push("doublecheck panels above top row")
-  -- If any panels (dangerous or not) are in rows above the top row, garbage should not fall.
-  for row_idx = self.height + 1, #self.panels do
-    for col_idx = 1, self.width do
-      if panels[row_idx][col_idx].color ~= 0 then
-        self.panels_in_top_row = true
-        break
-      end
-    end
-  end
-  --prof.pop("doublecheck panels above top row")
 
   prof.push("pop from incoming garbage q")
   if self:shouldDropGarbage() then
@@ -1101,7 +1083,7 @@ end
 
 function Stack:advancePassiveRaise()
   if not self.manual_raise and self.stop_time == 0 and not self.rise_lock then
-    if self.panels_in_top_row then
+    if self:isToppedOut() then
       self.health = self.health - 1
     else
       self.rise_timer = self.rise_timer - 1
@@ -1339,20 +1321,6 @@ end
 -- returns true if garbage was dropped, false otherwise
 function Stack:tryDropGarbage()
   logger.debug("trying to drop garbage at frame "..self.clock)
-
-  -- Do one last check for panels in the way.
-  for i = self.height + 1, #self.panels do
-    if self.panels[i] then
-      for j = 1, self.width do
-        if self.panels[i][j] then
-          if self.panels[i][j].color ~= 0 then
-            logger.trace("Aborting garbage drop: panel found at row " .. tostring(i) .. " column " .. tostring(j))
-            return
-          end
-        end
-      end
-    end
-  end
 
   local garbage = self.incomingGarbage:pop()
   logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.clock, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
@@ -1636,7 +1604,7 @@ function Stack:checkGameOver()
       if stackOverCondition == MatchRules.StackOverConditions.HEALTH then
         if self.health <= value and self.shake_time <= 0 then
           return true
-        elseif not self.rise_lock and self.behaviours.allowManualRaise and self.panels_in_top_row and self.manual_raise then
+        elseif not self.rise_lock and self.behaviours.allowManualRaise and self:isToppedOut() and self.manual_raise then
           return true
         end
       elseif not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then

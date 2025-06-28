@@ -24,9 +24,9 @@ local floor, min, max = math.floor, math.min, math.max
 ---@field garbageTarget PlayerStack
 ---@field panels_dir string the id of the panel set id used for its shock garbage images
 ---@field poppedPanelIndex integer
----@field danger boolean panels in the top row (danger); unlike panels_in_top_row I think this does not indicate a top out in all cases
+---@field danger boolean if there is any panel in the two top-most visible rows
 ---@field danger_timer integer Decides the bounce frame while the column is in danger, increments and stops according to certain rules
----@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column. \n
+---@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column.
 ---@field analytic table
 ---@field player Player
 
@@ -1625,7 +1625,7 @@ function PlayerStack.updateDangerBounce(self)
   end
 
   if self.danger then
-    if self.engine.panels_in_top_row and self.engine.speed ~= 0 then
+    if self.engine:isToppedOut() and self.engine.speed ~= 0 then
       -- Player has topped out, panels hold the "flattened" frame
       self.danger_timer = 0
     elseif self.engine.stop_time == 0 then
