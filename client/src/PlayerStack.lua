@@ -1636,8 +1636,4 @@ function PlayerStack.updateDangerBounce(self)
   end
 end
 
-function PlayerStack:setPuzzleState(puzzle)
-  self.engine:setPuzzleState(puzzle)
-end
-
 return PlayerStack

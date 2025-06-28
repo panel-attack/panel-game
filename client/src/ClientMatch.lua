@@ -130,7 +130,7 @@ function ClientMatch.createFromReplay(replay, players)
 
   -- and assign their stacks from the engine
   for i, player in ipairs(clientMatch.players) do
-    local clientStack = player:createClientStack(clientMatch.engine.stacks[i], clientMatch)
+    local clientStack = player:createClientStack(clientMatch.engine.stacks[i])
     if replay.metadata.completed then
       -- watching a finished replay
       clientStack:setMaxRunsPerFrame(1)
@@ -159,7 +159,7 @@ function ClientMatch:setup()
       engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings, player.settings.healthSettings)
     end
 
-    clientStack = player:createClientStack(engineStack, self)
+    clientStack = player:createClientStack(engineStack)
     self.stacks[i] = clientStack
   end
 
