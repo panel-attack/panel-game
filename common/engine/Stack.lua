@@ -1467,6 +1467,7 @@ function Stack:getAttackPatternData()
 
   for _, garbage in ipairs(self.outgoingGarbage.history) do
     if garbage.isChain then
+      ---@cast garbage ChainGarbage
       if garbage.finalized then
         data.attackPatterns[#data.attackPatterns+1] = {chain = garbage.linkTimes, chainEndTime = garbage.finalizedClock}
       else
