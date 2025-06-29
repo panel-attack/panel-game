@@ -45,7 +45,13 @@ function WigglePay.canSwap(stack, panel1, panel2)
   local row = stack.cur_row
   local col = stack.cur_col
   for _, oldRecord in ipairs(stack.swapStallingBackLog) do
-    if oldRecord.leftId == panel1.id and oldRecord.rightId == panel2.id and oldRecord.row == row and oldRecord.col == col then
+    if oldRecord.clock >= stack.clock then
+      -- backLog is in timely sequence and saves the clock time of the record
+      -- with this check, rollback does not need to be considered:
+      --  in live play a garbage drop from the rollback implies WigglePay is not active (because garbage can only fall when not topped out) so it would naturally reset during resimulation
+      --  if there is no garbage drop after the rollback, the rerun is deterministic and will arrive at the same result already in the backlog
+      return true, 0
+    elseif oldRecord.leftId == panel1.id and oldRecord.rightId == panel2.id and oldRecord.row == row and oldRecord.col == col then
       if stack.health > stack.behaviours.swapStallingPunish then
         return true, stack.behaviours.swapStallingPunish
       else
@@ -64,11 +70,13 @@ end
 function WigglePay.registerSwap(stack, panel1, panel2, healthCost)
   if WigglePay.isActive(stack) then
     if healthCost == 0 then
-      local newRecord = { leftId = panel1.id, rightId = panel2.id, row = stack.cur_row, col = stack.cur_col }
-      -- mark the reverse swap of the swap initiated just now
-      stack.swapStallingBackLog[#stack.swapStallingBackLog+1] = { leftId = newRecord.rightId, rightId = newRecord.leftId, row = stack.cur_row, col = stack.cur_col }
-      -- and the swap itself so it's already marked in case the reverse swap happens and logic stays simple for when data is added
-      stack.swapStallingBackLog[#stack.swapStallingBackLog+1] = newRecord
+      if not stack:behindRollback() then
+        local newRecord = { leftId = panel1.id, rightId = panel2.id, row = stack.cur_row, col = stack.cur_col, clock = stack.clock }
+        -- mark the reverse swap of the swap initiated just now
+        stack.swapStallingBackLog[#stack.swapStallingBackLog+1] = { leftId = newRecord.rightId, rightId = newRecord.leftId, row = stack.cur_row, col = stack.cur_col, clock = stack.clock }
+        -- and the swap itself so it's already marked in case the reverse swap happens and logic stays simple for when data is added
+        stack.swapStallingBackLog[#stack.swapStallingBackLog+1] = newRecord
+      end
     else
       stack.health = stack.health - healthCost
     end
