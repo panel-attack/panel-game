@@ -252,8 +252,6 @@ function Puzzle:toGameMode()
     mode.matchRules.stackSetupModifications.behaviours = {
       allowManualRaise = false,
       passiveRaise = false,
-      swapStallingMode = 0,
-      swapStallingPunish = 0,
     }
     if self.puzzleType == "chain" then
       mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.CHAIN] = false
@@ -263,6 +261,7 @@ function Puzzle:toGameMode()
     end
   end
 
+  mode.matchRules.stackSetupModifications.behaviours.swapStallingMode = 0
   mode.matchRules.doCountdown = self.doCountdown
 
   return mode
