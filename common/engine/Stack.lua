@@ -172,6 +172,7 @@ local Stack = class(
     assert(args.panelSource)
 
     s.levelData = args.levelData
+    -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
     s.behaviours = StackBehaviours.getDefault()
     if args.stackSetupModifications.behaviours then
       for key, value in pairs(args.stackSetupModifications.behaviours) do
@@ -181,7 +182,6 @@ local Stack = class(
     s.panelSource = args.panelSource:clone(s)
     s.inputMethod = args.inputMethod
 
-    -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
 
     s.swapStallingBackLog = {}
 
@@ -206,7 +206,6 @@ local Stack = class(
 
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
-
     s.confirmedInput = table.new(43200, 0)
     s.garbageCreatedCount = 0
     s.garbageLandedThisFrame = {}
@@ -222,7 +221,6 @@ local Stack = class(
       end
     end
 
-    s.game_stopwatch_running = true
     s.max_runs_per_frame = 3
 
     s.displacement = 16
@@ -679,6 +677,15 @@ function Stack:controls()
 
     self.swapThisFrame = swap
 
+    if self.swapThisFrame and self:swapQueued() then
+      -- swapping is allowed at most every second frame
+      -- that is not necessarily a good thing as it can cause stealth attempts to fail due to the swaps being spaced too closely
+      --  without the player being aware why it failed, but it's difficult to change at the moment
+      -- see https://github.com/panel-attack/panel-game/issues/624
+      self.swapThisFrame = false
+      self:emitSignal("swapDenied")
+    end
+
     if up then
       new_dir = "up"
     elseif down then
@@ -756,8 +763,40 @@ function Stack:run()
   --prof.push("Stack:setupInput")
   self:setupInput()
   --prof.pop("Stack:setupInput")
+  local swapQueued = self:swapQueued()
   --prof.push("Stack:simulate")
-  self:simulate()
+  if self.game_stopwatch_running then
+    self:simulate()
+    self.game_stopwatch = self.game_stopwatch + 1
+  else
+    if self.do_countdown then
+      self:runCountDownIfNeeded()
+      if not self.do_countdown then
+        self.game_stopwatch_running = true
+        self:simulate()
+        self.game_stopwatch = self.game_stopwatch + 1
+      end
+    end
+  end
+
+  -- Phase 3. /////////////////////////////////////////////////////////////
+  -- Actions performed according to player input
+
+  self:applyCursorDirection(self.cursorDirection)
+
+  --prof.push("new swap")
+  -- Queue Swapping
+  -- Note: Swapping is queued in Stack.controls for touch mode
+  if self.inputMethod == "controller" and self.swapThisFrame then
+    local leftPanel = self.panels[self.cur_row][self.cur_col]
+    local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
+    self:tryQueueSwap(leftPanel, rightPanel)
+  end
+  --prof.pop("new swap")
+
+  self:handleManualRaise()
+
+  self.clock = self.clock + 1
   --prof.pop("Stack:simulate")
   prof.pop("Stack:run")
   self:emitSignal("finishedRun")
@@ -867,37 +906,14 @@ end
 
 -- One run of the engine routine.
 function Stack:simulate()
-  --prof.push("simulate 1")
-  local swapped_this_frame = nil
   table.clear(self.garbageLandedThisFrame)
-  self:runCountDownIfNeeded()
 
   if self.swapCount >= self.behaviours.startTimersWithSwapCount then
-    --prof.push("shake time updates")
-    self.prev_shake_time = self.shake_time
-    self.shake_time = self.shake_time - 1
-    self.shake_time = max(self.shake_time, self.shake_time_on_frame)
-    if self.shake_time == 0 then
-      self.peak_shake_time = 0
-    end
-    --prof.pop("shake time updates")
-    if self.pre_stop_time ~= 0 then
-      self.pre_stop_time = self.pre_stop_time - 1
-    elseif self.stop_time ~= 0 then
-      self.stop_time = self.stop_time - 1
-    end
-    --prof.pop("simulate 1")
-
-    --prof.push("new row stuff")
-    if self.displacement == 0 and self.has_risen then
-      self.top_cur_row = self.height
-      self:new_row()
-    end
-
+    --prof.push("simulate 1")
+    self:decrementInvincibilityTimers()
     self:updateRiseLock()
-    --prof.pop("new row stuff")
-
     self:updateSpeed()
+    --prof.pop("simulate 1")
 
     --prof.push("passive raise")
     -- Phase 0 //////////////////////////////////////////////////////////////
@@ -935,62 +951,6 @@ function Stack:simulate()
   self:checkMatches()
   self:updatePanels()
   self:updateActivePanelCount()
-
-  -- Phase 3. /////////////////////////////////////////////////////////////
-  -- Actions performed according to player input
-
-  self:applyCursorDirection(self.cursorDirection)
-
-  --prof.push("new swap")
-  -- Queue Swapping
-  -- Note: Swapping is queued in Stack.controls for touch mode
-  if self.inputMethod == "controller" then
-    if self.swapThisFrame then
-      if swapped_this_frame then
-        self:emitSignal("swapDenied")
-      else
-        local leftPanel = self.panels[self.cur_row][self.cur_col]
-        local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
-        self:tryQueueSwap(leftPanel, rightPanel)
-      end
-    end
-  end
-  --prof.pop("new swap")
-
-  --prof.push("active raise")
-  -- MANUAL STACK RAISING
-  if self.behaviours.allowManualRaise then
-    if self.manual_raise then
-      if not self.rise_lock then
-        self.stop_time = 0
-        if self:isToppedOut() then
-          if self:checkGameOver() then
-            self:setGameOver()
-          end
-        else
-          self.has_risen = true
-          self.displacement = self.displacement - 1
-          if self.displacement == 1 then
-            self.manual_raise = false
-            self.rise_timer = 1
-            if not self.prevent_manual_raise then
-              self:addScore(1)
-            end
-            self.prevent_manual_raise = true
-          end
-          self.manual_raise_yet = true --ehhhh
-        end
-      elseif not self.manual_raise_yet then
-        self.manual_raise = false
-      elseif self:hasFallingGarbage() then
-        self.manual_raise = false
-      end
-    -- if the stack is rise locked when you press the raise button,
-    -- the raising is cancelled
-    end
-  end
-  --prof.pop("active raise")
-
   --prof.push("chain update")
   -- if at the end of the routine there are no chain panels, the chain ends.
   if self.chain_counter ~= 0 and not self:hasChainingPanels() then
@@ -1002,12 +962,6 @@ function Stack:simulate()
     end
   end
   --prof.pop("chain update")
-
-  if not self:checkGameWin() then
-    if self:checkGameOver() then
-      self:setGameOver()
-    end
-  end
 
   --prof.push("process staged garbage")
   self.outgoingGarbage:processStagedGarbageForClock(self.clock)
@@ -1021,11 +975,77 @@ function Stack:simulate()
   end
   prof.pop("pop from incoming garbage q")
 
-  self.clock = self.clock + 1
-
-  if self.game_stopwatch_running then
-    self.game_stopwatch = (self.game_stopwatch or -1) + 1
+  if not self:checkGameWin() then
+    if self:checkGameOver() then
+      self:setGameOver()
+    end
   end
+end
+
+function Stack:decrementInvincibilityTimers()
+  self.prev_shake_time = self.shake_time
+  self.shake_time = self.shake_time - 1
+  self.shake_time = max(self.shake_time, self.shake_time_on_frame)
+  if self.shake_time == 0 then
+    self.peak_shake_time = 0
+  end
+
+  if self.pre_stop_time ~= 0 then
+    self.pre_stop_time = self.pre_stop_time - 1
+  elseif self.stop_time ~= 0 then
+    self.stop_time = self.stop_time - 1
+  end
+end
+
+function Stack:handleManualRaise()
+  --prof.push("active raise")
+  -- MANUAL STACK RAISING
+  if self.behaviours.allowManualRaise and self.manual_raise then
+    if not self.rise_lock then
+      -- no rise lock, the manual raise proceeds in the standard case
+      self.stop_time = 0
+      if self:isToppedOut() then
+        -- why is this game over check needed?
+        -- manual raise halts passive raise and only passive raise leads to health reduction
+        -- replacing this with health reduction could be a viable alternative
+        -- see also: https://github.com/panel-attack/panel-game/issues/437 and comments within checkGameOver itself
+        if self:checkGameOver() then
+          self:setGameOver()
+        end
+      else
+        self.has_risen = true
+        self.displacement = self.displacement - 1
+        if self.displacement == 1 then
+          if not self.prevent_manual_raise then
+            self:addScore(1)
+          end
+          -- the final decrement of displacement is forcefully deferred to passive raise through these 3 properties
+          -- see https://github.com/panel-attack/panel-game/issues/663 for more info
+          self.manual_raise = false
+          self.rise_timer = 1
+          self.prevent_manual_raise = true
+        elseif self.displacement == 0 then
+          -- edge case that only occurs when manual raise is pressed at displacement = 1
+          -- immediately create the new row and continue to raise another full row
+          self.top_cur_row = self.height
+          self:new_row()
+        end
+        -- this means we started the manual raise and so the manual raise will resume even after a rise lock
+        self.manual_raise_yet = true
+      end
+    elseif not self.manual_raise_yet then
+      -- manual raise was pressed but rise lock was already active so the manual raise will never be started
+      self.manual_raise = false
+    elseif self:hasFallingGarbage() then
+      -- the manual raise has been interrupted by falling garbage; in this scenario we don't want the raise to resume afterwards so it is cancelled here
+      self.manual_raise = false
+      -- falling garbage might result in a topout and trying to finish the raise afterwards would mean instant death the moment shake time runs out
+      -- even if there is still stop time or health remaining which is straight up unfair
+    end
+  -- if the stack is rise locked when you press the raise button,
+  -- the raising is suspended
+  end
+  --prof.pop("active raise")
 end
 
 ---@param direction CursorDirection?
@@ -1094,7 +1114,6 @@ end
 
 function Stack:runCountDownIfNeeded()
   if self.do_countdown then
-    self.game_stopwatch_running = false
     self.rise_lock = true
     if self.clock == 0 then
       self.animatingCursorDuringCountdown = true
@@ -1135,7 +1154,6 @@ function Stack:runCountDownIfNeeded()
         --we are done counting down
         self.do_countdown = false
         self.countdown_timer = nil
-        self.game_stopwatch_running = true
       end
       if self.countdown_timer then
         self.countdown_timer = self.countdown_timer - 1
@@ -1594,6 +1612,11 @@ function Stack:checkGameOver()
         if self.health <= value and self.shake_time <= 0 then
           return true
         elseif not self.rise_lock and self.behaviours.allowManualRaise and self:isToppedOut() and self.manual_raise then
+          -- this check is disputable, see https://github.com/panel-attack/panel-game/issues/437
+          -- with 1 maxHealth the difference is negligible as clearing out stop time means game over on the next frame if no swap was queued with the raise
+          -- but on lower levels it becomes rather easy to accidently kill yourself
+          -- this can be viewed as a positive (prepares for level 10 and punishes dangerous use of inputs; one tap -> one entire row, no need to hold down)
+          -- but also as a negative (accidently killing yourself in non-threatening circumstances)
           return true
         end
       elseif not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then
