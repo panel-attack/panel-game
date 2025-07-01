@@ -29,6 +29,7 @@ local MatchRules = require("common.data.MatchRules")
 ---@field maxTimeSpentRunning number
 ---@field clock integer
 ---@field ended boolean
+---@field gameOverClock integer?
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -507,11 +508,11 @@ function Match:hasEnded()
   end
 
   if self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-    if aliveCount == self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-      local gameOverClock = 0
-      for i = 1, #self.stacks do
-        if self.stacks[i].game_over_clock > gameOverClock then
-          gameOverClock = self.stacks[i].game_over_clock
+    if aliveCount <= self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
+      local gameOverClock = math.huge
+      for _, stack in ipairs(self.stacks) do
+        if stack.game_over_clock > 0 then
+          gameOverClock = math.min(stack.game_over_clock, gameOverClock)
         end
       end
       self.gameOverClock = gameOverClock
