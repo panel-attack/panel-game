@@ -18,12 +18,12 @@
 --   by testing enough replays e.g. an entire month it should be possible to find at least one replay that exhibits misbehaviour to indicate a problem
 
 
-local VERIFICATION_PATH = "replays/verifier/2024/04/01"
+local VERIFICATION_PATH = "replays/verifier/2025/05/"
 local OUTPUT = "problematicReplays"
 -- override the replay version of the used replays
 -- this is a crutch because server replays never saved the engine version in the replay
 -- and there is a countdown fix in engine code specifically referencing v046 that can lead to issues
-local ENGINE_VERSION_OVERRIDE = "047"
+--local ENGINE_VERSION_OVERRIDE = "047"
 
 require("common.lib.mathExtensions")
 local util = require("common.lib.util")
@@ -31,36 +31,37 @@ util.addToCPath("./common/lib/??")
 util.addToCPath("./server/lib/??")
 local logger = require("common.lib.logger")
 require("client.src.globals")
-local Game = require("client.src.Game")
 local verifier = require("common.tests.engine.IntegrityVerification")
 local cr = coroutine.create(verifier.bulkVerifyReplays)
+local system = require("client.src.system")
 
-function love.load()
-  -- this is necessary setup of globals while non-client tests still depend on client components
-  GAME = Game()
-  GAME:load()
-
-  local cr = coroutine.create(GAME.setupRoutine)
-  while coroutine.status(cr) ~= "dead" do
-    local success, status = coroutine.resume(cr, GAME)
-    if not success then
-      GAME.crashTrace = debug.traceback(cr)
-      error(status)
-    end
-  end
-
-  GAME.muteSound = true
-
+function love.load(arg)
   if not love.filesystem.exists(OUTPUT) then
     love.filesystem.createDirectory(OUTPUT)
   end
 
-  verifier.overrideEngineVersion(ENGINE_VERSION_OVERRIDE)
+  --verifier.overrideEngineVersion(ENGINE_VERSION_OVERRIDE)
+  local f = function() end
+  -- to speed up the test a bit, turn logger functions into empty functions so that the calls and stdout don't have to happen
+  logger.trace = f
+  logger.debug = f
+  logger.info = f
+
+  if arg[1] == "debug" then
+    system.startDebugger()
+    verifier.bulkVerifyReplays(VERIFICATION_PATH, OUTPUT)
+  end
 end
 
 function love.update()
-  if coroutine.status(cr) ~= "dead" then
-    coroutine.resume(cr, VERIFICATION_PATH, OUTPUT)
+  local status = coroutine.status(cr)
+  if status ~= "dead" then
+    local success, err = coroutine.resume(cr, VERIFICATION_PATH, OUTPUT)
+    if not success then
+      print(err)
+      print(debug.traceback(cr))
+      love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
+    end
   else
     love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
     love.event.quit(0)
@@ -69,4 +70,7 @@ end
 
 function love.draw()
   love.graphics.print("Processed " .. verifier.processed .. " replays with " .. #verifier.faulty .. " problems", 10, 10)
+  local t = love.timer.getTime()
+  love.graphics.print(t .. "s run time", 10, 30)
+  love.graphics.print((verifier.processed / t) .. " replays per second", 10, 50)
 end
