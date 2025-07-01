@@ -1,8 +1,9 @@
 local utf8 = require("common.lib.utf8Additions")
 
-function string.toCharTable(self)
+---@param str string
+function string.toCharTable(str)
   local t = {}
-  for _, codePoint in utf8.codes(self) do
+  for _, codePoint in utf8.codes(str) do
     local character = utf8.char(codePoint)
     t[#t+1] = character
   end

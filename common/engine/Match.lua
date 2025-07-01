@@ -396,7 +396,7 @@ function Match:createNewReplay()
         levelData = stack.levelData,
         stackBehaviours = stack.behaviours,
         inputMethod = stack.inputMethod,
-        inputs = InputCompression.compressInputString(table.concat(stack.confirmedInput))
+        inputs = InputCompression.compressInputTable(stack.confirmedInput)
       }
       replay.stacks[i] = replayStack
     elseif stack.TYPE == "SimulatedStack" then
@@ -551,8 +551,6 @@ function Match:hasEnded()
 end
 
 function Match:handleMatchEnd()
-  self:checkAborted()
-
   if self.aborted then
     self.winners = {}
   else
@@ -576,55 +574,6 @@ end
 -- a local function to avoid creating a closure every frame
 local checkGameEnded = function(stack)
   return stack:game_ended()
-end
-
-local TOTAL_COUNTDOWN_LENGTH = consts.COUNTDOWN_LENGTH + consts.COUNTDOWN_START
-
----@return boolean hasAborted
-function Match:checkAborted()
-  -- the aborted flag may get set if the game is aborted through outside causes (usually network)
-  -- this function checks if the match got aborted through inside causes (local player abort or local desync)
-  if not self.aborted then
-    if self:isIrrecoverablyDesynced() then
-      -- someone got a desync error, this definitely died
-      self.aborted = true
-      self.winners = {}
-    elseif self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-      local alive = 0
-      for i = 1, #self.stacks do
-        if not self.stacks[i]:game_ended() then
-          alive = alive + 1
-        end
-        -- if there is more than n alive with a stacksActive condition, this must have been aborted
-        if alive > self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-          self.aborted = true
-          self.winners = {}
-          break
-        end
-      end
-    elseif self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT] then
-      local timeLimit = self.timeLimit
-      if self.doCountdown then
-        timeLimit = timeLimit + TOTAL_COUNTDOWN_LENGTH
-      end
-      for i, stack in ipairs(self.stacks) do
-        if not stack:game_ended() and stack.clock < timeLimit then
-          self.aborted = true
-          self.winners = {}
-          break
-        end
-      end
-    else
-      -- if this is not last alive and no desync that means we expect EVERY stack to be game over
-      if not tableUtils.trueForAll(self.stacks, checkGameEnded) then
-        -- someone didn't lose so this got aborted (e.g. through a pause -> leave)
-        self.aborted = true
-        self.winners = {}
-      end
-    end
-  end
-
-  return self.aborted
 end
 
 -- returns true if the stack should run once more during the current match:run
@@ -704,7 +653,7 @@ function Match:createStackWithSettings(levelData, isLocal, inputMethod, inputs)
   self.garbageTargets[#self.stacks] = {}
   self.garbageSources[stack] = {}
   if inputs then
-    stack:receiveConfirmedInput(InputCompression.decompressInputString(inputs))
+    stack:receiveConfirmedInput(InputCompression.decompressInputString2(inputs))
   end
 
   return stack

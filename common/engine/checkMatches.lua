@@ -833,7 +833,7 @@ function Stack:calculateStopTime(comboSize, toppedOut, isChain, chainCounter)
 end
 
 function Stack:awardStopTime(isChain, comboSize)
-  local stopTime = self:calculateStopTime(comboSize, self.panels_in_top_row, isChain, self.chain_counter)
+  local stopTime = self:calculateStopTime(comboSize, self:isToppedOut(), isChain, self.chain_counter)
   if stopTime > self.stop_time then
     self.stop_time = stopTime
   end
@@ -852,12 +852,12 @@ end
 function Stack:updateScoreWithCombo(comboSize)
   if comboSize > 3 then
     if (score_mode == consts.SCOREMODE_TA) then
-      self.score = self.score + SCORE_COMBO_TA[math.min(30, comboSize)]
+      self:addScore(SCORE_COMBO_TA[math.min(30, comboSize)])
     elseif (score_mode == consts.SCOREMODE_PDP64) then
       if (comboSize < 41) then
-        self.score = self.score + SCORE_COMBO_PdP64[comboSize]
+        self:addScore(SCORE_COMBO_PdP64[comboSize])
       else
-        self.score = self.score + 20400 + ((comboSize - 40) * 800)
+        self:addScore(20400 + ((comboSize - 40) * 800))
       end
     end
   end
@@ -869,7 +869,7 @@ function Stack:updateScoreWithChain()
     if (chain_bonus > 13) then
       chain_bonus = 0
     end
-    self.score = self.score + SCORE_CHAIN_TA[chain_bonus]
+    self:addScore(SCORE_CHAIN_TA[chain_bonus])
   end
 end
 
