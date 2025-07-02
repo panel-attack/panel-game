@@ -56,7 +56,7 @@ function love.load(arg)
 end
 
 function love.update()
-  --love.timer.sleep(1/120)
+  love.timer.sleep(1/60)
   if not verifier.pollMessages() then
     if verifier.hasFinished() then
       love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
