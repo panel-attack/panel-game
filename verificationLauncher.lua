@@ -32,7 +32,7 @@ util.addToCPath("./server/lib/??")
 local logger = require("common.lib.logger")
 require("client.src.globals")
 local verifier = require("common.tests.engine.IntegrityVerification")
-local cr = coroutine.create(verifier.bulkVerifyReplays)
+local cr = coroutine.create(verifier.asyncBulkVerifyReplays)
 local system = require("client.src.system")
 
 function love.load(arg)
@@ -48,26 +48,35 @@ function love.load(arg)
   logger.debug = f
   logger.info = f
 
-  verifier.initializeThreads(4)
   if arg[1] == "debug" then
     system.startDebugger()
   end
-  verifier.bulkVerifyReplays(VERIFICATION_PATH)
+  verifier.asyncBulkVerifyReplays(VERIFICATION_PATH, 4)
+end
+
+local function terminate()
+  love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
+  love.event.quit(0)
 end
 
 function love.update()
   love.timer.sleep(1/60)
   if not verifier.pollMessages() then
     if verifier.hasFinished() then
-      love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
-      love.event.quit(0)
+      terminate()
     end
+  end
+
+  if (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) and love.keyboard.isDown("c") then
+    -- early exit without losing the notes about faulty results
+    terminate()
   end
 end
 
 function love.draw()
   love.graphics.print("Processed " .. verifier.processed .. " replays with " .. #verifier.faulty .. " problems", 10, 10)
   local t = love.timer.getTime()
-  love.graphics.print(t .. "s run time", 10, 30)
+  love.graphics.print(math.floor(t) .. "s run time", 10, 30)
   love.graphics.print((verifier.processed / t) .. " replays per second", 10, 50)
+  love.graphics.print(math.floor(verifier.framesProcessed / t) .. " frames per second", 10, 70)
 end

@@ -14,7 +14,7 @@ logger.trace = f
 logger.debug = f
 logger.info = f
 
-local id, filePaths = ...
+local filePaths, versionOverride = ...
 
 ---@param replay ReplayV3
 ---@return boolean success
@@ -82,7 +82,7 @@ end
 local function loadReplay(filePath, versionOverride)
   local replayTable = fileUtils.readJsonFile(filePath)
   if not replayTable then
-    love.thread.getChannel(id .. "out"):push({filePath = filePath, message = "Failed to read file"})
+    love.thread.getChannel("verificationResult"):push({filePath = filePath, message = "Failed to read file"})
   else
     if versionOverride then
       -- server replays did not save version number until late v047 and the internal processor assumes v046 in that case which may be wrong
@@ -91,7 +91,7 @@ local function loadReplay(filePath, versionOverride)
     end
     local replay = ReplayV3.createFromTable(replayTable, true)
     if not replay then
-      love.thread.getChannel(id .. "out"):push({filePath = filePath, message = "Failed to create replay"})
+      love.thread.getChannel("verificationResult"):push({filePath = filePath, message = "Failed to create replay"})
     elseif not replay.metadata.incomplete then
       return replay
     end
@@ -99,10 +99,10 @@ local function loadReplay(filePath, versionOverride)
 end
 
 for i, filePath in ipairs(filePaths) do
-  local replay = loadReplay(filePath)
+  local replay = loadReplay(filePath, versionOverride)
   if replay then
     local verified, winnerIndex, clock, expectedDuration = verifyReplay(replay)
-    love.thread.getChannel(id .. "out"):push({verified = verified,
+    love.thread.getChannel("verificationResult"):push({verified = verified,
                                               winnerIndex = winnerIndex,
                                               expectedWinnerIndex = (replay.metadata.winnerIndex or "unknown"),
                                               clock = clock,

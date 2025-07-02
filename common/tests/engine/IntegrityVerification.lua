@@ -20,17 +20,10 @@ function verifier.initializeThreads(threadCount)
   end
 end
 
-function verifier.cleanUpThreads()
-  for i = 1, verifier.threadCount do
-    love.thread.getChannel(tostring(i) .. "in"):push("shutdown")
-    verifier.threads[i]:wait()
-  end
-end
-
 function verifier.pollMessages()
   local polledAny = false
   for i = 1, verifier.threadCount do
-    local message = love.thread.getChannel(tostring(i) .. "out"):pop()
+    local message = love.thread.getChannel("verificationResult"):pop()
     if message then
       polledAny = true
       verifier.processed = verifier.processed + 1
@@ -55,6 +48,8 @@ function verifier.pollMessages()
   return polledAny
 end
 
+-- naive strategy: give each thread the same count of replays
+-- on the tail end some threads will be faster than the others but with enough replays it should average out and take a negligible amount of extra time
 function verifier.populatePerThreadFileLists(replayPath, startIndex)
   local j = startIndex or 1
   local items = love.filesystem.getDirectoryItems(replayPath)
@@ -71,10 +66,11 @@ function verifier.populatePerThreadFileLists(replayPath, startIndex)
   return j
 end
 
-function verifier.bulkVerifyReplays(replayPath)
+function verifier.asyncBulkVerifyReplays(replayPath, threadCount)
+  verifier.initializeThreads(threadCount)
   verifier.populatePerThreadFileLists(replayPath)
   for i = 1, verifier.threadCount do
-    verifier.threads[i]:start(tostring(i), verifier.pathsPerThread[i])
+    verifier.threads[i]:start(verifier.pathsPerThread[i], verifier.versionOverride)
   end
 end
 
