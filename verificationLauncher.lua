@@ -42,29 +42,26 @@ function love.load(arg)
 
   --verifier.overrideEngineVersion(ENGINE_VERSION_OVERRIDE)
   local f = function() end
-  -- to speed up the test a bit, turn logger functions into empty functions so that the calls and stdout don't have to happen
+  -- to speed up the test a bit, turn logger functions into empty functions so that stdout doesn't have to happen
+  -- with some luck, luajit will correct identify all args to these functions as unused and optimize them out, saving a huge load of string concatenation
   logger.trace = f
   logger.debug = f
   logger.info = f
 
+  verifier.initializeThreads(4)
   if arg[1] == "debug" then
     system.startDebugger()
-    verifier.bulkVerifyReplays(VERIFICATION_PATH, OUTPUT)
   end
+  verifier.bulkVerifyReplays(VERIFICATION_PATH)
 end
 
 function love.update()
-  local status = coroutine.status(cr)
-  if status ~= "dead" then
-    local success, err = coroutine.resume(cr, VERIFICATION_PATH, OUTPUT)
-    if not success then
-      print(err)
-      print(debug.traceback(cr))
+  --love.timer.sleep(1/120)
+  if not verifier.pollMessages() then
+    if verifier.hasFinished() then
       love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
+      love.event.quit(0)
     end
-  else
-    love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
-    love.event.quit(0)
   end
 end
 

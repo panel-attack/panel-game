@@ -600,7 +600,7 @@ function Match:shouldRun(stack, runsSoFar)
   end
 
   -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
+  if config and config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
     -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
     if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
       if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then
