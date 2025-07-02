@@ -55,7 +55,9 @@ function love.load(arg)
 end
 
 local function terminate()
-  love.filesystem.write(OUTPUT .. "/faulty.json", json.encode(verifier.faulty))
+  local j = json.encode(verifier.faulty, {indent = true, keyorder = { "path", "reason" }})
+  ---@cast j string
+  love.filesystem.write(OUTPUT .. "/faulty.json", j)
   love.event.quit(0)
 end
 
