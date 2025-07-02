@@ -14,6 +14,8 @@ logger.trace = f
 logger.debug = f
 logger.info = f
 
+local stopChannel = love.thread.getChannel("stop")
+
 local filePaths, versionOverride = ...
 
 ---@param replay ReplayV3
@@ -108,5 +110,8 @@ for i, filePath in ipairs(filePaths) do
                                               clock = clock,
                                               expectedDuration = expectedDuration,
                                               filePath = filePath})
+  end
+  if stopChannel:peek() then
+    break
   end
 end

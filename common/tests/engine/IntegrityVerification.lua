@@ -81,6 +81,14 @@ function verifier.hasFinished()
   return not tableUtils.trueForAny(verifier.threads, threadIsRunning)
 end
 
+function verifier.cancelBulkVerification()
+  love.thread.getChannel("stop"):push("stop")
+  while not verifier.hasFinished() do
+  end
+  -- make sure to poll any remaining results
+  verifier.pollMessages()
+end
+
 -- ---@param replay ReplayV3
 -- ---@return boolean success
 -- ---@return integer winnerIndex

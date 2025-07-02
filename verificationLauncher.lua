@@ -71,6 +71,7 @@ function love.update()
 
   if (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) and love.keyboard.isDown("c") then
     -- early exit without losing the notes about faulty results
+    verifier.cancelBulkVerification()
     terminate()
   end
 end
