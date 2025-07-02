@@ -22,27 +22,26 @@ end
 
 function verifier.pollMessages()
   local polledAny = false
-  for i = 1, verifier.threadCount do
-    local message = love.thread.getChannel("verificationResult"):pop()
-    if message then
-      polledAny = true
-      verifier.processed = verifier.processed + 1
-      if message.verified == nil then
-        verifier.faulty[#verifier.faulty+1] = { path = message.filePath, reason = message.message }
+  local message = love.thread.getChannel("verificationResult"):pop()
+  while message do
+    polledAny = true
+    verifier.processed = verifier.processed + 1
+    if message.verified == nil then
+      verifier.faulty[#verifier.faulty+1] = { path = message.filePath, reason = message.message }
+    else
+      verifier.framesProcessed = verifier.framesProcessed + message.clock
+      if message.verified == false then
+        verifier.faulty[#verifier.faulty+1] = {
+          path = message.filePath,
+          reason = "Replay stopped running at " .. message.clock .. " with winner " .. message.winnerIndex
+              ..   " but should have stopped at " .. message.expectedDuration .. " with winner " .. message.expectedWinnerIndex
+        }
       else
-        verifier.framesProcessed = verifier.framesProcessed + message.clock
-        if message.verified == false then
-          verifier.faulty[#verifier.faulty+1] = {
-            path = message.filePath,
-            reason = "Replay stopped running at " .. message.clock .. " with winner " .. message.winnerIndex
-                ..   " but should have stopped at " .. message.expectedDuration .. " with winner " .. message.expectedWinnerIndex
-          }
-        else
-          -- verification can run for a very long time so removing verified files prevents us from checking dupes if running in parts     
-          love.filesystem.remove(message.filePath)
-        end
+        -- verification can run for a very long time so removing verified files prevents us from checking dupes if running in parts
+        love.filesystem.remove(message.filePath)
       end
     end
+    message = love.thread.getChannel("verificationResult"):pop()
   end
 
   return polledAny

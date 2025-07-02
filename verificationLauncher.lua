@@ -78,5 +78,6 @@ function love.draw()
   local t = love.timer.getTime()
   love.graphics.print(math.floor(t) .. "s run time", 10, 30)
   love.graphics.print((verifier.processed / t) .. " replays per second", 10, 50)
-  love.graphics.print(math.floor(verifier.framesProcessed / t) .. " frames per second", 10, 70)
+  -- * 2 because these are 2 player replays
+  love.graphics.print(math.floor(verifier.framesProcessed * 2 / t) .. " frames per second", 10, 70)
 end
