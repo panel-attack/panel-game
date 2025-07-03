@@ -25,14 +25,9 @@ local OUTPUT = "problematicReplays"
 -- and there is a countdown fix in engine code specifically referencing v046 that can lead to issues
 --local ENGINE_VERSION_OVERRIDE = "047"
 
-require("common.lib.mathExtensions")
-local util = require("common.lib.util")
-util.addToCPath("./common/lib/??")
-util.addToCPath("./server/lib/??")
+require("common.lib.util")
 local logger = require("common.lib.logger")
-require("client.src.globals")
 local verifier = require("common.tests.engine.IntegrityVerification")
-local cr = coroutine.create(verifier.asyncBulkVerifyReplays)
 local system = require("client.src.system")
 
 function love.load(arg)
@@ -50,8 +45,13 @@ function love.load(arg)
 
   if arg[1] == "debug" then
     system.startDebugger()
+    if not arg[2] then
+      error("Can only run one replay in debug mode, pass its file path as the second argument!")
+    end
+    verifier.verifyReplay(arg[2])
+  else
+    verifier.asyncBulkVerifyReplays(VERIFICATION_PATH, 5)
   end
-  verifier.asyncBulkVerifyReplays(VERIFICATION_PATH, 4)
 end
 
 local function terminate()

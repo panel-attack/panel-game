@@ -2,7 +2,9 @@
 -- all  replays that do not finish correctly with the current engine are copied into a separate directory
 
 local util = require("common.lib.util")
+local fileUtils = require("client.src.FileUtils")
 local tableUtils = require("common.lib.tableUtils")
+local verification = require("common.tests.engine.IntegrityVerificationSingle")
 
 local verifier = { faulty = {}, processed = 0, framesProcessed = 0}
 
@@ -10,6 +12,7 @@ function verifier.overrideEngineVersion(version)
   verifier.versionOverride = version
 end
 
+---@param threadCount integer
 function verifier.initializeThreads(threadCount)
   verifier.pathsPerThread = {}
   verifier.threads = {}
@@ -20,6 +23,7 @@ function verifier.initializeThreads(threadCount)
   end
 end
 
+---@return boolean # if any messages were processed
 function verifier.pollMessages()
   local polledAny = false
   local message = love.thread.getChannel("verificationResult"):pop()
@@ -49,6 +53,8 @@ end
 
 -- naive strategy: give each thread the same count of replays
 -- on the tail end some threads will be faster than the others but with enough replays it should average out and take a negligible amount of extra time
+---@param replayPath string the directory containing all replays to be processed, traversed recursively
+---@param startIndex integer? the index to assign the next filePath to, defaults to 1
 function verifier.populatePerThreadFileLists(replayPath, startIndex)
   local j = startIndex or 1
   local items = love.filesystem.getDirectoryItems(replayPath)
@@ -65,8 +71,19 @@ function verifier.populatePerThreadFileLists(replayPath, startIndex)
   return j
 end
 
+---@param replayPath string the directory containing all replays to be processed, traversed recursively
+---@param threadCount integer? default 3 <br>
+--- higher thread counts observe strongly diminishing returns on speed, probably because the CPU starts to get cache misses with too many threads <br>
+--- reference values for my machine, assume 1 thread = 100% speed <br>
+--- 2 threads = ~175% speed <br>
+--- 3 threads = ~235% speed <br>
+--- 4 threads = ~215% speed <br>
+--- 5 threads = ~250% speed <br>
+--- 8 threads = ~270% speed <br>
+--- this likely varies with load, the assumption is that more than 3 threads start to overtax CPU cache and the more threads the more cache misses you'll get <br>
+--- my CPU has 8MB L2 cache and 32MB L3 cache for reference
 function verifier.asyncBulkVerifyReplays(replayPath, threadCount)
-  verifier.initializeThreads(threadCount)
+  verifier.initializeThreads(threadCount or 3)
   verifier.populatePerThreadFileLists(replayPath)
   for i = 1, verifier.threadCount do
     verifier.threads[i]:start(verifier.pathsPerThread[i], verifier.versionOverride)
@@ -77,6 +94,7 @@ local function threadIsRunning(t)
   return t:isRunning()
 end
 
+---@return boolean
 function verifier.hasFinished()
   return not tableUtils.trueForAny(verifier.threads, threadIsRunning)
 end
@@ -89,67 +107,30 @@ function verifier.cancelBulkVerification()
   verifier.pollMessages()
 end
 
--- ---@param replay ReplayV3
--- ---@return boolean success
--- ---@return integer winnerIndex
--- ---@return integer matchClock
--- ---@return integer expectedDuration
--- function verifier.verifyReplay(replay)
---   local match = Match.createFromReplay(replay)
---   -- probably a lot faster without rollback
---   match:setAlwaysSaveRollbacks(false)
---   match:start()
+--- verifies a single replay; does not delete the file regardless of result
+---@param filePath string
+---@param versionOverride string?
+function verifier.verifyReplay(filePath, versionOverride)
+  local jsonTable = fileUtils.readJsonFile(filePath)
+  if not jsonTable then
+    verifier.faulty[#verifier.faulty + 1] = { path = filePath, reason = "Failed to read json" }
+    return
+  end
 
---   local expectedDuration = replay.metadata.duration
---   if not expectedDuration then
---     -- if duration did not save somehow, get it from the decompressed inputs
---     -- in local replays the input counts may differ so pick the lowest input count as when losing locally, the opponent keeps playing until simulating your loss
---     for _, stack in ipairs(match.stacks) do
---       if stack.TYPE == "Stack" then
---         ---@cast stack Stack
---         if expectedDuration then
---           expectedDuration = math.min(expectedDuration, #stack.confirmedInput)
---         else
---           expectedDuration = #stack.confirmedInput
---         end
---       end
---     end
---   end
---   ---@cast expectedDuration integer
+  local replay = verification.loadReplay(jsonTable, versionOverride)
+  if not replay then
+    verifier.faulty[#verifier.faulty + 1] = { path = filePath, reason = "Failed to load replay" }
+    return
+  end
 
---   -- the extra clock safeguards against getting stuck if for some reason the match fails to advance to the end
---   local clock = 0
---   while not match:hasEnded() and clock < expectedDuration * 2 do
---     clock = clock + 1
---     match:run()
---   end
-
---   match:handleMatchEnd()
-
---   for _, stack in ipairs(match.stacks) do
---     if stack.TYPE == "Stack" then
---       ---@cast stack Stack
---       stack:deinit()
---     end
---   end
-
---   -- winners is always a table with at least 1 player (2 in case of a tie)
---   -- it being empty signifies the match never finished
---   if match.winners == nil then
---     return false, 0, match.clock, expectedDuration
---   end
-
---   if not match.gameOverClock or (match.gameOverClock + 1 < expectedDuration) then
---     return false, tableUtils.indexOf(match.stacks, match.winners[1]), match.clock, expectedDuration
---   end
-
---   if replay.metadata.winnerIndex and replay.metadata.winnerIndex ~= tableUtils.indexOf(match.stacks, match.winners[1]) then
---     return false, tableUtils.indexOf(match.stacks, match.winners[1]), match.clock, expectedDuration
---   end
-
---   -- is there another check necessary?
-
---   return true, tableUtils.indexOf(match.stacks, match.winners[1]), match.clock, expectedDuration
--- end
+  local verified, winnerIndex, clock, expectedDuration = verification.verifyReplay(replay)
+  if not verified then
+    verifier.faulty[#verifier.faulty+1] = {
+      path = filePath,
+      reason = "Replay stopped running at " .. clock .. " with winner " .. winnerIndex
+          ..   " but should have stopped at " .. expectedDuration .. " with winner " .. (replay.metadata.winnerIndex or "Unknown")
+    }
+  end
+end
 
 return verifier

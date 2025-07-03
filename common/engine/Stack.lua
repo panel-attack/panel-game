@@ -876,6 +876,8 @@ function Stack:shouldDropGarbage()
           if self.panels[i][j] then
             if self.panels[i][j].color ~= 0 then
               -- using warn logging here because of suspicion that this code is never reached
+              -- after bulk verification this code was presumably hit for 3 replays out of 18000+ and always found a panel in row 13 column 1
+              -- so it has to stay for now but probably worth investigating under which circumstances it does not hit either of the other checks
               logger.warn("Aborting garbage drop: panel found at row " .. tostring(i) .. " column " .. tostring(j))
               return false
             end
