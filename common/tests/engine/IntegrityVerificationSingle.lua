@@ -31,11 +31,16 @@ function singleVerification.verifyReplay(replay)
   -- probably a lot faster without rollback
   match:setAlwaysSaveRollbacks(false)
   match:start()
+  for _, stack in ipairs(match.stacks) do
+    -- we can get different input counts, make sure we don't overshoot game over if one player had more inputs than the other
+    stack:setMaxRunsPerFrame(1)
+  end
 
   local expectedDuration = replay.metadata.duration
   if not expectedDuration then
     -- if duration did not save somehow, get it from the decompressed inputs
-    -- in local replays the input counts may differ so pick the lowest input count as when losing locally, the opponent keeps playing until simulating your loss
+    -- the input counts may differ between players as when losing locally, the opponent keeps playing until simulating your loss
+    --  so pick the lowest input count
     for _, stack in ipairs(match.stacks) do
       if stack.TYPE == "Stack" then
         ---@cast stack Stack

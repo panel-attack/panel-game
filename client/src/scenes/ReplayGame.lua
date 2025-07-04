@@ -135,7 +135,7 @@ function ReplayGame:drawHUD()
     end
 
     stack:drawLevel()
-    if stack.analytic then
+    if stack.analytic and not DEBUG_ENABLED then
       prof.push("Stack:drawAnalyticData")
       stack:drawAnalyticData()
       prof.pop("Stack:drawAnalyticData")
