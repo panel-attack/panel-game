@@ -127,6 +127,7 @@ function Stack:checkMatches()
     end
     -- interrupt any ongoing manual raise
     self.manual_raise = false
+    self.rise_lock = true
 
     local attackGfxOrigin = self:applyMatchToPanels(matchingPanels, isChainLink, comboSize)
     local garbagePanels = self:getConnectedGarbagePanels2(matchingPanels)

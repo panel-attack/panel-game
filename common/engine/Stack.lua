@@ -156,6 +156,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field swappingPanelCount integer how many panels are swapping on this frame
 ---@field panelSource PanelSource where the Stack gets its panels from 
 ---@field swapCount integer
+---@field wasToppedOut boolean if the stack was topped out at the start of the frame
 
 
 -- Represents the full panel stack for one player
@@ -796,6 +797,12 @@ function Stack:run()
 
   self:handleManualRaise()
 
+  prof.push("pop from incoming garbage q")
+  if self:shouldDropGarbage() then
+    self:tryDropGarbage()
+  end
+  prof.pop("pop from incoming garbage q")
+
   self.clock = self.clock + 1
   --prof.pop("Stack:simulate")
   prof.pop("Stack:run")
@@ -910,6 +917,8 @@ end
 function Stack:simulate()
   table.clear(self.garbageLandedThisFrame)
 
+  self.wasToppedOut = self:isToppedOut()
+
   if self.swapCount >= self.behaviours.startTimersWithSwapCount then
     --prof.push("simulate 1")
     self:decrementInvincibilityTimers()
@@ -921,16 +930,16 @@ function Stack:simulate()
     -- Phase 0 //////////////////////////////////////////////////////////////
     -- Stack automatic rising
     if self.behaviours.passiveRaise then
-      self:advancePassiveRaise()
-
-      if self:checkGameOver() then
-        self:setGameOver()
+      if self:advancePassiveRaise() then
+        if self:checkGameOver() then
+          self:setGameOver()
+        end
       end
     end
     --prof.pop("passive raise")
 
     --prof.push("reset stuff")
-    if not self:isToppedOut() and not self:hasFallingGarbage() then
+    if not self.wasToppedOut and not self:hasFallingGarbage() then
       self.health = self.levelData.maxHealth
     end
 
@@ -971,12 +980,6 @@ function Stack:simulate()
 
   self:removeExtraRows()
 
-  prof.push("pop from incoming garbage q")
-  if self:shouldDropGarbage() then
-    self:tryDropGarbage()
-  end
-  prof.pop("pop from incoming garbage q")
-
   if not self:checkGameWin() then
     if self:checkGameOver() then
       self:setGameOver()
@@ -1006,7 +1009,7 @@ function Stack:handleManualRaise()
     if not self.rise_lock then
       -- no rise lock, the manual raise proceeds in the standard case
       self.stop_time = 0
-      if self:isToppedOut() then
+      if self.wasToppedOut then
         -- why is this game over check needed?
         -- manual raise halts passive raise and only passive raise leads to health reduction
         -- replacing this with health reduction could be a viable alternative
@@ -1026,11 +1029,6 @@ function Stack:handleManualRaise()
           self.manual_raise = false
           self.rise_timer = 1
           self.prevent_manual_raise = true
-        elseif self.displacement == 0 then
-          -- edge case that only occurs when manual raise is pressed at displacement = 1
-          -- immediately create the new row and continue to raise another full row
-          self.top_cur_row = self.height
-          self:new_row()
         end
         -- this means we started the manual raise and so the manual raise will resume even after a rise lock
         self.manual_raise_yet = true
@@ -1095,20 +1093,35 @@ function Stack:updateSpeed()
   --prof.pop("speed increase")
 end
 
+---@return boolean? # if any raising did indeed happen
 function Stack:advancePassiveRaise()
-  if not self.manual_raise and self.stop_time == 0 and not self.rise_lock then
-    if self:isToppedOut() then
-      self.health = self.health - 1
+  if not self.rise_lock then
+    if self.manual_raise then
+      -- handle all of manual raise here sometime in the far future
+      if self.displacement == 0 and self.has_risen then
+        -- edge case that only occurs when manual raise is pressed at displacement = 1 on the previous frame
+        -- the addition of the new row is only added on the next frame to guarantee the stack was not topped out at the start of the frame
+        -- see https://github.com/panel-attack/panel-game/issues/663 for context why this is exactly here
+        self.top_cur_row = self.height
+        self:new_row()
+      end
     else
-      self.rise_timer = self.rise_timer - 1
-      if self.rise_timer <= 0 then -- try to rise
-        self.displacement = self.displacement - 1
-        if self.displacement == 0 then
-          self.prevent_manual_raise = false
-          self.top_cur_row = self.height
-          self:new_row()
+      if self.stop_time == 0 then
+        if self:isToppedOut() then
+          self.health = self.health - 1
+        else
+          self.rise_timer = self.rise_timer - 1
+          if self.rise_timer <= 0 then -- try to rise
+            self.displacement = self.displacement - 1
+            if self.displacement == 0 then
+              self.prevent_manual_raise = false
+              self.top_cur_row = self.height
+              self:new_row()
+            end
+            self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
+          end
         end
-        self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
+        return true
       end
     end
   end
@@ -1613,7 +1626,7 @@ function Stack:checkGameOver()
       if stackOverCondition == MatchRules.StackOverConditions.HEALTH then
         if self.health <= value and self.shake_time <= 0 then
           return true
-        elseif not self.rise_lock and self.behaviours.allowManualRaise and self:isToppedOut() and self.manual_raise then
+        elseif not self.rise_lock and self.behaviours.allowManualRaise and self.wasToppedOut and self.manual_raise then
           -- this check is disputable, see https://github.com/panel-attack/panel-game/issues/437
           -- with 1 maxHealth the difference is negligible as clearing out stop time means game over on the next frame if no swap was queued with the raise
           -- but on lower levels it becomes rather easy to accidently kill yourself
