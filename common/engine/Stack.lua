@@ -225,7 +225,7 @@ local Stack = class(
     s.max_runs_per_frame = 3
 
     s.displacement = 16
-
+    s.wasToppedOut = false
     s.rise_timer = consts.SPEED_TO_RISE_TIME[s.speed]
     s.rise_lock = false
     s.has_risen = false
