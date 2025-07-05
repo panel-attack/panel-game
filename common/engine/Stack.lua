@@ -1095,34 +1095,33 @@ end
 
 ---@return boolean? # if any raising did indeed happen
 function Stack:advancePassiveRaise()
-  if not self.rise_lock then
-    if self.manual_raise then
-      -- handle all of manual raise here sometime in the far future
-      if self.displacement == 0 and self.has_risen then
-        -- edge case that only occurs when manual raise is pressed at displacement = 1 on the previous frame
-        -- the addition of the new row is only added on the next frame to guarantee the stack was not topped out at the start of the frame
-        -- see https://github.com/panel-attack/panel-game/issues/663 for context why this is exactly here
-        self.top_cur_row = self.height
-        self:new_row()
-      end
-    else
-      if self.stop_time == 0 then
-        if self:isToppedOut() then
-          self.health = self.health - 1
-        else
-          self.rise_timer = self.rise_timer - 1
-          if self.rise_timer <= 0 then -- try to rise
-            self.displacement = self.displacement - 1
-            if self.displacement == 0 then
-              self.prevent_manual_raise = false
-              self.top_cur_row = self.height
-              self:new_row()
-            end
-            self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
+  if self.manual_raise then
+    -- handle all of manual raise here sometime in the far future
+    -- currently this finishes a raise from the PREVIOUS frame so it may ignore rise_lock
+    if self.displacement == 0 and self.has_risen then
+      -- edge case that only occurs when manual raise is pressed at displacement = 1 on the previous frame
+      -- the addition of the new row is only added on the next frame to guarantee the stack was not topped out at the start of the frame
+      -- see https://github.com/panel-attack/panel-game/issues/663 for context why this is exactly here
+      self.top_cur_row = self.height
+      self:new_row()
+    end
+  else
+    if not self.rise_lock and self.stop_time == 0 then
+      if self:isToppedOut() then
+        self.health = self.health - 1
+      else
+        self.rise_timer = self.rise_timer - 1
+        if self.rise_timer <= 0 then -- try to rise
+          self.displacement = self.displacement - 1
+          if self.displacement == 0 then
+            self.prevent_manual_raise = false
+            self.top_cur_row = self.height
+            self:new_row()
           end
+          self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
         end
-        return true
       end
+      return true
     end
   end
 end
