@@ -764,7 +764,7 @@ function Stack:run()
   --prof.push("Stack:setupInput")
   self:setupInput()
   --prof.pop("Stack:setupInput")
-  local swapQueued = self:swapQueued()
+
   --prof.push("Stack:simulate")
   if self.game_stopwatch_running then
     self:simulate()
