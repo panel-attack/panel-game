@@ -253,7 +253,7 @@ function Puzzle:toGameMode()
     mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
     mode.matchRules.stackSetupModifications.stopTime = self.stopTime
     mode.matchRules.stackSetupModifications.shakeTime = self.shakeTime
-    mode.matchRules.stackSetupModifications.behaviours.startTimersWithSwapCount = 1
+    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "firstSwap"
   else
     mode.matchRules.stackSetupModifications.behaviours = {
       allowManualRaise = false,

@@ -765,17 +765,28 @@ function Stack:run()
   self:setupInput()
   --prof.pop("Stack:setupInput")
 
+
+  if self.do_countdown then
+    self:runCountDownIfNeeded()
+    if not self.do_countdown then
+      self.game_stopwatch_running = true
+    end
+  end
+
   --prof.push("Stack:simulate")
   if self.game_stopwatch_running then
     self:simulate()
-    self.game_stopwatch = self.game_stopwatch + 1
   else
-    if self.do_countdown then
-      self:runCountDownIfNeeded()
-      if not self.do_countdown then
+    if self.behaviours.delaySimulationUntil == "firstInput" then
+      if self.input_state ~= self:idleInput() then
         self.game_stopwatch_running = true
-        self:simulate()
-        self.game_stopwatch = self.game_stopwatch + 1
+        -- need to compensate the fact that we increment stopwatch at the end of the frame without having simulated
+        self.game_stopwatch = -1
+      end
+    elseif self.behaviours.delaySimulationUntil == "firstSwap" then
+      if self.swapThisFrame then
+        self.game_stopwatch_running = true
+        self.game_stopwatch = -1
       end
     end
   end
@@ -797,11 +808,14 @@ function Stack:run()
 
   self:handleManualRaise()
 
-  prof.push("pop from incoming garbage q")
-  if self:shouldDropGarbage() then
-    self:tryDropGarbage()
+  if self.game_stopwatch_running then
+    prof.push("pop from incoming garbage q")
+    if self:shouldDropGarbage() then
+      self:tryDropGarbage()
+    end
+    prof.pop("pop from incoming garbage q")
+    self.game_stopwatch = self.game_stopwatch + 1
   end
-  prof.pop("pop from incoming garbage q")
 
   self.clock = self.clock + 1
   --prof.pop("Stack:simulate")
@@ -919,41 +933,38 @@ function Stack:simulate()
 
   self.wasToppedOut = self:isToppedOut()
 
-  if self.swapCount >= self.behaviours.startTimersWithSwapCount then
-    --prof.push("simulate 1")
-    self:decrementInvincibilityTimers()
-    self:updateRiseLock()
-    self:updateSpeed()
-    --prof.pop("simulate 1")
+  --prof.push("simulate 1")
+  self:decrementInvincibilityTimers()
+  self:updateRiseLock()
+  self:updateSpeed()
+  --prof.pop("simulate 1")
 
-    --prof.push("passive raise")
-    -- Phase 0 //////////////////////////////////////////////////////////////
-    -- Stack automatic rising
-    if self.behaviours.passiveRaise then
-      if self:advancePassiveRaise() then
-        if self:checkGameOver() then
-          self:setGameOver()
-        end
+  --prof.push("passive raise")
+  -- Phase 0 //////////////////////////////////////////////////////////////
+  -- Stack automatic rising
+  if self.behaviours.passiveRaise then
+    if self:advancePassiveRaise() then
+      if self:checkGameOver() then
+        self:setGameOver()
       end
     end
-    --prof.pop("passive raise")
-
-    --prof.push("reset stuff")
-    if not self.wasToppedOut and not self:hasFallingGarbage() then
-      self.health = self.levelData.maxHealth
-    end
-
-    if self.displacement % 16 ~= 0 then
-      self.top_cur_row = self.height - 1
-    end
-    --prof.pop("reset stuff")
   end
+  --prof.pop("passive raise")
+
+  --prof.push("reset stuff")
+  if not self.wasToppedOut and not self:hasFallingGarbage() then
+    self.health = self.levelData.maxHealth
+  end
+
+  if self.displacement % 16 ~= 0 then
+    self.top_cur_row = self.height - 1
+  end
+  --prof.pop("reset stuff")
 
   --prof.push("old swap")
   -- Begin the swap we input last frame.
   if self:swapQueued() then
     self:swap(self.queuedSwapRow, self.queuedSwapColumn)
-    swapped_this_frame = true
     self.queuedSwapColumn = 0
     self.queuedSwapRow = 0
   end

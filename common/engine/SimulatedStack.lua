@@ -12,6 +12,7 @@ local AttackEngine = require("common.engine.AttackEngine")
 local SimulatedStack = class(
 function(self, args)
   self.max_runs_per_frame = 1
+  self.health = 1
 
   if args.attackSettings then
     self:addAttackEngine(args.attackSettings)
