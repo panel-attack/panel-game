@@ -79,7 +79,7 @@ function PuzzleSet.loadV1(setName, puzzleSetData)
   end
 
   if #puzzles > 0 then
-    return PuzzleSet(setName, puzzles)
+    return PuzzleSet(setName, nil, puzzles)
   end
 end
 
