@@ -183,6 +183,9 @@ local Stack = class(
     s.panelSource = args.panelSource:clone(s)
     s.inputMethod = args.inputMethod
 
+    if s.behaviours.delaySimulationUntil then
+      s.game_stopwatch_running = false
+    end
 
     s.swapStallingBackLog = {}
 
@@ -1754,6 +1757,12 @@ function Stack:addScore(score)
     self.score = 99999
   -- lol owned
   end
+end
+
+---@param doCountdown boolean
+function Stack:setCountdown(doCountdown)
+  self.do_countdown = doCountdown
+  self.game_stopwatch_running = not self.do_countdown and not self.behaviours.delaySimulationUntil
 end
 
 return Stack
