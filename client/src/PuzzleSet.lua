@@ -6,17 +6,16 @@ local logger = require("common.lib.logger")
 -- A puzzle set is a set of puzzles, typically they have a common difficulty or theme.
 ---@class PuzzleSet
 ---@field setName string
+---@field description string
 ---@field puzzles Puzzle[]
 ---@field fileSource string?
-local PuzzleSet =
-  class(
-  function(self, setName, description, puzzles, puzzleSets)
-    self.setName = setName
-    self.description = description or ""
-    self.puzzles = puzzles or {}
-    self.puzzleSets = puzzleSets or {}
-  end
-)
+local PuzzleSet = class(
+function(self, setName, description, puzzles, puzzleSets)
+  self.setName = setName
+  self.description = description or ""
+  self.puzzles = puzzles or {}
+  self.puzzleSets = puzzleSets or {}
+end)
 
 ---@param filePath string
 ---@return PuzzleSet[]
@@ -27,11 +26,11 @@ function PuzzleSet.loadFromFile(filePath)
   if data then
     if data["Version"] == 3 then
       for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
-        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV3(puzzleSetData)
+        puzzleSets[#puzzleSets + 1] = PuzzleSet.loadV3(puzzleSetData)
       end
     elseif data["Version"] == 2 then
       for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
-        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV2(puzzleSetData)
+        puzzleSets[#puzzleSets + 1] = PuzzleSet.loadV2(puzzleSetData)
       end
     elseif data["Version"] and type(data["Version"]) == "number" then
       logger.warn("Puzzle " .. filePath .. " specifies invalid version " .. data["Version"])
@@ -44,7 +43,7 @@ function PuzzleSet.loadFromFile(filePath)
           if type(setName) == "string" and type(puzzleSet) == "table" then
             local v1Set = PuzzleSet.loadV1(setName, puzzleSet)
             if v1Set then
-              puzzleSets[#puzzleSets+1] = v1Set
+              puzzleSets[#puzzleSets + 1] = v1Set
               successCounter = successCounter + 1
             end
           end
@@ -88,7 +87,8 @@ function PuzzleSet.loadV2(puzzleSetData)
   local puzzleSetName = loc(puzzleSetData["Set Name"])
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData["Puzzles"]) do
-    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"])
+    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"],
+                          puzzleData["Stop"], puzzleData["Shake"])
     puzzles[#puzzles + 1] = puzzle
   end
 
@@ -103,7 +103,12 @@ function PuzzleSet.loadV3(puzzleSetData)
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
   for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
-    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"], puzzleData["PanelBuffer"], puzzleData["GarbagePanelBuffer"])
+    local cursorStartLeft
+    if puzzleData["CursorStartLeft"] then
+      cursorStartLeft = {row = puzzleData["CursorStartLeft"].Row, column = puzzleData["CursorStartLeft"].Column}
+    end
+    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"],
+                          puzzleData["Stop"], puzzleData["Shake"], puzzleData["PanelBuffer"], puzzleData["GarbagePanelBuffer"], cursorStartLeft)
     puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
   end
   for _, currentPuzzleSet in pairs(puzzleSetData["Puzzle Sets"] or {}) do
