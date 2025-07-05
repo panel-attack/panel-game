@@ -11,7 +11,6 @@ local GeneratorSource = require("common.engine.GeneratorSource")
 local GarbageQueueTestingUtils = {}
 
 function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
-  local stacks = {}
   local mode
   if attackFile then
     mode = GameModes.getPreset("ONE_PLAYER_TRAINING")
@@ -95,23 +94,19 @@ end
 
 function GarbageQueueTestingUtils.sendGarbage(stack, width, height, chain, metal, time)
   -- -1 cause this will get called after the frame ended instead of during the frame
-  local frameEarned = time or stack.clock
+  local frameEarned = time or stack.game_stopwatch
   local isChain = chain or false
   local isMetal = metal or false
 
-  -- oddly enough telegraph accepts a time as a param for pushing garbage but asserts that time is equal to the stack
-  local realClock = stack.clock
-  stack.clock = frameEarned
   stack.outgoingGarbage:push({
     width = width,
     height = height,
     isMetal = isMetal,
     isChain = isChain,
-    frameEarned = stack.clock,
+    frameEarned = frameEarned,
     rowEarned = 1,
     colEarned = 1
   })
-  stack.clock = realClock
 end
 
 return GarbageQueueTestingUtils

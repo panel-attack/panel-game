@@ -38,12 +38,6 @@ function SimulatedStack:addHealth(healthSettings)
 end
 
 function SimulatedStack:run()
-  if self.attackEngine then
-    self.attackEngine:run()
-  end
-
-  self.outgoingGarbage:processStagedGarbageForClock(self.clock)
-
   if self.do_countdown and self.countdown_timer > 0 then
     if self.healthEngine then
       self.healthEngine.clock = self.clock
@@ -52,6 +46,12 @@ function SimulatedStack:run()
       self.countdown_timer = self.countdown_timer - 1
     end
   else
+    if self.attackEngine then
+      self.attackEngine:run()
+    end
+
+    self.outgoingGarbage:processStagedGarbageForClock(self.game_stopwatch)
+
     if self.healthEngine then
       -- perform the equivalent of queued garbage being dropped
       -- except a little quicker than on real stacks
@@ -64,9 +64,9 @@ function SimulatedStack:run()
         self:setGameOver()
       end
     end
+    self.game_stopwatch = self.game_stopwatch + 1
   end
 
-  self.game_stopwatch = self.game_stopwatch + 1
   self.clock = self.clock + 1
 
   self:emitSignal("finishedRun")

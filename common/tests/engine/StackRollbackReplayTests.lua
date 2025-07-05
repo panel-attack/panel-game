@@ -21,18 +21,18 @@ local function rollbackPastAttackTest()
   StackReplayTestingUtils:simulateStack(stack1, aheadTime)
 
   -- Simulate to a point P1 has sent an attack to P2
-  assert(#stack1.outgoingGarbage.garbageInTransit[523] == 1)
+  assert(#stack1.outgoingGarbage.garbageInTransit[335] == 1)
 
   -- Rollback P1 past the time the attack popped off the garbage queue
   match:debugRollbackAndCaptureState(rollbackTime)
 
   -- This should cause the attack to be undone
-  assert(stack1.outgoingGarbage.garbageInTransit[523] == nil)
+  assert(stack1.outgoingGarbage.garbageInTransit[335] == nil)
 
   -- Simulate again, attack should pop off again
   StackReplayTestingUtils:simulateMatchUntil(match, aheadTime)
 
-  assert(stack1.outgoingGarbage.garbageInTransit[523] ~= nil and #stack1.outgoingGarbage.garbageInTransit[523] == 1)
+  assert(stack1.outgoingGarbage.garbageInTransit[335] ~= nil and #stack1.outgoingGarbage.garbageInTransit[335] == 1)
 
   StackReplayTestingUtils:fullySimulateMatch(match)
 
@@ -67,16 +67,16 @@ local function rollbackNotPastAttackTest()
   StackReplayTestingUtils:simulateStack(stack1, aheadTime)
 
   -- Simulate to a point P1 has sent an attack to P2
-  assert(#stack1.outgoingGarbage.garbageInTransit[523] == 1)
+  assert(#stack1.outgoingGarbage.garbageInTransit[335] == 1)
 
   -- Rollback P1 but not past the time the attack popped off the garbage queue
   match:debugRollbackAndCaptureState(rollbackTime)
-  assert(stack1.outgoingGarbage.garbageInTransit[523] ~= nil and #stack1.outgoingGarbage.garbageInTransit[523] == 1)
+  assert(stack1.outgoingGarbage.garbageInTransit[335] ~= nil and #stack1.outgoingGarbage.garbageInTransit[335] == 1)
 
   -- Simulate again, attack shouldn't pop off again
   StackReplayTestingUtils:simulateMatchUntil(match, aheadTime)
 
-  assert(stack1.outgoingGarbage.garbageInTransit[523] ~= nil and #stack1.outgoingGarbage.garbageInTransit[523] == 1)
+  assert(stack1.outgoingGarbage.garbageInTransit[335] ~= nil and #stack1.outgoingGarbage.garbageInTransit[335] == 1)
 
   StackReplayTestingUtils:fullySimulateMatch(match)
 
@@ -159,7 +159,7 @@ local function rollbackFullyPastAttack()
   assert(chainGarbage.finalizedClock == nil)
 
   StackReplayTestingUtils:fullySimulateMatch(match)
-  local t = outgoingGarbage.garbageInTransit[722]
+  local t = outgoingGarbage.garbageInTransit[534]
   assert(t[1] ~= nil)
   assert(t[1].isChain)
   ---@cast t ChainGarbage

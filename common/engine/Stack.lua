@@ -1442,13 +1442,17 @@ function Stack:getAttackPatternData()
   data.attackPatterns = {}
   data.extraInfo = {}
   data.extraInfo.matchLength = " "
-  if self.game_stopwatch and tonumber(self.game_stopwatch) then
+  if self.game_stopwatch > 0 then
     data.extraInfo.matchLength = frames_to_time_string(self.game_stopwatch)
+  else
+    -- there is nothing to export!
+    return
   end
   local now = os.date("*t", to_UTC(os.time()))
   data.extraInfo.dateGenerated = string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec)
 
   data.mergeComboMetalQueue = false
+  -- TODO: Adjust the export to account for presence of countdown for the delayBeforeStart once it has been moved to a behaviour
   data.delayBeforeStart = 0
   data.delayBeforeRepeat = 91
   local defaultEndTime = 70
