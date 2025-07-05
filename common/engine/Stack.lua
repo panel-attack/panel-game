@@ -535,8 +535,8 @@ function Stack:rollbackToFrame(frame)
   local currentFrame = self.clock
 
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rollbackToFrame(frame)
-    self.outgoingGarbage:rollbackToFrame(frame)
+    self.incomingGarbage:rollbackToFrame(self.game_stopwatch)
+    self.outgoingGarbage:rollbackToFrame(self.game_stopwatch)
     self.panelSource:rollbackToFrame(frame)
 
     self.rollbackCount = self.rollbackCount + 1
@@ -553,8 +553,8 @@ end
 ---@return boolean success if rewinding succeeded
 function Stack:rewindToFrame(frame)
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rewindToFrame(frame)
-    self.outgoingGarbage:rewindToFrame(frame)
+    self.incomingGarbage:rewindToFrame(self.game_stopwatch)
+    self.outgoingGarbage:rewindToFrame(self.game_stopwatch)
     self.panelSource:rewindToFrame(frame)
 
     self:emitSignal("rollbackPerformed", self)
@@ -573,11 +573,11 @@ function Stack:saveForRollback()
   self:rollbackCopy()
   prof.pop("Stack.rollbackCopy")
   prof.push("incomingGarbage:saveForRollback")
-  self.incomingGarbage:saveForRollback(self.clock)
+  self.incomingGarbage:saveForRollback(self.game_stopwatch)
   prof.pop("incomingGarbage:saveForRollback")
   prof.push("outgoingGarbage:saveForRollback")
   if self.outgoingGarbage then
-    self.outgoingGarbage:saveForRollback(self.clock)
+    self.outgoingGarbage:saveForRollback(self.game_stopwatch)
   end
   prof.pop("outgoingGarbage:saveForRollback")
   self.panelSource:saveForRollback(self.clock)
@@ -968,14 +968,14 @@ function Stack:simulate()
     self.chain_counter = 0
 
     if self.outgoingGarbage then
-      logger.debug("Player " .. self.which .. " chain ended at " .. self.clock)
-      self.outgoingGarbage:finalizeCurrentChain(self.clock)
+      logger.debug("Player " .. self.which .. " chain ended at " .. self.game_stopwatch)
+      self.outgoingGarbage:finalizeCurrentChain(self.game_stopwatch)
     end
   end
   --prof.pop("chain update")
 
   --prof.push("process staged garbage")
-  self.outgoingGarbage:processStagedGarbageForClock(self.clock)
+  self.outgoingGarbage:processStagedGarbageForClock(self.game_stopwatch)
   --prof.pop("process staged garbage")
 
   self:removeExtraRows()
@@ -1341,10 +1341,10 @@ end
 -- tries to drop a width x height garbage.
 -- returns true if garbage was dropped, false otherwise
 function Stack:tryDropGarbage()
-  logger.debug("trying to drop garbage at frame "..self.clock)
+  logger.debug("trying to drop garbage at frame " .. self.game_stopwatch)
 
   local garbage = self.incomingGarbage:pop()
-  logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.clock, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
+  logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.game_stopwatch, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
 
   self:dropGarbage(garbage.width, garbage.height, garbage.isMetal)
 

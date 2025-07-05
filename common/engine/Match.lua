@@ -282,17 +282,18 @@ function Match:pushGarbageTo(stack)
   for _, st in ipairs(self.garbageSources[stack]) do
     local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
     if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-      if stack.clock > oldestTransitTime then
+      if stack.game_stopwatch > oldestTransitTime then
         -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
         --  which may even include another rollback
         if not self:rollbackToFrame(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
           -- if we can't rollback, it's a desync
+          self.desyncError = true
           self:abort()
         end
       end
-      local garbageDelivery = st:getReadyGarbageAt(stack.clock)
+      local garbageDelivery = st:getReadyGarbageAt(stack.game_stopwatch)
       if garbageDelivery then
         --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
         stack:receiveGarbage(garbageDelivery)
@@ -311,7 +312,7 @@ function Match:shouldSaveRollback(stack)
     for senderIndex, targetList in ipairs(self.garbageTargets) do
       for _, target in ipairs(targetList) do
         if target == stack then
-          if self.stacks[senderIndex].clock + GARBAGE_DELAY_LAND_TIME <= stack.clock then
+          if self.stacks[senderIndex].game_stopwatch + GARBAGE_DELAY_LAND_TIME <= stack.game_stopwatch then
             return true
           end
         end

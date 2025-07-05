@@ -66,6 +66,7 @@ function SimulatedStack:run()
     end
   end
 
+  self.game_stopwatch = self.game_stopwatch + 1
   self.clock = self.clock + 1
 
   self:emitSignal("finishedRun")
