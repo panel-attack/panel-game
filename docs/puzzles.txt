@@ -17,11 +17,16 @@ The contents of each puzzle file should be formatted something like this:
       "Puzzles": [
         {
           "Puzzle Type": "chain",
-          "Do Countdown": true,
+          "StartTiming": "countdown",
           "Moves": 0,
           "Stack": 
             "040000
              111440",
+          "CursorStartLeft":
+          {
+            "Row": 2,
+            "Column": 2
+          }
         },
         {
           "Puzzle Type": "clear",
@@ -29,20 +34,21 @@ The contents of each puzzle file should be formatted something like this:
           "Moves": 0,
           "Stack": 
            "
-		   [====]
-		   [====]
-		   [====]
-		   [====]
-		   [====]
-		   [====]
-		   [====]
-		   [====]
-		   020000
-		   122[=]
-		   245156
-		   325363",
-		   "Stop": 60,
-           "Shake": 0
+          [====]
+          [====]
+          [====]
+          [====]
+          [====]
+          [====]
+          [====]
+          [====]
+          020000
+          122[=]
+          245156
+		      325363",
+          "StartTiming": "firstSwap",
+          "Stop": 60,
+          "Shake": 0
         },
       ]
     },
@@ -61,15 +67,45 @@ Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzz
     "chain" all panels need to be cleared onces the first chain ends, and there must be a chain
     "clear" all garbage on the field needs to be cleared before health runs out
 
-"Do Countdown" whether to do the countdown at the beginning
-
 "Moves" the number of moves, can be zero to not have a limit
 
-"Stack" the starting arangement of the panels, see below
+"Stack" the starting arrangement of the panels, see below
+
+"StartTiming" specifies when the simulation of the Stack starts:
+- "firstSwap": Game physics are on hold until the first swap. The player can move normally.
+- "firstInput": All game physics are on hold until the first player input.
+- "countdown": The game starts after a 3 second countdown
+- "immediately": Full simulation starts with no delay
+
+If no start timing is given, a suitable start timing is selected based on puzzle type:
+- "clear" and "chain" puzzles will use "firstInput" if a cursor start position is given and "firstSwap" if not
+- "moves" puzzles will start immediately
 
 "Stop" specifies how many frames of stop time are initially granted to the player
 
 "Shake" specifies how many frames of shake time are initially granted to the player
+
+"CursorStartLeft" specifies where the left part of the cursor should start the puzzle
+the format is { "Row": 1, "Column": 1 }
+
+"PanelBuffer" specifies the panels that should appear if the player is raising the stack.
+
+If not specified these will be unmatchable grey panels. Outside of clear puzzles, raising is currently disabled.
+
+"GarbagePanelBuffer" specifies the panel that should appear from cleared garbage.
+
+For each cleared row of garbage, the first 6 colors are taken from the string and assigned to the positions in the row accordingly.
+
+If a piece of garbage did not fill out an entire row only the colors in the spots with garbage will appear, e.g.:
+
+[==]00
+919999
+91[==]
+919999
+
+If the garbagePanelBuffer is "123456123456", the bottom garbage will transform into 3456 and the top garbage will transform into 1234.
+
+Afterwards the garbagePanelBuffer will be empty. An empty buffer means that only grey unmatchable panels will appear from garbage.
 
 Note: carriage returns and spaces in your file are very helpful for readability,
  but are not necessary.

@@ -70,7 +70,13 @@ function PuzzleSet.loadV1(setName, puzzleSetData)
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData) do
     if type(puzzleData) == "table" and #puzzleData >= 2 and type(puzzleData[1]) == "string" and type(puzzleData[2]) == "number" then
-      local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
+      local args = {
+        puzzleType = "moves",
+        startTiming = "countdown",
+        moves = puzzleData[2],
+        stack = puzzleData[1]
+      }
+      local puzzle = Puzzle(args)
       if puzzle:validate() then
         puzzles[#puzzles + 1] = puzzle
       end
@@ -87,8 +93,15 @@ function PuzzleSet.loadV2(puzzleSetData)
   local puzzleSetName = loc(puzzleSetData["Set Name"])
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData["Puzzles"]) do
-    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"],
-                          puzzleData["Stop"], puzzleData["Shake"])
+    local args = {
+      puzzleType = puzzleData["Puzzle Type"],
+      startTiming = puzzleData["Do Countdown"] and "countdown" or "immediately",
+      moves = puzzleData["Moves"],
+      stack = puzzleData["Stack"],
+      stopTime = puzzleData["Stop"],
+      shakeTime = puzzleData["Shake"],
+    }
+    local puzzle = Puzzle(args)
     puzzles[#puzzles + 1] = puzzle
   end
 
@@ -103,12 +116,21 @@ function PuzzleSet.loadV3(puzzleSetData)
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
   for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
-    local cursorStartLeft
+    local args = {
+      puzzleType = puzzleData["Puzzle Type"],
+      startTiming = puzzleData["StartTiming"],
+      moves = puzzleData["Moves"],
+      stack = puzzleData["Stack"],
+      stopTime = puzzleData["Stop"],
+      shakeTime = puzzleData["Shake"],
+      panelBuffer = puzzleData["PanelBuffer"],
+      garbagePanelBuffer = puzzleData["GarbagePanelBuffer"]
+    }
     if puzzleData["CursorStartLeft"] then
-      cursorStartLeft = {row = puzzleData["CursorStartLeft"].Row, column = puzzleData["CursorStartLeft"].Column}
+      args.cursorStartLeft = {row = puzzleData["CursorStartLeft"].Row, column = puzzleData["CursorStartLeft"].Column}
     end
-    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"],
-                          puzzleData["Stop"], puzzleData["Shake"], puzzleData["PanelBuffer"], puzzleData["GarbagePanelBuffer"], cursorStartLeft)
+
+    local puzzle = Puzzle(args)
     puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
   end
   for _, currentPuzzleSet in pairs(puzzleSetData["Puzzle Sets"] or {}) do

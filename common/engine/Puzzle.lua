@@ -8,40 +8,78 @@ local MatchRules = require("common.data.MatchRules")
 ---@field row integer
 ---@field column integer
 
+---@alias PuzzleType ("moves" | "chain" | "clear")
+
+---@class PuzzleArgs
+---@field puzzleType PuzzleType
+---@field stack string representation of the panel colors, the last character is the bottom right panel
+---@field startTiming PuzzleStartTiming?
+---@field cursorStartLeft GridCoordinate?
+---@field moves integer? in how many swaps the puzzle has to be solved
+
+---@class GarbagePuzzleArgs : PuzzleArgs
+---@field stopTime integer?
+---@field shakeTime integer?
+---@field panelBuffer string?
+---@field garbagePanelBuffer string?
+
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels
 ---@class Puzzle
----@field puzzleType ("moves" | "chain" | "clear")
----@field doCountdown boolean
----@field moves integer
+---@field puzzleType PuzzleType
+---@field startTiming PuzzleStartTiming
 ---@field stack string string representation of the panel colors
+---@field cursorStartLeft GridCoordinate?
+---@field moves integer
+---@field stopTime integer?
+---@field shakeTime integer?
 ---@field panelBuffer string
 ---@field garbageBuffer string
 ---@field randomizeColors boolean
----@field stopTime integer?
----@field shakeTime integer?
----@field cursorStartLeft GridCoordinate?
----@overload fun(puzzleType: string, doCountdown: boolean, moves: integer?, stack: string, stopTime: integer?, shakeTime: integer?, panelBuffer: string?, garbageBuffer: string?, cursorStartLeft: GridCoordinate?): Puzzle
+---@field UUID string
+---@overload fun(puzzleArgs: GarbagePuzzleArgs): Puzzle
 Puzzle = class(
-  function(self, puzzleType, doCountdown, moves, stack, stopTime, shakeTime, panelBuffer, garbageBuffer, cursorStartLeft)
-    self.puzzleType = puzzleType or "moves"
-    self.doCountdown = doCountdown
-    self.moves = moves or 0
-    self.stack = string.gsub(stack, "%s+", "") -- Remove whitespace so files can be easier to read
-    self.panelBuffer = panelBuffer
-    self.garbageBuffer = garbageBuffer
-    self.randomizeColors = false
-    self.stopTime = stopTime
-    self.shakeTime = shakeTime
-    self.cursorStartLeft = cursorStartLeft
+---@param self Puzzle
+---@param puzzleArgs GarbagePuzzleArgs
+  function(self, puzzleArgs)
+    self.puzzleType = puzzleArgs.puzzleType or "moves"
+    if puzzleArgs.startTiming then
+      self.startTiming = puzzleArgs.startTiming
+    else
+      if self.puzzleType == "clear" or self.puzzleType == "chain" then
+        if self.cursorStartLeft then
+          self.startTiming = Puzzle.START_TIMINGS.firstInput
+        else
+          self.startTiming = Puzzle.START_TIMINGS.firstSwap
+        end
+      else
+        self.startTiming = Puzzle.START_TIMINGS.immediately
+      end
+    end
+    self.stack = string.gsub(puzzleArgs.stack, "%s+", "") -- Remove whitespace so files can be easier to read
+    self.cursorStartLeft = puzzleArgs.cursorStartLeft
+    self.moves = puzzleArgs.moves or 0
+
+    self.panelBuffer = puzzleArgs.panelBuffer
+    self.garbageBuffer = puzzleArgs.garbagePanelBuffer
+    self.stopTime = puzzleArgs.stopTime
+    self.shakeTime = puzzleArgs.shakeTime
+
     self.UUID = Puzzle.getV1UUID(self)
+    self.randomizeColors = false
   end
 )
 
+
+---@param puzzle Puzzle
+---@return string
 function Puzzle.getV1UUID(puzzle)
-  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.doCountdown) .. tostring(puzzle.moves) .. tostring(puzzle.stop_time) .. tostring(puzzle.shake_time)
+  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
+  ---@diagnostic disable-next-line: return-type-mismatch
   return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
 end
 
+---@enum PuzzleStartTiming
+Puzzle.START_TIMINGS = { countdown = "countdown", immediately = "immediately", firstInput = "firstInput", firstSwap = "firstSwap" }
 Puzzle.PUZZLE_TYPES = { "moves", "chain", "clear" }
 Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
 
@@ -114,8 +152,8 @@ end
 function Puzzle:validate()
   local errMessage = ""
 
-  if type(self.doCountdown) ~= "boolean" then
-    errMessage = "\nInvalid value for property 'doCountdown'"
+  if type(self.startTiming) ~= "string" or Puzzle.START_TIMINGS[self.startTiming] == nil then
+    errMessage = "\nInvalid value for property 'startTiming'"
   end
 
   local stackLength = string.len(self.stack)
@@ -277,7 +315,14 @@ function Puzzle:toGameMode()
   end
 
   mode.matchRules.stackSetupModifications.behaviours.swapStallingMode = 0
-  mode.matchRules.doCountdown = self.doCountdown
+  if self.startTiming == Puzzle.START_TIMINGS.countdown then
+    mode.matchRules.doCountdown = true
+    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "countdownEnded"
+  elseif self.startTiming == Puzzle.START_TIMINGS.firstInput then
+    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "firstInput"
+  elseif self.startTiming == Puzzle.START_TIMINGS.firstSwap then
+    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "firstSwap"
+  end
 
   if self.cursorStartLeft then
     mode.matchRules.stackSetupModifications.startingRow = self.cursorStartLeft.row

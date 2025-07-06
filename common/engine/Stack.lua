@@ -769,9 +769,9 @@ function Stack:run()
   --prof.pop("Stack:setupInput")
 
 
-  if self.do_countdown then
-    self:runCountDownIfNeeded()
-    if not self.do_countdown then
+  if self.behaviours.delaySimulationUntil == "countdownEnded" and self.clock <= (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
+    self:runCountdown()
+    if self.clock == (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
       self.game_stopwatch_running = true
     end
   end
@@ -780,6 +780,8 @@ function Stack:run()
   if self.game_stopwatch_running then
     self:simulate()
   else
+    -- these behaviours need to run "half a frame" on their first one to give the first swap the chance to queue to prevent instant game over on the next one
+    -- otherwise, if health is 1 and no stop/shake is given and the stack is topped out, passive raise will instakill
     if self.behaviours.delaySimulationUntil == "firstInput" then
       if self.input_state ~= self:idleInput() then
         self.game_stopwatch_running = true
@@ -864,10 +866,6 @@ function Stack:isToppedOut()
 end
 
 function Stack:updatePanels()
-  if self.do_countdown then
-    return
-  end
-
   prof.push("Stack:updatePanels")
   self.shake_time_on_frame = 0
   for row = 1, #self.panels do
@@ -1140,52 +1138,51 @@ function Stack:advancePassiveRaise()
   end
 end
 
-function Stack:runCountDownIfNeeded()
-  if self.do_countdown then
-    self.rise_lock = true
-    if self.clock == 0 then
-      self.animatingCursorDuringCountdown = true
+function Stack:runCountdown()
+  self.do_countdown = true
+  self.rise_lock = true
+  if self.clock == 0 then
+    self.animatingCursorDuringCountdown = true
+    if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
+      self.cursorLock = true
+    end
+    self.cur_row = self.height - 1
+    if self.inputMethod == "touch" then
+      self.cur_col = self.width
+    elseif self.inputMethod == "controller" then
+      self.cur_col = self.width - 1
+    end
+  elseif self.clock == consts.COUNTDOWN_START then
+    self.countdown_timer = consts.COUNTDOWN_LENGTH
+  end
+  if self.countdown_timer then
+    local countDownFrame = consts.COUNTDOWN_LENGTH - self.countdown_timer
+    if countDownFrame > 0 and countDownFrame % consts.COUNTDOWN_CURSOR_SPEED == 0 then
+      local moveIndex = math.floor(countDownFrame / consts.COUNTDOWN_CURSOR_SPEED)
+      if moveIndex <= 4 then
+        self:moveCursorInDirection("down")
+      elseif moveIndex <= 6 then
+        self:moveCursorInDirection("left")
+
+      elseif moveIndex == 10 then
+        self.animatingCursorDuringCountdown = nil
+        if self.inputMethod == "touch" then
+          self.cur_row = 0
+          self.cur_col = 0
+        end
+      end
+    elseif countDownFrame == 6 * consts.COUNTDOWN_CURSOR_SPEED + 1 then
       if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
-        self.cursorLock = true
+        self.cursorLock = nil
       end
-      self.cur_row = self.height - 1
-      if self.inputMethod == "touch" then
-        self.cur_col = self.width
-      elseif self.inputMethod == "controller" then
-        self.cur_col = self.width - 1
-      end
-    elseif self.clock == consts.COUNTDOWN_START then
-      self.countdown_timer = consts.COUNTDOWN_LENGTH
+    end
+    if self.countdown_timer == 0 then
+      --we are done counting down
+      self.do_countdown = false
+      self.countdown_timer = nil
     end
     if self.countdown_timer then
-      local countDownFrame = consts.COUNTDOWN_LENGTH - self.countdown_timer
-      if countDownFrame > 0 and countDownFrame % consts.COUNTDOWN_CURSOR_SPEED == 0 then
-        local moveIndex = math.floor(countDownFrame / consts.COUNTDOWN_CURSOR_SPEED)
-        if moveIndex <= 4 then
-          self:moveCursorInDirection("down")
-        elseif moveIndex <= 6 then
-          self:moveCursorInDirection("left")
-
-        elseif moveIndex == 10 then
-          self.animatingCursorDuringCountdown = nil
-          if self.inputMethod == "touch" then
-            self.cur_row = 0
-            self.cur_col = 0
-          end
-        end
-      elseif countDownFrame == 6 * consts.COUNTDOWN_CURSOR_SPEED + 1 then
-        if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
-          self.cursorLock = nil
-        end
-      end
-      if self.countdown_timer == 0 then
-        --we are done counting down
-        self.do_countdown = false
-        self.countdown_timer = nil
-      end
-      if self.countdown_timer then
-        self.countdown_timer = self.countdown_timer - 1
-      end
+      self.countdown_timer = self.countdown_timer - 1
     end
   end
 end
@@ -1605,9 +1602,7 @@ end
 
 function Stack:updateRiseLock()
   local previousRiseLock = self.rise_lock
-  if self.do_countdown then
-    self.rise_lock = true
-  elseif self:swapQueued()then
+  if self:swapQueued()then
     self.rise_lock = true
   elseif self.shake_time > 0 then
     self.rise_lock = true
@@ -1762,7 +1757,15 @@ end
 ---@param doCountdown boolean
 function Stack:setCountdown(doCountdown)
   self.do_countdown = doCountdown
-  self.game_stopwatch_running = not self.do_countdown and not self.behaviours.delaySimulationUntil
+  if doCountdown then
+    self.behaviours.delaySimulationUntil = "countdownEnded"
+    self.game_stopwatch_running = false
+  else
+    if self.behaviours.delaySimulationUntil == "countdownEnded" then
+      self.behaviours.delaySimulationUntil = nil
+    end
+    self.game_stopwatch_running = not self.behaviours.delaySimulationUntil
+  end
 end
 
 return Stack

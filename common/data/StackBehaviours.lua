@@ -5,7 +5,7 @@
 ---@field swapStallingPunish integer? how much health is deducted for stalling swaps
 ---@field delaySimulationUntil SimulationDelayOptions?
 
----@alias SimulationDelayOptions ("firstSwap" | "firstInput")
+---@alias SimulationDelayOptions ("firstSwap" | "firstInput" | "countdownEnded")
 
 local StackBehaviour = {}
 
