@@ -7,7 +7,7 @@ local class = require("common.lib.class")
 ---@field height integer
 ---@field startTime integer
 ---@field endsChain boolean
----@field garbage table
+---@field garbage Garbage
 AttackPattern =
   class(
   function(self, width, height, startTime, metal, chain, endsChain)

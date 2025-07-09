@@ -44,7 +44,7 @@ function(self, mode, gameScene)
   -- this is a bit naive but effective for now
   self.online = GAME.netClient:isConnected()
   if self.online then
-    GAME.netClient:connectSignal("disconnect", self, self.onDisconnect)
+    GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
   end
 
   Signal.turnIntoEmitter(self)
@@ -545,6 +545,7 @@ end
 
 -- a callback function that is getting registered to the ClientMatch's matchEnded signal
 -- may get unregistered from the match in case of abortion
+---@param match ClientMatch
 function BattleRoom:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1
 

@@ -205,9 +205,8 @@ function MatchParticipant:isHuman()
 end
 
 ---@param engineStack BaseStack
----@param engineMatch Match
 ---@return PlayerStack | ChallengeModePlayerStack
-function MatchParticipant:createClientStack(engineStack, engineMatch)
+function MatchParticipant:createClientStack(engineStack)
   error("Did not implement createClientStack")
 end
 
