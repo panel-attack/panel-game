@@ -1627,7 +1627,7 @@ function PlayerStack.updateDangerBounce(self)
   end
 
   if self.danger then
-    if self.engine:isToppedOut() and self.engine.speed ~= 0 then
+    if self.engine.wasToppedOut and self.engine.speed ~= 0 then
       -- Player has topped out, panels hold the "flattened" frame
       self.danger_timer = 0
     elseif self.engine.stop_time == 0 then

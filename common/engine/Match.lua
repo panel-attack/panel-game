@@ -29,6 +29,7 @@ local MatchRules = require("common.data.MatchRules")
 ---@field maxTimeSpentRunning number
 ---@field clock integer
 ---@field ended boolean
+---@field gameOverClock integer?
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -281,17 +282,18 @@ function Match:pushGarbageTo(stack)
   for _, st in ipairs(self.garbageSources[stack]) do
     local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
     if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-      if stack.clock > oldestTransitTime then
+      if stack.game_stopwatch > oldestTransitTime then
         -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
         --  which may even include another rollback
         if not self:rollbackToFrame(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
           -- if we can't rollback, it's a desync
+          self.desyncError = true
           self:abort()
         end
       end
-      local garbageDelivery = st:getReadyGarbageAt(stack.clock)
+      local garbageDelivery = st:getReadyGarbageAt(stack.game_stopwatch)
       if garbageDelivery then
         --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
         stack:receiveGarbage(garbageDelivery)
@@ -310,7 +312,7 @@ function Match:shouldSaveRollback(stack)
     for senderIndex, targetList in ipairs(self.garbageTargets) do
       for _, target in ipairs(targetList) do
         if target == stack then
-          if self.stacks[senderIndex].clock + GARBAGE_DELAY_LAND_TIME <= stack.clock then
+          if self.stacks[senderIndex].game_stopwatch + GARBAGE_DELAY_LAND_TIME <= stack.game_stopwatch then
             return true
           end
         end
@@ -507,11 +509,11 @@ function Match:hasEnded()
   end
 
   if self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-    if aliveCount == self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-      local gameOverClock = 0
-      for i = 1, #self.stacks do
-        if self.stacks[i].game_over_clock > gameOverClock then
-          gameOverClock = self.stacks[i].game_over_clock
+    if aliveCount <= self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
+      local gameOverClock = math.huge
+      for _, stack in ipairs(self.stacks) do
+        if stack.game_over_clock > 0 then
+          gameOverClock = math.min(stack.game_over_clock, gameOverClock)
         end
       end
       self.gameOverClock = gameOverClock
@@ -599,7 +601,7 @@ function Match:shouldRun(stack, runsSoFar)
   end
 
   -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
+  if config and config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
     -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
     if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
       if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then

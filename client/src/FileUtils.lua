@@ -1,6 +1,7 @@
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local system = require("client.src.system")
+local json = require("common.lib.dkjson")
 
 local PREFIX_OF_IGNORED_DIRECTORIES = "__"
 

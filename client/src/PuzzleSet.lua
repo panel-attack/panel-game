@@ -6,17 +6,16 @@ local logger = require("common.lib.logger")
 -- A puzzle set is a set of puzzles, typically they have a common difficulty or theme.
 ---@class PuzzleSet
 ---@field setName string
+---@field description string
 ---@field puzzles Puzzle[]
 ---@field fileSource string?
-local PuzzleSet =
-  class(
-  function(self, setName, description, puzzles, puzzleSets)
-    self.setName = setName
-    self.description = description or ""
-    self.puzzles = puzzles or {}
-    self.puzzleSets = puzzleSets or {}
-  end
-)
+local PuzzleSet = class(
+function(self, setName, description, puzzles, puzzleSets)
+  self.setName = setName
+  self.description = description or ""
+  self.puzzles = puzzles or {}
+  self.puzzleSets = puzzleSets or {}
+end)
 
 ---@param filePath string
 ---@return PuzzleSet[]
@@ -27,11 +26,11 @@ function PuzzleSet.loadFromFile(filePath)
   if data then
     if data["Version"] == 3 then
       for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
-        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV3(puzzleSetData)
+        puzzleSets[#puzzleSets + 1] = PuzzleSet.loadV3(puzzleSetData)
       end
     elseif data["Version"] == 2 then
       for _, puzzleSetData in pairs(data["Puzzle Sets"]) do
-        puzzleSets[#puzzleSets+1] = PuzzleSet.loadV2(puzzleSetData)
+        puzzleSets[#puzzleSets + 1] = PuzzleSet.loadV2(puzzleSetData)
       end
     elseif data["Version"] and type(data["Version"]) == "number" then
       logger.warn("Puzzle " .. filePath .. " specifies invalid version " .. data["Version"])
@@ -44,7 +43,7 @@ function PuzzleSet.loadFromFile(filePath)
           if type(setName) == "string" and type(puzzleSet) == "table" then
             local v1Set = PuzzleSet.loadV1(setName, puzzleSet)
             if v1Set then
-              puzzleSets[#puzzleSets+1] = v1Set
+              puzzleSets[#puzzleSets + 1] = v1Set
               successCounter = successCounter + 1
             end
           end
@@ -71,7 +70,13 @@ function PuzzleSet.loadV1(setName, puzzleSetData)
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData) do
     if type(puzzleData) == "table" and #puzzleData >= 2 and type(puzzleData[1]) == "string" and type(puzzleData[2]) == "number" then
-      local puzzle = Puzzle("moves", true, puzzleData[2], puzzleData[1])
+      local args = {
+        puzzleType = "moves",
+        startTiming = "countdown",
+        moves = puzzleData[2],
+        stack = puzzleData[1]
+      }
+      local puzzle = Puzzle(args)
       if puzzle:validate() then
         puzzles[#puzzles + 1] = puzzle
       end
@@ -79,7 +84,7 @@ function PuzzleSet.loadV1(setName, puzzleSetData)
   end
 
   if #puzzles > 0 then
-    return PuzzleSet(setName, puzzles)
+    return PuzzleSet(setName, nil, puzzles)
   end
 end
 
@@ -88,7 +93,15 @@ function PuzzleSet.loadV2(puzzleSetData)
   local puzzleSetName = loc(puzzleSetData["Set Name"])
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData["Puzzles"]) do
-    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"])
+    local args = {
+      puzzleType = puzzleData["Puzzle Type"],
+      startTiming = puzzleData["Do Countdown"] and "countdown" or "immediately",
+      moves = puzzleData["Moves"],
+      stack = puzzleData["Stack"],
+      stopTime = puzzleData["Stop"],
+      shakeTime = puzzleData["Shake"],
+    }
+    local puzzle = Puzzle(args)
     puzzles[#puzzles + 1] = puzzle
   end
 
@@ -103,7 +116,21 @@ function PuzzleSet.loadV3(puzzleSetData)
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
   for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
-    local puzzle = Puzzle(puzzleData["Puzzle Type"], puzzleData["Do Countdown"], puzzleData["Moves"], puzzleData["Stack"], puzzleData["Stop"], puzzleData["Shake"], puzzleData["PanelBuffer"], puzzleData["GarbagePanelBuffer"])
+    local args = {
+      puzzleType = puzzleData["Puzzle Type"],
+      startTiming = puzzleData["StartTiming"],
+      moves = puzzleData["Moves"],
+      stack = puzzleData["Stack"],
+      stopTime = puzzleData["Stop"],
+      shakeTime = puzzleData["Shake"],
+      panelBuffer = puzzleData["PanelBuffer"],
+      garbagePanelBuffer = puzzleData["GarbagePanelBuffer"]
+    }
+    if puzzleData["CursorStartLeft"] then
+      args.cursorStartLeft = {row = puzzleData["CursorStartLeft"].Row, column = puzzleData["CursorStartLeft"].Column}
+    end
+
+    local puzzle = Puzzle(args)
     puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
   end
   for _, currentPuzzleSet in pairs(puzzleSetData["Puzzle Sets"] or {}) do

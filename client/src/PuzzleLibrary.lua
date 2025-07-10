@@ -34,12 +34,14 @@ function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
 
   table.sort(puzzleFiles, function(a, b)
     if a == "Puzzles.json" then
-      return a < b
-    else
       return true
+    elseif b == "Puzzles.json" then
+      return false
+    else
+      return a < b
     end
   end)
-  
+
   for _, currentFilename in ipairs(puzzleFiles) do
     if currentFilename ~= "README.txt" then
       local currentPuzzleSets = self:puzzleSetsFromFile(fullPath .. "/" .. currentFilename)
