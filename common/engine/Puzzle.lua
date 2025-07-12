@@ -42,6 +42,7 @@ Puzzle = class(
 ---@param puzzleArgs GarbagePuzzleArgs
   function(self, puzzleArgs)
     self.puzzleType = puzzleArgs.puzzleType or "moves"
+    self.cursorStartLeft = puzzleArgs.cursorStartLeft
     if puzzleArgs.startTiming then
       self.startTiming = puzzleArgs.startTiming
     else
@@ -56,7 +57,6 @@ Puzzle = class(
       end
     end
     self.stack = string.gsub(puzzleArgs.stack, "%s+", "") -- Remove whitespace so files can be easier to read
-    self.cursorStartLeft = puzzleArgs.cursorStartLeft
     self.moves = puzzleArgs.moves or 0
 
     self.panelBuffer = puzzleArgs.panelBuffer
@@ -64,7 +64,7 @@ Puzzle = class(
     self.stopTime = puzzleArgs.stopTime
     self.shakeTime = puzzleArgs.shakeTime
 
-    self.UUID = Puzzle.getV1UUID(self)
+    self.UUID = Puzzle.getV2UUID(self)
     self.randomizeColors = false
   end
 )
@@ -73,6 +73,16 @@ Puzzle = class(
 ---@param puzzle Puzzle
 ---@return string
 function Puzzle.getV1UUID(puzzle)
+    -- local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.doCountdown) .. tostring(puzzle.moves) .. tostring(puzzle.stop_time) .. tostring(puzzle.shake_time)
+    local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
+    local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
+  ---@diagnostic disable-next-line: return-type-mismatch
+  return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+end
+
+---@param puzzle Puzzle
+---@return string
+function Puzzle.getV2UUID(puzzle)
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
   ---@diagnostic disable-next-line: return-type-mismatch
   return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
@@ -129,7 +139,7 @@ unreverseMap["["] = "]"
 unreverseMap["]"] = "["
 local rowWidth = 6
 
----@param puzzleString string
+---@param puzzleString string?
 ---@return string puzzleString
 function Puzzle.horizontallyFlipPuzzleString(puzzleString)
   -- to flip we need it guaranteed that all rows are complete so pad out the topmost row
@@ -346,9 +356,25 @@ function Puzzle:toPanelSource(randomize, flip)
 
   if flip then
     if math.random(2) == 1 then
-      puzzleString = Puzzle.horizontallyFlipPuzzleString(puzzleString)
-      panelBuffer = Puzzle.horizontallyFlipPuzzleString(panelBuffer)
-      garbageBuffer = Puzzle.horizontallyFlipPuzzleString(garbageBuffer)
+      if puzzleString ~= nil then
+        puzzleString = Puzzle.horizontallyFlipPuzzleString(puzzleString)
+      end
+      if panelBuffer ~= nil then
+        panelBuffer = Puzzle.horizontallyFlipPuzzleString(panelBuffer)
+      end
+      if garbageBuffer ~= nil then
+        garbageBuffer = Puzzle.horizontallyFlipPuzzleString(garbageBuffer)
+      end
+
+      if self.cursorStartLeft and self.cursorStartLeft.column then
+        -- 1 -> 5 +4
+        -- 2 -> 4 +2
+        -- 3 -> 3 +0
+        -- 4 -> 2 -2
+        -- 5 -> 1 -4
+        local delta = (3 - self.cursorStartLeft.column) * 2
+        self.cursorStartLeft.column = self.cursorStartLeft.column + delta
+      end
     end
   end
 

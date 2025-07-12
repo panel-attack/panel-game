@@ -1,3 +1,4 @@
+local Game = require("client.src.Game")
 local Scene = require("client.src.scenes.Scene")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
@@ -13,6 +14,7 @@ local Stack = require("common.engine.Stack")
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
 ---@field menu Menu
+---@field puzzleLibrary PuzzleLibrary
 ---@field levelSlider LevelSlider
 ---@field randomColorButtons ButtonGroup
 ---@field battleRoom BattleRoom
