@@ -585,6 +585,9 @@ end
 ---@param height integer height in panels
 ---@return love.Texture
 function Character:getGarbageTexture(width, height)
+  if not self.garbagePrerenders[width] then
+    self.garbagePrerenders[width] = {}
+  end
   if not self.garbagePrerenders[width][height] then
     self.garbagePrerenders[width][height] = self:createGarbageTexture(width, height)
   end
