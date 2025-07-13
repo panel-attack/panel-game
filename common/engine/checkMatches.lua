@@ -468,7 +468,7 @@ function Stack:getConnectedGarbagePanels2(matchingPanels)
 
   for row = 1, #self.panels do
     for col = 1, self.width do
-      panel = self.panels[row][col]
+      local panel = self.panels[row][col]
       if panel.isGarbage and panel.state == "normal" and not idGarbage[panel.garbageId]
       -- we only want to match garbage that is either fully or partially on-screen OR has been on-screen before
       -- example: chain garbage several rows high lands in row 12; by visuals/shake it is clear that it is more than 1 row high
