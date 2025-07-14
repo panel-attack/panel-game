@@ -20,6 +20,14 @@ local util = require("common.lib.util")
 util.addToCPath("./common/lib/??")
 util.addToCPath("./server/lib/??")
 local logger = require("common.lib.logger")
+
+-- Set log level based on debug argument
+if arg[2] == "debug" then
+  logger.setLogLevel(logger.DEBUG)
+else
+  logger.setLogLevel(logger.INFO)
+end
+
 require("client.src.globals")
 local Game = require("client.src.Game")
 
@@ -74,10 +82,16 @@ local tests = {
 }
 
 local updateCount = 0
+local testsFailed = false
+
 function love.update(dt)
   if tests[updateCount] then
     logger.info("running test file " .. tests[updateCount])
-    require(tests[updateCount])
+    local success, err = pcall(require, tests[updateCount])
+    if not success then
+      logger.error("Test failed: " .. tests[updateCount] .. " - " .. tostring(err))
+      testsFailed = true
+    end
   end
   updateCount = updateCount + 1
 end
@@ -94,14 +108,23 @@ function love.draw()
 end
 
 function love.quit()
-  print(love.timer.getTime() - t .. "s elapsed")
+  logger.info(love.timer.getTime() - t .. "s elapsed")
   --require("jit.p").stop()
   love.filesystem.write("test.log", tostring(logger.messageBuffer))
+  
+  if testsFailed then
+    logger.error("Tests failed!")
+    os.exit(1)
+  else
+    logger.info("All tests passed!")
+    os.exit(0)
+  end
 end
 
 local love_errorhandler = love.errorhandler
 function love.errorhandler(msg)
-  logger.info(msg)
+  logger.error(msg)
+  testsFailed = true
   pcall(love.filesystem.write, "test-crash.log", tostring(logger.messageBuffer))
   if lldebugger then
     error(msg, 2)
