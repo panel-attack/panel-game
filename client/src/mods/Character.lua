@@ -594,6 +594,14 @@ function Character:getGarbageTexture(width, height)
   if not self.garbagePrerenders[width] then
     self.garbagePrerenders[width] = {}
   end
+  if height > 29 then
+    -- let's not kill orangetriangle's VRAM upon doing a x9999
+    -- any chain where the face is situated above row 12 is going to look the same so there is no need to render it accurately
+    -- just use the block with the corresponding odd/even line count so the fillers are arranged correctly
+    local remainder = height % 2
+    height = 28 + remainder
+  end
+
   if not self.garbagePrerenders[width][height] then
     -- canvases are affected by scissors and transformations so we need to make sure to suspend them
     local sx, sy, w, h = love.graphics.getScissor()
