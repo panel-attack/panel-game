@@ -85,6 +85,34 @@ function love.update(dt)
   GAME:update(dt)
 end
 
+local statOrder -- in reverse of the desired display order
+
+if system.meetsLoveVersionRequirement(12, 0) then
+  statOrder = {
+    "buffermemory",
+    "texturememory",
+    "buffers",
+    "textures",
+    "fonts",
+    "shaderswitches",
+    "canvasswitches",
+    "drawcallsbatched",
+    "drawcalls",
+  }
+else
+  statOrder = {
+    "texturememory",
+    "canvases",
+    "images",
+    "fonts",
+    "shaderswitches",
+    "canvasswitches",
+    "drawcallsbatched",
+    "drawcalls",
+  }
+end
+
+
 -- Called whenever the game needs to draw.
 function love.draw()
   GAME:draw()
@@ -92,10 +120,16 @@ function love.draw()
   if DEBUG_ENABLED then
     local stats = love.graphics.getStats()
     local width, height = love.graphics.getDimensions()
-    local i = 1
-    for name, count in pairs(stats) do
-      love.graphics.printf(name .. ": " .. count, 0, height - i * 16, width, "right")
-      i = i + 1
+
+    for i = #statOrder, 1, -1 do
+      local key = statOrder[i]
+      local value = stats[key]
+      if value then
+        if string.find(key, "memory") then
+          value = string.format("%.2f MB", value / 1024 / 1024)
+        end
+        love.graphics.printf(key .. ": " .. value, 0, height - i * 16, width, "right")
+      end
     end
   end
 end

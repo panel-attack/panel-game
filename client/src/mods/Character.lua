@@ -337,9 +337,13 @@ function Character.graphics_init(self, full, yields)
 
     for width = 1, 6 do
       self.garbagePrerenders[width] = {}
-      for height = 1, 20 do
-        self.garbagePrerenders[width][height] = self:createGarbageTexture(width, height)
-      end
+      self.garbagePrerenders[width][1] = self:createGarbageTexture(width, 1)
+    end
+
+    -- when loading bigger garbage pieces in greater quantities and in training mode widths it starts to fill up texture memory quite a bit
+    -- instead those are loaded ad hoc when needed
+    for height = 2, 12 do
+      self.garbagePrerenders[6][height] = self:createGarbageTexture(6, height)
     end
 
     self.telegraph_garbage_images = {}
@@ -606,12 +610,13 @@ function Character:drawGarbage(x, y, width, height, scale)
   local texture = self:getGarbageTexture(width, height)
   love.graphics.push("transform")
   love.graphics.scale(scale)
-  if texture then
+  --if texture then
     love.graphics.draw(texture, x, y)
-  else
-    love.graphics.translate(x, y)
-    self:__drawGarbage(width, height)
-  end
+  --else
+    -- for debugging and development purposes
+    --love.graphics.translate(x, y)
+    --self:__drawGarbage(width, height)
+  --end
   love.graphics.pop()
 end
 
