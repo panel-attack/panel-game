@@ -586,6 +586,7 @@ function Character:createGarbageTexture(width, height)
   return canvas
 end
 
+--- returns an existing prerender or if there is none, creates one and caches it for reuse
 ---@param width integer width in panels
 ---@param height integer height in panels
 ---@return love.Texture
@@ -594,7 +595,21 @@ function Character:getGarbageTexture(width, height)
     self.garbagePrerenders[width] = {}
   end
   if not self.garbagePrerenders[width][height] then
+    -- canvases are affected by scissors and transformations so we need to make sure to suspend them
+    local sx, sy, w, h = love.graphics.getScissor()
+    if sx then
+      love.graphics.setScissor()
+    end
+    love.graphics.push("transform")
+    love.graphics.origin()
+
     self.garbagePrerenders[width][height] = self:createGarbageTexture(width, height)
+
+    -- and then reapply them
+    love.graphics.pop()
+    if sx then
+      love.graphics.setScissor(sx, sy, w, h)
+    end
   end
 
   return self.garbagePrerenders[width][height]
@@ -610,13 +625,11 @@ function Character:drawGarbage(x, y, width, height, scale)
   local texture = self:getGarbageTexture(width, height)
   love.graphics.push("transform")
   love.graphics.scale(scale)
-  --if texture then
-    love.graphics.draw(texture, x, y)
-  --else
-    -- for debugging and development purposes
-    --love.graphics.translate(x, y)
-    --self:__drawGarbage(width, height)
-  --end
+  love.graphics.draw(texture, x, y)
+  -- for debugging and development purposes, draw with the code creating the texture instead of the texture itself
+  -- useful when there are problems with texture generation
+  --love.graphics.translate(x, y)
+  --self:__drawGarbage(width, height)
   love.graphics.pop()
 end
 
