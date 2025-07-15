@@ -88,6 +88,16 @@ end
 -- Called whenever the game needs to draw.
 function love.draw()
   GAME:draw()
+
+  if DEBUG_ENABLED then
+    local stats = love.graphics.getStats()
+    local width, height = love.graphics.getDimensions()
+    local i = 1
+    for name, count in pairs(stats) do
+      love.graphics.printf(name .. ": " .. count, 0, height - i * 16, width, "right")
+      i = i + 1
+    end
+  end
 end
 
 -- Handle a mouse or touch press
