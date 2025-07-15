@@ -12,7 +12,6 @@ local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 ---@class ChallengeModePlayer : MatchParticipant
 ---@field usedCharacterIds string[] array of character ids that have already been used during the life time of the player
 ---@field settings ChallengeModePlayerSettings
-
 local ChallengeModePlayer = class(
 function(self, playerNumber)
   self.name = "Challenger"
