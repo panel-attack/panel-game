@@ -776,7 +776,7 @@ function Stack:run()
 
   --prof.push("Stack:simulate")
   if self.stopWatchIsRunning then
-    self:simulate()
+    self:runPhysics()
   else
     -- these behaviours need to run "half a frame" on their first one to give the first swap the chance to queue to prevent instant game over on the next one
     -- otherwise, if health is 1 and no stop/shake is given and the stack is topped out, passive raise will instakill
@@ -927,7 +927,7 @@ function Stack:shouldDropGarbage()
 end
 
 -- One run of the engine routine.
-function Stack:simulate()
+function Stack:runPhysics()
   table.clear(self.garbageLandedThisFrame)
 
   self.wasToppedOut = self:isToppedOut()

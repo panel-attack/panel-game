@@ -9,11 +9,11 @@ local MatchRules = require("common.data.MatchRules")
 ---@field is_local boolean effectively if the Stack is receiving its inputs via local input
 ---@field framesBehindArray integer[] Records how far behind the stack was at each match clock time
 ---@field framesBehind integer How far behind the stack is at the current Match clock time
----@field clock integer how many times run has been called; this is equivalent to how many inputs have been processed
----@field stopWatch integer how many times the simulation has run; unlike a clock and just like a stopWatch this frame timer only runs when the simulation is running
----@field stopWatchIsRunning boolean if the stack is running the simulation during runs
+---@field clock integer how many times run has been called; this is equivalent to how many inputs have been processed;<br>This is the chief timer to measure synchronicity and the driver of rollback and inputs
+---@field stopWatch integer how many times the game physics have run; unlike a clock and just like a stopWatch this frame timer only runs when the simulation is running
+---@field stopWatchIsRunning boolean if the stack is running the game physics during runs
 ---@field game_over_clock integer What the clock time was when the Stack went game over
----@field do_countdown boolean if the stack is performing a countdown at the start of the match
+---@field do_countdown boolean if the stack is currently performing a countdown / will perform a countdown at the start of the match;<br> this is state, the value will change at the end of countdown
 ---@field countdown_timer boolean? ephemeral timer used for tracking countdown progress at the start of the game
 ---@field outgoingGarbage GarbageQueue
 ---@field incomingGarbage GarbageQueue

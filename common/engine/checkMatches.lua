@@ -109,10 +109,6 @@ local function canMatch(panel)
 end
 
 function Stack:checkMatches()
-  if self.do_countdown then
-    return
-  end
-
   prof.push("Stack:checkMatches")
   --local reference = self:getMatchingPanels2()
   local matchingPanels = self:getMatchingPanels()

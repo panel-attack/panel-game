@@ -39,41 +39,50 @@ function SimulatedStack:addHealth(healthSettings)
 end
 
 function SimulatedStack:run()
-  -- TODO: integrate this with stopWatchIsRunning instead of relying on the do_countdown field
-  if self.do_countdown and self.countdown_timer > 0 then
+  if self.stopWatchIsRunning then
+    self:runPhysics()
+  elseif self.do_countdown and self.countdown_timer > 0 then
     if self.healthEngine then
       self.healthEngine.clock = self.clock
     end
     if self.clock >= consts.COUNTDOWN_START then
       self.countdown_timer = self.countdown_timer - 1
     end
+    if self.countdown_timer == 0 then
+      self.do_countdown = nil
+      self.stopWatchIsRunning = true
+    end
   else
-    if self.attackEngine then
-      self.attackEngine:run()
-    end
-
-    self.outgoingGarbage:processStagedGarbageForClock(self.stopWatch)
-
-    if self.healthEngine then
-      -- perform the equivalent of queued garbage being dropped
-      -- except a little quicker than on real stacks
-      for i = #self.incomingGarbage.stagedGarbage, 1, -1 do
-        self.healthEngine:receiveGarbage(self.clock, self.incomingGarbage:pop())
-      end
-
-      self.health = self.healthEngine:run()
-    end
-
-    if self.health <= 0 then
-      self:setGameOver()
-    end
-
-    self.stopWatch = self.stopWatch + 1
+    error("stopWatch of SimulatedStack is not running but neither is the countdown")
   end
 
   self.clock = self.clock + 1
 
   self:emitSignal("finishedRun")
+end
+
+function SimulatedStack:runPhysics()
+  if self.attackEngine then
+    self.attackEngine:run()
+  end
+
+  self.outgoingGarbage:processStagedGarbageForClock(self.stopWatch)
+
+  if self.healthEngine then
+    -- perform the equivalent of queued garbage being dropped
+    -- except a little quicker than on real stacks
+    for i = #self.incomingGarbage.stagedGarbage, 1, -1 do
+      self.healthEngine:receiveGarbage(self.clock, self.incomingGarbage:pop())
+    end
+
+    self.health = self.healthEngine:run()
+  end
+
+  if self.health <= 0 then
+    self:setGameOver()
+  end
+
+  self.stopWatch = self.stopWatch + 1
 end
 
 function SimulatedStack:setGameOver()
