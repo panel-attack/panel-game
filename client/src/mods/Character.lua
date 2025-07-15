@@ -414,6 +414,7 @@ function Character.graphics_uninit(self)
     end
   end
   self.telegraph_garbage_images = {}
+  self.garbagePrerenders = {}
 end
 
 
@@ -599,6 +600,7 @@ end
 ---@param y integer top offset
 ---@param width integer width in panels
 ---@param height integer height in panels
+---@param scale number?
 function Character:drawGarbage(x, y, width, height, scale)
   scale = scale or 1
   local texture = self:getGarbageTexture(width, height)
@@ -619,13 +621,13 @@ function Character:__drawGarbage(width, height)
   local imgs = self.images
   local panelSize = 16
   local halfPanelSize = panelSize / 2
-  local garbageHeight, garbageWidth = height, width
+  local garbageWidth, garbageHeight = width, height
   local leftX = 0
-  -- the x offset of the rightmost panel
-  local rightX = (width - 1) * panelSize
+  -- the x offset of the rightmost panel, , not the right border of the garbage
+  local rightX = (garbageWidth - 1) * panelSize
   local topY = 0
-  -- the y offset of the bottom most panel
-  local bottomY = (height - 1) * panelSize
+  -- the y offset of the bottom most panel, not the bottom border of the garbage
+  local bottomY = (garbageHeight - 1) * panelSize
   local cornerWidth = halfPanelSize
   local cornerHeight = 3
   local useFiller1 = ((garbageHeight - (garbageHeight % 2)) / 2) % 2 == 0
