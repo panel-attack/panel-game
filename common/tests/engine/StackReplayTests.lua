@@ -373,7 +373,7 @@ local function fallingWhileHoverBeginsDoesNotChain()
 end
 
 local function platformTest(waitFrames, useMatchSide)
-  local puzzle = Puzzle({puzzleType = "chain", stack = "3000994339949999994999999999999999999999999999999999", stopTime = 60})
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.chain, stack = "3000994339949999994999999999999999999999999999999999", stopTime = 60})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
   ---@cast stack Stack

@@ -117,7 +117,7 @@ function PuzzleSet.loadV3(puzzleSetData)
 
   for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
     local args = {
-      puzzleType = puzzleData["Puzzle Type"],
+      puzzleType = string.lower(puzzleData["Puzzle Type"]),
       startTiming = puzzleData["StartTiming"],
       moves = puzzleData["Moves"],
       stack = puzzleData["Stack"],
