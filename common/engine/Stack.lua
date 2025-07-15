@@ -110,7 +110,6 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 --- panel[i] gets the row where i is the index of the row with 1 being the bottommost row in play (not dimmed) \n
 --- panel[i][j] gets the panel at row i where j is the column index counting from left to right starting from 1 \n
 --- the update order for panels is bottom to top and left to right as well
----@field game_stopwatch_running boolean set to false if countdown starts
 ---@field displacement integer This variable indicates how far below the top of the play area the top row of panels actually is. \n
 --- This variable being decremented causes the stack to rise. \n
 --- During the automatic rising routine, if this variable is 0, it's reset to 15, all the panels are moved up one row, and a new row is generated at the bottom. \n
@@ -183,7 +182,7 @@ local Stack = class(
     s.inputMethod = args.inputMethod
 
     if s.behaviours.delaySimulationUntil then
-      s.game_stopwatch_running = false
+      s.stopWatchIsRunning = false
     end
 
     s.swapStallingBackLog = {}
@@ -396,7 +395,7 @@ function Stack:rollbackCopy()
   copy.countdown_timer = self.countdown_timer
   copy.clock = self.clock
   copy.stopWatch = self.stopWatch
-  copy.game_stopwatch_running = self.game_stopwatch_running
+  copy.stopWatchIsRunning = self.stopWatchIsRunning
   copy.rise_lock = self.rise_lock
   copy.top_cur_row = self.top_cur_row
   copy.displacement = self.displacement
@@ -452,7 +451,7 @@ local function internalRollbackToFrame(stack, frame)
   stack.countdown_timer = copy.countdown_timer
   stack.clock = copy.clock
   stack.stopWatch = copy.stopWatch
-  stack.game_stopwatch_running = copy.game_stopwatch_running
+  stack.stopWatchIsRunning = copy.stopWatchIsRunning
   stack.rise_lock = copy.rise_lock
   stack.top_cur_row = copy.top_cur_row
   stack.displacement = copy.displacement
@@ -771,25 +770,25 @@ function Stack:run()
   if self.behaviours.delaySimulationUntil == "countdownEnded" and self.clock <= (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
     self:runCountdown()
     if self.clock == (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
-      self.game_stopwatch_running = true
+      self.stopWatchIsRunning = true
     end
   end
 
   --prof.push("Stack:simulate")
-  if self.game_stopwatch_running then
+  if self.stopWatchIsRunning then
     self:simulate()
   else
     -- these behaviours need to run "half a frame" on their first one to give the first swap the chance to queue to prevent instant game over on the next one
     -- otherwise, if health is 1 and no stop/shake is given and the stack is topped out, passive raise will instakill
     if self.behaviours.delaySimulationUntil == "firstInput" then
       if self.input_state ~= self:idleInput() then
-        self.game_stopwatch_running = true
+        self.stopWatchIsRunning = true
         -- need to compensate the fact that we increment stopWatch at the end of the frame without having simulated
         self.stopWatch = -1
       end
     elseif self.behaviours.delaySimulationUntil == "firstSwap" then
       if self.swapThisFrame then
-        self.game_stopwatch_running = true
+        self.stopWatchIsRunning = true
         self.stopWatch = -1
       end
     end
@@ -812,7 +811,7 @@ function Stack:run()
 
   self:handleManualRaise()
 
-  if self.game_stopwatch_running then
+  if self.stopWatchIsRunning then
     prof.push("pop from incoming garbage q")
     if self:shouldDropGarbage() then
       self:tryDropGarbage()
@@ -1645,7 +1644,7 @@ function Stack:checkGameOver()
           -- but also as a negative (accidently killing yourself in non-threatening circumstances)
           return true
         end
-      elseif not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then
+      elseif not self:hasActivePanels() and not self:swapQueued() and self.stopWatchIsRunning then
         if stackOverCondition == MatchRules.StackOverConditions.SWAPS then
           if self.swapCount >= value then
             return true
@@ -1758,12 +1757,12 @@ function Stack:setCountdown(doCountdown)
   self.do_countdown = doCountdown
   if doCountdown then
     self.behaviours.delaySimulationUntil = "countdownEnded"
-    self.game_stopwatch_running = false
+    self.stopWatchIsRunning = false
   else
     if self.behaviours.delaySimulationUntil == "countdownEnded" then
       self.behaviours.delaySimulationUntil = nil
     end
-    self.game_stopwatch_running = not self.behaviours.delaySimulationUntil
+    self.stopWatchIsRunning = not self.behaviours.delaySimulationUntil
   end
 end
 

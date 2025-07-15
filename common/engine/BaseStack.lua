@@ -11,7 +11,7 @@ local MatchRules = require("common.data.MatchRules")
 ---@field framesBehind integer How far behind the stack is at the current Match clock time
 ---@field clock integer how many times run has been called; this is equivalent to how many inputs have been processed
 ---@field stopWatch integer how many times the simulation has run; unlike a clock and just like a stopWatch this frame timer only runs when the simulation is running
----@field game_stopwatch_running boolean if the stack is simulating during runs
+---@field stopWatchIsRunning boolean if the stack is running the simulation during runs
 ---@field game_over_clock integer What the clock time was when the Stack went game over
 ---@field do_countdown boolean if the stack is performing a countdown at the start of the match
 ---@field countdown_timer boolean? ephemeral timer used for tracking countdown progress at the start of the game
@@ -62,7 +62,7 @@ function(self, args)
   self.framesBehind = 0
   self.clock = 0
   self.stopWatch = 0
-  self.game_stopwatch_running = true
+  self.stopWatchIsRunning = true
   self.game_over_clock = -1 -- the exact clock frame the stack lost, -1 while alive
   Signal.turnIntoEmitter(self)
   self:createSignal("gameOver")
@@ -116,7 +116,7 @@ end
 ---@param doCountdown boolean
 function BaseStack:setCountdown(doCountdown)
   self.do_countdown = doCountdown
-  self.game_stopwatch_running = not self.do_countdown
+  self.stopWatchIsRunning = not self.do_countdown
 end
 
 ---@param maxRunsPerFrame integer

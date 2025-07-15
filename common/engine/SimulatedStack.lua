@@ -39,6 +39,7 @@ function SimulatedStack:addHealth(healthSettings)
 end
 
 function SimulatedStack:run()
+  -- TODO: integrate this with stopWatchIsRunning instead of relying on the do_countdown field
   if self.do_countdown and self.countdown_timer > 0 then
     if self.healthEngine then
       self.healthEngine.clock = self.clock
