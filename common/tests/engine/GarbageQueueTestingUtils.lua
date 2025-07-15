@@ -44,11 +44,13 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   match:start()
 
   -- make some space for garbage to fall
+---@diagnostic disable-next-line: param-type-mismatch
   GarbageQueueTestingUtils.reduceRowsTo(match.stacks[1], 0)
 
   return match
 end
 
+---@param match Match
 function GarbageQueueTestingUtils.runToFrame(match, frame)
   local stack = match.stacks[1]
   while stack.clock < frame do
@@ -61,6 +63,7 @@ function GarbageQueueTestingUtils.runToFrame(match, frame)
 end
 
 -- clears panels until only "count" rows are left
+---@param stack Stack
 function GarbageQueueTestingUtils.reduceRowsTo(stack, count)
   for row = #stack.panels, count + 1 do
     for col = 1, stack.width do
@@ -70,6 +73,7 @@ function GarbageQueueTestingUtils.reduceRowsTo(stack, count)
 end
 
 -- fill up panels with non-matching panels until "count" rows are filled
+---@param stack Stack
 function GarbageQueueTestingUtils.fillRowsTo(stack, count)
   for row = 1, count do
     if not stack.panels[row] then
@@ -84,17 +88,20 @@ function GarbageQueueTestingUtils.fillRowsTo(stack, count)
   end
 end
 
+---@param stack Stack
 function GarbageQueueTestingUtils.simulateActivity(stack)
   stack.hasActivePanels = function() return true end
 end
 
+---@param stack Stack
 function GarbageQueueTestingUtils.simulateInactivity(stack)
   stack.hasActivePanels = function() return false end
 end
 
+---@param stack Stack
 function GarbageQueueTestingUtils.sendGarbage(stack, width, height, chain, metal, time)
   -- -1 cause this will get called after the frame ended instead of during the frame
-  local frameEarned = time or stack.game_stopwatch
+  local frameEarned = time or stack.stopWatch
   local isChain = chain or false
   local isMetal = metal or false
 

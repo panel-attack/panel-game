@@ -17,8 +17,8 @@ PortraitGame.name = "PortraitGame"
 local function getTimer(match)
   local frames = 0
   local stack = match.stacks[1]
-  if stack ~= nil and stack.engine.game_stopwatch ~= nil and tonumber(stack.engine.game_stopwatch) ~= nil then
-    frames = stack.engine.game_stopwatch
+  if stack ~= nil and stack.engine.stopWatch ~= nil and tonumber(stack.engine.stopWatch) ~= nil then
+    frames = stack.engine.stopWatch
   end
 
   if match.engine.timeLimit then

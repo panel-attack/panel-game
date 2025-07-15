@@ -30,7 +30,7 @@ AttackPattern =
 ---@field treatMetalAsCombo boolean whether the metal garbage is treated the same as combo garbage (aka they can mix)
 ---@field attackPatterns AttackPattern[] The array of AttackPattern objects this engine will run through.
 ---@field attackSettings table The format for serializing AttackPattern information
----@field stopwatch integer  The stopwatch to control the continuity of the sending process
+---@field stopWatch integer  The stopWatch to control the continuity of the sending process
 ---@field outgoingGarbage GarbageQueue The garbage queue attacks are added to
 local AttackEngine = class(
   function(self, attackSettings, garbageQueue)
@@ -50,7 +50,7 @@ local AttackEngine = class(
     self:addAttackPatternsFromTable(attackSettings.attackPatterns)
     self.attackSettings = attackSettings
 
-    self.stopwatch = 0
+    self.stopWatch = 0
 
     self.outgoingGarbage = garbageQueue
     -- to ensure correct behaviour according to the pattern definition
@@ -85,7 +85,7 @@ end
 -- Adds an attack pattern that happens repeatedly on a timer.
 ---@param width integer? the width of the garbage block in columns
 ---@param height integer? the height of the garbage block in rows
----@param start integer the stopwatch frame these attacks should start being sent
+---@param start integer the stopWatch frame these attacks should start being sent
 ---@param metal boolean? if this is a metal block
 ---@param chain boolean? if this is a chain attack
 function AttackEngine.addAttackPattern(self, width, height, start, metal, chain)
@@ -94,7 +94,7 @@ function AttackEngine.addAttackPattern(self, width, height, start, metal, chain)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
 end
 
----@param chainEnd integer the stopwatch frame the ongoing chain is being finalized
+---@param chainEnd integer the stopWatch frame the ongoing chain is being finalized
 function AttackEngine.addEndChainPattern(self, chainEnd)
   local attackPattern = AttackPattern(0, 0, self.delayBeforeStart + chainEnd, false, false, true)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
@@ -117,21 +117,21 @@ function AttackEngine.run(self)
   --  that the recipient is stalling acceptance so we shouldn't push more inside
   if self.disableQueueLimit or self.outgoingGarbage.transitTimers:len() <= 6 then
     for i = 1, #self.attackPatterns do
-      if self.stopwatch >= self.attackPatterns[i].startTime then
-        local difference = self.stopwatch - self.attackPatterns[i].startTime
+      if self.stopWatch >= self.attackPatterns[i].startTime then
+        local difference = self.stopWatch - self.attackPatterns[i].startTime
         local remainder = difference % totalAttackTimeBeforeRepeat
         if remainder == 0 then
           if self.attackPatterns[i].endsChain then
             if not self.outgoingGarbage.currentChain then
               break
             end
-            self.outgoingGarbage:finalizeCurrentChain(self.stopwatch)
+            self.outgoingGarbage:finalizeCurrentChain(self.stopWatch)
           else
             local garbage = self.attackPatterns[i].garbage
             if garbage.isChain then
-              self.outgoingGarbage:addChainLink(self.stopwatch, math.random(1, 11), math.random(1, 6))
+              self.outgoingGarbage:addChainLink(self.stopWatch, math.random(1, 11), math.random(1, 6))
             else
-              garbage.frameEarned = self.stopwatch
+              garbage.frameEarned = self.stopWatch
               -- we need a coordinate for the origin of the attack animation
               garbage.rowEarned = math.random(1, 11)
               garbage.colEarned = math.random(1, 6)
@@ -147,7 +147,7 @@ function AttackEngine.run(self)
     end
   end
 
-  self.stopwatch = self.stopwatch + 1
+  self.stopWatch = self.stopWatch + 1
 end
 
 function AttackEngine:saveForRollback(frame)
@@ -156,12 +156,12 @@ end
 
 function AttackEngine:rollbackToFrame(frame)
   self.outgoingGarbage:rollbackToFrame(frame)
-  self.stopwatch = frame
+  self.stopWatch = frame
 end
 
 function AttackEngine:rewindToFrame(frame)
   self.outgoingGarbage:rewindToFrame(frame)
-  self.stopwatch = frame
+  self.stopWatch = frame
 end
 
 return AttackEngine

@@ -282,7 +282,7 @@ function Match:pushGarbageTo(stack)
   for _, st in ipairs(self.garbageSources[stack]) do
     local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
     if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-      if stack.game_stopwatch > oldestTransitTime then
+      if stack.stopWatch > oldestTransitTime then
         -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
@@ -293,7 +293,7 @@ function Match:pushGarbageTo(stack)
           self:abort()
         end
       end
-      local garbageDelivery = st:getReadyGarbageAt(stack.game_stopwatch)
+      local garbageDelivery = st:getReadyGarbageAt(stack.stopWatch)
       if garbageDelivery then
         --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
         stack:receiveGarbage(garbageDelivery)
@@ -312,7 +312,7 @@ function Match:shouldSaveRollback(stack)
     for senderIndex, targetList in ipairs(self.garbageTargets) do
       for _, target in ipairs(targetList) do
         if target == stack then
-          if self.stacks[senderIndex].game_stopwatch + GARBAGE_DELAY_LAND_TIME <= stack.game_stopwatch then
+          if self.stacks[senderIndex].stopWatch + GARBAGE_DELAY_LAND_TIME <= stack.stopWatch then
             return true
           end
         end
@@ -535,7 +535,7 @@ function Match:hasEnded()
   end
 
   if self.timeLimit then
-    if tableUtils.trueForAll(self.stacks, function(stack) return stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit end) then
+    if tableUtils.trueForAll(self.stacks, function(stack) return stack.stopWatch and stack.stopWatch >= self.timeLimit end) then
       self.ended = true
       return true
     end
@@ -588,7 +588,7 @@ function Match:shouldRun(stack, runsSoFar)
   if not stack:game_ended() then
     if self.timeLimit then
       -- timeLimit will malfunction with SimulatedStack
-      if stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit then
+      if stack.stopWatch and stack.stopWatch >= self.timeLimit then
         -- the stack should only run 1 frame beyond the time limit (excluding countdown)
         return false
       end

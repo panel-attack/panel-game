@@ -51,7 +51,7 @@ function SimulatedStack:run()
       self.attackEngine:run()
     end
 
-    self.outgoingGarbage:processStagedGarbageForClock(self.game_stopwatch)
+    self.outgoingGarbage:processStagedGarbageForClock(self.stopWatch)
 
     if self.healthEngine then
       -- perform the equivalent of queued garbage being dropped
@@ -67,7 +67,7 @@ function SimulatedStack:run()
       self:setGameOver()
     end
 
-    self.game_stopwatch = self.game_stopwatch + 1
+    self.stopWatch = self.stopWatch + 1
   end
 
   self.clock = self.clock + 1
@@ -115,18 +115,18 @@ function SimulatedStack:saveForRollback()
     copy = {}
   end
 
-  self.incomingGarbage:saveForRollback(self.game_stopwatch)
+  self.incomingGarbage:saveForRollback(self.stopWatch)
 
   if self.healthEngine then
     self.healthEngine:saveRollbackCopy()
   end
 
   if self.attackEngine then
-    self.attackEngine:saveForRollback(self.game_stopwatch)
+    self.attackEngine:saveForRollback(self.stopWatch)
   end
 
   copy.health = self.health
-  copy.game_stopwatch = self.game_stopwatch
+  copy.stopWatch = self.stopWatch
   copy.game_over_clock = self.game_over_clock
 
   self.rollbackCopies[self.clock] = copy
@@ -156,7 +156,7 @@ local function internalRollbackToFrame(stack, frame)
       stack.health = copy.health
     end
 
-    stack.game_stopwatch = copy.game_stopwatch
+    stack.stopWatch = copy.stopWatch
     stack.game_over_clock = copy.game_over_clock
 
     return true
@@ -167,10 +167,10 @@ end
 
 function SimulatedStack:rollbackToFrame(frame)
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rollbackToFrame(self.game_stopwatch)
+    self.incomingGarbage:rollbackToFrame(self.stopWatch)
 
     if self.attackEngine then
-      self.attackEngine:rollbackToFrame(self.game_stopwatch)
+      self.attackEngine:rollbackToFrame(self.stopWatch)
     end
 
     self.lastRollbackFrame = self.clock
@@ -183,10 +183,10 @@ end
 
 function SimulatedStack:rewindToFrame(frame)
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rewindToFrame(self.game_stopwatch)
+    self.incomingGarbage:rewindToFrame(self.stopWatch)
 
     if self.attackEngine then
-      self.attackEngine:rewindToFrame(self.game_stopwatch)
+      self.attackEngine:rewindToFrame(self.stopWatch)
     end
 
     self.clock = frame

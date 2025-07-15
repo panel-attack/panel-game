@@ -252,7 +252,6 @@ function PlayerStack:onRollback(engine)
 
   -- to fool Match without having to wrap everything into getters
   self.clock = engine.clock
-  self.game_stopwatch = engine.game_stopwatch
 
   --prof.push("rollback copy analytics")
   self.analytic:rollbackToFrame(self.clock)

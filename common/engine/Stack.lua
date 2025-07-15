@@ -149,7 +149,6 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field peak_shake_time integer Records the maximum shake time obtained for the current stretch of uninterrupted shake time. \n
 --- Any additional shake time gained before shake depletes to 0 will reset shake_time back to this value. Set to 0 when shake_time reaches 0.
 ---@field warningsTriggered table ancient ancient, probably remove
----@field game_stopwatch integer? Clock time minus time that swaps were blocked
 ---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
 ---@field panelTemplate (Panel | fun(row: integer, column: integer, id: integer?): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
 ---@field swapStallingBackLog table tracks swaps that will incur a health cost for stalling if not swapping would have resulted in health loss
@@ -396,7 +395,7 @@ function Stack:rollbackCopy()
   copy.health = self.health
   copy.countdown_timer = self.countdown_timer
   copy.clock = self.clock
-  copy.game_stopwatch = self.game_stopwatch
+  copy.stopWatch = self.stopWatch
   copy.game_stopwatch_running = self.game_stopwatch_running
   copy.rise_lock = self.rise_lock
   copy.top_cur_row = self.top_cur_row
@@ -452,7 +451,7 @@ local function internalRollbackToFrame(stack, frame)
 
   stack.countdown_timer = copy.countdown_timer
   stack.clock = copy.clock
-  stack.game_stopwatch = copy.game_stopwatch
+  stack.stopWatch = copy.stopWatch
   stack.game_stopwatch_running = copy.game_stopwatch_running
   stack.rise_lock = copy.rise_lock
   stack.top_cur_row = copy.top_cur_row
@@ -538,8 +537,8 @@ function Stack:rollbackToFrame(frame)
   local currentFrame = self.clock
 
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rollbackToFrame(self.game_stopwatch)
-    self.outgoingGarbage:rollbackToFrame(self.game_stopwatch)
+    self.incomingGarbage:rollbackToFrame(self.stopWatch)
+    self.outgoingGarbage:rollbackToFrame(self.stopWatch)
     self.panelSource:rollbackToFrame(frame)
 
     self.rollbackCount = self.rollbackCount + 1
@@ -556,8 +555,8 @@ end
 ---@return boolean success if rewinding succeeded
 function Stack:rewindToFrame(frame)
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rewindToFrame(self.game_stopwatch)
-    self.outgoingGarbage:rewindToFrame(self.game_stopwatch)
+    self.incomingGarbage:rewindToFrame(self.stopWatch)
+    self.outgoingGarbage:rewindToFrame(self.stopWatch)
     self.panelSource:rewindToFrame(frame)
 
     self:emitSignal("rollbackPerformed", self)
@@ -576,11 +575,11 @@ function Stack:saveForRollback()
   self:rollbackCopy()
   prof.pop("Stack.rollbackCopy")
   prof.push("incomingGarbage:saveForRollback")
-  self.incomingGarbage:saveForRollback(self.game_stopwatch)
+  self.incomingGarbage:saveForRollback(self.stopWatch)
   prof.pop("incomingGarbage:saveForRollback")
   prof.push("outgoingGarbage:saveForRollback")
   if self.outgoingGarbage then
-    self.outgoingGarbage:saveForRollback(self.game_stopwatch)
+    self.outgoingGarbage:saveForRollback(self.stopWatch)
   end
   prof.pop("outgoingGarbage:saveForRollback")
   self.panelSource:saveForRollback(self.clock)
@@ -785,13 +784,13 @@ function Stack:run()
     if self.behaviours.delaySimulationUntil == "firstInput" then
       if self.input_state ~= self:idleInput() then
         self.game_stopwatch_running = true
-        -- need to compensate the fact that we increment stopwatch at the end of the frame without having simulated
-        self.game_stopwatch = -1
+        -- need to compensate the fact that we increment stopWatch at the end of the frame without having simulated
+        self.stopWatch = -1
       end
     elseif self.behaviours.delaySimulationUntil == "firstSwap" then
       if self.swapThisFrame then
         self.game_stopwatch_running = true
-        self.game_stopwatch = -1
+        self.stopWatch = -1
       end
     end
   end
@@ -819,7 +818,7 @@ function Stack:run()
       self:tryDropGarbage()
     end
     prof.pop("pop from incoming garbage q")
-    self.game_stopwatch = self.game_stopwatch + 1
+    self.stopWatch = self.stopWatch + 1
   end
 
   self.clock = self.clock + 1
@@ -980,14 +979,14 @@ function Stack:simulate()
     self.chain_counter = 0
 
     if self.outgoingGarbage then
-      logger.debug("Player " .. self.which .. " chain ended at " .. self.game_stopwatch)
-      self.outgoingGarbage:finalizeCurrentChain(self.game_stopwatch)
+      logger.debug("Player " .. self.which .. " chain ended at " .. self.stopWatch)
+      self.outgoingGarbage:finalizeCurrentChain(self.stopWatch)
     end
   end
   --prof.pop("chain update")
 
   --prof.push("process staged garbage")
-  self.outgoingGarbage:processStagedGarbageForClock(self.game_stopwatch)
+  self.outgoingGarbage:processStagedGarbageForClock(self.stopWatch)
   --prof.pop("process staged garbage")
 
   self:removeExtraRows()
@@ -1352,10 +1351,10 @@ end
 -- tries to drop a width x height garbage.
 -- returns true if garbage was dropped, false otherwise
 function Stack:tryDropGarbage()
-  logger.debug("trying to drop garbage at frame " .. self.game_stopwatch)
+  logger.debug("trying to drop garbage at frame " .. self.stopWatch)
 
   local garbage = self.incomingGarbage:pop()
-  logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.game_stopwatch, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
+  logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.stopWatch, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
 
   self:dropGarbage(garbage.width, garbage.height, garbage.isMetal)
 
@@ -1453,8 +1452,8 @@ function Stack:getAttackPatternData()
   data.attackPatterns = {}
   data.extraInfo = {}
   data.extraInfo.matchLength = " "
-  if self.game_stopwatch > 0 then
-    data.extraInfo.matchLength = frames_to_time_string(self.game_stopwatch)
+  if self.stopWatch > 0 then
+    data.extraInfo.matchLength = frames_to_time_string(self.stopWatch)
   else
     -- there is nothing to export!
     return
