@@ -155,6 +155,7 @@ function loc(text_key, ...)
   if not code or not Localization.data[code] then
     code = Localization.codes[1]
   end
+  assert(code)
 
   local ret = nil
   if Localization.init then
@@ -176,5 +177,7 @@ function loc(text_key, ...)
 
   return ret
 end
+
+Localization:init()
 
 return Localization

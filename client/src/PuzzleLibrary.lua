@@ -2,15 +2,13 @@ local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
-local Puzzle = require("common.engine.Puzzle")
 local PuzzleSet = require("client.src.PuzzleSet")
-local Scores = require("client.src.scores")
 local tableUtils = require("common.lib.tableUtils")
 
 -- A puzzle collection is a set of all puzzles that can be queried and filtered for a subset.
 ---@class PuzzleLibrary
 ---@field puzzleSets table<integer, table> all the puzzle sets
----@field puzzleResults Scores
+---@field puzzleResults Scores?
 local PuzzleLibrary =
     class(
       function(self, puzzleResults)
@@ -156,6 +154,7 @@ function PuzzleLibrary:getNextTrainingDateForPuzzleUUID(UUID)
   end
   assert(successRecord.success == true)
   assert(successRecord.timestamp > 0)
+  assert(successRecord.UUID == nil)
 
   local winRate = self.puzzleResults:puzzleSuccessRateForUUID(UUID)
   local trainInterval = self:trainIntervalForResults(winStreak, winRate)

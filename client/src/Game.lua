@@ -40,6 +40,7 @@ local function newCanvasSnappedScale(self)
 end
 
 ---@class PanelAttack
+---@field scores Scores
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
 ---@field globalCanvas love.Canvas
@@ -216,8 +217,6 @@ end
 
 function Game:setupRoutine()
   -- loading various assets into the game
-  coroutine.yield("Loading localization...")
-  Localization:init()
   self:setLanguage(config.language_code)
 
   detectHardwareProblems()
