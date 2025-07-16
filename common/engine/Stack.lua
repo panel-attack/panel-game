@@ -440,9 +440,9 @@ function Stack:rollbackCopy()
 end
 
 ---@param stack Stack
----@param frame integer
-local function internalRollbackToFrame(stack, frame)
-  local copy = stack.rollbackBuffer:rollbackToFrame(frame)
+---@param clock integer
+local function internalRollbackToFrame(stack, clock)
+  local copy = stack.rollbackBuffer:rollbackToFrame(clock)
 
   if not copy then
     return false
@@ -518,7 +518,7 @@ local function internalRollbackToFrame(stack, frame)
 
   -- this is for the interpolation of the shake animation only (not a physics relevant field)
   local previousData = stack.rollbackBuffer:peekPrevious()
-  if previousData and previousData.clock == frame - 1 then
+  if previousData and previousData.clock == clock - 1 then
     stack.prev_shake_time = previousData.shake_time
   else
     -- if this is the oldest rollback frame we don't need to interpolate with previous values
@@ -530,15 +530,15 @@ local function internalRollbackToFrame(stack, frame)
   return true
 end
 
----@param frame integer the frame to rollback to if possible
+---@param clock integer the frame to rollback to if possible
 ---@return boolean success if rolling back succeeded
-function Stack:rollbackToFrame(frame)
+function Stack:rollbackToFrame(clock)
   local currentFrame = self.clock
 
-  if internalRollbackToFrame(self, frame) then
+  if internalRollbackToFrame(self, clock) then
     self.incomingGarbage:rollbackToFrame(self.stopWatch)
     self.outgoingGarbage:rollbackToFrame(self.stopWatch)
-    self.panelSource:rollbackToFrame(frame)
+    self.panelSource:rollbackToFrame(clock)
 
     self.rollbackCount = self.rollbackCount + 1
     -- match will try to fast forward this stack to that frame
@@ -550,13 +550,13 @@ function Stack:rollbackToFrame(frame)
   return false
 end
 
----@param frame integer the frame to rewind to if possible
+---@param clock integer the frame to rewind to if possible
 ---@return boolean success if rewinding succeeded
-function Stack:rewindToFrame(frame)
-  if internalRollbackToFrame(self, frame) then
+function Stack:rewindToFrame(clock)
+  if internalRollbackToFrame(self, clock) then
     self.incomingGarbage:rewindToFrame(self.stopWatch)
     self.outgoingGarbage:rewindToFrame(self.stopWatch)
-    self.panelSource:rewindToFrame(frame)
+    self.panelSource:rewindToFrame(clock)
 
     self:emitSignal("rollbackPerformed", self)
     return true

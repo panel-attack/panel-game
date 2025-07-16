@@ -197,7 +197,7 @@ function LegacyPanelSource:clone(stack)
   return source
 end
 
-function LegacyPanelSource:saveForRollback(frame)
+function LegacyPanelSource:saveForRollback(clock)
   local copy = self.rollbackBuffer:getOldest()
 
   if not copy then
@@ -209,11 +209,11 @@ function LegacyPanelSource:saveForRollback(frame)
   copy.panelGenCount = self.panelGenCount
   copy.garbageGenCount = self.garbageGenCount
 
-  self.rollbackBuffer:saveCopy(frame, copy)
+  self.rollbackBuffer:saveCopy(clock, copy)
 end
 
-function LegacyPanelSource:rollbackToFrame(frame)
-  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+function LegacyPanelSource:rollbackToFrame(clock)
+  local copy = self.rollbackBuffer:rollbackToFrame(clock)
 
   if not copy then
     error("Could not rollback LegacyPanelSource")
@@ -225,8 +225,8 @@ function LegacyPanelSource:rollbackToFrame(frame)
   self.garbageGenCount = copy.garbageGenCount
 end
 
-function LegacyPanelSource:rewindToFrame(frame)
-  self:rollbackToFrame(frame)
+function LegacyPanelSource:rewindToFrame(clock)
+  self:rollbackToFrame(clock)
 end
 
 return LegacyPanelSource

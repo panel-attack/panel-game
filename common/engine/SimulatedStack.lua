@@ -148,11 +148,11 @@ function SimulatedStack:saveForRollback()
   end
 end
 
-local function internalRollbackToFrame(stack, frame)
-  local copy = stack.rollbackCopies[frame]
+local function internalRollbackToFrame(stack, clock)
+  local copy = stack.rollbackCopies[clock]
 
-  if copy and frame < stack.clock then
-    for f = frame, stack.clock do
+  if copy and clock < stack.clock then
+    for f = clock, stack.clock do
       if stack.rollbackCopies[f] then
         stack.rollbackCopyPool:push(stack.rollbackCopies[f])
         stack.rollbackCopies[f] = nil
@@ -160,7 +160,7 @@ local function internalRollbackToFrame(stack, frame)
     end
 
     if stack.healthEngine then
-      stack.healthEngine:rollbackToFrame(frame)
+      stack.healthEngine:rollbackToFrame(clock)
       stack.health = stack.healthEngine.framesToppedOutToLose
     else
       stack.health = copy.health
@@ -175,8 +175,8 @@ local function internalRollbackToFrame(stack, frame)
   return false
 end
 
-function SimulatedStack:rollbackToFrame(frame)
-  if internalRollbackToFrame(self, frame) then
+function SimulatedStack:rollbackToFrame(clock)
+  if internalRollbackToFrame(self, clock) then
     self.incomingGarbage:rollbackToFrame(self.stopWatch)
 
     if self.attackEngine then
@@ -184,22 +184,22 @@ function SimulatedStack:rollbackToFrame(frame)
     end
 
     self.lastRollbackFrame = self.clock
-    self.clock = frame
+    self.clock = clock
     return true
   end
 
   return false
 end
 
-function SimulatedStack:rewindToFrame(frame)
-  if internalRollbackToFrame(self, frame) then
+function SimulatedStack:rewindToFrame(clock)
+  if internalRollbackToFrame(self, clock) then
     self.incomingGarbage:rewindToFrame(self.stopWatch)
 
     if self.attackEngine then
       self.attackEngine:rewindToFrame(self.stopWatch)
     end
 
-    self.clock = frame
+    self.clock = clock
     return true
   end
 

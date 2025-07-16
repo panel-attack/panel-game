@@ -202,13 +202,13 @@ function GarbageQueue:saveForRollback(frame)
   self.rollbackBuffer:saveCopy(frame, copy)
 end
 
----@param frame integer
-function GarbageQueue:rollbackToFrame(frame)
-  assert(self.rollbackBuffer, "Attempted to rollback garbage queue to frame " .. frame .. " but no rollback buffer has been kept")
+---@param stopWatch integer
+function GarbageQueue:rollbackToFrame(stopWatch)
+  assert(self.rollbackBuffer, "Attempted to rollback garbage queue to frame " .. stopWatch .. " but no rollback buffer has been kept")
 
-  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+  local copy = self.rollbackBuffer:rollbackToFrame(stopWatch)
 
-  assert(copy, "Attempted to rollback garbage queue to frame " .. frame .. " but no rollback copy was available")
+  assert(copy, "Attempted to rollback garbage queue to frame " .. stopWatch .. " but no rollback copy was available")
 
   self.stagedGarbage = copy.stagedGarbage
   self.currentChain = copy.currentChain
@@ -221,20 +221,20 @@ function GarbageQueue:rollbackToFrame(frame)
   -- this may not universally work for multiplayer with more than 2 players
   for i = self.transitTimers.last, self.transitTimers.first, -1 do
     local transitFrame = self.transitTimers[i]
-    if transitFrame >= frame + GARBAGE_DELAY_LAND_TIME then
+    if transitFrame >= stopWatch + GARBAGE_DELAY_LAND_TIME then
       self.garbageInTransit[transitFrame] = nil
       self.transitTimers.last = self.transitTimers.last - 1
     end
   end
 end
 
----@param frame integer
-function GarbageQueue:rewindToFrame(frame)
-  assert(self.rollbackBuffer, "Attempted to rewind garbage queue to frame " .. frame .. " but no rollback buffer has been kept")
+---@param stopWatch integer
+function GarbageQueue:rewindToFrame(stopWatch)
+  assert(self.rollbackBuffer, "Attempted to rewind garbage queue to frame " .. stopWatch .. " but no rollback buffer has been kept")
 
-  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+  local copy = self.rollbackBuffer:rollbackToFrame(stopWatch)
 
-  assert(copy, "Attempted to rewind garbage queue to frame " .. frame .. " but no rollback copy was available")
+  assert(copy, "Attempted to rewind garbage queue to frame " .. stopWatch .. " but no rollback copy was available")
 
   self.stagedGarbage = copy.stagedGarbage
   self.currentChain = copy.currentChain

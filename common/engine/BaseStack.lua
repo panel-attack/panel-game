@@ -161,15 +161,15 @@ function BaseStack:saveForRollback()
   error("did not implement saveForRollback")
 end
 
----@param frame integer the frame to rollback to if possible
+---@param clock integer the frame to rollback to if possible
 ---@return boolean success if rolling back succeeded
-function BaseStack:rollbackToFrame(frame)
+function BaseStack:rollbackToFrame(clock)
   error("did not implement rollbackToFrame")
 end
 
----@param frame integer the frame to rewind to if possible
+---@param clock integer the frame to rewind to if possible
 ---@return boolean success if rewinding succeeded
-function BaseStack:rewindToFrame(frame)
+function BaseStack:rewindToFrame(clock)
   error("did not implement rewindToFrame")
 end
 

@@ -222,7 +222,7 @@ function GeneratorSource:clone(stack)
   return source
 end
 
-function GeneratorSource:saveForRollback(frame)
+function GeneratorSource:saveForRollback(clock)
   local copy = self.rollbackBuffer:getOldest()
 
   if not copy then
@@ -236,11 +236,11 @@ function GeneratorSource:saveForRollback(frame)
   copy.adjacentAccepted = self.panelGenerator.adjacentAccepted
   copy.adjacentDenied = self.panelGenerator.adjacentDenied
 
-  self.rollbackBuffer:saveCopy(frame, copy)
+  self.rollbackBuffer:saveCopy(clock, copy)
 end
 
-function GeneratorSource:rollbackToFrame(frame)
-  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+function GeneratorSource:rollbackToFrame(clock)
+  local copy = self.rollbackBuffer:rollbackToFrame(clock)
 
   if not copy then
     error("Could not rollback GeneratorSource")
@@ -254,8 +254,8 @@ function GeneratorSource:rollbackToFrame(frame)
   self.panelGenerator.adjacentDenied = copy.adjacentDenied
 end
 
-function GeneratorSource:rewindToFrame(frame)
-  self:rollbackToFrame(frame)
+function GeneratorSource:rewindToFrame(clock)
+  self:rollbackToFrame(clock)
 end
 
 return GeneratorSource

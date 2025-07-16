@@ -223,7 +223,7 @@ function PuzzleSource:clone(stack)
   return source
 end
 
-function PuzzleSource:saveForRollback(frame)
+function PuzzleSource:saveForRollback(clock)
   local copy = self.rollbackBuffer:getOldest()
 
   if not copy then
@@ -236,11 +236,11 @@ function PuzzleSource:saveForRollback(frame)
   copy.garbageGenCount = self.garbageGenCount
   -- self.panels is not stored under the assumption that panels always get fully consumed on the frame they got created
 
-  self.rollbackBuffer:saveCopy(frame, copy)
+  self.rollbackBuffer:saveCopy(clock, copy)
 end
 
-function PuzzleSource:rollbackToFrame(frame)
-  local copy = self.rollbackBuffer:rollbackToFrame(frame)
+function PuzzleSource:rollbackToFrame(clock)
+  local copy = self.rollbackBuffer:rollbackToFrame(clock)
 
   if not copy then
     error("Could not rollback PuzzleSource")
@@ -252,8 +252,8 @@ function PuzzleSource:rollbackToFrame(frame)
   self.garbageGenCount = copy.garbageGenCount
 end
 
-function PuzzleSource:rewindToFrame(frame)
-  self:rollbackToFrame(frame)
+function PuzzleSource:rewindToFrame(clock)
+  self:rollbackToFrame(clock)
 end
 
 return PuzzleSource

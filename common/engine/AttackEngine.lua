@@ -150,18 +150,18 @@ function AttackEngine.run(self)
   self.stopWatch = self.stopWatch + 1
 end
 
-function AttackEngine:saveForRollback(frame)
-  self.outgoingGarbage:saveForRollback(frame)
+function AttackEngine:saveForRollback(stopWatch)
+  self.outgoingGarbage:saveForRollback(stopWatch)
 end
 
-function AttackEngine:rollbackToFrame(frame)
-  self.outgoingGarbage:rollbackToFrame(frame)
-  self.stopWatch = frame
+function AttackEngine:rollbackToFrame(stopWatch)
+  self.outgoingGarbage:rollbackToFrame(stopWatch)
+  self.stopWatch = stopWatch
 end
 
-function AttackEngine:rewindToFrame(frame)
-  self.outgoingGarbage:rewindToFrame(frame)
-  self.stopWatch = frame
+function AttackEngine:rewindToFrame(stopWatch)
+  self.outgoingGarbage:rewindToFrame(stopWatch)
+  self.stopWatch = stopWatch
 end
 
 return AttackEngine

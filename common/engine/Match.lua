@@ -30,6 +30,8 @@ local MatchRules = require("common.data.MatchRules")
 ---@field clock integer
 ---@field ended boolean
 ---@field gameOverClock integer?
+---@field debugDesync boolean? if the Match will purposely let the second stack fall behind for the purpose of debugging and testing rollback and related features
+---@field debugDesyncValue integer? by how many frames the second stack will fall behind if desyncDebug is on
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -287,7 +289,7 @@ function Match:pushGarbageTo(stack)
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
         --  which may even include another rollback
-        if not self:rollbackToFrame(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
+        if not self:rollbackToStopWatch(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
           -- if we can't rollback, it's a desync
           self.desyncError = true
           self:abort()
@@ -323,12 +325,20 @@ function Match:shouldSaveRollback(stack)
   end
 end
 
+-- attempt to rollback the specified stack to the specified stopWatch
+---@param stack BaseStack
+---@param stopWatch integer
+---@return boolean success
+function Match:rollbackToStopWatch(stack, stopWatch)
+  return self:rollbackToFrame(stack, stopWatch + (stack.clock - stack.stopWatch))
+end
+
 -- attempt to rollback the specified stack to the specified frame
 ---@param stack BaseStack
----@param frame integer
+---@param clock integer
 ---@return boolean success
-function Match:rollbackToFrame(stack, frame)
-  if stack:rollbackToFrame(frame) then
+function Match:rollbackToFrame(stack, clock)
+  if stack:rollbackToFrame(clock) then
     return true
   end
 
@@ -337,17 +347,17 @@ end
 
 -- rewind is ONLY to be used for replay playback as it relies on all stacks being at the same clock time
 -- and also uses slightly different data required only in a both-sides rollback scenario that would never occur for online rollback
----@param frame integer
-function Match:rewindToFrame(frame)
+---@param clock integer
+function Match:rewindToFrame(clock)
   local failed = false
   for i, stack in ipairs(self.stacks) do
-    if not stack:rewindToFrame(frame) then
+    if not stack:rewindToFrame(clock) then
       failed = true
       break
     end
   end
   if not failed then
-    self.clock = frame
+    self.clock = clock
     self.ended = false
   end
 end
@@ -600,11 +610,11 @@ function Match:shouldRun(stack, runsSoFar)
     end
   end
 
-  -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config and config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
-    -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
-    if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
-      if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then
+  if self.debugDesync and not stack.is_local and tableUtils.indexOf(self.stacks, stack) == 2 then
+    -- force non-local player 2 to fall behind a certain number of frames to force rollback
+    if self.garbageTargets[2][1] and self.garbageTargets[2][1]:game_ended() == false then
+      -- but only stay behind if the game isn't over for the local player (=garbageTarget) yet as the second stack has to run to game over clock for the match to end
+      if stack.clock + self.debugDesyncValue >= self.garbageTargets[2][1].clock then
         return false
       end
     end
@@ -612,6 +622,19 @@ function Match:shouldRun(stack, runsSoFar)
 
   -- and then the stack specific conditions in stack
   return stack:shouldRun(runsSoFar)
+end
+
+---@param enable boolean? true if the second stack should fall behind, false if they should stay in sync as much as possible
+---@param value integer? by how many frames the second stack should be behind; defaults to 120 if enabled<br>
+--- careful with setting this too high when using this with replays: if stack 1 is the losing one it can happen that they never receive the garbage that topped them out
+--- because the second stack does not simulate far enough to send it, causing the replay to get stuck
+function Match:enableDebugDesync(enable, value)
+  self.debugDesync = enable
+  if not self.debugDesync then
+    self.debugDesyncValue = nil
+  else
+    self.debugDesyncValue = value or 120
+  end
 end
 
 function Match:setCountdown(doCountdown)
