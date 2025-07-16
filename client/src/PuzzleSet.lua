@@ -71,8 +71,8 @@ function PuzzleSet.loadV1(setName, puzzleSetData)
   for _, puzzleData in pairs(puzzleSetData) do
     if type(puzzleData) == "table" and #puzzleData >= 2 and type(puzzleData[1]) == "string" and type(puzzleData[2]) == "number" then
       local args = {
-        puzzleType = "moves",
-        startTiming = "countdown",
+        puzzleType = Puzzle.PUZZLE_TYPES.moves,
+        startTiming = Puzzle.START_TIMINGS.countdown,
         moves = puzzleData[2],
         stack = puzzleData[1]
       }
@@ -94,8 +94,8 @@ function PuzzleSet.loadV2(puzzleSetData)
   local puzzles = {}
   for _, puzzleData in pairs(puzzleSetData["Puzzles"]) do
     local args = {
-      puzzleType = puzzleData["Puzzle Type"],
-      startTiming = puzzleData["Do Countdown"] and "countdown" or "immediately",
+      puzzleType = string.lower(puzzleData["Puzzle Type"]),
+      startTiming = puzzleData["Do Countdown"] and Puzzle.START_TIMINGS.countdown or Puzzle.START_TIMINGS.immediately,
       moves = puzzleData["Moves"],
       stack = puzzleData["Stack"],
       stopTime = puzzleData["Stop"],
@@ -118,16 +118,26 @@ function PuzzleSet.loadV3(puzzleSetData)
   for _, puzzleData in pairs(puzzleSetData["Puzzles"] or {}) do
     local args = {
       puzzleType = string.lower(puzzleData["Puzzle Type"]),
-      startTiming = puzzleData["StartTiming"],
       moves = puzzleData["Moves"],
       stack = puzzleData["Stack"],
       stopTime = puzzleData["Stop"],
       shakeTime = puzzleData["Shake"],
-      panelBuffer = puzzleData["PanelBuffer"],
-      garbagePanelBuffer = puzzleData["GarbagePanelBuffer"]
+      panelBuffer = puzzleData["Panel Buffer"],
+      garbagePanelBuffer = puzzleData["Garbage Panel Buffer"]
     }
-    if puzzleData["CursorStartLeft"] then
-      args.cursorStartLeft = {row = puzzleData["CursorStartLeft"].Row, column = puzzleData["CursorStartLeft"].Column}
+    if puzzleData["Cursor Start Left"] then
+      args.cursorStartLeft = {row = puzzleData["Cursor Start Left"].Row, column = puzzleData["Cursor Start Left"].Column}
+    end
+    if puzzleData["Start Timing"] then
+      if puzzleData["Start Timing"] == "First Swap" then
+        args.startTiming = Puzzle.START_TIMINGS.firstSwap
+      elseif puzzleData["Start Timing"] == "First Input" then
+        args.startTiming = Puzzle.START_TIMINGS.firstInput
+      elseif puzzleData["Start Timing"] == "Countdown" then
+        args.startTiming = Puzzle.START_TIMINGS.countdown
+      elseif puzzleData["Start Timing"] == "Immediately" then
+        args.startTiming = Puzzle.START_TIMINGS.immediately
+      end
     end
 
     local puzzle = Puzzle(args)
