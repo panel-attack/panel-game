@@ -217,4 +217,28 @@ function UIElement:getTouchedElement(x, y)
   end
 end
 
+-- Traverses the UI tree and calls receiveInputs on any focused elements
+function UIElement:handleFocusedInput(inputs, dt)
+  -- If this element has focus and can receive inputs, handle it
+  if self.hasFocus and self.receiveInputs then
+    self:receiveInputs(inputs, dt)
+    return true -- Input was handled, don't continue traversing
+  end
+  
+  -- If this element is a focus director with a focused child, handle that
+  if self.focused and self.focused.receiveInputs then
+    self.focused:receiveInputs(inputs, dt)
+    return true -- Input was handled
+  end
+  
+  -- Otherwise, traverse children to find focused elements
+  for _, child in ipairs(self.children) do
+    if child:handleFocusedInput(inputs, dt) then
+      return true -- Input was handled by a child
+    end
+  end
+  
+  return false -- No focused element found
+end
+
 return UIElement

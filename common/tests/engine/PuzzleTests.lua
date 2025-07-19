@@ -171,3 +171,49 @@ function PuzzleTests.testHorizontallyFlippedSmallGarbagePuzzle()
 end
 
 PuzzleTests.testHorizontallyFlippedSmallGarbagePuzzle()
+
+function PuzzleTests.testNewPuzzleWithPuzzleString()
+  local originalPuzzle = Puzzle({
+    puzzleType = "moves", 
+    startTiming = "countdown", 
+    moves = 5, 
+    stack = "1254216999999952",
+    stopTime = 10,
+    shakeTime = 5,
+    panelBuffer = "000111222",
+    garbagePanelBuffer = "333444555",
+    cursorStartLeft = {row = 3, column = 2}
+  })
+  
+  local newPuzzleString = "9876543210987654"
+  local newPuzzle = Puzzle.newPuzzleWithPuzzleString(newPuzzleString, originalPuzzle)
+  
+  assert(newPuzzle.puzzleType == originalPuzzle.puzzleType)
+  assert(newPuzzle.startTiming == originalPuzzle.startTiming)
+  assert(newPuzzle.moves == originalPuzzle.moves)
+  assert(newPuzzle.stack == newPuzzleString)
+  assert(newPuzzle.stopTime == originalPuzzle.stopTime)
+  assert(newPuzzle.shakeTime == originalPuzzle.shakeTime)
+  assert(newPuzzle.panelBuffer == originalPuzzle.panelBuffer)
+  assert(newPuzzle.garbageBuffer == originalPuzzle.garbageBuffer)
+  assert(newPuzzle.cursorStartLeft.row == originalPuzzle.cursorStartLeft.row)
+  assert(newPuzzle.cursorStartLeft.column == originalPuzzle.cursorStartLeft.column)
+end
+
+function PuzzleTests.testNewPuzzleWithPuzzleStringMinimal()
+  local originalPuzzle = Puzzle({
+    puzzleType = "chain", 
+    stack = "1111111111111111"
+  })
+  
+  local newPuzzleString = "2222222222222222"
+  local newPuzzle = Puzzle.newPuzzleWithPuzzleString(newPuzzleString, originalPuzzle)
+  
+  assert(newPuzzle.puzzleType == "chain")
+  assert(newPuzzle.stack == newPuzzleString)
+  assert(newPuzzle.moves == 0)
+  assert(newPuzzle.cursorStartLeft == nil)
+end
+
+PuzzleTests.testNewPuzzleWithPuzzleString()
+PuzzleTests.testNewPuzzleWithPuzzleStringMinimal()

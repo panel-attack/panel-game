@@ -334,16 +334,105 @@ function fileUtils.write(path, filename, data)
   end
 end
 
+local function prettifyJson(jsonString)
+  local result = {}
+  local i = 1
+  local len = #jsonString
+  local inString = false
+  local escaped = false
+  local indentLevel = 0
+  
+  -- Helper function to generate indentation string
+  local function getIndentation()
+    return string.rep("  ", indentLevel)
+  end
+  
+  while i <= len do
+    local char = jsonString:sub(i, i)
+    
+    if escaped then
+      escaped = false
+    elseif char == '\\' and inString then
+      escaped = true
+    elseif char == '"' then
+      inString = not inString
+    elseif not inString then
+      if char == '{' then
+        table.insert(result, char)
+        indentLevel = indentLevel + 1
+        -- Always add newline after opening brace
+        table.insert(result, '\n' .. getIndentation())
+        i = i + 1
+        goto continue
+      elseif char == '[' then
+        table.insert(result, char)
+        indentLevel = indentLevel + 1
+        -- Always add newline after opening bracket
+        table.insert(result, '\n' .. getIndentation())
+        i = i + 1
+        goto continue
+      elseif char == '}' or char == ']' then
+        indentLevel = indentLevel - 1
+        table.insert(result, '\n' .. getIndentation() .. char)
+        i = i + 1
+        goto continue
+      elseif char == ',' then
+        table.insert(result, char)
+        table.insert(result, '\n' .. getIndentation())
+        i = i + 1
+        goto continue
+      elseif char == ':' then
+        -- Look ahead to see if next non-whitespace is '['
+        local j = i + 1
+        local nextNonSpace = nil
+        while j <= len do
+          local nextChar = jsonString:sub(j, j)
+          if nextChar ~= ' ' and nextChar ~= '\t' and nextChar ~= '\n' then
+            nextNonSpace = nextChar
+            break
+          end
+          j = j + 1
+        end
+        
+        if nextNonSpace == '[' then
+          -- For arrays, put colon, newline, then indentation
+          table.insert(result, ':\n' .. getIndentation())
+        else
+          -- For other values, just colon and space
+          table.insert(result, ': ')
+        end
+        i = i + 1
+        goto continue
+      elseif char == '\n' or char == '\t' or char == ' ' then
+        -- Skip whitespace from the original JSON since we manage our own formatting
+        i = i + 1
+        goto continue
+      end
+    end
+    
+    table.insert(result, char)
+    i = i + 1
+    ::continue::
+  end
+  
+  return table.concat(result)
+end
+
 -- encodes the table into json and writes it to the filename at the given path
 -- throws an error on failure so it should be assumed the write always succeeds
 ---@param path string
 ---@param filename string
 ---@param tab table
----@param encodeArgs ({indent: boolean, keyorder: string[], level: integer} | nil)
+---@param encodeArgs ({indent: boolean, pretty: boolean, keyorder: string[], level: integer} | nil)
 function fileUtils.writeJson(path, filename, tab, encodeArgs)
   local encoded = json.encode(tab, encodeArgs)
   ---@cast encoded string # json.encode always returns a string if the second argument does not contain the buffer field
+  if encodeArgs and encodeArgs.pretty and encodeArgs.indent then
+    encoded = prettifyJson(encoded)
+  end
   fileUtils.write(path, filename, encoded)
 end
+
+fileUtils.prettifyJson = prettifyJson
 
 return fileUtils

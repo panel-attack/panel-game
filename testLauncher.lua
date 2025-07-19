@@ -74,6 +74,7 @@ local tests = {
   "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",
+  "client.tests.PuzzleSetTests",
   "client.tests.ServerQueueTests",
   "client.tests.SoundGroupTests",
   "client.tests.TcpClientTests",
@@ -89,7 +90,13 @@ function love.update(dt)
     logger.info("running test file " .. tests[updateCount])
     local success, err = pcall(require, tests[updateCount])
     if not success then
-      logger.error("Test failed: " .. tests[updateCount] .. " - " .. tostring(err))
+      -- Check if the error is due to missing file
+      if string.find(err, "module.*not found") then
+        logger.error("Test file does not exist: " .. tests[updateCount] .. " - " .. tostring(err))
+        logger.error("Make sure the test file exists at the correct path and is properly named")
+      else
+        logger.error("Test failed: " .. tests[updateCount] .. " - " .. tostring(err))
+      end
       testsFailed = true
     end
   end

@@ -93,6 +93,77 @@ Puzzle.START_TIMINGS = { countdown = "countdown", immediately = "immediately", f
 Puzzle.PUZZLE_TYPES = { "moves", "chain", "clear" }
 Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
 
+Puzzle.PUZZLE_PROPERTY = {
+  TYPE = "Puzzle Type",
+  START_TIMING = "StartTiming",
+  MOVES = "Moves",
+  STOP = "Stop",
+  SHAKE = "Shake",
+  STACK = "Stack",
+  PANEL_BUFFER = "PanelBuffer",
+  GARBAGE_PANEL_BUFFER = "GarbagePanelBuffer",
+  CURSOR_START_LEFT = "CursorStartLeft"
+}
+
+Puzzle.PUZZLE_SET_PROPERTY = {
+  NAME = "Set Name",
+  DESCRIPTION = "Description",
+  PUZZLES = "Puzzles",
+  PUZZLE_SETS = "Puzzle Sets"
+}
+
+Puzzle.ROOT_PROPERTY = {
+  VERSION = "Version",
+  PUZZLE_SETS = "Puzzle Sets"
+}
+
+Puzzle.CURSOR_PROPERTY = {
+  COLUMN = "Column",
+  ROW = "Row"
+}
+
+-- Helper functions for consistent key ordering
+---@return string[]
+function Puzzle.getPuzzleKeyOrder()
+  return {
+    Puzzle.PUZZLE_PROPERTY.TYPE,
+    Puzzle.PUZZLE_PROPERTY.START_TIMING,
+    Puzzle.PUZZLE_PROPERTY.MOVES,
+    Puzzle.PUZZLE_PROPERTY.STOP,
+    Puzzle.PUZZLE_PROPERTY.SHAKE,
+    Puzzle.PUZZLE_PROPERTY.STACK,
+    Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER,
+    Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER,
+    Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT
+  }
+end
+
+---@return string[]
+function Puzzle.getPuzzleSetKeyOrder()
+  return {
+    Puzzle.PUZZLE_SET_PROPERTY.NAME,
+    Puzzle.PUZZLE_SET_PROPERTY.DESCRIPTION,
+    Puzzle.PUZZLE_SET_PROPERTY.PUZZLES,
+    Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS
+  }
+end
+
+---@return string[]
+function Puzzle.getRootKeyOrder()
+  return {
+    Puzzle.ROOT_PROPERTY.VERSION,
+    Puzzle.ROOT_PROPERTY.PUZZLE_SETS
+  }
+end
+
+---@return string[]
+function Puzzle.getCursorKeyOrder()
+  return {
+    Puzzle.CURSOR_PROPERTY.COLUMN,
+    Puzzle.CURSOR_PROPERTY.ROW
+  }
+end
+
 ---@param width integer
 ---@param height integer
 ---@return string puzzleString
@@ -245,6 +316,30 @@ function Puzzle:validate()
   return errMessage == "", errMessage
 end
 
+-- Helper function to convert a single puzzle to save data format
+---@return table
+function Puzzle:getSaveData()
+  local puzzleData = {
+    [Puzzle.PUZZLE_PROPERTY.TYPE] = self.puzzleType,
+    [Puzzle.PUZZLE_PROPERTY.START_TIMING] = self.startTiming,
+    [Puzzle.PUZZLE_PROPERTY.MOVES] = self.moves,
+    [Puzzle.PUZZLE_PROPERTY.STOP] = self.stopTime,
+    [Puzzle.PUZZLE_PROPERTY.SHAKE] = self.shakeTime,
+    [Puzzle.PUZZLE_PROPERTY.STACK] = self.stack,
+    [Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER] = self.panelBuffer,
+    [Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] = self.garbageBuffer
+  }
+  
+  if self.cursorStartLeft then
+    puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] = {
+      [Puzzle.CURSOR_PROPERTY.COLUMN] = self.cursorStartLeft.column,
+      [Puzzle.CURSOR_PROPERTY.ROW] = self.cursorStartLeft.row
+    }
+  end
+  
+  return puzzleData
+end
+
 ---@param panels Panel[][]
 ---@return string puzzleString
 function Puzzle.toPuzzleString(panels)
@@ -379,6 +474,23 @@ function Puzzle:toPanelSource(randomize, flip)
   end
 
   return PuzzleSource(puzzleString, panelBuffer, garbageBuffer)
+end
+
+---@param puzzleString string
+---@param originalPuzzle Puzzle
+---@return Puzzle
+function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
+  return Puzzle({
+    puzzleType = originalPuzzle.puzzleType,
+    stack = puzzleString,
+    moves = originalPuzzle.moves,
+    startTiming = originalPuzzle.startTiming,
+    cursorStartLeft = originalPuzzle.cursorStartLeft,
+    stopTime = originalPuzzle.stopTime,
+    shakeTime = originalPuzzle.shakeTime,
+    panelBuffer = originalPuzzle.panelBuffer,
+    garbagePanelBuffer = originalPuzzle.garbageBuffer
+  })
 end
 
 return Puzzle
