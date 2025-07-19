@@ -28,6 +28,8 @@ local GeneratorSource = require("common.engine.GeneratorSource")
 ---@field online boolean
 ---@field gameScene table
 ---@field match ClientMatch
+---@field panelSource table?
+---@field sceneParameters table?
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
 BattleRoom = class(
 function(self, mode, gameScene)
@@ -40,7 +42,9 @@ function(self, mode, gameScene)
   self.ranked = false
   self.state = 1
   self.matchesPlayed = 0
+  self.panelSource = nil
   self.gameScene = gameScene or require("client.src.scenes." .. mode.gameScene)
+  self.sceneParameters = nil
   -- this is a bit naive but effective for now
   self.online = GAME.netClient:isConnected()
   if self.online then
@@ -232,10 +236,8 @@ end
 
 ---@return PanelSource
 function BattleRoom:createPanelSource()
-  local player = self.players[1]
-  if player.settings.puzzleSet and player.settings.puzzleIndex and player.settings.puzzleSet.puzzles[player.settings.puzzleIndex] then
-    local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
-    return puzzle:toPanelSource(config.puzzle_randomColors)
+  if self.panelSource then
+    return self.panelSource
   else
     return GeneratorSource(math.random(1, 999999), self.mode.stackInteraction ~= GameModes.StackInteractions.NONE)
   end
@@ -373,18 +375,27 @@ function BattleRoom:startMatch(replay)
 end
 
 function BattleRoom:createScene(match)
+  local sceneParams = {match = match}
+  
+  -- Merge any additional scene parameters
+  if self.sceneParameters then
+    for key, value in pairs(self.sceneParameters) do
+      sceneParams[key] = value
+    end
+  end
+  
   -- for touch android players load a different scene
   if (system.isMobileOS() or DEBUG_ENABLED) and self.gameScene.name ~= "PuzzleGame" and
   --but only if they are the only local player cause for 2p vs local using portrait mode would be bad
       tableUtils.count(self.players, function(p) return p.isLocal and p.human end) == 1 then
     for _, player in ipairs(self.players) do
       if player.isLocal and player.human and player.settings.inputMethod == "touch" then
-        return require("client.src.scenes.PortraitGame")({match = match})
+        return require("client.src.scenes.PortraitGame")(sceneParams)
       end
     end
   end
   if self.gameScene then
-    return self.gameScene({match = match})
+    return self.gameScene(sceneParams)
   end
 end
 

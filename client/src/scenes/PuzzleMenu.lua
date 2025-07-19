@@ -57,11 +57,15 @@ function PuzzleMenu:setupPuzzleSet(puzzleSet, index)
     write_conf_file()
   end
 
-  GAME.localPlayer:setPuzzleSet(puzzleSet, index)
+  -- Set scene parameters for the puzzle game
+  self.battleRoom.sceneParameters = {
+    puzzleSet = puzzleSet,
+    puzzleIndex = index
+  }
 
-  local player = self.battleRoom.players[1]
-  local puzzle = player.settings.puzzleSet.puzzles[index]
+  local puzzle = puzzleSet.puzzles[index]
   self.battleRoom:setGameMode(puzzle:toGameMode())
+  self.battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
 end
 
 function PuzzleMenu:startGame(puzzleSet, index)
@@ -290,7 +294,7 @@ function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
   local gameMode = puzzle:toGameMode()
   local BattleRoom = require("client.src.BattleRoom")
   local tempBattleRoom = BattleRoom.createLocalFromGameMode(gameMode)
-  
+  tempBattleRoom.panelSource = puzzleSet.puzzles[index]:toPanelSource(config.puzzle_randomColors)
   if not tempBattleRoom then
     logger.warn("Failed to create BattleRoom for puzzle editor")
     return
@@ -301,7 +305,6 @@ function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
     tempBattleRoom.players[1]:restrictInputs(GAME.input.mouse)
   end
   
-  tempBattleRoom.players[1]:setPuzzleSet(puzzleSet, index)
   local match = tempBattleRoom:createMatch()
   
   -- Start the match to position stacks properly
