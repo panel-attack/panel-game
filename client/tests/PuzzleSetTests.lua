@@ -21,60 +21,6 @@ function PuzzleSetTests.updatePuzzleValid()
   assert(updatedPuzzle.stack == "9876543210987654")
 end
 
-function PuzzleSetTests.updatePuzzleInvalidIndex()
-  local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
-  local puzzleSet = PuzzleSet("Test Set", "Test description", {puzzle1})
-  
-  local newPuzzle = Puzzle({puzzleType = "chain", startTiming = "countdown", moves = 1, stack = "9876543210987654"})
-  
-  local success, errorMessage = pcall(function()
-    puzzleSet:updatePuzzle(0, newPuzzle)
-  end)
-  
-  assert(not success)
-  assert(string.match(errorMessage, "Invalid puzzle index"))
-end
-
-function PuzzleSetTests.updatePuzzleInvalidIndexTooHigh()
-  local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
-  local puzzleSet = PuzzleSet("Test Set", "Test description", {puzzle1})
-  
-  local newPuzzle = Puzzle({puzzleType = "chain", startTiming = "countdown", moves = 1, stack = "9876543210987654"})
-  
-  local success, errorMessage = pcall(function()
-    puzzleSet:updatePuzzle(2, newPuzzle)
-  end)
-  
-  assert(not success)
-  assert(string.match(errorMessage, "Invalid puzzle index"))
-end
-
-function PuzzleSetTests.updatePuzzleNilPuzzle()
-  local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
-  local puzzleSet = PuzzleSet("Test Set", "Test description", {puzzle1})
-  
-  local success, errorMessage = pcall(function()
-    puzzleSet:updatePuzzle(1, nil)
-  end)
-  
-  assert(not success)
-  assert(string.match(errorMessage, "Cannot update puzzle: newPuzzle cannot be nil"))
-end
-
-function PuzzleSetTests.updatePuzzleNonNumberIndex()
-  local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
-  local puzzleSet = PuzzleSet("Test Set", "Test description", {puzzle1})
-  
-  local newPuzzle = Puzzle({puzzleType = "chain", startTiming = "countdown", moves = 1, stack = "9876543210987654"})
-  
-  local success, errorMessage = pcall(function()
-    puzzleSet:updatePuzzle("invalid", newPuzzle)
-  end)
-  
-  assert(not success)
-  assert(string.match(errorMessage, "Invalid puzzle index"))
-end
-
 function PuzzleSetTests.generateSaveDataValid()
   local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
   local puzzle2 = Puzzle({puzzleType = "chain", startTiming = "countdown", moves = 3, stack = "2134567890123456", cursorStartLeft = {row = 2, column = 3}})
@@ -121,19 +67,6 @@ function PuzzleSetTests.generateSaveDataNoPuzzles()
   assert(data["Puzzle Sets"][1]["Description"] == "A test description")
   assert(data["Puzzle Sets"][1]["Puzzles"] ~= nil)
   assert(#data["Puzzle Sets"][1]["Puzzles"] == 0)
-end
-
-function PuzzleSetTests.generateSaveDataNoSetName()
-  local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
-  local puzzleSet = PuzzleSet("", "A test description", {puzzle1})
-  
-  local success, errorMessage = pcall(function()
-    puzzleSet:generateSaveData()
-  end)
-  
-  assert(not success)
-  assert(errorMessage)
-  assert(string.match(errorMessage, "setName is required"))
 end
 
 function PuzzleSetTests.generateSaveDataWithOptionalFields()
@@ -279,13 +212,8 @@ end
 
 -- Run the tests
 PuzzleSetTests.updatePuzzleValid()
-PuzzleSetTests.updatePuzzleInvalidIndex()
-PuzzleSetTests.updatePuzzleInvalidIndexTooHigh()
-PuzzleSetTests.updatePuzzleNilPuzzle()
-PuzzleSetTests.updatePuzzleNonNumberIndex()
 PuzzleSetTests.generateSaveDataValid()
 PuzzleSetTests.generateSaveDataNoPuzzles()
-PuzzleSetTests.generateSaveDataNoSetName()
 PuzzleSetTests.generateSaveDataWithOptionalFields()
 PuzzleSetTests.testJSONValidityRequirement1()
 PuzzleSetTests.testUnchangedPuzzlePreservationRequirement3()

@@ -113,21 +113,6 @@ function PuzzleMenu:load(sceneParams)
     }
   )
 
-  self.randomlyFlipPuzzleButtons = ui.ButtonGroup(
-    {
-      buttons = {
-        ui.TextButton({label = ui.Label({text = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-        ui.TextButton({label = ui.Label({text = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-      },
-      values = {false, true},
-      selectedIndex = config.puzzle_randomFlipped and 2 or 1,
-      onChange = function(group, value)
-        GAME.theme:playMoveSfx()
-        config.puzzle_randomFlipped = value
-      end
-    }
-  )
-
   self.puzzlePreviewStack = ui.StackElement({vAlign = "top", hAlign = "center", x = 0, y = 0, scale=2})
 
   self.puzzleDescriptionLabel = ui.Label({text = "", x = 0, y = 0, width = 400, height = 100, fontSize = 20, translate = false})
@@ -191,7 +176,6 @@ function PuzzleMenu:loadMenu()
   if self:currentlyAtRootLevel() == false then
     menuOptions[#menuOptions+1] = ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider)
     menuOptions[#menuOptions+1] = ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons)
-    menuOptions[#menuOptions+1] = ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons)
     for index, value in ipairs(menuOptions) do
       value.onSelectedFunction = self:clearPreviewFunction()
     end

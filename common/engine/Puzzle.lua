@@ -440,37 +440,13 @@ end
 ---@param randomize boolean?
 ---@param flip boolean?
 ---@return PuzzleSource
-function Puzzle:toPanelSource(randomize, flip)
+function Puzzle:toPanelSource(randomize)
   local puzzleString = self:fillMissingPanelsInPuzzleString(6, 12)
   local panelBuffer = self.panelBuffer
   local garbageBuffer = self.garbageBuffer
 
   if randomize then
     puzzleString, panelBuffer, garbageBuffer = Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbageBuffer)
-  end
-
-  if flip then
-    if math.random(2) == 1 then
-      if puzzleString ~= nil then
-        puzzleString = Puzzle.horizontallyFlipPuzzleString(puzzleString)
-      end
-      if panelBuffer ~= nil then
-        panelBuffer = Puzzle.horizontallyFlipPuzzleString(panelBuffer)
-      end
-      if garbageBuffer ~= nil then
-        garbageBuffer = Puzzle.horizontallyFlipPuzzleString(garbageBuffer)
-      end
-
-      if self.cursorStartLeft and self.cursorStartLeft.column then
-        -- 1 -> 5 +4
-        -- 2 -> 4 +2
-        -- 3 -> 3 +0
-        -- 4 -> 2 -2
-        -- 5 -> 1 -4
-        local delta = (3 - self.cursorStartLeft.column) * 2
-        self.cursorStartLeft.column = self.cursorStartLeft.column + delta
-      end
-    end
   end
 
   return PuzzleSource(puzzleString, panelBuffer, garbageBuffer)
