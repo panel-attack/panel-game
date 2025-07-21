@@ -226,6 +226,8 @@ end
 function Match:run()
   local startTime = love.timer.getTime()
 
+  self:padRewindDataIfNeeded()
+
   local runs = {}
 
   for i, _ in ipairs(self.stacks) do
@@ -695,6 +697,21 @@ function Match:addTarget(source, target)
 
   if not tableUtils.contains(self.garbageSources[target], source) then
     table.insert(self.garbageSources[target], source)
+  end
+end
+
+--- this function exists to allow repeated playback and rewind
+--- by default taking data out of the rollback buffer removes it because users of that data might take it verbatim and change it later
+--- that means when rewinding and then running forward again, there is a gap in rollback data at the frame where the rewind stopped
+--- keeping all rewind data would be very inefficient as we'd be copying a ton of panel data every frame, often when it is not necessary
+--- so instead only detect when we start running forward again
+function Match:padRewindDataIfNeeded()
+  if self.alwaysSaveRollbacks then
+    for i, stack in ipairs(self.stacks) do
+      if stack.clock == stack.lastRollbackFrame then
+        stack:saveForRollback()
+      end
+    end
   end
 end
 
