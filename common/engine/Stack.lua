@@ -590,7 +590,6 @@ function Stack:toPuzzleInfo()
   local puzzleInfo = {}
   puzzleInfo["Stop"] = self.stop_time
   puzzleInfo["Shake"] = self.shake_time
-  puzzleInfo["Pre-Stop"] = self.pre_stop_time
   puzzleInfo["Stack"] = Puzzle.toPuzzleString(self.panels)
 
   return puzzleInfo

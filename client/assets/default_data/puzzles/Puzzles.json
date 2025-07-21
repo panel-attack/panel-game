@@ -1,14 +1,17 @@
 {
   "Version": 3,
-  "Puzzle Sets": [
+  "Puzzle Sets":
+  [
     {
       "Set Name": "puzzle_set_name_classic",
       "Description": "puzzle_set_description_classic",
-      "Puzzle Sets": [
+      "Puzzle Sets":
+      [
         {
           "Set Name": "puzzle_set_name_classic_set_1",
           "Description": "puzzle_set_description_classic_set_1",
-          "Puzzles": [
+          "Puzzles":
+          [
             {
               "Puzzle Type": "moves",
               "Moves": 1,
@@ -64,7 +67,8 @@
         {
           "Set Name": "puzzle_set_name_classic_set_2",
           "Description": "puzzle_set_description_classic_set_2",
-          "Puzzles": [
+          "Puzzles":
+          [
             {
               "Puzzle Type": "moves",
               "Moves": 1,
@@ -120,7 +124,8 @@
         {
           "Set Name": "puzzle_set_name_classic_set_3",
           "Description": "puzzle_set_description_classic_set_3",
-          "Puzzles": [
+          "Puzzles":
+          [
             {
               "Puzzle Type": "moves",
               "Moves": 2,
@@ -176,7 +181,8 @@
         {
           "Set Name": "puzzle_set_name_classic_set_4",
           "Description": "puzzle_set_description_classic_set_4",
-          "Puzzles": [
+          "Puzzles":
+          [
             {
               "Puzzle Type": "moves",
               "Moves": 2,
@@ -232,7 +238,8 @@
         {
           "Set Name": "puzzle_set_name_classic_set_5",
           "Description": "puzzle_set_description_classic_set_5",
-          "Puzzles": [
+          "Puzzles":
+          [
             {
               "Puzzle Type": "moves",
               "Moves": 2,
@@ -288,7 +295,8 @@
         {
           "Set Name": "puzzle_set_name_classic_set_6",
           "Description": "puzzle_set_description_classic_set_6",
-          "Puzzles": [
+          "Puzzles":
+          [
             {
               "Puzzle Type": "moves",
               "Moves": 3,
@@ -346,15 +354,18 @@
     {
       "Set Name": "puzzle_set_name_mission",
       "Description": "puzzle_set_description_mission",
-      "Puzzle Sets": [
+      "Puzzle Sets":
+      [
         {
           "Set Name": "puzzle_set_name_beginner",
           "Description": "puzzles_set_description_beginner",
-          "Puzzle Sets": [
+          "Puzzle Sets":
+          [
             {
               "Set Name": "puzzle_set_name_beginner_combos",
               "Description": "puzzles_set_description_beginner_combos",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -390,7 +401,8 @@
             {
               "Set Name": "puzzle_set_name_beginner_chains",
               "Description": "puzzles_set_description_beginner_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -418,11 +430,13 @@
         {
           "Set Name": "puzzle_set_name_novice",
           "Description": "puzzles_set_description_novice",
-          "Puzzle Sets": [
+          "Puzzle Sets":
+          [
             {
               "Set Name": "puzzle_set_name_novice_combos",
               "Description": "puzzles_set_description_novice_combos",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -468,7 +482,8 @@
             {
               "Set Name": "puzzle_set_name_novice_chains",
               "Description": "puzzles_set_description_novice_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -494,7 +509,8 @@
             {
               "Set Name": "puzzle_set_name_novice_convert_horizontal_chains",
               "Description": "puzzles_set_description_novice_convert_horizontal_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -520,7 +536,8 @@
             {
               "Set Name": "puzzle_set_name_novice_earthquake_chains",
               "Description": "puzzles_set_description_novice_earthquake_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -571,7 +588,8 @@
             {
               "Set Name": "puzzle_set_name_novice_deeper_earthquake_chains",
               "Description": "puzzles_set_description_novice_deeper_earthquake_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -622,7 +640,8 @@
             {
               "Set Name": "puzzle_set_name_novice_horizontal_chain_from_tower",
               "Description": "puzzles_set_description_novice_horizontal_chain_from_tower",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -643,36 +662,34 @@
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_1",
               "Description": "puzzle_set_description_advanced_clear_puzzles_1",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 35,
+                  "Stack": "000000000000000000000000000[=][==========]000006210503160306534315651246",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
-                  },
-                  "Stack": "000000000000000000000000000[=][==========]000006210503160306534315651246",
-                  "Stop": 35,
-                  "Pre-Stop": 0
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 120,
+                  "Stack": "000000000000000000000000[====][====][=]000[====]040090334010599190411564",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 4
-                  },
-                  "Stop": 120,
-                  "Pre-Stop": 0,
-                  "Stack": "000000000000000000000000[====][====][=]000[====]040090334010599190411564"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 120,
+                  "Stack": "000000000000[=][=][=][=][==========][=]000240000331500146306231404365243",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 2
-                  },
-                  "Stop": 120,
-                  "Pre-Stop": 0,
-                  "Stack": "000000000000[=][=][=][=][==========][=]000240000331500146306231404365243"
+                  }
                 }
               ]
             }
@@ -681,11 +698,13 @@
         {
           "Set Name": "puzzle_set_name_intermediate",
           "Description": "puzzles_set_description_intermediate",
-          "Puzzle Sets": [
+          "Puzzle Sets":
+          [
             {
               "Set Name": "puzzle_set_name_intermediate_chains",
               "Description": "puzzles_set_description_intermediate_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -701,7 +720,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_extended_horizontal_chains",
               "Description": "puzzles_set_description_intermediate_extended_horizontal_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -722,7 +742,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_chains_from_huge_tower",
               "Description": "puzzles_set_description_intermediate_chains_from_huge_tower",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -743,7 +764,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_horizontal_chain_from_side",
               "Description": "puzzles_set_description_intermediate_horizontal_chain_from_side",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -759,7 +781,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_pre_setup_combo_chains",
               "Description": "puzzles_set_description_intermediate_pre_setup_combo_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -770,7 +793,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_combo_chains",
               "Description": "puzzles_set_description_intermediate_combo_chains",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -796,7 +820,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_pre_setup_inserts",
               "Description": "puzzle_set_description_intermediate_pre_setup_inserts",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -817,7 +842,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_change_side_inserts",
               "Description": "puzzle_set_description_intermediate_change_side_inserts",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -838,7 +864,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_inserts",
               "Description": "puzzle_set_description_intermediate_inserts",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -889,7 +916,8 @@
             {
               "Set Name": "puzzle_set_name_intermediate_combo_chain_inserts",
               "Description": "puzzle_set_description_intermediate_combo_chain_inserts",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "Moves": 0,
@@ -905,39 +933,41 @@
             {
               "Set Name": "puzzle_set_name_intermediate_removes",
               "Description": "puzzle_set_description_intermediate_removes",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "StartTiming": "countdown",
+                  "Moves": 0,
+                  "Stack": "100999199993339999949999149999949999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
-                  },
-                  "Moves": 0,
-                  "Stack": "100999199993339999949999149999949999999"
+                  }
                 },
                 {
                   "Puzzle Type": "chain",
                   "StartTiming": "immediately",
+                  "Moves": 0,
+                  "Stack": "200999299999199999419999149999949999299",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 2
-                  },
-                  "Moves": 0,
-                  "Stack": "200999299999199999419999149999949999299"
+                  }
                 }
               ]
             },
             {
               "Set Name": "puzzle_set_name_intermediate_openers",
               "Description": "puzzle_set_description_intermediate_openers",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "chain",
                   "StartTiming": "immediately",
                   "Moves": 0,
-                  "Chain Size": 7,
-                  "Stack": "300001290106399303199506592303299536393"
+                  "Stack": "300001290106399303199506592303299536393",
+                  "Chain Size": 7
                 },
                 {
                   "Puzzle Type": "chain",
@@ -958,11 +988,13 @@
         {
           "Set Name": "puzzle_set_name_advanced",
           "Description": "puzzle_set_description_advanced",
-          "Puzzle Sets": [
+          "Puzzle Sets":
+          [
             {
               "Set Name": "puzzle_set_name_advanced_shoguns",
               "Description": "puzzle_set_description_advanced_shoguns",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "moves",
                   "Moves": 1,
@@ -1018,161 +1050,150 @@
             {
               "Set Name": "puzzle_set_name_advanced_transitions_1",
               "Description": "puzzle_set_description_advanced_transitions_1",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
-                  "CursorStartLeft": {
-                    "Column": 4,
-                    "Row": 7
-                  },
+                  "Stop": 20,
+                  "Shake": 0,
                   "Stack": "[======================]999339[====]299309299999299999999999999999",
-                  "Stop": 20,
-                  "Pre-Stop": 0,
-                  "Shake": 0
-                },
-                {
-                  "Puzzle Type": "clear",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
-                  },
+                  }
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "Stop": 20,
+                  "Shake": 0,
                   "Stack": "[======================]999339[====]299039299999299999999999999999",
-                  "Stop": 20,
-                  "Pre-Stop": 0,
-                  "Shake": 0
-                },
-                {
-                  "Puzzle Type": "clear",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
-                  },
-                  "Stack": "[======================]999339[====]299903299999299999999999999999",
+                  }
+                },
+                {
+                  "Puzzle Type": "clear",
                   "Stop": 20,
-                  "Pre-Stop": 0,
-                  "Shake": 0
+                  "Shake": 0,
+                  "Stack": "[======================]999339[====]299903299999299999999999999999",
+                  "CursorStartLeft": {
+                    "Column": 4,
+                    "Row": 7
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "Moves": 0,
-                  "Stack": "[======================]999339[====]230999299999299999999999999999",
                   "Stop": 20,
-                  "Pre-Stop": 0,
-                  "Shake": 0
+                  "Shake": 0,
+                  "Stack": "[======================]999339[====]230999299999299999999999999999"
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 20,
+                  "Shake": 0,
+                  "Stack": "[======================]999993[====]200003200003209999999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
-                  },
-                  "Stack": "[======================]999993[====]200003200003209999999999999999",
-                  "Stop": 20,
-                  "Pre-Stop": 0,
-                  "Shake": 0
+                  }
                 }
               ]
             },
             {
               "Set Name": "puzzle_set_name_advanced_transitions_2",
               "Description": "puzzle_set_description_advanced_transitions_2",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 60,
+                  "Shake": 0,
+                  "Stack": "[================][===]0061340121351[====]405365112361999399999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 7
-                  },
-                  "Stack": "[================][===]0061340121351[====]405365112361999399999999999999",
-                  "Stop": 60,
-                  "Pre-Stop": 66,
-                  "Shake": 0
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 40,
+                  "Shake": 0,
+                  "Stack": "[======================]125446[====]069004069504969999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 8
-                  },
-                  "Stack": "[======================]125446[====]069004069504969999999999999999999999",
-                  "Stop": 40,
-                  "Pre-Stop": 0,
-                  "Shake": 0
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 60,
+                  "Shake": 0,
+                  "Stack": "[============================][====]132120[====]200062563164322464356566613131",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
-                  },
-                  
-                  "Pre-Stop": 107,
-                  "Stop": 60,
-                  "Shake": 0,
-                  "Stack": "[============================][====]132120[====]200062563164322464356566613131"
-                },
+                  }
+                }
               ]
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_2",
               "Description": "puzzle_set_description_advanced_clear_puzzles_2",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 73,
+                  "Shake": 0,
+                  "Stack": "[==============================================]400001600005400003310005660006610003351015",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
-                  },
-                  "Stack": "[==============================================]400001600005400003310005660006610003351015",
-                  "Stop": 73,
-                  "Pre-Stop": 0,
-                  "Shake": 0
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 58,
+                  "Shake": 0,
+                  "Stack": "[==========================================================]000040300060266050153060242060",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 4
-                  },
-                  "Pre-Stop": 0,
-                  "Stop": 58,
-                  "Shake": 0,
-                  "Stack": "[==========================================================]000040300060266050153060242060"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 120,
+                  "Shake": 0,
+                  "Stack": "[==========][==========][==========][==========][==========]000100262653543226633511",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
-                  },
-                  "Pre-Stop": 0,
-                  "Stop": 120,
-                  "Shake": 0,
-                  "Stack": "[==========][==========][==========][==========][==========]000100262653543226633511"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 120,
+                  "Shake": 0,
+                  "Stack": "[==========][==========][==========][==========][==========][====]046030023236045141",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
-                  },
-                  "Pre-Stop": 0,
-                  "Stop": 120,
-                  "Shake": 0,
-                  "Stack": "[==========][==========][==========][==========][==========][====]046030023236045141"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "Moves": 0,
-                  "Stack": "[==========]060062044361135314232625614532",
-                  "Stop": 84
+                  "Stop": 84,
+                  "Stack": "[==========]060062044361135314232625614532"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 5,
-                  "Pre-Stop": 62,
                   "Stack": "[==================================]000006200604300606410302632503532501132205"
                 },
                 {
@@ -1180,7 +1201,6 @@
                   "Moves": 0,
                   "Stop": 90,
                   "Shake": 0,
-                  "Pre-Stop": 162,
                   "Stack": "[==================================]005600502246622441523131315313124252456141"
                 },
                 {
@@ -1188,7 +1208,6 @@
                   "Moves": 0,
                   "Stop": 27,
                   "Shake": 23,
-                  "Pre-Stop": 49,
                   "Stack": "[============================]363521[====]230602520452560312312164124252456141"
                 },
                 {
@@ -1196,7 +1215,6 @@
                   "Moves": 0,
                   "Stop": 63,
                   "Shake": 42,
-                  "Pre-Stop": 0,
                   "Stack": "[============================]000000[====][======================]000005000302005203031162124314464221"
                 }
               ]
@@ -1204,85 +1222,77 @@
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_3",
               "Description": "puzzle_set_description_advanced_clear_puzzles_3",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
-                  "CursorStartLeft": {
-                    "Column": 3,
-                    "Row": 5
-                  },
                   "StartTiming": "immediately",
-                  "Pre-Stop": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "995999"
+                  "GarbagePanelBuffer": "995999",
+                  "CursorStartLeft": {
+                    "Column": 3,
+                    "Row": 5
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
-                  "CursorStartLeft": {
-                    "Column": 3,
-                    "Row": 6
-                  },
                   "StartTiming": "immediately",
-                  "Pre-Stop": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[==========][==========][==========][==========]000000[==========]004003902043904043909999999999999999",
-                  "GarbagePanelBuffer": "999499"
+                  "GarbagePanelBuffer": "999499",
+                  "CursorStartLeft": {
+                    "Column": 3,
+                    "Row": 6
+                  }
                 }
               ]
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_4",
               "Description": "puzzle_set_description_advanced_clear_puzzles_4",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
                   "Stop": 54,
-                  "Pre-Stop": 0,
                   "Stack": "[============================]600200304106254633265261633622241253256162"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 33,
-                  "Pre-Stop": 0,
                   "Stack": "[============================]430000510500621600461662252262426521516563"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 82,
-                  "Pre-Stop": 0,
                   "Stack": "[==========][==========]100000600000520000330000436001212005214001365132"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 81,
-                  "Pre-Stop": 0,
                   "Stack": "[==========]00[==]0[==]0060000020001125005543404215102552406524162234243451256"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 48,
-                  "Pre-Stop": 0,
                   "Stack": "[=]000[====]005632516364[====]200000602000616400132200483610541282244223"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 120,
-                  "Pre-Stop": 0,
                   "Stack": "000[=][====][=]000[==]00[====]100501530226640551130553531663"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 54,
-                  "Pre-Stop": 0,
                   "Stack": "000000000000[==========]000352056163253252[====]000106000453460145122121"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 78,
-                  "Pre-Stop": 0,
                   "Stack": "000[=][==========][==========]500000300000400200500503200152160551610435"
                 }
               ]
@@ -1290,16 +1300,16 @@
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_5",
               "Description": "puzzle_set_description_advanced_clear_puzzles_5",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
+                  "Stop": 53,
+                  "Stack": "[============================]463000[====]320000614000235042521024252561534361",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
-                  },
-                  "Stack": "[============================]463000[====]320000614000235042521024252561534361",
-                  "Stop": 53,
-                  "Pre-Stop": 0
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1352,32 +1362,27 @@
                 {
                   "Puzzle Type": "clear",
                   "Stop": 22,
-                  "Pre-Stop": 0,
                   "Shake": 70,
                   "Stack": "[====]000003640002462445535161414121221336"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 90,
-                  "Pre-Stop": 0,
                   "Stack": "[====]060004324513424264514561425622254335"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 30,
-                  "Pre-Stop": 0,
                   "Stack": "[====]320000310000520000360000355445"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 86,
-                  "Pre-Stop": 0,
                   "Stack": "[========================================]000360000255000336600125450225221164"
                 },
                 {
                   "Puzzle Type": "clear",
                   "Stop": 98,
-                  "Pre-Stop": 27,
                   "Stack": "[======================]200000300000600000502000406004301025401156344412"
                 }
               ]
@@ -1385,7 +1390,8 @@
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_6",
               "Description": "puzzle_set_description_advanced_clear_puzzles_6",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
@@ -1461,7 +1467,8 @@
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_7",
               "Description": "puzzle_set_description_advanced_clear_puzzles_7",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
@@ -1509,7 +1516,8 @@
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_8",
               "Description": "puzzle_set_description_advanced_clear_puzzles_8",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
@@ -1541,58 +1549,57 @@
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
+                  "Stop": 90,
+                  "Shake": 0,
+                  "Stack": "[==========][=]000[====]000005000003000005002006303533301422414532112624513451",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 6
-                  },
-                  "Stop": 90,
-                  "Shake": 0,
-                  "Stack": "[==========][=]000[====]000005000003000005002006303533301422414532112624513451"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
+                  "Stop": 56,
+                  "Stack": "[=]000[====][================]000[=][====]000040200311330224151452542322",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 5
-                  },
-                  "Stack": "[=]000[====][================]000[=][====]000040200311330224151452542322",
-                  "Stop": 56
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
+                  "Stop": 62,
+                  "Stack": "[====]465256444444000140461220263530",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
-                  },
-                  "Stack": "[====]465256444444000140461220263530",
-                  "Stop": 62
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
                   "Moves": 0,
-                  "Stack": "[==================================]000039000039000029300092993329",
                   "Stop": 120,
-                  "Pre-Stop": 0,
-                  "Shake": 0
+                  "Shake": 0,
+                  "Stack": "[==================================]000039000039000029300092993329"
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
                   "Moves": 0,
-                  "Stack": "[====]400300102105303621204243136326",
                   "Stop": 60,
-                  "Pre-Stop": 0,
-                  "Shake": 0
+                  "Shake": 0,
+                  "Stack": "[====]400300102105303621204243136326"
                 }
               ]
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_9",
               "Description": "puzzle_set_description_advanced_clear_puzzles_9",
-              "Puzzles": [
+              "Puzzles":
+              [
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
@@ -1605,7 +1612,6 @@
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
                   "Stop": 47,
-                  "Pre-Stop": 0,
                   "Shake": 64,
                   "Stack": "000[=][==========][====][==========][====]400250500250400434401421356112"
                 },
@@ -1613,7 +1619,6 @@
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
                   "Stop": 56,
-                  "Pre-Stop": 0,
                   "Shake": 0,
                   "Stack": "[====]000000000000000000[===]0000[=]000001000006000026000035500041630145161235"
                 },
@@ -1621,7 +1626,6 @@
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
                   "Stop": 75,
-                  "Pre-Stop": 0,
                   "Shake": 30,
                   "Stack": "[==========]600000210000550003450043313041116055"
                 },
@@ -1629,57 +1633,52 @@
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
                   "Stop": 52,
-                  "Pre-Stop": 0,
                   "Shake": 0,
                   "Stack": "000000[==========][====]002000205000605600206600165402141402312305551546"
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
+                  "Stop": 43,
+                  "Shake": 42,
+                  "Stack": "[====]000000[====][================]000631564156213615344511612433515265232313",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
-                  },
-                  "Stop": 43,
-                  "Pre-Stop": 0,
-                  "Shake": 42,
-                  "Stack": "[====]000000[====][================]000631564156213615344511612433515265232313"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
+                  "Stop": 58,
+                  "Shake": 0,
+                  "Stack": "[=]000[====][==========]512631[====]006000134050514020652033522055523032",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 3
-                  },
-                  "Stop": 58,
-                  "Pre-Stop": 0,
-                  "Shake": 0,
-                  "Stack": "[=]000[====][==========]512631[====]006000134050514020652033522055523032"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
+                  "Stop": 58,
+                  "Shake": 0,
+                  "Stack": "[==================================]011253[====]061499065199069329999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 5
-                  },
-                  "Stop": 58,
-                  "Pre-Stop": 0,
-                  "Shake": 0,
-                  "Stack": "[==================================]011253[====]061499065199069329999999"
+                  }
                 },
                 {
                   "Puzzle Type": "clear",
                   "StartTiming": "firstInput",
+                  "Stop": 14,
+                  "Shake": 75,
+                  "Stack": "[====================================================]844003221204356501",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
-                  },
-                  "Stop": 14,
-                  "Pre-Stop": 0,
-                  "Shake": 75,
-                  "Stack": "[====================================================]844003221204356501"
+                  }
                 }
               ]
             }

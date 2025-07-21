@@ -10,11 +10,15 @@ local FileUtils = require("client.src.FileUtils")
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
 ---@field player Player
+---@field puzzleSet PuzzleSet?
+---@field puzzleIndex integer?
 local PuzzleGame = class(
   function (self, sceneParams)
     self.keepMusic = true
     self.fadeOutMusicOnGameOver = false
     self.saveReplay = false
+    self.puzzleSet = sceneParams.puzzleSet
+    self.puzzleIndex = sceneParams.puzzleIndex
   end,
   GameBase
 )
@@ -26,10 +30,11 @@ function PuzzleGame:customLoad()
 ---@diagnostic disable-next-line: assign-type-mismatch
   self.player = self.match.players[1]
   self.inputConfiguration = self.player.inputConfiguration
-  local puzzle = self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex]
+  
+  local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
   local isValid, validationError = puzzle:validate()
   if not isValid then
-    validationError = "Validation error in puzzle set " .. self.player.settings.puzzleSet.setName .. "\n"
+    validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
                     .. validationError
     local transition = MessageTransition(GAME.timer, 5, validationError)
     GAME.navigationStack:popToTop(transition)
@@ -58,8 +63,8 @@ end
 function PuzzleGame:startNextScene()
   if self.match.engine.aborted then
     GAME.navigationStack:pop()
-  elseif self.player.settings.puzzleIndex <= #self.player.settings.puzzleSet.puzzles then
-    local puzzle = self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex]
+  elseif self.puzzleIndex <= #self.puzzleSet.puzzles then
+    local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
     GAME.battleRoom:setGameMode(puzzle:toGameMode())
     self.player:setWantsReady(true)
   else
@@ -69,14 +74,16 @@ end
 
 function PuzzleGame:savePuzzleRecordResult(success)
   local inputs = InputCompression.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
-  GAME.scores:savePuzzleRecord(self.player.settings.puzzleSet.puzzles[self.player.settings.puzzleIndex], inputs, to_UTC(os.time()), success)
+  GAME.scores:savePuzzleRecord(self.puzzleSet.puzzles[self.puzzleIndex], inputs, to_UTC(os.time()), success)
 end
 
 function PuzzleGame:customGameOverSetup()
   if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
     self:savePuzzleRecordResult(true)
-    self.player:setPuzzleIndex(self.player.settings.puzzleIndex + 1)
+    
+    self.puzzleIndex = self.puzzleIndex + 1
+    GAME.battleRoom.sceneParameters.puzzleIndex = self.puzzleIndex
   else -- puzzle failed or manually reset
     self.text = loc("pl_you_lose")
     if (self.match.aborted == nil or self.match.aborted == false) then

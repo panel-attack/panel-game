@@ -57,11 +57,15 @@ function PuzzleMenu:setupPuzzleSet(puzzleSet, index)
     write_conf_file()
   end
 
-  GAME.localPlayer:setPuzzleSet(puzzleSet, index)
+  -- Set scene parameters for the puzzle game
+  self.battleRoom.sceneParameters = {
+    puzzleSet = puzzleSet,
+    puzzleIndex = index
+  }
 
-  local player = self.battleRoom.players[1]
-  local puzzle = player.settings.puzzleSet.puzzles[index]
+  local puzzle = puzzleSet.puzzles[index]
   self.battleRoom:setGameMode(puzzle:toGameMode())
+  self.battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
 end
 
 function PuzzleMenu:startGame(puzzleSet, index)
@@ -113,27 +117,15 @@ function PuzzleMenu:load(sceneParams)
     }
   )
 
-  self.randomlyFlipPuzzleButtons = ui.ButtonGroup(
-    {
-      buttons = {
-        ui.TextButton({label = ui.Label({text = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-        ui.TextButton({label = ui.Label({text = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-      },
-      values = {false, true},
-      selectedIndex = config.puzzle_randomFlipped and 2 or 1,
-      onChange = function(group, value)
-        GAME.theme:playMoveSfx()
-        config.puzzle_randomFlipped = value
-      end
-    }
-  )
-
   self.puzzlePreviewStack = ui.StackElement({vAlign = "top", hAlign = "center", x = 0, y = 0, scale=2})
 
   self.puzzleDescriptionLabel = ui.Label({text = "", x = 0, y = 0, width = 400, height = 100, fontSize = 20, translate = false})
   self.puzzleDescriptionLabel:setFillColors(.2, .2, .2, .8)
   self.puzzleDescriptionLabel:setStrokeColors(1, 1, 1, 1)
   self.puzzleDescriptionLabel:setWrap(400, "left")
+
+  -- Edit puzzle button (initially nil, created when needed)
+  self.editPuzzleButton = nil
 
   self:loadMenu()
 
@@ -188,7 +180,6 @@ function PuzzleMenu:loadMenu()
   if self:currentlyAtRootLevel() == false then
     menuOptions[#menuOptions+1] = ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider)
     menuOptions[#menuOptions+1] = ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons)
-    menuOptions[#menuOptions+1] = ui.MenuItem.createToggleButtonGroupMenuItem("randomHorizontalFlipped", nil, nil, self.randomlyFlipPuzzleButtons)
     for index, value in ipairs(menuOptions) do
       value.onSelectedFunction = self:clearPreviewFunction()
     end
@@ -246,6 +237,11 @@ function PuzzleMenu:clearPreviewFunction()
   return function ()
     self.puzzlePreviewStack:setStack(nil)
     self:setPuzzleDescription(nil)
+    -- Remove edit button if it exists
+    if self.editPuzzleButton then
+      self.previewStackPanel:remove(self.editPuzzleButton)
+      self.editPuzzleButton = nil
+    end
   end
 end
 
@@ -259,9 +255,89 @@ function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, index)
   if puzzleSet then
     return function ()
       self:updatePuzzlePreviewStackForPuzzleSet(puzzleSet, index)
-      self:setPuzzleDescription(puzzleSet.description)
+      self:setPuzzleDescription(puzzleSet.localizedDescription)
+      
+      -- Create edit button for individual puzzles (not puzzle sets)
+      if puzzleSet.puzzles and puzzleSet.puzzles[index] then
+        self:createEditPuzzleButton(puzzleSet, index)
+      end
     end
   end
+end
+
+function PuzzleMenu:createEditPuzzleButton(puzzleSet, index)
+  -- Remove existing edit button if any
+  if self.editPuzzleButton then
+    self.previewStackPanel:remove(self.editPuzzleButton)
+  end
+  
+  -- Create new edit button with embedded puzzle data
+  self.editPuzzleButton = ui.TextButton({
+    label = ui.Label({text = "Edit Puzzle"}),
+    width = 120,
+    height = 30,
+    hAlign = "center",
+    vAlign = "top",
+    x = 0,
+    y = 0,
+    onClick = function()
+      self:openPuzzleEditor(puzzleSet, index)
+    end
+  })
+  
+  self.previewStackPanel:addElement(self.editPuzzleButton)
+end
+
+function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
+  -- Create a match for the editor like BattleRoom does
+  local puzzle = puzzleSet.puzzles[index]
+  local gameMode = puzzle:toGameMode()
+  local BattleRoom = require("client.src.BattleRoom")
+  local tempBattleRoom = BattleRoom.createLocalFromGameMode(gameMode)
+  tempBattleRoom.panelSource = puzzleSet.puzzles[index]:toPanelSource(config.puzzle_randomColors)
+  if not tempBattleRoom then
+    logger.warn("Failed to create BattleRoom for puzzle editor")
+    return
+  end
+  
+  if not tempBattleRoom.players[1].inputConfiguration then
+    tempBattleRoom.players[1]:setInputMethod("touch")
+    tempBattleRoom.players[1]:restrictInputs(GAME.input.mouse)
+  end
+  
+  local match = tempBattleRoom:createMatch()
+  
+  -- Start the match to position stacks properly
+  match:start()
+  
+  -- Find the puzzle set with fileSource and adjust the path
+  local sourceRootPuzzleSet = self.rootPuzzleSet
+  local adjustedPath = {}
+  
+  -- Walk down the hierarchy to find the first puzzle set with a fileSource
+  for i, pathIndex in ipairs(self.currentPuzzleSetIndices) do
+    if sourceRootPuzzleSet.puzzleSets[pathIndex] and sourceRootPuzzleSet.puzzleSets[pathIndex].fileSource then
+      sourceRootPuzzleSet = sourceRootPuzzleSet.puzzleSets[pathIndex]
+      -- Copy the remaining path after this point
+      for j = i + 1, #self.currentPuzzleSetIndices do
+        adjustedPath[#adjustedPath + 1] = self.currentPuzzleSetIndices[j]
+      end
+      break
+    else
+      sourceRootPuzzleSet = sourceRootPuzzleSet.puzzleSets[pathIndex]
+    end
+  end
+  
+  local PuzzleEditorScene = require("client.src.scenes.PuzzleEditorScene")
+  local editor = PuzzleEditorScene({
+    match = match, 
+    puzzleSet = puzzleSet, 
+    puzzleIndex = index,
+    rootPuzzleSet = sourceRootPuzzleSet,
+    puzzleSetPath = adjustedPath
+  })
+  editor:load()
+  GAME.navigationStack:push(editor)
 end
 
 function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, flatPuzzleSet, index, puzzle)
@@ -282,7 +358,7 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, flatPuzzleSet, index, puz
 end
 
 function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, index)
-  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
+  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.localizedSetName, nil, false, function() 
     GAME.theme:playValidationSfx()
     self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
     self:updateCurrentPuzzleSet()
@@ -295,7 +371,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, index)
 end
 
 function PuzzleMenu:menuItemToTrainPuzzleSet(puzzleSet)
-  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.setName, nil, false, function() 
+  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.localizedSetName, nil, false, function() 
     self:startGame(puzzleSet)
   end)
 
