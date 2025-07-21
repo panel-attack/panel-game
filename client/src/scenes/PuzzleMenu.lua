@@ -4,11 +4,12 @@ local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
 local PuzzleLibrary = require("client.src.PuzzleLibrary")
+local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
+local PuzzleHierarchyDisplay = require("client.src.graphics.PuzzleHierarchyDisplay")
+local PuzzleGame = require("client.src.scenes.PuzzleGame")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
-local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelPresets      = require("common.data.LevelPresets")
-local ClientMatch = require("client.src.ClientMatch")
 local Stack = require("common.engine.Stack")
 
 -- Scene for the puzzle selection menu
@@ -47,12 +48,10 @@ PuzzleMenu.name = "PuzzleMenu"
 local BUTTON_WIDTH = 60
 local BUTTON_HEIGHT = 25
 
-function PuzzleMenu:setupPuzzleSet(puzzleSet, index)
-  if not index then
-    index = 1
-  end
+function PuzzleMenu:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
 
-  if config.puzzle_level ~= self.levelSlider.value or config.puzzle_randomColors ~= self.randomColorsButtons.value then
+  if (self.levelSlider and config.puzzle_level ~= self.levelSlider.value) or 
+     (self.randomColorsButtons and config.puzzle_randomColors ~= self.randomColorsButtons.value) then
     logger.debug("saving settings...")
     write_conf_file()
   end
@@ -60,16 +59,17 @@ function PuzzleMenu:setupPuzzleSet(puzzleSet, index)
   -- Set scene parameters for the puzzle game
   self.battleRoom.sceneParameters = {
     puzzleSet = puzzleSet,
-    puzzleIndex = index
+    puzzleSetIterator = puzzleSetIterator
   }
 
-  local puzzle = puzzleSet.puzzles[index]
-  self.battleRoom:setGameMode(puzzle:toGameMode())
-  self.battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
+  if PuzzleGame.setupNextPuzzle(self.battleRoom, puzzleSetIterator, puzzleSet) == nil then
+    assert(false, "could not setup puzzle")
+  end
 end
 
-function PuzzleMenu:startGame(puzzleSet, index)
-  self:setupPuzzleSet(puzzleSet, index)
+function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
+  assert(puzzleSetIterator)
+  self:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
   local player = self.battleRoom.players[1]
   player:setWantsReady(true)
   GAME.theme:playValidationSfx()
@@ -127,6 +127,18 @@ function PuzzleMenu:load(sceneParams)
   -- Edit puzzle button (initially nil, created when needed)
   self.editPuzzleButton = nil
 
+  -- Create PuzzleHierarchyDisplay for navigation
+  self.puzzleHierarchyDisplay = PuzzleHierarchyDisplay({
+    puzzleSet = self.rootPuzzleSet,
+    puzzleSetIndices = self.currentPuzzleSetIndices,
+    width = 400,
+    height = 30,
+    x = 0,
+    y = 0,
+    hAlign = "center",
+    vAlign = "top"
+  })
+
   self:loadMenu()
 
   self.previewStackPanel = ui.StackPanel(
@@ -139,7 +151,6 @@ function PuzzleMenu:load(sceneParams)
       y = 0,
     }
   )
-  self:updatePuzzlePreviewStackForPuzzleSet(self.currentPuzzleSet, 1)
 
   self.previewStackPanel:addElement(self.puzzlePreviewStack)
   self.previewStackPanel:addElement(self.puzzleDescriptionLabel)
@@ -159,6 +170,7 @@ function PuzzleMenu:load(sceneParams)
   self.containerStackPanel:addElement(self.previewStackPanel)
 
   self.uiRoot:addChild(self.containerStackPanel)
+  self.uiRoot:addChild(self.puzzleHierarchyDisplay)
   
 end
 
@@ -186,21 +198,25 @@ function PuzzleMenu:loadMenu()
   end
 
   if self:currentlyAtRootLevel() == false then
-    menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, 1, nil)
+    menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.rootPuzzleSet, self.currentPuzzleSetIndices, nil)
   end
 
-  for index, currentPuzzleSet in ipairs(self.currentPuzzleSet.puzzleSets) do
-    menuOptions[#menuOptions + 1] = self:menuItemToViewPuzzleSet(currentPuzzleSet, index)
+  local currentPuzzleSet = self.rootPuzzleSet:getPuzzleSetFromIndices(self.currentPuzzleSetIndices)
+
+  for index, currentPuzzleSet in ipairs(currentPuzzleSet.puzzleSets) do
+    local nextIndices = deepcpy(self.currentPuzzleSetIndices)
+    nextIndices[#nextIndices+1] = index
+    menuOptions[#menuOptions + 1] = self:menuItemToViewPuzzleSet(self.rootPuzzleSet, nextIndices, index)
   end
 
-  for index, currentPuzzle in ipairs(self.currentPuzzleSet.puzzles) do
-    menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.currentPuzzleSet, self.flatPuzzleSet, index, currentPuzzle)
+  for index, currentPuzzle in ipairs(currentPuzzleSet.puzzles) do
+    menuOptions[#menuOptions + 1] = self:menuItemToPlayPuzzleSet(self.rootPuzzleSet, self.currentPuzzleSetIndices, index)
   end
 
   if self:currentlyAtRootLevel() == false then
-    local trainingPuzzleSet = self.currentTrainingPuzzleSet
-    if #trainingPuzzleSet.puzzles > 0 then
-      menuOptions[#menuOptions + 1] = self:menuItemToTrainPuzzleSet(trainingPuzzleSet)
+    local menuItem = self:menuItemToTrainWithIterator(self.currentPuzzleSetIndices)
+    if menuItem then
+      menuOptions[#menuOptions + 1] = menuItem
     end
   end
 
@@ -245,21 +261,28 @@ function PuzzleMenu:clearPreviewFunction()
   end
 end
 
-function PuzzleMenu:updatePuzzlePreviewStackForPuzzleSet(puzzleSet, index)
-  local flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet)
-  local stack = self:getDisplayStack(flatPuzzleSet.puzzles[index])
+function PuzzleMenu:updatePuzzlePreviewStackForPuzzle(puzzle)
+  local stack = self:getDisplayStack(puzzle)
   self.puzzlePreviewStack:setStack(stack)
 end
 
-function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, index)
-  if puzzleSet then
+function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index)
+  local currentPuzzleSet = self.rootPuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
+  if currentPuzzleSet then
     return function ()
-      self:updatePuzzlePreviewStackForPuzzleSet(puzzleSet, index)
-      self:setPuzzleDescription(puzzleSet.localizedDescription)
+      local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)
+      local firstIndices = puzzleSetIterator:nextPuzzle()
+      if firstIndices then
+        local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.rootPuzzleSet, firstIndices)
+        if puzzle then
+          self:updatePuzzlePreviewStackForPuzzle(puzzle)
+        end
+      end
+      self:setPuzzleDescription(currentPuzzleSet.localizedDescription)
       
       -- Create edit button for individual puzzles (not puzzle sets)
-      if puzzleSet.puzzles and puzzleSet.puzzles[index] then
-        self:createEditPuzzleButton(puzzleSet, index)
+      if currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
+        self:createEditPuzzleButton(currentPuzzleSet, index)
       end
     end
   end
@@ -340,42 +363,74 @@ function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
   GAME.navigationStack:push(editor)
 end
 
-function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, flatPuzzleSet, index, puzzle)
+function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
+  assert(puzzleSet)
+  assert(puzzleSetIndices)
   local textString = loc("start")
-  if puzzle then
+  if index then
     textString = loc("rp_browser_info_puzzle") .. " " .. index
   end
-  if puzzle and puzzle.puzzleEverBeaten then
-    textString = textString .. " +"
+  if index then
+    local nextIndices = deepcpy(puzzleSetIndices)
+    nextIndices[#nextIndices+1] = index
+    local puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, nextIndices)
+    assert(puzzle)
+    if puzzle.puzzleEverBeaten then
+      textString = textString .. " +"
+    end
   end
+  -- Create a puzzle set iterator for the current puzzle set
+  local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)
+  assert(puzzleSetIterator:totalPuzzleCount() > 0)
   local result = ui.MenuItem.createButtonMenuItem(textString, nil, false, function()
-    self:startGame(flatPuzzleSet, index)
+    self:startGame(puzzleSet, puzzleSetIterator)
   end)
 
-  result.onSelectedFunction = self:previewFunctionForPuzzleSet(flatPuzzleSet, index)
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index)
 
   return result
 end
 
-function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, index)
-  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.localizedSetName, nil, false, function() 
+function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
+  local currentPuzzleSet = self.rootPuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
+  local result = ui.MenuItem.createButtonMenuItem(currentPuzzleSet.localizedSetName, nil, false, function() 
     GAME.theme:playValidationSfx()
     self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
     self:updateCurrentPuzzleSet()
     self:refreshMenu()
   end)
 
-  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, 1)
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index)
 
   return result
 end
 
-function PuzzleMenu:menuItemToTrainPuzzleSet(puzzleSet)
-  local result = ui.MenuItem.createButtonMenuItem(puzzleSet.localizedSetName, nil, false, function() 
-    self:startGame(puzzleSet)
+function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
+  -- Get the training puzzle count by temporarily getting the first puzzle
+  local trainingPuzzleSetIterator = PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary)
+  local puzzleCount = trainingPuzzleSetIterator:totalPuzzleCount()
+  
+  if puzzleCount == 0 then
+    return nil
+  end
+
+  local trainingSetName = loc("puzzle_training") .. " " .. puzzleCount
+  local result = ui.MenuItem.createButtonMenuItem(trainingSetName, nil, false, function() 
+    self:startGame(self.rootPuzzleSet, trainingPuzzleSetIterator)
   end)
 
-  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, 1)
+  -- Preview the first training puzzle
+  result.onSelectedFunction = function()
+    local previewIterator = PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary)
+    local firstIndices = previewIterator:nextPuzzle()
+    if firstIndices then
+      local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.rootPuzzleSet, firstIndices)
+      if puzzle then
+        self:updatePuzzlePreviewStackForPuzzle(puzzle)
+        self:setPuzzleDescription("")
+      end
+    end
+  end
 
   return result
 end
@@ -385,12 +440,10 @@ function PuzzleMenu:updateCurrentPuzzleSet()
     self.rootPuzzleSet = self.puzzleLibrary:getDefaultPuzzleSet()
   end
 
-  self.currentPuzzleSet = self.rootPuzzleSet
-  for index, value in ipairs(self.currentPuzzleSetIndices) do
-    self.currentPuzzleSet = self.currentPuzzleSet.puzzleSets[value]
+  -- Update hierarchy display if it exists
+  if self.puzzleHierarchyDisplay then
+    self.puzzleHierarchyDisplay:updateDisplay(self.rootPuzzleSet, self.currentPuzzleSetIndices)
   end
-  self.flatPuzzleSet = self.puzzleLibrary:flattenedPuzzleSetForPuzzleSet(self.currentPuzzleSet)
-  self.currentTrainingPuzzleSet = self.puzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(self.currentPuzzleSet)
 end
 
 function PuzzleMenu:update(dt)

@@ -73,11 +73,12 @@ Puzzle = class(
 ---@param puzzle Puzzle
 ---@return string
 function Puzzle.getV1UUID(puzzle)
-    -- local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.doCountdown) .. tostring(puzzle.moves) .. tostring(puzzle.stop_time) .. tostring(puzzle.shake_time)
-    local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
-    local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
+  local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
+  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
   ---@diagnostic disable-next-line: return-type-mismatch
-  return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  local digest = love.data.hash("string", "sha256", hashString)
+  return love.data.encode("string", "hex", digest)
 end
 
 ---@param puzzle Puzzle
@@ -85,7 +86,9 @@ end
 function Puzzle.getV2UUID(puzzle)
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
   ---@diagnostic disable-next-line: return-type-mismatch
-  return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  local digest = love.data.hash("string", "sha256", hashString)
+  return love.data.encode("string", "hex", digest)
 end
 
 ---@enum PuzzleStartTiming

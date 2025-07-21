@@ -459,7 +459,7 @@ Leggi il README e guarda i puzzle d'esempio che si trovano lì per avere istruzi
 %appdata%\Panel Attack\puzzles
 
 สามารถดูวิธีใช้ใน README และตัวอย่าง puzzle ที่อยู่ในนั้นได้"
-pz_puzzles,,Puzzles:,Puzzles :,Quebra-cabeças:,パズル：,Puzzles:,Puzzles:,Puzzles:,Puzzles:
+pz_puzzles,,Puzzles,Puzzles,Quebra-cabeças,パズル,Puzzles,Puzzles,Puzzles,Puzzles
 rp_endless,,endless,infini,Infinito,エンドレス,Interminable,Endlos,infinito,ไม่รู้จบ
 rp_no_endless,,I don't have an endless replay :(,Je n'ai pas de replay infini :(,Não possuo replay sem fim :(,エンドレスのリプレイはありません -_-,No encuentro ninguna repetición del modo Interminable :(,Ich habe kein Replay für Endless :-(,Non ho un replay della modalità infinito :(,ฉันไม่มี replay โหมดไม่รู้จบ :(
 rp_no_puzzle,,I don't have a puzzle replay :(,Je n'ai pas de replay puzzle :(,Não possuo replay de quebra-cabeça :(,パズルのリプレイはありません -_-,No encuentro ninguna repetición del modo Puzzle :(,Ich habe kein Puzzle Replay :-(,Non ho un replay della modalità puzzle :(,ฉันไม่มี replay โหมด puzzle :(

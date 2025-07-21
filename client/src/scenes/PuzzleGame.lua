@@ -6,24 +6,78 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local InputCompression = require("common.data.InputCompression")
 local consts = require("common.engine.consts")
 local FileUtils = require("client.src.FileUtils")
+local ui = require("client.src.ui")
+local PuzzleHierarchyDisplay = require("client.src.graphics.PuzzleHierarchyDisplay")
+local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
 
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
 ---@field player Player
 ---@field puzzleSet PuzzleSet?
+---@field puzzleSetIterator PuzzleSetIterator?
 ---@field puzzleIndex integer?
+---@field rootPuzzleSet PuzzleSet?
+---@field puzzleHierarchyDisplay PuzzleHierarchyDisplay?
+---@field currentPuzzleIndices integer[]?
 local PuzzleGame = class(
   function (self, sceneParams)
     self.keepMusic = true
     self.fadeOutMusicOnGameOver = false
     self.saveReplay = false
+    assert(sceneParams.puzzleSet)
+    assert(sceneParams.puzzleSetIterator)
     self.puzzleSet = sceneParams.puzzleSet
-    self.puzzleIndex = sceneParams.puzzleIndex
+    self.puzzleSetIterator = sceneParams.puzzleSetIterator
+    self.puzzleHierarchyDisplay = nil
+    self.currentPuzzleIndices = nil
   end,
   GameBase
 )
 
 PuzzleGame.name = "PuzzleGame"
+
+function PuzzleGame:getCurrentPuzzle()
+  assert(self.puzzleSetIterator)
+  local currentPuzzleIndices = self.puzzleSetIterator:currentPuzzle()
+
+  if currentPuzzleIndices then
+    local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.puzzleSet, currentPuzzleIndices)
+    assert(puzzle)
+    return puzzle
+  end
+
+  return nil
+end
+
+function PuzzleGame:getNextPuzzle()
+  assert(self.puzzleSetIterator)
+  self.currentPuzzleIndices = self.puzzleSetIterator:nextPuzzle()
+
+  if self.puzzleHierarchyDisplay and self.currentPuzzleIndices then
+    self.puzzleHierarchyDisplay:updateDisplay(self.rootPuzzleSet, self.currentPuzzleIndices)
+  end
+
+  if self.currentPuzzleIndices then
+    local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.puzzleSet, self.currentPuzzleIndices)
+    assert(puzzle)
+    return puzzle
+  end
+
+  return nil
+end
+
+function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet)
+  -- Get the first puzzle from the iterator
+  local puzzleIndices = puzzleSetIterator:nextPuzzle()
+  if puzzleIndices then
+    local puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, puzzleIndices)
+    if puzzle then
+      GAME.battleRoom:setGameMode(puzzle:toGameMode())
+      GAME.battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
+    end
+  end
+  return puzzleIndices
+end
 
 function PuzzleGame:customLoad()
   -- we cache the player's input configuration here so that only inputs from this config can start the next puzzle
@@ -31,13 +85,19 @@ function PuzzleGame:customLoad()
   self.player = self.match.players[1]
   self.inputConfiguration = self.player.inputConfiguration
   
-  local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
-  local isValid, validationError = puzzle:validate()
-  if not isValid then
-    validationError = "Validation error in puzzle set " .. self.puzzleSet.setName .. "\n"
-                    .. validationError
-    local transition = MessageTransition(GAME.timer, 5, validationError)
-    GAME.navigationStack:popToTop(transition)
+  -- Create PuzzleHierarchyDisplay if we have puzzle set navigation data
+  if self.puzzleSet and self.currentPuzzleIndices then
+    self.puzzleHierarchyDisplay = PuzzleHierarchyDisplay({
+      puzzleSet = self.puzzleSet,
+      puzzleSetIndices = self.currentPuzzleIndices,
+      width = 400,
+      height = 30,
+      x = 0,
+      y = 0,
+      hAlign = "center",
+      vAlign = "top"
+    })
+    self.uiRoot:addChild(self.puzzleHierarchyDisplay)
   end
 end
 
@@ -63,18 +123,21 @@ end
 function PuzzleGame:startNextScene()
   if self.match.engine.aborted then
     GAME.navigationStack:pop()
-  elseif self.puzzleIndex <= #self.puzzleSet.puzzles then
-    local puzzle = self.puzzleSet.puzzles[self.puzzleIndex]
-    GAME.battleRoom:setGameMode(puzzle:toGameMode())
-    self.player:setWantsReady(true)
   else
-    GAME.navigationStack:pop()
+    if self.puzzleSetIterator then
+      self.player:setWantsReady(true)
+    else
+      GAME.navigationStack:pop()
+    end
   end
 end
 
 function PuzzleGame:savePuzzleRecordResult(success)
   local inputs = InputCompression.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
-  GAME.scores:savePuzzleRecord(self.puzzleSet.puzzles[self.puzzleIndex], inputs, to_UTC(os.time()), success)
+  local currentPuzzle = self:getCurrentPuzzle()
+  if currentPuzzle then
+    GAME.scores:savePuzzleRecord(currentPuzzle, inputs, to_UTC(os.time()), success)
+  end
 end
 
 function PuzzleGame:customGameOverSetup()
@@ -82,8 +145,9 @@ function PuzzleGame:customGameOverSetup()
     self.text = loc("pl_you_win")
     self:savePuzzleRecordResult(true)
     
-    self.puzzleIndex = self.puzzleIndex + 1
-    GAME.battleRoom.sceneParameters.puzzleIndex = self.puzzleIndex
+    if PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet) == nil then
+      self.puzzleSetIterator = nil
+    end
   else -- puzzle failed or manually reset
     self.text = loc("pl_you_lose")
     if (self.match.aborted == nil or self.match.aborted == false) then

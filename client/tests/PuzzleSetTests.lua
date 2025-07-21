@@ -175,11 +175,6 @@ function PuzzleSetTests.testExactJSONFormatting()
   local encoded = json.encode(data, {indent = true, pretty = true, keyorder = PuzzleSet.keyOrder})
   local prettified = FileUtils.prettifyJson(encoded)
   
-  logger.info("=== CURRENT PRETTIFIED OUTPUT ===")
-  logger.info(prettified)
-  logger.info("=== ESCAPED VERSION ===")
-  logger.info(string.gsub(prettified, "\n", "\\n\n"))
-  
   -- Define the exact expected format
   local expected = [[{
   "Version": 3,
@@ -200,11 +195,6 @@ function PuzzleSetTests.testExactJSONFormatting()
     }
   ]
 }]]
-
-  logger.info("=== EXPECTED FORMAT ===")
-  logger.info(expected)
-  logger.info("=== EXPECTED ESCAPED ===")
-  logger.info(string.gsub(expected, "\n", "\\n\n"))
   
   -- Character by character comparison
   assert(prettified == expected, "JSON formatting should match exactly")

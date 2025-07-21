@@ -179,6 +179,33 @@ function PuzzleSet:getPuzzle(index)
   return self.puzzles[index]
 end
 
+function PuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)  
+  local puzzleSet = self
+
+  -- Navigate through puzzle set hierarchy
+  for i = 1, #puzzleSetIndices do
+    local index = puzzleSetIndices[i]
+    if puzzleSet.puzzleSets and puzzleSet.puzzleSets[index] then
+      puzzleSet = puzzleSet.puzzleSets[index]
+    else
+      return nil -- Invalid path
+    end
+  end
+  
+  return puzzleSet
+end
+
+function PuzzleSet:getPuzzleFromIndices(puzzleSetIndices, puzzleIndex)
+  local puzzleSet = self:getPuzzleSetFromIndices(puzzleSetIndices)
+  
+  -- Get the final puzzle
+  if puzzleSet.puzzles and puzzleSet.puzzles[puzzleIndex] then
+    return puzzleSet.puzzles[puzzleIndex]
+  end
+  
+  return nil
+end
+
 -- Update a puzzle at the specified index
 ---@param index integer
 ---@param newPuzzle Puzzle

@@ -7,7 +7,6 @@ local tableUtils = require("common.lib.tableUtils")
 
 -- A puzzle collection is a set of all puzzles that can be queried and filtered for a subset.
 ---@class PuzzleLibrary
----@field puzzleSets table<integer, table> all the puzzle sets
 ---@field puzzleResults Scores?
 local PuzzleLibrary =
     class(
@@ -16,17 +15,33 @@ local PuzzleLibrary =
       end
     )
 
+---@return table<integer, table> all the puzzle sets
 function PuzzleLibrary:getDefaultPuzzleSet()
   local directory = consts.PUZZLES_SAVE_DIRECTORY
-  local puzzleSets = self:puzzleSetFromPath(directory)
+  local puzzleSet = self:puzzleSetFromPath(directory)
 
-  return puzzleSets
+  self:addStatisticsToPuzzleSet(puzzleSet)
+
+  return puzzleSet
+end
+
+function PuzzleLibrary:addStatisticsToPuzzleSet(puzzleSet)
+  for _, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
+    self:addStatisticsToPuzzleSet(currentPuzzleSet)
+  end
+
+  for _, currentPuzzle in ipairs(puzzleSet.puzzles) do
+    local trainingDate = self:getNextTrainingDateForPuzzleUUID(currentPuzzle.UUID)
+    currentPuzzle.trainingDate = trainingDate
+    currentPuzzle.puzzleEverBeaten = self.puzzleResults:puzzleEverBeaten(currentPuzzle.UUID)
+  end
 end
 
 -- Returns all puzzles from the given path as a puzzle set.
 -- Puzzle sets are embedded recursively
+-- @return PuzzleSet 
 function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
-  local puzzleSet = PuzzleSet(subDirectory or "Puzzles", nil, {}, {})
+  local puzzleSet = PuzzleSet(subDirectory or "pz_puzzles", nil, {}, {})
 
   local puzzleFiles = FileUtils.getFilteredDirectoryItems(fullPath, "file")
 
@@ -65,7 +80,7 @@ end
 
 -- Creates a new puzzle set from a given puzzle set by recursively putting all the puzzles at the root level.
 function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
-  local result = PuzzleSet("Puzzles", nil, {}, {})
+  local result = PuzzleSet("pz_puzzles", nil, {}, {})
 
   for _, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
     local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(currentPuzzleSet, filter, sort)
@@ -74,11 +89,7 @@ function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
     end
   end
 
-  logger.trace("added flattened " .. puzzleSet.setName .. " " .. #puzzleSet.puzzles)
   for _, currentPuzzle in ipairs(puzzleSet.puzzles) do
-    local trainingDate = self:getNextTrainingDateForPuzzleUUID(currentPuzzle.UUID)
-    currentPuzzle.trainingDate = trainingDate
-    currentPuzzle.puzzleEverBeaten = self.puzzleResults:puzzleEverBeaten(currentPuzzle.UUID)
     result.puzzles[#result.puzzles + 1] = currentPuzzle
   end
 
@@ -167,10 +178,7 @@ local invalidSetsForTraining = { "puzzle_name_classic_set_1",
   "puzzle_name_classic_set_3",
   "puzzle_name_classic_set_4",
   "puzzle_name_classic_set_5",
-  "puzzle_name_classic_set_6",
-  "Bagagle Mode",
-  "Go Hard",
-  "Ridiculous Mode" }
+  "puzzle_name_classic_set_6"}
 function PuzzleLibrary.filterPuzzleSetForTraining(puzzleSet)
   if tableUtils.contains(invalidSetsForTraining, puzzleSet.setName) then
     puzzleSet.puzzles = {}
@@ -178,13 +186,52 @@ function PuzzleLibrary.filterPuzzleSetForTraining(puzzleSet)
   end
 end
 
--- Returns a set of puzzles to train given the reference puzzle set
-function PuzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
-  local flattenedPuzzleSet = self:flattenedPuzzleSetForPuzzleSet(puzzleSet, self.filterPuzzleSetForTraining)
+-- Returns training puzzles with their indices in the original puzzle set hierarchy
+-- @param puzzleSet PuzzleSet
+-- @param puzzleSetIndices integer[]
+function PuzzleLibrary:currentTrainingPuzzleIndicesForPuzzleSet(puzzleSet, puzzleSetIndices)
+  assert(puzzleSet)
+  assert(puzzleSetIndices)
+
+  -- Collect all puzzles with their indices while preserving hierarchy and applying filtering
+  local puzzleWithIndices = {}
+  local function collectPuzzlesRecursively(set, currentIndices)
+    -- Apply same filtering logic as filterPuzzleSetForTraining
+    if tableUtils.contains(invalidSetsForTraining, set.setName) then
+      return -- Skip this entire set and its children
+    end
+    
+    -- Add puzzles from current set
+    for i, puzzle in ipairs(set.puzzles) do
+      local indices = {}
+      for _, idx in ipairs(currentIndices) do
+        indices[#indices + 1] = idx
+      end
+      indices[#indices + 1] = i
+      puzzleWithIndices[#puzzleWithIndices + 1] = {puzzle = puzzle, indices = indices}
+    end
+    
+    -- Recursively process child sets
+    for i, childSet in ipairs(set.puzzleSets) do
+      local childIndices = {}
+      for _, idx in ipairs(currentIndices) do
+        childIndices[#childIndices + 1] = idx
+      end
+      childIndices[#childIndices + 1] = i
+      collectPuzzlesRecursively(childSet, childIndices)
+    end
+  end
+  local currentPuzzleSet = puzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
+
+  collectPuzzlesRecursively(currentPuzzleSet, puzzleSetIndices)
+  
+  -- Apply training date filtering and histogram calculation
   local timedResults = {}
-  local results = {}
+  local trainingPuzzles = {}
   local currentTime = to_UTC(os.time())
-  for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
+  
+  for _, puzzleData in ipairs(puzzleWithIndices) do
+    local puzzle = puzzleData.puzzle
     local bucketDifference = math.ceil((puzzle.trainingDate - currentTime) / DAY)
     if puzzle.trainingDate < currentTime then
       bucketDifference = 0
@@ -194,10 +241,11 @@ function PuzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
     end
     timedResults[bucketDifference] = timedResults[bucketDifference] + 1
     if currentTime > puzzle.trainingDate then
-      results[#results + 1] = puzzle
+      trainingPuzzles[#trainingPuzzles + 1] = puzzleData
     end
   end
-
+  
+  -- Log histogram
   logger.debug("Training Puzzles Histogram")
   local total = 0
   for k, v in pairsSortedByKeys(timedResults) do
@@ -205,20 +253,24 @@ function PuzzleLibrary:currentTrainingPuzzleSetForPuzzleSet(puzzleSet)
     total = total + v
   end
   logger.debug(total .. " total puzzles")
-
-  local sortFunction = function(a, b)
-    if a.trainingDate == b.trainingDate then
-      return a.UUID < b.UUID
-    end
-    return a.trainingDate < b.trainingDate
-  end
-
-  table.sort(results, sortFunction)
-
-  local setName = loc("puzzle_training") .. " " .. #results
   
-  local puzzleSet = PuzzleSet(setName, nil, results)
-  return puzzleSet
+  -- Sort by training date, then by UUID (same logic as original method)
+  local sortFunction = function(a, b)
+    if a.puzzle.trainingDate == b.puzzle.trainingDate then
+      return a.puzzle.UUID < b.puzzle.UUID
+    end
+    return a.puzzle.trainingDate < b.puzzle.trainingDate
+  end
+  
+  table.sort(trainingPuzzles, sortFunction)
+  
+  -- Return just the indices arrays
+  local result = {}
+  for _, puzzleData in ipairs(trainingPuzzles) do
+    result[#result + 1] = puzzleData.indices
+  end
+  
+  return result
 end
 
 return PuzzleLibrary
