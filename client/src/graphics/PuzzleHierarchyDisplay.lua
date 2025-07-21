@@ -64,11 +64,9 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
     return
   end
   
-  -- Draw background panel with subtle transparency
   GraphicsUtil.setColor(0.1, 0.1, 0.2, 0.8)
   love.graphics.rectangle("fill", self.x - 8, self.y - 4, self.width + 16, 28)
   
-  -- Draw border with accent color
   GraphicsUtil.setColor(0.4, 0.7, 1.0, 0.9)
   love.graphics.rectangle("line", self.x - 8, self.y - 4, self.width + 16, 28)
   
@@ -76,10 +74,8 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
   local currentSet = self.puzzleSet
   local xOffset = 0
   
-  -- Add root set name with special styling
   parts[#parts + 1] = {text = currentSet.localizedSetName or currentSet.setName, type = "root"}
   
-  -- Navigate through hierarchy and collect set names
   if self.puzzleSetIndices then
     for i = 1, #self.puzzleSetIndices do
       local index = self.puzzleSetIndices[i]
@@ -92,7 +88,6 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
     end
   end
   
-  -- Add current puzzle index with highlight only if specified
   if self.puzzleIndex then
     parts[#parts + 1] = {text = "Puzzle " .. self.puzzleIndex, type = "puzzle"}
   end
@@ -100,11 +95,11 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
   -- Draw each part with appropriate styling
   for i, part in ipairs(parts) do
     if part.type == "root" then
-      GraphicsUtil.setColor(0.9, 0.9, 0.4, 1.0) -- Yellow for root
+      GraphicsUtil.setColor(0.9, 0.9, 0.4, 1.0)
     elseif part.type == "set" then
-      GraphicsUtil.setColor(0.7, 0.8, 1.0, 1.0) -- Light blue for sets
+      GraphicsUtil.setColor(0.7, 0.8, 1.0, 1.0)
     elseif part.type == "puzzle" then
-      GraphicsUtil.setColor(1.0, 0.8, 0.4, 1.0) -- Orange for current puzzle
+      GraphicsUtil.setColor(1.0, 0.8, 0.4, 1.0)
     end
     
     love.graphics.print(part.text, self.x + xOffset, self.y)
@@ -118,9 +113,7 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
     end
   end
   
-  -- Reset color
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
-
 
 return PuzzleHierarchyDisplay

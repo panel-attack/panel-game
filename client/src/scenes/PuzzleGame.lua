@@ -28,8 +28,22 @@ local PuzzleGame = class(
     assert(sceneParams.puzzleSetIterator)
     self.puzzleSet = sceneParams.puzzleSet
     self.puzzleSetIterator = sceneParams.puzzleSetIterator
-    self.puzzleHierarchyDisplay = nil
-    self.currentPuzzleIndices = nil
+
+    local indices = deepcpy(self.puzzleSetIterator:currentPuzzle())
+    local index = indices[#indices]
+    indices[#indices] = nil
+    self.puzzleHierarchyDisplay = PuzzleHierarchyDisplay({
+      puzzleSet = self.puzzleSet,
+      puzzleSetIndices = indices,
+      puzzleIndex = index,
+      width = 400,
+      height = 30,
+      x = 0,
+      y = 0,
+      hAlign = "center",
+      vAlign = "top"
+    })
+    self.uiRoot:addChild(self.puzzleHierarchyDisplay)
   end,
   GameBase
 )
@@ -42,23 +56,6 @@ function PuzzleGame:getCurrentPuzzle()
 
   if currentPuzzleIndices then
     local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.puzzleSet, currentPuzzleIndices)
-    assert(puzzle)
-    return puzzle
-  end
-
-  return nil
-end
-
-function PuzzleGame:getNextPuzzle()
-  assert(self.puzzleSetIterator)
-  self.currentPuzzleIndices = self.puzzleSetIterator:nextPuzzle()
-
-  if self.puzzleHierarchyDisplay and self.currentPuzzleIndices then
-    self.puzzleHierarchyDisplay:updateDisplay(self.rootPuzzleSet, self.currentPuzzleIndices)
-  end
-
-  if self.currentPuzzleIndices then
-    local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.puzzleSet, self.currentPuzzleIndices)
     assert(puzzle)
     return puzzle
   end
@@ -84,21 +81,6 @@ function PuzzleGame:customLoad()
 ---@diagnostic disable-next-line: assign-type-mismatch
   self.player = self.match.players[1]
   self.inputConfiguration = self.player.inputConfiguration
-  
-  -- Create PuzzleHierarchyDisplay if we have puzzle set navigation data
-  if self.puzzleSet and self.currentPuzzleIndices then
-    self.puzzleHierarchyDisplay = PuzzleHierarchyDisplay({
-      puzzleSet = self.puzzleSet,
-      puzzleSetIndices = self.currentPuzzleIndices,
-      width = 400,
-      height = 30,
-      x = 0,
-      y = 0,
-      hAlign = "center",
-      vAlign = "top"
-    })
-    self.uiRoot:addChild(self.puzzleHierarchyDisplay)
-  end
 end
 
 function PuzzleGame:customRun()
@@ -145,7 +127,9 @@ function PuzzleGame:customGameOverSetup()
     self.text = loc("pl_you_win")
     self:savePuzzleRecordResult(true)
     
-    if PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet) == nil then
+    local puzzleIndices = PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet)
+    if puzzleIndices then
+    else
       self.puzzleSetIterator = nil
     end
   else -- puzzle failed or manually reset

@@ -35,7 +35,7 @@ function PuzzleHierarchyDisplayTests.testHierarchyDisplay()
   -- Test display for puzzle in child set
   local display = PuzzleHierarchyDisplay({
     puzzleSet = parentSet,
-    puzzleSetIndices = {1, 1}, -- First child set, first puzzle
+    puzzleSetIndices = {1, 1},
     width = 200,
     height = 100
   })
@@ -60,7 +60,7 @@ function PuzzleHierarchyDisplayTests.testUpdateMethodUpdatesDisplay()
   
   local display = PuzzleHierarchyDisplay({
     puzzleSet = parentSet,
-    puzzleSetIndices = {1}, -- Initially at child set
+    puzzleSetIndices = {1},
     width = 200,
     height = 100
   })
@@ -85,7 +85,7 @@ function PuzzleHierarchyDisplayTests.testUsesLocalizedNames()
   
   local display = PuzzleHierarchyDisplay({
     puzzleSet = parentSet,
-    puzzleSetIndices = {1, 1}, -- Navigate to child set, first puzzle
+    puzzleSetIndices = {1, 1},
     width = 200,
     height = 100
   })
