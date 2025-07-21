@@ -69,7 +69,7 @@ function(self, args)
   -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
   self.canvas = true
-  self.portraitFade = config.portrait_darkness / 100 -- will be set back to 0 if count down happens
+  self.portraitFade = 0
 
   self.danger_music = false
 
@@ -297,6 +297,8 @@ function ClientStack:drawCharacter()
         self.portraitFade = desiredFade * percent
       end
     end
+  else
+    self.portraitFade = config.portrait_darkness / 100 -- Set to desired fade if there's no countdown
   end
 
   self.character:drawPortrait(self.renderIndex, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
