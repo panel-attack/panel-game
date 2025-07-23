@@ -38,8 +38,8 @@ endless_type,Name of the menu in endless / time attack that lets you pick betwee
 endless_classic,old difficulty style in endless / time attack,Classic,Classique,Clássico,クラシック,Clásico,Klassisch,Classico,คลาสสิค
 endless_modern,new difficulty style in endless / time attack,Modern,Moderne,Moderno,モダン,Moderno,Modern,Moderno,ทันสมัย
 anonymous,,Anonymous,Anonyme,Anônimo,匿名,Anónimo,Anonym,Anonimo,ไม่ระบุตัวตน
-stages,,stages,terrains,Cenários,ステージ,escenarios,Arenen,Scenario,ด่าน
-characters,,characters,personnages,Personagens,キャラクター,personajes,Charaktere,Personaggi,ตัวละคร
+stages,,stages,terrains,Cenários,ステージ,Escenarios,Arenen,Scenario,ด่าน
+characters,,characters,personnages,Personagens,キャラクター,Personajes,Charaktere,Personaggi,ตัวละคร
 join_community,,Join the community at %1,Rejoignez la communauté sur %1,Participe da comunidade em %1,コミュニティに参加しよう %1,Únete a nuestra comunidad en %1,Tritt unserer Community bei unter %1,Unisciti alla community su %1,เข้าร่วมกลุ่มได้ที่ %1
 warning_msg,,You've had a bug. Please report this on Discord with file:,"Vous venez de rencontrer un problème.
 S'il vous plaît, signalez le sur Discord avec le fichier :","Você encontrou um problema. Por favor, reporte no Discord o arquivo em anexo:",不具合が発生しました。以下のファイルでディスコードに報告して下さい：,"Hubo un problema. Por favor, reporta esto en Discord con el siguiente archivo:",Ein Bug ist aufgetreten. Bitte melde diesen in unserem Discord mit der Datei:,"Hai riscontrato un bug. Per favore, segnalalo su Discord con il file:",คุณเจอ bug กรุณารายงานปัญหาใน Discord ด้วยไฟล์นี้:
@@ -52,7 +52,7 @@ lb_header_board,,"Leaderboard
   Rang  Score   Joueur","Placar de Classificação
   Rank  Classificação  Jogador","ランキング
  順位 レート プレイヤー","Clasificación
- Rango  Puntaje Jugador","Rangliste
+ Rango Puntaje Jugador","Rangliste
  Rang  Punkte  Spieler","Classifica
   Posizione  Punteggio   Giocatore","ตารางคะแนน
 แรงค์ เรทติ้ง ผู้เล่น"
@@ -138,12 +138,12 @@ Panel Attackが同時に2回起動されている場合発生する可能性も�
 入れ替えボタン、またはもどるボタンを押して下さい。","Error：El nombre ya está siendo usado :<
 
 
-Si te fuiste del servidor,
+Si justo te fuiste del servidor,
 puede que este no se haya dado cuenta, intenta unirte de nuevo.
 
 
 Esto también puede ocurrir si tienes dos
-Instancias abiertas del juego.
+instancias abiertas de Panel Attack.
 Pulsa ""Cambiar"" o ""Volver"" para continuar.","Fehler: Dieser Name wird bereits verwendet :<
 
 Wenn du die Lobby gerade erst verlassen hast, könnte es sein, dass der Server dich noch nicht abgemeldet hat. Versuche es bitte erneut.
@@ -182,7 +182,10 @@ Novo nome: ""%2""","ようこそ、ユーザー名が更新されました。
 以前のユーザー名： ""%1""
 新しいユーザー名： ""%2""","Bienvenido, tu nombre de usuario fue actualizado.
 
+
 Nombre antiguo: ""%1""
+
+
 Nombre nuevo: ""%2""","Willkommen, dein Anzeigename wurde aktualisiert.
 
 Alter Name: ""%1""
@@ -206,7 +209,7 @@ ld_analytics,,Loading analytics...,Chargement des statistiques...,Carregando est
 mm_1_endless,,1P endless,1J infini,1J infinito,1P エンドレス,1J interminable,1P Endlos,1P infinito,1P แบบไม่มีจบ
 mm_1_puzzle,,1P puzzle,1J puzzle,1J quebra-cabeça,1P パズル,1J Puzzle,1P Puzzle,1P puzzle,1P puzzle
 mm_1_time,,1P time attack,1J contre la montre,1J contra o tempo,1P スコアアタック,1J Contrareloj,1P Time Attack,1P a tempo,1P time attack
-mm_1_training,Vs training mode,1P training,Formation 1P,treinamento 1P,1P トレーニング,entrenamiento 1P,1P Training,Allenamento 1P,1P ฝึกซ้อม
+mm_1_training,Vs training mode,1P training,Formation 1P,treinamento 1P,1P トレーニング,Entrenamiento 1P,1P Training,Allenamento 1P,1P ฝึกซ้อม
 mm_1_challenge_mode,Challenge Mode,Challenge Mode,Mode Défi,Modo desafio,チャレンジモード,Modo Desafío,Herausforderungsmodus,Modalità sfida,โหมดท้าทาย
 mm_1_vs,,1P vs yourself,1J vs soi-même,1J vs você mesmo,1P じぶんとのたたかい,1J vs Tú,1P gegen dich selbst,1P vs te stesso,1P สู้กับตัวเอง
 mm_2_vs_local,,2P vs local game,2J vs en local,2J vs jogo local,2P ローカルVS,2J vs partida local,2P lokal,2P vs in locale,2P แข่งกันสองคน บนคอมเครื่องเดียวกัน
@@ -220,7 +223,7 @@ mm_options,,Options,Options,Opções,オプション,Opciones,Optionen,Opzioni,O
 mm_quit,,Quit,Quitter,Sair,終わる,Salir,Verlassen,Esci,ออก
 mm_replay_of,,Replay of %1,Replay de %1,Replay de %1,%1のリプレイ,Ver repetición de %1,Replay von %1,Replay di 1%,รีเพลย์ของ %1
 mm_set_name,,Set name,Changer de pseudo,Trocar apelido,ユーザー名設定,Definir nombre,Name festlegen,Imposta il nome,ตั้งชื่อ
-nt_ver_err,Shown when connecting to server with wrong version,"Your game version is out of date, DOWNLOAD the latest version of the game from http://panelattack.com","Votre version de jeu est obsolète, téléchargez la dernière version du jeu à partir de http://panelattack.com","Sua versão do jogo está desatualizada, faça o download da versão mais recente do jogo em http://panelattack.com",ゲームバージョンは古くなっています。http://panelatcack.comからゲームの最新バージョンをダウンロードしてください,"Tu versión de juego está desactualizada, descargue la última versión del juego desde http://panelattack.com",Ihre Spielversion ist veraltet und laden Sie die neueste Version des Spiels von http://panelattack.com herunter,"La versione del gioco è obsoleta, scarica l'ultima versione del gioco da http://panelattack.com",เวอร์ชันเกมของคุณล้าสมัยดาวน์โหลดเกมล่าสุดจาก http://panelattack.com
+nt_ver_err,Shown when connecting to server with wrong version,"Your game version is out of date, DOWNLOAD the latest version of the game from https://panelattack.com","Votre version de jeu est obsolète, téléchargez la dernière version du jeu à partir de https://panelattack.com","Sua versão do jogo está desatualizada, faça o download da versão mais recente do jogo em https://panelattack.com",ゲームバージョンは古くなっています。http://panelatcack.comからゲームの最新バージョンをダウンロードしてください,"Tu versión de juego está desactualizada, descarga la última versión desde https://panelattack.com",Ihre Spielversion ist veraltet und laden Sie die neueste Version des Spiels von https://panelattack.com herunter,"La versione del gioco è obsoleta, scarica l'ultima versione del gioco da https://panelattack.com",เวอร์ชันเกมของคุณล้าสมัยดาวน์โหลดเกมล่าสุดจาก https://panelattack.com
 nt_conn_timeout,,Failed to connect to the server.,Impossible de se connecter au serveur.,Falha ao conectar o servidor.,サーバーに接続が失敗しました。,Error al conectarse al servidor.,Es konnte keine Verbindung zum Server hergestellt werden.,Errore di connessione al server.,การเชื่อมต่อกับ server ล้มเหลว
 nt_msg_err,,"Network error, message could not be decoded: ""%1""","Erreur réseau, le message ne peut pas être décodé: ""%1""","Erro de conexão, a mensagem não pôde ser codificada: ""%1""","ネットワークエラー、メッセージのデコード失敗: ""%1""","Error de red, el mensaje no pudo ser decodificado: ""%1""",Netzwerkfehler: Die folgende Nachricht konnte nicht entschlüsselt werden: %1,"Errore di network, il messaggio non può essere decodificato: ""%1""","การเชื่อมต่อล้มเหลว ข้อความไม่สามารถถอดรหัสได้: ""%1"""
 nt_player_err,,Server did not send number of players.,Le serveur n'a pas envoyé le nombre de joueurs.,O servidor não emitiu nº de jogadores.,サーバーからプレイヤー人数を受信しませんでした。,El servidor no envio la cantidad de jugadores.,Server schickte die Anzahl der Spieler nicht.,Il server non ha inviato il numero di giocatori.,server ไม่ได้แจ้งจำนวนผู้เล่น
@@ -323,9 +326,9 @@ op_music_sfx,Sound Effect in Sound Test,SFX,Sonner,Som,?,Sonar,Klang,Suono,เ�
 op_panels,,Panels set,Choisir les blocs,Definir painéis,パネルセット,Set de paneles,Panelset,Scelta delle tessere,ชุด Panels
 op_reload_analytics,,reloading analytics...,rechargement des statistiques...,recarregando estatísticas...,解析を再読み込みしています...,Recargando estadísticas...,Statistiken werden neugeladen...,Ricaricamento delle statistiche...,กำลังโหลด analytics อีกครั้ง
 op_reload_characters,,reloading characters...,rechargement des personnages...,recarregando personagens...,キャラクターを再読み込みしています...,Recargando personajes...,Charaktere werden neugeladen...,Ricaricamento dei personaggi...,กำลังโหลดตัวละครอีกครั้ง
-op_reload_stages,,reloading stages...,rechargement des terrains...,recarregando cenários...,ステージを再読み込みしています…,recargando escenarios...,Arenen werden neugeladen...,Ricarimento degli scenari...,กำลังโหลดด่านอีกครั้ง
-op_reload_theme,,reloading theme...,rechargement du thème...,recarregando tema...,テーマを再読み込みしています…,recargando temas...,Themen werden neugeladen...,Ricaricamento dei temi...,กำลังโหลดธีมอีกครั้ง
-op_replay_public,,Save replays publicly,Sauvegarder les replays publiquement,Salvar replays publicamente,リプレイを,Grabar repeticiones públicamente,Replays öffentlich abspeichern,Salva i replay pubblicamente,เซฟรีเพลย์แบบเปิดให้สาธารณะดูได้
+op_reload_stages,,reloading stages...,rechargement des terrains...,recarregando cenários...,ステージを再読み込みしています…,Recargando escenarios...,Arenen werden neugeladen...,Ricarimento degli scenari...,กำลังโหลดด่านอีกครั้ง
+op_reload_theme,,reloading theme...,rechargement du thème...,recarregando tema...,テーマを再読み込みしています…,Recargando temas...,Themen werden neugeladen...,Ricaricamento dei temi...,กำลังโหลดธีมอีกครั้ง
+op_replay_public,,Save replays publicly,Sauvegarder les replays publiquement,Salvar replays publicamente,リプレイを,Guardar repeticiones públicamente,Replays öffentlich abspeichern,Salva i replay pubblicamente,เซฟรีเพลย์แบบเปิดให้สาธารณะดูได้
 op_replay_public_no,,No,Non,Não,公開しない,No,Nein,No,ไม่
 op_replay_public_anonymously,,Anonymously,Anonymement,Anônimo,匿名で公開する,Anónimamente,Anonym,Anonimamente,ไม่ระบุตัวตน
 op_replay_public_with_name,,With my name,Avec mon pseudo,Com meu apelido,ユーザー名付きで公開する,Con mi nombre,Mit meinem Benutzernamen,Con il mio nome,ด้วยชื่อของฉัน
@@ -335,8 +338,8 @@ op_vol,,Master Volume,Volume Global,Vol. principal,マスターボリューム,V
 op_vol_music,,Music Volume,Volume Musique,Vol. da música,BGMボリューム,Volumen de música,Lautstärke der Musik,Volume della musica,ระดับความดังเสียงเพลง
 op_vol_sfx,,SFX Volume,Volume Effets,Vol. Efeitos Esp.,SFXボリューム,Volumen de sonido,Lautstärke der Soundeffekte,Volume SFX,ระดับความดังเสียงประกอบ
 op_input_delay,,Key repeat delay (offline only),Délai de répétition des touches,Atraso na repetição das teclas (apenas offline),DAS 設定（オフラインのみ）,Retraso de repetición de las teclas (Solo fuera de línea),Verzögerung für die Tastenwiederholung bei gedrückt halten (nur offline),Ritardo della ripetizione dell'input (solo offline),ดีเลย์การกดปุ่มซ้ำๆ
-op_portrait_darkness,Options: darkness of the portraits in game,Portrait Darkness,Portrait Obscurité,Claridade de Retratos,背景の暗さ,Retrato Oscuridad,Helligkeit des Charakterporträts während des Spiels,Oscurità del ritratto,ความมืดของรูปภาพ
-op_popfx,Options: Whether pop effects should show,Pop Effects,Effets Pop,Efeitos de Explosão,パネル消しエフェクト,efectos pop,Popeffekte,Effetti pop,เอฟเฟคต์เวลาพาเนลถูกทำลาย
+op_portrait_darkness,Options: darkness of the portraits in game,Portrait Darkness,Portrait Obscurité,Claridade de Retratos,背景の暗さ,Oscuridad del retrato,Helligkeit des Charakterporträts während des Spiels,Oscurità del ritratto,ความมืดของรูปภาพ
+op_popfx,Options: Whether pop effects should show,Pop Effects,Effets Pop,Efeitos de Explosão,パネル消しエフェクト,Efectos pop,Popeffekte,Effetti pop,เอฟเฟคต์เวลาพาเนลถูกทำลาย
 op_renderTelegraph,Options: Whether the telegraph above the stack should show,Show Telegraph,Montrer le télégraphe,Mostrar telégrafo,テレグラフを表示,Mostrar telégrafo,Telegraph zeigen,Mostra telegrafo,แสดง Telegraph
 op_renderAttacks,Options: Whether the telegraph attack animations should show,Show Attacks,Montrer des attaques,Mostrar ataques,攻撃を示す,Mostrar ataques,Angriffe anzeigen,Mostra attacchi,แสดง attack animation ของ telegraph
 op_cardTransparency,Options: Whether the combo / chain cards should become transparent,Card Transparency,Transparence des cartes,Transparência do cartão,カードの透明性,Transparencia de la tarjeta,Kartentransparenz,Trasparenza della carta,แสดงการ์ดใส
@@ -345,7 +348,7 @@ opponent_level,,Opponent's level,Niveau adverse,Nível do oponente,相手のレ�
 pl_pause_help,,Press Start again to resume,Appuyer sur Start pour continuer,Pressione Começar novamente para continuar,STARTで再開,"Presiona ""Start"" para resumir",Drücke Start um fortzufahren,"Premi ""Start"" di nuovo per riprendere",กด start อีกครั้งเพื่อเล่นต่อ
 pl_1_win,,P1 wins ^^,J1 gagne ^^,J1 vence ^^,1Pの勝ち！ ＾＾,J1 gana ^^,Spieler 1 gewinnt,P1 vince ^^,ผู้เล่น 1 ชนะ ^^
 pl_2_win,,P2 wins ^^,J2 gagne ^^,J2 vence ^^,2Pの勝ち！ ＾＾,J2 gana ^^,Spieler 2 gewinnt,P2 vince ^^,ผู้เล่น 2 ชนะ ^^
-pl_cleared,,cleared: %1,détruit : %1,destruido: %1,消したパネル：%1個,despejado: %1,Cleared: %1,Completato: %1,เคลียร์แล้ว: %1
+pl_cleared,,cleared: %1,détruit : %1,destruido: %1,消したパネル：%1個,Despejado: %1,Cleared: %1,Completato: %1,เคลียร์แล้ว: %1
 pl_frame,,Frame: %1,Frame : %1,Frame: %1,フレーム：%1,Cuadro: %1,Frame: %1,Frame: %1,เฟรม: %1
 pl_game_start,,Game is starting!,La partie va commencer !,A partida está começando!,ゲームが始まります！,¡La partida va a comenzar!,Das Spiel beginnt!,Il gioco sta per inziare!,เกมกำลังเริ่ม !
 pl_gameover,,Game Over,Terminé,Fim de jogo,ゲームオーバー,Fin del juego,Game Over,Gioco finito,เกมจบแล้ว
@@ -370,7 +373,7 @@ riga: %1
 colonna: %2","ข้อมูลพาเนล:
 แถว: %1
 คอลัมน์: %2"
-pl_pre_stop,,Pre stop: %1,Délai pré stop : %1,Atraso ante-parada: %1,ストップ前：%1,Detención pre. :%1,Pre-Stop: %1,Pre stop: %1,ก่อน stop: %1
+pl_pre_stop,,Pre stop: %1,Délai pré stop : %1,Atraso ante-parada: %1,ストップ前：%1,Pre-Detención. :%1,Pre-Stop: %1,Pre stop: %1,ก่อน stop: %1
 pl_score,,Score: %1,Score : %1,Pontuação: %1,スコア：%1,Puntaje: %1,Score: %1,Punteggio: %1,คะแนน: %1
 pl_shake,,Shake: %1,Délai secousse : %1,Tremor: %1,床揺れ：%1,Sacudida: %1,Shake: %1,Scossa: %1,สั่น: %1
 pl_spectate_join,,"Joined a match in progress.
@@ -438,7 +441,7 @@ Revisa el archivo README y el set de puzzles de ejemplo en su correspondiente ca
 para más infomación.","Anmerkung: Du kannst unter Windows neue, selbstgemachte Puzzles an folgendem Pfad ablegen:
 
 %appdata%\Panel Attack\puzzles
-(Kopiere das in die Navigationsleiste des Explorers und drücke danach Enter, sieh für andere Betriebssysteme unter http://panelattack.com/faq.html nach)
+(Kopiere das in die Navigationsleiste des Explorers und drücke danach Enter, sieh für andere Betriebssysteme unter https://panelattack.com/faq.html nach)
 
 Schau dir für weitere Informationen die README und das Beispielpuzzleset an.","Nota: puoi inserire nuovi puzzle in:
 
@@ -469,8 +472,16 @@ ss_controller,Type of input method – controller,Controller,Manette,Controlador
 ss_current_rating,,current:,courant :,atual:,現在：,Actual:,derzeitig:,corrente:,ปัจจุบัน:
 ss_disconnect,,Disconnected from server.,Vous êtes deconnecté du serveur.,Desconectado do servidor.,サーバーから切断されました。,Desconectado del servidor.,Verbindung zum Server verloren.,Disconnesso dal server.,ถูกตัดขาดจาก server
 ss_could_not_connect,Shown when the server could not be reached,Could not connect to the server.,Ne peut se connecter au serveur.,Não pôde conectar-se ao servidor.,サーバーに接続できませんでした。,No se puede conectar con el servidor.,Konnte keine Verbindung zum Server herstellen.,Impossibile connettersi al server.,ไม่สามารถเชื่อมต่อกับ server ได้
-ss_room_closed_in_game,Message shown when room closes mid game,"The connection to the match was lost. Usually this happens due to an unstable network connection from one of the players, but this could also be a bug or crash.","La connexion au match a été perdue. usuellement, cela se produit en raison d'une connexion réseau instable de l'un des joueurs, mais cela pourrait également être un bug ou un crash.","A conexão com a partida foi perdida. usoramente isso acontece devido a uma conexão de rede instável de um dos jogadores, mas isso também pode ser um bug ou acidente.",試合への接続が失われました。USLAVEこれは、プレーヤーの1つからの不安定なネットワーク接続が原因で起こりますが、これもバグやクラッシュになる可能性があります。,"La conexión con el partido se perdió. usualmente esto sucede debido a una conexión de red inestable de uno de los jugadores, pero esto también podría ser un error o un choque.","Die Verbindung zum Spiel wurde unterbrochen. Normalerweise passiert dies aufgrund einer instabilen Netzwerkverbindung von einem der Spieler, allerdings kann der Verbindungsabbruch auch durch einen Programmabsturz beim Gegner hervorgerufen worden sein.","La connessione alla partita è stata persa. usualmente ciò accade a causa di una connessione di rete instabile da uno dei giocatori, ma questo potrebbe anche essere un bug o un incidente.",การเชื่อมต่อล้มเหลว\nปกติจะเกิดจากการเชื่อมต่อของผู้เล่นคนใดคนหนึ่งไม่เสถียร\nหรืออาจเกิดจาก bug หรือ crash
-ss_latency_error,Message shown when the connection is too unstable,The network connection is too unstable to continue the game. It could be your connection or the opponent's.,La connexion réseau est trop instable pour continuer le jeu. Cela pourrait être votre connexion ou les adversaires.,A conexão de rede é muito instável para continuar o jogo. Pode ser sua conexão ou os adversários.,ネットワーク接続は、ゲームを続行するには不安定すぎます。それはあなたの接続または対戦相手かもしれません。,La conexión de red es demasiado inestable para continuar el juego. Podría ser tu conexión o a los oponentes.,"Die Netzwerkverbindung ist zu instabil, um das Spiel fortzusetzen. Es könnte deine Verbindung oder die des Gegners sein.",La connessione di rete è troppo instabile per continuare il gioco. Potrebbe essere la tua connessione o gli avversari.,การเชื่อมต่อไม่เสถียรพอที่จะเล่นต่อไปได้ อาจเกิดจาก internet ของคุณ หรือไม่ก็คู่แข่ง
+ss_room_closed_in_game,Message shown when room closes mid game,"The connection to the match was lost.
+Usually this happens due to an unstable network connection from one of the players, but this could also be a bug or crash.","La connexion au match a été perdue.
+Usuellement, cela se produit en raison d'une connexion réseau instable de l'un des joueurs, mais cela pourrait également être un bug ou un crash.","A conexão com a partida foi perdida.
+Usoramente isso acontece devido a uma conexão de rede instável de um dos jogadores, mas isso também pode ser um bug ou acidente.",試合への接続が失われました。USLAVEこれは、プレーヤーの1つからの不安定なネットワーク接続が原因で起こりますが、これもバグやクラッシュになる可能性があります。,"La conexión con el partido se perdió.
+Usualmente esto sucede debido a una conexión de red inestable de uno de los jugadores, pero esto también podría ser un error o un choque.","Die Verbindung zum Spiel wurde unterbrochen.
+Normalerweise passiert dies aufgrund einer instabilen Netzwerkverbindung von einem der Spieler, allerdings kann der Verbindungsabbruch auch durch einen Programmabsturz beim Gegner hervorgerufen worden sein.","La connessione alla partita è stata persa.
+Usualmente ciò accade a causa di una connessione di rete instabile da uno dei giocatori, ma questo potrebbe anche essere un bug o un incidente.","การเชื่อมต่อล้มเหลว
+ปกติจะเกิดจากการเชื่อมต่อของผู้เล่นคนใดคนหนึ่งไม่เสถียร
+หรืออาจเกิดจาก bug หรือ crash"
+ss_latency_error,Message shown when the connection is too unstable,The network connection is too unstable to continue the game. It could be your connection or the opponent's.,La connexion réseau est trop instable pour continuer le jeu. Cela pourrait être votre connexion ou les adversaires.,A conexão de rede é muito instável para continuar o jogo. Pode ser sua conexão ou os adversários.,ネットワーク接続は、ゲームを続行するには不安定すぎます。それはあなたの接続または対戦相手かもしれません。,La conexión de red es demasiado inestable para continuar el juego. Podría ser tu conexión o la del oponente.,"Die Netzwerkverbindung ist zu instabil, um das Spiel fortzusetzen. Es könnte deine Verbindung oder die des Gegners sein.",La connessione di rete è troppo instabile per continuare il gioco. Potrebbe essere la tua connessione o gli avversari.,การเชื่อมต่อไม่เสถียรพอที่จะเล่นต่อไปได้ อาจเกิดจาก internet ของคุณ หรือไม่ก็คู่แข่ง
 ss_average_frames_behind,Prints the average number of frames behind,Average frames behind: %1,Cadres moyens derrière: %1,Quadros médios por trás: %1,後ろの平均フレーム：％1,Marcos promedio detrás: %1,Durchschnittliche Frames Verzögerung: %1,Cornici medi dietro: %1,เฟรมที่ตามหลังอยู่โดยเฉลี่ย: %1
 ss_average_frames_behind_player,Prints the average number of frames behind a player was.,Average frames behind for %1 was %2,Les cadres moyens derrière pour %1 étaient %2,Quadros médios por %1 foi %2,％1の平均フレームは％2でした。,Los marcos promedio detrás de %1 fue %2.,Durchschnittliche Frames hinter %1 waren %2.,I telai medi dietro per %1 era %2.,เฟรมที่ตามหลังอยู่โดยเฉลี่ยของ %1 คือ %2
 ss_draw,,Draw,Egalité,Empate,引き分け,Empate,Unentschieden,Pareggio,เสมอ
@@ -521,20 +532,19 @@ player_press_key,,Player %1 press any key,Le joueur %1 appuie sur n'importe quel
 config_input_welcome,Shown on the configure input screen,Set a input configuration for each keyboard / controller you want to be able to use.,Définissez une configuration d'entrée pour chaque clavier/contrôleur que vous souhaitez pouvoir utiliser.,Defina uma configuração de entrada para cada teclado / controlador que deseja usar.,使用するキーボード/コントローラーごとにキーコンフィグを設定して下さい。,Establezca una configuración de entrada para cada teclado / controlador que desee poder utilizar.,Gib eine Eingabekonfiguration für deinen Kontroller oder deine Tastaturen an.,Imposta una configurazione di input per ogni tastiera/controller che desideri utilizzare.,ตั้งค่าปุ่ม สำหรับ keyboard / controller ที่ต้องการใช้
 configuration,Configuration for controller / keyboard setup,Configuration,Configuration,Configuração,キーコンフィグ,Configuración,Konfiguration,Configurazione,ตั้งค่า
 love_version_warning,Warning shown to users using love 11.3,"You are using an outdated version of Panel Attack which uses an old LOVE version, please download the latest version from the website / discord.","Vous utilisez une version obsolète de l'attaque de panneau qui utilise une ancienne version d'amour, veuillez télécharger la dernière version du site Web / Discord.","Você está usando uma versão desatualizada do painel de ataque que usa uma versão antiga do amor, faça o download da versão mais recente do site / discórdia.",古いLoveバージョンを使用する古いバージョンのパネル攻撃を使用しています。ウェブサイト / Discordから最新バージョンをダウンロードしてください。,"Está utilizando una versión obsoleta de Panel Attack que utiliza una vieja versión de amor, descargue la última versión del sitio web / discordia.","Du verwendest eine Version von Panel Attack, die eine veraltete LÖVE-Version verwendet. Bitte lade die neueste Version von der Website oder dem Discord herunter.","Stai usando una versione obsoleta dell'attacco del pannello che utilizza una vecchia versione d'amore, scarica l'ultima versione dal sito Web / discordia.",คุณกำลังใช้ Panel Attack เวอร์ชั่นเก่า กรุณาดาวน์โหลดเวอร์ชั่นล่าสุดจาก website หรือ discord
-challenge_difficulty_1,level 2 - very few attacks basically just surviving,Breezy (Easy),Breezy (facile),Breezy (fácil),さわやかな（簡単）,Breezy (fácil),Luftig (leicht),Breezy (facile),Breezy (ง่าย)
-challenge_difficulty_2,level 4 - some attacks mostly just surviving,Windy (Normal),Windy (normal),Vento (normal),風が強い（通常）,Viento (normal),Windig (normal),Ventoso (normale),Windy (ปานกลาง)
-challenge_difficulty_3,level 6 - attacking and surviving,Gusty (Hard),À l'esprit (dur),Gusty (duro),gusty（ハード）,Gusty (duro),Böig (schwer),Gusty (duro),Gusty (ยาก)
-challenge_difficulty_4,level 6 - learning to win while constantly under pressure,Stormy (Very Hard),Stormy (très dur),Stormy (muito difícil),ストーミー（とても難しい）,Stormy (muy duro),Stürmisch (sehr schwer),Stormy (molto duro),Stormy (ยากมาก)
+challenge_difficulty_1,level 2 - very few attacks basically just surviving,Breezy (Easy),Breezy (facile),Breezy (fácil),さわやかな（簡単）,Breezy (Fácil),Luftig (leicht),Breezy (facile),Breezy (ง่าย)
+challenge_difficulty_2,level 4 - some attacks mostly just surviving,Windy (Normal),Windy (normal),Vento (normal),風が強い（通常）,Viento (Normal),Windig (normal),Ventoso (normale),Windy (ปานกลาง)
+challenge_difficulty_3,level 6 - attacking and surviving,Gusty (Hard),À l'esprit (dur),Gusty (duro),gusty（ハード）,Gusty (Difícil),Böig (schwer),Gusty (duro),Gusty (ยาก)
+challenge_difficulty_4,level 6 - learning to win while constantly under pressure,Stormy (Very Hard),Stormy (très dur),Stormy (muito difícil),ストーミー（とても難しい）,Stormy (Muy difícil),Stürmisch (sehr schwer),Stormy (molto duro),Stormy (ยากมาก)
 challenge_difficulty_5,level 8 - an average level 8 challenge,Turbulent,Turbulent,Turbulento,乱流,Turbulento,Turbulent,Turbolento,Turbulent
 challenge_difficulty_6,level 10 - an average level 10 challenge,Whirlwind,Tourbillon,Turbilhão,旋風,Torbellino,Wirbelwind,Turbine,Whirlwind
 challenge_difficulty_7,level 10 - a hard level 10 challenge,Tempest,Tempête,Tempestade,嵐,Tempestad,Sturm,Tempesta,Tempest
 challenge_difficulty_8,level 10 - a really hard level 10 challenge,Hurricane,Ouragan,Furacão,ハリケーン,Huracán,Hurrikan,Uragano,Hurricane
 challenge_difficulty_9,level 11? - unused right now,Tornado,Tornade,Tornado,竜巻,Tornado,Tornado,Tornado,Tornado
 auto_updater_version_warning,Warning shown to users with an old autoupdater,"New updater available, please download from","Nouveau autoupdater disponible, veuillez installer à partir de","Novo autoupdater disponível, instale de",新しいautoupdaterを利用できます。からインストールしてください,"Nuevo autoupdater disponible, instale desde","Ein neuer Updater ist verfügbar, bitte lade ihn unter folgendem Link herunter:","Nuovo autoupdater disponibile, installa da",มีระบบอัพเดทอัตโนมัติเวอร์ชั่นใหม่ กรุณา Install โดยใช้ระบบนั้น
-username_blank_warning,shown in user name input when nothing is entered,Username cannot be blank,Le nom d'utilisateur ne peut pas être vide,O nome de usuário não pode ficar em branco,ユーザー名を空白にすることはできません,Nombre de usuario no puede estar en blanco,Benutzername darf nicht leer sein,Il nome utente non può essere vuoto,Username ไม่สามารถเป็นค่าว่างได้
-op_shakeIntensity,Option for the intensity of the shake animation,Shake Animation Intensity,,,,,Stärke der Aufprallanimation
-op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,,,,,Performance/Stromverbrauch
+username_blank_warning,shown in user name input when nothing is entered,Username cannot be blank,Le nom d'utilisateur ne peut pas être vide,O nome de usuário não pode ficar em branco,ユーザー名を空白にすることはできません,El nombre de usuario no puede estar en blanco,Benutzername darf nicht leer sein,Il nome utente non può essere vuoto,Username ไม่สามารถเป็นค่าว่างได้
+op_shakeIntensity,Option for the intensity of the shake animation,Shake Animation Intensity,,,,Intensidad del temblor,Stärke der Aufprallanimation,,
 pause_resume,Label for the resume button in the pause menu,Resume,,,,Continuar,Fortsetzen,,
 op_menu_music,Label for toggling menu music,Menu Music,,,,,Menü Musik,,
-rp_browser_info_challenge_stage,Label for displaying the stage of the challenge mode difficulty,Stage,,,,,Stufe,,
+rp_browser_info_challenge_stage,Label for displaying the stage of the challenge mode difficulty,Stage,,,,Grado,Stufe,,
 op_openSaveDir,Button to open the save directory of Panel Attack, Open Save Directory,,,,,Speicherort öffnen,,
