@@ -36,10 +36,10 @@ local PuzzleGame = class(
       puzzleSet = self.puzzleSet,
       puzzleSetIndices = indices,
       puzzleIndex = index,
-      width = 400,
-      height = 30,
+      width = 0,
+      height = 0,
       x = 0,
-      y = 0,
+      y = 60,
       hAlign = "center",
       vAlign = "top"
     })

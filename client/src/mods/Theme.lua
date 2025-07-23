@@ -425,6 +425,8 @@ function Theme:loadIngameGraphics()
     self.images.walls[i] = self:load_theme_img("frame/wall" .. i .. "P")
   end
 
+  self.images.separator = self:load_theme_img("separator")
+
   self:loadIngameLabels()
   self:loadMultibar()
   self:loadAnalyticsIcons()

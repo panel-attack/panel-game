@@ -131,10 +131,10 @@ function PuzzleMenu:load(sceneParams)
   self.puzzleHierarchyDisplay = PuzzleHierarchyDisplay({
     puzzleSet = self.rootPuzzleSet,
     puzzleSetIndices = self.currentPuzzleSetIndices,
-    width = 400,
-    height = 30,
+    width = 0,
+    height = 0,
     x = 0,
-    y = 0,
+    y = 56,
     hAlign = "center",
     vAlign = "top"
   })
@@ -317,7 +317,7 @@ function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
   local gameMode = puzzle:toGameMode()
   local BattleRoom = require("client.src.BattleRoom")
   local tempBattleRoom = BattleRoom.createLocalFromGameMode(gameMode)
-  tempBattleRoom.panelSource = puzzleSet.puzzles[index]:toPanelSource(config.puzzle_randomColors)
+  tempBattleRoom.panelSource = puzzleSet.puzzles[index]:toPanelSource(false)
   if not tempBattleRoom then
     logger.warn("Failed to create BattleRoom for puzzle editor")
     return
