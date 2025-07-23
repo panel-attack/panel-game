@@ -84,6 +84,10 @@ end
 
 function PuzzleMenu:refresh()
   self:updateCurrentPuzzleSet()
+  -- Reload puzzle statistics to show updated completion status
+  if self.rootPuzzleSet then
+    self.puzzleLibrary:addStatisticsToPuzzleSet(self.rootPuzzleSet)
+  end
   self:refreshMenu()
 end
 
