@@ -9,6 +9,7 @@ local FileUtils = require("client.src.FileUtils")
 local ui = require("client.src.ui")
 local PuzzleHierarchyDisplay = require("client.src.graphics.PuzzleHierarchyDisplay")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
+local MatchRules = require("common.data.MatchRules")
 
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
@@ -81,6 +82,9 @@ function PuzzleGame:customLoad()
 ---@diagnostic disable-next-line: assign-type-mismatch
   self.player = self.match.players[1]
   self.inputConfiguration = self.player.inputConfiguration
+  
+  -- Override drawTimer to prevent elapsed time display in puzzles
+  self.match.drawTimer = function() end
 end
 
 function PuzzleGame:customRun()
@@ -138,6 +142,27 @@ function PuzzleGame:customGameOverSetup()
       self:savePuzzleRecordResult(false)
     end
   end
+end
+
+function PuzzleGame:drawHUD()
+  if not self.match.isPaused then
+    for _, stack in ipairs(self.match.stacks) do
+      if stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
+        stack:drawMoveCount()
+      end
+      
+      stack:drawMultibar()
+    end
+
+    self:drawCommunityMessage()
+  end
+end
+
+function PuzzleGame:drawBackground()
+  if self.backgroundImage then
+    self.backgroundImage:draw()
+  end
+  -- Skip drawing bg_overlay for puzzles
 end
 
 return PuzzleGame
