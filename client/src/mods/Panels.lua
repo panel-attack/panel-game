@@ -52,6 +52,20 @@ local DEFAULT_PANEL_ANIM =
 
 -- The class representing the panel image data
 -- Not to be confused with "Panel" which is one individual panel in the game stack model
+---@class Panels
+---@field path string
+---@field id string
+---@field name string
+---@field type "single" | "sheet"
+---@field size integer
+---@field scale number
+---@field images { metals: {left: love.Texture, mid: love.Texture, right: love.Texture, flash: love.Texture}}
+---@field greyPanel love.Texture
+---@field sheetConfig table
+---@field sheets love.Texture[] mapped by color index
+---@field batches love.SpriteBatch[] mapped by color index
+---@field quad love.Quad
+---@field displayIcons love.Texture[] mapped by color index
 Panels =
   class(
   function(self, full_path, folder_name)
@@ -638,6 +652,26 @@ function Panels:drawPanelFrame(color, state, x, y, size)
   self.quad:setViewport(0, (sheetConfig.row - 1) * self.size, self.size, self.size)
   local scale = (size or self.size) / self.size
   GraphicsUtil.drawQuad(self.sheets[color], self.quad, x, y, 0, scale)
+end
+
+---@param x integer right border
+---@param y integer top border
+---@param width integer width in panels
+---@param stackScale number Stack.gfxScale
+function Panels:drawMetalGarbage(x, y, width, stackScale)
+  local metals = self.images.metals
+  local metal_w, metal_h = metals.mid:getDimensions()
+  local metall_w, metall_h = metals.left:getDimensions()
+  local metalr_w, metalr_h = metals.right:getDimensions()
+  love.graphics.push("transform")
+  love.graphics.scale(stackScale)
+
+  GraphicsUtil.draw(metals.left, (x - 16 * (width - 1)), y, 0, 8 / metall_w, 16 / metall_h)
+  GraphicsUtil.draw(metals.right, (x + 8), y, 0, 8 / metalr_w , 16 / metalr_h)
+  for i = 0, 2 * (width - 1) - 1 do
+    GraphicsUtil.draw(metals.mid, (x - 8 * i), y, 0, 8 / metal_w, 16 / metal_h)
+  end
+  love.graphics.pop()
 end
 
 return Panels
