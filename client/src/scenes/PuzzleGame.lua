@@ -40,7 +40,7 @@ local PuzzleGame = class(
       width = 0,
       height = 0,
       x = 0,
-      y = 60,
+      y = 18,
       hAlign = "center",
       vAlign = "top"
     })
@@ -85,6 +85,18 @@ function PuzzleGame:customLoad()
   
   -- Override drawTimer to prevent elapsed time display in puzzles
   self.match.drawTimer = function() end
+  
+  -- Center the stack on screen for puzzles
+  for _, stack in ipairs(self.match.stacks) do
+    -- Calculate center position
+    -- Stack frame is typically around 104 pixels wide (baseWidth + panelOriginXOffset)
+    local stackWidth = stack.baseWidth + stack.panelOriginXOffset
+    local centerX = (consts.CANVAS_WIDTH - stackWidth * stack.gfxScale) / 2
+    local centerY = (consts.CANVAS_HEIGHT - stack.baseHeight * stack.gfxScale) / 2
+    
+    -- Move stack to center
+    stack:moveToPosition(centerX, centerY)
+  end
 end
 
 function PuzzleGame:customRun()
@@ -153,8 +165,6 @@ function PuzzleGame:drawHUD()
       
       stack:drawMultibar()
     end
-
-    self:drawCommunityMessage()
   end
 end
 
@@ -163,6 +173,11 @@ function PuzzleGame:drawBackground()
     self.backgroundImage:draw()
   end
   -- Skip drawing bg_overlay for puzzles
+end
+
+-- Disable taunt sounds in puzzle mode
+function PuzzleGame:shouldDisableTauntSounds()
+  return true
 end
 
 return PuzzleGame

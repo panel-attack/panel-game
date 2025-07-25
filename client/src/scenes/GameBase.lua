@@ -490,4 +490,9 @@ function GameBase:genericOnMatchEnded(match)
   end
 end
 
+-- Override this method in subclasses to disable taunt sounds
+function GameBase:shouldDisableTauntSounds()
+  return false
+end
+
 return GameBase

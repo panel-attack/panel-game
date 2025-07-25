@@ -1467,6 +1467,10 @@ end
 local MAX_TAUNT_PER_10_SEC = 4
 
 function PlayerStack:can_taunt()
+  -- Check if the current scene allows taunt sounds
+  if GAME.battleRoom and GAME.battleRoom.gameScene and GAME.battleRoom.gameScene.shouldDisableTauntSounds and GAME.battleRoom.gameScene:shouldDisableTauntSounds() then
+    return false
+  end
   return self.taunt_queue:len() < MAX_TAUNT_PER_10_SEC or self.taunt_queue:peek() + 10 < love.timer.getTime()
 end
 

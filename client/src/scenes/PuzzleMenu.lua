@@ -123,7 +123,8 @@ function PuzzleMenu:load(sceneParams)
 
   self.puzzlePreviewStack = ui.StackElement({vAlign = "top", hAlign = "center", x = 0, y = 0, scale=2})
 
-  self.puzzleDescriptionLabel = ui.Label({text = "", x = 0, y = 0, width = 400, height = 100, fontSize = 20, translate = false})
+  self.puzzleDescriptionLabel = ui.Label({text = "", x = 0, y = 0, width = 400, height = 100, fontSize = 20, translate = false,
+      paddingTop = 8, paddingBottom = 8, paddingLeft = 16, paddingRight = 16})
   self.puzzleDescriptionLabel:setFillColors(.2, .2, .2, .8)
   self.puzzleDescriptionLabel:setStrokeColors(1, 1, 1, 1)
   self.puzzleDescriptionLabel:setWrap(400, "left")

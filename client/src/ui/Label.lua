@@ -9,6 +9,11 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field replacements string[]? Additional strings to perform string format on a localized key with parts marked for replacement
 ---@field fontSize integer? The size of the font
 ---@field wrapWidth? number the number of pixels to go before wrapping
+---@field padding number? Uniform padding on all sides in pixels
+---@field paddingTop number? Top padding in pixels
+---@field paddingRight number? Right padding in pixels
+---@field paddingBottom number? Bottom padding in pixels
+---@field paddingLeft number? Left padding in pixels
 
 ---@class Label : UiElement
 ---@field text string The raw text or localization key
@@ -21,6 +26,10 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field strokeColors table? List of red, green, blue, and alpha color for stroke, no stroke if nil
 ---@field drawable love.Text Cached love.Text for redrawing
 ---@field autoSizeToText boolean true if the text should change the width and height
+---@field paddingTop number Top padding in pixels
+---@field paddingRight number Right padding in pixels
+---@field paddingBottom number Bottom padding in pixels
+---@field paddingLeft number Left padding in pixels
 ---@overload fun(options: LabelOptions): Label
 local Label = class(
   function(self, options)
@@ -30,6 +39,11 @@ local Label = class(
     self.autoSizeToText = (self.width == 0 or self.height == 0)
     self.wrapWidth = options.wrapWidth or nil
     self.fontSize = options.fontSize or GraphicsUtil.fontSize
+    local padding = options.padding or 0
+    self.paddingTop = options.paddingTop or padding
+    self.paddingRight = options.paddingRight or padding
+    self.paddingBottom = options.paddingBottom or padding
+    self.paddingLeft = options.paddingLeft or padding
 
     self:setText(options.text, options.replacements, options.translate)
   end,
@@ -85,6 +99,21 @@ function Label:setWrap(wrapWidth, hAlign)
   self:refreshFormatting()
 end
 
+function Label:setPadding(padding, paddingTop, paddingRight, paddingBottom, paddingLeft)
+  if padding then
+    self.paddingTop = paddingTop or padding
+    self.paddingRight = paddingRight or padding
+    self.paddingBottom = paddingBottom or padding
+    self.paddingLeft = paddingLeft or padding
+  else
+    self.paddingTop = paddingTop or self.paddingTop
+    self.paddingRight = paddingRight or self.paddingRight
+    self.paddingBottom = paddingBottom or self.paddingBottom
+    self.paddingLeft = paddingLeft or self.paddingLeft
+  end
+  self:refreshFormatting()
+end
+
 function Label:setFillColors(red, green, blue, alpha)
   self.fillColors = {red, green, blue, alpha}
   self:refreshFormatting()
@@ -102,14 +131,20 @@ function Label:refreshFormatting()
     text = loc(self.text, unpack(self.replacementTable))
   end
 
-  if self.wrapWidth then
-    self.drawable:setf(text, self.wrapWidth, self.hAlign)
+  local contentWidth = self.wrapWidth
+  if contentWidth and (self.paddingLeft + self.paddingRight) > 0 then
+    contentWidth = contentWidth - self.paddingLeft - self.paddingRight
+  end
+
+  if contentWidth then
+    self.drawable:setf(text, contentWidth, self.hAlign)
   else
     self.drawable:set(text)
   end
+  
   if self.autoSizeToText then
-    self.width = self.drawable:getWidth()
-    self.height = self.drawable:getHeight()
+    self.width = self.drawable:getWidth() + self.paddingLeft + self.paddingRight
+    self.height = self.drawable:getHeight() + self.paddingTop + self.paddingBottom
   end
 end
 
@@ -134,7 +169,11 @@ function Label:drawSelf()
   if self.strokeColors then
     GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, self.strokeColors[1], self.strokeColors[2], self.strokeColors[3], self.strokeColors[4])
   end
-  GraphicsUtil.drawClearText(self.drawable, math.round(self.x), math.round(self.y))
+  
+  -- Draw text with padding offset
+  local textX = self.x + self.paddingLeft
+  local textY = self.y + self.paddingTop
+  GraphicsUtil.drawClearText(self.drawable, math.round(textX), math.round(textY))
 end
 
 return Label
