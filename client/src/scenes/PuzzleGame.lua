@@ -65,6 +65,9 @@ function PuzzleGame:getCurrentPuzzle()
 end
 
 function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet)
+  -- Store current stage info for potential preservation
+  local currentStageId = battleRoom.match and battleRoom.match.stageId or nil
+  
   -- Get the first puzzle from the iterator
   local puzzleIndices = puzzleSetIterator:nextPuzzle()
   if puzzleIndices then
@@ -72,6 +75,7 @@ function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet)
     if puzzle then
       GAME.battleRoom:setGameMode(puzzle:toGameMode())
       GAME.battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
+      battleRoom.preferredStageId = currentStageId
     end
   end
   return puzzleIndices
