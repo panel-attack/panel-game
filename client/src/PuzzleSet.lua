@@ -53,7 +53,10 @@ function PuzzleSet.loadFromFile(filePath)
   if data then
     if data[Puzzle.ROOT_PROPERTY.VERSION] == 3 then
       for _, puzzleSetData in pairs(data[Puzzle.ROOT_PROPERTY.PUZZLE_SETS]) do
-        puzzleSets[#puzzleSets + 1] = PuzzleSet.loadV3(puzzleSetData)
+        local loadedSet = PuzzleSet.loadV3(puzzleSetData)
+        if loadedSet then
+          puzzleSets[#puzzleSets + 1] = loadedSet
+        end
       end
     elseif data[Puzzle.ROOT_PROPERTY.VERSION] == 2 then
       for _, puzzleSetData in pairs(data[Puzzle.ROOT_PROPERTY.PUZZLE_SETS]) do
@@ -135,8 +138,53 @@ function PuzzleSet.loadV2(puzzleSetData)
   return PuzzleSet(puzzleSetName, nil, puzzles)
 end
 
----@return PuzzleSet
+---@param puzzleSetData table
+---@return boolean
+function PuzzleSet.validateV3Properties(puzzleSetData)
+  -- Validate puzzle set properties
+  for key, _ in pairs(puzzleSetData) do
+    if not Puzzle.isValidPuzzleSetProperty(key) then
+      logger.warn("Unsupported puzzle set property found: " .. tostring(key))
+      return false
+    end
+  end
+  
+  -- Validate puzzle properties
+  for _, puzzleData in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
+    for key, _ in pairs(puzzleData) do
+      if not Puzzle.isValidPuzzleProperty(key) then
+        logger.warn("Unsupported puzzle property found: " .. tostring(key))
+        return false
+      end
+    end
+    
+    -- Validate cursor properties if present
+    if puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] then
+      for key, _ in pairs(puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT]) do
+        if not Puzzle.isValidCursorProperty(key) then
+          logger.warn("Unsupported cursor property found: " .. tostring(key))
+          return false
+        end
+      end
+    end
+  end
+  
+  -- Recursively validate nested puzzle sets
+  for _, nestedPuzzleSetData in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
+    if not PuzzleSet.validateV3Properties(nestedPuzzleSetData) then
+      return false
+    end
+  end
+  
+  return true
+end
+
+---@return PuzzleSet?
 function PuzzleSet.loadV3(puzzleSetData)
+  if not PuzzleSet.validateV3Properties(puzzleSetData) then
+    return nil
+  end
+
   local puzzleSetName = puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.NAME]
   local puzzleSetDescription = puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.DESCRIPTION] or nil
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
@@ -163,7 +211,10 @@ function PuzzleSet.loadV3(puzzleSetData)
     puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
   end
   for _, currentPuzzleSet in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
-    puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = PuzzleSet.loadV3(currentPuzzleSet)
+    local loadedSet = PuzzleSet.loadV3(currentPuzzleSet)
+    if loadedSet then
+      puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = loadedSet
+    end
   end
 
   return puzzleSet

@@ -30,7 +30,6 @@ The contents of each puzzle file should be formatted something like this:
         },
         {
           "Puzzle Type": "clear",
-          "Do Countdown": false,
           "Moves": 0,
           "Stack": 
            "

@@ -125,6 +125,33 @@ Puzzle.CURSOR_PROPERTY = {
   ROW = "Row"
 }
 
+local validPuzzleSetProperties = {}
+for _, property in pairs(Puzzle.PUZZLE_SET_PROPERTY) do
+  validPuzzleSetProperties[property] = true
+end
+
+local validPuzzleProperties = {}
+for _, property in pairs(Puzzle.PUZZLE_PROPERTY) do
+  validPuzzleProperties[property] = true
+end
+
+local validCursorProperties = {}
+for _, property in pairs(Puzzle.CURSOR_PROPERTY) do
+  validCursorProperties[property] = true
+end
+
+function Puzzle.isValidPuzzleSetProperty(property)
+  return validPuzzleSetProperties[property] == true
+end
+
+function Puzzle.isValidPuzzleProperty(property)
+  return validPuzzleProperties[property] == true
+end
+
+function Puzzle.isValidCursorProperty(property)
+  return validCursorProperties[property] == true
+end
+
 -- Helper functions for consistent key ordering
 ---@return string[]
 function Puzzle.getPuzzleKeyOrder()
