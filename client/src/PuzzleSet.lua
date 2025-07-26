@@ -21,13 +21,54 @@ function(self, setName, description, puzzles, puzzleSets)
   self.localizedDescription = self.description ~= "" and loc(self.description) or ""
 end)
 
+-- Puzzle set properties
+PuzzleSet.PUZZLE_SET_PROPERTY = {
+  NAME = "Set Name",
+  DESCRIPTION = "Description",
+  PUZZLES = "Puzzles",
+  PUZZLE_SETS = "Puzzle Sets"
+}
+
+PuzzleSet.ROOT_PROPERTY = {
+  VERSION = "Version",
+  PUZZLE_SETS = "Puzzle Sets"
+}
+
+local validPuzzleSetProperties = {}
+for _, property in pairs(PuzzleSet.PUZZLE_SET_PROPERTY) do
+  validPuzzleSetProperties[property] = true
+end
+
+function PuzzleSet.isValidPuzzleSetProperty(property)
+  return validPuzzleSetProperties[property] == true
+end
+
+-- Helper functions for consistent key ordering
+---@return string[]
+function PuzzleSet.getPuzzleSetKeyOrder()
+  return {
+    PuzzleSet.PUZZLE_SET_PROPERTY.NAME,
+    PuzzleSet.PUZZLE_SET_PROPERTY.DESCRIPTION,
+    PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES,
+    PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS
+  }
+end
+
+---@return string[]
+function PuzzleSet.getRootKeyOrder()
+  return {
+    PuzzleSet.ROOT_PROPERTY.VERSION,
+    PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS
+  }
+end
+
 PuzzleSet.keyOrder = {
-  Puzzle.ROOT_PROPERTY.VERSION,
+  PuzzleSet.ROOT_PROPERTY.VERSION,
   
-  Puzzle.PUZZLE_SET_PROPERTY.NAME,
-  Puzzle.PUZZLE_SET_PROPERTY.DESCRIPTION,
-  Puzzle.PUZZLE_SET_PROPERTY.PUZZLES,
-  Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS,
+  PuzzleSet.PUZZLE_SET_PROPERTY.NAME,
+  PuzzleSet.PUZZLE_SET_PROPERTY.DESCRIPTION,
+  PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES,
+  PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS,
   
   Puzzle.PUZZLE_PROPERTY.TYPE,
   Puzzle.PUZZLE_PROPERTY.START_TIMING,
@@ -51,19 +92,19 @@ function PuzzleSet.loadFromFile(filePath)
   local puzzleSets = {}
 
   if data then
-    if data[Puzzle.ROOT_PROPERTY.VERSION] == 3 then
-      for _, puzzleSetData in pairs(data[Puzzle.ROOT_PROPERTY.PUZZLE_SETS]) do
+    if data[PuzzleSet.ROOT_PROPERTY.VERSION] == 3 then
+      for _, puzzleSetData in pairs(data[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS]) do
         local loadedSet = PuzzleSet.loadV3(puzzleSetData)
         if loadedSet then
           puzzleSets[#puzzleSets + 1] = loadedSet
         end
       end
-    elseif data[Puzzle.ROOT_PROPERTY.VERSION] == 2 then
-      for _, puzzleSetData in pairs(data[Puzzle.ROOT_PROPERTY.PUZZLE_SETS]) do
+    elseif data[PuzzleSet.ROOT_PROPERTY.VERSION] == 2 then
+      for _, puzzleSetData in pairs(data[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS]) do
         puzzleSets[#puzzleSets + 1] = PuzzleSet.loadV2(puzzleSetData)
       end
-    elseif data[Puzzle.ROOT_PROPERTY.VERSION] and type(data[Puzzle.ROOT_PROPERTY.VERSION]) == "number" then
-      logger.warn("Puzzle " .. filePath .. " specifies invalid version " .. data[Puzzle.ROOT_PROPERTY.VERSION])
+    elseif data[PuzzleSet.ROOT_PROPERTY.VERSION] and type(data[PuzzleSet.ROOT_PROPERTY.VERSION]) == "number" then
+      logger.warn("Puzzle " .. filePath .. " specifies invalid version " .. data[PuzzleSet.ROOT_PROPERTY.VERSION])
     else
       -- old file format compatibility
       -- the old file format actually has NO markers to identify it as a puzzle which means that we just have to try and import
@@ -120,9 +161,9 @@ end
 
 ---@return PuzzleSet
 function PuzzleSet.loadV2(puzzleSetData)
-  local puzzleSetName = puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.NAME]
+  local puzzleSetName = puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.NAME]
   local puzzles = {}
-  for _, puzzleData in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES]) do
+  for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES]) do
     local args = {
       puzzleType = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE],
       startTiming = puzzleData["Do Countdown"] and "countdown" or "immediately",
@@ -143,14 +184,14 @@ end
 function PuzzleSet.validateV3Properties(puzzleSetData)
   -- Validate puzzle set properties
   for key, _ in pairs(puzzleSetData) do
-    if not Puzzle.isValidPuzzleSetProperty(key) then
+    if not PuzzleSet.isValidPuzzleSetProperty(key) then
       logger.warn("Unsupported puzzle set property found: " .. tostring(key))
       return false
     end
   end
   
   -- Validate puzzle properties
-  for _, puzzleData in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
+  for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
     for key, _ in pairs(puzzleData) do
       if not Puzzle.isValidPuzzleProperty(key) then
         logger.warn("Unsupported puzzle property found: " .. tostring(key))
@@ -170,7 +211,7 @@ function PuzzleSet.validateV3Properties(puzzleSetData)
   end
   
   -- Recursively validate nested puzzle sets
-  for _, nestedPuzzleSetData in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
+  for _, nestedPuzzleSetData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
     if not PuzzleSet.validateV3Properties(nestedPuzzleSetData) then
       return false
     end
@@ -185,11 +226,11 @@ function PuzzleSet.loadV3(puzzleSetData)
     return nil
   end
 
-  local puzzleSetName = puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.NAME]
-  local puzzleSetDescription = puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.DESCRIPTION] or nil
+  local puzzleSetName = puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.NAME]
+  local puzzleSetDescription = puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.DESCRIPTION] or nil
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
-  for _, puzzleData in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
+  for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
     local args = {
       puzzleType = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE],
       startTiming = puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING],
@@ -210,7 +251,7 @@ function PuzzleSet.loadV3(puzzleSetData)
     local puzzle = Puzzle(args)
     puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
   end
-  for _, currentPuzzleSet in pairs(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
+  for _, currentPuzzleSet in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
     local loadedSet = PuzzleSet.loadV3(currentPuzzleSet)
     if loadedSet then
       puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = loadedSet
@@ -272,21 +313,21 @@ end
 
 local function puzzleSetToSaveData(puzzleSet)
   local puzzleSetData = {
-    [Puzzle.PUZZLE_SET_PROPERTY.NAME] = puzzleSet.setName,
-    [Puzzle.PUZZLE_SET_PROPERTY.DESCRIPTION] = puzzleSet.description,
-    [Puzzle.PUZZLE_SET_PROPERTY.PUZZLES] = {}
+    [PuzzleSet.PUZZLE_SET_PROPERTY.NAME] = puzzleSet.setName,
+    [PuzzleSet.PUZZLE_SET_PROPERTY.DESCRIPTION] = puzzleSet.description,
+    [PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] = {}
   }
   
   -- Convert puzzles to save format
   for i, puzzle in ipairs(puzzleSet.puzzles) do
-    puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES][i] = puzzle:getSaveData()
+    puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES][i] = puzzle:getSaveData()
   end
   
   -- Recursively handle nested puzzle sets
   if puzzleSet.puzzleSets and #puzzleSet.puzzleSets > 0 then
-    puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS] = {}
+    puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS] = {}
     for i, nestedPuzzleSet in ipairs(puzzleSet.puzzleSets) do
-      puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS][i] = puzzleSetToSaveData(nestedPuzzleSet)
+      puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS][i] = puzzleSetToSaveData(nestedPuzzleSet)
     end
   end
   
@@ -301,8 +342,8 @@ function PuzzleSet:generateSaveData()
   end
   
   local data = {
-    [Puzzle.ROOT_PROPERTY.VERSION] = 3,
-    [Puzzle.ROOT_PROPERTY.PUZZLE_SETS] = {
+    [PuzzleSet.ROOT_PROPERTY.VERSION] = 3,
+    [PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS] = {
       puzzleSetToSaveData(self)
     }
   }
@@ -365,7 +406,7 @@ end
 ---@param updatedPuzzle Puzzle The updated puzzle data
 ---@return boolean success Whether the puzzle set was found and puzzle was updated
 function PuzzleSet:updatePuzzleInFileData(fileData, targetPuzzleSet, puzzleIndex, updatedPuzzle)
-  if not fileData[Puzzle.ROOT_PROPERTY.PUZZLE_SETS] then
+  if not fileData[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS] then
     return false
   end
   
@@ -373,7 +414,7 @@ function PuzzleSet:updatePuzzleInFileData(fileData, targetPuzzleSet, puzzleIndex
   local puzzleData = updatedPuzzle:getSaveData()
   
   -- Recursively search and update in the file data
-  return self:updatePuzzleInDataArray(fileData[Puzzle.ROOT_PROPERTY.PUZZLE_SETS], targetPuzzleSet, puzzleIndex, puzzleData)
+  return self:updatePuzzleInDataArray(fileData[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS], targetPuzzleSet, puzzleIndex, puzzleData)
 end
 
 -- Helper to recursively search for a puzzle set and update a specific puzzle within it
@@ -384,10 +425,10 @@ end
 ---@return boolean success Whether the puzzle set was found and puzzle was updated
 function PuzzleSet:updatePuzzleInDataArray(puzzleSetsArray, targetPuzzleSet, puzzleIndex, puzzleData)
   for i, puzzleSetData in ipairs(puzzleSetsArray) do
-    if puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.NAME] == targetPuzzleSet.setName then
+    if puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.NAME] == targetPuzzleSet.setName then
       -- Found the target puzzle set - update the specific puzzle
-      if puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES] and puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES][puzzleIndex] then
-        puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLES][puzzleIndex] = puzzleData
+      if puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] and puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES][puzzleIndex] then
+        puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES][puzzleIndex] = puzzleData
         return true
       else
         -- Puzzle index out of range
@@ -396,8 +437,8 @@ function PuzzleSet:updatePuzzleInDataArray(puzzleSetsArray, targetPuzzleSet, puz
     end
     
     -- Check nested puzzle sets
-    if puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS] then
-      if self:updatePuzzleInDataArray(puzzleSetData[Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS], targetPuzzleSet, puzzleIndex, puzzleData) then
+    if puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS] then
+      if self:updatePuzzleInDataArray(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS], targetPuzzleSet, puzzleIndex, puzzleData) then
         return true
       end
     end

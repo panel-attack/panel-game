@@ -108,27 +108,12 @@ Puzzle.PUZZLE_PROPERTY = {
   CURSOR_START_LEFT = "CursorStartLeft"
 }
 
-Puzzle.PUZZLE_SET_PROPERTY = {
-  NAME = "Set Name",
-  DESCRIPTION = "Description",
-  PUZZLES = "Puzzles",
-  PUZZLE_SETS = "Puzzle Sets"
-}
-
-Puzzle.ROOT_PROPERTY = {
-  VERSION = "Version",
-  PUZZLE_SETS = "Puzzle Sets"
-}
 
 Puzzle.CURSOR_PROPERTY = {
   COLUMN = "Column",
   ROW = "Row"
 }
 
-local validPuzzleSetProperties = {}
-for _, property in pairs(Puzzle.PUZZLE_SET_PROPERTY) do
-  validPuzzleSetProperties[property] = true
-end
 
 local validPuzzleProperties = {}
 for _, property in pairs(Puzzle.PUZZLE_PROPERTY) do
@@ -140,9 +125,6 @@ for _, property in pairs(Puzzle.CURSOR_PROPERTY) do
   validCursorProperties[property] = true
 end
 
-function Puzzle.isValidPuzzleSetProperty(property)
-  return validPuzzleSetProperties[property] == true
-end
 
 function Puzzle.isValidPuzzleProperty(property)
   return validPuzzleProperties[property] == true
@@ -168,23 +150,6 @@ function Puzzle.getPuzzleKeyOrder()
   }
 end
 
----@return string[]
-function Puzzle.getPuzzleSetKeyOrder()
-  return {
-    Puzzle.PUZZLE_SET_PROPERTY.NAME,
-    Puzzle.PUZZLE_SET_PROPERTY.DESCRIPTION,
-    Puzzle.PUZZLE_SET_PROPERTY.PUZZLES,
-    Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS
-  }
-end
-
----@return string[]
-function Puzzle.getRootKeyOrder()
-  return {
-    Puzzle.ROOT_PROPERTY.VERSION,
-    Puzzle.ROOT_PROPERTY.PUZZLE_SETS
-  }
-end
 
 ---@return string[]
 function Puzzle.getCursorKeyOrder()
