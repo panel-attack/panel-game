@@ -96,10 +96,10 @@ function PuzzleGame:customLoad()
     -- Stack frame is typically around 104 pixels wide (baseWidth + panelOriginXOffset)
     local stackWidth = stack.baseWidth + stack.panelOriginXOffset
     local centerX = (consts.CANVAS_WIDTH - stackWidth * stack.gfxScale) / 2
-    local centerY = (consts.CANVAS_HEIGHT - stack.baseHeight * stack.gfxScale) / 2
+    local normalY = stack.baseWidth + stack.panelOriginXOffset
     
     -- Move stack to center
-    stack:moveToPosition(centerX, centerY)
+    stack:moveToPosition(centerX, normalY)
   end
 end
 
