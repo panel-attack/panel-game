@@ -149,16 +149,15 @@ function MainMenu:checkForUpdates()
   end
 end
 
-function MainMenu:update(dt)
+function MainMenu:updateSelf(dt)
   GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
-function MainMenu:draw()
+function MainMenu:drawSelf()
   GAME.theme.images.bg_main:draw()
-  self.uiRoot:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 

@@ -361,8 +361,8 @@ function GameBase:update(dt)
     self:runGame(dt)
   end
   
-  -- Handle keyboard input for any focused UI elements
   self.uiRoot:handleFocusedInput(input, dt)
+  self.uiRoot:update(dt)
 end
 
 function GameBase:draw()

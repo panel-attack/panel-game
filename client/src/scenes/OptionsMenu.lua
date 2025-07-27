@@ -577,14 +577,13 @@ function OptionsMenu:load()
   self.uiRoot:addChild(self.menus.baseMenu)
 end
 
-function OptionsMenu:update(dt)
+function OptionsMenu:updateSelf(dt)
   self.backgroundImage:update(dt)
   self.menus[self.activeMenuName]:receiveInputs(inputManager)
 end
 
-function OptionsMenu:draw()
+function OptionsMenu:drawSelf()
   self.backgroundImage:draw()
-  self.uiRoot:draw()
 end
 
 return OptionsMenu

@@ -197,7 +197,7 @@ end
 -- scene core functionality --
 ------------------------------
 local loginStateLabel = ui.Label({text = loc("lb_login"), translate = false, x = 500, y = 350})
-function Lobby:update(dt)
+function Lobby:updateSelf(dt)
   self.backgroundImg:update(dt)
 
   if GAME.netClient.state == NetClient.STATES.LOGIN then

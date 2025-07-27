@@ -59,16 +59,22 @@ function Scene:applyMusic()
   end
 end
 
--- abstract functions to be implemented per scene
-
--- Ran every frame while the scene is active
 function Scene:update(dt)
-  error("every scene MUST implement an update function, even " .. self.name)
+  self:updateSelf(dt)
+  self.uiRoot:update(dt)
 end
 
--- main draw
 function Scene:draw()
-  error("every scene MUST implement a draw function, even " .. self.name)
+  self:drawSelf()
+  self.uiRoot:draw()
+end
+
+function Scene:updateSelf(dt)
+  -- Optional implementation in subclasses
+end
+
+function Scene:drawSelf()
+  -- Optional implementation in subclasses
 end
 
 function Scene:refreshLocalization()
