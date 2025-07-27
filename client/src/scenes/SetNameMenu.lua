@@ -102,7 +102,7 @@ function SetNameMenu:update(dt)
   if self.nameField.hasFocus then
     self.nameLengthLabel:setText("(" .. self.nameField.value:len() .. "/" .. NAME_LENGTH_LIMIT .. ")")
     if self.nameField.value == "" then
-      self.validationLabel:setText("op_username_blank_warning", nil, true)
+      self.validationLabel:setText("username_blank_warning", nil, true)
     end
     self.confirmationButton:setEnabled(self.nameField.value ~= "")
   end

@@ -282,6 +282,8 @@ function GameBase:startNextScene()
 end
 
 function GameBase:runGame(dt)
+  self:handlePause()
+
   if self.frameInfo.startTime == nil then
     self.frameInfo.startTime = love.timer.getTime()
   end
@@ -299,8 +301,6 @@ function GameBase:runGame(dt)
   self.droppedFrameCount = self.droppedFrameCount + (framesRun - 1)
 
   self:customRun()
-
-  self:handlePause()
 end
 
 function GameBase:musicCanChange()
