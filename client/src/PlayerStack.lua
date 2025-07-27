@@ -1259,8 +1259,15 @@ function PlayerStack:drawPanels(garbageCharacter, metalPanelSet, shakeOffset)
               if panel.metal then
                 metalPanelSet:drawMetalGarbage(draw_x, draw_y, panel.width, self.gfxScale)
               else
+                -- any chain where the face is situated above row 12 is going to look the same so there is no need to render it accurately
+                -- filler sprites at the bottom of the garbage alternate in a sequence of 4 so we can use a block with the same pattern
+                local drawHeight = math.min(panel.height, 28 + panel.height % 4)
                 -- need the top left offset for this one
-                garbageCharacter:drawGarbage(draw_x - (panel.width - 1) * 16, draw_y - (panel.height - 1) * 16, panel.width, panel.height, self.gfxScale)
+                local garbageX = draw_x - (panel.width - 1) * 16
+                local garbageY = draw_y - (drawHeight - 1) * 16
+
+---@diagnostic disable-next-line: param-type-mismatch
+                garbageCharacter:drawGarbage(garbageX, garbageY, panel.width, drawHeight, self.gfxScale)
               end
             end
           end
