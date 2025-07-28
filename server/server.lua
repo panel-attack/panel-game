@@ -297,7 +297,7 @@ function Server:create_room(gameMode, ...)
   self:setLobbyChanged()
   local players = {...}
   local leaderboard
-  if self.leaderboard and deep_content_equal(gameMode, self.leaderboard.gameMode) then
+  if self.leaderboard and tableUtils.deep_content_equal(gameMode, self.leaderboard.gameMode) then
     leaderboard = self.leaderboard
   end
 

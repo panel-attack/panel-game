@@ -14,6 +14,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field paddingRight number? Right padding in pixels
 ---@field paddingBottom number? Bottom padding in pixels
 ---@field paddingLeft number? Left padding in pixels
+---@field textColor table? List of red, green, blue, and alpha color for text
 
 ---@class Label : UiElement
 ---@field text string The raw text or localization key
@@ -24,6 +25,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field font love.Font Cached font for recreating the love.Text on changes
 ---@field fillColors table? List of red, green, blue, and alpha color for fill, no fill if nil
 ---@field strokeColors table? List of red, green, blue, and alpha color for stroke, no stroke if nil
+---@field textColor table? List of red, green, blue, and alpha color for text
 ---@field drawable love.Text Cached love.Text for redrawing
 ---@field autoSizeToText boolean true if the text should change the width and height
 ---@field paddingTop number Top padding in pixels
@@ -44,6 +46,7 @@ local Label = class(
     self.paddingRight = options.paddingRight or padding
     self.paddingBottom = options.paddingBottom or padding
     self.paddingLeft = options.paddingLeft or padding
+    self.textColor = options.textColor
 
     self:setText(options.text, options.replacements, options.translate)
   end,
@@ -124,6 +127,10 @@ function Label:setStrokeColors(red, green, blue, alpha)
   self:refreshFormatting()
 end
 
+function Label:setTextColor(red, green, blue, alpha)
+  self.textColor = {red, green, blue, alpha}
+end
+
 function Label:refreshFormatting()
   local text = self.text
 
@@ -170,10 +177,15 @@ function Label:drawSelf()
     GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, self.strokeColors[1], self.strokeColors[2], self.strokeColors[3], self.strokeColors[4])
   end
   
-  -- Draw text with padding offset
   local textX = self.x + self.paddingLeft
   local textY = self.y + self.paddingTop
-  GraphicsUtil.drawClearText(self.drawable, math.round(textX), math.round(textY))
+  if self.textColor then
+    GraphicsUtil.setColor(self.textColor[1], self.textColor[2], self.textColor[3], self.textColor[4])
+    GraphicsUtil.draw(self.drawable, math.round(textX), math.round(textY))
+    GraphicsUtil.setColor(1, 1, 1, 1)
+  else
+    GraphicsUtil.drawClearText(self.drawable, math.round(textX), math.round(textY))
+  end
 end
 
 return Label

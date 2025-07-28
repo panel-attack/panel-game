@@ -2,6 +2,7 @@
 local class = require("common.lib.class")
 local ServerProtocol = require("common.network.ServerProtocol")
 local LevelPresets = require("common.data.LevelPresets")
+local tableUtils = require("common.lib.tableUtils")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 
@@ -185,7 +186,7 @@ function Player:usesModifiedLevelData()
   if self.levelData == nil then
     return false
   else
-    return not deep_content_equal(self.levelData, LevelPresets.getModern(self.level))
+    return not tableUtils.deep_content_equal(self.levelData, LevelPresets.getModern(self.level))
   end
 end
 

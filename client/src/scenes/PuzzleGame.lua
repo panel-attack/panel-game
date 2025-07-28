@@ -1,15 +1,13 @@
 local GameBase = require("client.src.scenes.GameBase")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
-local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local InputCompression = require("common.data.InputCompression")
 local consts = require("common.engine.consts")
 local FileUtils = require("client.src.FileUtils")
-local ui = require("client.src.ui")
 local PuzzleHierarchyDisplay = require("client.src.graphics.PuzzleHierarchyDisplay")
+local PuzzleGoalDisplay = require("client.src.graphics.PuzzleGoalDisplay")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
-local MatchRules = require("common.data.MatchRules")
 
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
@@ -20,6 +18,7 @@ local MatchRules = require("common.data.MatchRules")
 ---@field rootPuzzleSet PuzzleSet?
 ---@field puzzleHierarchyDisplay PuzzleHierarchyDisplay?
 ---@field currentPuzzleIndices integer[]?
+---@field puzzleGoalDisplay PuzzleGoalDisplay?
 local PuzzleGame = class(
   function (self, sceneParams)
     self.keepMusic = true
@@ -101,6 +100,24 @@ function PuzzleGame:customLoad()
     -- Move stack to center
     stack:moveToPosition(centerX, normalY)
   end
+  
+  local currentPuzzle = self:getCurrentPuzzle()
+  if currentPuzzle and self.match.stacks[1] and self.match.stacks[1].engine then
+    local stack = self.match.stacks[1]
+    local stackWidth = stack.baseWidth + stack.panelOriginXOffset
+    local centerX = (consts.CANVAS_WIDTH - stackWidth * stack.gfxScale) / 2
+    local stackRightEdge = centerX + (stackWidth * stack.gfxScale)
+    
+    self.puzzleGoalDisplay = PuzzleGoalDisplay({
+      x = stackRightEdge + 2,
+      y = 358,
+      width = 0,
+      height = 0,
+      puzzle = currentPuzzle,
+      stack = stack.engine
+    })
+    self.uiRoot:addChild(self.puzzleGoalDisplay)
+  end
 end
 
 function PuzzleGame:customRun()
@@ -163,10 +180,6 @@ end
 function PuzzleGame:drawHUD()
   if not self.match.isPaused then
     for _, stack in ipairs(self.match.stacks) do
-      if stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
-        stack:drawMoveCount()
-      end
-      
       stack:drawMultibar()
     end
   end
