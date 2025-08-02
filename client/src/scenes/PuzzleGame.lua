@@ -23,6 +23,7 @@ local PuzzleSet = require("client.src.PuzzleSet")
 ---@field puzzleHelpDisplay PuzzleHelpDisplay?
 ---@field queuedInputs string[] Queue of inputs to be fed one per frame
 ---@field inputQueueIndex integer Current position in the input queue
+---@field hintUsed boolean Whether a hint has been used for this puzzle
 local PuzzleGame = class(
   function (self, sceneParams)
     self.keepMusic = true
@@ -31,6 +32,7 @@ local PuzzleGame = class(
     
     self.queuedInputs = {}
     self.inputQueueIndex = 1
+    self.hintUsed = false
     assert(sceneParams.puzzleSet)
     assert(sceneParams.puzzleSetIterator)
     self.puzzleSet = sceneParams.puzzleSet
@@ -255,7 +257,9 @@ end
 function PuzzleGame:customGameOverSetup()
   if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
-    self:savePuzzleRecordResult(true)
+    if not self.hintUsed then
+      self:savePuzzleRecordResult(true)
+    end
     self:recordPuzzleSolution()
     
     local puzzleIndices = PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet)
@@ -335,6 +339,7 @@ function PuzzleGame:resetPuzzle()
   if self.puzzleHelpDisplay then
     self.puzzleHelpDisplay.playerSwapPositions = {}
   end
+  self.hintUsed = false
 end
 
 -- Execute a single hint (position cursor and swap)
@@ -385,6 +390,7 @@ function PuzzleGame:executePuzzleHint(targetRow, targetColumn)
   end
   -- table.insert(inputs, KeyDataEncoding.swap)
   
+  self.hintUsed = true
   self:queueInputs(inputs)
   
   return true
@@ -401,7 +407,7 @@ function PuzzleGame:playPuzzleSolution(solutionInputs)
   end
   
   self:resetPuzzle()
-  
+  self.hintUsed = true
   self:queueInputs(procat(solutionInputs))
   
   return true
