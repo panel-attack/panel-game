@@ -383,6 +383,9 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     if puzzle.puzzleEverBeaten then
       textString = textString .. " +"
     end
+    if puzzle.solution then
+      textString = textString .. " •"
+    end
   end
   -- Create a puzzle set iterator for the current puzzle set
   local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)

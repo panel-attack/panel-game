@@ -103,7 +103,7 @@ function PuzzleGoalDisplay:getObjectiveKey()
   elseif self.puzzle.puzzleType == "clear" then
     return "puzzle_goal_clear_objective"
   else
-    return "puzzle_goal_unknown_objective"
+    return ""
   end
 end
 

@@ -43,6 +43,38 @@ function PuzzleSet.isValidPuzzleSetProperty(property)
   return validPuzzleSetProperties[property] == true
 end
 
+-- Walk down the hierarchy to find the first puzzle set with a fileSource
+-- Returns the puzzle set with fileSource and the adjusted path
+---@param rootPuzzleSet PuzzleSet The root puzzle set to start from
+---@param indices integer[] Array of indices representing the path down the hierarchy
+---@return PuzzleSet? puzzleSetWithFileSource The first puzzle set found with a fileSource
+---@return integer[] adjustedPath The remaining path after the fileSource puzzle set
+function PuzzleSet.findPuzzleSetWithFileSource(rootPuzzleSet, indices)
+  local currentPuzzleSet = rootPuzzleSet
+  local adjustedPath = {}
+  
+  for i, pathIndex in ipairs(indices) do
+    if currentPuzzleSet.puzzleSets and currentPuzzleSet.puzzleSets[pathIndex] and currentPuzzleSet.puzzleSets[pathIndex].fileSource then
+      -- Found a puzzle set with fileSource
+      currentPuzzleSet = currentPuzzleSet.puzzleSets[pathIndex]
+      -- Copy the remaining path after this point
+      for j = i + 1, #indices do
+        adjustedPath[#adjustedPath + 1] = indices[j]
+      end
+      return currentPuzzleSet, adjustedPath
+    elseif currentPuzzleSet.puzzleSets and currentPuzzleSet.puzzleSets[pathIndex] then
+      -- Continue walking down the hierarchy
+      currentPuzzleSet = currentPuzzleSet.puzzleSets[pathIndex]
+    else
+      -- Path is invalid
+      break
+    end
+  end
+  
+  -- If we get here, no fileSource was found in the path, return the root
+  return rootPuzzleSet, indices
+end
+
 -- Helper functions for consistent key ordering
 ---@return string[]
 function PuzzleSet.getPuzzleSetKeyOrder()
@@ -239,7 +271,9 @@ function PuzzleSet.loadV3(puzzleSetData)
       stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],
       shakeTime = puzzleData[Puzzle.PUZZLE_PROPERTY.SHAKE],
       panelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER],
-      garbagePanelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER]
+      garbagePanelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER],
+      solution = puzzleData[Puzzle.PUZZLE_PROPERTY.SOLUTION],
+      helpDescription = puzzleData[Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION]
     }
     if puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] then
       args.cursorStartLeft = {

@@ -16,6 +16,8 @@ local MatchRules = require("common.data.MatchRules")
 ---@field startTiming PuzzleStartTiming?
 ---@field cursorStartLeft GridCoordinate?
 ---@field moves integer? in how many swaps the puzzle has to be solved
+---@field solution string? compressed input string for puzzle solution
+---@field helpDescription string? optional help text explaining the puzzle pattern
 
 ---@class GarbagePuzzleArgs : PuzzleArgs
 ---@field stopTime integer?
@@ -36,6 +38,8 @@ local MatchRules = require("common.data.MatchRules")
 ---@field garbageBuffer string
 ---@field randomizeColors boolean
 ---@field UUID string
+---@field solution string? compressed input string for puzzle solution
+---@field helpDescription string? optional help text explaining the puzzle pattern
 ---@overload fun(puzzleArgs: GarbagePuzzleArgs): Puzzle
 Puzzle = class(
 ---@param self Puzzle
@@ -63,6 +67,8 @@ Puzzle = class(
     self.garbageBuffer = puzzleArgs.garbagePanelBuffer
     self.stopTime = puzzleArgs.stopTime
     self.shakeTime = puzzleArgs.shakeTime
+    self.solution = puzzleArgs.solution
+    self.helpDescription = puzzleArgs.helpDescription
 
     self.UUID = Puzzle.getV2UUID(self)
     self.randomizeColors = false
@@ -105,7 +111,9 @@ Puzzle.PUZZLE_PROPERTY = {
   STACK = "Stack",
   PANEL_BUFFER = "PanelBuffer",
   GARBAGE_PANEL_BUFFER = "GarbagePanelBuffer",
-  CURSOR_START_LEFT = "CursorStartLeft"
+  CURSOR_START_LEFT = "CursorStartLeft",
+  SOLUTION = "Solution",
+  HELP_DESCRIPTION = "Help Description"
 }
 
 
@@ -146,7 +154,9 @@ function Puzzle.getPuzzleKeyOrder()
     Puzzle.PUZZLE_PROPERTY.STACK,
     Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER,
     Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER,
-    Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT
+    Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT,
+    Puzzle.PUZZLE_PROPERTY.SOLUTION,
+    Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION
   }
 end
 
@@ -322,7 +332,9 @@ function Puzzle:getSaveData()
     [Puzzle.PUZZLE_PROPERTY.SHAKE] = self.shakeTime,
     [Puzzle.PUZZLE_PROPERTY.STACK] = self.stack,
     [Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER] = self.panelBuffer,
-    [Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] = self.garbageBuffer
+    [Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] = self.garbageBuffer,
+    [Puzzle.PUZZLE_PROPERTY.SOLUTION] = self.solution,
+    [Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION] = self.helpDescription
   }
   
   if self.cursorStartLeft then
@@ -460,7 +472,9 @@ function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
     stopTime = originalPuzzle.stopTime,
     shakeTime = originalPuzzle.shakeTime,
     panelBuffer = originalPuzzle.panelBuffer,
-    garbagePanelBuffer = originalPuzzle.garbageBuffer
+    garbagePanelBuffer = originalPuzzle.garbageBuffer,
+    solution = originalPuzzle.solution,
+    helpDescription = originalPuzzle.helpDescription
   })
 end
 

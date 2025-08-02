@@ -62,6 +62,7 @@ local allTests = {
   "common.tests.engine.StackReplayTests",
   "common.tests.engine.GarbageQueueTests",
   "common.tests.engine.PuzzleTests",
+  "common.tests.PuzzleHintHelperTests",
   "common.tests.engine.StackTouchReplayTests",
   "common.tests.engine.StackRollbackReplayTests",
   -- disabled for testLauncher because it needs the client love callbacks
