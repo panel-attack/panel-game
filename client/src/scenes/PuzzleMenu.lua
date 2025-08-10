@@ -194,8 +194,10 @@ function PuzzleMenu:loadMenu()
 
   local menuOptions = {}
 
+  self.levelSliderMenuItem = ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider)
+
   if self:currentlyAtRootLevel() == false then
-    menuOptions[#menuOptions+1] = ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider)
+    menuOptions[#menuOptions+1] = self.levelSliderMenuItem
     menuOptions[#menuOptions+1] = ui.MenuItem.createToggleButtonGroupMenuItem("randomColors", nil, nil, self.randomColorsButtons)
     for index, value in ipairs(menuOptions) do
       value.onSelectedFunction = self:clearPreviewFunction()
@@ -234,7 +236,7 @@ function PuzzleMenu:loadMenu()
         self:updateCurrentPuzzleSet()
         self:refreshMenu()
       end
-    end)
+    end, self.levelSliderMenuItem.width)
 
   self.menu = ui.Menu({
     x = 400,
@@ -392,7 +394,7 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
   assert(puzzleSetIterator:totalPuzzleCount() > 0)
   local result = ui.MenuItem.createButtonMenuItem(textString, nil, false, function()
     self:startGame(puzzleSet, puzzleSetIterator)
-  end)
+  end, self.levelSliderMenuItem.width)
 
   result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, index ~= nil)
 
@@ -406,7 +408,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
     self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
     self:updateCurrentPuzzleSet()
     self:refreshMenu()
-  end)
+  end, self.levelSliderMenuItem.width)
 
   result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, false)
 
@@ -425,7 +427,7 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
   local trainingSetName = loc("puzzle_training") .. " " .. puzzleCount
   local result = ui.MenuItem.createButtonMenuItem(trainingSetName, nil, false, function() 
     self:startGame(self.rootPuzzleSet, trainingPuzzleSetIterator)
-  end)
+  end, self.levelSliderMenuItem.width)
 
   -- Preview the first training puzzle
   result.onSelectedFunction = function()
