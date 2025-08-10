@@ -435,9 +435,12 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
       local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.rootPuzzleSet, firstIndices)
       if puzzle then
         self:updatePuzzlePreviewStackForPuzzle(puzzle)
-        self:setPuzzleDescription("")
       end
     end
+    
+    -- Set training description with puzzle count
+    local trainingDescription = "Practice puzzles - the game learns which ones you find difficult and focuses on those. (" .. puzzleCount .. " available)"
+    self:setPuzzleDescription(trainingDescription)
   end
 
   return result
