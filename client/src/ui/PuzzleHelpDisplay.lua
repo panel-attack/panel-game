@@ -143,9 +143,9 @@ function PuzzleHelpDisplay:updateContent()
   
   if self.state == PuzzleHelpState.HINT_SHOWN then
     if self.hintHelper:isMovePuzzle() then
-      self.buttonLabel:setText("Hint given", {}, true)
+      self.buttonLabel:setText("puzzle_help_hint_given", {}, true)
     else
-      self.buttonLabel:setText("Solution playing", {}, true)
+      self.buttonLabel:setText("puzzle_help_solution_playing", {}, true)
     end
   elseif self.state == PuzzleHelpState.SHOW_HELP then
     if self:hasSolution() then
