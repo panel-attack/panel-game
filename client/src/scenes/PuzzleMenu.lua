@@ -290,6 +290,9 @@ function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, ind
       -- Create edit button for individual puzzles only
       if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
         self:createEditPuzzleButton(currentPuzzleSet, index)
+      elseif self.editPuzzleButton then
+        self.previewStackPanel:remove(self.editPuzzleButton)
+        self.editPuzzleButton = nil
       end
     end
   end
@@ -301,21 +304,29 @@ function PuzzleMenu:createEditPuzzleButton(puzzleSet, index)
     self.previewStackPanel:remove(self.editPuzzleButton)
   end
   
-  -- Create new edit button with embedded puzzle data
-  self.editPuzzleButton = ui.TextButton({
-    label = ui.Label({text = "Edit Puzzle"}),
-    width = 120,
-    height = 30,
-    hAlign = "center",
+  -- Create clickable image button for edit
+  local editImage = themes[config.theme].images.edit
+  assert(editImage, "Edit icon must be loaded in theme")
+  
+  -- Create image button using the new ImageButton class
+  self.editPuzzleButton = ui.ImageButton({
+    image = editImage,
+    width = 40,
+    height = 40,
+    hAlign = "right",
     vAlign = "top",
     x = 0,
     y = 0,
+    backgroundColor = {0, 0, 0, 0},
+    outlineColor = {0, 0, 0, 0},
     onClick = function()
       self:openPuzzleEditor(puzzleSet, index)
+      GAME.theme:playValidationSfx()
     end
   })
   
-  self.previewStackPanel:addElement(self.editPuzzleButton)
+  -- Insert edit button at the beginning of the preview stack (before the preview)
+  self.previewStackPanel:insertElementAtIndex(self.editPuzzleButton, 1)
 end
 
 function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
@@ -443,6 +454,11 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
     -- Set training description with puzzle count
     local trainingDescription = "Practice puzzles - the game learns which ones you find difficult and focuses on those. (" .. puzzleCount .. " available)"
     self:setPuzzleDescription(trainingDescription)
+
+    if self.editPuzzleButton then
+      self.previewStackPanel:remove(self.editPuzzleButton)
+      self.editPuzzleButton = nil
+    end
   end
 
   return result

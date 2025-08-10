@@ -325,6 +325,7 @@ function Theme:loadMenuGraphics()
   self.images.bg_select_screen = UpdatingImage(self:load_theme_img("background/select_screen"), self.bg_select_screen_is_tiled, self.bg_select_screen_speed_x, self.bg_select_screen_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
   self.images.bg_readme = UpdatingImage(self:load_theme_img("background/readme"), self.bg_readme_is_tiled, self.bg_readme_speed_x, self.bg_readme_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
   self.images.IMG_bug = self:load_theme_img("bug")
+  self.images.edit = self:load_theme_img("edit")
 end
 
 ---@param theme Theme
