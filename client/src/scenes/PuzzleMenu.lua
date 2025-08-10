@@ -271,7 +271,7 @@ function PuzzleMenu:updatePuzzlePreviewStackForPuzzle(puzzle)
   self.puzzlePreviewStack:setStack(stack)
 end
 
-function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index)
+function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, isIndividualPuzzle)
   local currentPuzzleSet = self.rootPuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
   if currentPuzzleSet then
     return function ()
@@ -285,8 +285,8 @@ function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, ind
       end
       self:setPuzzleDescription(currentPuzzleSet.localizedDescription)
       
-      -- Create edit button for individual puzzles (not puzzle sets)
-      if currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
+      -- Create edit button for individual puzzles only
+      if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
         self:createEditPuzzleButton(currentPuzzleSet, index)
       end
     end
@@ -394,7 +394,7 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     self:startGame(puzzleSet, puzzleSetIterator)
   end)
 
-  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index)
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, index ~= nil)
 
   return result
 end
@@ -408,7 +408,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
     self:refreshMenu()
   end)
 
-  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index)
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, false)
 
   return result
 end
