@@ -158,6 +158,10 @@ function PuzzleMenu:load(sceneParams)
   )
 
   self.previewStackPanel:addElement(self.puzzlePreviewStack)
+
+  local verticalSpacer = ui.UiElement({width = 1, height = 10})
+  self.previewStackPanel:addElement(verticalSpacer)
+
   self.previewStackPanel:addElement(self.puzzleDescriptionLabel)
 
   self.containerStackPanel = ui.StackPanel(
@@ -172,6 +176,10 @@ function PuzzleMenu:load(sceneParams)
   )
 
   self.containerStackPanel:addElement(self.menu)
+
+  local horizontalSpacer = ui.UiElement({width = 20, height = 1})
+  self.containerStackPanel:addElement(horizontalSpacer)
+
   self.containerStackPanel:addElement(self.previewStackPanel)
 
   self.uiRoot:addChild(self.containerStackPanel)
