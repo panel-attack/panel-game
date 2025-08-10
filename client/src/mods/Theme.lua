@@ -326,6 +326,7 @@ function Theme:loadMenuGraphics()
   self.images.bg_readme = UpdatingImage(self:load_theme_img("background/readme"), self.bg_readme_is_tiled, self.bg_readme_speed_x, self.bg_readme_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
   self.images.IMG_bug = self:load_theme_img("bug")
   self.images.edit = self:load_theme_img("edit")
+  self.images.hint = self:load_theme_img("hint")
 end
 
 ---@param theme Theme

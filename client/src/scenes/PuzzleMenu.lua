@@ -396,25 +396,57 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
   if index then
     textString = loc("rp_browser_info_puzzle") .. " " .. index
   end
+  
+  local puzzle = nil
   if index then
     local nextIndices = deepcpy(puzzleSetIndices)
     nextIndices[#nextIndices+1] = index
-    local puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, nextIndices)
+    puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, nextIndices)
     assert(puzzle)
     if puzzle.puzzleEverBeaten then
       textString = textString .. " +"
     end
-    if puzzle.solution then
-      textString = textString .. " •"
-    end
   end
+  
   -- Create a puzzle set iterator for the current puzzle set
   local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)
   assert(puzzleSetIterator:totalPuzzleCount() > 0)
-  local result = ui.MenuItem.createButtonMenuItem(textString, nil, false, function()
-    self:startGame(puzzleSet, puzzleSetIterator)
-  end, self.levelSliderMenuItem.width)
+  
+  -- Create the main text button
+  local textButton = ui.TextButton({
+    label = ui.Label({
+      text = textString,
+      translate = false,
+      hAlign = "center",
+      vAlign = "center"
+    }),
+    onClick = function()
+      self:startGame(puzzleSet, puzzleSetIterator)
+    end,
+    width = self.levelSliderMenuItem.width
+  })
 
+  -- If puzzle has a solution, overlay hint image on the right side of the button
+  if puzzle and puzzle.solution then
+    local hintImage = themes[config.theme].images.hint
+    assert(hintImage, "Hint icon must be loaded in theme")
+    
+    local hintImageContainer = ui.ImageContainer({
+      image = hintImage,
+      width = 16,
+      height = 16,
+      hAlign = "right",
+      vAlign = "center",
+      x = -8, -- 8 pixels from right edge
+      y = 0
+    })
+    
+    textButton:addChild(hintImageContainer)
+  end
+
+  local result = ui.MenuItem.createMenuItem(textButton)
+  
+  result.textButton = textButton
   result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, index ~= nil)
 
   return result
