@@ -261,6 +261,7 @@ function PuzzleMenu:loadMenu()
 
   local backMenuItem = ui.MenuItem.createMenuItem(backTextButton)
   backMenuItem.textButton = backTextButton
+  backMenuItem.onSelectedFunction = self:clearPreviewFunction()
   menuOptions[#menuOptions + 1] = backMenuItem
 
   self.menu = ui.Menu({
@@ -278,7 +279,13 @@ function PuzzleMenu:currentlyAtRootLevel()
 end
 
 function PuzzleMenu:setPuzzleDescription(puzzleDescription)
-  self.puzzleDescriptionLabel:setText(puzzleDescription, nil, false)
+  if puzzleDescription and puzzleDescription ~= "" then
+    self.puzzleDescriptionLabel:setText(puzzleDescription, nil, false)
+    self.puzzleDescriptionLabel:setVisibility(true)
+  else
+    self.puzzleDescriptionLabel:setText("", nil, false)
+    self.puzzleDescriptionLabel:setVisibility(false)
+  end
 end
 
 function PuzzleMenu:clearPreviewFunction()
@@ -310,7 +317,14 @@ function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, ind
           self:updatePuzzlePreviewStackForPuzzle(puzzle)
         end
       end
-      self:setPuzzleDescription(currentPuzzleSet.localizedDescription)
+      -- For individual puzzles, check if the puzzle itself has a description
+      -- For puzzle sets, use the set's description
+      if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
+        local puzzle = currentPuzzleSet.puzzles[index]
+        self:setPuzzleDescription(puzzle.helpDescription)
+      else
+        self:setPuzzleDescription(currentPuzzleSet.localizedDescription)
+      end
       
       -- Create edit button for individual puzzles only
       if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then

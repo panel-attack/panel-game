@@ -79,6 +79,8 @@ function Label:setText(text, replacementTable, translate)
 
   if text then
     self.text = text
+  else
+    self.text = ""
   end
 
   if self.translate then
