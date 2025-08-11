@@ -288,15 +288,18 @@ function PuzzleMenu:setPuzzleDescription(puzzleDescription)
   end
 end
 
+function PuzzleMenu:removeEditButton()
+  if self.editPuzzleButton then
+    self.editPuzzleButton:detach()
+    self.editPuzzleButton = nil
+  end
+end
+
 function PuzzleMenu:clearPreviewFunction()
   return function ()
     self.puzzlePreviewStack:setStack(nil)
     self:setPuzzleDescription(nil)
-    -- Remove edit button if it exists
-    if self.editPuzzleButton then
-      self.previewStackPanel:remove(self.editPuzzleButton)
-      self.editPuzzleButton = nil
-    end
+    self:removeEditButton()
   end
 end
 
@@ -329,33 +332,29 @@ function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, ind
       -- Create edit button for individual puzzles only
       if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
         self:createEditPuzzleButton(currentPuzzleSet, index)
-      elseif self.editPuzzleButton then
-        self.previewStackPanel:remove(self.editPuzzleButton)
-        self.editPuzzleButton = nil
+      else
+        self:removeEditButton()
       end
     end
   end
 end
 
 function PuzzleMenu:createEditPuzzleButton(puzzleSet, index)
-  -- Remove existing edit button if any
-  if self.editPuzzleButton then
-    self.previewStackPanel:remove(self.editPuzzleButton)
-  end
+  self:removeEditButton()
   
   -- Create clickable image button for edit
   local editImage = themes[config.theme].images.edit
   assert(editImage, "Edit icon must be loaded in theme")
   
-  -- Create image button using the new ImageButton class
+  -- Position it in the right corner of the preview stack
   self.editPuzzleButton = ui.ImageButton({
     image = editImage,
     width = 40,
     height = 40,
-    hAlign = "right",
-    vAlign = "top",
-    x = 0,
-    y = 0,
+    hAlign = "center",
+    vAlign = "center", 
+    x = 256,
+    y = -236,
     backgroundColor = {0, 0, 0, 0},
     outlineColor = {0, 0, 0, 0},
     onClick = function()
@@ -364,8 +363,8 @@ function PuzzleMenu:createEditPuzzleButton(puzzleSet, index)
     end
   })
   
-  -- Insert edit button at the beginning of the preview stack (before the preview)
-  self.previewStackPanel:insertElementAtIndex(self.editPuzzleButton, 1)
+  -- Add edit button directly to the UI root
+  self.uiRoot:addChild(self.editPuzzleButton)
 end
 
 function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
@@ -597,10 +596,7 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
     local trainingDescription = "Practice puzzles - the game learns which ones you find difficult and focuses on those. (" .. puzzleCount .. " available)"
     self:setPuzzleDescription(trainingDescription)
 
-    if self.editPuzzleButton then
-      self.previewStackPanel:remove(self.editPuzzleButton)
-      self.editPuzzleButton = nil
-    end
+    self:removeEditButton()
   end
 
   return result
