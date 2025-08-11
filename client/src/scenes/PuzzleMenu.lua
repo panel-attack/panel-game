@@ -235,7 +235,15 @@ function PuzzleMenu:loadMenu()
     end
   end
 
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
+  -- Create the back button with left-aligned text
+  local backTextButton = ui.TextButton({
+    label = ui.Label({
+      text = "back",
+      translate = true,
+      hAlign = "center",
+      vAlign = "center"
+    }),
+    onClick = function()
       GAME.theme:playCancelSfx()
       if self:currentlyAtRootLevel() then
         self:exit()
@@ -244,7 +252,16 @@ function PuzzleMenu:loadMenu()
         self:updateCurrentPuzzleSet()
         self:refreshMenu()
       end
-    end, self.levelSliderMenuItem.width)
+    end,
+    width = self.levelSliderMenuItem.width
+  })
+  
+  backTextButton.label.hAlign = "left"
+  backTextButton.label.x = 8 
+
+  local backMenuItem = ui.MenuItem.createMenuItem(backTextButton)
+  backMenuItem.textButton = backTextButton
+  menuOptions[#menuOptions + 1] = backMenuItem
 
   self.menu = ui.Menu({
     x = 400,
@@ -403,9 +420,6 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     nextIndices[#nextIndices+1] = index
     puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, nextIndices)
     assert(puzzle)
-    if puzzle.puzzleEverBeaten then
-      textString = textString .. " +"
-    end
   end
   
   -- Create a puzzle set iterator for the current puzzle set
@@ -425,6 +439,30 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     end,
     width = self.levelSliderMenuItem.width
   })
+  
+  textButton.label.hAlign = "left"
+  textButton.label.x = 8 
+
+  -- If puzzle has been beaten, overlay completion icon on the right side (to the left of hint)
+  if puzzle and puzzle.puzzleEverBeaten then
+    local completeImage = themes[config.theme].images.complete
+    assert(completeImage, "Complete icon must be loaded in theme")
+    
+    -- Position completion icon based on whether there's also a hint icon
+    local xOffset = puzzle and puzzle.solution and -32 or -8 -- Further left if there's also a hint icon
+    
+    local completeImageContainer = ui.ImageContainer({
+      image = completeImage,
+      width = 16,
+      height = 16,
+      hAlign = "right",
+      vAlign = "center",
+      x = xOffset,
+      y = 0
+    })
+    
+    textButton:addChild(completeImageContainer)
+  end
 
   -- If puzzle has a solution, overlay hint image on the right side of the button
   if puzzle and puzzle.solution then
@@ -454,13 +492,47 @@ end
 
 function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
   local currentPuzzleSet = self.rootPuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
-  local result = ui.MenuItem.createButtonMenuItem(currentPuzzleSet.localizedSetName, nil, false, function() 
-    GAME.theme:playValidationSfx()
-    self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
-    self:updateCurrentPuzzleSet()
-    self:refreshMenu()
-  end, self.levelSliderMenuItem.width)
+  
+  -- Create the main text button
+  local textButton = ui.TextButton({
+    label = ui.Label({
+      text = currentPuzzleSet.localizedSetName,
+      translate = false,
+      hAlign = "center",
+      vAlign = "center"
+    }),
+    onClick = function() 
+      GAME.theme:playValidationSfx()
+      self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
+      self:updateCurrentPuzzleSet()
+      self:refreshMenu()
+    end,
+    width = self.levelSliderMenuItem.width
+  })
+  
+  textButton.label.hAlign = "left"
+  textButton.label.x = 8 
 
+  -- If puzzle set is fully completed, overlay completion icon on the right side
+  if currentPuzzleSet:isCompleted() then
+    local completeImage = themes[config.theme].images.complete
+    assert(completeImage, "Complete icon must be loaded in theme")
+    
+    local completeImageContainer = ui.ImageContainer({
+      image = completeImage,
+      width = 16,
+      height = 16,
+      hAlign = "right",
+      vAlign = "center",
+      x = -8, -- 8 pixels from right edge
+      y = 0
+    })
+    
+    textButton:addChild(completeImageContainer)
+  end
+
+  local result = ui.MenuItem.createMenuItem(textButton)
+  result.textButton = textButton
   result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, false)
 
   return result
@@ -476,9 +548,25 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
   end
 
   local trainingSetName = loc("puzzle_training") .. " " .. puzzleCount
-  local result = ui.MenuItem.createButtonMenuItem(trainingSetName, nil, false, function() 
-    self:startGame(self.rootPuzzleSet, trainingPuzzleSetIterator)
-  end, self.levelSliderMenuItem.width)
+  
+  local trainingTextButton = ui.TextButton({
+    label = ui.Label({
+      text = trainingSetName,
+      translate = false,
+      hAlign = "center",
+      vAlign = "center"
+    }),
+    onClick = function() 
+      self:startGame(self.rootPuzzleSet, trainingPuzzleSetIterator)
+    end,
+    width = self.levelSliderMenuItem.width
+  })
+  
+  trainingTextButton.label.hAlign = "left"
+  trainingTextButton.label.x = 8 
+
+  local result = ui.MenuItem.createMenuItem(trainingTextButton)
+  result.textButton = trainingTextButton
 
   -- Preview the first training puzzle
   result.onSelectedFunction = function()

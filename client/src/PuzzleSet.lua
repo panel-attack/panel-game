@@ -332,6 +332,37 @@ function PuzzleSet:getPuzzleFromIndices(puzzleSetIndices, puzzleIndex)
   return nil
 end
 
+-- Check if all puzzles in this set have been completed
+-- This includes both direct puzzles and all puzzles in nested puzzle sets
+---@return boolean
+function PuzzleSet:isCompleted()
+  -- A puzzle set is considered completed if it has content and all content is completed
+  local hasContent = false
+  
+  -- Check all direct puzzles in this set
+  if self.puzzles and #self.puzzles > 0 then
+    hasContent = true
+    for _, puzzle in ipairs(self.puzzles) do
+      if not puzzle.puzzleEverBeaten then
+        return false
+      end
+    end
+  end
+  
+  -- Check all nested puzzle sets recursively
+  if self.puzzleSets and #self.puzzleSets > 0 then
+    hasContent = true
+    for _, nestedPuzzleSet in ipairs(self.puzzleSets) do
+      if not nestedPuzzleSet:isCompleted() then
+        return false
+      end
+    end
+  end
+  
+  -- Return true only if the set has content and all of it is completed
+  return hasContent
+end
+
 -- Update a puzzle at the specified index
 ---@param index integer
 ---@param newPuzzle Puzzle
