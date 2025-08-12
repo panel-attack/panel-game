@@ -72,12 +72,18 @@ function PuzzleGame:getCurrentPuzzle()
   return nil
 end
 
-function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet)
+function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet, advance)
   -- Store current stage info for potential preservation
   local currentStageId = battleRoom.match and battleRoom.match.stageId or nil
   
-  -- Get the first puzzle from the iterator
-  local puzzleIndices = puzzleSetIterator:nextPuzzle()
+  -- Get puzzle indices - either advance to next or stay on current
+  local puzzleIndices
+  if advance == false then
+    puzzleIndices = puzzleSetIterator:currentPuzzle()
+  else
+    puzzleIndices = puzzleSetIterator:nextPuzzle()
+  end
+  
   if puzzleIndices then
     local puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, puzzleIndices)
     if puzzle then
@@ -257,12 +263,11 @@ end
 function PuzzleGame:customGameOverSetup()
   if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
-    if not self.hintUsed then
-      self:savePuzzleRecordResult(true)
-    end
+    self:savePuzzleRecordResult(not self.hintUsed)
     self:recordPuzzleSolution()
     
-    local puzzleIndices = PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet)
+    -- If hint/solution was used, stay on the same puzzle; otherwise advance to next
+    local puzzleIndices = PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet, not self.hintUsed)
     if puzzleIndices then
     else
       self.puzzleSetIterator = nil

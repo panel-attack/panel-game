@@ -167,7 +167,7 @@ function PuzzleHelpDisplay:updateContent()
 end
 
 function PuzzleHelpDisplay:updateVisibility()
-  self.visible = (self.state ~= PuzzleHelpState.HIDDEN) or self.puzzle.helpDescription ~= nil
+  self.visible = (self.state ~= PuzzleHelpState.HIDDEN) or (self.puzzle.helpDescription ~= nil and self.puzzle.helpDescription ~= "")
 end
 
 function PuzzleHelpDisplay:updateDimensions()

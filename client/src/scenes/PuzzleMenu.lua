@@ -62,7 +62,7 @@ function PuzzleMenu:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
     puzzleSetIterator = puzzleSetIterator
   }
 
-  if PuzzleGame.setupNextPuzzle(self.battleRoom, puzzleSetIterator, puzzleSet) == nil then
+  if PuzzleGame.setupNextPuzzle(self.battleRoom, puzzleSetIterator, puzzleSet, true) == nil then
     assert(false, "could not setup puzzle")
   end
 end
