@@ -106,7 +106,7 @@ local Game = class(
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  PuzzleLibrary.writeDefaultPuzzles("client/assets/default_data/puzzles", "docs/puzzles.txt", consts.PUZZLES_SAVE_DIRECTORY)
+  PuzzleLibrary.cleanupDefaultPuzzles(consts.PUZZLES_SAVE_DIRECTORY)
 
   -- move to constructor
   self.updater = GAME_UPDATER or nil

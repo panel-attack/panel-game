@@ -17,8 +17,9 @@ local PuzzleLibrary =
 
 ---@return table<integer, table> all the puzzle sets
 function PuzzleLibrary:getDefaultPuzzleSet()
-  local directory = consts.PUZZLES_SAVE_DIRECTORY
+  local directory = consts.PUZZLES_LOAD_DIRECTORY
   local puzzleSet = self:puzzleSetFromPath(directory)
+  self:addPuzzleSetDirToPuzzleSet(puzzleSet, consts.PUZZLES_SAVE_DIRECTORY)
 
   self:addStatisticsToPuzzleSet(puzzleSet)
 
@@ -42,7 +43,15 @@ end
 -- @return PuzzleSet 
 function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
   local puzzleSet = PuzzleSet(subDirectory or "pz_puzzles", nil, {}, {})
+  self:addPuzzleSetDirToPuzzleSet(puzzleSet, fullPath)
+  return puzzleSet
+end
 
+-- Adds puzzles from the given directory path to an existing puzzle set.
+-- Puzzle sets are embedded recursively
+-- @param puzzleSet PuzzleSet The existing puzzle set to add to
+-- @param fullPath string The directory path to read puzzles from
+function PuzzleLibrary:addPuzzleSetDirToPuzzleSet(puzzleSet, fullPath)
   local puzzleFiles = FileUtils.getFilteredDirectoryItems(fullPath, "file")
 
   table.sort(puzzleFiles, function(a, b)
@@ -67,8 +76,6 @@ function PuzzleLibrary:puzzleSetFromPath(fullPath, subDirectory)
     local currentPuzzleSet = self:puzzleSetFromPath(fullPath .. "/" .. subDirectory, subDirectory)
     puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = currentPuzzleSet
   end
-
-  return puzzleSet
 end
 
 -- Helper function to load from a puzzle file
@@ -104,15 +111,8 @@ function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
   return result
 end
 
--- writes the stock puzzles to the user's puzzle directory
-function PuzzleLibrary.writeDefaultPuzzles(defaultPuzzleDirectory, readmePath, savePuzzleDirectory)
-  pcall(
-    function()
-      love.filesystem.createDirectory(savePuzzleDirectory)
-      FileUtils.recursiveCopy(defaultPuzzleDirectory, savePuzzleDirectory)
-      FileUtils.copyFile(readmePath, savePuzzleDirectory .. "/README.txt")
-    end
-  )
+-- removes the stock puzzles to the user's puzzle directory
+function PuzzleLibrary.cleanupDefaultPuzzles(savePuzzleDirectory)
   pcall(
     function()
       local oldPuzzleFile = savePuzzleDirectory .. "/stock (example).json"
