@@ -328,6 +328,7 @@ function Theme:loadMenuGraphics()
   self.images.edit = self:load_theme_img("edit")
   self.images.hint = self:load_theme_img("hint")
   self.images.complete = self:load_theme_img("complete")
+  self.images.partial = self:load_theme_img("partial")
 end
 
 ---@param theme Theme

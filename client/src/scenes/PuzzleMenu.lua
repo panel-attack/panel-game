@@ -548,6 +548,21 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
     })
     
     textButton:addChild(completeImageContainer)
+  elseif currentPuzzleSet:isPartiallyCompleted() then
+    local partialImage = themes[config.theme].images.partial
+    assert(partialImage, "Partial icon must be loaded in theme")
+    
+    local partialImageContainer = ui.ImageContainer({
+      image = partialImage,
+      width = 16,
+      height = 16,
+      hAlign = "right",
+      vAlign = "center",
+      x = -8, -- 8 pixels from right edge
+      y = 0
+    })
+    
+    textButton:addChild(partialImageContainer)
   end
 
   local result = ui.MenuItem.createMenuItem(textButton)

@@ -363,6 +363,44 @@ function PuzzleSet:isCompleted()
   return hasContent
 end
 
+-- Check if this puzzle set has some but not all puzzles completed
+-- This includes both direct puzzles and all puzzles in nested puzzle sets
+---@return boolean
+function PuzzleSet:isPartiallyCompleted()
+  -- If fully completed, it's not partially completed
+  if self:isCompleted() then
+    return false
+  end
+  
+  local hasContent = false
+  local hasCompletedContent = false
+  
+  -- Check all direct puzzles in this set
+  if self.puzzles and #self.puzzles > 0 then
+    hasContent = true
+    for _, puzzle in ipairs(self.puzzles) do
+      if puzzle.puzzleEverBeaten then
+        hasCompletedContent = true
+        break
+      end
+    end
+  end
+  
+  -- Check all nested puzzle sets recursively
+  if self.puzzleSets and #self.puzzleSets > 0 then
+    hasContent = true
+    for _, nestedPuzzleSet in ipairs(self.puzzleSets) do
+      if nestedPuzzleSet:isCompleted() or nestedPuzzleSet:isPartiallyCompleted() then
+        hasCompletedContent = true
+        break
+      end
+    end
+  end
+  
+  -- Return true if the set has content and some (but not all) of it is completed
+  return hasContent and hasCompletedContent
+end
+
 -- Update a puzzle at the specified index
 ---@param index integer
 ---@param newPuzzle Puzzle
