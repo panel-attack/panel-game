@@ -308,6 +308,12 @@ function PuzzleMenu:updatePuzzlePreviewStackForPuzzle(puzzle)
   self.puzzlePreviewStack:setStack(stack)
 end
 
+---Creates a preview function for a puzzle set that updates the preview stack and description
+---@param puzzleSet PuzzleSet The root puzzle set to navigate from
+---@param puzzleSetIndices table Array of indices to navigate to the target puzzle set
+---@param index number|nil The specific puzzle index within the target set (nil to start from first puzzle)
+---@param isIndividualPuzzle boolean Whether this is for an individual puzzle (true) or puzzle set (false)
+---@return function The preview function to be called when the menu item is selected
 function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, isIndividualPuzzle)
   local currentPuzzleSet = self.rootPuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
   if currentPuzzleSet then
@@ -546,7 +552,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
 
   local result = ui.MenuItem.createMenuItem(textButton)
   result.textButton = textButton
-  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, false)
+  result.onSelectedFunction = self:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, nil, false)
 
   return result
 end
