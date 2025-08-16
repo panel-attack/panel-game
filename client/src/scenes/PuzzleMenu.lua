@@ -405,8 +405,10 @@ function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
   end
   
   if not tempBattleRoom.players[1].inputConfiguration then
-    tempBattleRoom.players[1]:setInputMethod("touch")
-    tempBattleRoom.players[1]:restrictInputs(GAME.input.mouse)
+    local player = tempBattleRoom.players[1]
+    assert(player)
+    player:setInputMethod("controller")
+    player:restrictInputs(GAME.input.inputConfigurations[1])
   end
   
   local match = tempBattleRoom:createMatch()

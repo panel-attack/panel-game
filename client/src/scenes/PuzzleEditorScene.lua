@@ -16,6 +16,7 @@ local directsFocus = require("client.src.ui.FocusDirector")
 ---@field rootPuzzleSet PuzzleSet?
 ---@field puzzleSetPath table<integer>?
 ---@field selectedPanelType integer
+---@field cursorMode boolean
 ---@field isEditing boolean
 ---@field hasUnsavedChanges boolean
 ---@field touchInputDetector any
@@ -35,6 +36,7 @@ local PuzzleEditorScene = class(
     self.puzzleSetPath = sceneParams.puzzleSetPath or {}
 
     self.selectedPanelType = 1
+    self.cursorMode = false
     self.isEditing = true
     self.hasUnsavedChanges = false
   end,
@@ -48,6 +50,12 @@ function PuzzleEditorScene:customLoad()
 
   if self.match.stacks[1] then
     self.match.stacks[1].engine.do_countdown = true
+    
+    -- Initialize cursor position from puzzle if set
+    if self.originalPuzzle.cursorStartLeft then
+      self.match.stacks[1].engine.cur_row = self.originalPuzzle.cursorStartLeft.row
+      self.match.stacks[1].engine.cur_col = self.originalPuzzle.cursorStartLeft.column
+    end
   end
 
   self:createUI()
@@ -168,12 +176,28 @@ function PuzzleEditorScene:createPaletteButtons()
     palettePanel:addChild(button)
   end
 
+  -- Add cursor button after the colorless button
+  local cursorIndex = #colors + 1
+  local row = math.floor((cursorIndex - 1) / buttonsPerRow)
+  local col = (cursorIndex - 1) % buttonsPerRow
+  
+  local x = col * (buttonSize + spacing)
+  local y = row * (buttonSize + spacing)
+  
+  local cursorButton = self:createCursorButton(buttonSize)
+  cursorButton.x = x
+  cursorButton.y = y
+  
+  self.paletteButtons[cursorIndex] = {button = cursorButton, color = "cursor"}
+  palettePanel:addChild(cursorButton)
+
   return palettePanel
 end
 
 function PuzzleEditorScene:updatePaletteSelection()
   for _, paletteButton in ipairs(self.paletteButtons) do
-    if paletteButton.color == self.selectedPanelType then
+    if (paletteButton.color == self.selectedPanelType and not self.cursorMode) or 
+       (paletteButton.color == "cursor" and self.cursorMode) then
       paletteButton.button.backgroundColor = {.5, .5, 1, .7}
     else
       paletteButton.button.backgroundColor = {.3, .3, .3, .7}
@@ -256,6 +280,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
       height = size,
       onClick = function()
         self.selectedPanelType = color
+        self.cursorMode = false
         self:updatePaletteSelection()
         GAME.theme:playValidationSfx()
       end
@@ -271,6 +296,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
       height = size,
       onClick = function()
         self.selectedPanelType = color
+        self.cursorMode = false
         self:updatePaletteSelection()
         GAME.theme:playValidationSfx()
       end
@@ -287,11 +313,27 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
       height = size,
       onClick = function()
         self.selectedPanelType = color
+        self.cursorMode = false
         self:updatePaletteSelection()
         GAME.theme:playValidationSfx()
       end
     })
   end
+end
+
+function PuzzleEditorScene:createCursorButton(size)
+  local cursorImage = GAME.theme.images.cursor[1].image
+  
+  return ui.ImageButton({
+    image = cursorImage,
+    width = size,
+    height = size,
+    onClick = function()
+      self.cursorMode = true
+      self:updatePaletteSelection()
+      GAME.theme:playValidationSfx()
+    end
+  })
 end
 
 function PuzzleEditorScene:getColorName(color)
@@ -311,11 +353,38 @@ function PuzzleEditorScene:getColorName(color)
 end
 
 function PuzzleEditorScene:editPanel(row, column, newColor)
-  logger.debug("editPanel called: row=" .. row .. ", column=" .. column .. ", newColor=" .. newColor)
+  logger.debug("editPanel called: row=" .. row .. ", column=" .. column .. ", newColor=" .. newColor .. ", cursorMode=" .. tostring(self.cursorMode))
   local stack = self.match.stacks[1]
 
   if row < 1 or row > #stack.engine.panels or column < 1 or column > stack.engine.width then
     logger.warn("editPanel: Invalid coordinates")
+    return
+  end
+
+  if self.cursorMode then
+    -- Handle cursor position setting
+    if column >= 1 and column <= 5 then
+      -- Set cursor start position
+      self.originalPuzzle.cursorStartLeft = {row = row, column = column}
+      -- Update the live stack cursor position
+      stack.engine.cur_row = row
+      stack.engine.cur_col = column
+      logger.debug("Cursor start position set to row=" .. row .. ", column=" .. column)
+    else
+      -- Remove cursor start position if clicked outside columns 1-5
+      self.originalPuzzle.cursorStartLeft = nil
+      -- Reset cursor to default position when removed
+      stack.engine.cur_row = 7
+      stack.engine.cur_col = 3
+      logger.debug("Cursor start position removed")
+    end
+    
+    if not self.hasUnsavedChanges then
+      self.hasUnsavedChanges = true
+      self.statusLabel:setText("* Unsaved changes")
+    end
+    
+    -- Stay in cursor mode until user selects a different tool
     return
   end
 
