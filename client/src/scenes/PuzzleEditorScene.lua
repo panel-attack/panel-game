@@ -66,7 +66,7 @@ function PuzzleEditorScene:createUI()
   })
 
   self.gameViewPanel = ui.UiElement({
-    width = consts.CANVAS_WIDTH - 250,
+    width = consts.CANVAS_WIDTH - 320,
     height = consts.CANVAS_HEIGHT
   })
 
@@ -74,10 +74,10 @@ function PuzzleEditorScene:createUI()
 
   self.editorPanel = ui.StackPanel({
     alignment = "top",
-    width = 250,
+    width = 300,
     height = consts.CANVAS_HEIGHT,
     x = 20,
-    y = 50
+    y = 20
   })
 
   local controls = self:createEditorControls()
@@ -103,8 +103,7 @@ function PuzzleEditorScene:createPuzzleGrid()
     x = scaledOriginX,
     y = scaledOriginY,
     width = stack.engine.width * panelSize,
-    height = stack.engine.height * panelSize,
-    backgroundColor = {0, 1, 0, 0.3}
+    height = stack.engine.height * panelSize
   })
 
   for row = 1, stack.engine.height do
@@ -114,8 +113,8 @@ function PuzzleEditorScene:createPuzzleGrid()
         y = (row - 1) * panelSize,
         width = panelSize - 2,
         height = panelSize - 2,
-        backgroundColor = {0.2, 0.2, 0.2, 0.1}, 
-        borderColor = {0.5, 0.5, 0.5, 0.2},
+        backgroundColor = {0.2, 0.2, 0.2, 0.0}, 
+        outlineColor = {0.5, 0.5, 0.5, 0.0},
         borderWidth = 1,
         onClick = function()
           -- Convert visual row to engine row (flip vertically)
@@ -134,40 +133,39 @@ end
 
 function PuzzleEditorScene:createPaletteButtons()
   local colors = Panel.extendedRegularColorsArray()
-  table.insert(colors, 1, 0)
-  table.insert(colors, 8)
+  table.insert(colors, 1, 0)  -- empty
+  table.insert(colors, 8)     -- shock
+  table.insert(colors, 9)     -- colorless
 
-  local palettePanel = ui.StackPanel({
-    alignment = "top",
-    width = 200,
-    height = 300
+  local palettePanel = ui.UiElement({
+    width = 280,
+    height = 200
   })
 
   self.paletteButtons = {}
 
+  -- Arrange buttons in a 3x3 grid with one extra
+  local buttonSize = 40
+  local spacing = 10
+  local buttonsPerRow = 3
+  
   for i, color in ipairs(colors) do
-    local colorName = self:getColorName(color)
-    local button = ui.TextButton({
-      label = ui.Label({
-        text = colorName,
-        fontSize = 12,
-        translate = false
-      }),
-      width = 120,
-      height = 25,
-      onClick = function()
-        self.selectedPanelType = color
-        self:updatePaletteSelection()
-        GAME.theme:playValidationSfx()
-      end
-    })
+    local row = math.floor((i - 1) / buttonsPerRow)
+    local col = (i - 1) % buttonsPerRow
+    
+    local x = col * (buttonSize + spacing)
+    local y = row * (buttonSize + spacing)
+    
+    local button = self:createPanelButtonSmall(color, buttonSize)
+    button.x = x
+    button.y = y
 
     if i == 1 then
       button.backgroundColor = {.5, .5, 1, .7}
     end
 
     self.paletteButtons[i] = {button = button, color = color}
-    palettePanel:addElement(button)
+    palettePanel:addChild(button)
   end
 
   return palettePanel
@@ -203,16 +201,23 @@ function PuzzleEditorScene:createEditorControls()
   controls[#controls + 1] = self.palettePanel
 
   controls[#controls + 1] = ui.TextButton({
+    label = ui.Label({text = "Clear Solution"}),
+    width = 100,
+    height = 25,
+    onClick = function() self:clearSolution() end
+  })
+
+  controls[#controls + 1] = ui.TextButton({
     label = ui.Label({text = "Save Puzzle"}),
-    width = 120,
-    height = 30,
+    width = 100,
+    height = 25,
     onClick = function() self:savePuzzle() end
   })
 
   controls[#controls + 1] = ui.TextButton({
     label = ui.Label({text = "Exit Editor"}),
-    width = 120,
-    height = 30,
+    width = 100,
+    height = 25,
     onClick = function() self:exitEditor() end
   })
 
@@ -234,6 +239,61 @@ function PuzzleEditorScene:setupFocusManagement()
   self:setFocus(self.palettePanel)
 end
 
+function PuzzleEditorScene:createPanelButton(color)
+  return self:createPanelButtonSmall(color, 60)
+end
+
+function PuzzleEditorScene:createPanelButtonSmall(color, size)
+  if color == 0 then
+    -- Empty panel - use a text button
+    return ui.TextButton({
+      label = ui.Label({
+        text = "Empty",
+        fontSize = size > 50 and 12 or 8,
+        translate = false
+      }),
+      width = size,
+      height = size,
+      onClick = function()
+        self.selectedPanelType = color
+        self:updatePaletteSelection()
+        GAME.theme:playValidationSfx()
+      end
+    })
+  elseif color == 9 then
+    -- Colorless panel - use the actual panel image
+    local stack = self.match.stacks[1]
+    local panelsData = panels[stack.panels_dir]
+    
+    return ui.ImageButton({
+      image = panelsData.greyPanel,
+      width = size,
+      height = size,
+      onClick = function()
+        self.selectedPanelType = color
+        self:updatePaletteSelection()
+        GAME.theme:playValidationSfx()
+      end
+    })
+  else
+    -- Regular colored panels (1-8) - use the actual panel image
+    local stack = self.match.stacks[1]
+    local panelsData = panels[stack.panels_dir]
+    local panelImage = panelsData.displayIcons[color]
+    
+    return ui.ImageButton({
+      image = panelImage,
+      width = size,
+      height = size,
+      onClick = function()
+        self.selectedPanelType = color
+        self:updatePaletteSelection()
+        GAME.theme:playValidationSfx()
+      end
+    })
+  end
+end
+
 function PuzzleEditorScene:getColorName(color)
   local names = {
     [0] = "Empty",
@@ -244,7 +304,8 @@ function PuzzleEditorScene:getColorName(color)
     [5] = "Diamonds",
     [6] = "Inv Tri",
     [7] = "Squares",
-    [8] = "Shock"
+    [8] = "Shock",
+    [9] = "Colorless"
   }
   return names[color] or "Unknown"
 end
@@ -282,7 +343,7 @@ function PuzzleEditorScene:keypressed(key)
     end
   elseif key == "s" and (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) then
     self:savePuzzle()
-  elseif key >= "0" and key <= "8" then
+  elseif key >= "0" and key <= "9" then
     local newType = tonumber(key)
     if newType then
       self.selectedPanelType = newType
@@ -324,7 +385,24 @@ function PuzzleEditorScene:promptSave()
   self:exitEditor()
 end
 
+function PuzzleEditorScene:clearSolution()
+  -- Clear the solution from the original puzzle
+  self.originalPuzzle.solution = nil
+  
+  -- Mark as having unsaved changes
+  if not self.hasUnsavedChanges then
+    self.hasUnsavedChanges = true
+    self.statusLabel:setText("* Unsaved changes")
+  end
+  
+  logger.debug("Puzzle solution cleared")
+end
+
 function PuzzleEditorScene:exitEditor()
+  -- Clean up input configuration to prevent double claiming
+  if self.match and self.match.stacks[1] and self.match.stacks[1].player then
+    self.match.stacks[1].player:unrestrictInputs()
+  end
   GAME.navigationStack:pop()
 end
 
