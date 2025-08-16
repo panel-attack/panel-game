@@ -21,6 +21,7 @@ local Stack = require("common.engine.Stack")
 ---@field battleRoom BattleRoom
 ---@field rootPuzzleSet table
 ---@field currentPuzzleSetIndices table<integer, integer> integer index into sub puzzle sets
+---@field selectedIndexStack table<integer, integer> stores selected menu index for each navigation level
 ---@field puzzlePreviewStack StackElement
 ---@field puzzleDescriptionLabel Label
 local PuzzleMenu = class(
@@ -37,6 +38,7 @@ local PuzzleMenu = class(
     self.battleRoom = sceneParams.battleRoom
     self.rootPuzzleSet = nil
     self.currentPuzzleSetIndices = {}
+    self.selectedIndexStack = {}
 
     self:load(sceneParams)
   end,
@@ -83,12 +85,23 @@ end
 
 
 function PuzzleMenu:refresh()
+  -- Preserve current selected index when refreshing from puzzle game
+  local currentSelectedIndex = nil
+  if self.menu then
+    currentSelectedIndex = self.menu.selectedIndex
+  end
+  
   self:updateCurrentPuzzleSet()
   -- Reload puzzle statistics to show updated completion status
   if self.rootPuzzleSet then
     self.puzzleLibrary:addStatisticsToPuzzleSet(self.rootPuzzleSet)
   end
   self:refreshMenu()
+  
+  -- Restore the selected index after menu refresh
+  if self.menu and currentSelectedIndex and currentSelectedIndex <= #self.menu.menuItems then
+    self.menu:setSelectedIndex(currentSelectedIndex)
+  end
 end
 
 function PuzzleMenu:load(sceneParams)
@@ -249,8 +262,14 @@ function PuzzleMenu:loadMenu()
         self:exit()
       else
         table.remove(self.currentPuzzleSetIndices)
+        -- Restore the previous selected index when going back
+        local previousSelectedIndex = table.remove(self.selectedIndexStack) or 1
         self:updateCurrentPuzzleSet()
         self:refreshMenu()
+        -- Set the selected index after the menu is refreshed
+        if self.menu and previousSelectedIndex <= #self.menu.menuItems then
+          self.menu:setSelectedIndex(previousSelectedIndex)
+        end
       end
     end,
     width = self.levelSliderMenuItem.width
@@ -522,6 +541,10 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
     }),
     onClick = function() 
       GAME.theme:playValidationSfx()
+      -- Save current selected index before navigating
+      if self.menu and self.menu.selectedIndex <= #self.menu.menuItems then
+        self.selectedIndexStack[#self.selectedIndexStack+1] = self.menu.selectedIndex
+      end
       self.currentPuzzleSetIndices[#self.currentPuzzleSetIndices+1] = index
       self:updateCurrentPuzzleSet()
       self:refreshMenu()
