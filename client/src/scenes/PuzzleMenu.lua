@@ -3,10 +3,12 @@ local Scene = require("client.src.scenes.Scene")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local ui = require("client.src.ui")
+local BattleRoom = require("client.src.BattleRoom")
 local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
 local PuzzleHierarchyDisplay = require("client.src.graphics.PuzzleHierarchyDisplay")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
+local PuzzleEditorScene = require("client.src.scenes.PuzzleEditorScene")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local LevelPresets      = require("common.data.LevelPresets")
@@ -396,7 +398,6 @@ function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
   -- Create a match for the editor like BattleRoom does
   local puzzle = puzzleSet.puzzles[index]
   local gameMode = puzzle:toGameMode()
-  local BattleRoom = require("client.src.BattleRoom")
   local tempBattleRoom = BattleRoom.createLocalFromGameMode(gameMode)
   tempBattleRoom.panelSource = puzzleSet.puzzles[index]:toPanelSource(false)
   if not tempBattleRoom then
@@ -434,7 +435,6 @@ function PuzzleMenu:openPuzzleEditor(puzzleSet, index)
     end
   end
   
-  local PuzzleEditorScene = require("client.src.scenes.PuzzleEditorScene")
   local editor = PuzzleEditorScene({
     match = match, 
     puzzleSet = puzzleSet, 

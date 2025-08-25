@@ -2,12 +2,14 @@ local GameBase = require("client.src.scenes.GameBase")
 local TouchInputDetector = require("client.src.TouchInputDetector")
 local Panel = require("common.engine.Panel")
 local Puzzle = require("common.engine.Puzzle")
+local PuzzleEditorStackOverlay = require("client.src.ui.PuzzleEditorStackOverlay")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local consts = require("common.engine.consts")
 local ui = require("client.src.ui")
 local focusable = require("client.src.ui.Focusable")
 local directsFocus = require("client.src.ui.FocusDirector")
+
 
 ---@class PuzzleEditorScene : GameBase
 ---@field puzzleSet PuzzleSet
@@ -37,6 +39,12 @@ local PuzzleEditorScene = class(
 
     self.selectedPanelType = 1
     self.cursorMode = false
+    self.garbageMode = false
+    self.shockGarbageMode = false
+    self.isDraggingGarbage = false
+    self.garbageDragStart = nil
+    self.garbageDragCurrent = nil
+    self.garbageIdCounter = 0
     self.isEditing = true
     self.hasUnsavedChanges = false
   end,
@@ -107,36 +115,20 @@ function PuzzleEditorScene:createPuzzleGrid()
   local scaledOriginX = stack.panelOriginX * stack.gfxScale
   local scaledOriginY = stack.panelOriginY * stack.gfxScale
 
-  local puzzleGridContainer = ui.UiElement({
+  -- Create single overlay for all touch interactions and drawing
+  local stackOverlay = PuzzleEditorStackOverlay({
     x = scaledOriginX,
     y = scaledOriginY,
     width = stack.engine.width * panelSize,
-    height = stack.engine.height * panelSize
+    height = stack.engine.height * panelSize,
+    stack = stack,
+    puzzleEditor = self
   })
 
-  for row = 1, stack.engine.height do
-    for col = 1, stack.engine.width do
-      local panelButton = ui.Button({
-        x = (col - 1) * panelSize,
-        y = (row - 1) * panelSize,
-        width = panelSize - 2,
-        height = panelSize - 2,
-        backgroundColor = {0.2, 0.2, 0.2, 0.0}, 
-        outlineColor = {0.5, 0.5, 0.5, 0.0},
-        borderWidth = 1,
-        onClick = function()
-          -- Convert visual row to engine row (flip vertically)
-          local engineRow = stack.engine.height - row + 1
-          logger.debug("Grid button clicked at visual row=" .. row .. ", engine row=" .. engineRow .. ", col=" .. col .. ", selectedType=" .. self.selectedPanelType)
-          self:editPanel(engineRow, col, self.selectedPanelType)
-        end
-      })
+  -- Store reference for access by other methods
+  self.puzzleStackOverlay = stackOverlay
 
-      puzzleGridContainer:addChild(panelButton)
-    end
-  end
-
-  return puzzleGridContainer
+  return stackOverlay
 end
 
 function PuzzleEditorScene:createPaletteButtons()
@@ -147,7 +139,7 @@ function PuzzleEditorScene:createPaletteButtons()
 
   local palettePanel = ui.UiElement({
     width = 280,
-    height = 200
+    height = 300
   })
 
   self.paletteButtons = {}
@@ -191,13 +183,45 @@ function PuzzleEditorScene:createPaletteButtons()
   self.paletteButtons[cursorIndex] = {button = cursorButton, color = "cursor"}
   palettePanel:addChild(cursorButton)
 
+  -- Add garbage button
+  local garbageIndex = cursorIndex + 1
+  row = math.floor((garbageIndex - 1) / buttonsPerRow)
+  col = (garbageIndex - 1) % buttonsPerRow
+  
+  x = col * (buttonSize + spacing)
+  y = row * (buttonSize + spacing)
+  
+  local garbageButton = self:createGarbageButton(buttonSize)
+  garbageButton.x = x
+  garbageButton.y = y
+  
+  self.paletteButtons[garbageIndex] = {button = garbageButton, color = "garbage"}
+  palettePanel:addChild(garbageButton)
+
+  -- Add shock garbage button
+  local shockGarbageIndex = garbageIndex + 1
+  row = math.floor((shockGarbageIndex - 1) / buttonsPerRow)
+  col = (shockGarbageIndex - 1) % buttonsPerRow
+  
+  x = col * (buttonSize + spacing)
+  y = row * (buttonSize + spacing)
+  
+  local shockGarbageButton = self:createShockGarbageButton(buttonSize)
+  shockGarbageButton.x = x
+  shockGarbageButton.y = y
+  
+  self.paletteButtons[shockGarbageIndex] = {button = shockGarbageButton, color = "shock_garbage"}
+  palettePanel:addChild(shockGarbageButton)
+
   return palettePanel
 end
 
 function PuzzleEditorScene:updatePaletteSelection()
   for _, paletteButton in ipairs(self.paletteButtons) do
-    if (paletteButton.color == self.selectedPanelType and not self.cursorMode) or 
-       (paletteButton.color == "cursor" and self.cursorMode) then
+    if (paletteButton.color == self.selectedPanelType and not self.cursorMode and not self.garbageMode and not self.shockGarbageMode) or 
+       (paletteButton.color == "cursor" and self.cursorMode) or
+       (paletteButton.color == "garbage" and self.garbageMode) or
+       (paletteButton.color == "shock_garbage" and self.shockGarbageMode) then
       paletteButton.button.backgroundColor = {.5, .5, 1, .7}
     else
       paletteButton.button.backgroundColor = {.3, .3, .3, .7}
@@ -281,6 +305,8 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
       onClick = function()
         self.selectedPanelType = color
         self.cursorMode = false
+        self.garbageMode = false
+        self.shockGarbageMode = false
         self:updatePaletteSelection()
         GAME.theme:playValidationSfx()
       end
@@ -297,6 +323,8 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
       onClick = function()
         self.selectedPanelType = color
         self.cursorMode = false
+        self.garbageMode = false
+        self.shockGarbageMode = false
         self:updatePaletteSelection()
         GAME.theme:playValidationSfx()
       end
@@ -314,6 +342,8 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
       onClick = function()
         self.selectedPanelType = color
         self.cursorMode = false
+        self.garbageMode = false
+        self.shockGarbageMode = false
         self:updatePaletteSelection()
         GAME.theme:playValidationSfx()
       end
@@ -330,6 +360,75 @@ function PuzzleEditorScene:createCursorButton(size)
     height = size,
     onClick = function()
       self.cursorMode = true
+      self.garbageMode = false
+      self.shockGarbageMode = false
+      self:updatePaletteSelection()
+      GAME.theme:playValidationSfx()
+    end
+  })
+end
+
+function PuzzleEditorScene:createGarbageButton(size)
+  local stack = self.match.stacks[1]
+  local garbageImage = stack.character.images.pop
+  
+  return ui.ImageButton({
+    image = garbageImage,
+    width = size,
+    height = size,
+    onClick = function()
+      self.garbageMode = true
+      self.shockGarbageMode = false
+      self.cursorMode = false
+      self:updatePaletteSelection()
+      GAME.theme:playValidationSfx()
+    end
+  })
+end
+
+function PuzzleEditorScene:createShockGarbageButton(size)
+  local stack = self.match.stacks[1]
+  local panelsData = panels[stack.panels_dir]
+  
+  -- Create a canvas to draw the shock garbage with end caps like it appears in game
+  local canvas = love.graphics.newCanvas(size, size)
+  local prevCanvas = love.graphics.getCanvas()
+  
+  canvas:renderTo(function()
+    local shockImages = panelsData.images.metals
+    local leftImage = shockImages.left
+    local midImage = shockImages.mid
+    local rightImage = shockImages.right
+    
+    -- Calculate scaling to fit the button size
+    local targetWidth = size * 0.8  -- Leave some padding
+    local targetHeight = size * 0.6
+    
+    -- Draw left cap
+    local leftWidth = targetWidth * 0.25
+    love.graphics.draw(leftImage, size * 0.1, size * 0.2, 0, leftWidth / leftImage:getWidth(), targetHeight / leftImage:getHeight())
+    
+    -- Draw middle section
+    local midWidth = targetWidth * 0.5
+    local midX = size * 0.1 + leftWidth
+    love.graphics.draw(midImage, midX, size * 0.2, 0, midWidth / midImage:getWidth(), targetHeight / midImage:getHeight())
+    
+    -- Draw right cap
+    local rightWidth = targetWidth * 0.25
+    local rightX = midX + midWidth
+    love.graphics.draw(rightImage, rightX, size * 0.2, 0, rightWidth / rightImage:getWidth(), targetHeight / rightImage:getHeight())
+  end)
+  
+  love.graphics.setCanvas(prevCanvas)
+  
+  return ui.ImageButton({
+    image = canvas,
+    width = size,
+    height = size,
+    onClick = function()
+      self.shockGarbageMode = true
+      self.garbageMode = false
+      self.cursorMode = false
       self:updatePaletteSelection()
       GAME.theme:playValidationSfx()
     end
@@ -350,6 +449,151 @@ function PuzzleEditorScene:getColorName(color)
     [9] = "Colorless"
   }
   return names[color] or "Unknown"
+end
+
+function PuzzleEditorScene:startDrag(row, column)
+  if self.garbageMode or self.shockGarbageMode then
+    self.isDraggingGarbage = true
+    self.garbageDragStart = {row = row, column = column}
+    self.garbageDragCurrent = {row = row, column = column}
+    logger.debug("Started garbage drag at row=" .. row .. ", column=" .. column)
+  else
+    -- For normal panel editing, just place the panel immediately
+    self:editPanel(row, column, self.selectedPanelType)
+  end
+end
+
+function PuzzleEditorScene:updateDrag(row, column)
+  if self.isDraggingGarbage then
+    self.garbageDragCurrent = {row = row, column = column}
+  else
+    -- For normal panel editing, continue painting panels
+    self:editPanel(row, column, self.selectedPanelType)
+  end
+end
+
+function PuzzleEditorScene:finishDrag(row, column)
+  if self.isDraggingGarbage then
+    self.garbageDragCurrent = {row = row, column = column}
+    self:placeGarbageBlock()
+    self:cancelDrag()
+  end
+end
+
+function PuzzleEditorScene:cancelDrag()
+  self.isDraggingGarbage = false
+  self.garbageDragStart = nil
+  self.garbageDragCurrent = nil
+end
+
+function PuzzleEditorScene:clearGarbageBlock(row, column)
+  local stack = self.match.stacks[1]
+  local panel = stack.engine.panels[row][column]
+  
+  -- If this panel is not garbage, nothing to clear
+  if not panel.isGarbage then
+    return
+  end
+  
+  local garbageId = panel.garbageId
+  
+  -- Find and clear all panels with the same garbage ID
+  for r = 1, stack.engine.height do
+    for c = 1, stack.engine.width do
+      local p = stack.engine.panels[r][c]
+      if p.isGarbage and p.garbageId == garbageId then
+        p:clear(true, false)
+        p.color = 0  -- Set to empty
+        p.stateChanged = true
+      end
+    end
+  end
+end
+
+
+function PuzzleEditorScene:placeGarbageBlock()
+  if not self.garbageDragStart or not self.garbageDragCurrent then
+    return
+  end
+
+  local stack = self.match.stacks[1]
+  local startRow = self.garbageDragStart.row
+  local startCol = self.garbageDragStart.column
+  local endRow = self.garbageDragCurrent.row
+  local endCol = self.garbageDragCurrent.column
+
+  -- Calculate garbage dimensions and position
+  local minRow = math.min(startRow, endRow)
+  local maxRow = math.max(startRow, endRow)
+  local minCol = math.min(startCol, endCol)
+  local maxCol = math.max(startCol, endCol)
+  
+  local width = maxCol - minCol + 1
+  local height = maxRow - minRow + 1
+  
+  -- Shock garbage is limited to 1 panel high
+  if self.shockGarbageMode and height > 1 then
+    -- Keep only the start row for shock garbage
+    maxRow = startRow
+    minRow = startRow
+    height = 1
+  elseif height > 1 and not self.shockGarbageMode then
+    -- Regular garbage can expand to 6-wide when dragging vertically
+    minCol = 1
+    maxCol = 6
+    width = 6
+  end
+
+  -- Ensure we don't exceed board boundaries
+  if maxCol > stack.engine.width then
+    local excess = maxCol - stack.engine.width
+    minCol = minCol - excess
+    maxCol = stack.engine.width
+  end
+  if minCol < 1 then
+    local deficit = 1 - minCol
+    minCol = 1
+    maxCol = maxCol + deficit
+    width = maxCol - minCol + 1
+  end
+  if maxRow > stack.engine.height then
+    local excess = maxRow - stack.engine.height
+    minRow = minRow - excess
+    maxRow = stack.engine.height
+  end
+  if minRow < 1 then
+    minRow = 1
+    height = maxRow - minRow + 1
+  end
+
+  -- Create garbage block
+  self.garbageIdCounter = self.garbageIdCounter + 1
+  local garbageId = self.garbageIdCounter
+  
+  for row = minRow, maxRow do
+    for col = minCol, maxCol do
+      if row >= 1 and row <= stack.engine.height and col >= 1 and col <= stack.engine.width then
+        local panel = stack.engine.panels[row][col]
+        panel:clear(true, false)
+        panel.isGarbage = true
+        panel.metal = self.shockGarbageMode
+        panel.color = 9 -- colorless
+        panel.garbageId = garbageId
+        panel.x_offset = col - minCol
+        panel.y_offset = row - minRow
+        panel.width = width
+        panel.height = height
+        panel.stateChanged = true
+      end
+    end
+  end
+
+  if not self.hasUnsavedChanges then
+    self.hasUnsavedChanges = true
+    self.statusLabel:setText("* Unsaved changes")
+  end
+
+  logger.debug("Placed " .. (self.shockGarbageMode and "shock " or "") .. "garbage block: " .. width .. "x" .. height .. " at (" .. minRow .. "," .. minCol .. ")")
 end
 
 function PuzzleEditorScene:editPanel(row, column, newColor)
@@ -388,12 +632,22 @@ function PuzzleEditorScene:editPanel(row, column, newColor)
     return
   end
 
+  if self.garbageMode or self.shockGarbageMode then
+    -- Garbage mode handled by drag events, not single clicks
+    return
+  end
+
   local panel = stack.engine.panels[row][column]
 
   if panel.color ~= newColor then
     if not self.hasUnsavedChanges then
       self.hasUnsavedChanges = true
       self.statusLabel:setText("* Unsaved changes")
+    end
+
+    -- If we're overwriting a garbage panel, clear the entire garbage block
+    if panel.isGarbage then
+      self:clearGarbageBlock(row, column)
     end
 
     -- Properly clear all panel state before setting new color
