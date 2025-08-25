@@ -89,8 +89,22 @@ end
 
 ---@param puzzle Puzzle
 ---@return string
-function Puzzle.getV2UUID(puzzle)
+function Puzzle.getV2UUIDOld(puzzle)
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
+  ---@diagnostic disable-next-line: return-type-mismatch
+  -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  local digest = love.data.hash("string", "sha256", hashString)
+  return love.data.encode("string", "hex", digest)
+end
+
+---@param puzzle Puzzle
+---@return string
+function Puzzle.getV2UUID(puzzle)
+  local cursorString = ""
+  if puzzle.cursorStartLeft then
+    cursorString = tostring(puzzle.cursorStartLeft.row) .. "," .. tostring(puzzle.cursorStartLeft.column)
+  end
+  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime) .. cursorString .. tostring(puzzle.panelBuffer) .. tostring(puzzle.garbageBuffer)
   ---@diagnostic disable-next-line: return-type-mismatch
   -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
   local digest = love.data.hash("string", "sha256", hashString)

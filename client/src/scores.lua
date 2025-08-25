@@ -8,8 +8,9 @@ local logger = require("common.lib.logger")
 -- 1 had only vs scores in an incompatible format
 -- 2 has vs self, time attack, endless
 -- 3 has vs self, time attack, endless, puzzles
--- 4 has vs self, time attack, endless, puzzles UUIDv2
-local currentVersion = 4
+-- 4 has vs self, time attack, endless, puzzles UUIDv2 (original)
+-- 5 has vs self, time attack, endless, puzzles UUIDv2 (with cursor/buffers)
+local currentVersion = 5
 
 -- Holds on the current scores and records for game modes
 ---@class Scores
@@ -214,6 +215,8 @@ function Scores.createFromScoreFile()
         scores.puzzleRecords = puzzleRecords
         if scores.version == 3 then
           scores:upgradeFromScoreData(scoreData)
+        elseif scores.version == 4 then
+          scores:upgradeFromV4ToV5(scoreData)
         end
       end
 
@@ -233,6 +236,24 @@ function Scores:upgradeFromScoreData(scoreData)
   local flattenedPuzzleSet = puzzleLibrary:flattenedPuzzleSetForPuzzleSet(defaultPuzzleSet)
   for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
     local oldUUID = puzzle:getV1UUID()
+    local newUUID = puzzle:getV2UUID()
+    if self.puzzleRecords[oldUUID] then
+      local oldRecords = self.puzzleRecords[oldUUID]
+      for _, record in ipairs(oldRecords) do
+        record.UUID = nil
+      end
+      self.puzzleRecords[newUUID] = oldRecords
+      self.puzzleRecords[oldUUID] = nil
+    end
+  end
+end
+
+function Scores:upgradeFromV4ToV5(scoreData)
+  local puzzleLibrary = PuzzleLibrary(Scores())
+  local defaultPuzzleSet = puzzleLibrary:getDefaultPuzzleSet()
+  local flattenedPuzzleSet = puzzleLibrary:flattenedPuzzleSetForPuzzleSet(defaultPuzzleSet)
+  for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
+    local oldUUID = puzzle:getV2UUIDOld()
     local newUUID = puzzle:getV2UUID()
     if self.puzzleRecords[oldUUID] then
       local oldRecords = self.puzzleRecords[oldUUID]
