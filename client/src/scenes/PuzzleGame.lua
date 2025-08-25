@@ -9,6 +9,7 @@ local PuzzleGoalDisplay = require("client.src.graphics.PuzzleGoalDisplay")
 local PuzzleHelpDisplay = require("client.src.ui.PuzzleHelpDisplay")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
 local PuzzleSet = require("client.src.PuzzleSet")
+local MultibarElement = require("client.src.ui.MultibarElement")
 
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
@@ -24,6 +25,7 @@ local PuzzleSet = require("client.src.PuzzleSet")
 ---@field queuedInputs string[] Queue of inputs to be fed one per frame
 ---@field inputQueueIndex integer Current position in the input queue
 ---@field hintUsed boolean Whether a hint has been used for this puzzle
+---@field multibarElement MultibarElement? Relative multibar component
 local PuzzleGame = class(
   function (self, sceneParams)
     self.keepMusic = true
@@ -104,23 +106,58 @@ function PuzzleGame:customLoad()
   -- Override drawTimer to prevent elapsed time display in puzzles
   self.match.drawTimer = function() end
   
-  -- Center the stack on screen for puzzles
-  for _, stack in ipairs(self.match.stacks) do
-    -- Calculate center position
-    local stackWidth = stack.baseWidth + stack.panelOriginXOffset
-    local centerX = (consts.CANVAS_WIDTH - stackWidth * stack.gfxScale) / 2
-    local normalY = stack.baseWidth + stack.panelOriginXOffset
-    
-    -- Move stack to center
-    stack:moveToPosition(centerX, normalY)
+  local stack = self.match.stacks[1]
+  assert(stack)
+
+  stack:moveToCenterPosition()
+  
+  local framePos = themes[config.theme].healthbar_frame_Pos
+  local frameScale = themes[config.theme].healthbar_frame_Scale * (stack.gfxScale / 3)
+  
+  local percentWidthShift = 0
+  if stack.multiplication > 0 then
+    percentWidthShift = 1
   end
+  
+  local baseX = stack:labelOriginXWithOffset(framePos, frameScale, false, stack.assets.multibar.frameAbsolute:getWidth(), percentWidthShift, false)
+  local baseY = stack:elementOriginYWithOffset(framePos, false)
+  local barPos = themes[config.theme].multibar_Pos
+  local overtimePos = themes[config.theme].multibar_LeftoverTime_Pos
+  local barAbsoluteX = stack:elementOriginXWithOffset(barPos, false)
+  local barAbsoluteY = stack:elementOriginYWithOffset(barPos, false)
+  local overtimeAbsoluteX = stack:elementOriginXWithOffset(overtimePos, false)
+  local overtimeAbsoluteY = stack:elementOriginYWithOffset(overtimePos, false)
+  
+  local relativeBarPos = {barAbsoluteX - baseX, barAbsoluteY - baseY}
+  local relativeOvertimePos = {overtimeAbsoluteX - baseX, overtimeAbsoluteY - baseY}
+  
+  self.multibarElement = MultibarElement({
+    x = baseX,
+    y = baseY,
+    stack = stack,
+    framePos = {0, 0}, -- Frame is at element origin
+    barPos = relativeBarPos,
+    overtimePos = relativeOvertimePos,
+    frameScale = themes[config.theme].healthbar_frame_Scale,
+    barScale = themes[config.theme].multibar_Scale,
+    overtimeDecimals = themes[config.theme].multibar_LeftoverTime_Decimals
+  })
+  
+  
+  self.uiRoot:addChild(self.multibarElement)
+  
+  -- Connect to pause signal to handle multibar visibility
+  self.match:connectSignal("pauseChanged", self, function(subscriber, match)
+    if self.multibarElement then
+      self.multibarElement:setVisibility(not match.isPaused)
+    end
+  end)
   
   local currentPuzzle = self:getCurrentPuzzle()
   if currentPuzzle and self.match.stacks[1] and self.match.stacks[1].engine then
     local stack = self.match.stacks[1]
     local stackWidth = stack.baseWidth + stack.panelOriginXOffset
-    local centerX = (consts.CANVAS_WIDTH - stackWidth * stack.gfxScale) / 2
-    local stackRightEdge = centerX + (stackWidth * stack.gfxScale)
+    local stackRightEdge = stack.frameOriginX * stack.gfxScale + (stackWidth * stack.gfxScale)
     
     self.puzzleGoalDisplay = PuzzleGoalDisplay({
       x = stackRightEdge + 2,
@@ -281,11 +318,7 @@ function PuzzleGame:customGameOverSetup()
 end
 
 function PuzzleGame:drawHUD()
-  if not self.match.isPaused then
-    for _, stack in ipairs(self.match.stacks) do
-      stack:drawMultibar()
-    end
-  end
+  -- HUD elements are drawn via normal element heirarchy in puzzle game
 end
 
 function PuzzleGame:drawBackground()

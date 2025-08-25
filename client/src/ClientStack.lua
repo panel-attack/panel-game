@@ -226,33 +226,76 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
 end
 
--- Positions the stack draw position for the given player
-function ClientStack:moveForRenderIndex(renderIndex)
+-- Sets up renderIndex-specific properties and assets
+function ClientStack:setupForRenderIndex(renderIndex)
   self.renderIndex = renderIndex
-  -- Position of elements should ideally be on even coordinates to avoid non pixel alignment
+
   if renderIndex == 1 then
     self.mirror_x = 1
     self.multiplication = 0
   elseif renderIndex == 2 then
     self.mirror_x = -1
     self.multiplication = 1
+  else
+    assert(false)
+    return -- Unknown renderIndex
   end
+  self:assignAssets(GAME.theme:getIngameAssetPack(renderIndex))
+end
+
+-- Calculates the outer edge scaled position for a given render index and offset
+---@param renderIndex integer the render index (1 or 2)
+---@return number outerEdgeScaled the calculated outer edge position
+function ClientStack:calculateOuterEdgeScaled(renderIndex)
+  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local stackWidth = self:canvasWidth()
+  local innerStackXMovement = 100
+  local outerStackXMovement = stackWidth + innerStackXMovement
+  local mirrorX = renderIndex == 1 and 1 or -1
+  
+  return centerX - (outerStackXMovement * mirrorX)
+end
+
+function ClientStack:calculateCenteredStackOuterEdgeScaled()
   local centerX = (GAME.globalCanvas:getWidth() / 2)
   local stackWidth = self:canvasWidth()
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement
 
-  local outerEdgeScaled = centerX - (outerStackXMovement * self.mirror_x)
+  -- Calculate normal renderIndex 1 position (no offset)
+  local normalRenderIndex1X = centerX - outerStackXMovement
+  
+  -- Desired centered position
+  local stackWidthUnscaled = self.baseWidth + self.panelOriginXOffset
+  local desiredCenterX = (consts.CANVAS_WIDTH - stackWidthUnscaled * self.gfxScale) / 2
+  
+  -- Calculate and use centering offset instead of provided xOffset
+  return centerX - (outerStackXMovement) + (desiredCenterX - normalRenderIndex1X)
+end
 
-  local frameOriginEdgeScaled = outerEdgeScaled
+-- Positions the stack draw position for the given player
+function ClientStack:moveForRenderIndex(renderIndex)
+  self:setupForRenderIndex(renderIndex)
+  
+  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local stackWidth = self:canvasWidth()
+  local innerStackXMovement = 100
+  local outerStackXMovement = stackWidth + innerStackXMovement
+  local outerNonScaled = centerX - (outerStackXMovement * self.mirror_x)
+
+  local frameOriginNonScaled = outerNonScaled
   if self.mirror_x == -1 then
-    frameOriginEdgeScaled = outerEdgeScaled - stackWidth
+    frameOriginNonScaled = outerNonScaled - stackWidth
   end
+  
+  self:moveToPosition(frameOriginNonScaled, self.baseWidth + self.panelOriginXOffset)
+end
 
-  self:moveToPosition(frameOriginEdgeScaled, self.baseWidth + self.panelOriginXOffset)
-  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerEdgeScaled / self.gfxScale) -- The outer X value of the frame
-
-  self:assignAssets(GAME.theme:getIngameAssetPack(self.renderIndex))
+-- Positions the stack centered on screen (for puzzle mode)
+function ClientStack:moveToCenterPosition()
+  local outerNonScaled = self:calculateCenteredStackOuterEdgeScaled()
+  
+  self:moveToPosition(outerNonScaled, self.baseWidth + self.panelOriginXOffset)
 end
 
 ---@param x integer in screen coordinates
@@ -262,7 +305,9 @@ function ClientStack:moveToPosition(x, y)
   self.frameOriginY = y / self.gfxScale
   self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
   self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
-  self.origin_x = x / self.gfxScale
+  local stackWidth = self.mirror_x == -1 and self:canvasWidth() or 0
+  local outerNonScaled = x + stackWidth
+  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerNonScaled / self.gfxScale)
 end
 
 -- to be used in conjunction with resetDrawArea
