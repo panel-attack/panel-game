@@ -338,31 +338,30 @@ end
 ---@return function The preview function to be called when the menu item is selected
 function PuzzleMenu:previewFunctionForPuzzleSet(puzzleSet, puzzleSetIndices, index, isIndividualPuzzle)
   local currentPuzzleSet = self.rootPuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
-  if currentPuzzleSet then
-    return function ()
-      local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)
-      local firstIndices = puzzleSetIterator:nextPuzzle()
-      if firstIndices then
-        local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.rootPuzzleSet, firstIndices)
-        if puzzle then
-          self:updatePuzzlePreviewStackForPuzzle(puzzle)
-        end
+  assert(currentPuzzleSet)
+  return function ()
+    local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)
+    local firstIndices = puzzleSetIterator:nextPuzzle()
+    if firstIndices then
+      local puzzle = PuzzleSetIterator.getPuzzleFromIndices(self.rootPuzzleSet, firstIndices)
+      if puzzle then
+        self:updatePuzzlePreviewStackForPuzzle(puzzle)
       end
-      -- For individual puzzles, check if the puzzle itself has a description
-      -- For puzzle sets, use the set's description
-      if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
-        local puzzle = currentPuzzleSet.puzzles[index]
-        self:setPuzzleDescription(puzzle.helpDescription)
-      else
-        self:setPuzzleDescription(currentPuzzleSet.localizedDescription)
-      end
-      
-      -- Create edit button for individual puzzles only
-      if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
-        self:createEditPuzzleButton(currentPuzzleSet, index)
-      else
-        self:removeEditButton()
-      end
+    end
+    -- For individual puzzles, check if the puzzle itself has a description
+    -- For puzzle sets, use the set's description
+    if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
+      local puzzle = currentPuzzleSet.puzzles[index]
+      self:setPuzzleDescription(puzzle.helpDescription)
+    else
+      self:setPuzzleDescription(currentPuzzleSet.localizedDescription)
+    end
+    
+    -- Create edit button for individual puzzles only
+    if isIndividualPuzzle and index and currentPuzzleSet.puzzles and currentPuzzleSet.puzzles[index] then
+      self:createEditPuzzleButton(currentPuzzleSet, index)
+    else
+      self:removeEditButton()
     end
   end
 end

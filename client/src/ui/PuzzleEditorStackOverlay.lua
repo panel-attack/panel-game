@@ -92,6 +92,7 @@ local function enablePreviewMode()
     originalDrawGfxScaled = GraphicsUtil.draw
   end
   -- Replace with transparent version
+  ---@diagnostic disable-next-line: duplicate-set-field
   GraphicsUtil.draw = function(img, x, y, rot, xScale, yScale)
     if not img then return end
     local prevBlendMode, prevAlphaMode = love.graphics.getBlendMode()

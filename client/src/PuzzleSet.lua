@@ -10,6 +10,7 @@ local logger = require("common.lib.logger")
 ---@field localizedSetName string
 ---@field localizedDescription string
 ---@field puzzles Puzzle[]
+---@field puzzleSets PuzzleSet[]
 ---@field fileSource string?
 local PuzzleSet = class(
 function(self, setName, description, puzzles, puzzleSets)

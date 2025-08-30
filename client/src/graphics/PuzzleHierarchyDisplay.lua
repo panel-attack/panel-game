@@ -58,18 +58,18 @@ function PuzzleHierarchyDisplay:buildParts()
     self:updateDimensions()
     return
   end
-  
+
   local parts = {}
   local currentSet = self.puzzleSet
   local depth = 0
-  
+
   -- Add root set name
   parts[#parts + 1] = {
-    text = currentSet.localizedSetName or currentSet.setName, 
-    type = "root", 
+    text = currentSet.localizedSetName or currentSet.setName,
+    type = "root",
     depth = depth
   }
-  
+
   -- Navigate through hierarchy and collect set names
   if self.puzzleSetIndices then
     for i = 1, #self.puzzleSetIndices do
@@ -78,8 +78,8 @@ function PuzzleHierarchyDisplay:buildParts()
         currentSet = currentSet.puzzleSets[index]
         depth = depth + 1
         parts[#parts + 1] = {
-          text = currentSet.localizedSetName or currentSet.setName, 
-          type = "set", 
+          text = currentSet.localizedSetName or currentSet.setName,
+          type = "set",
           depth = depth
         }
       else
@@ -87,17 +87,17 @@ function PuzzleHierarchyDisplay:buildParts()
       end
     end
   end
-  
+
   -- Add current puzzle index only if specified
   if self.puzzleIndex then
     depth = depth + 1
     parts[#parts + 1] = {
-      text = "Puzzle " .. self.puzzleIndex, 
-      type = "puzzle", 
+      text = "Puzzle " .. self.puzzleIndex,
+      type = "puzzle",
       depth = depth
     }
   end
-  
+
   self.cachedParts = parts
   self:updateDimensions()
 end
@@ -106,28 +106,30 @@ function PuzzleHierarchyDisplay:calculateContentWidth()
   if not self.cachedParts or #self.cachedParts == 0 then
     return 0
   end
-  
+
   local totalWidth = 0
-  local font = love.graphics.getFont()
-  
+  ---@type love.Font
+  local font = love.graphics.getFont() ---@diagnostic disable-line: assign-type-mismatch
+
   for i, part in ipairs(self.cachedParts) do
     totalWidth = totalWidth + font:getWidth(part.text)
-    
+
     -- Add separator width if not the last element
     if i < #self.cachedParts then
       totalWidth = totalWidth + SEPARATOR_WIDTH + 12 -- 6px padding on each side
     end
   end
-  
+
   return totalWidth
 end
 
 function PuzzleHierarchyDisplay:updateDimensions()
   local contentWidth = self:calculateContentWidth()
-  local font = love.graphics.getFont()
-  
+  ---@type love.Font
+  local font = love.graphics.getFont() ---@diagnostic disable-line: assign-type-mismatch
+
   self.width = contentWidth + (BACKGROUND_PADDING * 2)
-  self.height = font:getHeight("A") + (BACKGROUND_PADDING * 2)
+  self.height = font:getHeight() + (BACKGROUND_PADDING * 2)
 end
 
 function PuzzleHierarchyDisplay:drawSteampunkSeparator(x, y)
@@ -140,12 +142,12 @@ function PuzzleHierarchyDisplay:getDisplayText()
   if not self.cachedParts or #self.cachedParts == 0 then
     return ""
   end
-  
+
   local textParts = {}
-  for i, part in ipairs(self.cachedParts) do
+  for _, part in ipairs(self.cachedParts) do
     textParts[#textParts + 1] = part.text
   end
-  
+
   return table.concat(textParts, " > ")
 end
 
@@ -157,28 +159,30 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
   if not self.cachedParts or #self.cachedParts == 0 then
     return
   end
-  
+
   -- Draw background with auto-sized dimensions
   GraphicsUtil.setColor(COLORS.background)
   love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-  
+
   GraphicsUtil.setColor(COLORS.border)
   love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
-  
+
   -- Center content within the component
   local contentWidth = self:calculateContentWidth()
   local startX = self.x + (self.width - contentWidth) / 2
   local drawY = self.y + BACKGROUND_PADDING
   local xOffset = 0
-  
+
   -- Draw each part with progressive gold colors
   for i, part in ipairs(self.cachedParts) do
     local goldColor = getGoldColorForDepth(part.depth)
     GraphicsUtil.setColor(goldColor)
-    
+
     love.graphics.print(part.text, startX + xOffset, drawY)
-    xOffset = xOffset + love.graphics.getFont():getWidth(part.text)
-    
+    ---@type love.Font
+    local currentFont = love.graphics.getFont() ---@diagnostic disable-line: assign-type-mismatch
+    xOffset = xOffset + currentFont:getWidth(part.text)
+
     -- Draw separator with spacing
     if i < #self.cachedParts then
       xOffset = xOffset + 6 -- Space before separator
@@ -186,7 +190,7 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
       xOffset = xOffset + SEPARATOR_WIDTH + 6 -- Space after separator
     end
   end
-  
+
   GraphicsUtil.setColor(COLORS.white)
 end
 

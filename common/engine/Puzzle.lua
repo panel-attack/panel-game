@@ -3,6 +3,7 @@ local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local PuzzleSource = require("common.engine.PuzzleSource")
 local MatchRules = require("common.data.MatchRules")
+local Panel = require("common.engine.Panel")
 
 ---@class GridCoordinate
 ---@field row integer
@@ -40,6 +41,8 @@ local MatchRules = require("common.data.MatchRules")
 ---@field UUID string
 ---@field solution string? compressed input string for puzzle solution
 ---@field helpDescription string? optional help text explaining the puzzle pattern
+---@field puzzleEverBeaten boolean? dynamically added field indicating if this puzzle was ever completed
+---@field trainingDate number? dynamically added field for spaced repetition training scheduling
 ---@overload fun(puzzleArgs: GarbagePuzzleArgs): Puzzle
 Puzzle = class(
 ---@param self Puzzle
@@ -81,9 +84,10 @@ Puzzle = class(
 function Puzzle.getV1UUID(puzzle)
   local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
-  ---@diagnostic disable-next-line: return-type-mismatch
   -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
   local digest = love.data.hash("string", "sha256", hashString)
+  ---@diagnostic disable-next-line: return-type-mismatch
   return love.data.encode("string", "hex", digest)
 end
 
@@ -91,9 +95,10 @@ end
 ---@return string
 function Puzzle.getV2UUIDOld(puzzle)
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
-  ---@diagnostic disable-next-line: return-type-mismatch
   -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
   local digest = love.data.hash("string", "sha256", hashString)
+  ---@diagnostic disable-next-line: return-type-mismatch
   return love.data.encode("string", "hex", digest)
 end
 
@@ -105,13 +110,15 @@ function Puzzle.getV2UUID(puzzle)
     cursorString = tostring(puzzle.cursorStartLeft.row) .. "," .. tostring(puzzle.cursorStartLeft.column)
   end
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime) .. cursorString .. tostring(puzzle.panelBuffer) .. tostring(puzzle.garbageBuffer)
-  ---@diagnostic disable-next-line: return-type-mismatch
   -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
   local digest = love.data.hash("string", "sha256", hashString)
+  ---@diagnostic disable-next-line: return-type-mismatch
   return love.data.encode("string", "hex", digest)
 end
 
----@enum PuzzleStartTiming
+---@alias PuzzleStartTiming "countdown" | "immediately" | "firstInput" | "firstSwap"
+
 Puzzle.START_TIMINGS = { countdown = "countdown", immediately = "immediately", firstInput = "firstInput", firstSwap = "firstSwap" }
 Puzzle.PUZZLE_TYPES = { "moves", "chain", "clear" }
 Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
@@ -211,7 +218,7 @@ function Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbage
   end
   local newColorOrder = {}
 
-  for i = 1, #colorArray, 1 do
+  for _ = 1, #colorArray, 1 do
     newColorOrder[tostring(tableUtils.length(newColorOrder)+1)] = tostring(table.remove(colorArray, love.math.random(1, #colorArray)))
   end
 
@@ -220,31 +227,6 @@ function Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbage
   garbageBuffer = garbageBuffer and garbageBuffer:gsub("%d", newColorOrder) or ""
 
   return puzzleString, panelBuffer, garbageBuffer
-end
-
-local unreverseMap = {}
-unreverseMap["{"] = "}"
-unreverseMap["}"] = "{"
-unreverseMap["["] = "]"
-unreverseMap["]"] = "["
-local rowWidth = 6
-
----@param puzzleString string?
----@return string puzzleString
-function Puzzle.horizontallyFlipPuzzleString(puzzleString)
-  -- to flip we need it guaranteed that all rows are complete so pad out the topmost row
-  puzzleString = string.rep(0, puzzleString:len() % 6) .. puzzleString
-  local result = ""
-  for i = 1, puzzleString:len(), rowWidth do
-    local rowString = string.sub(puzzleString, i, i+rowWidth-1)
-    if string.find(rowString, "%d") then
-      rowString = string.reverse(rowString)
-      rowString = string.gsub(rowString, "[%{%}%[%]]", unreverseMap)
-    end
-    result = result .. rowString
-  end
-
-  return result
 end
 
 ---@return boolean isValid
@@ -350,14 +332,14 @@ function Puzzle:getSaveData()
     [Puzzle.PUZZLE_PROPERTY.SOLUTION] = self.solution,
     [Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION] = self.helpDescription
   }
-  
+
   if self.cursorStartLeft then
     puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] = {
       [Puzzle.CURSOR_PROPERTY.COLUMN] = self.cursorStartLeft.column,
       [Puzzle.CURSOR_PROPERTY.ROW] = self.cursorStartLeft.row
     }
   end
-  
+
   return puzzleData
 end
 
@@ -458,7 +440,6 @@ function Puzzle:toGameMode()
 end
 
 ---@param randomize boolean?
----@param flip boolean?
 ---@return PuzzleSource
 function Puzzle:toPanelSource(randomize)
   local puzzleString = self:fillMissingPanelsInPuzzleString(6, 12)

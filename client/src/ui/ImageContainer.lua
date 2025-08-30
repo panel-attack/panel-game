@@ -3,6 +3,7 @@ local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+---@class ImageContainer : UiElement
 local ImageContainer = class(function(self, options)
   self.drawBorders = options.drawBorders or false
   self.outlineColor = options.outlineColor or {1, 1, 1, 1}
