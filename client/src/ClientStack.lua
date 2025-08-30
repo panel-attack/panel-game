@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local ModController = require("client.src.mods.ModController")
 
 -- Draws an image at the given spot while scaling all coordinate and scale values with stack.gfxScale
 local function drawGfxScaled(stack, img, x, y, rot, xScale, yScale)
@@ -52,6 +53,9 @@ function(self, args)
   self.player_number = args.player_number or args.engine.which
   self.is_local = args.player and args.player.isLocal or args.engine.is_local
   self.character = characters[args.characterId]
+  if self.character and not self.character.fullyLoaded then
+    ModController:loadModFor(self.character, self, true)
+  end
   self.theme = args.theme or themes[config.theme]
 
   self.panels_dir = args.panels_dir
