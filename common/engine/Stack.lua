@@ -560,6 +560,9 @@ function Stack:rewindToFrame(frame)
     self.outgoingGarbage:rewindToFrame(self.game_stopwatch)
     self.panelSource:rewindToFrame(frame)
 
+    -- we did roll back but we want to stay here
+    self.lastRollbackFrame = frame
+
     self:emitSignal("rollbackPerformed", self)
     return true
   end

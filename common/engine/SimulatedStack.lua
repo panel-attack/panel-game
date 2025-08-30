@@ -189,6 +189,8 @@ function SimulatedStack:rewindToFrame(frame)
       self.attackEngine:rewindToFrame(self.game_stopwatch)
     end
 
+     -- we did roll back but we want to stay here
+     self.lastRollbackFrame = frame
     self.clock = frame
     return true
   end
