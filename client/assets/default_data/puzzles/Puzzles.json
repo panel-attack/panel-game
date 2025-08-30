@@ -1330,8 +1330,8 @@
                   "Puzzle Type": "chain",
                   "StartTiming": "firstSwap",
                   "Moves": 0,
-                  "Stack": "900000950000940091940099524912945219949999",
-                  "Solution": "A23E6A7E7A6B5A6B6A6Q1A4C7Q1A5E10A5B9A9E7A1Q1A5C4A2Q1A6C3A7C6Q1A8C9A10E8A39Q1A6Q1A8B8A3I7Q1A7B7Q1A8I6A10E7A17Q1A2B5A5B7A2Q1A3C7Q1A81"
+                  "Stack": "000000000000000000000000000000900000950000940099941299524919945219949999",
+                  "Solution": "A23E8C5A7E6A6E3A7E6Q1A16C6A13E7A40Q1A3Q1A3B7J1I2A5B3J1I3A6Q1A4C5S1A6E2F1B5A4B5A3Q1A5C5A5I4Q1A112"
                 },
                 {
                   "Puzzle Type": "chain",
@@ -1999,7 +1999,7 @@
                   "StartTiming": "firstInput",
                   "Moves": 0,
                   "Stop": 82,
-                  "Stack": "[======================][==========][==========]100000600000520000330000436001212005214001365132",
+                  "Stack": "[======================][======================][==========][==========]100000600000520000330000436001212005214001365132",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 1
@@ -2230,6 +2230,30 @@
                     "Row": 6
                   },
                   "Solution": "A107I3A2Q1A6I4A2Q1A6E3G1C4A5E6A5E5U1E1A4"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "firstInput",
+                  "Moves": 0,
+                  "Stop": 53,
+                  "Stack": "[======================][============================]463000[====]320000614000235042521024252561534361",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 1
+                  },
+                  "Solution": "A71Q1A5I6A6I4Y1I1A4B9A3E8A4E5A5B8Q1A8I7A10Q1A5B4R1B3A6B3J1I6A6I7A57Q1A4C16A7I4A6I6A4Q1A2B8Q1A2B6A11E3A37Q1A2E9A3B5F2E1A3B10A1Q1A5C4A2Q1A7C6A3Q1A5"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "firstInput",
+                  "Moves": 0,
+                  "Stop": 84,
+                  "Stack": "[==========][==========][==========][==========][==========][==========]060062044361135314232625614532",
+                  "CursorStartLeft": {
+                    "Column": 2,
+                    "Row": 2
+                  },
+                  "Solution": "A137B6A2Q1A8C5A6C5A1Q1A3B6Q1A2B10E7A10B7A3Q1A3C9A4C5A6I6A6I3A7I3A7I6Q1A1B19A1Q1A5C4S1C1A5C6A6E7A11Q1A7E5A5E7B8Q1A5"
                 }
               ]
             },
@@ -2374,30 +2398,6 @@
                     "Row": 5
                   },
                   "Solution": "A86C7Q1A76B9A9E5A2B5A1Q1A17I7A21Q1A5"
-                },
-                {
-                  "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
-                  "Moves": 0,
-                  "Stop": 53,
-                  "Stack": "[======================][============================]463000[====]320000614000235042521024252561534361",
-                  "CursorStartLeft": {
-                    "Column": 1,
-                    "Row": 1
-                  },
-                  "Solution": "A71Q1A5I6A6I4Y1I1A4B9A3E8A4E5A5B8Q1A8I7A10Q1A5B4R1B3A6B3J1I6A6I7A57Q1A4C16A7I4A6I6A4Q1A2B8Q1A2B6A11E3A37Q1A2E9A3B5F2E1A3B10A1Q1A5C4A2Q1A7C6A3Q1A5"
-                },
-                {
-                  "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
-                  "Moves": 0,
-                  "Stop": 84,
-                  "Stack": "[==========][==========][==========][==========][==========][==========]060062044361135314232625614532",
-                  "CursorStartLeft": {
-                    "Column": 2,
-                    "Row": 2
-                  },
-                  "Solution": "A137B6A2Q1A8C5A6C5A1Q1A3B6Q1A2B10E7A10B7A3Q1A3C9A4C5A6I6A6I3A7I3A7I6Q1A1B19A1Q1A5C4S1C1A5C6A6E7A11Q1A7E5A5E7B8Q1A5"
                 }
               ]
             }
