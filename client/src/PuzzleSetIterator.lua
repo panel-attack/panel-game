@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local PuzzleSet = require("client.src.PuzzleSet")
 
+-- Provides iteration through puzzles in a puzzle set, supporting both sequential and training order traversal
 ---@class PuzzleSetIterator
 ---@field puzzleSet PuzzleSet
 ---@field currentIndex integer
@@ -27,6 +28,7 @@ function PuzzleSetIterator:currentPuzzle()
   return nil
 end
 
+-- Advances to and returns the next puzzle's indices, or nil if at end
 ---@return integer[]?
 function PuzzleSetIterator:nextPuzzle()
   if self.puzzleIndicesList and self.currentIndex <= #self.puzzleIndicesList then
@@ -37,6 +39,7 @@ function PuzzleSetIterator:nextPuzzle()
   return nil
 end
 
+-- Returns the total number of puzzles available in this iterator
 function PuzzleSetIterator:totalPuzzleCount()
   return #self.puzzleIndicesList
 end

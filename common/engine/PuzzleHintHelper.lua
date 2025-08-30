@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local InputCompression = require("common.data.InputCompression")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
 
+-- Analyzes puzzle solutions to provide hints and next move suggestions to players
 ---@class PuzzleHintHelper
 ---@field puzzle Puzzle
 ---@field solutionInputs string[]? decompressed solution input array

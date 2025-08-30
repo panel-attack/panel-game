@@ -231,6 +231,7 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
 end
 
 -- Sets up renderIndex-specific properties and assets
+-- Configures stack positioning parameters for a specific render index (1 for left, 2 for right)
 function ClientStack:setupForRenderIndex(renderIndex)
   self.renderIndex = renderIndex
 
@@ -260,6 +261,7 @@ function ClientStack:calculateOuterEdgeScaled(renderIndex)
   return centerX - (outerStackXMovement * mirrorX)
 end
 
+-- Calculates the centered position for a single stack by adjusting standard positioning
 function ClientStack:calculateCenteredStackOuterEdgeScaled()
   local centerX = (GAME.globalCanvas:getWidth() / 2)
   local stackWidth = self:canvasWidth()

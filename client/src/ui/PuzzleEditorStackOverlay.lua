@@ -3,6 +3,7 @@ local TouchInputDetector = require("client.src.TouchInputDetector")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 
+-- Handles touch/mouse interaction overlay for editing puzzle panels in the puzzle editor
 ---@class PuzzleEditorStackOverlay : UiElement
 ---@field stack any
 ---@field touchInputDetector TouchInputDetector

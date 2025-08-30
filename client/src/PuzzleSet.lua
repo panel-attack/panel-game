@@ -299,6 +299,7 @@ end
 -- Get a puzzle by index
 ---@param index integer
 ---@return Puzzle
+-- Returns the puzzle at the given index with bounds checking
 function PuzzleSet:getPuzzle(index)
   if not index or type(index) ~= "number" or index < 1 or index > #self.puzzles then
     error("Invalid puzzle index: " .. tostring(index) .. ". Must be between 1 and " .. #self.puzzles)
@@ -306,6 +307,7 @@ function PuzzleSet:getPuzzle(index)
   return self.puzzles[index]
 end
 
+-- Navigates down the hierarchy to find a nested puzzle set using an array of indices
 function PuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)  
   local puzzleSet = self
 
@@ -322,6 +324,7 @@ function PuzzleSet:getPuzzleSetFromIndices(puzzleSetIndices)
   return puzzleSet
 end
 
+-- Gets a specific puzzle by navigating to a nested puzzle set and then selecting the puzzle index
 function PuzzleSet:getPuzzleFromIndices(puzzleSetIndices, puzzleIndex)
   local puzzleSet = self:getPuzzleSetFromIndices(puzzleSetIndices)
   

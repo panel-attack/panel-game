@@ -25,6 +25,7 @@ local PuzzleHelpState = {
   HINT_SHOWN = "hint_shown"
 }
 
+-- Displays contextual help and hints for puzzle solving, including automatic hint system after idle time
 ---@class PuzzleHelpDisplay : UiElement
 ---@field puzzle Puzzle The puzzle instance
 ---@field puzzleGame table The puzzle game scene
