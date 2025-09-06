@@ -46,7 +46,13 @@ function ReplayGame:runGame()
 
   if self.match.ended and playbackSpeed < 0 then
     -- we can rewind from death this way
+    -- Before clearing the ended state, decrement any incremented win counts
+    if self.match.winners and #self.match.winners == 1 then
+      self.match.winners[1]:setWinCount(self.match.winners[1].wins - 1)
+    end
     self.match.ended = false
+    -- Clear cached winner state so it can be recalculated if we reach a different match end
+    self.match.winners = nil
   end
 
   if not self.match.isPaused then
@@ -139,6 +145,21 @@ function ReplayGame:drawHUD()
       prof.push("Stack:drawAnalyticData")
       stack:drawAnalyticData()
       prof.pop("Stack:drawAnalyticData")
+    end
+  end
+end
+
+function ReplayGame:genericOnMatchEnded(match)
+  -- Call parent implementation first
+  GameBase.genericOnMatchEnded(self, match)
+  
+  -- Add win count increment logic like BattleRoom does
+  if not match.aborted then
+    local winners = match:getWinners()
+    if #winners == 1 then
+      winners[1].stack.character:playWinSfx()
+      -- increment win count on winning player if there is only one
+      winners[1]:incrementWinCount()
     end
   end
 end
