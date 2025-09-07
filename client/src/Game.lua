@@ -1,4 +1,5 @@
-require("client.src.localization")
+local Localization = require("client.src.localization")
+Localization:init()
 require("common.lib.Queue")
 require("client.src.server_queue")
 local CharacterLoader = require("client.src.mods.CharacterLoader")

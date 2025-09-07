@@ -111,16 +111,34 @@ function PuzzleLibrary:flattenedPuzzleSetForPuzzleSet(puzzleSet, filter, sort)
   return result
 end
 
--- removes the stock puzzles to the user's puzzle directory
+-- Helper function to check if a file should be cleaned up based on modification date
+local function shouldCleanupFile(filePath, cutoffDate)
+  local fileInfo = love.filesystem.getInfo(filePath, "file")
+  if fileInfo then
+    return not fileInfo.modtime or fileInfo.modtime < cutoffDate
+  end
+  return false
+end
+
+-- removes the old puzzles from the user's puzzle directory
 function PuzzleLibrary.cleanupDefaultPuzzles(savePuzzleDirectory)
-  pcall(
-    function()
-      local oldPuzzleFile = savePuzzleDirectory .. "/stock (example).json"
-      if love.filesystem.exists(oldPuzzleFile) then
-        love.filesystem.remove(oldPuzzleFile)
-      end
-    end
-  )
+  -- Date we shipped the newer version of beta puzzles
+  local cutoffDate = os.time({year = 2025, month = 9, day = 12})
+  
+  local oldPuzzleFile = savePuzzleDirectory .. "/stock (example).json"
+  if shouldCleanupFile(oldPuzzleFile, cutoffDate) then
+    love.filesystem.remove(oldPuzzleFile)
+  end
+  
+  local betaPuzzleFile = savePuzzleDirectory .. "/Puzzles.json"
+  if shouldCleanupFile(betaPuzzleFile, cutoffDate) then
+    love.filesystem.remove(betaPuzzleFile)
+  end
+
+  local betaPuzzleReadmeFile = savePuzzleDirectory .. "/README.txt"
+  if shouldCleanupFile(betaPuzzleReadmeFile, cutoffDate) then
+    love.filesystem.remove(betaPuzzleReadmeFile)
+  end
 end
 
 local ONE_HOUR = 60 * 60

@@ -334,6 +334,17 @@ function fileUtils.write(path, filename, data)
   end
 end
 
+-- Custom JSON prettifier that provides enhanced formatting beyond DKJson's standard indent option
+-- Key differences from DKJson's built-in indent:
+-- 1. Always adds newlines after opening braces/brackets (DKJson may keep simple objects on one line)
+-- 2. Special handling for arrays after colons - places arrays on new indented lines
+-- 3. Custom whitespace management - strips original spacing and applies consistent 2-space indentation
+-- 4. More aggressive line breaking for better readability of complex nested structures
+-- 5. Handles colon spacing differently - uses ': ' for values but ':\n' + indent for arrays
+-- This is used when encodeArgs.pretty and encodeArgs.indent are both true to provide
+-- more readable output than DKJson's standard formatting
+---@param jsonString string The compact JSON string (typically from json.encode) to format
+---@return string The formatted JSON string with enhanced indentation and line breaks
 local function prettifyJson(jsonString)
   local result = {}
   local i = 1

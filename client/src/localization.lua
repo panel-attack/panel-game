@@ -178,6 +178,4 @@ function loc(text_key, ...)
   return ret
 end
 
-Localization:init()
-
 return Localization

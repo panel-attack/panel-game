@@ -4,6 +4,7 @@ local GameModes = require("common.data.GameModes")
 local PuzzleSource = require("common.engine.PuzzleSource")
 local MatchRules = require("common.data.MatchRules")
 local Panel = require("common.engine.Panel")
+local system = require("client.src.system")
 
 ---@class GridCoordinate
 ---@field row integer
@@ -78,28 +79,34 @@ Puzzle = class(
   end
 )
 
+-- Helper function to handle Love2D version compatibility for hashing
+---@param hashString string
+---@return string
+local function hashAndEncode(hashString)
+  if system.meetsLoveVersionRequirement(12, 0) then
+    ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
+    local digest = love.data.hash("string", "sha256", hashString)
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return love.data.encode("string", "hex", digest)
+  else
+    -- Love 11 compatibility
+    return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  end
+end
 
 ---@param puzzle Puzzle
 ---@return string
 function Puzzle.getV1UUID(puzzle)
   local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
-  -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
-  ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
-  local digest = love.data.hash("string", "sha256", hashString)
-  ---@diagnostic disable-next-line: return-type-mismatch
-  return love.data.encode("string", "hex", digest)
+  return hashAndEncode(hashString)
 end
 
 ---@param puzzle Puzzle
 ---@return string
 function Puzzle.getV2UUIDOld(puzzle)
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
-  -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
-  ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
-  local digest = love.data.hash("string", "sha256", hashString)
-  ---@diagnostic disable-next-line: return-type-mismatch
-  return love.data.encode("string", "hex", digest)
+  return hashAndEncode(hashString)
 end
 
 ---@param puzzle Puzzle
@@ -110,11 +117,7 @@ function Puzzle.getV2UUID(puzzle)
     cursorString = tostring(puzzle.cursorStartLeft.row) .. "," .. tostring(puzzle.cursorStartLeft.column)
   end
   local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime) .. cursorString .. tostring(puzzle.panelBuffer) .. tostring(puzzle.garbageBuffer)
-  -- return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
-  ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
-  local digest = love.data.hash("string", "sha256", hashString)
-  ---@diagnostic disable-next-line: return-type-mismatch
-  return love.data.encode("string", "hex", digest)
+  return hashAndEncode(hashString)
 end
 
 ---@alias PuzzleStartTiming "countdown" | "immediately" | "firstInput" | "firstSwap"

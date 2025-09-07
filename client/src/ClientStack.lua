@@ -242,28 +242,16 @@ function ClientStack:setupForRenderIndex(renderIndex)
     self.mirror_x = -1
     self.multiplication = 1
   else
-    assert(false)
-    return -- Unknown renderIndex
+    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1 or 2.")
   end
   self:assignAssets(GAME.theme:getIngameAssetPack(renderIndex))
 end
 
--- Calculates the outer edge scaled position for a given render index and offset
----@param renderIndex integer the render index (1 or 2)
----@return number outerEdgeScaled the calculated outer edge position
-function ClientStack:calculateOuterEdgeScaled(renderIndex)
-  local centerX = (GAME.globalCanvas:getWidth() / 2)
-  local stackWidth = self:canvasWidth()
-  local innerStackXMovement = 100
-  local outerStackXMovement = stackWidth + innerStackXMovement
-  local mirrorX = renderIndex == 1 and 1 or -1
-  
-  return centerX - (outerStackXMovement * mirrorX)
-end
-
--- Calculates the centered position for a single stack by adjusting standard positioning
-function ClientStack:calculateCenteredStackOuterEdgeScaled()
-  local centerX = (GAME.globalCanvas:getWidth() / 2)
+-- Calculates the horizontal position for centering a stack around a given coordinate
+---@param centerCoordinate number The X coordinate to center around
+---@return number The calculated outer edge position for horizontal centering
+function ClientStack:calculateHorizontallyCenteredPosition(centerCoordinate)
+  local centerX = centerCoordinate
   local stackWidth = self:canvasWidth()
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement
@@ -299,7 +287,8 @@ end
 
 -- Positions the stack centered on screen (for puzzle mode)
 function ClientStack:moveToCenterPosition()
-  local outerNonScaled = self:calculateCenteredStackOuterEdgeScaled()
+  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local outerNonScaled = self:calculateHorizontallyCenteredPosition(centerX)
   
   self:moveToPosition(outerNonScaled, self.baseWidth + self.panelOriginXOffset)
 end
