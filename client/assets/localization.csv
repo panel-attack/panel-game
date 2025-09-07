@@ -240,9 +240,6 @@ op_about_characters,,About custom characters,À propos des personnages personnal
 op_about_themes,,About custom themes,À propos des thèmes personnalisés,Sobre temas personalizados,カスタムテーマについて,Acerca de temas personalizados,How to: Eigene Themes entwickeln,A proposito dei temi personalizzabili,เกี่ยวกับ custom themes
 op_about_stages,,About custom stages,À propos des terrains personnalisés,Sobre cenários personalizados,カスタムステージについて,Acerca de escenarios personalizados,How to: Eigene Arenen erstellen,A proposito degli scenari personalizzabili,เกี่ยวกับด่าน custom 
 op_about_panels,,About custom panels,À propos des blocs personnalisés,Sobre painéis personalizados,カスタムパネルについて,Acerca de paneles personalizados,How to: Eigene Panels kreieren,A propostio delle tessere personalizzabili,เกี่ยวกับ custom panels
-op_about_attack_files,,About Attack Files
-op_about_installing_mods,,Installing Mods
-op_system_info,Button for showing system information,System Info
 op_analytics,,Enable analytics,Activer les statistiques,Ativar estatísticas,解析を有効にする,Habilitar estadísticas,Statistiken aktivieren,Attiva statistiche,เปิด analytics
 op_copy_files,,"Hold on.  Copying an example folder to make this easier...
 
@@ -347,11 +344,6 @@ op_renderTelegraph,Options: Whether the telegraph above the stack should show,Sh
 op_renderAttacks,Options: Whether the telegraph attack animations should show,Show Attacks,Montrer des attaques,Mostrar ataques,攻撃を示す,Mostrar ataques,Angriffe anzeigen,Mostra attacchi,แสดง attack animation ของ telegraph
 op_cardTransparency,Options: Whether the combo / chain cards should become transparent,Card Transparency,Transparence des cartes,Transparência do cartão,カードの透明性,Transparencia de la tarjeta,Kartentransparenz,Trasparenza della carta,แสดงการ์ดใส
 op_cardfx_scale,Options: how far away the popfx particles converge onto your combo/chain before it pops,Attack Particle Distance,Distance des particules d'attaque,Alcance de Partículas de Ataque,攻撃パーティクル発生距離,Distancia de partículas de ataque,Skalierung der Popeffekte bei Kombos und Ketten,Distanza delle particelle di attacco,ระยะ attack particle
-mod_manage_icon,Label for icon in mod management,Icon,Icône,Ícone,アイコン,Icono,Symbol,Icona,ไอคอน
-mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Name,Nome,ชื่อ
-mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
-mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submods,サブMOD,Submods,Submods,Submod,ซับม็อด
-mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
 opponent_level,,Opponent's level,Niveau adverse,Nível do oponente,相手のレベル,Nivel del oponente,Level des Gegners,Livello dell'avversario,ระดับของคู่ต่อสู้
 pl_pause_help,,Press Start again to resume,Appuyer sur Start pour continuer,Pressione Começar novamente para continuar,STARTで再開,"Presiona ""Start"" para resumir",Drücke Start um fortzufahren,"Premi ""Start"" di nuovo per riprendere",กด start อีกครั้งเพื่อเล่นต่อ
 pl_1_win,,P1 wins ^^,J1 gagne ^^,J1 vence ^^,1Pの勝ち！ ＾＾,J1 gana ^^,Spieler 1 gewinnt,P1 vince ^^,ผู้เล่น 1 ชนะ ^^
@@ -552,7 +544,6 @@ challenge_difficulty_9,level 11? - unused right now,Tornado,Tornade,Tornado,竜�
 auto_updater_version_warning,Warning shown to users with an old autoupdater,"New updater available, please download from","Nouveau autoupdater disponible, veuillez installer à partir de","Novo autoupdater disponível, instale de",新しいautoupdaterを利用できます。からインストールしてください,"Nuevo autoupdater disponible, instale desde","Ein neuer Updater ist verfügbar, bitte lade ihn unter folgendem Link herunter:","Nuovo autoupdater disponibile, installa da",มีระบบอัพเดทอัตโนมัติเวอร์ชั่นใหม่ กรุณา Install โดยใช้ระบบนั้น
 username_blank_warning,shown in user name input when nothing is entered,Username cannot be blank,Le nom d'utilisateur ne peut pas être vide,O nome de usuário não pode ficar em branco,ユーザー名を空白にすることはできません,Nombre de usuario no puede estar en blanco,Benutzername darf nicht leer sein,Il nome utente non può essere vuoto,Username ไม่สามารถเป็นค่าว่างได้
 op_shakeIntensity,Option for the intensity of the shake animation,Shake Animation Intensity,Intensité de l'animation de secousse,Intensidade da animação de tremor,揺れアニメーション強度,Intensidad de la animación de sacudida,Stärke der Aufprallanimation,Intensità dell'animazione di scuotimento,ความเข้มของแอนิเมชันสั่น
-op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,Performance/Consommation de batterie,Desempenho/Dreno de bateria,パフォーマンス/バッテリー消費,Rendimiento/Consumo de batería,Performance/Stromverbrauch,Prestazioni/Consumo batteria,ประสิทธิภาพ/การใช้แบตเตอรี่
 pause_resume,Label for the resume button in the pause menu,Resume,Reprendre,Retomar,再開,Continuar,Fortsetzen,Riprendi,ดำเนินต่อ
 op_menu_music,Label for toggling menu music,Menu Music,Musique du menu,Música do menu,メニューミュージック,Música del menú,Menü Musik,Musica del menu,เพลงเมนู
 rp_browser_info_challenge_stage,Label for displaying the stage of the challenge mode difficulty,Stage,Stage,Fase,ステージ,Fase,Stufe,Fase,ด่าน
@@ -678,3 +669,12 @@ puzzle_help_no_hints,When puzzle has no hints available,No hints available for t
 puzzle_help_no_solution,When puzzle has no solution,No solution available for this puzzle,Aucune solution disponible pour ce puzzle,Nenhuma solução disponível para este quebra-cabeça,このパズルには解答がありません,No hay solución disponible para este puzzle,Keine Lösung für dieses Puzzle verfügbar,Nessuna soluzione disponibile per questo puzzle,ไม่มีคำตอบสำหรับปริศนานี้
 puzzle_help_hint_given,When hint has been shown to player,Hint given,Indice donné,Dica dada,ヒントが与えられました,Pista dada,Hinweis gegeben,Suggerimento dato,ให้คำใบ้แล้ว
 puzzle_help_solution_playing,When solution is currently playing,Solution playing,Solution en cours,Solução reproduzindo,解答を再生中,Solución reproduciéndose,Lösung läuft,Soluzione in corso,กำลังเล่นคำตอบ
+op_about_attack_files,Information about attack files and mod installation,About Attack Files,À propos des fichiers d'attaque,Sobre arquivos de ataque,アタックファイルについて,Acerca de archivos de ataque,Über Attack-Dateien,Informazioni sui file di attacco,เกี่ยวกับ Attack Files
+op_system_info,Button for showing system information,System Info,Informations système,Informações do sistema,システム情報,Información del sistema,Systeminformationen,Informazioni di sistema,ข้อมูลระบบ
+op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,Performance/Consommation de batterie,Desempenho/Dreno de bateria,パフォーマンス/バッテリー消費,Rendimiento/Consumo de batería,Performance/Stromverbrauch,Prestazioni/Consumo batteria,ประสิทธิภาพ/การใช้แบตเตอรี่
+op_about_installing_mods,Information about installing mods,Installing Mods,Installation de mods,Instalando mods,MODのインストール,Instalando mods,Mods installieren,Installazione mod,การติดตั้งม็อด
+mod_manage_icon,Label for icon in mod management,Icon,Icône,Ícone,アイコン,Icono,Symbol,Icona,ไอคอน
+mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Name,Nome,ชื่อ
+mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
+mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submods,サブMOD,Submods,Submods,Submod,ซับม็อด
+mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
