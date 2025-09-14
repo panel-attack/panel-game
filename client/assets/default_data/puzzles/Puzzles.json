@@ -17,8 +17,8 @@
               "StartTiming": "immediately",
               "Moves": 1,
               "Stack": "000000000000000000000000000000000000000000000000000000000000000000010110",
-              "Solution": "A45E6A11E5A8E7A10E5A12E5A11E4A16C3A27Q1A64",
-              "Help Description": "Make the swap to clear all the panels"
+              "Help Description": "Make the swap to clear all the panels",
+              "Solution": "A45E6A11E5A8E7A10E5A12E5A11E4A16C3A27Q1A64"
             },
             {
               "Puzzle Type": "moves",
@@ -644,8 +644,8 @@
                   "StartTiming": "firstSwap",
                   "Moves": 0,
                   "Stack": "999479949799997499999749",
-                  "Solution": "A29E5A6E5A6E6U1A7B4A1Q1A4E2G2C3A5C5A1Q1A5B7A5E4F3B2A6E7A9Q1A5C6Q1A5B4Q1A5C5A6I3Y1A99",
-                  "Help Description": ""
+                  "Help Description": "",
+                  "Solution": "A29E5A6E5A6E6U1A7B4A1Q1A4E2G2C3A5C5A1Q1A5B7A5E4F3B2A6E7A9Q1A5C6Q1A5B4Q1A5C5A6I3Y1A99"
                 }
               ]
             },
@@ -694,8 +694,8 @@
                   "StartTiming": "firstSwap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000300000100994100994910933149999999",
-                  "Solution": "A74E7A9E3A9E3A15E4A15B7A8Q1A24C5A14I6A44Q1A114",
-                  "Help Description": "If you have three vertical panels of a color, sometimes it is better to drop one down to make a horizontal chain"
+                  "Help Description": "If you have three vertical panels of a color, sometimes it is better to drop one down to make a horizontal chain",
+                  "Solution": "A74E7A9E3A9E3A15E4A15B7A8Q1A24C5A14I6A44Q1A114"
                 },
                 {
                   "Puzzle Type": "chain",
@@ -890,6 +890,7 @@
             },
             {
               "Set Name": "puzzle_set_name_novice_clear_puzzles_1",
+              "Description": "puzzle_set_description_novice_clear_puzzles_1",
               "Puzzles":
               [
                 {
@@ -1006,6 +1007,7 @@
             },
             {
               "Set Name": "puzzle_set_name_novice_clear_puzzles_2",
+              "Description": "puzzle_set_description_novice_clear_puzzles_2",
               "Puzzles":
               [
                 {
@@ -1471,6 +1473,7 @@
             },
             {
               "Set Name": "puzzle_set_name_intermediate_clear_puzzles_1",
+              "Description": "puzzle_set_description_intermediate_clear_puzzles_1",
               "Puzzles":
               [
                 {
@@ -1552,6 +1555,7 @@
             },
             {
               "Set Name": "puzzle_set_name_intermediate_clear_puzzles_2",
+              "Description": "puzzle_set_description_intermediate_clear_puzzles_2",
               "Puzzles":
               [
                 {
@@ -1808,6 +1812,7 @@
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_1",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_1",
               "Puzzles":
               [
                 {
@@ -1917,6 +1922,7 @@
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_2",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_2",
               "Puzzles":
               [
                 {
@@ -2003,7 +2009,8 @@
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 1
-                  }
+                  },
+                  "Solution": "A50Q1A6C6Q1A9B10J2I7A4B7A3I6A1B9A8Q1A9C5A8C4A9C3A8C9A56Q1A11E9A34Q1A7I6A9I5A23E4A6E7A19Q1A7B6A7Q1A5"
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2021,6 +2028,7 @@
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_3",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_3",
               "Puzzles":
               [
                 {
@@ -2129,6 +2137,7 @@
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_4",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_4",
               "Puzzles":
               [
                 {
@@ -2259,6 +2268,7 @@
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_5",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_5",
               "Puzzles":
               [
                 {
@@ -2341,6 +2351,7 @@
             },
             {
               "Set Name": "puzzle_set_name_advanced_clear_puzzles_6",
+              "Description": "puzzle_set_description_advanced_clear_puzzles_6",
               "Puzzles":
               [
                 {
