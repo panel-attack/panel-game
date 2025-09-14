@@ -2,7 +2,7 @@ local UIElement = require("client.src.ui.UIElement")
 local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local PuzzleHintHelper = require("common.engine.PuzzleHintHelper")
+local PuzzleHintHelper = require("client.src.PuzzleHintHelper")
 
 local BACKGROUND_PADDING = 8
 local BACKGROUND_PADDING_VERTICAL = 4

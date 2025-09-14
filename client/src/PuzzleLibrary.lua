@@ -123,7 +123,7 @@ end
 -- removes the old puzzles from the user's puzzle directory
 function PuzzleLibrary.cleanupDefaultPuzzles(savePuzzleDirectory)
   -- Date we shipped the newer version of beta puzzles
-  local cutoffDate = os.time({year = 2025, month = 9, day = 12})
+  local cutoffDate = os.time({year = 2025, month = 9, day = 14})
   
   local oldPuzzleFile = savePuzzleDirectory .. "/stock (example).json"
   if shouldCleanupFile(oldPuzzleFile, cutoffDate) then

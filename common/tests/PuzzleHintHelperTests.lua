@@ -1,4 +1,4 @@
-local PuzzleHintHelper = require("common.engine.PuzzleHintHelper")
+local PuzzleHintHelper = require("client.src.PuzzleHintHelper")
 local Puzzle = require("common.engine.Puzzle")
 local InputCompression = require("common.data.InputCompression")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
