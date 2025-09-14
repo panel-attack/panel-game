@@ -128,7 +128,9 @@ function ChallengeModePlayerStack:canPlaySfx()
 end
 
 ---@param matchEnded boolean?
-function ChallengeModePlayerStack:render(matchEnded)
+---@param xOffset integer? provides an additional x offset e.g. from translation as scissors only operates in screen/canvas coordinates
+---@param yOffset integer? provides an additional y offset e.g. from translation as scissors only operates in screen/canvas coordinates
+function ChallengeModePlayerStack:render(matchEnded, xOffset, yOffset)
   self:setDrawArea()
   self:drawCharacter()
   if self.engine.healthEngine then

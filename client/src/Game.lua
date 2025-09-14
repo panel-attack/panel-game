@@ -1,4 +1,5 @@
-require("client.src.localization")
+local Localization = require("client.src.localization")
+Localization:init()
 require("common.lib.Queue")
 require("client.src.server_queue")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
@@ -40,6 +41,7 @@ local function newCanvasSnappedScale(self)
 end
 
 ---@class PanelAttack
+---@field scores Scores
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
 ---@field globalCanvas love.Canvas
@@ -105,7 +107,7 @@ local Game = class(
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  PuzzleLibrary.writeDefaultPuzzles("client/assets/default_data/puzzles", "docs/puzzles.txt", consts.PUZZLES_SAVE_DIRECTORY)
+  PuzzleLibrary.cleanupDefaultPuzzles(consts.PUZZLES_SAVE_DIRECTORY)
 
   -- move to constructor
   self.updater = GAME_UPDATER or nil
@@ -216,8 +218,6 @@ end
 
 function Game:setupRoutine()
   -- loading various assets into the game
-  coroutine.yield("Loading localization...")
-  Localization:init()
   self:setLanguage(config.language_code)
 
   detectHardwareProblems()

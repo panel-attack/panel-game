@@ -14,45 +14,49 @@ local logger = {
   messageBuffer = RingBuffer(2048)
 }
 
-local TRACE = 0 -- Log something that is very detailed verbose debug logging
-local DEBUG = 1 -- Log something that is only useful when debugging
-local INFO = 2 -- Log something that is useful in most normal conditions
-local WARN = 3 -- Log something that could be a problem
-local ERROR = 4 -- Log something that definitely is a problem
+logger.TRACE = 0 -- Log something that is very detailed verbose debug logging
+logger.DEBUG = 1 -- Log something that is only useful when debugging
+logger.INFO = 2 -- Log something that is useful in most normal conditions
+logger.WARN = 3 -- Log something that could be a problem
+logger.ERROR = 4 -- Log something that definitely is a problem
 
-local LOG_LEVEL = DEBUG
+local LOG_LEVEL = logger.DEBUG
+
+function logger.setLogLevel(level)
+  LOG_LEVEL = level
+end
 
 -- See comments above about when you should use each logging level
 function logger.trace(msg)
-  if LOG_LEVEL <= TRACE then
+  if LOG_LEVEL <= logger.TRACE then
     direct_log("TRACE", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.debug(msg)
-  if LOG_LEVEL <= DEBUG then
+  if LOG_LEVEL <= logger.DEBUG then
     direct_log("DEBUG", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.info(msg)
-  if LOG_LEVEL <= INFO then
+  if LOG_LEVEL <= logger.INFO then
     direct_log(" INFO", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.warn(msg)
-  if LOG_LEVEL <= WARN then
+  if LOG_LEVEL <= logger.WARN then
     direct_log(" WARN", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.error(msg)
-  if LOG_LEVEL <= ERROR then
+  if LOG_LEVEL <= logger.ERROR then
     direct_log("ERROR", msg);
   end
 end

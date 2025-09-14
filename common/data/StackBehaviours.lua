@@ -3,7 +3,9 @@
 ---@field allowManualRaise boolean? manual raise inputs are ignored or not
 ---@field swapStallingMode integer? how swaps are treated with respect to stalling passive raise
 ---@field swapStallingPunish integer? how much health is deducted for stalling swaps
----@field startTimersWithSwapCount integer?
+---@field delaySimulationUntil SimulationDelayOptions?
+
+---@alias SimulationDelayOptions ("firstSwap" | "firstInput" | "countdownEnded")
 
 local StackBehaviour = {}
 
@@ -13,7 +15,7 @@ function StackBehaviour.getV048Default()
     allowManualRaise = true,
     swapStallingMode = 0,
     swapStallingPunish = 0,
-    startTimersWithSwapCount = 0,
+    delaySimulationUntilFirstInput = nil,
   }
 end
 
@@ -23,7 +25,7 @@ function StackBehaviour.getV049Default()
     allowManualRaise = true,
     swapStallingMode = 1,
     swapStallingPunish = 4,
-    startTimersWithSwapCount = 0,
+    delaySimulationUntilFirstInput = nil,
   }
 end
 

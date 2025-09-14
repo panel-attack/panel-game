@@ -182,6 +182,8 @@ function GameBase:load()
     ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
+      -- Clear focus when pause menu is hidden
+      self.uiRoot:setFocus(nil)
       self.match:togglePause()
       if self.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.stageTrack)
@@ -235,7 +237,9 @@ function GameBase:handlePause()
       GAME.theme:playValidationSfx()
     end
   else
-    self.pauseMenu:receiveInputs()
+    if (self.pauseMenu.hasFocus == nil or self.pauseMenu.hasFocus == false) and playerPressingStart(self.match) == false then
+      self.uiRoot:setFocus(self.pauseMenu)
+    end
   end
 end
 
@@ -356,6 +360,9 @@ function GameBase:update(dt)
     end
     self:runGame(dt)
   end
+  
+  self.uiRoot:handleFocusedInput(input, dt)
+  self.uiRoot:update(dt)
 end
 
 function GameBase:draw()
@@ -378,8 +385,9 @@ function GameBase:draw()
 
   if self.match.isPaused then
     self.match:draw_pause()
-    self.uiRoot:draw()
   end
+  
+  self.uiRoot:draw()
 
   if config.show_fps then
     GraphicsUtil.printf("Dropped Frames: " .. self.droppedFrameCount, 1, 12)
@@ -480,6 +488,11 @@ function GameBase:genericOnMatchEnded(match)
   if self.saveReplay then
     FileUtils.saveReplay(match.replay)
   end
+end
+
+-- Override this method in subclasses to disable taunt sounds
+function GameBase:shouldDisableTauntSounds()
+  return false
 end
 
 return GameBase

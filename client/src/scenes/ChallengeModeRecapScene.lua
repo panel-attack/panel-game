@@ -33,7 +33,7 @@ ChallengeModeRecapScene.name = "ChallengeModeRecapScene"
 -- scene core functionality --
 ------------------------------
 
-function ChallengeModeRecapScene:update(dt)
+function ChallengeModeRecapScene:updateSelf(dt)
   self.backgroundImg:update(dt)
   local displayTime = love.timer.getTime() - self.recapStartTime
 
@@ -46,7 +46,7 @@ function ChallengeModeRecapScene:update(dt)
   end
 end
 
-function ChallengeModeRecapScene:draw()
+function ChallengeModeRecapScene:drawSelf()
   self.backgroundImg:draw()
 
   local drawX = consts.CANVAS_WIDTH / 2

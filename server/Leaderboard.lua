@@ -520,7 +520,7 @@ function Leaderboard:rating_adjustment_approved(players)
   -- end
   if players[1].level ~= players[2].level then
     reasons[#reasons + 1] = "Levels don't match"
-  -- elseif not deep_content_equal(players[1].levelData or LevelPresets.getModern(players[1].level), players[2].levelData or LevelPresets.getModern(players[2].level)) then
+  -- elseif not tableUtils.deep_content_equal(players[1].levelData or LevelPresets.getModern(players[1].level), players[2].levelData or LevelPresets.getModern(players[2].level)) then
   --  reasons[#reasons + 1] = "Level data doesn't match"
   end
 

@@ -299,6 +299,12 @@ function ReplayV3.createFromV3Data(replayData)
       if LevelData.validate(stack.levelData) then
         stack.levelData = setmetatable(stack.levelData, LevelData)
       end
+      -- the startTimersWithSwapCount got retired in favor of delaySimulationUntil
+      -- as there were no use cases in which it was set to a different value than 1, there should be no problems with a straight up replacement
+---@diagnostic disable-next-line: undefined-field
+      if stack.stackBehaviours.startTimersWithSwapCount and stack.stackBehaviours.startTimersWithSwapCount > 0 then
+        stack.stackBehaviours.delaySimulationUntil = "firstSwap"
+      end
     end
   end
   return replayData

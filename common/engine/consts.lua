@@ -39,6 +39,7 @@ consts.COUNTDOWN_START = 8
 consts.COUNTDOWN_LENGTH = 180 --3 seconds at 60 fps
 
 consts.PUZZLES_SAVE_DIRECTORY = "puzzles"
+consts.PUZZLES_LOAD_DIRECTORY = "client/assets/default_data/puzzles"
 
 consts.SERVER_SAVE_DIRECTORY = "servers/"
 consts.LEGACY_SERVER_LOCATION = "18.188.43.50"

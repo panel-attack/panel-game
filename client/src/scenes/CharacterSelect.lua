@@ -730,7 +730,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = loc("ss_rating") .. " " .. ((player.league) or "none"),
     translate = false
   })
-  stackPanel.leagueLabel.update = function(self, league)
+  stackPanel.leagueLabel.updateLabel = function(self, league)
     self:setText(loc("ss_rating") .. " " .. (league or "none"))
   end
 
@@ -739,7 +739,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = player.rating or "",
     translate = false
   })
-  stackPanel.ratingLabel.update = function(self, rating, ratingDiff)
+  stackPanel.ratingLabel.updateLabel = function(self, rating, ratingDiff)
     if ratingDiff > 0 then
       self:setText(tostring(rating) .. " (+" .. ratingDiff .. ")", nil, false)
     elseif ratingDiff < 0 then
@@ -754,7 +754,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = loc("ss_wins") .. " " .. player:getWinCountForDisplay(),
     translate = false
   })
-  stackPanel.winsLabel.update = function(self, winCount)
+  stackPanel.winsLabel.updateLabel = function(self, winCount)
     self:setText(loc("ss_wins") .. " " .. winCount, nil, false)
   end
 
@@ -768,7 +768,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = "  " .. loc("ss_current_rating") .. " " .. tostring(player.winrate) .. "%",
     translate = false
   })
-  stackPanel.winrateValueLabel.update = function(self, winrate)
+  stackPanel.winrateValueLabel.updateLabel = function(self, winrate)
     self:setText("  " .. loc("ss_current_rating") .. tostring(winrate) .. "%", nil, false)
   end
 
@@ -779,15 +779,15 @@ function CharacterSelect:createPlayerInfo(player)
   if self.battleRoom.ranked then
     stackPanel.winrateExpectedLabel:setText(loc("ss_expected_rating") .. " " .. player.expectedWinrate .. "%")
   end
-  stackPanel.winrateExpectedLabel.update = function(self, expectedWinrate)
+  stackPanel.winrateExpectedLabel.updateLabel = function(self, expectedWinrate)
     self:setText("  " .. loc("ss_expected_rating") .. tostring(expectedWinrate) .. "%", nil, false)
   end
 
-  player:connectSignal("leagueChanged", stackPanel.leagueLabel, stackPanel.leagueLabel.update)
-  player:connectSignal("ratingChanged", stackPanel.ratingLabel, stackPanel.ratingLabel.update)
-  player:connectSignal("winsChanged", stackPanel.winsLabel, stackPanel.winsLabel.update)
-  player:connectSignal("winrateChanged", stackPanel.winrateValueLabel, stackPanel.winrateValueLabel.update)
-  player:connectSignal("expectedWinrateChanged", stackPanel.winrateExpectedLabel, stackPanel.winrateExpectedLabel.update)
+  player:connectSignal("leagueChanged", stackPanel.leagueLabel, stackPanel.leagueLabel.updateLabel)
+  player:connectSignal("ratingChanged", stackPanel.ratingLabel, stackPanel.ratingLabel.updateLabel)
+  player:connectSignal("winsChanged", stackPanel.winsLabel, stackPanel.winsLabel.updateLabel)
+  player:connectSignal("winrateChanged", stackPanel.winrateValueLabel, stackPanel.winrateValueLabel.updateLabel)
+  player:connectSignal("expectedWinrateChanged", stackPanel.winrateExpectedLabel, stackPanel.winrateExpectedLabel.updateLabel)
 
   stackPanel:addElement(stackPanel.leagueLabel)
   stackPanel:addElement(stackPanel.ratingLabel)
@@ -909,7 +909,7 @@ function CharacterSelect:createDifficultyCarousel(player, height)
   return difficultyCarousel
 end
 
-function CharacterSelect:update(dt)
+function CharacterSelect:updateSelf(dt)
   for _, cursor in ipairs(self.ui.cursors) do
     if cursor.player.isLocal and cursor.player.human then
       if not cursor.player.inputConfiguration then
@@ -931,9 +931,8 @@ function CharacterSelect:update(dt)
   end
 end
 
-function CharacterSelect:draw()
+function CharacterSelect:drawSelf()
   self.backgroundImg:draw()
-  self.uiRoot:draw()
   self:customDraw()
 end
 

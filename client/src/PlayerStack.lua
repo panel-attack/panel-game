@@ -910,13 +910,15 @@ end
 
 -- Renders the player's stack on screen
 ---@param matchEnded boolean?
-function PlayerStack:render(matchEnded)
+---@param xOffset integer? provides an additional x offset e.g. from translation as scissors only operates in screen/canvas coordinates
+---@param yOffset integer? provides an additional y offset e.g. from translation as scissors only operates in screen/canvas coordinates
+function PlayerStack:render(matchEnded, xOffset, yOffset)
   prof.push("Stack:render")
   if self.canvas == nil then
     return
   end
 
-  self:setDrawArea()
+  self:setDrawArea(xOffset, yOffset)
   self:drawCharacter()
   local garbageCharacter
   local metalPanelSet
@@ -1407,6 +1409,10 @@ end
 local MAX_TAUNT_PER_10_SEC = 4
 
 function PlayerStack:can_taunt()
+  -- Check if the current scene allows taunt sounds
+  if GAME.battleRoom and GAME.battleRoom.gameScene and GAME.battleRoom.gameScene.shouldDisableTauntSounds and GAME.battleRoom.gameScene:shouldDisableTauntSounds() then
+    return false
+  end
   return self.taunt_queue:len() < MAX_TAUNT_PER_10_SEC or self.taunt_queue:peek() + 10 < love.timer.getTime()
 end
 
@@ -1567,7 +1573,7 @@ function PlayerStack.updateDangerBounce(self)
   end
 
   if self.danger then
-    if self.engine:isToppedOut() and self.engine.speed ~= 0 then
+    if self.engine.wasToppedOut and self.engine.speed ~= 0 then
       -- Player has topped out, panels hold the "flattened" frame
       self.danger_timer = 0
     elseif self.engine.stop_time == 0 then

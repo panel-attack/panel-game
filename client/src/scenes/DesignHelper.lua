@@ -56,14 +56,10 @@ function DesignHelper:loadStages()
   self.stageCarousel:loadCurrentStages()
 end
 
-function DesignHelper:update()
+function DesignHelper:updateSelf()
   if input.allKeys.isDown["MenuEsc"] then
     GAME.navigationStack:pop()
   end
-end
-
-function DesignHelper:draw()
-  self.grid:draw()
 end
 
 return DesignHelper

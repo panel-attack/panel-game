@@ -68,7 +68,7 @@ local countdownEnd = consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
 
 ---@param battleRoom BattleRoom
 function ClientMatch.createFromBattleRoom(battleRoom)
-  local clientMatch = ClientMatch.createFromGameMode(battleRoom.players, battleRoom.mode, battleRoom:createPanelSource(), battleRoom.ranked)
+  local clientMatch = ClientMatch.createFromGameMode(battleRoom.players, battleRoom.mode, battleRoom:createPanelSource(), battleRoom.ranked, battleRoom.preferredStageId)
 
   clientMatch.supportsPause = not battleRoom.online or (#battleRoom.players == 1 and battleRoom.players[1].isLocal)
 
@@ -76,9 +76,9 @@ function ClientMatch.createFromBattleRoom(battleRoom)
 end
 
 ---@param gameMode GameMode
-function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked)
+function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked, stageId)
   local clientMatch = ClientMatch(players, ranked)
-  clientMatch:setStage()
+  clientMatch:setStage(stageId)
   clientMatch.gameMode = gameMode
   clientMatch.stackInteraction = gameMode.stackInteraction
   clientMatch.matchRules = gameMode.matchRules

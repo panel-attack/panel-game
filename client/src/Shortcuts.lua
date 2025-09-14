@@ -2,6 +2,7 @@ local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local inputFieldManager = require("client.src.ui.inputFieldManager")
 local FileUtils = require("client.src.FileUtils")
+local logger = require("common.lib.logger")
 
 local function runSystemCommands()
   -- toggle debug mode
@@ -52,7 +53,7 @@ local function handleCopy()
     end
 
     if tableUtils.length(stacks) > 0 then
-      local encodeArguments = {indent = true, keyorder = {"P1", "P2", "Player", "Stop", "Pre-Stop", "Shake", "Stack"}}
+      local encodeArguments = {indent = true, keyorder = {"P1", "P2", "Player", "Stop", "Shake", "Stack"}}
       love.system.setClipboardText(json.encode(stacks, encodeArguments))
       return true
     end
@@ -67,7 +68,11 @@ local function handleDumpAttackPattern(playerNumber)
 
     if player and player.stack then
       local data, state = player.stack:getAttackPatternData()
-      FileUtils.writeJson("training", data.extraInfo.dateGenerated .. "_" .. data.extraInfo.playerName .. "_" .. data.extraInfo.gpm .. "gpm.json", data, state)
+      if data then
+        FileUtils.writeJson("training", data.extraInfo.dateGenerated .. "_" .. data.extraInfo.playerName .. "_" .. data.extraInfo.gpm .. "gpm.json", data, state)
+      else
+        logger.warn("Tried to export attack patterns from a game that has not run physics yet")
+      end
       return true
     end
   end

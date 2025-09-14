@@ -3,6 +3,7 @@ local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local class = require("common.lib.class")
 
 -- An object that manages touches on the screen and translates them to swaps on a stack
+---@class TouchInputDetector
 local TouchInputDetector =
   class(
   function(self, stack)

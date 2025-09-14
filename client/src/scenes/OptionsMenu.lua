@@ -160,7 +160,7 @@ function OptionsMenu:loadBaseMenu()
   for k, v in ipairs(languageName) do
     local lang = config.language_code
     GAME:setLanguage(v[1])
-    languageLabels[#languageLabels + 1] = ui.Label({text = v[2], translate = false, width = 70, height = 25})
+    languageLabels[#languageLabels + 1] = ui.Label({text = v[2], translate = false})
     GAME:setLanguage(lang)
   end
 
@@ -487,7 +487,7 @@ end
 
 function OptionsMenu:loadDebugMenu()
   local debugMenuOptions = {
-    ui.MenuItem.createToggleButtonGroupMenuItem("op_debug", nil, nil, createToggleButtonGroup("debug_mode")),
+    ui.MenuItem.createToggleButtonGroupMenuItem("op_debug_mode", nil, nil, createToggleButtonGroup("debug_mode")),
     ui.MenuItem.createSliderMenuItem("VS Frames Behind", nil, false, createConfigSlider("debug_vsFramesBehind", 0, 200)),
     ui.MenuItem.createToggleButtonGroupMenuItem("Show Debug Servers", nil, false, createToggleButtonGroup("debugShowServers")),
     ui.MenuItem.createToggleButtonGroupMenuItem("Show Design Helper", nil, false, createToggleButtonGroup("debugShowDesignHelper")),
@@ -530,15 +530,15 @@ function OptionsMenu:loadAboutMenu()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/panels.md")
         end),
-    ui.MenuItem.createButtonMenuItem("About Attack Files", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("op_about_attack_files", nil, nil, function()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/training.txt")
         end),
-    ui.MenuItem.createButtonMenuItem("Installing Mods", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("op_about_installing_mods", nil, nil, function()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/installMods.md")
         end),
-    ui.MenuItem.createButtonMenuItem("System Info", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("op_system_info", nil, nil, function()
           GAME.theme:playValidationSfx()
           self:switchToScreen("systemInfo")
         end),
@@ -577,14 +577,13 @@ function OptionsMenu:load()
   self.uiRoot:addChild(self.menus.baseMenu)
 end
 
-function OptionsMenu:update(dt)
+function OptionsMenu:updateSelf(dt)
   self.backgroundImage:update(dt)
   self.menus[self.activeMenuName]:receiveInputs(inputManager)
 end
 
-function OptionsMenu:draw()
+function OptionsMenu:drawSelf()
   self.backgroundImage:draw()
-  self.uiRoot:draw()
 end
 
 return OptionsMenu

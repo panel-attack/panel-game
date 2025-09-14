@@ -58,8 +58,6 @@ function(self, name, publicId, isLocal)
   settings.wantsRanked = true
   settings.inputMethod = "controller"
   settings.attackEngineSettings = nil
-  settings.puzzleSet = nil
-  settings.puzzleIndex = nil
 
   -- planned for the future, players don't have public ids yet
   self.publicId = publicId or -1
@@ -94,8 +92,6 @@ Player.TYPE = "Player"
 function Player:reset()
   MatchParticipant.reset(self)
   self:unrestrictInputs()
-  self.settings.puzzleSet = nil
-  self.settings.puzzleIndex = nil
 end
 
 ---@param engineStack Stack
@@ -187,20 +183,6 @@ function Player:setStyle(style)
       self:setSpeed(self.settings.speed)
     end
     self:emitSignal("styleChanged", style)
-  end
-end
-
-function Player:setPuzzleSet(puzzleSet, index)
-  if puzzleSet ~= self.settings.puzzleSet then
-    self.settings.puzzleSet = puzzleSet
-    self:emitSignal("puzzleSetChanged", puzzleSet)
-  end
-  self.settings.puzzleIndex = index
-end
-
-function Player:setPuzzleIndex(puzzleIndex)
-  if puzzleIndex ~= self.settings.puzzleIndex then
-    self.settings.puzzleIndex = puzzleIndex
   end
 end
 

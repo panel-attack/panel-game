@@ -101,8 +101,8 @@ function MainMenu:createMainMenu()
 
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
+  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
+                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
                         }
 
   local function addDebugMenuItems()
@@ -149,16 +149,15 @@ function MainMenu:checkForUpdates()
   end
 end
 
-function MainMenu:update(dt)
+function MainMenu:updateSelf(dt)
   GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
-function MainMenu:draw()
+function MainMenu:drawSelf()
   GAME.theme.images.bg_main:draw()
-  self.uiRoot:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 
