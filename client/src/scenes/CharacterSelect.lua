@@ -60,10 +60,9 @@ function CharacterSelect:load()
   self.ui.playerInfos = {}
   self:createInputDeviceOverlay()
   self:customLoad()
-  self:bringOverlayToFront()
-  self:setChangeInputButtonVisibility(true)
+  self:setChangeInputButtonVisibility(false)
+  self:setChangeInputButtonVisibleIfNeeded()
   self:openInputDeviceOverlayIfNeeded()
-  self:updateChangeInputSummary()
 end
 
 ---@param player Player
@@ -266,11 +265,10 @@ function CharacterSelect:createInputDeviceOverlay()
 end
 
 function CharacterSelect:onInputDeviceOverlayClosed()
-  self:setChangeInputButtonVisibility(true)
-  self:updateChangeInputSummary()
+  self:setChangeInputButtonVisibleIfNeeded()
 end
 
-function CharacterSelect:openInputDeviceOverlayIfNeeded(forceOpen)
+function CharacterSelect:openInputDeviceOverlayIfNeeded()
   if not self.battleRoom or not self.inputDeviceOverlay then
     return
   end
@@ -280,7 +278,7 @@ function CharacterSelect:openInputDeviceOverlayIfNeeded(forceOpen)
     return
   end
 
-  if forceOpen or not self.battleRoom:areLocalPlayersAssigned() then
+  if not self.battleRoom:areLocalPlayersAssigned() then
     self:bringOverlayToFront()
     self:setChangeInputButtonVisibility(false)
     self.inputDeviceOverlay:open()
@@ -294,79 +292,31 @@ function CharacterSelect:bringOverlayToFront()
   end
 end
 
+function CharacterSelect:setChangeInputButtonVisibleIfNeeded()
+  if self.ui and self.ui.changeInputButton then
+    if self.battleRoom and #self.battleRoom:getLocalHumanPlayers() == 0 then
+      return
+    end
+
+    self.ui.changeInputButton:setVisibility(true)
+  end
+end
+
 function CharacterSelect:setChangeInputButtonVisibility(isVisible)
   if self.ui and self.ui.changeInputButton then
     self.ui.changeInputButton:setVisibility(isVisible)
   end
 end
 
-function CharacterSelect:getInputDeviceSummary()
-  if not self.battleRoom then
-    return ""
-  end
-
-  local players = self.battleRoom:getLocalHumanPlayers()
-  if #players == 0 then
-    return "No local players"
-  end
-
-  return InputDeviceUtils.formatAssignmentSummary(players)
-end
-
-function CharacterSelect:updateChangeInputSummary()
-  if not self.ui or not self.ui.changeInputButton then
-    return
-  end
-
-  local button = self.ui.changeInputButton
-  local summary = self:getInputDeviceSummary()
-  button.summaryLabel:setText(summary ~= "" and summary or "No local players", nil, false)
-  button.isEnabled = self.battleRoom and #self.battleRoom:getLocalHumanPlayers() > 0
-end
-
 function CharacterSelect:createChangeInputButton()
-  local button = ui.Button({
+  return ui.ChangeInputButton({
     hFill = true,
     vFill = true,
-    backgroundColor = {0.15, 0.15, 0.15, 0.85},
-    outlineColor = {1, 1, 1, 1}
-  })
-
-  local titleLabel = ui.Label({
-    text = "Change Input Device",
-    translate = false,
-    hAlign = "center"
-  })
-  titleLabel.y = 6
-  titleLabel.hFill = true
-  button:addChild(titleLabel)
-
-  local summaryLabel = ui.Label({
-    text = self:getInputDeviceSummary(),
-    translate = false,
-    hAlign = "left",
-    wrapWidth = 0,
-    fontSize = math.max(GraphicsUtil.fontSize - 4, 12)
-  })
-  summaryLabel.x = 8
-  summaryLabel.y = 36
-  button:addChild(summaryLabel)
-
-  function button:onResize()
-    summaryLabel.wrapWidth = math.max(self.width - 16, 0)
-  end
-
-  button.onClick = function()
-    if button.isEnabled then
+    battleRoom = self.battleRoom,
+    onChangeInputRequested = function()
       self:onChangeInputDeviceRequested()
     end
-  end
-  button.onSelect = button.onClick
-  button.summaryLabel = summaryLabel
-
-  button.isEnabled = self.battleRoom and #self.battleRoom:getLocalHumanPlayers() > 0
-
-  return button
+  })
 end
 
 function CharacterSelect:onChangeInputDeviceRequested()
@@ -385,11 +335,7 @@ function CharacterSelect:onChangeInputDeviceRequested()
     GAME.theme:playMoveSfx()
   end
 
-  if self.inputDeviceOverlay then
-    self:setChangeInputButtonVisibility(false)
-    self.inputDeviceOverlay:open()
-  end
-  self:updateChangeInputSummary()
+  self:openInputDeviceOverlayIfNeeded()
 end
 
 local super_select_pixelcode = [[
@@ -1061,13 +1007,6 @@ function CharacterSelect:createDifficultyCarousel(player, height)
 end
 
 function CharacterSelect:updateSelf(dt)
-  local hasLocalPlayers = self.battleRoom and (#self.battleRoom:getLocalHumanPlayers() > 0)
-
-  if hasLocalPlayers and self.inputDeviceOverlay and not self.inputDeviceOverlay:isActive() and
-    not self.battleRoom:areLocalPlayersAssigned() then
-    self.inputDeviceOverlay:open()
-  end
-
   local overlayActive = self.inputDeviceOverlay and self.inputDeviceOverlay:isActive()
 
   if not overlayActive then
@@ -1089,8 +1028,6 @@ function CharacterSelect:updateSelf(dt)
       GAME.navigationStack:pop()
     end
   end
-
-  self:updateChangeInputSummary()
 
   if self:customUpdate() then
     return

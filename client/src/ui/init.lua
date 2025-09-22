@@ -9,6 +9,9 @@ local ui = {
   Button = require(PATH .. ".Button"),
   ButtonGroup = require(PATH .. ".ButtonGroup"),
   Carousel = require(PATH .. ".Carousel"),
+  ---@see ChangeInputButton
+  ---@type fun(options: ChangeInputButtonOptions): ChangeInputButton
+  ChangeInputButton = require(PATH .. ".ChangeInputButton"),
   Focusable = require(PATH .. ".Focusable"),
   FocusDirector = require(PATH .. ".FocusDirector"),
   Grid = require(PATH .. ".Grid"),

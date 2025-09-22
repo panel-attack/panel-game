@@ -22,15 +22,23 @@
    - Provide formatting helpers for UI strings (per-player assignment lines).
 
 3. **Input Device Overlay (`client/src/scenes/components/InputDeviceOverlay.lua`)**
-   - Full-screen `UiElement` with:
-     - Dim background, title label "Select Input Device(s)", and body copy.
-     - Slot list (`ui.Grid`) showing Player {n} statuses.
-     - Device grid of `ui.Button`s (including “Touch”) navigable via controller.
-   - Interaction rules:
-     - Use `inputManager` hold durations (`isPressed` / `isPressedWithRepeat`) to detect ≥1s confirm/cancel holds; touch tile uses `onHold` timer.
-     - Confirm assigns next unassigned local human via BattleRoom helper; cancel clears the player bound to that device.
-     - Auto-close (call overlay callback) once all required slots are assigned.
-   - Emit signals/events so scenes can update surrounding UI state and play SFX.
+   - **Visual Design (Updated)**:
+     - Horizontal row of player slots (only show required number of players)
+     - Use `client/assets/themes/Panel Attack Modern/p1@2x.png` and `p2@2x.png` for player numbers
+     - Assert p3@2x.png and p4@2x.png exist for future 3-4 player support
+     - Device type icons: controller icon for controllers, keyboard icon for keyboards, pointer icon for touch
+     - Progressive visual feedback: device icons become more visible as hold threshold approaches
+   - **Interaction Model (Updated)**:
+     - Hold any device → assigns to next available player slot
+     - Touch and hold specific player tile → assigns touch to that specific slot
+     - Progressive fill effect shows hold progress
+     - **No cancel support** (removed as specified)
+     - Wait 1 second after all players assigned before auto-closing
+   - **Component Architecture**:
+     - Replace Grid with horizontal StackPanel for player slots
+     - New PlayerSlot component with device icon, player number image, and progress feedback
+     - Remove complex device descriptor grid
+     - Use ImageContainer for player number graphics and device icons
 
 4. **Scene integration (`client/src/scenes/CharacterSelect*.lua`)**
    - Instantiate overlay in `load()` and attach to `uiRoot`.

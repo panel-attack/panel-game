@@ -4,6 +4,7 @@ local logger = require("common.lib.logger")
 
 local InputDeviceUtils = {}
 
+-- Parses controller binding string to extract GUID and slot
 local function parseControllerBinding(binding)
   if not binding then
     return nil
@@ -17,6 +18,7 @@ local function parseControllerBinding(binding)
   return nil
 end
 
+-- Resolves controller name from GUID and slot using Love2D joystick API
 local function resolveControllerName(guid, slot)
   if not guid then
     return nil
@@ -25,27 +27,29 @@ local function resolveControllerName(guid, slot)
   local fallbackName = joystickManager.guidToName and joystickManager.guidToName[guid]
 
   for _, joystick in ipairs(love.joystick.getJoysticks()) do
-    if joystick:getGUID() == guid then
-      if not slot then
-        local name = joystick:getName()
-        logger.debug("InputDeviceUtils:resolveControllerName guid=%s slot=nil name=%s", guid, name)
-        return name
-      end
-
-      local guidMap = joystickManager.guidsToJoysticks and joystickManager.guidsToJoysticks[guid]
-      if guidMap and guidMap[joystick:getID()] == slot then
-        local name = joystick:getName()
-        logger.debug("InputDeviceUtils:resolveControllerName guid=%s slot=%s name=%s", guid, tostring(slot), name)
-        return name
-      end
+    if joystick:getGUID() ~= guid then
+      goto continue
     end
+
+    if not slot then
+      local name = joystick:getName()
+      return name
+    end
+
+    local guidMap = joystickManager.guidsToJoysticks and joystickManager.guidsToJoysticks[guid]
+    if guidMap and guidMap[joystick:getID()] == slot then
+      local name = joystick:getName()
+      return name
+    end
+
+    ::continue::
   end
 
   return fallbackName
 end
 
+-- Classifies input configuration as keyboard, controller, or touch based on bindings
 local function classifyConfiguration(config, index)
-  logger.debug("InputDeviceUtils:classifyConfiguration index=%s", tostring(index))
   local firstBinding
   for _, keyName in ipairs(consts.KEY_NAMES) do
     local binding = config[keyName]
@@ -63,14 +67,13 @@ local function classifyConfiguration(config, index)
   end
 
   if firstBinding and firstBinding:match("^mouse") then
-    logger.debug("InputDeviceUtils:classifyConfiguration detected touch binding")
     return "touch", "Touch"
   end
 
-  logger.debug("InputDeviceUtils:classifyConfiguration default keyboard")
   return "keyboard", "Keyboard"
 end
 
+-- Builds device descriptor for input configuration
 local function buildConfigDescriptor(config, index)
   local deviceType, label = classifyConfiguration(config, index)
 
@@ -80,16 +83,11 @@ local function buildConfigDescriptor(config, index)
     type = deviceType,
     label = label,
     index = index,
-    assignedPlayer = config.player,
-    bindings = {
-      Swap1 = config["Swap1"],
-      Start = config["Start"],
-      Swap2 = config["Swap2"],
-      MenuSelect = config["MenuSelect"],
-    }
+    assignedPlayer = config.player
   }
 end
 
+-- Builds device descriptor for touch/mouse input
 local function buildTouchDescriptor()
   local mouse = GAME.input.mouse
   return {
@@ -102,21 +100,32 @@ local function buildTouchDescriptor()
   }
 end
 
+-- Gets list of all assignable input devices (controllers, keyboard, touch)
 function InputDeviceUtils.getAssignableDevices()
   local devices = {}
   for i, config in ipairs(GAME.input.inputConfigurations) do
     if config["Swap1"] or config["Start"] then
-      logger.debug("InputDeviceUtils:getAssignableDevices adding config index=%d", i)
       devices[#devices + 1] = buildConfigDescriptor(config, i)
     end
   end
 
   devices[#devices + 1] = buildTouchDescriptor()
-  logger.debug("InputDeviceUtils:getAssignableDevices total=%d", #devices)
 
   return devices
 end
 
+-- Gets label for a specific input configuration
+local function getConfigurationLabel(inputConfiguration)
+  for i, config in ipairs(GAME.input.inputConfigurations) do
+    if config == inputConfiguration then
+      local descriptor = buildConfigDescriptor(config, i)
+      return descriptor.label
+    end
+  end
+  return "Unknown"
+end
+
+-- Describes current input device assignment for a player
 local function describePlayerAssignment(player)
   if not player then
     return ""
@@ -127,37 +136,23 @@ local function describePlayerAssignment(player)
   end
 
   if player.inputConfiguration then
-    local index
-    for i, config in ipairs(GAME.input.inputConfigurations) do
-      if config == player.inputConfiguration then
-        index = i
-        break
-      end
-    end
-
-    if index then
-      local descriptor = buildConfigDescriptor(player.inputConfiguration, index)
-      return descriptor.label
-    end
-  end
-
-  if player.settings.inputMethod == "touch" then
-    return "Touch"
+    return getConfigurationLabel(player.inputConfiguration)
   end
 
   return "Unassigned"
 end
 
+-- Formats assignment summary text showing all player device assignments
 function InputDeviceUtils.formatAssignmentSummary(players)
   local lines = {}
   for i, player in ipairs(players) do
     local indexLabel = player.playerNumber or i
     lines[#lines + 1] = string.format("Player %s: %s", indexLabel, describePlayerAssignment(player))
   end
-  logger.debug("InputDeviceUtils:formatAssignmentSummary lines=%d", #lines)
   return table.concat(lines, "\n")
 end
 
+-- Public wrapper for describePlayerAssignment
 function InputDeviceUtils.describePlayerAssignment(player)
   return describePlayerAssignment(player)
 end

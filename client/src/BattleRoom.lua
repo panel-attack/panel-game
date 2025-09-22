@@ -45,7 +45,6 @@ function(self, mode, gameScene)
   self.panelSource = nil
   self.gameScene = gameScene or require("client.src.scenes." .. mode.gameScene)
   self.sceneParameters = nil
-  self.localDeviceAssignments = {}
   -- this is a bit naive but effective for now
   self.online = GAME.netClient:isConnected()
   if self.online then
@@ -137,7 +136,7 @@ function BattleRoom.createFromServerMessage(message)
 
   battleRoom:updateRankedStatus(message.ranked)
 
-  battleRoom:assignInputConfigurations()
+  battleRoom:restoreInputConfigurations()
   GAME.netClient:registerPlayerUpdates(battleRoom)
 
   return battleRoom
@@ -167,7 +166,7 @@ function BattleRoom.createLocalFromGameMode(gameMode, gameScene)
     end
   end
 
-  if battleRoom:assignInputConfigurations() then
+  if battleRoom:restoreInputConfigurations() then
     return battleRoom
   else
     return nil
@@ -437,10 +436,8 @@ function BattleRoom:startLoadingNewAssets()
   end
 end
 
--- updates a player's input configuration
--- if lock is true it tries to claim the first unclaim inputConfiguration for which a key is down (may not claim any)
--- if lock is false it unclaims the player's current inputConfiguration
-function BattleRoom:assignInputConfigurations()
+-- Validates that there are enough input configurations for local players and attempts to restore previous assignments
+function BattleRoom:restoreInputConfigurations()
   local localPlayers = self:getLocalHumanPlayers()
 
   local validInputConfigurationCount = 1
@@ -458,9 +455,32 @@ function BattleRoom:assignInputConfigurations()
     return false
   end
 
+  -- Try to restore previous device assignments
+  for _, player in ipairs(localPlayers) do
+    if player.lastUsedInputConfiguration then
+      logger.debug("BattleRoom: attempting to restore device for player %d", player.playerNumber)
+      -- Check if the device is available (not already claimed by another player)
+      local deviceAvailable = true
+      for _, otherPlayer in ipairs(localPlayers) do
+        if otherPlayer ~= player and otherPlayer.inputConfiguration == player.lastUsedInputConfiguration then
+          deviceAvailable = false
+          break
+        end
+      end
+
+      if deviceAvailable then
+        local success = self:claimDeviceForPlayer(player, player.lastUsedInputConfiguration)
+        if success then
+          logger.debug("BattleRoom: restored device for player %d", player.playerNumber)
+        end
+      end
+    end
+  end
+
   return true
 end
 
+-- Gets all local human players in the battle room
 function BattleRoom:getLocalHumanPlayers()
   local localPlayers = {}
   for _, player in ipairs(self.players) do
@@ -468,20 +488,18 @@ function BattleRoom:getLocalHumanPlayers()
       localPlayers[#localPlayers + 1] = player
     end
   end
-
-  logger.debug("BattleRoom:getLocalHumanPlayers count=%d", #localPlayers)
   return localPlayers
 end
 
+-- Checks if a player has an assigned input device
 function BattleRoom:isPlayerAssigned(player)
   assert(player, "player is required")
   local assigned = player.inputConfiguration ~= nil
-  logger.debug("BattleRoom:isPlayerAssigned player=%s assigned=%s", tostring(player.playerNumber), tostring(assigned))
   return assigned
 end
 
+-- Checks if all local human players have assigned input devices
 function BattleRoom:areLocalPlayersAssigned()
-  logger.debug("BattleRoom:areLocalPlayersAssigned")
   for _, player in ipairs(self:getLocalHumanPlayers()) do
     if not self:isPlayerAssigned(player) then
       return false
@@ -491,6 +509,17 @@ function BattleRoom:areLocalPlayersAssigned()
   return true
 end
 
+-- Gets player by player number
+function BattleRoom:getPlayerByNumber(playerNumber)
+  for _, player in ipairs(self.players) do
+    if player.playerNumber == playerNumber then
+      return player
+    end
+  end
+  return nil
+end
+
+-- Gets the player currently assigned to a specific input device
 function BattleRoom:getPlayerAssignedToDevice(device)
   assert(device, "device is required")
   logger.debug("BattleRoom:getPlayerAssignedToDevice device=%s", tostring(device))
@@ -507,6 +536,7 @@ function BattleRoom:getPlayerAssignedToDevice(device)
   return nil
 end
 
+-- Claims an input device for a specific player
 function BattleRoom:claimDeviceForPlayer(player, device)
   assert(player, "player is required")
   assert(device, "device is required")
@@ -528,11 +558,11 @@ function BattleRoom:claimDeviceForPlayer(player, device)
   end
 
   player:restrictInputs(device)
-  self.localDeviceAssignments[player] = device
 
   return true
 end
 
+-- Clears input device assignment for a player
 function BattleRoom:clearPlayerAssignment(player)
   assert(player, "player is required")
   logger.debug("BattleRoom:clearPlayerAssignment player=%s", tostring(player.playerNumber))
@@ -541,13 +571,12 @@ function BattleRoom:clearPlayerAssignment(player)
     player:unrestrictInputs()
   end
 
-  self.localDeviceAssignments[player] = nil
-
   if player.settings.inputMethod ~= "controller" then
     player:setInputMethod("controller")
   end
 end
 
+-- Releases all input device assignments for local players
 function BattleRoom:releaseAllLocalAssignments()
   local released = false
   for _, player in ipairs(self:getLocalHumanPlayers()) do
@@ -578,6 +607,7 @@ function BattleRoom:update(dt)
 end
 
 function BattleRoom:shutdown()
+
   for _, player in ipairs(self.players) do
     player:disconnectSubscriber(self)
     player:reset()
@@ -586,7 +616,6 @@ function BattleRoom:shutdown()
     self.match:deinit()
     self.match = nil
   end
-  self.localDeviceAssignments = {}
   if self.online then
     GAME.netClient:leaveRoom()
   end

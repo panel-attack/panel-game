@@ -1,31 +1,205 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local Label = require("client.src.ui.Label")
-local Grid = require("client.src.ui.Grid")
-local TextButton = require("client.src.ui.TextButton")
+local StackPanel = require("client.src.ui.StackPanel")
+local ImageContainer = require("client.src.ui.ImageContainer")
 local InputDeviceUtils = require("client.src.input.InputDeviceUtils")
 local inputManager = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 
-local HOLD_THRESHOLD = 0.5
-local CONFIRM_KEYS = {"Swap1", "Start"}
-local CANCEL_KEYS = {"Swap2", "MenuEsc"}
-local KEY_ACTIVE_VALUES = {
-  [true] = true,
-  [false] = false,
-}
+local HOLD_THRESHOLD = 0.25
+local ALL_INPUT_KEYS = consts.KEY_NAMES
+local AUTO_CLOSE_DELAY = 0.25
+local PLAYER_SLOT_SIZE = 150
+local DEVICE_ICON_SIZE = 64
+
+
+---@class PlayerSlot : UiElement
+---@field playerNumber number
+---@field assignedDevice table?
+---@field holdProgress number
+---@field pendingDeviceType string?
+---@field playerImage ImageContainer?
+---@field deviceIcon UiElement?
+---@field isTargetedForTouch boolean
+local PlayerSlot = class(function(self, options)
+  local playerNumber = options.playerNumber or options
+  self.playerNumber = playerNumber
+  self.assignedDevice = nil
+  self.holdProgress = 0
+  self.pendingDeviceType = nil
+  self.isTargetedForTouch = false
+
+  -- Set size after parent initialization
+  self.width = PLAYER_SLOT_SIZE
+  self.height = PLAYER_SLOT_SIZE
+
+  self:createPlayerNumberImage()
+end, UiElement)
+
+function PlayerSlot:drawSelf()
+    self:drawSlotBackground(self)
+    self:drawSlotBorder(self)
+end
+
+-- Draws slot background with progress-based color transitions
+function PlayerSlot:drawSlotBackground(slot)
+  local progress = self.holdProgress or 0
+  local bgColor = self:getBackgroundColor(progress)
+  GraphicsUtil.setColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
+  GraphicsUtil.drawRectangle("fill", self.x, self.y, slot.width, slot.height)
+  GraphicsUtil.setColor(1, 1, 1, 1)
+end
+
+-- Draws slot border with progress-based color transitions
+function PlayerSlot:drawSlotBorder(slot)
+  local progress = self.holdProgress or 0
+  local borderColor = self:getBorderColor(progress)
+  GraphicsUtil.setColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
+  GraphicsUtil.drawRectangle("line", self.x, self.y, slot.width, slot.height)
+  GraphicsUtil.setColor(1, 1, 1, 1)
+end
+
+-- Gets background color based on assignment and progress
+function PlayerSlot:getBackgroundColor(progress)
+  if self.assignedDevice then
+    return {0.2, 0.3, 0.4, 0.9}  -- Assigned: grey-blue background
+  else
+    local greyToBlue = progress * 0.3  -- How much blue to add
+    return {0.2, 0.2 + greyToBlue, 0.2 + greyToBlue * 2, 0.8}
+  end
+end
+
+-- Gets border color based on assignment and progress
+function PlayerSlot:getBorderColor(progress)
+  if self.assignedDevice then
+    return {0.3, 0.4, 0.5, 1}  -- Assigned: grey-blue border
+  else
+    local greyToBlue = progress * 0.5  -- How much blue to add to border
+    return {0.4, 0.4 + greyToBlue, 0.4 + greyToBlue * 1.5, 1}
+  end
+end
+
+-- Creates the player number image from theme
+function PlayerSlot:createPlayerNumberImage()
+  local playerIcon = GAME.theme:getPlayerNumberIcon(self.playerNumber)
+  assert(playerIcon, string.format("Missing player %d icon in current theme", self.playerNumber))
+
+  self.playerImage = ImageContainer({
+    image = playerIcon,
+    hAlign = "center",
+    vAlign = "top",
+    y = 10,
+    scale = 2
+  })
+  self:addChild(self.playerImage)
+end
+
+-- Sets the assigned device for this player slot
+function PlayerSlot:setAssignedDevice(device)
+  self.assignedDevice = device
+end
+
+-- Updates the device icon based on current assignment or hold progress
+function PlayerSlot:updateDeviceIcon()
+  if self.deviceIcon then
+    self.deviceIcon:detach()
+    self.deviceIcon = nil
+  end
+
+  -- Show icon for assigned device OR pending device during hold
+  local deviceType = nil
+  if self.assignedDevice and self.assignedDevice.type then
+    deviceType = self.assignedDevice.type
+  elseif self.pendingDeviceType and self.holdProgress > 0 then
+    deviceType = self.pendingDeviceType
+  end
+
+  if deviceType then
+    local iconElement = UiElement({
+      width = DEVICE_ICON_SIZE,
+      height = DEVICE_ICON_SIZE,
+      hAlign = "center",
+      vAlign = "bottom",
+      y = -10
+    })
+
+    iconElement.drawSelf = function(icon)
+      -- Device icon transitions from grey to blue based on progress
+      local progress = self.holdProgress or 0
+      local iconColor
+      if self.assignedDevice then
+        -- Assigned device: solid blue
+        iconColor = {0.3, 0.4, 0.8, 1}
+      else
+        -- Pending device: grey to blue transition
+        local greyToBlue = progress * 0.6  -- How much blue to add
+        iconColor = {0.4, 0.4 + greyToBlue * 0.2, 0.4 + greyToBlue * 0.8, 1}
+      end
+      GraphicsUtil.setColor(iconColor[1], iconColor[2], iconColor[3], iconColor[4])
+
+      local centerX = icon.width / 2
+      local centerY = icon.height / 2
+
+      if deviceType == "controller" then
+        -- Simple gamepad icon
+        GraphicsUtil.drawRectangle("fill", centerX - 20, centerY - 8, 40, 16)
+        love.graphics.circle("fill", centerX - 12, centerY - 3, 3)
+        love.graphics.circle("fill", centerX + 12, centerY - 3, 3)
+      elseif deviceType == "keyboard" then
+        -- Simple keyboard icon
+        GraphicsUtil.drawRectangle("line", centerX - 15, centerY - 6, 30, 12)
+        for i = 0, 2 do
+          GraphicsUtil.drawRectangle("fill", centerX - 12 + i * 8, centerY - 3, 6, 2)
+        end
+      elseif deviceType == "touch" then
+        -- Simple pointer/hand icon
+        love.graphics.circle("fill", centerX, centerY - 8, 4)
+        GraphicsUtil.drawRectangle("fill", centerX - 2, centerY - 4, 4, 12)
+      end
+
+      GraphicsUtil.setColor(1, 1, 1, 1)
+    end
+
+    self.deviceIcon = iconElement
+    self:addChild(iconElement)
+  end
+end
+
+-- Sets hold progress and pending device type for visual feedback
+function PlayerSlot:setHoldProgress(progress, pendingDeviceType)
+  self.holdProgress = math.max(0, math.min(1, progress))
+  self.pendingDeviceType = pendingDeviceType
+end
+
+function PlayerSlot:setTouchTarget(isTarget)
+  self.isTargetedForTouch = isTarget
+end
+
+function PlayerSlot:updateSelf(dt)
+  -- Update device icon if needed during each frame
+  self:updateDeviceIcon()
+end
+
+
+-- Checks if mouse cursor is over this player slot
+function PlayerSlot:isMouseOver()
+  local mx, my = inputManager.mouse.x, inputManager.mouse.y
+  local x, y = self:getScreenPos()
+  return mx >= x and mx <= x + self.width and my >= y and my <= y + self.height
+end
 
 ---@class InputDeviceOverlay : UiElement
 ---@field battleRoom BattleRoom
 ---@field holdThreshold number
 ---@field active boolean
----@field deviceGrid Grid?
----@field deviceButtons table<string, TextButton>
+---@field playerSlots PlayerSlot[]
 ---@field deviceDescriptors table
----@field deviceState table<string, {confirmTriggered:boolean, cancelTriggered:boolean}>
----@field touchHoldTriggered boolean
+---@field deviceState table<string, {confirmTriggered:boolean, holdTime:number}>
+---@field touchTargetSlot PlayerSlot?
+---@field autoCloseTimer number
 ---@field onClose fun()? optional close callback
 local InputDeviceOverlay = class(function(self, options)
   options = options or {}
@@ -34,12 +208,11 @@ local InputDeviceOverlay = class(function(self, options)
   self.onClose = options.onClose
 
   self.active = false
-  self.deviceGrid = nil
-  self.deviceButtons = {}
+  self.playerSlots = {}
   self.deviceDescriptors = {}
   self.deviceState = {}
-  self.touchHoldTriggered = false
-  self.touchHoldTime = 0
+  self.touchTargetSlot = nil
+  self.autoCloseTimer = 0
 
   self.hFill = true
   self.vFill = true
@@ -48,7 +221,6 @@ local InputDeviceOverlay = class(function(self, options)
   self:setVisibility(false)
 
   self:buildUi()
-  logger.debug("InputDeviceOverlay initialized")
 end, UiElement)
 
 local function getHoldDurationForDescriptor(descriptor, keyAliases)
@@ -64,11 +236,11 @@ local function getHoldDurationForDescriptor(descriptor, keyAliases)
     end
   end
 
-  if descriptor.bindings then
+  if descriptor.config then
     for _, alias in ipairs(keyAliases) do
-      local binding = descriptor.bindings[alias]
-      if binding then
-        local duration = inputManager.allKeys.isPressed[binding]
+      local key = descriptor.config[alias]
+      if key then
+        local duration = inputManager.allKeys.isPressed[key]
         if type(duration) == "number" and duration > (maxDuration or 0) then
           maxDuration = duration
         end
@@ -79,82 +251,38 @@ local function getHoldDurationForDescriptor(descriptor, keyAliases)
   return maxDuration
 end
 
-local function isKeyHeldForDescriptor(descriptor, keyAliases)
-  local device = descriptor.config
 
-  if device then
-    for _, alias in ipairs(keyAliases) do
-      local downValue = device.isDown and device.isDown[alias]
-      if type(downValue) == "number" then
-        return true
-      elseif KEY_ACTIVE_VALUES[downValue] then
-        return true
-      end
-    end
-  end
-
-  if descriptor.bindings then
-    for _, alias in ipairs(keyAliases) do
-      local binding = descriptor.bindings[alias]
-      if binding then
-        local downValue = inputManager.allKeys.isDown[binding]
-        if type(downValue) == "number" then
-          return true
-        elseif KEY_ACTIVE_VALUES[downValue] then
-          return true
-        end
-      end
-    end
-  end
-
-  return false
-end
-
+-- Builds the main UI elements for the overlay
 function InputDeviceOverlay:buildUi()
+  -- Title
   self.titleLabel = Label({
-    text = "Select Input Device(s)",
-    translate = false,
+    text = "Press a button on the device you want to use",
     hAlign = "center",
+    vAlign = "top",
+    y = 60,
     hFill = true,
-    wrapWidth = consts.CANVAS_WIDTH
+    fontSize = GraphicsUtil.fontSize + 4
   })
-  self.titleLabel.y = 60
   self:addChild(self.titleLabel)
 
-  local instructionWidth = math.floor(consts.CANVAS_WIDTH * 0.7)
-  self.instructionsLabel = Label({
-    text = "",
-    translate = false,
+  -- Subtitle
+  self.subtitleLabel = Label({
+    text = "or touch the player slot if you want to use touch",
     hAlign = "center",
-    hFill = false,
-    width = instructionWidth,
-    wrapWidth = instructionWidth,
-    fontSize = GraphicsUtil.fontSize + 2
+    vAlign = "top",
+    y = 100,
+    hFill = true,
+    fontSize = GraphicsUtil.fontSize
   })
-  self.instructionsLabel.x = math.floor((consts.CANVAS_WIDTH - instructionWidth) / 2)
-  self.instructionsLabel.y = 120
-  self:addChild(self.instructionsLabel)
+  self:addChild(self.subtitleLabel)
 
-  self.playerSlotContainer = UiElement({
-    x = math.floor((consts.CANVAS_WIDTH - math.floor(consts.CANVAS_WIDTH * 0.7)) / 2),
-    y = 240,
-    width = math.floor(consts.CANVAS_WIDTH * 0.7),
-    height = 0,
-    hFill = false,
-    vFill = false
+  -- Player slots container
+  self.slotsContainer = StackPanel({
+    alignment = "left",
+    hAlign = "center",
+    vAlign = "center"
   })
-  self.playerSlotContainer.drawSelf = function(container)
-    if container.height <= 0 then
-      return
-    end
-    GraphicsUtil.setColor(0, 0, 0, 0.5)
-    GraphicsUtil.drawRectangle("fill", 0, 0, container.width, container.height)
-    GraphicsUtil.setColor(1, 1, 1, 0.2)
-    GraphicsUtil.drawRectangle("line", 0, 0, container.width, container.height)
-    GraphicsUtil.setColor(1, 1, 1, 1)
-  end
-  self:addChild(self.playerSlotContainer)
-  self.playerSlotLabels = {}
+  self:addChild(self.slotsContainer)
 end
 
 function InputDeviceOverlay:getLocalPlayers()
@@ -162,233 +290,71 @@ function InputDeviceOverlay:getLocalPlayers()
   return self.battleRoom:getLocalHumanPlayers()
 end
 
+-- Gets the next player that needs device assignment
 function InputDeviceOverlay:getNextUnassignedPlayer()
-  logger.debug("InputDeviceOverlay:getNextUnassignedPlayer")
   for _, player in ipairs(self:getLocalPlayers()) do
     if not self.battleRoom:isPlayerAssigned(player) then
       return player
     end
   end
-
   return nil
 end
 
-function InputDeviceOverlay:updateInstructions()
-  logger.debug("InputDeviceOverlay:updateInstructions")
-  local targetPlayer = self:getNextUnassignedPlayer()
-  local playerLabel
-  if targetPlayer then
-    playerLabel = targetPlayer.playerNumber or "?"
-  else
-    local players = self:getLocalPlayers()
-    playerLabel = players[1] and (players[1].playerNumber or "?") or "?"
+function InputDeviceOverlay:getPlayerSlotForTouch()
+  for _, slot in ipairs(self.playerSlots) do
+    if slot:isMouseOver() then
+      return slot
+    end
   end
-
-  local text = string.format(
-    "Hold confirm for about 0.5 seconds on the device you want for Player %s, or click and hold on the touch tile.\nHold cancel to unassign a device",
-    playerLabel
-  )
-  self.instructionsLabel:setText(text, nil, false)
-  self.instructionsLabel:setWrap(self.instructionsLabel.width, "center")
-  self.instructionsLabel:setWrap(math.floor(consts.CANVAS_WIDTH * 0.7), "center")
+  return nil
 end
 
-function InputDeviceOverlay:updatePlayerSlots()
-  logger.debug("InputDeviceOverlay:updatePlayerSlots")
-  self:updateTitle()
-  for _, label in ipairs(self.playerSlotLabels) do
-    label.element:detach()
+function InputDeviceOverlay:buildPlayerSlots()
+  self.playerSlots = {}
+  while #self.slotsContainer.children > 0 do
+    self.slotsContainer:remove(self.slotsContainer.children[1])
   end
-  self.playerSlotLabels = {}
 
   local players = self:getLocalPlayers()
-  local lineHeight = 28
-  if #players == 0 then
-    self.playerSlotContainer.height = 0
-  else
-  self.playerSlotContainer.height = #players * lineHeight + 24
-  end
+  for i, player in ipairs(players) do
+    local slot = PlayerSlot({playerNumber = player.playerNumber or i})
+    self.playerSlots[i] = slot
+    self.slotsContainer:addElement(slot)
 
-  for index, player in ipairs(players) do
-    local assignment = InputDeviceUtils.describePlayerAssignment(player)
-    local labelText = string.format("Player %s — %s", player.playerNumber or index, assignment)
-    local label = Label({
-      text = labelText,
-      translate = false,
-      hAlign = "left",
-      wrapWidth = self.playerSlotContainer.width,
-      fontSize = GraphicsUtil.fontSize + 1
-    })
-    label.x = 8
-    label.y = 12 + (index - 1) * lineHeight
-    self.playerSlotContainer:addChild(label)
-    self.playerSlotLabels[#self.playerSlotLabels + 1] = {player = player, element = label}
-  end
+    -- Add spacing after each slot except the last
+    if i < #players then
+      local spacer = UiElement({
+        width = 20,
+        height = PLAYER_SLOT_SIZE
+      })
+      self.slotsContainer:addElement(spacer)
+    end
 
-  if self.deviceGridContainer then
-    self.deviceGridContainer.y = self.playerSlotContainer.y + self.playerSlotContainer.height + 40
+    -- Check if player is already assigned
+    local assignedDevice = self:getAssignedDeviceForPlayer(player)
+    if assignedDevice then
+      slot:setAssignedDevice(assignedDevice)
+    end
   end
 end
 
-function InputDeviceOverlay:updateTitle()
-  local players = self:getLocalPlayers()
-  local needed = 0
-  for _, player in ipairs(players) do
-    if not self.battleRoom:isPlayerAssigned(player) then
-      needed = needed + 1
-    end
-  end
-  local plural = needed > 1 and "Devices" or "Device"
-  self.titleLabel:setText("Select Input " .. plural, nil, false)
-end
-
-function InputDeviceOverlay:rebuildDeviceGrid()
-  logger.debug("InputDeviceOverlay:rebuildDeviceGrid")
-  if self.deviceGrid then
-    self.deviceGrid:detach()
-    self.deviceGrid = nil
-  end
-  if self.deviceGridContainer then
-    self.deviceGridContainer:detach()
-    self.deviceGridContainer = nil
+function InputDeviceOverlay:getAssignedDeviceForPlayer(player)
+  if not self.deviceDescriptors or not self.battleRoom or not player then
+    return nil
   end
 
-  local devices = self.deviceDescriptors
-  if #devices == 0 then
-    return
-  end
-
-  local columns = math.min(#devices, 3)
-  local rows = math.ceil(#devices / columns)
-  local unitSize = 180
-
-  local grid = Grid({
-    unitSize = unitSize,
-    gridWidth = columns,
-    gridHeight = rows,
-    unitMargin = 8
-  })
-  grid.x = 0
-  grid.y = 0
-
-  local gridContainer = UiElement({
-    x = math.floor((consts.CANVAS_WIDTH - grid.width) / 2),
-    y = self.playerSlotContainer.y + self.playerSlotContainer.height + 40,
-    width = grid.width,
-    height = grid.height
-  })
-  gridContainer.drawSelf = function(container)
-    GraphicsUtil.setColor(0, 0, 0, 0.55)
-    GraphicsUtil.drawRectangle("fill", 0, 0, container.width, container.height)
-    GraphicsUtil.setColor(1, 1, 1, 0.25)
-    GraphicsUtil.drawRectangle("line", 0, 0, container.width, container.height)
-    GraphicsUtil.setColor(1, 1, 1, 1)
-  end
-  gridContainer:addChild(grid)
-  self:addChild(gridContainer)
-  self.deviceGridContainer = gridContainer
-  self.deviceGrid = grid
-  self.deviceButtons = {}
-  self.touchDescriptor = nil
-  self.touchButton = nil
-
-  for index, descriptor in ipairs(devices) do
-    logger.debug("InputDeviceOverlay: building descriptor %s bindings Swap1=%s Start=%s", descriptor.id,
-      tostring(descriptor.bindings and descriptor.bindings.Swap1), tostring(descriptor.bindings and descriptor.bindings.Start))
-    local button = TextButton({
-      label = Label({text = "", translate = false}),
-      hFill = true,
-      vFill = true,
-      backgroundColor = {0.15, 0.15, 0.15, 0.85},
-      outlineColor = {1, 1, 1, 1}
-    })
-    button.isEnabled = descriptor.type == "touch"
-    button.deviceId = descriptor.id
-    if button.label then
-      button.label:setVisibility(false)
-    end
-
-    local progressFill = UiElement({x = 0, y = 0, width = 0, height = button.height})
-    progressFill.drawSelf = function(fill)
-      GraphicsUtil.setColor(1, 1, 1, 0.2)
-      GraphicsUtil.drawRectangle("fill", 0, 0, fill.width, fill.height)
-      GraphicsUtil.setColor(1, 1, 1, 1)
-    end
-    button.progressFill = progressFill
-    button:addChild(progressFill)
-
-    local nameLabel = Label({
-      text = descriptor.label,
-      translate = false,
-      hAlign = "center",
-      wrapWidth = unitSize - 32,
-      fontSize = GraphicsUtil.fontSize + 2
-    })
-    nameLabel.hFill = true
-    button.nameLabel = nameLabel
-    button:addChild(nameLabel)
-
-    local baseInstruction = descriptor.type == "touch" and "Click and hold" or "Hold confirm"
-    local instructionLabel = Label({
-      text = baseInstruction,
-      translate = false,
-      hAlign = "center",
-      wrapWidth = unitSize - 32,
-      fontSize = GraphicsUtil.fontSize - 2
-    })
-    instructionLabel.hFill = true
-    button.instructionLabel = instructionLabel
-    button:addChild(instructionLabel)
-
-    button.onResize = function(selfButton)
-      if selfButton.progressFill then
-        selfButton.progressFill.height = selfButton.height
-      end
-      if selfButton.nameLabel then
-        selfButton.nameLabel.width = selfButton.width - 16
-        selfButton.nameLabel.x = 8
-        selfButton.nameLabel.y = 14
-      end
-      if selfButton.instructionLabel then
-        selfButton.instructionLabel.width = selfButton.width - 16
-        selfButton.instructionLabel.x = 8
-        selfButton.instructionLabel.y = selfButton.height - selfButton.instructionLabel.height - 14
-      end
-    end
-    button:onResize()
-
-    if descriptor.type == "touch" then
-      self.touchDescriptor = descriptor
-      self.touchButton = button
-      button.onClick = function() end
-      button.onSelect = nil
-    else
-      button.onClick = function() end
-    end
-    descriptor.button = button
-
-    local col = ((index - 1) % columns) + 1
-    local row = math.floor((index - 1) / columns) + 1
-    grid:createElementAt(col, row, 1, 1, descriptor.id, button, true, true)
-    self.deviceButtons[descriptor.id] = button
-  end
-
-  self:updateDeviceButtons()
-end
-
-function InputDeviceOverlay:updateDeviceButtons()
-  logger.debug("InputDeviceOverlay:updateDeviceButtons")
   for _, descriptor in ipairs(self.deviceDescriptors) do
-    local button = self.deviceButtons[descriptor.id]
-    if button then
-      local state = self.deviceState[descriptor.id]
-      self:updateHoldFeedback(descriptor, state)
+    if descriptor and descriptor.config then
+      local assignedPlayer = self.battleRoom:getPlayerAssignedToDevice(descriptor.config)
+      if assignedPlayer == player then
+        return descriptor
+      end
     end
   end
+  return nil
 end
 
 function InputDeviceOverlay:syncDevices()
-  logger.debug("InputDeviceOverlay:syncDevices")
   local latest = InputDeviceUtils.getAssignableDevices()
   local rebuild = false
 
@@ -407,237 +373,227 @@ function InputDeviceOverlay:syncDevices()
   self.deviceDescriptors = latest
 
   if rebuild then
-    self:rebuildDeviceGrid()
-  else
-    self:updateDeviceButtons()
+    self:updatePlayerSlots()
   end
 end
 
-function InputDeviceOverlay:updateHoldFeedback(descriptor, state)
-  local button = descriptor.button or self.deviceButtons[descriptor.id]
-  if not button then
+function InputDeviceOverlay:updatePlayerSlots()
+  if not self.playerSlots then
     return
   end
 
-  local assignedPlayer = self.battleRoom and self.battleRoom:getPlayerAssignedToDevice(descriptor.config) or nil
-  local ratio = 0
-  if state and state.confirmHoldTime then
-    ratio = math.min(state.confirmHoldTime / self.holdThreshold, 1)
-  end
-  if descriptor == self.touchDescriptor then
-    ratio = math.min((self.touchHoldTime or 0) / self.holdThreshold, 1)
-  end
-  if button.progressFill then
-    button.progressFill.width = button.width * ratio
-  end
-
-  if assignedPlayer then
-    button.backgroundColor = {0.25, 0.5, 0.25, 0.9}
-    local statusText = string.format("Assigned to Player %s\nHold cancel to unassign", assignedPlayer.playerNumber or "?")
-    button.nameLabel:setText(descriptor.label, nil, false)
-    button.instructionLabel:setText(statusText, nil, false)
-    if button.progressFill then
-      button.progressFill.width = button.width
-    end
-  else
-    button.backgroundColor = {0.15, 0.15, 0.15, 0.85}
-    button.nameLabel:setText(descriptor.label, nil, false)
-    local baseInstruction
-    if descriptor.type == "touch" then
-      if ratio > 0 then
-        baseInstruction = string.format("Click %.0f%%", ratio * 100)
-      else
-        baseInstruction = "Click and hold"
-      end
-    else
-      if ratio > 0 then
-        baseInstruction = string.format("Hold %.0f%%", ratio * 100)
-      else
-        baseInstruction = "Hold confirm"
+  for i, slot in ipairs(self.playerSlots) do
+    if slot and slot.setAssignedDevice then
+      local players = self:getLocalPlayers()
+      if players then
+        local player = players[i]
+        if player then
+          local assignedDevice = self:getAssignedDeviceForPlayer(player)
+          slot:setAssignedDevice(assignedDevice)
+        end
       end
     end
-    button.instructionLabel:setText(baseInstruction, nil, false)
-  end
-
-  if button.onResize then
-    button:onResize()
   end
 end
 
-function InputDeviceOverlay:assignDevice(descriptor)
+
+
+
+-- Assigns a device to a player and plays feedback
+function InputDeviceOverlay:assignDevice(descriptor, targetPlayer)
   assert(descriptor, "descriptor is required")
   assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
-  local targetPlayer = self:getNextUnassignedPlayer()
+
   if not targetPlayer then
-    logger.debug("InputDeviceOverlay:assignDevice called with no target player")
+    targetPlayer = self:getNextUnassignedPlayer()
+  end
+
+  if not targetPlayer then
     return
   end
 
-  logger.debug("InputDeviceOverlay:assignDevice assigning device %s to player %s", descriptor.id, targetPlayer.playerNumber)
-  if descriptor.bindings then
-    logger.debug("InputDeviceOverlay:assignDevice bindings Swap1=%s Start=%s", tostring(descriptor.bindings.Swap1), tostring(descriptor.bindings.Start))
-  end
   local success = self.battleRoom:claimDeviceForPlayer(targetPlayer, descriptor.config)
   if success then
-    GAME.theme:playValidationSfx()
+    if GAME.theme and GAME.theme.playValidationSfx then
+      GAME.theme:playValidationSfx()
+    end
     self:updatePlayerSlots()
-    self:updateInstructions()
-    self:updateDeviceButtons()
+
     if self.battleRoom:areLocalPlayersAssigned() then
-      self:close()
+      self.autoCloseTimer = AUTO_CLOSE_DELAY
     end
   end
 end
 
-function InputDeviceOverlay:handleCancel(descriptor)
-  assert(descriptor, "descriptor is required")
-  assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
-  logger.debug("InputDeviceOverlay:handleCancel for device %s", descriptor.id)
-  local player = self.battleRoom:getPlayerAssignedToDevice(descriptor.config)
-  if player then
-    self.battleRoom:clearPlayerAssignment(player)
-    GAME.theme:playCancelSfx()
-    self:updatePlayerSlots()
-    self:updateInstructions()
-    self:updateDeviceButtons()
-  end
-end
-
+-- Processes hold input for a configuration device
 function InputDeviceOverlay:processConfigHold(descriptor, dt)
   assert(descriptor and descriptor.config, "Descriptor with config is required")
   assert(type(dt) == "number", "dt must be numeric")
-  logger.debug("InputDeviceOverlay:processConfigHold device=%s dt=%.3f", descriptor.id, dt)
-  local device = descriptor.config
-  local state = self.deviceState[descriptor.id]
-  if not state then
-    state = {confirmTriggered = false, cancelTriggered = false, confirmHoldTime = 0, cancelHoldTime = 0}
-    self.deviceState[descriptor.id] = state
-  end
 
-  local swap1Binding = descriptor.bindings and descriptor.bindings.Swap1
-  local startBinding = descriptor.bindings and descriptor.bindings.Start
-  if swap1Binding or startBinding then
-    logger.debug("InputDeviceOverlay:processConfigHold %s raw isPressed Swap1=%s Start=%s", descriptor.id,
-      tostring(swap1Binding and device.isPressed and device.isPressed.Swap1 or "nil"),
-      tostring(startBinding and device.isPressed and device.isPressed.Start or "nil"))
-    logger.debug("InputDeviceOverlay:processConfigHold %s raw isDown Swap1=%s Start=%s", descriptor.id,
-      tostring(swap1Binding and device.isDown and device.isDown.Swap1 or "nil"),
-      tostring(startBinding and device.isDown and device.isDown.Start or "nil"))
-    logger.debug("InputDeviceOverlay:processConfigHold %s allKeys isPressed swap1Binding=%s startBinding=%s", descriptor.id,
-      tostring(swap1Binding and inputManager.allKeys.isPressed[swap1Binding] or "nil"),
-      tostring(startBinding and inputManager.allKeys.isPressed[startBinding] or "nil"))
-    logger.debug("InputDeviceOverlay:processConfigHold %s allKeys isDown swap1Binding=%s startBinding=%s", descriptor.id,
-      tostring(swap1Binding and inputManager.allKeys.isDown[swap1Binding] or "nil"),
-      tostring(startBinding and inputManager.allKeys.isDown[startBinding] or "nil"))
-  end
-
-  local confirmDuration = getHoldDurationForDescriptor(descriptor, CONFIRM_KEYS)
-  if confirmDuration then
-    state.confirmHoldTime = confirmDuration
-    if confirmDuration > 0 then
-      logger.debug("InputDeviceOverlay:processConfigHold %s confirmDuration=%.3f", descriptor.id, confirmDuration)
-    end
-  elseif isKeyHeldForDescriptor(descriptor, CONFIRM_KEYS) then
-    state.confirmHoldTime = (state.confirmHoldTime or 0) + dt
-    confirmDuration = state.confirmHoldTime
-    logger.debug("InputDeviceOverlay:processConfigHold %s accumulating confirmHold=%.3f", descriptor.id, state.confirmHoldTime)
-  else
-    state.confirmHoldTime = 0
-  end
-
-  if confirmDuration and confirmDuration >= self.holdThreshold then
-    if not state.confirmTriggered then
-      logger.debug("InputDeviceOverlay:processConfigHold confirm threshold reached for %s", descriptor.id)
-      self:assignDevice(descriptor)
-    end
-    state.confirmTriggered = true
-  else
-    state.confirmTriggered = false
-  end
-
-  if self.battleRoom:getPlayerAssignedToDevice(device) then
-    local cancelDuration = getHoldDurationForDescriptor(descriptor, CANCEL_KEYS)
-    if cancelDuration then
-      state.cancelHoldTime = cancelDuration
-      if cancelDuration > 0 then
-        logger.debug("InputDeviceOverlay:processConfigHold %s cancelDuration=%.3f", descriptor.id, cancelDuration)
-      end
-    elseif isKeyHeldForDescriptor(descriptor, CANCEL_KEYS) then
-      state.cancelHoldTime = (state.cancelHoldTime or 0) + dt
-      cancelDuration = state.cancelHoldTime
-      logger.debug("InputDeviceOverlay:processConfigHold %s accumulating cancelHold=%.3f", descriptor.id, state.cancelHoldTime)
-    else
-      state.cancelHoldTime = 0
-    end
-
-    if cancelDuration and cancelDuration >= self.holdThreshold then
-      if not state.cancelTriggered then
-        logger.debug("InputDeviceOverlay:processConfigHold cancel threshold reached for %s", descriptor.id)
-        self:handleCancel(descriptor)
-      end
-      state.cancelTriggered = true
-    else
-      state.cancelTriggered = false
-    end
-  else
-    state.cancelTriggered = false
-    state.cancelHoldTime = 0
-  end
-
-  self:updateHoldFeedback(descriptor, state)
-end
-
-function InputDeviceOverlay:isMouseOverButton(button)
-  if not button then
-    return false
-  end
-  local bx, by = button:getScreenPos()
-  return inputManager.mouse.x >= bx and inputManager.mouse.x <= bx + button.width and
-    inputManager.mouse.y >= by and inputManager.mouse.y <= by + button.height
-end
-
-function InputDeviceOverlay:updateTouchHold(dt)
-  if not self.touchDescriptor or not self.touchButton then
+  if descriptor.config.claimed == true then
     return
   end
 
-  local mousePressed = inputManager.mouse.isPressed[1]
-  local mouseDown = inputManager.mouse.isDown[1]
-  local inBounds = self:isMouseOverButton(self.touchButton)
-  local holding = (type(mousePressed) == "number" and mousePressed > 0) or type(mouseDown) == "number"
-
-  if holding and inBounds then
-    if type(mousePressed) == "number" then
-      self.touchHoldTime = mousePressed
-    else
-      self.touchHoldTime = self.touchHoldTime + dt
-    end
-
-    logger.debug("InputDeviceOverlay:updateTouchHold holdTime=%.3f", self.touchHoldTime)
-    if self.touchHoldTime >= self.holdThreshold and not self.touchHoldTriggered then
-      self.touchHoldTriggered = true
-      self:assignDevice(self.touchDescriptor)
-    end
-  else
-    if not holding or not inBounds then
-      self.touchHoldTriggered = false
-    end
-    self.touchHoldTime = 0
+  local state = self.deviceState[descriptor.id]
+  if not state then
+    state = {confirmTriggered = false, holdTime = 0}
+    self.deviceState[descriptor.id] = state
   end
 
-  self.deviceState[self.touchDescriptor.id] = self.deviceState[self.touchDescriptor.id] or {}
-  local touchState = self.deviceState[self.touchDescriptor.id]
-  touchState.confirmHoldTime = self.touchHoldTime
-  self:updateHoldFeedback(self.touchDescriptor, touchState)
+  local confirmDuration = getHoldDurationForDescriptor(descriptor, ALL_INPUT_KEYS)
+  if confirmDuration and confirmDuration > 0 then
+    state.holdTime = confirmDuration
+  else
+    state.holdTime = 0
+  end
+
+  -- Update visual feedback on all slots
+  local progress = math.min(state.holdTime / self.holdThreshold, 1)
+  for i, slot in ipairs(self.playerSlots) do
+    if not slot.assignedDevice and progress > 0 then
+      slot:setHoldProgress(progress, descriptor.type)
+      break
+    end
+  end
+
+  if state.holdTime >= self.holdThreshold and not state.confirmTriggered then
+    self:assignDevice(descriptor)
+    state.confirmTriggered = true
+  elseif state.holdTime < self.holdThreshold then
+    state.confirmTriggered = false
+  end
+end
+
+
+-- Updates touch hold state and visual feedback
+function InputDeviceOverlay:updateTouchHold(dt)
+  local touchDescriptor = self:getTouchDescriptor()
+  if not touchDescriptor then
+    return
+  end
+
+  local holding = self:isMouseHolding()
+  if holding then
+    self:processTouchHold(dt, touchDescriptor)
+  else
+    self:clearTouchTarget()
+  end
+end
+
+-- Checks if mouse is currently being held down
+function InputDeviceOverlay:isMouseHolding()
+  local mousePressed = inputManager.mouse.isPressed[1]
+  local mouseDown = inputManager.mouse.isDown[1]
+  return (type(mousePressed) == "number" and mousePressed > 0) or type(mouseDown) == "number"
+end
+
+-- Processes touch hold logic when mouse is held down
+function InputDeviceOverlay:processTouchHold(dt, touchDescriptor)
+  local targetSlot = self:getPlayerSlotForTouch()
+  if not targetSlot then
+    self:clearTouchTarget()
+    return
+  end
+
+  local state = self.deviceState[touchDescriptor.id]
+  if not state then
+    state = {confirmTriggered = false, holdTime = 0}
+    self.deviceState[touchDescriptor.id] = state
+  end
+
+  self:updateTouchTarget(targetSlot)
+
+  -- Update hold time directly in device state
+  local mousePressed = inputManager.mouse.isPressed[1]
+  if type(mousePressed) == "number" then
+    state.holdTime = mousePressed
+  else
+    state.holdTime = state.holdTime + dt
+  end
+
+  local progress = math.min(state.holdTime / self.holdThreshold, 1)
+  targetSlot:setHoldProgress(progress, "touch")
+
+  if state.holdTime >= self.holdThreshold and not state.confirmTriggered then
+    self:assignTouchToSlot(touchDescriptor, targetSlot)
+    state.confirmTriggered = true
+  elseif state.holdTime < self.holdThreshold then
+    state.confirmTriggered = false
+  end
+end
+
+-- Updates touch target slot when changed
+function InputDeviceOverlay:updateTouchTarget(targetSlot)
+  if self.touchTargetSlot ~= targetSlot then
+    if self.touchTargetSlot then
+      self.touchTargetSlot:setTouchTarget(false)
+    end
+    self.touchTargetSlot = targetSlot
+    self.touchTargetSlot:setTouchTarget(true)
+    -- Reset touch device state when switching targets
+    local touchDescriptor = self:getTouchDescriptor()
+    if touchDescriptor then
+      local state = self.deviceState[touchDescriptor.id]
+      if state then
+        state.holdTime = 0
+        state.confirmTriggered = false
+      end
+    end
+  end
+end
+
+
+-- Assigns touch device to specific slot
+function InputDeviceOverlay:assignTouchToSlot(touchDescriptor, targetSlot)
+  local players = self:getLocalPlayers()
+  for i, slot in ipairs(self.playerSlots) do
+    if slot == targetSlot then
+      local targetPlayer = players[i]
+      if targetPlayer then
+        self:assignDevice(touchDescriptor, targetPlayer)
+      end
+      break
+    end
+  end
+end
+
+function InputDeviceOverlay:clearTouchTarget()
+  if self.touchTargetSlot then
+    self.touchTargetSlot:setTouchTarget(false)
+    self.touchTargetSlot:setHoldProgress(0, nil)
+    self.touchTargetSlot = nil
+  end
+  -- Clear touch device state
+  local touchDescriptor = self:getTouchDescriptor()
+  if touchDescriptor then
+    local state = self.deviceState[touchDescriptor.id]
+    if state then
+      state.holdTime = 0
+      state.confirmTriggered = false
+    end
+  end
+end
+
+function InputDeviceOverlay:getTouchDescriptor()
+  for _, descriptor in ipairs(self.deviceDescriptors) do
+    if descriptor.type == "touch" then
+      return descriptor
+    end
+  end
+  return nil
 end
 
 function InputDeviceOverlay:updateSelf(dt)
   if not self.active then
     return
   end
-  logger.debug("InputDeviceOverlay:updateSelf dt=%.3f", dt)
 
-  self:syncDevices()
+
+  for i, slot in ipairs(self.playerSlots) do
+    if not slot.assignedDevice then
+      slot:setHoldProgress(0, nil)
+    end
+  end
 
   for _, descriptor in ipairs(self.deviceDescriptors) do
     if descriptor.type ~= "touch" then
@@ -647,8 +603,12 @@ function InputDeviceOverlay:updateSelf(dt)
 
   self:updateTouchHold(dt)
 
-  if self.battleRoom and self.battleRoom:areLocalPlayersAssigned() then
-    self:close()
+  -- Handle auto-close timer
+  if self.autoCloseTimer > 0 then
+    self.autoCloseTimer = self.autoCloseTimer - dt
+    if self.autoCloseTimer <= 0 then
+      self:close()
+    end
   end
 end
 
@@ -657,7 +617,6 @@ function InputDeviceOverlay:drawSelf()
     return
   end
 
-  logger.debug("InputDeviceOverlay:drawSelf")
   GraphicsUtil.setColor(0, 0, 0, 0.75)
   GraphicsUtil.drawRectangle("fill", 0, 0, self.width, self.height)
   GraphicsUtil.setColor(1, 1, 1, 1)
@@ -665,15 +624,15 @@ end
 
 function InputDeviceOverlay:open()
   assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
-  logger.debug("InputDeviceOverlay:open")
-  self:updatePlayerSlots()
 
-  self:updateInstructions()
   self.deviceState = {}
-  self.touchHoldTriggered = false
+  self.touchTargetSlot = nil
+  self.autoCloseTimer = 0
   self.active = true
   self:setVisibility(true)
+
   self:syncDevices()
+  self:buildPlayerSlots()
 end
 
 function InputDeviceOverlay:close()
@@ -681,14 +640,14 @@ function InputDeviceOverlay:close()
     return
   end
 
-  logger.debug("InputDeviceOverlay:close")
   self.active = false
   self:setVisibility(false)
+  self:clearTouchTarget()
+  self.autoCloseTimer = 0
+
   if self.onClose then
     self.onClose()
   end
-  self.touchHoldTriggered = false
-  self.touchHoldTime = 0
 end
 
 function InputDeviceOverlay:isActive()
@@ -697,21 +656,18 @@ end
 
 function InputDeviceOverlay:onTouch()
   if self.active then
-    logger.debug("InputDeviceOverlay:onTouch consumed")
     return true
   end
 end
 
 function InputDeviceOverlay:onRelease()
   if self.active then
-    logger.debug("InputDeviceOverlay:onRelease consumed")
     return true
   end
 end
 
 function InputDeviceOverlay:receiveInputs()
   -- swallow focus-based input while overlay is displayed
-  logger.debug("InputDeviceOverlay:receiveInputs consumed")
 end
 
 return InputDeviceOverlay
