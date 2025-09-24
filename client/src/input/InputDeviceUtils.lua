@@ -157,4 +157,38 @@ function InputDeviceUtils.describePlayerAssignment(player)
   return describePlayerAssignment(player)
 end
 
+-- Detects which input configuration is currently providing input
+function InputDeviceUtils.detectActiveInputConfiguration()
+  for i = 1, #GAME.input.inputConfigurations do
+    local config = GAME.input.inputConfigurations[i]
+    for _, keyName in ipairs(consts.KEY_NAMES) do
+      if config.isDown and config.isDown[keyName] then
+        return config
+      end
+    end
+  end
+
+  return nil
+end
+
+function InputDeviceUtils.checkForUnassignedConfigurationInputs(battleRoom)
+  if not battleRoom then
+    return false
+  end
+
+  local activeConfig = InputDeviceUtils.detectActiveInputConfiguration()
+  if not activeConfig then
+    return false
+  end
+
+  local assignedConfigs = {}
+  for _, player in ipairs(battleRoom:getLocalHumanPlayers()) do
+    if player.inputConfiguration then
+      assignedConfigs[player.inputConfiguration] = true
+    end
+  end
+
+  return not assignedConfigs[activeConfig]
+end
+
 return InputDeviceUtils

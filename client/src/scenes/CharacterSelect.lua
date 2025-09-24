@@ -1010,6 +1010,11 @@ function CharacterSelect:updateSelf(dt)
   local overlayActive = self.inputDeviceOverlay and self.inputDeviceOverlay:isActive()
 
   if not overlayActive then
+    if InputDeviceUtils.checkForUnassignedConfigurationInputs(self.battleRoom) then
+      self.battleRoom:releaseAllLocalAssignments()
+      self:openInputDeviceOverlayIfNeeded()
+    end
+
     for _, cursor in ipairs(self.ui.cursors) do
       if cursor.player.isLocal and cursor.player.human then
         if not cursor.player.inputConfiguration then
