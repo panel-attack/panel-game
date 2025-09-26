@@ -319,7 +319,7 @@ function InputDeviceOverlay:buildPlayerSlots()
 
   local players = self:getLocalPlayers()
   for i, player in ipairs(players) do
-    local slot = PlayerSlot({playerNumber = player.playerNumber or i, parentOverlay = self})
+    local slot = PlayerSlot({playerNumber = i, parentOverlay = self})
     self.playerSlots[i] = slot
     self.slotsContainer:addElement(slot)
 

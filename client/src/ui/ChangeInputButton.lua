@@ -139,7 +139,7 @@ function ChangeInputButton:addPlayerIcons(playerRow, player, playerIndex)
   })
   playerIcon.drawSelf = function(elementSelf)
     if GAME.theme then
-      local playerNumberIcon = GAME.theme:getPlayerNumberIcon(player.playerNumber or playerIndex)
+      local playerNumberIcon = GAME.theme:getPlayerNumberIcon(playerIndex)
       if playerNumberIcon then
         local scale = iconSize / math.max(playerNumberIcon:getWidth(), playerNumberIcon:getHeight())
         love.graphics.draw(playerNumberIcon, elementSelf.x, elementSelf.y, 0, scale, scale)
