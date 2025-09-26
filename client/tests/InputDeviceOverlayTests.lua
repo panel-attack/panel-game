@@ -108,7 +108,6 @@ local function createOverlayUnderTest()
 
   overlay.updatePlayerSlots = noop
   overlay.updateDeviceButtons = noop
-  overlay:updateInstructions()
 
   return overlay, battleRoom, player, keyboardConfig, touchConfig
 end
@@ -130,7 +129,7 @@ local function testAssignDeviceByAccumulatedHold()
   local restoreTheme = setUpThemeStubs()
   local overlay, battleRoom, player, keyboardConfig = createOverlayUnderTest()
 
-  keyboardConfig.isDown["Swap1"] = 2 -- simulate key held
+  keyboardConfig.isPressed["Swap1"] = 2 -- simulate key held
   overlay:processConfigHold(overlay.deviceDescriptors[1], 0.6)
   overlay:processConfigHold(overlay.deviceDescriptors[1], 0.5)
 
@@ -170,6 +169,34 @@ local function testTouchHoldAssigns()
   restoreTheme()
 end
 
+local function testIconRenderingSystem()
+  local restoreTheme = setUpThemeStubs()
+  local overlay, battleRoom, player, keyboardConfig = createOverlayUnderTest()
+
+  -- Mock GAME.theme with input prompt icons
+  if not GAME.theme then
+    GAME.theme = {}
+  end
+  GAME.theme.getInputPromptIcon = function(self, deviceType)
+    -- Return a mock texture-like object
+    return {
+      getWidth = function() return 32 end,
+      getHeight = function() return 32 end
+    }
+  end
+
+  overlay:open()
+  keyboardConfig.isPressed["Swap1"] = 1.25
+  overlay:processConfigHold(overlay.deviceDescriptors[1], 0)
+
+  -- Verify device icons are created and properly configured
+  local playerSlot = overlay.playerSlots[1]
+  assert(playerSlot.deviceIcon ~= nil, "Device icon should be created")
+  assert(playerSlot.pendingDeviceType == "keyboard", "Pending device type should be keyboard")
+
+  restoreTheme()
+end
+
 local function testOverlayConsumesTouches()
   local overlay = select(1, createOverlayUnderTest())
   overlay.active = true
@@ -185,4 +212,5 @@ test(testAssignDeviceFromPressedDuration)
 test(testAssignDeviceByAccumulatedHold)
 test(testCancelReleasesAssignment)
 test(testTouchHoldAssigns)
+test(testIconRenderingSystem)
 test(testOverlayConsumesTouches)

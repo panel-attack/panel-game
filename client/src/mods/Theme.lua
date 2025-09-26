@@ -360,6 +360,38 @@ local function loadPlayerNumberIcons(theme)
   return theme.images.IMG_players
 end
 
+local function loadInputPromptIcons(theme)
+  local icons = {}
+
+  -- Load basic device types
+  icons.controller = theme:load_theme_img("input/controller")
+  icons.keyboard = theme:load_theme_img("input/keyboard")
+  icons.touch = theme:load_theme_img("input/touch")
+  icons.mouse = theme:load_theme_img("input/mouse")
+
+  -- Load specific controller variants
+  icons.controller_variants = {}
+  icons.controller_variants.generic = theme:load_theme_img("input/controller_generic")
+  icons.controller_variants.playstation1 = theme:load_theme_img("input/controller_playstation1")
+  icons.controller_variants.playstation2 = theme:load_theme_img("input/controller_playstation2")
+  icons.controller_variants.playstation3 = theme:load_theme_img("input/controller_playstation3")
+  icons.controller_variants.playstation4 = theme:load_theme_img("input/controller_playstation4")
+  icons.controller_variants.playstation5 = theme:load_theme_img("input/controller_playstation5")
+  icons.controller_variants.xbox360 = theme:load_theme_img("input/controller_xbox360")
+  icons.controller_variants.xboxone = theme:load_theme_img("input/controller_xboxone")
+  icons.controller_variants.xboxseries = theme:load_theme_img("input/controller_xboxseries")
+  icons.controller_variants.switch_pro = theme:load_theme_img("input/controller_switch_pro")
+
+  -- Load device number overlays
+  icons.device_numbers = {}
+  for i = 0, 9 do
+    icons.device_numbers[i] = theme:load_theme_img("input/device_number_" .. i)
+  end
+
+  theme.images.INPUT_PROMPTS = icons
+  return theme.images.INPUT_PROMPTS
+end
+
 function Theme:loadSelectionGraphics()
   self.images.flags = {}
   for _, flag in ipairs(flags) do
@@ -393,6 +425,7 @@ function Theme:loadSelectionGraphics()
   self.images.IMG_random_character = self:load_theme_img("random_character")
 
   loadPlayerNumberIcons(self)
+  loadInputPromptIcons(self)
   loadGridCursors(self)
 end
 
@@ -1025,6 +1058,48 @@ function Theme:getPlayerNumberIcon(index)
   end
 
   return self.images.IMG_players[index]
+end
+
+---@param deviceType string
+---@return love.Texture
+function Theme:getInputPromptIcon(deviceType)
+  if not self.images.INPUT_PROMPTS then
+    loadInputPromptIcons(self)
+  end
+  return self.images.INPUT_PROMPTS[deviceType]
+end
+
+---@param deviceType string "controller", "keyboard", "touch", or "mouse"
+---@param controllerImageVariant string? specific controller image variant key
+---@return love.Texture
+function Theme:getSpecificInputIcon(deviceType, controllerImageVariant)
+  if not self.images.INPUT_PROMPTS then
+    loadInputPromptIcons(self)
+  end
+
+  if deviceType == "controller" and controllerImageVariant and self.images.INPUT_PROMPTS.controller_variants then
+    local specificIcon = self.images.INPUT_PROMPTS.controller_variants[controllerImageVariant]
+    if specificIcon then
+      return specificIcon
+    end
+  end
+
+  -- Fallback to basic device type
+  return self.images.INPUT_PROMPTS[deviceType]
+end
+
+---@param number integer the device number (0-9)
+---@return love.Texture?
+function Theme:getDeviceNumberIcon(number)
+  if not self.images.INPUT_PROMPTS then
+    loadInputPromptIcons(self)
+  end
+
+  if self.images.INPUT_PROMPTS.device_numbers and number >= 0 and number <= 9 then
+    return self.images.INPUT_PROMPTS.device_numbers[number]
+  end
+
+  return nil
 end
 
 ---@param index integer?

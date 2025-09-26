@@ -73,15 +73,73 @@ local function classifyConfiguration(config, index)
   return "keyboard", "Keyboard"
 end
 
+-- Maps controller names to specific image variants for theme selection
+local function getControllerImageVariant(controllerName)
+  if not controllerName then
+    return "generic"
+  end
+
+  local name = controllerName:lower()
+
+  -- PlayStation controllers
+  if name:find("playstation") or name:find("dualshock") or name:find("dualsense") then
+    if name:find("5") or name:find("dualsense") then
+      return "playstation5"
+    elseif name:find("4") or name:find("dualshock 4") then
+      return "playstation4"
+    elseif name:find("3") then
+      return "playstation3"
+    elseif name:find("2") then
+      return "playstation2"
+    elseif name:find("1") then
+      return "playstation1"
+    else
+      return "playstation4" -- Default to PS4 for generic PlayStation
+    end
+  end
+
+  -- Xbox controllers
+  if name:find("xbox") or name:find("microsoft") then
+    if name:find("series") or name:find("xbox series") then
+      return "xboxseries"
+    elseif name:find("one") or name:find("xbox one") then
+      return "xboxone"
+    elseif name:find("360") then
+      return "xbox360"
+    else
+      return "xboxone" -- Default to Xbox One for generic Xbox
+    end
+  end
+
+  -- Nintendo Switch controllers
+  if name:find("switch") or name:find("nintendo") then
+    if name:find("pro") then
+      return "switch_pro"
+    else
+      return "switch_pro" -- Default to Switch Pro for any Nintendo/Switch controller
+    end
+  end
+
+  -- Default to generic controller
+  return "generic"
+end
+
 -- Builds device descriptor for input configuration
 local function buildConfigDescriptor(config, index)
   local deviceType, label = classifyConfiguration(config, index)
+
+  -- For controllers, determine the specific image variant to use
+  local controllerImageVariant = nil
+  if deviceType == "controller" then
+    controllerImageVariant = getControllerImageVariant(label)
+  end
 
   return {
     id = string.format("config_%d", index),
     config = config,
     type = deviceType,
     label = label,
+    controllerImageVariant = controllerImageVariant, -- Specific controller image to use
     index = index,
     assignedPlayer = config.player
   }
@@ -103,13 +161,23 @@ end
 -- Gets list of all assignable input devices (controllers, keyboard, touch)
 function InputDeviceUtils.getAssignableDevices()
   local devices = {}
+  local deviceTypeCounters = {} -- Track device configuration numbers per type
+
   for i, config in ipairs(GAME.input.inputConfigurations) do
     if config["Swap1"] or config["Start"] then
-      devices[#devices + 1] = buildConfigDescriptor(config, i)
+      local descriptor = buildConfigDescriptor(config, i)
+
+      -- Calculate device configuration number for this type
+      deviceTypeCounters[descriptor.type] = (deviceTypeCounters[descriptor.type] or 0) + 1
+      descriptor.deviceNumber = deviceTypeCounters[descriptor.type]
+
+      devices[#devices + 1] = descriptor
     end
   end
 
-  devices[#devices + 1] = buildTouchDescriptor()
+  local touchDescriptor = buildTouchDescriptor()
+  touchDescriptor.deviceNumber = 1 -- Touch is always device number 1
+  devices[#devices + 1] = touchDescriptor
 
   return devices
 end

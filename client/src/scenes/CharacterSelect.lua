@@ -1013,6 +1013,7 @@ function CharacterSelect:updateSelf(dt)
     if InputDeviceUtils.checkForUnassignedConfigurationInputs(self.battleRoom) then
       self.battleRoom:releaseAllLocalAssignments()
       self:openInputDeviceOverlayIfNeeded()
+      return -- Don't process cursor inputs this frame when overlay opens
     end
 
     for _, cursor in ipairs(self.ui.cursors) do

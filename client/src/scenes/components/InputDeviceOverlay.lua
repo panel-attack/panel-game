@@ -6,6 +6,7 @@ local ImageContainer = require("client.src.ui.ImageContainer")
 local InputDeviceUtils = require("client.src.input.InputDeviceUtils")
 local inputManager = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local InputPromptRenderer = require("client.src.graphics.InputPromptRenderer")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 
@@ -24,6 +25,7 @@ local DEVICE_ICON_SIZE = 64
 ---@field playerImage ImageContainer?
 ---@field deviceIcon UiElement?
 ---@field isTargetedForTouch boolean
+---@field parentOverlay InputDeviceOverlay?
 local PlayerSlot = class(function(self, options)
   local playerNumber = options.playerNumber or options
   self.playerNumber = playerNumber
@@ -31,6 +33,7 @@ local PlayerSlot = class(function(self, options)
   self.holdProgress = 0
   self.pendingDeviceType = nil
   self.isTargetedForTouch = false
+  self.parentOverlay = options.parentOverlay
 
   -- Set size after parent initialization
   self.width = PLAYER_SLOT_SIZE
@@ -91,7 +94,7 @@ function PlayerSlot:createPlayerNumberImage()
     image = playerIcon,
     hAlign = "center",
     vAlign = "top",
-    y = 10,
+    y = 14,
     scale = 2
   })
   self:addChild(self.playerImage)
@@ -122,45 +125,48 @@ function PlayerSlot:updateDeviceIcon()
       width = DEVICE_ICON_SIZE,
       height = DEVICE_ICON_SIZE,
       hAlign = "center",
-      vAlign = "bottom",
-      y = -10
+      vAlign = "center"
     })
 
     iconElement.drawSelf = function(icon)
       -- Device icon transitions from grey to blue based on progress
       local progress = self.holdProgress or 0
-      local iconColor
+      local alpha
       if self.assignedDevice then
-        -- Assigned device: solid blue
-        iconColor = {0.3, 0.4, 0.8, 1}
+        -- Assigned device: full opacity
+        alpha = 1
       else
-        -- Pending device: grey to blue transition
-        local greyToBlue = progress * 0.6  -- How much blue to add
-        iconColor = {0.4, 0.4 + greyToBlue * 0.2, 0.4 + greyToBlue * 0.8, 1}
+        -- Pending device: grey to blue transition (fade in)
+        alpha = 0.4 + progress * 0.6
       end
-      GraphicsUtil.setColor(iconColor[1], iconColor[2], iconColor[3], iconColor[4])
 
       local centerX = icon.width / 2
       local centerY = icon.height / 2
 
-      if deviceType == "controller" then
-        -- Simple gamepad icon
-        GraphicsUtil.drawRectangle("fill", centerX - 20, centerY - 8, 40, 16)
-        love.graphics.circle("fill", centerX - 12, centerY - 3, 3)
-        love.graphics.circle("fill", centerX + 12, centerY - 3, 3)
-      elseif deviceType == "keyboard" then
-        -- Simple keyboard icon
-        GraphicsUtil.drawRectangle("line", centerX - 15, centerY - 6, 30, 12)
-        for i = 0, 2 do
-          GraphicsUtil.drawRectangle("fill", centerX - 12 + i * 8, centerY - 3, 6, 2)
+      -- Get pre-calculated controller image variant and device number from descriptor
+      local controllerImageVariant = nil
+      local deviceNumber = nil
+
+      if self.assignedDevice then
+        -- Use pre-calculated values from assigned device descriptor
+        controllerImageVariant = self.assignedDevice.controllerImageVariant
+        deviceNumber = self.assignedDevice.deviceNumber
+      elseif self.pendingDeviceType and self.parentOverlay then
+        -- For pending devices, find the descriptor being held to show specific controller icon
+        for _, descriptor in ipairs(self.parentOverlay.deviceDescriptors) do
+          if descriptor.type == self.pendingDeviceType then
+            local state = self.parentOverlay.deviceState[descriptor.id]
+            if state and state.holdTime > 0 then
+              controllerImageVariant = descriptor.controllerImageVariant
+              deviceNumber = descriptor.deviceNumber
+              break
+            end
+          end
         end
-      elseif deviceType == "touch" then
-        -- Simple pointer/hand icon
-        love.graphics.circle("fill", centerX, centerY - 8, 4)
-        GraphicsUtil.drawRectangle("fill", centerX - 2, centerY - 4, 4, 12)
       end
 
-      GraphicsUtil.setColor(1, 1, 1, 1)
+      -- Render the device icon with number if applicable
+      InputPromptRenderer.renderIconWithNumber(deviceType, centerX, centerY, DEVICE_ICON_SIZE, alpha, controllerImageVariant, deviceNumber)
     end
 
     self.deviceIcon = iconElement
@@ -213,9 +219,6 @@ local InputDeviceOverlay = class(function(self, options)
   self.deviceState = {}
   self.touchTargetSlot = nil
   self.autoCloseTimer = 0
-
-  self.hFill = true
-  self.vFill = true
   self.width = consts.CANVAS_WIDTH
   self.height = consts.CANVAS_HEIGHT
   self:setVisibility(false)
@@ -260,7 +263,6 @@ function InputDeviceOverlay:buildUi()
     hAlign = "center",
     vAlign = "top",
     y = 60,
-    hFill = true,
     fontSize = GraphicsUtil.fontSize + 4
   })
   self:addChild(self.titleLabel)
@@ -271,7 +273,6 @@ function InputDeviceOverlay:buildUi()
     hAlign = "center",
     vAlign = "top",
     y = 100,
-    hFill = true,
     fontSize = GraphicsUtil.fontSize
   })
   self:addChild(self.subtitleLabel)
@@ -280,7 +281,8 @@ function InputDeviceOverlay:buildUi()
   self.slotsContainer = StackPanel({
     alignment = "left",
     hAlign = "center",
-    vAlign = "center"
+    vAlign = "center",
+    height = PLAYER_SLOT_SIZE
   })
   self:addChild(self.slotsContainer)
 end
@@ -317,7 +319,7 @@ function InputDeviceOverlay:buildPlayerSlots()
 
   local players = self:getLocalPlayers()
   for i, player in ipairs(players) do
-    local slot = PlayerSlot({playerNumber = player.playerNumber or i})
+    local slot = PlayerSlot({playerNumber = player.playerNumber or i, parentOverlay = self})
     self.playerSlots[i] = slot
     self.slotsContainer:addElement(slot)
 
@@ -353,6 +355,7 @@ function InputDeviceOverlay:getAssignedDeviceForPlayer(player)
   end
   return nil
 end
+
 
 function InputDeviceOverlay:syncDevices()
   local latest = InputDeviceUtils.getAssignableDevices()
@@ -583,6 +586,26 @@ function InputDeviceOverlay:getTouchDescriptor()
   return nil
 end
 
+-- Checks if any button is currently being pressed on any device
+function InputDeviceOverlay:isAnyButtonCurrentlyPressed()
+  -- Check if mouse is being held (for touch)
+  if self:isMouseHolding() then
+    return true
+  end
+
+  -- Check if any configuration device has buttons pressed
+  for _, descriptor in ipairs(self.deviceDescriptors) do
+    if descriptor.type ~= "touch" and descriptor.config then
+      local holdDuration = getHoldDurationForDescriptor(descriptor, ALL_INPUT_KEYS)
+      if holdDuration and holdDuration > 0 then
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
 function InputDeviceOverlay:updateSelf(dt)
   if not self.active then
     return
@@ -604,7 +627,7 @@ function InputDeviceOverlay:updateSelf(dt)
   self:updateTouchHold(dt)
 
   -- Handle auto-close timer
-  if self.autoCloseTimer > 0 then
+  if self.autoCloseTimer > 0 and not self:isAnyButtonCurrentlyPressed() then
     self.autoCloseTimer = self.autoCloseTimer - dt
     if self.autoCloseTimer <= 0 then
       self:close()
