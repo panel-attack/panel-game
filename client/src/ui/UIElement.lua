@@ -222,7 +222,8 @@ end
 function UIElement:getTouchedElement(x, y)
   if self.isVisible and self.isEnabled and self:inBounds(x, y) then
     local touchedElement
-    for i = 1, #self.children do
+    -- Check children in reverse order (last drawn = first touched)
+    for i = #self.children, 1, -1 do
       touchedElement = self.children[i]:getTouchedElement(x, y)
       if touchedElement then
         return touchedElement
