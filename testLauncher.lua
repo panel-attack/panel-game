@@ -35,6 +35,7 @@ else
 end
 
 require("client.src.globals")
+local system = require("client.src.system")
 local Game = require("client.src.Game")
 
 function love.load()
@@ -177,9 +178,9 @@ function love.errorhandler(msg)
   if lldebugger then
     error(msg, 2)
   else
-    if love.filesystem.exists("test-crash.log") then
+    if love.filesystem.exists("test-crash.log") and system.supportsFileBrowserOpen() then
       local sep = package.config:sub(1, 1)
-      love.system.openURL(love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")
+      love.system.openURL("file://"..love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")
     end
     return love_errorhandler(msg)
   end
