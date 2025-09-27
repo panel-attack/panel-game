@@ -59,6 +59,12 @@ function MainMenu:createMainMenu()
         switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
       end
     end),
+    ui.MenuItem.createButtonMenuItem("mm_2_time", nil, nil, function()
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      if GAME.battleRoom then
+        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
+      end
+    end),
     ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
       if GAME.battleRoom then
@@ -101,8 +107,8 @@ function MainMenu:createMainMenu()
 
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
+  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
+                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
                         }
 
   local function addDebugMenuItems()
@@ -149,15 +155,16 @@ function MainMenu:checkForUpdates()
   end
 end
 
-function MainMenu:updateSelf(dt)
+function MainMenu:update(dt)
   GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
-function MainMenu:drawSelf()
+function MainMenu:draw()
   GAME.theme.images.bg_main:draw()
+  self.uiRoot:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 
