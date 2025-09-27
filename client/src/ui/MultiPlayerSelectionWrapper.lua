@@ -19,7 +19,9 @@ StackPanel)
 function MultiPlayerSelectionWrapper:addElement(uiElement, player)
   self.wrappedElements[player] = uiElement
   uiElement.yieldFocus = function()
-    self.yieldFocus()
+    if self.yieldFocus then
+      self.yieldFocus()
+    end
   end
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)

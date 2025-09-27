@@ -157,6 +157,7 @@ function Carousel:onRelease(x, y)
   self.initialTouchX = 0
   self.initialTouchY = 0
   self.initialTouchPassenger = nil
+  self:onSelect()
 end
 
 return Carousel

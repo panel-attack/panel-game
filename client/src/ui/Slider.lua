@@ -117,10 +117,12 @@ end
 ---@param newValue number
 ---@param committed boolean? if the callback should get executed
 function Slider:setValue(newValue, committed)
-  self.value = util.bound(self.min, newValue, self.max)
-  self.valueText:set(tostring(self.value))
-  if committed or self.onlyChangeOnRelease == false then
-    self:onValueChange()
+  if self.value ~= newValue then
+    self.value = util.bound(self.min, newValue, self.max)
+    self.valueText:set(tostring(self.value))
+    if committed or self.onlyChangeOnRelease == false then
+      self:onValueChange()
+    end
   end
 end
 

@@ -213,6 +213,10 @@ function CharacterSelect:createStageCarousel(player, width)
     stageCarousel:setPassengerById(player.settings.selectedStageId)
   end
 
+  stageCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
+    -- Specifically don't set to cause tons of loads
+  end
+
   stageCarousel:setPassengerById(player.settings.selectedStageId)
 
   -- to update the UI if code gets changed from the backend (e.g. network messages)
@@ -497,7 +501,7 @@ function CharacterSelect:createPanelCarousel(player, height)
   end
 
   panelCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    player:setPanels(selectedPassenger.id)
+    -- Specifically don't set to cause tons of loads
   end
 
   panelCarousel:setPassengerById(player.settings.panelId)
@@ -891,6 +895,14 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     passengers = passengers,
     selectedId = player.settings.difficulty
   })
+
+  difficultyCarousel.onSelectCallback = function()
+    -- Just update on every passenger changes instead to update the UI
+  end
+
+  difficultyCarousel.onBackCallback = function()
+    -- Just update on every passenger changes instead to update the UI
+  end
 
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
     local levelData = LevelPresets.getClassic(selectedPassenger.id)
