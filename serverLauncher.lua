@@ -15,7 +15,7 @@ require("server.tests.LoginTests")
 
 local database = require("server.PADatabase")
 local Server = require("server.server")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 local Persistence = require("server.Persistence")
 
 local server = Server(database, Persistence)

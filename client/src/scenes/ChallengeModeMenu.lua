@@ -24,7 +24,7 @@ function ChallengeModeMenu:goToCharacterSelect(difficulty)
   GAME.theme:playValidationSfx()
   GAME.battleRoom = ChallengeMode.create(difficulty)
   if GAME.battleRoom then
-    GAME.navigationStack:replace(CharacterSelectChallenge({battleRoom = GAME.battleRoom}))
+    GAME.navigationStack:replace(CharacterSelectChallenge())
   end
 end
 
@@ -60,10 +60,9 @@ function ChallengeModeMenu:load(sceneParams)
   self.uiRoot:addChild(self.menu)
 end
 
-function ChallengeModeMenu:updateSelf(dt)
+function ChallengeModeMenu:update(dt)
   self.backgroundImg:update(dt)
   self.menu:receiveInputs()
-  self.uiRoot:update(dt)
 end
 
 function ChallengeModeMenu:draw()

@@ -71,7 +71,7 @@ function SetUserIdMenu:confirmId()
   end
 end
 
-function SetUserIdMenu:updateSelf(dt)
+function SetUserIdMenu:update(dt)
   if input.allKeys.isDown["return"] then
     self:confirmId()
   elseif input.allKeys.isDown["escape"] then
@@ -79,10 +79,11 @@ function SetUserIdMenu:updateSelf(dt)
   end
 end
 
-function SetUserIdMenu:drawSelf()
+function SetUserIdMenu:draw()
   self.backgroundImg:draw()
   local menuX, menuY = unpack(themes[config.theme].main_menu_screen_pos)
   GraphicsUtil.printf("Enter User ID (or paste from clipboard)", menuX, menuY)
+  self.uiRoot:draw()
 end
 
 return SetUserIdMenu

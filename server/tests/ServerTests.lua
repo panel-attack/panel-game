@@ -5,7 +5,7 @@ local json = require("common.lib.dkjson")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local ServerTesting = require("server.tests.ServerTesting")
 local Leaderboard = require("server.Leaderboard")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 local tableUtils = require("common.lib.tableUtils")
 
 local function testLogin()
@@ -106,12 +106,12 @@ local function testGameplay()
   message = bob.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectateRequestGranted")
   assert(message.content.replay)
-  ---@type ReplayV3
+  ---@type Replay
   local replay = message.content.replay
   -- by convention the player challenging first ends up as player two
   -- not formally required but something the test relies on, feel free to change if it crashes here due to that
-  assert(replay.stacks[2].inputs == "A1")
-  assert(replay.stacks[1].inputs == "g1")
+  assert(replay.players[2].settings.inputs == "A1")
+  assert(replay.players[1].settings.inputs == "g1")
 
   -- everyone gets the spectator update
   message = alice.connection.outgoingMessageQueue:pop().messageText
@@ -269,7 +269,7 @@ local function testSinglePlayer()
   assert(message.type == "spectatorUpdate")
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectateRequestGranted" and message.content.replay == nil)
-  assert(tableUtils.deep_content_equal(message.content.gameMode, GameModes.getPreset("ONE_PLAYER_VS_SELF")))
+  assert(deep_content_equal(message.content.gameMode, GameModes.getPreset("ONE_PLAYER_VS_SELF")))
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectatorUpdate")
 

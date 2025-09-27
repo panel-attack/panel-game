@@ -14,8 +14,7 @@
         "love",
         "jit",
         "lldebugger",
-        "config",
-        "DEBUG_ENABLED"
+        "config"
     ],
     "diagnostics.ignoredFiles": "Opened",
 

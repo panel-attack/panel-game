@@ -17,15 +17,11 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@class ChallengeModePlayerStack
 ---@overload fun(args: table): ChallengeModePlayerStack
 local ChallengeModePlayerStack = class(
----@param self ChallengeModePlayerStack
----@param args table
 function(self, args)
-  self.player = args.player
-  assert(self.engine.TYPE == "SimulatedStack")
+  self.engine = SimulatedStack(args)
   self.engine.outgoingGarbage:connectSignal("garbagePushed", self, self.onGarbagePushed)
   self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
-  self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("finishedRun", self, self.onRun)
 
   -- queue limit is set for automated attack settings e.g. combo storm that send garbage every frame
@@ -42,10 +38,6 @@ function(self, args)
   self.difficultyQuads = {}
 end,
 ClientStack)
-
-function ChallengeModePlayerStack:onGameOver()
-  SoundController:playSfx(themes[config.theme].sounds.game_over)
-end
 
 function ChallengeModePlayerStack:onGarbagePushed(garbage)
   -- TODO: Handle combos SFX greather than 7
@@ -127,10 +119,7 @@ function ChallengeModePlayerStack:canPlaySfx()
   return true
 end
 
----@param matchEnded boolean?
----@param xOffset integer? provides an additional x offset e.g. from translation as scissors only operates in screen/canvas coordinates
----@param yOffset integer? provides an additional y offset e.g. from translation as scissors only operates in screen/canvas coordinates
-function ChallengeModePlayerStack:render(matchEnded, xOffset, yOffset)
+function ChallengeModePlayerStack:render()
   self:setDrawArea()
   self:drawCharacter()
   if self.engine.healthEngine then
@@ -157,6 +146,10 @@ end
 ---@param garbageTarget GarbageTarget
 function ChallengeModePlayerStack:setGarbageTarget(garbageTarget)
   ClientStack.setGarbageTarget(self, garbageTarget)
+  if self.engine.attackEngine then
+    -- the target needs to match the settings about shock garbage being sorted with 
+    self.engine.attackEngine:setGarbageTarget(garbageTarget)
+  end
 end
 
 function ChallengeModePlayerStack:drawScore()
