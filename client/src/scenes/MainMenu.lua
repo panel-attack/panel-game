@@ -59,6 +59,12 @@ function MainMenu:createMainMenu()
         switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
       end
     end),
+    ui.MenuItem.createButtonMenuItem("mm_2_time", nil, nil, function()
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      if GAME.battleRoom then
+        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
+      end
+    end),
     ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
       if GAME.battleRoom then
