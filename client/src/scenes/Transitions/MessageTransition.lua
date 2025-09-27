@@ -25,7 +25,18 @@ function MessageTransition:updateScenes(dt)
 end
 
 function MessageTransition:draw()
+  -- Animación de escalado tipo "bounce" al inicio del mensaje
+  local bounce = 1
+  if self.progress < 0.3 then
+    bounce = 1 + math.sin(self.progress * math.pi / 0.3) * 0.2
+  end
+
+  love.graphics.push()
+  love.graphics.translate(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
+  love.graphics.scale(bounce, bounce)
+  love.graphics.translate(-love.graphics.getWidth() / 2, -love.graphics.getHeight() / 2)
   self.uiRoot:draw()
+  love.graphics.pop()
 end
 
 return MessageTransition
