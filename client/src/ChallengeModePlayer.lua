@@ -26,8 +26,6 @@ function(self, playerNumber)
 end,
 MatchParticipant)
 
-ChallengeModePlayer.TYPE = "ChallengeModePlayer"
-
 local function characterForStageNumber(stageNumber)
   -- Get all other characters than the player character
   local otherCharacters = {}
@@ -53,22 +51,21 @@ local function characterForStageNumber(stageNumber)
   return character
 end
 
----@param engineStack SimulatedStack
----@return ChallengeModePlayerStack
-function ChallengeModePlayer:createClientStack(engineStack)
-  local args = {
-    engine = engineStack,
-    player_number = self.playerNumber,
-    panels_dir = self.settings.panelId,
-    characterId = self.settings.characterId,
-    player = self,
+function ChallengeModePlayer:createStackFromSettings(match, which)
+  assert(self.settings.healthSettings or self.settings.attackEngineSettings)
+  local stack = ChallengeModePlayerStack({
+    which = which,
+    character = self.settings.characterId,
+    is_local = not (match.replay and match.replay.completed),
     attackSettings = self.settings.attackEngineSettings,
     healthSettings = self.settings.healthSettings,
-  }
+    match = match,
+  })
 
-  self.stack = ChallengeModePlayerStack(args)
+  self.stack = stack
+  stack.player = self
 
-  return self.stack
+  return stack
 end
 
 function ChallengeModePlayer:setCharacterForStage(stageNumber)
@@ -81,17 +78,13 @@ function ChallengeModePlayer:setWantsReady(wantsReady)
   self:emitSignal("wantsReadyChanged", true)
 end
 
----@param stackMetadata SimulatedStackMetadata
----@return ChallengeModePlayer
-function ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
-  local player = ChallengeModePlayer(stackMetadata.stackIndex)
-  player:setCharacter(stackMetadata.characterId)
-  player:setPanels(stackMetadata.panelId)
-  player.settings.difficulty = stackMetadata.challengeModeDifficulty
-  player.settings.level = stackMetadata.stageIndex
-
-  -- see if things like attackEngineSettings and healthSettings need to be loaded on the ChallengeModePlayer too - I think not
-
+function ChallengeModePlayer.createFromReplayPlayer(replayPlayer, playerNumber)
+  local player = ChallengeModePlayer(playerNumber)
+  player.settings.attackEngineSettings = replayPlayer.settings.attackEngineSettings
+  player.settings.healthSettings = replayPlayer.settings.healthSettings
+  player.settings.characterId = CharacterLoader.fullyResolveCharacterSelection(replayPlayer.settings.characterId)
+  player.settings.difficulty = replayPlayer.settings.difficulty
+  player.isLocal = false
   return player
 end
 

@@ -26,7 +26,7 @@ end, Scene)
 
 StartUp.name = "StartUp"
 
-function StartUp:updateSelf(dt)
+function StartUp:update(dt)
   if self.migrationPath then
     local success, status = coroutine.resume(self.migrationRoutine, self)
     if success then
@@ -72,7 +72,7 @@ function StartUp:drawLoadingString(loadingString)
   love.graphics.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", 0, 1)
 end
 
-function StartUp:drawSelf()
+function StartUp:draw()
   self:drawLoadingString(self.message)
 end
 

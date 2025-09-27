@@ -8,7 +8,6 @@ local GraphicsUtil = {
   fontSize = 12,
   fontDpiScale = 1,
   fontCache = {},
-  ---@type love.Quad[]
   quadPool = {}
 }
 
@@ -32,7 +31,7 @@ function GraphicsUtil.createPixelFontMap(characters, atlas)
 
   for i = 1, characters:len() do
     local char = characters:sub(i, i)
-    pixelFontMap.charToQuad[char] = GraphicsUtil:newRecycledQuad((i - 1) * charWidth, 0, charWidth, atlasHeight, atlasWidth, atlasHeight)
+    pixelFontMap.charToQuad[char] = love.graphics.newQuad((i - 1) * charWidth, 0, charWidth, atlasHeight, atlasWidth, atlasHeight)
   end
 
   return pixelFontMap
@@ -107,6 +106,7 @@ end
 
 -- Draws the given string with the given pixel font image atlas
 -- string - the string to draw
+-- TODO support both upper and lower case
 -- atlas - the image to use as the pixel font
 -- font map - a dictionary of a character mapped to the column number in the pixel font image
 ---@param str string
@@ -176,7 +176,7 @@ function GraphicsUtil:newRecycledQuad(x, y, width, height, sw, sh)
     self.quadPool[#self.quadPool] = nil
     result:setViewport(x, y, width, height, sw, sh)
   end
-
+  
   return result
 end
 

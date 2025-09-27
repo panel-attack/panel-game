@@ -143,24 +143,6 @@ function UIElement:refreshLocalization()
   end
 end
 
-function UIElement:update(dt)
-  if self.isVisible then
-    self:updateSelf(dt)
-    self:updateChildren(dt)
-  end
-end
-
--- UiElements can override this method to do custom update logic
--- implementation is optional
-function UIElement:updateSelf(dt)
-end
-
-function UIElement:updateChildren(dt)
-  for _, uiElement in ipairs(self.children) do
-    uiElement:update(dt)
-  end
-end
-
 function UIElement:draw()
   if self.isVisible then
     self:drawSelf()
@@ -174,8 +156,8 @@ function UIElement:draw()
   end
 end
 
--- UiElements can overrid this method to do custom drawing
--- implementation is optional
+-- UiElements containing children draw the children-independent part in this function
+-- implementation is optional so layout elements don't have to
 function UIElement:drawSelf()
 end
 
@@ -233,30 +215,6 @@ function UIElement:getTouchedElement(x, y)
       return self
     end
   end
-end
-
--- Traverses the UI tree and calls receiveInputs on any focused elements
-function UIElement:handleFocusedInput(inputs, dt)
-  -- If this element has focus and can receive inputs, handle it
-  if self.hasFocus and self.receiveInputs then
-    self:receiveInputs(inputs, dt)
-    return true -- Input was handled, don't continue traversing
-  end
-  
-  -- If this element is a focus director with a focused child, handle that
-  if self.focused and self.focused.receiveInputs then
-    self.focused:receiveInputs(inputs, dt)
-    return true -- Input was handled
-  end
-  
-  -- Otherwise, traverse children to find focused elements
-  for _, child in ipairs(self.children) do
-    if child:handleFocusedInput(inputs, dt) then
-      return true -- Input was handled by a child
-    end
-  end
-  
-  return false -- No focused element found
 end
 
 return UIElement

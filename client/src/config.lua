@@ -21,6 +21,7 @@ require("client.src.globals")
 ---@field endless_level integer?
 ---@field puzzle_level integer
 ---@field puzzle_randomColors boolean
+---@field puzzle_randomFlipped boolean
 ---@field name string
 ---@field master_volume number
 ---@field SFX_volume number
@@ -31,7 +32,6 @@ require("client.src.globals")
 ---@field debugShowDesignHelper boolean
 ---@field debugProfile boolean
 ---@field debugProfileThreshold integer
----@field debug_vsFramesBehind integer
 ---@field show_fps boolean
 ---@field show_ingame_infos boolean
 ---@field danger_music_changeback_delay boolean
@@ -84,6 +84,7 @@ config = {
     -- Puzzle settings
     puzzle_level                  = 5,
     puzzle_randomColors           = false,
+    puzzle_randomFlipped          = false,
 
     -- Player name
     name                          = "",
@@ -210,6 +211,9 @@ config = {
           end
           if type(read_data.puzzle_randomColors) == "boolean" then
             configTable.puzzle_randomColors = read_data.puzzle_randomColors
+          end
+          if type(read_data.puzzle_randomFlipped) == "boolean" then
+            configTable.puzzle_randomFlipped = read_data.puzzle_randomFlipped
           end
 
           if type(read_data.name) == "string" then

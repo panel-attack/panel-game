@@ -1,7 +1,7 @@
 local ServerGame = require("server.Game")
 local Leaderboard = require("server.Leaderboard")
 local LevelPresets = require("common.data.LevelPresets")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 -- we don't want to test the persistence part here, do that explicitly elsewhere instead
 local MockPersistence = require("server.tests.MockPersistence")
 local ServerTesting = require("server.tests.ServerTesting")

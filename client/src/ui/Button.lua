@@ -13,12 +13,10 @@ local input = require("client.src.inputManager")
 ---@field backgroundColor number[]
 ---@field outlineColor number []
 ---@field onClick fun(button: Button?, input: table?, timeHeld: number?)
----@field currentlyPressed boolean
 local Button = class(
   function(self, options)
     self.backgroundColor = options.backgroundColor or {.3, .3, .3, .7}
     self.outlineColor = options.outlineColor or {.5, .5, .5, .7}
-    self.currentlyPressed = false
 
     -- callbacks
     self.onClick = options.onClick or function()
@@ -31,15 +29,15 @@ local Button = class(
 Button.TYPE = "Button"
 
 function Button:onTouch(x, y)
-  self.currentlyPressed = true
+  self.backgroundColor[4] = 1
 end
 
 function Button:onRelease(x, y, timeHeld)
+  self.backgroundColor[4] = 0.7
   if self:inBounds(x, y) then
     -- first argument non-self of onClick is the input source to accomodate inputs via controllers from different players
     self:onClick(input.mouse, timeHeld)
   end
-  self.currentlyPressed = false
 end
 
 function Button:receiveInputs(input)
@@ -53,11 +51,7 @@ end
 
 function Button:drawBackground()
   if self.backgroundColor[4] > 0 then
-    if self.currentlyPressed then 
-      GraphicsUtil.setColor(self.backgroundColor[1], self.backgroundColor[2], self.backgroundColor[3], 1)
-    else
-      GraphicsUtil.setColor(self.backgroundColor[1], self.backgroundColor[2], self.backgroundColor[3], self.backgroundColor[4])
-    end
+    GraphicsUtil.setColor(self.backgroundColor)
     GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end

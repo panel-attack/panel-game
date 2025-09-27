@@ -57,17 +57,16 @@ local function updateLobbyState(self, lobbyState)
   self:emitSignal("lobbyStateUpdate", self.lobbyData)
 end
 
----@param room BattleRoom
-local function getSceneFromRoom(room)
+local function getSceneByGameMode(gameMode)
   -- this is so hacky oh my god
-  if room.mode.name == "VS" then
-    return CharacterSelect2p({battleRoom = room})
-  elseif room.mode.name == "endless" then
-    return require("client.src.scenes.EndlessMenu")({battleRoom = room})
-  elseif room.mode.name == "timeattack" then
-    return require("client.src.scenes.TimeAttackMenu")({battleRoom = room})
-  elseif room.mode.name == "vsSelf" then
-    return require("client.src.scenes.CharacterSelectVsSelf")({battleRoom = room})
+  if gameMode.richPresenceLabel == "2p versus" then
+    return CharacterSelect2p()
+  elseif gameMode.richPresenceLabel == "Endless" then
+    return require("client.src.scenes.EndlessMenu")()
+  elseif gameMode.richPresenceLabel == "Time Attack" then
+    return require("client.src.scenes.TimeAttackMenu")()
+  elseif gameMode.richPresenceLabel == "1p vs self" then
+    return require("client.src.scenes.CharacterSelectVsSelf")()
   end
 end
 
@@ -78,7 +77,7 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   self.room = GAME.battleRoom
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
-  GAME.navigationStack:push(getSceneFromRoom(self.room))
+  GAME.navigationStack:push(getSceneByGameMode(self.room.mode))
   self.state = states.ROOM
 end
 
@@ -149,64 +148,54 @@ local function processTauntMessage(self, message)
 end
 
 ---@param self NetClient
----@param message { replay: ReplayV3, [string]: any }
 local function processMatchStartMessage(self, message)
   if not self.room then
     return
   end
 
-  for j, player in ipairs(self.room.players) do
-    for i, metadata in ipairs(message.replay.metadata.stacks) do
-      if player.playerNumber == metadata.stackIndex then
-        if player.human then
-          ---@cast metadata StackMetadata
-          if metadata.level and metadata.level ~= player.settings.level then
-            player:setLevel(metadata.level)
-          end
+  for _, playerSettings in ipairs(message.playerSettings) do
+    -- contains level, characterId, panelId
+    for _, player in ipairs(self.room.players) do
+      if playerSettings.playerNumber == player.playerNumber then
+        -- verify that settings on server and local match to prevent desync / crash
+        if playerSettings.level ~= player.settings.level then
+          player:setLevel(playerSettings.level)
         end
-      end
-    end
+        if playerSettings.levelData and LevelData.validate(playerSettings.levelData) then
+          playerSettings.levelData = setmetatable(playerSettings.levelData, LevelData)
+          player:setLevelData(playerSettings.levelData)
+        end
 
-    for i, stackSettings in ipairs(message.replay.stacks) do
-      if player.playerNumber == i then
-        if player.human then
-          ---@cast stackSettings ReplayStack
-          if LevelData.validate(stackSettings.levelData) and not LevelData.__eq(stackSettings.levelData, player.settings.levelData) then
-            setmetatable(stackSettings.levelData, LevelData)
-            player:setLevelData(stackSettings.levelData)
-          end
+        if playerSettings.inputMethod ~= player.settings.inputMethod then
+          -- since only one player can claim touch, touch is unclaimed every time we return to character select
+          -- this also means they will send controller as their input method until they ready up
+          -- if the remote touch player readies up AFTER the local client, we never get informed about the change in input method
+          -- besides for the match start message itself
+          -- likewise if the local player readies up with touch and then unreadies their inputMethod will flip back to controller so we even have to overwrite the local player setting
+          -- so it's very important to set this here
+          player:setInputMethod(playerSettings.inputMethod)
+        end
 
-          if stackSettings.inputMethod ~= player.settings.inputMethod then
-            -- since only one player can claim touch, touch is unclaimed every time we return to character select
-            -- this also means they will send controller as their input method until they ready up
-            -- if the remote touch player readies up AFTER the local client, we never get informed about the change in input method
-            -- besides for the match start message itself
-            -- likewise if the local player readies up with touch and then unreadies their inputMethod will flip back to controller so we even have to overwrite the local player setting
-            -- so it's very important to set this here
-            player:setInputMethod(stackSettings.inputMethod)
-          end
-
-          if player.isLocal then
-            if not player.inputConfiguration then
-              if player.settings.inputMethod == "touch" then
-                player:restrictInputs(GAME.input.mouse)
+        if player.isLocal then
+          if not player.inputConfiguration then
+            if player.settings.inputMethod == "touch" then
+              player:restrictInputs(GAME.input.mouse)
+            else
+              if player.lastUsedInputConfiguration.x then
+                -- there is no configuration and the last one is a touch configuration
+                -- there is no way to know which input configuration the player wanted to use in this scenario so throw an error
+                error("Player's input configuration does not match input method " .. player.settings.inputMethod .. " sent by server.")
               else
-                if player.lastUsedInputConfiguration and player.lastUsedInputConfiguration.x then
-                  -- there is no configuration and the last one is a touch configuration
-                  -- there is no way to know which input configuration the player wanted to use in this scenario so throw an error
-                  error("Player's input configuration does not match input method " .. player.settings.inputMethod .. " sent by server.")
-                else
-                  player:restrictInputs(player.lastUsedInputConfiguration)
-                end
+                player:restrictInputs(player.lastUsedInputConfiguration)
               end
-              -- fallback in case the player lost their input config while the server sent the message
             end
+            -- fallback in case the player lost their input config while the server sent the message
           end
-          -- generally I don't think it's a good idea to try and rematch the other diverging settings here
-          -- everyone is loaded and ready which can only happen after character/panel data was already exchanged
-          -- if they diverge it's because the chosen mod is missing on the other client
-          -- generally I think server should only send physics relevant data with match_start
         end
+        -- generally I don't think it's a good idea to try and rematch the other diverging settings here
+        -- everyone is loaded and ready which can only happen after character/panel data was already exchanged
+        -- if they diverge it's because the chosen mod is missing on the other client
+        -- generally I think server should only send physics relevant data with match_start
       end
     end
   end
@@ -221,7 +210,7 @@ local function processMatchStartMessage(self, message)
   end
 
   self.tcpClient:dropOldInputMessages()
-  self.room:startMatch(message.replay)
+  self.room:startMatch(message.stageId, message.seed, message.replay)
   self:setState(states.INGAME)
 end
 
@@ -289,11 +278,11 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
     local catchUp = GameCatchUp(vsScene)
     -- need to push character select, otherwise the pop on match end will return to lobby
     -- directly add to the stack so it isn't getting displayed
-    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneFromRoom(self.room)
+    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneByGameMode(self.room.mode)
     GAME.navigationStack:push(catchUp)
   else
     self.state = states.ROOM
-    GAME.navigationStack:push(getSceneFromRoom(self.room))
+    GAME.navigationStack:push(getSceneByGameMode(self.room.mode))
   end
 end
 
@@ -393,7 +382,7 @@ local NetClient = class(function(self)
   self:createSignal("lobbyStateUpdate")
   self:createSignal("leaderboardUpdate")
   -- only fires for unintended disconnects
-  self:createSignal("clientDisconnected")
+  self:createSignal("disconnect")
   self:createSignal("loginFinished")
 end)
 
@@ -492,7 +481,7 @@ function NetClient:registerPlayerUpdates(room)
       player:connectSignal("difficultyChanged", player, sendPlayerSettings)
       player:connectSignal("startingSpeedChanged", player, sendPlayerSettings)
       player:connectSignal("levelChanged", player, sendPlayerSettings)
-      player:connectSignal("levelDataChanged", player, sendPlayerSettings)
+      player:connectSignal("colorCountChanged", player, sendPlayerSettings)
       player:connectSignal("inputMethodChanged", player, sendPlayerSettings)
       player:connectSignal("hasLoadedChanged", player, sendPlayerSettings)
     else
@@ -528,25 +517,13 @@ end
 
 function NetClient:logout()
   self.tcpClient:sendRequest(ClientMessages.logout())
-  -- we want to give the message a chance to actually be sent to the network before we free the socket
-  -- otherwise the socket might get cleared before that and the server will only disconnect the player after a delay (which means they still get shown in lobby for ~10s)
-  -- it would be more reliable to only actually reset the socket after a server confirmation so there is no delay (however small)
-  --  but then we'd have the same problem on the server (how does the server know the client received logout?) so it's actually not nearly as simple as this
-  love.timer.sleep(0.05)
-  self:disconnect(true)
-end
-
----@param voluntary boolean if the disconnect happened through player intent or not
-function NetClient:disconnect(voluntary)
-  self.room = nil
+  love.timer.sleep(0.005)
   self.tcpClient:resetNetwork()
   self:setState(states.OFFLINE)
-  resetLobbyData(self)
   GAME.localPlayer:disconnectSubscriber(GAME.netClient)
   -- this is because the online updates are currently subscribed to the player itself
   -- that should probably get changed because while mildly convenient it is unexpected for the interaction
   GAME.localPlayer:disconnectSubscriber(GAME.localPlayer)
-  self:emitSignal("clientDisconnected", voluntary)
 end
 
 function NetClient:update()
@@ -572,7 +549,11 @@ function NetClient:update()
   end
 
   if not self.tcpClient:processIncomingMessages() then
-    self:disconnect(false)
+    self:setState(states.OFFLINE)
+    self.room = nil
+    self.tcpClient:resetNetwork()
+    resetLobbyData(self)
+    self:emitSignal("disconnect")
     return
   end
 

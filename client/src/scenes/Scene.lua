@@ -4,7 +4,6 @@ local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
-local directsFocus = require("client.src.ui.FocusDirector")
 
 ---@alias sceneMusic ("none" | "main" | "title_screen" | "select_screen")
 
@@ -21,7 +20,6 @@ local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
     self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
-    directsFocus(self.uiRoot)
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main
@@ -59,22 +57,16 @@ function Scene:applyMusic()
   end
 end
 
+-- abstract functions to be implemented per scene
+
+-- Ran every frame while the scene is active
 function Scene:update(dt)
-  self:updateSelf(dt)
-  self.uiRoot:update(dt)
+  error("every scene MUST implement an update function, even " .. self.name)
 end
 
+-- main draw
 function Scene:draw()
-  self:drawSelf()
-  self.uiRoot:draw()
-end
-
-function Scene:updateSelf(dt)
-  -- Optional implementation in subclasses
-end
-
-function Scene:drawSelf()
-  -- Optional implementation in subclasses
+  error("every scene MUST implement a draw function, even " .. self.name)
 end
 
 function Scene:refreshLocalization()

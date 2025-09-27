@@ -30,7 +30,7 @@ function ModManagement:load()
   )
 
   self.headerLabel = ui.Label({
-    text = "",
+    text = "placeholder",
     hAlign = "center",
     fontSize = 16,
   })
@@ -217,12 +217,12 @@ function ModManagement:loadGridHeader()
     vAlign = "top",
     y = headerY,
   })
-  headLine:createElementAt(1, 1, 1, 1, "icon", ui.Label({text = "mod_manage_icon", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(2, 1, 3, 1, "name", ui.Label({text = "mod_manage_name", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(3*columnWidth - 1, 1, columnWidth, 1, "music", ui.Label({text = "mod_manage_music", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(4*columnWidth - 1, 1, columnWidth, 1, "subMods", ui.Label({text = "mod_manage_submods", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(1, 1, 1, 1, "icon", ui.Label({text = "Icon", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(2, 1, 3, 1, "name", ui.Label({text = "Name", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(3*columnWidth - 1, 1, columnWidth, 1, "music", ui.Label({text = "Music", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(4*columnWidth - 1, 1, columnWidth, 1, "subMods", ui.Label({text = "Sub mods", hAlign = "center", vAlign = "center"}))
   --headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "visible", ui.Label({text = "Visible", hAlign = "center", vAlign = "center"}))
-  headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "enabled", ui.Label({text = "mod_manage_enabled", hAlign = "center", vAlign = "center"}))
+  headLine:createElementAt(5*columnWidth - 1, 1, columnWidth, 1, "enabled", ui.Label({text = "Enabled", hAlign = "center", vAlign = "center"}))
 
   return headLine
 end

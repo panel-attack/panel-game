@@ -1,6 +1,7 @@
 local inputManager = require("client.src.inputManager")
 local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
+local PuzzleSet = require("client.src.PuzzleSet")
 
 -- the save.lua file contains the read/write functions
 
@@ -66,6 +67,38 @@ function save.read_user_id_file(serverIP)
     end
   )
   return userID
+end
+
+-- writes the stock puzzles
+function save.write_puzzles()
+  love.filesystem.createDirectory("puzzles")
+  pcall(
+    function()
+      FileUtils.recursiveCopy("client/assets/default_data/puzzles", "puzzles")
+    end
+  )
+end
+
+-- reads the selected puzzle file
+function save.read_puzzles(path)
+  pcall(
+    function()
+      local puzzleFiles = FileUtils.getFilteredDirectoryItems(path) or {}
+      local count = 0
+      logger.debug("loading custom puzzles...")
+      for _, filename in pairs(puzzleFiles) do
+        logger.trace(filename)
+        if love.filesystem.getInfo(path .. "/" .. filename) and filename ~= "README.txt" then
+          local puzzleSets = PuzzleSet.loadFromFile(path .. "/" .. filename)
+          for _, puzzleSet in ipairs(puzzleSets) do
+            GAME.puzzleSets[puzzleSet.setName] = puzzleSet
+            count = count + 1
+          end
+        end
+      end
+      logger.debug("loaded " .. count .. " puzzle sets")
+    end
+  )
 end
 
 -- I think this is unnecessary as we use the path with love.filesystem.read which assumes / as the separator

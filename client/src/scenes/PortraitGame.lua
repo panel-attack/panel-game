@@ -21,8 +21,8 @@ local function getTimer(match)
     frames = stack.engine.game_stopwatch
   end
 
-  if match.engine.timeLimit then
-    frames = (match.engine.timeLimit * 60) - frames
+  if match.timeLimit then
+    frames = (match.timeLimit * 60) - frames
     if frames < 0 then
       frames = 0
     end
@@ -80,6 +80,12 @@ end
 function PortraitGame:drawMultibar(stack)
   local stop_time = stack.engine.stop_time
   local shake_time = stack.engine.shake_time
+
+  -- before the first move, display the stop time from the puzzle, not the stack
+  if stack.engine.puzzle and stack.engine.puzzle.puzzleType == "clear" and stack.engine.puzzle.moves == stack.engine.puzzle.remaining_moves then
+    stop_time = stack.engine.puzzle.stop_time
+    shake_time = stack.engine.puzzle.shake_time
+  end
 
   framePos = framePos or themes[config.theme].healthbar_frame_Pos
   barPos = barPos or themes[config.theme].multibar_Pos
@@ -206,10 +212,12 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 5
       -- force center it horizontally
-      local frameX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2)
+      stack.frameOriginX = (GAME.globalCanvas:getWidth() / 2 - stack:canvasWidth() / 2) / stack.gfxScale
       -- and anchor at the bottom
-      local frameY = (GAME.globalCanvas:getHeight() - stack:canvasHeight())
-      stack:moveToPosition(frameX, frameY)
+      stack.frameOriginY = (GAME.globalCanvas:getHeight() - stack:canvasHeight()) / stack.gfxScale
+      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
+      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
+      stack.origin_x = stack.frameOriginX / stack.gfxScale
 
       -- create a raise button that interacts with the touch controller
       local raiseButton = ui.TextButton({label = ui.Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
@@ -231,9 +239,11 @@ function PortraitGame:flipToPortrait()
       local stack = player.stack
       stack.gfxScale = 1
       stack.canvas = true
-      local frameX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
-      local frameY = 10
-      stack:moveToPosition(frameX, frameY)
+      stack.frameOriginX = (GAME.globalCanvas:getWidth() - stack:canvasWidth()) - 12
+      stack.frameOriginY = 10
+      stack.panelOriginX = stack.frameOriginX + stack.panelOriginXOffset
+      stack.panelOriginY = stack.frameOriginY + stack.panelOriginYOffset
+      stack.origin_x = stack.frameOriginX / stack.gfxScale
     end
   end
 end

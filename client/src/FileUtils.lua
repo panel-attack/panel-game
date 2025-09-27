@@ -1,7 +1,7 @@
 local logger = require("common.lib.logger")
+local Replay = require("common.data.Replay")
 local tableUtils = require("common.lib.tableUtils")
 local system = require("client.src.system")
-local json = require("common.lib.dkjson")
 
 local PREFIX_OF_IGNORED_DIRECTORIES = "__"
 
@@ -28,24 +28,6 @@ function fileUtils.getFilteredDirectoryItems(path, fileType)
       if not fileType or love.filesystem.getInfo(path .. "/" .. file, fileType) then
         results[#results+1] = file
       end
-    end
-  end
-
-  return results
-end
-
--- recursively goes down all folders and returns all non folder files as a tuple of directory and filename
----@param path string
----@return {directory: string, filename: string}[]
-function fileUtils.getFilteredFilesRecursive(path)
-  local results = {}
-
-  for _, filename in ipairs(fileUtils.getFilteredDirectoryItems(path, "file")) do
-    results[#results+1] = {directory=path, filename=filename}
-  end
-  for _, subDirectory in ipairs(fileUtils.getFilteredDirectoryItems(path, "directory")) do
-    for _, record in ipairs(fileUtils.getFilteredFilesRecursive(path .. "/" .. subDirectory)) do
-      results[#results+1] = {directory=record.directory, filename=record.filename}
     end
   end
 
@@ -257,12 +239,14 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   love.filesystem.write(filePath .. "." .. format, data)
 end
 
----@param replay ReplayV3
+---@param replay Replay
 function fileUtils.saveReplay(replay)
   local path = replay:generatePath("/")
   local filename = replay:generateFileName()
-  GAME.lastReplayPath = path
-  fileUtils.writeJson(path, filename .. ".json", replay, replay.keyOrder)
+  -- TODO: This is for legacy support of the replay browser only;
+  -- as Replay is a common.data object, client should not use it to write client specific fields
+  Replay.lastPath = path
+  fileUtils.writeJson(path, filename .. ".json", replay)
 end
 
 ---@param files string[]
@@ -334,116 +318,14 @@ function fileUtils.write(path, filename, data)
   end
 end
 
--- Custom JSON prettifier that provides enhanced formatting beyond DKJson's standard indent option
--- Key differences from DKJson's built-in indent:
--- 1. Always adds newlines after opening braces/brackets (DKJson may keep simple objects on one line)
--- 2. Special handling for arrays after colons - places arrays on new indented lines
--- 3. Custom whitespace management - strips original spacing and applies consistent 2-space indentation
--- 4. More aggressive line breaking for better readability of complex nested structures
--- 5. Handles colon spacing differently - uses ': ' for values but ':\n' + indent for arrays
--- This is used when encodeArgs.pretty and encodeArgs.indent are both true to provide
--- more readable output than DKJson's standard formatting
----@param jsonString string The compact JSON string (typically from json.encode) to format
----@return string The formatted JSON string with enhanced indentation and line breaks
-local function prettifyJson(jsonString)
-  local result = {}
-  local i = 1
-  local len = #jsonString
-  local inString = false
-  local escaped = false
-  local indentLevel = 0
-  
-  -- Helper function to generate indentation string
-  local function getIndentation()
-    return string.rep("  ", indentLevel)
-  end
-  
-  while i <= len do
-    local char = jsonString:sub(i, i)
-    
-    if escaped then
-      escaped = false
-    elseif char == '\\' and inString then
-      escaped = true
-    elseif char == '"' then
-      inString = not inString
-    elseif not inString then
-      if char == '{' then
-        table.insert(result, char)
-        indentLevel = indentLevel + 1
-        -- Always add newline after opening brace
-        table.insert(result, '\n' .. getIndentation())
-        i = i + 1
-        goto continue
-      elseif char == '[' then
-        table.insert(result, char)
-        indentLevel = indentLevel + 1
-        -- Always add newline after opening bracket
-        table.insert(result, '\n' .. getIndentation())
-        i = i + 1
-        goto continue
-      elseif char == '}' or char == ']' then
-        indentLevel = indentLevel - 1
-        table.insert(result, '\n' .. getIndentation() .. char)
-        i = i + 1
-        goto continue
-      elseif char == ',' then
-        table.insert(result, char)
-        table.insert(result, '\n' .. getIndentation())
-        i = i + 1
-        goto continue
-      elseif char == ':' then
-        -- Look ahead to see if next non-whitespace is '['
-        local j = i + 1
-        local nextNonSpace = nil
-        while j <= len do
-          local nextChar = jsonString:sub(j, j)
-          if nextChar ~= ' ' and nextChar ~= '\t' and nextChar ~= '\n' then
-            nextNonSpace = nextChar
-            break
-          end
-          j = j + 1
-        end
-        
-        if nextNonSpace == '[' then
-          -- For arrays, put colon, newline, then indentation
-          table.insert(result, ':\n' .. getIndentation())
-        else
-          -- For other values, just colon and space
-          table.insert(result, ': ')
-        end
-        i = i + 1
-        goto continue
-      elseif char == '\n' or char == '\t' or char == ' ' then
-        -- Skip whitespace from the original JSON since we manage our own formatting
-        i = i + 1
-        goto continue
-      end
-    end
-    
-    table.insert(result, char)
-    i = i + 1
-    ::continue::
-  end
-  
-  return table.concat(result)
-end
-
--- encodes the table into json and writes it to the filename at the given path
--- throws an error on failure so it should be assumed the write always succeeds
 ---@param path string
 ---@param filename string
 ---@param tab table
----@param encodeArgs ({indent: boolean, pretty: boolean, keyorder: string[], level: integer} | nil)
+---@param encodeArgs ({indent: boolean, keyorder: string[], level: integer} | nil)
 function fileUtils.writeJson(path, filename, tab, encodeArgs)
   local encoded = json.encode(tab, encodeArgs)
   ---@cast encoded string # json.encode always returns a string if the second argument does not contain the buffer field
-  if encodeArgs and encodeArgs.pretty and encodeArgs.indent then
-    encoded = prettifyJson(encoded)
-  end
   fileUtils.write(path, filename, encoded)
 end
-
-fileUtils.prettifyJson = prettifyJson
 
 return fileUtils
