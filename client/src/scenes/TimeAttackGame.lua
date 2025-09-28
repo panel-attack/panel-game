@@ -1,6 +1,6 @@
 local GameBase = require("client.src.scenes.GameBase")
 local class = require("common.lib.class")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 
 -- Scene for an time attack mode instance of the game
 local TimeAttackGame = class(

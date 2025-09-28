@@ -7,24 +7,8 @@ require("table.new")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 local Signal = require("common.lib.signal")
 
----@class Garbage
----@field width integer width of the garbage in columns, the minimum value is 1, the maximum value is the width of the receiving Stack
----@field height integer height of the garbage in rows, the minimum value is 1
----@field isMetal boolean if the garbage is shock/metal garbage - mutually exclusive with isChain = true
----@field isChain boolean if the piece of garbage is considered a chain <br>
---- for attack pattern garbage this flag may be true even if the garbage has none of the ChainGarbage fields
----@field frameEarned integer the clock of the origin of this piece of garbage when it is first created
----@field rowEarned integer the row the piece of garbage was earned at
----@field colEarned integer the column the piece of garbage was earned at
+---@class GarbageQueue : Signal
 
-
----@class ChainGarbage : Garbage
----@field finalized boolean? if the garbage has stopped growing
----@field finalizedClock integer? the time the chain ended at; relevant only for generating attack patterns
----@field links table<integer, {rowEarned: integer, colEarned: integer}>? all individual chain links by clock with the position they were earned at
----@field linkTimes integer[]? array of the clock times the chain links were achieved at (iterate and access links with the value)
----@field rowEarned nil chains track the position for each link in the links table
----@field colEarned nil chains track the position for each link in the links table
 
 -- +1 to compensate for a compensation someone made
 -- the original thought was probably that the attack animation should only start on the frame AFTER the garbage gets queued
@@ -32,8 +16,6 @@ local Signal = require("common.lib.signal")
 -- now we don't do this anymore and the draw code has to be wary of that on his own so that the engine numbers are consistent at least
 local STAGING_DURATION = GARBAGE_TRANSIT_TIME + GARBAGE_TELEGRAPH_TIME + 1
 
----@param a ChainGarbage
----@param b ChainGarbage
 local function orderChainGarbage(a, b)
   if a.finalized == b.finalized then
     return a.frameEarned > b.frameEarned
@@ -44,8 +26,6 @@ end
 
 -- specifies order in the garbage queue if two elements are both combos
 -- higher priority garbage is at the end so we can pop it without having to shift indexes
----@param a Garbage
----@param b Garbage
 local function orderComboGarbage(a, b)
   -- both are combos
   if a.width ~= b.width then
@@ -66,8 +46,6 @@ end
 --  finalized (optional)
 -- orders garbage so that priority increases with index
 -- higher priority garbage is at the end so we can pop it without having to shift indexes
----@param garbageQueue GarbageQueue
----@param treatMetalAsCombo boolean?
 local function orderGarbage(garbageQueue, treatMetalAsCombo)
   table.sort(garbageQueue, function(a, b)
     if a.isChain == b.isChain then
@@ -101,32 +79,30 @@ local function orderGarbage(garbageQueue, treatMetalAsCombo)
 end
 
 -- Holds garbage in a queue and follows a specific order for which types should be popped out first.
----@class GarbageQueue : Signal
----@operator call([boolean?, boolean?]): GarbageQueue
----@field stagedGarbage Garbage[] all garbage that is in the staging stage, garbage is reordered from lowest to highest priority with every new piece of garbage
----@field garbageInTransit table<integer, Garbage[]> holds all garbage that left staging phase in a non-continously integer indexed hash <br>
---- the clock time for delivery is used as the index, meaning it has a lot of gaps
----@field history Garbage[] references all garbage that was ever pushed to this queue in the order that it was pushed <br>
---- mainly exists for easier evaluation / testcases
----@field transitTimers Queue holds the clock times for which garbageInTransit has garbage in a continuously integer indexed ordered array
---- for easier access and order sensitive iteration <br>
---- all calls to Queue functions should be done via access to the class function: Queue.func(self.transitTimers, args) <br>
---- that is in order to avoid having to rollback copy the metatable along with the actual content
----@field currentChain ChainGarbage? the chain garbage that is currently being grown
----@field illegalStuffIsAllowed boolean? illegal stuff means that chains may be queued as combos instead
----@field treatMetalAsCombo boolean?
----@field rollbackBuffer RollbackBuffer
+---@class GarbageQueue
 ---@overload fun(allowIllegalStuff: boolean?, treatMetalAsCombo: boolean?): GarbageQueue
 GarbageQueue = class(
----@param self GarbageQueue
----@param allowIllegalStuff boolean?
----@param treatMetalAsCombo boolean?
+---@type self GarbageQueue
 function(self, allowIllegalStuff, treatMetalAsCombo)
+  ---@class GarbageQueue
+  self = self
+  -- holds all garbage in the staging phase in a continously integer indexed array
+  -- garbage is reordered from lowest to highest priority every frame
   self.stagedGarbage = {}
+  -- holds all garbage that left staging phase in a non-continously integer indexed hash
+  -- the clock time for delivery is used as the index, meaning it has a lot of gaps
   self.garbageInTransit = {}
+  -- the garbage history contains references to all garbage that got pushed into this queue
+  -- in the order it got pushed
+  -- only exists for easier evaluation / testcases
   self.history = {}
+  -- holds the clock times for which garbageInTransit has garbage in a continuously integer indexed ordered array
+  -- for easier access and order sensitive iteration
+  -- all calls to Queue functions should be done via access to the class function: Queue.func(self.transitTimers, args)
+  -- that is in order to avoid having to rollback copy the metatable along with the actual content
   self.transitTimers = Queue()
   self.currentChain = nil
+  -- illegal stuff means that chains may be queued as combos instead
   self.illegalStuffIsAllowed = allowIllegalStuff
   self.treatMetalAsCombo = treatMetalAsCombo
 
@@ -140,8 +116,7 @@ function(self, allowIllegalStuff, treatMetalAsCombo)
   self:createSignal("chainEnded")
 end)
 
----@param frame integer
-function GarbageQueue:saveForRollback(frame)
+function GarbageQueue:rollbackCopy(frame)
   local copy = self.rollbackBuffer:getOldest()
   if copy then
     table.clear(copy.stagedGarbage)
@@ -202,7 +177,6 @@ function GarbageQueue:saveForRollback(frame)
   self.rollbackBuffer:saveCopy(frame, copy)
 end
 
----@param frame integer
 function GarbageQueue:rollbackToFrame(frame)
   assert(self.rollbackBuffer, "Attempted to rollback garbage queue to frame " .. frame .. " but no rollback buffer has been kept")
 
@@ -228,7 +202,6 @@ function GarbageQueue:rollbackToFrame(frame)
   end
 end
 
----@param frame integer
 function GarbageQueue:rewindToFrame(frame)
   assert(self.rollbackBuffer, "Attempted to rewind garbage queue to frame " .. frame .. " but no rollback buffer has been kept")
 
@@ -245,12 +218,9 @@ end
 
 -- corrects garbage pushed as combo to be flagged as a finalized chain if it is higher than 1 row
 -- and the garbage queue is configured to do so
----@param garbageQueue GarbageQueue
----@param garbage Garbage
 local function correctChainingFlag(garbageQueue, garbage)
   if garbage.height > 1 and garbageQueue.illegalStuffIsAllowed then
     -- even though it's combo garbage, pretend it's a chain
-    ---@cast garbage ChainGarbage
     -- this has the notable advantage that multiple chains can be queued on the same frame
     -- which makes training mode files a little easier to automate
     garbage.isChain = true
@@ -258,9 +228,15 @@ local function correctChainingFlag(garbageQueue, garbage)
   end
 end
 
---   for regular chaining you're NOT supposed to use this function,
+-- garbage is expected to be a table with the values
+--  width
+--  height
+--  isMetal
+--  isChain
+--  frameEarned
+--  finalized (only if pushing chains)
+--   for regular chaining you're NOT supposed to use this function
 --   use GarbageQueue:addChainLink and GarbageQueue:finalizeCurrentChain instead
----@param garbage Garbage
 function GarbageQueue:push(garbage)
   --logger.debug("pushing garbage " .. table_to_string(garbage))
   correctChainingFlag(self, garbage)
@@ -272,10 +248,16 @@ function GarbageQueue:push(garbage)
   --logger.debug(self:toString())
 end
 
--- accepts multiple pieces of garbage in an array <br>
---   for regular chaining you're NOT supposed to use this function,
+-- accepts multiple pieces of garbage in an array
+-- garbage is expected to be a table with the values
+--  width
+--  height
+--  isMetal
+--  isChain
+--  frameEarned
+--  finalized (only if pushing chains)
+--   for regular chaining you're NOT supposed to use this function
 --   use GarbageQueue:addChainLink and GarbageQueue:finalizeCurrentChain instead
----@param garbageArray Garbage[]?
 function GarbageQueue:pushTable(garbageArray)
   --logger.debug("pushing garbage table with " .. #garbageArray .. " entries")
   if garbageArray then
@@ -285,12 +267,10 @@ function GarbageQueue:pushTable(garbageArray)
   end
 end
 
----@return Garbage
 function GarbageQueue:peek()
   return self.stagedGarbage[#self.stagedGarbage]
 end
 
----@return Garbage
 function GarbageQueue:pop()
   -- default value for table.remove is the length, so the last index
   local garbage = table.remove(self.stagedGarbage)
@@ -299,20 +279,13 @@ function GarbageQueue:pop()
   return garbage
 end
 
----@return integer
 function GarbageQueue:getOldestFinishedTransitTime()
   return Queue.peek(self.transitTimers)
 end
 
----@param clock integer
 function GarbageQueue:popFinishedTransitsAt(clock)
   if Queue.peek(self.transitTimers) == clock then
-    -- regular garbage queues can only pop garbage for the exact clock time desired
     Queue.pop(self.transitTimers)
-    return self.garbageInTransit[clock]
-  elseif self.illegalStuffIsAllowed and Queue.peek(self.transitTimers) < clock then
-    -- but when illegal stuff is allowed (attack engines) they can also pop garbage that was supposed to be popped earlier
-    clock = Queue.pop(self.transitTimers)
     return self.garbageInTransit[clock]
   end
 end
@@ -320,7 +293,6 @@ end
 -- traverses the garbage queue back to front (which is order of priority, high to low)
 -- returning all sequential garbage that has not been changed within the staging duration
 -- stops the traversal at the first piece of garbage that has not yet stayed the full staging duration
----@param clock integer
 function GarbageQueue:processStagedGarbageForClock(clock)
   -- we don't want to create a table until it is confirmed that garbage is being popped
   -- otherwise we get a lot of unnecessary table garbage
@@ -328,7 +300,6 @@ function GarbageQueue:processStagedGarbageForClock(clock)
   for i = #self.stagedGarbage, 1, -1 do
     local garbage = self.stagedGarbage[i]
     if garbage.isChain then
-      ---@cast garbage ChainGarbage
       if not garbage.finalized or garbage.frameEarned + STAGING_DURATION > clock then
         break
       else
@@ -356,7 +327,6 @@ function GarbageQueue:processStagedGarbageForClock(clock)
   end
 end
 
----@return string
 function GarbageQueue:toString()
   local garbageQueueString = "Garbage Queue Content\n Staged Garbage" 
   local jsonEncodedGarbage = tableUtils.map(self.stagedGarbage, function(garbage) return json.encode(garbage) end)
@@ -368,16 +338,12 @@ function GarbageQueue:toString()
   return garbageQueueString
 end
 
----@return integer
 function GarbageQueue:len()
   return #self.stagedGarbage
 end
 
 -- This is used by the telegraph to increase the size of the chain garbage being built
 -- or add a 6-wide if there is not chain garbage yet in the queue
----@param frameEarned integer
----@param row integer
----@param column integer
 function GarbageQueue:addChainLink(frameEarned, row, column)
   if self.currentChain == nil then
     self.currentChain = {
@@ -412,8 +378,6 @@ end
 -- returns the index of the first garbage block matching the requested type and size, or where it would go if it was in the Garbage_Queue.
 -- note: the first index for our implemented Queue object is 0, not 1
 -- this will return 0 for the first index.
----@param garbage Garbage
----@return integer
 function GarbageQueue:getGarbageIndex(garbage)
   local garbageCount = #self.stagedGarbage
   for i = 1, #self.stagedGarbage do
@@ -428,7 +392,6 @@ function GarbageQueue:getGarbageIndex(garbage)
   error("commence explosion")
 end
 
----@param clock integer
 function GarbageQueue:finalizeCurrentChain(clock)
   --logger.debug("Finalizing chain at " .. clock)
   self.currentChain.finalized = true

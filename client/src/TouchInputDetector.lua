@@ -3,14 +3,13 @@ local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local class = require("common.lib.class")
 
 -- An object that manages touches on the screen and translates them to swaps on a stack
----@class TouchInputDetector
 local TouchInputDetector =
   class(
   function(self, stack)
     self.stack = stack
     self.width = stack.engine.width
     self.height = stack.engine.height
-    self.touchInputController = stack.touchInputController
+    self.touchInputController = stack.engine.touchInputController
     -- whether the stack (panels) are touched.  Still true if touch is dragged off the stack, but not released yet.
     self.touchingStack = false
     --if any is {row = 0, col = 0}, this is the equivalent if the variable being nil and not refering to any panel on the stack

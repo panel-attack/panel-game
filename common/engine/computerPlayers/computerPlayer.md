@@ -38,4 +38,4 @@ One of the general goals for computer player implementations is configurability.
 | Swap  | 16 |
 | Raise | 32 |
 
-To the combined binary value, 1 needs to be added. This value is then converted into a single character value via the `KeyDataEncoding.base64encode` array, e.g. for swap + down, `16 + 4 + 1 = 21` -> `base64encode[21]`.
+To the combined binary value, 1 needs to be added. This value is then converted into a single character value via the `base64encode` array, e.g. for swap + down, `16 + 4 + 1 = 21` -> `base64encode[21]`.

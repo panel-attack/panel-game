@@ -1,201 +1,36 @@
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
-local GameModes = require("common.data.GameModes")
-local PuzzleSource = require("common.engine.PuzzleSource")
-local MatchRules = require("common.data.MatchRules")
-local Panel = require("common.engine.Panel")
-local system = require("client.src.system")
-
----@class GridCoordinate
----@field row integer
----@field column integer
-
----@alias PuzzleType ("moves" | "chain" | "clear")
-
----@class PuzzleArgs
----@field puzzleType PuzzleType
----@field stack string representation of the panel colors, the last character is the bottom right panel
----@field startTiming PuzzleStartTiming?
----@field cursorStartLeft GridCoordinate?
----@field moves integer? in how many swaps the puzzle has to be solved
----@field solution string? compressed input string for puzzle solution
----@field helpDescription string? optional help text explaining the puzzle pattern
-
----@class GarbagePuzzleArgs : PuzzleArgs
----@field stopTime integer?
----@field shakeTime integer?
----@field panelBuffer string?
----@field garbagePanelBuffer string?
 
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels
 ---@class Puzzle
----@field puzzleType PuzzleType
----@field startTiming PuzzleStartTiming
----@field stack string string representation of the panel colors
----@field cursorStartLeft GridCoordinate?
+---@field puzzleType ("moves" | "chain" | "clear")
+---@field doCountdown boolean
 ---@field moves integer
----@field stopTime integer?
----@field shakeTime integer?
----@field panelBuffer string
----@field garbageBuffer string
+---@field stack string string representation of the panel colors
 ---@field randomizeColors boolean
----@field UUID string
----@field solution string? compressed input string for puzzle solution
----@field helpDescription string? optional help text explaining the puzzle pattern
----@field puzzleEverBeaten boolean? dynamically added field indicating if this puzzle was ever completed
----@field trainingDate number? dynamically added field for spaced repetition training scheduling
----@overload fun(puzzleArgs: GarbagePuzzleArgs): Puzzle
-Puzzle = class(
----@param self Puzzle
----@param puzzleArgs GarbagePuzzleArgs
-  function(self, puzzleArgs)
-    self.puzzleType = puzzleArgs.puzzleType or "moves"
-    self.cursorStartLeft = puzzleArgs.cursorStartLeft
-    if puzzleArgs.startTiming then
-      self.startTiming = puzzleArgs.startTiming
-    else
-      if self.puzzleType == "clear" or self.puzzleType == "chain" then
-        if self.cursorStartLeft then
-          self.startTiming = Puzzle.START_TIMINGS.firstInput
-        else
-          self.startTiming = Puzzle.START_TIMINGS.firstSwap
-        end
-      else
-        self.startTiming = Puzzle.START_TIMINGS.immediately
-      end
-    end
-    self.stack = string.gsub(puzzleArgs.stack, "%s+", "") -- Remove whitespace so files can be easier to read
-    self.moves = puzzleArgs.moves or 0
-
-    self.panelBuffer = puzzleArgs.panelBuffer
-    self.garbageBuffer = puzzleArgs.garbagePanelBuffer
-    self.stopTime = puzzleArgs.stopTime
-    self.shakeTime = puzzleArgs.shakeTime
-    self.solution = puzzleArgs.solution
-    self.helpDescription = puzzleArgs.helpDescription
-
-    self.UUID = Puzzle.getV2UUID(self)
+---@field stop_time integer
+---@field shake_time integer
+Puzzle =
+  class(
+  function(self, puzzleType, doCountdown, moves, stack, stop_time, shake_time)
+    self.puzzleType = puzzleType or "moves"
+    self.doCountdown = doCountdown
+    self.moves = moves or 0
+    self.stack = string.gsub(stack, "%s+", "") -- Remove whitespace so files can be easier to read
     self.randomizeColors = false
+    self.stop_time = stop_time or 0
+    self.shake_time = shake_time or 0
   end
 )
 
--- Helper function to handle Love2D version compatibility for hashing
----@param hashString string
----@return string
-local function hashAndEncode(hashString)
-  if system.meetsLoveVersionRequirement(12, 0) then
-    ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
-    local digest = love.data.hash("string", "sha256", hashString)
-    ---@diagnostic disable-next-line: return-type-mismatch
-    return love.data.encode("string", "hex", digest)
-  else
-    -- Love 11 compatibility
-    return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
-  end
+function Puzzle.getPuzzleTypes()
+  return { "moves", "chain", "clear" }
 end
 
----@param puzzle Puzzle
----@return string
-function Puzzle.getV1UUID(puzzle)
-  local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
-  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
-  return hashAndEncode(hashString)
+function Puzzle.getLegalCharacters()
+  return { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
 end
 
----@param puzzle Puzzle
----@return string
-function Puzzle.getV2UUIDOld(puzzle)
-  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
-  return hashAndEncode(hashString)
-end
-
----@param puzzle Puzzle
----@return string
-function Puzzle.getV2UUID(puzzle)
-  local cursorString = ""
-  if puzzle.cursorStartLeft then
-    cursorString = tostring(puzzle.cursorStartLeft.row) .. "," .. tostring(puzzle.cursorStartLeft.column)
-  end
-  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime) .. cursorString .. tostring(puzzle.panelBuffer) .. tostring(puzzle.garbageBuffer)
-  return hashAndEncode(hashString)
-end
-
----@alias PuzzleStartTiming "countdown" | "immediately" | "firstInput" | "firstSwap"
-
-Puzzle.START_TIMINGS = { countdown = "countdown", immediately = "immediately", firstInput = "firstInput", firstSwap = "firstSwap" }
-Puzzle.PUZZLE_TYPES = { "moves", "chain", "clear" }
-Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
-
-Puzzle.PUZZLE_PROPERTY = {
-  TYPE = "Puzzle Type",
-  START_TIMING = "StartTiming",
-  MOVES = "Moves",
-  STOP = "Stop",
-  SHAKE = "Shake",
-  STACK = "Stack",
-  PANEL_BUFFER = "PanelBuffer",
-  GARBAGE_PANEL_BUFFER = "GarbagePanelBuffer",
-  CURSOR_START_LEFT = "CursorStartLeft",
-  SOLUTION = "Solution",
-  HELP_DESCRIPTION = "Help Description"
-}
-
-
-Puzzle.CURSOR_PROPERTY = {
-  COLUMN = "Column",
-  ROW = "Row"
-}
-
-
-local validPuzzleProperties = {}
-for _, property in pairs(Puzzle.PUZZLE_PROPERTY) do
-  validPuzzleProperties[property] = true
-end
-
-local validCursorProperties = {}
-for _, property in pairs(Puzzle.CURSOR_PROPERTY) do
-  validCursorProperties[property] = true
-end
-
-
-function Puzzle.isValidPuzzleProperty(property)
-  return validPuzzleProperties[property] == true
-end
-
-function Puzzle.isValidCursorProperty(property)
-  return validCursorProperties[property] == true
-end
-
--- Helper functions for consistent key ordering
----@return string[]
-function Puzzle.getPuzzleKeyOrder()
-  return {
-    Puzzle.PUZZLE_PROPERTY.TYPE,
-    Puzzle.PUZZLE_PROPERTY.START_TIMING,
-    Puzzle.PUZZLE_PROPERTY.MOVES,
-    Puzzle.PUZZLE_PROPERTY.STOP,
-    Puzzle.PUZZLE_PROPERTY.SHAKE,
-    Puzzle.PUZZLE_PROPERTY.STACK,
-    Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER,
-    Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER,
-    Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT,
-    Puzzle.PUZZLE_PROPERTY.SOLUTION,
-    Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION
-  }
-end
-
-
----@return string[]
-function Puzzle.getCursorKeyOrder()
-  return {
-    Puzzle.CURSOR_PROPERTY.COLUMN,
-    Puzzle.CURSOR_PROPERTY.ROW
-  }
-end
-
----@param width integer
----@param height integer
----@return string puzzleString
 function Puzzle:fillMissingPanelsInPuzzleString(width, height)
   local puzzleString = self.stack
   local boardSizeInPanels = width * height
@@ -205,6 +40,10 @@ function Puzzle:fillMissingPanelsInPuzzleString(width, height)
     if fillUpLength > 0 then
       puzzleString = string.rep("0", width - fillUpLength) .. puzzleString
     end
+    -- then fill up with single line garbage to ensure topout
+    while string.len(puzzleString) < boardSizeInPanels do
+      puzzleString = "[" .. string.rep("=", width - 2) .. "]" .. puzzleString
+    end
   else
     puzzleString = string.rep("0", boardSizeInPanels - string.len(puzzleString)) .. puzzleString
   end
@@ -212,33 +51,49 @@ function Puzzle:fillMissingPanelsInPuzzleString(width, height)
   return puzzleString
 end
 
----@param puzzleString string
----@return string puzzleString, string panelBuffer, string garbageBuffer
-function Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbageBuffer)
+function Puzzle.randomizeColorsInPuzzleString(puzzleString)
   local colorArray = Panel.regularColorsArray()
   if puzzleString:find("7") then
     colorArray = Panel.extendedRegularColorsArray()
   end
   local newColorOrder = {}
 
-  for _ = 1, #colorArray, 1 do
+  for i = 1, #colorArray, 1 do
     newColorOrder[tostring(tableUtils.length(newColorOrder)+1)] = tostring(table.remove(colorArray, love.math.random(1, #colorArray)))
   end
-
+  
   puzzleString = puzzleString:gsub("%d", newColorOrder)
-  panelBuffer = panelBuffer and panelBuffer:gsub("%d", newColorOrder) or ""
-  garbageBuffer = garbageBuffer and garbageBuffer:gsub("%d", newColorOrder) or ""
 
-  return puzzleString, panelBuffer, garbageBuffer
+  return puzzleString
 end
 
----@return boolean isValid
----@return string problems
-function Puzzle:validate()
+function Puzzle:horizontallyFlipPuzzleString()
+  local rowWidth = 6
+  local height = 12
+  puzzleString = self:fillMissingPanelsInPuzzleString(rowWidth, height)
+  local result = ""
+  local unreverseMap = {}
+  unreverseMap["{"] = "}"
+  unreverseMap["}"] = "{"
+  unreverseMap["["] = "]"
+  unreverseMap["]"] = "["
+  for i = 1, puzzleString:len(), rowWidth do
+    local rowString = string.sub(puzzleString, i, i+rowWidth-1)
+    if string.find(rowString, "%d") then
+      rowString = string.reverse(rowString)
+      rowString = string.gsub(rowString, "[%{%}%[%]]", unreverseMap)
+    end
+    result = result .. rowString
+  end
+
+  return result
+end
+
+function Puzzle.validate(self)
   local errMessage = ""
 
-  if type(self.startTiming) ~= "string" or Puzzle.START_TIMINGS[self.startTiming] == nil then
-    errMessage = "\nInvalid value for property 'startTiming'"
+  if type(self.doCountdown) ~= "boolean" then
+    errMessage = "\nInvalid value for property 'doCountdown'"
   end
 
   local stackLength = string.len(self.stack)
@@ -261,7 +116,7 @@ function Puzzle:validate()
   local pendingGarbageStartIndex = 0
   for i = 1, #self.stack do
     local char = string.sub(self.stack, i, i)
-    if not tableUtils.contains(Puzzle.LEGAL_CHARACTERS, char)
+    if not tableUtils.contains(Puzzle.getLegalCharacters(), char)
       and not tableUtils.contains(illegalCharacters, char) then
       table.insert(illegalCharacters, char)
     end
@@ -300,9 +155,9 @@ function Puzzle:validate()
     errMessage = errMessage .. "\nPuzzlestring contains invalid characters: " .. table.concat(illegalCharacters, ", ")
   end
 
-  if not tableUtils.contains(Puzzle.PUZZLE_TYPES, self.puzzleType) then
+  if not tableUtils.contains(Puzzle.getPuzzleTypes(), self.puzzleType) then
     errMessage = errMessage ..
-    "\nInvalid puzzle type detected, available puzzle types are: " .. table.concat(Puzzle.PUZZLE_TYPES, ", ")
+    "\nInvalid puzzle type detected, available puzzle types are: " .. table.concat(Puzzle.getPuzzleTypes(), ", ")
   end
 
   if string.lower(self.puzzleType) == "moves" and (not tonumber(self.moves) or tonumber(self.moves) < 1 ) then
@@ -310,44 +165,9 @@ function Puzzle:validate()
     "\nInvalid number of moves detected, expecting a number greater than zero but instead got " .. self.moves
   end
 
-  if self.cursorStartLeft then
-    if not (self.cursorStartLeft.row >= 1 and self.cursorStartLeft.row <= 12) or not (self.cursorStartLeft.column >= 1 and self.cursorStartLeft.column <= 5) then
-      errMessage = errMessage ..
-      "\nInvalid cursor start position, expected row to be between 1 and 12 and column to be between 1 and 5"
-    end
-  end
-
   return errMessage == "", errMessage
 end
 
--- Helper function to convert a single puzzle to save data format
----@return table
-function Puzzle:getSaveData()
-  local puzzleData = {
-    [Puzzle.PUZZLE_PROPERTY.TYPE] = self.puzzleType,
-    [Puzzle.PUZZLE_PROPERTY.START_TIMING] = self.startTiming,
-    [Puzzle.PUZZLE_PROPERTY.MOVES] = self.moves,
-    [Puzzle.PUZZLE_PROPERTY.STOP] = self.stopTime,
-    [Puzzle.PUZZLE_PROPERTY.SHAKE] = self.shakeTime,
-    [Puzzle.PUZZLE_PROPERTY.STACK] = self.stack,
-    [Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER] = self.panelBuffer,
-    [Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] = self.garbageBuffer,
-    [Puzzle.PUZZLE_PROPERTY.SOLUTION] = self.solution,
-    [Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION] = self.helpDescription
-  }
-
-  if self.cursorStartLeft then
-    puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] = {
-      [Puzzle.CURSOR_PROPERTY.COLUMN] = self.cursorStartLeft.column,
-      [Puzzle.CURSOR_PROPERTY.ROW] = self.cursorStartLeft.row
-    }
-  end
-
-  return puzzleData
-end
-
----@param panels Panel[][]
----@return string puzzleString
 function Puzzle.toPuzzleString(panels)
   local function getPanelColor(panel)
     if panel.isGarbage then
@@ -391,88 +211,6 @@ function Puzzle.toPuzzleString(panels)
   end
 
   return table.concat(puzzleMatrix)
-end
-
----@return GameMode
-function Puzzle:toGameMode()
-  local mode = GameModes.getPreset("ONE_PLAYER_PUZZLE")
-  if not mode.matchRules.stackSetupModifications then
-    mode.matchRules.stackSetupModifications = { behaviours = {}}
-  elseif not mode.matchRules.stackSetupModifications.behaviours then
-    mode.matchRules.stackSetupModifications.behaviours = {}
-  end
-
-  if self.moves > 0 then
-    mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.SWAPS] = self.moves
-  end
-
-  if self.puzzleType == "clear" then
-    mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
-    mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
-    mode.matchRules.stackSetupModifications.stopTime = self.stopTime
-    mode.matchRules.stackSetupModifications.shakeTime = self.shakeTime
-  else
-    mode.matchRules.stackSetupModifications.behaviours = {
-      allowManualRaise = false,
-      passiveRaise = false,
-    }
-    if self.puzzleType == "chain" then
-      mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.CHAIN] = false
-      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
-    elseif self.puzzleType == "moves" then
-      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
-    end
-  end
-
-  mode.matchRules.stackSetupModifications.behaviours.swapStallingMode = 0
-  if self.startTiming == Puzzle.START_TIMINGS.countdown then
-    mode.matchRules.doCountdown = true
-    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "countdownEnded"
-  elseif self.startTiming == Puzzle.START_TIMINGS.firstInput then
-    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "firstInput"
-  elseif self.startTiming == Puzzle.START_TIMINGS.firstSwap then
-    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "firstSwap"
-  end
-
-  if self.cursorStartLeft then
-    mode.matchRules.stackSetupModifications.startingRow = self.cursorStartLeft.row
-    mode.matchRules.stackSetupModifications.startingCol = self.cursorStartLeft.column
-  end
-
-  return mode
-end
-
----@param randomize boolean?
----@return PuzzleSource
-function Puzzle:toPanelSource(randomize)
-  local puzzleString = self:fillMissingPanelsInPuzzleString(6, 12)
-  local panelBuffer = self.panelBuffer
-  local garbageBuffer = self.garbageBuffer
-
-  if randomize then
-    puzzleString, panelBuffer, garbageBuffer = Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbageBuffer)
-  end
-
-  return PuzzleSource(puzzleString, panelBuffer, garbageBuffer)
-end
-
----@param puzzleString string
----@param originalPuzzle Puzzle
----@return Puzzle
-function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
-  return Puzzle({
-    puzzleType = originalPuzzle.puzzleType,
-    stack = puzzleString,
-    moves = originalPuzzle.moves,
-    startTiming = originalPuzzle.startTiming,
-    cursorStartLeft = originalPuzzle.cursorStartLeft,
-    stopTime = originalPuzzle.stopTime,
-    shakeTime = originalPuzzle.shakeTime,
-    panelBuffer = originalPuzzle.panelBuffer,
-    garbagePanelBuffer = originalPuzzle.garbageBuffer,
-    solution = originalPuzzle.solution,
-    helpDescription = originalPuzzle.helpDescription
-  })
 end
 
 return Puzzle

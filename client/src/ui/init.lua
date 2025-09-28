@@ -13,9 +13,6 @@ local ui = {
   FocusDirector = require(PATH .. ".FocusDirector"),
   Grid = require(PATH .. ".Grid"),
   GridCursor = require(PATH .. ".GridCursor"),
-  ---@see ImageButton
-  ---@type fun(options: ImageButtonOptions): ImageButton
-  ImageButton = require(PATH .. ".ImageButton"),
   ImageContainer = require(PATH .. ".ImageContainer"),
   InputField = require(PATH .. ".InputField"),
   ---@see Label
@@ -40,8 +37,6 @@ local ui = {
   ---@see Slider
   ---@type fun(options: SliderOptions): Slider
   Slider = require(PATH .. ".Slider"),
-  ---@source StackElement.lua
-  StackElement = require(PATH .. ".StackElement"),
   StackPanel = require(PATH .. ".StackPanel"),
   StageCarousel = require(PATH .. ".StageCarousel"),
   Stepper = require(PATH .. ".Stepper"),

@@ -166,11 +166,6 @@ Additionally it used ingame during the countdown.
 `random_stage`: Thumbnail for random stage selection. See readme_stages for the recommended size.
 `random_character`: Icon for random character selection. See readme_characters for the recommended size.
 
-#### Puzzle Menu Icons
-
-`hint`: Icon displayed on puzzle menu buttons when the puzzle has a solution/hint available. Overlaid on the right side of the button.
-`complete`: Icon displayed on puzzle menu buttons when the puzzle has been completed. Overlaid on the right side of the button, positioned to the left of the hint icon if both are present.
-
 #### Level display
 
 Level icons have to be provided inside its own `level` subdirectory.  

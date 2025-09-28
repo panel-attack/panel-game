@@ -1,10 +1,8 @@
 local ClientMatch = require("client.src.ClientMatch")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 local Player = require("client.src.Player")
 local consts = require("common.engine.consts")
-local GeneratorSource = require("common.engine.GeneratorSource")
 local logger = require("common.lib.logger")
-local LevelPresets = require("common.data.LevelPresets")
 
 local Theme = require("client.src.mods.Theme")
 
@@ -28,7 +26,6 @@ local function createEndlessClientMatch(playerCount, theme)
     local player = Player.getLocalPlayer()
     player.isLocal = false
     player:setLevel(10)
-    player:setLevelData(LevelPresets.getModern(10))
     player:setStyle(GameModes.Styles.MODERN)
     player.playerNumber = i
 
@@ -36,7 +33,7 @@ local function createEndlessClientMatch(playerCount, theme)
     players[#players+1] = player
   end
 
-  local clientMatch = ClientMatch.createFromGameMode(players, endless, GeneratorSource(math.random(1, 999999), true), false)
+  local clientMatch = ClientMatch(players, true, endless.stackInteraction, endless.winConditions, endless.gameOverConditions, false)
   clientMatch:start()
 
   if theme then
@@ -377,43 +374,3 @@ local function testShakeInterpolate()
 end
 
 test(testShakeInterpolate)
-
--- Test for positioning system values (frameOriginX, panelOriginX, origin_x)
--- These values were captured BEFORE the moveToPosition refactor to ensure no regression
-local function testCurrentStackPositioning()
-  local match = createEndlessClientMatch(2, defaultTheme)
-  
-  local stack1 = match.stacks[1]
-  local stack2 = match.stacks[2]
-  
-  -- Player 1 positioning values (renderIndex = 1) - ORIGINAL values before moveToPosition refactor
-  assert(stack1.frameOriginX == 76) 
-  assert(stack1.panelOriginX == 80) -- frameOriginX + panelOriginXOffset(4)
-  assert(stack1.origin_x == 80)     -- Original positioning calculation
-  
-  -- Player 2 positioning values (renderIndex = 2) - ORIGINAL values before moveToPosition refactor
-  -- Using math.floor to handle floating point precision
-  assert(math.floor(stack2.frameOriginX) == 246) -- Original: 246.66666666667
-  assert(math.floor(stack2.panelOriginX) == 250) -- Original: 250.66666666667  
-  assert(math.floor(stack2.origin_x) == 346)     -- Original: 346.66666666667
-end
-
-test(testCurrentStackPositioning)
-
--- Test for center positioning (puzzle mode)
-local function testCenterPositioning()
-  local match = createEndlessClientMatch(1, defaultTheme)
-  local stack = match.stacks[1]
-  
-  -- Position using center positioning method
-  stack:moveToCenterPosition()
-  
-  -- Assert expected center positioning values
-  assert(math.floor(stack.frameOriginX * 100) == 15933) -- 159.33333333333 * 100
-  assert(math.floor(stack.panelOriginX * 100) == 16333) -- 163.33333333333 * 100  
-  assert(math.floor(stack.origin_x * 100) == 16333)     -- 163.33333333333 * 100
-  assert(stack.renderIndex == 1)
-  assert(stack.mirror_x == 1)
-end
-
-test(testCenterPositioning)
