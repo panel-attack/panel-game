@@ -11,6 +11,7 @@ Please follow the following code guidelines when contributing:
 - Make sure the testLauncher successfully completes all tests
   - if sensible for your contribution, please consider adding a unit or integration test  
   depending on the topic we may not accept a PR without
+- Always add new localization entries at the bottom of localization.csv; localization fixes by users are difficult to apply if new entries appear in the middle
 - Follow the formatting guidelines below
 
 Additionally we ask that you avoid use of LuaJIT's ffi module. LuaJIT is disabled on Android, our weakest platform, making ffi extremely slow there.
