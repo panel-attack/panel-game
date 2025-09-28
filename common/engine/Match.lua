@@ -341,6 +341,11 @@ end
 -- and also uses slightly different data required only in a both-sides rollback scenario that would never occur for online rollback
 ---@param frame integer
 function Match:rewindToFrame(frame)
+  -- Bounds check: don't allow rewinding to negative frames
+  if frame < 0 then
+    return
+  end
+
   local failed = false
   for i, stack in ipairs(self.stacks) do
     if not stack:rewindToFrame(frame) then
