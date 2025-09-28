@@ -1,6 +1,7 @@
 local consts = require("common.engine.consts")
 local input = require("client.src.inputManager")
 local class = require("common.lib.class")
+local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.data.GameModes")
 local Scene = require("client.src.scenes.Scene")
@@ -73,10 +74,10 @@ function CharacterSelect:createPlayerIcon(player)
   })
 
    -- character image
-   selectedCharacterIcon.updateImage = function(image, characterId)
-    image:setImage(characters[characterId].images.icon)
+   selectedCharacterIcon.onCharacterChanged = function(selfElement, characterId)
+    selfElement:setImage(characters[characterId].images.icon)
   end
-  player:connectSignal("selectedCharacterIdChanged", selectedCharacterIcon, selectedCharacterIcon.updateImage)
+  player:connectSignal("selectedCharacterIdChanged", selectedCharacterIcon, selectedCharacterIcon.onCharacterChanged)
 
   playerIcon:addChild(selectedCharacterIcon)
 
@@ -90,10 +91,10 @@ function CharacterSelect:createPlayerIcon(player)
       y = -2
     })
 
-    levelIcon.updateImage = function(image, level)
-      image:setImage(themes[config.theme].images.IMG_levels[level])
+    levelIcon.onLevelChanged = function(selfElement, level)
+      selfElement:setImage(themes[config.theme].images.IMG_levels[level])
     end
-    player:connectSignal("levelChanged", levelIcon, levelIcon.updateImage)
+    player:connectSignal("levelChanged", levelIcon, levelIcon.onLevelChanged)
 
     playerIcon:addChild(levelIcon)
   end
@@ -141,15 +142,15 @@ function CharacterSelect:createPlayerIcon(player)
   })
   playerIcon:addChild(readyIcon)
 
-  loadIcon.update = function(self, loaded)
-    self:setVisibility(not loaded)
+  loadIcon.onLoadedChanged = function(selfElement, loaded)
+    selfElement:setVisibility(not loaded)
     readyIcon:setVisibility(loaded and player.settings.wantsReady)
   end
-  player:connectSignal("hasLoadedChanged", loadIcon, loadIcon.update)
-  readyIcon.update = function(self, wantsReady)
-    self:setVisibility(wantsReady and player.hasLoaded)
+  player:connectSignal("hasLoadedChanged", loadIcon, loadIcon.onLoadedChanged)
+  readyIcon.onReadyChanged = function(selfElement, wantsReady)
+    selfElement:setVisibility(wantsReady and player.hasLoaded)
   end
-  player:connectSignal("wantsReadyChanged", readyIcon, readyIcon.update)
+  player:connectSignal("wantsReadyChanged", readyIcon, readyIcon.onReadyChanged)
 
   return playerIcon
 end
@@ -432,10 +433,10 @@ function CharacterSelect:createPageIndicator(pagedUniGrid)
     vAlign = "top",
     translate = false
   })
-  pageCounterLabel.updatePage = function(self, grid, page)
-    self:setText(loc("page") .. " " .. page .. "/" .. #grid.pages)
+  pageCounterLabel.onPageChanged = function(selfElement, grid, page)
+    selfElement:setText(loc("page") .. " " .. page .. "/" .. #grid.pages)
   end
-  pagedUniGrid:connectSignal("pageTurned", pageCounterLabel, pageCounterLabel.updatePage)
+  pagedUniGrid:connectSignal("pageTurned", pageCounterLabel, pageCounterLabel.onPageChanged)
   return pageCounterLabel
 end
 
@@ -506,8 +507,13 @@ function CharacterSelect:createPanelCarousel(player, height)
     carousel:setColorCount(levelData.colors)
   end
 
+  local updatePanelSelection = function(carousel, panelId)
+    carousel:setPassengerById(panelId)
+  end
+
   -- to update the UI if code gets changed from the backend (e.g. network messages)
   player:connectSignal("levelDataChanged", panelCarousel, updateColor)
+  player:connectSignal("panelIdChanged", panelCarousel, updatePanelSelection)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
@@ -825,16 +831,16 @@ function CharacterSelect:createRankedStatusPanel()
   rankedStatus:addElement(rankedStatus.rankedLabel)
   rankedStatus:addElement(rankedStatus.commentLabel)
 
-  rankedStatus.update = function(self, ranked, comments)
+  rankedStatus.updateFromRankedStatusChanged = function(selfElement, ranked, comments)
     if ranked then
-      rankedStatus.rankedLabel:setText("ss_ranked")
+      selfElement.rankedLabel:setText("ss_ranked")
     else
-      rankedStatus.rankedLabel:setText("ss_casual")
+      selfElement.rankedLabel:setText("ss_casual")
     end
-    rankedStatus.commentLabel:setText(comments, nil, false)
+    selfElement.commentLabel:setText(comments, nil, false)
   end
 
-  self.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.update)
+  self.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.updateFromRankedStatusChanged)
 
   return rankedStatus
 end
