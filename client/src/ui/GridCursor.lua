@@ -57,14 +57,16 @@ function GridCursor:setTarget(grid, startPosition, activeArea)
   end
 end
 
-function GridCursor:updatePosition(x, y)
+function GridCursor:updatePosition(x, y, silent)
   local moved = (x ~= self.selectedGridPos.x or y ~= self.selectedGridPos.y)
   self.selectedGridPos.x = x
   self.selectedGridPos.y = y
-  if moved then
-    GAME.theme:playMoveSfx()
-  else
-    GAME.theme:playCancelSfx()
+  if not silent then
+    if moved then
+      GAME.theme:playMoveSfx()
+    else
+      GAME.theme:playCancelSfx()
+    end
   end
   self:onMove(moved)
 end
@@ -106,10 +108,10 @@ function GridCursor:move(direction)
     end
     if nextGridElement == selectedGridElement then
       -- this must be the only UiElement in this column, abort here
-      self:updatePosition(self.selectedGridPos.x, self.selectedGridPos.y)
+      self:updatePosition(self.selectedGridPos.x, self.selectedGridPos.y, false)
     else
       -- new UiElement was found!
-      self:updatePosition(newX, self.selectedGridPos.y)
+      self:updatePosition(newX, self.selectedGridPos.y, false)
     end
   else
     local newY = wrap(self.activeArea.y1, self.selectedGridPos.y + direction.y, self.activeArea.y2)
@@ -129,10 +131,10 @@ function GridCursor:move(direction)
     end
     if nextGridElement == selectedGridElement then
       -- this must be the only UiElement in this row, abort here
-      self:updatePosition(self.selectedGridPos.x, self.selectedGridPos.y)
+      self:updatePosition(self.selectedGridPos.x, self.selectedGridPos.y, false)
     else
       -- new UiElement was found!
-      self:updatePosition(self.selectedGridPos.x, newY)
+      self:updatePosition(self.selectedGridPos.x, newY, false)
     end
   end
 end
@@ -194,7 +196,6 @@ function GridCursor:receiveInputs(inputs, dt)
     elseif inputs.isDown.Swap1 or inputs.isDown.Start then
       local element = self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
       if element.onSelect then
-        GAME.theme:playValidationSfx()
         self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x):onSelect(self)
       else
         GAME.theme:playCancelSfx()
