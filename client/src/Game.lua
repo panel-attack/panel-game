@@ -1,5 +1,4 @@
-local Localization = require("client.src.localization")
-Localization:init()
+require("client.src.localization")
 require("common.lib.Queue")
 require("client.src.server_queue")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
@@ -15,13 +14,11 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local analytics = require("client.src.analytics")
 local input = require("client.src.inputManager")
-local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local save = require("client.src.save")
 local fileUtils = require("client.src.FileUtils")
-local Scores = require("client.src.scores")
 local handleShortcuts = require("client.src.Shortcuts")
 local Player = require("client.src.Player")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 local NetClient = require("client.src.network.NetClient")
 local StartUp = require("client.src.scenes.StartUp")
 local SoundController = require("client.src.music.SoundController")
@@ -29,7 +26,6 @@ require("client.src.BattleRoom")
 local prof = require("common.lib.zoneProfiler")
 local tableUtils = require("common.lib.tableUtils")
 local system = require("client.src.system")
-local ModController = require("client.src.mods.ModController")
 
 local RichPresence = require("client.lib.rich_presence.RichPresence")
 
@@ -41,7 +37,6 @@ local function newCanvasSnappedScale(self)
 end
 
 ---@class PanelAttack
----@field scores Scores
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
 ---@field globalCanvas love.Canvas
@@ -54,18 +49,16 @@ end
 ---@field automaticScales number[]
 ---@field config UserConfig
 ---@field puzzleSets table<string, PuzzleSet>
----@field lastReplayPath string?
----@field crashTrace string?
----@field theme Theme
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
-    self.scores = Scores.createFromScoreFile()
+    self.scores = require("client.src.scores")
     self.input = input
     self.match = nil -- Match - the current match going on or nil if inbetween games
     self.battleRoom = nil -- BattleRoom - the current room being used for battles
     self.focused = true -- if the window is focused
     self.backgroundImage = nil -- the background image for the game, should always be set to something with the proper dimensions
+    self.puzzleSets = {} -- all the puzzles loaded into the game
     self.netClient = NetClient()
     self.server_queue = ServerQueue()
     self.main_menu_screen_pos = {consts.CANVAS_WIDTH / 2 - 108 + 50, consts.CANVAS_HEIGHT / 2 - 111}
@@ -107,7 +100,9 @@ local Game = class(
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  PuzzleLibrary.cleanupDefaultPuzzles(consts.PUZZLES_SAVE_DIRECTORY)
+  GAME.puzzleSets = {}
+  save.write_puzzles()
+  save.read_puzzles("puzzles")
 
   -- move to constructor
   self.updater = GAME_UPDATER or nil
@@ -194,6 +189,15 @@ function Game:writeReleaseStreamDefinition()
             url = "https://panelattack.com/downloads/updates/beta",
             prefix = "panel-beta-"
           }
+        },
+        {
+          name = "engine-preview",
+          versioningType = "timestamp",
+          serverEndPoint = {
+            type = "filesystem",
+            url = "https://panelattack.com/downloads/updates/engine-preview",
+            prefix = "panel-"
+          }
         }
       },
       default = "stable"
@@ -218,9 +222,13 @@ end
 
 function Game:setupRoutine()
   -- loading various assets into the game
+  coroutine.yield("Loading localization...")
+  Localization:init()
   self:setLanguage(config.language_code)
 
   detectHardwareProblems()
+
+  fileUtils.copyFile("docs/puzzles.txt", "puzzles/README.txt")
 
   coroutine.yield(loc("ld_theme"))
   theme_init()
@@ -247,7 +255,6 @@ function Game:setupRoutine()
   self:writeReleaseStreamDefinition()
 
   self:initializeLocalPlayer()
-  ModController:loadModFor(characters[GAME.localPlayer.settings.characterId], GAME.localPlayer, true)
 end
 
 -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate

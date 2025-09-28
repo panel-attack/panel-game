@@ -27,7 +27,6 @@ local ModController = require("client.src.mods.ModController")
 ---@field ready boolean if the participant is ready to start the game (wants to and actually is)
 ---@field human boolean if the participant is a human
 ---@field isLocal boolean if the participant is controlled by a local player
----@field stack ClientStack?
 
 -- a match participant represents the minimum spec for a what constitutes a "player" in a battleRoom / match
 ---@class MatchParticipant : Signal
@@ -93,6 +92,11 @@ function MatchParticipant:setExpectedWinrate(expectedWinrate)
   self:emitSignal("expectedWinrateChanged", expectedWinrate)
 end
 
+-- returns a table with some key properties on functions to be run as part of a match
+function MatchParticipant:createStackFromSettings(match, which)
+  error("MatchParticipant needs to implement function createStackFromSettings")
+end
+
 function MatchParticipant:setStage(stageId)
   if stageId ~= self.settings.selectedStageId then
     self.settings.selectedStageId = StageLoader.resolveStageSelection(stageId)
@@ -145,20 +149,6 @@ function MatchParticipant:refreshCharacter()
   end
 end
 
-function MatchParticipant:setPanels(panelId)
-  if panelId ~= self.settings.panelId then
-    if panels[panelId] then
-      self.settings.panelId = panelId
-    else
-      -- default back to config panels always
-      self.settings.panelId = config.panels
-    end
-    -- panels are always loaded so no loading is necessary
-
-    self:emitSignal("panelIdChanged", self.settings.panelId)
-  end
-end
-
 function MatchParticipant:setWantsReady(wantsReady)
   if wantsReady ~= self.settings.wantsReady then
     self.settings.wantsReady = wantsReady
@@ -202,12 +192,6 @@ end
 
 function MatchParticipant:isHuman()
   return self.human
-end
-
----@param engineStack BaseStack
----@return PlayerStack | ChallengeModePlayerStack
-function MatchParticipant:createClientStack(engineStack)
-  error("Did not implement createClientStack")
 end
 
 return MatchParticipant

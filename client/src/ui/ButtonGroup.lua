@@ -26,11 +26,11 @@ local function setButtons(self, buttons, values, selectedIndex)
       button:detach()
     end
   end
-
+  
   self.selectedIndex = selectedIndex
   self.values = values
   self.buttons = buttons
-
+  
   local overallWidth = 0
   local overallHeight = 0
   for i, button in ipairs(buttons) do
@@ -56,23 +56,18 @@ local function setActiveButton(self, selectedIndex)
   end
 end
 
----@class ButtonGroup : UiElement
----@field selectedIndex integer
----@field buttons Button[]
----@field value any
----@field values any[]
----@field onChange fun(self: ButtonGroup)
 local ButtonGroup = class(
   function(self, options)
     self.selectedIndex = options.selectedIndex or 1
 
     self.onChange = options.onChange or function() end
-
+    
     setButtons(self, options.buttons, options.values, self.selectedIndex)
+    
+    self.TYPE = "ButtonGroup"
   end,
   UIElement
 )
-ButtonGroup.TYPE = "ButtonGroup"
 
 -- changes state for the button group
 -- updates the color of the selected button

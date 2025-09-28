@@ -3,7 +3,7 @@ local consts = require("common.engine.consts")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 local EndlessMenu = require("client.src.scenes.EndlessMenu")
 local PuzzleMenu = require("client.src.scenes.PuzzleMenu")
 local TimeAttackMenu = require("client.src.scenes.TimeAttackMenu")
@@ -44,25 +44,43 @@ function MainMenu:createMainMenu()
   local menuItems = {ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"), EndlessGame)
       if GAME.battleRoom then
-        switchToScene(EndlessMenu({battleRoom = GAME.battleRoom}))
+        switchToScene(EndlessMenu())
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_PUZZLE"), PuzzleGame)
       if GAME.battleRoom then
-        switchToScene(PuzzleMenu({battleRoom = GAME.battleRoom}))
+        switchToScene(PuzzleMenu())
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"), TimeAttackGame)
       if GAME.battleRoom then
-        switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
+        switchToScene(TimeAttackMenu())
+      end
+    end),
+    ui.MenuItem.createButtonMenuItem("mm_2_time", nil, nil, function()
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      if GAME.battleRoom then
+        switchToScene(CharacterSelect2p())
+      end
+    end),
+    ui.MenuItem.createButtonMenuItem("mm_2_time", nil, nil, function()
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      if GAME.battleRoom then
+        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
+      end
+    end),
+    ui.MenuItem.createButtonMenuItem("mm_2_time", nil, nil, function()
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      if GAME.battleRoom then
+        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
       if GAME.battleRoom then
-        switchToScene(CharacterSelectVsSelf({battleRoom = GAME.battleRoom}))
+        switchToScene(CharacterSelectVsSelf())
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_training", nil, nil, function()
@@ -77,7 +95,7 @@ function MainMenu:createMainMenu()
     ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
       if GAME.battleRoom then
-        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
+        switchToScene(CharacterSelect2p())
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
@@ -101,8 +119,8 @@ function MainMenu:createMainMenu()
 
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
+  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
+                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
                         }
 
   local function addDebugMenuItems()
@@ -149,15 +167,16 @@ function MainMenu:checkForUpdates()
   end
 end
 
-function MainMenu:updateSelf(dt)
+function MainMenu:update(dt)
   GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
-function MainMenu:drawSelf()
+function MainMenu:draw()
   GAME.theme.images.bg_main:draw()
+  self.uiRoot:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 

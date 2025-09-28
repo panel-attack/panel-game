@@ -52,20 +52,6 @@ local DEFAULT_PANEL_ANIM =
 
 -- The class representing the panel image data
 -- Not to be confused with "Panel" which is one individual panel in the game stack model
----@class Panels
----@field path string
----@field id string
----@field name string
----@field type "single" | "sheet"
----@field size integer
----@field scale number
----@field images { metals: {left: love.Texture, mid: love.Texture, right: love.Texture, flash: love.Texture}}
----@field greyPanel love.Texture
----@field sheetConfig table
----@field sheets love.Texture[] mapped by color index
----@field batches love.SpriteBatch[] mapped by color index
----@field quad love.Quad
----@field displayIcons love.Texture[] mapped by color index
 Panels =
   class(
   function(self, full_path, folder_name)
@@ -102,21 +88,6 @@ function Panels:json_init()
   return false
 end
 
--- Adds the panels at the given path and directory
-local function addPanelDirectory(current_path, dir)
-  local panel_set = Panels(current_path, dir)
-  local success = panel_set:json_init()
-
-  if success then
-    if panels[panel_set.id] ~= nil then
-      logger.trace(current_path .. " has been ignored since a panel set with this id has already been found")
-    else
-      panels[panel_set.id] = panel_set
-      panels_ids[#panels_ids + 1] = panel_set.id
-    end
-  end
-end
-
 -- Recursively load all panel images from the given directory
 local function add_panels_from_dir_rec(path)
   local lfs = love.filesystem
@@ -128,7 +99,17 @@ local function add_panels_from_dir_rec(path)
       add_panels_from_dir_rec(current_path)
 
       -- init stage: 'real' folder
-      addPanelDirectory(current_path, v)
+      local panel_set = Panels(current_path, v)
+      local success = panel_set:json_init()
+
+      if success then
+        if panels[panel_set.id] ~= nil then
+          logger.trace(current_path .. " has been ignored since a panel set with this id has already been found")
+        else
+          panels[panel_set.id] = panel_set
+          panels_ids[#panels_ids + 1] = panel_set.id
+        end
+      end
     end
   end
 end
@@ -137,8 +118,14 @@ function panels_init()
   panels = {} -- holds all panels, all of them will be fully loaded
   panels_ids = {} -- holds all panels ids
 
-  -- add default panel set manually because it has a "__" in it.
-  addPanelDirectory("client/assets/panels/__default", "__default")
+  -- add default panel set
+  local defaultPanels = Panels("client/assets/panels/__default", "__default")
+  local success = defaultPanels:json_init()
+
+  if success then
+      panels[defaultPanels.id] = defaultPanels
+      panels_ids[#panels_ids + 1] = defaultPanels.id
+  end
   add_panels_from_dir_rec("client/assets/default_data/panels")
   add_panels_from_dir_rec("panels")
 
@@ -339,7 +326,7 @@ function Panels:load()
   if self.sheetConfig.panic == nil then
     self.sheetConfig.panic = self.sheetConfig.danger
   end
-
+  
   self.scale = 16 / self.size
 
   self.quad = love.graphics.newQuad(0, 0, self.size, self.size, self.sheets[1])
@@ -623,11 +610,9 @@ function Panels:addToDraw(panel, x, y, stackScale, danger, dangerTimer, stopTime
     local conf, frame
     conf, frame, x, y = self:getDrawProps(panel, x, y, danger, dangerTimer, stopTime)
 
-    if conf then
-      self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size)
-      -- scale / 3 because for the current standard size of 16
-      batch:add(self.quad, x * stackScale, y * stackScale, 0, self.scale * stackScale)
-    end
+    self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size)
+    -- scale / 3 because for the current standard size of 16
+    batch:add(self.quad, x * stackScale, y * stackScale, 0, self.scale * stackScale)
   end
 end
 
@@ -652,26 +637,6 @@ function Panels:drawPanelFrame(color, state, x, y, size)
   self.quad:setViewport(0, (sheetConfig.row - 1) * self.size, self.size, self.size)
   local scale = (size or self.size) / self.size
   GraphicsUtil.drawQuad(self.sheets[color], self.quad, x, y, 0, scale)
-end
-
----@param x integer right border
----@param y integer top border
----@param width integer width in panels
----@param stackScale number Stack.gfxScale
-function Panels:drawMetalGarbage(x, y, width, stackScale)
-  local metals = self.images.metals
-  local metal_w, metal_h = metals.mid:getDimensions()
-  local metall_w, metall_h = metals.left:getDimensions()
-  local metalr_w, metalr_h = metals.right:getDimensions()
-  love.graphics.push("transform")
-  love.graphics.scale(stackScale)
-
-  GraphicsUtil.draw(metals.left, (x - 16 * (width - 1)), y, 0, 8 / metall_w, 16 / metall_h)
-  GraphicsUtil.draw(metals.right, (x + 8), y, 0, 8 / metalr_w , 16 / metalr_h)
-  for i = 0, 2 * (width - 1) - 1 do
-    GraphicsUtil.draw(metals.mid, (x - 8 * i), y, 0, 8 / metal_w, 16 / metal_h)
-  end
-  love.graphics.pop()
 end
 
 return Panels

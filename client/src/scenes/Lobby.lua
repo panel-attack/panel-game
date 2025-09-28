@@ -5,7 +5,7 @@ local logger = require("common.lib.logger")
 local util = require("common.lib.util")
 local NetClient = require("client.src.network.NetClient")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
-local GameModes = require("common.data.GameModes")
+local GameModes = require("common.engine.GameModes")
 
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
 local Lobby = class(function(self, sceneParams)
@@ -49,7 +49,7 @@ function Lobby:load(sceneParams)
   end
 
   GAME.netClient:connectSignal("lobbyStateUpdate", self, self.onLobbyStateUpdate)
-  GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
+  GAME.netClient:connectSignal("disconnect", self, self.onDisconnect)
   GAME.netClient:connectSignal("leaderboardUpdate", self.leaderboard, self.leaderboard.updateData)
   GAME.netClient:connectSignal("loginFinished", self, self.onLoginFinish)
 
@@ -197,7 +197,7 @@ end
 -- scene core functionality --
 ------------------------------
 local loginStateLabel = ui.Label({text = loc("lb_login"), translate = false, x = 500, y = 350})
-function Lobby:updateSelf(dt)
+function Lobby:update(dt)
   self.backgroundImg:update(dt)
 
   if GAME.netClient.state == NetClient.STATES.LOGIN then
@@ -224,8 +224,8 @@ function Lobby:draw()
   end
 end
 
-function Lobby:onDisconnect(voluntary)
-  if not GAME.navigationStack.transition and not voluntary then
+function Lobby:onDisconnect()
+  if not GAME.navigationStack.transition then
     -- automatic reconnect if we're not about to switch scene
     GAME.netClient:login(GAME.connected_server_ip, GAME.connected_server_port)
   end

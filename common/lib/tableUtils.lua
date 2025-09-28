@@ -102,37 +102,11 @@ function tableUtils.insertListAt(list, position, tab)
   end
 end
 
--- Returns if two tables contain exactly the same things
--- does not perform deep comparisons of keys which are tables.
----@param a any
----@param b any
----@return boolean
-function tableUtils.deep_content_equal(a, b)
-  if type(a) ~= "table" or type(b) ~= "table" then
-    return a == b
-  else
-    if a == b then
-      -- two tables can still be the same by reference which also makes them === exactly equal
-      return true
-    else
-      for i = 1, 2 do
-        for k, v in pairs(a) do
-          if not tableUtils.deep_content_equal(v, b[k]) then
-            return false
-          end
-        end
-        a, b = b, a
-      end
-      return true
-    end
-  end
-end
-
 -- returns true if the table contains the given element or an identical copy of it, otherwise false 
 -- may result in a deathloop if there are recursive references
 function tableUtils.contains(tab, element)
   for _, value in pairs(tab) do
-    if tableUtils.deep_content_equal(value, element) then
+    if deep_content_equal(value, element) then
       return true
     end
   end
@@ -178,10 +152,6 @@ function tableUtils.getKeys(tab)
 end 
  
 -- returns the key for the given value, key is random if value occurs multiple times
----@generic T
----@param tab table<T, any>
----@param element any
----@return T
 function tableUtils.indexOf(tab, element)
   for key, value in pairs(tab) do
     if value == element then

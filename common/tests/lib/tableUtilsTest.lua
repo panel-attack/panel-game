@@ -81,7 +81,7 @@ local function testTableFilterList()
   )
   assert(#filteredTable == 2)
   for i = 1, #expected do
-    assert(tableUtils.deep_content_equal(filteredTable[i], expected[i]))
+    assert(deep_content_equal(filteredTable[i], expected[i]))
   end
 
   logger.trace("passed test testTableFilterList")
@@ -102,7 +102,7 @@ local function testTableFilterDict()
   )
   assert(tableUtils.length(filteredTable) == 2)
   for key, _ in pairs(expected) do
-    assert(tableUtils.deep_content_equal(filteredTable[key], expected[key]))
+    assert(deep_content_equal(filteredTable[key], expected[key]))
   end
 
   logger.trace("passed test testTableFilterDict")
@@ -120,7 +120,7 @@ local function testTableFirstList()
     end
   )
 
-  assert(tableUtils.deep_content_equal(firstItem, expected))
+  assert(deep_content_equal(firstItem, expected))
 
   logger.trace("passed test testTableFirstList")
 end
@@ -136,7 +136,7 @@ local function testTableFirstDict()
       return value == "330000"
     end
   )
-  assert(tableUtils.deep_content_equal(firstItem, expected))
+  assert(deep_content_equal(firstItem, expected))
 
   logger.trace("passed test testTableFirstDict")
 end
@@ -153,7 +153,7 @@ local function testTableFirstEmptyDict()
       return value == "3412300"
     end
   )
-  assert(tableUtils.deep_content_equal(firstItem, expected))
+  assert(deep_content_equal(firstItem, expected))
 
   logger.trace("passed test testTableFirstEmptyDict")
 end
@@ -262,7 +262,7 @@ local function testTableAppendToListEmpty()
 
   assert(#testData == #expected)
   for i = 1, #expected do
-    assert(tableUtils.deep_content_equal(testData[i], expected[i]))
+    assert(deep_content_equal(testData[i], expected[i]))
   end
 
   logger.trace("passed test testTableAppendToListEmpty")
@@ -289,7 +289,7 @@ local function testTableAppendToList()
 
   assert(#testData == #expected)
   for i = 1, #expected do
-    assert(tableUtils.deep_content_equal(testData[i], expected[i]))
+    assert(deep_content_equal(testData[i], expected[i]))
   end
 
   logger.trace("passed test testTableAppendToList")
@@ -316,7 +316,7 @@ local function testTableInsertListAt()
 
   assert(#testData == #expected)
   for i = 1, #expected do
-    assert(tableUtils.deep_content_equal(testData[i], expected[i]))
+    assert(deep_content_equal(testData[i], expected[i]))
   end
 
   logger.trace("passed test testTableInsertListAt")
@@ -338,7 +338,7 @@ local function testTableInsertListAtEmpty()
 
   assert(#testData == #expected)
   for i = 1, #expected do
-    assert(tableUtils.deep_content_equal(testData[i], expected[i]))
+    assert(deep_content_equal(testData[i], expected[i]))
   end
 
   logger.trace("passed test testTableInsertListAtEmpty")

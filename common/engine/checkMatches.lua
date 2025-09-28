@@ -1,5 +1,6 @@
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
+local PanelGenerator = require("common.engine.PanelGenerator")
 local consts = require("common.engine.consts")
 local LevelData = require("common.data.LevelData")
 local prof = require("common.lib.zoneProfiler")
@@ -113,7 +114,6 @@ function Stack:checkMatches()
     return
   end
 
-  prof.push("Stack:checkMatches")
   --local reference = self:getMatchingPanels2()
   local matchingPanels = self:getMatchingPanels()
   local comboSize = #matchingPanels
@@ -127,7 +127,6 @@ function Stack:checkMatches()
     end
     -- interrupt any ongoing manual raise
     self.manual_raise = false
-    self.rise_lock = true
 
     local attackGfxOrigin = self:applyMatchToPanels(matchingPanels, isChainLink, comboSize)
     local garbagePanels = self:getConnectedGarbagePanels2(matchingPanels)
@@ -153,7 +152,6 @@ function Stack:checkMatches()
   end
 
   self:clearChainingFlags()
-  prof.pop("Stack:checkMatches")
 end
 
 -- getMatchingPanels2 is a reference implementation
@@ -447,7 +445,7 @@ local function matchOnContact(a, b)
     elseif a.right == b.left - 1 or a.left == b.right + 1 then
       -- the matching panel could be touching horizontally
       -- verify horizontal contact
-      return (b.top >= a.bottom and b.top <= a.top) or (a.top >= b.bottom and a.top <= b.top)
+      return (a.top <= b.bottom and b.top <= a.top) or (b.top <= a.bottom and a.top <= b.top)
     else
       return false
     end
@@ -746,7 +744,7 @@ function Stack:convertGarbagePanels(isChain)
       if panel.y_offset == -1 and panel.color == 9 then
         -- the bottom row of the garbage piece is about to transform into panels
         if garbagePanelRow == nil then
-          garbagePanelRow = self.panelSource:getGarbagePanelRowString(self)
+          garbagePanelRow = self:getGarbagePanelRow()
         end
         panel.color = string.sub(garbagePanelRow, column, column) + 0
         if isChain then
@@ -757,15 +755,46 @@ function Stack:convertGarbagePanels(isChain)
   end
 end
 
+function Stack:refillGarbagePanelBuffer()
+  PanelGenerator:setSeed(self.seed + self.garbageGenCount)
+  -- privateGeneratePanels already appends to the existing self.gpanel_buffer
+  local garbagePanels = PanelGenerator.privateGeneratePanels(20, self.width, self.levelData.colors, self.gpanel_buffer, not self.allowAdjacentColors)
+  -- and then we append that result to the remaining buffer
+  self.gpanel_buffer = self.gpanel_buffer .. garbagePanels
+  -- that means the next 10 rows of garbage will use the same colors as the 10 rows after
+  -- that's a bug but it cannot be fixed without breaking replays
+  -- it is also hard to abuse as 
+  -- a) players would need to accurately track the 10 row cycles
+  -- b) "solve into the same thing" only applies to a limited degree:
+  --   a garbage panel row of 123456 solves into 1234 for ====00 but into 3456 for 00====
+  --   that means information may be incomplete and partial memorization may prove unreliable
+  -- c) garbage panels change every (10 + n * 20 rows) with n>0 in ℕ 
+  --    so the player needs to always survive 20 rows to start abusing
+  --    and can then only abuse for every 10 rows out of 20
+  -- overall it is to be expected that the strain of trying to memorize outweighs the gains
+  -- this bug should be fixed with the next breaking change to the engine
+
+  self.garbageGenCount = self.garbageGenCount + 1
+end
+
+function Stack:getGarbagePanelRow()
+  if string.len(self.gpanel_buffer) <= 10 * self.width then
+    self:refillGarbagePanelBuffer()
+  end
+  local garbagePanelRow = string.sub(self.gpanel_buffer, 1, 6)
+  self.gpanel_buffer = string.sub(self.gpanel_buffer, 7)
+  return garbagePanelRow
+end
+
 function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
-  logger.debug("P" .. self.which .. "@" .. self.game_stopwatch .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
+  logger.debug("P" .. self.which .. "@" .. self.clock .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
   for i = 3, metalCount do
     self.outgoingGarbage:push({
       width = 6,
       height = 1,
       isMetal = true,
       isChain = false,
-      frameEarned = self.game_stopwatch,
+      frameEarned = self.clock,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -779,7 +808,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       height = 1,
       isMetal = false,
       isChain = false,
-      frameEarned = self.game_stopwatch,
+      frameEarned = self.clock,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -791,7 +820,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       -- If we did a combo also, we need to enqueue the attack graphic one row higher cause thats where the chain card will be.
       rowOffset = 1
     end
-    self.outgoingGarbage:addChainLink(self.game_stopwatch, coordinate.column, coordinate.row +  rowOffset)
+    self.outgoingGarbage:addChainLink(self.clock, coordinate.column, coordinate.row +  rowOffset)
   end
 end
 
@@ -834,7 +863,7 @@ function Stack:calculateStopTime(comboSize, toppedOut, isChain, chainCounter)
 end
 
 function Stack:awardStopTime(isChain, comboSize)
-  local stopTime = self:calculateStopTime(comboSize, self.wasToppedOut, isChain, self.chain_counter)
+  local stopTime = self:calculateStopTime(comboSize, self.panels_in_top_row, isChain, self.chain_counter)
   if stopTime > self.stop_time then
     self.stop_time = stopTime
   end
@@ -853,12 +882,12 @@ end
 function Stack:updateScoreWithCombo(comboSize)
   if comboSize > 3 then
     if (score_mode == consts.SCOREMODE_TA) then
-      self:addScore(SCORE_COMBO_TA[math.min(30, comboSize)])
+      self.score = self.score + SCORE_COMBO_TA[math.min(30, comboSize)]
     elseif (score_mode == consts.SCOREMODE_PDP64) then
       if (comboSize < 41) then
-        self:addScore(SCORE_COMBO_PdP64[comboSize])
+        self.score = self.score + SCORE_COMBO_PdP64[comboSize]
       else
-        self:addScore(20400 + ((comboSize - 40) * 800))
+        self.score = self.score + 20400 + ((comboSize - 40) * 800)
       end
     end
   end
@@ -870,7 +899,7 @@ function Stack:updateScoreWithChain()
     if (chain_bonus > 13) then
       chain_bonus = 0
     end
-    self:addScore(SCORE_CHAIN_TA[chain_bonus])
+    self.score = self.score + SCORE_CHAIN_TA[chain_bonus]
   end
 end
 

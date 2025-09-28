@@ -2,35 +2,17 @@ local logger = require("common.lib.logger")
 local consts = require("common.engine.consts")
 local class = require("common.lib.class")
 
----@class HealthSettings
----@field framesToppedOutToLose number Starting value of framesToppedOutToLose
----@field lineClearGPM number How many "lines" we clear per minute. Essentially how fast we recover.
----@field lineHeightToKill number How many "lines" need to be accumulated before we are "topped" out.
----@field riseSpeed integer The initial speed lines accumulate with passively
-
----@class HealthEngine
----@field framesToppedOutToLose number Number of seconds currently remaining of being "topped" out before we are defeated.
----@field maxSecondsToppedOutToLose number Starting value of framesToppedOutToLose
----@field lineClearRate number How many "lines" we clear per second. Essentially how fast we recover.
----@field currentLines number The current number of "lines" simulated
----@field height number How many "lines" need to be accumulated before we are "topped" out.
----@field lastWasFourCombo boolean Tracks if the last combo was a +4. If two +4s hit in a row, it only counts as 1 "line"
----@field clock integer Current clock time, this should match the opponent
----@field initialRiseSpeed integer The initial speed lines accumulate with passively
----@field currentRiseSpeed integer The current speed lines accumulate with passively; speed is just like normal Stacks for now, lines are added faster the longer the match goes
----@field rollbackCopies table
----@field rollbackCopyPool Queue
-local Health = class(
+Health =
+  class(
   function(self, framesToppedOutToLose, lineClearGPM, height, riseSpeed)
-    self.framesToppedOutToLose = framesToppedOutToLose
-    self.maxSecondsToppedOutToLose = framesToppedOutToLose
-    self.lineClearRate = lineClearGPM / 60
-    self.currentLines = 0
-    self.height = height
-    self.lastWasFourCombo = false
-    self.clock = 0
-    self.initialRiseSpeed = riseSpeed
-    self.currentRiseSpeed = riseSpeed
+    self.framesToppedOutToLose = framesToppedOutToLose -- Number of seconds currently remaining of being "topped" out before we are defeated.
+    self.maxSecondsToppedOutToLose = framesToppedOutToLose -- Starting value of framesToppedOutToLose
+    self.lineClearRate = lineClearGPM / 60 -- How many "lines" we clear per second. Essentially how fast we recover.
+    self.currentLines = 0 -- The current number of "lines" simulated
+    self.height = height -- How many "lines" need to be accumulated before we are "topped" out.
+    self.lastWasFourCombo = false -- Tracks if the last combo was a +4. If two +4s hit in a row, it only counts as 1 "line"
+    self.clock = 0 -- Current clock time, this should match the opponent
+    self.currentRiseSpeed = riseSpeed -- rise speed is just like the normal game for now, lines are added faster the longer the match goes
     self.rollbackCopies = {}
     self.rollbackCopyPool = Queue()
   end
@@ -133,16 +115,6 @@ function Health:rollbackToFrame(frame)
   self.framesToppedOutToLose = copy.framesToppedOutToLose
   self.lastWasFourCombo = copy.lastWasFourCombo
   self.clock = frame
-end
-
----@return HealthSettings
-function Health:getSettings()
-  return {
-    framesToppedOutToLose = self.maxSecondsToppedOutToLose,
-    lineClearGPM = self.lineClearRate * 60,
-    lineHeightToKill = self.height,
-    riseSpeed = self.initialRiseSpeed
-  }
 end
 
 return Health

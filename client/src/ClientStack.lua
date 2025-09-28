@@ -1,8 +1,8 @@
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Signal = require("common.lib.signal")
+-- TODO: move graphics related functionality to client
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local ModController = require("client.src.mods.ModController")
 
 -- Draws an image at the given spot while scaling all coordinate and scale values with stack.gfxScale
 local function drawGfxScaled(stack, img, x, y, rot, xScale, yScale)
@@ -21,8 +21,6 @@ end
 ---@field baseWidth integer
 ---@field baseHeight integer
 ---@field gfxScale number scale factor for the entire Stack, default: 3
----@field panelOriginXOffset integer how far the panel origin is offset relative to frame at scale 1
----@field panelOriginYOffset integer how far the panel origin is offset relative to frame at scale 1
 ---@field canvas boolean if the stack is supposed to be drawn
 ---@field portraitFade number inverse opacity of the character portrait
 ---@field engine BaseStack the engine actually running the physics
@@ -34,29 +32,26 @@ end
 ---@field multi_shakeQuad love.Quad
 ---@field danger_music boolean
 ---@field garbageSource ClientStack The stack the garbage assets are used from
+---@field match ClientMatch
 ---@field assets IngameAssetPack
 ---@field renderIndex integer determines the position of the stack and how some elements are rendered
----@field player_number integer used for display ordering
 
 ---@class ClientStack
 local ClientStack = class(
----@param self ClientStack
----@param args table
 function(self, args)
+  ---@class ClientStack
   self = self
 
-  assert(args.engine)
-  assert(args.characterId)
+  assert(args.is_local ~= nil)
+  assert(args.character)
+  assert(args.match)
 
-  self.engine = args.engine
   -- player number according to the multiplayer server, for game outcome reporting 
-  self.player_number = args.player_number or args.engine.which
-  self.is_local = args.player and args.player.isLocal or args.engine.is_local
-  self.character = characters[args.characterId]
-  if self.character and not self.character.fullyLoaded then
-    ModController:loadModFor(self.character, self, true)
-  end
+  self.player_number = args.player_number or args.which
+  self.is_local = args.is_local
+  self.character = characters[args.character]
   self.theme = args.theme or themes[config.theme]
+  self.match = args.match
 
   self.panels_dir = args.panels_dir
   if not self.panels_dir or not panels[self.panels_dir] then
@@ -67,13 +62,11 @@ function(self, args)
   -- also relevant for the touch input controller method besides general drawing
   self.baseWidth = 104
   self.baseHeight = 204
-  self.panelOriginXOffset = 4
-  self.panelOriginYOffset = 4
   self.gfxScale = 3
   -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
   self.canvas = true
-  self.portraitFade = 0
+  self.portraitFade = config.portrait_darkness / 100 -- will be set back to 0 if count down happens
 
   self.danger_music = false
 
@@ -230,91 +223,46 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
 end
 
--- Sets up renderIndex-specific properties and assets
--- Configures stack positioning parameters for a specific render index (1 for left, 2 for right)
-function ClientStack:setupForRenderIndex(renderIndex)
+-- Positions the stack draw position for the given player
+function ClientStack:moveForRenderIndex(renderIndex)
   self.renderIndex = renderIndex
-
+  -- Position of elements should ideally be on even coordinates to avoid non pixel alignment
   if renderIndex == 1 then
     self.mirror_x = 1
     self.multiplication = 0
   elseif renderIndex == 2 then
     self.mirror_x = -1
     self.multiplication = 1
-  else
-    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1 or 2.")
   end
-  self:assignAssets(GAME.theme:getIngameAssetPack(renderIndex))
-end
-
--- Calculates the horizontal position for centering a stack around a given coordinate
----@param centerCoordinate number The X coordinate to center around
----@return number The calculated outer edge position for horizontal centering
-function ClientStack:calculateHorizontallyCenteredPosition(centerCoordinate)
-  local centerX = centerCoordinate
-  local stackWidth = self:canvasWidth()
-  local innerStackXMovement = 100
-  local outerStackXMovement = stackWidth + innerStackXMovement
-
-  -- Calculate normal renderIndex 1 position (no offset)
-  local normalRenderIndex1X = centerX - outerStackXMovement
-  
-  -- Desired centered position
-  local stackWidthUnscaled = self.baseWidth + self.panelOriginXOffset
-  local desiredCenterX = (consts.CANVAS_WIDTH - stackWidthUnscaled * self.gfxScale) / 2
-  
-  -- Calculate and use centering offset instead of provided xOffset
-  return centerX - (outerStackXMovement) + (desiredCenterX - normalRenderIndex1X)
-end
-
--- Positions the stack draw position for the given player
-function ClientStack:moveForRenderIndex(renderIndex)
-  self:setupForRenderIndex(renderIndex)
-  
   local centerX = (GAME.globalCanvas:getWidth() / 2)
   local stackWidth = self:canvasWidth()
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement
+  self.panelOriginXOffset = 4
+  self.panelOriginYOffset = 4
+
   local outerNonScaled = centerX - (outerStackXMovement * self.mirror_x)
+  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerNonScaled / self.gfxScale) -- The outer X value of the frame
 
   local frameOriginNonScaled = outerNonScaled
   if self.mirror_x == -1 then
     frameOriginNonScaled = outerNonScaled - stackWidth
   end
-  
-  self:moveToPosition(frameOriginNonScaled, self.baseWidth + self.panelOriginXOffset)
-end
+  self.frameOriginX = frameOriginNonScaled / self.gfxScale -- The left X value where the frame is drawn
+  self.frameOriginY = 108 / self.gfxScale
 
--- Positions the stack centered on screen (for puzzle mode)
-function ClientStack:moveToCenterPosition()
-  local centerX = (GAME.globalCanvas:getWidth() / 2)
-  local outerNonScaled = self:calculateHorizontallyCenteredPosition(centerX)
-  
-  self:moveToPosition(outerNonScaled, self.baseWidth + self.panelOriginXOffset)
-end
-
----@param x integer in screen coordinates
----@param y integer in screen coordinates
-function ClientStack:moveToPosition(x, y)
-  self.frameOriginX = x / self.gfxScale
-  self.frameOriginY = y / self.gfxScale
   self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
   self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
-  local stackWidth = self.mirror_x == -1 and self:canvasWidth() or 0
-  local outerNonScaled = x + stackWidth
-  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerNonScaled / self.gfxScale)
+
+  self:assignAssets(GAME.theme:getIngameAssetPack(self.renderIndex))
 end
 
 -- to be used in conjunction with resetDrawArea
 -- sets the draw area for the Stack by defining an area outside of which all draws are cut off
 --   and translating following draws to be relative to the top left origin of the area
----@param xOffset integer? provides an additional x offset e.g. from translation as scissors only operates in screen/canvas coordinates
----@param yOffset integer? provides an additional y offset e.g. from translation as scissors only operates in screen/canvas coordinates
-function ClientStack:setDrawArea(xOffset, yOffset)
-  xOffset = xOffset or 0
-  yOffset = yOffset or 0
+function ClientStack:setDrawArea()
   -- this used to be a canvas instead but turns out switching between canvases can be quite the overhead
-  love.graphics.setScissor(xOffset + self.frameOriginX * self.gfxScale, yOffset + self.frameOriginY * self.gfxScale, self.baseWidth * self.gfxScale, self.baseHeight * self.gfxScale)
+  love.graphics.setScissor(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale, self.baseWidth * self.gfxScale, self.baseHeight * self.gfxScale)
   love.graphics.push("transform")
   love.graphics.translate(self.frameOriginX * self.gfxScale, self.frameOriginY * self.gfxScale)
 end
@@ -341,8 +289,6 @@ function ClientStack:drawCharacter()
         self.portraitFade = desiredFade * percent
       end
     end
-  else
-    self.portraitFade = config.portrait_darkness / 100 -- Set to desired fade if there's no countdown
   end
 
   self.character:drawPortrait(self.renderIndex, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
@@ -495,7 +441,12 @@ end
 
 ---@return boolean
 function ClientStack:game_ended()
-  return self.engine:game_ended()
+  if self.engine:game_ended() then
+    return true
+  else
+    -- for display we may also want to know if the match has ended
+    return self.match.engine.ended
+  end
 end
 
 ---@param assetPack IngameAssetPack
@@ -534,8 +485,7 @@ function ClientStack:runGameOver()
   error("did not implement runGameOver")
 end
 
----@param matchEnded boolean?
-function ClientStack:render(matchEnded)
+function ClientStack:render()
   error("did not implement render")
 end
 
