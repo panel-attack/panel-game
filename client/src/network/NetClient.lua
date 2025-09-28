@@ -485,7 +485,9 @@ function NetClient:registerPlayerUpdates(room)
     if player.isLocal then
       -- seems a bit silly to subscribe a player to itself but it works and the player doesn't have to become part of the closure
       player:connectSignal("characterIdChanged", player, sendPlayerSettings)
+      player:connectSignal("selectedCharacterIdChanged", player, sendPlayerSettings)
       player:connectSignal("stageIdChanged", player, sendPlayerSettings)
+      player:connectSignal("selectedStageIdChanged", player, sendPlayerSettings)
       player:connectSignal("panelIdChanged", player, sendPlayerSettings)
       player:connectSignal("wantsRankedChanged", player, sendPlayerSettings)
       player:connectSignal("wantsReadyChanged", player, sendPlayerSettings)
