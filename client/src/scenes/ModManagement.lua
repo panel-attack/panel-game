@@ -104,7 +104,7 @@ function ModManagement:load()
 
   self.openSaveDirectoryButton = ui.MenuItem.createButtonMenuItem(
     "op_openSaveDir", nil, true, function(button, inputs)
-      love.system.openURL(love.filesystem.getSaveDirectory())
+      love.system.openURL("file://"..love.filesystem.getSaveDirectory())
     end
   )
 
