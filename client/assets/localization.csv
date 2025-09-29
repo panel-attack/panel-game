@@ -661,3 +661,4 @@ mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Nam
 mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
 mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submods,サブMOD,Submods,Submods,Submod,ซับม็อด
 mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
+mm_2_time,,2P time attack,2J contre la montre,2J contra o tempo,2P スコアアタック,2J Contrareloj,2P Time Attack,2P a tempo,2P time attack
