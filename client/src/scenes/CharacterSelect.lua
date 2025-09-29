@@ -173,6 +173,7 @@ function CharacterSelect:createReadyButton()
       player = GAME.localPlayer
     end
     player:setWantsReady(not player.settings.wantsReady)
+    GAME.theme:playValidationSfx()
   end
   readyButton.onSelect = readyButton.onClick
 
@@ -320,7 +321,7 @@ function CharacterSelect:getCharacterButtons()
       else
         return
       end
-      GAME.theme:playValidationSfx()
+
       if character then
         if character:canSuperSelect() and holdTime > consts.SUPER_SELECTION_START + consts.SUPER_SELECTION_DURATION then
           -- super select
@@ -332,9 +333,12 @@ function CharacterSelect:getCharacterButtons()
           end
         end
         character:playSelectionSfx()
+      else
+        GAME.theme:playValidationSfx()
       end
+
       player:setCharacter(selfElement.characterId)
-      player.cursor:updatePosition(9, 2)
+      player.cursor:updatePosition(9, 2, true)
     end
 
     if characters[characterButton.characterId] and characters[characterButton.characterId]:canSuperSelect() then
@@ -471,7 +475,7 @@ function CharacterSelect:createCursor(grid, player)
     elseif player.settings.wantsReady then
       player:setWantsReady(false)
     else
-      cursor:updatePosition(9, 6)
+      cursor:updatePosition(9, 6, false)
     end
   end
 
