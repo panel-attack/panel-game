@@ -55,6 +55,7 @@ function love.load()
 end
 
 local allTests = {
+  "common.tests.lib.JsonPrecisionTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.RollbackBufferTests",
