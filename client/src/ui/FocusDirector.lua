@@ -14,13 +14,13 @@
 -- - Clears director.focused = nil
 -- - Executes optional callback function
 
-local function directsFocus(object)
-  object.focused = nil
+local function directsFocus(uiElement)
+  uiElement.focused = nil
 
-  -- Sets focus to a focusable object
+  -- Sets focus to a focusable uiElement
   -- @param focusable The object to focus (must have been marked with Focusable mixin)
   -- @param callback Optional function to call when focus is yielded
-  object.setFocus = function(self, focusable, callback)
+  uiElement.setFocus = function(self, focusable, callback)
     -- Clear focus from currently focused object
     if self.focused then
       self.focused.hasFocus = false
