@@ -345,13 +345,15 @@ function Game:updateMouseVisibility(dt)
 end
 
 function Game:handleResize(newWidth, newHeight)
-  self:updateCanvasPositionAndScale(newWidth, newHeight)
-  if self.battleRoom and self.battleRoom.match then
-    self.needsAssetReload = true
-  else
-    self:refreshCanvasAndImagesForNewScale()
+  local positionChanged, scaleChanged = self:updateCanvasPositionAndScale(newWidth, newHeight)
+  if scaleChanged then
+    if self.battleRoom and self.battleRoom.match then
+      self.needsAssetReload = true
+    else
+      self:refreshCanvasAndImagesForNewScale()
+    end
+    self.showGameScaleUntil = self.timer + 5
   end
-  self.showGameScaleUntil = self.timer + 5
 end
 
 -- Called every few fractions of a second to update the game
@@ -543,8 +545,15 @@ function Game:toggleFullscreen()
 end
 
 -- Updates the scale and position values to use up the right size of the window based on the user's settings.
+---@return boolean positionChanged
+---@return boolean scaleChanged
 function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
   logger.debug("Updating canvas scale with args " .. newWindowWidth .. "," .. newWindowHeight)
+
+  local oldCanvasX = self.canvasX
+  local oldCanvasY = self.canvasY
+  local oldCanvasXScale = self.canvasXScale
+  local oldCanvasYScale = self.canvasYScale
 
   -- we want to draw at integer coordinates to prevent weird interpolation
   if newWindowWidth % 2 > 0 then
@@ -589,6 +598,10 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
     self.canvasXScale = newScale
     self.canvasYScale = newScale
   end
+
+  local positionChanged = oldCanvasX ~= self.canvasX or oldCanvasY ~= self.canvasY
+  local scaleChanged = not (math.floatsEqualWithPrecision(oldCanvasXScale, self.canvasXScale, 4) and math.floatsEqualWithPrecision(oldCanvasYScale, self.canvasYScale, 4))
+  return positionChanged, scaleChanged
 end
 
 -- Reloads the canvas and all images / fonts for the new game scale

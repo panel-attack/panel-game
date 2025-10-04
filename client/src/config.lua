@@ -1,3 +1,4 @@
+local JsonSafePrecision = require("common.data.JsonSafePrecision")
 json = require("common.lib.dkjson")
 local util = require("common.lib.util")
 local fileUtils = require("client.src.FileUtils")
@@ -260,7 +261,7 @@ config = {
             configTable.popfx = read_data.popfx
           end
           if type(read_data.shakeIntensity) == "number" then
-            configTable.shakeIntensity = util.bound(0.5, read_data.shakeIntensity, 1)
+            configTable.shakeIntensity = util.bound(0.5, JsonSafePrecision.toSafePrecision(read_data.shakeIntensity), 1)
           end
           if type(read_data.cardfx_scale) == "number" then
             configTable.cardfx_scale = util.bound(1, read_data.cardfx_scale, 200)
@@ -282,7 +283,7 @@ config = {
             configTable.gameScaleType = read_data.gameScaleType
           end
           if type(read_data.gameScaleFixedValue) == "number" then
-            configTable.gameScaleFixedValue = read_data.gameScaleFixedValue
+            configTable.gameScaleFixedValue = JsonSafePrecision.toSafePrecision(read_data.gameScaleFixedValue)
           end
 
           if type(read_data.windowWidth) == "number" then
