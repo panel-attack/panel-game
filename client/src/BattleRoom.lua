@@ -368,7 +368,13 @@ function BattleRoom:startMatch(replay)
   match:start()
   self.match = match
   self.state = BattleRoom.states.MatchInProgress
-  local transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
+
+  -- Use instant transition if requested, otherwise fade
+  local transition = nil
+  if not (self.sceneParameters and self.sceneParameters.useInstantTransition) then
+    transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
+  end
+
   local scene = self:createScene(match)
   scene:load()
   GAME.navigationStack:push(scene, transition)

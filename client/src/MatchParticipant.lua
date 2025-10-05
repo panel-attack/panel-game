@@ -196,8 +196,11 @@ function MatchParticipant:onMatchEnded()
    if self.human then
     self:setWantsReady(false)
    end
-  self:refreshCharacter()
-  self:refreshStage()
+  -- Skip refresh if character and stage are locked (e.g., in puzzle mode)
+  if not self.lockCharacterAndStage then
+    self:refreshCharacter()
+    self:refreshStage()
+  end
 end
 
 function MatchParticipant:isHuman()
