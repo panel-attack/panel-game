@@ -197,20 +197,18 @@ function PuzzleEditorStackOverlay:drawGarbagePreview()
       end
     end
   else
-    -- Create a mock panel object for drawGarbageBlock
-    local mockPanel = {
-      width = width,
-      height = height
-    }
-    
     -- For regular garbage, the bottom-right panel is at (minRow, maxCol) since y_offset=0 is at minRow
-    local bottomRightRow = minRow  
+    local bottomRightRow = minRow
     local bottomRightCol = maxCol
-    local drawX = stack.panelOriginX + (bottomRightCol - 1) * 16 
-    local drawY = stack.panelOriginY + (11 - bottomRightRow) * 16 + stack.engine.displacement
-    
-    -- Reuse existing drawGarbageBlock method
-    stack:drawGarbageBlock(mockPanel, drawX, drawY, stack.character.images)
+    local bottomRightX = stack.panelOriginX + (bottomRightCol - 1) * 16
+    local bottomRightY = stack.panelOriginY + (11 - bottomRightRow) * 16 + stack.engine.displacement
+
+    -- Convert to top-left corner for drawGarbage
+    local garbageX = bottomRightX - (width - 1) * 16
+    local garbageY = bottomRightY - (height - 1) * 16
+
+    -- Use Character:drawGarbage method (it handles scaling internally)
+    stack.character:drawGarbage(garbageX, garbageY, width, height, stack.gfxScale)
   end
   
   -- Restore normal drawing mode
