@@ -81,7 +81,17 @@ function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
 
   -- Lock character and stage for the entire puzzle session
   -- This prevents them from changing between puzzles
-  player.lockCharacterAndStage = true
+  player.settings.lockCharacterAndStage = true
+
+  -- Use the resolved stage for all matches in this session
+  self.battleRoom.preferredStageId = player.settings.stageId
+
+  -- Refresh to set characterId/stageId and emit signals for loading
+  player:refreshCharacter()
+  player:refreshStage()
+
+  -- Update loading state to ensure BattleRoom knows assets need to load
+  self.battleRoom:updateLoadingState()
 
   self:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
   player:setWantsReady(true)

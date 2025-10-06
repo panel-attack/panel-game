@@ -30,6 +30,7 @@ local GeneratorSource = require("common.engine.GeneratorSource")
 ---@field match ClientMatch
 ---@field panelSource table?
 ---@field sceneParameters table?
+---@field preferredStageId string? if set, this stage will be used for all matches in the session
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
 BattleRoom = class(
 function(self, mode, gameScene)

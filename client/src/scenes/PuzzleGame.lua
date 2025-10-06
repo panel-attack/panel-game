@@ -258,7 +258,7 @@ function PuzzleGame:startNextScene()
   if shouldPop then
     -- Clear the character/stage lock when returning to puzzle menu
     if self.player then
-      self.player.lockCharacterAndStage = nil
+      self.player.settings.lockCharacterAndStage = nil
     end
     GAME.navigationStack:pop()
   else

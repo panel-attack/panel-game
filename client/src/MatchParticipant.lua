@@ -15,6 +15,7 @@ local ModController = require("client.src.mods.ModController")
 ---@field panelId string id of the panelSet used to source shock garbage images
 ---@field wantsReady boolean
 ---@field attackEngineSettings table
+---@field lockCharacterAndStage boolean? if true, prevents character and stage from being refreshed between matches
 
 ---@class MatchParticipant
 ---@field name string the name of the participant for display
@@ -197,7 +198,7 @@ function MatchParticipant:onMatchEnded()
     self:setWantsReady(false)
    end
   -- Skip refresh if character and stage are locked (e.g., in puzzle mode)
-  if not self.lockCharacterAndStage then
+  if not self.settings.lockCharacterAndStage then
     self:refreshCharacter()
     self:refreshStage()
   end
