@@ -74,7 +74,7 @@ local function classifyConfiguration(config, index)
 end
 
 -- Maps controller names to specific image variants for theme selection
-local function getControllerImageVariant(controllerName)
+function InputDeviceUtils.getControllerImageVariant(controllerName)
   if not controllerName then
     return "generic"
   end
@@ -82,7 +82,7 @@ local function getControllerImageVariant(controllerName)
   local name = controllerName:lower()
 
   -- PlayStation controllers
-  if name:find("playstation") or name:find("dualshock") or name:find("dualsense") then
+  if name:find("playstation") or name:find("dualshock") or name:find("dualsense") or name:find("ps%d") then
     if name:find("5") or name:find("dualsense") then
       return "playstation5"
     elseif name:find("4") or name:find("dualshock 4") then
@@ -111,16 +111,87 @@ local function getControllerImageVariant(controllerName)
     end
   end
 
+  -- SNES controllers (8BitDo and others) - Check before Switch to avoid "Super Nintendo" matching "Nintendo"
+  if name:find("snes") or name:find("sn30") or name:find("sf30") or name:find("super nintendo") or name:find("super famicom") then
+    return "snes"
+  end
+
+  -- N64 controllers (8BitDo and others) - Check before Switch to avoid "Nintendo 64" matching "Nintendo"
+  if name:find("n64") or name:find("nintendo 64") or name:find("64 controller") or (name:find("8bitdo") and name:find("64")) then
+    return "n64"
+  end
+
+  -- Hyperkin Admiral N64 Controller
+  if name:find("admiral") then
+    return "n64"
+  end
+
   -- Nintendo Switch controllers
-  if name:find("switch") or name:find("nintendo") then
-    if name:find("pro") then
-      return "switch_pro"
-    else
-      return "switch_pro" -- Default to Switch Pro for any Nintendo/Switch controller
+  if name:find("switch") or name:find("nintendo") or (name:find("pro controller") and not name:find("sn30") and not name:find("sf30")) then
+    return "switch_pro"
+  end
+
+  -- Hyperkin Scout (SNES-style controller)
+  if name:find("scout") and name:find("hyperkin") then
+    return "snes"
+  end
+
+  -- iBuffalo SNES controllers
+  if name:find("ibuffalo") or name:find("2%-axis 8%-button") then
+    return "snes"
+  end
+
+  -- SEGA Genesis/Mega Drive controllers (M30 style)
+  if name:find("m30") or name:find("genesis") or name:find("mega drive") or name:find("neogeo") then
+    -- Check it's not a Nintendo M30 variant
+    if not name:find("nintendo") then
+      return "generic" -- No SEGA controller image, use generic
     end
   end
 
-  -- Default to generic controller
+  -- GameCube controllers
+  if name:find("gamecube") or name:find("game cube") then
+    return "gamecube"
+  end
+
+  -- 8BitDo GameCube adapter
+  if name:find("gbros") then
+    return "gamecube"
+  end
+
+  -- Hori Xbox-style controllers (Horipad for Xbox) - Check first
+  if name:find("hori") and name:find("xbox") then
+    return "xboxone"
+  end
+
+  -- Hori Nintendo Switch controllers - Check for explicit Switch mention
+  if name:find("hori") and name:find("switch") then
+    return "switch_pro"
+  end
+
+  -- Hori GameCube-style controllers (Battle Pad and generic Horipad default to GameCube)
+  -- Generic "Horipad" without Xbox/Switch specifier defaults to GameCube style
+  if name:find("hori") and (name:find("battle pad") or name:find("horipad")) then
+    return "gamecube"
+  end
+
+  -- 8BitDo Pro 2 and Pro 3 - PlayStation style (symmetrical sticks)
+  if name:find("8bitdo") and (name:find("pro 2") or name:find("pro 3") or name:find("pro2") or name:find("pro3")) then
+    return "playstation4" -- Use PS4 as the generic PlayStation style
+  end
+
+  -- 8BitDo Ultimate series - Xbox style (asymmetrical sticks)
+  if name:find("8bitdo") and name:find("ultimate") then
+    return "xboxone" -- Use Xbox One as the generic Xbox style
+  end
+
+  -- GameSir Tarantula - PlayStation style (symmetrical sticks)
+  if name:find("gamesir") and name:find("tarantula") then
+    return "playstation4"
+  end
+
+  -- Default to generic controller for other modern controllers
+  -- This includes: 8BitDo Lite/Zero/F40/Micro/Arcade, GameSir G7/T4/X2, Hori Fighting Edge, etc.
   return "generic"
 end
 
@@ -131,7 +202,7 @@ local function buildConfigDescriptor(config, index)
   -- For controllers, determine the specific image variant to use
   local controllerImageVariant = nil
   if deviceType == "controller" then
-    controllerImageVariant = getControllerImageVariant(label)
+    controllerImageVariant = InputDeviceUtils.getControllerImageVariant(label)
   end
 
   return {
