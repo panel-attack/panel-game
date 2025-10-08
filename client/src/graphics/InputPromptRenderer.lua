@@ -1,5 +1,6 @@
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+-- Rendering utility for drawing input device icons with optional numbering
 local InputPromptRenderer = {}
 
 -- Renders an input prompt icon at the specified position

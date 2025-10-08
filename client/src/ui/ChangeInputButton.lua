@@ -12,12 +12,13 @@ local UiElement = require(PATH .. ".UIElement")
 ---@field battleRoom BattleRoom?
 ---@field onChangeInputRequested fun()?
 
+-- Button that displays current player input assignments and allows changing them
 ---@class ChangeInputButton : Button
----@field battleRoom BattleRoom?
----@field onChangeInputRequested fun()
----@field titleLabel Label
----@field summaryLabel Label
----@field signalConnections table
+---@field battleRoom BattleRoom? Reference to battle room for querying player assignments
+---@field onChangeInputRequested fun() Callback invoked when button is clicked to change inputs
+---@field titleLabel Label Title text label
+---@field iconContainer StackPanel Container for player assignment icons
+---@field signalConnections table[] Array of signal subscriptions for live updates
 local ChangeInputButton = class(
   function(self, options)
     options = options or {}
@@ -66,6 +67,7 @@ function ChangeInputButton:onResize()
   -- Icon container has fixed width now
 end
 
+---@return string Summary text of all player assignments
 function ChangeInputButton:getInputDeviceSummary()
   if not self.battleRoom then
     return ""
@@ -115,6 +117,8 @@ function ChangeInputButton:updateSummary()
   self.isEnabled = true
 end
 
+---@param player Player
+---@param playerIndex number
 function ChangeInputButton:addPlayerRow(player, playerIndex)
   local iconSize = 20
 
@@ -127,6 +131,9 @@ function ChangeInputButton:addPlayerRow(player, playerIndex)
   self.iconContainer:addElement(playerRow)
 end
 
+---@param playerRow StackPanel
+---@param player Player
+---@param playerIndex number
 function ChangeInputButton:addPlayerIcons(playerRow, player, playerIndex)
   local iconSize = 20
 
@@ -185,6 +192,8 @@ function ChangeInputButton:addPlayerIcons(playerRow, player, playerIndex)
   end
 end
 
+---@param player Player
+---@return {deviceType: string, index: number, showIndex: boolean}? Device info or nil
 function ChangeInputButton:getPlayerDeviceInfo(player)
   if not player.inputConfiguration then
     return nil
@@ -222,6 +231,7 @@ function ChangeInputButton:getPlayerDeviceInfo(player)
   return playerDeviceInfo
 end
 
+---@param battleRoom BattleRoom
 function ChangeInputButton:setBattleRoom(battleRoom)
   self:unsubscribeFromPlayerSignals()
   self.battleRoom = battleRoom

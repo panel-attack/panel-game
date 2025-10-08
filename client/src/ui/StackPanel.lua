@@ -6,6 +6,9 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 -- StackPanel is a layouting element that stacks up all its children in one direction based on an alignment setting
 -- Useful for auto-aligning multiple ui elements that only know one of their dimensions
+---@class StackPanel : UiElement
+---@field alignment string Direction to stack children ("left", "right", "top", "bottom")
+---@field pixelsTaken number Pixels used in the stacking direction
 local StackPanel = class(function(stackPanel, options)
   -- all children are aligned automatically towards that option inside the StackPanel
   -- possible values: "left", "right", "top", "bottom"

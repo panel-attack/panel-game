@@ -2,9 +2,13 @@ local joystickManager = require("common.lib.joystickManager")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 
+-- Utility module for detecting, classifying, and labeling input devices
 local InputDeviceUtils = {}
 
 -- Parses controller binding string to extract GUID and slot
+---@param binding string? Controller binding string (format: "guid:slot:...")
+---@return string? guid Controller GUID
+---@return number? slot Controller slot number
 local function parseControllerBinding(binding)
   if not binding then
     return nil
@@ -19,6 +23,9 @@ local function parseControllerBinding(binding)
 end
 
 -- Resolves controller name from GUID and slot using Love2D joystick API
+---@param guid string Controller GUID
+---@param slot number? Controller slot number
+---@return string? Controller name or nil
 local function resolveControllerName(guid, slot)
   if not guid then
     return nil
@@ -49,6 +56,10 @@ local function resolveControllerName(guid, slot)
 end
 
 -- Classifies input configuration as keyboard, controller, or touch based on bindings
+---@param config table Input configuration object
+---@param index number Configuration index
+---@return string deviceType "keyboard", "controller", or "touch"
+---@return string label Human-readable device name
 local function classifyConfiguration(config, index)
   local firstBinding
   for _, keyName in ipairs(consts.KEY_NAMES) do
@@ -74,6 +85,8 @@ local function classifyConfiguration(config, index)
 end
 
 -- Maps controller names to specific image variants for theme selection
+---@param controllerName string? Controller name from Love2D
+---@return string Image variant key (e.g., "playstation4", "xboxone", "generic")
 function InputDeviceUtils.getControllerImageVariant(controllerName)
   if not controllerName then
     return "generic"
@@ -196,6 +209,9 @@ function InputDeviceUtils.getControllerImageVariant(controllerName)
 end
 
 -- Builds device descriptor for input configuration
+---@param config table Input configuration object
+---@param index number Configuration index in GAME.input.inputConfigurations
+---@return table Device descriptor with type, label, config, etc.
 local function buildConfigDescriptor(config, index)
   local deviceType, label = classifyConfiguration(config, index)
 
@@ -217,6 +233,7 @@ local function buildConfigDescriptor(config, index)
 end
 
 -- Builds device descriptor for touch/mouse input
+---@return table Touch device descriptor
 local function buildTouchDescriptor()
   local mouse = GAME.input.mouse
   return {
@@ -230,6 +247,7 @@ local function buildTouchDescriptor()
 end
 
 -- Gets list of all assignable input devices (controllers, keyboard, touch)
+---@return table[] Array of device descriptors with metadata
 function InputDeviceUtils.getAssignableDevices()
   local devices = {}
   local deviceTypeCounters = {} -- Track device configuration numbers per type
@@ -254,6 +272,8 @@ function InputDeviceUtils.getAssignableDevices()
 end
 
 -- Gets label for a specific input configuration
+---@param inputConfiguration table Input configuration object
+---@return string Human-readable label
 local function getConfigurationLabel(inputConfiguration)
   for i, config in ipairs(GAME.input.inputConfigurations) do
     if config == inputConfiguration then
@@ -265,6 +285,8 @@ local function getConfigurationLabel(inputConfiguration)
 end
 
 -- Describes current input device assignment for a player
+---@param player Player?
+---@return string Description of player's device assignment
 local function describePlayerAssignment(player)
   if not player then
     return ""
@@ -282,6 +304,8 @@ local function describePlayerAssignment(player)
 end
 
 -- Formats assignment summary text showing all player device assignments
+---@param players Player[] Array of players
+---@return string Multi-line summary text
 function InputDeviceUtils.formatAssignmentSummary(players)
   local lines = {}
   for i, player in ipairs(players) do
@@ -292,11 +316,14 @@ function InputDeviceUtils.formatAssignmentSummary(players)
 end
 
 -- Public wrapper for describePlayerAssignment
+---@param player Player
+---@return string Description of player's device assignment
 function InputDeviceUtils.describePlayerAssignment(player)
   return describePlayerAssignment(player)
 end
 
 -- Detects which input configuration is currently providing input
+---@return table? Input configuration with active input, or nil
 function InputDeviceUtils.detectActiveInputConfiguration()
   for i = 1, #GAME.input.inputConfigurations do
     local config = GAME.input.inputConfigurations[i]
@@ -310,6 +337,8 @@ function InputDeviceUtils.detectActiveInputConfiguration()
   return nil
 end
 
+---@param battleRoom BattleRoom?
+---@return boolean True if an unassigned configuration has active input
 function InputDeviceUtils.checkForUnassignedConfigurationInputs(battleRoom)
   if not battleRoom then
     return false

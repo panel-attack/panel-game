@@ -458,7 +458,7 @@ function BattleRoom:restoreInputConfigurations()
   -- Try to restore previous device assignments
   for _, player in ipairs(localPlayers) do
     if player.lastUsedInputConfiguration then
-      logger.debug("BattleRoom: attempting to restore device for player %d", player.playerNumber)
+      logger.debug(string.format("BattleRoom: attempting to restore device for player %d", player.playerNumber))
       -- Check if the device is available (not already claimed by another player)
       local deviceAvailable = true
       for _, otherPlayer in ipairs(localPlayers) do
@@ -471,7 +471,7 @@ function BattleRoom:restoreInputConfigurations()
       if deviceAvailable then
         local success = self:claimDeviceForPlayer(player, player.lastUsedInputConfiguration)
         if success then
-          logger.debug("BattleRoom: restored device for player %d", player.playerNumber)
+          logger.debug(string.format("BattleRoom: restored device for player %d", player.playerNumber))
         end
       end
     end
@@ -522,7 +522,7 @@ end
 -- Gets the player currently assigned to a specific input device
 function BattleRoom:getPlayerAssignedToDevice(device)
   assert(device, "device is required")
-  logger.debug("BattleRoom:getPlayerAssignedToDevice device=%s", tostring(device))
+  logger.debug(string.format("BattleRoom:getPlayerAssignedToDevice device=%s", tostring(device)))
   if device.player then
     return device.player
   end
@@ -540,7 +540,7 @@ end
 function BattleRoom:claimDeviceForPlayer(player, device)
   assert(player, "player is required")
   assert(device, "device is required")
-  logger.debug("BattleRoom:claimDeviceForPlayer player=%s device=%s", tostring(player.playerNumber), tostring(device))
+  logger.debug(string.format("BattleRoom:claimDeviceForPlayer player=%s device=%s", tostring(player.playerNumber), tostring(device)))
 
   if player.inputConfiguration == device then
     logger.debug("BattleRoom:claimDeviceForPlayer device already assigned to player")
@@ -565,7 +565,7 @@ end
 -- Clears input device assignment for a player
 function BattleRoom:clearPlayerAssignment(player)
   assert(player, "player is required")
-  logger.debug("BattleRoom:clearPlayerAssignment player=%s", tostring(player.playerNumber))
+  logger.debug(string.format("BattleRoom:clearPlayerAssignment player=%s", tostring(player.playerNumber)))
 
   if player.inputConfiguration then
     player:unrestrictInputs()

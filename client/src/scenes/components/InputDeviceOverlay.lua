@@ -17,15 +17,18 @@ local PLAYER_SLOT_SIZE = 150
 local DEVICE_ICON_SIZE = 64
 
 
+-- Visual UI element representing one player's input device assignment status
 ---@class PlayerSlot : UiElement
----@field playerNumber number
----@field assignedDevice table?
----@field holdProgress number
----@field pendingDeviceType string?
----@field playerImage ImageContainer?
----@field deviceIcon UiElement?
----@field isTargetedForTouch boolean
----@field parentOverlay InputDeviceOverlay?
+---@field playerNumber number Visual player index (1, 2, etc.)
+---@field assignedDevice table? Device descriptor if assigned, nil otherwise
+---@field holdProgress number Current hold progress from 0-1
+---@field pendingDeviceType string? Device type being held during assignment (keyboard/controller/touch)
+---@field playerImage ImageContainer? Player number icon from theme
+---@field deviceIcon UiElement? Device icon showing keyboard/controller/touch type
+---@field isTargetedForTouch boolean True when mouse is hovering over this slot for touch assignment
+---@field parentOverlay InputDeviceOverlay? Reference to parent overlay for accessing device descriptors
+
+---@param options {playerNumber: number, parentOverlay: InputDeviceOverlay}
 local PlayerSlot = class(function(self, options)
   local playerNumber = options.playerNumber or options
   self.playerNumber = playerNumber
@@ -48,6 +51,7 @@ function PlayerSlot:drawSelf()
 end
 
 -- Draws slot background with progress-based color transitions
+---@param slot PlayerSlot
 function PlayerSlot:drawSlotBackground(slot)
   local progress = self.holdProgress or 0
   local bgColor = self:getBackgroundColor(progress)
@@ -57,6 +61,7 @@ function PlayerSlot:drawSlotBackground(slot)
 end
 
 -- Draws slot border with progress-based color transitions
+---@param slot PlayerSlot
 function PlayerSlot:drawSlotBorder(slot)
   local progress = self.holdProgress or 0
   local borderColor = self:getBorderColor(progress)
@@ -66,6 +71,8 @@ function PlayerSlot:drawSlotBorder(slot)
 end
 
 -- Gets background color based on assignment and progress
+---@param progress number Hold progress from 0-1
+---@return table Color array {r, g, b, a}
 function PlayerSlot:getBackgroundColor(progress)
   if self.assignedDevice then
     return {0.2, 0.3, 0.4, 0.9}  -- Assigned: grey-blue background
@@ -76,6 +83,8 @@ function PlayerSlot:getBackgroundColor(progress)
 end
 
 -- Gets border color based on assignment and progress
+---@param progress number Hold progress from 0-1
+---@return table Color array {r, g, b, a}
 function PlayerSlot:getBorderColor(progress)
   if self.assignedDevice then
     return {0.3, 0.4, 0.5, 1}  -- Assigned: grey-blue border
@@ -101,6 +110,7 @@ function PlayerSlot:createPlayerNumberImage()
 end
 
 -- Sets the assigned device for this player slot
+---@param device table? Device descriptor or nil
 function PlayerSlot:setAssignedDevice(device)
   self.assignedDevice = device
 end
@@ -175,38 +185,53 @@ function PlayerSlot:updateDeviceIcon()
 end
 
 -- Sets hold progress and pending device type for visual feedback
+---@param progress number Hold progress from 0-1
+---@param pendingDeviceType string? Device type being held (keyboard/controller/touch)
 function PlayerSlot:setHoldProgress(progress, pendingDeviceType)
   self.holdProgress = math.max(0, math.min(1, progress))
   self.pendingDeviceType = pendingDeviceType
 end
 
+---@param isTarget boolean True when mouse is hovering over this slot
 function PlayerSlot:setTouchTarget(isTarget)
   self.isTargetedForTouch = isTarget
 end
 
+---@param dt number Delta time in seconds
 function PlayerSlot:updateSelf(dt)
   -- Update device icon if needed during each frame
   self:updateDeviceIcon()
 end
 
-
 -- Checks if mouse cursor is over this player slot
+---@return boolean True if mouse is over this slot
 function PlayerSlot:isMouseOver()
   local mx, my = inputManager.mouse.x, inputManager.mouse.y
   local x, y = self:getScreenPos()
   return mx >= x and mx <= x + self.width and my >= y and my <= y + self.height
 end
 
+-- Modal overlay that blocks game start until all local players have assigned input devices using hold-to-confirm interaction
 ---@class InputDeviceOverlay : UiElement
+---@field battleRoom BattleRoom Reference to battle room for player/device management
+---@field holdThreshold number Duration in seconds required to confirm assignment (default 0.25)
+---@field active boolean True when overlay is open and processing input
+---@field playerSlots PlayerSlot[] Array of player slot UI elements
+---@field deviceDescriptors table[] Array of device metadata from InputDeviceUtils
+---@field deviceState table<string, {confirmTriggered:boolean, holdTime:number}> Tracks hold state per device
+---@field touchTargetSlot PlayerSlot? Current slot being targeted for touch assignment
+---@field autoCloseTimer number Timer for auto-closing after all assignments complete
+---@field onClose fun()? Callback invoked when overlay closes
+---@field titleLabel Label Title text element
+---@field subtitleLabel Label Subtitle text element
+---@field slotsContainer StackPanel Container for player slots
+
+---@class InputDeviceOverlayOptions
 ---@field battleRoom BattleRoom
----@field holdThreshold number
----@field active boolean
----@field playerSlots PlayerSlot[]
----@field deviceDescriptors table
----@field deviceState table<string, {confirmTriggered:boolean, holdTime:number}>
----@field touchTargetSlot PlayerSlot?
----@field autoCloseTimer number
----@field onClose fun()? optional close callback
+---@field holdThreshold number?
+---@field onClose fun()?
+
+---@param options InputDeviceOverlayOptions
 local InputDeviceOverlay = class(function(self, options)
   options = options or {}
   self.battleRoom = options.battleRoom
@@ -226,6 +251,9 @@ local InputDeviceOverlay = class(function(self, options)
   self:buildUi()
 end, UiElement)
 
+---@param descriptor table Device descriptor
+---@param keyAliases string[] Array of key aliases to check
+---@return number? Maximum hold duration across all checked keys
 local function getHoldDurationForDescriptor(descriptor, keyAliases)
   local device = descriptor.config
   local maxDuration
@@ -287,12 +315,14 @@ function InputDeviceOverlay:buildUi()
   self:addChild(self.slotsContainer)
 end
 
+---@return Player[] Array of local human players
 function InputDeviceOverlay:getLocalPlayers()
   assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
   return self.battleRoom:getLocalHumanPlayers()
 end
 
 -- Gets the next player that needs device assignment
+---@return Player? Next unassigned player or nil if all assigned
 function InputDeviceOverlay:getNextUnassignedPlayer()
   for _, player in ipairs(self:getLocalPlayers()) do
     if not self.battleRoom:isPlayerAssigned(player) then
@@ -302,6 +332,7 @@ function InputDeviceOverlay:getNextUnassignedPlayer()
   return nil
 end
 
+---@return PlayerSlot? Player slot under mouse cursor or nil
 function InputDeviceOverlay:getPlayerSlotForTouch()
   for _, slot in ipairs(self.playerSlots) do
     if slot:isMouseOver() then
@@ -340,6 +371,8 @@ function InputDeviceOverlay:buildPlayerSlots()
   end
 end
 
+---@param player Player
+---@return table? Device descriptor if player is assigned, nil otherwise
 function InputDeviceOverlay:getAssignedDeviceForPlayer(player)
   if not self.deviceDescriptors or not self.battleRoom or not player then
     return nil
@@ -403,6 +436,8 @@ end
 
 
 -- Assigns a device to a player and plays feedback
+---@param descriptor table Device descriptor to assign
+---@param targetPlayer Player? Player to assign to, or nil to assign to next unassigned player
 function InputDeviceOverlay:assignDevice(descriptor, targetPlayer)
   assert(descriptor, "descriptor is required")
   assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
@@ -429,6 +464,8 @@ function InputDeviceOverlay:assignDevice(descriptor, targetPlayer)
 end
 
 -- Processes hold input for a configuration device
+---@param descriptor table Device descriptor for controller/keyboard
+---@param dt number Delta time in seconds
 function InputDeviceOverlay:processConfigHold(descriptor, dt)
   assert(descriptor and descriptor.config, "Descriptor with config is required")
   assert(type(dt) == "number", "dt must be numeric")
@@ -469,6 +506,7 @@ end
 
 
 -- Updates touch hold state and visual feedback
+---@param dt number Delta time in seconds
 function InputDeviceOverlay:updateTouchHold(dt)
   local touchDescriptor = self:getTouchDescriptor()
   if not touchDescriptor then
@@ -484,6 +522,7 @@ function InputDeviceOverlay:updateTouchHold(dt)
 end
 
 -- Checks if mouse is currently being held down
+---@return boolean True if mouse button 1 is held
 function InputDeviceOverlay:isMouseHolding()
   local mousePressed = inputManager.mouse.isPressed[1]
   local mouseDown = inputManager.mouse.isDown[1]
@@ -491,6 +530,8 @@ function InputDeviceOverlay:isMouseHolding()
 end
 
 -- Processes touch hold logic when mouse is held down
+---@param dt number Delta time in seconds
+---@param touchDescriptor table Touch device descriptor
 function InputDeviceOverlay:processTouchHold(dt, touchDescriptor)
   local targetSlot = self:getPlayerSlotForTouch()
   if not targetSlot then
@@ -526,6 +567,7 @@ function InputDeviceOverlay:processTouchHold(dt, touchDescriptor)
 end
 
 -- Updates touch target slot when changed
+---@param targetSlot PlayerSlot New target slot for touch assignment
 function InputDeviceOverlay:updateTouchTarget(targetSlot)
   if self.touchTargetSlot ~= targetSlot then
     if self.touchTargetSlot then
@@ -547,6 +589,8 @@ end
 
 
 -- Assigns touch device to specific slot
+---@param touchDescriptor table Touch device descriptor
+---@param targetSlot PlayerSlot Slot to assign touch to
 function InputDeviceOverlay:assignTouchToSlot(touchDescriptor, targetSlot)
   local players = self:getLocalPlayers()
   for i, slot in ipairs(self.playerSlots) do
@@ -577,6 +621,7 @@ function InputDeviceOverlay:clearTouchTarget()
   end
 end
 
+---@return table? Touch device descriptor or nil if not found
 function InputDeviceOverlay:getTouchDescriptor()
   for _, descriptor in ipairs(self.deviceDescriptors) do
     if descriptor.type == "touch" then
@@ -587,6 +632,7 @@ function InputDeviceOverlay:getTouchDescriptor()
 end
 
 -- Checks if any button is currently being pressed on any device
+---@return boolean True if any device has active input
 function InputDeviceOverlay:isAnyButtonCurrentlyPressed()
   -- Check if mouse is being held (for touch)
   if self:isMouseHolding() then
@@ -606,6 +652,7 @@ function InputDeviceOverlay:isAnyButtonCurrentlyPressed()
   return false
 end
 
+---@param dt number Delta time in seconds
 function InputDeviceOverlay:updateSelf(dt)
   if not self.active then
     return
@@ -673,16 +720,19 @@ function InputDeviceOverlay:close()
   end
 end
 
+---@return boolean True if overlay is currently active
 function InputDeviceOverlay:isActive()
   return self.active
 end
 
+---@return boolean? True to block touch event propagation
 function InputDeviceOverlay:onTouch()
   if self.active then
     return true
   end
 end
 
+---@return boolean? True to block release event propagation
 function InputDeviceOverlay:onRelease()
   if self.active then
     return true
