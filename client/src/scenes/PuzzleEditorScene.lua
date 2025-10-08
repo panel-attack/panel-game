@@ -64,6 +64,9 @@ function PuzzleEditorScene:customLoad()
       self.match.stacks[1].engine.cur_row = self.originalPuzzle.cursorStartLeft.row
       self.match.stacks[1].engine.cur_col = self.originalPuzzle.cursorStartLeft.column
     end
+
+    -- Initialize garbage ID counter from stack's garbageCreatedCount to avoid ID collisions
+    self.garbageIdCounter = self.match.stacks[1].engine.garbageCreatedCount
   end
 
   self:createUI()
@@ -564,6 +567,20 @@ function PuzzleEditorScene:placeGarbageBlock()
   if minRow < 1 then
     minRow = 1
     height = maxRow - minRow + 1
+  end
+
+  -- Clear any intersecting garbage blocks
+  local clearedGarbageIds = {}
+  for row = minRow, maxRow do
+    for col = minCol, maxCol do
+      if row >= 1 and row <= stack.engine.height and col >= 1 and col <= stack.engine.width then
+        local panel = stack.engine.panels[row][col]
+        if panel.isGarbage and not clearedGarbageIds[panel.garbageId] then
+          self:clearGarbageBlock(row, col)
+          clearedGarbageIds[panel.garbageId] = true
+        end
+      end
+    end
   end
 
   -- Create garbage block

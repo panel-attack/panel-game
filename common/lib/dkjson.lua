@@ -9,6 +9,9 @@ David Kolf's JSON module for Lua 5.1 - 5.4
 
 Version 2.6
 
+PANEL ATTACK MODIFICATIONS:
+- Added JsonSafePrecision integration and DEBUG validation in num2str()
+- Added @overload annotations for json.encode function
 
 For the documentation see the corresponding readme.txt or visit
 <http://dkolf.de/src/dkjson-lua.fsl/>.
@@ -51,6 +54,7 @@ local strrep, gsub, strsub, strbyte, strchar, strfind, strlen, strformat =
       string.find, string.len, string.format
 local strmatch = string.match
 local concat = table.concat
+local JsonSafePrecision = require("common.data.JsonSafePrecision")
 
 local json = { version = "dkjson 2.6" }
 
@@ -185,6 +189,10 @@ end
 updatedecpoint()
 
 local function num2str (num)
+  -- Debug validation in DEBUG builds
+  if DEBUG_ENABLED then
+    JsonSafePrecision.assertJsonSafePrecision(num)
+  end
   return replace(fsub(tostring(num), numfilter, ""), decpoint, ".")
 end
 
