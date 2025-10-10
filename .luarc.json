@@ -35,7 +35,7 @@
         "redefined-local": "Any",
         "redundant-return": "Any",
         "return-type-mismatch": "Any",
-        "trailing-space": "Any",
+        "trailing-space": "None", // Just noise, we don't particularly care
         "undefined-field": "Opened", // TODO: Remove once all warnings are fixed
         "unreachable-code": "Any",
         "unused-function": "Any",
