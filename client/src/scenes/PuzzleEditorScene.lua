@@ -706,8 +706,12 @@ function PuzzleEditorScene:savePuzzle()
   assert(self.rootPuzzleSet.fileSource)
 
   local targetPuzzleSet = self.rootPuzzleSet
+  ---@cast targetPuzzleSet PuzzleSet
   for _, pathIndex in ipairs(self.puzzleSetPath) do
-    targetPuzzleSet = targetPuzzleSet.puzzleSets[pathIndex]
+    local nextSet = targetPuzzleSet.puzzleSets[pathIndex]
+    assert(nextSet)
+    ---@cast nextSet PuzzleSet
+    targetPuzzleSet = nextSet
   end
 
   targetPuzzleSet:updatePuzzle(self.puzzleIndex, updatedPuzzle)

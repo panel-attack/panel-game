@@ -34,6 +34,7 @@
         "${3rd}/love2d/library",
         "common/lib/socket.lua",
         "common/lib/dkjson.lua",
-        "common/lib/csprng.lua"
+        "common/lib/csprng.lua",
+        ".vscode/love2d-12/library"
     ]
 }
