@@ -6,7 +6,8 @@ local ModLoader = require("client.src.mods.ModLoader")
 
 local CharacterLoader = {}
 
--- (re)Initializes the characters globals with data
+---(re)Initializes the characters globals with data
+---@return nil
 function CharacterLoader.initCharacters()
   local all, ids, filtered, visible = ModLoader.initMods(Character)
   ---@type table<string, Character>
@@ -21,6 +22,8 @@ function CharacterLoader.initCharacters()
   CharacterLoader.loadBundleIcons()
 end
 
+---Ensures all characters have an icon, generating bundle icons when required
+---@return nil
 function CharacterLoader.loadBundleIcons()
   -- bundles without character icon display up to 4 icons of their subcharacters
   -- there is no guarantee the subcharacters had been loaded previously so do it after everything got preloaded
@@ -35,6 +38,9 @@ function CharacterLoader.loadBundleIcons()
   end
 end
 
+---Resolves a requested character selection, falling back to a random visible character
+---@param characterId string|nil
+---@return string
 function CharacterLoader.resolveCharacterSelection(characterId)
   if not characterId or not characters[characterId] then
     -- resolve via random selection
@@ -44,6 +50,9 @@ function CharacterLoader.resolveCharacterSelection(characterId)
   return characterId
 end
 
+---Resolves bundle selections until a concrete character is chosen
+---@param characterId string
+---@return string
 function CharacterLoader.resolveBundle(characterId)
   while characters[characterId]:isBundle() do
     local subMods = characters[characterId]:getSubMods()
@@ -53,6 +62,9 @@ function CharacterLoader.resolveBundle(characterId)
   return characterId
 end
 
+---Fully resolves a potentially missing or bundled character selection
+---@param characterId string|nil
+---@return string
 function CharacterLoader.fullyResolveCharacterSelection(characterId)
   characterId = CharacterLoader.resolveCharacterSelection(characterId)
   return CharacterLoader.resolveBundle(characterId)

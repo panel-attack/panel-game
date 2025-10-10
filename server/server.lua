@@ -879,7 +879,7 @@ end
 
 -- gets the bans for that player they did not see yet
 ---@param player ServerPlayer
----@return table<integer, string>
+---@return table<BanID, string>
 function Server:getUnseenBans(player)
   return self.database:getPlayerUnseenBans(player.publicPlayerID)
 end

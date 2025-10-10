@@ -57,6 +57,9 @@ end
 ---@field lastReplayPath string?
 ---@field crashTrace string?
 ---@field theme Theme
+---@field focused boolean
+---@field connected_server_ip string?
+---@field connected_server_port integer?
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)

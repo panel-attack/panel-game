@@ -36,6 +36,7 @@ function PuzzleLibraryTests.testCurrentTrainingPuzzleIndicesFilteringAndHistogra
   -- Mock logger to capture debug output for first method only
   local loggedMessages = {}
   local originalDebug = logger.debug
+---@diagnostic disable-next-line: duplicate-set-field
   logger.debug = function(message)
     loggedMessages[#loggedMessages + 1] = message
   end

@@ -76,6 +76,7 @@ function ClientMatch.createFromBattleRoom(battleRoom)
 end
 
 ---@param gameMode GameMode
+---@return ClientMatch
 function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked, stageId)
   local clientMatch = ClientMatch(players, ranked)
   clientMatch:setStage(stageId)

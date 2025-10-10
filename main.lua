@@ -387,6 +387,7 @@ function love.errorhandler(msg)
   end
 end
 
+---@diagnostic disable-next-line: duplicate-set-field
 function love.resize(newWidth, newHeight)
   if GAME then
     logger.debug("Updating canvas scale from love.resize")
