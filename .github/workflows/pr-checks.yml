@@ -24,21 +24,17 @@ jobs:
           checklevel: Information
         continue-on-error: true
 
-      - name: Upload diagnostics JSON
-        if: steps.typecheck.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: diagnostics-json
-          path: "**/*.json"
-
       - name: Format diagnostics output
         if: steps.typecheck.outcome == 'failure'
         run: |
           echo "## ❌ Lua Language Server Diagnostics Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Looking for diagnostic files..." >> $GITHUB_STEP_SUMMARY
-          ls -la *.json 2>/dev/null || echo "No JSON files found in root" >> $GITHUB_STEP_SUMMARY
-          find . -name "*.json" -type f >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "check.json" ]; then
+            jq -r 'to_entries[] | .key as $file | .value[] | "**\($file | split("/") | last):\(.range.start.line + 1)** - \(.message) (\(.code))"' check.json >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No check.json file found" >> $GITHUB_STEP_SUMMARY
+          fi
 
           exit 1
 
