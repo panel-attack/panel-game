@@ -66,6 +66,7 @@ function PuzzleEditorScene:customLoad()
     end
 
     -- Initialize garbage ID counter from stack's garbageCreatedCount to avoid ID collisions
+    ---@diagnostic disable-next-line: invisible
     self.garbageIdCounter = self.match.stacks[1].engine.garbageCreatedCount
   end
 
