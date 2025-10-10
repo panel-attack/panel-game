@@ -1,0 +1,66 @@
+name: PR Checks
+
+on:
+  pull_request:
+    paths:
+      - '**.lua'
+      - '.luarc.json'
+      - '.github/workflows/pr-checks.yml'
+  push:
+    branches: [beta]
+
+jobs:
+  lua-diagnostics:
+    name: Lua Language Server Diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Type Check and Lint
+        uses: mrcjkb/lua-typecheck-action@v0
+        with:
+          configpath: .luarc.json
+          checklevel: Information
+
+  love2d-tests:
+    name: Love2D Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Love2D dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-2.0-0 libopenal1 libfreetype6 \
+            libtheora0 libvorbis0a libmodplug1 libfuse2
+
+      - name: Cache Love2D binary
+        id: cache-love
+        uses: actions/cache@v4
+        with:
+          path: ~/love2d
+          key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
+
+      - name: Download Love2D 12.0
+        if: steps.cache-love.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/love2d
+          curl -L "https://github.com/JamesVanBoxtel/panel-game/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
+            -o /tmp/love.tar.gz
+          tar -xzf /tmp/love.tar.gz -C ~/love2d
+
+      - name: Make Love2D executable
+        run: chmod +x ~/love2d/love.AppImage
+
+      - name: Run tests
+        run: ~/love2d/love.AppImage ./testLauncher.lua
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        timeout-minutes: 10
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: "*.log"

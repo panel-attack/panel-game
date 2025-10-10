@@ -1,55 +1,224 @@
-# PR Check Strategy
+# GitHub PR Checks Implementation for Panel Attack
 
-- **Need:** Keep pull requests from regressing gameplay tests, Lua syntax, or diagnostics.
-- **Approach:** Use GitHub Actions to run language-quality gates up front, then execute the Love2D driven test suite on any change that touches Lua or Love configuration.
+## Overview
 
-## Common Checks for Lua Projects
+This document outlines the GitHub Actions PR checks for Panel Attack:
+1. **Lua Language Server diagnostics** - Block PRs that introduce new warnings
+2. **Love2D test suite** - Run all tests in headless mode with log output
 
-- `lua-language-server --check` (LuaLS) to mirror editor diagnostics in CI; configured via `.luarc.json`.
+## Implementation
 
-## Common Checks for Love2D Projects
+### Job 1: Lua Language Server Diagnostics
 
-- Run `love` in headless mode to execute unit/integration harnesses (`love ./testLauncher.lua`).
-- Cache the Love2D runtime between workflow runs to avoid repeated downloads.
-- Smoke-test content with scene load scripts when deterministic tests exist.
-- Validate assets (fonts, audio) if pipeline supports it; skipped here for now.
+Uses the existing `.luarc.json` configuration to match local development environment.
 
-## Proposed GitHub Actions Workflow
+```yaml
+lua-diagnostics:
+  name: Lua Language Server Diagnostics
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - name: Type Check and Lint
+      uses: mrcjkb/lua-typecheck-action@v0
+      with:
+        config_file: .luarc.json
+        level: Warning
+```
 
-- **Job 1 – Lua Diagnostics Gate**
-  - Trigger: all PRs touching Lua or workflow files.
-  - Steps:
-    - Install LuaLS CLI (from release binary or `npm i -g @luals/server`).
-    - Run `lua-language-server --check .` with project `.luarc.json`.
-  - Failure policy: block merge; artifacts limited to logs for now.
+**What it checks:**
+- Type mismatches
+- Undefined fields
+- Nil safety issues
+- All diagnostics configured in `.luarc.json`
 
-- **Job 2 – Love2D Test Suite**
-  - Trigger: same filters as above (plus ability to call manually).
-  - Steps:
-    - Acquire Love 12.0 CI build (see "Bundling Love2D" below).
-    - Cache `~/.cache/love` and downloaded archive.
-    - Launch tests: `love ./testLauncher.lua`.
-    - Optional extension: add verification run (`love ./verificationLauncher.lua`) once stable in CI.
-  - Failure policy: block merge; upload test logs if failure occurs.
+**Configuration:**
+Your `.luarc.json` diagnostics with "Any" status are checked on all files. 
 
-- **Job 3 – Fast Smoke (Optional)**
-  - Lightweight job to run targeted scriptable scenarios via `panel_attack_navigator.py` if runtime budget allows.
+### Job 2: Love2D Test Suite
 
-## Bundling Love2D for CI
+Runs `testLauncher.lua` in headless mode and captures log output. No UI rendering needed.
 
-- **Preferred:** Download nightly build during CI (scripted curl/wget) and cache it; keeps repo small, ensures updates stay centralized.
-- **Alternative:** Publish required build as a release asset (or private bucket) and fetch from there; version with SHA pinning.
-- **Last resort:** Commit binary via Git LFS; only if external hosting is impossible and size remains manageable.
-- Implementation detail: use `tar`/`unzip`, place binary on PATH (`export LOVE_PATH="$HOME/love/bin"`), and run `LOVE_PATH/love ./testLauncher.lua`.
+```yaml
+love2d-tests:
+  name: Love2D Test Suite
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
 
-## Preventing New Diagnostics
+    - name: Install Love2D dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-2.0-0 libopenal1 libfreetype6 \
+          libtheora0 libvorbis0a libmodplug1
 
-- LuaLS `--check` exits non-zero when diagnostics are produced; run against the repo root configured by `.luarc.json`.
-- Gate merges on LuaLS results; document baseline suppressions in `.luarc.json` if needed to stay green.
+    - name: Cache Love2D binary
+      id: cache-love
+      uses: actions/cache@v4
+      with:
+        path: ~/love2d
+        key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
+
+    - name: Download Love2D 12.0
+      if: steps.cache-love.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p ~/love2d
+        # Download from GitHub release where you've uploaded the Love2D binary
+        curl -L "https://github.com/YOUR-ORG/panel-attack/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
+          -o /tmp/love.tar.gz
+        tar -xzf /tmp/love.tar.gz -C ~/love2d --strip-components=1
+
+    - name: Run tests
+      run: ~/love2d/bin/love ./testLauncher.lua
+      env:
+        SDL_VIDEODRIVER: dummy
+        SDL_AUDIODRIVER: dummy
+      timeout-minutes: 10
+
+    - name: Upload test logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs
+        path: "*.log"
+```
+
+**Key points:**
+- Uses `SDL_VIDEODRIVER=dummy` and `SDL_AUDIODRIVER=dummy` - no Xvfb needed
+- Downloads Love2D from a GitHub release in your repo
+- Caches the binary for faster subsequent runs
+- Captures and uploads logs on failure
+
+### Complete Workflow File
+
+Create `.github/workflows/pr-checks.yml`:
+
+```yaml
+name: PR Checks
+
+on:
+  pull_request:
+    paths:
+      - '**.lua'
+      - '.luarc.json'
+      - '.github/workflows/pr-checks.yml'
+  push:
+    branches: [beta]
+
+jobs:
+  lua-diagnostics:
+    name: Lua Language Server Diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Type Check and Lint
+        uses: mrcjkb/lua-typecheck-action@v0
+        with:
+          config_file: .luarc.json
+          level: Warning
+
+  love2d-tests:
+    name: Love2D Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Love2D dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-2.0-0 libopenal1 libfreetype6 \
+            libtheora0 libvorbis0a libmodplug1
+
+      - name: Cache Love2D binary
+        id: cache-love
+        uses: actions/cache@v4
+        with:
+          path: ~/love2d
+          key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
+
+      - name: Download Love2D 12.0
+        if: steps.cache-love.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/love2d
+          curl -L "https://github.com/YOUR-ORG/panel-attack/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
+            -o /tmp/love.tar.gz
+          tar -xzf /tmp/love.tar.gz -C ~/love2d --strip-components=1
+
+      - name: Run tests
+        run: ~/love2d/bin/love ./testLauncher.lua
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        timeout-minutes: 10
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: "*.log"
+```
+
+## Love2D Binary Distribution
+
+### Upload Your Current Love2D Binary
+
+1. **Package your current Love2D 12.0 binary:**
+   ```bash
+   # On your Mac where you have Love2D 12.0 working
+   # Get the Linux version (download CI build or compile)
+   # Then package it:
+   tar -czf love-12.0-linux-x86_64.tar.gz love-directory/
+   ```
+
+2. **Create a GitHub release to host it:**
+   ```bash
+   gh release create love2d-12.0 \
+     love-12.0-linux-x86_64.tar.gz \
+     --title "Love2D 12.0 Development Build" \
+     --notes "Love2D 12.0 CI build for GitHub Actions"
+   ```
+
+3. **Create version tracking file:**
+   ```bash
+   # Create .github/love-version.txt with a hash or date
+   echo "12.0-2025-10-10" > .github/love-version.txt
+   git add .github/love-version.txt
+   git commit -m "Add Love2D version tracking for CI cache"
+   ```
+
+4. **Update the workflow URL:**
+   Replace `YOUR-ORG` in the workflow with your actual GitHub org/username.
+
+### Updating Love2D Version
+
+When you want to update the Love2D binary:
+1. Upload new binary to a new GitHub release
+2. Update `.github/love-version.txt`
+3. Update the download URL in the workflow if needed
+
+## CI Performance
+
+**Expected Runtime:**
+- Lua Language Server: ~30-60 seconds
+- Love2D Tests: ~2-5 minutes
+- **Total: ~3-6 minutes per PR**
+
+**Caching:**
+- Love2D binary is cached after first download
+- Cache invalidates when `.github/love-version.txt` changes
 
 ## Next Steps
 
-- Decide on Love2D distribution source (nightly URL vs. hosted artifact).
-- Author `.github/workflows/pr-checks.yml` implementing jobs above.
-- Add caching key for Love builds (`love-12.0-${{ hashFiles('scripts/love-download.sh') }}`).
-- Verify LuaLS installation strategy on Ubuntu runners (binary release vs. `npm`).
+1. ✅ Create `.github/workflows/pr-checks.yml` with the complete workflow above
+2. ✅ Package your Love2D 12.0 Linux binary as a tar.gz
+3. ✅ Upload it to a GitHub release: `love2d-12.0`
+4. ✅ Create `.github/love-version.txt` to track version for caching
+5. ✅ Update workflow URL with your org/username
+6. ✅ Test on a development branch
+7. ✅ Enable as required check for PRs
+
+## References
+
+- [mrcjkb/lua-typecheck-action](https://github.com/marketplace/actions/lua-typecheck-action) - Lua Language Server CI
+- [Lua Language Server Diagnostics](https://luals.github.io/wiki/diagnostics/)
+- [SDL Environment Variables](https://wiki.libsdl.org/SDL2/CategoryHints) - For headless mode
