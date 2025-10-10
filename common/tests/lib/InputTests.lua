@@ -18,7 +18,9 @@ end
 -- TODO: rewrite the test with sourcing the pressed keys from match.stacks[1].player.inputConfiguration
 local function testSameFrameKeyPressRelease()
   local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
-  match.stacks[1].player:restrictInputs(GAME.input.inputConfigurations[1])
+  local player = match.stacks[1].player
+  ---@cast player Player
+  player:restrictInputs(GAME.input.inputConfigurations[1])
   -- advance past countdown
   match.stacks[1]:receiveConfirmedInput(string.rep(match.stacks[1]:idleInput(), 200))
   while match.stacks[1].clock < 200 do
@@ -45,7 +47,7 @@ local function testSameFrameKeyPressRelease()
   match.stacks[1]:send_controls()
   match.stacks[1]:run()
   assert(match.stacks[1].confirmedInput[202] == "A")
-  match.stacks[1].player:unrestrictInputs()
+  player:unrestrictInputs()
 end
 
 testSameFrameKeyPressRelease()
