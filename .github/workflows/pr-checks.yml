@@ -31,9 +31,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "check.json" ]; then
-            jq -r 'to_entries[] | .key as $file | .value[] | "**\($file | split("/") | last):\(.range.start.line + 1)** - \(.message) (\(.code))"' check.json >> $GITHUB_STEP_SUMMARY
+            # Count total diagnostics
+            TOTAL=$(jq '[.[] | length] | add' check.json)
+            echo "Found **$TOTAL** diagnostic issue(s):" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Format diagnostics grouped by file
+            jq -r 'to_entries[] | .key as $file | "### \($file)\n" + (.value | map("- Line \(.range.start.line + 1): \(.message) `[\(.code)]`") | join("\n"))' check.json >> $GITHUB_STEP_SUMMARY
           else
-            echo "No check.json file found" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ No check.json file found" >> $GITHUB_STEP_SUMMARY
           fi
 
           exit 1
@@ -82,9 +88,24 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "test-output.log" ]; then
-            grep -E "Test failed:|Tests failed!" test-output.log | while read -r line; do
-              echo "- $line" >> $GITHUB_STEP_SUMMARY
-            done
+            # Show test failures
+            if grep -q -E "Test failed:|Tests failed!" test-output.log; then
+              echo "### Failed Tests:" >> $GITHUB_STEP_SUMMARY
+              grep -E "Test failed:|Tests failed!" test-output.log | while read -r line; do
+                echo "- $line" >> $GITHUB_STEP_SUMMARY
+              done
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            # Show ERROR level logs for context
+            if grep -q "ERROR:" test-output.log; then
+              echo "### Error Details:" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              grep "ERROR:" test-output.log | tail -20 >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ No test output log found" >> $GITHUB_STEP_SUMMARY
           fi
 
           exit 1
