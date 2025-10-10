@@ -18,6 +18,7 @@ jobs:
       - name: Type Check and Lint
         uses: mrcjkb/lua-typecheck-action@v0
         with:
+          directories: .
           configpath: .luarc.json
           checklevel: Information
 

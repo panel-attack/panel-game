@@ -21,8 +21,9 @@ lua-diagnostics:
     - name: Type Check and Lint
       uses: mrcjkb/lua-typecheck-action@v0
       with:
-        config_file: .luarc.json
-        level: Warning
+        directories: .
+        configpath: .luarc.json
+        checklevel: Information
 ```
 
 **What it checks:**
@@ -113,6 +114,7 @@ jobs:
       - name: Type Check and Lint
         uses: mrcjkb/lua-typecheck-action@v0
         with:
+          directories: .
           configpath: .luarc.json
           checklevel: Information
 
