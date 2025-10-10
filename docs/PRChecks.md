@@ -36,7 +36,7 @@ Your `.luarc.json` diagnostics with "Any" status are checked on all files.
 
 ### Job 2: Love2D Test Suite
 
-Runs `testLauncher.lua` in headless mode and captures log output. No UI rendering needed.
+Runs `testLauncher.lua` using Xvfb for headless OpenGL support and captures log output.
 
 ```yaml
 love2d-tests:
@@ -45,11 +45,10 @@ love2d-tests:
   steps:
     - uses: actions/checkout@v4
 
-    - name: Install Love2D dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libsdl2-2.0-0 libopenal1 libfreetype6 \
-          libtheora0 libvorbis0a libmodplug1
+        sudo apt-get install -y libfuse2 xvfb
 
     - name: Cache Love2D binary
       id: cache-love
@@ -62,16 +61,15 @@ love2d-tests:
       if: steps.cache-love.outputs.cache-hit != 'true'
       run: |
         mkdir -p ~/love2d
-        # Download from GitHub release where you've uploaded the Love2D binary
         curl -L "https://github.com/YOUR-ORG/panel-attack/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
           -o /tmp/love.tar.gz
-        tar -xzf /tmp/love.tar.gz -C ~/love2d --strip-components=1
+        tar -xzf /tmp/love.tar.gz -C ~/love2d
+
+    - name: Make Love2D executable
+      run: chmod +x ~/love2d/love.AppImage
 
     - name: Run tests
-      run: ~/love2d/bin/love ./testLauncher.lua
-      env:
-        SDL_VIDEODRIVER: dummy
-        SDL_AUDIODRIVER: dummy
+      run: xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua
       timeout-minutes: 10
 
     - name: Upload test logs on failure
@@ -83,7 +81,9 @@ love2d-tests:
 ```
 
 **Key points:**
-- Uses `SDL_VIDEODRIVER=dummy` and `SDL_AUDIODRIVER=dummy` - no Xvfb needed
+- Uses AppImage format for Love2D (self-contained)
+- Only requires `libfuse2` (for AppImage) and `xvfb` (for headless OpenGL)
+- Uses `xvfb-run` for virtual display with software OpenGL rendering
 - Downloads Love2D from a GitHub release in your repo
 - Caches the binary for faster subsequent runs
 - Captures and uploads logs on failure
@@ -113,8 +113,8 @@ jobs:
       - name: Type Check and Lint
         uses: mrcjkb/lua-typecheck-action@v0
         with:
-          config_file: .luarc.json
-          level: Warning
+          configpath: .luarc.json
+          checklevel: Information
 
   love2d-tests:
     name: Love2D Test Suite
@@ -122,11 +122,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Love2D dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsdl2-2.0-0 libopenal1 libfreetype6 \
-            libtheora0 libvorbis0a libmodplug1
+          sudo apt-get install -y libfuse2 xvfb
 
       - name: Cache Love2D binary
         id: cache-love
@@ -141,13 +140,13 @@ jobs:
           mkdir -p ~/love2d
           curl -L "https://github.com/YOUR-ORG/panel-attack/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
             -o /tmp/love.tar.gz
-          tar -xzf /tmp/love.tar.gz -C ~/love2d --strip-components=1
+          tar -xzf /tmp/love.tar.gz -C ~/love2d
+
+      - name: Make Love2D executable
+        run: chmod +x ~/love2d/love.AppImage
 
       - name: Run tests
-        run: ~/love2d/bin/love ./testLauncher.lua
-        env:
-          SDL_VIDEODRIVER: dummy
-          SDL_AUDIODRIVER: dummy
+        run: xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua
         timeout-minutes: 10
 
       - name: Upload test logs on failure
