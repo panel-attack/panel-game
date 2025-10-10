@@ -16,11 +16,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Type Check and Lint
+        id: typecheck
         uses: mrcjkb/lua-typecheck-action@v0
         with:
           directories: .
           configpath: .luarc.json
           checklevel: Information
+        continue-on-error: true
+
+      - name: Format diagnostics output
+        if: steps.typecheck.outcome == 'failure'
+        run: |
+          echo "## ❌ Lua Language Server Diagnostics Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following issues were found:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Parse and format errors from check.json if it exists
+          if [ -f "check.json" ]; then
+            jq -r '.[] | "### \(.uri | split("/") | last)\n**Line \(.range.start.line + 1)**: \(.message)\nCode: `\(.code)`\n"' check.json >> $GITHUB_STEP_SUMMARY
+          fi
+
+          exit 1
 
   love2d-tests:
     name: Love2D Test Suite

@@ -8,156 +8,21 @@ This document outlines the GitHub Actions PR checks for Panel Attack:
 
 ## Implementation
 
+See `.github/workflows/pr-checks.yml` for the complete workflow implementation.
+
 ### Job 1: Lua Language Server Diagnostics
 
-Uses the existing `.luarc.json` configuration to match local development environment.
-
-```yaml
-lua-diagnostics:
-  name: Lua Language Server Diagnostics
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-    - name: Type Check and Lint
-      uses: mrcjkb/lua-typecheck-action@v0
-      with:
-        directories: .
-        configpath: .luarc.json
-        checklevel: Information
-```
-
-**What it checks:**
-- Type mismatches
-- Undefined fields
-- Nil safety issues
-- All diagnostics configured in `.luarc.json`
-
-**Configuration:**
-Your `.luarc.json` diagnostics with "Any" status are checked on all files. 
+- Uses [mrcjkb/lua-typecheck-action](https://github.com/mrcjkb/lua-typecheck-action)
+- Uses your `.luarc.json` configuration
+- Check level: Information (fails on Info, Warning, or Error diagnostics)
+- Formats error output in job summary for easy reading
 
 ### Job 2: Love2D Test Suite
 
-Runs `testLauncher.lua` using Xvfb for headless OpenGL support and captures log output.
-
-```yaml
-love2d-tests:
-  name: Love2D Test Suite
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libfuse2 xvfb
-
-    - name: Cache Love2D binary
-      id: cache-love
-      uses: actions/cache@v4
-      with:
-        path: ~/love2d
-        key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
-
-    - name: Download Love2D 12.0
-      if: steps.cache-love.outputs.cache-hit != 'true'
-      run: |
-        mkdir -p ~/love2d
-        curl -L "https://github.com/YOUR-ORG/panel-attack/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
-          -o /tmp/love.tar.gz
-        tar -xzf /tmp/love.tar.gz -C ~/love2d
-
-    - name: Make Love2D executable
-      run: chmod +x ~/love2d/love.AppImage
-
-    - name: Run tests
-      run: xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua
-      timeout-minutes: 10
-
-    - name: Upload test logs on failure
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-logs
-        path: "*.log"
-```
-
-**Key points:**
+- Runs `testLauncher.lua` using Xvfb for headless OpenGL support
 - Uses AppImage format for Love2D (self-contained)
-- Only requires `libfuse2` (for AppImage) and `xvfb` (for headless OpenGL)
-- Uses `xvfb-run` for virtual display with software OpenGL rendering
-- Downloads Love2D from a GitHub release in your repo
-- Caches the binary for faster subsequent runs
+- Downloads Love2D from GitHub release and caches it
 - Captures and uploads logs on failure
-
-### Complete Workflow File
-
-Create `.github/workflows/pr-checks.yml`:
-
-```yaml
-name: PR Checks
-
-on:
-  pull_request:
-    paths:
-      - '**.lua'
-      - '.luarc.json'
-      - '.github/workflows/pr-checks.yml'
-  push:
-    branches: [beta]
-
-jobs:
-  lua-diagnostics:
-    name: Lua Language Server Diagnostics
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Type Check and Lint
-        uses: mrcjkb/lua-typecheck-action@v0
-        with:
-          directories: .
-          configpath: .luarc.json
-          checklevel: Information
-
-  love2d-tests:
-    name: Love2D Test Suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libfuse2 xvfb
-
-      - name: Cache Love2D binary
-        id: cache-love
-        uses: actions/cache@v4
-        with:
-          path: ~/love2d
-          key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
-
-      - name: Download Love2D 12.0
-        if: steps.cache-love.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/love2d
-          curl -L "https://github.com/YOUR-ORG/panel-attack/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
-            -o /tmp/love.tar.gz
-          tar -xzf /tmp/love.tar.gz -C ~/love2d
-
-      - name: Make Love2D executable
-        run: chmod +x ~/love2d/love.AppImage
-
-      - name: Run tests
-        run: xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua
-        timeout-minutes: 10
-
-      - name: Upload test logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-logs
-          path: "*.log"
-```
 
 ## Love2D Binary Distribution
 
