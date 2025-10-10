@@ -1,4 +1,4 @@
-name: create-love-archive
+name: Create Love Archive
 on: [push]
 
 jobs:
@@ -12,9 +12,15 @@ jobs:
       # so just move it into the working directory
       - run: mv ../dev-build/panel-attack.love ./panel-attack.love
       - uses: actions/upload-artifact@v4
+        id: upload-artifact
         with:
           name: panel-attack.love
           path: panel-attack.love
           # it's already a zip
           compression-level: 0
+      - name: Add artifact link to PR check
+        run: |
+          echo "## Love Archive Build Complete ✓" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Download:** [panel-attack.love](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
 
