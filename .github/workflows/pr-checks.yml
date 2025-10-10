@@ -32,14 +32,24 @@ jobs:
 
           if [ -f "check.json" ]; then
             # Count total diagnostics
-            TOTAL=$(jq '[.[] | length] | add' check.json)
-            echo "Found **$TOTAL** diagnostic issue(s):" >> $GITHUB_STEP_SUMMARY
+            TOTAL=$(jq '[.[] | length] | add // 0' check.json)
+            echo "Found **$TOTAL** diagnostic issue(s)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
-            # Format diagnostics grouped by file
-            jq -r 'to_entries[] | .key as $file | "### \($file)\n" + (.value | map("- Line \(.range.start.line + 1): \(.message) `[\(.code)]`") | join("\n"))' check.json >> $GITHUB_STEP_SUMMARY
+            # Show first 50 diagnostics (to avoid overwhelming output)
+            echo "<details>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>View Diagnostics</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            jq -r 'to_entries[] | .key as $file | .value[] | "**\($file):\(.range.start.line + 1)** - \(.message) `[\(.code)]`"' check.json | head -50 >> $GITHUB_STEP_SUMMARY
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ No check.json file found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Debug: Listing files in current directory:" >> $GITHUB_STEP_SUMMARY
+            ls -la >> $GITHUB_STEP_SUMMARY
           fi
 
           exit 1
