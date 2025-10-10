@@ -36,12 +36,12 @@ jobs:
             echo "Found **$TOTAL** diagnostic issue(s)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
-            # Show first 50 diagnostics (to avoid overwhelming output)
+            # Show all diagnostics
             echo "<details>" >> $GITHUB_STEP_SUMMARY
             echo "<summary>View Diagnostics</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
-            jq -r 'to_entries[] | .key as $file | .value[] | "**\($file):\(.range.start.line + 1)** - \(.message) `[\(.code)]`"' check.json | head -50 >> $GITHUB_STEP_SUMMARY
+            jq -r 'to_entries[] | .key as $file | .value[] | "**\($file):\(.range.start.line + 1)** - \(.message) `[\(.code)]`"' check.json >> $GITHUB_STEP_SUMMARY
 
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "</details>" >> $GITHUB_STEP_SUMMARY
@@ -94,28 +94,39 @@ jobs:
       - name: Format Test Failures
         if: steps.tests.outcome == 'failure'
         run: |
+          echo "## ❌ Love2D Tests Failed"
           echo "## ❌ Love2D Tests Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "test-output.log" ]; then
             # Show test failures
             if grep -q -E "Test failed:|Tests failed!" test-output.log; then
+              echo "### Failed Tests:"
               echo "### Failed Tests:" >> $GITHUB_STEP_SUMMARY
               grep -E "Test failed:|Tests failed!" test-output.log | while read -r line; do
+                echo "- $line"
                 echo "- $line" >> $GITHUB_STEP_SUMMARY
               done
               echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "No test failure patterns found in log"
             fi
 
             # Show ERROR level logs for context
             if grep -q "ERROR:" test-output.log; then
+              echo "### Error Details:"
               echo "### Error Details:" >> $GITHUB_STEP_SUMMARY
               echo '```' >> $GITHUB_STEP_SUMMARY
-              grep "ERROR:" test-output.log | tail -20 >> $GITHUB_STEP_SUMMARY
+              grep "ERROR:" test-output.log | tail -20 | tee -a $GITHUB_STEP_SUMMARY
               echo '```' >> $GITHUB_STEP_SUMMARY
+            else
+              echo "No ERROR patterns found in log"
             fi
           else
+            echo "⚠️ No test output log found"
             echo "⚠️ No test output log found" >> $GITHUB_STEP_SUMMARY
+            echo "Listing current directory:"
+            ls -la
           fi
 
           exit 1

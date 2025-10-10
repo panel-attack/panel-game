@@ -6,23 +6,57 @@ This document outlines the GitHub Actions PR checks for Panel Attack:
 1. **Lua Language Server diagnostics** - Block PRs that introduce new warnings
 2. **Love2D test suite** - Run all tests in headless mode with log output
 
+### What Developers See
+
+Both checks provide **clean, filtered output** showing only errors:
+- **Lua diagnostics**: All diagnostics with file:line and message
+- **Test failures**: Only failed test names and ERROR-level logs
+
+**All failures still block the PR** - the checks fail with proper exit codes while providing readable error summaries in the GitHub Actions job summary page.
+
 ## Implementation
 
 See `.github/workflows/pr-checks.yml` for the complete workflow implementation.
 
 ### Job 1: Lua Language Server Diagnostics
 
+**How it works:**
 - Uses [mrcjkb/lua-typecheck-action](https://github.com/mrcjkb/lua-typecheck-action)
 - Uses your `.luarc.json` configuration
 - Check level: Information (fails on Info, Warning, or Error diagnostics)
-- Formats error output in job summary for easy reading
+- Outputs diagnostics to `check.json`
+
+**Output formatting:**
+- On failure, shows filtered error summary in GitHub job summary
+- Displays total diagnostic count
+- Shows all diagnostics in collapsible details section
+- Format: `**file:line** - message [code]`
+- Still fails the check after displaying formatted output
+
+**Failure behavior:**
+- Step runs with `continue-on-error: true`
+- Format step runs if typecheck fails
+- Exits with code 1 to fail the check
 
 ### Job 2: Love2D Test Suite
 
+**How it works:**
 - Runs `testLauncher.lua` using Xvfb for headless OpenGL support
 - Uses AppImage format for Love2D (self-contained)
 - Downloads Love2D from GitHub release and caches it
-- Captures and uploads logs on failure
+- Captures full output to `test-output.log`
+
+**Output formatting:**
+- On failure, shows filtered error summary in GitHub job summary
+- Displays only failed test lines matching "Test failed:" or "Tests failed!"
+- Shows last 20 ERROR-level log entries for debugging context
+- Uploads complete log files as artifacts for detailed investigation
+- Still fails the check after displaying formatted output
+
+**Failure behavior:**
+- Test run uses `continue-on-error: true`
+- Format step runs if tests fail
+- Exits with code 1 to fail the check
 
 ## Love2D Binary Distribution
 
