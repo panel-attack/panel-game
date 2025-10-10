@@ -24,7 +24,7 @@ jobs:
           checklevel: Information
         continue-on-error: true
 
-      - name: Format diagnostics output
+      - name: Format diagnostics Output
         if: steps.typecheck.outcome == 'failure'
         run: |
           echo "## ❌ Lua Language Server Diagnostics Failed" >> $GITHUB_STEP_SUMMARY
@@ -39,7 +39,7 @@ jobs:
           exit 1
 
   love2d-tests:
-    name: Love2D Test Suite
+    name: Test Suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
           path: ~/love2d
           key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
 
-      - name: Download Love2D 12.0
+      - name: Download Love2D
         if: steps.cache-love.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/love2d
@@ -67,13 +67,31 @@ jobs:
       - name: Make Love2D executable
         run: chmod +x ~/love2d/love.AppImage
 
-      - name: Run tests
-        run: xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua
+      - name: Run Tests
+        id: tests
+        run: xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua 2>&1 | tee test-output.log
         timeout-minutes: 10
+        continue-on-error: true
 
-      - name: Upload test logs on failure
-        if: failure()
+      - name: Format Test Failures
+        if: steps.tests.outcome == 'failure'
+        run: |
+          echo "## ❌ Love2D Tests Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "test-output.log" ]; then
+            grep "Test failed:" test-output.log | while read -r line; do
+              echo "- $line" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          exit 1
+
+      - name: Upload Test Logs on Failure
+        if: steps.tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: test-logs
-          path: "*.log"
+          path: |
+            *.log
+            test-output.log
