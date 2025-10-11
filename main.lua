@@ -22,16 +22,12 @@ GAME = Game()
 -- so by overwriting that, the new runInternal will get used on the next iteration
 love.runInternal = CustomRun.innerRun
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.run()
   return CustomRun.run()
 end
 
 -- Called at the beginning to load the game
 -- Either called directly or from auto_updater
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.load(args, rawArgs)
   love.keyboard.setTextInput(false)
 
@@ -67,16 +63,12 @@ function love.load(args, rawArgs)
   end
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.focus(f)
   GAME.focused = f
 end
 
 -- Called every few fractions of a second to update the game
 -- dt is the amount of time in seconds that has passed.
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.update(dt)
   if config.show_fps and config.debug_mode then
     if CustomRun.runTimeGraph == nil then
@@ -120,9 +112,8 @@ else
   }
 end
 
+
 -- Called whenever the game needs to draw.
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.draw()
   GAME:draw()
 
@@ -144,8 +135,6 @@ function love.draw()
 end
 
 -- Handle a mouse or touch press
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.mousepressed(x, y, button)
   x, y = GAME:transform_coordinates(x, y)
   if button == 1 then
@@ -154,8 +143,6 @@ function love.mousepressed(x, y, button)
   inputManager:mousePressed(x, y, button)
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.mousereleased(x, y, button)
   x, y = GAME:transform_coordinates(x, y)
   if button == 1 then
@@ -164,8 +151,6 @@ function love.mousereleased(x, y, button)
   inputManager:mouseReleased(x, y, button)
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.mousemoved( x, y, dx, dy, istouch )
   x, y = GAME:transform_coordinates(x, y)
   if love.mouse.isDown(1) then
@@ -174,14 +159,10 @@ function love.mousemoved( x, y, dx, dy, istouch )
   inputManager:mouseMoved(x, y)
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.joystickpressed(joystick, button)
   inputManager:joystickPressed(joystick, button)
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.joystickreleased(joystick, button)
   inputManager:joystickReleased(joystick, button)
 end
@@ -194,8 +175,6 @@ end
 -- end
 
 -- quit handling
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.quit()
   if prof.enabled then
     prof.write()
@@ -230,8 +209,6 @@ function love.quit()
   end
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.errorhandler(msg)
   if lldebugger then
     pcall(love.filesystem.write, "debug.log", tostring(logger.messageBuffer))
@@ -410,8 +387,6 @@ function love.errorhandler(msg)
   end
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.resize(newWidth, newHeight)
   if GAME then
     logger.debug("Updating canvas scale from love.resize")
@@ -419,8 +394,6 @@ function love.resize(newWidth, newHeight)
   end
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.keypressed(key, scancode, rep)
   logger.trace("key pressed: " .. key)
   if scancode then
@@ -428,20 +401,14 @@ function love.keypressed(key, scancode, rep)
   end
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.textinput(text)
   inputFieldManager.textInput(text)
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.keyreleased(key, unicode)
   inputManager:keyReleased(key, unicode)
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.joystickaxis(joystick, axisIndex, value)
   inputManager:joystickaxis(joystick, axisIndex, value)
 end

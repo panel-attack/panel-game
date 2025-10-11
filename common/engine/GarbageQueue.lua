@@ -102,6 +102,7 @@ end
 
 -- Holds garbage in a queue and follows a specific order for which types should be popped out first.
 ---@class GarbageQueue : Signal
+---@operator call([boolean?, boolean?]): GarbageQueue
 ---@field stagedGarbage Garbage[] all garbage that is in the staging stage, garbage is reordered from lowest to highest priority with every new piece of garbage
 ---@field garbageInTransit table<integer, Garbage[]> holds all garbage that left staging phase in a non-continously integer indexed hash <br>
 --- the clock time for delivery is used as the index, meaning it has a lot of gaps

@@ -27,7 +27,7 @@ local randomStage = nil -- acts as the bundle stage for all theme stages
 ---@field display_name string
 ---@field music_style string defines the behaviour for music when switching between normal and danger
 ---@field music_volume number defines a multiplier to apply to the StageTrack
----@field images table<string, love.Texture> graphical assets of the stage
+---@field images table<string, love.Image> graphical assets of the stage
 ---@field musics table<string, Music> music of the stage
 ---@field hasMusic boolean? if the stage has any music
 ---@field stageTrack StageTrack? the StageTrack constructed from the stage's music assets

@@ -123,7 +123,7 @@ end
 
 ---Static method to get puzzle from puzzle set using puzzleSetIndices
 ---@param puzzleSet PuzzleSet
----@param puzzleSetIndices integer[]?
+---@param puzzleSetIndices integer[]
 ---@return Puzzle?
 function PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, puzzleSetIndices)
   if puzzleSetIndices == nil then

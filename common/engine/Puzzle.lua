@@ -83,7 +83,6 @@ Puzzle = class(
 ---@param hashString string
 ---@return string
 local function hashAndEncode(hashString)
-  -- We specify string so its okay to disable diagnostic
   if system.meetsLoveVersionRequirement(12, 0) then
     ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
     local digest = love.data.hash("string", "sha256", hashString)
@@ -91,7 +90,6 @@ local function hashAndEncode(hashString)
     return love.data.encode("string", "hex", digest)
   else
     -- Love 11 compatibility
-    ---@diagnostic disable-next-line: return-type-mismatch, missing-parameter, param-type-mismatch
     return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
   end
 end

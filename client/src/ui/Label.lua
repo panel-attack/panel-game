@@ -22,11 +22,11 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field replacementTable string[]? Additional strings to perform string format on a localized key with parts marked for replacement
 ---@field fontSize integer The size of the font
 ---@field wrapWidth? number the number of pixels to go before wrapping
----@field font love.Font Cached font for recreating the love.TextBatch on changes
+---@field font love.Font Cached font for recreating the love.Text on changes
 ---@field fillColors table? List of red, green, blue, and alpha color for fill, no fill if nil
 ---@field strokeColors table? List of red, green, blue, and alpha color for stroke, no stroke if nil
 ---@field textColor table? List of red, green, blue, and alpha color for text
----@field drawable love.TextBatch Cached love.TextBatch for redrawing
+---@field drawable love.Text Cached love.Text for redrawing
 ---@field autoSizeToText boolean true if the text should change the width and height
 ---@field paddingTop number Top padding in pixels
 ---@field paddingRight number Right padding in pixels

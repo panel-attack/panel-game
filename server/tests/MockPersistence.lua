@@ -1,4 +1,4 @@
----@diagnostic disable: missing-fields, duplicate-set-field
+---@diagnostic disable: missing-fields
 
 ---@type Persistence
 local MockPersistence = {}

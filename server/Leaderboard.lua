@@ -70,9 +70,7 @@ local Leaderboard =
 function Leaderboard:importData(data)
   if data then
     for row = 2, #data do
-      local number = tostring(data[row][1])
-      assert(number)
-      data[row][1] = number
+      data[row][1] = tostring(data[row][1])
 ---@diagnostic disable-next-line: missing-fields
       self.players[data[row][1]] = {}
       for col = 1, #data[1] do

@@ -208,15 +208,11 @@ function CharacterSelect:createStageCarousel(player, width)
 
   -- stage carousel
   stageCarousel.onSelectCallback = function()
-    -- Just update on every passenger change
+    player:setStage(stageCarousel:getSelectedPassenger().id)
   end
 
   stageCarousel.onBackCallback = function()
-    -- Just update on every passenger change
-  end
-
-  stageCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    player:setStage(selectedPassenger.id)
+    stageCarousel:setPassengerById(player.settings.selectedStageId)
   end
 
   stageCarousel:setPassengerById(player.settings.selectedStageId)
@@ -399,7 +395,6 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   end
 
   -- we need to override the standard onRelease to reset the shader
-  ---@diagnostic disable-next-line: duplicate-set-field
   characterButton.onRelease = function(self, x, y, timeHeld)
     self.updateSuperSelectShader(self.superSelectImage, 0)
     if self:inBounds(x, y) then
@@ -411,7 +406,6 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   -- by applying focusable we can turn it into an "on release" interaction rather than on press by taking control of input interpretation
   ui.Focusable(characterButton)
   characterButton.holdTime = 0
-  ---@diagnostic disable-next-line: duplicate-set-field
   characterButton.receiveInputs = function(self, inputs, dt)
     if inputs.isPressed["Swap1"] then
       -- measure the time the press is held for
@@ -500,11 +494,11 @@ function CharacterSelect:createPanelCarousel(player, height)
 
   -- panel carousel
   panelCarousel.onSelectCallback = function()
-    -- Just update on every passenger change
+    player:setPanels(panelCarousel:getSelectedPassenger().id)
   end
 
   panelCarousel.onBackCallback = function()
-    -- Just update on every passenger change
+    panelCarousel:setPassengerById(player.settings.panelId)
   end
 
   panelCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
@@ -558,7 +552,6 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   })
 
   ui.Focusable(levelSlider)
-  ---@diagnostic disable-next-line: duplicate-set-field
   levelSlider.receiveInputs = function(self, inputs)
     if inputs:isPressedWithRepeat("Left") then
       self:setValue(self.value - 1)
@@ -591,7 +584,6 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
     player:setLevelData(LevelPresets.getModern(self.value))
   end
 
-  ---@diagnostic disable-next-line: duplicate-set-field
   levelSlider.setValueFromPos = function(self, x)
     local screenX, screenY = self:getScreenPos()
     self:setValue(math.floor((x - screenX) / self.tickLength) + self.min)
@@ -910,33 +902,19 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     selectedId = player.settings.difficulty
   })
 
-  difficultyCarousel.onSelectCallback = function()
-    -- Just update on every passenger change
-  end
-
-  difficultyCarousel.onBackCallback = function()
-    -- Just update on every passenger change
-  end
-
-  local updateDifficultyData = function(difficultyID)
-    local levelData = LevelPresets.getClassic(difficultyID)
-    player:setDifficulty(difficultyID)
-    if self.battleRoom.mode.name == "endless" and difficultyID == 1 then
+  difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
+    local levelData = LevelPresets.getClassic(selectedPassenger.id)
+    player:setDifficulty(selectedPassenger.id)
+    if self.battleRoom.mode.name == "endless" and selectedPassenger.id == 1 then
       -- Endless easy uses 5 colors instead of 6
       levelData:setColorCount(5)
       -- and by extension also allows adjacent panels of the same colors
       levelData:setAdjacentDenialFrequency(0)
     end
     player:setLevelData(levelData)
-  end
-  difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    updateDifficultyData(selectedPassenger.id)
     GAME.theme:playMoveSfx()
     self:refresh()
   end
-  -- Note that this updates the player level data which could be wrong before because of the weird endless case
-  -- its probably fine for now, but ideally the model should be right when the battle room is created
-  updateDifficultyData(difficultyCarousel.selectedId)
 
   return difficultyCarousel
 end

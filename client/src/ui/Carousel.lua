@@ -103,6 +103,7 @@ function Carousel:onSelect()
   if self.onSelectCallback then
     self.onSelectCallback()
   end
+  self:yieldFocus()
 end
 
 -- this should/may be overwritten by the parent
@@ -110,6 +111,7 @@ function Carousel:onBack()
   if self.onBackCallback then
     self.onBackCallback()
   end
+  self:yieldFocus()
 end
 
 -- the parent makes sure this is only called while focused
@@ -121,11 +123,9 @@ function Carousel:receiveInputs(inputs)
   elseif inputs.isDown["Swap1"] or inputs.isDown["Start"] then
     GAME.theme:playValidationSfx()
     self:onSelect()
-    self:yieldFocus()
   elseif inputs.isDown["Swap2"] or inputs.isDown["Escape"] then
     GAME.theme:playCancelSfx()
     self:onBack()
-    self:yieldFocus()
   end
 end
 
@@ -157,7 +157,6 @@ function Carousel:onRelease(x, y)
   self.initialTouchX = 0
   self.initialTouchY = 0
   self.initialTouchPassenger = nil
-  self:onSelect()
 end
 
 return Carousel

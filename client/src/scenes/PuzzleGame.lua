@@ -3,7 +3,6 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local InputCompression = require("common.data.InputCompression")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
-local LevelPresets = require("common.data.LevelPresets")
 local consts = require("common.engine.consts")
 local PuzzleHierarchyDisplay = require("client.src.graphics.PuzzleHierarchyDisplay")
 local PuzzleGoalDisplay = require("client.src.graphics.PuzzleGoalDisplay")
@@ -27,7 +26,6 @@ local MultibarElement = require("client.src.ui.MultibarElement")
 ---@field inputQueueIndex integer Current position in the input queue
 ---@field hintUsed boolean Whether a hint has been used for this puzzle
 ---@field multibarElement MultibarElement? Relative multibar component
----@field playerStack PlayerStack? Player stack associated with the current puzzle run
 local PuzzleGame = class(
   function (self, sceneParams)
     self.keepMusic = true
@@ -41,15 +39,6 @@ local PuzzleGame = class(
     assert(sceneParams.puzzleSetIterator)
     self.puzzleSet = sceneParams.puzzleSet
     self.puzzleSetIterator = sceneParams.puzzleSetIterator
-
-    -- Pick up queued solution inputs if passed from previous scene
-    if sceneParams.queuedSolutionInputs then
-      self.queuedInputs = sceneParams.queuedSolutionInputs
-      self.hintUsed = sceneParams.hintWasUsed or false
-      -- Clear from battleRoom parameters so it doesn't persist
-      GAME.battleRoom.sceneParameters.queuedSolutionInputs = nil
-      GAME.battleRoom.sceneParameters.hintWasUsed = nil
-    end
 
     local indices = deepcpy(self.puzzleSetIterator:currentPuzzle())
     local index = indices[#indices]
@@ -86,6 +75,9 @@ function PuzzleGame:getCurrentPuzzle()
 end
 
 function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet, advance)
+  -- Store current stage info for potential preservation
+  local currentStageId = battleRoom.match and battleRoom.match.stageId or nil
+  
   -- Get puzzle indices - either advance to next or stay on current
   local puzzleIndices
   if advance == false then
@@ -93,12 +85,13 @@ function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet, ad
   else
     puzzleIndices = puzzleSetIterator:nextPuzzle()
   end
-
+  
   if puzzleIndices then
     local puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, puzzleIndices)
     if puzzle then
       GAME.battleRoom:setGameMode(puzzle:toGameMode())
       GAME.battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
+      battleRoom.preferredStageId = currentStageId
     end
   end
   return puzzleIndices
@@ -106,29 +99,15 @@ end
 
 function PuzzleGame:customLoad()
   -- we cache the player's input configuration here so that only inputs from this config can start the next puzzle
-  local firstPlayer = self.match.players[1]
-  assert(firstPlayer, "PuzzleGame requires a player")
-  assert(firstPlayer.human, "PuzzleGame expects a human-controlled player")
-  ---@cast firstPlayer Player
-  self.player = firstPlayer
+---@diagnostic disable-next-line: assign-type-mismatch
+  self.player = self.match.players[1]
   self.inputConfiguration = self.player.inputConfiguration
-  local playerStack = self.player.stack
-  assert(playerStack, "PuzzleGame requires an associated player stack")
-  self.playerStack = playerStack
-
-  -- Restore level if it was temporarily changed for solution playback
-  if GAME.battleRoom.sceneParameters.restoreLevelAfterCreation then
-    local restoreLevel = GAME.battleRoom.sceneParameters.restoreLevelAfterCreation
-    GAME.localPlayer:setLevel(restoreLevel)
-    GAME.localPlayer:setLevelData(LevelPresets.getModern(restoreLevel))
-    GAME.battleRoom.sceneParameters.restoreLevelAfterCreation = nil
-  end
-
+  
   -- Override drawTimer to prevent elapsed time display in puzzles
-  ---@diagnostic disable-next-line: duplicate-set-field
   self.match.drawTimer = function() end
   
-  local stack = playerStack
+  local stack = self.match.stacks[1]
+  assert(stack)
 
   stack:moveToCenterPosition()
   
@@ -175,9 +154,8 @@ function PuzzleGame:customLoad()
   end)
   
   local currentPuzzle = self:getCurrentPuzzle()
-  local activeStack = self.playerStack
-  if currentPuzzle and activeStack then
-    local stack = activeStack
+  if currentPuzzle and self.match.stacks[1] and self.match.stacks[1].engine then
+    local stack = self.match.stacks[1]
     local stackWidth = stack.baseWidth + stack.panelOriginXOffset
     local stackRightEdge = stack.frameOriginX * stack.gfxScale + (stackWidth * stack.gfxScale)
     
@@ -200,11 +178,6 @@ function PuzzleGame:customLoad()
       puzzleGame = self
     })
     self.uiRoot:addChild(self.puzzleHelpDisplay)
-
-    -- If solution is playing (non-move puzzle with hint used), show the hint state
-    if self.hintUsed and currentPuzzle.puzzleType ~= "moves" then
-      self.puzzleHelpDisplay:transitionToState("hint_shown")
-    end
   end
 end
 
@@ -261,25 +234,19 @@ function PuzzleGame:readyToProceedToNextScene()
 end
 
 function PuzzleGame:startNextScene()
-  local shouldPop = self.match.engine.aborted or not self.puzzleSetIterator
-
-  if shouldPop then
-    -- Clear the character/stage lock when returning to puzzle menu
-    if self.player then
-      self.player.settings.lockCharacterAndStage = nil
-    end
+  if self.match.engine.aborted then
     GAME.navigationStack:pop()
   else
-    self.player:setWantsReady(true)
+    if self.puzzleSetIterator then
+      self.player:setWantsReady(true)
+    else
+      GAME.navigationStack:pop()
+    end
   end
 end
 
 function PuzzleGame:savePuzzleRecordResult(success)
-  local playerStack = self.playerStack
-  if not playerStack then
-    return
-  end
-  local inputs = InputCompression.compressInputString(table.concat(playerStack.engine.confirmedInput))
+  local inputs = InputCompression.compressInputString(table.concat(self.match.players[1].stack.engine.confirmedInput))
   local currentPuzzle = self:getCurrentPuzzle()
   if currentPuzzle then
     GAME.scores:savePuzzleRecord(currentPuzzle, inputs, to_UTC(os.time()), success)
@@ -287,23 +254,13 @@ function PuzzleGame:savePuzzleRecordResult(success)
 end
 
 function PuzzleGame:recordPuzzleSolution()
-  local playerStack = self.playerStack
-  if not playerStack then
-    return
-  end
-
   local currentPuzzle = self:getCurrentPuzzle()
   if not currentPuzzle or currentPuzzle.solution then
     -- Don't overwrite existing solutions
     return
   end
-
-  -- Only record solutions when playing at level 10
-  if GAME.localPlayer.settings.level ~= 10 then
-    return
-  end
-
-  local engine = playerStack.engine
+  
+  local engine = self.match.players[1].stack.engine
   if engine.inputMethod ~= "controller" then
     return
   end
@@ -316,15 +273,13 @@ function PuzzleGame:recordPuzzleSolution()
   currentPuzzle.solution = inputs
   
   if self.puzzleSetIterator and self.puzzleSet then
-    local puzzleSet = self.puzzleSet
-    ---@cast puzzleSet PuzzleSet
     local currentIndices = self.puzzleSetIterator:currentPuzzle()
     if currentIndices then
       local targetIndices = {unpack(currentIndices)} -- copy the indices
       local puzzleIndex = table.remove(targetIndices) -- remove last element (puzzle index)
       
       -- Find the puzzle set with fileSource and get the adjusted path
-      local sourceRootPuzzleSet, adjustedPath = PuzzleSet.findPuzzleSetWithFileSource(puzzleSet, targetIndices)
+      local sourceRootPuzzleSet, adjustedPath = PuzzleSet.findPuzzleSetWithFileSource(self.puzzleSet, targetIndices)
       
       -- Navigate to the target puzzle set using the adjusted path
       local targetPuzzleSet = sourceRootPuzzleSet
@@ -335,35 +290,19 @@ function PuzzleGame:recordPuzzleSolution()
       end
       
       -- Save the puzzle with solution using the root puzzle set that has the file source
-      if sourceRootPuzzleSet and sourceRootPuzzleSet.saveTargetPuzzleToFile and targetPuzzleSet then
-        ---@cast targetPuzzleSet PuzzleSet
+      if sourceRootPuzzleSet and sourceRootPuzzleSet.saveTargetPuzzleToFile then
         sourceRootPuzzleSet:saveTargetPuzzleToFile(targetPuzzleSet, puzzleIndex, currentPuzzle)
       end
     end
   end
 end
 
-function PuzzleGame:drawEndGameText()
-  if self.isResetting or self.hintUsed then
-    return
-  end
-
-  -- Call parent implementation first
-  GameBase.drawEndGameText(self)
-end
-
 function PuzzleGame:customGameOverSetup()
-  if self.isResetting then
-    self.text = nil
-    return
-  end
-
-  local playerStack = self.playerStack
-  if playerStack and playerStack.engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
+  if self.match.stacks[1].engine.game_over_clock <= 0 and not self.match.engine.aborted then -- puzzle has been solved successfully
     self.text = loc("pl_you_win")
     self:savePuzzleRecordResult(not self.hintUsed)
     self:recordPuzzleSolution()
-
+    
     -- If hint/solution was used, stay on the same puzzle; otherwise advance to next
     local puzzleIndices = PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet, not self.hintUsed)
     if puzzleIndices then
@@ -379,11 +318,7 @@ function PuzzleGame:customGameOverSetup()
 end
 
 function PuzzleGame:drawHUD()
-  -- HUD elements are drawn via normal element hierarchy in puzzle game
-  -- Draw level display
-  if not self.match.isPaused and self.match.stacks[1] then
-    self.match.stacks[1]:drawLevel()
-  end
+  -- HUD elements are drawn via normal element heirarchy in puzzle game
 end
 
 function PuzzleGame:drawBackground()
@@ -400,9 +335,8 @@ end
 
 -- Track player swaps for hint system
 function PuzzleGame:trackSwapInput()
-  local playerStack = self.playerStack
-  if self.puzzleHelpDisplay and playerStack and not self.match.isPaused then
-    local stack = playerStack.engine
+  if self.puzzleHelpDisplay and self.match.stacks[1] and self.match.stacks[1].engine and not self.match.isPaused then
+    local stack = self.match.stacks[1].engine
     local cursorRow = stack.cur_row
     local cursorColumn = stack.cur_col
     self.puzzleHelpDisplay:trackPlayerSwap(cursorRow, cursorColumn)
@@ -411,9 +345,8 @@ end
 
 function PuzzleGame:feedQueuedInput()
   if #self.queuedInputs > 0 and self.inputQueueIndex <= #self.queuedInputs then
-    local playerStack = self.playerStack
-    if playerStack then
-      local stack = playerStack.engine
+    if self.match.stacks[1] and self.match.stacks[1].engine then
+      local stack = self.match.stacks[1].engine
       local input = self.queuedInputs[self.inputQueueIndex]
       stack:receiveConfirmedInput(input)
       self.inputQueueIndex = self.inputQueueIndex + 1
@@ -440,37 +373,20 @@ end
 
 function PuzzleGame:resetPuzzle()
   self:savePuzzleRecordResult(false)
-
-  -- Mark that we're resetting to avoid showing "you lose" text
-  self.isResetting = true
-
-  -- Abort the current match to properly end it and reset BattleRoom state to Setup
-  self.match:abort()
-
-  -- Setup the puzzle (same as losing does in customGameOverSetup)
-  PuzzleGame.setupNextPuzzle(GAME.battleRoom, self.puzzleSetIterator, self.puzzleSet, false)
-
-  GAME.battleRoom.sceneParameters.useInstantTransition = true
-
-  -- Re-claim the player's last used input configuration before setting ready
-  -- This is needed because onMatchEnded unrestricted inputs, and setWantsReady
-  -- requires an input to be actively pressed to claim, which may not be the case
-  if self.player.lastUsedInputConfiguration then
-    self.player:restrictInputs(self.player.lastUsedInputConfiguration)
+  self.match:resetPuzzle()
+  if self.puzzleHelpDisplay then
+    self.puzzleHelpDisplay.playerSwapPositions = {}
   end
-
-  -- Trigger new match creation (same as startNextScene does after game over)
-  self.player:setWantsReady(true)
+  self.hintUsed = false
 end
 
 -- Execute a single hint (position cursor and swap)
 function PuzzleGame:executePuzzleHint(targetRow, targetColumn)
-  local playerStack = self.playerStack
-  if not playerStack then
+  if not self.match.stacks[1] or not self.match.stacks[1].engine then
     return false
   end
   
-  local stack = playerStack.engine
+  local stack = self.match.stacks[1].engine
   
   -- Calculate movement needed from current cursor position
   local currentRow = stack.cur_row 
@@ -524,28 +440,14 @@ function PuzzleGame:playPuzzleSolution(solutionInputs)
     return false
   end
   
-  if not self.playerStack then
+  if not self.match.stacks[1] or not self.match.stacks[1].engine then
     return false
   end
-
-  local currentPuzzle = self:getCurrentPuzzle()
-  local isMovePuzzle = currentPuzzle and currentPuzzle.puzzleType == "moves"
-
-  -- Store solution inputs for the new scene to pick up
-  GAME.battleRoom.sceneParameters.queuedSolutionInputs = procat(solutionInputs)
-  GAME.battleRoom.sceneParameters.hintWasUsed = true
-
-  -- For non-move puzzles, temporarily set to level 10 for faster panels
-  -- Store the original level to restore after match is created
-  if not isMovePuzzle then
-    GAME.battleRoom.sceneParameters.restoreLevelAfterCreation = config.puzzle_level
-    GAME.localPlayer:setLevel(10)
-    GAME.localPlayer:setLevelData(LevelPresets.getModern(10))
-  end
-
-  -- Reset puzzle (creates new scene via resetPuzzle)
+  
   self:resetPuzzle()
-
+  self.hintUsed = true
+  self:queueInputs(procat(solutionInputs))
+  
   return true
 end
 

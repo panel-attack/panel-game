@@ -4,8 +4,7 @@ require("client.src.config")
 -- Require developer here as this is basically the first thing to load in love 2D
 require("client.src.developer")
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
+
 function love.conf(t)
   -- Set the identity before loading the config file
   -- as we need it set to get to the correct load directory.
@@ -16,32 +15,21 @@ function love.conf(t)
   t.appendidentity = false            -- Search files in source directory before save directory (boolean)
 
   local loveMajor = love.getVersion()
-  local usingModernLove = loveMajor >= 12
   -- this version has wrappers to be compatible with either love 11 or 12
   -- by adjusting to the actual version we avoid the pop-up informing the user about potential compatibility problems
-  if usingModernLove then
+  if loveMajor >= 12 then
     t.version = "12.0"                -- The LÖVE version this game was made for (string)
     t.highdpi = true                  -- Enable high-dpi mode for the window on a Retina display (boolean)
     t.window.displayindex = config.display        -- Index of the monitor to show the window in (number)
-    if t.graphics then
-      t.graphics.gammacorrect = false
-    else
-      -- older versions of love12 had this defined here
-      ---@diagnostic disable-next-line: inject-field
-      t.gammacorrect = false
-    end
   else
     t.version = "11.5"
-    ---@diagnostic disable-next-line: inject-field
     t.window.highdpi = true
     t.window.display = config.display
-    ---@diagnostic disable-next-line: inject-field
-    t.accelerometerjoystick = false   -- Enable the accelerometer on iOS and Android by exposing it as a Joystick (boolean)
-    ---@diagnostic disable-next-line: inject-field
-    t.gammacorrect = false            -- Enable gamma-correct rendering, when supported by the system (boolean)
   end
   t.console = false                   -- Attach a console (boolean, Windows only)
+  t.accelerometerjoystick = false     -- Enable the accelerometer on iOS and Android by exposing it as a Joystick (boolean)
   t.externalstorage = true
+  t.gammacorrect = false              -- Enable gamma-correct rendering, when supported by the system (boolean)
 
   t.audio.mic = false                 -- Request and use microphone capabilities in Android (boolean)
   t.audio.mixwithsystem = false       -- Keep background music playing when opening LOVE (boolean, iOS and Android only)
@@ -64,15 +52,10 @@ function love.conf(t)
   t.window.x = config.windowX              -- The x-coordinate of the window's position in the specified display (number)
   t.window.y = config.windowY              -- The y-coordinate of the window's position in the specified display (number)
 
-  if usingModernLove then
-    -- These modules are always on in modern love
-    ---@diagnostic disable-next-line: inject-field
-    t.modules.data = true               -- Enable the data module (boolean)
-    ---@diagnostic disable-next-line: inject-field
-    t.modules.font = true               -- Enable the font module (boolean)
-  end
   t.modules.audio = true              -- Enable the audio module (boolean)
+  t.modules.data = true               -- Enable the data module (boolean)
   t.modules.event = true              -- Enable the event module (boolean)
+  t.modules.font = true               -- Enable the font module (boolean)
   t.modules.graphics = true           -- Enable the graphics module (boolean)
   t.modules.image = true              -- Enable the image module (boolean)
   t.modules.joystick = true           -- Enable the joystick module (boolean)

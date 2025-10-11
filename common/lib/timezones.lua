@@ -1,13 +1,12 @@
 -- Compute the difference in seconds between local time and UTC.
-local function get_timezone()
+function get_timezone()
   local now = os.time()
-  ---@diagnostic disable-next-line: param-type-mismatch
   return os.difftime(now, os.time(os.date("!*t", now)))
 end
-local timezone = get_timezone()
+timezone = get_timezone()
 
 -- Return a timezone string in ISO 8601:2000 standard form (+hhmm or -hhmm)
-local function get_tzoffset(timezone)
+function get_tzoffset(timezone)
   local h, m = math.modf(timezone / 3600)
   return string.format("%+.4d", 100 * h + 60 * m)
 end
@@ -24,15 +23,14 @@ end
 --]]
 -- return the timezone offset in seconds, as it was on the time given by ts
 -- Eric Feliksik
-local function get_timezone_offset(ts)
+function get_timezone_offset(ts)
   local utcdate = os.date("!*t", ts)
   local localdate = os.date("*t", ts)
   localdate.isdst = false -- this is the trick
----@diagnostic disable-next-line: param-type-mismatch
   return os.difftime(os.time(localdate), os.time(utcdate))
 end
-local currentTimeZoneOffset = get_timezone_offset(os.time())
+tzoffset = get_timezone_offset(os.time())
 
 function to_UTC(time_to_convert)
-  return time_to_convert + -1 * currentTimeZoneOffset
+  return time_to_convert + -1 * tzoffset
 end

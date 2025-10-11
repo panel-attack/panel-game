@@ -15,55 +15,25 @@
         "jit",
         "lldebugger",
         "config",
-        "DEBUG_ENABLED",
-        "seed_from_mt", // TODO: Remove once this global is gone
-        "extract_mt", // TODO: Remove once this global is gone
-        "cs_random", // TODO: Remove once this global is gone
-        "initialize_mt_generator" // TODO: Remove once this global is gone
+        "DEBUG_ENABLED"
     ],
-    "diagnostics.libraryFiles": "Disable", // We don't want to diagnose library files, we shouldn't be editing them for the most part
-    "diagnostics.ignoredFiles": "Disable", // We don't want to diagnose ignored files, we ignored them for a reason
-    
-    "diagnostics.neededFileStatus": {
-        "assign-type-mismatch": "Any",
-        "cast-local-type": "Any",
-        "code-after-break": "Any",
-        "duplicate-set-field": "Any",
-        "empty-block": "Any",
-        "inject-field": "Any",
-        "need-check-nil": "None", // TODO: Remove once all warnings are fixed
-        "param-type-mismatch": "Any",
-        "redefined-local": "Any",
-        "redundant-return": "Any",
-        "return-type-mismatch": "Any",
-        "trailing-space": "None", // Just noise, we don't particularly care
-        "undefined-field": "None", // TODO: Remove once all warnings are fixed
-        "unreachable-code": "Any",
-        "unused-function": "Any",
-        "unused-label": "Any",
-        "unused-local": "Any",
-        "unused-vararg": "Any",
-        "undefined-doc-name": "Any"
-    },
+    "diagnostics.ignoredFiles": "Opened",
 
     "hint.semicolon": "Disable",
 
     "workspace.checkThirdParty": false,
     "workspace.ignoreDir": [
-        "client/lib/rich_presence/",
         ".vscode",
         // these would flag duplicate functions otherwise as they also define love callbacks
-        // TODO: We should probably just ignore those spots in the files so we get other check still
         "testLauncher.lua",
         "verificationLauncher.lua",
         // may want to include this to debug updater features
-        "updater",
-        "common/lib/socket.lua",
-        "common/lib/dkjson.lua",
-        "common/lib/csprng.lua",
-        "common/lib/jprof/MessagePack.lua"
+        "updater"
     ],
     "workspace.library": [
-        ".vscode/love2d-12/library"
+        "${3rd}/love2d/library",
+        "common/lib/socket.lua",
+        "common/lib/dkjson.lua",
+        "common/lib/csprng.lua"
     ]
 }

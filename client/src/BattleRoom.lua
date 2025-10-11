@@ -8,8 +8,10 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local ModController = require("client.src.mods.ModController")
 local ModLoader = require("client.src.mods.ModLoader")
 local ClientMatch = require("client.src.ClientMatch")
+local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
+local consts = require("common.engine.consts")
 local system = require("client.src.system")
 local GeneratorSource = require("common.engine.GeneratorSource")
 
@@ -28,7 +30,6 @@ local GeneratorSource = require("common.engine.GeneratorSource")
 ---@field match ClientMatch
 ---@field panelSource table?
 ---@field sceneParameters table?
----@field preferredStageId string? if set, this stage will be used for all matches in the session
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
 BattleRoom = class(
 function(self, mode, gameScene)
@@ -367,13 +368,7 @@ function BattleRoom:startMatch(replay)
   match:start()
   self.match = match
   self.state = BattleRoom.states.MatchInProgress
-
-  -- Use instant transition if requested, otherwise fade
-  local transition = nil
-  if not (self.sceneParameters and self.sceneParameters.useInstantTransition) then
-    transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
-  end
-
+  local transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
   local scene = self:createScene(match)
   scene:load()
   GAME.navigationStack:push(scene, transition)

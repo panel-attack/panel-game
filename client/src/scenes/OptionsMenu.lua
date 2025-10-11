@@ -13,7 +13,6 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local util = require("common.lib.util")
 local ModManagement = require("client.src.scenes.ModManagement")
 local system = require("client.src.system")
-local JsonSafePrecision = require("common.data.JsonSafePrecision")
 local logger = require("common.lib.logger")
 local prof = require("common.lib.zoneProfiler")
 
@@ -346,12 +345,13 @@ function OptionsMenu:loadGraphicsMenu()
   })
 
   local function scaleSettingsChanged()
+    GAME.showGameScaleUntil = GAME.timer + 10
     local newPixelWidth, newPixelHeight = love.graphics.getDimensions()
+    local previousXScale = GAME.canvasXScale
     logger.debug("Updating canvas scale from options")
-    local positionChanged, scaleChanged = GAME:updateCanvasPositionAndScale(newPixelWidth, newPixelHeight)
-    if scaleChanged then
+    GAME:updateCanvasPositionAndScale(newPixelWidth, newPixelHeight)
+    if previousXScale ~= GAME.canvasXScale then
       GAME:refreshCanvasAndImagesForNewScale()
-      GAME.showGameScaleUntil = GAME.timer + 10
     end
   end
 
@@ -364,7 +364,7 @@ function OptionsMenu:loadGraphicsMenu()
       tickLength = 1,
       onlyChangeOnRelease = true, -- performance is bad so don't change till release
       onValueChange = function(slider)
-        config.gameScaleFixedValue = JsonSafePrecision.toSafePrecision(slider.value)
+        config.gameScaleFixedValue = slider.value
         scaleSettingsChanged()
       end
     })
@@ -416,7 +416,7 @@ function OptionsMenu:loadGraphicsMenu()
       tickAmount = 5,
       tickLength = 10,
       onValueChange = function(slider)
-        config.shakeIntensity = JsonSafePrecision.toSafePrecision(slider.value / 100)
+        config.shakeIntensity = slider.value / 100
       end
     })
     return slider

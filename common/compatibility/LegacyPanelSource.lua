@@ -65,20 +65,20 @@ function LegacyPanelSource:generateStartingBoard(stack)
   -- legacy crutch, the arcane magic for the non-uniform starting board assumes this is there and it really doesn't work without it
   ret = string.rep("0", stack.width) .. ret
   -- arcane magic to get a non-uniform starting board
-  local returnArray = procat(ret)
+  ret = procat(ret)
   local maxStartingHeight = 7
   local height = tableUtils.map(procat(string.rep(maxStartingHeight, stack.width)), function(s) return tonumber(s) end)
   local to_remove = 2 * stack.width
   while to_remove > 0 do
     local idx = LegacyPanelGenerator:random(1, stack.width) -- pick a random column
     if height[idx] > 0 then
-      returnArray[idx + stack.width * (-height[idx] + 8)] = "0" -- delete the topmost panel in this column
+      ret[idx + stack.width * (-height[idx] + 8)] = "0" -- delete the topmost panel in this column
       height[idx] = height[idx] - 1
       to_remove = to_remove - 1
     end
   end
 
-  ret = table.concat(returnArray)
+  ret = table.concat(ret)
   ret = string.sub(ret, stack.width + 1)
 
   return ret

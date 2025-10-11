@@ -18,7 +18,6 @@ local legacyScoreY = 208
 
 ---@param playerCount integer
 ---@param theme table?
----@return ClientMatch
 local function createEndlessClientMatch(playerCount, theme)
   local endless = GameModes.getPreset("ONE_PLAYER_ENDLESS")
   local players = {}
@@ -196,6 +195,7 @@ test(testNewThemeOffsetPlayer2)
 
 local function testShakeOffsetLargeGarbage()
   local match = createEndlessClientMatch(2, defaultTheme)
+  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
 
@@ -289,6 +289,7 @@ test(testShakeOffsetLargeGarbage)
 -- Tests that having reduction properly reduces and rounds
 local function testShakeOffsetReduction()
   local match = createEndlessClientMatch(2, defaultTheme)
+  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.5) == 1)
@@ -326,6 +327,7 @@ test(testShakeOffsetReduction)
 
 local function testShakeOffsetMassiveReduction()
   local match = createEndlessClientMatch(2, defaultTheme)
+  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.25) == 1)
@@ -363,6 +365,7 @@ test(testShakeOffsetMassiveReduction)
 
 local function testShakeInterpolate()
   local match = createEndlessClientMatch(2, defaultTheme)
+  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(70, 0, 1) == 30)

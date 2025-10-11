@@ -4,8 +4,6 @@ local class = require("common.lib.class")
 local PuzzleTests = class(function() end)
 
 function PuzzleTests.validationCountdown()
--- Purposeful wrong type
----@diagnostic disable-next-line: assign-type-mismatch
   local puzzle = Puzzle({puzzleType = "moves", startTiming = "idc", moves = 5, stack = "1254216999999952"})
   local isValid, validationMessage = puzzle:validate()
 
@@ -14,8 +12,6 @@ function PuzzleTests.validationCountdown()
 end
 
 function PuzzleTests.validationPuzzleType()
--- Purposeful wrong type
----@diagnostic disable-next-line: assign-type-mismatch
   local puzzle = Puzzle({puzzleType = "garbageGoal", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
   local isValid, validationMessage = puzzle:validate()
 

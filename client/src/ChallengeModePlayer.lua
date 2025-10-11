@@ -1,5 +1,6 @@
 local MatchParticipant = require("client.src.MatchParticipant")
 local class = require("common.lib.class")
+local CharacterLoader = require("client.src.mods.CharacterLoader")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 
 ---@class ChallengeModePlayerSettings : ParticipantSettings

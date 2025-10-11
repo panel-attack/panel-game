@@ -329,7 +329,7 @@ function PuzzleSet:getPuzzleFromIndices(puzzleSetIndices, puzzleIndex)
   local puzzleSet = self:getPuzzleSetFromIndices(puzzleSetIndices)
   
   -- Get the final puzzle
-  if puzzleSet and puzzleSet.puzzles and puzzleSet.puzzles[puzzleIndex] then
+  if puzzleSet.puzzles and puzzleSet.puzzles[puzzleIndex] then
     return puzzleSet.puzzles[puzzleIndex]
   end
   

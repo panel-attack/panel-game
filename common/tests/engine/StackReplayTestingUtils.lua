@@ -16,7 +16,6 @@ function StackReplayTestingUtils:simulateReplayWithPath(path)
   return self:fullySimulateMatch(match)
 end
 
----@return Match
 function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, playerCount)
   local endless = GameModes.getPreset("ONE_PLAYER_ENDLESS")
   if playerCount == nil then
@@ -45,7 +44,6 @@ function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, pl
   return match
 end
 
----@return Match
 function StackReplayTestingUtils.createSinglePlayerMatch(gameMode, panelSource, inputMethod, levelData)
   if not panelSource then
     local enableShock = (gameMode.stackInteraction ~= GameModes.StackInteractions.NONE)

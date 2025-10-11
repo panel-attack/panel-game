@@ -74,26 +74,8 @@ end
 
 function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
   assert(puzzleSetIterator)
-  GAME.localPlayer:setLevel(config.puzzle_level)
-  GAME.localPlayer:setLevelData(LevelPresets.getModern(config.puzzle_level))
-
-  local player = self.battleRoom.players[1]
-
-  -- Lock character and stage for the entire puzzle session
-  -- This prevents them from changing between puzzles
-  player.settings.lockCharacterAndStage = true
-
-  -- Use the resolved stage for all matches in this session
-  self.battleRoom.preferredStageId = player.settings.stageId
-
-  -- Refresh to set characterId/stageId and emit signals for loading
-  player:refreshCharacter()
-  player:refreshStage()
-
-  -- Update loading state to ensure BattleRoom knows assets need to load
-  self.battleRoom:updateLoadingState()
-
   self:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
+  local player = self.battleRoom.players[1]
   player:setWantsReady(true)
   GAME.theme:playValidationSfx()
 end
@@ -135,6 +117,8 @@ function PuzzleMenu:load(sceneParams)
       onValueChange = function(s)
         GAME.theme:playMoveSfx()
         config.puzzle_level = s.value
+        GAME.localPlayer:setLevel(s.value)
+        GAME.localPlayer:setLevelData(LevelPresets.getModern(s.value))
       end
     })
 
@@ -689,7 +673,7 @@ function PuzzleMenu:getDisplayStack(puzzle)
   local gameMode = puzzle:toGameMode()
   local args = {
     which = 1,
-    levelData = LevelPresets.getModern(config.puzzle_level),
+    levelData = LevelPresets.getModern(config.puzzle_level or 5),
     is_local = false,
     stackOverConditions = gameMode.matchRules.stackOverConditions,
     stackWinConditions = gameMode.matchRules.stackWinConditions,

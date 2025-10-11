@@ -58,12 +58,10 @@ end
 
 -- copies a file from the given source to the given destination
 function fileUtils.copyFile(source, destination)
-  local source_file, sizeError = love.filesystem.read(source)
-  if source_file == nil then
-    return false, sizeError
-  end
-  local success, error = love.filesystem.write(destination, source_file)
-  return success, error
+  local success
+  local source_file, err = love.filesystem.read(source)
+  success, err = love.filesystem.write(destination, source_file)
+  return success, err
 end
 
 -- copies a file from the given source to the given destination
@@ -256,8 +254,6 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   end
 
   local data = imageData:encode(format)
-  --- Not sure if this is right, revisit
-  ---@diagnostic disable-next-line: param-type-mismatch
   love.filesystem.write(filePath .. "." .. format, data)
 end
 

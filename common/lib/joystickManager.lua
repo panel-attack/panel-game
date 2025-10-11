@@ -101,8 +101,6 @@ function joystickManager:getDPadState(joystick, hatIndex)
   }
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.joystickadded(joystick)
   -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions
@@ -167,8 +165,6 @@ function love.joystickadded(joystick)
   joystickManager.devices[id] = device
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function love.joystickremoved(joystick)
   -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions

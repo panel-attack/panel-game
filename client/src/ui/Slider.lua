@@ -31,9 +31,9 @@ local sliderBarThickness = 6
 ---@field value number current value
 ---@field onValueChange fun(slider:Slider) callback for whenever the value is changed
 ---@field onlyChangeOnRelease boolean flag to control when onValueChange is called; set it to true for sliders that have a callback that takes a long time
----@field minText love.TextBatch
----@field maxText love.TextBatch
----@field valueText love.TextBatch
+---@field minText love.Text
+---@field maxText love.Text
+---@field valueText love.Text
 ---@field isFocusable boolean? only present if the individual object has been marked as focusable
 ---@field yieldFocus fun()? only present if the individual object has been marked as focusable, yields focus back to the parent element
 ---@overload fun(options: SliderOptions): Slider
@@ -51,10 +51,9 @@ local Slider = class(
     self.value = self:getBoundedValue(value) -- don't use set value as not everything is setup yet
     self.onlyChangeOnRelease = options.onlyChangeOnRelease or false
 
-    local currentFont = love.graphics.getFont()
-    self.minText = GraphicsUtil.newText(currentFont, tostring(self.min))
-    self.maxText = GraphicsUtil.newText(currentFont, tostring(self.max))
-    self.valueText = GraphicsUtil.newText(currentFont, tostring(self.value))
+    self.minText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.min))
+    self.maxText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.max))
+    self.valueText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.value))
 
     local valueTextWidth, valueTextHeight = self.valueText:getDimensions()
     local textWidth, textHeight = self.maxText:getDimensions()
@@ -118,12 +117,10 @@ end
 ---@param newValue number
 ---@param committed boolean? if the callback should get executed
 function Slider:setValue(newValue, committed)
-  if self.value ~= newValue then
-    self.value = util.bound(self.min, newValue, self.max)
-    self.valueText:set(tostring(self.value))
-    if committed or self.onlyChangeOnRelease == false then
-      self:onValueChange()
-    end
+  self.value = util.bound(self.min, newValue, self.max)
+  self.valueText:set(tostring(self.value))
+  if committed or self.onlyChangeOnRelease == false then
+    self:onValueChange()
   end
 end
 

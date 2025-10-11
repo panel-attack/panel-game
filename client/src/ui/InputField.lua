@@ -9,8 +9,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local InputField = class(
   function(self, options)
-    local currentFont = love.graphics.getFont()
-    self.placeholderText = GraphicsUtil.newText(currentFont, options.placeholder) or GraphicsUtil.newText(currentFont, "Input Field")
+    self.placeholderText = GraphicsUtil.newText(love.graphics.getFont(), options.placeholder) or GraphicsUtil.newText(love.graphics.getFont(), "Input Field")
     self.value = options.value or ""
     self.charLimit = options.charLimit or NAME_LENGTH_LIMIT
     -- unlike the name, this also allows underscores
@@ -24,8 +23,8 @@ local InputField = class(
     -- left, right, center
     self.hAlign = options.hAlign or 'left'
     self.vAlign = options.vAlign or 'center'
-
-    self.text = GraphicsUtil.newText(currentFont, self.value)
+    
+    self.text = GraphicsUtil.newText(love.graphics.getFont(), self.value)
     -- stretch to fit text
     local textWidth, textHeight = self.text:getDimensions()
     self.width = math.max(textWidth + 6, self.width)
@@ -58,8 +57,7 @@ function InputField:onRelease(x, y)
 end
 
 local textOffset = 4
-local currentFont = love.graphics.getFont()
-local textCursor = GraphicsUtil.newText(currentFont, "|")
+local textCursor = GraphicsUtil.newText(love.graphics.getFont(), "|")
 
 function InputField:onVisibilityChanged()
   if self.isVisible then
@@ -76,8 +74,7 @@ function InputField:getCursorPos()
 
   local byteoffset = utf8.offset(self.value, self.offset)
   local text = string.sub(self.value, 1, byteoffset)
-  local font = love.graphics.getFont()
-  return self.x + textOffset + GraphicsUtil.newText(font, text):getWidth()
+  return self.x + textOffset + GraphicsUtil.newText(love.graphics.getFont(), text):getWidth()
 end
 
 function InputField:unfocus()
