@@ -1038,7 +1038,7 @@ function CharacterSelect:updateSelf(dt)
   local overlayActive = self.inputDeviceOverlay and self.inputDeviceOverlay:isActive()
 
   if not overlayActive then
-    if InputDeviceUtils.checkForUnassignedConfigurationInputs(self.battleRoom) then
+    if not self.battleRoom.spectating and InputDeviceUtils.checkForUnassignedConfigurationInputs(self.battleRoom) then
       self.battleRoom:releaseAllLocalAssignments()
       self:openInputDeviceOverlayIfNeeded()
       return -- Don't process cursor inputs this frame when overlay opens

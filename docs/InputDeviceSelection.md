@@ -10,14 +10,12 @@
 - Each player box shows the player number
 - When you touch or use a controller the device used shows in the box and becomes active.
 - The overlay dismisses once every assignment is made.
-- A"Change Input Device" button is on character select to allow you to reselect, triggering the overlay again with all local assignments reset.
+- A "Change Input Device" button is on character select to allow you to reselect, triggering the overlay again with all local assignments reset.
 - The change input device button shows all assignments in a compact form.
 - Any input config should be able to navigate the menus outside of character select.
 - When an input configuration is used that isn't assigned, release configs and bring up the overlay again
 - When more than one input configuration of a device type are assigned, they should be numbered by order they are in the input configuration, so second keyboard configuration says "2"
 - An attempt should be made to show an image close to the input method used. Touch, keyboard, controller shape
-
-## Architecture
 
 ## Testing Plan
 - Manual scenarios:

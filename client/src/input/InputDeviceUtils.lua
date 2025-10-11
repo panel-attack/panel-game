@@ -68,11 +68,11 @@ local function classifyConfiguration(config, index)
       firstBinding = firstBinding or binding
       if binding:find(":", 1, true) then
         local guid, slot = parseControllerBinding(binding)
-        local name = resolveControllerName(guid, slot)
-        if slot then
+        if guid then
+          local name = resolveControllerName(guid, slot)
           return "controller", name or "Controller"
         end
-        return "controller", name or "Controller"
+        return "controller", "Controller"
       end
     end
   end
