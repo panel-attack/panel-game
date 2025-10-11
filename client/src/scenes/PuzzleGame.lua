@@ -111,6 +111,7 @@ function PuzzleGame:customLoad()
   self.playerStack = playerStack
   
   -- Override drawTimer to prevent elapsed time display in puzzles
+  ---@diagnostic disable-next-line: duplicate-set-field
   self.match.drawTimer = function() end
   
   local stack = playerStack
