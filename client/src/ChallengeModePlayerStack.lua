@@ -1,6 +1,5 @@
 local class = require("common.lib.class")
 local ClientStack = require("client.src.ClientStack")
-local SimulatedStack = require("common.engine.SimulatedStack")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class ChallengeModePlayerStack : ClientStack
@@ -162,6 +161,12 @@ end
 function ChallengeModePlayerStack:drawScore()
   -- no fake score for simulated stacks yet
   -- could be fun for fake 1p time attack vs later on, lol
+end
+
+function ChallengeModePlayerStack:drawMoveCount()
+end
+
+function ChallengeModePlayerStack:drawAnalyticData()
 end
 
 function ChallengeModePlayerStack:drawSpeed()

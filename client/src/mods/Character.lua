@@ -27,12 +27,15 @@ local chainStyle = {classic = 0, per_chain = 1}
 ---@enum ComboStyle
 local comboStyle = {classic = 0, per_combo = 1}
 
+---@alias TelegraphImageRow table<integer, love.Texture?>
+---@alias TelegraphImageMap table<integer|string, TelegraphImageRow | love.Texture?>
+
 ---@class Character:Mod
 ---@field display_name string Name for display in selection menus
 ---@field stage string? Id of a stage for super select
 ---@field panels string? Id of a panel set for super select
 ---@field images table<string, love.Texture> graphical assets of the character
----@field telegraph_garbage_images userdata[][] graphical assets for telegraph display
+---@field telegraph_garbage_images TelegraphImageMap graphical assets for telegraph display
 ---@field sounds table<string, table<integer, SfxGroup> | SfxGroup> sound effect assets of the character
 ---@field musics table<string, Music> music assets of the character
 ---@field hasMusic boolean? if the character has any music

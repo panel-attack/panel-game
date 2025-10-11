@@ -16,7 +16,7 @@ local directsFocus = require("client.src.ui.FocusDirector")
 ---@field puzzleIndex integer
 ---@field originalPuzzle Puzzle
 ---@field rootPuzzleSet PuzzleSet?
----@field puzzleSetPath table<integer>?
+---@field puzzleSetPath table<integer>
 ---@field selectedPanelType integer
 ---@field cursorMode boolean
 ---@field isEditing boolean
@@ -58,7 +58,7 @@ function PuzzleEditorScene:customLoad()
 
   if self.match.stacks[1] then
     self.match.stacks[1].engine.do_countdown = true
-    
+
     -- Initialize cursor position from puzzle if set
     if self.originalPuzzle.cursorStartLeft then
       self.match.stacks[1].engine.cur_row = self.originalPuzzle.cursorStartLeft.row
@@ -66,6 +66,7 @@ function PuzzleEditorScene:customLoad()
     end
 
     -- Initialize garbage ID counter from stack's garbageCreatedCount to avoid ID collisions
+    ---@diagnostic disable-next-line: invisible
     self.garbageIdCounter = self.match.stacks[1].engine.garbageCreatedCount
   end
 
@@ -151,14 +152,14 @@ function PuzzleEditorScene:createPaletteButtons()
   local buttonSize = 40
   local spacing = 10
   local buttonsPerRow = 3
-  
+
   for i, color in ipairs(colors) do
     local row = math.floor((i - 1) / buttonsPerRow)
     local col = (i - 1) % buttonsPerRow
-    
+
     local x = col * (buttonSize + spacing)
     local y = row * (buttonSize + spacing)
-    
+
     local button = self:createPanelButtonSmall(color, buttonSize)
     button.x = x
     button.y = y
@@ -175,14 +176,14 @@ function PuzzleEditorScene:createPaletteButtons()
   local cursorIndex = #colors + 1
   local row = math.floor((cursorIndex - 1) / buttonsPerRow)
   local col = (cursorIndex - 1) % buttonsPerRow
-  
+
   local x = col * (buttonSize + spacing)
   local y = row * (buttonSize + spacing)
-  
+
   local cursorButton = self:createCursorButton(buttonSize)
   cursorButton.x = x
   cursorButton.y = y
-  
+
   self.paletteButtons[cursorIndex] = {button = cursorButton, color = "cursor"}
   palettePanel:addChild(cursorButton)
 
@@ -190,14 +191,14 @@ function PuzzleEditorScene:createPaletteButtons()
   local garbageIndex = cursorIndex + 1
   row = math.floor((garbageIndex - 1) / buttonsPerRow)
   col = (garbageIndex - 1) % buttonsPerRow
-  
+
   x = col * (buttonSize + spacing)
   y = row * (buttonSize + spacing)
-  
+
   local garbageButton = self:createGarbageButton(buttonSize)
   garbageButton.x = x
   garbageButton.y = y
-  
+
   self.paletteButtons[garbageIndex] = {button = garbageButton, color = "garbage"}
   palettePanel:addChild(garbageButton)
 
@@ -205,14 +206,14 @@ function PuzzleEditorScene:createPaletteButtons()
   local shockGarbageIndex = garbageIndex + 1
   row = math.floor((shockGarbageIndex - 1) / buttonsPerRow)
   col = (shockGarbageIndex - 1) % buttonsPerRow
-  
+
   x = col * (buttonSize + spacing)
   y = row * (buttonSize + spacing)
-  
+
   local shockGarbageButton = self:createShockGarbageButton(buttonSize)
   shockGarbageButton.x = x
   shockGarbageButton.y = y
-  
+
   self.paletteButtons[shockGarbageIndex] = {button = shockGarbageButton, color = "shock_garbage"}
   palettePanel:addChild(shockGarbageButton)
 
@@ -221,7 +222,7 @@ end
 
 function PuzzleEditorScene:updatePaletteSelection()
   for _, paletteButton in ipairs(self.paletteButtons) do
-    if (paletteButton.color == self.selectedPanelType and not self.cursorMode and not self.garbageMode and not self.shockGarbageMode) or 
+    if (paletteButton.color == self.selectedPanelType and not self.cursorMode and not self.garbageMode and not self.shockGarbageMode) or
        (paletteButton.color == "cursor" and self.cursorMode) or
        (paletteButton.color == "garbage" and self.garbageMode) or
        (paletteButton.color == "shock_garbage" and self.shockGarbageMode) then
@@ -318,7 +319,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
     -- Colorless panel - use the actual panel image
     local stack = self.match.stacks[1]
     local panelsData = panels[stack.panels_dir]
-    
+
     return ui.ImageButton({
       image = panelsData.greyPanel,
       width = size,
@@ -337,7 +338,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
     local stack = self.match.stacks[1]
     local panelsData = panels[stack.panels_dir]
     local panelImage = panelsData.displayIcons[color]
-    
+
     return ui.ImageButton({
       image = panelImage,
       width = size,
@@ -356,7 +357,7 @@ end
 
 function PuzzleEditorScene:createCursorButton(size)
   local cursorImage = GAME.theme.images.cursor[1].image
-  
+
   return ui.ImageButton({
     image = cursorImage,
     width = size,
@@ -374,7 +375,7 @@ end
 function PuzzleEditorScene:createGarbageButton(size)
   local stack = self.match.stacks[1]
   local garbageImage = stack.character.images.pop
-  
+
   return ui.ImageButton({
     image = garbageImage,
     width = size,
@@ -392,38 +393,38 @@ end
 function PuzzleEditorScene:createShockGarbageButton(size)
   local stack = self.match.stacks[1]
   local panelsData = panels[stack.panels_dir]
-  
+
   -- Create a canvas to draw the shock garbage with end caps like it appears in game
   local canvas = love.graphics.newCanvas(size, size)
   local prevCanvas = love.graphics.getCanvas()
-  
+
   canvas:renderTo(function()
     local shockImages = panelsData.images.metals
     local leftImage = shockImages.left
     local midImage = shockImages.mid
     local rightImage = shockImages.right
-    
+
     -- Calculate scaling to fit the button size
     local targetWidth = size * 0.8  -- Leave some padding
     local targetHeight = size * 0.6
-    
+
     -- Draw left cap
     local leftWidth = targetWidth * 0.25
     love.graphics.draw(leftImage, size * 0.1, size * 0.2, 0, leftWidth / leftImage:getWidth(), targetHeight / leftImage:getHeight())
-    
+
     -- Draw middle section
     local midWidth = targetWidth * 0.5
     local midX = size * 0.1 + leftWidth
     love.graphics.draw(midImage, midX, size * 0.2, 0, midWidth / midImage:getWidth(), targetHeight / midImage:getHeight())
-    
+
     -- Draw right cap
     local rightWidth = targetWidth * 0.25
     local rightX = midX + midWidth
     love.graphics.draw(rightImage, rightX, size * 0.2, 0, rightWidth / rightImage:getWidth(), targetHeight / rightImage:getHeight())
   end)
-  
+
   love.graphics.setCanvas(prevCanvas)
-  
+
   return ui.ImageButton({
     image = canvas,
     width = size,
@@ -492,14 +493,14 @@ end
 function PuzzleEditorScene:clearGarbageBlock(row, column)
   local stack = self.match.stacks[1]
   local panel = stack.engine.panels[row][column]
-  
+
   -- If this panel is not garbage, nothing to clear
   if not panel.isGarbage then
     return
   end
-  
+
   local garbageId = panel.garbageId
-  
+
   -- Find and clear all panels with the same garbage ID
   for r = 1, stack.engine.height do
     for c = 1, stack.engine.width do
@@ -530,10 +531,10 @@ function PuzzleEditorScene:placeGarbageBlock()
   local maxRow = math.max(startRow, endRow)
   local minCol = math.min(startCol, endCol)
   local maxCol = math.max(startCol, endCol)
-  
+
   local width = maxCol - minCol + 1
   local height = maxRow - minRow + 1
-  
+
   -- Shock garbage is limited to 1 panel high
   if self.shockGarbageMode and height > 1 then
     -- Keep only the start row for shock garbage
@@ -586,7 +587,7 @@ function PuzzleEditorScene:placeGarbageBlock()
   -- Create garbage block
   self.garbageIdCounter = self.garbageIdCounter + 1
   local garbageId = self.garbageIdCounter
-  
+
   for row = minRow, maxRow do
     for col = minCol, maxCol do
       if row >= 1 and row <= stack.engine.height and col >= 1 and col <= stack.engine.width then
@@ -639,12 +640,12 @@ function PuzzleEditorScene:editPanel(row, column, newColor)
       stack.engine.cur_col = 3
       logger.debug("Cursor start position removed")
     end
-    
+
     if not self.hasUnsavedChanges then
       self.hasUnsavedChanges = true
       self.statusLabel:setText("* Unsaved changes")
     end
-    
+
     -- Stay in cursor mode until user selects a different tool
     return
   end
@@ -706,12 +707,16 @@ function PuzzleEditorScene:savePuzzle()
   assert(self.rootPuzzleSet.fileSource)
 
   local targetPuzzleSet = self.rootPuzzleSet
+  ---@cast targetPuzzleSet PuzzleSet
   for _, pathIndex in ipairs(self.puzzleSetPath) do
-    targetPuzzleSet = targetPuzzleSet.puzzleSets[pathIndex]
+    local nextSet = targetPuzzleSet.puzzleSets[pathIndex]
+    assert(nextSet)
+    ---@cast nextSet PuzzleSet
+    targetPuzzleSet = nextSet
   end
 
   targetPuzzleSet:updatePuzzle(self.puzzleIndex, updatedPuzzle)
-  
+
   self.rootPuzzleSet:saveTargetPuzzleToFile(targetPuzzleSet, self.puzzleIndex, updatedPuzzle)
 
   self.hasUnsavedChanges = false
@@ -728,20 +733,22 @@ end
 function PuzzleEditorScene:clearSolution()
   -- Clear the solution from the original puzzle
   self.originalPuzzle.solution = nil
-  
+
   -- Mark as having unsaved changes
   if not self.hasUnsavedChanges then
     self.hasUnsavedChanges = true
     self.statusLabel:setText("* Unsaved changes")
   end
-  
+
   logger.debug("Puzzle solution cleared")
 end
 
 function PuzzleEditorScene:exitEditor()
   -- Clean up input configuration to prevent double claiming
   if self.match and self.match.stacks[1] and self.match.stacks[1].player then
-    self.match.stacks[1].player:unrestrictInputs()
+    local player = self.match.stacks[1].player
+    ---@cast player Player
+    player:unrestrictInputs()
   end
   GAME.navigationStack:pop()
 end

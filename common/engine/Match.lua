@@ -57,6 +57,7 @@ function(self, panelSource, matchRules)
   self.timeSpentRunning = 0
   self.maxTimeSpentRunning = 0
   self.createTime = love.timer.getTime()
+  ---@diagnostic disable-next-line: param-type-mismatch
   self.startTimestamp = os.time(os.date("*t"))
   self.clock = 0
   self.ended = false
@@ -136,7 +137,7 @@ function Match:getWinners()
           local hasLowestTime = true
           for k = 1, #potentialWinners do
             if k ~= j then
-              if #potentialWinner:getConfirmedInputCount() < #potentialWinners[k]:getConfirmedInputCount() then
+              if potentialWinner:getConfirmedInputCount() < potentialWinners[k]:getConfirmedInputCount() then
                 hasLowestTime = false
                 break
               end
@@ -377,7 +378,10 @@ function Match:getInfo()
   info.ended = self.ended
   info.stacks = {}
   for i, stack in ipairs(self.stacks) do
-    info.stacks[i] = stack:getInfo()
+    if stack.getInfo then
+      ---@cast stack Stack
+      info.stacks[i] = stack:getInfo()
+    end
   end
 
   return info

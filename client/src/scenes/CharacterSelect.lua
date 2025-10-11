@@ -496,6 +496,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   end
 
   -- we need to override the standard onRelease to reset the shader
+  ---@diagnostic disable-next-line: duplicate-set-field
   characterButton.onRelease = function(self, x, y, timeHeld)
     self.updateSuperSelectShader(self.superSelectImage, 0)
     if self:inBounds(x, y) then
@@ -507,6 +508,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   -- by applying focusable we can turn it into an "on release" interaction rather than on press by taking control of input interpretation
   ui.Focusable(characterButton)
   characterButton.holdTime = 0
+  ---@diagnostic disable-next-line: duplicate-set-field
   characterButton.receiveInputs = function(self, inputs, dt)
     if inputs.isPressed["Swap1"] then
       -- measure the time the press is held for
@@ -653,6 +655,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   })
 
   ui.Focusable(levelSlider)
+  ---@diagnostic disable-next-line: duplicate-set-field
   levelSlider.receiveInputs = function(self, inputs)
     if inputs:isPressedWithRepeat("Left") then
       self:setValue(self.value - 1)
@@ -685,6 +688,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
     player:setLevelData(LevelPresets.getModern(self.value))
   end
 
+  ---@diagnostic disable-next-line: duplicate-set-field
   levelSlider.setValueFromPos = function(self, x)
     local screenX, screenY = self:getScreenPos()
     self:setValue(math.floor((x - screenX) / self.tickLength) + self.min)

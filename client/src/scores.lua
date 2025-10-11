@@ -145,10 +145,16 @@ function Scores.saveVsSelfScoreForLevel(self, score, level)
 end
 
 function Scores.lastVsScoreForLevel(self, level)
+  if #self.vsSelf < level then
+    return 0
+  end
   return self.vsSelf[level]["last"]
 end
 
 function Scores.recordVsScoreForLevel(self, level)
+  if #self.vsSelf < level then
+    return 0
+  end
   return self.vsSelf[level]["record"]
 end
 
@@ -161,10 +167,16 @@ function Scores.saveTimeAttack1PScoreForLevel(self, score, level)
 end
 
 function Scores.lastTimeAttack1PForLevel(self, level)
+  if #self.timeAttack1P < level then
+    return 0
+  end
   return self.timeAttack1P[level]["last"]
 end
 
 function Scores.recordTimeAttack1PForLevel(self, level)
+  if #self.timeAttack1P < level then
+    return 0
+  end
   return self.timeAttack1P[level]["record"]
 end
 
@@ -177,10 +189,16 @@ function Scores.saveEndlessScoreForLevel(self, score, level)
 end
 
 function Scores.lastEndlessForLevel(self, level)
+  if #self.endless < level then
+    return 0
+  end
   return self.endless[level]["last"]
 end
 
 function Scores.recordEndlessForLevel(self, level)
+  if #self.endless < level then
+    return 0
+  end
   return self.endless[level]["record"]
 end
 

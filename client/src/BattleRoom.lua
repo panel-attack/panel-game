@@ -8,10 +8,8 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local ModController = require("client.src.mods.ModController")
 local ModLoader = require("client.src.mods.ModLoader")
 local ClientMatch = require("client.src.ClientMatch")
-local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
-local consts = require("common.engine.consts")
 local system = require("client.src.system")
 local GeneratorSource = require("common.engine.GeneratorSource")
 
