@@ -98,6 +98,12 @@ function SimulatedStack:shouldRun(runsSoFar)
   return runsSoFar < self.max_runs_per_frame
 end
 
+---@return integer
+function SimulatedStack:getConfirmedInputCount()
+  assert(false) -- Don't call this method for now, just exists for analyzer
+  return 0
+end
+
 function SimulatedStack:game_ended()
   if self.game_over_clock > 0 then
     return self.clock >= self.game_over_clock

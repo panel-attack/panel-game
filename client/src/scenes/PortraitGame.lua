@@ -213,6 +213,7 @@ function PortraitGame:flipToPortrait()
 
       -- create a raise button that interacts with the touch controller
       local raiseButton = ui.TextButton({label = ui.Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
+      ---@diagnostic disable-next-line: duplicate-set-field
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
         stack.touchInputDetector.touchingRaise = true
@@ -220,6 +221,7 @@ function PortraitGame:flipToPortrait()
       raiseButton.onDrag = function(button, x, y)
         stack.touchInputDetector.touchingRaise = button:inBounds(x, y)
       end
+      ---@diagnostic disable-next-line: duplicate-set-field
       raiseButton.onRelease = function(button, x, y, timeHeld)
         button.backgroundColor[4] = 0.7
         stack.touchInputDetector.touchingRaise = false

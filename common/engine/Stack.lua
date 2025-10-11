@@ -149,7 +149,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field peak_shake_time integer Records the maximum shake time obtained for the current stretch of uninterrupted shake time. \n
 --- Any additional shake time gained before shake depletes to 0 will reset shake_time back to this value. Set to 0 when shake_time reaches 0.
 ---@field warningsTriggered table ancient ancient, probably remove
----@field game_stopwatch integer? Clock time minus time that swaps were blocked
+---@field game_stopwatch integer Clock time minus time that swaps were blocked
 ---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
 ---@field panelTemplate (Panel | fun(row: integer, column: integer, id: integer?): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
 ---@field swapStallingBackLog table tracks swaps that will incur a health cost for stalling if not swapping would have resulted in health loss
