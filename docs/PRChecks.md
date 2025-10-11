@@ -1,123 +1,32 @@
-# GitHub PR Checks Implementation for Panel Attack
+# PR Checks Reference
 
-## Overview
+This document explains how the Panel Attack GitHub PR checks work and how to refresh the bundled Love2D binary. See `.github/workflows/pr-checks.yml` for the authoritative configuration.
 
-This document outlines the GitHub Actions PR checks for Panel Attack:
-1. **Lua Language Server diagnostics** - Block PRs that introduce new warnings
-2. **Love2D test suite** - Run all tests in headless mode with log output
+## Checks at a Glance
 
-### What Developers See
+- **Lua diagnostics (`lua-typecheck`)**: runs the lua-language-server action and fails on any diagnostic at information level or higher.
+- **Love2D tests (`love-tests`)**: launches `testLauncher.lua` in headless mode using the cached Love AppImage and exports logs for review.
 
-Both checks provide **clean, filtered output** showing only errors:
-- **Lua diagnostics**: All diagnostics with file:line and message
-- **Test failures**: Only failed test names and ERROR-level logs
+Each job publishes a concise failure summary to the GitHub Actions job summary while still failing the workflow so that GitHub blocks the PR when problems are detected.
 
-**All failures still block the PR** - the checks fail with proper exit codes while providing readable error summaries in the GitHub Actions job summary page.
+## Diagnostics Job Notes
 
-## Implementation
+- The action writes raw results to `check.json`; the following step formats that output down to file, line, message, and diagnostic code for easier consumption.
+- When the typecheck step fails, the formatting step still runs because the job is marked with `continue-on-error`, and then the final step exits with status 1 to propagate the failure back to GitHub.
+- All emitted diagnostics appear in a collapsible section, so reviewers can expand to inspect the full context without leaving the PR.
 
-See `.github/workflows/pr-checks.yml` for the complete workflow implementation.
+## Love2D Test Job Notes
 
-### Job 1: Lua Language Server Diagnostics
+- Tests execute with the Love2D AppImage downloaded from the project’s GitHub release. The artifact is cached using the key that incorporates `.github/love-version.txt`.
+- Failures capture filtered output: failing test names and the tail of ERROR-level logs are surfaced in the job summary, while the untouched log files are uploaded as artifacts for deep dives.
+- The job mirrors the diagnostics pattern: the run step may continue to allow formatting and logging, but the final gate step exits non-zero so GitHub marks the PR check as failed.
 
-**How it works:**
-- Uses [mrcjkb/lua-typecheck-action](https://github.com/mrcjkb/lua-typecheck-action)
-- Check level: Information (fails on Info, Warning, or Error diagnostics)
-- Outputs diagnostics to `check.json`
+## Updating the Love2D Distribution
 
-**Output formatting:**
-- On failure, shows filtered error summary in GitHub job summary
-- Displays total diagnostic count
-- Shows all diagnostics in collapsible details section
-- Format: `**file:line** - message [code]`
-- Still fails the check after displaying formatted output
-
-**Failure behavior:**
-- Step runs with `continue-on-error: true`
-- Format step runs if typecheck fails
-- Exits with code 1 to fail the check
-
-### Job 2: Love2D Test Suite
-
-**How it works:**
-- Runs `testLauncher.lua` using Xvfb for headless OpenGL support
-- Uses AppImage format for Love2D (self-contained)
-- Downloads Love2D from GitHub release and caches it
-- Captures full output to `test-output.log`
-
-**Output formatting:**
-- On failure, shows filtered error summary in GitHub job summary
-- Displays only failed test lines matching "Test failed:" or "Tests failed!"
-- Shows last 20 ERROR-level log entries for debugging context
-- Uploads complete log files as artifacts for detailed investigation
-- Still fails the check after displaying formatted output
-
-**Failure behavior:**
-- Test run uses `continue-on-error: true`
-- Format step runs if tests fail
-- Exits with code 1 to fail the check
-
-## Love2D Binary Distribution
-
-### Upload Your Current Love2D Binary
-
-1. **Package your current Love2D 12.0 binary:**
-   ```bash
-   # On your Mac where you have Love2D 12.0 working
-   # Get the Linux version (download CI build or compile)
-   # Then package it:
-   tar -czf love-12.0-linux-x86_64.tar.gz love-directory/
-   ```
-
-2. **Create a GitHub release to host it:**
-   ```bash
-   gh release create love2d-12.0 \
-     love-12.0-linux-x86_64.tar.gz \
-     --title "Love2D 12.0 Development Build" \
-     --notes "Love2D 12.0 CI build for GitHub Actions"
-   ```
-
-3. **Create version tracking file:**
-   ```bash
-   # Create .github/love-version.txt with a hash or date
-   echo "12.0-2025-10-10" > .github/love-version.txt
-   git add .github/love-version.txt
-   git commit -m "Add Love2D version tracking for CI cache"
-   ```
-
-4. **Update the workflow URL:**
-   Replace `YOUR-ORG` in the workflow with your actual GitHub org/username.
-
-### Updating Love2D Version
-
-When you want to update the Love2D binary:
-1. Upload new binary to a new GitHub release
-2. Update `.github/love-version.txt`
-3. Update the download URL in the workflow if needed
-
-## CI Performance
-
-**Expected Runtime:**
-- Lua Language Server: ~30-60 seconds
-- Love2D Tests: ~2-5 minutes
-- **Total: ~3-6 minutes per PR**
-
-**Caching:**
-- Love2D binary is cached after first download
-- Cache invalidates when `.github/love-version.txt` changes
-
-## Next Steps
-
-1. ✅ Create `.github/workflows/pr-checks.yml` with the complete workflow above
-2. ✅ Package your Love2D 12.0 Linux binary as a tar.gz
-3. ✅ Upload it to a GitHub release: `love2d-12.0`
-4. ✅ Create `.github/love-version.txt` to track version for caching
-5. ✅ Update workflow URL with your org/username
-6. ✅ Test on a development branch
-7. ✅ Enable as required check for PRs
-
-## References
-
-- [mrcjkb/lua-typecheck-action](https://github.com/marketplace/actions/lua-typecheck-action) - Lua Language Server CI
-- [Lua Language Server Diagnostics](https://luals.github.io/wiki/diagnostics/)
-- [SDL Environment Variables](https://wiki.libsdl.org/SDL2/CategoryHints) - For headless mode
+1. Publish the new Linux Love2D build to a GitHub release that the workflow can access (keep naming consistent so the download URL change is minimal).
+   - Package the AppImage or extracted `love` directory with `tar -czf love-<version>-linux-x86_64.tar.gz <source-folder>` so the workflow can download and unpack it directly.
+   - Create (or reuse) a release and upload the archive. The GitHub UI works, or you can run `gh release upload love2d-<version> love-<version>-linux-x86_64.tar.gz --clobber`.
+   - Note the release tag and asset filename—the workflow download step uses both, so keep them aligned when you update the YAML.
+2. Update `.github/love-version.txt` with a new cache token (date, hash). This invalidates the Actions cache and forces the new binary to download.
+3. Adjust the download URL in `.github/workflows/pr-checks.yml` if the release tag or asset name changed.
+4. Open a PR containing these updates; the first workflow run will repopulate the cache and subsequent runs will reuse it.
