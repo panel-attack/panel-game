@@ -324,7 +324,7 @@ function Player:updateSettings(settings)
       if settings.levelData.frameConstants.GARBAGE_HOVER then
         self:setStyle(GameModes.Styles.MODERN)
         self:setLevel(settings.level)
-      else
+      elseif settings.level <= LevelPresets.classicPresetCount then
         self:setStyle(GameModes.Styles.CLASSIC)
         self:setDifficulty(settings.level)
       end
