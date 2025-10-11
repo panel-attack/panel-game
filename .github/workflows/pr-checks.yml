@@ -132,9 +132,11 @@ jobs:
         if: steps.cache-love.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/love2d
-          curl -L "https://github.com/panel-attack/panel-game/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
+          curl -fL "https://github.com/panel-attack/panel-game/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
             -o /tmp/love.tar.gz
           tar -xzf /tmp/love.tar.gz -C ~/love2d
+          # Rename the AppImage to a consistent name for easier reference
+          mv ~/love2d/*.AppImage ~/love2d/love.AppImage
 
       - name: Make Love2D executable
         run: chmod +x ~/love2d/love.AppImage
