@@ -44,7 +44,7 @@ end
 ---@field scores Scores
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
----@field globalCanvas love.Canvas
+---@field globalCanvas love.graphics.Texture
 ---@field muteSound boolean
 ---@field rich_presence table
 ---@field input table
@@ -57,6 +57,10 @@ end
 ---@field lastReplayPath string?
 ---@field crashTrace string?
 ---@field theme Theme
+---@field focused boolean
+---@field connected_server_ip string?
+---@field connected_server_port integer?
+---@field localPlayer Player?
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)

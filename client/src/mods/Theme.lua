@@ -724,6 +724,7 @@ function Theme:saveVerboseConfig()
 
   -- Get the data from the file in case there is something we don't know about
   local jsonData = fileUtils.readJsonFile(jsonPath)
+  assert(jsonData)
 
   -- Save off any configurable data that may have changed / upgraded
   local configurableKeys = self:configurableKeys()
@@ -740,6 +741,7 @@ function Theme.json_init(self)
 
   -- Then override with custom theme
   local customData = fileUtils.readJsonFile(self.path .. "/config.json")
+  assert(customData)
   local version = self:versionForJSONVersion(customData.version)
   if version == Theme.THEME_VERSIONS.original then
     self:loadVersion1DefaultValues()

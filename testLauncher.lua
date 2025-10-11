@@ -134,7 +134,7 @@ function love.update(dt)
     end
     if not success then
       -- Check if the error is due to missing file
-      if string.find(err, "module.*not found") then
+      if err and string.find(err, "module.*not found") then
         logger.error("Test file does not exist: " .. tests[updateCount] .. " - " .. tostring(err))
         logger.error("Make sure the test file exists at the correct path and is properly named")
       else
@@ -179,7 +179,8 @@ function love.errorhandler(msg)
   if lldebugger then
     error(msg, 2)
   else
-    if love.filesystem.exists("test-crash.log") and system.supportsFileBrowserOpen() then
+    local crashInfo = love.filesystem.getInfo("test-crash.log")
+    if crashInfo and system.supportsFileBrowserOpen() then
       local sep = package.config:sub(1, 1)
       love.system.openURL("file://"..love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")
     end

@@ -21,7 +21,7 @@ function TestUtils.expectErrorQuiet(thunk, pattern)
   if pattern and not tostring(err):match(pattern) then
     return false, ("unexpected error: %s"):format(err)
   end
-  return true
+  return true, ""
 end
 
 return TestUtils

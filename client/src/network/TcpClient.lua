@@ -10,6 +10,8 @@ local class = require("common.lib.class")
 local Request = require("client.src.network.Request")
 local ServerMessages = require("client.src.network.ServerMessages")
 
+---@class TcpSocket
+
 ---@class TcpClient
 ---@field data string
 ---@field connectionUptime integer

@@ -342,7 +342,7 @@ function Panels:load()
 
   self.scale = 16 / self.size
 
-  self.quad = love.graphics.newQuad(0, 0, self.size, self.size, self.sheets[1])
+  self.quad = love.graphics.newQuad(0, 0, self.size, self.size, self.sheets[1]:getDimensions())
   self.displayIcons = {}
   for color = 1, 8 do
     local canvas = love.graphics.newCanvas(self.size, self.size)
@@ -624,7 +624,7 @@ function Panels:addToDraw(panel, x, y, stackScale, danger, dangerTimer, stopTime
     conf, frame, x, y = self:getDrawProps(panel, x, y, danger, dangerTimer, stopTime)
 
     if conf then
-      self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size)
+      self.quad:setViewport((frame - 1) * self.size, (conf.row - 1) * self.size, self.size, self.size, self.sheets[panel.color]:getDimensions())
       -- scale / 3 because for the current standard size of 16
       batch:add(self.quad, x * stackScale, y * stackScale, 0, self.scale * stackScale)
     end
@@ -649,7 +649,7 @@ end
 function Panels:drawPanelFrame(color, state, x, y, size)
   local sheetConfig = self.sheetConfig[state]
   -- always draw the first frame
-  self.quad:setViewport(0, (sheetConfig.row - 1) * self.size, self.size, self.size)
+  self.quad:setViewport(0, (sheetConfig.row - 1) * self.size, self.size, self.size, self.sheets[color]:getDimensions())
   local scale = (size or self.size) / self.size
   GraphicsUtil.drawQuad(self.sheets[color], self.quad, x, y, 0, scale)
 end
