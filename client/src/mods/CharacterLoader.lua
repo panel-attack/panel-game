@@ -11,10 +11,12 @@ local CharacterLoader = {}
 function CharacterLoader.initCharacters()
   local all, ids, filtered, visible = ModLoader.initMods(Character)
   ---@type table<string, Character>
+  ---@diagnostic disable-next-line: assign-type-mismatch
   allCharacters = all
   ---@type string[]
   characterIds = ids
   ---@type table<string, Character>
+  ---@diagnostic disable-next-line: assign-type-mismatch
   characters = filtered
   ---@type string[]
   visibleCharacters = visible
