@@ -32,7 +32,7 @@
         "empty-block": "Any",
         "inject-field": "Any",
         "need-check-nil": "None", // TODO: Remove once all warnings are fixed
-        "param-type-mismatch": "None", // TODO: Remove once all warnings are fixed
+        "param-type-mismatch": "Any",
         "redefined-local": "Any",
         "redundant-return": "Any",
         "return-type-mismatch": "Any",
