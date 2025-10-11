@@ -16,18 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate CI Lua config
-        run: |
-          # Copy base config and replace all "Opened" with "None" for CI
-          sed 's/"Opened"/"None"/g' .luarc.json > .luarc.ci.json
-          echo "Generated .luarc.ci.json for CI (all 'Opened' diagnostics disabled)"
-
       - name: Type Check and Lint
         id: typecheck
         uses: mrcjkb/lua-typecheck-action@v0
         with:
           directories: .
-          configpath: .luarc.ci.json
+          configpath: .luarc.json
           checklevel: Information
         continue-on-error: true
 

@@ -22,8 +22,6 @@ See `.github/workflows/pr-checks.yml` for the complete workflow implementation.
 
 **How it works:**
 - Uses [mrcjkb/lua-typecheck-action](https://github.com/mrcjkb/lua-typecheck-action)
-- Dynamically generates `.luarc.ci.json` from `.luarc.json` with all `"Opened"` changed to `"None"`
-- This ensures CI only checks diagnostics marked as `"Any"` (not editor-only warnings)
 - Check level: Information (fails on Info, Warning, or Error diagnostics)
 - Outputs diagnostics to `check.json`
 
