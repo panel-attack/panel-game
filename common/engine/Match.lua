@@ -57,6 +57,7 @@ function(self, panelSource, matchRules)
   self.timeSpentRunning = 0
   self.maxTimeSpentRunning = 0
   self.createTime = love.timer.getTime()
+  ---@diagnostic disable-next-line: param-type-mismatch
   self.startTimestamp = os.time(os.date("*t"))
   self.clock = 0
   self.ended = false

@@ -31,9 +31,9 @@ local sliderBarThickness = 6
 ---@field value number current value
 ---@field onValueChange fun(slider:Slider) callback for whenever the value is changed
 ---@field onlyChangeOnRelease boolean flag to control when onValueChange is called; set it to true for sliders that have a callback that takes a long time
----@field minText love.Text
----@field maxText love.Text
----@field valueText love.Text
+---@field minText love.TextBatch
+---@field maxText love.TextBatch
+---@field valueText love.TextBatch
 ---@field isFocusable boolean? only present if the individual object has been marked as focusable
 ---@field yieldFocus fun()? only present if the individual object has been marked as focusable, yields focus back to the parent element
 ---@overload fun(options: SliderOptions): Slider
@@ -51,9 +51,10 @@ local Slider = class(
     self.value = self:getBoundedValue(value) -- don't use set value as not everything is setup yet
     self.onlyChangeOnRelease = options.onlyChangeOnRelease or false
 
-    self.minText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.min))
-    self.maxText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.max))
-    self.valueText = GraphicsUtil.newText(love.graphics.getFont(), tostring(self.value))
+    local currentFont = love.graphics.getFont()
+    self.minText = GraphicsUtil.newText(currentFont, tostring(self.min))
+    self.maxText = GraphicsUtil.newText(currentFont, tostring(self.max))
+    self.valueText = GraphicsUtil.newText(currentFont, tostring(self.value))
 
     local valueTextWidth, valueTextHeight = self.valueText:getDimensions()
     local textWidth, textHeight = self.maxText:getDimensions()

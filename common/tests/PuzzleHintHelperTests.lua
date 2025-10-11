@@ -19,9 +19,6 @@ function PuzzleHintHelperTests.testCreateHintHelperWithoutSolution()
   assert(helper:getSolutionInputString() == nil, "Should return nil for solution input string when no solution")
 end
 
-
-assert(false)
-
 function PuzzleHintHelperTests.testCreateHintHelperWithSolution()
   -- Create a simple solution string (move right and swap)
   local solutionInputs = KeyDataEncoding.right .. KeyDataEncoding.swap

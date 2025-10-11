@@ -44,7 +44,7 @@ end
 ---@field scores Scores
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
----@field globalCanvas love.Canvas
+---@field globalCanvas love.graphics.Texture
 ---@field muteSound boolean
 ---@field rich_presence table
 ---@field input table

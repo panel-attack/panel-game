@@ -309,7 +309,8 @@ function PuzzleGame:recordPuzzleSolution()
       end
       
       -- Save the puzzle with solution using the root puzzle set that has the file source
-      if sourceRootPuzzleSet and sourceRootPuzzleSet.saveTargetPuzzleToFile then
+      if sourceRootPuzzleSet and sourceRootPuzzleSet.saveTargetPuzzleToFile and targetPuzzleSet then
+        ---@cast targetPuzzleSet PuzzleSet
         sourceRootPuzzleSet:saveTargetPuzzleToFile(targetPuzzleSet, puzzleIndex, currentPuzzle)
       end
     end

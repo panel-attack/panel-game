@@ -16,8 +16,6 @@ local Telegraph = require("client.src.graphics.Telegraph")
 local MatchParticipant = require("client.src.MatchParticipant")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 local NetworkProtocol = require("common.network.NetworkProtocol")
-local GeneratorSource = require("common.engine.GeneratorSource")
-local StackBehaviours = require("common.data.StackBehaviours")
 ---@module "client.src.ChallengeModePlayerStack"
 
 ---@class ClientMatch
@@ -165,7 +163,7 @@ function ClientMatch:setup()
   end
 
   if self.stackInteraction == GameModes.StackInteractions.ATTACK_ENGINE then
-    for i, player in ipairs(self.players) do
+    for _, player in ipairs(self.players) do
       local engineStack = self.engine:createSimulatedStackWithSettings(player.settings.attackEngineSettings)
       local attackEngineHost = ChallengeModePlayerStack({
         engine = engineStack,
@@ -178,7 +176,7 @@ function ClientMatch:setup()
       self.stacks[#self.stacks+1] = attackEngineHost
     end
   elseif self.stackInteraction == GameModes.StackInteractions.SELF then
-    for i, stack in ipairs(self.stacks) do
+    for _, stack in ipairs(self.stacks) do
       self.engine:addTarget(stack.engine, stack.engine)
     end
   elseif self.stackInteraction == GameModes.StackInteractions.VERSUS then
@@ -200,7 +198,7 @@ function ClientMatch:run()
     return
   end
 
-  for i, stack in ipairs(self.stacks) do
+  for _, stack in ipairs(self.stacks) do
     -- if stack.cpu then
     --   stack.cpu:run(stack)
     -- end
@@ -258,7 +256,7 @@ function ClientMatch:start()
   -- here on client side we can simply acknowledge that only up to 2 players per match are supported
 
   self:moveStacks()
-  for i, stack in ipairs(self.stacks) do
+  for _, stack in ipairs(self.stacks) do
     stack:connectSignal("dangerMusicChanged", self, self.updateDangerMusic)
   end
 
@@ -681,8 +679,8 @@ function ClientMatch:getWinners()
   if not self.winners and self.engine:hasEnded() then
     local winningStacks = self.engine:getWinners()
     local winners = {}
-    for i, stack in ipairs(winningStacks) do
-      for j, player in ipairs(self.players) do
+    for _, stack in ipairs(winningStacks) do
+      for _, player in ipairs(self.players) do
         if player.stack.engine == stack then
           winners[#winners+1] = player
           break
@@ -704,7 +702,7 @@ function ClientMatch:resetPuzzle()
   stackEngine.confirmedInput = {}
   self.players[1]:incrementWinCount()
   -- rollback data is discarded so we need to resave frame 0
-  for i, stack in ipairs(self.engine.stacks) do
+  for _, stack in ipairs(self.engine.stacks) do
     stack:saveForRollback()
   end
 end

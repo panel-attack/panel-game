@@ -256,6 +256,8 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   end
 
   local data = imageData:encode(format)
+  --- Not sure if this is right, revisit
+  ---@diagnostic disable-next-line: param-type-mismatch
   love.filesystem.write(filePath .. "." .. format, data)
 end
 

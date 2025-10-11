@@ -79,9 +79,6 @@ local Server = class(
     FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
     seed_from_mt(extract_mt())
-    --timezone testing
-    -- print("server_UTC_offset (in seconds) is "..tzoffset)
-    -- print("that's "..(tzoffset/3600).." hours")
     -- local server_start_time = os.time()
     -- print("current local time: "..server_start_time)
     -- print("current UTC time: "..to_UTC(server_start_time))
@@ -93,9 +90,6 @@ local Server = class(
     -- print("formatted UTC time: "..formatted_UTC_time)
     logger.debug("COMPRESS_REPLAYS_ENABLED: " .. (COMPRESS_REPLAYS_ENABLED and "true" or "false"))
     logger.debug("initialized!")
-    -- print("get_timezone() output: "..get_timezone())
-    -- print("get_timezone_offset(os.time()) output: "..get_timezone_offset(os.time()))
-    -- print("get_tzoffset(get_timezone()) output:"..get_tzoffset(get_timezone()))    
   end
 )
 
@@ -192,17 +186,24 @@ function Server:importDatabase()
   if gameMatches then -- only do it if there was a gameResults file to begin with
     logger.info("Importing GameResults.csv to database")
     for _, result in ipairs(gameMatches) do
-      local player1ID = result[1]
-      local player2ID = result[2]
-      local player1Won = result[3] == 1
-      local ranked = result[4] == 1
-      local gameID = self.database:insertGame(ranked)
-      if player1Won then
-        self.database:insertPlayerGameResult(player1ID, gameID, nil,  1)
-        self.database:insertPlayerGameResult(player2ID, gameID, nil,  2)
+      local parsedPlayer1ID = tostring(result[1])
+      local parsedPlayer2ID = tostring(result[2])
+      local parsedOutcome = tonumber(result[3])
+      local parsedRanked = tonumber(result[4])
+      if parsedPlayer1ID and parsedPlayer2ID and parsedOutcome and parsedRanked then
+        local player1Won = parsedOutcome == 1
+        local ranked = parsedRanked == 1
+        local gameID = self.database:insertGame(ranked)
+        assert(gameID)
+        if player1Won then
+          self.database:insertPlayerGameResult(parsedPlayer1ID, gameID, nil,  1)
+          self.database:insertPlayerGameResult(parsedPlayer2ID, gameID, nil,  2)
+        else
+          self.database:insertPlayerGameResult(parsedPlayer2ID, gameID, nil,  1)
+          self.database:insertPlayerGameResult(parsedPlayer1ID, gameID, nil,  2)
+        end
       else
-        self.database:insertPlayerGameResult(player2ID, gameID, nil,  1)
-        self.database:insertPlayerGameResult(player1ID, gameID, nil,  2)
+        logger.warn("Skipping malformed GameResults.csv row: " .. json.encode(result))
       end
     end
   end
@@ -372,7 +373,9 @@ end
 ---@return privateUserId new_user_id
 function Server:generate_new_user_id()
   local new_user_id = cs_random()
-  return tostring(new_user_id)
+  local result = tostring(new_user_id)
+  assert(result)
+  return result
 end
 
 -- Checks if a logging in player is banned based off their IP.
@@ -605,7 +608,7 @@ function Server:processMessage(message, connection)
       self.playerToRoom[player]:handleTaunt(message, player)
       return true
     elseif player.state == "playing" and message.game_over then
-      self.playerToRoom[player]:handleGameOverOutcome(message, player)
+      self.playerToRoom[player]:handleGameOverOutcome(message.game_over, player)
       return true
     elseif (player.state == "playing") and message.matchAbort then
       self.playerToRoom[player]:abortGame(player)

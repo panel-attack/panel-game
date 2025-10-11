@@ -64,7 +64,6 @@
         "common/lib/jprof/MessagePack.lua"
     ],
     "workspace.library": [
-        "${3rd}/love2d/library",
         ".vscode/love2d-12/library"
     ]
 }
