@@ -31,6 +31,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 -- Due to this, unless for a good reason, all properties on Player should be set using the setters
 ---@class Player : MatchParticipant
 ---@field settings PlayerSettings
+---@field publicId integer
 ---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player
@@ -192,8 +193,11 @@ function Player:setRating(rating)
     self.ratingHistory[#self.ratingHistory + 1] = self.rating
   end
 
-  if rating and tonumber(rating) then
-    rating = math.round(tonumber(rating))
+  if rating then
+    local ratingNumber = tonumber(rating)
+    if ratingNumber then
+      rating = math.round(ratingNumber)
+    end
   end
 
   self.rating = rating

@@ -21,7 +21,6 @@ end
 
 
 assert(false)
-print(noteefenalf)
 
 function PuzzleHintHelperTests.testCreateHintHelperWithSolution()
   -- Create a simple solution string (move right and swap)

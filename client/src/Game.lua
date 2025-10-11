@@ -60,6 +60,7 @@ end
 ---@field focused boolean
 ---@field connected_server_ip string?
 ---@field connected_server_port integer?
+---@field localPlayer Player?
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
