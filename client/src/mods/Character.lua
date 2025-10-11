@@ -577,9 +577,10 @@ end
 ---@param height integer height in panels
 ---@return love.Texture
 function Character:createGarbageTexture(width, height)
+   local relativeScale = self.images.pop:getWidth() / 16
   -- create all canvases as if we were working with the 360x240 resolution but use the canvas dpi scale to use the real resolution
   -- that makes it easy to scale later as everything can be treated the same while love handles the dpi scale resolution for us
-  local canvas = love.graphics.newCanvas(width * 48, height * 48, {dpiscale = self.images.pop:getDPIScale()})
+  local canvas = love.graphics.newCanvas(width * 16, height * 16, {dpiscale = self.images.pop:getDPIScale() * relativeScale})
 
   -- Use the same filter as the garbage images so that upscaling looks right for pixel art
   local min, mag = self.images.pop:getFilter()
@@ -626,13 +627,12 @@ end
 ---@param y integer top offset
 ---@param width integer width in panels
 ---@param height integer height in panels
----@param scale number?
+---@param scale number
 function Character:drawGarbage(x, y, width, height, scale)
-  scale = scale / 3 --Garbage is now drawn in normal pixel coordinates, but the rest or stack rendering hasn't moved scales yet
   local texture = self:getGarbageTexture(width, height)
   love.graphics.push("transform")
   love.graphics.scale(scale)
-  love.graphics.draw(texture, x*3, y*3)
+  love.graphics.draw(texture, x, y)
   -- for debugging and development purposes, draw with the code creating the texture instead of the texture itself
   -- useful when there are problems with texture generation
   --love.graphics.translate(x, y)
@@ -660,10 +660,10 @@ function Character:__drawGarbage(width, height)
   --          xxxxxxx--------------------------------------xxxxxxx
 
   local imgs = self.images
-  local panelSize = 48
+  local panelSize = 16
   local halfPanelSize = panelSize / 2
-  local topBottomHeight = 6
-  local cornerHeight = 9
+  local topBottomHeight = 2
+  local cornerHeight = 3
   local cornerWidth = halfPanelSize
   local garbageWidth, garbageHeight = width, height
   local leftX = 0
