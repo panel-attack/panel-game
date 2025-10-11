@@ -24,35 +24,90 @@ jobs:
           configpath: .luarc.json
           checklevel: Information
         continue-on-error: true
+        env:
+          NO_COLOR: 1
 
-      - name: Format diagnostics Output
+      - name: Publish diagnostics annotations
         if: steps.typecheck.outcome == 'failure'
         run: |
-          echo "## ❌ Lua Language Server Diagnostics Failed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          python3 <<'PYTHON'
+          import json
+          import sys
+          import os
 
-          if [ -f "check.json" ]; then
-            # Count total diagnostics
-            TOTAL=$(jq '[.[] | length] | add // 0' check.json)
-            echo "Found **$TOTAL** diagnostic issue(s)" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+          # LSP severity → GitHub annotation level mapping
+          SEVERITY_MAP = {
+              1: 'error',    # Error
+              2: 'warning',  # Warning
+              3: 'notice',   # Information
+              4: 'notice'    # Hint
+          }
 
-            # Show all diagnostics
-            echo "<details>" >> $GITHUB_STEP_SUMMARY
-            echo "<summary>View Diagnostics</summary>" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+          try:
+              with open('check.json') as f:
+                  diagnostics = json.load(f)
+          except FileNotFoundError:
+              print('::error::check.json not found')
+              sys.exit(1)
+          except json.JSONDecodeError:
+              print('::error::check.json is not valid JSON')
+              sys.exit(1)
 
-            jq -r 'to_entries[] | .key as $file | .value[] | "**\($file):\(.range.start.line + 1)** - \(.message) `[\(.code)]`"' check.json >> $GITHUB_STEP_SUMMARY
+          total_count = 0
+          severity_counts = {'error': 0, 'warning': 0, 'notice': 0}
 
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "</details>" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ No check.json file found" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Debug: Listing files in current directory:" >> $GITHUB_STEP_SUMMARY
-            ls -la >> $GITHUB_STEP_SUMMARY
-          fi
+          # Emit annotations for all diagnostics
+          for file_path, issues in diagnostics.items():
+              for issue in issues:
+                  severity_level = issue.get('severity', 2)
+                  severity = SEVERITY_MAP.get(severity_level, 'warning')
 
+                  # LSP uses 0-indexed lines/columns, GitHub uses 1-indexed
+                  line = issue['range']['start']['line'] + 1
+                  col = issue['range']['start']['character'] + 1
+
+                  message = issue['message']
+                  code = issue.get('code', 'unknown')
+
+                  # Emit GitHub workflow command
+                  print(f"::{severity} file={file_path},line={line},col={col}::{message} [{code}]")
+
+                  total_count += 1
+                  severity_counts[severity] += 1
+
+          # Print summary to step output
+          print(f"\n📊 Emitted {total_count} annotations:", file=sys.stderr)
+          print(f"  Errors: {severity_counts['error']}", file=sys.stderr)
+          print(f"  Warnings: {severity_counts['warning']}", file=sys.stderr)
+          print(f"  Notices: {severity_counts['notice']}", file=sys.stderr)
+
+          if total_count == 0:
+              print('::warning::lua-language-server reported failure but no diagnostics were parsed')
+
+          # Write summary for PR comment
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_path:
+              with open(summary_path, 'a') as summary:
+                  summary.write('## ❌ Lua Language Server Diagnostics Failed\n\n')
+                  summary.write(f'Found **{total_count}** diagnostic issue(s)\n\n')
+                  summary.write(f'- Errors: **{severity_counts["error"]}**\n')
+                  summary.write(f'- Warnings: **{severity_counts["warning"]}**\n')
+                  summary.write(f'- Notices: **{severity_counts["notice"]}**\n\n')
+
+                  # Detailed diagnostics in collapsible section
+                  summary.write('<details>\n')
+                  summary.write('<summary>View All Diagnostics</summary>\n\n')
+
+                  for file_path, issues in diagnostics.items():
+                      for issue in issues:
+                          line = issue['range']['start']['line'] + 1
+                          message = issue['message']
+                          code = issue.get('code', 'unknown')
+                          summary.write(f'**{file_path}:{line}** - {message} `[{code}]`\n')
+
+                  summary.write('\n</details>\n')
+
+          PYTHON
           exit 1
 
   love2d-tests:
