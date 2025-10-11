@@ -53,9 +53,7 @@ function(self, args)
   self.player_number = args.player_number or args.engine.which
   self.is_local = args.player and args.player.isLocal or args.engine.is_local
   self.character = characters[args.characterId]
-  if self.character and not self.character.fullyLoaded then
-    ModController:loadModFor(self.character, self, true)
-  end
+  ModController:loadModFor(self.character, self)
   self.theme = args.theme or themes[config.theme]
 
   self.panels_dir = args.panels_dir
@@ -513,6 +511,7 @@ function ClientStack:assignAssets(assetPack)
 end
 
 function ClientStack:deinit()
+  ModController:releaseModsFor(self)
   GraphicsUtil:releaseQuad(self.healthQuad)
   GraphicsUtil:releaseQuad(self.multi_prestopQuad)
   GraphicsUtil:releaseQuad(self.multi_stopQuad)

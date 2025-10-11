@@ -253,6 +253,17 @@ function GameBase:setupGameOver()
     SoundController:fadeOutActiveTrack(3)
   end
 
+  local winners = self.match:getWinners()
+  if self.text == nil then
+    if #self.match.players == 1 then
+      self.text = loc("pl_gameover")
+    elseif #winners == 1 then
+      self.text = loc("ss_p_wins", winners[1].name)
+    else
+      self.text = loc("ss_draw")
+    end
+  end
+  
   self:customGameOverSetup()
 end
 
@@ -451,16 +462,9 @@ end
 function GameBase:drawEndGameText()
   if self.match.ended then
 
-    local winners = self.match:getWinners()
     local message = self.text
     if message == nil then
-      if #self.match.players == 1 then
-        message = loc("pl_gameover")
-      elseif #winners == 1 then
-        message = loc("ss_p_wins", winners[1].name)
-      else
-        message = loc("ss_draw")
-      end
+      message = ""
     end
 
     local gameOverPosition = themes[config.theme].gameover_text_Pos
