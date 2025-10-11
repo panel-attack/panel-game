@@ -61,6 +61,9 @@ CC BY-SA 4.0
 CC BY-NC-SA 4.0
   To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/
 
+CC0 1.0
+  To view a copy of this license, visit http://creativecommons.org/publicdomain/zero/1.0/
+
 SIL OPEN FONT LICENSE
   Version 1.1 - 26 February 2007
   PREAMBLE
@@ -229,6 +232,16 @@ themes/Panel Attack Modern/sfx/thud_#
   Unlike most other asset packs from this seller however, according to our insight this pack is still available for download for anyone who originally purchased it. This indicates that it was not flagged for copyright and the mediator (Unity) considers these assets as lawfully acquired as otherwise continuing to host them would be an infringement itself.
   The conclusion is that we cannot obtain new licenses by fault of the licensor but the already acquired license is valid.
   Accordingly these assets should be replaced as soon as convenient or once the licensor becomes available again, maintainers shall obtain additional licenses, whichever is first.
+
+themes/Panel Attack Modern/input/
+  Copyright (C) Kenney
+  License: CC0 1.0
+  https://kenney.nl/assets/input-prompts
+
+themes/Panel Attack Modern/input/controller_snes
+themes/Panel Attack Modern/input/controller_n64
+  Copyright (C) 2025 JamBox
+  License: CC0 1.0
 
 Characters
 ==========
