@@ -32,6 +32,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@class Player : MatchParticipant
 ---@field settings PlayerSettings
 ---@field publicId integer
+---@field playerNumber integer?
 ---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player

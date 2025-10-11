@@ -26,7 +26,7 @@
     
     "diagnostics.neededFileStatus": {
         "assign-type-mismatch": "Any",
-        "cast-local-type": "Opened", // TODO: Remove once all warnings are fixed
+        "cast-local-type": "Any",
         "code-after-break": "Any",
         "duplicate-set-field": "Any",
         "empty-block": "Any",
@@ -60,7 +60,8 @@
         "updater",
         "common/lib/socket.lua",
         "common/lib/dkjson.lua",
-        "common/lib/csprng.lua"
+        "common/lib/csprng.lua",
+        "common/lib/jprof/MessagePack.lua"
     ],
     "workspace.library": [
         "${3rd}/love2d/library",
