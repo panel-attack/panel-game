@@ -608,7 +608,9 @@ function Server:processMessage(message, connection)
       self.playerToRoom[player]:handleTaunt(message, player)
       return true
     elseif player.state == "playing" and message.game_over then
-      self.playerToRoom[player]:handleGameOverOutcome(message.game_over, player)
+      -- Revisit when we have real annotations on server
+      ---@diagnostic disable-next-line: param-type-mismatch
+      self.playerToRoom[player]:handleGameOverOutcome(message, player)
       return true
     elseif (player.state == "playing") and message.matchAbort then
       self.playerToRoom[player]:abortGame(player)
