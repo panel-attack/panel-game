@@ -18,6 +18,10 @@ UiElement)
 
 ---@param stack PlayerStack?
 function StackElement:setStack(stack)
+  if self.stack then
+    self.stack:deinit()
+  end
+  
   self.stack = stack
   if self.stack then
     self.stack.gfxScale = self.scale

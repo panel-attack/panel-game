@@ -695,19 +695,6 @@ function ClientMatch:getWinners()
   end
 end
 
-function ClientMatch:resetPuzzle()
-  -- basically rewinding the match but clearing all the player inputs before it can rerun, effectively resulting in a restart
-  -- frame 0 is always saved as a rollback copy even if there is otherwise no reason to save copies
-  self.engine:rewindToFrame(0)
-  local stackEngine = self.engine.stacks[1]
-  stackEngine.confirmedInput = {}
-  self.players[1]:incrementWinCount()
-  -- rollback data is discarded so we need to resave frame 0
-  for i, stack in ipairs(self.engine.stacks) do
-    stack:saveForRollback()
-  end
-end
-
 ---@param prefix "I" | "U"
 ---@param input string
 function ClientMatch:receiveInput(prefix, input)
