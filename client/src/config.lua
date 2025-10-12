@@ -55,6 +55,7 @@ require("client.src.globals")
 ---@field display integer
 ---@field windowX number?
 ---@field windowY number?
+---@alias DebugConfig UserConfig
 config = {
     -- The last used engine version
     version                       = consts.ENGINE_VERSION,
@@ -144,7 +145,9 @@ config = {
   function write_conf_file()
     pcall(
       function()
-        love.filesystem.write("conf.json", json.encode(config))
+        local encodedConfig = json.encode(config)
+        ---@cast encodedConfig string
+        love.filesystem.write("conf.json", encodedConfig)
       end
     )
   end

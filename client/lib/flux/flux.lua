@@ -175,7 +175,11 @@ end
 
 
 function flux:clear(obj, vars)
-  for t in pairs(self[obj]) do
+  local objTweens = self[obj]
+  if not objTweens or type(objTweens) ~= "table" then
+    return
+  end
+  for t in pairs(objTweens) do
     if t.inited then
       for k in pairs(vars) do t.vars[k] = nil end
     end

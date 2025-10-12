@@ -286,7 +286,9 @@ end
 
 function Scores.saveToFile(self)
   if self.version == currentVersion then
-    love.filesystem.write("scores.json", json.encode(self))
+    local encodedScores = json.encode(self)
+    ---@cast encodedScores string
+    love.filesystem.write("scores.json", encodedScores)
   end
 end
 
