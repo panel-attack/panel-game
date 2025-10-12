@@ -287,11 +287,11 @@ function Game:createDirectoriesIfNeeded()
 
   local oldServerDirectory = consts.SERVER_SAVE_DIRECTORY .. consts.LEGACY_SERVER_LOCATION
   local newServerDirectory = consts.SERVER_SAVE_DIRECTORY .. consts.SERVER_LOCATION
-  if not love.filesystem.getInfo(newServerDirectory) then
+  if not fileUtils.exists(newServerDirectory) then
     love.filesystem.createDirectory(newServerDirectory)
 
     -- Move the old user ID spot to the new folder (we won't delete the old one for backwards compatibility and safety)
-    if love.filesystem.getInfo(oldServerDirectory) then
+    if fileUtils.exists(oldServerDirectory) then
       local userID = save.read_user_id_file(consts.LEGACY_SERVER_LOCATION)
       save.write_user_id_file(userID, consts.SERVER_LOCATION)
     end

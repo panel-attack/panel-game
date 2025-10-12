@@ -84,7 +84,7 @@ function StartUp:checkIfMigrationIsPossible()
 
   local os = love.system.getOS()
   if os == "Linux" or os == "OS X" then
-    if not love.filesystem.exists("conf.json") then
+    if not fileUtils.exists("conf.json") then
       local path = love.filesystem.getAppdataDirectory()
       if path:sub(-1) ~= "/" then
         path = path .. "/"
@@ -101,7 +101,7 @@ function StartUp:checkIfMigrationIsPossible()
         -- if we couldn't mount that directory, that means there is no old install
         logger.debug("No old install found")
       else
-        if love.filesystem.exists("oldInstall/conf.json") then
+        if fileUtils.exists("oldInstall/conf.json") then
           return path
         end
       end

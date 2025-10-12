@@ -6,6 +6,7 @@ local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
 require("client.src.BattleRoom")
 local save = require("client.src.save")
+local fileUtils = require("client.src.FileUtils")
 
 
 -- Challenge Mode is a particular play through of the challenge mode in the game, it contains all the settings for the mode.
@@ -146,7 +147,7 @@ end
 function ChallengeMode:attackFilePath(difficulty, stageIndex)
   for i = stageIndex, 1, -1 do
     local path = "client/assets/default_data/training/challenge-" .. difficulty .. "-" .. i .. ".json"
-    if love.filesystem.getInfo(path) then
+    if fileUtils.exists(path) then
       return path
     end
   end

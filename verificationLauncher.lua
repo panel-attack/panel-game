@@ -29,9 +29,10 @@ require("common.lib.util")
 local logger = require("common.lib.logger")
 local verifier = require("common.tests.engine.IntegrityVerification")
 local system = require("client.src.system")
+local fileUtils = require("client.src.FileUtils")
 
 function love.load(arg)
-  if not love.filesystem.exists(OUTPUT) then
+  if not fileUtils.exists(OUTPUT) then
     love.filesystem.createDirectory(OUTPUT)
   end
 

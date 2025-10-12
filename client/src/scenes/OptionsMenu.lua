@@ -556,7 +556,7 @@ function OptionsMenu:loadModifyUserIdMenu()
   local modifyUserIdOptions = {}
   local userIDDirectories = fileUtils.getFilteredDirectoryItems("servers")
   for i = 1, #userIDDirectories do
-    if love.filesystem.getInfo("servers/" .. userIDDirectories[i] .. "/user_id.txt", "file") then
+    if fileUtils.exists("servers/" .. userIDDirectories[i] .. "/user_id.txt") then
       modifyUserIdOptions[#modifyUserIdOptions + 1] = ui.MenuItem.createButtonMenuItem(userIDDirectories[i], nil, false, function()
           GAME.navigationStack:push(SetUserIdMenu({serverIp = userIDDirectories[i]}))
         end)

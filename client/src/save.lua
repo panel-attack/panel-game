@@ -16,14 +16,14 @@ function save.read_key_file()
   local filename
   local migrateInputs = false
 
-  if love.filesystem.getInfo("keysV3.json", "file") then
+  if FileUtils.exists("keysV3.json") then
     filename = "keysV3.json"
   else
     filename = "keysV2.txt"
     migrateInputs = true
   end
 
-  if not love.filesystem.getInfo(filename, "file") then
+  if not FileUtils.exists(filename) then
     return inputManager.inputConfigurations
   else
     local inputConfigs = FileUtils.readJsonFile(filename)
@@ -73,7 +73,7 @@ end
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
 function save.readAttackFile(path)
-  if love.filesystem.getInfo(path, "file") then
+  if FileUtils.exists(path) then
     local jsonData = love.filesystem.read(path)
     local trainingConf, position, errorMsg = json.decode(jsonData)
     if trainingConf then
