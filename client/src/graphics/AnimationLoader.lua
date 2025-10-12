@@ -370,6 +370,8 @@ end
 
 -- DRAWING CODE
 
+local loveMajor = love.getVersion()
+
 -- Shader used for clipping using a stencil pass
 local alphaDiscardShader = love.graphics.newShader([[
     vec4 effect(vec4 tintColor, Image tex, vec2 texCoord, vec2 screenCoord)
@@ -391,6 +393,17 @@ function AnimationLoader.objectTransform(obj)
 end
 
 
+local function drawSiblingsBeforeNode(parent, node)
+  love.graphics.setShader(alphaDiscardShader)
+  for _, sibling in ipairs(parent.children) do
+    if sibling == node then
+      break
+    end
+    AnimationLoader.drawNode(sibling, nil)
+  end
+  love.graphics.setShader()
+end
+
 function AnimationLoader.drawNode(d, parent)
     love.graphics.push("all")
 
@@ -410,17 +423,16 @@ function AnimationLoader.drawNode(d, parent)
 
       if usesStencil then
         assert(parent, "To use a stencil you need siblings")
-        love.graphics.stencil(function()
-          love.graphics.setShader(alphaDiscardShader)
-          for _, sibling in ipairs(parent.children) do
-            if sibling == d then
-              break
-            end
-            AnimationLoader.drawNode(sibling, nil)
-          end
-          love.graphics.setShader()
-        end, "replace", 1, false)
-        love.graphics.setStencilTest("equal", 1)
+        if loveMajor >= 12 then
+          love.graphics.setStencilMode("draw", 1)
+          drawSiblingsBeforeNode(parent, d)
+          love.graphics.setStencilMode("test", 1)
+        else
+          love.graphics.stencil(function()
+            drawSiblingsBeforeNode(parent, d)
+          end, "replace", 1, false)
+          love.graphics.setStencilTest("equal", 1)
+        end
       end
 
       if usesBlendAlphaMode then
@@ -440,7 +452,11 @@ function AnimationLoader.drawNode(d, parent)
       end
 
       if usesStencil then
-        love.graphics.setStencilTest()
+        if loveMajor >= 12 then
+          love.graphics.setStencilMode()
+        else
+          love.graphics.setStencilTest()
+        end
       end
     end
 
