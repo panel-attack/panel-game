@@ -325,6 +325,10 @@ function Theme:loadMenuGraphics()
   self.images.bg_select_screen = UpdatingImage(self:load_theme_img("background/select_screen"), self.bg_select_screen_is_tiled, self.bg_select_screen_speed_x, self.bg_select_screen_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
   self.images.bg_readme = UpdatingImage(self:load_theme_img("background/readme"), self.bg_readme_is_tiled, self.bg_readme_speed_x, self.bg_readme_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
   self.images.IMG_bug = self:load_theme_img("bug")
+  self.images.edit = self:load_theme_img("edit")
+  self.images.hint = self:load_theme_img("hint")
+  self.images.complete = self:load_theme_img("complete")
+  self.images.partial = self:load_theme_img("partial")
 end
 
 ---@param theme Theme
@@ -424,6 +428,8 @@ function Theme:loadIngameGraphics()
     self.images.frames[i] = self:load_theme_img("frame/frame" .. i .. "P")
     self.images.walls[i] = self:load_theme_img("frame/wall" .. i .. "P")
   end
+
+  self.images.separator = self:load_theme_img("separator")
 
   self:loadIngameLabels()
   self:loadMultibar()
@@ -718,6 +724,7 @@ function Theme:saveVerboseConfig()
 
   -- Get the data from the file in case there is something we don't know about
   local jsonData = fileUtils.readJsonFile(jsonPath)
+  assert(jsonData)
 
   -- Save off any configurable data that may have changed / upgraded
   local configurableKeys = self:configurableKeys()
@@ -734,6 +741,7 @@ function Theme.json_init(self)
 
   -- Then override with custom theme
   local customData = fileUtils.readJsonFile(self.path .. "/config.json")
+  assert(customData)
   local version = self:versionForJSONVersion(customData.version)
   if version == Theme.THEME_VERSIONS.original then
     self:loadVersion1DefaultValues()

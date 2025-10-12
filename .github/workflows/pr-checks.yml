@@ -1,0 +1,199 @@
+name: PR Checks
+
+on:
+  pull_request:
+    paths:
+      - '**.lua'
+      - '.luarc.json'
+      - '.github/workflows/pr-checks.yml'
+  push:
+    branches: [beta]
+
+jobs:
+  lua-diagnostics:
+    name: Lua Language Server Diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Type Check and Lint
+        id: typecheck
+        uses: mrcjkb/lua-typecheck-action@v0
+        with:
+          directories: .
+          configpath: .luarc.json
+          checklevel: Information
+        continue-on-error: true
+        env:
+          NO_COLOR: 1
+
+      - name: Publish diagnostics annotations
+        if: steps.typecheck.outcome == 'failure'
+        run: |
+          python3 <<'PYTHON'
+          import json
+          import sys
+          import os
+
+          # LSP severity → GitHub annotation level mapping
+          SEVERITY_MAP = {
+              1: 'error',    # Error
+              2: 'warning',  # Warning
+              3: 'notice',   # Information
+              4: 'notice'    # Hint
+          }
+
+          try:
+              with open('check.json') as f:
+                  diagnostics = json.load(f)
+          except FileNotFoundError:
+              print('::error::check.json not found')
+              sys.exit(1)
+          except json.JSONDecodeError:
+              print('::error::check.json is not valid JSON')
+              sys.exit(1)
+
+          total_count = 0
+          severity_counts = {'error': 0, 'warning': 0, 'notice': 0}
+
+          # Emit annotations for all diagnostics
+          for file_path, issues in diagnostics.items():
+              for issue in issues:
+                  severity_level = issue.get('severity', 2)
+                  severity = SEVERITY_MAP.get(severity_level, 'warning')
+
+                  # LSP uses 0-indexed lines/columns, GitHub uses 1-indexed
+                  line = issue['range']['start']['line'] + 1
+                  col = issue['range']['start']['character'] + 1
+
+                  message = issue['message']
+                  code = issue.get('code', 'unknown')
+
+                  # Emit GitHub workflow command
+                  print(f"::{severity} file={file_path},line={line},col={col}::{message} [{code}]")
+
+                  total_count += 1
+                  severity_counts[severity] += 1
+
+          # Print summary to step output
+          print(f"\n📊 Emitted {total_count} annotations:", file=sys.stderr)
+          print(f"  Errors: {severity_counts['error']}", file=sys.stderr)
+          print(f"  Warnings: {severity_counts['warning']}", file=sys.stderr)
+          print(f"  Notices: {severity_counts['notice']}", file=sys.stderr)
+
+          if total_count == 0:
+              print('::warning::lua-language-server reported failure but no diagnostics were parsed')
+
+          # Write summary for PR comment
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_path:
+              with open(summary_path, 'a') as summary:
+                  summary.write('## ❌ Lua Language Server Diagnostics Failed\n\n')
+                  summary.write(f'Found **{total_count}** diagnostic issue(s)\n\n')
+                  summary.write(f'- Errors: **{severity_counts["error"]}**\n')
+                  summary.write(f'- Warnings: **{severity_counts["warning"]}**\n')
+                  summary.write(f'- Notices: **{severity_counts["notice"]}**\n\n')
+
+                  # Detailed diagnostics in collapsible section
+                  summary.write('<details>\n')
+                  summary.write('<summary>View All Diagnostics</summary>\n\n')
+
+                  for file_path, issues in diagnostics.items():
+                      for issue in issues:
+                          line = issue['range']['start']['line'] + 1
+                          message = issue['message']
+                          code = issue.get('code', 'unknown')
+                          summary.write(f'**{file_path}:{line}** - {message} `[{code}]`\n')
+
+                  summary.write('\n</details>\n')
+
+          PYTHON
+          exit 1
+
+  love2d-tests:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 xvfb
+
+      - name: Cache Love2D binary
+        id: cache-love
+        uses: actions/cache@v4
+        with:
+          path: ~/love2d
+          key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
+
+      - name: Download Love2D
+        if: steps.cache-love.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/love2d
+          curl -fL "https://github.com/panel-attack/panel-game/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
+            -o /tmp/love.tar.gz
+          tar -xzf /tmp/love.tar.gz -C ~/love2d
+          # Rename the AppImage to a consistent name for easier reference
+          mv ~/love2d/*.AppImage ~/love2d/love.AppImage
+
+      - name: Make Love2D executable
+        run: chmod +x ~/love2d/love.AppImage
+
+      - name: Run Tests
+        id: tests
+        run: |
+          set -o pipefail
+          xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua 2>&1 | tee test-output.log
+        timeout-minutes: 10
+        continue-on-error: true
+
+      - name: Format Test Failures
+        if: steps.tests.outcome == 'failure'
+        run: |
+          echo "## ❌ Love2D Tests Failed"
+          echo "## ❌ Love2D Tests Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "test-output.log" ]; then
+            # Show test failures
+            if grep -q -E "Test failed:|Tests failed!" test-output.log; then
+              echo "### Failed Tests:"
+              echo "### Failed Tests:" >> $GITHUB_STEP_SUMMARY
+              grep -E "Test failed:|Tests failed!" test-output.log | while read -r line; do
+                echo "- $line"
+                echo "- $line" >> $GITHUB_STEP_SUMMARY
+              done
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "No test failure patterns found in log"
+            fi
+
+            # Show ERROR level logs for context
+            if grep -q "ERROR:" test-output.log; then
+              echo "### Error Details:"
+              echo "### Error Details:" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              grep "ERROR:" test-output.log | tail -20 | tee -a $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            else
+              echo "No ERROR patterns found in log"
+            fi
+          else
+            echo "⚠️ No test output log found"
+            echo "⚠️ No test output log found" >> $GITHUB_STEP_SUMMARY
+            echo "Listing current directory:"
+            ls -la
+          fi
+
+          exit 1
+
+      - name: Upload Test Logs on Failure
+        if: steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            *.log
+            test-output.log

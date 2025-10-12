@@ -13,6 +13,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local util = require("common.lib.util")
 local ModManagement = require("client.src.scenes.ModManagement")
 local system = require("client.src.system")
+local JsonSafePrecision = require("common.data.JsonSafePrecision")
 local logger = require("common.lib.logger")
 local prof = require("common.lib.zoneProfiler")
 
@@ -160,7 +161,7 @@ function OptionsMenu:loadBaseMenu()
   for k, v in ipairs(languageName) do
     local lang = config.language_code
     GAME:setLanguage(v[1])
-    languageLabels[#languageLabels + 1] = ui.Label({text = v[2], translate = false, width = 70, height = 25})
+    languageLabels[#languageLabels + 1] = ui.Label({text = v[2], translate = false})
     GAME:setLanguage(lang)
   end
 
@@ -345,13 +346,12 @@ function OptionsMenu:loadGraphicsMenu()
   })
 
   local function scaleSettingsChanged()
-    GAME.showGameScaleUntil = GAME.timer + 10
     local newPixelWidth, newPixelHeight = love.graphics.getDimensions()
-    local previousXScale = GAME.canvasXScale
     logger.debug("Updating canvas scale from options")
-    GAME:updateCanvasPositionAndScale(newPixelWidth, newPixelHeight)
-    if previousXScale ~= GAME.canvasXScale then
+    local positionChanged, scaleChanged = GAME:updateCanvasPositionAndScale(newPixelWidth, newPixelHeight)
+    if scaleChanged then
       GAME:refreshCanvasAndImagesForNewScale()
+      GAME.showGameScaleUntil = GAME.timer + 10
     end
   end
 
@@ -364,7 +364,7 @@ function OptionsMenu:loadGraphicsMenu()
       tickLength = 1,
       onlyChangeOnRelease = true, -- performance is bad so don't change till release
       onValueChange = function(slider)
-        config.gameScaleFixedValue = slider.value
+        config.gameScaleFixedValue = JsonSafePrecision.toSafePrecision(slider.value)
         scaleSettingsChanged()
       end
     })
@@ -416,7 +416,7 @@ function OptionsMenu:loadGraphicsMenu()
       tickAmount = 5,
       tickLength = 10,
       onValueChange = function(slider)
-        config.shakeIntensity = slider.value / 100
+        config.shakeIntensity = JsonSafePrecision.toSafePrecision(slider.value / 100)
       end
     })
     return slider
@@ -487,7 +487,7 @@ end
 
 function OptionsMenu:loadDebugMenu()
   local debugMenuOptions = {
-    ui.MenuItem.createToggleButtonGroupMenuItem("op_debug", nil, nil, createToggleButtonGroup("debug_mode")),
+    ui.MenuItem.createToggleButtonGroupMenuItem("op_debug_mode", nil, nil, createToggleButtonGroup("debug_mode")),
     ui.MenuItem.createSliderMenuItem("VS Frames Behind", nil, false, createConfigSlider("debug_vsFramesBehind", 0, 200)),
     ui.MenuItem.createToggleButtonGroupMenuItem("Show Debug Servers", nil, false, createToggleButtonGroup("debugShowServers")),
     ui.MenuItem.createToggleButtonGroupMenuItem("Show Design Helper", nil, false, createToggleButtonGroup("debugShowDesignHelper")),
@@ -530,15 +530,15 @@ function OptionsMenu:loadAboutMenu()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/panels.md")
         end),
-    ui.MenuItem.createButtonMenuItem("About Attack Files", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("op_about_attack_files", nil, nil, function()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/training.txt")
         end),
-    ui.MenuItem.createButtonMenuItem("Installing Mods", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("op_about_installing_mods", nil, nil, function()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/installMods.md")
         end),
-    ui.MenuItem.createButtonMenuItem("System Info", nil, nil, function()
+    ui.MenuItem.createButtonMenuItem("op_system_info", nil, nil, function()
           GAME.theme:playValidationSfx()
           self:switchToScreen("systemInfo")
         end),
@@ -577,14 +577,13 @@ function OptionsMenu:load()
   self.uiRoot:addChild(self.menus.baseMenu)
 end
 
-function OptionsMenu:update(dt)
+function OptionsMenu:updateSelf(dt)
   self.backgroundImage:update(dt)
   self.menus[self.activeMenuName]:receiveInputs(inputManager)
 end
 
-function OptionsMenu:draw()
+function OptionsMenu:drawSelf()
   self.backgroundImage:draw()
-  self.uiRoot:draw()
 end
 
 return OptionsMenu

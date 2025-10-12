@@ -238,6 +238,14 @@ end
 ---@param input string
 ---@param sender ServerPlayer
 function Room:broadcastInput(input, sender)
+  if not self.game then
+    pcall(function()
+      logger.warn(self.roomNumber .. ": Unexpected input received from " .. sender.userId .. " " .. sender.name .. " in state " .. sender.state)
+      logger.warn("Room Info: " .. self:toString())
+    end)
+    return
+  end
+
   self.game:receiveInput(sender, input)
 
   local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, input)

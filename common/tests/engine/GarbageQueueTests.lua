@@ -22,7 +22,7 @@ local function testComboQueueing1()
   GarbageQueueTestingUtils.sendGarbage(stack, 5, 1)
   GarbageQueueTestingUtils.runToFrame(match, 512)
   assert(tableUtils.length(stack.outgoingGarbage.garbageInTransit) == 1, "3 and 4 wide should've left telegraph together")
-  assert(stack.outgoingGarbage.garbageInTransit[420 + minTransferTime], "3 wide should've managed to pass through telegraph in the shortest time possible")
+  assert(stack.outgoingGarbage.garbageInTransit[232 + minTransferTime], "3 wide should've managed to pass through telegraph in the shortest time possible")
   assert(stack.outgoingGarbage:len() == 1, "5 wide should still be inside")
   StackReplayTestingUtils:cleanup(match)
 end

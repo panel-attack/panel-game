@@ -12,6 +12,7 @@ local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
 local TrainingMenu = require("client.src.scenes.TrainingMenu")
 local ChallengeModeMenu = require("client.src.scenes.ChallengeModeMenu")
 local Lobby = require("client.src.scenes.Lobby")
+local LocalGameModeSelectionScene = require("client.src.scenes.LocalGameModeSelectionScene")
 local CharacterSelect2p = require("client.src.scenes.CharacterSelect2p")
 local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
@@ -39,9 +40,9 @@ end, Scene)
 
 MainMenu.name = "MainMenu"
 
-local function switchToScene(sceneName, transition)
+local function switchToScene(scene, transition)
   GAME.theme:playValidationSfx()
-  GAME.navigationStack:push(sceneName, transition)
+  GAME.navigationStack:push(scene, transition)
 end
 
 function MainMenu:createMainMenu()
@@ -80,10 +81,7 @@ function MainMenu:createMainMenu()
       switchToScene(Lobby({serverIp = "panelattack.com"}))
     end),
     ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
-      if GAME.battleRoom then
-        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
-      end
+      switchToScene(LocalGameModeSelectionScene())
     end),
     ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
       switchToScene(ReplayBrowser())
@@ -106,8 +104,8 @@ function MainMenu:createMainMenu()
 
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, nil, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
+  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
+                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
                         }
 
   local function addDebugMenuItems()
@@ -154,18 +152,19 @@ function MainMenu:checkForUpdates()
   end
 end
 
-function MainMenu:update(dt)
+function MainMenu:updateSelf(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
-function MainMenu:draw()
+function MainMenu:drawSelf()
   for _,d in ipairs(self.drawables) do
     AnimationLoader.drawNode(d)
   end
   
   self.uiRoot:draw()
+
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 

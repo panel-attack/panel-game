@@ -2,6 +2,12 @@
 -- with love 12 you can pass the name of a lua file as an argument when starting love
 -- this will cause that file to be used in place of main.lua
 -- so by passing "./testLauncher.lua" as the first arg this becomes a testrunner that shares the game's conf.lua
+-- Usage: 
+--   love ./testLauncher.lua [debug] [test_name]
+--   Examples:
+--     love ./testLauncher.lua debug PuzzleSetIteratorTests
+--     love ./testLauncher.lua PuzzleSetIteratorTests
+--     love ./testLauncher.lua debug
 if arg[2] == "debug" then
   require("client.src.developer")
 end
@@ -20,7 +26,16 @@ local util = require("common.lib.util")
 util.addToCPath("./common/lib/??")
 util.addToCPath("./server/lib/??")
 local logger = require("common.lib.logger")
+
+-- Set log level based on debug argument
+if arg[2] == "debug" then
+  logger.setLogLevel(logger.DEBUG)
+else
+  logger.setLogLevel(logger.INFO)
+end
+
 require("client.src.globals")
+local system = require("client.src.system")
 local Game = require("client.src.Game")
 
 function love.load()
@@ -39,20 +54,9 @@ function love.load()
   end
 end
 
-local tests = {
-  "server.tests.ServerTests",
-  "server.tests.LeaderboardTests",
-  "server.tests.RoomTests",
-  "server.tests.LoginTests",
+local allTests = {
+  "common.tests.lib.JsonPrecisionTests",
   "client.tests.AnimationLoaderTests",
-  "client.tests.FileUtilsTests",
-  "client.tests.ModControllerTests",
-  "client.tests.QueueTests",
-  "client.tests.ServerQueueTests",
-  "client.tests.SoundGroupTests",
-  "client.tests.TcpClientTests",
-  "client.tests.ThemeTests",
-  "client.tests.StackGraphicsTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.RollbackBufferTests",
@@ -61,6 +65,7 @@ local tests = {
   "common.tests.engine.StackReplayTests",
   "common.tests.engine.GarbageQueueTests",
   "common.tests.engine.PuzzleTests",
+  "common.tests.PuzzleHintHelperTests",
   "common.tests.engine.StackTouchReplayTests",
   "common.tests.engine.StackRollbackReplayTests",
   -- disabled for testLauncher because it needs the client love callbacks
@@ -71,13 +76,73 @@ local tests = {
   "common.tests.lib.utilTests",
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
+  "common.tests.data.InputCompressionTests",
+  "server.tests.ServerTests",
+  "server.tests.LeaderboardTests",
+  "server.tests.RoomTests",
+  "server.tests.LoginTests",
+  "client.tests.FileUtilsTests",
+  "client.tests.ModControllerTests",
+  "client.tests.QueueTests",
+  "client.tests.PuzzleSetTests",
+  "client.tests.PuzzleSetIteratorTests",
+  "client.tests.PuzzleLibraryTests",
+  "client.tests.graphics_PuzzleHierarchyDisplayTests",
+  "client.tests.ServerQueueTests",
+  "client.tests.SoundGroupTests",
+  "client.tests.TcpClientTests",
+  "client.tests.ThemeTests",
+  "client.tests.StackGraphicsTests",
 }
 
+-- Check for specific test name argument
+local testFilter = nil
+if arg[2] == "debug" and arg[3] then
+  testFilter = arg[3]
+elseif arg[2] and arg[2] ~= "debug" then
+  testFilter = arg[2]
+end
+
+local tests = {}
+if testFilter then
+  -- Filter tests to only run the specified test
+  for _, testName in ipairs(allTests) do
+    if string.find(testName, testFilter) then
+      table.insert(tests, testName)
+    end
+  end
+  if #tests == 0 then
+    logger.error("No tests found matching filter: " .. testFilter)
+    os.exit(1)
+  else
+    logger.info("Running " .. #tests .. " test(s) matching filter: " .. testFilter)
+  end
+else
+  tests = allTests
+end
+
 local updateCount = 0
+local testsFailed = false
+
 function love.update(dt)
   if tests[updateCount] then
     logger.info("running test file " .. tests[updateCount])
-    require(tests[updateCount])
+    local success, err = true, nil
+    if lldebugger then
+      require(tests[updateCount])
+    else
+      success, err = pcall(require, tests[updateCount])
+    end
+    if not success then
+      -- Check if the error is due to missing file
+      if err and string.find(err, "module.*not found") then
+        logger.error("Test file does not exist: " .. tests[updateCount] .. " - " .. tostring(err))
+        logger.error("Make sure the test file exists at the correct path and is properly named")
+      else
+        logger.error("Test failed: " .. tests[updateCount] .. " - " .. tostring(err))
+      end
+      testsFailed = true
+    end
   end
   updateCount = updateCount + 1
 end
@@ -94,21 +159,31 @@ function love.draw()
 end
 
 function love.quit()
-  print(love.timer.getTime() - t .. "s elapsed")
+  logger.info("Tests completed in " .. love.timer.getTime() - t .. "s seconds")
   --require("jit.p").stop()
   love.filesystem.write("test.log", tostring(logger.messageBuffer))
+  
+  if testsFailed then
+    logger.error("Tests failed!")
+    os.exit(1)
+  else
+    logger.info("All tests passed!")
+    os.exit(0)
+  end
 end
 
 local love_errorhandler = love.errorhandler
 function love.errorhandler(msg)
-  logger.info(msg)
+  logger.error(msg)
+  testsFailed = true
   pcall(love.filesystem.write, "test-crash.log", tostring(logger.messageBuffer))
   if lldebugger then
     error(msg, 2)
   else
-    if love.filesystem.exists("test-crash.log") then
+    local crashInfo = love.filesystem.getInfo("test-crash.log")
+    if crashInfo and system.supportsFileBrowserOpen() then
       local sep = package.config:sub(1, 1)
-      love.system.openURL(love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")
+      love.system.openURL("file://"..love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")
     end
     return love_errorhandler(msg)
   end

@@ -1,6 +1,7 @@
 local consts = require("common.engine.consts")
 local input = require("client.src.inputManager")
 local class = require("common.lib.class")
+local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.data.GameModes")
 local Scene = require("client.src.scenes.Scene")
@@ -73,10 +74,10 @@ function CharacterSelect:createPlayerIcon(player)
   })
 
    -- character image
-   selectedCharacterIcon.updateImage = function(image, characterId)
-    image:setImage(characters[characterId].images.icon)
+   selectedCharacterIcon.onCharacterChanged = function(selfElement, characterId)
+    selfElement:setImage(characters[characterId].images.icon)
   end
-  player:connectSignal("selectedCharacterIdChanged", selectedCharacterIcon, selectedCharacterIcon.updateImage)
+  player:connectSignal("selectedCharacterIdChanged", selectedCharacterIcon, selectedCharacterIcon.onCharacterChanged)
 
   playerIcon:addChild(selectedCharacterIcon)
 
@@ -90,10 +91,10 @@ function CharacterSelect:createPlayerIcon(player)
       y = -2
     })
 
-    levelIcon.updateImage = function(image, level)
-      image:setImage(themes[config.theme].images.IMG_levels[level])
+    levelIcon.onLevelChanged = function(selfElement, level)
+      selfElement:setImage(themes[config.theme].images.IMG_levels[level])
     end
-    player:connectSignal("levelChanged", levelIcon, levelIcon.updateImage)
+    player:connectSignal("levelChanged", levelIcon, levelIcon.onLevelChanged)
 
     playerIcon:addChild(levelIcon)
   end
@@ -141,15 +142,15 @@ function CharacterSelect:createPlayerIcon(player)
   })
   playerIcon:addChild(readyIcon)
 
-  loadIcon.update = function(self, loaded)
-    self:setVisibility(not loaded)
+  loadIcon.onLoadedChanged = function(selfElement, loaded)
+    selfElement:setVisibility(not loaded)
     readyIcon:setVisibility(loaded and player.settings.wantsReady)
   end
-  player:connectSignal("hasLoadedChanged", loadIcon, loadIcon.update)
-  readyIcon.update = function(self, wantsReady)
-    self:setVisibility(wantsReady and player.hasLoaded)
+  player:connectSignal("hasLoadedChanged", loadIcon, loadIcon.onLoadedChanged)
+  readyIcon.onReadyChanged = function(selfElement, wantsReady)
+    selfElement:setVisibility(wantsReady and player.hasLoaded)
   end
-  player:connectSignal("wantsReadyChanged", readyIcon, readyIcon.update)
+  player:connectSignal("wantsReadyChanged", readyIcon, readyIcon.onReadyChanged)
 
   return playerIcon
 end
@@ -173,6 +174,7 @@ function CharacterSelect:createReadyButton()
       player = GAME.localPlayer
     end
     player:setWantsReady(not player.settings.wantsReady)
+    GAME.theme:playValidationSfx()
   end
   readyButton.onSelect = readyButton.onClick
 
@@ -206,11 +208,15 @@ function CharacterSelect:createStageCarousel(player, width)
 
   -- stage carousel
   stageCarousel.onSelectCallback = function()
-    player:setStage(stageCarousel:getSelectedPassenger().id)
+    -- Just update on every passenger change
   end
 
   stageCarousel.onBackCallback = function()
-    stageCarousel:setPassengerById(player.settings.selectedStageId)
+    -- Just update on every passenger change
+  end
+
+  stageCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
+    player:setStage(selectedPassenger.id)
   end
 
   stageCarousel:setPassengerById(player.settings.selectedStageId)
@@ -320,7 +326,7 @@ function CharacterSelect:getCharacterButtons()
       else
         return
       end
-      GAME.theme:playValidationSfx()
+
       if character then
         if character:canSuperSelect() and holdTime > consts.SUPER_SELECTION_START + consts.SUPER_SELECTION_DURATION then
           -- super select
@@ -332,9 +338,12 @@ function CharacterSelect:getCharacterButtons()
           end
         end
         character:playSelectionSfx()
+      else
+        GAME.theme:playValidationSfx()
       end
+
       player:setCharacter(selfElement.characterId)
-      player.cursor:updatePosition(9, 2)
+      player.cursor:updatePosition(9, 2, true)
     end
 
     if characters[characterButton.characterId] and characters[characterButton.characterId]:canSuperSelect() then
@@ -390,6 +399,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   end
 
   -- we need to override the standard onRelease to reset the shader
+  ---@diagnostic disable-next-line: duplicate-set-field
   characterButton.onRelease = function(self, x, y, timeHeld)
     self.updateSuperSelectShader(self.superSelectImage, 0)
     if self:inBounds(x, y) then
@@ -401,6 +411,7 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
   -- by applying focusable we can turn it into an "on release" interaction rather than on press by taking control of input interpretation
   ui.Focusable(characterButton)
   characterButton.holdTime = 0
+  ---@diagnostic disable-next-line: duplicate-set-field
   characterButton.receiveInputs = function(self, inputs, dt)
     if inputs.isPressed["Swap1"] then
       -- measure the time the press is held for
@@ -432,10 +443,10 @@ function CharacterSelect:createPageIndicator(pagedUniGrid)
     vAlign = "top",
     translate = false
   })
-  pageCounterLabel.updatePage = function(self, grid, page)
-    self:setText(loc("page") .. " " .. page .. "/" .. #grid.pages)
+  pageCounterLabel.onPageChanged = function(selfElement, grid, page)
+    selfElement:setText(loc("page") .. " " .. page .. "/" .. #grid.pages)
   end
-  pagedUniGrid:connectSignal("pageTurned", pageCounterLabel, pageCounterLabel.updatePage)
+  pagedUniGrid:connectSignal("pageTurned", pageCounterLabel, pageCounterLabel.onPageChanged)
   return pageCounterLabel
 end
 
@@ -471,7 +482,7 @@ function CharacterSelect:createCursor(grid, player)
     elseif player.settings.wantsReady then
       player:setWantsReady(false)
     else
-      cursor:updatePosition(9, 6)
+      cursor:updatePosition(9, 6, false)
     end
   end
 
@@ -489,11 +500,11 @@ function CharacterSelect:createPanelCarousel(player, height)
 
   -- panel carousel
   panelCarousel.onSelectCallback = function()
-    player:setPanels(panelCarousel:getSelectedPassenger().id)
+    -- Just update on every passenger change
   end
 
   panelCarousel.onBackCallback = function()
-    panelCarousel:setPassengerById(player.settings.panelId)
+    -- Just update on every passenger change
   end
 
   panelCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
@@ -506,8 +517,13 @@ function CharacterSelect:createPanelCarousel(player, height)
     carousel:setColorCount(levelData.colors)
   end
 
+  local updatePanelSelection = function(carousel, panelId)
+    carousel:setPassengerById(panelId)
+  end
+
   -- to update the UI if code gets changed from the backend (e.g. network messages)
   player:connectSignal("levelDataChanged", panelCarousel, updateColor)
+  player:connectSignal("panelIdChanged", panelCarousel, updatePanelSelection)
 
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
@@ -542,6 +558,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   })
 
   ui.Focusable(levelSlider)
+  ---@diagnostic disable-next-line: duplicate-set-field
   levelSlider.receiveInputs = function(self, inputs)
     if inputs:isPressedWithRepeat("Left") then
       self:setValue(self.value - 1)
@@ -574,6 +591,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
     player:setLevelData(LevelPresets.getModern(self.value))
   end
 
+  ---@diagnostic disable-next-line: duplicate-set-field
   levelSlider.setValueFromPos = function(self, x)
     local screenX, screenY = self:getScreenPos()
     self:setValue(math.floor((x - screenX) / self.tickLength) + self.min)
@@ -730,7 +748,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = loc("ss_rating") .. " " .. ((player.league) or "none"),
     translate = false
   })
-  stackPanel.leagueLabel.update = function(self, league)
+  stackPanel.leagueLabel.updateLabel = function(self, league)
     self:setText(loc("ss_rating") .. " " .. (league or "none"))
   end
 
@@ -739,7 +757,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = player.rating or "",
     translate = false
   })
-  stackPanel.ratingLabel.update = function(self, rating, ratingDiff)
+  stackPanel.ratingLabel.updateLabel = function(self, rating, ratingDiff)
     if ratingDiff > 0 then
       self:setText(tostring(rating) .. " (+" .. ratingDiff .. ")", nil, false)
     elseif ratingDiff < 0 then
@@ -754,7 +772,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = loc("ss_wins") .. " " .. player:getWinCountForDisplay(),
     translate = false
   })
-  stackPanel.winsLabel.update = function(self, winCount)
+  stackPanel.winsLabel.updateLabel = function(self, winCount)
     self:setText(loc("ss_wins") .. " " .. winCount, nil, false)
   end
 
@@ -768,7 +786,7 @@ function CharacterSelect:createPlayerInfo(player)
     text = "  " .. loc("ss_current_rating") .. " " .. tostring(player.winrate) .. "%",
     translate = false
   })
-  stackPanel.winrateValueLabel.update = function(self, winrate)
+  stackPanel.winrateValueLabel.updateLabel = function(self, winrate)
     self:setText("  " .. loc("ss_current_rating") .. tostring(winrate) .. "%", nil, false)
   end
 
@@ -779,15 +797,15 @@ function CharacterSelect:createPlayerInfo(player)
   if self.battleRoom.ranked then
     stackPanel.winrateExpectedLabel:setText(loc("ss_expected_rating") .. " " .. player.expectedWinrate .. "%")
   end
-  stackPanel.winrateExpectedLabel.update = function(self, expectedWinrate)
+  stackPanel.winrateExpectedLabel.updateLabel = function(self, expectedWinrate)
     self:setText("  " .. loc("ss_expected_rating") .. tostring(expectedWinrate) .. "%", nil, false)
   end
 
-  player:connectSignal("leagueChanged", stackPanel.leagueLabel, stackPanel.leagueLabel.update)
-  player:connectSignal("ratingChanged", stackPanel.ratingLabel, stackPanel.ratingLabel.update)
-  player:connectSignal("winsChanged", stackPanel.winsLabel, stackPanel.winsLabel.update)
-  player:connectSignal("winrateChanged", stackPanel.winrateValueLabel, stackPanel.winrateValueLabel.update)
-  player:connectSignal("expectedWinrateChanged", stackPanel.winrateExpectedLabel, stackPanel.winrateExpectedLabel.update)
+  player:connectSignal("leagueChanged", stackPanel.leagueLabel, stackPanel.leagueLabel.updateLabel)
+  player:connectSignal("ratingChanged", stackPanel.ratingLabel, stackPanel.ratingLabel.updateLabel)
+  player:connectSignal("winsChanged", stackPanel.winsLabel, stackPanel.winsLabel.updateLabel)
+  player:connectSignal("winrateChanged", stackPanel.winrateValueLabel, stackPanel.winrateValueLabel.updateLabel)
+  player:connectSignal("expectedWinrateChanged", stackPanel.winrateExpectedLabel, stackPanel.winrateExpectedLabel.updateLabel)
 
   stackPanel:addElement(stackPanel.leagueLabel)
   stackPanel:addElement(stackPanel.ratingLabel)
@@ -825,16 +843,16 @@ function CharacterSelect:createRankedStatusPanel()
   rankedStatus:addElement(rankedStatus.rankedLabel)
   rankedStatus:addElement(rankedStatus.commentLabel)
 
-  rankedStatus.update = function(self, ranked, comments)
+  rankedStatus.updateFromRankedStatusChanged = function(selfElement, ranked, comments)
     if ranked then
-      rankedStatus.rankedLabel:setText("ss_ranked")
+      selfElement.rankedLabel:setText("ss_ranked")
     else
-      rankedStatus.rankedLabel:setText("ss_casual")
+      selfElement.rankedLabel:setText("ss_casual")
     end
-    rankedStatus.commentLabel:setText(comments, nil, false)
+    selfElement.commentLabel:setText(comments, nil, false)
   end
 
-  self.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.update)
+  self.battleRoom:connectSignal("rankedStatusChanged", rankedStatus, rankedStatus.updateFromRankedStatusChanged)
 
   return rankedStatus
 end
@@ -892,24 +910,38 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     selectedId = player.settings.difficulty
   })
 
-  difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    local levelData = LevelPresets.getClassic(selectedPassenger.id)
-    player:setDifficulty(selectedPassenger.id)
-    if self.battleRoom.mode.name == "endless" and selectedPassenger.id == 1 then
+  difficultyCarousel.onSelectCallback = function()
+    -- Just update on every passenger change
+  end
+
+  difficultyCarousel.onBackCallback = function()
+    -- Just update on every passenger change
+  end
+
+  local updateDifficultyData = function(difficultyID)
+    local levelData = LevelPresets.getClassic(difficultyID)
+    player:setDifficulty(difficultyID)
+    if self.battleRoom.mode.name == "endless" and difficultyID == 1 then
       -- Endless easy uses 5 colors instead of 6
       levelData:setColorCount(5)
       -- and by extension also allows adjacent panels of the same colors
       levelData:setAdjacentDenialFrequency(0)
     end
     player:setLevelData(levelData)
+  end
+  difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
+    updateDifficultyData(selectedPassenger.id)
     GAME.theme:playMoveSfx()
     self:refresh()
   end
+  -- Note that this updates the player level data which could be wrong before because of the weird endless case
+  -- its probably fine for now, but ideally the model should be right when the battle room is created
+  updateDifficultyData(difficultyCarousel.selectedId)
 
   return difficultyCarousel
 end
 
-function CharacterSelect:update(dt)
+function CharacterSelect:updateSelf(dt)
   for _, cursor in ipairs(self.ui.cursors) do
     if cursor.player.isLocal and cursor.player.human then
       if not cursor.player.inputConfiguration then
@@ -931,9 +963,8 @@ function CharacterSelect:update(dt)
   end
 end
 
-function CharacterSelect:draw()
+function CharacterSelect:drawSelf()
   self.backgroundImg:draw()
-  self.uiRoot:draw()
   self:customDraw()
 end
 

@@ -60,9 +60,10 @@ function ChallengeModeMenu:load(sceneParams)
   self.uiRoot:addChild(self.menu)
 end
 
-function ChallengeModeMenu:update(dt)
+function ChallengeModeMenu:updateSelf(dt)
   self.backgroundImg:update(dt)
   self.menu:receiveInputs()
+  self.uiRoot:update(dt)
 end
 
 function ChallengeModeMenu:draw()

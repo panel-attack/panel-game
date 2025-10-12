@@ -8,10 +8,8 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local ModController = require("client.src.mods.ModController")
 local ModLoader = require("client.src.mods.ModLoader")
 local ClientMatch = require("client.src.ClientMatch")
-local GameBase = require("client.src.scenes.GameBase")
 local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTransition")
 local Easings = require("client.src.Easings")
-local consts = require("common.engine.consts")
 local system = require("client.src.system")
 local GeneratorSource = require("common.engine.GeneratorSource")
 
@@ -28,6 +26,9 @@ local GeneratorSource = require("common.engine.GeneratorSource")
 ---@field online boolean
 ---@field gameScene table
 ---@field match ClientMatch
+---@field panelSource table?
+---@field sceneParameters table?
+---@field preferredStageId string? if set, this stage will be used for all matches in the session
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
 BattleRoom = class(
 function(self, mode, gameScene)
@@ -40,11 +41,13 @@ function(self, mode, gameScene)
   self.ranked = false
   self.state = 1
   self.matchesPlayed = 0
+  self.panelSource = nil
   self.gameScene = gameScene or require("client.src.scenes." .. mode.gameScene)
+  self.sceneParameters = nil
   -- this is a bit naive but effective for now
   self.online = GAME.netClient:isConnected()
   if self.online then
-    GAME.netClient:connectSignal("disconnect", self, self.onDisconnect)
+    GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
   end
 
   Signal.turnIntoEmitter(self)
@@ -232,10 +235,8 @@ end
 
 ---@return PanelSource
 function BattleRoom:createPanelSource()
-  local player = self.players[1]
-  if player.settings.puzzleSet and player.settings.puzzleIndex and player.settings.puzzleSet.puzzles[player.settings.puzzleIndex] then
-    local puzzle = player.settings.puzzleSet.puzzles[player.settings.puzzleIndex]
-    return puzzle:toPanelSource(config.puzzle_randomColors, config.puzzle_randomFlipped)
+  if self.panelSource then
+    return self.panelSource
   else
     return GeneratorSource(math.random(1, 999999), self.mode.stackInteraction ~= GameModes.StackInteractions.NONE)
   end
@@ -366,25 +367,40 @@ function BattleRoom:startMatch(replay)
   match:start()
   self.match = match
   self.state = BattleRoom.states.MatchInProgress
-  local transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
+
+  -- Use instant transition if requested, otherwise fade
+  local transition = nil
+  if not (self.sceneParameters and self.sceneParameters.useInstantTransition) then
+    transition = BlackFadeTransition(GAME.timer, 0.4, Easings.getSineIn())
+  end
+
   local scene = self:createScene(match)
   scene:load()
   GAME.navigationStack:push(scene, transition)
 end
 
 function BattleRoom:createScene(match)
+  local sceneParams = {match = match}
+  
+  -- Merge any additional scene parameters
+  if self.sceneParameters then
+    for key, value in pairs(self.sceneParameters) do
+      sceneParams[key] = value
+    end
+  end
+  
   -- for touch android players load a different scene
   if (system.isMobileOS() or DEBUG_ENABLED) and self.gameScene.name ~= "PuzzleGame" and
   --but only if they are the only local player cause for 2p vs local using portrait mode would be bad
       tableUtils.count(self.players, function(p) return p.isLocal and p.human end) == 1 then
     for _, player in ipairs(self.players) do
       if player.isLocal and player.human and player.settings.inputMethod == "touch" then
-        return require("client.src.scenes.PortraitGame")({match = match})
+        return require("client.src.scenes.PortraitGame")(sceneParams)
       end
     end
   end
   if self.gameScene then
-    return self.gameScene({match = match})
+    return self.gameScene(sceneParams)
   end
 end
 
@@ -545,6 +561,7 @@ end
 
 -- a callback function that is getting registered to the ClientMatch's matchEnded signal
 -- may get unregistered from the match in case of abortion
+---@param match ClientMatch
 function BattleRoom:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1
 

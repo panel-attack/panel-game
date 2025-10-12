@@ -393,7 +393,7 @@ local NetClient = class(function(self)
   self:createSignal("lobbyStateUpdate")
   self:createSignal("leaderboardUpdate")
   -- only fires for unintended disconnects
-  self:createSignal("disconnect")
+  self:createSignal("clientDisconnected")
   self:createSignal("loginFinished")
 end)
 
@@ -485,7 +485,9 @@ function NetClient:registerPlayerUpdates(room)
     if player.isLocal then
       -- seems a bit silly to subscribe a player to itself but it works and the player doesn't have to become part of the closure
       player:connectSignal("characterIdChanged", player, sendPlayerSettings)
+      player:connectSignal("selectedCharacterIdChanged", player, sendPlayerSettings)
       player:connectSignal("stageIdChanged", player, sendPlayerSettings)
+      player:connectSignal("selectedStageIdChanged", player, sendPlayerSettings)
       player:connectSignal("panelIdChanged", player, sendPlayerSettings)
       player:connectSignal("wantsRankedChanged", player, sendPlayerSettings)
       player:connectSignal("wantsReadyChanged", player, sendPlayerSettings)
@@ -528,13 +530,25 @@ end
 
 function NetClient:logout()
   self.tcpClient:sendRequest(ClientMessages.logout())
-  love.timer.sleep(0.005)
+  -- we want to give the message a chance to actually be sent to the network before we free the socket
+  -- otherwise the socket might get cleared before that and the server will only disconnect the player after a delay (which means they still get shown in lobby for ~10s)
+  -- it would be more reliable to only actually reset the socket after a server confirmation so there is no delay (however small)
+  --  but then we'd have the same problem on the server (how does the server know the client received logout?) so it's actually not nearly as simple as this
+  love.timer.sleep(0.05)
+  self:disconnect(true)
+end
+
+---@param voluntary boolean if the disconnect happened through player intent or not
+function NetClient:disconnect(voluntary)
+  self.room = nil
   self.tcpClient:resetNetwork()
   self:setState(states.OFFLINE)
+  resetLobbyData(self)
   GAME.localPlayer:disconnectSubscriber(GAME.netClient)
   -- this is because the online updates are currently subscribed to the player itself
   -- that should probably get changed because while mildly convenient it is unexpected for the interaction
   GAME.localPlayer:disconnectSubscriber(GAME.localPlayer)
+  self:emitSignal("clientDisconnected", voluntary)
 end
 
 function NetClient:update()
@@ -560,11 +574,7 @@ function NetClient:update()
   end
 
   if not self.tcpClient:processIncomingMessages() then
-    self:setState(states.OFFLINE)
-    self.room = nil
-    self.tcpClient:resetNetwork()
-    resetLobbyData(self)
-    self:emitSignal("disconnect")
+    self:disconnect(false)
     return
   end
 

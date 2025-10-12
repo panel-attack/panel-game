@@ -135,7 +135,7 @@ function ReplayV2.createFromV2Data(replayData)
         replayPlayer:setLevelData(player.settings.levelData)
       end
       replayPlayer:setInputMethod(player.settings.inputMethod)
-      replayPlayer:setInputs(InputCompression.decompressInputString(player.settings.inputs))
+      replayPlayer:setInputs(InputCompression.decompressInputString2(player.settings.inputs))
     else
       replayPlayer:setHealthSettings(player.settings.healthSettings)
     end
@@ -216,7 +216,7 @@ function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     p1:setInputMethod(v1r.inputMethod or "controller")
   end
 
-  p1:setInputs(InputCompression.decompressInputString(v1r.in_buf))
+  p1:setInputs(InputCompression.decompressInputString2(v1r.in_buf))
   p1:setBehaviours(StackBehaviours.getV048Default())
 
   if v1r.P1_level then
@@ -245,7 +245,7 @@ function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
     -- not saved in v1
     p2:setPanelId(config and config.panels or "pacci")
     p2:setInputMethod(v1r.P2_inputMethod or "controller")
-    p2:setInputs(InputCompression.decompressInputString(v1r.I))
+    p2:setInputs(InputCompression.decompressInputString2(v1r.I))
 
     -- presence of V2 means level and vs
     p2:setBehaviours(StackBehaviours.getV048Default())

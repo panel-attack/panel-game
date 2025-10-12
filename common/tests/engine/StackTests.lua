@@ -3,10 +3,11 @@ local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingU
 local Puzzle = require("common.engine.Puzzle")
 local LevelPresets = require("common.data.LevelPresets")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local TestUtils = require("common.tests.TestUtils")
 
 local function puzzleTest()
   -- to stop rising
-  local puzzle = Puzzle("moves", false, 1, "011010")
+  local puzzle = Puzzle({puzzleType = "moves", moves = 1, stack = "011010"})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
   ---@cast stack Stack
@@ -26,7 +27,7 @@ end
 puzzleTest()
 
 local function clearPuzzleTest()
-  local puzzle = Puzzle("clear", false, 0, "[============================][====]246260[====]600016514213466313451511124242", 60, 0)
+  local puzzle = Puzzle({puzzleType = "clear", stack = "[============================][====]246260[====]600016514213466313451511124242", stopTime = 60})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
   ---@cast stack Stack
@@ -50,7 +51,7 @@ local function basicSwapTest()
   local stack = match.stacks[1]
 ---@cast stack Stack
 
-  stack.do_countdown = false
+  stack:setCountdown(false)
 
   stack:receiveConfirmedInput("AA") -- can't swap on first two frames
   StackReplayTestingUtils:simulateMatchUntil(match, 2)
@@ -71,7 +72,7 @@ local function moveAfterCountdownV46Test()
   match:setEngineVersion(consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE)
   local stack = match.stacks[1]
   ---@cast stack Stack
-  stack.do_countdown = true
+  stack:setCountdown(true)
   assert(characters ~= nil, "no characters")
   local lastBlockedCursorMovementFrame = 33
   stack:receiveConfirmedInput(string.rep(stack:idleInput(), lastBlockedCursorMovementFrame + 1))
@@ -93,8 +94,15 @@ local function testShakeFrames()
   ---@cast stack Stack
 
   -- imaginary garbage should crash
-  assert(pcall(stack.shakeFrameForGarbageSize, 6, 0) == false)
-  assert(pcall(stack.shakeFrameForGarbageSize, 6, -1) == false)
+  local success1, errorMessage1 = TestUtils.expectErrorQuiet(function()
+    stack:shakeFramesForGarbageSize(6, 0)
+  end)
+  assert(success1, errorMessage1)
+
+  local success2, errorMessage2 = TestUtils.expectErrorQuiet(function()
+    stack:shakeFramesForGarbageSize(6, -1)
+  end)
+  assert(success2, errorMessage2)
 
   assert(stack:shakeFramesForGarbageSize(1, 1) == 18)
   assert(stack:shakeFramesForGarbageSize(2, 1) == 18)
@@ -133,7 +141,7 @@ testShakeFrames()
 
 
 local function swapStalling1Test1()
-  local puzzle = Puzzle("clear", false, 0, "[======================][====]246260[====]600016514213461336451511124242", 0, 0)
+  local puzzle = Puzzle({puzzleType = "clear", stack = "[======================][====]246260[====]600016514213461336451511124242"})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
   ---@cast stack Stack

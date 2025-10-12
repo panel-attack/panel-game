@@ -56,6 +56,20 @@
           "serverLauncher.lua", 
           "debug"
         ]
-      }
+      },
+      {
+        "name": "replayVerification",
+        "type": "lua-local", 
+        "request": "launch",
+        "program": {
+        // the respective path to your love installation
+          "command": ""
+        },
+        "args": [
+          "verificationLauncher.lua",
+          //"debug", // use the debug to verify only a single replay on the main thread; this is to troubleshoot false positives or improve the verification code
+          //"path/to/the/replay/you/are/debugging.json"
+        ]
+      },
     ]
   }

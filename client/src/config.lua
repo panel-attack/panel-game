@@ -1,3 +1,4 @@
+local JsonSafePrecision = require("common.data.JsonSafePrecision")
 json = require("common.lib.dkjson")
 local util = require("common.lib.util")
 local fileUtils = require("client.src.FileUtils")
@@ -21,7 +22,6 @@ require("client.src.globals")
 ---@field endless_level integer?
 ---@field puzzle_level integer
 ---@field puzzle_randomColors boolean
----@field puzzle_randomFlipped boolean
 ---@field name string
 ---@field master_volume number
 ---@field SFX_volume number
@@ -85,7 +85,6 @@ config = {
     -- Puzzle settings
     puzzle_level                  = 5,
     puzzle_randomColors           = false,
-    puzzle_randomFlipped          = false,
 
     -- Player name
     name                          = "",
@@ -213,9 +212,6 @@ config = {
           if type(read_data.puzzle_randomColors) == "boolean" then
             configTable.puzzle_randomColors = read_data.puzzle_randomColors
           end
-          if type(read_data.puzzle_randomFlipped) == "boolean" then
-            configTable.puzzle_randomFlipped = read_data.puzzle_randomFlipped
-          end
 
           if type(read_data.name) == "string" then
             configTable.name = read_data.name
@@ -265,7 +261,7 @@ config = {
             configTable.popfx = read_data.popfx
           end
           if type(read_data.shakeIntensity) == "number" then
-            configTable.shakeIntensity = util.bound(0.5, read_data.shakeIntensity, 1)
+            configTable.shakeIntensity = util.bound(0.5, JsonSafePrecision.toSafePrecision(read_data.shakeIntensity), 1)
           end
           if type(read_data.cardfx_scale) == "number" then
             configTable.cardfx_scale = util.bound(1, read_data.cardfx_scale, 200)
@@ -287,7 +283,7 @@ config = {
             configTable.gameScaleType = read_data.gameScaleType
           end
           if type(read_data.gameScaleFixedValue) == "number" then
-            configTable.gameScaleFixedValue = read_data.gameScaleFixedValue
+            configTable.gameScaleFixedValue = JsonSafePrecision.toSafePrecision(read_data.gameScaleFixedValue)
           end
 
           if type(read_data.windowWidth) == "number" then

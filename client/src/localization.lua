@@ -1,6 +1,7 @@
 -- TODO rename
 local FILENAME = "client/assets/localization.csv"
 local consts = require("common.engine.consts")
+local logger = require("common.lib.logger")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
 
@@ -25,64 +26,64 @@ function Localization.refresh_global_strings(self)
   join_community_msg = loc("join_community" ,"\ndiscord." .. consts.SERVER_LOCATION)
 end
 
-function Localization.init(self)
-  local function csv_line(line, acc)
-    local function trim(a, b)
-      if line:sub(a, a) == '"' then
-        a = a + 1
-      end
-      if line:sub(b, b) == '"' then
-        b = b - 1
-      end
-      return line:sub(a, b)
+function Localization.csv_line(line, acc)
+  local function trim(a, b)
+    if line:sub(a, a) == '"' then
+      a = a + 1
     end
-
-    local tokens = {}
-    local leftover = nil
-    local cur = 1
-    local stop_cur = 1
-    local escape = (acc ~= nil)
-    local ch
-
-    while cur <= line:len() do
-      ch = line:sub(cur, cur)
-
-      if ch == '"' then
-        if line:sub(cur + 1, cur + 1) == '"' then
-          cur = cur + 1
-        else
-          escape = not escape
-        end
-      elseif not escape and ch == "," then
-        tokens[#tokens + 1] = trim(stop_cur, cur - 1)
-
-        if acc then
-          tokens[#tokens] = acc .. tokens[#tokens]
-          acc = nil
-        end
-
-        tokens[#tokens] = tokens[#tokens]:gsub('""', '"')
-
-        stop_cur = cur + 1
-      end
-
-      cur = cur + 1
+    if line:sub(b, b) == '"' then
+      b = b - 1
     end
-
-    if escape then
-      if not acc then
-        leftover = line:sub(stop_cur + 1, cur)
-      else
-        leftover = acc .. line:sub(stop_cur, cur)
-      end
-      leftover = leftover .. "\n"
-    else
-      tokens[#tokens + 1] = trim(stop_cur, cur)
-    end
-
-    return tokens, leftover
+    return line:sub(a, b)
   end
 
+  local tokens = {}
+  local leftover = nil
+  local cur = 1
+  local stop_cur = 1
+  local escape = (acc ~= nil)
+  local ch
+
+  while cur <= line:len() do
+    ch = line:sub(cur, cur)
+
+    if ch == '"' then
+      if line:sub(cur + 1, cur + 1) == '"' then
+        cur = cur + 1
+      else
+        escape = not escape
+      end
+    elseif not escape and ch == "," then
+      tokens[#tokens + 1] = trim(stop_cur, cur - 1)
+
+      if acc then
+        tokens[#tokens] = acc .. tokens[#tokens]
+        acc = nil
+      end
+
+      tokens[#tokens] = tokens[#tokens]:gsub('""', '"')
+
+      stop_cur = cur + 1
+    end
+
+    cur = cur + 1
+  end
+
+  if escape then
+    if not acc then
+      leftover = line:sub(stop_cur + 1, cur)
+    else
+      leftover = acc .. line:sub(stop_cur, cur)
+    end
+    leftover = leftover .. "\n"
+  else
+    tokens[#tokens + 1] = trim(stop_cur, cur)
+  end
+
+  return tokens, leftover
+end
+
+function Localization.init(self)
   self.init = true
   local num_line = 1
   local tokens, leftover
@@ -92,7 +93,7 @@ function Localization.init(self)
   if love.filesystem.getInfo(FILENAME) then
     for line in love.filesystem.lines(FILENAME) do
       if num_line == 1 then
-        tokens = csv_line(line)
+        tokens = Localization.csv_line(line)
         for j, v in ipairs(tokens) do
           if j > 2 and v:gsub("%s", ""):len() > 0 then
             self.codes[#self.codes + 1] = v
@@ -100,15 +101,20 @@ function Localization.init(self)
           end
         end
       else
-        tokens, leftover = csv_line(line, leftover)
+        tokens, leftover = Localization.csv_line(line, leftover)
         for j, v in ipairs(tokens) do
           -- Key all the other languages by the first column
           if not key then
             key = v
             if key == "" or key:match("%s+") then
+              logger.warn("Invalid key in localization file")
               break
             end
+            if self.data[self.codes[1]][key] ~= nil then
+              logger.warn("Duplicate key in localization file: " .. key)
+            end
           else
+            -- Second column is the description, only used for making translations
             if j ~= 2 then
               if v ~= "" and not v:match("^%s+$") then
                 if num_line == 2 then
@@ -149,6 +155,7 @@ function loc(text_key, ...)
   if not code or not Localization.data[code] then
     code = Localization.codes[1]
   end
+  assert(code)
 
   local ret = nil
   if Localization.init then
@@ -161,6 +168,7 @@ function loc(text_key, ...)
       ret = ret:gsub("%%" .. i, tmp)
     end
   else
+    love.filesystem.append("warnings.txt", text_key .. ",,,,,,,,," .. "\n")
     ret = "#" .. text_key
     for i = 1, select("#", ...) do
       ret = ret .. " " .. select(i, ...)

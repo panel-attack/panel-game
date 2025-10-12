@@ -26,7 +26,7 @@ Scene)
 
 ModValidationScene.name = "ModValidationScene"
 
-function ModValidationScene:update(dt)
+function ModValidationScene:updateSelf(dt)
   if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
     GAME.theme:playMoveSfx()
     self.offset = self.offset + SCROLL_STEP
@@ -52,8 +52,7 @@ function ModValidationScene:update(dt)
   self.offset = self.scrollContainer.scrollOffset
 end
 
-function ModValidationScene:draw()
-  self.uiRoot:draw()
+function ModValidationScene:drawSelf()
 end
 
 return ModValidationScene

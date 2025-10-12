@@ -1,4 +1,5 @@
-require("client.src.localization")
+local Localization = require("client.src.localization")
+Localization:init()
 require("common.lib.Queue")
 require("client.src.server_queue")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
@@ -40,9 +41,10 @@ local function newCanvasSnappedScale(self)
 end
 
 ---@class PanelAttack
+---@field scores Scores
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
----@field globalCanvas love.Canvas
+---@field globalCanvas love.graphics.Texture
 ---@field muteSound boolean
 ---@field rich_presence table
 ---@field input table
@@ -55,6 +57,10 @@ end
 ---@field lastReplayPath string?
 ---@field crashTrace string?
 ---@field theme Theme
+---@field focused boolean
+---@field connected_server_ip string?
+---@field connected_server_port integer?
+---@field localPlayer Player?
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
@@ -105,7 +111,7 @@ local Game = class(
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  PuzzleLibrary.writeDefaultPuzzles("client/assets/default_data/puzzles", "docs/puzzles.txt", consts.PUZZLES_SAVE_DIRECTORY)
+  PuzzleLibrary.cleanupDefaultPuzzles(consts.PUZZLES_SAVE_DIRECTORY)
 
   -- move to constructor
   self.updater = GAME_UPDATER or nil
@@ -192,15 +198,6 @@ function Game:writeReleaseStreamDefinition()
             url = "https://panelattack.com/downloads/updates/beta",
             prefix = "panel-beta-"
           }
-        },
-        {
-          name = "engine-preview",
-          versioningType = "timestamp",
-          serverEndPoint = {
-            type = "filesystem",
-            url = "https://panelattack.com/downloads/updates/engine-preview",
-            prefix = "panel-"
-          }
         }
       },
       default = "stable"
@@ -225,8 +222,6 @@ end
 
 function Game:setupRoutine()
   -- loading various assets into the game
-  coroutine.yield("Loading localization...")
-  Localization:init()
   self:setLanguage(config.language_code)
 
   detectHardwareProblems()
@@ -354,13 +349,15 @@ function Game:updateMouseVisibility(dt)
 end
 
 function Game:handleResize(newWidth, newHeight)
-  self:updateCanvasPositionAndScale(newWidth, newHeight)
-  if self.battleRoom and self.battleRoom.match then
-    self.needsAssetReload = true
-  else
-    self:refreshCanvasAndImagesForNewScale()
+  local positionChanged, scaleChanged = self:updateCanvasPositionAndScale(newWidth, newHeight)
+  if scaleChanged then
+    if self.battleRoom and self.battleRoom.match then
+      self.needsAssetReload = true
+    else
+      self:refreshCanvasAndImagesForNewScale()
+    end
+    self.showGameScaleUntil = self.timer + 5
   end
-  self.showGameScaleUntil = self.timer + 5
 end
 
 -- Called every few fractions of a second to update the game
@@ -552,8 +549,15 @@ function Game:toggleFullscreen()
 end
 
 -- Updates the scale and position values to use up the right size of the window based on the user's settings.
+---@return boolean positionChanged
+---@return boolean scaleChanged
 function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
   logger.debug("Updating canvas scale with args " .. newWindowWidth .. "," .. newWindowHeight)
+
+  local oldCanvasX = self.canvasX
+  local oldCanvasY = self.canvasY
+  local oldCanvasXScale = self.canvasXScale
+  local oldCanvasYScale = self.canvasYScale
 
   -- we want to draw at integer coordinates to prevent weird interpolation
   if newWindowWidth % 2 > 0 then
@@ -598,6 +602,10 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
     self.canvasXScale = newScale
     self.canvasYScale = newScale
   end
+
+  local positionChanged = oldCanvasX ~= self.canvasX or oldCanvasY ~= self.canvasY
+  local scaleChanged = not (math.floatsEqualWithPrecision(oldCanvasXScale, self.canvasXScale, 4) and math.floatsEqualWithPrecision(oldCanvasYScale, self.canvasYScale, 4))
+  return positionChanged, scaleChanged
 end
 
 -- Reloads the canvas and all images / fonts for the new game scale

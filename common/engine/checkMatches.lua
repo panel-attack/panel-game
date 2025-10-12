@@ -127,6 +127,7 @@ function Stack:checkMatches()
     end
     -- interrupt any ongoing manual raise
     self.manual_raise = false
+    self.rise_lock = true
 
     local attackGfxOrigin = self:applyMatchToPanels(matchingPanels, isChainLink, comboSize)
     local garbagePanels = self:getConnectedGarbagePanels2(matchingPanels)
@@ -757,14 +758,14 @@ function Stack:convertGarbagePanels(isChain)
 end
 
 function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
-  logger.debug("P" .. self.which .. "@" .. self.clock .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
+  logger.debug("P" .. self.which .. "@" .. self.game_stopwatch .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
   for i = 3, metalCount do
     self.outgoingGarbage:push({
       width = 6,
       height = 1,
       isMetal = true,
       isChain = false,
-      frameEarned = self.clock,
+      frameEarned = self.game_stopwatch,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -778,7 +779,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       height = 1,
       isMetal = false,
       isChain = false,
-      frameEarned = self.clock,
+      frameEarned = self.game_stopwatch,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -790,7 +791,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       -- If we did a combo also, we need to enqueue the attack graphic one row higher cause thats where the chain card will be.
       rowOffset = 1
     end
-    self.outgoingGarbage:addChainLink(self.clock, coordinate.column, coordinate.row +  rowOffset)
+    self.outgoingGarbage:addChainLink(self.game_stopwatch, coordinate.column, coordinate.row +  rowOffset)
   end
 end
 
@@ -833,7 +834,7 @@ function Stack:calculateStopTime(comboSize, toppedOut, isChain, chainCounter)
 end
 
 function Stack:awardStopTime(isChain, comboSize)
-  local stopTime = self:calculateStopTime(comboSize, self.panels_in_top_row, isChain, self.chain_counter)
+  local stopTime = self:calculateStopTime(comboSize, self.wasToppedOut, isChain, self.chain_counter)
   if stopTime > self.stop_time then
     self.stop_time = stopTime
   end
@@ -852,12 +853,12 @@ end
 function Stack:updateScoreWithCombo(comboSize)
   if comboSize > 3 then
     if (score_mode == consts.SCOREMODE_TA) then
-      self.score = self.score + SCORE_COMBO_TA[math.min(30, comboSize)]
+      self:addScore(SCORE_COMBO_TA[math.min(30, comboSize)])
     elseif (score_mode == consts.SCOREMODE_PDP64) then
       if (comboSize < 41) then
-        self.score = self.score + SCORE_COMBO_PdP64[comboSize]
+        self:addScore(SCORE_COMBO_PdP64[comboSize])
       else
-        self.score = self.score + 20400 + ((comboSize - 40) * 800)
+        self:addScore(20400 + ((comboSize - 40) * 800))
       end
     end
   end
@@ -869,7 +870,7 @@ function Stack:updateScoreWithChain()
     if (chain_bonus > 13) then
       chain_bonus = 0
     end
-    self.score = self.score + SCORE_CHAIN_TA[chain_bonus]
+    self:addScore(SCORE_CHAIN_TA[chain_bonus])
   end
 end
 

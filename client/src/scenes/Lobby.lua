@@ -49,7 +49,7 @@ function Lobby:load(sceneParams)
   end
 
   GAME.netClient:connectSignal("lobbyStateUpdate", self, self.onLobbyStateUpdate)
-  GAME.netClient:connectSignal("disconnect", self, self.onDisconnect)
+  GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
   GAME.netClient:connectSignal("leaderboardUpdate", self.leaderboard, self.leaderboard.updateData)
   GAME.netClient:connectSignal("loginFinished", self, self.onLoginFinish)
 
@@ -197,7 +197,7 @@ end
 -- scene core functionality --
 ------------------------------
 local loginStateLabel = ui.Label({text = loc("lb_login"), translate = false, x = 500, y = 350})
-function Lobby:update(dt)
+function Lobby:updateSelf(dt)
   self.backgroundImg:update(dt)
 
   if GAME.netClient.state == NetClient.STATES.LOGIN then
@@ -224,8 +224,8 @@ function Lobby:draw()
   end
 end
 
-function Lobby:onDisconnect()
-  if not GAME.navigationStack.transition then
+function Lobby:onDisconnect(voluntary)
+  if not GAME.navigationStack.transition and not voluntary then
     -- automatic reconnect if we're not about to switch scene
     GAME.netClient:login(GAME.connected_server_ip, GAME.connected_server_port)
   end

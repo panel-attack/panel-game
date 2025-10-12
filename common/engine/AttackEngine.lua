@@ -1,5 +1,6 @@
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
+local consts = require("common.engine.consts")
 
 -- A pattern for sending garbage
 ---@class AttackPattern
@@ -7,7 +8,7 @@ local class = require("common.lib.class")
 ---@field height integer
 ---@field startTime integer
 ---@field endsChain boolean
----@field garbage table
+---@field garbage Garbage
 AttackPattern =
   class(
   function(self, width, height, startTime, metal, chain, endsChain)
@@ -29,11 +30,14 @@ AttackPattern =
 ---@field treatMetalAsCombo boolean whether the metal garbage is treated the same as combo garbage (aka they can mix)
 ---@field attackPatterns AttackPattern[] The array of AttackPattern objects this engine will run through.
 ---@field attackSettings table The format for serializing AttackPattern information
----@field clock integer  The clock to control the continuity of the sending process
+---@field stopwatch integer  The stopwatch to control the continuity of the sending process
 ---@field outgoingGarbage GarbageQueue The garbage queue attacks are added to
 local AttackEngine = class(
   function(self, attackSettings, garbageQueue)
     self.delayBeforeStart = attackSettings.delayBeforeStart or 0
+    if not attackSettings.countdownAdjusted then
+      self.delayBeforeStart = self.delayBeforeStart - (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH)
+    end
     self.delayBeforeRepeat = attackSettings.delayBeforeRepeat or 0
     self.disableQueueLimit = attackSettings.disableQueueLimit or false
 
@@ -46,7 +50,7 @@ local AttackEngine = class(
     self:addAttackPatternsFromTable(attackSettings.attackPatterns)
     self.attackSettings = attackSettings
 
-    self.clock = 0
+    self.stopwatch = 0
 
     self.outgoingGarbage = garbageQueue
     -- to ensure correct behaviour according to the pattern definition
@@ -79,20 +83,20 @@ function AttackEngine:addAttackPatternsFromTable(attackPatternsTable)
 end
 
 -- Adds an attack pattern that happens repeatedly on a timer.
--- width - the width of the attack
--- height - the height of the attack
--- start -- the clock frame these attacks should start being sent
--- repeatDelay - the amount of time in between each attack after start
--- metal - if this is a metal block
--- chain - if this is a chain attack
+---@param width integer? the width of the garbage block in columns
+---@param height integer? the height of the garbage block in rows
+---@param start integer the stopwatch frame these attacks should start being sent
+---@param metal boolean? if this is a metal block
+---@param chain boolean? if this is a chain attack
 function AttackEngine.addAttackPattern(self, width, height, start, metal, chain)
   assert(width ~= nil and height ~= nil and start ~= nil and metal ~= nil and chain ~= nil)
   local attackPattern = AttackPattern(width, height, self.delayBeforeStart + start, metal, chain, false)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
 end
 
-function AttackEngine.addEndChainPattern(self, start, repeatDelay)
-  local attackPattern = AttackPattern(0, 0, self.delayBeforeStart + start, false, false, true)
+---@param chainEnd integer the stopwatch frame the ongoing chain is being finalized
+function AttackEngine.addEndChainPattern(self, chainEnd)
+  local attackPattern = AttackPattern(0, 0, self.delayBeforeStart + chainEnd, false, false, true)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
 end
 
@@ -113,21 +117,21 @@ function AttackEngine.run(self)
   --  that the recipient is stalling acceptance so we shouldn't push more inside
   if self.disableQueueLimit or self.outgoingGarbage.transitTimers:len() <= 6 then
     for i = 1, #self.attackPatterns do
-      if self.clock >= self.attackPatterns[i].startTime then
-        local difference = self.clock - self.attackPatterns[i].startTime
+      if self.stopwatch >= self.attackPatterns[i].startTime then
+        local difference = self.stopwatch - self.attackPatterns[i].startTime
         local remainder = difference % totalAttackTimeBeforeRepeat
         if remainder == 0 then
           if self.attackPatterns[i].endsChain then
             if not self.outgoingGarbage.currentChain then
               break
             end
-            self.outgoingGarbage:finalizeCurrentChain(self.clock)
+            self.outgoingGarbage:finalizeCurrentChain(self.stopwatch)
           else
             local garbage = self.attackPatterns[i].garbage
             if garbage.isChain then
-              self.outgoingGarbage:addChainLink(self.clock, math.random(1, 11), math.random(1, 6))
+              self.outgoingGarbage:addChainLink(self.stopwatch, math.random(1, 11), math.random(1, 6))
             else
-              garbage.frameEarned = self.clock
+              garbage.frameEarned = self.stopwatch
               -- we need a coordinate for the origin of the attack animation
               garbage.rowEarned = math.random(1, 11)
               garbage.colEarned = math.random(1, 6)
@@ -143,7 +147,7 @@ function AttackEngine.run(self)
     end
   end
 
-  self.clock = self.clock + 1
+  self.stopwatch = self.stopwatch + 1
 end
 
 function AttackEngine:saveForRollback(frame)
@@ -152,12 +156,12 @@ end
 
 function AttackEngine:rollbackToFrame(frame)
   self.outgoingGarbage:rollbackToFrame(frame)
-  self.clock = frame
+  self.stopwatch = frame
 end
 
 function AttackEngine:rewindToFrame(frame)
   self.outgoingGarbage:rewindToFrame(frame)
-  self.clock = frame
+  self.stopwatch = frame
 end
 
 return AttackEngine

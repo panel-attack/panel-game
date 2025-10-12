@@ -182,6 +182,8 @@ function GameBase:load()
     ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
+      -- Clear focus when pause menu is hidden
+      self.uiRoot:setFocus(nil)
       self.match:togglePause()
       if self.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.stageTrack)
@@ -235,7 +237,9 @@ function GameBase:handlePause()
       GAME.theme:playValidationSfx()
     end
   else
-    self.pauseMenu:receiveInputs()
+    if (self.pauseMenu.hasFocus == nil or self.pauseMenu.hasFocus == false) and playerPressingStart(self.match) == false then
+      self.uiRoot:setFocus(self.pauseMenu)
+    end
   end
 end
 
@@ -249,6 +253,17 @@ function GameBase:setupGameOver()
     SoundController:fadeOutActiveTrack(3)
   end
 
+  local winners = self.match:getWinners()
+  if self.text == nil then
+    if #self.match.players == 1 then
+      self.text = loc("pl_gameover")
+    elseif #winners == 1 then
+      self.text = loc("ss_p_wins", winners[1].name)
+    else
+      self.text = loc("ss_draw")
+    end
+  end
+  
   self:customGameOverSetup()
 end
 
@@ -278,6 +293,8 @@ function GameBase:startNextScene()
 end
 
 function GameBase:runGame(dt)
+  self:handlePause()
+
   if self.frameInfo.startTime == nil then
     self.frameInfo.startTime = love.timer.getTime()
   end
@@ -295,8 +312,6 @@ function GameBase:runGame(dt)
   self.droppedFrameCount = self.droppedFrameCount + (framesRun - 1)
 
   self:customRun()
-
-  self:handlePause()
 end
 
 function GameBase:musicCanChange()
@@ -356,6 +371,9 @@ function GameBase:update(dt)
     end
     self:runGame(dt)
   end
+  
+  self.uiRoot:handleFocusedInput(input, dt)
+  self.uiRoot:update(dt)
 end
 
 function GameBase:draw()
@@ -378,8 +396,9 @@ function GameBase:draw()
 
   if self.match.isPaused then
     self.match:draw_pause()
-    self.uiRoot:draw()
   end
+  
+  self.uiRoot:draw()
 
   if config.show_fps then
     GraphicsUtil.printf("Dropped Frames: " .. self.droppedFrameCount, 1, 12)
@@ -443,16 +462,9 @@ end
 function GameBase:drawEndGameText()
   if self.match.ended then
 
-    local winners = self.match:getWinners()
     local message = self.text
     if message == nil then
-      if #self.match.players == 1 then
-        message = loc("pl_gameover")
-      elseif #winners == 1 then
-        message = loc("ss_p_wins", winners[1].name)
-      else
-        message = loc("ss_draw")
-      end
+      message = ""
     end
 
     local gameOverPosition = themes[config.theme].gameover_text_Pos
@@ -480,6 +492,11 @@ function GameBase:genericOnMatchEnded(match)
   if self.saveReplay then
     FileUtils.saveReplay(match.replay)
   end
+end
+
+-- Override this method in subclasses to disable taunt sounds
+function GameBase:shouldDisableTauntSounds()
+  return false
 end
 
 return GameBase

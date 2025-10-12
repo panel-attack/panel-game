@@ -18,6 +18,10 @@ function(self, puzzleString, panelBuffer, garbageBuffer)
   self.panelGenCount = 0
   self.garbageGenCount = 0
 
+  if self.panelBuffer:len() % 6 ~= 0 then
+    self.panelBuffer = self.panelBuffer .. string.rep(9, 6 - self.panelBuffer:len() % 6)
+  end
+
   self.panels = {}
   self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
@@ -67,6 +71,8 @@ function PuzzleSource:generatePanels(stack)
   return panels
 end
 
+---@param stack Stack
+---@return string garbageBuffer returns the full garbageBuffer to replace the new one
 function PuzzleSource:generateGarbagePanels(stack)
   self.garbageGenCount = self.garbageGenCount + 1
   local garbagePanels = ""
@@ -88,7 +94,7 @@ end
 ---@param row integer
 function PuzzleSource:createNewRow(stack, row)
   if self.panelGenCount == 0 then
-    self.panelBuffer = self:generateStartingBoard(stack)
+    self.panelBuffer = self:generateStartingBoard(stack) .. self.panelBuffer
   end
 
   if #self.panels < stack.width then
@@ -138,8 +144,10 @@ function PuzzleSource:createPanels(panelBuffer, stack)
       panels[row][column] = panel
 
       local color = string.sub(rowString, column, column)
-      if not garbageStartRow and tonumber(color) then
-        panel.color = tonumber(color)
+      local numericColor = tonumber(color)
+      if not garbageStartRow and numericColor ~= nil then
+        ---@cast numericColor integer
+        panel.color = numericColor
       else
         -- start of a garbage block
         if color == "]" or color == "}" then
@@ -199,7 +207,7 @@ end
 
 function PuzzleSource:getGarbagePanelRowString(stack)
   if self.garbagePanelBuffer:len() < stack.width then
-    self.garbagePanelBuffer = self.garbagePanelBuffer .. self:generateGarbagePanels(stack)
+    self.garbagePanelBuffer = self:generateGarbagePanels(stack)
   end
 
   local garbagePanelRow = string.sub(self.garbagePanelBuffer, 1, stack.width)

@@ -51,9 +51,9 @@ function MenuItem.createMenuItem(label, item)
 end
 
 -- Creates a menu item with just a button
-function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
+function MenuItem.createButtonMenuItem(text, replacements, translate, onClick, width)
   assert(text ~= nil)
-  local BUTTON_WIDTH = 140
+  local BUTTON_WIDTH = width or 140
   if translate == nil then
     translate = true
   end
@@ -75,11 +75,11 @@ function MenuItem.createButtonMenuItem(text, replacements, translate, onClick)
 end
 
 -- Creates a menu item with a label followed by a button
-function MenuItem.createLabeledButtonMenuItem(labelText, labelTextReplacements, labelTextTranslate, buttonText, buttonTextReplacements, buttonTextTranslate, buttonOnClick)
+function MenuItem.createLabeledButtonMenuItem(labelText, labelTextReplacements, labelTextTranslate, buttonText, buttonTextReplacements, buttonTextTranslate, buttonOnClick, width)
   assert(labelText ~= nil)
   assert(buttonText ~= nil)
   assert(buttonOnClick ~= nil)
-  local BUTTON_WIDTH = 140
+  local BUTTON_WIDTH = width or 140
   if labelTextTranslate == nil then
     labelTextTranslate = true
   end

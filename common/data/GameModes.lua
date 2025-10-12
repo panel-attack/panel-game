@@ -166,6 +166,24 @@ local TwoPlayerVersus = {
     doCountdown = true
   }
 }
+---@type GameMode
+local TwoPlayerTimeAttack = {
+  style = Styles.MODERN,
+  gameScene = "TimeAttackGame",
+  richPresenceLabel = "2p Time Attack", -- loc("mm_2_time"),
+  name = "2p_timeattack",
+
+  playerCount = 2,
+  stackInteraction = StackInteractions.NONE, -- Cambia VERSUS por NONE
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 1, [MatchRules.MatchEndConditions.TIME_LIMIT] = TIME_ATTACK_TIME * 60},
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST }, { [MatchRules.MatchWinCriterias.SCORE] = MatchRules.orders.HIGHEST }},
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  }
+}
 
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
@@ -179,6 +197,7 @@ privateGameModes.ONE_PLAYER_TRAINING = OnePlayerTraining
 privateGameModes.ONE_PLAYER_PUZZLE = OnePlayerPuzzle
 privateGameModes.ONE_PLAYER_CHALLENGE = OnePlayerChallenge
 privateGameModes.TWO_PLAYER_VS = TwoPlayerVersus
+privateGameModes.TWO_PLAYER_TIME_ATTACK = TwoPlayerTimeAttack
 
 ---@return GameMode
 ---@overload fun(mode: "ONE_PLAYER_VS_SELF"): GameMode
@@ -188,6 +207,7 @@ privateGameModes.TWO_PLAYER_VS = TwoPlayerVersus
 ---@overload fun(mode: "ONE_PLAYER_PUZZLE"): GameMode
 ---@overload fun(mode: "ONE_PLAYER_CHALLENGE"): GameMode
 ---@overload fun(mode: "TWO_PLAYER_VS"): GameMode
+---@overload fun(mode: "TWO_PLAYER_TIME_ATTACK"): GameMode
 function GameModes.getPreset(mode)
   assert(privateGameModes[mode], "Trying to access non existing mode " .. mode)
   return deepcpy(privateGameModes[mode])

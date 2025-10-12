@@ -1,6 +1,5 @@
 local class = require("common.lib.class")
 local ClientStack = require("client.src.ClientStack")
-local SimulatedStack = require("common.engine.SimulatedStack")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class ChallengeModePlayerStack : ClientStack
@@ -128,7 +127,9 @@ function ChallengeModePlayerStack:canPlaySfx()
 end
 
 ---@param matchEnded boolean?
-function ChallengeModePlayerStack:render(matchEnded)
+---@param xOffset integer? provides an additional x offset e.g. from translation as scissors only operates in screen/canvas coordinates
+---@param yOffset integer? provides an additional y offset e.g. from translation as scissors only operates in screen/canvas coordinates
+function ChallengeModePlayerStack:render(matchEnded, xOffset, yOffset)
   self:setDrawArea()
   self:drawCharacter()
   if self.engine.healthEngine then
@@ -160,6 +161,12 @@ end
 function ChallengeModePlayerStack:drawScore()
   -- no fake score for simulated stacks yet
   -- could be fun for fake 1p time attack vs later on, lol
+end
+
+function ChallengeModePlayerStack:drawMoveCount()
+end
+
+function ChallengeModePlayerStack:drawAnalyticData()
 end
 
 function ChallengeModePlayerStack:drawSpeed()

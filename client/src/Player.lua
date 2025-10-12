@@ -31,6 +31,8 @@ local StackBehaviours = require("common.data.StackBehaviours")
 -- Due to this, unless for a good reason, all properties on Player should be set using the setters
 ---@class Player : MatchParticipant
 ---@field settings PlayerSettings
+---@field publicId integer
+---@field playerNumber integer?
 ---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player
@@ -58,8 +60,6 @@ function(self, name, publicId, isLocal)
   settings.wantsRanked = true
   settings.inputMethod = "controller"
   settings.attackEngineSettings = nil
-  settings.puzzleSet = nil
-  settings.puzzleIndex = nil
 
   -- planned for the future, players don't have public ids yet
   self.publicId = publicId or -1
@@ -94,8 +94,6 @@ Player.TYPE = "Player"
 function Player:reset()
   MatchParticipant.reset(self)
   self:unrestrictInputs()
-  self.settings.puzzleSet = nil
-  self.settings.puzzleIndex = nil
 end
 
 ---@param engineStack Stack
@@ -190,28 +188,17 @@ function Player:setStyle(style)
   end
 end
 
-function Player:setPuzzleSet(puzzleSet, index)
-  if puzzleSet ~= self.settings.puzzleSet then
-    self.settings.puzzleSet = puzzleSet
-    self:emitSignal("puzzleSetChanged", puzzleSet)
-  end
-  self.settings.puzzleIndex = index
-end
-
-function Player:setPuzzleIndex(puzzleIndex)
-  if puzzleIndex ~= self.settings.puzzleIndex then
-    self.settings.puzzleIndex = puzzleIndex
-  end
-end
-
 function Player:setRating(rating)
   if self.rating and tonumber(self.rating) then
     -- only save a rating if we actually have one, tonumber assures that rating does not track placement progress instead
     self.ratingHistory[#self.ratingHistory + 1] = self.rating
   end
 
-  if rating and tonumber(rating) then
-    rating = math.round(tonumber(rating))
+  if rating then
+    local ratingNumber = tonumber(rating)
+    if ratingNumber then
+      rating = math.round(ratingNumber)
+    end
   end
 
   self.rating = rating
@@ -342,7 +329,7 @@ function Player:updateSettings(settings)
       if settings.levelData.frameConstants.GARBAGE_HOVER then
         self:setStyle(GameModes.Styles.MODERN)
         self:setLevel(settings.level)
-      else
+      elseif settings.level <= LevelPresets.classicPresetCount then
         self:setStyle(GameModes.Styles.CLASSIC)
         self:setDifficulty(settings.level)
       end

@@ -124,7 +124,6 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field score integer points incrementing on chain, combo, match, pop and manual raise according to certain rules
 ---@field chain_counter integer Number of the current chain links starting from 2; relevant for scoring and stop_time \n
 --- resets to 0 on chain end and sends garbage according to length
----@field panels_in_top_row boolean If there are panels in the top row of the stack; pre-condition for losing under the NEGATIVE_HEALTH game over condition
 ---@field n_active_panels integer How many panels are "active" on this frame; active panels prevent the stack from rising
 ---@field n_prev_active_panels integer How many panels were "active" on the previous frame; previous active panels prevent the stack from rising
 ---@field manual_raise boolean if true the stack is currently being manually raised; kept true until the raise has been completed
@@ -150,13 +149,14 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field peak_shake_time integer Records the maximum shake time obtained for the current stretch of uninterrupted shake time. \n
 --- Any additional shake time gained before shake depletes to 0 will reset shake_time back to this value. Set to 0 when shake_time reaches 0.
 ---@field warningsTriggered table ancient ancient, probably remove
----@field game_stopwatch integer? Clock time minus time that swaps were blocked
+---@field game_stopwatch integer Clock time minus time that swaps were blocked
 ---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
 ---@field panelTemplate (Panel | fun(row: integer, column: integer, id: integer?): Panel) A template class based on Panel enriched by tailor made closures containing references to the Stack
 ---@field swapStallingBackLog table tracks swaps that will incur a health cost for stalling if not swapping would have resulted in health loss
 ---@field swappingPanelCount integer how many panels are swapping on this frame
 ---@field panelSource PanelSource where the Stack gets its panels from 
 ---@field swapCount integer
+---@field wasToppedOut boolean if the stack was topped out at the start of the frame
 
 
 -- Represents the full panel stack for one player
@@ -173,6 +173,7 @@ local Stack = class(
     assert(args.panelSource)
 
     s.levelData = args.levelData
+    -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
     s.behaviours = StackBehaviours.getDefault()
     if args.stackSetupModifications.behaviours then
       for key, value in pairs(args.stackSetupModifications.behaviours) do
@@ -182,7 +183,9 @@ local Stack = class(
     s.panelSource = args.panelSource:clone(s)
     s.inputMethod = args.inputMethod
 
-    -- the behaviour table contains a bunch of flags to modify the stack behaviour for custom game modes in broader chunks of functionality
+    if s.behaviours.delaySimulationUntil then
+      s.game_stopwatch_running = false
+    end
 
     s.swapStallingBackLog = {}
 
@@ -207,7 +210,6 @@ local Stack = class(
 
     s.currentGarbageDropColumnIndexes = {1, 1, 1, 1, 1, 1}
 
-
     s.confirmedInput = table.new(43200, 0)
     s.garbageCreatedCount = 0
     s.garbageLandedThisFrame = {}
@@ -223,11 +225,10 @@ local Stack = class(
       end
     end
 
-    s.game_stopwatch_running = true
     s.max_runs_per_frame = 3
 
     s.displacement = 16
-
+    s.wasToppedOut = false
     s.rise_timer = consts.SPEED_TO_RISE_TIME[s.speed]
     s.rise_lock = false
     s.has_risen = false
@@ -237,8 +238,6 @@ local Stack = class(
 
     s.score = 0
     s.chain_counter = 0
-
-    s.panels_in_top_row = false
 
     s.n_active_panels = 0
     s.n_prev_active_panels = 0
@@ -255,7 +254,7 @@ local Stack = class(
     s.cur_timer = 0 -- number of ticks for which a new direction's been pressed
     s.cursorDirection = nil -- the direction pressed
     s.cur_row = args.stackSetupModifications.startingRow or 7
-    s.cur_col = args.stackSetupModifications.startingCol or  3
+    s.cur_col = args.stackSetupModifications.startingCol or 3
     s.queuedSwapColumn = 0
     s.queuedSwapRow = 0
     if s.behaviours.passiveRaise then
@@ -423,7 +422,6 @@ function Stack:rollbackCopy()
   copy.peak_shake_time = self.peak_shake_time
   copy.shake_time_on_frame = self.shake_time_on_frame
   copy.do_countdown = self.do_countdown
-  copy.panels_in_top_row = self.panels_in_top_row
   copy.has_risen = self.has_risen
   copy.metalPanelsQueued = self.metalPanelsQueued
   copy.panels_cleared = self.panels_cleared
@@ -480,7 +478,6 @@ local function internalRollbackToFrame(stack, frame)
   stack.peak_shake_time = copy.peak_shake_time
   stack.shake_time_on_frame = copy.shake_time_on_frame
   stack.do_countdown = copy.do_countdown
-  stack.panels_in_top_row = copy.panels_in_top_row
   stack.has_risen = copy.has_risen
   stack.metalPanelsQueued = copy.metalPanelsQueued
   stack.panels_cleared = copy.panels_cleared
@@ -535,15 +532,14 @@ local function internalRollbackToFrame(stack, frame)
   return true
 end
 
----@param self Stack
 ---@param frame integer the frame to rollback to if possible
 ---@return boolean success if rolling back succeeded
-function Stack.rollbackToFrame(self, frame)
+function Stack:rollbackToFrame(frame)
   local currentFrame = self.clock
 
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rollbackToFrame(frame)
-    self.outgoingGarbage:rollbackToFrame(frame)
+    self.incomingGarbage:rollbackToFrame(self.game_stopwatch)
+    self.outgoingGarbage:rollbackToFrame(self.game_stopwatch)
     self.panelSource:rollbackToFrame(frame)
 
     self.rollbackCount = self.rollbackCount + 1
@@ -560,9 +556,12 @@ end
 ---@return boolean success if rewinding succeeded
 function Stack:rewindToFrame(frame)
   if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rewindToFrame(frame)
-    self.outgoingGarbage:rewindToFrame(frame)
+    self.incomingGarbage:rewindToFrame(self.game_stopwatch)
+    self.outgoingGarbage:rewindToFrame(self.game_stopwatch)
     self.panelSource:rewindToFrame(frame)
+
+    -- we did roll back but we want to stay here
+    self.lastRollbackFrame = frame
 
     self:emitSignal("rollbackPerformed", self)
     return true
@@ -575,16 +574,16 @@ end
 -- NOTE: the clock time is the save state for simulating right BEFORE that clock time is simulated
 function Stack:saveForRollback()
   prof.push("Stack:saveForRollback")
-  self:remove_extra_rows()
+  self:removeExtraRows()
   prof.push("Stack.rollbackCopy")
   self:rollbackCopy()
   prof.pop("Stack.rollbackCopy")
   prof.push("incomingGarbage:saveForRollback")
-  self.incomingGarbage:saveForRollback(self.clock)
+  self.incomingGarbage:saveForRollback(self.game_stopwatch)
   prof.pop("incomingGarbage:saveForRollback")
   prof.push("outgoingGarbage:saveForRollback")
   if self.outgoingGarbage then
-    self.outgoingGarbage:saveForRollback(self.clock)
+    self.outgoingGarbage:saveForRollback(self.game_stopwatch)
   end
   prof.pop("outgoingGarbage:saveForRollback")
   self.panelSource:saveForRollback(self.clock)
@@ -592,11 +591,10 @@ function Stack:saveForRollback()
   self:emitSignal("rollbackSaved", self.clock)
 end
 
-function Stack.toPuzzleInfo(self)
+function Stack:toPuzzleInfo()
   local puzzleInfo = {}
   puzzleInfo["Stop"] = self.stop_time
   puzzleInfo["Shake"] = self.shake_time
-  puzzleInfo["Pre-Stop"] = self.pre_stop_time
   puzzleInfo["Stack"] = Puzzle.toPuzzleString(self.panels)
 
   return puzzleInfo
@@ -616,15 +614,16 @@ function Stack:hasMatchableGarbage()
   return false
 end
 
-function Stack.hasActivePanels(self)
+function Stack:hasActivePanels()
   return self.n_active_panels > 0 or self.n_prev_active_panels > 0
 end
 
-function Stack.has_falling_garbage(self)
-  for i = 1, self.height + 3 do --we shouldn't have to check quite 3 rows above height, but just to make sure...
-    local panelRow = self.panels[i]
-    for j = 1, self.width do
-      if panelRow and panelRow[j].isGarbage and panelRow[j].state == "falling" then
+function Stack:hasFallingGarbage()
+  -- iterating top to bottom as finding falling garbage in upper rows is more likely
+  -- we shouldn't have to check quite 3 rows above height, but just to make sure...
+  for row = math.min(self.height + 3, #self.panels), 1, -1 do
+    for col = 1, self.width do
+      if self.panels[row][col].isGarbage and self.panels[row][col].state == "falling" then
         return true
       end
     end
@@ -683,6 +682,15 @@ function Stack:controls()
     raise, swap, up, down, left, right = unpack(KeyDataEncoding.base64decode[sdata])
 
     self.swapThisFrame = swap
+
+    if self.swapThisFrame and self:swapQueued() then
+      -- swapping is allowed at most every second frame
+      -- that is not necessarily a good thing as it can cause stealth attempts to fail due to the swaps being spaced too closely
+      --  without the player being aware why it failed, but it's difficult to change at the moment
+      -- see https://github.com/panel-attack/panel-game/issues/624
+      self.swapThisFrame = false
+      self:emitSignal("swapDenied")
+    end
 
     if up then
       new_dir = "up"
@@ -747,7 +755,7 @@ function Stack:shouldRun(runsSoFar)
 end
 
 -- Runs one step of the stack.
-function Stack.run(self)
+function Stack:run()
   prof.push("Stack:run")
 
   if self.is_local == false then
@@ -761,20 +769,74 @@ function Stack.run(self)
   --prof.push("Stack:setupInput")
   self:setupInput()
   --prof.pop("Stack:setupInput")
+
+
+  if self.behaviours.delaySimulationUntil == "countdownEnded" and self.clock <= (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
+    self:runCountdown()
+    if self.clock == (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH) then
+      self.game_stopwatch_running = true
+    end
+  end
+
   --prof.push("Stack:simulate")
-  self:simulate()
+  if self.game_stopwatch_running then
+    self:simulate()
+  else
+    -- these behaviours need to run "half a frame" on their first one to give the first swap the chance to queue to prevent instant game over on the next one
+    -- otherwise, if health is 1 and no stop/shake is given and the stack is topped out, passive raise will instakill
+    if self.behaviours.delaySimulationUntil == "firstInput" then
+      if self.input_state ~= self:idleInput() then
+        self.game_stopwatch_running = true
+        -- need to compensate the fact that we increment stopwatch at the end of the frame without having simulated
+        self.game_stopwatch = -1
+      end
+    elseif self.behaviours.delaySimulationUntil == "firstSwap" then
+      if self.swapThisFrame then
+        self.game_stopwatch_running = true
+        self.game_stopwatch = -1
+      end
+    end
+  end
+
+  -- Phase 3. /////////////////////////////////////////////////////////////
+  -- Actions performed according to player input
+
+  self:applyCursorDirection(self.cursorDirection)
+
+  --prof.push("new swap")
+  -- Queue Swapping
+  -- Note: Swapping is queued in Stack.controls for touch mode
+  if self.inputMethod == "controller" and self.swapThisFrame then
+    local leftPanel = self.panels[self.cur_row][self.cur_col]
+    local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
+    self:tryQueueSwap(leftPanel, rightPanel)
+  end
+  --prof.pop("new swap")
+
+  self:handleManualRaise()
+
+  if self.game_stopwatch_running then
+    prof.push("pop from incoming garbage q")
+    if self:shouldDropGarbage() then
+      self:tryDropGarbage()
+    end
+    prof.pop("pop from incoming garbage q")
+    self.game_stopwatch = self.game_stopwatch + 1
+  end
+
+  self.clock = self.clock + 1
   --prof.pop("Stack:simulate")
   prof.pop("Stack:run")
   self:emitSignal("finishedRun")
 end
 
 local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
-function Stack.idleInput(self)
+function Stack:idleInput()
   return (self.inputMethod == "touch" and touchIdleInput) or KeyDataEncoding.base64encode[1]
 end
 
 -- Grabs input from the buffer of inputs or from the controller and sends out to the network if needed.
-function Stack.setupInput(self)
+function Stack:setupInput()
   self.input_state = nil
 
   if self:game_ended() == false then
@@ -786,7 +848,7 @@ function Stack.setupInput(self)
   self:controls()
 end
 
-function Stack.receiveConfirmedInput(self, input)
+function Stack:receiveConfirmedInput(input)
   if utf8.len(input) == 1 then
     self.confirmedInput[#self.confirmedInput+1] = input
   else
@@ -796,21 +858,16 @@ function Stack.receiveConfirmedInput(self, input)
   --logger.debug("Player " .. self.which .. " got new input. Total length: " .. #self.confirmedInput)
 end
 
-function Stack.hasPanelsInTopRow(self)
-  local panelRow = self.panels[self.height]
-  for idx = 1, self.width do
-    if panelRow[idx]:dangerous() then
+function Stack:isToppedOut()
+  for col = 1, self.width do
+    if self.panels[self.height][col]:dangerous() then
       return true
     end
   end
   return false
 end
 
-function Stack.updatePanels(self)
-  if self.do_countdown then
-    return
-  end
-
+function Stack:updatePanels()
   prof.push("Stack:updatePanels")
   self.shake_time_on_frame = 0
   for row = 1, #self.panels do
@@ -829,99 +886,88 @@ function Stack:shouldDropGarbage()
 
   if not garbage then
     return false
-  else
+  elseif self:isToppedOut() then
     -- new garbage can't drop if the stack is full
+    return false
+  elseif self:hasFallingGarbage() then
     -- new garbage always drops one by one
-    if not self.panels_in_top_row and not self:has_falling_garbage() then
-      if not self:hasActivePanels() then
-        return true
-      elseif garbage.isChain then
-        -- drop chain garbage higher than 1 row immediately
-        return garbage.height > 1
-      else
-        -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
-        -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
-        -- and because of that hack, we need to do another hack here and allow n-height combo garbage
-        -- technically garbage should get fixed garbageQueue side though so we should not reach here
-        if garbage.height > 1 then
-          logger.debug("Reached the cursed path")
-          return true
-        else
-          return false
+    return false
+  else
+    -- Verify that there are no panels in the way above the stack
+    for i = self.height + 1, #self.panels do
+      if self.panels[i] then
+        for j = 1, self.width do
+          if self.panels[i][j] then
+            if self.panels[i][j].color ~= 0 then
+              -- using warn logging here because of suspicion that this code is never reached
+              -- after bulk verification this code was presumably hit for 3 replays out of 18000+ and always found a panel in row 13 column 1
+              -- so it has to stay for now but probably worth investigating under which circumstances it does not hit either of the other checks
+              logger.warn("Aborting garbage drop: panel found at row " .. tostring(i) .. " column " .. tostring(j))
+              return false
+            end
+          end
         end
       end
+    end
+  end
+
+  if not self:hasActivePanels() then
+    return true
+  elseif garbage.isChain then
+    -- drop chain garbage higher than 1 row immediately
+    return garbage.height > 1
+  else
+    if garbage.height > 1 then
+      -- attackengine garbage higher than 1 (aka chain garbage) is treated as combo garbage
+      -- that is to circumvent the garbage queue not allowing to send multiple chains simultaneously
+      -- and because of that hack, we need to do another hack here and allow n-height combo garbage
+      -- technically garbage should get fixed garbageQueue side though so we should not reach here
+      logger.debug("Reached the cursed path")
+      return true
+    else
+      return false
     end
   end
 end
 
 -- One run of the engine routine.
 function Stack:simulate()
-  --prof.push("simulate 1")
-  local panels = self.panels
-  local swapped_this_frame = nil
   table.clear(self.garbageLandedThisFrame)
-  self:runCountDownIfNeeded()
 
-  --prof.push("simulate danger updates")
-  self.panels_in_top_row = self:hasPanelsInTopRow()
-  --prof.pop("simulate danger updates")
+  self.wasToppedOut = self:isToppedOut()
 
-  if self.swapCount >= self.behaviours.startTimersWithSwapCount then
-    --prof.push("shake time updates")
-    self.prev_shake_time = self.shake_time
-    self.shake_time = self.shake_time - 1
-    self.shake_time = max(self.shake_time, self.shake_time_on_frame)
-    if self.shake_time == 0 then
-      self.peak_shake_time = 0
-    end
-    --prof.pop("shake time updates")
-    if self.pre_stop_time ~= 0 then
-      self.pre_stop_time = self.pre_stop_time - 1
-    elseif self.stop_time ~= 0 then
-      self.stop_time = self.stop_time - 1
-    end
-    --prof.pop("simulate 1")
+  --prof.push("simulate 1")
+  self:decrementInvincibilityTimers()
+  self:updateRiseLock()
+  self:updateSpeed()
+  --prof.pop("simulate 1")
 
-    --prof.push("new row stuff")
-    if self.displacement == 0 and self.has_risen then
-      self.top_cur_row = self.height
-      self:new_row()
-    end
-
-    self:updateRiseLock()
-    --prof.pop("new row stuff")
-
-    self:updateSpeed()
-
-    --prof.push("passive raise")
-    -- Phase 0 //////////////////////////////////////////////////////////////
-    -- Stack automatic rising
-    if self.behaviours.passiveRaise then
-      self:advancePassiveRaise()
-
+  --prof.push("passive raise")
+  -- Phase 0 //////////////////////////////////////////////////////////////
+  -- Stack automatic rising
+  if self.behaviours.passiveRaise then
+    if self:advancePassiveRaise() then
       if self:checkGameOver() then
         self:setGameOver()
       end
     end
-    --prof.pop("passive raise")
-
-    --prof.push("reset stuff")
-    local hasFallingGarbage = self:has_falling_garbage()
-    if not self.panels_in_top_row and not hasFallingGarbage then
-      self.health = self.levelData.maxHealth
-    end
-
-    if self.displacement % 16 ~= 0 then
-      self.top_cur_row = self.height - 1
-    end
-    --prof.pop("reset stuff")
   end
+  --prof.pop("passive raise")
+
+  --prof.push("reset stuff")
+  if not self.wasToppedOut and not self:hasFallingGarbage() then
+    self.health = self.levelData.maxHealth
+  end
+
+  if self.displacement % 16 ~= 0 then
+    self.top_cur_row = self.height - 1
+  end
+  --prof.pop("reset stuff")
 
   --prof.push("old swap")
   -- Begin the swap we input last frame.
   if self:swapQueued() then
     self:swap(self.queuedSwapRow, self.queuedSwapColumn)
-    swapped_this_frame = true
     self.queuedSwapColumn = 0
     self.queuedSwapRow = 0
   end
@@ -930,129 +976,90 @@ function Stack:simulate()
   self:checkMatches()
   self:updatePanels()
   self:updateActivePanelCount()
-
-  -- Phase 3. /////////////////////////////////////////////////////////////
-  -- Actions performed according to player input
-
-  self:applyCursorDirection(self.cursorDirection)
-
-  --prof.push("new swap")
-  -- Queue Swapping
-  -- Note: Swapping is queued in Stack.controls for touch mode
-  if self.inputMethod == "controller" then
-    if self.swapThisFrame then
-      if swapped_this_frame then
-        self:emitSignal("swapDenied")
-      else
-        local leftPanel = self.panels[self.cur_row][self.cur_col]
-        local rightPanel = self.panels[self.cur_row][self.cur_col + 1]
-        self:tryQueueSwap(leftPanel, rightPanel)
-      end
-    end
-  end
-  --prof.pop("new swap")
-
-  --prof.push("active raise")
-  -- MANUAL STACK RAISING
-  if self.behaviours.allowManualRaise then
-    if self.manual_raise then
-      if not self.rise_lock then
-        self.stop_time = 0
-        if self.panels_in_top_row then
-          if self:checkGameOver() then
-            self:setGameOver()
-          end
-        else
-          self.has_risen = true
-          self.displacement = self.displacement - 1
-          if self.displacement == 1 then
-            self.manual_raise = false
-            self.rise_timer = 1
-            if not self.prevent_manual_raise then
-              self.score = self.score + 1
-            end
-            self.prevent_manual_raise = true
-          end
-          self.manual_raise_yet = true --ehhhh
-        end
-      elseif not self.manual_raise_yet then
-        self.manual_raise = false
-      elseif self:has_falling_garbage() then
-        self.manual_raise = false
-      end
-    -- if the stack is rise locked when you press the raise button,
-    -- the raising is cancelled
-    end
-  end
-  --prof.pop("active raise")
-
   --prof.push("chain update")
   -- if at the end of the routine there are no chain panels, the chain ends.
   if self.chain_counter ~= 0 and not self:hasChainingPanels() then
     self.chain_counter = 0
 
     if self.outgoingGarbage then
-      logger.debug("Player " .. self.which .. " chain ended at " .. self.clock)
-      self.outgoingGarbage:finalizeCurrentChain(self.clock)
+      logger.debug("Player " .. self.which .. " chain ended at " .. self.game_stopwatch)
+      self.outgoingGarbage:finalizeCurrentChain(self.game_stopwatch)
     end
   end
   --prof.pop("chain update")
 
-  if (self.score > 99999) then
-    self.score = 99999
-  -- lol owned
-  end
+  --prof.push("process staged garbage")
+  self.outgoingGarbage:processStagedGarbageForClock(self.game_stopwatch)
+  --prof.pop("process staged garbage")
+
+  self:removeExtraRows()
 
   if not self:checkGameWin() then
     if self:checkGameOver() then
       self:setGameOver()
     end
   end
+end
 
-  --prof.push("process staged garbage")
-  self.outgoingGarbage:processStagedGarbageForClock(self.clock)
-  --prof.pop("process staged garbage")
-
-  --prof.push("remove_extra_rows")
-  self:remove_extra_rows()
-  --prof.pop("remove_extra_rows")
-
-  --prof.push("double-check panels_in_top_row")
-  --double-check panels_in_top_row
-
-  self.panels_in_top_row = false
-  -- If any dangerous panels are in the top row, garbage should not fall.
-  for col_idx = 1, self.width do
-    if panels[self.height][col_idx]:dangerous() then
-      self.panels_in_top_row = true
-      break
-    end
+function Stack:decrementInvincibilityTimers()
+  self.prev_shake_time = self.shake_time
+  self.shake_time = self.shake_time - 1
+  self.shake_time = max(self.shake_time, self.shake_time_on_frame)
+  if self.shake_time == 0 then
+    self.peak_shake_time = 0
   end
-  --prof.pop("double-check panels_in_top_row")
 
-  --prof.push("doublecheck panels above top row")
-  -- If any panels (dangerous or not) are in rows above the top row, garbage should not fall.
-  for row_idx = self.height + 1, #self.panels do
-    for col_idx = 1, self.width do
-      if panels[row_idx][col_idx].color ~= 0 then
-        self.panels_in_top_row = true
-        break
+  if self.pre_stop_time ~= 0 then
+    self.pre_stop_time = self.pre_stop_time - 1
+  elseif self.stop_time ~= 0 then
+    self.stop_time = self.stop_time - 1
+  end
+end
+
+function Stack:handleManualRaise()
+  --prof.push("active raise")
+  -- MANUAL STACK RAISING
+  if self.behaviours.allowManualRaise and self.manual_raise then
+    if not self.rise_lock then
+      -- no rise lock, the manual raise proceeds in the standard case
+      self.stop_time = 0
+      if self.wasToppedOut then
+        -- why is this game over check needed?
+        -- manual raise halts passive raise and only passive raise leads to health reduction
+        -- replacing this with health reduction could be a viable alternative
+        -- see also: https://github.com/panel-attack/panel-game/issues/437 and comments within checkGameOver itself
+        if self:checkGameOver() then
+          self:setGameOver()
+        end
+      else
+        self.has_risen = true
+        self.displacement = self.displacement - 1
+        if self.displacement == 1 then
+          if not self.prevent_manual_raise then
+            self:addScore(1)
+          end
+          -- the final decrement of displacement is forcefully deferred to passive raise through these 3 properties
+          -- see https://github.com/panel-attack/panel-game/issues/663 for more info
+          self.manual_raise = false
+          self.rise_timer = 1
+          self.prevent_manual_raise = true
+        end
+        -- this means we started the manual raise and so the manual raise will resume even after a rise lock
+        self.manual_raise_yet = true
       end
+    elseif not self.manual_raise_yet then
+      -- manual raise was pressed but rise lock was already active so the manual raise will never be started
+      self.manual_raise = false
+    elseif self:hasFallingGarbage() then
+      -- the manual raise has been interrupted by falling garbage; in this scenario we don't want the raise to resume afterwards so it is cancelled here
+      self.manual_raise = false
+      -- falling garbage might result in a topout and trying to finish the raise afterwards would mean instant death the moment shake time runs out
+      -- even if there is still stop time or health remaining which is straight up unfair
     end
+  -- if the stack is rise locked when you press the raise button,
+  -- the raising is suspended
   end
-  --prof.pop("doublecheck panels above top row")
-
-  prof.push("pop from incoming garbage q")
-  if self:shouldDropGarbage() then
-    self:tryDropGarbage()
-  end
-  prof.pop("pop from incoming garbage q")
-
-  self.clock = self.clock + 1
-
-  if self.game_stopwatch_running then
-    self.game_stopwatch = (self.game_stopwatch or -1) + 1
-  end
+  --prof.pop("active raise")
 end
 
 ---@param direction CursorDirection?
@@ -1100,73 +1107,84 @@ function Stack:updateSpeed()
   --prof.pop("speed increase")
 end
 
+---@return boolean? # if any raising did indeed happen
 function Stack:advancePassiveRaise()
-  if not self.manual_raise and self.stop_time == 0 and not self.rise_lock then
-    if self.panels_in_top_row then
-      self.health = self.health - 1
-    else
-      self.rise_timer = self.rise_timer - 1
-      if self.rise_timer <= 0 then -- try to rise
-        self.displacement = self.displacement - 1
-        if self.displacement == 0 then
-          self.prevent_manual_raise = false
-          self.top_cur_row = self.height
-          self:new_row()
+  if self.manual_raise then
+    -- handle all of manual raise here sometime in the far future
+    -- currently this finishes a raise from the PREVIOUS frame so it may ignore rise_lock
+    if self.displacement == 0 and self.has_risen then
+      -- edge case that only occurs when manual raise is pressed at displacement = 1 on the previous frame
+      -- the addition of the new row is only added on the next frame to guarantee the stack was not topped out at the start of the frame
+      -- see https://github.com/panel-attack/panel-game/issues/663 for context why this is exactly here
+      self.top_cur_row = self.height
+      self:new_row()
+    end
+  else
+    if not self.rise_lock and self.stop_time == 0 then
+      if self:isToppedOut() then
+        self.health = self.health - 1
+      else
+        self.rise_timer = self.rise_timer - 1
+        if self.rise_timer <= 0 then -- try to rise
+          self.displacement = self.displacement - 1
+          if self.displacement == 0 then
+            self.prevent_manual_raise = false
+            self.top_cur_row = self.height
+            self:new_row()
+          end
+          self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
         end
-        self.rise_timer = self.rise_timer + consts.SPEED_TO_RISE_TIME[self.speed]
       end
+      return true
     end
   end
 end
 
-function Stack:runCountDownIfNeeded()
-  if self.do_countdown then
-    self.game_stopwatch_running = false
-    self.rise_lock = true
-    if self.clock == 0 then
-      self.animatingCursorDuringCountdown = true
+function Stack:runCountdown()
+  self.do_countdown = true
+  self.rise_lock = true
+  if self.clock == 0 then
+    self.animatingCursorDuringCountdown = true
+    if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
+      self.cursorLock = true
+    end
+    self.cur_row = self.height - 1
+    if self.inputMethod == "touch" then
+      self.cur_col = self.width
+    elseif self.inputMethod == "controller" then
+      self.cur_col = self.width - 1
+    end
+  elseif self.clock == consts.COUNTDOWN_START then
+    self.countdown_timer = consts.COUNTDOWN_LENGTH
+  end
+  if self.countdown_timer then
+    local countDownFrame = consts.COUNTDOWN_LENGTH - self.countdown_timer
+    if countDownFrame > 0 and countDownFrame % consts.COUNTDOWN_CURSOR_SPEED == 0 then
+      local moveIndex = math.floor(countDownFrame / consts.COUNTDOWN_CURSOR_SPEED)
+      if moveIndex <= 4 then
+        self:moveCursorInDirection("down")
+      elseif moveIndex <= 6 then
+        self:moveCursorInDirection("left")
+
+      elseif moveIndex == 10 then
+        self.animatingCursorDuringCountdown = nil
+        if self.inputMethod == "touch" then
+          self.cur_row = 0
+          self.cur_col = 0
+        end
+      end
+    elseif countDownFrame == 6 * consts.COUNTDOWN_CURSOR_SPEED + 1 then
       if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
-        self.cursorLock = true
+        self.cursorLock = nil
       end
-      self.cur_row = self.height - 1
-      if self.inputMethod == "touch" then
-        self.cur_col = self.width
-      elseif self.inputMethod == "controller" then
-        self.cur_col = self.width - 1
-      end
-    elseif self.clock == consts.COUNTDOWN_START then
-      self.countdown_timer = consts.COUNTDOWN_LENGTH
+    end
+    if self.countdown_timer == 0 then
+      --we are done counting down
+      self.do_countdown = false
+      self.countdown_timer = nil
     end
     if self.countdown_timer then
-      local countDownFrame = consts.COUNTDOWN_LENGTH - self.countdown_timer
-      if countDownFrame > 0 and countDownFrame % consts.COUNTDOWN_CURSOR_SPEED == 0 then
-        local moveIndex = math.floor(countDownFrame / consts.COUNTDOWN_CURSOR_SPEED)
-        if moveIndex <= 4 then
-          self:moveCursorInDirection("down")
-        elseif moveIndex <= 6 then
-          self:moveCursorInDirection("left")
-
-        elseif moveIndex == 10 then
-          self.animatingCursorDuringCountdown = nil
-          if self.inputMethod == "touch" then
-            self.cur_row = 0
-            self.cur_col = 0
-          end
-        end
-      elseif countDownFrame == 6 * consts.COUNTDOWN_CURSOR_SPEED + 1 then
-        if self.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE then
-          self.cursorLock = nil
-        end
-      end
-      if self.countdown_timer == 0 then
-        --we are done counting down
-        self.do_countdown = false
-        self.countdown_timer = nil
-        self.game_stopwatch_running = true
-      end
-      if self.countdown_timer then
-        self.countdown_timer = self.countdown_timer - 1
-      end
+      self.countdown_timer = self.countdown_timer - 1
     end
   end
 end
@@ -1182,7 +1200,7 @@ end
 
 -- Sets the current stack as "lost"
 -- Also begins drawing game over effects
-function Stack.setGameOver(self)
+function Stack:setGameOver()
 
   if self.game_over_clock > 0 then
     -- it is possible that game over is set twice on the same frame
@@ -1319,51 +1337,34 @@ function Stack:swap(row, col)
   end
 end
 
--- Removes unneeded rows
-function Stack.remove_extra_rows(self)
-  local panels = self.panels
-  for row = #panels, self.height + 1, -1 do
-    local nonempty = false
-    local panelRow = panels[row]
+-- Removes unneeded rows from the top of the stack
+function Stack:removeExtraRows()
+  --prof.push("removeExtraRows")
+  for row = #self.panels, self.height + 1, -1 do
     for col = 1, self.width do
-      nonempty = nonempty or (panelRow[col].color ~= 0)
+      if self.panels[row][col].color ~= 0 then
+        return
+      end
     end
-    if nonempty then
-      break
-    else
-      panels[row] = nil
-    end
+    self.panels[row] = nil
   end
+  --prof.pop("removeExtraRows")
 end
 
 -- tries to drop a width x height garbage.
 -- returns true if garbage was dropped, false otherwise
 function Stack:tryDropGarbage()
-  logger.debug("trying to drop garbage at frame "..self.clock)
-
-  -- Do one last check for panels in the way.
-  for i = self.height + 1, #self.panels do
-    if self.panels[i] then
-      for j = 1, self.width do
-        if self.panels[i][j] then
-          if self.panels[i][j].color ~= 0 then
-            logger.trace("Aborting garbage drop: panel found at row " .. tostring(i) .. " column " .. tostring(j))
-            return
-          end
-        end
-      end
-    end
-  end
+  logger.debug("trying to drop garbage at frame " .. self.game_stopwatch)
 
   local garbage = self.incomingGarbage:pop()
-  logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.clock, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
+  logger.debug(string.format("%d Dropping garbage on stack %d - height %d  width %d  %s", self.game_stopwatch, self.which, garbage.height, garbage.width, garbage.isMetal and "Metal" or ""))
 
   self:dropGarbage(garbage.width, garbage.height, garbage.isMetal)
 
   return true
 end
 
-function Stack.getGarbageSpawnColumn(self, garbageWidth)
+function Stack:getGarbageSpawnColumn(garbageWidth)
   local columns = self.garbageSizeDropColumnMaps[garbageWidth]
   local index = self.currentGarbageDropColumnIndexes[garbageWidth]
   local spawnColumn = columns[index]
@@ -1372,7 +1373,7 @@ function Stack.getGarbageSpawnColumn(self, garbageWidth)
   return spawnColumn
 end
 
-function Stack.dropGarbage(self, width, height, isMetal)
+function Stack:dropGarbage(width, height, isMetal)
   -- garbage always drops in row 13
   local originRow = self.height + 1
   -- combo garbage will alternate it's spawn column
@@ -1454,19 +1455,24 @@ function Stack:getAttackPatternData()
   data.attackPatterns = {}
   data.extraInfo = {}
   data.extraInfo.matchLength = " "
-  if self.game_stopwatch and tonumber(self.game_stopwatch) then
+  if self.game_stopwatch > 0 then
     data.extraInfo.matchLength = frames_to_time_string(self.game_stopwatch)
+  else
+    -- there is nothing to export!
+    return
   end
   local now = os.date("*t", to_UTC(os.time()))
   data.extraInfo.dateGenerated = string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec)
 
   data.mergeComboMetalQueue = false
+  -- TODO: Adjust the export to account for presence of countdown for the delayBeforeStart once it has been moved to a behaviour
   data.delayBeforeStart = 0
   data.delayBeforeRepeat = 91
   local defaultEndTime = 70
 
   for _, garbage in ipairs(self.outgoingGarbage.history) do
     if garbage.isChain then
+      ---@cast garbage ChainGarbage
       if garbage.finalized then
         data.attackPatterns[#data.attackPatterns+1] = {chain = garbage.linkTimes, chainEndTime = garbage.finalizedClock}
       else
@@ -1494,9 +1500,9 @@ function Stack:createPanelAt(row, column)
 end
 
 ---@param panel Panel
-function Stack.onPop(self, panel)
+function Stack:onPop(panel)
   if not panel.isGarbage then
-    self.score = self.score + 10
+    self:addScore(10)
 
     self.panels_cleared = self.panels_cleared + 1
     if self.panels_cleared % self.levelData.shockFrequency == 0 then
@@ -1508,14 +1514,14 @@ function Stack.onPop(self, panel)
 end
 
 ---@param panel Panel
-function Stack.onPopped(self, panel)
+function Stack:onPopped(panel)
   if self.panels_to_speedup then
     self.panels_to_speedup = self.panels_to_speedup - 1
   end
 end
 
 ---@param panel Panel
-function Stack.onLand(self, panel)
+function Stack:onLand(panel)
   -- need to emit signal before onGarbageLand because the panel is altered by onGarbageLand
   self:emitSignal("panelLanded", panel)
 
@@ -1525,7 +1531,7 @@ function Stack.onLand(self, panel)
 end
 
 ---@param panel Panel
-function Stack.onGarbageLand(self, panel)
+function Stack:onGarbageLand(panel)
   if panel.shake_time
     -- only parts of the garbage that are on the visible board can be considered for shake
     and panel.row <= self.height then
@@ -1545,7 +1551,7 @@ function Stack.onGarbageLand(self, panel)
   end
 end
 
-function Stack.hasChainingPanels(self)
+function Stack:hasChainingPanels()
   -- row 0 panels can never chain cause they're dimmed
   for row = 1, #self.panels do
     for col = 1, self.width do
@@ -1598,9 +1604,7 @@ end
 
 function Stack:updateRiseLock()
   local previousRiseLock = self.rise_lock
-  if self.do_countdown then
-    self.rise_lock = true
-  elseif self:swapQueued()then
+  if self:swapQueued()then
     self.rise_lock = true
   elseif self.shake_time > 0 then
     self.rise_lock = true
@@ -1636,7 +1640,12 @@ function Stack:checkGameOver()
       if stackOverCondition == MatchRules.StackOverConditions.HEALTH then
         if self.health <= value and self.shake_time <= 0 then
           return true
-        elseif not self.rise_lock and self.behaviours.allowManualRaise and self.panels_in_top_row and self.manual_raise then
+        elseif not self.rise_lock and self.behaviours.allowManualRaise and self.wasToppedOut and self.manual_raise then
+          -- this check is disputable, see https://github.com/panel-attack/panel-game/issues/437
+          -- with 1 maxHealth the difference is negligible as clearing out stop time means game over on the next frame if no swap was queued with the raise
+          -- but on lower levels it becomes rather easy to accidently kill yourself
+          -- this can be viewed as a positive (prepares for level 10 and punishes dangerous use of inputs; one tap -> one entire row, no need to hold down)
+          -- but also as a negative (accidently killing yourself in non-threatening circumstances)
           return true
         end
       elseif not self:hasActivePanels() and not self:swapQueued() and self.game_stopwatch_running then
@@ -1723,7 +1732,7 @@ function Stack:toReplayStack(stackIndex)
     levelData = self.levelData,
     stackBehaviours = self.behaviours,
     inputMethod = self.inputMethod,
-    inputs = InputCompression.compressInputString(table.concat(self.confirmedInput)),
+    inputs = InputCompression.compressInputTable(self.confirmedInput),
   }
 end
 
@@ -1735,6 +1744,29 @@ function Stack:deinit()
         rollbackPanelBuffer[#rollbackPanelBuffer+1] = self.rollbackBuffer.buffer[i].panels[j]
       end
     end
+  end
+end
+
+---@param score integer
+function Stack:addScore(score)
+  self.score = self.score + score
+  if (self.score > 99999) then
+    self.score = 99999
+  -- lol owned
+  end
+end
+
+---@param doCountdown boolean
+function Stack:setCountdown(doCountdown)
+  self.do_countdown = doCountdown
+  if doCountdown then
+    self.behaviours.delaySimulationUntil = "countdownEnded"
+    self.game_stopwatch_running = false
+  else
+    if self.behaviours.delaySimulationUntil == "countdownEnded" then
+      self.behaviours.delaySimulationUntil = nil
+    end
+    self.game_stopwatch_running = not self.behaviours.delaySimulationUntil
   end
 end
 

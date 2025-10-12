@@ -29,6 +29,7 @@ local MatchRules = require("common.data.MatchRules")
 ---@field maxTimeSpentRunning number
 ---@field clock integer
 ---@field ended boolean
+---@field gameOverClock integer?
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -56,6 +57,7 @@ function(self, panelSource, matchRules)
   self.timeSpentRunning = 0
   self.maxTimeSpentRunning = 0
   self.createTime = love.timer.getTime()
+  ---@diagnostic disable-next-line: param-type-mismatch
   self.startTimestamp = os.time(os.date("*t"))
   self.clock = 0
   self.ended = false
@@ -135,7 +137,7 @@ function Match:getWinners()
           local hasLowestTime = true
           for k = 1, #potentialWinners do
             if k ~= j then
-              if #potentialWinner:getConfirmedInputCount() < #potentialWinners[k]:getConfirmedInputCount() then
+              if potentialWinner:getConfirmedInputCount() < potentialWinners[k]:getConfirmedInputCount() then
                 hasLowestTime = false
                 break
               end
@@ -226,6 +228,8 @@ end
 function Match:run()
   local startTime = love.timer.getTime()
 
+  self:padRewindDataIfNeeded()
+
   local runs = {}
 
   for i, _ in ipairs(self.stacks) do
@@ -281,17 +285,18 @@ function Match:pushGarbageTo(stack)
   for _, st in ipairs(self.garbageSources[stack]) do
     local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
     if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-      if stack.clock > oldestTransitTime then
+      if stack.game_stopwatch > oldestTransitTime then
         -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
         --  which may even include another rollback
         if not self:rollbackToFrame(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
           -- if we can't rollback, it's a desync
+          self.desyncError = true
           self:abort()
         end
       end
-      local garbageDelivery = st:getReadyGarbageAt(stack.clock)
+      local garbageDelivery = st:getReadyGarbageAt(stack.game_stopwatch)
       if garbageDelivery then
         --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
         stack:receiveGarbage(garbageDelivery)
@@ -310,7 +315,7 @@ function Match:shouldSaveRollback(stack)
     for senderIndex, targetList in ipairs(self.garbageTargets) do
       for _, target in ipairs(targetList) do
         if target == stack then
-          if self.stacks[senderIndex].clock + GARBAGE_DELAY_LAND_TIME <= stack.clock then
+          if self.stacks[senderIndex].game_stopwatch + GARBAGE_DELAY_LAND_TIME <= stack.game_stopwatch then
             return true
           end
         end
@@ -337,6 +342,11 @@ end
 -- and also uses slightly different data required only in a both-sides rollback scenario that would never occur for online rollback
 ---@param frame integer
 function Match:rewindToFrame(frame)
+  -- Bounds check: don't allow rewinding to negative frames
+  if frame < 0 then
+    return
+  end
+
   local failed = false
   for i, stack in ipairs(self.stacks) do
     if not stack:rewindToFrame(frame) then
@@ -368,7 +378,10 @@ function Match:getInfo()
   info.ended = self.ended
   info.stacks = {}
   for i, stack in ipairs(self.stacks) do
-    info.stacks[i] = stack:getInfo()
+    if stack.getInfo then
+      ---@cast stack Stack
+      info.stacks[i] = stack:getInfo()
+    end
   end
 
   return info
@@ -396,7 +409,7 @@ function Match:createNewReplay()
         levelData = stack.levelData,
         stackBehaviours = stack.behaviours,
         inputMethod = stack.inputMethod,
-        inputs = InputCompression.compressInputString(table.concat(stack.confirmedInput))
+        inputs = InputCompression.compressInputTable(stack.confirmedInput)
       }
       replay.stacks[i] = replayStack
     elseif stack.TYPE == "SimulatedStack" then
@@ -507,11 +520,11 @@ function Match:hasEnded()
   end
 
   if self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-    if aliveCount == self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-      local gameOverClock = 0
-      for i = 1, #self.stacks do
-        if self.stacks[i].game_over_clock > gameOverClock then
-          gameOverClock = self.stacks[i].game_over_clock
+    if aliveCount <= self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
+      local gameOverClock = math.huge
+      for _, stack in ipairs(self.stacks) do
+        if stack.game_over_clock > 0 then
+          gameOverClock = math.min(stack.game_over_clock, gameOverClock)
         end
       end
       self.gameOverClock = gameOverClock
@@ -551,8 +564,6 @@ function Match:hasEnded()
 end
 
 function Match:handleMatchEnd()
-  self:checkAborted()
-
   if self.aborted then
     self.winners = {}
   else
@@ -578,55 +589,6 @@ local checkGameEnded = function(stack)
   return stack:game_ended()
 end
 
-local TOTAL_COUNTDOWN_LENGTH = consts.COUNTDOWN_LENGTH + consts.COUNTDOWN_START
-
----@return boolean hasAborted
-function Match:checkAborted()
-  -- the aborted flag may get set if the game is aborted through outside causes (usually network)
-  -- this function checks if the match got aborted through inside causes (local player abort or local desync)
-  if not self.aborted then
-    if self:isIrrecoverablyDesynced() then
-      -- someone got a desync error, this definitely died
-      self.aborted = true
-      self.winners = {}
-    elseif self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-      local alive = 0
-      for i = 1, #self.stacks do
-        if not self.stacks[i]:game_ended() then
-          alive = alive + 1
-        end
-        -- if there is more than n alive with a stacksActive condition, this must have been aborted
-        if alive > self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-          self.aborted = true
-          self.winners = {}
-          break
-        end
-      end
-    elseif self.rules.matchEndConditions[MatchRules.MatchEndConditions.TIME_LIMIT] then
-      local timeLimit = self.timeLimit
-      if self.doCountdown then
-        timeLimit = timeLimit + TOTAL_COUNTDOWN_LENGTH
-      end
-      for i, stack in ipairs(self.stacks) do
-        if not stack:game_ended() and stack.clock < timeLimit then
-          self.aborted = true
-          self.winners = {}
-          break
-        end
-      end
-    else
-      -- if this is not last alive and no desync that means we expect EVERY stack to be game over
-      if not tableUtils.trueForAll(self.stacks, checkGameEnded) then
-        -- someone didn't lose so this got aborted (e.g. through a pause -> leave)
-        self.aborted = true
-        self.winners = {}
-      end
-    end
-  end
-
-  return self.aborted
-end
-
 -- returns true if the stack should run once more during the current match:run
 -- returns false otherwise
 ---@param stack BaseStack
@@ -650,7 +612,7 @@ function Match:shouldRun(stack, runsSoFar)
   end
 
   -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
+  if config and config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
     -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
     if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
       if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then
@@ -704,7 +666,7 @@ function Match:createStackWithSettings(levelData, isLocal, inputMethod, inputs)
   self.garbageTargets[#self.stacks] = {}
   self.garbageSources[stack] = {}
   if inputs then
-    stack:receiveConfirmedInput(InputCompression.decompressInputString(inputs))
+    stack:receiveConfirmedInput(InputCompression.decompressInputString2(inputs))
   end
 
   return stack
@@ -746,6 +708,21 @@ function Match:addTarget(source, target)
 
   if not tableUtils.contains(self.garbageSources[target], source) then
     table.insert(self.garbageSources[target], source)
+  end
+end
+
+--- this function exists to allow repeated playback and rewind
+--- by default taking data out of the rollback buffer removes it because users of that data might take it verbatim and change it later
+--- that means when rewinding and then running forward again, there is a gap in rollback data at the frame where the rewind stopped
+--- keeping all rewind data would be very inefficient as we'd be copying a ton of panel data every frame, often when it is not necessary
+--- so instead only detect when we start running forward again
+function Match:padRewindDataIfNeeded()
+  if self.alwaysSaveRollbacks then
+    for i, stack in ipairs(self.stacks) do
+      if stack.clock == stack.lastRollbackFrame then
+        stack:saveForRollback()
+      end
+    end
   end
 end
 
