@@ -282,7 +282,9 @@ local function write_analytics_files()
         return
       end
 
-      love.filesystem.write("analytics.json", json.encode(analytics_data))
+      local encodedAnalytics = json.encode(analytics_data)
+      ---@cast encodedAnalytics string
+      love.filesystem.write("analytics.json", encodedAnalytics)
     end
   )
   output_pretty_analytics()

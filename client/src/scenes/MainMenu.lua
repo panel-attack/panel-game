@@ -2,6 +2,7 @@ local Scene = require("client.src.scenes.Scene")
 local consts = require("common.engine.consts")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local AnimationLoader = require("client.src.graphics.AnimationLoader")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local EndlessMenu = require("client.src.scenes.EndlessMenu")
@@ -26,11 +27,15 @@ local VsSelfGame = require("client.src.scenes.VsSelfGame")
 local GameBase = require("client.src.scenes.GameBase")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 
+  local SCENE_PATH = themes[config.theme].path .. "/scenes/"
+local SCENE_FILENAME = "MainMenu.json"
+
 -- Scene for the main menu
 local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
   self.uiRoot:addChild(self.menu)
+  self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
 end, Scene)
 
 MainMenu.name = "MainMenu"
@@ -148,14 +153,18 @@ function MainMenu:checkForUpdates()
 end
 
 function MainMenu:updateSelf(dt)
-  GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
 function MainMenu:drawSelf()
-  GAME.theme.images.bg_main:draw()
+  for _,d in ipairs(self.drawables) do
+    AnimationLoader.drawNode(d)
+  end
+  
+  self.uiRoot:draw()
+
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 
@@ -196,6 +205,20 @@ function MainMenu:drawSelf()
       GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, consts.CANVAS_WIDTH, "right")
       infoYPosition = infoYPosition - fontHeight
     end
+  end
+end
+
+function MainMenu:sceneDidDissappear()
+  for _,d in ipairs(self.drawables) do
+    AnimationLoader.stopFluxTweensOnDrawable(d)
+  end
+  self.drawables = {}
+end
+
+
+function MainMenu:refresh()
+  if #self.drawables == 0 then
+    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
   end
 end
 

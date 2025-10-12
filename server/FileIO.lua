@@ -83,6 +83,7 @@ end
 
 function FileIO.write_error_report(error_report_json)
   local json_string = json.encode(error_report_json)
+  ---@cast json_string string
   if json_string:len() >= 5000 --[[5kB]] then
     return false
   end

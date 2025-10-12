@@ -56,6 +56,7 @@ end
 
 local allTests = {
   "common.tests.lib.JsonPrecisionTests",
+  "client.tests.AnimationLoaderTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.RollbackBufferTests",

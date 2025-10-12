@@ -1,0 +1,666 @@
+{
+  "drawables": [
+    {
+      "id": "logoAssembly",
+      "anchor": "center",
+      "position": {
+        "x": 640,
+        "y": 290
+      },
+      "size": {
+        "width": 584,
+        "height": 416
+      },
+      "children": [
+        {
+          "id": "backgroundBottomLeftGear",
+          "anchor": "topLeft",
+          "position": {
+            "x": 98,
+            "y": 240
+          },
+          "children": [
+            {
+              "filePath": "Gear0",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear1",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear2",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "tint": [
+                1,
+                0,
+                0
+              ],
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear3",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "yoyo": true,
+              "animationTracks": [
+                {
+                  "yoyo": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "alpha": 0.8,
+                        "xScale": 1.2,
+                        "yScale": 1.2
+                      },
+                      "durationSeconds": 1,
+                      "easeType": "quadinout"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear4",
+              "anchor": "topLeft",
+              "stencil": true,
+              "alpha": 0.3,
+              "blendMode": "add",
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "backgroundBottomRightGear",
+          "anchor": "topLeft",
+          "position": {
+            "x": 394,
+            "y": 240
+          },
+          "children": [
+            {
+              "filePath": "Gear0",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": -6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear1",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": -6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear2",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "tint": [
+                1,
+                0,
+                0
+              ],
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": -6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear3",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "yoyo": true,
+              "animationTracks": [
+                {
+                  "yoyo": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "alpha": 0.8,
+                        "xScale": 1.2,
+                        "yScale": 1.2
+                      },
+                      "durationSeconds": 1,
+                      "easeType": "quadinout"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear4",
+              "anchor": "topLeft",
+              "stencil": true,
+              "alpha": 0.3,
+              "blendMode": "add",
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "mainLogo",
+          "filePath": "PanelAttackLogoLayer0",
+          "anchor": "topLeft",
+          "position": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": "logoMid",
+          "filePath": "PanelAttackLogoLayer2",
+          "anchor": "topLeft",
+          "position": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": "ForegroundLeftGear",
+          "anchor": "topLeft",
+          "position": {
+            "x": 208,
+            "y": 312
+          },
+          "xScale": 0.6,
+          "yScale": 0.6,
+          "children": [
+            {
+              "filePath": "Gear0",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": -6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear1",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": -6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear2",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "tint": [
+                0,
+                1,
+                0
+              ],
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": -6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Circle",
+              "anchor": "topLeft",
+              "xScale": 1.4,
+              "yScale": 1.4,
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            },
+            {
+              "filePath": "Gear3",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "yoyo": true,
+              "animationTracks": [
+                {
+                  "yoyo": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "alpha": 0.8,
+                        "xScale": 1.2,
+                        "yScale": 1.2
+                      },
+                      "durationSeconds": 1,
+                      "easeType": "quadinout"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear4",
+              "anchor": "topLeft",
+              "stencil": true,
+              "alpha": 0.3,
+              "blendMode": "add",
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "ForegroundRighGear",
+          "anchor": "topLeft",
+          "position": {
+            "x": 320,
+            "y": 312
+          },
+          "xScale": 0.6,
+          "yScale": 0.6,
+          "children": [
+            {
+              "filePath": "Gear0",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear1",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear2",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "tint": [
+                1,
+                1,
+                0
+              ],
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "X",
+              "anchor": "topLeft",
+              "xScale": 1.4,
+              "yScale": 1.4,
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            },
+            {
+              "filePath": "Gear3",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "yoyo": true,
+              "animationTracks": [
+                {
+                  "yoyo": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "alpha": 0.8,
+                        "xScale": 1.2,
+                        "yScale": 1.2
+                      },
+                      "durationSeconds": 1,
+                      "easeType": "quadinout"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear4",
+              "anchor": "topLeft",
+              "stencil": true,
+              "alpha": 0.3,
+              "blendMode": "add",
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "logoTop",
+          "filePath": "PanelAttackLogoLayer4",
+          "anchor": "topLeft",
+          "position": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": "ForegroundTopGear",
+          "anchor": "topLeft",
+          "position": {
+            "x": 258,
+            "y": 24
+          },
+          "xScale": 0.7,
+          "yScale": 0.7,
+          "children": [
+            {
+              "filePath": "Gear0",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear1",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear2",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "tint": [
+                1,
+                0,
+                1
+              ],
+              "animationTracks": [
+                {
+                  "loopTrack": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "rotation": 6.28318
+                      },
+                      "durationSeconds": 20,
+                      "easeType": "linear"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "HourGlass",
+              "anchor": "topLeft",
+              "xScale": 1.4,
+              "yScale": 1.4,
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            },
+            {
+              "filePath": "Gear3",
+              "anchor": "topLeft",
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "yoyo": true,
+              "animationTracks": [
+                {
+                  "yoyo": true,
+                  "steps": [
+                    {
+                      "animateProperties": {
+                        "alpha": 0.8,
+                        "xScale": 1.2,
+                        "yScale": 1.2
+                      },
+                      "durationSeconds": 1,
+                      "easeType": "quadinout"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "filePath": "Gear4",
+              "anchor": "topLeft",
+              "stencil": true,
+              "alpha": 0.3,
+              "blendMode": "add",
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

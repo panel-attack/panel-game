@@ -59,6 +59,13 @@ function Scene:applyMusic()
   end
 end
 
+function Scene:sceneDidDissappear()
+  -- Override if you need to do anything on complete
+end
+
+-- abstract functions to be implemented per scene
+
+-- Ran every frame while the scene is active
 function Scene:update(dt)
   self:updateSelf(dt)
   self.uiRoot:update(dt)

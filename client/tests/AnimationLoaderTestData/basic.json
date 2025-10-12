@@ -1,0 +1,23 @@
+{
+  "drawables": [
+    {
+      "id": "BasicElement",
+      "filePath": "test_image",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "size": {
+        "width": 50,
+        "height": 75
+      },
+      "alpha": 0.8,
+      "tint": [1.0, 0.5, 0.2],
+      "anchor": "center",
+      "pivot": "center",
+      "rotation": 0.5,
+      "blendMode": "add",
+      "alphaMode": "premultiplied"
+    }
+  ]
+}

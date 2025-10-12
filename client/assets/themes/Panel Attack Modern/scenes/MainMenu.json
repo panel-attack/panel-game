@@ -1,0 +1,266 @@
+{
+  "drawables": [
+    {
+      "filePath": "MainMenuCityBackground"
+    },
+    {
+      "ref": "Stars.json"
+    },
+    {
+      "filePath": "MainMenuCityFog1",
+      "position": {
+        "x": 0,
+        "y": 10
+      },
+      "wrap": "repeat",
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 50,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCityBackBuildings"
+    },
+    {
+      "ref": "WindowsBack.json"
+    },
+    {
+      "filePath": "MainMenuCityFog2",
+      "position": {
+        "x": 0,
+        "y": 100
+      },
+      "wrap": "repeat",
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 40,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCityMiddleBuildings"
+    },
+    {
+      "ref": "WindowsMid.json"
+    },
+    {
+      "id": "Crystal",
+      "templateOnly": true,
+      "filePath": "Crystal",
+      "tint": [
+        0.8,
+        0.8,
+        1
+      ],
+      "anchor": "center",
+      "xScale": 0.2,
+      "yScale": 0.2,
+      "position": {
+        "x": 549,
+        "y": 450
+      },
+      "animationTracks": [
+        {
+          "yoyo": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "y": 456
+              },
+              "durationSeconds": 4,
+              "easeType": "quadinout"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Glyph",
+      "filePath": "Glyph",
+      "tint": [
+        0.2,
+        0.999,
+        0.2
+      ],
+      "anchor": "center",
+      "xScale": 1,
+      "yScale": 1,
+      "position": {
+        "x": 1106,
+        "y": 240
+      },
+      "animationTracks": [
+        {
+          "yoyo": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "alpha": 0.8
+              },
+              "durationSeconds": 4,
+              "easeType": "quadinout"
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "filePath": "GlyphCircle",
+          "anchor": "center",
+          "position": {
+            "x": 21,
+            "y": 54
+          },
+          "tint": [
+            0.2,
+            0.999,
+            0.2
+          ],
+          "animationTracks": [
+            {
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "xScale": 1.1,
+                    "yScale": 1.1,
+                    "rotation": 6.28318,
+                    "alpha": 0.8
+                  },
+                  "durationSeconds": 2,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ref": "Crystal",
+      "overrides": {
+        "position": {
+          "x": 201,
+          "y": 244
+        },
+        "tint": [
+          0.6,
+          0.999,
+          0.6
+        ],
+        "animationTracks": [
+          {
+            "steps": [
+              {
+                "animateProperties": {
+                  "y": 240
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "ref": "Glyph",
+      "overrides": {
+        "position": {
+          "x": 332,
+          "y": 224
+        },
+        "tint": [
+          0.6,
+          0.6,
+          0.999
+        ],
+        "children": [
+          {
+            "tint": [
+              0.6,
+              0.6,
+              0.999
+            ]
+          }
+        ],
+        "animationTracks": [
+          {
+            "steps": [
+              {
+                "animateProperties": {}
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "filePath": "MainMenuCityFog3",
+      "position": {
+        "x": 0,
+        "y": 200
+      },
+      "wrap": "repeat",
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 30,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "filePath": "MainMenuCityFrontBuildings"
+    },
+    {
+      "ref": "WindowsFront.json"
+    },
+    {
+      "filePath": "MainMenuCityFog4",
+      "position": {
+        "x": 0,
+        "y": 300
+      },
+      "wrap": "repeat",
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "scrollX": 1280
+              },
+              "durationSeconds": 20,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

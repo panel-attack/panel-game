@@ -147,6 +147,9 @@ function NavigationStack:update(dt)
     self.transition:update(dt)
 
     if self.transition.progress >= 1 then
+      if self.transition.oldScene then
+        self.transition.oldScene:sceneDidDissappear()
+      end
       self.transition = nil
       self.scenes[#self.scenes]:applyMusic()
       if self.callback then

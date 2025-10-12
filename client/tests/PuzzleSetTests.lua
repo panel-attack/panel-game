@@ -99,6 +99,7 @@ function PuzzleSetTests.testJSONValidityRequirement1()
   local data = puzzleSet:generateSaveData()
   
   local baseEncoded = json.encode(data, {indent = true, pretty = true, keyorder = PuzzleSet.keyOrder})
+  ---@cast baseEncoded string
   local encoded = FileUtils.prettifyJson(baseEncoded)
   
   -- Test that the JSON is valid by attempting to decode it
@@ -126,6 +127,7 @@ function PuzzleSetTests.testUnchangedPuzzlePreservationRequirement3()
   -- Generate the original save data
   local originalData = originalPuzzleSet:generateSaveData()
   local originalEncoded = json.encode(originalData, {indent = true, pretty = true, keyorder = PuzzleSet.keyOrder})
+  ---@cast originalEncoded string
   
   -- Get the original puzzle data for comparison
   local originalPuzzle1Data = originalData["Puzzle Sets"][1]["Puzzles"][1]
@@ -139,6 +141,7 @@ function PuzzleSetTests.testUnchangedPuzzlePreservationRequirement3()
   -- Generate the new save data
   local newData = originalPuzzleSet:generateSaveData()
   local newEncoded = json.encode(newData, {indent = true, pretty = true, keyorder = PuzzleSet.keyOrder})
+  ---@cast newEncoded string
   
   -- Get the new puzzle data for comparison
   local newPuzzle1Data = newData["Puzzle Sets"][1]["Puzzles"][1]
@@ -173,6 +176,7 @@ function PuzzleSetTests.testExactJSONFormatting()
   
   local data = puzzleSet:generateSaveData()
   local encoded = json.encode(data, {indent = true, pretty = true, keyorder = PuzzleSet.keyOrder})
+  ---@cast encoded string
   local prettified = FileUtils.prettifyJson(encoded)
   
   -- Define the exact expected format
