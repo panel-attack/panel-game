@@ -174,7 +174,7 @@ function UIElement:draw()
   end
 end
 
--- UiElements can overrid this method to do custom drawing
+-- UiElements can override this method to do custom drawing
 -- implementation is optional
 function UIElement:drawSelf()
 end

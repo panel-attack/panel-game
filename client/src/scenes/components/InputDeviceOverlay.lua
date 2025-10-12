@@ -682,6 +682,8 @@ function InputDeviceOverlay:updateSelf(dt)
   end
 end
 
+-- Intentional override
+---@diagnostic disable-next-line: duplicate-set-field
 function InputDeviceOverlay:drawSelf()
   if not self.active then
     return
