@@ -3,6 +3,7 @@ local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 -- StackPanel is a layouting element that stacks up all its children in one direction based on an alignment setting
 -- Useful for auto-aligning multiple ui elements that only know one of their dimensions
@@ -52,6 +53,9 @@ function StackPanel:addElement(uiElement)
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)
   self:resize()
+  uiElement.yieldFocus = function()
+    self.yieldFocus()
+  end
 end
 
 
@@ -114,8 +118,17 @@ function StackPanel:remove(uiElement)
   uiElement:detach()
 end
 
+function StackPanel:receiveInputs(input, dt)
+  for _, child in ipairs(self.children) do
+    if child.receiveInputs then
+      child:receiveInputs(input, dt)
+      return
+    end
+  end
+end
+
 function StackPanel:drawSelf()
-  if DEBUG_ENABLED then
+  if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(1, 0, 0, 0.7)
     GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)

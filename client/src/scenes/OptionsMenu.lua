@@ -2,6 +2,7 @@ local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local inputManager = require("client.src.inputManager")
 local save = require("client.src.save")
+local DebugMenu = require("client.src.debug.DebugMenu")
 local consts = require("common.engine.consts")
 local fileUtils = require("client.src.FileUtils")
 local analytics = require("client.src.analytics")
@@ -15,7 +16,6 @@ local ModManagement = require("client.src.scenes.ModManagement")
 local system = require("client.src.system")
 local JsonSafePrecision = require("common.data.JsonSafePrecision")
 local logger = require("common.lib.logger")
-local prof = require("common.lib.zoneProfiler")
 
 -- Scene for the options menu
 local OptionsMenu = class(function(self, sceneParams)
@@ -486,30 +486,14 @@ function OptionsMenu:loadSoundMenu()
 end
 
 function OptionsMenu:loadDebugMenu()
-  local debugMenuOptions = {
-    ui.MenuItem.createToggleButtonGroupMenuItem("op_debug_mode", nil, nil, createToggleButtonGroup("debug_mode")),
-    ui.MenuItem.createSliderMenuItem("VS Frames Behind", nil, false, createConfigSlider("debug_vsFramesBehind", 0, 200)),
-    ui.MenuItem.createToggleButtonGroupMenuItem("Show Debug Servers", nil, false, createToggleButtonGroup("debugShowServers")),
-    ui.MenuItem.createToggleButtonGroupMenuItem("Show Design Helper", nil, false, createToggleButtonGroup("debugShowDesignHelper")),
-    ui.MenuItem.createButtonMenuItem("Window Size Tester", nil, false, function()
-      GAME.navigationStack:push(require("client.src.scenes.WindowSizeTester")())
-    end),
-    ui.MenuItem.createToggleButtonGroupMenuItem("Profile frame times", nil, false, createToggleButtonGroup("debugProfile",
-      function()
-        prof.enable(config.debugProfile)
-        prof.setDurationFilter(config.debugProfileThreshold / 1000)
-      end)),
-    ui.MenuItem.createSliderMenuItem("Discard frames below duration (ms)", nil, false, createConfigSlider("debugProfileThreshold", 0, 100,
-      function()
-        prof.setDurationFilter(config.debugProfileThreshold / 1000)
-      end)),
-    ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-          GAME.theme:playCancelSfx()
-          self:switchToScreen("baseMenu")
-        end),
-  }
-
-  return ui.Menu.createCenteredMenu(debugMenuOptions)
+  local debugMenu = DebugMenu.makeDebugMenu({
+    showBackButton = true,
+    onBack = function()
+      self:switchToScreen("baseMenu")
+    end,
+    height = themes[config.theme].main_menu_max_height
+  })
+  return debugMenu
 end
 
 function OptionsMenu:loadAboutMenu()

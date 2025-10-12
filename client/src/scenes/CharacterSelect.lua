@@ -636,9 +636,18 @@ end
 
 ---@param player Player
 ---@param width number
----@return BoolSelector rankedSelector
+---@return StackPanel rankedSelectionContainer
 function CharacterSelect:createRankedSelection(player, width)
-  local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, isEnabled = player.isLocal, vFill = true, width = width, vAlign = "center", hAlign = "center"})
+
+  -- player number icon
+  local playerIndex = tableUtils.indexOf(self.players, player)
+  local playerNumberIcon = ui.ImageContainer({
+    image = themes[config.theme].images.IMG_players[playerIndex],
+    scale = 2,
+    vAlign = "center"
+  })
+
+  local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, isEnabled = player.isLocal, vAlign = "center"})
   rankedSelector.onValueChange = function(boolSelector, value)
     GAME.theme:playValidationSfx()
     player:setWantsRanked(value)
@@ -648,31 +657,40 @@ function CharacterSelect:createRankedSelection(player, width)
 
   player:connectSignal("wantsRankedChanged", rankedSelector, rankedSelector.setValue)
 
-  -- player number icon
-  local playerIndex = tableUtils.indexOf(self.players, player)
-  local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
-    hAlign = "left",
-    vAlign = "center",
-    x = 2,
-    scale = 2,
-  })
-  rankedSelector.playerNumberIcon = playerNumberIcon
-  rankedSelector:addChild(rankedSelector.playerNumberIcon)
+  local container = ui.StackPanel(
+    {
+      alignment = "left",
+      height = rankedSelector.height,
+      hAlign = "center",
+      vAlign = "center",
+    }
+  )
+  container.playerNumberIcon = playerNumberIcon
+  container.rankedSelector = rankedSelector
+  container:addElement(playerNumberIcon)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
+  container:addElement(rankedSelector)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
 
-  return rankedSelector
+  return container
 end
 
 ---@param player Player
 ---@param width number
+---@return StackPanel styleSelectionContainer
 ---@return BoolSelector styleSelector
 function CharacterSelect:createStyleSelection(player, width)
+  -- player number icon
+  local playerIndex = tableUtils.indexOf(self.players, player)
+  local playerNumberIcon = ui.ImageContainer({
+    image = themes[config.theme].images.IMG_players[playerIndex],
+    scale = 2,
+    vAlign = "center"
+  })
+
   local styleSelector = ui.BoolSelector({
     startValue = (player.settings.style == GameModes.Styles.MODERN),
-    vFill = true,
-    width = width,
-    vAlign = "center",
-    hAlign = "center",
+    isEnabled = player.isLocal
   })
 
   -- onValueChange should get implemented by the caller
@@ -689,19 +707,20 @@ function CharacterSelect:createStyleSelection(player, width)
     end
   )
 
-  -- player number icon
-  local playerIndex = tableUtils.indexOf(self.players, player)
-  local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
-    hAlign = "left",
+  local container = ui.StackPanel({
+    alignment = "left",
+    height = styleSelector.height,
+    hAlign = "center",
     vAlign = "center",
-    x = 8,
-    scale = 2,
   })
-  styleSelector.playerNumberIcon = playerNumberIcon
-  styleSelector:addChild(styleSelector.playerNumberIcon)
+  container.playerNumberIcon = playerNumberIcon
+  container.styleSelector = styleSelector
+  container:addElement(playerNumberIcon)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
+  container:addElement(styleSelector)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
 
-  return styleSelector
+  return container, styleSelector
 end
 
 function CharacterSelect:createRecordsBox(lastText)
