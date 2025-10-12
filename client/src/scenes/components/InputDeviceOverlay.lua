@@ -138,6 +138,8 @@ function PlayerSlot:updateDeviceIcon()
       vAlign = "center"
     })
 
+    -- Intentional override
+    ---@diagnostic disable-next-line: duplicate-set-field
     iconElement.drawSelf = function(icon)
       -- Device icon transitions from grey to blue based on progress
       local progress = self.holdProgress or 0
