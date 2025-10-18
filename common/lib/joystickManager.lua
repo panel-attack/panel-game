@@ -180,10 +180,12 @@ function love.joystickremoved(joystick)
 
   logger.info("Disconnecting device " .. vendorID .. ";" .. productID .. ";" .. productVersion .. ";" .. joystick:getName() .. ";" .. guid .. ";" .. id)
 
-  joystickManager.guidsToJoysticks[guid][id] = nil
+  if joystickManager.guidsToJoysticks[guid] then
+    joystickManager.guidsToJoysticks[guid][id] = nil
 
-  if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
-    joystickManager.guidsToJoysticks[guid] = nil
+    if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
+      joystickManager.guidsToJoysticks[guid] = nil
+    end
   end
 
   joystickManager.devices[id] = nil
