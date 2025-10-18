@@ -39,6 +39,10 @@ function Signal.createSignal(t, signalName)
   t.signalSubscriptions[signalName] = util.getWeaklyKeyedTable()
 end
 
+-- emits a signal, calling all connected callbacks with the subscriber and any additional arguments
+---@param emitter Signal the emitter that is emitting the signal
+---@param signalName string the name of the signal to emit
+---@param ... any additional arguments to pass to the callbacks
 function Signal.emitSignal(emitter, signalName, ...)
   if not emitter.signalSubscriptions[signalName] then
     error("Trying to emit unknown signal " .. signalName)

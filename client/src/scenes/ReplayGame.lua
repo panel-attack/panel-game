@@ -149,12 +149,13 @@ function ReplayGame:drawHUD()
   end
 end
 
+---@param match ClientMatch
 function ReplayGame:genericOnMatchEnded(match)
   -- Call parent implementation first
   GameBase.genericOnMatchEnded(self, match)
   
   -- Add win count increment logic like BattleRoom does
-  if not match.aborted then
+  if not match.engine.aborted then
     local winners = match:getWinners()
     if #winners == 1 then
       winners[1].stack.character:playWinSfx()

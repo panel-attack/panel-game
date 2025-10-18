@@ -231,10 +231,6 @@ end
 
 function ClientMatch:handleMatchEnd()
   self.ended = true
-  -- propagate aborted flag from Match to ClientMatch
-  if self.engine.aborted then
-    self.aborted = true
-  end
   -- this prepares everything about the replay except the save location
   self:finalizeReplay()
   -- execute callbacks
@@ -338,7 +334,6 @@ function ClientMatch:setStage(stageId)
 end
 
 function ClientMatch:abort()
-  self.aborted = true
   self.engine:abort()
   self:handleMatchEnd()
 end

@@ -14,6 +14,7 @@ function VsSelfGame:customLoad()
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
 end
 
+---@param match ClientMatch
 function VsSelfGame:onMatchEnded(match)
   local P1 = match.players[1].stack
   GAME.scores:saveVsSelfScoreForLevel(P1.analytic.data.sent_garbage_lines, P1.level)

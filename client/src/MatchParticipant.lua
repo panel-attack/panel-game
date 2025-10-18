@@ -192,7 +192,8 @@ function MatchParticipant:setAttackEngineSettings(attackEngineSettings)
 end
 
 -- a callback that runs whenever a match ended
-function MatchParticipant:onMatchEnded()
+---@param match ClientMatch
+function MatchParticipant:onMatchEnded(match)
    -- to prevent the game from instantly restarting, unready all players
    if self.human then
     self:setWantsReady(false)
