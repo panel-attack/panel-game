@@ -11,6 +11,19 @@ local fileUtils = {}
 fileUtils.SUPPORTED_IMAGE_FORMATS = {".png", ".jpg", ".jpeg"}
 fileUtils.SUPPORTED_SOUND_FORMATS = {".mp3", ".ogg", ".wav", ".flac", ".699", ".amf", ".ams", ".dbm", ".dmf", ".dsm", ".far", ".it", ".j2b", ".mdl", ".med", ".mod", ".mt2", ".mtm", ".okt", ".psm", ".s3m", ".stm", ".ult", ".umx", ".xm"}
 
+-- Wrapper for love.filesystem.exists that handles version compatibility
+-- In LÖVE 11.x, uses getInfo() to avoid deprecation warning
+-- In LÖVE 12.x+, uses exists() which is no longer deprecated
+---@param path string
+---@return boolean
+function fileUtils.exists(path)
+  if system.meetsLoveVersionRequirement(12, 0) then
+    return love.filesystem.exists(path)
+  else
+    return love.filesystem.getInfo(path) ~= nil
+  end
+end
+
 -- returns the directory items with a default filter and an optional filetype filter
 -- by default, filters out everything starting with __ and Mac's .DS_Store file
 -- optionally the result can be filtered to return only "file" or "directory" items
@@ -119,7 +132,7 @@ end
 ---@param file string
 ---@return table? # nil if the file could not be read or deserialization failed
 function fileUtils.readJsonFile(file)
-  if not love.filesystem.getInfo(file, "file") then
+  if not fileUtils.exists(file) then
     logger.debug("No file at specified path " .. file)
     return nil
   else
@@ -148,7 +161,7 @@ end
 ---@return love.Source?
 function fileUtils.loadSoundFromSupportExtensions(path_and_filename, streamed)
   for k, extension in ipairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
-    if love.filesystem.exists(path_and_filename .. extension) then
+    if fileUtils.exists(path_and_filename .. extension) then
       return love.audio.newSource(path_and_filename .. extension, streamed and "stream" or "static")
     end
   end
@@ -229,7 +242,7 @@ end
 function fileUtils.getSoundFileName(soundName, path)
   local p = path .. "/" .. soundName
   for _, extension in pairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
-    if love.filesystem.exists(p .. extension) then
+    if fileUtils.exists(p .. extension) then
       return soundName .. extension
     end
   end

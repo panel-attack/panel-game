@@ -37,6 +37,7 @@ end
 require("client.src.globals")
 local system = require("client.src.system")
 local Game = require("client.src.Game")
+local fileUtils = require("client.src.FileUtils")
 
 function love.load()
   -- this is necessary setup of globals while non-client tests still depend on client components
@@ -179,7 +180,7 @@ function love.errorhandler(msg)
   if lldebugger then
     error(msg, 2)
   else
-    local crashInfo = love.filesystem.getInfo("test-crash.log")
+    local crashInfo = fileUtils.exists("test-crash.log")
     if crashInfo and system.supportsFileBrowserOpen() then
       local sep = package.config:sub(1, 1)
       love.system.openURL("file://"..love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")

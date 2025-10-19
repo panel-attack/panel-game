@@ -60,7 +60,7 @@ function GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extensi
 
   local fileName = pathAndName .. scaleSuffixString .. extension
 
-  if love.filesystem.getInfo(fileName) then
+  if FileUtils.exists(fileName) then
     local result = GraphicsUtil.privateLoadImage(fileName)
     if result then
       assert(result:getDPIScale() == scale, "The image " .. pathAndName .. " didn't wasn't created with the scale: " .. scale .. " did you make sure the width and height are divisible by the scale?")

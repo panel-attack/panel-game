@@ -507,8 +507,8 @@ function Theme:loadCards()
   -- Chain card loading
   -- load as many chain cards as there are available until 99
   -- we assume if the theme provided any chains, they want to control all of them so don't load backups
-  local hasChainCards = love.filesystem.getInfo(self.path .. "/chain")
-  local wantsBackupChainCards = hasChainCards == nil
+  local hasChainCards = fileUtils.exists(self.path .. "/chain")
+  local wantsBackupChainCards = not hasChainCards
   for i = 2, 13 do
     -- with backup from default theme
     self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "")
@@ -822,7 +822,7 @@ end
 function Theme:loadDefaultStage()
   local stagePath = self.path .. "/default/stage"
   local defaultStage
-  if love.filesystem.getInfo(stagePath, "directory") then
+  if fileUtils.exists(stagePath) then
     defaultStage = require("client.src.mods.Stage")(stagePath, "__default")
     -- we don't want to do a full json init but we need to find out the music style of the default stage
     local read_data = fileUtils.readJsonFile(defaultStage.path .. "/config.json")

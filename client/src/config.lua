@@ -164,7 +164,7 @@ config = {
         if read_data then
           -- do stuff using read_data.version for retrocompatibility here
 
-          if type(read_data.theme) == "string" and love.filesystem.getInfo(THEME_DIRECTORY_PATH .. read_data.theme .. "/config.json") then
+          if type(read_data.theme) == "string" and fileUtils.exists(THEME_DIRECTORY_PATH .. read_data.theme .. "/config.json") then
             configTable.theme = read_data.theme
           end
 
