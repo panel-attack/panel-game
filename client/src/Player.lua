@@ -20,6 +20,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field speed integer
 ---@field levelData LevelData
 ---@field style Styles
+---@field preferredStyle Styles
 ---@field wantsRanked boolean
 ---@field inputMethod InputMethod
 
@@ -53,6 +54,7 @@ function(self, name, publicId, isLocal)
   ---@type LevelData
   settings.levelData = LevelPresets.getModern(1)
   settings.style = GameModes.Styles.MODERN
+  settings.preferredStyle = GameModes.Styles.MODERN
   settings.characterId = ""
   settings.stageId = ""
   settings.panelId = ""
@@ -77,6 +79,7 @@ function(self, name, publicId, isLocal)
   -- they can register a callback with each signal via Signal.connectSignal
   -- there are a few more signals in MatchParticipant (which is why we don't have to explicitly declare us as emitting Signals again)
   self:createSignal("styleChanged")
+  self:createSignal("preferredStyleChanged")
   self:createSignal("difficultyChanged")
   self:createSignal("startingSpeedChanged")
   self:createSignal("levelChanged")
@@ -172,21 +175,30 @@ end
 -- sets the style of "level" presets the player selects from
 -- 1 = classic
 -- 2 = modern
--- longterm we want to abandon the concept of "style" on the player / battleRoom level
--- just setting difficulty or level should set the levelData and done with it, style is a menu-only concept
--- there is no technical reason why someone on level 10 shouldn't be able to play against someone on Hard
+-- style is a menu-only concept for UI display
+-- derived settings (levelData) should be updated by calling gameMode.updateLocalPlayersDerivedSettings
 function Player:setStyle(style)
   if style ~= self.settings.style then
+    logger.debug("setting style " .. style)
     self.settings.style = style
-    if style == GameModes.Styles.MODERN then
-      self:setLevelData(LevelPresets.getModern(self.settings.level or config.level))
-    else
-      self:setLevelData(LevelPresets.getClassic(self.settings.difficulty or config.endless_difficulty))
-      self:setSpeed(self.settings.speed)
-    end
     self:emitSignal("styleChanged", style)
   end
 end
+
+-- sets the preferred style when loading UI
+-- not sent over network
+-- 1 = classic
+-- 2 = modern
+-- style is a menu-only concept for UI display
+-- derived settings (levelData) should be updated by calling gameMode.updateLocalPlayersDerivedSettings
+function Player:setPreferredStyle(preferredStyle)
+  if preferredStyle ~= self.settings.preferredStyle then
+    logger.debug("setting preferred style " .. preferredStyle)
+    self.settings.preferredStyle = preferredStyle
+    self:emitSignal("preferredStyleChanged", preferredStyle)
+  end
+end
+
 
 function Player:setRating(rating)
   if self.rating and tonumber(self.rating) then
@@ -233,7 +245,7 @@ function Player:unrestrictInputs()
 end
 
 ---@return Player
-function Player.getLocalPlayer()
+function Player.createLocalPlayerFromConfig()
   local player = Player(config.name, -1, true)
 
   player:setDifficulty(config.endless_difficulty)
@@ -245,11 +257,11 @@ function Player.getLocalPlayer()
   player:setWantsRanked(config.ranked)
   player:setInputMethod(config.inputMethod)
   if config.endless_level then
+    player:setPreferredStyle(GameModes.Styles.MODERN)
     player:setStyle(GameModes.Styles.MODERN)
-    player:setLevelData(LevelPresets.getModern(player.settings.level))
   else
+    player:setPreferredStyle(GameModes.Styles.CLASSIC)
     player:setStyle(GameModes.Styles.CLASSIC)
-    player:setLevelData(LevelPresets.getClassic(player.settings.difficulty))
     player:setSpeed(config.endless_speed)
   end
 

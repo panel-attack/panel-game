@@ -668,7 +668,7 @@ end
 ---@return BoolSelector styleSelector
 function CharacterSelect:createStyleSelection(player, width)
   local styleSelector = ui.BoolSelector({
-    startValue = (player.settings.style == GameModes.Styles.MODERN),
+    startValue = (player.settings.preferredStyle == GameModes.Styles.MODERN),
     vFill = true,
     width = width,
     vAlign = "center",
@@ -918,25 +918,11 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     -- Just update on every passenger change
   end
 
-  local updateDifficultyData = function(difficultyID)
-    local levelData = LevelPresets.getClassic(difficultyID)
-    player:setDifficulty(difficultyID)
-    if self.battleRoom.mode.name == "endless" and difficultyID == 1 then
-      -- Endless easy uses 5 colors instead of 6
-      levelData:setColorCount(5)
-      -- and by extension also allows adjacent panels of the same colors
-      levelData:setAdjacentDenialFrequency(0)
-    end
-    player:setLevelData(levelData)
-  end
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    updateDifficultyData(selectedPassenger.id)
+    player:setDifficulty(selectedPassenger.id)
     GAME.theme:playMoveSfx()
     self:refresh()
   end
-  -- Note that this updates the player level data which could be wrong before because of the weird endless case
-  -- its probably fine for now, but ideally the model should be right when the battle room is created
-  updateDifficultyData(difficultyCarousel.selectedId)
 
   return difficultyCarousel
 end

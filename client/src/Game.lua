@@ -257,7 +257,7 @@ end
 -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate
 -- it basically represents the player that is operating the client (and thus binds to its configuration)
 function Game:initializeLocalPlayer()
-  self.localPlayer = Player.getLocalPlayer()
+  self.localPlayer = Player.createLocalPlayerFromConfig()
   self.localPlayer:connectSignal("selectedCharacterIdChanged", config, function(config, newId) config.character = newId end)
   self.localPlayer:connectSignal("selectedStageIdChanged", config, function(config, newId) config.stage = newId end)
   self.localPlayer:connectSignal("panelIdChanged", config, function(config, newId) config.panels = newId end)
@@ -266,7 +266,7 @@ function Game:initializeLocalPlayer()
   self.localPlayer:connectSignal("difficultyChanged", config, function(config, difficulty) config.endless_difficulty = difficulty end)
   self.localPlayer:connectSignal("levelChanged", config, function(config, level) config.level = level end)
   self.localPlayer:connectSignal("wantsRankedChanged", config, function(config, wantsRanked) config.ranked = wantsRanked end)
-  self.localPlayer:connectSignal("styleChanged", config, function(config, style)
+  self.localPlayer:connectSignal("preferredStyleChanged", config, function(config, style)
     if style == GameModes.Styles.CLASSIC then
       config.endless_level = nil
     else
@@ -303,21 +303,6 @@ function Game:createDirectoriesIfNeeded()
   if love.system.getOS() ~= "OS X" then
     fileUtils.recursiveRemoveFiles(".", ".DS_Store")
   end
-end
-
-function Game:runUnitTests()
-  coroutine.yield("Running Unit Tests")
-
-  -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate
-  -- basically the player that is operating the client
-  GAME.localPlayer = Player.getLocalPlayer()
-  -- we need to overwrite the local player as all replay related tests need a non-local player
-  GAME.localPlayer.isLocal = false
-
-  logger.info("Running Unit Tests...")
-  GAME.muteSound = true
-  --require("client.tests.Tests")
-  SoundController:applyConfigVolumes()
 end
 
 function Game:runPerformanceTests()

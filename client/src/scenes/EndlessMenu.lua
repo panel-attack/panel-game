@@ -88,13 +88,16 @@ function EndlessMenu:loadUserInterface()
 
   styleSelector.onValueChange = function(boolSelector, value)
     GAME.theme:playValidationSfx()
-    self.ui.grid:removeElementsIn(6, 2, 3, 1)
     if value and player.settings.style ~= GameModes.Styles.MODERN then
+      player:setPreferredStyle(GameModes.Styles.MODERN)
       player:setStyle(GameModes.Styles.MODERN)
+      self.ui.grid:removeElementsIn(6, 2, 3, 1)
       self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
       self.ui.recordBox:setVisibility(false)
-    elseif value == false and player.settings.style ~= GameModes.Styles.CLASSIC then
+    elseif value == false and player.settings.preferredStyle ~= GameModes.Styles.CLASSIC then
+      player:setPreferredStyle(GameModes.Styles.CLASSIC)
       player:setStyle(GameModes.Styles.CLASSIC)
+      self.ui.grid:removeElementsIn(6, 2, 3, 1)
       self.ui.grid:createElementAt(6, 2, 2, 1, "speedSelection", self.ui.speedSelection, nil, true)
       self.ui.grid:createElementAt(8, 2, 1, 1, "difficultySelection", self.ui.difficultySelection, nil, true)
       self.ui.recordBox:setVisibility(true)

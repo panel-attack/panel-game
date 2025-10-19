@@ -1,4 +1,6 @@
+local class = require("common.lib.class")
 local MatchRules = require("common.data.MatchRules")
+local LevelPresets = require("common.data.LevelPresets")
 local TIME_ATTACK_TIME = 120
 
 local GameModes = {}
@@ -13,6 +15,25 @@ local GameModes = {}
 ---@field gameScene string
 ---@field style Styles
 ---@field richPresenceLabel string?
+---@field updateLocalPlayersDerivedSettings function
+local GameMode = class(function(self, properties)
+  for key, value in pairs(properties) do
+    self[key] = value
+  end
+end)
+
+-- Returns a copy of the game mode data suitable for JSON serialization
+-- Removes all methods/functions from the copied data
+---@return table
+function GameMode:getGameModeJSONData()
+  local gameModeData = deepcpy(self)
+  for key, value in pairs(gameModeData) do
+    if type(value) == "function" then
+      gameModeData[key] = nil
+    end
+  end
+  return gameModeData
+end
 
 -- longterm we want to abandon the concept of "style" on the engine and room setup level
 -- the engine only cares about levelData, style is a menu-only concept
@@ -23,9 +44,52 @@ local Styles = { CHOOSE = 0, CLASSIC = 1, MODERN = 2}
 ---@enum StackInteractions
 local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3 }
 
+-- Updates player with modern-style level data based on their level setting
+---@param player Player
+local function updateModernSettings(player)
+  player:setStyle(Styles.MODERN)
+  player:setLevelData(LevelPresets.getModern(player.settings.level))
+end
+
+-- Updates player with level data based on their style selection (modern or classic)
+---@param player Player
+local function updateStyleBasedSettings(player)
+  if player.settings.style ~= player.settings.preferredStyle then
+    player.settings.style = player.settings.preferredStyle
+  end
+  if player.settings.preferredStyle == Styles.MODERN then
+    player:setLevelData(LevelPresets.getModern(player.settings.level))
+  elseif player.settings.preferredStyle == Styles.CLASSIC then
+    player:setLevelData(LevelPresets.getClassic(player.settings.difficulty))
+  else
+    assert("Expected a set style")
+  end
+end
+
+-- Updates player with level data for endless mode, applying style-specific settings and endless easy difficulty adjustments
+---@param player Player
+local function updateEndlessStyleBasedSettings(player)
+  if player.settings.style ~= player.settings.preferredStyle then
+    player.settings.style = player.settings.preferredStyle
+  end
+  if player.settings.preferredStyle == Styles.MODERN then
+    player:setLevelData(LevelPresets.getModern(player.settings.level))
+  elseif player.settings.preferredStyle == Styles.CLASSIC then
+    local levelData = LevelPresets.getClassic(player.settings.difficulty)
+    if player.settings.difficulty == 1 then
+      -- Endless easy uses 5 colors instead of 6
+      levelData:setColorCount(5)
+      -- and allows adjacent panels of the same colors
+      levelData:setAdjacentDenialFrequency(0)
+    end
+    player:setLevelData(levelData)
+  else
+    assert("Expected a set style")
+  end
+end
+
 ---@type GameMode
-local OnePlayerVsSelf = {
-  style = Styles.MODERN,
+local OnePlayerVsSelf = GameMode({
   gameScene = "VsSelfGame",
   richPresenceLabel = "1p vs self", -- loc("mm_1_vs"),
   name = "vsSelf",
@@ -40,12 +104,13 @@ local OnePlayerVsSelf = {
     stackWinConditions = {},
     stackSetupModifications = {},
     doCountdown = true,
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateModernSettings
+})
 
 ---@type GameMode
-local OnePlayerTimeAttack = {
-  style = Styles.CHOOSE,
+local OnePlayerTimeAttack = GameMode({
   gameScene = "TimeAttackGame",
   richPresenceLabel = "Time Attack", -- loc("mm_1_time"),
   name = "timeattack",
@@ -60,12 +125,13 @@ local OnePlayerTimeAttack = {
     stackWinConditions = {},
     stackSetupModifications = {},
     doCountdown = true,
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateStyleBasedSettings
+})
 
 ---@type GameMode
-local OnePlayerEndless = {
-  style = Styles.CHOOSE,
+local OnePlayerEndless = GameMode({
   gameScene = "EndlessGame",
   richPresenceLabel = "Endless", -- loc("mm_1_endless"),
   name = "endless",
@@ -80,12 +146,13 @@ local OnePlayerEndless = {
     stackWinConditions = {},
     stackSetupModifications = {},
     doCountdown = true,
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateEndlessStyleBasedSettings
+})
 
 ---@type GameMode
-local OnePlayerTraining = {
-  style = Styles.MODERN,
+local OnePlayerTraining = GameMode({
   gameScene = "GameBase",
   richPresenceLabel = "Training", -- loc("mm_1_training"),
   name = "training",
@@ -100,13 +167,14 @@ local OnePlayerTraining = {
     stackWinConditions = {},
     stackSetupModifications = {},
     doCountdown = true,
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateModernSettings
+})
 
 ---@type GameMode
-local OnePlayerPuzzle = {
+local OnePlayerPuzzle = GameMode({
   -- flags for battleRoom to evaluate and in some cases offer UI for
-  style = Styles.MODERN,
   richPresenceLabel = "Puzzle", -- loc("mm_1_puzzle"),
   gameScene = "PuzzleGame",
   name = "puzzle",
@@ -124,12 +192,13 @@ local OnePlayerPuzzle = {
     -- these are extended based on the loaded puzzle
     stackSetupModifications = {},
     doCountdown = false,
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateModernSettings
+})
 
 ---@type GameMode
-local OnePlayerChallenge = {
-  style = Styles.MODERN,
+local OnePlayerChallenge = GameMode({
   gameScene = "Game1pChallenge",
   richPresenceLabel = "Challenge Mode", -- loc("mm_1_challenge_mode"),
   name = "challenge",
@@ -144,12 +213,13 @@ local OnePlayerChallenge = {
     stackWinConditions = {},
     stackSetupModifications = {},
     doCountdown = true,
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateModernSettings
+})
 
 ---@type GameMode
-local TwoPlayerVersus = {
-  style = Styles.MODERN,
+local TwoPlayerVersus = GameMode({
   gameScene = "GameBase",
   richPresenceLabel = "2p versus", -- loc("mm_2_vs"),
   name = "VS",
@@ -164,11 +234,12 @@ local TwoPlayerVersus = {
     stackWinConditions = {},
     stackSetupModifications = {},
     doCountdown = true
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateModernSettings
+})
 ---@type GameMode
-local TwoPlayerTimeAttack = {
-  style = Styles.MODERN,
+local TwoPlayerTimeAttack = GameMode({
   gameScene = "TimeAttackGame",
   richPresenceLabel = "2p Time Attack", -- loc("mm_2_time"),
   name = "2p_timeattack",
@@ -182,8 +253,10 @@ local TwoPlayerTimeAttack = {
     stackWinConditions = {},
     stackSetupModifications = {},
     doCountdown = true,
-  }
-}
+  },
+
+  updateLocalPlayersDerivedSettings = updateModernSettings
+})
 
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
@@ -211,6 +284,29 @@ privateGameModes.TWO_PLAYER_TIME_ATTACK = TwoPlayerTimeAttack
 function GameModes.getPreset(mode)
   assert(privateGameModes[mode], "Trying to access non existing mode " .. mode)
   return deepcpy(privateGameModes[mode])
+end
+
+-- Creates a GameMode from server message data by loading the preset and applying overrides
+---@param gameModeData table The game mode data from the server message
+---@return GameMode
+function GameModes.createFromServerData(gameModeData)
+  local preset = nil
+  for _, gameMode in pairs(privateGameModes) do
+    if gameMode.name == gameModeData.name then
+      preset = gameMode
+      break
+    end
+  end
+
+  assert(preset, "Unknown game mode name: " .. tostring(gameModeData.name))
+
+  local result = deepcpy(preset)
+
+  for key, value in pairs(gameModeData) do
+    result[key] = value
+  end
+
+  return result
 end
 
 return GameModes

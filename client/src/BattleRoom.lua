@@ -15,7 +15,7 @@ local GeneratorSource = require("common.engine.GeneratorSource")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
 ---@class BattleRoom : Signal
----@field mode GameMode
+---@field mode GameMode The game mode configuration defining rules, player count, and match settings for this battle room
 ---@field players Player[]
 ---@field spectators string[]
 ---@field spectating boolean
@@ -59,7 +59,8 @@ end)
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
 function BattleRoom.createFromServerMessage(message)
-  local battleRoom = BattleRoom(message.gameMode)
+  local gameMode = GameModes.createFromServerData(message.gameMode)
+  local battleRoom = BattleRoom(gameMode)
 
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
@@ -108,16 +109,12 @@ function BattleRoom.createFromServerMessage(message)
         p = Player(player.name, player.publicId or -i, false)
       end
 
-      -- order is important here as setting style will indirectly also override levelData so it needs to be before updateSettings
-      if gameMode.style ~= GameModes.Styles.CHOOSE then
-        p:setStyle(gameMode.style)
-      else
-        if player.settings.levelData then
-          if player.settings.levelData.frameConstants.GARBAGE_HOVER then
-            p:setStyle(GameModes.Styles.MODERN)
-          else
-            p:setStyle(GameModes.Styles.CLASSIC)
-          end
+      -- Not great, but the server doesn't know about style for now
+      if player.settings.levelData then
+        if player.settings.levelData.frameConstants.GARBAGE_HOVER then
+          p:setStyle(GameModes.Styles.MODERN)
+        else
+          p:setStyle(GameModes.Styles.CLASSIC)
         end
       end
 
@@ -141,27 +138,30 @@ function BattleRoom.createFromServerMessage(message)
   return battleRoom
 end
 
-function BattleRoom.createLocalFromGameMode(gameMode, gameScene)
+-- Creates a local (offline) BattleRoom from a GameMode configuration.
+-- For single-player modes, uses the game's main local player. For multi-player modes,
+-- creates temporary local players that don't persist settings changes.
+---@param gameMode GameMode The game mode configuration defining rules and player count
+---@param gameScene table? Optional scene class to use for matches (defaults to mode's gameScene)
+---@param settingCHangesUpdateConfig boolean? If true, setting changes update config (default: true). Only applies to single-player modes.
+---@return BattleRoom? battleRoom The created battle room, or nil if input configuration assignment fails
+function BattleRoom.createLocalFromGameMode(gameMode, gameScene, settingCHangesUpdateConfig)
+  if settingCHangesUpdateConfig == nil then
+    settingCHangesUpdateConfig = true
+  end
+
   local battleRoom = BattleRoom(gameMode, gameScene)
 
-  if gameMode.playerCount == 1 then
+  if settingCHangesUpdateConfig and gameMode.playerCount == 1 then
     -- always use the game client's local player
     battleRoom:addPlayer(GAME.localPlayer)
   else
     -- with more than 1 local player we can't be sure which player is the "real" regular user
     -- so make them both local players that don't update config settings
     for i = 1, gameMode.playerCount do
-      local player = Player.getLocalPlayer()
+      local player = Player.createLocalPlayerFromConfig()
       player.name = loc("player_n", i)
       battleRoom:addPlayer(player)
-    end
-  end
-
-  if gameMode.style ~= GameModes.Styles.CHOOSE then
-    for i, player in ipairs(battleRoom.players) do
-      if player.human then
-        battleRoom.players[i]:setStyle(gameMode.style)
-      end
     end
   end
 
@@ -271,6 +271,15 @@ function BattleRoom:addPlayer(player)
   end
   self.players[#self.players + 1] = player
 
+  if player.isLocal and player.human and self.mode.updateLocalPlayersDerivedSettings then
+    -- Initial update
+    self.mode.updateLocalPlayersDerivedSettings(player)
+
+    -- Connect signals to update derived settings when style/difficulty
+    player:connectSignal("preferredStyleChanged", self.mode, function() self.mode.updateLocalPlayersDerivedSettings(player) end)
+    player:connectSignal("difficultyChanged", self.mode, function() self.mode.updateLocalPlayersDerivedSettings(player) end)
+    player:connectSignal("levelChanged", self.mode, function() self.mode.updateLocalPlayersDerivedSettings(player) end)
+  end
   if player.isLocal then
     self:connectSignal("allAssetsLoadedChanged", player, player.setLoaded)
   end
@@ -402,28 +411,6 @@ function BattleRoom:createScene(match)
   if self.gameScene then
     return self.gameScene(sceneParams)
   end
-end
-
--- sets the style of "level" presets the players select from
--- 1 = classic
--- 2 = modern
--- longterm we want to abandon the concept of "style" on the player / battleRoom level
--- just setting difficulty or level should set the levelData and done with it, style is a menu-only concept
--- there is no technical reason why someone on level 10 shouldn't be able to play against someone on Hard
--- for now it's a battleRoom wide setting and players have to match
-function BattleRoom:setStyle(styleChoice)
-  -- style could be configurable per play instead but let's not for now
-  if self.mode.style == GameModes.Styles.CHOOSE then
-    self.style = styleChoice
-    self.onStyleChanged(styleChoice)
-  else
-    error("Trying to set difficulty style in a game mode that doesn't support style selection")
-  end
-end
-
--- not player specific, so this gets a separate callback that can only be overwritten once
--- so the UI can update and load up the different controls for it
-function BattleRoom.onStyleChanged(style, player)
 end
 
 function BattleRoom:startLoadingNewAssets()
