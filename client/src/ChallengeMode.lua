@@ -205,7 +205,7 @@ function ChallengeMode:onMatchEnded(match)
     GAME.netClient:reportLocalGameResult(winners)
   end
 
-  if match.aborted then
+  if match.engine.aborted then
     -- in challenge mode, an abort is always a manual pause and leave by the local player
     -- match:deinit is the responsibility of the one switching out of the game scene
     GAME.navigationStack:pop(nil, function() match:deinit() end)

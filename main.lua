@@ -255,7 +255,7 @@ function love.errorhandler(msg)
   if GAME.battleRoom and GAME.battleRoom.match then
     pcall(function()
       local match = GAME.battleRoom.match
-      match.aborted = true
+      match.engine.aborted = true
       ReplayV3.finalizeReplay(match.engine, match.replay)
       logger.info("Replay of match during crash:\n" .. json.encode(match.replay))
     end)

@@ -482,6 +482,7 @@ function GameBase:drawEndGameText()
   end
 end
 
+---@param match ClientMatch
 function GameBase:genericOnMatchEnded(match)
   self:setupGameOver()
   -- matches always sort players to have locals in front so if 1 isn't local, none is

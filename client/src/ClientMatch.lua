@@ -334,7 +334,6 @@ function ClientMatch:setStage(stageId)
 end
 
 function ClientMatch:abort()
-  self.aborted = true
   self.engine:abort()
   self:handleMatchEnd()
 end

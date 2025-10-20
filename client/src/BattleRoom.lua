@@ -565,7 +565,7 @@ end
 function BattleRoom:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1
 
-  if not match.aborted then
+  if not match.engine.aborted then
     local winners = match:getWinners()
     -- apply wins and possibly statistical data up for collection
     if #winners == 1 then

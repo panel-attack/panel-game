@@ -30,6 +30,8 @@ local MatchRules = require("common.data.MatchRules")
 ---@field clock integer
 ---@field ended boolean
 ---@field gameOverClock integer?
+---@field aborted boolean the game stopped in the middle because of crash, desync, game leave, online player left, etc.
+---@field desyncError boolean? the match stopped because the other stack became too out of sync
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -61,6 +63,7 @@ function(self, panelSource, matchRules)
   self.startTimestamp = os.time(os.date("*t"))
   self.clock = 0
   self.ended = false
+  self.aborted = false
 end
 )
 
