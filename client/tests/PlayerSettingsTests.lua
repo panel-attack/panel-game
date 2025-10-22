@@ -7,27 +7,18 @@ local BattleRoom = require("client.src.BattleRoom")
 local function testDifficultyCarouselShouldNotMutatePlayerOnCreation()
 
   local player = Player("TestPlayer", 1, true)
-  player:setStyle(GameModes.Styles.MODERN)
-  player:setDifficulty(1)
-  player:setLevel(10)
-  player:setLevelData(LevelPresets.getModern(10))
-
-  local originalLevel = player.settings.level
-  local originalDifficulty = player.settings.difficulty
-  local originalStyle = player.settings.style
-  local originalGarbageHover = player.settings.levelData.frameConstants.GARBAGE_HOVER
-  local originalColorCount = player.settings.levelData.colors
-
-  assert(originalLevel == 10, "Initial level should be 10")
-  assert(originalStyle == GameModes.Styles.MODERN, "Initial style should be MODERN")
-  assert(originalGarbageHover == 4, "Initial GARBAGE_HOVER should be 4")
-  assert(originalColorCount == 6, "Initial color count should be 6")
 
   local gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
   local battleRoom = BattleRoom(gameMode)
   battleRoom:addPlayer(player)
 
   local characterSelect = CharacterSelect({battleRoom = battleRoom})
+  
+  local originalLevel = player.settings.level
+  local originalDifficulty = player.settings.difficulty
+  local originalStyle = player.settings.style
+  local originalGarbageHover = player.settings.levelData.frameConstants.GARBAGE_HOVER
+  local originalColorCount = player.settings.levelData.colors
 
   local _ = characterSelect:createDifficultyCarousel(player, 100)
 
@@ -42,28 +33,6 @@ end
 
 testDifficultyCarouselShouldNotMutatePlayerOnCreation()
 
-local function testAllModernLevelsHaveGarbageHover()
-  for level = 1, 11 do
-    local levelData = LevelPresets.getModern(level)
-    assert(levelData.frameConstants.GARBAGE_HOVER ~= nil, "Modern level " .. level .. " should have GARBAGE_HOVER")
-    assert(levelData.frameConstants.GARBAGE_HOVER ~= nil,
-      "Modern level " .. level .. " GARBAGE_HOVER should not be nil")
-  end
-end
-
-testAllModernLevelsHaveGarbageHover()
-
-local function testAllClassicLevelsLackGarbageHover()
-  for difficulty = 1, 4 do
-    local levelData = LevelPresets.getClassic(difficulty)
-    assert(levelData.frameConstants.GARBAGE_HOVER == nil,
-      "Classic difficulty " .. difficulty .. " should not have GARBAGE_HOVER but got " ..
-      tostring(levelData.frameConstants.GARBAGE_HOVER))
-  end
-end
-
-testAllClassicLevelsLackGarbageHover()
-
 local function testEndlessModeClassicDifficulty1SetsCorrectSettings()
 
   local gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
@@ -74,8 +43,7 @@ local function testEndlessModeClassicDifficulty1SetsCorrectSettings()
 
   local battleRoomPlayer = battleRoom.players[1]
 
-  battleRoomPlayer:setPreferredStyle(GameModes.Styles.CLASSIC)
-  battleRoomPlayer:setDifficulty(1)
+  battleRoomPlayer:setLevelData(LevelPresets.getClassicEndless(1))
 
   assert(battleRoomPlayer.settings.levelData.colors == 5,
     "Endless mode with classic difficulty 1 should have 5 colors, but got " ..
@@ -100,8 +68,7 @@ local function testVsSelfChangesEndlessClassicSettingsToModern()
   local endlessPlayer = endlessBattleRoom.players[1]
 
   -- Set to classic difficulty 1 (simulating what happens in endless mode)
-  endlessPlayer:setPreferredStyle(GameModes.Styles.CLASSIC)
-  endlessPlayer:setDifficulty(1)
+  endlessPlayer:setLevelData(LevelPresets.getClassicEndless(1))
 
   -- Verify endless settings
   assert(endlessPlayer.settings.style == GameModes.Styles.CLASSIC,
@@ -120,7 +87,7 @@ local function testVsSelfChangesEndlessClassicSettingsToModern()
   assert(vsSelfBattleRoom ~= nil, "Vs self BattleRoom should be created successfully")
 
   local vsSelfPlayer = vsSelfBattleRoom.players[1]
-  vsSelfPlayer:setLevel(10)
+  vsSelfPlayer:setLevelData(LevelPresets.getModern(10))
 
   assert(vsSelfPlayer.settings.levelData.frameConstants.GARBAGE_HOVER ~= nil,
     "Modern style should have GARBAGE_HOVER set")

@@ -20,7 +20,6 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field speed integer
 ---@field levelData LevelData
 ---@field style Styles
----@field preferredStyle Styles
 ---@field wantsRanked boolean
 ---@field inputMethod InputMethod
 
@@ -54,7 +53,6 @@ function(self, name, publicId, isLocal)
   ---@type LevelData
   settings.levelData = LevelPresets.getModern(1)
   settings.style = GameModes.Styles.MODERN
-  settings.preferredStyle = GameModes.Styles.MODERN
   settings.characterId = ""
   settings.stageId = ""
   settings.panelId = ""
@@ -79,7 +77,6 @@ function(self, name, publicId, isLocal)
   -- they can register a callback with each signal via Signal.connectSignal
   -- there are a few more signals in MatchParticipant (which is why we don't have to explicitly declare us as emitting Signals again)
   self:createSignal("styleChanged")
-  self:createSignal("preferredStyleChanged")
   self:createSignal("difficultyChanged")
   self:createSignal("startingSpeedChanged")
   self:createSignal("levelChanged")
@@ -110,12 +107,19 @@ function Player:createClientStack(engineStack)
     player = self,
   }
 
-  if self.settings.style == GameModes.Styles.MODERN then
-    args.level = self.settings.level
-  else
-    args.difficulty = self.settings.difficulty
+  local presetInfo = LevelPresets.getStyleAndPreset(self.settings.levelData)
+  if presetInfo then
+    if presetInfo.style == GameModes.Styles.MODERN then
+      if presetInfo.level then
+        args.level = self.settings.level
+      end
+    else
+      if presetInfo.difficulty then
+        args.difficulty = self.settings.difficulty
+      end
+    end
   end
-
+  
   self.stack = PlayerStack(args)
 
   return self.stack
@@ -147,7 +151,7 @@ end
 function Player:setLevelData(levelData)
   self.settings.levelData = levelData
   self:setSpeed(levelData.startingSpeed)
-  self:emitSignal("levelDataChanged", levelData)
+  self:emitSignal("levelDataChanged", levelData, self)
 end
 
 function Player:setSpeed(speed)
@@ -179,26 +183,10 @@ end
 -- derived settings (levelData) should be updated by calling gameMode.updateLocalPlayersDerivedSettings
 function Player:setStyle(style)
   if style ~= self.settings.style then
-    logger.debug("setting style " .. style)
     self.settings.style = style
     self:emitSignal("styleChanged", style)
   end
 end
-
--- sets the preferred style when loading UI
--- not sent over network
--- 1 = classic
--- 2 = modern
--- style is a menu-only concept for UI display
--- derived settings (levelData) should be updated by calling gameMode.updateLocalPlayersDerivedSettings
-function Player:setPreferredStyle(preferredStyle)
-  if preferredStyle ~= self.settings.preferredStyle then
-    logger.debug("setting preferred style " .. preferredStyle)
-    self.settings.preferredStyle = preferredStyle
-    self:emitSignal("preferredStyleChanged", preferredStyle)
-  end
-end
-
 
 function Player:setRating(rating)
   if self.rating and tonumber(self.rating) then
@@ -257,10 +245,8 @@ function Player.createLocalPlayerFromConfig()
   player:setWantsRanked(config.ranked)
   player:setInputMethod(config.inputMethod)
   if config.endless_level then
-    player:setPreferredStyle(GameModes.Styles.MODERN)
     player:setStyle(GameModes.Styles.MODERN)
   else
-    player:setPreferredStyle(GameModes.Styles.CLASSIC)
     player:setStyle(GameModes.Styles.CLASSIC)
     player:setSpeed(config.endless_speed)
   end
@@ -337,16 +323,6 @@ function Player:updateSettings(settings)
   end
 
   if settings.levelData ~= nil then
-    if settings.level ~= nil then
-      if settings.levelData.frameConstants.GARBAGE_HOVER then
-        self:setStyle(GameModes.Styles.MODERN)
-        self:setLevel(settings.level)
-      elseif settings.level <= LevelPresets.classicPresetCount then
-        self:setStyle(GameModes.Styles.CLASSIC)
-        self:setDifficulty(settings.level)
-      end
-    end
-
     self:setLevelData(settings.levelData)
   end
 

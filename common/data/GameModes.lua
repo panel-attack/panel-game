@@ -1,6 +1,5 @@
 local class = require("common.lib.class")
 local MatchRules = require("common.data.MatchRules")
-local LevelPresets = require("common.data.LevelPresets")
 local TIME_ATTACK_TIME = 120
 
 local GameModes = {}
@@ -44,50 +43,6 @@ local Styles = { CHOOSE = 0, CLASSIC = 1, MODERN = 2}
 ---@enum StackInteractions
 local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3 }
 
--- Updates player with modern-style level data based on their level setting
----@param player Player
-local function updateModernSettings(player)
-  player:setStyle(Styles.MODERN)
-  player:setLevelData(LevelPresets.getModern(player.settings.level))
-end
-
--- Updates player with level data based on their style selection (modern or classic)
----@param player Player
-local function updateStyleBasedSettings(player)
-  if player.settings.style ~= player.settings.preferredStyle then
-    player.settings.style = player.settings.preferredStyle
-  end
-  if player.settings.preferredStyle == Styles.MODERN then
-    player:setLevelData(LevelPresets.getModern(player.settings.level))
-  elseif player.settings.preferredStyle == Styles.CLASSIC then
-    player:setLevelData(LevelPresets.getClassic(player.settings.difficulty))
-  else
-    assert("Expected a set style")
-  end
-end
-
--- Updates player with level data for endless mode, applying style-specific settings and endless easy difficulty adjustments
----@param player Player
-local function updateEndlessStyleBasedSettings(player)
-  if player.settings.style ~= player.settings.preferredStyle then
-    player.settings.style = player.settings.preferredStyle
-  end
-  if player.settings.preferredStyle == Styles.MODERN then
-    player:setLevelData(LevelPresets.getModern(player.settings.level))
-  elseif player.settings.preferredStyle == Styles.CLASSIC then
-    local levelData = LevelPresets.getClassic(player.settings.difficulty)
-    if player.settings.difficulty == 1 then
-      -- Endless easy uses 5 colors instead of 6
-      levelData:setColorCount(5)
-      -- and allows adjacent panels of the same colors
-      levelData:setAdjacentDenialFrequency(0)
-    end
-    player:setLevelData(levelData)
-  else
-    assert("Expected a set style")
-  end
-end
-
 ---@type GameMode
 local OnePlayerVsSelf = GameMode({
   gameScene = "VsSelfGame",
@@ -106,7 +61,6 @@ local OnePlayerVsSelf = GameMode({
     doCountdown = true,
   },
 
-  updateLocalPlayersDerivedSettings = updateModernSettings
 })
 
 ---@type GameMode
@@ -127,7 +81,6 @@ local OnePlayerTimeAttack = GameMode({
     doCountdown = true,
   },
 
-  updateLocalPlayersDerivedSettings = updateStyleBasedSettings
 })
 
 ---@type GameMode
@@ -148,7 +101,6 @@ local OnePlayerEndless = GameMode({
     doCountdown = true,
   },
 
-  updateLocalPlayersDerivedSettings = updateEndlessStyleBasedSettings
 })
 
 ---@type GameMode
@@ -169,7 +121,6 @@ local OnePlayerTraining = GameMode({
     doCountdown = true,
   },
 
-  updateLocalPlayersDerivedSettings = updateModernSettings
 })
 
 ---@type GameMode
@@ -194,7 +145,6 @@ local OnePlayerPuzzle = GameMode({
     doCountdown = false,
   },
 
-  updateLocalPlayersDerivedSettings = updateModernSettings
 })
 
 ---@type GameMode
@@ -215,7 +165,6 @@ local OnePlayerChallenge = GameMode({
     doCountdown = true,
   },
 
-  updateLocalPlayersDerivedSettings = updateModernSettings
 })
 
 ---@type GameMode
@@ -236,7 +185,6 @@ local TwoPlayerVersus = GameMode({
     doCountdown = true
   },
 
-  updateLocalPlayersDerivedSettings = updateModernSettings
 })
 ---@type GameMode
 local TwoPlayerTimeAttack = GameMode({
@@ -255,7 +203,6 @@ local TwoPlayerTimeAttack = GameMode({
     doCountdown = true,
   },
 
-  updateLocalPlayersDerivedSettings = updateModernSettings
 })
 
 GameModes.Styles = Styles

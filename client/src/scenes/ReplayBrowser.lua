@@ -223,8 +223,10 @@ function ReplayBrowser:draw()
         if player.level then
           GraphicsUtil.print(loc("rp_browser_info_level", player.level), menu_x + offsetX, menu_y + 95)
         else
-          GraphicsUtil.print(loc("rp_browser_info_speed", stack.levelData.startingSpeed), menu_x + offsetX, menu_y + 95)
-          GraphicsUtil.print(loc("rp_browser_info_difficulty", player.difficulty), menu_x + offsetX, menu_y + 110)
+          if player.difficulty then
+            GraphicsUtil.print(loc("rp_browser_info_speed", stack.levelData.startingSpeed), menu_x + offsetX, menu_y + 95)
+            GraphicsUtil.print(loc("rp_browser_info_difficulty", player.difficulty), menu_x + offsetX, menu_y + 110)
+          end
         end
       else
         ---@cast player SimulatedStackMetadata

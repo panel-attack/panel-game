@@ -109,15 +109,8 @@ function BattleRoom.createFromServerMessage(message)
         p = Player(player.name, player.publicId or -i, false)
       end
 
-      -- Not great, but the server doesn't know about style for now
-      if player.settings.levelData then
-        if player.settings.levelData.frameConstants.GARBAGE_HOVER then
-          p:setStyle(GameModes.Styles.MODERN)
-        else
-          p:setStyle(GameModes.Styles.CLASSIC)
-        end
-      end
-
+      -- updateSettings will set levelData which triggers levelDataChanged signal
+      -- which will automatically update style based on the levelData
       p:updateSettings(player.settings)
 
       if player.ratingInfo then
@@ -143,16 +136,16 @@ end
 -- creates temporary local players that don't persist settings changes.
 ---@param gameMode GameMode The game mode configuration defining rules and player count
 ---@param gameScene table? Optional scene class to use for matches (defaults to mode's gameScene)
----@param settingCHangesUpdateConfig boolean? If true, setting changes update config (default: true). Only applies to single-player modes.
+---@param settingChangesUpdateConfig boolean? If true, setting changes update config (default: true). Only applies to single-player modes.
 ---@return BattleRoom? battleRoom The created battle room, or nil if input configuration assignment fails
-function BattleRoom.createLocalFromGameMode(gameMode, gameScene, settingCHangesUpdateConfig)
-  if settingCHangesUpdateConfig == nil then
-    settingCHangesUpdateConfig = true
+function BattleRoom.createLocalFromGameMode(gameMode, gameScene, settingChangesUpdateConfig)
+  if settingChangesUpdateConfig == nil then
+    settingChangesUpdateConfig = true
   end
 
   local battleRoom = BattleRoom(gameMode, gameScene)
 
-  if settingCHangesUpdateConfig and gameMode.playerCount == 1 then
+  if settingChangesUpdateConfig and gameMode.playerCount == 1 then
     -- always use the game client's local player
     battleRoom:addPlayer(GAME.localPlayer)
   else
@@ -271,15 +264,6 @@ function BattleRoom:addPlayer(player)
   end
   self.players[#self.players + 1] = player
 
-  if player.isLocal and player.human and self.mode.updateLocalPlayersDerivedSettings then
-    -- Initial update
-    self.mode.updateLocalPlayersDerivedSettings(player)
-
-    -- Connect signals to update derived settings when style/difficulty
-    player:connectSignal("preferredStyleChanged", self.mode, function() self.mode.updateLocalPlayersDerivedSettings(player) end)
-    player:connectSignal("difficultyChanged", self.mode, function() self.mode.updateLocalPlayersDerivedSettings(player) end)
-    player:connectSignal("levelChanged", self.mode, function() self.mode.updateLocalPlayersDerivedSettings(player) end)
-  end
   if player.isLocal then
     self:connectSignal("allAssetsLoadedChanged", player, player.setLoaded)
   end

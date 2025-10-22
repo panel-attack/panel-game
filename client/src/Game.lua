@@ -11,6 +11,7 @@ require("client.src.mods.Theme")
 -- Not to be confused with "Match" which is the current battle / instance of the game.
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local LevelPresets = require("common.data.LevelPresets")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local analytics = require("client.src.analytics")
@@ -266,11 +267,17 @@ function Game:initializeLocalPlayer()
   self.localPlayer:connectSignal("difficultyChanged", config, function(config, difficulty) config.endless_difficulty = difficulty end)
   self.localPlayer:connectSignal("levelChanged", config, function(config, level) config.level = level end)
   self.localPlayer:connectSignal("wantsRankedChanged", config, function(config, wantsRanked) config.ranked = wantsRanked end)
-  self.localPlayer:connectSignal("preferredStyleChanged", config, function(config, style)
-    if style == GameModes.Styles.CLASSIC then
-      config.endless_level = nil
-    else
-      config.endless_level = config.level
+
+  self.localPlayer:connectSignal("levelDataChanged", config, function(config, levelData, player)
+    local presetInfo = LevelPresets.getStyleAndPreset(levelData)
+    if presetInfo then
+      if presetInfo.style == GameModes.Styles.MODERN then
+        config.level = presetInfo.level
+        config.endless_level = presetInfo.level
+      else
+        config.endless_difficulty = presetInfo.difficulty
+        config.endless_level = nil
+      end
     end
   end)
 end

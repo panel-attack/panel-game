@@ -396,10 +396,10 @@ function ClientMatch:finalizeReplay()
           ---@cast player Player
           metadata.name = player.name
           metadata.publicId = player.publicId
-          if player.settings.style == GameModes.Styles.MODERN then
-            metadata.level = player.settings.level
-          else
-            metadata.difficulty = player.settings.difficulty
+          if stack.level then
+            metadata.level = stack.level
+          elseif stack.difficulty then
+            metadata.difficulty = stack.difficulty
           end
           metadata.analytics = player.stack.analytic.data
           ---@diagnostic disable-next-line: inject-field
