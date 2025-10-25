@@ -4,11 +4,11 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.data.GameModes")
+local LevelPresets = require("common.data.LevelPresets")
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Character = require("client.src.mods.Character")
-local LevelPresets = require("common.data.LevelPresets")
 
 -- The character select screen scene
 ---@class CharacterSelect : Scene
@@ -57,7 +57,47 @@ function CharacterSelect:load()
   self.ui.cursors = {}
   self.ui.characterIcons = {}
   self.ui.playerInfos = {}
+
   self:customLoad()
+
+  for _, player in ipairs(self.players) do
+    if player:isHuman() then
+      if player.isLocal then
+        self:initializeFromLocalPlayerSettings(player)
+      end
+      player:connectSignal("levelDataChanged", self, self.onLevelDataChanged)
+      self:onLevelDataChanged(player.settings.levelData, player)
+    end
+  end
+end
+
+function CharacterSelect:onLevelDataChanged(levelData, player)
+  local presetInfo = LevelPresets.getStyleAndPreset(levelData)
+
+  if not presetInfo then
+    -- Custom levelData, default to current settings
+    return
+  end
+
+  if presetInfo.style == GameModes.Styles.MODERN then
+    player:setStyle(GameModes.Styles.MODERN)
+    if presetInfo.level then
+      player:setLevel(presetInfo.level)
+    end
+  else
+    player:setStyle(GameModes.Styles.CLASSIC)
+    if presetInfo.difficulty then
+      player:setDifficulty(presetInfo.difficulty)
+    end
+  end
+
+  self:refresh()
+end
+
+function CharacterSelect:initializeFromLocalPlayerSettings(player)
+  player:setStyle(GameModes.Styles.MODERN)
+  player:setLevel(player.settings.level)
+  player:setLevelData(LevelPresets.getModern(player.settings.level))
 end
 
 ---@param player Player
@@ -893,7 +933,7 @@ function CharacterSelect:createSpeedSlider(player, height, min)
   return uiElement
 end
 
-function CharacterSelect:createDifficultyCarousel(player, height)
+function CharacterSelect:createDifficultyCarousel(player, height, getPresetFunc)
   local passengers = {
     { id = 1, uiElement = ui.Label({text = "easy", vAlign = "center", hAlign = "center"})},
     { id = 2, uiElement = ui.Label({text = "normal", vAlign = "center", hAlign = "center"})},
@@ -918,25 +958,16 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     -- Just update on every passenger change
   end
 
-  local updateDifficultyData = function(difficultyID)
-    local levelData = LevelPresets.getClassic(difficultyID)
-    player:setDifficulty(difficultyID)
-    if self.battleRoom.mode.name == "endless" and difficultyID == 1 then
-      -- Endless easy uses 5 colors instead of 6
-      levelData:setColorCount(5)
-      -- and by extension also allows adjacent panels of the same colors
-      levelData:setAdjacentDenialFrequency(0)
-    end
-    player:setLevelData(levelData)
-  end
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    updateDifficultyData(selectedPassenger.id)
+    player:setDifficulty(selectedPassenger.id)
+    if getPresetFunc then
+      player:setLevelData(getPresetFunc(selectedPassenger.id))
+    end
     GAME.theme:playMoveSfx()
-    self:refresh()
   end
-  -- Note that this updates the player level data which could be wrong before because of the weird endless case
-  -- its probably fine for now, but ideally the model should be right when the battle room is created
-  updateDifficultyData(difficultyCarousel.selectedId)
+
+  -- to update the UI if code gets changed from the backend (e.g. network messages)
+  player:connectSignal("difficultyChanged", difficultyCarousel, difficultyCarousel.setPassengerById)
 
   return difficultyCarousel
 end

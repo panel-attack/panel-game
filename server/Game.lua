@@ -77,6 +77,8 @@ function Game.createFromRoomState(room)
       metadata.level = player.level
     else
       -- TODO: https://github.com/panel-attack/panel-game/issues/602
+      -- Use this pattern when we are in this area again and testing server
+      -- local presetInfo = LevelPresets.getStyleAndPreset(levelData)
       metadata.difficulty = player.level
     end
 

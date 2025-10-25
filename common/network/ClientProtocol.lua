@@ -134,11 +134,13 @@ function ClientMessages.sendTaunt(direction, index)
   }
 end
 
+---@param gameMode GameMode
 function ClientMessages.sendRoomRequest(gameMode)
+  local gameModeData = gameMode:getGameModeJSONData()
   local roomRequestMessage = {
     recipient = "server",
     type = "roomRequest",
-    content = { gameMode = gameMode }
+    content = { gameMode = gameModeData }
   }
   return {
     messageType = msgTypes.jsonMessage,

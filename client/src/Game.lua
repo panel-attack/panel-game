@@ -11,6 +11,7 @@ require("client.src.mods.Theme")
 -- Not to be confused with "Match" which is the current battle / instance of the game.
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local LevelPresets = require("common.data.LevelPresets")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local analytics = require("client.src.analytics")
@@ -257,7 +258,7 @@ end
 -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate
 -- it basically represents the player that is operating the client (and thus binds to its configuration)
 function Game:initializeLocalPlayer()
-  self.localPlayer = Player.getLocalPlayer()
+  self.localPlayer = Player.createLocalPlayerFromConfig()
   self.localPlayer:connectSignal("selectedCharacterIdChanged", config, function(config, newId) config.character = newId end)
   self.localPlayer:connectSignal("selectedStageIdChanged", config, function(config, newId) config.stage = newId end)
   self.localPlayer:connectSignal("panelIdChanged", config, function(config, newId) config.panels = newId end)
@@ -266,11 +267,17 @@ function Game:initializeLocalPlayer()
   self.localPlayer:connectSignal("difficultyChanged", config, function(config, difficulty) config.endless_difficulty = difficulty end)
   self.localPlayer:connectSignal("levelChanged", config, function(config, level) config.level = level end)
   self.localPlayer:connectSignal("wantsRankedChanged", config, function(config, wantsRanked) config.ranked = wantsRanked end)
-  self.localPlayer:connectSignal("styleChanged", config, function(config, style)
-    if style == GameModes.Styles.CLASSIC then
-      config.endless_level = nil
-    else
-      config.endless_level = config.level
+
+  self.localPlayer:connectSignal("levelDataChanged", config, function(config, levelData, player)
+    local presetInfo = LevelPresets.getStyleAndPreset(levelData)
+    if presetInfo then
+      if presetInfo.style == GameModes.Styles.MODERN then
+        config.level = presetInfo.level
+        config.endless_level = presetInfo.level
+      else
+        config.endless_difficulty = presetInfo.difficulty
+        config.endless_level = nil
+      end
     end
   end)
 end
@@ -303,21 +310,6 @@ function Game:createDirectoriesIfNeeded()
   if love.system.getOS() ~= "OS X" then
     fileUtils.recursiveRemoveFiles(".", ".DS_Store")
   end
-end
-
-function Game:runUnitTests()
-  coroutine.yield("Running Unit Tests")
-
-  -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate
-  -- basically the player that is operating the client
-  GAME.localPlayer = Player.getLocalPlayer()
-  -- we need to overwrite the local player as all replay related tests need a non-local player
-  GAME.localPlayer.isLocal = false
-
-  logger.info("Running Unit Tests...")
-  GAME.muteSound = true
-  --require("client.tests.Tests")
-  SoundController:applyConfigVolumes()
 end
 
 function Game:runPerformanceTests()

@@ -91,8 +91,12 @@ function Grid:drawSelf()
   end
 end
 
--- removes all gridElements overlapping with the specified box
--- the box is top left anchored
+--- removes all gridElements overlapping with the specified box
+--- the box is top left anchored
+---@param x integer 
+---@param y integer 
+---@param width integer 
+---@param height integer 
 function Grid:removeElementsIn(x, y, width, height)
   height = height or 1
   width = width or 1

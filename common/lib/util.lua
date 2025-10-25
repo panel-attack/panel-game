@@ -114,7 +114,9 @@ function real_deepcpy(tab)
   return setmetatable(ret, getmetatable(tab))
 end
 
--- copys the full variable deeply
+-- Creates a deep copy of a table, recursively copying all nested tables
+-- Preserves metatables and handles circular references
+-- If the input is not a table, returns it unchanged
 ---@generic T
 ---@param tab T
 ---@return T deepCopy

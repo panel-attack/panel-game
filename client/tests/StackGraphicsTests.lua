@@ -26,7 +26,7 @@ local function createEndlessClientMatch(playerCount, theme)
     playerCount = 1
   end
   for i = 1, playerCount do
-    local player = Player.getLocalPlayer()
+    local player = Player.createLocalPlayerFromConfig()
     player.isLocal = false
     player:setLevel(10)
     player:setLevelData(LevelPresets.getModern(10))

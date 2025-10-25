@@ -1,6 +1,7 @@
 -- this file documents presets for level data
 local LevelData = require("common.data.LevelData")
 local JsonSafePrecision = require("common.data.JsonSafePrecision")
+local GameModes = require("common.data.GameModes")
 
 ---@type LevelData[]
 local modern = {}
@@ -325,5 +326,72 @@ function LevelPresets.getClassic(difficulty)
 end
 
 LevelPresets.classicPresetCount = #classic
+
+---@type (table<number | string, LevelData>)
+local classicEndless = {}
+-- Deep copy from classic presets and modify only what's different for endless mode
+classicEndless[1] = deepcpy(classic[1])
+-- Endless easy uses 5 colors instead of 6
+classicEndless[1]:setColorCount(5)
+-- and allows adjacent panels of the same colors
+classicEndless[1]:setAdjacentDenialFrequency(0)
+classicEndless.easy = classicEndless[1]
+
+-- Normal, hard, and ex are identical to classic mode for endless
+classicEndless[2] = deepcpy(classic[2])
+classicEndless.normal = classicEndless[2]
+
+classicEndless[3] = deepcpy(classic[3])
+classicEndless.hard = classicEndless[3]
+
+classicEndless[4] = deepcpy(classic[4])
+classicEndless.ex = classicEndless[4]
+
+---@param difficulty number | string the difficulty expressed as index 1 2 3 4 or easy normal hard ex
+---@return LevelData # a deepcopy of the classic endless preset
+function LevelPresets.getClassicEndless(difficulty)
+  assert(classicEndless[difficulty], "trying to load inexistent difficulty preset" .. difficulty)
+  return deepcpy(classicEndless[difficulty])
+end
+
+LevelPresets.classicEndlessPresetCount = #classicEndless
+
+---@class PresetInfo
+---@field style Styles
+---@field level integer?
+---@field difficulty integer?
+---@field isEndless boolean?
+
+---@param levelData LevelData
+---@return PresetInfo? # style and preset information, or nil if levelData doesn't match any preset
+function LevelPresets.getStyleAndPreset(levelData)
+  if not levelData then
+    return nil
+  end
+
+  -- Check modern presets
+  for level = 1, #modern do
+    if LevelData.__eq(levelData, modern[level]) then
+      return {style = GameModes.Styles.MODERN, level = level, difficulty = nil, isEndless = false}
+    end
+  end
+
+  -- Check classicEndless presets
+  for difficulty = 1, #classicEndless do
+    if LevelData.__eq(levelData, classicEndless[difficulty]) then
+      return {style = GameModes.Styles.CLASSIC, level = nil, difficulty = difficulty, isEndless = true}
+    end
+  end
+
+  -- Check classic presets
+  for difficulty = 1, #classic do
+    if LevelData.__eq(levelData, classic[difficulty]) then
+      return {style = GameModes.Styles.CLASSIC, level = nil, difficulty = difficulty, isEndless = false}
+    end
+  end
+
+  -- Doesn't match any preset - return nil
+  return nil
+end
 
 return LevelPresets

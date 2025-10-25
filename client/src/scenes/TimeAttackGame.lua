@@ -17,7 +17,7 @@ end
 
 ---@param match ClientMatch
 function TimeAttackGame:onMatchEnded(match)
-  if match.players[1].settings.style == GameModes.Styles.CLASSIC then
+  if match.players[1].stack.difficulty then
     GAME.scores:saveTimeAttack1PScoreForLevel(match.players[1].stack.engine.score, match.players[1].stack.difficulty)
   end
 end

@@ -458,6 +458,7 @@ function NetClient:requestSpectate(roomNumber)
   end
 end
 
+---@param gameMode GameMode
 function NetClient:requestRoom(gameMode)
   if self:isConnected() then
     self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode))
