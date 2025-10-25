@@ -192,7 +192,7 @@ function Room:remove_spectator(spectator)
       self.spectators[i].state = "lobby"
       logger.debug(spectator.name .. " left " .. self.name .. " as a spectator")
       table.remove(self.spectators, i)
-      spectator:removeFromRoom(self, spectator.name .. " left")
+      spectator:removeFromRoom(self)
       lobbyChanged = true
       break
     end

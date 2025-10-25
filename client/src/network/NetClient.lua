@@ -125,7 +125,12 @@ local function processLeaveRoomMessage(self, message)
       -- instead we actively abort the match ourselves
       self.room.match:abort()
       self.room.match:deinit()
-      transition = MessageTransition(love.timer.getTime(), 5, message.reason or "", false)
+
+      if message.reason then
+        -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
+        -- the other player and spectators should be informed why the room is being closed
+        transition = MessageTransition(love.timer.getTime(), 5, message.reason, false)
+      end
     end
 
     -- and then shutdown the room
