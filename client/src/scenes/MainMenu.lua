@@ -4,6 +4,7 @@ local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
+local DebugSettings = require("client.src.debug.DebugSettings")
 local EndlessMenu = require("client.src.scenes.EndlessMenu")
 local PuzzleMenu = require("client.src.scenes.PuzzleMenu")
 local TimeAttackMenu = require("client.src.scenes.TimeAttackMenu")
@@ -38,6 +39,16 @@ MainMenu.name = "MainMenu"
 local function switchToScene(scene, transition)
   GAME.theme:playValidationSfx()
   GAME.navigationStack:push(scene, transition)
+end
+
+function MainMenu:refresh()
+  if self.menu then
+    self.menu:detach()
+    self.menu = nil
+  end
+
+  self.menu = self:createMainMenu()
+  self.uiRoot:addChild(self.menu)
 end
 
 function MainMenu:createMainMenu()
@@ -104,12 +115,12 @@ function MainMenu:createMainMenu()
                         }
 
   local function addDebugMenuItems()
-    if config.debugShowServers then
+    if DebugSettings.showDebugServers() then
       for i, menuItem in ipairs(debugMenuItems) do
         menu:addMenuItem(i + 7, menuItem)
       end
     end
-    if config.debugShowDesignHelper then
+    if DebugSettings.showDesignHelper() then
       menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
           switchToScene(DesignHelper())
         end))

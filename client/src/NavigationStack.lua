@@ -1,11 +1,23 @@
 local DirectTransition = require("client.src.scenes.Transitions.DirectTransition")
 local logger = require("common.lib.logger")
+local UIElement = require("client.src.ui.UIElement")
+local class = require("common.lib.class")
+local consts = require("common.engine.consts")
 
-local NavigationStack = {
-  scenes = {},
-  transition = nil,
-  callback = nil,
-}
+---@class NavigationStack : UiElement
+---@field scenes Scene[]
+---@field transition table?
+---@field callback function?
+local NavigationStack = class(
+  function(self)
+    self.scenes = {}
+    self.transition = nil
+    self.callback = nil
+    self.width = consts.CANVAS_WIDTH
+    self.height = consts.CANVAS_HEIGHT
+  end,
+  UIElement
+)
 
 function NavigationStack:push(newScene, transition)
   local activeScene = self.scenes[#self.scenes]
@@ -142,7 +154,7 @@ function NavigationStack:getActiveScene()
   end
 end
 
-function NavigationStack:update(dt)
+function NavigationStack:updateSelf(dt)
   if self.transition then
     self.transition:update(dt)
 
@@ -163,7 +175,7 @@ function NavigationStack:update(dt)
   end
 end
 
-function NavigationStack:draw()
+function NavigationStack:drawSelf()
   if self.transition then
     self.transition:draw()
   else
@@ -172,6 +184,14 @@ function NavigationStack:draw()
     end
     self.scenes[#self.scenes]:draw()
   end
+end
+
+function NavigationStack:getTouchedElement(x, y)
+  local activeScene = self:getActiveScene()
+  if activeScene and activeScene.uiRoot then
+    return activeScene.uiRoot:getTouchedElement(x, y)
+  end
+  return nil
 end
 
 return NavigationStack

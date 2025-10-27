@@ -12,6 +12,7 @@ local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 local MatchRules = require("common.data.MatchRules")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 ---@class Match
 ---@field stacks (Stack | SimulatedStack)[] The stacks to run as part of the match
@@ -615,10 +616,11 @@ function Match:shouldRun(stack, runsSoFar)
   end
 
   -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config and config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
+  local framesBehind = DebugSettings.getVSFramesBehind()
+  if not stack.is_local and framesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
     -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
     if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
-      if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then
+      if stack.clock + framesBehind >= self.garbageTargets[2][1].clock then
         return false
       end
     end

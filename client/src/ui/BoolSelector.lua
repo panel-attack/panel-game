@@ -3,6 +3,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 ---@class BoolSelectorOptions : UiElementOptions
 ---@field startValue boolean?
@@ -11,9 +12,22 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@class BoolSelector : UiElement
 ---@field value boolean
 ---@field vertical boolean
-local BoolSelector = class(function(boolSelector, options)
-  boolSelector.value = options.startValue or false
-  boolSelector.vertical = false
+---@field circleRadius number
+---@field extraDistance number
+---@field lengthPadding number
+---@field widthPadding number
+local BoolSelector = class(function(self, options)
+  self.value = options.startValue or false
+  self.vertical = false
+  self.circleRadius = 10
+  self.extraDistance = 16
+  self.lengthPadding = 2
+  self.widthPadding = 2
+  self.onValueChange = options.onValueChange or function() end
+
+  -- Calculate initial dimensions
+  self.width = self:calculateWidth()
+  self.height = self:calculateHeight()
 end,
 UiElement)
 
@@ -62,57 +76,60 @@ function BoolSelector:setValue(value)
   end
 end
 
+---@return number
+function BoolSelector:calculateWidth()
+  local width = self.circleRadius * 2 + 2 * self.widthPadding
+  if not self.vertical then
+    width = width + self.extraDistance
+  end
+  return width
+end
+
+---@return number
+function BoolSelector:calculateHeight()
+  local height = self.circleRadius * 2 + 2 * self.lengthPadding
+  if self.vertical then
+    height = height + self.extraDistance
+  end
+  return height
+end
+
 -- other code may implement a callback here
 -- function BoolSelector.onValueChange() end
 
-local circleRadius = 10
-local extraDistance = 16
-local lengthPadding = 2
-local widthPadding = 2
-local totalWidth = 0
-local totalLength = 0
-local fakeCenteredChild = {hAlign = "center", vAlign = "center", width = totalWidth, height = totalLength}
-
 function BoolSelector:drawSelf()
-  if DEBUG_ENABLED then
+  if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(0, 0, 1, 1)
     GraphicsUtil.drawRectangle("line", self.x + 1, self.y + 1, self.width - 2, self.height - 2)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 
-  local circleX = circleRadius + widthPadding
-  local circleY = circleRadius + lengthPadding
-  totalWidth = circleRadius * 2 + 2 * widthPadding
-  totalLength = circleRadius * 2 + 2 * lengthPadding
+  local drawX = self.x + self.widthPadding
+  local drawY = self.y + self.lengthPadding
+  local drawWidth = self.width - 2 * self.widthPadding
+  local drawHeight = self.height - 2 * self.lengthPadding
+
+  local circleX = self.circleRadius
+  local circleY = self.circleRadius
+
   if self.vertical then
-    totalLength = totalLength + extraDistance
     if self.value == false then
-      circleY = circleY + extraDistance
+      circleY = circleY + self.extraDistance
     end
   else
-    totalWidth = totalWidth + extraDistance
     if self.value then
-      circleX = circleX + extraDistance
+      circleX = circleX + self.extraDistance
     end
   end
-  fakeCenteredChild.width = totalWidth
-  fakeCenteredChild.height = totalLength
-
-  -- we want these to be centered but creating a Rectangle / Circle ui element is maybe a bit too much?
-  -- so just apply the translation via a fake element with all necessary props
-  GraphicsUtil.applyAlignment(self, fakeCenteredChild)
-  love.graphics.translate(self.x, self.y)
 
   if self.value then
     GraphicsUtil.setColor(30/255, 190/255, 67/255, 1)
-    GraphicsUtil.drawRectangle("fill", 0, 0, totalWidth, totalLength, nil, nil, nil, nil, circleRadius, circleRadius)
+    GraphicsUtil.drawRectangle("fill", drawX, drawY, drawWidth, drawHeight, nil, nil, nil, nil, self.circleRadius, self.circleRadius)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 
-  GraphicsUtil.drawRectangle("line", 0, 0, totalWidth, totalLength, nil, nil, nil, nil, circleRadius, circleRadius)
-  love.graphics.circle("fill", circleX, circleY, circleRadius)
-
-  GraphicsUtil.resetAlignment()
+  GraphicsUtil.drawRectangle("line", drawX, drawY, drawWidth, drawHeight, nil, nil, nil, nil, self.circleRadius, self.circleRadius)
+  love.graphics.circle("fill", drawX + circleX, drawY + circleY, self.circleRadius)
 end
 
 return BoolSelector
