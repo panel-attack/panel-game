@@ -33,6 +33,14 @@ local system = require("client.src.system")
 local ModController = require("client.src.mods.ModController")
 
 local RichPresence = require("client.lib.rich_presence.RichPresence")
+local DebugSettings = require("client.src.debug.DebugSettings")
+local Button = require("client.src.ui.Button")
+local TextButton = require("client.src.ui.TextButton")
+local OverlayContainer = require("client.src.ui.OverlayContainer")
+local DebugMenu = require("client.src.debug.DebugMenu")
+local Label = require("client.src.ui.Label")
+local UIElement = require("client.src.ui.UIElement")
+local NavigationStack = require("client.src.NavigationStack")
 
 -- Provides a scale that is on .5 boundary to make sure it renders well.
 -- Useful for creating new canvas with a solid DPI
@@ -106,12 +114,19 @@ local Game = class(
 
     -- time in seconds, can be used by other elements to track the passing of time beyond dt
     self.timer = love.timer.getTime()
+
+    self.debugOverlay = nil
+    self.debugButton = nil
+
+    -- Root UI element that contains all UI (scenes + overlays + debug)
+    self.uiRoot = UIElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
   end
 )
 
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
+  DebugSettings.init()
   PuzzleLibrary.cleanupDefaultPuzzles(consts.PUZZLES_SAVE_DIRECTORY)
 
   -- move to constructor
@@ -131,8 +146,11 @@ function Game:load()
     self.input:importConfigurations(user_input_conf)
   end
 
-  self.navigationStack = require("client.src.NavigationStack")
+  self.navigationStack = NavigationStack({})
   self.navigationStack:push(StartUp({setupRoutine = self.setupRoutine}))
+
+  -- Add navigation stack to root UI
+  self.uiRoot:addChild(self.navigationStack)
   self.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=GAME:newCanvasSnappedScale()})
 end
 
@@ -253,6 +271,8 @@ function Game:setupRoutine()
 
   self:initializeLocalPlayer()
   ModController:loadModFor(characters[GAME.localPlayer.settings.characterId], GAME.localPlayer, true)
+
+  self:initializeDebugOverlay()
 end
 
 -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate
@@ -366,9 +386,9 @@ function Game:update(dt)
 
   handleShortcuts()
 
-  prof.push("navigationStack update")
-  self.navigationStack:update(dt)
-  prof.pop("navigationStack update")
+  prof.push("uiRoot update")
+  self.uiRoot:update(dt)
+  prof.pop("uiRoot update")
 
   if self.backgroundImage then
     self.backgroundImage:update(dt)
@@ -386,7 +406,7 @@ function Game:draw()
   love.graphics.clear()
 
   -- With this, self.globalCanvas is clear and set as our active canvas everything is being drawn to
-  self.navigationStack:draw()
+  self.uiRoot:draw()
 
   self:drawFPS()
   self:drawScaleInfo()
@@ -402,8 +422,7 @@ function Game:draw()
 end
 
 function Game:drawFPS()
-  -- Draw the FPS if enabled
-  if self.config.show_fps then
+  if self.config.show_fps or DebugSettings.forceFPS() then
     love.graphics.print("FPS: " .. love.timer.getFPS(), 1, 1)
   end
 end
@@ -665,5 +684,41 @@ function Game:setLanguage(lang_code)
 
   Localization:refresh_global_strings()
 end
+
+function Game:initializeDebugOverlay()
+  if not DEBUG_ENABLED then
+    return
+  end
+
+  self.debugButton = TextButton({
+    x = consts.CANVAS_WIDTH - 50,
+    y = consts.CANVAS_HEIGHT - 50,
+    label = Label({
+      text = "Debug",
+      translate = false,
+      hAlign = "center",
+      vAlign = "center"
+    }),
+    width = 40,
+    height = 40,
+    onClick = function()
+      if self.debugOverlay then
+        if not self.debugOverlay:isActive() then
+          self.debugOverlay:open()
+        end
+      end
+    end
+  })
+
+  local debugMenu = DebugMenu.makeDebugMenu({height = consts.CANVAS_HEIGHT - 40})
+  self.debugOverlay = OverlayContainer({
+    content = debugMenu
+  })
+
+  -- Add debug UI to root
+  self.uiRoot:addChild(self.debugButton)
+  self.uiRoot:addChild(self.debugOverlay)
+end
+
 
 return Game
