@@ -2,7 +2,7 @@
 local FILENAME = "client/assets/localization.csv"
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
-local GraphicsUtil = require("client.src.graphics.graphics_util")
+local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local fileUtils = require("client.src.FileUtils")
 
@@ -15,11 +15,11 @@ Localization = {
     init = false,
 }
 
-function Localization.get_list_codes(self)
+function Localization:get_list_codes()
   return self.codes
 end
 
-function Localization.get_language(self)
+function Localization:get_language()
   return self.codes[self.lang_index]
 end
 
@@ -177,6 +177,42 @@ function loc(text_key, ...)
   end
 
   return ret
+end
+
+function Localization:getCurrentLanguageCode()
+  if config.language_code then
+    return config.language_code
+  end
+  return "EN"
+end
+
+-- Creates language labels by temporarily switching to each language to load proper fonts
+-- Returns: array of {code, name} pairs, array of labels with proper fonts
+function Localization:getLanguageLabelsWithFonts()
+  local languageData = {}
+  local languageLabels = {}
+  local originalLanguageCode = self:getCurrentLanguageCode()
+
+  for k, languageCode in ipairs(self:get_list_codes()) do
+    GAME:setLanguage(languageCode)
+    local languageName = self.data[languageCode]["LANG"]
+    languageData[#languageData + 1] = {code = languageCode, name = languageName}
+    languageLabels[#languageLabels + 1] = ui.Label({text = languageName, translate = false})
+  end
+
+  GAME:setLanguage(originalLanguageCode)
+
+  return languageData, languageLabels
+end
+
+-- Gets the index of a language code in the list
+function Localization:getLanguageIndex(languageCode)
+  for k, code in ipairs(self:get_list_codes()) do
+    if code == languageCode then
+      return k
+    end
+  end
+  return 1
 end
 
 return Localization

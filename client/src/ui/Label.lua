@@ -27,7 +27,8 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field strokeColors table? List of red, green, blue, and alpha color for stroke, no stroke if nil
 ---@field textColor table? List of red, green, blue, and alpha color for text
 ---@field drawable love.TextBatch Cached love.TextBatch for redrawing
----@field autoSizeToText boolean true if the text should change the width and height
+---@field autoSizeWidth boolean true if the text should change the width
+---@field autoSizeHeight boolean true if the text should change the height
 ---@field paddingTop number Top padding in pixels
 ---@field paddingRight number Right padding in pixels
 ---@field paddingBottom number Bottom padding in pixels
@@ -38,7 +39,8 @@ local Label = class(
     self.hAlign = options.hAlign or "left"
     self.vAlign = options.vAlign or "top"
     self.hFill = options.hFill or false
-    self.autoSizeToText = (self.width == 0 or self.height == 0)
+    self.autoSizeWidth = self.width == 0
+    self.autoSizeHeight = self.height == 0
     self.wrapWidth = options.wrapWidth or nil
     self.fontSize = options.fontSize or GraphicsUtil.fontSize
     local padding = options.padding or 0
@@ -151,8 +153,11 @@ function Label:refreshFormatting()
     self.drawable:set(text)
   end
   
-  if self.autoSizeToText then
+  if self.autoSizeWidth then
     self.width = self.drawable:getWidth() + self.paddingLeft + self.paddingRight
+  end
+
+  if self.autoSizeHeight then
     self.height = self.drawable:getHeight() + self.paddingTop + self.paddingBottom
   end
 end

@@ -50,16 +50,9 @@ function StartUp:updateSelf(dt)
 
     if coroutine.status(self.setupRoutine) == "dead" then
       love.graphics.setFont(GraphicsUtil.getGlobalFont())
-      -- we need the indirection for the scenes here because startup initializes localization which following scenes need
-      if themes[config.theme].images.bg_title then
-        GAME.navigationStack:replace(require("client.src.scenes.TitleScreen")())
-      else
-        GAME.navigationStack:replace(require("client.src.scenes.MainMenu")())
-      end
-
-      if next(ModLoader.invalidMods) then
-        GAME.navigationStack:push(require("client.src.scenes.ModValidationScene")())
-      end
+      -- Delegate to SceneCoordinator to handle initial scene and setup flow
+      local SceneCoordinator = require("client.src.scenes.SceneCoordinator")
+      SceneCoordinator.handleStartupComplete(SceneCoordinator)
     end
   end
 end

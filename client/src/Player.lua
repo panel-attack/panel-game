@@ -82,6 +82,7 @@ function(self, name, publicId, isLocal)
   self:createSignal("levelChanged")
   self:createSignal("levelDataChanged")
   self:createSignal("inputMethodChanged")
+  self:createSignal("inputConfigurationChanged")
   self:createSignal("puzzleSetChanged")
   self:createSignal("ratingChanged")
   self:createSignal("leagueChanged")
@@ -94,6 +95,10 @@ Player.TYPE = "Player"
 function Player:reset()
   MatchParticipant.reset(self)
   self:unrestrictInputs()
+end
+
+function Player:isLocalHuman()
+  return self.isLocal and self.human
 end
 
 ---@param engineStack Stack
@@ -217,6 +222,7 @@ function Player:restrictInputs(inputConfiguration)
     error("Player " .. self.playerNumber .. " is trying to claim a second input configuration")
   end
   self.inputConfiguration = input:claimConfiguration(self, inputConfiguration)
+  self:emitSignal("inputConfigurationChanged", self.inputConfiguration)
 end
 
 function Player:unrestrictInputs()
@@ -229,6 +235,7 @@ function Player:unrestrictInputs()
     self.lastUsedInputConfiguration = self.inputConfiguration
     input:releaseConfiguration(self, self.inputConfiguration)
     self.inputConfiguration = nil
+    self:emitSignal("inputConfigurationChanged", nil)
   end
 end
 

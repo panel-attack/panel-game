@@ -33,7 +33,7 @@ local ChallengeMode = class(
     self.player = ChallengeModePlayer(#self.players + 1)
     self.player.settings.difficulty = difficulty
     self:addPlayer(self.player)
-    self:assignInputConfigurations()
+    self:restoreInputConfigurations()
     self:setStage(stageIndex or 1)
   end,
   BattleRoom

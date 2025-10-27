@@ -40,6 +40,7 @@ local flags = {
 ---@field main_menu_y_max number
 ---@field main_menu_max_height number
 ---@field defaultStage Stage
+---@field colors table<string, number[]> color palette where each value is an RGBA array of four numbers (0-1 range)
 Theme =
   class(
 ---@param self Theme
@@ -57,6 +58,22 @@ Theme =
     self.main_menu_screen_pos = {0, 0} -- the top center position of most menus
     self.main_menu_y_max = 0
     self.main_menu_max_height = 0
+
+    self.colors = {
+      menuDefaultBackgroundColor = {1, 1, 1, 0.15},
+      menuDefaultBorderColor = {1, 1, 1, 0.15},
+      menuSelectedBackgroundColor = {0.6, 0.6, 1, 0.15},
+      menuSelectedBorderColor = {0.6, 0.6, 1, 0.15},
+      activeBackgroundColor = {0.2, 0.3, 0.4, 0.9},
+      darkTransparentBackgroundColor = {0, 0, 0, 0.75},
+      highlightTextColor = {1, 1, 0.3, 1},
+      inputSlotDefaultBackgroundColor = {0.2, 0.2, 0.2, 0.9},
+      inputSlotDefaultBorderColor = {0.4, 0.4, 0.4, 0.9},
+      inputSlotSelectedBackgroundColor = {0.2, 0.2, 0.34, 1.0},
+      inputSlotSelectedBorderColor = {0.5, 0.5, 0.8, 1.0},
+      incompleteConfigBackgroundColor = {0.918, 0.251, 0.275, 1.0},
+      configCorrectBackgroundColor = {0.3, .3, .3, 0.7}
+    }
   end
 )
 
@@ -360,6 +377,42 @@ local function loadPlayerNumberIcons(theme)
   return theme.images.IMG_players
 end
 
+local function loadInputPromptIcons(theme)
+  local icons = {}
+
+  -- Load basic device types
+  icons.controller = theme:load_theme_img("input/controller")
+  icons.keyboard = theme:load_theme_img("input/keyboard")
+  icons.touch = theme:load_theme_img("input/touch")
+  icons.mouse = theme:load_theme_img("input/mouse")
+
+  -- Load specific controller variants
+  icons.controller_variants = {}
+  icons.controller_variants.generic = theme:load_theme_img("input/controller_generic")
+  icons.controller_variants.playstation1 = theme:load_theme_img("input/controller_playstation1")
+  icons.controller_variants.playstation2 = theme:load_theme_img("input/controller_playstation2")
+  icons.controller_variants.playstation3 = theme:load_theme_img("input/controller_playstation3")
+  icons.controller_variants.playstation4 = theme:load_theme_img("input/controller_playstation4")
+  icons.controller_variants.playstation5 = theme:load_theme_img("input/controller_playstation5")
+  icons.controller_variants.xbox360 = theme:load_theme_img("input/controller_xbox360")
+  icons.controller_variants.xboxone = theme:load_theme_img("input/controller_xboxone")
+  icons.controller_variants.xboxseries = theme:load_theme_img("input/controller_xboxseries")
+  icons.controller_variants.switch_pro = theme:load_theme_img("input/controller_switch_pro")
+
+  -- Load add controller icon
+  icons.controller_add = theme:load_theme_img("input/controller_add")
+  icons.controller_error = theme:load_theme_img("input/error")
+
+  -- Load device number overlays
+  icons.device_numbers = {}
+  for i = 0, 9 do
+    icons.device_numbers[i] = theme:load_theme_img("input/device_number_" .. i)
+  end
+
+  theme.images.inputPrompts = icons
+  return theme.images.inputPrompts
+end
+
 function Theme:loadSelectionGraphics()
   self.images.flags = {}
   for _, flag in ipairs(flags) do
@@ -393,6 +446,7 @@ function Theme:loadSelectionGraphics()
   self.images.IMG_random_character = self:load_theme_img("random_character")
 
   loadPlayerNumberIcons(self)
+  loadInputPromptIcons(self)
   loadGridCursors(self)
 end
 
@@ -1027,6 +1081,48 @@ function Theme:getPlayerNumberIcon(index)
   end
 
   return self.images.IMG_players[index]
+end
+
+---@param deviceType string
+---@return love.Texture
+function Theme:getInputPromptIcon(deviceType)
+  if not self.images.inputPrompts then
+    loadInputPromptIcons(self)
+  end
+  return self.images.inputPrompts[deviceType]
+end
+
+---@param deviceType string "controller", "keyboard", "touch", or "mouse"
+---@param controllerImageVariant string? specific controller image variant key
+---@return love.Texture
+function Theme:getSpecificInputIcon(deviceType, controllerImageVariant)
+  if not self.images.inputPrompts then
+    loadInputPromptIcons(self)
+  end
+
+  if deviceType == "controller" and controllerImageVariant and self.images.inputPrompts.controller_variants then
+    local specificIcon = self.images.inputPrompts.controller_variants[controllerImageVariant]
+    if specificIcon then
+      return specificIcon
+    end
+  end
+
+  -- Fallback to basic device type
+  return self.images.inputPrompts[deviceType]
+end
+
+---@param number integer the device number (0-9)
+---@return love.Texture?
+function Theme:getDeviceNumberIcon(number)
+  if not self.images.inputPrompts then
+    loadInputPromptIcons(self)
+  end
+
+  if self.images.inputPrompts.device_numbers and number >= 0 and number <= 9 then
+    return self.images.inputPrompts.device_numbers[number]
+  end
+
+  return nil
 end
 
 ---@param index integer?

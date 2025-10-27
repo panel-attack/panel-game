@@ -9,7 +9,7 @@ require("client.src.globals")
 -- Default configuration values
 ---@class UserConfig
 ---@field version string
----@field language_code string
+---@field language_code string?
 ---@field theme string
 ---@field panels string?
 ---@field character string
@@ -51,12 +51,13 @@ require("client.src.globals")
 ---@field display integer
 ---@field windowX number?
 ---@field windowY number?
+---@field discordCommunityShown boolean
 config = {
     -- The last used engine version
     version                       = consts.ENGINE_VERSION,
 
       -- Lang used for localization
-    language_code                 = "EN",
+    language_code                 = nil,
 
     -- Last selected theme, panels, character and stage
     theme                         = consts.DEFAULT_THEME_DIRECTORY,
@@ -130,12 +131,15 @@ config = {
     display                       = 1,
     windowX                       = nil,
     windowY                       = nil,
+    discordCommunityShown         = false,
   }
 
   -- writes to the "conf.json" file
   function write_conf_file()
     pcall(
       function()
+        local encoded = json.encode(config)
+        ---@cast encoded string
         love.filesystem.write("conf.json", json.encode(config))
       end
     )
@@ -288,6 +292,9 @@ config = {
           end
           if type(read_data.enableMenuMusic) == "boolean" then
             configTable.enableMenuMusic = read_data.enableMenuMusic
+          end
+          if type(read_data.discordCommunityShown) == "boolean" then
+            configTable.discordCommunityShown = read_data.discordCommunityShown
           end
 
           configTable.debug = DebugSettings.normalizeConfigValues(read_data.debug)
