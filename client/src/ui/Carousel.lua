@@ -4,7 +4,6 @@ local Focusable = require(PATH .. ".Focusable")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 local function calculateFontSize(height)
   return math.floor(height / 2) + 1
@@ -88,7 +87,7 @@ function Carousel.setPassengerByIndex(self, index)
 end
 
 function Carousel:drawSelf()
-  if DebugSettings.showUIElementBorders() then
+  if DEBUG_ENABLED then
     GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
   end
 end

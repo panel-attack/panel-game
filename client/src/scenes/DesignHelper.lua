@@ -41,7 +41,7 @@ function DesignHelper:loadGrid()
 end
 
 function DesignHelper:loadRankedSelection(width)
-  local rankedSelector = ui.BoolSelector({startValue = true, width = width, vAlign = "center", hAlign = "center"})
+  local rankedSelector = ui.BoolSelector({startValue = true, vFill = true, width = width, vAlign = "center", hAlign = "center"})
 
   return rankedSelector
 end

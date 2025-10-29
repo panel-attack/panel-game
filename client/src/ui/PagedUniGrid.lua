@@ -6,7 +6,6 @@ local Grid = require(PATH .. ".Grid")
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 local function addNewPage(pagedUniGrid)
   local grid = Grid({
@@ -102,7 +101,7 @@ function PagedUniGrid:refreshPageTurnButtonVisibility()
 end
 
 function PagedUniGrid:drawSelf()
-  if DebugSettings.showUIElementBorders() then
+  if DEBUG_ENABLED then
     GraphicsUtil.setColor(1, 0, 0, 1)
     GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)

@@ -12,7 +12,6 @@ local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTran
 local Easings = require("client.src.Easings")
 local system = require("client.src.system")
 local GeneratorSource = require("common.engine.GeneratorSource")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
 ---@class BattleRoom : Signal
@@ -384,7 +383,7 @@ function BattleRoom:createScene(match)
   end
   
   -- for touch android players load a different scene
-  if (system.isMobileOS() or DebugSettings.simulateMobileOS()) and self.gameScene.name ~= "PuzzleGame" and
+  if (system.isMobileOS() or DEBUG_ENABLED) and self.gameScene.name ~= "PuzzleGame" and
   --but only if they are the only local player cause for 2p vs local using portrait mode would be bad
       tableUtils.count(self.players, function(p) return p.isLocal and p.human end) == 1 then
     for _, player in ipairs(self.players) do

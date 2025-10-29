@@ -7,13 +7,7 @@ local logger = require("common.lib.logger")
 local function runSystemCommands()
   -- toggle debug mode
   if input.allKeys.isDown["d"] then
-    if GAME.debugOverlay then
-      if GAME.debugOverlay.active then
-        GAME.debugOverlay:close()
-      else
-        GAME.debugOverlay:open()
-      end
-    end
+    config.debug_mode = not config.debug_mode
   -- reload characters
   elseif input.allKeys.isDown["c"] then
     characters_reload_graphics()

@@ -16,7 +16,6 @@ local Telegraph = require("client.src.graphics.Telegraph")
 local MatchParticipant = require("client.src.MatchParticipant")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 local NetworkProtocol = require("common.network.NetworkProtocol")
-local DebugSettings = require("client.src.debug.DebugSettings")
 ---@module "client.src.ChallengeModePlayerStack"
 
 ---@class ClientMatch
@@ -560,7 +559,7 @@ end
 
 function ClientMatch:drawCommunityMessage()
   -- Draw the community message
-  if not DebugSettings.showStackDebugInfo() then
+  if not config.debug_mode then
     GraphicsUtil.printf(join_community_msg or "", 0, 668, consts.CANVAS_WIDTH, "center")
   end
 end
@@ -599,7 +598,7 @@ function ClientMatch:render()
     end
   end
 
-  if DebugSettings.showStackDebugInfo() then
+  if config.debug_mode then
     local padding = 14
     local drawX = 500
     local drawY = -4

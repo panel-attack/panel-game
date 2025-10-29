@@ -5,7 +5,6 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
 local directsFocus = require("client.src.ui.FocusDirector")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 ---@alias sceneMusic ("none" | "main" | "title_screen" | "select_screen")
 
@@ -84,7 +83,7 @@ end
 
 function Scene:drawCommunityMessage()
   -- Draw the community message
-  if not DebugSettings.showStackDebugInfo() then
+  if not config.debug_mode then
     GraphicsUtil.printf(join_community_msg or "", 0, (668 / 720) * GAME.globalCanvas:getHeight(), GAME.globalCanvas:getWidth(), "center")
   end
 end

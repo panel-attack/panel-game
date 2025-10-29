@@ -5,7 +5,6 @@ local Label = require(PATH .. ".Label")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 local NAV_BUTTON_WIDTH = 25
 local EMPTY_STEPPER_WIDTH = 160
@@ -111,7 +110,7 @@ function Stepper:refreshLocalization()
 end
 
 function Stepper:drawSelf()
-  if DebugSettings.showUIElementBorders() then
+  if config.debug_mode then
     GraphicsUtil.setColor(self.color)
     GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height)
     GraphicsUtil.setColor(self.borderColor)

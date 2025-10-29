@@ -5,7 +5,6 @@ local util = require("common.lib.util")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.zoneProfiler")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 local ReplayGame = class(
   function (self, sceneParams)
@@ -142,7 +141,7 @@ function ReplayGame:drawHUD()
     end
 
     stack:drawLevel()
-    if stack.analytic and not DebugSettings.showStackDebugInfo() then
+    if stack.analytic and not DEBUG_ENABLED then
       prof.push("Stack:drawAnalyticData")
       stack:drawAnalyticData()
       prof.pop("Stack:drawAnalyticData")

@@ -1,7 +1,6 @@
 local class = require("common.lib.class")
 local ClientStack = require("client.src.ClientStack")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 ---@class ChallengeModePlayerStack : ClientStack
 ---@field engine SimulatedStack
@@ -199,7 +198,7 @@ function ChallengeModePlayerStack:drawMultibar()
 end
 
 function ChallengeModePlayerStack:drawDebug()
-  if DebugSettings.showStackDebugInfo() then
+  if config.debug_mode then
     local drawX = self.frameOriginX + self:canvasWidth() / 2
     local drawY = 10
     local padding = 14

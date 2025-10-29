@@ -2,7 +2,6 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 local GridElement = class(function(gridElement, options)
   if options.content then
@@ -17,7 +16,7 @@ local GridElement = class(function(gridElement, options)
   gridElement.gridHeight = options.gridHeight
   if options.drawBorders ~= nil then
     gridElement.drawBorders = options.drawBorders
-  elseif DebugSettings.showUIElementBorders() then
+  elseif DEBUG_ENABLED then
     gridElement.drawBorders = true
   else
     gridElement.drawBorders = false

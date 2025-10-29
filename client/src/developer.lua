@@ -1,5 +1,4 @@
 local system = require("client.src.system")
-local DebugSettings = require("client.src.debug.DebugSettings")
 ---@diagnostic disable: duplicate-set-field
 
 -- Put any local development changes you need in here that you don't want commited.
@@ -8,7 +7,7 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 local function enableProfiler(threshold)
   local prof = require("common.lib.zoneProfiler")
   prof.enable(true)
-  prof.setDurationFilter((threshold or DebugSettings.getProfileThreshold()) / 1000)
+  prof.setDurationFilter((threshold or config.debugProfileThreshold) / 1000)
 end
 
 local developerTools = {}

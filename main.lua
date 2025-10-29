@@ -1,7 +1,6 @@
 local logger = require("common.lib.logger")
 require("common.lib.mathExtensions")
 local utf8 = require("common.lib.utf8Additions")
-local DebugSettings = require("client.src.debug.DebugSettings")
 local inputManager = require("client.src.inputManager")
 require("client.src.globals")
 local touchHandler = require("client.src.ui.touchHandler")
@@ -63,8 +62,8 @@ function love.load(args, rawArgs)
 
   GAME:load()
   if not PROFILE_MEMORY then
-    prof.enable(DebugSettings.getProfileFrameTimes())
-    prof.setDurationFilter(DebugSettings.getProfileThreshold() / 1000)
+    prof.enable(config.debugProfile)
+    prof.setDurationFilter(config.debugProfileThreshold / 1000)
   end
 end
 
@@ -79,7 +78,7 @@ end
 -- Intentional override
 ---@diagnostic disable-next-line: duplicate-set-field
 function love.update(dt)
-  if DebugSettings.showRuntimeGraph() then
+  if config.show_fps and config.debug_mode then
     if CustomRun.runTimeGraph == nil then
       CustomRun.runTimeGraph = RunTimeGraph()
     end
@@ -127,7 +126,7 @@ end
 function love.draw()
   GAME:draw()
 
-  if DebugSettings.drawGraphicsStats() then
+  if DEBUG_ENABLED then
     local stats = love.graphics.getStats()
     local width, height = love.graphics.getDimensions()
 
