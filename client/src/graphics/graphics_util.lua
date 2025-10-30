@@ -379,6 +379,42 @@ function GraphicsUtil.resetAlignment()
   love.graphics.pop()
 end
 
+---@param width number Canvas width
+---@param height number Canvas height
+---@param drawFunc function Function to call inside renderTo
+---@param dpiscale number DPI scale for the canvas
+---@param filterMin string filter mode
+---@param filterMag string filter mode
+---@return love.graphics.Texture
+function GraphicsUtil.renderToImage(width, height, drawFunc, dpiscale, filterMin, filterMag)
+  love.graphics.push("all")
+  love.graphics.reset()
+
+  local canvas = love.graphics.newCanvas(width, height, {dpiscale = dpiscale})
+
+  canvas:setFilter(filterMin, filterMag)
+
+  canvas:renderTo(drawFunc)
+
+  -- Restore graphics state
+  love.graphics.pop()
+
+  local imageData
+  if love.getVersion() >= 12 then
+    imageData = love.graphics.readbackTexture(canvas)
+  else
+    imageData = canvas:newImageData()
+  end
+  local image = love.graphics.newImage(imageData, {dpiscale = dpiscale})
+
+  -- Preserve filter settings on the image
+  if filterMin and filterMag then
+    image:setFilter(filterMin, filterMag)
+  end
+
+  return image
+end
+
 local loveMajor = love.getVersion()
 
 if loveMajor >= 12 then

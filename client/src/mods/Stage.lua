@@ -183,25 +183,34 @@ end
 
 -- bundles without stage thumbnail display up to 4 thumbnails of their substages
 function Stage:createBundleThumbnail()
-  local canvas = love.graphics.newCanvas(2 * 80, 2 * 45)
-  canvas:renderTo(function()
-    for i, substageId in ipairs(self.subIds) do
-      if i <= 4 and (stages[substageId] or (allStages[substageId] and #self:getSubMods() == 0)) then
-        local stage = allStages[substageId]
-        local x = 0
-        local y = 0
-        if i % 2 == 0 then
-          x = 80
+  local firstStage = allStages[self.subIds[1]]
+  assert(firstStage ~= nil, "Expected a valid character in sub IDs")
+  local filterMin, filterMag = firstStage.images.thumbnail:getFilter()
+  local image = GraphicsUtil.renderToImage(
+    2 * 80,
+    2 * 45,
+    function()
+      for i, substageId in ipairs(self.subIds) do
+        if i <= 4 and (stages[substageId] or (allStages[substageId] and #self:getSubMods() == 0)) then
+          local stage = allStages[substageId]
+          local x = 0
+          local y = 0
+          if i % 2 == 0 then
+            x = 80
+          end
+          if i > 2 then
+            y = 45
+          end
+          local width, height = stage.images.thumbnail:getDimensions()
+          love.graphics.draw(stage.images.thumbnail, x, y, 0, 80 / width, 45 / height)
         end
-        if i > 2 then
-          y = 45
-        end
-        local width, height = stage.images.thumbnail:getDimensions()
-        love.graphics.draw(stage.images.thumbnail, x, y, 0, 80 / width, 45 / height)
       end
-    end
-  end)
-  return canvas
+    end,
+    GAME:newCanvasSnappedScale(),
+    filterMin,
+    filterMag
+  )
+  return image
 end
 
 -- uninits stage graphics

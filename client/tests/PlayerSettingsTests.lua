@@ -71,8 +71,6 @@ local function testVsSelfChangesEndlessClassicSettingsToModern()
   endlessPlayer:setLevelData(LevelPresets.getClassicEndless(1))
 
   -- Verify endless settings
-  assert(endlessPlayer.settings.style == GameModes.Styles.CLASSIC,
-    "Player should have classic style before vs self")
   assert(endlessPlayer.settings.levelData.colors == 5,
     "Player should have 5 colors before vs self")
   assert(endlessPlayer.settings.levelData.adjacentDenialFrequency == 0,

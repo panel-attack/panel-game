@@ -190,31 +190,36 @@ function Panels:loadSheets()
   self.size = self.sheets[1]:getHeight() / maxRowUsed
 end
 
--- 
+--
 function Panels:convertSinglesToSheetTexture(images, animationStates)
-  local canvas = love.graphics.newCanvas(self.size * 10, self.size * #animationStates,  {dpiscale = images[1]:getDPIScale()})
-  if self.size <= 24 then
-    -- none of the panels is bigger than 24x24 so we can assume pixel art style panels
-    canvas:setFilter("nearest", "nearest")
-  end
-  canvas:renderTo(function()
-    local row = 1
-    -- ipairs over a static table so the ordering is definitely consistent
-    for _, animationState in ipairs(animationStates) do
-      local animationConfig = self.animationConfig[animationState]
-      for frameNumber, imageIndex in ipairs(animationConfig.frames) do
-        local widthScale = self.size / images[imageIndex]:getWidth()
-        local heightScale = self.size / images[imageIndex]:getHeight()
-        if heightScale > 1 or widthScale > 1 then
-          images[imageIndex]:setFilter("nearest", "nearest")
-        end
-        love.graphics.draw(images[imageIndex], self.size * (frameNumber - 1), self.size * (row - 1),nil, widthScale, heightScale)
-      end
-      row = row + 1
-    end
-  end)
+  local dpiscale = images[1]:getDPIScale()
+  local filterMin, filterMag = images[1]:getFilter()
 
-  return canvas
+  local image = GraphicsUtil.renderToImage(
+    self.size * 10,
+    self.size * #animationStates,
+    function()
+      local row = 1
+      -- ipairs over a static table so the ordering is definitely consistent
+      for _, animationState in ipairs(animationStates) do
+        local animationConfig = self.animationConfig[animationState]
+        for frameNumber, imageIndex in ipairs(animationConfig.frames) do
+          local widthScale = self.size / images[imageIndex]:getWidth()
+          local heightScale = self.size / images[imageIndex]:getHeight()
+          if heightScale > 1 or widthScale > 1 then
+            images[imageIndex]:setFilter("nearest", "nearest")
+          end
+          love.graphics.draw(images[imageIndex], self.size * (frameNumber - 1), self.size * (row - 1), nil, widthScale, heightScale)
+        end
+        row = row + 1
+      end
+    end,
+    dpiscale,
+    filterMin,
+    filterMag
+  )
+
+  return image
 end
 
 local function validateSingleFilesAgainstConfig(imagesByColorAndIndex, animationConfig)
@@ -344,12 +349,21 @@ function Panels:load()
 
   self.quad = love.graphics.newQuad(0, 0, self.size, self.size, self.sheets[1]:getDimensions())
   self.displayIcons = {}
+
+  local dpiscale = self.sheets[1]:getDPIScale()
+  local filterMin, filterMag = self.sheets[1]:getFilter()
+
   for color = 1, 8 do
-    local canvas = love.graphics.newCanvas(self.size, self.size)
-    canvas:renderTo(function()
-      self:drawPanelFrame(color, "normal", 0, 0)
-    end)
-    self.displayIcons[color] = canvas
+    self.displayIcons[color] = GraphicsUtil.renderToImage(
+      self.size,
+      self.size,
+      function()
+        self:drawPanelFrame(color, "normal", 0, 0)
+      end,
+      dpiscale,
+      filterMin,
+      filterMag
+    )
     --fileUtils.saveTextureToFile(self.sheets[color], self.path .. "/panel-" .. color, "png")
     self.batches[color] = love.graphics.newSpriteBatch(self.sheets[color], 100, "stream")
   end
