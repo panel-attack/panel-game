@@ -195,7 +195,7 @@ function Panels:convertSinglesToSheetTexture(images, animationStates)
   local dpiscale = images[1]:getDPIScale()
   local filterMin, filterMag = images[1]:getFilter()
 
-  local image = GraphicsUtil.renderToImage(
+  local image = GraphicsUtil.renderToTexture(
     self.size * 10,
     self.size * #animationStates,
     function()
@@ -354,7 +354,7 @@ function Panels:load()
   local filterMin, filterMag = self.sheets[1]:getFilter()
 
   for color = 1, 8 do
-    self.displayIcons[color] = GraphicsUtil.renderToImage(
+    self.displayIcons[color] = GraphicsUtil.renderToTexture(
       self.size,
       self.size,
       function()

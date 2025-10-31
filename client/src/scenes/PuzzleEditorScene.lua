@@ -398,7 +398,7 @@ function PuzzleEditorScene:createShockGarbageButton(size)
   local dpiscale = shockImages.mid:getDPIScale()
   local filterMin, filterMag = shockImages.mid:getFilter()
 
-  local garbageImage = GraphicsUtil.renderToImage(
+  local garbageImage = GraphicsUtil.renderToTexture(
     size,
     size,
     function()

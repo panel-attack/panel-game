@@ -342,7 +342,7 @@ function CharacterSelect:getCharacterButtons()
       local dpiscale = panels.sheets[1]:getDPIScale()
       local filterMin, filterMag = panels.sheets[1]:getFilter()
 
-      local panelImage = GraphicsUtil.renderToImage(
+      local panelImage = GraphicsUtil.renderToTexture(
         panels.size,
         panels.size,
         function()

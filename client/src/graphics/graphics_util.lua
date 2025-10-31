@@ -1,6 +1,7 @@
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local FileUtils = require("client.src.FileUtils")
+local system = require("client.src.system")
 
 -- Utility methods for drawing
 local GraphicsUtil = {
@@ -379,6 +380,7 @@ function GraphicsUtil.resetAlignment()
   love.graphics.pop()
 end
 
+--- A wrapper function to create a love.Texture that persists in memory for drawing
 ---@param width number Canvas width
 ---@param height number Canvas height
 ---@param drawFunc function Function to call inside renderTo
@@ -386,7 +388,7 @@ end
 ---@param filterMin string filter mode
 ---@param filterMag string filter mode
 ---@return love.graphics.Texture
-function GraphicsUtil.renderToImage(width, height, drawFunc, dpiscale, filterMin, filterMag)
+function GraphicsUtil.renderToTexture(width, height, drawFunc, dpiscale, filterMin, filterMag)
   love.graphics.push("all")
   love.graphics.reset()
 
@@ -399,25 +401,29 @@ function GraphicsUtil.renderToImage(width, height, drawFunc, dpiscale, filterMin
   -- Restore graphics state
   love.graphics.pop()
 
-  local imageData
-  if love.getVersion() >= 12 then
-    imageData = love.graphics.readbackTexture(canvas)
-  else
+  if not system.meetsLoveVersionRequirement(12, 0) then
+    -- in love 11.5 Image and Canvas are distinct types inheriting from the Texture type that behave differently in a number of things
+    -- a main difference is that love.window.updateMode and love.window.setMode cause all Canvas objects to be cleared so that they need to be redrawn
+    -- to avoid this, immediately use the canvas's ImageData to create an Image type object that does not get cleared by window updates
+    local imageData
     imageData = canvas:newImageData()
-  end
-  local image = love.graphics.newImage(imageData, {dpiscale = dpiscale})
 
-  -- Preserve filter settings on the image
-  if filterMin and filterMag then
-    image:setFilter(filterMin, filterMag)
-  end
+    local image = love.graphics.newImage(imageData, {dpiscale = dpiscale})
 
-  return image
+    -- Preserve filter settings on the image
+    if filterMin and filterMag then
+      image:setFilter(filterMin, filterMag)
+    end
+
+    return image
+  else
+    -- in love 12.0 the Canvas type does no longer exist, everything declared with newCanvas is a Texture and window updates don't clear these
+    -- that means we can use the canvas directly
+    return canvas
+  end
 end
 
-local loveMajor = love.getVersion()
-
-if loveMajor >= 12 then
+if system.meetsLoveVersionRequirement(12, 0) then
   GraphicsUtil.newText = love.graphics.newTextBatch
 else
   GraphicsUtil.newText = love.graphics.newText

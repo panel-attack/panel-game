@@ -186,7 +186,7 @@ function Stage:createBundleThumbnail()
   local firstStage = allStages[self.subIds[1]]
   assert(firstStage ~= nil, "Expected a valid character in sub IDs")
   local filterMin, filterMag = firstStage.images.thumbnail:getFilter()
-  local image = GraphicsUtil.renderToImage(
+  local image = GraphicsUtil.renderToTexture(
     2 * 80,
     2 * 45,
     function()

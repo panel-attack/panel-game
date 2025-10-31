@@ -395,7 +395,7 @@ function Character:createBundleIcon()
   local firstCharacter = allCharacters[self.subIds[1]]
   assert(firstCharacter ~= nil, "Expected a valid character in sub IDs")
   local filterMin, filterMag = firstCharacter.images.icon:getFilter()
-  local image = GraphicsUtil.renderToImage(
+  local image = GraphicsUtil.renderToTexture(
     2 * 168,
     2 * 168,
     function()
@@ -595,7 +595,7 @@ function Character:createGarbageTexture(width, height)
   -- Use the same filter as the garbage images so that upscaling looks right for pixel art
   local filterMin, filterMag = self.images.pop:getFilter()
 
-  local image = GraphicsUtil.renderToImage(
+  local image = GraphicsUtil.renderToTexture(
     width * 16,
     height * 16,
     function()
