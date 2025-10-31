@@ -49,8 +49,8 @@ function EndlessMenu:loadUserInterface()
 
   self.ui.styleSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.styleSelection:setTitle("endless_modern")
-  local styleSelector = self:createStyleSelection(player, unitSize)
-  self.ui.styleSelection:addElement(styleSelector, player)
+  local styleContainer, styleSelector = self:createStyleSelection(player, unitSize)
+  self.ui.styleSelection:addElement(styleContainer, player)
 
   self.ui.grid:createElementAt(5, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
 
