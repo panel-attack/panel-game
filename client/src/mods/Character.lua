@@ -335,7 +335,7 @@ function Character.graphics_init(self, full, yields)
       coroutine.yield()
     end
   end
-  if full then
+  if full and not self:isBundle() then
     self.garbagePrerenders = {}
 
     for width = 1, 6 do
