@@ -66,6 +66,7 @@ function developerTools.wrapConfig()
       config.name = realName
     end
     write()
+    config.name = CUSTOM_USERNAME or realName
   end
 end
 
