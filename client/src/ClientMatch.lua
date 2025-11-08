@@ -147,6 +147,8 @@ end
 function ClientMatch:setup()
   self.engine = Match(self.panelSource, self.matchRules)
 
+  self.engine.debug.vsFramesBehind = DebugSettings.getVSFramesBehind()
+
   self.stacks = {}
 
   for i, player in ipairs(self.players) do
