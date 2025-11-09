@@ -32,6 +32,10 @@ local MatchRules = require("common.data.MatchRules")
 ---@field gameOverClock integer?
 ---@field aborted boolean the game stopped in the middle because of crash, desync, game leave, online player left, etc.
 ---@field desyncError boolean? the match stopped because the other stack became too out of sync
+---@field debug MatchDebugConfig internal debug configuration that defaults to non-debug values
+
+---@class MatchDebugConfig
+---@field vsFramesBehind integer
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -64,6 +68,11 @@ function(self, panelSource, matchRules)
   self.clock = 0
   self.ended = false
   self.aborted = false
+
+  -- Initialize internal debug configuration with non-debug defaults
+  self.debug = {
+    vsFramesBehind = 0
+  }
 end
 )
 
@@ -615,10 +624,10 @@ function Match:shouldRun(stack, runsSoFar)
   end
 
   -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config and config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
+  if not stack.is_local and self.debug.vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
     -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
     if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
-      if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then
+      if stack.clock + self.debug.vsFramesBehind >= self.garbageTargets[2][1].clock then
         return false
       end
     end
