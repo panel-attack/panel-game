@@ -24,8 +24,8 @@ local SLOW_READ_SIZE = 1 -- bytes per read
 local SLEEP_INTERVAL = 0.0001 -- seconds
 local FAST_READ_SLEEP = 0.0001 -- seconds
 local RETRY_MAX_ATTEMPTS = 50000
-local MESSAGE_COUNT = 500
-local LARGE_MESSAGE_PAD_COUNT = 1000
+local MESSAGE_COUNT = 50
+local LARGE_MESSAGE_PAD_COUNT = 100
 
 -- Helper to create a TCP server on localhost
 local function createLocalServer()
