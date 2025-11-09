@@ -405,15 +405,22 @@ function CharacterSelect:getCharacterButtons()
     end
 
     if character.panels and panels[character.panels] then
-      -- draw the color 1 normal panel in the left corner
-      -- it's only available on the sheet so we got to render it to its own canvas first
       local panels = panels[character.panels]
-      local canvas = love.graphics.newCanvas(panels.size, panels.size)
-      canvas:renderTo(function()
-        panels:drawPanelFrame(1, "normal", 0, 0, panels.size)
-      end)
+      local dpiscale = panels.sheets[1]:getDPIScale()
+      local filterMin, filterMag = panels.sheets[1]:getFilter()
 
-      characterButton.panelIcon = ui.ImageContainer({image = canvas, vAlign = "bottom", hAlign = "left", x = 2, y = -2, width = 16, height = 16})
+      local panelImage = GraphicsUtil.renderToTexture(
+        panels.size,
+        panels.size,
+        function()
+          panels:drawPanelFrame(1, "normal", 0, 0, panels.size)
+        end,
+        dpiscale,
+        filterMin,
+        filterMag
+      )
+
+      characterButton.panelIcon = ui.ImageContainer({image = panelImage, vAlign = "bottom", hAlign = "left", x = 2, y = -2, width = 16, height = 16})
       characterButton:addChild(characterButton.panelIcon)
     end
 

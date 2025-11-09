@@ -85,7 +85,7 @@ function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked, 
   clientMatch.panelSource = panelSource
   clientMatch.supportsPause = #players == 1 and players[1].isLocal
 
-  clientMatch:setup()
+  clientMatch:setupFromGameMode()
 
   return clientMatch
 end
@@ -141,10 +141,12 @@ function ClientMatch.createFromReplay(replay, players)
     clientMatch.stacks[i] = clientStack
   end
 
+  clientMatch:sharedSetup()
+
   return clientMatch
 end
 
-function ClientMatch:setup()
+function ClientMatch:setupFromGameMode()
   self.engine = Match(self.panelSource, self.matchRules)
 
   self.stacks = {}
@@ -190,7 +192,14 @@ function ClientMatch:setup()
     end
   end
 
+  self:sharedSetup()
+
   self.replay = self.engine:createNewReplay()
+end
+
+
+function ClientMatch:sharedSetup()
+  self.engine.debug.vsFramesBehind = DebugSettings.getVSFramesBehind()
 end
 
 function ClientMatch:run()
