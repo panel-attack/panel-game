@@ -18,7 +18,7 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local socket = require("socket")
 local logger = require("common.lib.logger")
 
-local SEND_ATTEMPTS_MAX = 100
+local SEND_ATTEMPTS_MAX = 10000
 local READ_TIMEOUT = 9 -- 10 seconds will make connection fail with no ping
 local SLOW_READ_SIZE = 100 -- bytes per read
 local SLEEP_INTERVAL = 0.0001 -- seconds
