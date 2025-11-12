@@ -81,6 +81,7 @@ local allTests = {
   "server.tests.LeaderboardTests",
   "server.tests.RoomTests",
   "server.tests.LoginTests",
+  "server.tests.RealSocketPartialSendTest",
   "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",

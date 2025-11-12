@@ -122,27 +122,30 @@ end
 ---@param connection Connection
 ---@return boolean # if the connection is still considered open
 local function sendQueuedMessages(connection)
-  for i = connection.outgoingMessageQueue.first, connection.outgoingMessageQueue.last do
-    local message = connection.outgoingMessageQueue[i]
-    local success, error = connection.socket:send(message)
-    if not success then
-      if error == "closed" then
-        return false
-      else
-        connection.sendRetryCount = connection.sendRetryCount + 1
-        break
+  while connection.outgoingMessageQueue:len() > 0 do
+    local message = connection.outgoingMessageQueue:peek()
+    local fullMessageSent, error, partialBytesSent = connection.socket:send(message)
+    if fullMessageSent then
+      connection.outgoingMessageQueue:pop()
+      if connection.sendRetryCount > 0 then
+        logger.debug(connection.index .. " Retry succeeded after " .. connection.sendRetryCount)
+        connection.sendRetryCount = 0
       end
-    elseif connection.sendRetryCount > 0 then
-      logger.debug(connection.index .. " Retry succeeded after " .. connection.sendRetryCount)
-      connection.sendRetryCount = 0
+    elseif error == "closed" then
+      return false
+    elseif error == "timeout" and partialBytesSent and partialBytesSent > 0 then
+      local remaining = message:sub(partialBytesSent + 1)
+      connection.outgoingMessageQueue[connection.outgoingMessageQueue.first] = remaining
+      logger.trace("Partial send: " .. partialBytesSent .. "/" .. #message .. " bytes sent. " .. #remaining .. " bytes remain in queue.")
+      break
+    else
+      connection.sendRetryCount = connection.sendRetryCount + 1
+      logger.trace("Send timeout with no progress (retry " .. connection.sendRetryCount .. "/" .. connection.sendRetryLimit .. ")")
+      break
     end
   end
 
-  if connection.sendRetryCount == 0 then
-    if connection.outgoingMessageQueue:len() > 0 then
-      connection.outgoingMessageQueue:clear()
-    end
-  elseif connection.sendRetryCount >= connection.sendRetryLimit then
+  if connection.sendRetryCount >= connection.sendRetryLimit then
     logger.info("Closing connection " .. connection.index .. ". Connection.send failed after " .. connection.sendRetryLimit .. " retries were attempted")
     return false
   end
