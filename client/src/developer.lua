@@ -48,6 +48,7 @@ function developerTools.processArgs(args)
   end
 end
 
+local realId = nil
 local realName = nil
 
 function developerTools.wrapUsernameConfig(customUsername)
@@ -81,8 +82,19 @@ function developerTools.wrapUserIDRead(customUserID)
   logger.debug("Overwriting userID with command line argument")
 
   local save = require("client.src.save")
+  local readId = save.read_user_id_file
   save.read_user_id_file = function(serverIP)
+    realId = readId(serverIP)
     return customUserID
+  end
+
+  local writeId = save.write_user_id_file
+  save.write_user_id_file = function(userID, serverIP)
+    if userID == customUserID then
+      userID = realId
+    end
+    assert(userID ~= nil)
+    writeId(userID, serverIP)
   end
 end
 
