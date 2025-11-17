@@ -13,7 +13,7 @@ Each puzzle file can contain as many puzzle sets as you like. Each set within a 
 
 The contents of each puzzle file should be formatted something like this:
 
-```json
+```jsonc
 {
   "Version": 3,
   "Puzzle Sets": [
@@ -24,7 +24,7 @@ The contents of each puzzle file should be formatted something like this:
           "Puzzle Type": "chain",
           "StartTiming": "countdown",
           "Moves": 0,
-          "Stack": 
+          "Stack":
             "040000
              111440",
           "CursorStartLeft":
@@ -36,7 +36,7 @@ The contents of each puzzle file should be formatted something like this:
         {
           "Puzzle Type": "clear",
           "Moves": 0,
-          "Stack": 
+          "Stack":
            "
           [====]
           [====]
@@ -81,7 +81,9 @@ Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzz
 - **"clear"** - all garbage on the field needs to be cleared before health runs out
 
 #### Other Fields
-- **"Moves"** - the number of moves, can be zero to not have a limit
+- **"Moves"** - the number of moves allowed to complete the puzzle
+  - Set to 0 for unlimited moves (no move limit)
+  - **Important**: "moves" type puzzles must have a value greater than 0
 - **"Stack"** - the starting arrangement of the panels, see below
 
 #### Start Timing
@@ -100,6 +102,14 @@ If no start timing is given, a suitable start timing is selected based on puzzle
 - **"Shake"** - specifies how many frames of shake time are initially granted to the player
 - **"CursorStartLeft"** - specifies where the left part of the cursor should start the puzzle
   - Format: `{ "Row": 1, "Column": 1 }`
+  - Valid ranges: Row must be 1-12, Column must be 1-5
+- **"Solution"** - a compressed input string representing the solution to the puzzle
+  - Format: String of encoded inputs (swap directions and timing)
+  - Used by the game to verify solutions or provide hints
+  - The best way to add this is to solve your puzzle in game, and it will be added to the puzzle.
+- **"Help Description"** - optional text that explains the puzzle pattern or provides hints to the player
+  - Format: String describing the puzzle mechanic or strategy
+  - Displayed when the player requests help for the puzzle
 
 #### Panel Buffers
 **"PanelBuffer"** specifies the panels that should appear if the player is raising the stack.
@@ -175,3 +185,7 @@ Carriage returns are allowed in the middle of the panel maps for each individual
 - **{** = left end of a shock garbage block
 - **}** = right end of a shock garbage block
 - **=** = filler space to determine the size of the garbage block indicated by the surrounding `[]{}`
+
+## More Examples
+
+For additional examples, check out the [default puzzles included with the game](https://github.com/panel-attack/panel-game/blob/beta/client/assets/default_data/puzzles/) on GitHub. This file contains a variety of puzzle types and demonstrates many of the features described in this guide.

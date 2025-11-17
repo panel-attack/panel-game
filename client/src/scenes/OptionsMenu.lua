@@ -514,6 +514,10 @@ function OptionsMenu:loadAboutMenu()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/panels.md")
         end),
+    ui.MenuItem.createButtonMenuItem("op_about_puzzles", nil, nil, function()
+          GAME.theme:playValidationSfx()
+          love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/puzzles.md")
+        end),
     ui.MenuItem.createButtonMenuItem("op_about_attack_files", nil, nil, function()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/training.txt")
