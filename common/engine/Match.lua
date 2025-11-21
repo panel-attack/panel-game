@@ -30,8 +30,12 @@ local MatchRules = require("common.data.MatchRules")
 ---@field clock integer
 ---@field ended boolean
 ---@field gameOverClock integer?
----@field debugDesync boolean? if the Match will purposely let the second stack fall behind for the purpose of debugging and testing rollback and related features
----@field debugDesyncValue integer? by how many frames the second stack will fall behind if desyncDebug is on
+---@field aborted boolean the game stopped in the middle because of crash, desync, game leave, online player left, etc.
+---@field desyncError boolean? the match stopped because the other stack became too out of sync
+---@field debug MatchDebugConfig internal debug configuration that defaults to non-debug values
+
+---@class MatchDebugConfig
+---@field vsFramesBehind integer
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -59,9 +63,16 @@ function(self, panelSource, matchRules)
   self.timeSpentRunning = 0
   self.maxTimeSpentRunning = 0
   self.createTime = love.timer.getTime()
+  ---@diagnostic disable-next-line: param-type-mismatch
   self.startTimestamp = os.time(os.date("*t"))
   self.clock = 0
   self.ended = false
+  self.aborted = false
+
+  -- Initialize internal debug configuration with non-debug defaults
+  self.debug = {
+    vsFramesBehind = 0
+  }
 end
 )
 
@@ -138,7 +149,7 @@ function Match:getWinners()
           local hasLowestTime = true
           for k = 1, #potentialWinners do
             if k ~= j then
-              if #potentialWinner:getConfirmedInputCount() < #potentialWinners[k]:getConfirmedInputCount() then
+              if potentialWinner:getConfirmedInputCount() < potentialWinners[k]:getConfirmedInputCount() then
                 hasLowestTime = false
                 break
               end
@@ -351,6 +362,10 @@ end
 -- and also uses slightly different data required only in a both-sides rollback scenario that would never occur for online rollback
 ---@param clock integer
 function Match:rewindToFrame(clock)
+  -- Bounds check: don't allow rewinding to negative frames
+  if clock < 0 then
+    return
+  end
   local failed = false
   for i, stack in ipairs(self.stacks) do
     if not stack:rewindToFrame(clock) then
@@ -382,7 +397,10 @@ function Match:getInfo()
   info.ended = self.ended
   info.stacks = {}
   for i, stack in ipairs(self.stacks) do
-    info.stacks[i] = stack:getInfo()
+    if stack.getInfo then
+      ---@cast stack Stack
+      info.stacks[i] = stack:getInfo()
+    end
   end
 
   return info
@@ -612,11 +630,11 @@ function Match:shouldRun(stack, runsSoFar)
     end
   end
 
-  if self.debugDesync and not stack.is_local and tableUtils.indexOf(self.stacks, stack) == 2 then
-    -- force non-local player 2 to fall behind a certain number of frames to force rollback
+  -- In debug mode allow non-local player 2 to fall a certain number of frames behind
+  if not stack.is_local and self.debug.vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
+    -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
     if self.garbageTargets[2][1] and self.garbageTargets[2][1]:game_ended() == false then
-      -- but only stay behind if the game isn't over for the local player (=garbageTarget) yet as the second stack has to run to game over clock for the match to end
-      if stack.clock + self.debugDesyncValue >= self.garbageTargets[2][1].clock then
+      if stack.clock + self.debug.vsFramesBehind >= self.garbageTargets[2][1].clock then
         return false
       end
     end

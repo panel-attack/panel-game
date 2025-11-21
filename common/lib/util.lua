@@ -80,31 +80,6 @@ function content_equal(a, b)
   return true
 end
 
--- does not perform deep comparisons of keys which are tables.
----@param a any
----@param b any
----@return boolean
-function deep_content_equal(a, b)
-  if type(a) ~= "table" or type(b) ~= "table" then
-    return a == b
-  else
-    if a == b then
-      -- two tables can still be the same by reference which also makes them === exactly equal
-      return true
-    else
-      for i = 1, 2 do
-        for k, v in pairs(a) do
-          if not deep_content_equal(v, b[k]) then
-            return false
-          end
-        end
-        a, b = b, a
-      end
-      return true
-    end
-  end
-end
-
 -- copy the table one key deep
 ---@generic T
 ---@param tab T
@@ -139,7 +114,9 @@ function real_deepcpy(tab)
   return setmetatable(ret, getmetatable(tab))
 end
 
--- copys the full variable deeply
+-- Creates a deep copy of a table, recursively copying all nested tables
+-- Preserves metatables and handles circular references
+-- If the input is not a table, returns it unchanged
 ---@generic T
 ---@param tab T
 ---@return T deepCopy

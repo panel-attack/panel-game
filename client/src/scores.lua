@@ -8,8 +8,9 @@ local logger = require("common.lib.logger")
 -- 1 had only vs scores in an incompatible format
 -- 2 has vs self, time attack, endless
 -- 3 has vs self, time attack, endless, puzzles
--- 4 has vs self, time attack, endless, puzzles UUIDv2
-local currentVersion = 4
+-- 4 has vs self, time attack, endless, puzzles UUIDv2 (original)
+-- 5 has vs self, time attack, endless, puzzles UUIDv2 (with cursor/buffers)
+local currentVersion = 5
 
 -- Holds on the current scores and records for game modes
 ---@class Scores
@@ -144,10 +145,16 @@ function Scores.saveVsSelfScoreForLevel(self, score, level)
 end
 
 function Scores.lastVsScoreForLevel(self, level)
+  if #self.vsSelf < level then
+    return 0
+  end
   return self.vsSelf[level]["last"]
 end
 
 function Scores.recordVsScoreForLevel(self, level)
+  if #self.vsSelf < level then
+    return 0
+  end
   return self.vsSelf[level]["record"]
 end
 
@@ -160,10 +167,16 @@ function Scores.saveTimeAttack1PScoreForLevel(self, score, level)
 end
 
 function Scores.lastTimeAttack1PForLevel(self, level)
+  if #self.timeAttack1P < level then
+    return 0
+  end
   return self.timeAttack1P[level]["last"]
 end
 
 function Scores.recordTimeAttack1PForLevel(self, level)
+  if #self.timeAttack1P < level then
+    return 0
+  end
   return self.timeAttack1P[level]["record"]
 end
 
@@ -176,10 +189,16 @@ function Scores.saveEndlessScoreForLevel(self, score, level)
 end
 
 function Scores.lastEndlessForLevel(self, level)
+  if #self.endless < level then
+    return 0
+  end
   return self.endless[level]["last"]
 end
 
 function Scores.recordEndlessForLevel(self, level)
+  if #self.endless < level then
+    return 0
+  end
   return self.endless[level]["record"]
 end
 
@@ -214,6 +233,8 @@ function Scores.createFromScoreFile()
         scores.puzzleRecords = puzzleRecords
         if scores.version == 3 then
           scores:upgradeFromScoreData(scoreData)
+        elseif scores.version == 4 then
+          scores:upgradeFromV4ToV5(scoreData)
         end
       end
 
@@ -233,6 +254,24 @@ function Scores:upgradeFromScoreData(scoreData)
   local flattenedPuzzleSet = puzzleLibrary:flattenedPuzzleSetForPuzzleSet(defaultPuzzleSet)
   for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
     local oldUUID = puzzle:getV1UUID()
+    local newUUID = puzzle:getV2UUID()
+    if self.puzzleRecords[oldUUID] then
+      local oldRecords = self.puzzleRecords[oldUUID]
+      for _, record in ipairs(oldRecords) do
+        record.UUID = nil
+      end
+      self.puzzleRecords[newUUID] = oldRecords
+      self.puzzleRecords[oldUUID] = nil
+    end
+  end
+end
+
+function Scores:upgradeFromV4ToV5(scoreData)
+  local puzzleLibrary = PuzzleLibrary(Scores())
+  local defaultPuzzleSet = puzzleLibrary:getDefaultPuzzleSet()
+  local flattenedPuzzleSet = puzzleLibrary:flattenedPuzzleSetForPuzzleSet(defaultPuzzleSet)
+  for _, puzzle in ipairs(flattenedPuzzleSet.puzzles) do
+    local oldUUID = puzzle:getV2UUIDOld()
     local newUUID = puzzle:getV2UUID()
     if self.puzzleRecords[oldUUID] then
       local oldRecords = self.puzzleRecords[oldUUID]

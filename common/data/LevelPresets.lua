@@ -1,5 +1,7 @@
 -- this file documents presets for level data
 local LevelData = require("common.data.LevelData")
+local JsonSafePrecision = require("common.data.JsonSafePrecision")
+local GameModes = require("common.data.GameModes")
 
 ---@type LevelData[]
 local modern = {}
@@ -29,7 +31,7 @@ modern[2] :setStartingSpeed(5)
           :setShockFrequency(14)
           :setShockCap(18)
           :setColorCount(5)
-          :setAdjacentDenialFrequency(1/7)
+          :setAdjacentDenialFrequency(JsonSafePrecision.fractionToSafePrecision(1, 7))
           :setMaxHealth(101)
           :setStopFormula(LevelData.STOP_FORMULAS.MODERN)
           :setStopComboConstant(-16)
@@ -49,7 +51,7 @@ modern[3] :setStartingSpeed(9)
           :setShockFrequency(16)
           :setShockCap(18)
           :setColorCount(5)
-          :setAdjacentDenialFrequency(2/7)
+          :setAdjacentDenialFrequency(JsonSafePrecision.fractionToSafePrecision(2, 7))
           :setMaxHealth(81)
           :setStopFormula(LevelData.STOP_FORMULAS.MODERN)
           :setStopComboConstant(-12)
@@ -69,7 +71,7 @@ modern[4] :setStartingSpeed(13)
           :setShockFrequency(19)
           :setShockCap(15)
           :setColorCount(5)
-          :setAdjacentDenialFrequency(3/7)
+          :setAdjacentDenialFrequency(JsonSafePrecision.fractionToSafePrecision(3, 7))
           :setMaxHealth(66)
           :setStopFormula(LevelData.STOP_FORMULAS.MODERN)
           :setStopComboConstant(-8)
@@ -90,7 +92,7 @@ modern[5] :setStartingSpeed(17)
           :setShockFrequency(23)
           :setShockCap(15)
           :setColorCount(5)
-          :setAdjacentDenialFrequency(4/7)
+          :setAdjacentDenialFrequency(JsonSafePrecision.fractionToSafePrecision(4, 7))
           :setMaxHealth(51)
           :setStopFormula(LevelData.STOP_FORMULAS.MODERN)
           :setStopComboConstant(-3)
@@ -110,7 +112,7 @@ modern[6] :setStartingSpeed(21)
           :setShockFrequency(26)
           :setShockCap(12)
           :setColorCount(5)
-          :setAdjacentDenialFrequency(5/7)
+          :setAdjacentDenialFrequency(JsonSafePrecision.fractionToSafePrecision(5, 7))
           :setMaxHealth(41)
           :setStopFormula(LevelData.STOP_FORMULAS.MODERN)
           :setStopComboConstant(2)
@@ -131,7 +133,7 @@ modern[7] :setStartingSpeed(25)
           :setShockFrequency(29)
           :setShockCap(9)
           :setColorCount(5)
-          :setAdjacentDenialFrequency(6/7)
+          :setAdjacentDenialFrequency(JsonSafePrecision.fractionToSafePrecision(6, 7))
           :setMaxHealth(31)
           :setStopFormula(LevelData.STOP_FORMULAS.MODERN)
           :setStopComboConstant(7)
@@ -324,5 +326,72 @@ function LevelPresets.getClassic(difficulty)
 end
 
 LevelPresets.classicPresetCount = #classic
+
+---@type (table<number | string, LevelData>)
+local classicEndless = {}
+-- Deep copy from classic presets and modify only what's different for endless mode
+classicEndless[1] = deepcpy(classic[1])
+-- Endless easy uses 5 colors instead of 6
+classicEndless[1]:setColorCount(5)
+-- and allows adjacent panels of the same colors
+classicEndless[1]:setAdjacentDenialFrequency(0)
+classicEndless.easy = classicEndless[1]
+
+-- Normal, hard, and ex are identical to classic mode for endless
+classicEndless[2] = deepcpy(classic[2])
+classicEndless.normal = classicEndless[2]
+
+classicEndless[3] = deepcpy(classic[3])
+classicEndless.hard = classicEndless[3]
+
+classicEndless[4] = deepcpy(classic[4])
+classicEndless.ex = classicEndless[4]
+
+---@param difficulty number | string the difficulty expressed as index 1 2 3 4 or easy normal hard ex
+---@return LevelData # a deepcopy of the classic endless preset
+function LevelPresets.getClassicEndless(difficulty)
+  assert(classicEndless[difficulty], "trying to load inexistent difficulty preset" .. difficulty)
+  return deepcpy(classicEndless[difficulty])
+end
+
+LevelPresets.classicEndlessPresetCount = #classicEndless
+
+---@class PresetInfo
+---@field style Styles
+---@field level integer?
+---@field difficulty integer?
+---@field isEndless boolean?
+
+---@param levelData LevelData
+---@return PresetInfo? # style and preset information, or nil if levelData doesn't match any preset
+function LevelPresets.getStyleAndPreset(levelData)
+  if not levelData then
+    return nil
+  end
+
+  -- Check modern presets
+  for level = 1, #modern do
+    if LevelData.__eq(levelData, modern[level]) then
+      return {style = GameModes.Styles.MODERN, level = level, difficulty = nil, isEndless = false}
+    end
+  end
+
+  -- Check classicEndless presets
+  for difficulty = 1, #classicEndless do
+    if LevelData.__eq(levelData, classicEndless[difficulty]) then
+      return {style = GameModes.Styles.CLASSIC, level = nil, difficulty = difficulty, isEndless = true}
+    end
+  end
+
+  -- Check classic presets
+  for difficulty = 1, #classic do
+    if LevelData.__eq(levelData, classic[difficulty]) then
+      return {style = GameModes.Styles.CLASSIC, level = nil, difficulty = difficulty, isEndless = false}
+    end
+  end
+
+  -- Doesn't match any preset - return nil
+  return nil
+end
 
 return LevelPresets

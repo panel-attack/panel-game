@@ -11,6 +11,19 @@ local fileUtils = {}
 fileUtils.SUPPORTED_IMAGE_FORMATS = {".png", ".jpg", ".jpeg"}
 fileUtils.SUPPORTED_SOUND_FORMATS = {".mp3", ".ogg", ".wav", ".flac", ".699", ".amf", ".ams", ".dbm", ".dmf", ".dsm", ".far", ".it", ".j2b", ".mdl", ".med", ".mod", ".mt2", ".mtm", ".okt", ".psm", ".s3m", ".stm", ".ult", ".umx", ".xm"}
 
+-- Wrapper for love.filesystem.exists that handles version compatibility
+-- In LÖVE 11.x, uses getInfo() to avoid deprecation warning
+-- In LÖVE 12.x+, uses exists() which is no longer deprecated
+---@param path string
+---@return boolean
+function fileUtils.exists(path)
+  if system.meetsLoveVersionRequirement(12, 0) then
+    return love.filesystem.exists(path)
+  else
+    return love.filesystem.getInfo(path) ~= nil
+  end
+end
+
 -- returns the directory items with a default filter and an optional filetype filter
 -- by default, filters out everything starting with __ and Mac's .DS_Store file
 -- optionally the result can be filtered to return only "file" or "directory" items
@@ -58,10 +71,12 @@ end
 
 -- copies a file from the given source to the given destination
 function fileUtils.copyFile(source, destination)
-  local success
-  local source_file, err = love.filesystem.read(source)
-  success, err = love.filesystem.write(destination, source_file)
-  return success, err
+  local source_file, sizeError = love.filesystem.read(source)
+  if source_file == nil then
+    return false, sizeError
+  end
+  local success, error = love.filesystem.write(destination, source_file)
+  return success, error
 end
 
 -- copies a file from the given source to the given destination
@@ -117,7 +132,7 @@ end
 ---@param file string
 ---@return table? # nil if the file could not be read or deserialization failed
 function fileUtils.readJsonFile(file)
-  if not love.filesystem.getInfo(file, "file") then
+  if not fileUtils.exists(file) then
     logger.debug("No file at specified path " .. file)
     return nil
   else
@@ -146,7 +161,7 @@ end
 ---@return love.Source?
 function fileUtils.loadSoundFromSupportExtensions(path_and_filename, streamed)
   for k, extension in ipairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
-    if love.filesystem.exists(path_and_filename .. extension) then
+    if fileUtils.exists(path_and_filename .. extension) then
       return love.audio.newSource(path_and_filename .. extension, streamed and "stream" or "static")
     end
   end
@@ -227,7 +242,7 @@ end
 function fileUtils.getSoundFileName(soundName, path)
   local p = path .. "/" .. soundName
   for _, extension in pairs(fileUtils.SUPPORTED_SOUND_FORMATS) do
-    if love.filesystem.exists(p .. extension) then
+    if fileUtils.exists(p .. extension) then
       return soundName .. extension
     end
   end
@@ -254,6 +269,8 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   end
 
   local data = imageData:encode(format)
+  --- Not sure if this is right, revisit
+  ---@diagnostic disable-next-line: param-type-mismatch
   love.filesystem.write(filePath .. "." .. format, data)
 end
 
@@ -334,6 +351,17 @@ function fileUtils.write(path, filename, data)
   end
 end
 
+-- Custom JSON prettifier that provides enhanced formatting beyond DKJson's standard indent option
+-- Key differences from DKJson's built-in indent:
+-- 1. Always adds newlines after opening braces/brackets (DKJson may keep simple objects on one line)
+-- 2. Special handling for arrays after colons - places arrays on new indented lines
+-- 3. Custom whitespace management - strips original spacing and applies consistent 2-space indentation
+-- 4. More aggressive line breaking for better readability of complex nested structures
+-- 5. Handles colon spacing differently - uses ': ' for values but ':\n' + indent for arrays
+-- This is used when encodeArgs.pretty and encodeArgs.indent are both true to provide
+-- more readable output than DKJson's standard formatting
+---@param jsonString string The compact JSON string (typically from json.encode) to format
+---@return string The formatted JSON string with enhanced indentation and line breaks
 local function prettifyJson(jsonString)
   local result = {}
   local i = 1

@@ -1,4 +1,5 @@
-require("client.src.localization")
+local Localization = require("client.src.localization")
+Localization:init()
 require("common.lib.Queue")
 require("client.src.server_queue")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
@@ -10,6 +11,7 @@ require("client.src.mods.Theme")
 -- Not to be confused with "Match" which is the current battle / instance of the game.
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local LevelPresets = require("common.data.LevelPresets")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local analytics = require("client.src.analytics")
@@ -31,6 +33,14 @@ local system = require("client.src.system")
 local ModController = require("client.src.mods.ModController")
 
 local RichPresence = require("client.lib.rich_presence.RichPresence")
+local DebugSettings = require("client.src.debug.DebugSettings")
+local Button = require("client.src.ui.Button")
+local TextButton = require("client.src.ui.TextButton")
+local OverlayContainer = require("client.src.ui.OverlayContainer")
+local DebugMenu = require("client.src.debug.DebugMenu")
+local Label = require("client.src.ui.Label")
+local UIElement = require("client.src.ui.UIElement")
+local NavigationStack = require("client.src.NavigationStack")
 
 -- Provides a scale that is on .5 boundary to make sure it renders well.
 -- Useful for creating new canvas with a solid DPI
@@ -43,7 +53,7 @@ end
 ---@field scores Scores
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
----@field globalCanvas love.Canvas
+---@field globalCanvas love.graphics.Texture
 ---@field muteSound boolean
 ---@field rich_presence table
 ---@field input table
@@ -56,6 +66,10 @@ end
 ---@field lastReplayPath string?
 ---@field crashTrace string?
 ---@field theme Theme
+---@field focused boolean
+---@field connected_server_ip string?
+---@field connected_server_port integer?
+---@field localPlayer Player?
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
@@ -100,13 +114,20 @@ local Game = class(
 
     -- time in seconds, can be used by other elements to track the passing of time beyond dt
     self.timer = love.timer.getTime()
+
+    self.debugOverlay = nil
+    self.debugButton = nil
+
+    -- Root UI element that contains all UI (scenes + overlays + debug)
+    self.uiRoot = UIElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
   end
 )
 
 Game.newCanvasSnappedScale = newCanvasSnappedScale
 
 function Game:load()
-  PuzzleLibrary.writeDefaultPuzzles("client/assets/default_data/puzzles", "docs/puzzles.txt", consts.PUZZLES_SAVE_DIRECTORY)
+  DebugSettings.init()
+  PuzzleLibrary.cleanupDefaultPuzzles(consts.PUZZLES_SAVE_DIRECTORY)
 
   -- move to constructor
   self.updater = GAME_UPDATER or nil
@@ -125,8 +146,11 @@ function Game:load()
     self.input:importConfigurations(user_input_conf)
   end
 
-  self.navigationStack = require("client.src.NavigationStack")
+  self.navigationStack = NavigationStack({})
   self.navigationStack:push(StartUp({setupRoutine = self.setupRoutine}))
+
+  -- Add navigation stack to root UI
+  self.uiRoot:addChild(self.navigationStack)
   self.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=GAME:newCanvasSnappedScale()})
 end
 
@@ -247,12 +271,14 @@ function Game:setupRoutine()
 
   self:initializeLocalPlayer()
   ModController:loadModFor(characters[GAME.localPlayer.settings.characterId], GAME.localPlayer, true)
+
+  self:initializeDebugOverlay()
 end
 
 -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate
 -- it basically represents the player that is operating the client (and thus binds to its configuration)
 function Game:initializeLocalPlayer()
-  self.localPlayer = Player.getLocalPlayer()
+  self.localPlayer = Player.createLocalPlayerFromConfig()
   self.localPlayer:connectSignal("selectedCharacterIdChanged", config, function(config, newId) config.character = newId end)
   self.localPlayer:connectSignal("selectedStageIdChanged", config, function(config, newId) config.stage = newId end)
   self.localPlayer:connectSignal("panelIdChanged", config, function(config, newId) config.panels = newId end)
@@ -261,11 +287,17 @@ function Game:initializeLocalPlayer()
   self.localPlayer:connectSignal("difficultyChanged", config, function(config, difficulty) config.endless_difficulty = difficulty end)
   self.localPlayer:connectSignal("levelChanged", config, function(config, level) config.level = level end)
   self.localPlayer:connectSignal("wantsRankedChanged", config, function(config, wantsRanked) config.ranked = wantsRanked end)
-  self.localPlayer:connectSignal("styleChanged", config, function(config, style)
-    if style == GameModes.Styles.CLASSIC then
-      config.endless_level = nil
-    else
-      config.endless_level = config.level
+
+  self.localPlayer:connectSignal("levelDataChanged", config, function(config, levelData, player)
+    local presetInfo = LevelPresets.getStyleAndPreset(levelData)
+    if presetInfo then
+      if presetInfo.style == GameModes.Styles.MODERN then
+        config.level = presetInfo.level
+        config.endless_level = presetInfo.level
+      else
+        config.endless_difficulty = presetInfo.difficulty
+        config.endless_level = nil
+      end
     end
   end)
 end
@@ -282,11 +314,11 @@ function Game:createDirectoriesIfNeeded()
 
   local oldServerDirectory = consts.SERVER_SAVE_DIRECTORY .. consts.LEGACY_SERVER_LOCATION
   local newServerDirectory = consts.SERVER_SAVE_DIRECTORY .. consts.SERVER_LOCATION
-  if not love.filesystem.getInfo(newServerDirectory) then
+  if not fileUtils.exists(newServerDirectory) then
     love.filesystem.createDirectory(newServerDirectory)
 
     -- Move the old user ID spot to the new folder (we won't delete the old one for backwards compatibility and safety)
-    if love.filesystem.getInfo(oldServerDirectory) then
+    if fileUtils.exists(oldServerDirectory) then
       local userID = save.read_user_id_file(consts.LEGACY_SERVER_LOCATION)
       save.write_user_id_file(userID, consts.SERVER_LOCATION)
     end
@@ -298,21 +330,6 @@ function Game:createDirectoriesIfNeeded()
   if love.system.getOS() ~= "OS X" then
     fileUtils.recursiveRemoveFiles(".", ".DS_Store")
   end
-end
-
-function Game:runUnitTests()
-  coroutine.yield("Running Unit Tests")
-
-  -- GAME.localPlayer is the standard player for battleRooms that don't get started from replays/spectate
-  -- basically the player that is operating the client
-  GAME.localPlayer = Player.getLocalPlayer()
-  -- we need to overwrite the local player as all replay related tests need a non-local player
-  GAME.localPlayer.isLocal = false
-
-  logger.info("Running Unit Tests...")
-  GAME.muteSound = true
-  --require("client.tests.Tests")
-  SoundController:applyConfigVolumes()
 end
 
 function Game:runPerformanceTests()
@@ -344,13 +361,15 @@ function Game:updateMouseVisibility(dt)
 end
 
 function Game:handleResize(newWidth, newHeight)
-  self:updateCanvasPositionAndScale(newWidth, newHeight)
-  if self.battleRoom and self.battleRoom.match then
-    self.needsAssetReload = true
-  else
-    self:refreshCanvasAndImagesForNewScale()
+  local positionChanged, scaleChanged = self:updateCanvasPositionAndScale(newWidth, newHeight)
+  if scaleChanged then
+    if self.battleRoom and self.battleRoom.match then
+      self.needsAssetReload = true
+    else
+      self:refreshCanvasAndImagesForNewScale()
+    end
+    self.showGameScaleUntil = self.timer + 5
   end
-  self.showGameScaleUntil = self.timer + 5
 end
 
 -- Called every few fractions of a second to update the game
@@ -367,9 +386,9 @@ function Game:update(dt)
 
   handleShortcuts()
 
-  prof.push("navigationStack update")
-  self.navigationStack:update(dt)
-  prof.pop("navigationStack update")
+  prof.push("uiRoot update")
+  self.uiRoot:update(dt)
+  prof.pop("uiRoot update")
 
   if self.backgroundImage then
     self.backgroundImage:update(dt)
@@ -387,7 +406,7 @@ function Game:draw()
   love.graphics.clear()
 
   -- With this, self.globalCanvas is clear and set as our active canvas everything is being drawn to
-  self.navigationStack:draw()
+  self.uiRoot:draw()
 
   self:drawFPS()
   self:drawScaleInfo()
@@ -403,8 +422,7 @@ function Game:draw()
 end
 
 function Game:drawFPS()
-  -- Draw the FPS if enabled
-  if self.config.show_fps then
+  if self.config.show_fps or DebugSettings.forceFPS() then
     love.graphics.print("FPS: " .. love.timer.getFPS(), 1, 1)
   end
 end
@@ -542,8 +560,15 @@ function Game:toggleFullscreen()
 end
 
 -- Updates the scale and position values to use up the right size of the window based on the user's settings.
+---@return boolean positionChanged
+---@return boolean scaleChanged
 function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
   logger.debug("Updating canvas scale with args " .. newWindowWidth .. "," .. newWindowHeight)
+
+  local oldCanvasX = self.canvasX
+  local oldCanvasY = self.canvasY
+  local oldCanvasXScale = self.canvasXScale
+  local oldCanvasYScale = self.canvasYScale
 
   -- we want to draw at integer coordinates to prevent weird interpolation
   if newWindowWidth % 2 > 0 then
@@ -588,6 +613,10 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
     self.canvasXScale = newScale
     self.canvasYScale = newScale
   end
+
+  local positionChanged = oldCanvasX ~= self.canvasX or oldCanvasY ~= self.canvasY
+  local scaleChanged = not (math.floatsEqualWithPrecision(oldCanvasXScale, self.canvasXScale, 4) and math.floatsEqualWithPrecision(oldCanvasYScale, self.canvasYScale, 4))
+  return positionChanged, scaleChanged
 end
 
 -- Reloads the canvas and all images / fonts for the new game scale
@@ -655,5 +684,41 @@ function Game:setLanguage(lang_code)
 
   Localization:refresh_global_strings()
 end
+
+function Game:initializeDebugOverlay()
+  if not DEBUG_ENABLED then
+    return
+  end
+
+  self.debugButton = TextButton({
+    x = consts.CANVAS_WIDTH - 50,
+    y = consts.CANVAS_HEIGHT - 50,
+    label = Label({
+      text = "Debug",
+      translate = false,
+      hAlign = "center",
+      vAlign = "center"
+    }),
+    width = 40,
+    height = 40,
+    onClick = function()
+      if self.debugOverlay then
+        if not self.debugOverlay:isActive() then
+          self.debugOverlay:open()
+        end
+      end
+    end
+  })
+
+  local debugMenu = DebugMenu.makeDebugMenu({height = consts.CANVAS_HEIGHT - 40})
+  self.debugOverlay = OverlayContainer({
+    content = debugMenu
+  })
+
+  -- Add debug UI to root
+  self.uiRoot:addChild(self.debugButton)
+  self.uiRoot:addChild(self.debugOverlay)
+end
+
 
 return Game

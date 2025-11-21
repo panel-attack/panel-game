@@ -4,14 +4,15 @@ back,Return to previous thing,Back,Retour,Voltar,戻る,Volver,Zurück,Indietro,
 difficulty,,Difficulty,Difficulté,Dificuldade,難易度,Dificultad,Schwierigkeit,Difficoltà,ระดับความยาก
 easy,,Easy,Facile,Fácil,EASY,Fácil,Leicht,Facile,ง่าย
 hard,,Hard,Difficile,Difícil,HARD,Difícil,Schwer,Difficile,ยาก
-input,as in “type of input method” ie “touch” or “controller”,Input,Saisir,Entrada,入力,Aporte,Eingabe,Ingresso,Input
+input,as in “type of input method” ie “touch” or “controller”,Input,Méthode d'entrée,Entrada,入力,Aporte,Eingabe,Ingresso,Input
 level,,Level,Niveau,Nível,LV,Nivel,Level,Livello,ระดับ
 randomColors,Option to randomize panel colors,Random Colors,Couleurs aléatoires,Cores aleatórias,ランダムな色,Colores al azar,Zufällige Farben,Colori casuali,สุ่มสี
+randomHorizontalFlipped,Option to randomly flip the puzzle horizontally,Randomly Flip,Inversion aléatoire,Vire aleatoriamente,ランダムにフリップ,Voltear al azar,Zufällig flip,Capovolgere casualmente,สุุ่มสลับซ้าย - ขวา
 normal,,Normal,Normal,Normal,NORMAL,Normal,Normal,Normale,ปานกลาง
 speed,,Speed,Vitesse,Velocidade,スピード,Velocidad,Geschwindigkeit,Velocità,ความเร็ว
 factory,Training mode that drops multiple tiers of chain garbage,Factory,Usine,Fábrica,工場,Fábrica,Fabrik,Fabbrica,Factory
 combo_storm,Training mode that drops lots of small combo blocks in a row,Combo Storm,Tempête combo,Tempestade de combinação,コンボ嵐,Tormenta combo,Combo Storm,Combo Storm.,Combo Storm
-large_garbage,Training mode that drops huge chain blocks,Large Garbage,Gros ordures,Grande lixo,大規模なごみ,Basura grande,Großer Müll,Grande spazzatura,ขยะก้อนใหญ่
+large_garbage,Training mode that drops huge chain blocks,Large Garbage,Gros déchets,Grande lixo,大規模なごみ,Basura grande,Großer Müll,Grande spazzatura,ขยะก้อนใหญ่
 width,width of garbage blocks in training mode,Width,Largeur,Largura,幅,Ancho,Breite,Larghezza,ความกว้างก้อนขยะ
 height,height of garbage blocks in training mode,Height,Hauteur,Altura,高さ,Altura,Höhe,Altezza,ความสูงก้อนขยะ
 vs,,vs,vs,vs,対,vs,vs,vs,vs
@@ -20,11 +21,11 @@ down,,Down,Bas,Baixo,下,Abajo,runter,Giù,ลง
 left,,Left,Gauche,Esquerda,左,Izquierda,links,Sinistra,ซ้าย
 right,,Right,Droite,Direita,右,Derecha,rechts,Destra,ขวา
 start,,Start,Start,Começar,START,Empezar,Start,Avvio,เริ่ม
-raise,button used to raise the stack,Raise,Soulever,Levantar,高める,Elevar,Heben,Aumentare,เลื่อน board ขึ้น
+raise,button used to raise the stack,Raise,Monter,Levantar,高める,Elevar,Heben,Aumentare,เลื่อน board ขึ้น
 player,,Player,Joueur,Jogador,プレイヤー,Jugador,Spieler,Giocatore,ผู้เล่น
 player_n,,Player %1,Joueur %1,Jogador %1,プレイヤー%1,Jugador %1,Spieler %1,Giocatore %1,ผูู้เล่น %1
 page,,Page,Page,Página,ページ,Página,Seite,Pagina,หน้า
-panels,,Panels,Panels,Painéis,パネル,Paneles,Panels,Tessere,Panels
+panels,,Panels,Blocs,Painéis,パネル,Paneles,Panels,Tessere,Panels
 character,,Character,Personnage,Personagem,??????,Personaje,Charakter,Carattere,ตัวละคร
 stage,,Stage,Terrain,Cenário,ステージ,Escenario,Arena,Scenario,ด่าน
 mode,,Mode,Mode,Modo,モード,Modo,Modus,Modalità,โหมด
@@ -33,7 +34,7 @@ random,,Random,Aléatoire,Aleatório,ランダム,Aleatorio,Zufall,Casuale,ส�
 leave,,Leave,Quitter,Sair,終わる,Salir,Verlassen,Esci,ออก
 pause,,Pause,Pause,Pausa,ポーズ,Pausa,Pause,Pausa,หยุด
 go_,,Go!,Commencer,Vai!,GO!,¡Comenzar!,Los!,Via!,ไป !
-endless_type,Name of the menu in endless / time attack that lets you pick between the old difficulty style and the new one,Type,Taper,Tipo,タイプ,Tipo,Typ,Tipo,ประเภท
+endless_type,Name of the menu in endless / time attack that lets you pick between the old difficulty style and the new one,Type,Type,Tipo,タイプ,Tipo,Typ,Tipo,ประเภท
 endless_classic,old difficulty style in endless / time attack,Classic,Classique,Clássico,クラシック,Clásico,Klassisch,Classico,คลาสสิค
 endless_modern,new difficulty style in endless / time attack,Modern,Moderne,Moderno,モダン,Moderno,Modern,Moderno,ทันสมัย
 anonymous,,Anonymous,Anonyme,Anônimo,匿名,Anónimo,Anonym,Anonimo,ไม่ระบุตัวตน
@@ -41,7 +42,7 @@ stages,,stages,terrains,Cenários,ステージ,Escenarios,Arenen,Scenario,ด่
 characters,,characters,personnages,Personagens,キャラクター,Personajes,Charaktere,Personaggi,ตัวละคร
 join_community,,Join the community at %1,Rejoignez la communauté sur %1,Participe da comunidade em %1,コミュニティに参加しよう %1,Únete a nuestra comunidad en %1,Tritt unserer Community bei unter %1,Unisciti alla community su %1,เข้าร่วมกลุ่มได้ที่ %1
 warning_msg,,You've had a bug. Please report this on Discord with file:,"Vous venez de rencontrer un problème.
-S'il vous plaît, signalez le sur Discord avec le fichier :","Você encontrou um problema. Por favor, reporte no Discord o arquivo em anexo:",不具合が発生しました。以下のファイルでディスコードに報告して下さい：,"Hubo un problema. Por favor, reporta esto en Discord con el siguiente archivo:",Ein Bug ist aufgetreten. Bitte melde diesen in unserem Discord mit der Datei:,"Hai riscontrato un bug. Per favore, segnalalo su Discord con il file:",คุณเจอ bug กรุณารายงานปัญหาใน Discord ด้วยไฟล์นี้:
+S'il vous plaît, signalez-le sur Discord avec le fichier :","Você encontrou um problema. Por favor, reporte no Discord o arquivo em anexo:",不具合が発生しました。以下のファイルでディスコードに報告して下さい：,"Hubo un problema. Por favor, reporta esto en Discord con el siguiente archivo:",Ein Bug ist aufgetreten. Bitte melde diesen in unserem Discord mit der Datei:,"Hai riscontrato un bug. Per favore, segnalalo su Discord con il file:",คุณเจอ bug กรุณารายงานปัญหาใน Discord ด้วยไฟล์นี้:
 lb_alone,,You are all alone in the lobby :(,Vous êtes seul dans le salon :(,Você está sozinho(a) no lobby :(,ぼっち　(´・ω・`),No hay nadie en el salón :(,Du bist ganz alleine in der Lobby :<,Sei tutto solo nella lobby :(,ในล็อบบี้ตอนนี้มีคุณคนเดียว :(
 lb_back,,Back to main menu,Revenir au menu principal,Voltar ao menu principal,メインメニューに戻る,Volver al menú principal,Zurück zum Hauptmenü,Torna al menù principale,กลับสู่เมนูหลัก
 lb_connecting,,Connecting...,Connexion en cours...,Conectando...,接続中...,Conectando,Verbinde...,Connessione...,กำลังเชื่อมต่อ
@@ -56,13 +57,13 @@ lb_header_board,,"Leaderboard
   Posizione  Punteggio   Giocatore","ตารางคะแนน
 แรงค์ เรทติ้ง ผู้เล่น"
 lb_show_board,,Show Leaderboard,Afficher le classement,Mostrar Placar de Classificação,ランキングを表示,Mostrar Tabla de Puntuación,Rangliste anzeigen,Mostra la classifica,แสดงตารางคะแนน
-lb_login,,Logging in...,Identification...,Iniciando sessão ...,ログインしています...,Iniciando Sesión,Anmeldung...,Accesso in corso...,กำลังเข้าสู่ระบบ
+lb_login,,Logging in...,Connexion en cours...,Iniciando sessão ...,ログインしています...,Iniciando Sesión,Anmeldung...,Accesso in corso...,กำลังเข้าสู่ระบบ
 lb_login_timeout,,"Login for ranked matches timed out.
 This server probably doesn't support ranking.
 
 
 You may continue unranked.","Délai de connexion à la partie classée dépassé.
-Ce serveur ne gère peut être pas les parties classées.
+Ce serveur ne gère peut-être pas les parties classées.
 
 
 Vous pouvez continuer en non classé.","O tempo de acesso à partidas ranqueadas expirou.
@@ -96,32 +97,20 @@ lb_spectate,,spectate,regarder,assistir,観戦する,espectar,zuschauen,Assisti,
 lb_used_name,,"Error: name is taken :<
 
 
-If you had just left the server,
-it may not have realized it yet, try joining again.
+If you had just left the server, it may not have realized it yet, try joining again.
 
-
-This can also happen if you have two
-instances of Panel Attack open.
+This can also happen if you have two instances of Panel Attack open.
 Press Swap or Back to continue.","Erreur : ce pseudo est déjà pris :<
 
+Si vous venez de quitter le serveur, il n'est peut-être pas encore à jour, réessayez.
 
-Si vous venez de quitter le serveur,
-il n'est peut être pas encore à jour, réessayez.
+Cela peut aussi arriver si vous avez lancé deux instances du jeu.
 
+Appuyez sur Valider ou Retour pour continuer.","Erro: Apelido já utilizado :<
 
-Cela peut aussi arriver si vous avez
-lancé deux instances du jeu.
+Se você acabou de sair do servidor, talvez não tenha reparado, tente entrar novamente.
 
-
-Appuyer sur Valider ou Retour pour continuer.","Erro: Apelido já utilizado :<
-
-
-Se você acabou de sair do servidor,
-talvez não tenha reparado, tente entrar novamente.
-
-
-Isso também pode acontecer se você tiver duas
-instâncias do Panel Attack abertas.
+Isso também pode acontecer se você tiver duas instâncias do Panel Attack abertas.
 Pressione Trocar ou Voltar para continuar.","エラー：ユーザー名が使用中です ・へ・
 
 
@@ -136,29 +125,21 @@ Panel Attackが同時に2回起動されている場合発生する可能性も�
 
 入れ替えボタン、またはもどるボタンを押して下さい。","Error：El nombre ya está siendo usado :<
 
+Si justo te fuiste del servidor, puede que este no se haya dado cuenta, intenta unirte de nuevo.
 
-Si justo te fuiste del servidor,
-puede que este no se haya dado cuenta, intenta unirte de nuevo.
-
-
-Esto también puede ocurrir si tienes dos
-instancias abiertas de Panel Attack.
+Esto también puede ocurrir si tienes dos instancias abiertas de Panel Attack.
 Pulsa ""Cambiar"" o ""Volver"" para continuar.","Fehler: Dieser Name wird bereits verwendet :<
 
 Wenn du die Lobby gerade erst verlassen hast, könnte es sein, dass der Server dich noch nicht abgemeldet hat. Versuche es bitte erneut.
 
 Das kann ebenfalls passieren, wenn du Panel Attack mehrfach geöffnet hast.
 
-
 Drücke die Tausch-Taste (A/B) oder die Esc-Taste, um fortzufahren.","Errore: nome già in uso :<
 
-
-Se hai appena lasciato il server,
-questo potrebbe non averlo ancora realizzato, prova ad accedere di nuovo.
+Se hai appena lasciato il server, questo potrebbe non averlo ancora realizzato, prova ad accedere di nuovo.
 
 
-Questo può anche succedere se hai 
-due istanze di Panel Attack aperte.
+Questo può anche succedere se hai due istanze di Panel Attack aperte.
 Premi ""Swap"" o Indietro per continuare.","Error: ชื่อนี้มีคนใช้แล้ว
 
 ถ้าคุณเพิ่งออกจาก server ไป บางที server อาจยังจำค่าเก่าอยู่ กรุณาลองเข้าสู่ server อีกครั้ง
@@ -208,15 +189,15 @@ ld_analytics,,Loading analytics...,Chargement des statistiques...,Carregando est
 mm_1_endless,,1P endless,1J infini,1J infinito,1P エンドレス,1J interminable,1P Endlos,1P infinito,1P แบบไม่มีจบ
 mm_1_puzzle,,1P puzzle,1J puzzle,1J quebra-cabeça,1P パズル,1J Puzzle,1P Puzzle,1P puzzle,1P puzzle
 mm_1_time,,1P time attack,1J contre la montre,1J contra o tempo,1P スコアアタック,1J Contrareloj,1P Time Attack,1P a tempo,1P time attack
-mm_1_training,Vs training mode,1P training,Formation 1P,treinamento 1P,1P トレーニング,Entrenamiento 1P,1P Training,Allenamento 1P,1P ฝึกซ้อม
-mm_1_challenge_mode,Challenge Mode,Challenge Mode,Mode Défi,Modo desafio,チャレンジモード,Modo Desafío,Herausforderungsmodus,Modalità sfida,โหมดท้าทาย
-mm_1_vs,,1P vs yourself,1J vs soi-même,1J vs você mesmo,1P じぶんとのたたかい,1J vs Tú,1P gegen dich selbst,1P vs te stesso,1P สู้กับตัวเอง
-mm_2_vs_local,,2P vs local game,2J vs en local,2J vs jogo local,2P ローカルVS,2J vs partida local,2P lokal,2P vs in locale,2P แข่งกันสองคน บนคอมเครื่องเดียวกัน
-mm_2_vs_online,,2P vs online %1,2J vs en ligne %1,2J vs online %1,2P オンラインVS %1,2J vs partida en línea %1,2P online %1,2P vs online %1,2P แข่งกับคนอื่นออนไลน์ %1
-mm_2_vs,,2P vs,2J vs,2J vs,2P VS,2J vs,2SP vs,2P vs,2P แข่งกับคนอื่น
+mm_1_training,Vs training mode,1P training,Entraînement 1J,treinamento 1P,1P トレーニング,Entrenamiento 1P,1P Training,Allenamento 1P,1P ฝึกซ้อม
+mm_1_challenge_mode,Challenge Mode,Challenge Mode,Mode défi,Modo desafio,チャレンジモード,Modo Desafío,Herausforderungsmodus,Modalità sfida,โหมดท้าทาย
+mm_1_vs,,1P vs yourself,1J contre soi-même,1J vs você mesmo,1P じぶんとのたたかい,1J vs Tú,1P gegen dich selbst,1P vs te stesso,1P สู้กับตัวเอง
+mm_2_vs_local,,2P vs local game,2J en local,2J vs jogo local,2P ローカルVS,2J vs partida local,2P lokal,2P vs in locale,2P แข่งกันสองคน บนคอมเครื่องเดียวกัน
+mm_2_vs_online,,2P vs online %1,2J en ligne %1,2J vs online %1,2P オンラインVS %1,2J vs partida en línea %1,2P online %1,2P vs online %1,2P แข่งกับคนอื่นออนไลน์ %1
+mm_2_vs,,2P vs,2J VS,2J vs,2P VS,2J vs,2SP vs,2P vs,2P แข่งกับคนอื่น
 mm_configure,,Configure input,Configurer les touches,Configurar teclas,入力コンフィグ,Configurar teclas,Tastenkonfiguration,Configura i tasti,ตั้งค่าปุ่ม
-mm_fullscreen,,Fullscreen %1,Plein Écran %1,Tela cheia %1,フルスクリーン %1,Pantalla completa %1,Vollbild %1,Schermo inteto 1%,เต็มจอ %1
-mm_music_test,,Music test,Musique test,Teste de música,サウンドテスト,Prueba de música,Musik-Test,Testa la musica,ทดสอบเพลง
+mm_fullscreen,,Fullscreen %1,Plein écran %1,Tela cheia %1,フルスクリーン %1,Pantalla completa %1,Vollbild %1,Schermo inteto 1%,เต็มจอ %1
+mm_music_test,,Music test,Test des musiques,Teste de música,サウンドテスト,Prueba de música,Musik-Test,Testa la musica,ทดสอบเพลง
 mm_no_support_fullscreen,,Your graphics card doesn't support canvases for fullscreen,Votre carte graphique ne supporte pas le plein écran,Sua placa de vídeo não suporta tela cheia,お使いのグラフィックカードはフルスクリーンのキャンバスに対応していません,Tu tarjeta gráfica no soporta bordes en pantalla completa.,Deine Grafikkarte unterstützt keine Vollbildauflösungen.,La tua scheda grafica non supporta la modalità schermo intero.,กราฟฟิคการ์ดของคุณไม่รองรับ canvas สำหรับเล่นเต็มจอ
 mm_options,,Options,Options,Opções,オプション,Opciones,Optionen,Opzioni,Options
 mm_quit,,Quit,Quitter,Sair,終わる,Salir,Verlassen,Esci,ออก
@@ -227,10 +208,10 @@ nt_conn_timeout,,Failed to connect to the server.,Impossible de se connecter au 
 nt_msg_err,,"Network error, message could not be decoded: ""%1""","Erreur réseau, le message ne peut pas être décodé: ""%1""","Erro de conexão, a mensagem não pôde ser codificada: ""%1""","ネットワークエラー、メッセージのデコード失敗: ""%1""","Error de red, el mensaje no pudo ser decodificado: ""%1""",Netzwerkfehler: Die folgende Nachricht konnte nicht entschlüsselt werden: %1,"Errore di network, il messaggio non può essere decodificato: ""%1""","การเชื่อมต่อล้มเหลว ข้อความไม่สามารถถอดรหัสได้: ""%1"""
 nt_player_err,,Server did not send number of players.,Le serveur n'a pas envoyé le nombre de joueurs.,O servidor não emitiu nº de jogadores.,サーバーからプレイヤー人数を受信しませんでした。,El servidor no envio la cantidad de jugadores.,Server schickte die Anzahl der Spieler nicht.,Il server non ha inviato il numero di giocatori.,server ไม่ได้แจ้งจำนวนผู้เล่น
 op_general,Options: General,General,Général,Em geral,全般的,General,Allgemein,Generale,ทั่วไป
-op_graphics,Options: Graphics,Graphics,Graphique,Gráficos,グラフィック,Gráficos,Grafik,Grafica,กราฟฟิค
-op_audio,Options: Audio,Audio,l'audio,Áudio.,オーディオ,Audio,Audio,Audio,เสียง
+op_graphics,Options: Graphics,Graphics,Graphismes,Gráficos,グラフィック,Gráficos,Grafik,Grafica,กราฟฟิค
+op_audio,Options: Audio,Audio,Audio,Áudio.,オーディオ,Audio,Audio,Audio,เสียง
 op_debug,Options: Debug,Debug,Déboguer,Depurar,デバッグ,Depurar,Debuggen,Debug.,Debug
-op_about,Options: About,About,Sur,Sobre,だいたい,Sobre,Über,Di,เกี่ยวกับ
+op_about,Options: About,About,À propos,Sobre,だいたい,Sobre,Über,Di,เกี่ยวกับ
 op_none,,none,rien,Nenhum,無し,Nada,keiner,Niente,ไม่มี
 op_on,,On,On,Ativ.,ON,On,An,On,เปิด
 op_off,,Off,Off,Desat.,OFF,Off,Aus,Off,ปิด
@@ -239,9 +220,6 @@ op_about_characters,,About custom characters,À propos des personnages personnal
 op_about_themes,,About custom themes,À propos des thèmes personnalisés,Sobre temas personalizados,カスタムテーマについて,Acerca de temas personalizados,How to: Eigene Themes entwickeln,A proposito dei temi personalizzabili,เกี่ยวกับ custom themes
 op_about_stages,,About custom stages,À propos des terrains personnalisés,Sobre cenários personalizados,カスタムステージについて,Acerca de escenarios personalizados,How to: Eigene Arenen erstellen,A proposito degli scenari personalizzabili,เกี่ยวกับด่าน custom 
 op_about_panels,,About custom panels,À propos des blocs personnalisés,Sobre painéis personalizados,カスタムパネルについて,Acerca de paneles personalizados,How to: Eigene Panels kreieren,A propostio delle tessere personalizzabili,เกี่ยวกับ custom panels
-op_about_attack_files,,About Attack Files
-op_about_installing_mods,,Installing Mods
-op_system_info,Button for showing system information,System Info
 op_analytics,,Enable analytics,Activer les statistiques,Ativar estatísticas,解析を有効にする,Habilitar estadísticas,Statistiken aktivieren,Attiva statistiche,เปิด analytics
 op_copy_files,,"Hold on.  Copying an example folder to make this easier...
 
@@ -249,10 +227,10 @@ op_copy_files,,"Hold on.  Copying an example folder to make this easier...
 This may take a few seconds or maybe even a minute or two.
 
 
-Don't worry if the window goes inactive or ""not responding""","Veuillez patientez, nous copions les fichiers exemples.
+Don't worry if the window goes inactive or ""not responding""","Veuillez patientez, nous copions les fichiers d'exemples.
 
 
-Cette opération peut prendre quelques secondes à 2 min.
+Cette opération peut prendre de quelques secondes à deux minutes.
 
 
 La fenêtre peut devenir inactive et ne plus répondre.","Um momento. Criando uma pasta modelo para facilitar isso...
@@ -289,26 +267,26 @@ Non preoccuparti se la finestra diventa inattiva o ""non risponde"".","กรุ
 อาจใช้เวลาไม่กี่วินาที หรืออาจจะนานถึง 1-2 นาที
 
 ไม่ต้องตกใจหากหน้าต่างเกิดอาการ ""not responding"""
-op_countdown,,Ready countdown,Compte à rebours avant une partie,Contagem regressiva,READYカウントダウン,Cuenta regresiva lista,Ready Countdown,Pronto per il conto alla rovescia,เตรียมพร้อมนับถอยหลัง
-op_debug_mode,Debug Mode button in options menu,Debug Mode,Mode Debug,Modo de Depuração,デバッグモード,Modo Depuración,Debug Modus,Modalità Debug,โหมด debug
+op_countdown,,Ready countdown,Compte à rebours de début de partie,Contagem regressiva,READYカウントダウン,Cuenta regresiva lista,Ready Countdown,Pronto per il conto alla rovescia,เตรียมพร้อมนับถอยหลัง
+op_debug_mode,Debug Mode button in options menu,Debug Mode,Mode debug,Modo de Depuração,デバッグモード,Modo Depuración,Debug Modus,Modalità Debug,โหมด debug
 op_default_char,,Use default characters,Utiliser les personnages par défaut,Usar personagens padrão,デフォルトのキャラクターを使用,Usar personajes por defecto.,Standardcharaktere verwenden,Usa i personaggi di base,ใช้ตัวละครค่าเริ่มต้น
 op_enter_name,,Enter your name:,Entrez votre pseudo :,Digite seu apelido:,ユーザー名を入力して下さい：,Ingresa tu nombre:,Gib deinen Benutzernamen ein:,Inserisci il tuo nome:,กรอกชื่อของคุณ:
-op_fps,,Show FPS,Afficher les FPS,Mostrar FPS,FPS表示,Mostrar FPS (cuadros por segundo),FPS anzeigen,Mostra FPS (frame al secondo),แสดง FPS
+op_fps,,Show FPS,Afficher les IPS,Mostrar FPS,FPS表示,Mostrar FPS (cuadros por segundo),FPS anzeigen,Mostra FPS (frame al secondo),แสดง FPS
 op_language,,Language,Langue,Idioma,言語,Idioma,Sprache,Lingua,ภาษา
 op_theme,,Theme,Thème,Tema,テーマ,Tema,Theme,Tema,ธีม
-op_scale,Setting that controls how much the game is scaled (resolution),Game Scale,Échelle de jeu,Escala de jogo,ゲームスケール,Escala de juego,Spielskala,Scala del gioco,เสกลหน้าจอเกม
+op_scale,Setting that controls how much the game is scaled (resolution),Game Scale,Mise à l'échelle du jeu,Escala de jogo,ゲームスケール,Escala de juego,Spielskala,Scala del gioco,เสกลหน้าจอเกม
 op_scale_auto,The scale type that snaps to the best scale for the current window size,Automatic,Automatique,Automático,自動,Automático,Automatisch,Automatico,อัตโนมัติ
 op_scale_fit,The scale type that fits the graphics as big as they can be to the window,Fit to Window,Ajuster à la fenêtre,Adequado à janela,ウィンドウにフィットします,Encaja en la ventana,An Fenster anpassen,Adatta alla finestra,พอดีขนาด Window
 op_scale_fixed,The scale type that uses a fixed scale value no matter what,Fixed Scale,Échelle fixe,Escala fixa,固定スケール,Escala fija,Feste Skala,Scala fissa,เสกลคงที่
 op_scale_fixed_value,The setting for the picked scale value in fixed mode,Fixed Scale,Échelle fixe,Escala fixa,固定スケール,Escala fija,Feste Skala,Scala fissa,เสกลคงที่
 op_ingame_infos,,Show informations during gameplay,Afficher les données pendant la partie,Mostrar informações durante partida,プレイ中情報表示,Mostrar información durante la partida,Informationen während des Spiels anzeigen,Mostra informazioni nel corso della partita,แสดงข้อมูลระหว่างเล่น
-op_use_music_from,,Use music from,Utiliser les musiques des,Usar música de,使用BGM,Usar música desde,Musikauswahl,Usa musica da,ใช้เพลงจาก
+op_use_music_from,,Use music from,Utiliser la musique du,Usar música de,使用BGM,Usar música desde,Musikauswahl,Usa musica da,ใช้เพลงจาก
 op_only_stage,,Stage 100% | Character 0%,Terrain 100% | Personnage 0%,Cenário 100% | Personagens 0%,ステージ 100% | キャラクター  0%,Escenario 100% | Personaje 0%,Arena 100% | Charakter 0%,Scenario 100% | Personaggio 0%,Stage 100% | Character 0%
 op_often_stage,,Stage 75% | Character 25%,Terrain 75% | Personnage 25%,Cenário 75% | Personagens 25%,ステージ 75% | キャラクター  25%,Escenario 75% | Personaje 25%,Arena 75% | Charakter 25%,Scenario 75% | Personaggio 25%,Stage 75% | Character 25%
 op_stage_characters,,Stage 50% | Character 50%,Terrain 50% | Personnage 50%,Cenário 50% | Personagens 50%,ステージ 50% | キャラクター  50%,Escenario 50% | Personaje 50%,Arena 50% | Charakter 50%,Scenario 50% | Personaggio 50%,Stage 50% | Character 50%
 op_often_characters,,Stage 25% | Character 75%,Terrain 25% | Personnage 75%,Cenário 25% | Personagens 75%,ステージ 25% | キャラクター  75%,Escenario 25% | Personaje 75%,Arena 25% | Charakter 75%,Scenario 25% | Personaggio 75%,Stage 25% | Character 75%
 op_only_characters,,Stage 0% | Character 100%,Terrain 0% | Personnage 100%,Cenário 0% | Personagens 100%,ステージ 0% | キャラクター  100%,Escenario 0% | Personaje 100%,Arena 0% | Charakter 100%,Scenario 0% | Personaggio 100%,Stage 0% | Character 100%
-op_music_current,,Currently playing:,Music actuel :,Reproduzindo agora:,現在再生中：,Música actual:,Aktuelle Musik:,Musica in riproduzone:,กำลังเล่น:
+op_music_current,,Currently playing:,Musique en cours :,Reproduzindo agora:,現在再生中：,Música actual:,Aktuelle Musik:,Musica in riproduzone:,กำลังเล่น:
 op_music_delay,,Danger music change-back delay,Délai du changement de la musique en mode danger,Atraso na mudança de música de perigo,ピンチBGM切り替えディレイ,Retrasar cambio de melodía de peligro,Verzögerung für die Rückkehr aus der Gefahrenmusik,Ritardo del cambiamento della musica di pericolo,ดีเลย์ระหว่างเปลี่ยนเพลง (จากเพลงอันตราย เป็นเพลงปกติ)
 op_music_intro,,Playing the intro,Joue l'intro,Reproduzindo introdução,イントロ表示,Reproduciendo la intro,Intro wird abgespielt,Riproduci la intro,กำลังเล่น intro
 op_music_load,,Loading required sounds... (this may take a while),Chargement des sons nécessaires... (cela peut prendre un certain temps),Carregando sons necessários ... (isso pode demorar um pouco),必要なサウンドを読み込みしています...（多少時間がかかるかも）,Cargando los sonidos requeridos...(esto tomará un momento),Benötigte Sounds werden geladen... (das könnte einige Zeit dauern),Caricamento dei suoni necessari (ci potrebbe volere un po'...),กำลังโหลดไฟล์เสียงที่จำเป็น (ต้องใช้เวลาสักพัก)
@@ -321,10 +299,10 @@ op_music_nav,,"%1 and %2 to navigate songs
 %3 para salir","Nutze %1 und %2 um zwischen Liedern zu navigieren und %3, um das Menü zu verlassen","%1 e %2 per navigare tra le canzoni
 %3 per uscire","%1 และ %2 เพื่อกรอเพลง
 %3 เพื่อออก"
-op_music_play,Play music button in Sound Test,Play,Play,Play,Play,Play,Play,Play,เล่น
+op_music_play,Play music button in Sound Test,Play,Jouer,Play,Play,Play,Play,Play,เล่น
 op_music_stop,Stop music button in Sound Test,Stop,Arrêter,Pare,やめる,Detener,Stoppen,Fermare,หยุด
-op_music_type,Select music type in Sound Test,Music type,La musique,Música,音楽,Música,Musik,Musica,ประเภทเพลง
-op_music_sfx,Sound Effect in Sound Test,SFX,Sonner,Som,?,Sonar,Klang,Suono,เสียงประกอบ
+op_music_type,Select music type in Sound Test,Music type,Type de musique,Música,音楽,Música,Musik,Musica,ประเภทเพลง
+op_music_sfx,Sound Effect in Sound Test,SFX,Effet sonore,Som,?,Sonar,Klang,Suono,เสียงประกอบ
 op_panels,,Panels set,Choisir les blocs,Definir painéis,パネルセット,Set de paneles,Panelset,Scelta delle tessere,ชุด Panels
 op_reload_analytics,,reloading analytics...,rechargement des statistiques...,recarregando estatísticas...,解析を再読み込みしています...,Recargando estadísticas...,Statistiken werden neugeladen...,Ricaricamento delle statistiche...,กำลังโหลด analytics อีกครั้ง
 op_reload_characters,,reloading characters...,rechargement des personnages...,recarregando personagens...,キャラクターを再読み込みしています...,Recargando personajes...,Charaktere werden neugeladen...,Ricaricamento dei personaggi...,กำลังโหลดตัวละครอีกครั้ง
@@ -336,25 +314,20 @@ op_replay_public_anonymously,,Anonymously,Anonymement,Anônimo,匿名で公開�
 op_replay_public_with_name,,With my name,Avec mon pseudo,Com meu apelido,ユーザー名付きで公開する,Con mi nombre,Mit meinem Benutzernamen,Con il mio nome,ด้วยชื่อของฉัน
 op_rating_details,"Whether to show rating points, win rates etc",Show Rating Details,Afficher les détails de la notation,Mostrar detalhes de classificação,評価の詳細を表示します,Detalles de calificación de espectáculos,Bewertungsdetails anzeigen,Mostra i dettagli di valutazione,แสดงรายละเอียด Rating
 op_save,,writing config to file...,sauvegarde de la configuration...,salvando configuração no arquivo...,ファイルに設定を書き込んでいます...,Escribiendo configuración al archivo...,Speichere Konfiguration in Datei...,Salvataggio delle configurazioni su file...,กำลังเขียน config ไปยัง file
-op_vol,,Master Volume,Volume Global,Vol. principal,マスターボリューム,Volumen principal,Lautstärke,Volume principale,ระดับความดังเสียงโดยรวม
-op_vol_music,,Music Volume,Volume Musique,Vol. da música,BGMボリューム,Volumen de música,Lautstärke der Musik,Volume della musica,ระดับความดังเสียงเพลง
-op_vol_sfx,,SFX Volume,Volume Effets,Vol. Efeitos Esp.,SFXボリューム,Volumen de sonido,Lautstärke der Soundeffekte,Volume SFX,ระดับความดังเสียงประกอบ
-op_input_delay,,Key repeat delay (offline only),Délai de répétition des touches,Atraso na repetição das teclas (apenas offline),DAS 設定（オフラインのみ）,Retraso de repetición de las teclas (Solo fuera de línea),Verzögerung für die Tastenwiederholung bei gedrückt halten (nur offline),Ritardo della ripetizione dell'input (solo offline),ดีเลย์การกดปุ่มซ้ำๆ
-op_portrait_darkness,Options: darkness of the portraits in game,Portrait Darkness,Portrait Obscurité,Claridade de Retratos,背景の暗さ,Oscuridad del retrato,Helligkeit des Charakterporträts während des Spiels,Oscurità del ritratto,ความมืดของรูปภาพ
-op_popfx,Options: Whether pop effects should show,Pop Effects,Effets Pop,Efeitos de Explosão,パネル消しエフェクト,Efectos pop,Popeffekte,Effetti pop,เอฟเฟคต์เวลาพาเนลถูกทำลาย
+op_vol,,Master Volume,Volume global,Vol. principal,マスターボリューム,Volumen principal,Lautstärke,Volume principale,ระดับความดังเสียงโดยรวม
+op_vol_music,,Music Volume,Volume des musiques,Vol. da música,BGMボリューム,Volumen de música,Lautstärke der Musik,Volume della musica,ระดับความดังเสียงเพลง
+op_vol_sfx,,SFX Volume,Volume des effets sonores,Vol. Efeitos Esp.,SFXボリューム,Volumen de sonido,Lautstärke der Soundeffekte,Volume SFX,ระดับความดังเสียงประกอบ
+op_input_delay,,Key repeat delay (offline only),Délai de répétition des touches (hors-ligne uniquement),Atraso na repetição das teclas (apenas offline),DAS 設定（オフラインのみ）,Retraso de repetición de las teclas (Solo fuera de línea),Verzögerung für die Tastenwiederholung bei gedrückt halten (nur offline),Ritardo della ripetizione dell'input (solo offline),ดีเลย์การกดปุ่มซ้ำๆ
+op_portrait_darkness,Options: darkness of the portraits in game,Portrait Darkness,Luminosité des portraits,Claridade de Retratos,背景の暗さ,Oscuridad del retrato,Helligkeit des Charakterporträts während des Spiels,Oscurità del ritratto,ความมืดของรูปภาพ
+op_popfx,Options: Whether pop effects should show,Pop Effects,Effets pop,Efeitos de Explosão,パネル消しエフェクト,Efectos pop,Popeffekte,Effetti pop,เอฟเฟคต์เวลาพาเนลถูกทำลาย
 op_renderTelegraph,Options: Whether the telegraph above the stack should show,Show Telegraph,Montrer le télégraphe,Mostrar telégrafo,テレグラフを表示,Mostrar telégrafo,Telegraph zeigen,Mostra telegrafo,แสดง Telegraph
-op_renderAttacks,Options: Whether the telegraph attack animations should show,Show Attacks,Montrer des attaques,Mostrar ataques,攻撃を示す,Mostrar ataques,Angriffe anzeigen,Mostra attacchi,แสดง attack animation ของ telegraph
+op_renderAttacks,Options: Whether the telegraph attack animations should show,Show Attacks,Montrer les attaques,Mostrar ataques,攻撃を示す,Mostrar ataques,Angriffe anzeigen,Mostra attacchi,แสดง attack animation ของ telegraph
 op_cardTransparency,Options: Whether the combo / chain cards should become transparent,Card Transparency,Transparence des cartes,Transparência do cartão,カードの透明性,Transparencia de la tarjeta,Kartentransparenz,Trasparenza della carta,แสดงการ์ดใส
 op_cardfx_scale,Options: how far away the popfx particles converge onto your combo/chain before it pops,Attack Particle Distance,Distance des particules d'attaque,Alcance de Partículas de Ataque,攻撃パーティクル発生距離,Distancia de partículas de ataque,Skalierung der Popeffekte bei Kombos und Ketten,Distanza delle particelle di attacco,ระยะ attack particle
-mod_manage_icon,Label for icon in mod management,Icon,Icône,Ícone,アイコン,Icono,Symbol,Icona,ไอคอน
-mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Name,Nome,ชื่อ
-mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
-mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submods,サブMOD,Submods,Submods,Submod,ซับม็อด
-mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
-opponent_level,,Opponent's level,Niveau adverse,Nível do oponente,相手のレベル,Nivel del oponente,Level des Gegners,Livello dell'avversario,ระดับของคู่ต่อสู้
-pl_pause_help,,Press Start again to resume,Appuyer sur Start pour continuer,Pressione Começar novamente para continuar,STARTで再開,"Presiona ""Start"" para resumir",Drücke Start um fortzufahren,"Premi ""Start"" di nuovo per riprendere",กด start อีกครั้งเพื่อเล่นต่อ
-pl_1_win,,P1 wins ^^,J1 gagne ^^,J1 vence ^^,1Pの勝ち！ ＾＾,J1 gana ^^,Spieler 1 gewinnt,P1 vince ^^,ผู้เล่น 1 ชนะ ^^
-pl_2_win,,P2 wins ^^,J2 gagne ^^,J2 vence ^^,2Pの勝ち！ ＾＾,J2 gana ^^,Spieler 2 gewinnt,P2 vince ^^,ผู้เล่น 2 ชนะ ^^
+opponent_level,,Opponent's level,Niveau de l'adversaire,Nível do oponente,相手のレベル,Nivel del oponente,Level des Gegners,Livello dell'avversario,ระดับของคู่ต่อสู้
+pl_pause_help,,Press Start again to resume,Appuyez sur Start pour continuer,Pressione Começar novamente para continuar,STARTで再開,"Presiona ""Start"" para resumir",Drücke Start um fortzufahren,"Premi ""Start"" di nuovo per riprendere",กด start อีกครั้งเพื่อเล่นต่อ
+pl_1_win,,P1 wins ^^,Victoire de J1 ^^,J1 vence ^^,1Pの勝ち！ ＾＾,J1 gana ^^,Spieler 1 gewinnt,P1 vince ^^,ผู้เล่น 1 ชนะ ^^
+pl_2_win,,P2 wins ^^,Victoire de J2 ^^,J2 vence ^^,2Pの勝ち！ ＾＾,J2 gana ^^,Spieler 2 gewinnt,P2 vince ^^,ผู้เล่น 2 ชนะ ^^
 pl_cleared,,cleared: %1,détruit : %1,destruido: %1,消したパネル：%1個,Despejado: %1,Cleared: %1,Completato: %1,เคลียร์แล้ว: %1
 pl_frame,,Frame: %1,Frame : %1,Frame: %1,フレーム：%1,Cuadro: %1,Frame: %1,Frame: %1,เฟรม: %1
 pl_game_start,,Game is starting!,La partie va commencer !,A partida está começando!,ゲームが始まります！,¡La partida va a comenzar!,Das Spiel beginnt!,Il gioco sta per inziare!,เกมกำลังเริ่ม !
@@ -399,7 +372,7 @@ pl_time,,Time: %1,Temps : %1,Tempo: %1,時間：%1,Tiempo: %1,Zeit: %1,Tempo: %1
 pl_time_out,,"game start timed out.
 This is a known bug, but you may post it in #panel-attack-bugs-features
 if you'd like.","Le chargement de la partie a pris trop de temps.
-Ceci est un bug connu, mais vous pouvez le signaler sur notre discord sur :
+Ceci est un bug connu, mais vous pouvez le signaler sur notre Discord sur :
 #panel-attack-bugs-features","Tempo esgotado para partida começar.
 Este é um bug conhecido, mas você pode postar em #panel-attack-bugs-features
 se quiser.","ゲームの開始がタイムアウトしました。
@@ -419,13 +392,13 @@ pz_info,,"Note: you may place new custom puzzles in
 
 
 See the README and example puzzle set there
-for instructions","Note: vous pouvez placer des puzzles personnalisés dans :
+for instructions","Note : vous pouvez placer des puzzles personnalisés dans :
 
 
 %appdata%\Panel Attack\puzzles
 
 
-Lisez le fichier README, et alle voir les exemples.","Nota: você pode alocar novos quebra-cabeças personalizados em
+Référez-vous au fichier README et aux exemples pour les instructions.","Nota: você pode alocar novos quebra-cabeças personalizados em
 
 
 %appdata%\Panel Attack\puzzles
@@ -461,7 +434,7 @@ Leggi il README e guarda i puzzle d'esempio che si trovano lì per avere istruzi
 %appdata%\Panel Attack\puzzles
 
 สามารถดูวิธีใช้ใน README และตัวอย่าง puzzle ที่อยู่ในนั้นได้"
-pz_puzzles,,Puzzles:,Puzzles :,Quebra-cabeças:,パズル：,Puzzles:,Puzzles:,Puzzles:,Puzzles:
+pz_puzzles,,Puzzles,Puzzles,Quebra-cabeças,パズル,Puzzles,Puzzles,Puzzles,Puzzles
 rp_endless,,endless,infini,Infinito,エンドレス,Interminable,Endlos,infinito,ไม่รู้จบ
 rp_no_endless,,I don't have an endless replay :(,Je n'ai pas de replay infini :(,Não possuo replay sem fim :(,エンドレスのリプレイはありません -_-,No encuentro ninguna repetición del modo Interminable :(,Ich habe kein Replay für Endless :-(,Non ho un replay della modalità infinito :(,ฉันไม่มี replay โหมดไม่รู้จบ :(
 rp_no_puzzle,,I don't have a puzzle replay :(,Je n'ai pas de replay puzzle :(,Não possuo replay de quebra-cabeça :(,パズルのリプレイはありません -_-,No encuentro ninguna repetición del modo Puzzle :(,Ich habe kein Puzzle Replay :-(,Non ho un replay della modalità puzzle :(,ฉันไม่มี replay โหมด puzzle :(
@@ -476,102 +449,97 @@ in 2%","คุณได้คะแนน %1
 ใน %2"
 ss_casual,,Casual,Normal,Casual,カジュアル,Casual,Normal,Normale,แคชชวล
 ss_controller,Type of input method – controller,Controller,Manette,Controlador,コントローラ,Controlador,Regler,Controller,จอย
-ss_current_rating,,current:,courant :,atual:,現在：,Actual:,derzeitig:,corrente:,ปัจจุบัน:
+ss_current_rating,,current:,actuel :,atual:,現在：,Actual:,derzeitig:,corrente:,ปัจจุบัน:
 ss_disconnect,,Disconnected from server.,Vous êtes deconnecté du serveur.,Desconectado do servidor.,サーバーから切断されました。,Desconectado del servidor.,Verbindung zum Server verloren.,Disconnesso dal server.,ถูกตัดขาดจาก server
-ss_could_not_connect,Shown when the server could not be reached,Could not connect to the server.,Ne peut se connecter au serveur.,Não pôde conectar-se ao servidor.,サーバーに接続できませんでした。,No se puede conectar con el servidor.,Konnte keine Verbindung zum Server herstellen.,Impossibile connettersi al server.,ไม่สามารถเชื่อมต่อกับ server ได้
+ss_could_not_connect,Shown when the server could not be reached,Could not connect to the server.,Impossible de se connecter au serveur.,Não pôde conectar-se ao servidor.,サーバーに接続できませんでした。,No se puede conectar con el servidor.,Konnte keine Verbindung zum Server herstellen.,Impossibile connettersi al server.,ไม่สามารถเชื่อมต่อกับ server ได้
 ss_room_closed_in_game,Message shown when room closes mid game,"The connection to the match was lost.
 Usually this happens due to an unstable network connection from one of the players, but this could also be a bug or crash.","La connexion au match a été perdue.
-Usuellement, cela se produit en raison d'une connexion réseau instable de l'un des joueurs, mais cela pourrait également être un bug ou un crash.","A conexão com a partida foi perdida.
+Cela est généralement dû à une connexion réseau instable de l'un des joueurs, mais cela pourrait également venir d'un bug ou d'un crash.","A conexão com a partida foi perdida.
 Usoramente isso acontece devido a uma conexão de rede instável de um dos jogadores, mas isso também pode ser um bug ou acidente.",試合への接続が失われました。USLAVEこれは、プレーヤーの1つからの不安定なネットワーク接続が原因で起こりますが、これもバグやクラッシュになる可能性があります。,"La conexión con el partido se perdió.
 Usualmente esto sucede debido a una conexión de red inestable de uno de los jugadores, pero esto también podría ser un error o un choque.","Die Verbindung zum Spiel wurde unterbrochen.
 Normalerweise passiert dies aufgrund einer instabilen Netzwerkverbindung von einem der Spieler, allerdings kann der Verbindungsabbruch auch durch einen Programmabsturz beim Gegner hervorgerufen worden sein.","La connessione alla partita è stata persa.
 Usualmente ciò accade a causa di una connessione di rete instabile da uno dei giocatori, ma questo potrebbe anche essere un bug o un incidente.","การเชื่อมต่อล้มเหลว
 ปกติจะเกิดจากการเชื่อมต่อของผู้เล่นคนใดคนหนึ่งไม่เสถียร
 หรืออาจเกิดจาก bug หรือ crash"
-ss_latency_error,Message shown when the connection is too unstable,The network connection is too unstable to continue the game. It could be your connection or the opponent's.,La connexion réseau est trop instable pour continuer le jeu. Cela pourrait être votre connexion ou les adversaires.,A conexão de rede é muito instável para continuar o jogo. Pode ser sua conexão ou os adversários.,ネットワーク接続は、ゲームを続行するには不安定すぎます。それはあなたの接続または対戦相手かもしれません。,La conexión de red es demasiado inestable para continuar el juego. Podría ser tu conexión o la del oponente.,"Die Netzwerkverbindung ist zu instabil, um das Spiel fortzusetzen. Es könnte deine Verbindung oder die des Gegners sein.",La connessione di rete è troppo instabile per continuare il gioco. Potrebbe essere la tua connessione o gli avversari.,การเชื่อมต่อไม่เสถียรพอที่จะเล่นต่อไปได้ อาจเกิดจาก internet ของคุณ หรือไม่ก็คู่แข่ง
-ss_average_frames_behind,Prints the average number of frames behind,Average frames behind: %1,Cadres moyens derrière: %1,Quadros médios por trás: %1,後ろの平均フレーム：％1,Marcos promedio detrás: %1,Durchschnittliche Frames Verzögerung: %1,Cornici medi dietro: %1,เฟรมที่ตามหลังอยู่โดยเฉลี่ย: %1
-ss_average_frames_behind_player,Prints the average number of frames behind a player was.,Average frames behind for %1 was %2,Les cadres moyens derrière pour %1 étaient %2,Quadros médios por %1 foi %2,％1の平均フレームは％2でした。,Los marcos promedio detrás de %1 fue %2.,Durchschnittliche Frames hinter %1 waren %2.,I telai medi dietro per %1 era %2.,เฟรมที่ตามหลังอยู่โดยเฉลี่ยของ %1 คือ %2
+ss_latency_error,Message shown when the connection is too unstable,The network connection is too unstable to continue the game. It could be your connection or the opponent's.,La connexion réseau est trop instable pour continuer la partie. Cela pourrait venir de votre connexion ou de celle de votre adversaire.,A conexão de rede é muito instável para continuar o jogo. Pode ser sua conexão ou os adversários.,ネットワーク接続は、ゲームを続行するには不安定すぎます。それはあなたの接続または対戦相手かもしれません。,La conexión de red es demasiado inestable para continuar el juego. Podría ser tu conexión o la del oponente.,"Die Netzwerkverbindung ist zu instabil, um das Spiel fortzusetzen. Es könnte deine Verbindung oder die des Gegners sein.",La connessione di rete è troppo instabile per continuare il gioco. Potrebbe essere la tua connessione o gli avversari.,การเชื่อมต่อไม่เสถียรพอที่จะเล่นต่อไปได้ อาจเกิดจาก internet ของคุณ หรือไม่ก็คู่แข่ง
+ss_average_frames_behind,Prints the average number of frames behind,Average frames behind: %1,Moyenne de frames en retard : %1,Quadros médios por trás: %1,後ろの平均フレーム：％1,Marcos promedio detrás: %1,Durchschnittliche Frames Verzögerung: %1,Cornici medi dietro: %1,เฟรมที่ตามหลังอยู่โดยเฉลี่ย: %1
+ss_average_frames_behind_player,Prints the average number of frames behind a player was.,Average frames behind for %1 was %2,La moyenne de frames en retard pour %1 était de %2,Quadros médios por %1 foi %2,％1の平均フレームは％2でした。,Los marcos promedio detrás de %1 fue %2.,Durchschnittliche Frames hinter %1 waren %2.,I telai medi dietro per %1 era %2.,เฟรมที่ตามหลังอยู่โดยเฉลี่ยของ %1 คือ %2
 ss_draw,,Draw,Egalité,Empate,引き分け,Empate,Unentschieden,Pareggio,เสมอ
 ss_err_no_reason,,Reason unknown,Erreur inconnue,Motivo desconhecido,理由不明,Razón desconocida,Grund unbekannt,Ragione sconosciuta,สาเหตุไม่แน่ชัด
 ss_error_leave,,Error when leaving online,Erreur en quittant le serveur,Erro ao sair do servidor,オンラインを離れる際のエラー,Error al salir de en línea,Fehler beim Verlassen des Servers,Errore nell'uscita dal server,Error ขณะออกจากโหมดออนไลน์
 ss_expected_rating,,expected:,attendu :,expectativa:,予想：,Esperado:,erwartet:,atteso:,ที่คาดไว้คือ :
 ss_init,,Waiting for room initialization...,En attente de la création de la salle...,Aguardando inicialização da sala...,ルームの初期化を待っています…,Esperando la inicialización de la sala.,Warte auf Initialisierung des Raumes...,Attesa per l'inizializzazione della stanza...,กำลังสร้างห้อง...
-ss_init_fail,,Room initialization failed.,Problème lors de la création de la salle.,Falha ao iniciar sala.,ルームの初期化に失敗しました。,Falló la inicialización de la sala.,Initialisierung des Raumes fehlgeschlagen.,Inizializzazione della stanza fallita.,การสร้างห้องไม่สำเร็จ
+ss_init_fail,,Room initialization failed.,La création de la salle a échoué.,Falha ao iniciar sala.,ルームの初期化に失敗しました。,Falló la inicialización de la sala.,Initialisierung des Raumes fehlgeschlagen.,Inizializzazione della stanza fallita.,การสร้างห้องไม่สำเร็จ
 ss_not_ranked,Message indicating not ranked right before the reason why,Not ranked.,Non classé.,Casual,レート変動なし。,Sin clasificar.,Nicht bewertet.,Non classificato.,ไม่ได้เล่นแบบ ranked
-ss_p_wins,,%1 wins,%1 gagne,%1 vence,%1の勝ち,%1 Gana,%1 gewinnt,%1 vince,%1 ชนะ
+ss_p_wins,,%1 wins,Victoire de %1,%1 vence,%1の勝ち,%1 Gana,%1 gewinnt,%1 vince,%1 ชนะ
 ss_ranked,Message to indicated ranked play,Ranked,Classé,Ranqueada,レート戦,Clasificado,Ranked,Classificato,เล่นแบบ ranked
 ss_rating,,Rating:,Classement :,Classificação:,レート：,Clasificación:,Rang:,Classificazione:,เรทติ้ง:
 ss_return,,Returning to main menu...,Retour au menu principal...,Voltar ao menu principal...,メインメニューに戻ります...,Regresando al menú principal...,Kehre zum Hauptmenü zurück...,Ritorno al menù principale...,กำลังกลับสู่เมนูหลัก
-ss_touch,"Type of input method – touch, as in “touch screen”",Touch,Toucher,Toque,接する,Tocar,Berühren,Tocco,สัมผัส
+ss_touch,"Type of input method – touch, as in “touch screen”",Touch,Tactile,Toque,接する,Tocar,Berühren,Tocco,สัมผัส
 ss_winrate,,Winrate:,Taux de victoire :,Taxa de vitórias:,勝率：,Racha de victorias:,Gewinnrate:,Rateo delle vittorie:,อัตราการชนะ:
 ss_wins,,Wins:,Victoires :,Vitórias:,勝ち：,Gana:,Siege:,Vittorie:,จำนวนเกมที่ชนะ:
-ss_ex_mode,,EX Mode,EX Mode,Modo EX,EXモード,Modo EX,EX,Modalità EX,โหมด EX 
+ss_ex_mode,,EX Mode,Mode EX,Modo EX,EXモード,Modo EX,EX,Modalità EX,โหมด EX 
 rp_browser_header,,~ Replay Browser ~,~ Bibliothèque des replays ~,~ Navegador de Replays ~,～リプレイブラウザ～,~ Explorador de Repeticiones ~,~ Replay Browser ~,~ Navigatore Replay ~,- คลัง replay -
-rp_browser_info_header,,~ Replay Information ~,~ Information des replays ~,~ Informações de Replays ~,～リプレイ情報～,~ Información de la repetición ~,~ Replay Informationen ~,~ Informazioni Replay ~,- ข้อมูล replay -
+rp_browser_info_header,,~ Replay Information ~,~ Informations du replay ~,~ Informações de Replays ~,～リプレイ情報～,~ Información de la repetición ~,~ Replay Informationen ~,~ Informazioni Replay ~,- ข้อมูล replay -
 rp_browser_current_dir,,Current directory: %1,Dossier actuel : %1,Pasta atual: %1,現在のディレクトリ：%1,Directorio actual: %1,Aktuelles Verzeichnis: %1,Elenco corrente: %1,ไดเรคทอรี่ปัจจุบัน: %1
 rp_browser_up,,up,monter,acima,戻る,volver,zurück ins übergeordnete Verzeichnis,su,ขึ้น
 rp_browser_root,,root,racine,raiz,ルート,raíz,Wurzel,sorgente,root
 rp_browser_more,,more,plus,mais,次,más,mehr,altro,more
 rp_browser_info_2p_vs,,2P VS,2J VS,2J VS,2P VS,2J VS,2P VS,2P VS,2P VS
-rp_browser_info_1p_vs,,VS Yourself,VS soi-même,VS Você mesmo,じぶんとのたたかい,VS Tú,1P gegen dich selbst,VS Te stesso,แข่งกับตัวเอง
+rp_browser_info_1p_vs,,VS Yourself,Contre soi-même,VS Você mesmo,じぶんとのたたかい,VS Tú,1P gegen dich selbst,VS Te stesso,แข่งกับตัวเอง
 rp_browser_info_1p,,1P,1J,1J,1P,1J,1P,1P,1P
 rp_browser_info_2p,,2P,2J,2J,2P,2J,2P,2P,2P
 rp_browser_info_name,,Name: %1,Nom : %1,Apelido %1,名前：%1,Nombre: %1,Name: %1,Nome: 1%,ชื่อ: %1
 rp_browser_info_level,,Level: %1,Niveau : %1,Nível: %1,LV：%1,Nivel: %1,Level: %1,Livello: 1%,ระดับ: %1
 rp_browser_info_character,,Character: %1,Personnage : %1,Personagem: 1%,キャラクター：%1,Personaje: %1,Charakter: %1,Personaggio: 1%,ตัวละคร: %1
-rp_browser_info_casual,,Casual Match,Match Normal,Partida Casual,カジュアル対戦,Partida Casual,Normale Partie,Partita Normale,แข่งแบบ Casual
-rp_browser_info_ranked,,Ranked Match,Match Classé,Partida Ranqueada,レート対戦,Partida Clasificatoria,Bewertete Partie,Partita Classificata,แข่งแบบ Ranked
+rp_browser_info_casual,,Casual Match,Match normal,Partida Casual,カジュアル対戦,Partida Casual,Normale Partie,Partita Normale,แข่งแบบ Casual
+rp_browser_info_ranked,,Ranked Match,Match classé,Partida Ranqueada,レート対戦,Partida Clasificatoria,Bewertete Partie,Partita Classificata,แข่งแบบ Ranked
 rp_browser_info_endless,,Endless,Infini,Infinito,エンドレス,Interminable,Endlos,Infinito,ไม่รู้จบ
 rp_browser_info_time_trial,,Time Trial,Contre la montre,Contra o Tempo,スコアアタック,Contrareloj,Time Attack,A Tempo,Time Trial
 rp_browser_info_speed,,Speed: %1,Vitesse : %1,Velocidade: %1,SPEED LV：%1,Velocidad: %1,Geschwindigkeit: %1,Velocità: 1%,ความเร็ว: %1
 rp_browser_info_difficulty,,Difficulty: %1,Difficulté : %1,Dificuldade: %1,難易度：%1,Dificultad: %1,Schwierigkeit: %1,Difficoltà: 1%,ความยาก: %1
 rp_browser_info_puzzle,,Puzzle,Puzzle,Quebra-Cabeça,パズル：%1,Puzzle,Puzzle,Puzzle,Puzzle
-rp_browser_watch,,"Press A/Confirm to view this replay, or B/Cancel to exit.","Appuyer sur A pour voir le replay, ou B pour quitter.",Aperte A/Confirme para ver este replay ou B/Cancelar para sair,Aボタンでリプレイを再生、Bボタンで戻る,"Presiona A/Confirmar para ver esta repetición, o B/Cancelar para salir.","Drücke A/Enter, um das Replay anzuschauen oder B/Escape, um zurückzukehren","Premi A/Conferma per vedere questo replay, o B/Annulla per uscire.",กด A/Confirm เพื่อดูรีเพลย์นี้ หรือ B/Cancel เพื่อออก
-rp_browser_no_info,,No information available...,Pas d'informations disponibles...,Sem informações disponíveis...,情報はありません…,Sin información disponible...,Keine Informationen verfügbar...,Nessuna informazione disponibile...,ไม่มีข้อมูลให้ดู
-rp_browser_error_unknown_replay_type,,Unknown replay type,Type de replay inconnu,Tipo de replay desconhecido,リプレイ種類不明,Tipo de repetición desconocida.,Unbekannter Replaytyp,Tipo di replay sconosciuto.,ไม่รู้จักประเภทของรีเพลย์
-rp_browser_error_loading,,Error loading replay: %1,Erreur au chargement du replay : %1,Erro ao carregar replay: %1,リプレイ読み込みエラー：%1,Error cargando la repetición: %1,Fehler beim Laden des Replays: %1,Errore nel caricamento del replay: 1%,Error ระหว่างโหลดรีเพลย์: %1
-rp_browser_error_unknown_filetype,,Unknown filetype %1. (%2),Type de fichier inconnu %1. (%2),Tipo de arquivo desconhecido %1. (%2),ファイル種類%1不明。(%2),Formato de archivo desconocido %1. (%2),Unbekannter Dateityp %1. (%2),Tipo di file sconosciuto %1. (%2),ไม่รู้จักประเภทไฟล์ %1. (%2)
-rp_browser_error_file_not_found,,File not found! (%1),Fichier introuvable ! (%1),Arquivo não encontrado! (%1),ファイルを見つけませんでした！,¡No se encontró el archivo! (%1),Datei nicht gefunden! (%1),File non trovato! (%1),ไม่พบไฟล์! (%1)
-rp_browser_wrong_version,Error shown when trying to load a old version replay,This replay can not be viewed because it was played on a different version of the game.,Cette rediffusion ne peut pas être vue car elle a été jouée sur une version différente du jeu.,Essa repetição não pode ser vista porque foi jogada em uma versão diferente do jogo.,このリプレイは、ゲームの別のバージョンで再生されたため表示できません。,Esta repetición no se puede ver porque se jugó en una versión diferente del juego.,"Diese Wiederholung kann nicht angesehen werden, da sie auf einer älteren Version des Spiels gespielt wurde. Du kannst auf dem Discord-Server nach einer geeigneten Version zum abspielen fragen.",Questo replay non può essere visto perché è stato giocato su una versione diversa del gioco.,รีเพลย์นี้ ดูไม่ได้ เพราะเป็นรีเพลย์ของเกมเวอร์ชันอื่น
-mm_replay_browser,,Replay Browser,Bibliothèque des replays,Navegador de Replays,リプレイブラウザ,Navegador de reproducción,Replay Browser,Navigatore Replay,ดูรีเพลย์
-continue_button,Text shown to press any key to continue,Press Any Button,Appuyer sur un bouton,Pressione qualquer botão,任意のボタンを押します,Pulse cualquier botón,Bitte drücke eine beliebige Taste.,Premere qualsiasi pulsante,กดปุ่มใดก็ได้
-player_press_key,,Player %1 press any key,Le joueur %1 appuie sur n'importe quelle touche,O jogador %1 carregue em qualquer tecla,プレーヤー％1　PUSH ANY KEY,Jugador %1 presione cualquier tecla,Spieler %1: Drücke eine beliebige Taste,Il giocatore %1 preme un tasto qualsiasi,ผู้เล่น %1 กดปุ่มใดก็ได้
-config_input_welcome,Shown on the configure input screen,Set a input configuration for each keyboard / controller you want to be able to use.,Définissez une configuration d'entrée pour chaque clavier/contrôleur que vous souhaitez pouvoir utiliser.,Defina uma configuração de entrada para cada teclado / controlador que deseja usar.,使用するキーボード/コントローラーごとにキーコンフィグを設定して下さい。,Establezca una configuración de entrada para cada teclado / controlador que desee poder utilizar.,Gib eine Eingabekonfiguration für deinen Kontroller oder deine Tastaturen an.,Imposta una configurazione di input per ogni tastiera/controller che desideri utilizzare.,ตั้งค่าปุ่ม สำหรับ keyboard / controller ที่ต้องการใช้
+rp_browser_watch,,"Press A/Confirm to view this replay, or B/Cancel to exit.","Appuyez sur A/Valider pour voir le replay, ou B/Annuler pour quitter.",Aperte A/Confirme para ver este replay ou B/Cancelar para sair,Aボタンでリプレイを再生、Bボタンで戻る,"Presiona A/Confirmar para ver esta repetición, o B/Cancelar para salir.","Drücke A/Enter, um das Replay anzuschauen oder B/Escape, um zurückzukehren","Premi A/Conferma per vedere questo replay, o B/Annulla per uscire.",กด A/Confirm เพื่อดูรีเพลย์นี้ หรือ B/Cancel เพื่อออก
+rp_browser_wrong_version,Error shown when trying to load a old version replay,This replay can not be viewed because it was played on a different version of the game.,Ce replay ne peut pas être vu car il a été joué sur une version différente du jeu.,Essa repetição não pode ser vista porque foi jogada em uma versão diferente do jogo.,このリプレイは、ゲームの別のバージョンで再生されたため表示できません。,Esta repetición no se puede ver porque se jugó en una versión diferente del juego.,"Diese Wiederholung kann nicht angesehen werden, da sie auf einer älteren Version des Spiels gespielt wurde. Du kannst auf dem Discord-Server nach einer geeigneten Version zum abspielen fragen.",Questo replay non può essere visto perché è stato giocato su una versione diversa del gioco.,รีเพลย์นี้ ดูไม่ได้ เพราะเป็นรีเพลย์ของเกมเวอร์ชันอื่น
+mm_replay_browser,,Replay Browser,Parcourir les replays,Navegador de Replays,リプレイブラウザ,Navegador de reproducción,Replay Browser,Navigatore Replay,ดูรีเพลย์
+continue_button,Text shown to press any key to continue,Press Any Button,Appuyer sur une touche,Pressione qualquer botão,任意のボタンを押します,Pulse cualquier botón,Bitte drücke eine beliebige Taste.,Premere qualsiasi pulsante,กดปุ่มใดก็ได้
+player_press_key,,Player %1 press any key,"Joueur %1, appuyez sur une touche",O jogador %1 carregue em qualquer tecla,プレーヤー％1　PUSH ANY KEY,Jugador %1 presione cualquier tecla,Spieler %1: Drücke eine beliebige Taste,Il giocatore %1 preme un tasto qualsiasi,ผู้เล่น %1 กดปุ่มใดก็ได้
+config_input_welcome,Shown on the configure input screen,Set a input configuration for each keyboard / controller you want to be able to use.,Définissez une configuration d'entrée pour chaque clavier ou manette que vous souhaitez pouvoir utiliser.,Defina uma configuração de entrada para cada teclado / controlador que deseja usar.,使用するキーボード/コントローラーごとにキーコンフィグを設定して下さい。,Establezca una configuración de entrada para cada teclado / controlador que desee poder utilizar.,Gib eine Eingabekonfiguration für deinen Kontroller oder deine Tastaturen an.,Imposta una configurazione di input per ogni tastiera/controller che desideri utilizzare.,ตั้งค่าปุ่ม สำหรับ keyboard / controller ที่ต้องการใช้
 configuration,Configuration for controller / keyboard setup,Configuration,Configuration,Configuração,キーコンフィグ,Configuración,Konfiguration,Configurazione,ตั้งค่า
-love_version_warning,Warning shown to users using love 11.3,"You are using an outdated version of Panel Attack which uses an old LOVE version, please download the latest version from the website / discord.","Vous utilisez une version obsolète de l'attaque de panneau qui utilise une ancienne version d'amour, veuillez télécharger la dernière version du site Web / Discord.","Você está usando uma versão desatualizada do painel de ataque que usa uma versão antiga do amor, faça o download da versão mais recente do site / discórdia.",古いLoveバージョンを使用する古いバージョンのパネル攻撃を使用しています。ウェブサイト / Discordから最新バージョンをダウンロードしてください。,"Está utilizando una versión obsoleta de Panel Attack que utiliza una vieja versión de amor, descargue la última versión del sitio web / discordia.","Du verwendest eine Version von Panel Attack, die eine veraltete LÖVE-Version verwendet. Bitte lade die neueste Version von der Website oder dem Discord herunter.","Stai usando una versione obsoleta dell'attacco del pannello che utilizza una vecchia versione d'amore, scarica l'ultima versione dal sito Web / discordia.",คุณกำลังใช้ Panel Attack เวอร์ชั่นเก่า กรุณาดาวน์โหลดเวอร์ชั่นล่าสุดจาก website หรือ discord
-challenge_difficulty_1,level 2 - very few attacks basically just surviving,Breezy (Easy),Breezy (facile),Breezy (fácil),さわやかな（簡単）,Breezy (Fácil),Luftig (leicht),Breezy (facile),Breezy (ง่าย)
-challenge_difficulty_2,level 4 - some attacks mostly just surviving,Windy (Normal),Windy (normal),Vento (normal),風が強い（通常）,Viento (Normal),Windig (normal),Ventoso (normale),Windy (ปานกลาง)
-challenge_difficulty_3,level 6 - attacking and surviving,Gusty (Hard),À l'esprit (dur),Gusty (duro),gusty（ハード）,Gusty (Difícil),Böig (schwer),Gusty (duro),Gusty (ยาก)
-challenge_difficulty_4,level 6 - learning to win while constantly under pressure,Stormy (Very Hard),Stormy (très dur),Stormy (muito difícil),ストーミー（とても難しい）,Stormy (Muy difícil),Stürmisch (sehr schwer),Stormy (molto duro),Stormy (ยากมาก)
-challenge_difficulty_5,level 8 - an average level 8 challenge,Turbulent,Turbulent,Turbulento,乱流,Turbulento,Turbulent,Turbolento,Turbulent
+love_version_warning,Warning shown to users using love 11.3,"You are using an outdated version of Panel Attack which uses an old LOVE version, please download the latest version from the website / discord.","Vous utilisez une version obsolète de Panel Attack qui utilise une ancienne version de LOVE, veuillez télécharger la dernière version sur le site Web / Discord.","Você está usando uma versão desatualizada do painel de ataque que usa uma versão antiga do amor, faça o download da versão mais recente do site / discórdia.",古いLoveバージョンを使用する古いバージョンのパネル攻撃を使用しています。ウェブサイト / Discordから最新バージョンをダウンロードしてください。,"Está utilizando una versión obsoleta de Panel Attack que utiliza una vieja versión de amor, descargue la última versión del sitio web / discordia.","Du verwendest eine Version von Panel Attack, die eine veraltete LÖVE-Version verwendet. Bitte lade die neueste Version von der Website oder dem Discord herunter.","Stai usando una versione obsoleta dell'attacco del pannello che utilizza una vecchia versione d'amore, scarica l'ultima versione dal sito Web / discordia.",คุณกำลังใช้ Panel Attack เวอร์ชั่นเก่า กรุณาดาวน์โหลดเวอร์ชั่นล่าสุดจาก website หรือ discord
+challenge_difficulty_1,level 2 - very few attacks basically just surviving,Breezy (Easy),Brise (facile),Breezy (fácil),さわやかな（簡単）,Breezy (Fácil),Luftig (leicht),Breezy (facile),Breezy (ง่าย)
+challenge_difficulty_2,level 4 - some attacks mostly just surviving,Windy (Normal),Venteux (normal),Vento (normal),風が強い（通常）,Viento (Normal),Windig (normal),Ventoso (normale),Windy (ปานกลาง)
+challenge_difficulty_3,level 6 - attacking and surviving,Gusty (Hard),Rafales (difficile),Gusty (duro),gusty（ハード）,Gusty (Difícil),Böig (schwer),Gusty (duro),Gusty (ยาก)
+challenge_difficulty_4,level 6 - learning to win while constantly under pressure,Stormy (Very Hard),Orageux (très difficile),Stormy (muito difícil),ストーミー（とても難しい）,Stormy (Muy difícil),Stürmisch (sehr schwer),Stormy (molto duro),Stormy (ยากมาก)
+challenge_difficulty_5,level 8 - an average level 8 challenge,Turbulent,Turbulences,Turbulento,乱流,Turbulento,Turbulent,Turbolento,Turbulent
 challenge_difficulty_6,level 10 - an average level 10 challenge,Whirlwind,Tourbillon,Turbilhão,旋風,Torbellino,Wirbelwind,Turbine,Whirlwind
 challenge_difficulty_7,level 10 - a hard level 10 challenge,Tempest,Tempête,Tempestade,嵐,Tempestad,Sturm,Tempesta,Tempest
 challenge_difficulty_8,level 10 - a really hard level 10 challenge,Hurricane,Ouragan,Furacão,ハリケーン,Huracán,Hurrikan,Uragano,Hurricane
 challenge_difficulty_9,level 11? - unused right now,Tornado,Tornade,Tornado,竜巻,Tornado,Tornado,Tornado,Tornado
-auto_updater_version_warning,Warning shown to users with an old autoupdater,"New updater available, please download from","Nouveau autoupdater disponible, veuillez installer à partir de","Novo autoupdater disponível, instale de",新しいautoupdaterを利用できます。からインストールしてください,"Nuevo autoupdater disponible, instale desde","Ein neuer Updater ist verfügbar, bitte lade ihn unter folgendem Link herunter:","Nuovo autoupdater disponibile, installa da",มีระบบอัพเดทอัตโนมัติเวอร์ชั่นใหม่ กรุณา Install โดยใช้ระบบนั้น
+auto_updater_version_warning,Warning shown to users with an old autoupdater,"New updater available, please download from","Nouveau gestionnaire de mises à jour disponible, veuillez installer à partir de","Novo autoupdater disponível, instale de",新しいautoupdaterを利用できます。からインストールしてください,"Nuevo autoupdater disponible, instale desde","Ein neuer Updater ist verfügbar, bitte lade ihn unter folgendem Link herunter:","Nuovo autoupdater disponibile, installa da",มีระบบอัพเดทอัตโนมัติเวอร์ชั่นใหม่ กรุณา Install โดยใช้ระบบนั้น
 username_blank_warning,shown in user name input when nothing is entered,Username cannot be blank,Le nom d'utilisateur ne peut pas être vide,O nome de usuário não pode ficar em branco,ユーザー名を空白にすることはできません,Nombre de usuario no puede estar en blanco,Benutzername darf nicht leer sein,Il nome utente non può essere vuoto,Username ไม่สามารถเป็นค่าว่างได้
 op_shakeIntensity,Option for the intensity of the shake animation,Shake Animation Intensity,Intensité de l'animation de secousse,Intensidade da animação de tremor,揺れアニメーション強度,Intensidad de la animación de sacudida,Stärke der Aufprallanimation,Intensità dell'animazione di scuotimento,ความเข้มของแอนิเมชันสั่น
-pause_resume,Label for the resume button in the pause menu,Resume,Reprendre,Retomar,再開,Continuar,Fortsetzen,Riprendi,ดำเนินต่อ
+pause_resume,Label for the resume button in the pause menu,Resume,Continuer,Retomar,再開,Continuar,Fortsetzen,Riprendi,ดำเนินต่อ
 op_menu_music,Label for toggling menu music,Menu Music,Musique du menu,Música do menu,メニューミュージック,Música del menú,Menü Musik,Musica del menu,เพลงเมนู
-rp_browser_info_challenge_stage,Label for displaying the stage of the challenge mode difficulty,Stage,Stage,Fase,ステージ,Grado,Stufe,Fase,ด่าน
-op_openSaveDir,Button to open the save directory of Panel Attack,Open Save Directory,Ouvrir le dossier de sauvegarde,Abrir Diretório de Salvamento,セーブディレクトリを開く,Abrir directorio de guardado,Speicherort öffnen,Apri cartella di salvataggio,เปิดไดเรกทอรีเซฟ
+rp_browser_info_challenge_stage,Label for displaying the stage of the challenge mode difficulty,Stage,Stage,Fase,ステージ,Fase,Stufe,Fase,ด่าน
+op_openSaveDir,Button to open the save directory of Panel Attack,Open Save Directory,Ouvrir le dossier des sauvegardes,Abrir Diretório de Salvamento,セーブディレクトリを開く,Abrir directorio de guardado,Speicherort öffnen,Apri cartella di salvataggio,เปิดไดเรกทอรีเซฟ
 puzzle_set_name_classic,name of the classic puzzle set in puzzle mode,Classic,Classique,Clássico,クラシック,Clásico,Klassisch,Classico,คลาสสิก
 puzzle_set_name_mission,name of the mission puzzle set in puzzle mode,Missions,Missions,Missões,ミッション,Misiones,Missionen,Missioni,ภารกิจ
 puzzle_training,label for the training button in puzzle mode,Training,Entraînement,Treinamento,トレーニング,Entrenamiento,Training,Allenamento,ฝึกซ้อม
-puzzle_set_description_classic,Description of the classic category in the puzzle mode,"Figure out how to clear all panels in the given number of moves.","Trouvez comment éliminer tous les panneaux en un nombre de coups donné.","Descubra como limpar todos os painéis no número de movimentos indicado.","指定された手数で全パネルを消す方法を考えよう。","Averigua cómo limpiar todos los paneles en el número de movimientos indicado.","Finde heraus, wie du alle Panels in der vorgegebenen Anzahl Züge räumen kannst.","Scopri come eliminare tutti i pannelli nel numero di mosse indicato.","หาวิธีเคลียร์แผงทั้งหมดภายในจำนวนการเคลื่อนย้ายที่กำหนด"
-puzzle_set_description_mission,Description of the mission category in the puzzle mode,"Learn the game and improve by solving missions with different challenges.","Apprenez le jeu et progressez en résolvant des missions aux défis variés.","Aprenda o jogo e melhore resolvendo missões com desafios variados.","さまざまな課題のミッションを解いてゲームの腕を磨こう。","Aprende el juego y mejora resolviendo misiones con distintos retos.","Lerne das Spiel und verbessere dich, indem du Missionen mit unterschiedlichen Herausforderungen meisterst.","Impara il gioco e migliora risolvendo missioni con sfide diverse.","เรียนรู้เกมและพัฒนาฝีมือด้วยการแก้ภารกิจที่มีความท้าทายหลากหลาย"
-puzzle_set_name_classic_set_1,Classic Set 1,Classic Set 1,"Set Classique 1","Conjunto Clássico 1",クラシックセット1,"Conjunto Clásico 1","Klassik-Set 1","Set Classico 1","ชุดคลาสสิก 1"
-puzzle_set_name_classic_set_2,Classic Set 2,Classic Set 2,"Set Classique 2","Conjunto Clássico 2",クラシックセット2,"Conjunto Clásico 2","Klassik-Set 2","Set Classico 2","ชุดคลาสสิก 2"
-puzzle_set_name_classic_set_3,Classic Set 3,Classic Set 3,"Set Classique 3","Conjunto Clássico 3",クラシックセット3,"Conjunto Clásico 3","Klassik-Set 3","Set Classico 3","ชุดคลาสสิก 3"
-puzzle_set_name_classic_set_4,Classic Set 4,Classic Set 4,"Set Classique 4","Conjunto Clássico 4",クラシックセット4,"Conjunto Clásico 4","Klassik-Set 4","Set Classico 4","ชุดคลาสสิก 4"
-puzzle_set_name_classic_set_5,Classic Set 5,Classic Set 5,"Set Classique 5","Conjunto Clássico 5",クラシックセット5,"Conjunto Clásico 5","Klassik-Set 5","Set Classico 5","ชุดคลาสสิก 5"
-puzzle_set_name_classic_set_6,Classic Set 6,Classic Set 6,"Set Classique 6","Conjunto Clássico 6",クラシックセット6,"Conjunto Clásico 6","Klassik-Set 6","Set Classico 6","ชุดคลาสสิก 6"
-puzzle_set_description_classic_set_1,,Find the correct moves to clear all the panels,Trouvez les bons déplacements pour effacer tous les panneaux,Encontre os movimentos certos para limpar todos os painéis,全パネルを消す正しい手順を見つけましょう,Encuentra los movimientos correctos para limpiar todos los paneles,Finde die richtigen Züge um alle Felder zu räumen,Trova le mosse corrette per eliminare tutti i pannelli,ค้นหาการเคลื่อนที่ที่ถูกต้องเพื่อลบแผงทั้งหมด
-puzzle_set_description_classic_set_2,,This set adds some difficulty, carefully plan the order of the panel clears,Cet ensemble ajoute de la difficulté ; planifiez soigneusement l’ordre des suppressions,Este conjunto acrescenta alguma dificuldade; planeje cuidadosamente a ordem das eliminações,このセットは少し難易度が上がります。消す順番を慎重に計画しましょう,Este conjunto añade cierta dificultad; planifica cuidadosamente el orden de las eliminaciones,Dieses Set erhöht den Schwierigkeitsgrad ; plane die Reihenfolge der Räumungen sorgfältig,Questo set aggiunge difficoltà; pianifica con cura l’ordine delle eliminazioni,ชุดนี้เพิ่มความยาก จัดแผนลำดับการลบแผงอย่างรอบคอบ
-puzzle_set_description_classic_set_3,,Consider how many panels of each color there are and what shape they need to pop in,Tenez compte du nombre de panneaux de chaque couleur et de la forme nécessaire pour les faire disparaître,Considere quantos painéis de cada cor existem e em que forma eles precisam estourar,各色のパネル数と消える形を考慮しましょう,Ten en cuenta cuántos paneles de cada color hay y en qué forma deben desaparecer,Beachte wie viele Felder jeder Farbe vorhanden sind und in welcher Form sie aufgelöst werden müssen,Considera quanti pannelli di ogni colore ci sono e in quale forma devono scoppiare,พิจารณาจำนวนแผงแต่ละสีและรูปแบบที่ต้องให้หายไป
-puzzle_set_description_classic_set_4,,Now we are starting to get hard, keep going and you can do it!,"Cela devient difficile ; continuez, vous pouvez y arriver !",Agora está ficando difícil; continue, você consegue!,ここから本格的に難しくなりますが、頑張って進みましょう！,Ahora empieza a ponerse difícil; ¡sigue adelante, tú puedes!,Jetzt wird es schwierig – mach weiter, du schaffst das!,Ora si inizia a fare sul serio: continua, ce la puoi fare!,เริ่มยากขึ้นแล้ว ทำต่อไป คุณทำได้!
-puzzle_set_description_classic_set_5,,A decent challenge, keep going!,"Un défi de taille ; continuez !",Um bom desafio; continue!,手応えのあるチャレンジです。続けて！,Un reto considerable, ¡sigue!,Eine anständige Herausforderung – weiter so!,Una sfida di tutto rispetto, avanti così!,ความท้าทายพอควร สู้ต่อ!
-puzzle_set_description_classic_set_6,,A hard challenge to find the correct moves in this final set,Un défi ardu : trouvez les bons déplacements dans cet ensemble final,Um desafio difícil: encontre os movimentos certos neste conjunto final,最終セットでは正しい手順を見つけるのが難しい課題です,Un reto difícil: encuentra los movimientos correctos en este conjunto final,Eine schwere Aufgabe: Finde im letzten Set die richtigen Züge,Una sfida difficile: trova le mosse corrette in questo set finale,ความท้าทายยากในการหาท่าถูกต้องในชุดสุดท้ายนี้
+puzzle_set_description_classic,Description of the classic category in the puzzle mode,Figure out how to clear all panels in the given number of moves.,Trouvez comment supprimer tous les blocs en un nombre de coups limité.,Descubra como limpar todos os painéis no número de movimentos indicado.,指定された手数で全パネルを消す方法を考えよう。,Averigua cómo limpiar todos los paneles en el número de movimientos indicado.,"Finde heraus, wie du alle Panels in der vorgegebenen Anzahl Züge räumen kannst.",Scopri come eliminare tutti i pannelli nel numero di mosse indicato.,หาวิธีเคลียร์แผงทั้งหมดภายในจำนวนการเคลื่อนย้ายที่กำหนด
+puzzle_set_description_mission,Description of the mission category in the puzzle mode,Learn the game and improve by solving missions with different challenges.,Apprenez le jeu et progressez en résolvant des missions aux défis variés.,Aprenda o jogo e melhore resolvendo missões com desafios variados.,さまざまな課題のミッションを解いてゲームの腕を磨こう。,Aprende el juego y mejora resolviendo misiones con distintos retos.,"Lerne das Spiel und verbessere dich, indem du Missionen mit unterschiedlichen Herausforderungen meisterst.",Impara il gioco e migliora risolvendo missioni con sfide diverse.,เรียนรู้เกมและพัฒนาฝีมือด้วยการแก้ภารกิจที่มีความท้าทายหลากหลาย
+puzzle_set_name_classic_set_1,Classic Set 1,Classic Set 1,Set Classique 1,Conjunto Clássico 1,クラシックセット1,Conjunto Clásico 1,Klassik-Set 1,Set Classico 1,ชุดคลาสสิก 1
+puzzle_set_name_classic_set_2,Classic Set 2,Classic Set 2,Set Classique 2,Conjunto Clássico 2,クラシックセット2,Conjunto Clásico 2,Klassik-Set 2,Set Classico 2,ชุดคลาสสิก 2
+puzzle_set_name_classic_set_3,Classic Set 3,Classic Set 3,Set Classique 3,Conjunto Clássico 3,クラシックセット3,Conjunto Clásico 3,Klassik-Set 3,Set Classico 3,ชุดคลาสสิก 3
+puzzle_set_name_classic_set_4,Classic Set 4,Classic Set 4,Set Classique 4,Conjunto Clássico 4,クラシックセット4,Conjunto Clásico 4,Klassik-Set 4,Set Classico 4,ชุดคลาสสิก 4
+puzzle_set_name_classic_set_5,Classic Set 5,Classic Set 5,Set Classique 5,Conjunto Clássico 5,クラシックセット5,Conjunto Clásico 5,Klassik-Set 5,Set Classico 5,ชุดคลาสสิก 5
+puzzle_set_name_classic_set_6,Classic Set 6,Classic Set 6,Set Classique 6,Conjunto Clássico 6,クラシックセット6,Conjunto Clásico 6,Klassik-Set 6,Set Classico 6,ชุดคลาสสิก 6
+puzzle_set_description_classic_set_1,,Find the correct moves to clear all the panels,Trouvez les bons déplacements pour supprimer tous les blocs,Encontre os movimentos certos para limpar todos os painéis,全パネルを消す正しい手順を見つけましょう,Encuentra los movimientos correctos para limpiar todos los paneles,Finde die richtigen Züge um alle Panels aufzulösen,Trova le mosse corrette per eliminare tutti i pannelli,ค้นหาการเคลื่อนที่ที่ถูกต้องเพื่อลบแผงทั้งหมด
+puzzle_set_description_classic_set_2,,This set adds some difficulty, carefully plan the order of the panel clears,Cet ensemble ajoute de la difficulté ; planifiez soigneusement l’ordre des suppressions,Este conjunto acrescenta alguma dificuldade; planeje cuidadosamente a ordem das eliminações,このセットは少し難易度が上がります。消す順番を慎重に計画しましょう,Dieses Set erhöht den Schwierigkeitsgrad ; plane die Reihenfolge der Züge sorgfältig,Dieses Set erhöht den Schwierigkeitsgrad ; plane die Reihenfolge der Räumungen sorgfältig,Questo set aggiunge difficoltà; pianifica con cura l’ordine delle eliminazioni,ชุดนี้เพิ่มความยาก จัดแผนลำดับการลบแผงอย่างรอบคอบ
+puzzle_set_description_classic_set_3,,Consider how many panels of each color there are and what shape they need to pop in,Tenez compte du nombre de blocs de chaque couleur et de la forme à leur donner pour pouvoir les faire disparaître,Considere quantos painéis de cada cor existem e em que forma eles precisam estourar,各色のパネル数と消える形を考慮しましょう,Ten en cuenta cuántos paneles de cada color hay y en qué forma deben desaparecer,Beachte wie viele Panels jeder Farbe vorhanden sind und in welcher Form sie aufgelöst werden müssen,Considera quanti pannelli di ogni colore ci sono e in quale forma devono scoppiare,พิจารณาจำนวนแผงแต่ละสีและรูปแบบที่ต้องให้หายไป
+puzzle_set_description_classic_set_4,,"Now we are starting to get hard, keep going and you can do it!","Cela devient difficile ; continuez, vous pouvez y arriver !","Agora está ficando difícil; continue, você consegue!",ここから本格的に難しくなりますが、頑張って進みましょう！,"Ahora empieza a ponerse difícil; ¡sigue adelante, tú puedes!","Jetzt wird es schwierig – mach weiter, du schaffst das!","Ora si inizia a fare sul serio: continua, ce la puoi fare!",เริ่มยากขึ้นแล้ว ทำต่อไป คุณทำได้!
+puzzle_set_description_classic_set_5,,"A decent challenge, keep going!",Un défi de taille ; continuez !,Um bom desafio; continue!,手応えのあるチャレンジです。続けて！,"Un reto considerable, ¡sigue!",Eine anständige Herausforderung – weiter so!,"Una sfida di tutto rispetto, avanti così!",ความท้าทายพอควร สู้ต่อ!
+puzzle_set_description_classic_set_6,,A hard challenge to find the correct moves in this final set,Un défi ardu : trouvez les bons déplacements dans cette dernière configuration,Um desafio difícil: encontre os movimentos certos neste conjunto final,最終セットでは正しい手順を見つけるのが難しい課題です,Un reto difícil: encuentra los movimientos correctos en este conjunto final,Eine schwere Aufgabe: Finde im letzten Set die richtigen Züge,Una sfida difficile: trova le mosse corrette in questo set finale,ความท้าทายยากในการหาท่าถูกต้องในชุดสุดท้ายนี้
 puzzle_set_name_beginner,,Beginner,Débutant,Iniciante,ビギナー,Principiante,Anfänger,Principiante,ผู้เริ่มต้น
 puzzles_set_description_beginner,,Learn the basics of combos and chains,Apprenez les bases des combos et des chaînes,Aprenda o básico de combos e correntes,コンボとチェインの基本を学びます,Aprende los fundamentos de combos y cadenas,Lerne die Grundlagen von Kombos und Ketten,Impara le basi di combo e catene,เรียนรู้พื้นฐานของคอมโบและเชน
 puzzle_set_name_beginner_chains,,Chains,Chaînes,Correntes,チェイン,Cadenas,Ketten,Catene,เชน
@@ -590,57 +558,83 @@ puzzle_set_name_novice_deeper_earthquake_chains,,Earthquake Chains,Chaînes séi
 puzzles_set_description_novice_earthquake_chains,,Learn how to make horizontal chains that span multiple levels,Apprenez à créer des chaînes horizontales sur plusieurs niveaux,Aprenda a fazer correntes horizontais que abrangem vários níveis,複数段にわたる水平チェインの作り方を学びます,Aprende a crear cadenas horizontales que abarquen varios niveles,Lerne horizontale Ketten über mehrere Ebenen zu erstellen,Impara a creare catene orizzontali su più livelli,เรียนรู้การสร้างเชนแนวนอนหลายระดับ
 puzzle_set_name_novice_earthquake_chains,,Earthquake Chains,Chaînes séismes,Correntes Terremoto,アースクエイクチェイン,Cadenas Terremoto,Erdbeben-Ketten,Catene Terremoto,เชนแผ่นดินไหว
 puzzles_set_description_novice_deeper_earthquake_chains,,Deeper Earthquake Chains,Chaînes séismes profondes,Correntes Terremoto Avançadas,ディープアースクエイクチェイン,Cadenas Terremoto Profundas,Tiefere Erdbeben-Ketten,Catene Terremoto Avanzate,เชนแผ่นดินไหวลึก
-puzzle_set_name_novice_horizontal_chain_from_tower,,Horizontal Chain From Tower,Chaîne horizontale depuis tour,Corrente Horizontal da Torre,タワーからの水平チェイン,Cadena Horizontal desde Torre,Horizontale Kette vom Turm,Catena Orizzontale dalla Torre,เชนแนวนอนจากหอ
-puzzles_set_description_novice_horizontal_chain_from_tower,,Learn how to make chains when lots of panels are in a tower shape,Apprenez à enchaîner lorsque de nombreux panneaux forment une tour,Aprenda a criar correntes quando muitos painéis formam uma torre,タワー状に積まれたパネルでチェインを作る方法を学びます,Aprende a encadenar cuando muchos paneles forman una torre,Lerne Ketten zu bilden wenn viele Felder turmartig gestapelt sind,Impara a creare catene quando molti pannelli formano una torre,เรียนรู้การทำเชนเมื่อมีแผงมากในรูปหอ
+puzzle_set_name_novice_horizontal_chain_from_tower,,Horizontal Chain From Tower,Chaîne horizontale depuis une tour,Corrente Horizontal da Torre,タワーからの水平チェイン,Cadena Horizontal desde Torre,Horizontale Kette vom Turm,Catena Orizzontale dalla Torre,เชนแนวนอนจากหอ
+puzzles_set_description_novice_horizontal_chain_from_tower,,Learn how to make chains when lots of panels are in a tower shape,Apprenez à faire des chaînes lorsque de nombreux blocs forment une tour,Aprenda a criar correntes quando muitos painéis formam uma torre,タワー状に積まれたパネルでチェインを作る方法を学びます,Aprende a encadenar cuando muchos paneles forman una torre,Lerne Ketten zu bilden wenn viele Panels turmartig gestapelt sind,Impara a creare catene quando molti pannelli formano una torre,เรียนรู้การทำเชนเมื่อมีแผงมากในรูปหอ
+puzzle_set_name_novice_clear_puzzles_1,,Clear Puzzles 1,Puzzles à résoudre 1,Quebra-cabeças Limpos 1,クリアパズル 1,Puzzles Limpios 1,Müll Puzzles 1,Puzzle da Pulire 1,ปริศนาเคลียร์ 1
+puzzle_set_description_novice_clear_puzzles_1,,Learn basic techniques for clearing garbage,Apprenez les techniques de base pour éliminer les blocs déchets,Aprenda técnicas básicas para limpar lixo,ガーベッジを消すための基本技術を学びます,Aprende técnicas básicas para limpiar basura,Lerne grundlegende Techniken zum Auflösen von Müll,Impara tecniche di base per ripulire i rifiuti,เรียนรู้เทคนิคพื้นฐานการเคลียร์ขยะ
+puzzle_set_name_novice_clear_puzzles_2,,Clear Puzzles 2,Puzzles à résoudre 2,Quebra-cabeças Limpos 2,クリアパズル 2,Puzzles Limpios 2,Müll Puzzles 2,Puzzle da Pulire 2,ปริศนาเคลียร์ 2
+puzzle_set_description_novice_clear_puzzles_2,,Learn more techniques for clearing garbage,Apprenez d'autres techniques pour éliminer les blocs déchets,Aprenda mais técnicas para limpar lixo,ガーベッジを消す追加技術を学びます,Aprende más técnicas para limpiar basura,Lerne weitere Techniken zum Auflösen von Müll,Impara altre tecniche per ripulire i rifiuti,เรียนรู้เทคนิคการเคลียร์ขยะเพิ่มเติม
 puzzle_set_name_intermediate,,Intermediate,Intermédiaire,Intermediário,インターミディエイト,Intermedio,Fortgeschritten,Intermedio,ระดับกลาง
-puzzles_set_description_intermediate,,Learn how to do large chains, inserts, and other complicated techniques,Apprenez à réaliser de grandes chaînes, des insertions et d’autres techniques avancées,Aprenda a fazer correntes grandes, inserções e outras técnicas complicadas,大規模チェイン、インサートなどの高度な技術を学びます,Aprende a realizar cadenas grandes, inserciones y otras técnicas complicadas,Lerne große Ketten Einsätze und andere komplexe Techniken,Impara a realizzare grandi catene, inserimenti e altre tecniche complesse,เรียนรู้เชนใหญ่ อินเสิร์ต และเทคนิคซับซ้อนอื่น ๆ
+puzzles_set_description_intermediate,,"Learn how to do large chains, inserts, and other complicated techniques","Apprenez à réaliser de grandes chaînes, des insertions et d'autres techniques avancées","Aprenda a fazer correntes grandes, inserções e outras técnicas complicadas",大規模チェイン、インサートなどの高度な技術を学びます,"Aprende a realizar cadenas grandes, inserciones y otras técnicas complicadas","Lerne große Ketten, Einsätze, und andere komplexe Techniken","Impara a realizzare grandi catene, inserimenti e altre tecniche complesse",เรียนรู้เชนใหญ่ อินเสิร์ต และเทคนิคซับซ้อนอื่น ๆ
 puzzle_set_name_intermediate_chains,,Chains,Chaînes,Correntes,チェイン,Cadenas,Ketten,Catene,เชน
 puzzles_set_description_intermediate_chains,,Learn from larger chain examples,Étudiez des exemples de chaînes plus longues,Aprenda com exemplos de correntes maiores,より大きなチェインの例から学びます,Aprende de ejemplos de cadenas más grandes,Lerne anhand größerer Kettenbeispiele,Impara da esempi di catene più grandi,เรียนรู้จากตัวอย่างเชนที่ใหญ่ขึ้น
 puzzle_set_name_intermediate_extended_horizontal_chains,,Extended Chains,Chaînes étendues,Correntes Estendidas,エクステンドチェイン,Cadenas Extendidas,Erweiterte Ketten,Catene Estese,เชนต่อขยาย
 puzzles_set_description_intermediate_extended_horizontal_chains,,Learn from even larger chain examples,Étudiez des exemples de chaînes encore plus longues,Aprenda com exemplos de correntes ainda maiores,さらに大きなチェインの例から学びます,Aprende de ejemplos de cadenas aún más grandes,Lerne anhand noch größerer Kettenbeispiele,Impara da esempi di catene ancora più grandi,เรียนรู้จากตัวอย่างเชนที่ใหญ่กว่านี้
-puzzle_set_name_intermediate_chains_from_huge_tower,,Chains From Huge Tower,Chaînes depuis tour énorme,Correntes de uma Torre Gigante,巨大タワーからのチェイン,Cadenas desde Torre Gigante,Ketten von riesigem Turm,Catene da Torre Gigante,เชนจากหอขนาดใหญ่
-puzzles_set_description_intermediate_chains_from_huge_tower,,Learn how to chain from an even bigger tower,Apprenez à enchaîner à partir d’une tour encore plus grande,Aprenda a encadear a partir de uma torre ainda maior,さらに大きなタワーでチェインする方法を学びます,Aprende a encadenar desde una torre aún más grande,Lerne von einem noch größeren Turm zu ketten,Impara a concatenare da una torre ancora più grande,เรียนรู้การทำเชนจากหอที่ใหญ่กว่า
+puzzle_set_name_intermediate_chains_from_huge_tower,,Chains From Huge Tower,Chaînes depuis une tour énorme,Correntes de uma Torre Gigante,巨大タワーからのチェイン,Cadenas desde Torre Gigante,Ketten von riesigem Turm,Catene da Torre Gigante,เชนจากหอขนาดใหญ่
+puzzles_set_description_intermediate_chains_from_huge_tower,,Learn how to chain from an even bigger tower,Apprenez à créer des chaînes depuis une tour encore plus grande,Aprenda a encadear a partir de uma torre ainda maior,さらに大きなタワーでチェインする方法を学びます,Aprende a encadenar desde una torre aún más grande,Lerne von einem noch größeren Turm zu Ketten zu bilden,Impara a concatenare da una torre ancora più grande,เรียนรู้การทำเชนจากหอที่ใหญ่กว่า
 puzzle_set_name_intermediate_horizontal_chain_from_side,,Horizontal Chain From the Side,Chaîne horizontale latérale,Corrente Horizontal Lateral,サイドからの水平チェイン,Cadena Horizontal desde el Lado,Horizontale Kette von der Seite,Catena Orizzontale Laterale,เชนแนวนอนจากด้านข้าง
 puzzles_set_description_intermediate_horizontal_chain_from_side,,Learn how to add chains to the side,Apprenez à ajouter des chaînes sur le côté,Aprenda a adicionar correntes pelo lado,横からチェインを追加する方法を学びます,Aprende a añadir cadenas por el lado,Lerne seitlich Ketten hinzuzufügen,Impara ad aggiungere catene sul lato,เรียนรู้การเพิ่มเชนด้านข้าง
 puzzle_set_name_intermediate_pre_setup_combo_chains,,Pre Setup Combo Chains,Chaînes combo préparées,Correntes de Combo Pré-Montadas,事前セットコンボチェイン,Cadenas Combo Preconfiguradas,Vorbereitete Combo-Ketten,Catene Combo Preimpostate,เชนคอมโบเตรียมไว้ล่วงหน้า
-puzzles_set_description_intermediate_pre_setup_combo_chains,,Start to add combos into your chains for high efficiency attack,Commencez à intégrer des combos dans vos chaînes pour des attaques très efficaces,Comece a adicionar combos às suas correntes para um ataque altamente eficiente,高効率攻撃のためチェインにコンボを組み込み始めましょう,Comienza a añadir combos a tus cadenas para un ataque de alta eficiencia,Beginne Kombos in deine Ketten einzubauen um effizient anzugreifen,Inizia a inserire combo nelle catene per attacchi ad alta efficienza,เริ่มใส่คอมโบในเชนเพื่อการโจมตีที่มีประสิทธิภาพสูง
-puzzle_set_name_intermediate_combo_chains,,Combo Chain,Chaîne combo,Corrente de Combo,コンボチェイン,Cadena Combo,Combo-Kette,Catena Combo,เชนคอมโบ
-puzzles_set_description_intermediate_combo_chains,,Combo chains that require more setup,Chaînes combo demandant plus de préparation,Correntes de combo que exigem mais preparação,準備が多いコンボチェイン,Cadenas combo que requieren más preparación,Combo-Ketten die mehr Vorbereitung erfordern,Catene combo che richiedono più preparazione,เชนคอมโบที่ต้องเตรียมมากขึ้น
+puzzles_set_description_intermediate_pre_setup_combo_chains,,Start to add combos into your chains for high efficiency attack,Commencez à intégrer des combos dans vos chaînes pour des attaques plus efficaces,Comece a adicionar combos às suas correntes para um ataque altamente eficiente,高効率攻撃のためチェインにコンボを組み込み始めましょう,Comienza a añadir combos a tus cadenas para un ataque de alta eficiencia,Beginne Kombos in deine Ketten einzubauen um effizient anzugreifen,Inizia a inserire combo nelle catene per attacchi ad alta efficienza,เริ่มใส่คอมโบในเชนเพื่อการโจมตีที่มีประสิทธิภาพสูง
+puzzle_set_name_intermediate_combo_chains,,Combo Chain,Chaîne combo,Corrente de Combo,コンボチェイン,Cadena Combo,Kombo-Kette,Catena Combo,เชนคอมโบ
+puzzles_set_description_intermediate_combo_chains,,Combo chains that require more setup,Chaînes combo demandant plus de préparation,Correntes de combo que exigem mais preparação,準備が多いコンボチェイン,Cadenas combo que requieren más preparación,Kombo-Ketten die mehr Vorbereitung erfordern,Catene combo che richiedono più preparazione,เชนคอมโบที่ต้องเตรียมมากขึ้น
 puzzle_set_name_intermediate_pre_setup_inserts,,Pre Setup Inserts,Insertions préparées,Inserções Pré-Montadas,事前セットインサート,Inserciones Preconfiguradas,Vorbereitete Einsätze,Inserti Preimpostati,อินเสิร์ตเตรียมไว้ล่วงหน้า
-puzzle_set_description_intermediate_pre_setup_inserts,,Swap into the gap made by the match to perform an insert,Insérez-vous dans l’espace créé par l’alignement pour réaliser une insertion,Troque para o espaço criado pelo alinhamento para fazer uma inserção,マッチで空いた隙間に差し込んでインサートを行います,Cambia al hueco creado por el match para realizar una inserción,Wechsle in die durch das Match entstandene Lücke um einen Einsatz durchzuführen,Sposta nel vuoto creato dall’abbinamento per eseguire un inserto,สลับเข้าไปในช่องว่างที่เกิดจากการจับคู่เพื่อทำอินเสิร์ต
-puzzle_set_name_intermediate_change_side_inserts,,Change Side Inserts,Insertions côté changé,Inserções de Mudança Lateral,サイド変更インサート,Inserciones de Cambio Lateral,Seitliche Einsätze ändern,Inserti con Cambio Lato,อินเสิร์ตย้ายด้าน
-puzzle_set_description_intermediate_change_side_inserts,,Move both horizontal panels to one side to make this insert possible,Déplacez les deux panneaux horizontaux d’un côté pour permettre cette insertion,Mova ambos os painéis horizontais para um lado para permitir esta inserção,両方の水平パネルを片側に動かしてインサートを可能にします,Mueve ambos paneles horizontales a un lado para posibilitar esta inserción,Bewege beide horizontalen Felder auf eine Seite damit dieser Einsatz möglich wird,Sposta entrambi i pannelli orizzontali su un lato per consentire questo inserto,เลื่อนแผงแนวนอนทั้งสองไปด้านเดียวเพื่อทำอินเสิร์ตนี้
+puzzle_set_description_intermediate_pre_setup_inserts,,Swap into the gap made by the match to perform an insert,Insérez-vous dans l’espace créé par l’alignement pour réaliser une insertion,Troque para o espaço criado pelo alinhamento para fazer uma inserção,マッチで空いた隙間に差し込んでインサートを行います,Cambia al hueco creado por el match para realizar una inserción,Tausche mit der durch das Match entstandenen Lücke um einen Einsatz durchzuführen,Sposta nel vuoto creato dall’abbinamento per eseguire un inserto,สลับเข้าไปในช่องว่างที่เกิดจากการจับคู่เพื่อทำอินเสิร์ต
+puzzle_set_name_intermediate_change_side_inserts,,Change Side Inserts,Changer le côté des insertions,Inserções de Mudança Lateral,サイド変更インサート,Inserciones de Cambio Lateral,Seitliche Einsätze ändern,Inserti con Cambio Lato,อินเสิร์ตย้ายด้าน
+puzzle_set_description_intermediate_change_side_inserts,,Move both horizontal panels to one side to make this insert possible,Déplacez les deux blocs horizontaux sur un seul côté pour rendre possible cette insertion,Mova ambos os painéis horizontais para um lado para permitir esta inserção,両方の水平パネルを片側に動かしてインサートを可能にします,Mueve ambos paneles horizontales a un lado para posibilitar esta inserción,Bewege beide horizontalen Panels auf eine Seite damit dieser Einsatz möglich wird,Sposta entrambi i pannelli orizzontali su un lato per consentire questo inserto,เลื่อนแผงแนวนอนทั้งสองไปด้านเดียวเพื่อทำอินเสิร์ตนี้
 puzzle_set_name_intermediate_inserts,,Intermediate Inserts,Insertions intermédiaires,Inserções Intermediárias,中級インサート,Inserciones Intermedias,Fortgeschrittene Einsätze,Inserti Intermedi,อินเสิร์ตระดับกลาง
 puzzle_set_description_intermediate_inserts,,More complicated insert patterns,Schémas d’insertion plus complexes,Padrões de inserção mais complexos,より複雑なインサートパターン,Patrones de inserción más complicados,Komplexere Einsatzmuster,Schemi di inserto più complessi,รูปแบบอินเสิร์ตที่ซับซ้อนขึ้น
-puzzle_set_name_intermediate_combo_chain_inserts,,Combo Chain Inserts,Insertions de chaîne combo,Inserções em Corrente de Combo,コンボチェインインサート,Inserciones en Cadena Combo,Combo-Ketten-Einsätze,Inserti in Catena Combo,อินเสิร์ตเชนคอมโบ
-puzzle_set_description_intermediate_combo_chain_inserts,,Use what you have learned from combo chains and inserts to put the two together,Combinez vos connaissances des chaînes combo et des insertions pour les réunir,Use o que aprendeu sobre correntes de combo e inserções para combiná-los,学んだコンボチェインとインサートを組み合わせましょう,Utiliza lo aprendido sobre cadenas combo e inserciones para combinarlos,Nutze dein Wissen über Combo-Ketten und Einsätze um beides zu kombinieren,Usa ciò che hai imparato su catene combo e inserti per combinarli,ใช้สิ่งที่เรียนรู้จากเชนคอมโบและอินเสิร์ตมารวมกัน
+puzzle_set_name_intermediate_combo_chain_inserts,,Combo Chain Inserts,Insertions de chaîne combo,Inserções em Corrente de Combo,コンボチェインインサート,Inserciones en Cadena Combo,Kombo-Ketten-Einsätze,Inserti in Catena Combo,อินเสิร์ตเชนคอมโบ
+puzzle_set_description_intermediate_combo_chain_inserts,,Use what you have learned from combo chains and inserts to put the two together,Combinez vos connaissances des chaînes combo et des insertions pour les combiner,Use o que aprendeu sobre correntes de combo e inserções para combiná-los,学んだコンボチェインとインサートを組み合わせましょう,Utiliza lo aprendido sobre cadenas combo e inserciones para combinarlos,Nutze dein Wissen über Kombo-Ketten und Einsätze um beides zu kombinieren,Usa ciò che hai imparato su catene combo e inserti per combinarli,ใช้สิ่งที่เรียนรู้จากเชนคอมโบและอินเสิร์ตมารวมกัน
 puzzle_set_name_intermediate_removes,,Removes,Suppressions,Remoções,リムーブ,Eliminaciones,Entfernungen,Rimozioni,การเอาออก
-puzzle_set_description_intermediate_removes,,Take out the panel at the right time to perform a chain,Retirez le panneau au bon moment pour déclencher une chaîne,Remova o painel no momento certo para executar uma corrente,適切なタイミングでパネルを取り除きチェインを発動します,Saca el panel en el momento adecuado para realizar una cadena,Entferne das Feld zum richtigen Zeitpunkt um eine Kette auszulösen,Rimuovi il pannello al momento giusto per attivare una catena,เอาแผงออกในเวลาที่เหมาะสมเพื่อทำเชน
+puzzle_set_description_intermediate_removes,,Take out the panel at the right time to perform a chain,Retirez le bloc au bon moment pour déclencher une chaîne,Remova o painel no momento certo para executar uma corrente,適切なタイミングでパネルを取り除きチェインを発動します,Saca el panel en el momento adecuado para realizar una cadena,Entferne das Feld zum richtigen Zeitpunkt um eine Kette auszulösen,Rimuovi il pannello al momento giusto per attivare una catena,เอาแผงออกในเวลาที่เหมาะสมเพื่อทำเชน
 puzzle_set_name_intermediate_openers,,Openers,Ouvertures,Aberturas,オープナー,Aperturas,Eröffnungen,Aperture,ท่าเปิด
 puzzle_set_description_intermediate_openers,,Practice making a big attack for these opening setups,Entraînez-vous à lancer une grosse attaque avec ces ouvertures,Pratique criar um grande ataque nesses setups de abertura,これらの開幕セットで大攻撃を練習します,Practica un gran ataque con estas configuraciones de apertura,Übe mit diesen Eröffnungs-Setups einen großen Angriff zu starten,Esercitati a sferrare un grande attacco con queste aperture,ฝึกการโจมตีใหญ่สำหรับการตั้งค่าช่วงเปิด
+puzzle_set_name_intermediate_clear_puzzles_1,,Clear Puzzles 1,Puzzles à résoudre 1,Quebra-cabeças Limpos 1,クリアパズル 1,Puzzles Limpios 1,Müll Puzzles 1,Puzzle da Pulire 1,ปริศนาเคลียร์ 1
+puzzle_set_name_intermediate_clear_puzzles_2,,Clear Puzzles 2,Puzzles à résoudre 2,Quebra-cabeças Limpos 2,クリアパズル 2,Puzzles Limpios 2,Müll Puzzles 2,Puzzle da Pulire 2,ปริศนาเคลียร์ 2
+puzzle_set_description_intermediate_clear_puzzles_1,,Practice intermediate techniques for clearing garbage,Entraînez-vous aux techniques intermédiaires pour éliminer les blocs déchets,Pratique técnicas intermediárias para limpar lixo,中級のガーベッジ削除技術を練習します,Practica técnicas intermedias para limpiar basura,Übe fortgeschrittene Techniken zum Auflösen von Müll,Pratica tecniche intermedie per ripulire i rifiuti,ฝึกเทคนิคระดับกลางการเคลียร์ขยะ
+puzzle_set_description_intermediate_clear_puzzles_2,,Develop intermediate techniques for clearing garbage,Développez les techniques intermédiaires pour éliminer les blocs déchets,Desenvolva técnicas intermediárias para limpar lixo,中級のガーベッジ削除技術を発達させます,Desarrolla técnicas intermedias para limpiar basura,Entwickle fortgeschrittene Techniken zum Auflösen von Müll,Sviluppa tecniche intermedie per ripulire i rifiuti,พัฒนาเทคนิคระดับกลางการเคลียร์ขยะ
 puzzle_set_name_advanced,,Advanced,Avancé,Avançado,アドバンス,Avanzado,Experte,Avanzato,ขั้นสูง
-puzzle_set_description_advanced,,Take your technique to the extreme with Shoguns, Transitions, and Garbage solves,Poussez votre technique à l’extrême avec Shoguns Transitions et résolutions de déchets,Leve sua técnica ao extremo com Shoguns Transições e resolução de lixo,将軍、トランジション、ガーベッジ処理でテクニックを極めましょう,Lleva tu técnica al extremo con Shoguns Transiciones y limpieza de basura,Bring deine Technik mit Shoguns Transitions und Mülllösungen auf das höchste Niveau,Porta la tua tecnica all’estremo con Shogun Transizioni e pulizia dei rifiuti,ยกระดับเทคนิคด้วยโชกุน ทรานซิชัน และการเคลียร์ขยะ
+puzzle_set_description_advanced,,"Take your technique to the extreme with Shoguns, Transitions, and Garbage solves","Poussez votre technique à l’extrême avec Shoguns, Transitions et résolutions de déchets","Leve sua técnica ao extremo com Shoguns, Transições e resolução de lixo",将軍、トランジション、ガーベッジ処理でテクニックを極めましょう,"Lleva tu técnica al extremo con Shoguns, Transiciones y limpieza de basura","Bring deine Technik mit Shoguns, Ebenenübergängen und Müllauflösungen auf das höchste Niveau",Porta la tua tecnica all’estremo con Shogun Transizioni e pulizia dei rifiuti,ยกระดับเทคนิคด้วยโชกุน ทรานซิชัน และการเคลียร์ขยะ
 puzzle_set_name_advanced_shoguns,,Shogun,Shogun,Shogun,将軍,Shogun,Shogun,Shogun,โชกุน
-puzzle_set_description_advanced_shoguns,,Setup the panels so that after the clear the falling panels will make a chain,Arrangez les panneaux pour qu’après la suppression ceux qui tombent forment une chaîne,Configure os painéis para que, após a limpeza, os painéis que caem formem uma corrente,クリア後に落下するパネルでチェインができるよう配置します,Configura los paneles para que, tras la limpieza, los que caigan formen una cadena,Ordne die Felder so an dass nach der Räumung die fallenden Felder eine Kette bilden,Organizza i pannelli in modo che, dopo la pulizia, quelli cadenti creino una catena,จัดแผงให้หลังเคลียร์แล้วแผงที่ตกลงมาจะสร้างเชน
+puzzle_set_description_advanced_shoguns,,Setup the panels so that after the clear the falling panels will make a chain,Arrangez les blocs pour qu’après la suppression ceux qui tombent forment une chaîne,"Configure os painéis para que, após a limpeza, os painéis que caem formem uma corrente",クリア後に落下するパネルでチェインができるよう配置します,"Configura los paneles para que, tras la limpieza, los que caigan formen una cadena",Ordne die Panels so an dass nach der Müllauflösung die fallenden Panels eine Kette bilden,"Organizza i pannelli in modo che, dopo la pulizia, quelli cadenti creino una catena",จัดแผงให้หลังเคลียร์แล้วแผงที่ตกลงมาจะสร้างเชน
 puzzle_set_name_advanced_transitions_1,,Transitions 1,Transitions 1,Transições 1,トランジション 1,Transiciones 1,Übergänge 1,Transizioni 1,ทรานซิชัน 1
-puzzle_set_description_advanced_transitions_1,,Learn how to use panels on a second level to immediately have a clear ready when the panels fall,Apprenez à utiliser les panneaux du second niveau pour avoir immédiatement une suppression prête lorsque les panneaux tombent,Aprenda a usar painéis no segundo nível para ter uma limpeza pronta quando eles caírem,二段目のパネルを使い、落下と同時に消せるようにする方法を学びます,Aprende a usar paneles en un segundo nivel para tener una limpieza lista cuando los paneles caigan,Lerne Felder auf der zweiten Ebene zu nutzen um beim Fallen sofort eine Räumung zu haben,Impara a usare pannelli su un secondo livello per avere subito una pulizia pronta quando cadono,เรียนรู้การใช้แผงชั้นสองเพื่อให้เคลียร์ได้ทันทีเมื่อแผงตก
+puzzle_set_description_advanced_transitions_1,,Learn how to use panels on a second level to immediately have a clear ready when the panels fall,Apprenez à utiliser les panneaux du second niveau pour avoir une suppression prête immédiatement lorsque les blocs tombent,Aprenda a usar painéis no segundo nível para ter uma limpeza pronta quando eles caírem,二段目のパネルを使い、落下と同時に消せるようにする方法を学びます,Aprende a usar paneles en un segundo nivel para tener una limpieza lista cuando los paneles caigan,"Nutze Panels auf der nächsten Ebene, um direkt zur nächsten Müllauflösung überzugehen",Impara a usare pannelli su un secondo livello per avere subito una pulizia pronta quando cadono,เรียนรู้การใช้แผงชั้นสองเพื่อให้เคลียร์ได้ทันทีเมื่อแผงตก
 puzzle_set_name_advanced_transitions_2,,Transitions 2,Transitions 2,Transições 2,トランジション 2,Transiciones 2,Übergänge 2,Transizioni 2,ทรานซิชัน 2
-puzzle_set_description_advanced_transitions_2,,More practice with transitions,Plus de pratique des transitions,Mais prática com transições,トランジションのさらなる練習,Más práctica con transiciones,Mehr Übung mit Übergängen,Ulteriore pratica con le transizioni,ฝึกทรานซิชันเพิ่มเติม
-puzzle_set_name_advanced_clear_puzzles_1,,Clear Puzzles 1,Énigmes de nettoyage 1,Quebra-cabeças de Limpeza 1,クリアパズル 1,Puzzles de Limpieza 1,Rätselräumung 1,Puzzle di Pulizia 1,พัซเซิลเคลียร์ 1
-puzzle_set_description_advanced_clear_puzzles_1,,Begin building techniques for clearing garbage,Commencez à développer des techniques pour éliminer les blocs déchets,Comece a desenvolver técnicas para limpar lixo,ガーベッジを消すための基礎技術を身につけましょう,Comienza a desarrollar técnicas para limpiar basura,Beginne Techniken zum Räumen von Müll aufzubauen,Inizia a sviluppare tecniche per ripulire i rifiuti,เริ่มพัฒนาทักษะการเคลียร์ขยะ
-puzzle_set_name_advanced_clear_puzzles_2,,Clear Puzzles 2,Énigmes de nettoyage 2,Quebra-cabeças de Limpeza 2,クリアパズル 2,Puzzles de Limpieza 2,Rätselräumung 2,Puzzle di Pulizia 2,พัซเซิลเคลียร์ 2
-puzzle_set_description_advanced_clear_puzzles_2,,Learn more techniques for clearing garbage,Apprenez d’autres techniques pour éliminer les blocs déchets,Aprenda mais técnicas para limpar lixo,ガーベッジを消す追加技術を学びます,Aprende más técnicas para limpiar basura,Lerne weitere Techniken zum Räumen von Müll,Impara altre tecniche per ripulire i rifiuti,เรียนรู้เทคนิคการเคลียร์ขยะเพิ่มเติม
-puzzle_set_name_advanced_clear_puzzles_3,,Clear Puzzles 3,Énigmes de nettoyage 3,Quebra-cabeças de Limpeza 3,クリアパズル 3,Puzzles de Limpieza 3,Rätselräumung 3,Puzzle di Pulizia 3,พัซเซิลเคลียร์ 3
-puzzle_set_description_advanced_clear_puzzles_3,,Moderate difficulty techniques for clearing garbage,Techniques de difficulté moyenne pour éliminer les blocs déchets,Técnicas de dificuldade moderada para limpar lixo,中級レベルのガーベッジ削除技術,Técnicas de dificultad moderada para limpiar basura,Techniken mittlerer Schwierigkeit zum Räumen von Müll,Tecniche di difficoltà moderata per ripulire i rifiuti,เทคนิคเคลียร์ขยะระดับกลาง
-puzzle_set_name_advanced_clear_puzzles_4,,Clear Puzzles 4,Énigmes de nettoyage 4,Quebra-cabeças de Limpeza 4,クリアパズル 4,Puzzles de Limpieza 4,Rätselräumung 4,Puzzle di Pulizia 4,พัซเซิลเคลียร์ 4
-puzzle_set_description_advanced_clear_puzzles_4,,Challenging techniques for clearing garbage,Techniques exigeantes pour éliminer les blocs déchets,Técnicas desafiadoras para limpar lixo,難易度の高いガーベッジ削除技術,Técnicas desafiantes para limpiar basura,Herausfordernde Techniken zum Räumen von Müll,Tecniche impegnative per ripulire i rifiuti,เทคนิคเคลียร์ขยะที่ท้าทาย
-puzzle_set_name_advanced_clear_puzzles_5,,Clear Puzzles 5,Énigmes de nettoyage 5,Quebra-cabeças de Limpeza 5,クリアパズル 5,Puzzles de Limpieza 5,Rätselräumung 5,Puzzle di Pulizia 5,พัซเซิลเคลียร์ 5
-puzzle_set_description_advanced_clear_puzzles_5,,Hard techniques for clearing garbage,Techniques difficiles pour éliminer les blocs déchets,Técnicas difíceis para limpar lixo,高度なガーベッジ削除技術,Técnicas difíciles para limpiar basura,Schwere Techniken zum Räumen von Müll,Tecniche difficili per ripulire i rifiuti,เทคนิคเคลียร์ขยะที่ยาก
-puzzle_set_name_advanced_clear_puzzles_6,,Clear Puzzles 6,Énigmes de nettoyage 6,Quebra-cabeças de Limpeza 6,クリアパズル 6,Puzzles de Limpieza 6,Rätselräumung 6,Puzzle di Pulizia 6,พัซเซิลเคลียร์ 6
-puzzle_set_description_advanced_clear_puzzles_6,,Very hard techniques for clearing garbage,Techniques très difficiles pour éliminer les blocs déchets,Técnicas muito difíceis para limpar lixo,非常に高度なガーベッジ削除技術,Técnicas muy difíciles para limpiar basura,Sehr schwere Techniken zum Räumen von Müll,Tecniche molto difficili per ripulire i rifiuti,เทคนิคเคลียร์ขยะที่ยากมาก
-puzzle_set_name_advanced_clear_puzzles_7,,Clear Puzzles 7,Énigmes de nettoyage 7,Quebra-cabeças de Limpeza 7,クリアパズル 7,Puzzles de Limpieza 7,Rätselräumung 7,Puzzle di Pulizia 7,พัซเซิลเคลียร์ 7
-puzzle_set_description_advanced_clear_puzzles_7,,Severe techniques for clearing garbage,Techniques sévères pour éliminer les blocs déchets,Técnicas severas para limpar lixo,厳しいガーベッジ削除技術,Técnicas severas para limpiar basura,Heftige Techniken zum Räumen von Müll,Tecniche severe per ripulire i rifiuti,เทคนิคเคลียร์ขยะที่หนักหน่วง
-puzzle_set_name_advanced_clear_puzzles_8,,Clear Puzzles 8,Énigmes de nettoyage 8,Quebra-cabeças de Limpeza 8,クリアパズル 8,Puzzles de Limpieza 8,Rätselräumung 8,Puzzle di Pulizia 8,พัซเซิลเคลียร์ 8
-puzzle_set_description_advanced_clear_puzzles_8,,Extreme techniques for clearing garbage,Techniques extrêmes pour éliminer les blocs déchets,Técnicas extremas para limpar lixo,極限のガーベッジ削除技術,Técnicas extremas para limpiar basura,Extreme Techniken zum Räumen von Müll,Tecniche estreme per ripulire i rifiuti,เทคนิคเคลียร์ขยะระดับสุดขีด
-puzzle_set_name_advanced_clear_puzzles_9,,Clear Puzzles 9,Énigmes de nettoyage 9,Quebra-cabeças de Limpeza 9,クリアパズル 9,Puzzles de Limpieza 9,Rätselräumung 9,Puzzle di Pulizia 9,พัซเซิลเคลียร์ 9
-puzzle_set_description_advanced_clear_puzzles_9,,Brutal techniques for clearing garbage,Techniques brutales pour éliminer les blocs déchets,Técnicas brutais para limpar lixo,超難度のガーベッジ削除技術,Técnicas brutales para limpiar basura,Brutale Techniken zum Räumen von Müll,Tecniche brutali per ripulire i rifiuti,เทคนิคเคลียร์ขยะสุดโหด
+puzzle_set_description_advanced_transitions_2,,More practice with transitions,Plus d'entraînement sur les transitions,Mais prática com transições,トランジションのさらなる練習,Más práctica con transiciones,Mehr Übung mit Übergängen,Ulteriore pratica con le transizioni,ฝึกทรานซิชันเพิ่มเติม
+puzzle_set_name_advanced_clear_puzzles_1,,Clear Puzzles 1,Puzzles à résoudre 1,Quebra-cabeças de Limpeza 1,クリアパズル 1,Puzzles de Limpieza 1,Müll Puzzles 1,Puzzle di Pulizia 1,พัซเซิลเคลียร์ 1
+puzzle_set_description_advanced_clear_puzzles_1,,Begin building techniques for clearing garbage,Commencez à développer les techniques pour éliminer les blocs déchets,Comece a desenvolver técnicas para limpar lixo,ガーベッジを消すための基礎技術を身につけましょう,Comienza a desarrollar técnicas para limpiar basura,Lerne erste Techniken zur Müllauflösung,Inizia a sviluppare tecniche per ripulire i rifiuti,เริ่มพัฒนาทักษะการเคลียร์ขยะ
+puzzle_set_name_advanced_clear_puzzles_2,,Clear Puzzles 2,Puzzles à résoudre 2,Quebra-cabeças de Limpeza 2,クリアパズル 2,Puzzles de Limpieza 2,Müll Puzzles 2,Puzzle di Pulizia 2,พัซเซิลเคลียร์ 2
+puzzle_set_description_advanced_clear_puzzles_2,,Continue building techniques for clearing garbage,Continuez à développer les techniques pour éliminer les blocs déchets,Continue desenvolvendo técnicas para limpar lixo,ガーベッジを消す技術を継続して構築します,Continúa desarrollando técnicas para limpiar basura,Setze den Aufbau von Techniken zur Müllauflösung fort,Continua a sviluppare tecniche per ripulire i rifiuti,พัฒนาทักษะการเคลียร์ขยะต่อไป
+puzzle_set_name_advanced_clear_puzzles_3,,Clear Puzzles 3,Puzzles à résoudre 3,Quebra-cabeças de Limpeza 3,クリアパズル 3,Puzzles de Limpieza 3,Müll Puzzles 3,Puzzle di Pulizia 3,พัซเซิลเคลียร์ 3
+puzzle_set_description_advanced_clear_puzzles_3,,Moderate difficulty techniques for clearing garbage,Techniques de difficulté moyenne pour éliminer les blocs déchets,Técnicas de dificuldade moderada para limpar lixo,中級レベルのガーベッジ削除技術,Técnicas de dificultad moderada para limpiar basura,Techniken mittlerer Schwierigkeit zur Müllauflösung,Tecniche di difficoltà moderata per ripulire i rifiuti,เทคนิคเคลียร์ขยะระดับกลาง
+puzzle_set_name_advanced_clear_puzzles_4,,Clear Puzzles 4,Puzzles à résoudre 4,Quebra-cabeças de Limpeza 4,クリアパズル 4,Puzzles de Limpieza 4,Müll Puzzles 4,Puzzle di Pulizia 4,พัซเซิลเคลียร์ 4
+puzzle_set_description_advanced_clear_puzzles_4,,Challenging techniques for clearing garbage,Techniques exigeantes pour éliminer les blocs déchets,Técnicas desafiadoras para limpar lixo,難易度の高いガーベッジ削除技術,Técnicas desafiantes para limpiar basura,Herausfordernde Techniken zur Müllauflösung,Tecniche impegnative per ripulire i rifiuti,เทคนิคเคลียร์ขยะที่ท้าทาย
+puzzle_set_name_advanced_clear_puzzles_5,,Clear Puzzles 5,Puzzles à résoudre 5,Quebra-cabeças de Limpeza 5,クリアパズル 5,Puzzles de Limpieza 5,Müll Puzzles 5,Puzzle di Pulizia 5,พัซเซิลเคลียร์ 5
+puzzle_set_description_advanced_clear_puzzles_5,,Hard techniques for clearing garbage,Techniques difficiles pour éliminer les blocs déchets,Técnicas difíceis para limpar lixo,高度なガーベッジ削除技術,Técnicas difíciles para limpiar basura,Schwere Techniken zur Auflösung von Müll,Tecniche difficili per ripulire i rifiuti,เทคนิคเคลียร์ขยะที่ยาก
+puzzle_set_name_advanced_clear_puzzles_6,,Clear Puzzles 6,Puzzles à résoudre 6,Quebra-cabeças de Limpeza 6,クリアパズル 6,Puzzles de Limpieza 6,Müll Puzzles 6,Puzzle di Pulizia 6,พัซเซิลเคลียร์ 6
+puzzle_set_description_advanced_clear_puzzles_6,,Very hard techniques for clearing garbage,Techniques très difficiles pour éliminer les blocs déchets,Técnicas muito difíceis para limpar lixo,非常に高度なガーベッジ削除技術,Técnicas muy difíciles para limpiar basura,Sehr schwere Techniken zur Müllauflösung,Tecniche molto difficili per ripulire i rifiuti,เทคนิคเคลียร์ขยะที่ยากมาก
+puzzle_goal_move_heading,Heading for move puzzles,SWAP,ÉCHANGER,TROCAR,交換,INTERCAMBIAR,ZUGLIMIT,SCAMBIA,สลับ
+puzzle_goal_move_objective,Objective for move puzzles,Clear all colored panels in %1 swaps,Éliminez tous les blocs colorés en %1 échanges,Limpe todos os painéis coloridos em %1 trocas,色付きパネルを%1手で全て消去,Limpia todos los paneles de color en %1 intercambios,Löse alle farbigen Panels in %1 Zügen auf,Elimina tutti i pannelli colorati in %1 scambi,เคลียร์แผงสีทั้งหมดใน %1 ครั้ง
+puzzle_goal_chain_heading,Heading for chain puzzles,CHAIN,CHAÎNE,CORRENTE,チェイン,CADENA,KETTE,CATENA,เชน
+puzzle_goal_chain_objective,Objective for chain puzzles,Clear all colored panels in one chain,Éliminez tous les blocs colorés en une chaîne,Limpe todos os painéis coloridos em uma corrente,色付きパネルを1つのチェインで全て消去,Limpia todos los paneles de color en una cadena,Löse alle farbigen Panels innerhalb einer Kette auf,Elimina tutti i pannelli colorati in una catena,เคลียร์แผงสีทั้งหมดในเชนเดียว
+puzzle_goal_clear_heading,Heading for clear puzzles,CLEAR,NETTOYER,LIMPAR,クリア,LIMPIAR,MÜLLAUFLÖSUNG,PULISCI,เคลียร์
+puzzle_goal_clear_objective,Objective for clear puzzles,Clear all garbage blocks without losing,Éliminez tous les blocs déchets sans perdre,Limpe todos os blocos de lixo sem perder,ガーベッジブロックを全て消去してクリア,Limpia todos los bloques de basura sin perder,Löse alle Müllblöcke auf ohne zu verlieren,Elimina tutti i blocchi spazzatura senza perdere,เคลียร์บล็อกขยะทั้งหมดโดยไม่แพ้
+puzzle_goal_unknown_heading,Fallback heading for unknown puzzle types,PUZZLE,ÉNIGME,QUEBRA-CABEÇA,パズル,PUZZLE,PUZZLE,PUZZLE,ปริศนา
+puzzle_help_next_prompt,Continue to next help state,Press Taunt Down for Hint,Appuyez sur Provocation Bas pour un indice,Pressione Provocação Baixo para dica,挑発下でヒント,Presiona Burla Abajo para pista,Drücke TauntDown für einen Hinweis,Premi Provocazione Giù per suggerimento,กดปุ่มเยาะเย้ยลงเพื่อดูคำใบ้
+puzzle_help_solution_prompt,Show solution after hint,Press Taunt Down to see a Solution,Appuyez sur Provocation Bas pour voir la solution,Pressione Provocação Baixo para ver uma solução,挑発下で解答を見る,Presiona Burla Abajo para ver una solución,Drücke TauntDown um eine Lösung zu sehen,Premi Provocazione Giù per vedere una soluzione,กดปุ่มเยาะเย้ยลงเพื่อดูคำตอบ
+puzzle_help_no_hints,When puzzle has no hints available,No hints available for this puzzle,Aucun indice disponible pour ce puzzle,Não há dicas disponíveis para este quebra-cabeça,このパズルにはヒントがありません,No hay pistas disponibles para este puzzle,Keine Hinweise für dieses Puzzle verfügbar,Nessun suggerimento disponibile per questo puzzle,ไม่มีคำใบ้สำหรับปริศนานี้
+puzzle_help_no_solution,When puzzle has no solution,No solution available for this puzzle,Aucune solution disponible pour ce puzzle,Nenhuma solução disponível para este quebra-cabeça,このパズルには解答がありません,No hay solución disponible para este puzzle,Keine Lösung für dieses Puzzle verfügbar,Nessuna soluzione disponibile per questo puzzle,ไม่มีคำตอบสำหรับปริศนานี้
+puzzle_help_hint_given,When hint has been shown to player,Hint given,Indice donné,Dica dada,ヒントが与えられました,Pista dada,Hinweis gegeben,Suggerimento dato,ให้คำใบ้แล้ว
+puzzle_help_solution_playing,When solution is currently playing,Solution playing,Solution en cours,Solução reproduzindo,解答を再生中,Solución reproduciéndose,Lösung läuft,Soluzione in corso,กำลังเล่นคำตอบ
+op_about_attack_files,Information about attack files and mod installation,About Attack Files,À propos des fichiers Attack,Sobre arquivos de ataque,アタックファイルについて,Acerca de archivos de ataque,Über Attack-Dateien,Informazioni sui file di attacco,เกี่ยวกับ Attack Files
+op_system_info,Button for showing system information,System Info,Informations système,Informações do sistema,システム情報,Información del sistema,Systeminformationen,Informazioni di sistema,ข้อมูลระบบ
+op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,Performance/Consommation de la batterie,Desempenho/Dreno de bateria,パフォーマンス/バッテリー消費,Rendimiento/Consumo de batería,Performance/Stromverbrauch,Prestazioni/Consumo batteria,ประสิทธิภาพ/การใช้แบตเตอรี่
+op_about_installing_mods,Information about installing mods,Installing Mods,Installation de mods,Instalando mods,MODのインストール,Instalando mods,Mods installieren,Installazione mod,การติดตั้งม็อด
+mod_manage_icon,Label for icon in mod management,Icon,Icône,Ícone,アイコン,Icono,Symbol,Icona,ไอคอน
+mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Name,Nome,ชื่อ
+mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
+mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submods,サブMOD,Submods,Submods,Submod,ซับม็อด
+mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
+mm_2_time,,2P time attack,2J contre la montre,2J contra o tempo,2P スコアアタック,2J Contrareloj,2P Time Attack,2P a tempo,2P time attack
+op_about_puzzles,,About custom puzzles,À propos des puzzles personnalisés,Sobre quebra-cabeças personalizados,カスタムパズルについて,Acerca de rompecabezas personalizados,How to: Eigene Puzzles erstellen,A proposito dei puzzle personalizzabili,เกี่ยวกับ custom puzzles

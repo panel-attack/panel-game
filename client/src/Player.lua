@@ -31,6 +31,8 @@ local StackBehaviours = require("common.data.StackBehaviours")
 -- Due to this, unless for a good reason, all properties on Player should be set using the setters
 ---@class Player : MatchParticipant
 ---@field settings PlayerSettings
+---@field publicId integer
+---@field playerNumber integer?
 ---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player
@@ -105,12 +107,19 @@ function Player:createClientStack(engineStack)
     player = self,
   }
 
-  if self.settings.style == GameModes.Styles.MODERN then
-    args.level = self.settings.level
-  else
-    args.difficulty = self.settings.difficulty
+  local presetInfo = LevelPresets.getStyleAndPreset(self.settings.levelData)
+  if presetInfo then
+    if presetInfo.style == GameModes.Styles.MODERN then
+      if presetInfo.level then
+        args.level = self.settings.level
+      end
+    else
+      if presetInfo.difficulty then
+        args.difficulty = self.settings.difficulty
+      end
+    end
   end
-
+  
   self.stack = PlayerStack(args)
 
   return self.stack
@@ -142,7 +151,7 @@ end
 function Player:setLevelData(levelData)
   self.settings.levelData = levelData
   self:setSpeed(levelData.startingSpeed)
-  self:emitSignal("levelDataChanged", levelData)
+  self:emitSignal("levelDataChanged", levelData, self)
 end
 
 function Player:setSpeed(speed)
@@ -170,18 +179,11 @@ end
 -- sets the style of "level" presets the player selects from
 -- 1 = classic
 -- 2 = modern
--- longterm we want to abandon the concept of "style" on the player / battleRoom level
--- just setting difficulty or level should set the levelData and done with it, style is a menu-only concept
--- there is no technical reason why someone on level 10 shouldn't be able to play against someone on Hard
+-- style is a menu-only concept for UI display
+-- derived settings (levelData) should be updated by calling gameMode.updateLocalPlayersDerivedSettings
 function Player:setStyle(style)
   if style ~= self.settings.style then
     self.settings.style = style
-    if style == GameModes.Styles.MODERN then
-      self:setLevelData(LevelPresets.getModern(self.settings.level or config.level))
-    else
-      self:setLevelData(LevelPresets.getClassic(self.settings.difficulty or config.endless_difficulty))
-      self:setSpeed(self.settings.speed)
-    end
     self:emitSignal("styleChanged", style)
   end
 end
@@ -192,8 +194,11 @@ function Player:setRating(rating)
     self.ratingHistory[#self.ratingHistory + 1] = self.rating
   end
 
-  if rating and tonumber(rating) then
-    rating = math.round(tonumber(rating))
+  if rating then
+    local ratingNumber = tonumber(rating)
+    if ratingNumber then
+      rating = math.round(ratingNumber)
+    end
   end
 
   self.rating = rating
@@ -228,7 +233,7 @@ function Player:unrestrictInputs()
 end
 
 ---@return Player
-function Player.getLocalPlayer()
+function Player.createLocalPlayerFromConfig()
   local player = Player(config.name, -1, true)
 
   player:setDifficulty(config.endless_difficulty)
@@ -241,10 +246,8 @@ function Player.getLocalPlayer()
   player:setInputMethod(config.inputMethod)
   if config.endless_level then
     player:setStyle(GameModes.Styles.MODERN)
-    player:setLevelData(LevelPresets.getModern(player.settings.level))
   else
     player:setStyle(GameModes.Styles.CLASSIC)
-    player:setLevelData(LevelPresets.getClassic(player.settings.difficulty))
     player:setSpeed(config.endless_speed)
   end
 
@@ -320,16 +323,6 @@ function Player:updateSettings(settings)
   end
 
   if settings.levelData ~= nil then
-    if settings.level ~= nil then
-      if settings.levelData.frameConstants.GARBAGE_HOVER then
-        self:setStyle(GameModes.Styles.MODERN)
-        self:setLevel(settings.level)
-      else
-        self:setStyle(GameModes.Styles.CLASSIC)
-        self:setDifficulty(settings.level)
-      end
-    end
-
     self:setLevelData(settings.levelData)
   end
 

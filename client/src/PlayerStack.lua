@@ -15,6 +15,7 @@ local logger = require("common.lib.logger")
 require("client.src.analytics")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local MatchRules      = require("common.data.MatchRules")
+local DebugSettings = require("client.src.debug.DebugSettings")
 ---@module "common.data.LevelData"
 
 local floor, min, max = math.floor, math.min, math.max
@@ -766,7 +767,7 @@ function PlayerStack:drawPopBurstParticle(atlas, quad, frameIndex, atlasDimensio
 end
 
 function PlayerStack:drawDebug()
-  if config.debug_mode then
+  if DebugSettings.showStackDebugInfo() then
     local engine = self.engine
 
     local x = self.origin_x + 480
@@ -862,7 +863,7 @@ function PlayerStack:drawDebug()
 end
 
 function PlayerStack:drawDebugPanels(shakeOffset)
-  if not config.debug_mode then
+  if not DebugSettings.showStackDebugInfo() then
     return
   end
 
@@ -951,7 +952,7 @@ function PlayerStack:drawRating()
   local rating
   if self.player.rating and tonumber(self.player.rating) then
     rating = self.player.rating
-  elseif config.debug_mode then
+  elseif DebugSettings.showStackDebugInfo() then
     rating = 1544 + self.player.playerNumber
   end
 
@@ -1258,8 +1259,15 @@ function PlayerStack:drawPanels(garbageCharacter, metalPanelSet, shakeOffset)
               if panel.metal then
                 metalPanelSet:drawMetalGarbage(draw_x, draw_y, panel.width, self.gfxScale)
               else
+                -- any chain where the face is situated above row 12 is going to look the same so there is no need to render it accurately
+                -- filler sprites at the bottom of the garbage alternate in a sequence of 4 so we can use a block with the same pattern
+                local drawHeight = math.min(panel.height, 28 + panel.height % 4)
                 -- need the top left offset for this one
-                garbageCharacter:drawGarbage(draw_x - (panel.width - 1) * 16, draw_y - (panel.height - 1) * 16, panel.width, panel.height, self.gfxScale)
+                local garbageX = draw_x - (panel.width - 1) * 16
+                local garbageY = draw_y - (drawHeight - 1) * 16
+
+---@diagnostic disable-next-line: param-type-mismatch
+                garbageCharacter:drawGarbage(garbageX, garbageY, panel.width, drawHeight, self.gfxScale)
               end
             end
           end
@@ -1408,6 +1416,10 @@ end
 local MAX_TAUNT_PER_10_SEC = 4
 
 function PlayerStack:can_taunt()
+  -- Check if the current scene allows taunt sounds
+  if GAME.battleRoom and GAME.battleRoom.gameScene and GAME.battleRoom.gameScene.shouldDisableTauntSounds and GAME.battleRoom.gameScene:shouldDisableTauntSounds() then
+    return false
+  end
   return self.taunt_queue:len() < MAX_TAUNT_PER_10_SEC or self.taunt_queue:peek() + 10 < love.timer.getTime()
 end
 

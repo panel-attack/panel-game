@@ -4,6 +4,7 @@ local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
+local fileUtils = require("client.src.FileUtils")
 
 -- Holds all the data for localizing the game
 Localization = {
@@ -90,7 +91,7 @@ function Localization.init(self)
   local i = 1
   local key = nil
   -- Process all the localization strings
-  if love.filesystem.getInfo(FILENAME) then
+  if fileUtils.exists(FILENAME) then
     for line in love.filesystem.lines(FILENAME) do
       if num_line == 1 then
         tokens = Localization.csv_line(line)
@@ -177,7 +178,5 @@ function loc(text_key, ...)
 
   return ret
 end
-
-Localization:init()
 
 return Localization

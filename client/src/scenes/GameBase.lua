@@ -15,6 +15,7 @@ local ui = require("client.src.ui")
 local FileUtils = require("client.src.FileUtils")
 local ClientStack = require("client.src.ClientStack")
 local MatchRules = require("common.data.MatchRules")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
@@ -253,6 +254,17 @@ function GameBase:setupGameOver()
     SoundController:fadeOutActiveTrack(3)
   end
 
+  local winners = self.match:getWinners()
+  if self.text == nil then
+    if #self.match.players == 1 then
+      self.text = loc("pl_gameover")
+    elseif #winners == 1 then
+      self.text = loc("ss_p_wins", winners[1].name)
+    else
+      self.text = loc("ss_draw")
+    end
+  end
+  
   self:customGameOverSetup()
 end
 
@@ -361,8 +373,8 @@ function GameBase:update(dt)
     self:runGame(dt)
   end
   
-  -- Handle keyboard input for any focused UI elements
   self.uiRoot:handleFocusedInput(input, dt)
+  self.uiRoot:update(dt)
 end
 
 function GameBase:draw()
@@ -433,14 +445,14 @@ function GameBase:drawHUD()
       end
 
       stack:drawLevel()
-      if stack.analytic and not config.debug_mode then
+      if stack.analytic and not DebugSettings.showStackDebugInfo() then
         --prof.push("Stack:drawAnalyticData")
         stack:drawAnalyticData()
         --prof.pop("Stack:drawAnalyticData")
       end
     end
 
-    if not config.debug_mode and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details
+    if not DebugSettings.showStackDebugInfo() and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details
       GraphicsUtil.print(GAME.battleRoom.spectatorString, themes[config.theme].spectators_Pos[1], themes[config.theme].spectators_Pos[2])
     end
 
@@ -451,16 +463,9 @@ end
 function GameBase:drawEndGameText()
   if self.match.ended then
 
-    local winners = self.match:getWinners()
     local message = self.text
     if message == nil then
-      if #self.match.players == 1 then
-        message = loc("pl_gameover")
-      elseif #winners == 1 then
-        message = loc("ss_p_wins", winners[1].name)
-      else
-        message = loc("ss_draw")
-      end
+      message = ""
     end
 
     local gameOverPosition = themes[config.theme].gameover_text_Pos
@@ -478,6 +483,7 @@ function GameBase:drawEndGameText()
   end
 end
 
+---@param match ClientMatch
 function GameBase:genericOnMatchEnded(match)
   self:setupGameOver()
   -- matches always sort players to have locals in front so if 1 isn't local, none is
@@ -488,6 +494,11 @@ function GameBase:genericOnMatchEnded(match)
   if self.saveReplay then
     FileUtils.saveReplay(match.replay)
   end
+end
+
+-- Override this method in subclasses to disable taunt sounds
+function GameBase:shouldDisableTauntSounds()
+  return false
 end
 
 return GameBase

@@ -8,7 +8,17 @@ local StageLoader = {}
 
 -- initializes the stage class
 function StageLoader.initStages()
-  allStages, stageIds, stages, visibleStages = ModLoader.initMods(Stage)
+  local all, ids, filtered, visible = ModLoader.initMods(Stage)
+  ---@type table<string, Stage>
+  ---@diagnostic disable-next-line: assign-type-mismatch
+  allStages = all
+  ---@type string[]
+  stageIds = ids
+  ---@type table<string, Stage>
+  ---@diagnostic disable-next-line: assign-type-mismatch
+  stages = filtered
+  ---@type string[]
+  visibleStages = visible
 
   StageLoader.loadBundleThumbnails()
 end

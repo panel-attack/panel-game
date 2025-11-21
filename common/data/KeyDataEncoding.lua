@@ -16,6 +16,7 @@ end
 local KeyDataEncoding = {
   base64encode = base64encode,
   base64decode = base64decode,
+  idle = base64encode[1],
   left = base64encode[3],
   right = base64encode[2],
   up = base64encode[9],

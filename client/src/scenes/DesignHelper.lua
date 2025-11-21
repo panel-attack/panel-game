@@ -41,7 +41,7 @@ function DesignHelper:loadGrid()
 end
 
 function DesignHelper:loadRankedSelection(width)
-  local rankedSelector = ui.BoolSelector({startValue = true, vFill = true, width = width, vAlign = "center", hAlign = "center"})
+  local rankedSelector = ui.BoolSelector({startValue = true, width = width, vAlign = "center", hAlign = "center"})
 
   return rankedSelector
 end
@@ -56,14 +56,10 @@ function DesignHelper:loadStages()
   self.stageCarousel:loadCurrentStages()
 end
 
-function DesignHelper:update()
+function DesignHelper:updateSelf()
   if input.allKeys.isDown["MenuEsc"] then
     GAME.navigationStack:pop()
   end
-end
-
-function DesignHelper:draw()
-  self.grid:draw()
 end
 
 return DesignHelper

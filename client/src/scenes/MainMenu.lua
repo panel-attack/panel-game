@@ -4,6 +4,7 @@ local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
+local DebugSettings = require("client.src.debug.DebugSettings")
 local EndlessMenu = require("client.src.scenes.EndlessMenu")
 local PuzzleMenu = require("client.src.scenes.PuzzleMenu")
 local TimeAttackMenu = require("client.src.scenes.TimeAttackMenu")
@@ -11,6 +12,7 @@ local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
 local TrainingMenu = require("client.src.scenes.TrainingMenu")
 local ChallengeModeMenu = require("client.src.scenes.ChallengeModeMenu")
 local Lobby = require("client.src.scenes.Lobby")
+local LocalGameModeSelectionScene = require("client.src.scenes.LocalGameModeSelectionScene")
 local CharacterSelect2p = require("client.src.scenes.CharacterSelect2p")
 local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
@@ -34,9 +36,19 @@ end, Scene)
 
 MainMenu.name = "MainMenu"
 
-local function switchToScene(sceneName, transition)
+local function switchToScene(scene, transition)
   GAME.theme:playValidationSfx()
-  GAME.navigationStack:push(sceneName, transition)
+  GAME.navigationStack:push(scene, transition)
+end
+
+function MainMenu:refresh()
+  if self.menu then
+    self.menu:detach()
+    self.menu = nil
+  end
+
+  self.menu = self:createMainMenu()
+  self.uiRoot:addChild(self.menu)
 end
 
 function MainMenu:createMainMenu()
@@ -75,10 +87,7 @@ function MainMenu:createMainMenu()
       switchToScene(Lobby({serverIp = "panelattack.com"}))
     end),
     ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
-      if GAME.battleRoom then
-        switchToScene(CharacterSelect2p({battleRoom = GAME.battleRoom}))
-      end
+      switchToScene(LocalGameModeSelectionScene())
     end),
     ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
       switchToScene(ReplayBrowser())
@@ -106,12 +115,12 @@ function MainMenu:createMainMenu()
                         }
 
   local function addDebugMenuItems()
-    if config.debugShowServers then
+    if DebugSettings.showDebugServers() then
       for i, menuItem in ipairs(debugMenuItems) do
         menu:addMenuItem(i + 7, menuItem)
       end
     end
-    if config.debugShowDesignHelper then
+    if DebugSettings.showDesignHelper() then
       menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
           switchToScene(DesignHelper())
         end))
@@ -149,16 +158,15 @@ function MainMenu:checkForUpdates()
   end
 end
 
-function MainMenu:update(dt)
+function MainMenu:updateSelf(dt)
   GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
 
   self:checkForUpdates()
 end
 
-function MainMenu:draw()
+function MainMenu:drawSelf()
   GAME.theme.images.bg_main:draw()
-  self.uiRoot:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 

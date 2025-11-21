@@ -559,7 +559,7 @@ function Stack:rewindToFrame(clock)
     self.panelSource:rewindToFrame(clock)
 
     -- we did roll back but we want to stay here
-    self.lastRollbackFrame = frame
+    self.lastRollbackFrame = clock
 
     self:emitSignal("rollbackPerformed", self)
     return true

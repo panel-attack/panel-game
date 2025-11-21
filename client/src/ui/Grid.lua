@@ -3,6 +3,7 @@ local UiElement = require(PATH .. ".UIElement")
 local GridElement = require(PATH .. ".GridElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 local Grid = class(function(self, options)
   self.unitSize = options.unitSize
@@ -61,6 +62,7 @@ function Grid:createElementAt(x, y, width, height, description, uiElement, noPad
   if gridElement.content.onSelect or gridElement.content.isFocusable then
     gridElement.onSelect = function(self, selector)
       if selector.setFocus and self.content.isFocusable then
+        GAME.theme:playValidationSfx()
         selector:setFocus(self.content)
       else
         self.content:onSelect(selector)
@@ -72,7 +74,7 @@ function Grid:createElementAt(x, y, width, height, description, uiElement, noPad
 end
 
 function Grid:drawSelf()
-  if DEBUG_ENABLED then
+  if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(1, 1, 1, 0.5)
     GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
@@ -90,8 +92,12 @@ function Grid:drawSelf()
   end
 end
 
--- removes all gridElements overlapping with the specified box
--- the box is top left anchored
+--- removes all gridElements overlapping with the specified box
+--- the box is top left anchored
+---@param x integer 
+---@param y integer 
+---@param width integer 
+---@param height integer 
 function Grid:removeElementsIn(x, y, width, height)
   height = height or 1
   width = width or 1

@@ -26,7 +26,7 @@ end, Scene)
 
 StartUp.name = "StartUp"
 
-function StartUp:update(dt)
+function StartUp:updateSelf(dt)
   if self.migrationPath then
     local success, status = coroutine.resume(self.migrationRoutine, self)
     if success then
@@ -72,7 +72,7 @@ function StartUp:drawLoadingString(loadingString)
   love.graphics.printf(loadingString, x, y, consts.CANVAS_WIDTH, "center", 0, 1)
 end
 
-function StartUp:draw()
+function StartUp:drawSelf()
   self:drawLoadingString(self.message)
 end
 
@@ -84,7 +84,7 @@ function StartUp:checkIfMigrationIsPossible()
 
   local os = love.system.getOS()
   if os == "Linux" or os == "OS X" then
-    if not love.filesystem.exists("conf.json") then
+    if not fileUtils.exists("conf.json") then
       local path = love.filesystem.getAppdataDirectory()
       if path:sub(-1) ~= "/" then
         path = path .. "/"
@@ -101,7 +101,7 @@ function StartUp:checkIfMigrationIsPossible()
         -- if we couldn't mount that directory, that means there is no old install
         logger.debug("No old install found")
       else
-        if love.filesystem.exists("oldInstall/conf.json") then
+        if fileUtils.exists("oldInstall/conf.json") then
           return path
         end
       end

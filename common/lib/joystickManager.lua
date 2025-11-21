@@ -101,6 +101,8 @@ function joystickManager:getDPadState(joystick, hatIndex)
   }
 end
 
+-- Intentional override
+---@diagnostic disable-next-line: duplicate-set-field
 function love.joystickadded(joystick)
   -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions
@@ -165,6 +167,8 @@ function love.joystickadded(joystick)
   joystickManager.devices[id] = device
 end
 
+-- Intentional override
+---@diagnostic disable-next-line: duplicate-set-field
 function love.joystickremoved(joystick)
   -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions
@@ -176,10 +180,12 @@ function love.joystickremoved(joystick)
 
   logger.info("Disconnecting device " .. vendorID .. ";" .. productID .. ";" .. productVersion .. ";" .. joystick:getName() .. ";" .. guid .. ";" .. id)
 
-  joystickManager.guidsToJoysticks[guid][id] = nil
+  if joystickManager.guidsToJoysticks[guid] then
+    joystickManager.guidsToJoysticks[guid][id] = nil
 
-  if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
-    joystickManager.guidsToJoysticks[guid] = nil
+    if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
+      joystickManager.guidsToJoysticks[guid] = nil
+    end
   end
 
   joystickManager.devices[id] = nil

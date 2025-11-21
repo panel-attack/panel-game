@@ -32,6 +32,7 @@ function Game1pChallenge:startNextScene()
   end
 end
 
+---@param match ClientMatch
 function Game1pChallenge:pauseChanged(match)
   if match.isPaused then
     self.timeSplitElement.isVisible = false

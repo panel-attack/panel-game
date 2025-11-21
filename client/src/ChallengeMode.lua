@@ -2,11 +2,11 @@ local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
 local GameModes = require("common.data.GameModes")
-local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
 require("client.src.BattleRoom")
 local save = require("client.src.save")
+local fileUtils = require("client.src.FileUtils")
 
 
 -- Challenge Mode is a particular play through of the challenge mode in the game, it contains all the settings for the mode.
@@ -147,7 +147,7 @@ end
 function ChallengeMode:attackFilePath(difficulty, stageIndex)
   for i = stageIndex, 1, -1 do
     local path = "client/assets/default_data/training/challenge-" .. difficulty .. "-" .. i .. ".json"
-    if love.filesystem.getInfo(path) then
+    if fileUtils.exists(path) then
       return path
     end
   end
@@ -205,7 +205,7 @@ function ChallengeMode:onMatchEnded(match)
     GAME.netClient:reportLocalGameResult(winners)
   end
 
-  if match.aborted then
+  if match.engine.aborted then
     -- in challenge mode, an abort is always a manual pause and leave by the local player
     -- match:deinit is the responsibility of the one switching out of the game scene
     GAME.navigationStack:pop(nil, function() match:deinit() end)

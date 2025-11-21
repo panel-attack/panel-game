@@ -1,6 +1,7 @@
 local CharacterSelect = require("client.src.scenes.CharacterSelect")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
+local LevelPresets = require("common.data.LevelPresets")
 local ui = require("client.src.ui")
 
 -- Scene for the endless game setup menu
@@ -48,8 +49,8 @@ function EndlessMenu:loadUserInterface()
 
   self.ui.styleSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.styleSelection:setTitle("endless_modern")
-  local styleSelector = self:createStyleSelection(player, unitSize)
-  self.ui.styleSelection:addElement(styleSelector, player)
+  local styleContainer, styleSelector = self:createStyleSelection(player, unitSize)
+  self.ui.styleSelection:addElement(styleContainer, player)
 
   self.ui.grid:createElementAt(5, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
 
@@ -71,7 +72,7 @@ function EndlessMenu:loadUserInterface()
   })
   self.ui.difficultySelection:setTitle("difficulty")
 
-  local difficultyCarousel = self:createDifficultyCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.difficultySelection.height)
+  local difficultyCarousel = self:createDifficultyCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.difficultySelection.height, LevelPresets.getClassicEndless)
   self.ui.difficultySelection:addElement(difficultyCarousel, player)
 
   self.ui.levelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
@@ -79,25 +80,14 @@ function EndlessMenu:loadUserInterface()
   local levelSlider = self:createLevelSlider(player, 20, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.levelSelection.height)
   self.ui.levelSelection:addElement(levelSlider, player)
 
-  if player.settings.style == GameModes.Styles.MODERN then
-    self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
-  else
-    self.ui.grid:createElementAt(6, 2, 2, 1, "speedSelection", self.ui.speedSelection, nil, true)
-    self.ui.grid:createElementAt(8, 2, 1, 1, "difficultySelection", self.ui.difficultySelection, nil, true)
-  end
-
   styleSelector.onValueChange = function(boolSelector, value)
     GAME.theme:playValidationSfx()
-    self.ui.grid:removeElementsIn(6, 2, 3, 1)
     if value and player.settings.style ~= GameModes.Styles.MODERN then
-      player:setStyle(GameModes.Styles.MODERN)
-      self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
-      self.ui.recordBox:setVisibility(false)
+      -- Set levelData for modern style - this will trigger levelDataChanged signal which updates UI
+      player:setLevelData(LevelPresets.getModern(player.settings.level))
     elseif value == false and player.settings.style ~= GameModes.Styles.CLASSIC then
-      player:setStyle(GameModes.Styles.CLASSIC)
-      self.ui.grid:createElementAt(6, 2, 2, 1, "speedSelection", self.ui.speedSelection, nil, true)
-      self.ui.grid:createElementAt(8, 2, 1, 1, "difficultySelection", self.ui.difficultySelection, nil, true)
-      self.ui.recordBox:setVisibility(true)
+      -- Set levelData for classic endless style - this will trigger levelDataChanged signal which updates UI
+      player:setLevelData(LevelPresets.getClassicEndless(player.settings.difficulty))
     end
   end
 
@@ -124,19 +114,42 @@ function EndlessMenu:loadUserInterface()
   self.ui.cursors[1].raise2Callback = function()
     self.ui.characterGrid:turnPage(1)
   end
+
+  player:connectSignal("styleChanged", self, self.onStyleChanged)
+  self:onStyleChanged(player.settings.style, player)
+end
+
+function EndlessMenu:onStyleChanged(style, player)
+  if style == GameModes.Styles.MODERN then
+    self.ui.grid:removeElementsIn(6, 2, 3, 1)
+    self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
+    self.ui.recordBox:setVisibility(false)
+  else
+    self.ui.grid:removeElementsIn(6, 2, 3, 1)
+    self.ui.grid:createElementAt(6, 2, 2, 1, "speedSelection", self.ui.speedSelection, nil, true)
+    self.ui.grid:createElementAt(8, 2, 1, 1, "difficultySelection", self.ui.difficultySelection, nil, true)
+    self.ui.recordBox:setVisibility(true)
+  end
+end
+
+function EndlessMenu:initializeFromLocalPlayerSettings(player)
+  if player.settings.style == GameModes.Styles.MODERN then
+    player:setLevelData(LevelPresets.getModern(player.settings.level))
+  else
+    player:setLevelData(LevelPresets.getClassicEndless(player.settings.difficulty))
+  end
 end
 
 function EndlessMenu:refresh()
-  local difficulty
   if self.battleRoom then
-    difficulty = self.battleRoom.players[1].settings.difficulty
-  else
-    difficulty = GAME.localPlayer.settings.difficulty
+    local difficulty = self.battleRoom.players[1].settings.difficulty
+    self.lastScore = GAME.scores:lastEndlessForLevel(difficulty)
+    self.record = GAME.scores:recordEndlessForLevel(difficulty)
+    if self.ui.recordBox then
+      self.ui.recordBox:setLastResult(self.lastScore)
+      self.ui.recordBox:setRecord(self.record)
+    end
   end
-  self.lastScore = GAME.scores:lastEndlessForLevel(difficulty)
-  self.record = GAME.scores:recordEndlessForLevel(difficulty)
-  self.ui.recordBox:setLastResult(self.lastScore)
-  self.ui.recordBox:setRecord(self.record)
 end
 
 return EndlessMenu

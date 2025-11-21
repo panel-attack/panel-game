@@ -269,7 +269,7 @@ local function testSinglePlayer()
   assert(message.type == "spectatorUpdate")
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectateRequestGranted" and message.content.replay == nil)
-  assert(deep_content_equal(message.content.gameMode, GameModes.getPreset("ONE_PLAYER_VS_SELF")))
+  assert(tableUtils.deep_content_equal(message.content.gameMode, GameModes.getPreset("ONE_PLAYER_VS_SELF"):getGameModeJSONData()))
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectatorUpdate")
 

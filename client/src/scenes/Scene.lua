@@ -5,6 +5,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
 local directsFocus = require("client.src.ui.FocusDirector")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 ---@alias sceneMusic ("none" | "main" | "title_screen" | "select_screen")
 
@@ -59,16 +60,22 @@ function Scene:applyMusic()
   end
 end
 
--- abstract functions to be implemented per scene
-
--- Ran every frame while the scene is active
 function Scene:update(dt)
-  error("every scene MUST implement an update function, even " .. self.name)
+  self:updateSelf(dt)
+  self.uiRoot:update(dt)
 end
 
--- main draw
 function Scene:draw()
-  error("every scene MUST implement a draw function, even " .. self.name)
+  self:drawSelf()
+  self.uiRoot:draw()
+end
+
+function Scene:updateSelf(dt)
+  -- Optional implementation in subclasses
+end
+
+function Scene:drawSelf()
+  -- Optional implementation in subclasses
 end
 
 function Scene:refreshLocalization()
@@ -77,7 +84,7 @@ end
 
 function Scene:drawCommunityMessage()
   -- Draw the community message
-  if not config.debug_mode then
+  if not DebugSettings.showStackDebugInfo() then
     GraphicsUtil.printf(join_community_msg or "", 0, (668 / 720) * GAME.globalCanvas:getHeight(), GAME.globalCanvas:getWidth(), "center")
   end
 end

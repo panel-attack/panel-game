@@ -3,6 +3,7 @@ local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingU
 local Puzzle = require("common.engine.Puzzle")
 local LevelPresets = require("common.data.LevelPresets")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local TestUtils = require("common.tests.TestUtils")
 
 local function puzzleTest()
   -- to stop rising
@@ -93,8 +94,15 @@ local function testShakeFrames()
   ---@cast stack Stack
 
   -- imaginary garbage should crash
-  assert(pcall(stack.shakeFramesForGarbageSize, 6, 0) == false)
-  assert(pcall(stack.shakeFramesForGarbageSize, 6, -1) == false)
+  local success1, errorMessage1 = TestUtils.expectErrorQuiet(function()
+    stack:shakeFramesForGarbageSize(6, 0)
+  end)
+  assert(success1, errorMessage1)
+
+  local success2, errorMessage2 = TestUtils.expectErrorQuiet(function()
+    stack:shakeFramesForGarbageSize(6, -1)
+  end)
+  assert(success2, errorMessage2)
 
   assert(stack:shakeFramesForGarbageSize(1, 1) == 18)
   assert(stack:shakeFramesForGarbageSize(2, 1) == 18)

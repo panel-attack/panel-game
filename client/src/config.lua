@@ -1,7 +1,9 @@
+local JsonSafePrecision = require("common.data.JsonSafePrecision")
 json = require("common.lib.dkjson")
 local util = require("common.lib.util")
 local fileUtils = require("client.src.FileUtils")
 local consts = require("common.engine.consts")
+local DebugSettings = require("client.src.debug.DebugSettings")
 require("client.src.globals")
 
 -- Default configuration values
@@ -26,12 +28,7 @@ require("client.src.globals")
 ---@field SFX_volume number
 ---@field music_volume number
 ---@field enableMenuMusic boolean
----@field debug_mode boolean
----@field debugShowServers boolean
----@field debugShowDesignHelper boolean
----@field debugProfile boolean
----@field debugProfileThreshold integer
----@field debug_vsFramesBehind integer
+---@field debug DebugConfig?
 ---@field show_fps boolean
 ---@field show_ingame_infos boolean
 ---@field danger_music_changeback_delay boolean
@@ -92,12 +89,8 @@ config = {
     SFX_volume                    = 50,
     music_volume                  = 50,
     enableMenuMusic               = true,
-    -- Debug mode flag
-    debug_mode                    = false,
-    debugShowServers              = false,
-    debugShowDesignHelper         = false,
-    debugProfile                  = false,
-    debugProfileThreshold         = 50,
+    -- Debug settings persisted separately
+    debug                         = DebugSettings.getDefaultConfigValues(),
 
     -- Show FPS in the top-left corner of the screen
     show_fps                      = false,
@@ -163,7 +156,7 @@ config = {
         if read_data then
           -- do stuff using read_data.version for retrocompatibility here
 
-          if type(read_data.theme) == "string" and love.filesystem.getInfo(THEME_DIRECTORY_PATH .. read_data.theme .. "/config.json") then
+          if type(read_data.theme) == "string" and fileUtils.exists(THEME_DIRECTORY_PATH .. read_data.theme .. "/config.json") then
             configTable.theme = read_data.theme
           end
 
@@ -225,19 +218,6 @@ config = {
           if type(read_data.music_volume) == "number" then
             configTable.music_volume = util.bound(0, read_data.music_volume, 100)
           end
-          if type(read_data.debug_mode) == "boolean" then
-            configTable.debug_mode = read_data.debug_mode
-          end
-          if type(read_data.debugShowServers) == "boolean" then
-            configTable.debugShowServers = read_data.debugShowServers
-          end
-          if type(read_data.debugShowDesignHelper) == "boolean" then
-            configTable.debugShowDesignHelper = read_data.debugShowDesignHelper
-          end
-          if type(read_data.debugProfile) == "boolean" then
-            configTable.debugProfile = read_data.debugProfile
-          end
-          -- debugProfileThreshold is not saved to prevent accidental dense profiling
           if type(read_data.show_fps) == "boolean" then
             configTable.show_fps = read_data.show_fps
           end
@@ -260,7 +240,7 @@ config = {
             configTable.popfx = read_data.popfx
           end
           if type(read_data.shakeIntensity) == "number" then
-            configTable.shakeIntensity = util.bound(0.5, read_data.shakeIntensity, 1)
+            configTable.shakeIntensity = util.bound(0.5, JsonSafePrecision.toSafePrecision(read_data.shakeIntensity), 1)
           end
           if type(read_data.cardfx_scale) == "number" then
             configTable.cardfx_scale = util.bound(1, read_data.cardfx_scale, 200)
@@ -282,7 +262,7 @@ config = {
             configTable.gameScaleType = read_data.gameScaleType
           end
           if type(read_data.gameScaleFixedValue) == "number" then
-            configTable.gameScaleFixedValue = read_data.gameScaleFixedValue
+            configTable.gameScaleFixedValue = JsonSafePrecision.toSafePrecision(read_data.gameScaleFixedValue)
           end
 
           if type(read_data.windowWidth) == "number" then
@@ -309,6 +289,8 @@ config = {
           if type(read_data.enableMenuMusic) == "boolean" then
             configTable.enableMenuMusic = read_data.enableMenuMusic
           end
+
+          configTable.debug = DebugSettings.normalizeConfigValues(read_data.debug)
         end
 
       end

@@ -30,6 +30,11 @@ function PlayerStack:send_controls()
     return
   end
 
+  local buffer_len = #self.engine.confirmedInput - self.engine.clock
+  if buffer_len > 0 then
+    return
+  end
+
   local to_send
   if self.inputMethod == "controller" then
     local input = self.player.inputConfiguration

@@ -1,4 +1,6 @@
 local system = require("client.src.system")
+local DebugSettings = require("client.src.debug.DebugSettings")
+local logger = require("common.lib.logger")
 ---@diagnostic disable: duplicate-set-field
 
 -- Put any local development changes you need in here that you don't want commited.
@@ -7,7 +9,7 @@ local system = require("client.src.system")
 local function enableProfiler(threshold)
   local prof = require("common.lib.zoneProfiler")
   prof.enable(true)
-  prof.setDurationFilter((threshold or config.debugProfileThreshold) / 1000)
+  prof.setDurationFilter((threshold or DebugSettings.getProfileThreshold()) / 1000)
 end
 
 local developerTools = {}
@@ -37,19 +39,21 @@ function developerTools.processArgs(args)
       GAME_UPDATER = require("updater.gameUpdater")
     else
       for match in string.gmatch(value, "user%-id=(.*)") do
-        CUSTOM_USER_ID = match
+        developerTools.customUserID = match
       end
       for match in string.gmatch(value, "username=(.*)") do
-        CUSTOM_USERNAME = match
+        developerTools.customUsername = match
       end
     end
   end
 end
 
-local realId
-local realName
+local realId = nil
+local realName = nil
 
-function developerTools.wrapConfig()
+function developerTools.wrapUsernameConfig(customUsername)
+  assert(customUsername)
+
   local read = readConfigFile
   local write = write_conf_file
 
@@ -57,37 +61,49 @@ function developerTools.wrapConfig()
     ---@type UserConfig
     c = read(c)
     realName = c.name
-    c.name = CUSTOM_USERNAME or realName
+    logger.debug("Original username was " .. realName)
+    c.name = customUsername
+    logger.debug("Overwriting name to custom username: " .. c.name)
   end
 
   write_conf_file = function()
-    if config.name == CUSTOM_USERNAME then
+    if config.name == customUsername then
+      assert(realName)
       config.name = realName
     end
     write()
+    config.name = customUsername
   end
 end
 
-function developerTools.wrapPersistence()
-  local save = require("client.src.save")
+function developerTools.wrapUserIDRead(customUserID)
+  assert(customUserID)
 
+  logger.debug("Overwriting userID with command line argument")
+
+  local save = require("client.src.save")
   local readId = save.read_user_id_file
   save.read_user_id_file = function(serverIP)
     realId = readId(serverIP)
-    return CUSTOM_USER_ID or realId
+    return customUserID
   end
 
   local writeId = save.write_user_id_file
   save.write_user_id_file = function(userID, serverIP)
-    if userID == CUSTOM_USER_ID then
+    if userID == customUserID then
       userID = realId
     end
+    assert(userID ~= nil)
     writeId(userID, serverIP)
   end
 end
 
 developerTools.processArgs(arg)
-developerTools.wrapConfig()
-developerTools.wrapPersistence()
+if developerTools.customUsername then
+  developerTools.wrapUsernameConfig(developerTools.customUsername)
+end
+if developerTools.customUserID then
+  developerTools.wrapUserIDRead(developerTools.customUserID)
+end
 
 return developerTools

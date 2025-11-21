@@ -3,6 +3,8 @@ local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local PuzzleSource = require("common.engine.PuzzleSource")
 local MatchRules = require("common.data.MatchRules")
+local Panel = require("common.engine.Panel")
+local system = require("client.src.system")
 
 ---@class GridCoordinate
 ---@field row integer
@@ -14,6 +16,8 @@ local MatchRules = require("common.data.MatchRules")
 ---@field startTiming PuzzleStartTiming?
 ---@field cursorStartLeft GridCoordinate?
 ---@field moves integer? in how many swaps the puzzle has to be solved
+---@field solution string? compressed input string for puzzle solution
+---@field helpDescription string? optional help text explaining the puzzle pattern
 
 ---@class GarbagePuzzleArgs : PuzzleArgs
 ---@field stopTime integer?
@@ -34,6 +38,10 @@ local MatchRules = require("common.data.MatchRules")
 ---@field garbageBuffer string
 ---@field randomizeColors boolean
 ---@field UUID string
+---@field solution string? compressed input string for puzzle solution
+---@field helpDescription string? optional help text explaining the puzzle pattern
+---@field puzzleEverBeaten boolean? dynamically added field indicating if this puzzle was ever completed
+---@field trainingDate number? dynamically added field for spaced repetition training scheduling
 ---@overload fun(puzzleArgs: GarbagePuzzleArgs): Puzzle
 Puzzle = class(
 ---@param self Puzzle
@@ -61,32 +69,59 @@ Puzzle = class(
     self.garbageBuffer = puzzleArgs.garbagePanelBuffer
     self.stopTime = puzzleArgs.stopTime
     self.shakeTime = puzzleArgs.shakeTime
+    self.solution = puzzleArgs.solution
+    self.helpDescription = puzzleArgs.helpDescription
 
     self.UUID = Puzzle.getV2UUID(self)
     self.randomizeColors = false
   end
 )
 
+-- Helper function to handle Love2D version compatibility for hashing
+---@param hashString string
+---@return string
+local function hashAndEncode(hashString)
+  -- We specify string so its okay to disable diagnostic
+  if system.meetsLoveVersionRequirement(12, 0) then
+    ---@diagnostic disable-next-line: redundant-parameter, param-type-mismatch
+    local digest = love.data.hash("string", "sha256", hashString)
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return love.data.encode("string", "hex", digest)
+  else
+    -- Love 11 compatibility
+    ---@diagnostic disable-next-line: return-type-mismatch, missing-parameter, param-type-mismatch
+    return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  end
+end
 
 ---@param puzzle Puzzle
 ---@return string
 function Puzzle.getV1UUID(puzzle)
-    -- local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.doCountdown) .. tostring(puzzle.moves) .. tostring(puzzle.stop_time) .. tostring(puzzle.shake_time)
-    local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
-    local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
-  ---@diagnostic disable-next-line: return-type-mismatch
-  return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  local nilString = tostring(nil) -- (puzzle.startTiming == Puzzle.START_TIMINGS.countdown) and tostring(true) or tostring(false)
+  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(false) .. tostring(puzzle.moves) .. nilString .. nilString
+  return hashAndEncode(hashString)
+end
+
+---@param puzzle Puzzle
+---@return string
+function Puzzle.getV2UUIDOld(puzzle)
+  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
+  return hashAndEncode(hashString)
 end
 
 ---@param puzzle Puzzle
 ---@return string
 function Puzzle.getV2UUID(puzzle)
-  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime)
-  ---@diagnostic disable-next-line: return-type-mismatch
-  return love.data.encode("string", "hex", love.data.hash("sha256", hashString))
+  local cursorString = ""
+  if puzzle.cursorStartLeft then
+    cursorString = tostring(puzzle.cursorStartLeft.row) .. "," .. tostring(puzzle.cursorStartLeft.column)
+  end
+  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime) .. cursorString .. tostring(puzzle.panelBuffer) .. tostring(puzzle.garbageBuffer)
+  return hashAndEncode(hashString)
 end
 
----@enum PuzzleStartTiming
+---@alias PuzzleStartTiming "countdown" | "immediately" | "firstInput" | "firstSwap"
+
 Puzzle.START_TIMINGS = { countdown = "countdown", immediately = "immediately", firstInput = "firstInput", firstSwap = "firstSwap" }
 ---@enum PuzzleType
 Puzzle.PUZZLE_TYPES = { moves = "moves", chain = "chain", clear = "clear" }
@@ -101,25 +136,36 @@ Puzzle.PUZZLE_PROPERTY = {
   STACK = "Stack",
   PANEL_BUFFER = "PanelBuffer",
   GARBAGE_PANEL_BUFFER = "GarbagePanelBuffer",
-  CURSOR_START_LEFT = "CursorStartLeft"
+  CURSOR_START_LEFT = "CursorStartLeft",
+  SOLUTION = "Solution",
+  HELP_DESCRIPTION = "Help Description"
 }
 
-Puzzle.PUZZLE_SET_PROPERTY = {
-  NAME = "Set Name",
-  DESCRIPTION = "Description",
-  PUZZLES = "Puzzles",
-  PUZZLE_SETS = "Puzzle Sets"
-}
-
-Puzzle.ROOT_PROPERTY = {
-  VERSION = "Version",
-  PUZZLE_SETS = "Puzzle Sets"
-}
 
 Puzzle.CURSOR_PROPERTY = {
   COLUMN = "Column",
   ROW = "Row"
 }
+
+
+local validPuzzleProperties = {}
+for _, property in pairs(Puzzle.PUZZLE_PROPERTY) do
+  validPuzzleProperties[property] = true
+end
+
+local validCursorProperties = {}
+for _, property in pairs(Puzzle.CURSOR_PROPERTY) do
+  validCursorProperties[property] = true
+end
+
+
+function Puzzle.isValidPuzzleProperty(property)
+  return validPuzzleProperties[property] == true
+end
+
+function Puzzle.isValidCursorProperty(property)
+  return validCursorProperties[property] == true
+end
 
 -- Helper functions for consistent key ordering
 ---@return string[]
@@ -133,27 +179,12 @@ function Puzzle.getPuzzleKeyOrder()
     Puzzle.PUZZLE_PROPERTY.STACK,
     Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER,
     Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER,
-    Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT
+    Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT,
+    Puzzle.PUZZLE_PROPERTY.SOLUTION,
+    Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION
   }
 end
 
----@return string[]
-function Puzzle.getPuzzleSetKeyOrder()
-  return {
-    Puzzle.PUZZLE_SET_PROPERTY.NAME,
-    Puzzle.PUZZLE_SET_PROPERTY.DESCRIPTION,
-    Puzzle.PUZZLE_SET_PROPERTY.PUZZLES,
-    Puzzle.PUZZLE_SET_PROPERTY.PUZZLE_SETS
-  }
-end
-
----@return string[]
-function Puzzle.getRootKeyOrder()
-  return {
-    Puzzle.ROOT_PROPERTY.VERSION,
-    Puzzle.ROOT_PROPERTY.PUZZLE_SETS
-  }
-end
 
 ---@return string[]
 function Puzzle.getCursorKeyOrder()
@@ -191,7 +222,7 @@ function Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbage
   end
   local newColorOrder = {}
 
-  for i = 1, #colorArray, 1 do
+  for _ = 1, #colorArray, 1 do
     newColorOrder[tostring(tableUtils.length(newColorOrder)+1)] = tostring(table.remove(colorArray, love.math.random(1, #colorArray)))
   end
 
@@ -200,31 +231,6 @@ function Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbage
   garbageBuffer = garbageBuffer and garbageBuffer:gsub("%d", newColorOrder) or ""
 
   return puzzleString, panelBuffer, garbageBuffer
-end
-
-local unreverseMap = {}
-unreverseMap["{"] = "}"
-unreverseMap["}"] = "{"
-unreverseMap["["] = "]"
-unreverseMap["]"] = "["
-local rowWidth = 6
-
----@param puzzleString string?
----@return string puzzleString
-function Puzzle.horizontallyFlipPuzzleString(puzzleString)
-  -- to flip we need it guaranteed that all rows are complete so pad out the topmost row
-  puzzleString = string.rep(0, puzzleString:len() % 6) .. puzzleString
-  local result = ""
-  for i = 1, puzzleString:len(), rowWidth do
-    local rowString = string.sub(puzzleString, i, i+rowWidth-1)
-    if string.find(rowString, "%d") then
-      rowString = string.reverse(rowString)
-      rowString = string.gsub(rowString, "[%{%}%[%]]", unreverseMap)
-    end
-    result = result .. rowString
-  end
-
-  return result
 end
 
 ---@return boolean isValid
@@ -326,16 +332,18 @@ function Puzzle:getSaveData()
     [Puzzle.PUZZLE_PROPERTY.SHAKE] = self.shakeTime,
     [Puzzle.PUZZLE_PROPERTY.STACK] = self.stack,
     [Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER] = self.panelBuffer,
-    [Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] = self.garbageBuffer
+    [Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] = self.garbageBuffer,
+    [Puzzle.PUZZLE_PROPERTY.SOLUTION] = self.solution,
+    [Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION] = self.helpDescription
   }
-  
+
   if self.cursorStartLeft then
     puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] = {
       [Puzzle.CURSOR_PROPERTY.COLUMN] = self.cursorStartLeft.column,
       [Puzzle.CURSOR_PROPERTY.ROW] = self.cursorStartLeft.row
     }
   end
-  
+
   return puzzleData
 end
 
@@ -404,7 +412,6 @@ function Puzzle:toGameMode()
     mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
     mode.matchRules.stackSetupModifications.stopTime = self.stopTime
     mode.matchRules.stackSetupModifications.shakeTime = self.shakeTime
-    mode.matchRules.stackSetupModifications.behaviours.delaySimulationUntil = "firstSwap"
   else
     mode.matchRules.stackSetupModifications.behaviours = {
       allowManualRaise = false,
@@ -437,7 +444,6 @@ function Puzzle:toGameMode()
 end
 
 ---@param randomize boolean?
----@param flip boolean?
 ---@return PuzzleSource
 function Puzzle:toPanelSource(randomize)
   local puzzleString = self:fillMissingPanelsInPuzzleString(6, 12)
@@ -464,7 +470,9 @@ function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
     stopTime = originalPuzzle.stopTime,
     shakeTime = originalPuzzle.shakeTime,
     panelBuffer = originalPuzzle.panelBuffer,
-    garbagePanelBuffer = originalPuzzle.garbageBuffer
+    garbagePanelBuffer = originalPuzzle.garbageBuffer,
+    solution = originalPuzzle.solution,
+    helpDescription = originalPuzzle.helpDescription
   })
 end
 

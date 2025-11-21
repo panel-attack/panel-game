@@ -18,6 +18,7 @@ local legacyScoreY = 208
 
 ---@param playerCount integer
 ---@param theme table?
+---@return ClientMatch
 local function createEndlessClientMatch(playerCount, theme)
   local endless = GameModes.getPreset("ONE_PLAYER_ENDLESS")
   local players = {}
@@ -25,7 +26,7 @@ local function createEndlessClientMatch(playerCount, theme)
     playerCount = 1
   end
   for i = 1, playerCount do
-    local player = Player.getLocalPlayer()
+    local player = Player.createLocalPlayerFromConfig()
     player.isLocal = false
     player:setLevel(10)
     player:setLevelData(LevelPresets.getModern(10))
@@ -195,7 +196,6 @@ test(testNewThemeOffsetPlayer2)
 
 local function testShakeOffsetLargeGarbage()
   local match = createEndlessClientMatch(2, defaultTheme)
-  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
 
@@ -289,7 +289,6 @@ test(testShakeOffsetLargeGarbage)
 -- Tests that having reduction properly reduces and rounds
 local function testShakeOffsetReduction()
   local match = createEndlessClientMatch(2, defaultTheme)
-  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.5) == 1)
@@ -327,7 +326,6 @@ test(testShakeOffsetReduction)
 
 local function testShakeOffsetMassiveReduction()
   local match = createEndlessClientMatch(2, defaultTheme)
-  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(76, 0, 0.25) == 1)
@@ -365,7 +363,6 @@ test(testShakeOffsetMassiveReduction)
 
 local function testShakeInterpolate()
   local match = createEndlessClientMatch(2, defaultTheme)
-  match.seed = 1
   local stack = match.stacks[2]
   ---@cast stack PlayerStack
   assert(stack:shakeOffsetForShakeFrames(70, 0, 1) == 30)
@@ -377,3 +374,43 @@ local function testShakeInterpolate()
 end
 
 test(testShakeInterpolate)
+
+-- Test for positioning system values (frameOriginX, panelOriginX, origin_x)
+-- These values were captured BEFORE the moveToPosition refactor to ensure no regression
+local function testCurrentStackPositioning()
+  local match = createEndlessClientMatch(2, defaultTheme)
+  
+  local stack1 = match.stacks[1]
+  local stack2 = match.stacks[2]
+  
+  -- Player 1 positioning values (renderIndex = 1) - ORIGINAL values before moveToPosition refactor
+  assert(stack1.frameOriginX == 76) 
+  assert(stack1.panelOriginX == 80) -- frameOriginX + panelOriginXOffset(4)
+  assert(stack1.origin_x == 80)     -- Original positioning calculation
+  
+  -- Player 2 positioning values (renderIndex = 2) - ORIGINAL values before moveToPosition refactor
+  -- Using math.floor to handle floating point precision
+  assert(math.floor(stack2.frameOriginX) == 246) -- Original: 246.66666666667
+  assert(math.floor(stack2.panelOriginX) == 250) -- Original: 250.66666666667  
+  assert(math.floor(stack2.origin_x) == 346)     -- Original: 346.66666666667
+end
+
+test(testCurrentStackPositioning)
+
+-- Test for center positioning (puzzle mode)
+local function testCenterPositioning()
+  local match = createEndlessClientMatch(1, defaultTheme)
+  local stack = match.stacks[1]
+  
+  -- Position using center positioning method
+  stack:moveToCenterPosition()
+  
+  -- Assert expected center positioning values
+  assert(math.floor(stack.frameOriginX * 100) == 15933) -- 159.33333333333 * 100
+  assert(math.floor(stack.panelOriginX * 100) == 16333) -- 163.33333333333 * 100  
+  assert(math.floor(stack.origin_x * 100) == 16333)     -- 163.33333333333 * 100
+  assert(stack.renderIndex == 1)
+  assert(stack.mirror_x == 1)
+end
+
+test(testCenterPositioning)

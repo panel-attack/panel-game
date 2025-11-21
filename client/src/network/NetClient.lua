@@ -125,7 +125,12 @@ local function processLeaveRoomMessage(self, message)
       -- instead we actively abort the match ourselves
       self.room.match:abort()
       self.room.match:deinit()
-      transition = MessageTransition(love.timer.getTime(), 5, message.reason or "", false)
+
+      if message.reason then
+        -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
+        -- the other player and spectators should be informed why the room is being closed
+        transition = MessageTransition(love.timer.getTime(), 5, message.reason, false)
+      end
     end
 
     -- and then shutdown the room
@@ -458,6 +463,7 @@ function NetClient:requestSpectate(roomNumber)
   end
 end
 
+---@param gameMode GameMode
 function NetClient:requestRoom(gameMode)
   if self:isConnected() then
     self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode))
@@ -485,7 +491,9 @@ function NetClient:registerPlayerUpdates(room)
     if player.isLocal then
       -- seems a bit silly to subscribe a player to itself but it works and the player doesn't have to become part of the closure
       player:connectSignal("characterIdChanged", player, sendPlayerSettings)
+      player:connectSignal("selectedCharacterIdChanged", player, sendPlayerSettings)
       player:connectSignal("stageIdChanged", player, sendPlayerSettings)
+      player:connectSignal("selectedStageIdChanged", player, sendPlayerSettings)
       player:connectSignal("panelIdChanged", player, sendPlayerSettings)
       player:connectSignal("wantsRankedChanged", player, sendPlayerSettings)
       player:connectSignal("wantsReadyChanged", player, sendPlayerSettings)

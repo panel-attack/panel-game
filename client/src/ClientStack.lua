@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local ModController = require("client.src.mods.ModController")
 
 -- Draws an image at the given spot while scaling all coordinate and scale values with stack.gfxScale
 local function drawGfxScaled(stack, img, x, y, rot, xScale, yScale)
@@ -52,6 +53,7 @@ function(self, args)
   self.player_number = args.player_number or args.engine.which
   self.is_local = args.player and args.player.isLocal or args.engine.is_local
   self.character = characters[args.characterId]
+  ModController:loadModFor(self.character, self)
   self.theme = args.theme or themes[config.theme]
 
   self.panels_dir = args.panels_dir
@@ -226,33 +228,67 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
 end
 
--- Positions the stack draw position for the given player
-function ClientStack:moveForRenderIndex(renderIndex)
+-- Sets up renderIndex-specific properties and assets
+-- Configures stack positioning parameters for a specific render index (1 for left, 2 for right)
+function ClientStack:setupForRenderIndex(renderIndex)
   self.renderIndex = renderIndex
-  -- Position of elements should ideally be on even coordinates to avoid non pixel alignment
+
   if renderIndex == 1 then
     self.mirror_x = 1
     self.multiplication = 0
   elseif renderIndex == 2 then
     self.mirror_x = -1
     self.multiplication = 1
+  else
+    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1 or 2.")
   end
-  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  self:assignAssets(GAME.theme:getIngameAssetPack(renderIndex))
+end
+
+-- Calculates the horizontal position for centering a stack around a given coordinate
+---@param centerCoordinate number The X coordinate to center around
+---@return number The calculated outer edge position for horizontal centering
+function ClientStack:calculateHorizontallyCenteredPosition(centerCoordinate)
+  local centerX = centerCoordinate
   local stackWidth = self:canvasWidth()
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement
 
-  local outerEdgeScaled = centerX - (outerStackXMovement * self.mirror_x)
+  -- Calculate normal renderIndex 1 position (no offset)
+  local normalRenderIndex1X = centerX - outerStackXMovement
+  
+  -- Desired centered position
+  local stackWidthUnscaled = self.baseWidth + self.panelOriginXOffset
+  local desiredCenterX = (consts.CANVAS_WIDTH - stackWidthUnscaled * self.gfxScale) / 2
+  
+  -- Calculate and use centering offset instead of provided xOffset
+  return centerX - (outerStackXMovement) + (desiredCenterX - normalRenderIndex1X)
+end
 
-  local frameOriginEdgeScaled = outerEdgeScaled
+-- Positions the stack draw position for the given player
+function ClientStack:moveForRenderIndex(renderIndex)
+  self:setupForRenderIndex(renderIndex)
+  
+  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local stackWidth = self:canvasWidth()
+  local innerStackXMovement = 100
+  local outerStackXMovement = stackWidth + innerStackXMovement
+  local outerNonScaled = centerX - (outerStackXMovement * self.mirror_x)
+
+  local frameOriginNonScaled = outerNonScaled
   if self.mirror_x == -1 then
-    frameOriginEdgeScaled = outerEdgeScaled - stackWidth
+    frameOriginNonScaled = outerNonScaled - stackWidth
   end
+  
+  self:moveToPosition(frameOriginNonScaled, self.baseWidth + self.panelOriginXOffset)
+end
 
-  self:moveToPosition(frameOriginEdgeScaled, self.baseWidth + self.panelOriginXOffset)
-  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerEdgeScaled / self.gfxScale) -- The outer X value of the frame
-
-  self:assignAssets(GAME.theme:getIngameAssetPack(self.renderIndex))
+-- Positions the stack centered on screen (for puzzle mode)
+function ClientStack:moveToCenterPosition()
+  local centerX = (GAME.globalCanvas:getWidth() / 2)
+  local outerNonScaled = self:calculateHorizontallyCenteredPosition(centerX)
+  
+  self:moveToPosition(outerNonScaled, self.baseWidth + self.panelOriginXOffset)
 end
 
 ---@param x integer in screen coordinates
@@ -262,7 +298,9 @@ function ClientStack:moveToPosition(x, y)
   self.frameOriginY = y / self.gfxScale
   self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
   self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
-  self.origin_x = x / self.gfxScale
+  local stackWidth = self.mirror_x == -1 and self:canvasWidth() or 0
+  local outerNonScaled = x + stackWidth
+  self.origin_x = (self.panelOriginXOffset * self.mirror_x) + (outerNonScaled / self.gfxScale)
 end
 
 -- to be used in conjunction with resetDrawArea
@@ -473,6 +511,7 @@ function ClientStack:assignAssets(assetPack)
 end
 
 function ClientStack:deinit()
+  ModController:releaseModsFor(self)
   GraphicsUtil:releaseQuad(self.healthQuad)
   GraphicsUtil:releaseQuad(self.multi_prestopQuad)
   GraphicsUtil:releaseQuad(self.multi_stopQuad)

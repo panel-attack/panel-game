@@ -144,8 +144,10 @@ function PuzzleSource:createPanels(panelBuffer, stack)
       panels[row][column] = panel
 
       local color = string.sub(rowString, column, column)
-      if not garbageStartRow and tonumber(color) then
-        panel.color = tonumber(color)
+      local numericColor = tonumber(color)
+      if not garbageStartRow and numericColor ~= nil then
+        ---@cast numericColor integer
+        panel.color = numericColor
       else
         -- start of a garbage block
         if color == "]" or color == "}" then

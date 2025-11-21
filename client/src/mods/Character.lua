@@ -27,12 +27,15 @@ local chainStyle = {classic = 0, per_chain = 1}
 ---@enum ComboStyle
 local comboStyle = {classic = 0, per_combo = 1}
 
+---@alias TelegraphImageRow table<integer, love.Texture?>
+---@alias TelegraphImageMap table<integer|string, TelegraphImageRow | love.Texture?>
+
 ---@class Character:Mod
 ---@field display_name string Name for display in selection menus
 ---@field stage string? Id of a stage for super select
 ---@field panels string? Id of a panel set for super select
 ---@field images table<string, love.Texture> graphical assets of the character
----@field telegraph_garbage_images userdata[][] graphical assets for telegraph display
+---@field telegraph_garbage_images TelegraphImageMap graphical assets for telegraph display
 ---@field sounds table<string, table<integer, SfxGroup> | SfxGroup> sound effect assets of the character
 ---@field musics table<string, Music> music assets of the character
 ---@field hasMusic boolean? if the character has any music
@@ -332,7 +335,7 @@ function Character.graphics_init(self, full, yields)
       coroutine.yield()
     end
   end
-  if full then
+  if full and not self:isBundle() then
     self.garbagePrerenders = {}
 
     for width = 1, 6 do
@@ -389,26 +392,35 @@ end
 
 -- bundles without stage icon display up to 4 icons of their substages
 function Character:createBundleIcon()
-  local canvas = love.graphics.newCanvas(2 * 168, 2 * 168)
-  canvas:renderTo(function()
-    for i, subCharacterId in ipairs(self.subIds) do
-      -- only draw up to 4 and only draw sub mods that are actually there unless there are none
-      if i <= 4 and (characters[subCharacterId] or (allCharacters[subCharacterId] and #self:getSubMods() == 0)) then
-        local character = allCharacters[subCharacterId]
-        local x = 0
-        local y = 0
-        if i % 2 == 0 then
-          x = 168
+  local firstCharacter = allCharacters[self.subIds[1]]
+  assert(firstCharacter ~= nil, "Expected a valid character in sub IDs")
+  local filterMin, filterMag = firstCharacter.images.icon:getFilter()
+  local image = GraphicsUtil.renderToTexture(
+    2 * 168,
+    2 * 168,
+    function()
+      for i, subCharacterId in ipairs(self.subIds) do
+        -- only draw up to 4 and only draw sub mods that are actually there unless there are none
+        if i <= 4 and (characters[subCharacterId] or (allCharacters[subCharacterId] and #self:getSubMods() == 0)) then
+          local character = allCharacters[subCharacterId]
+          local x = 0
+          local y = 0
+          if i % 2 == 0 then
+            x = 168
+          end
+          if i > 2 then
+            y = 168
+          end
+          local width, height = character.images.icon:getDimensions()
+          love.graphics.draw(character.images.icon, x, y, 0, 168 / width, 168 / height)
         end
-        if i > 2 then
-          y = 168
-        end
-        local width, height = character.images.icon:getDimensions()
-        love.graphics.draw(character.images.icon, x, y, 0, 168 / width, 168 / height)
       end
-    end
-  end)
-  return canvas
+    end,
+    GAME:newCanvasSnappedScale(),
+    filterMin,
+    filterMag
+  )
+  return image
 end
 
 function Character.graphics_uninit(self)
@@ -578,12 +590,23 @@ function Character:createGarbageTexture(width, height)
   local relativeScale = self.images.pop:getWidth() / 16
   -- create all canvases as if we were working with the 360x240 resolution but use the canvas dpi scale to use the real resolution
   -- that makes it easy to scale later as everything can be treated the same while love handles the dpi scale resolution for us
-  local canvas = love.graphics.newCanvas(width * 16, height * 16, {dpiscale = self.images.pop:getDPIScale() * relativeScale})
-  canvas:renderTo(function()
-    self:__drawGarbage(width, height)
-  end)
+  local dpiscale = self.images.pop:getDPIScale() * relativeScale
 
-  return canvas
+  -- Use the same filter as the garbage images so that upscaling looks right for pixel art
+  local filterMin, filterMag = self.images.pop:getFilter()
+
+  local image = GraphicsUtil.renderToTexture(
+    width * 16,
+    height * 16,
+    function()
+      self:__drawGarbage(width, height)
+    end,
+    dpiscale,
+    filterMin,
+    filterMag
+  )
+
+  return image
 end
 
 --- returns an existing prerender or if there is none, creates one and caches it for reuse
@@ -594,30 +617,9 @@ function Character:getGarbageTexture(width, height)
   if not self.garbagePrerenders[width] then
     self.garbagePrerenders[width] = {}
   end
-  if height > 29 then
-    -- let's not kill orangetriangle's VRAM upon doing a x9999
-    -- any chain where the face is situated above row 12 is going to look the same so there is no need to render it accurately
-    -- just use the block with the corresponding odd/even line count so the fillers are arranged correctly
-    local remainder = height % 2
-    height = 28 + remainder
-  end
 
   if not self.garbagePrerenders[width][height] then
-    -- canvases are affected by scissors and transformations so we need to make sure to suspend them
-    local sx, sy, w, h = love.graphics.getScissor()
-    if sx then
-      love.graphics.setScissor()
-    end
-    love.graphics.push("transform")
-    love.graphics.origin()
-
     self.garbagePrerenders[width][height] = self:createGarbageTexture(width, height)
-
-    -- and then reapply them
-    love.graphics.pop()
-    if sx then
-      love.graphics.setScissor(sx, sy, w, h)
-    end
   end
 
   return self.garbagePrerenders[width][height]
@@ -627,9 +629,8 @@ end
 ---@param y integer top offset
 ---@param width integer width in panels
 ---@param height integer height in panels
----@param scale number?
+---@param scale number
 function Character:drawGarbage(x, y, width, height, scale)
-  scale = scale or 1
   local texture = self:getGarbageTexture(width, height)
   love.graphics.push("transform")
   love.graphics.scale(scale)
@@ -644,9 +645,28 @@ end
 ---@param width integer width in panels
 ---@param height integer height in panels
 function Character:__drawGarbage(width, height)
+
+  -- Garbage has a left, middle, and right
+  -- the corners have a height of 9 pixels but the top and left only have a height of 6 pixels
+  -- filler and "face" images fill in the center portion
+  -- Attempt at pixel art to remind about the corner weirdness
+  --
+  --          xxxxxxx--------------------------------------xxxxxxx
+  --          xxxxxxx--------------------------------------xxxxxxx
+  --          xxxxxxx...............+++++++++..............xxxxxxx
+  --          @@@@@@@...............+++++++++..............@@@@@@@
+  --          @@@@@@@...............+++++++++..............@@@@@@@
+  --          @@@@@@@...............+++++++++..............@@@@@@@
+  --          xxxxxxx...............+++++++++..............xxxxxxx
+  --          xxxxxxx--------------------------------------xxxxxxx
+  --          xxxxxxx--------------------------------------xxxxxxx
+
   local imgs = self.images
   local panelSize = 16
   local halfPanelSize = panelSize / 2
+  local topBottomHeight = 2
+  local cornerHeight = 3
+  local cornerWidth = halfPanelSize
   local garbageWidth, garbageHeight = width, height
   local leftX = 0
   -- the x offset of the rightmost panel, , not the right border of the garbage
@@ -654,8 +674,6 @@ function Character:__drawGarbage(width, height)
   local topY = 0
   -- the y offset of the bottom most panel, not the bottom border of the garbage
   local bottomY = (garbageHeight - 1) * panelSize
-  local cornerWidth = halfPanelSize
-  local cornerHeight = 3
   local useFiller1 = ((garbageHeight - (garbageHeight % 2)) / 2) % 2 == 0
   local filler_w, filler_h = imgs.filler1:getDimensions()
   for i = 0, garbageHeight - 1 do
@@ -681,19 +699,19 @@ function Character:__drawGarbage(width, height)
     GraphicsUtil.draw(face, rightX - halfPanelSize * (garbageWidth - 1), topY + panelSize * ((garbageHeight - 1) / 2), 0, panelSize / face_w, panelSize / face_h)
   else
     local face_w, face_h = imgs.doubleface:getDimensions()
-    GraphicsUtil.draw(imgs.doubleface, rightX - halfPanelSize * (garbageWidth - 1), topY + panelSize * ((garbageHeight - 2) / 2), 0, panelSize / face_w, 32 / face_h)
+    GraphicsUtil.draw(imgs.doubleface, rightX - halfPanelSize * (garbageWidth - 1), topY + panelSize * ((garbageHeight - 2) / 2), 0, panelSize / face_w, 2 * panelSize / face_h)
   end
   local corner_w, corner_h = imgs.topleft:getDimensions()
   local lr_w, lr_h = imgs.left:getDimensions()
   local topbottom_w, topbottom_h = imgs.top:getDimensions()
-  GraphicsUtil.draw(imgs.left, leftX, topY + cornerHeight, 0, halfPanelSize / lr_w, (1 / lr_h) * (garbageHeight * panelSize - (cornerHeight*2)))
+  GraphicsUtil.draw( imgs.left,                  leftX, topY + cornerHeight, 0, halfPanelSize / lr_w, (1 / lr_h) * (garbageHeight * panelSize - (cornerHeight*2)))
   GraphicsUtil.draw(imgs.right, rightX + halfPanelSize, topY + cornerHeight, 0, halfPanelSize / lr_w, (1 / lr_h) * (garbageHeight * panelSize - (cornerHeight*2)))
-  GraphicsUtil.draw(imgs.top, leftX + cornerWidth, topY, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), 2 / topbottom_h)
-  GraphicsUtil.draw(imgs.bot, leftX + cornerWidth, bottomY + panelSize - 2, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), 2 / topbottom_h)
-  GraphicsUtil.draw(imgs.topleft, leftX, topY, 0, cornerWidth / corner_w, cornerHeight / corner_h)
+  GraphicsUtil.draw(imgs.top, leftX + cornerWidth,                                  topY, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), topBottomHeight / topbottom_h)
+  GraphicsUtil.draw(imgs.bot, leftX + cornerWidth, bottomY + panelSize - topBottomHeight, 0, (1 / topbottom_w) * (garbageWidth * panelSize - (cornerWidth*2)), topBottomHeight / topbottom_h)
+  GraphicsUtil.draw(imgs.topleft,                   leftX, topY, 0, cornerWidth / corner_w, cornerHeight / corner_h)
   GraphicsUtil.draw(imgs.topright, rightX + halfPanelSize, topY, 0, cornerWidth / corner_w, cornerHeight / corner_h)
-  GraphicsUtil.draw(imgs.botleft, leftX, bottomY + panelSize - 3, 0, cornerWidth / corner_w, cornerHeight / corner_h)
-  GraphicsUtil.draw(imgs.botright, rightX + halfPanelSize, bottomY + panelSize - 3, 0, cornerWidth / corner_w, cornerHeight / corner_h)
+  GraphicsUtil.draw(imgs.botleft,                   leftX, bottomY + panelSize - cornerHeight, 0, cornerWidth / corner_w, cornerHeight / corner_h)
+  GraphicsUtil.draw(imgs.botright, rightX + halfPanelSize, bottomY + panelSize - cornerHeight, 0, cornerWidth / corner_w, cornerHeight / corner_h)
 end
 
 function Character.reassignLegacySfx(self)

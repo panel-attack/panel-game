@@ -1,6 +1,7 @@
 local logger = require("common.lib.logger")
 local consts = require("common.engine.consts")
 local class = require("common.lib.class")
+local JsonSafePrecision = require("common.data.JsonSafePrecision")
 
 ---@class HealthSettings
 ---@field framesToppedOutToLose number Starting value of framesToppedOutToLose
@@ -24,7 +25,7 @@ local Health = class(
   function(self, framesToppedOutToLose, lineClearGPM, height, riseSpeed)
     self.framesToppedOutToLose = framesToppedOutToLose
     self.maxSecondsToppedOutToLose = framesToppedOutToLose
-    self.lineClearRate = lineClearGPM / 60
+    self.lineClearRate = JsonSafePrecision.toSafePrecision(lineClearGPM / 60)
     self.currentLines = 0
     self.height = height
     self.lastWasFourCombo = false
@@ -139,7 +140,7 @@ end
 function Health:getSettings()
   return {
     framesToppedOutToLose = self.maxSecondsToppedOutToLose,
-    lineClearGPM = self.lineClearRate * 60,
+    lineClearGPM = JsonSafePrecision.toSafePrecision(self.lineClearRate * 60),
     lineHeightToKill = self.height,
     riseSpeed = self.initialRiseSpeed
   }

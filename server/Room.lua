@@ -21,7 +21,7 @@ local ServerGame = require("server.Game")
 ---@field ratings table[] ratings by player number
 ---@field matchCount integer
 ---@field game ServerGame?
----@field gameMode GameMode
+---@field gameMode table -- only the data portion of the game mode
 ---@field ranked boolean if the next match is anticipated to be ranked 
 ---@field rankedReasons string[]
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
@@ -29,7 +29,7 @@ local Room = class(
 ---@param self Room
 ---@param roomNumber integer
 ---@param players ServerPlayer[]
----@param gameMode GameMode
+---@param gameMode table -- only the data portion of the game mode
 ---@param leaderboard Leaderboard?
 function(self, roomNumber, players, gameMode, leaderboard)
   self.players = players
@@ -192,7 +192,7 @@ function Room:remove_spectator(spectator)
       self.spectators[i].state = "lobby"
       logger.debug(spectator.name .. " left " .. self.name .. " as a spectator")
       table.remove(self.spectators, i)
-      spectator:removeFromRoom(self, spectator.name .. " left")
+      spectator:removeFromRoom(self)
       lobbyChanged = true
       break
     end
