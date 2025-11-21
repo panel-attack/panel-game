@@ -331,7 +331,11 @@ You can use the Ctrl+Shift+Alt+C shortcut to reload character graphics in the ga
 
 ### Garbage assets
 
-See https://cdn.discordapp.com/attachments/417706389813592068/874106744392007680/garbage_ref.png for an arrangement overview.
+Before creating garbage, take a look at the arrangement overview for the garbage files.
+
+![Arrangement overview](./images/garbageReference.png)
+
+These 10 sprites build a unit. Using different sizes and resolutions within these 10 sprites may lead to unexpected results. It is generally recommended to provide the full set and not make use of the built-in fallback textures.
 
 #### Filler sprites
 
@@ -358,7 +362,7 @@ This will get drawn on top of the filler sprites.
 
 ##### face
 
-Sprite for the center of garbage pieces of odd-numbered height (1, 3, ...)  
+Sprite for the center of garbage pieces of odd-numbered height (1, 3, ...), or all of them if face2 is not provided  
 Aspect ratio: 1:1 (square)  
 Recommended size: 96x96px
 

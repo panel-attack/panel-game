@@ -586,14 +586,14 @@ end
 ---@param height integer height in panels
 ---@return love.Texture
 function Character:createGarbageTexture(width, height)
-  -- pop and flash are verifiably "panel sized", technically filler and face should work too
-  local relativeScale = self.images.pop:getWidth() / 16
+  -- filler and face are the "panel sized" counterparts in the garbage so they are valid sprites to determine relative size
+  local relativeScale = self.images.face:getWidth() / 16
   -- create all canvases as if we were working with the 360x240 resolution but use the canvas dpi scale to use the real resolution
   -- that makes it easy to scale later as everything can be treated the same while love handles the dpi scale resolution for us
-  local dpiscale = self.images.pop:getDPIScale() * relativeScale
+  local dpiscale = self.images.face:getDPIScale() * relativeScale
 
   -- Use the same filter as the garbage images so that upscaling looks right for pixel art
-  local filterMin, filterMag = self.images.pop:getFilter()
+  local filterMin, filterMag = self.images.face:getFilter()
 
   local image = GraphicsUtil.renderToTexture(
     width * 16,
