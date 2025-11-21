@@ -96,10 +96,6 @@ end
 function ClientMatch.createFromReplay(replay, players)
   local engine = Match.createFromReplay(replay)
 
-  if config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 then
-    engine:enableDebugDesync(true, config.debug_vsFramesBehind)
-  end
-
   -- we only need to reconstruct the players from the metadata
   -- unless we already got them passed in
   players = players or {}
@@ -152,10 +148,6 @@ end
 
 function ClientMatch:setupFromGameMode()
   self.engine = Match(self.panelSource, self.matchRules)
-
-  if config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 then
-    self.engine:enableDebugDesync(true, config.debug_vsFramesBehind)
-  end
 
   self.stacks = {}
 

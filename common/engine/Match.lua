@@ -644,19 +644,6 @@ function Match:shouldRun(stack, runsSoFar)
   return stack:shouldRun(runsSoFar)
 end
 
----@param enable boolean? true if the second stack should fall behind, false if they should stay in sync as much as possible
----@param value integer? by how many frames the second stack should be behind; defaults to 120 if enabled<br>
---- careful with setting this too high when using this with replays: if stack 1 is the losing one it can happen that they never receive the garbage that topped them out
---- because the second stack does not simulate far enough to send it, causing the replay to get stuck
-function Match:enableDebugDesync(enable, value)
-  self.debugDesync = enable
-  if not self.debugDesync then
-    self.debugDesyncValue = nil
-  else
-    self.debugDesyncValue = value or 120
-  end
-end
-
 function Match:setCountdown(doCountdown)
   self.doCountdown = doCountdown
   self.rules.doCountdown = doCountdown

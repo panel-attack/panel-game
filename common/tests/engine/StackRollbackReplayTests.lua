@@ -198,7 +198,7 @@ end
 
 local function liveDesync()
   local match = StackReplayTestingUtils:setupReplayWithPath(testReplayFolder .. "v046-2023-01-28-02-39-32-JamBox-L10-vs-Galadic97-L10-Casual-P1wins.txt")
-  match:enableDebugDesync(true, 120)
+  match.debug.vsFramesBehind = 120
 
   StackReplayTestingUtils:fullySimulateMatch(match)
 
