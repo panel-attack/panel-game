@@ -90,11 +90,13 @@ end
 
 ---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.simulateActivity(stack)
+  ---@diagnostic disable-next-line: duplicate-set-field
   stack.hasActivePanels = function() return true end
 end
 
 ---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.simulateInactivity(stack)
+  ---@diagnostic disable-next-line: duplicate-set-field
   stack.hasActivePanels = function() return false end
 end
 
