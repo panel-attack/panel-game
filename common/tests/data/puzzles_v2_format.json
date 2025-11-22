@@ -1,0 +1,51 @@
+{
+  "Version": 2,
+  "Puzzle Sets": [
+    {
+      "Set Name": "Classic Puzzles",
+      "Puzzles": [
+        {
+          "Puzzle Type": "moves",
+          "Do Countdown": false,
+          "Moves": 1,
+          "Stack": "010110"
+        },
+        {
+          "Puzzle Type": "moves",
+          "Do Countdown": false,
+          "Moves": 2,
+          "Stack": "020220"
+        },
+        {
+          "Puzzle Type": "moves",
+          "Do Countdown": true,
+          "Moves": 3,
+          "Stack": "030330",
+          "Stop": 60,
+          "Shake": 30
+        }
+      ]
+    },
+    {
+      "Set Name": "Advanced Puzzles",
+      "Puzzles": [
+        {
+          "Puzzle Type": "clear",
+          "Do Countdown": false,
+          "Moves": 0,
+          "Stack": "111222333444555666",
+          "Stop": 120,
+          "Shake": 0
+        },
+        {
+          "Puzzle Type": "chain",
+          "Do Countdown": true,
+          "Moves": 0,
+          "Stack": "654321654321654321",
+          "Stop": null,
+          "Shake": null
+        }
+      ]
+    }
+  ]
+}
