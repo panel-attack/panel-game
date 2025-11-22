@@ -44,7 +44,6 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   match:start()
 
   -- make some space for garbage to fall
----@diagnostic disable-next-line: param-type-mismatch
   GarbageQueueTestingUtils.reduceRowsTo(match.stacks[1], 0)
 
   return match
@@ -63,7 +62,7 @@ function GarbageQueueTestingUtils.runToFrame(match, frame)
 end
 
 -- clears panels until only "count" rows are left
----@param stack Stack
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.reduceRowsTo(stack, count)
   for row = #stack.panels, count + 1 do
     for col = 1, stack.width do
@@ -73,13 +72,14 @@ function GarbageQueueTestingUtils.reduceRowsTo(stack, count)
 end
 
 -- fill up panels with non-matching panels until "count" rows are filled
----@param stack Stack
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.fillRowsTo(stack, count)
+  ---@cast stack Stack
   for row = 1, count do
     if not stack.panels[row] then
       stack.panels[row] = {}
       for col = 1, stack.width do
-        stack.createPanelAt(row, col)
+        stack:createPanelAt(row, col)
       end
     end
     for col = 1, stack.width do
@@ -88,17 +88,17 @@ function GarbageQueueTestingUtils.fillRowsTo(stack, count)
   end
 end
 
----@param stack Stack
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.simulateActivity(stack)
   stack.hasActivePanels = function() return true end
 end
 
----@param stack Stack
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.simulateInactivity(stack)
   stack.hasActivePanels = function() return false end
 end
 
----@param stack Stack
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.sendGarbage(stack, width, height, chain, metal, time)
   -- -1 cause this will get called after the frame ended instead of during the frame
   local frameEarned = time or stack.stopWatch

@@ -263,8 +263,10 @@ function PuzzleSet.loadV3(puzzleSetData)
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
   for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
+    ---@type string
+    local puzzleTypeValue = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE]
     local args = {
-      puzzleType = string.lower(puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE]),
+      puzzleType = string.lower(puzzleTypeValue),
       moves = puzzleData[Puzzle.PUZZLE_PROPERTY.MOVES],
       stack = puzzleData[Puzzle.PUZZLE_PROPERTY.STACK],
       stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],

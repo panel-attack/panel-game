@@ -324,6 +324,7 @@ end
 -- Helper function to convert a single puzzle to save data format
 ---@return table
 function Puzzle:getSaveData()
+  ---@type table<string, any>
   local puzzleData = {
     [Puzzle.PUZZLE_PROPERTY.TYPE] = self.puzzleType,
     [Puzzle.PUZZLE_PROPERTY.START_TIMING] = self.startTiming,
