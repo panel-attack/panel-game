@@ -109,10 +109,6 @@ local function canMatch(panel)
 end
 
 function Stack:checkMatches()
-  if self.do_countdown then
-    return
-  end
-
   prof.push("Stack:checkMatches")
   --local reference = self:getMatchingPanels2()
   local matchingPanels = self:getMatchingPanels()
@@ -468,7 +464,7 @@ function Stack:getConnectedGarbagePanels2(matchingPanels)
 
   for row = 1, #self.panels do
     for col = 1, self.width do
-      panel = self.panels[row][col]
+      local panel = self.panels[row][col]
       if panel.isGarbage and panel.state == "normal" and not idGarbage[panel.garbageId]
       -- we only want to match garbage that is either fully or partially on-screen OR has been on-screen before
       -- example: chain garbage several rows high lands in row 12; by visuals/shake it is clear that it is more than 1 row high
@@ -758,14 +754,14 @@ function Stack:convertGarbagePanels(isChain)
 end
 
 function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
-  logger.debug("P" .. self.which .. "@" .. self.game_stopwatch .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
+  logger.debug("P" .. self.which .. "@" .. self.stopWatch .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
   for i = 3, metalCount do
     self.outgoingGarbage:push({
       width = 6,
       height = 1,
       isMetal = true,
       isChain = false,
-      frameEarned = self.game_stopwatch,
+      frameEarned = self.stopWatch,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -779,7 +775,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       height = 1,
       isMetal = false,
       isChain = false,
-      frameEarned = self.game_stopwatch,
+      frameEarned = self.stopWatch,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -791,7 +787,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       -- If we did a combo also, we need to enqueue the attack graphic one row higher cause thats where the chain card will be.
       rowOffset = 1
     end
-    self.outgoingGarbage:addChainLink(self.game_stopwatch, coordinate.column, coordinate.row +  rowOffset)
+    self.outgoingGarbage:addChainLink(self.stopWatch, coordinate.column, coordinate.row +  rowOffset)
   end
 end
 

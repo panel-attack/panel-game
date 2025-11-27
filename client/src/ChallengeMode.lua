@@ -196,8 +196,8 @@ function ChallengeMode:onMatchEnded(match)
   -- so always record the result, even if it may have been an abort
   local gameTime = 0
   local stackEngine = match.stacks[1].engine
-  if stackEngine ~= nil and stackEngine.game_stopwatch then
-    gameTime = stackEngine.game_stopwatch
+  if stackEngine ~= nil and stackEngine.stopWatch then
+    gameTime = stackEngine.stopWatch
   end
   self:recordStageResult(winners, gameTime)
 

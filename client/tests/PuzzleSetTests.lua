@@ -200,6 +200,25 @@ function PuzzleSetTests.testExactJSONFormatting()
   assert(prettified == expected, "JSON formatting should match exactly")
 end
 
+function PuzzleSetTests.testLoadV3WithoutStartTiming()
+  -- Test that loading a v3 puzzle without StartTiming works
+  local puzzleSetData = {
+    ["Set Name"] = "Test Set",
+    ["Description"] = "Test description",
+    ["Puzzles"] = {
+      {
+        ["Puzzle Type"] = "moves",
+        ["Moves"] = 5,
+        ["Stack"] = "1254216999999952"
+      }
+    }
+  }
+
+  local result = PuzzleSet.loadV3(puzzleSetData)
+  assert(result ~= nil, "Should have loaded puzzle set")
+  assert(#result.puzzles == 1, "Should have one puzzle")
+end
+
 -- Run the tests
 PuzzleSetTests.updatePuzzleValid()
 PuzzleSetTests.generateSaveDataValid()
@@ -208,5 +227,6 @@ PuzzleSetTests.generateSaveDataWithOptionalFields()
 PuzzleSetTests.testJSONValidityRequirement1()
 PuzzleSetTests.testUnchangedPuzzlePreservationRequirement3()
 PuzzleSetTests.testExactJSONFormatting()
+PuzzleSetTests.testLoadV3WithoutStartTiming()
 
 return PuzzleSetTests

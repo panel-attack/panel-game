@@ -7,7 +7,7 @@ local TestUtils = require("common.tests.TestUtils")
 
 local function puzzleTest()
   -- to stop rising
-  local puzzle = Puzzle({puzzleType = "moves", moves = 1, stack = "011010"})
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.moves, moves = 1, stack = "011010"})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
   ---@cast stack Stack
@@ -27,7 +27,7 @@ end
 puzzleTest()
 
 local function clearPuzzleTest()
-  local puzzle = Puzzle({puzzleType = "clear", stack = "[============================][====]246260[====]600016514213466313451511124242", stopTime = 60})
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[============================][====]246260[====]600016514213466313451511124242", stopTime = 60})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
   ---@cast stack Stack
@@ -141,7 +141,7 @@ testShakeFrames()
 
 
 local function swapStalling1Test1()
-  local puzzle = Puzzle({puzzleType = "clear", stack = "[======================][====]246260[====]600016514213461336451511124242"})
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[======================][====]246260[====]600016514213461336451511124242"})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
   ---@cast stack Stack

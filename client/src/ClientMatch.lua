@@ -539,8 +539,8 @@ function ClientMatch:drawTimer()
   -- Draw the timer for time attack
   local frames = 0
   local stack = self.stacks[1]
-  if stack ~= nil and stack.engine.game_stopwatch ~= nil and tonumber(stack.engine.game_stopwatch) ~= nil then
-    frames = stack.engine.game_stopwatch
+  if stack ~= nil and stack.engine.stopWatch ~= nil and tonumber(stack.engine.stopWatch) ~= nil then
+    frames = stack.engine.stopWatch
   end
 
   if self.engine.timeLimit then

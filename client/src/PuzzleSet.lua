@@ -174,8 +174,8 @@ function PuzzleSet.loadV1(setName, puzzleSetData)
   for _, puzzleData in pairs(puzzleSetData) do
     if type(puzzleData) == "table" and #puzzleData >= 2 and type(puzzleData[1]) == "string" and type(puzzleData[2]) == "number" then
       local args = {
-        puzzleType = "moves",
-        startTiming = "countdown",
+        puzzleType = Puzzle.PUZZLE_TYPES.moves,
+        startTiming = Puzzle.START_TIMINGS.countdown,
         moves = puzzleData[2],
         stack = puzzleData[1]
       }
@@ -198,7 +198,7 @@ function PuzzleSet.loadV2(puzzleSetData)
   for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES]) do
     local args = {
       puzzleType = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE],
-      startTiming = puzzleData["Do Countdown"] and "countdown" or "immediately",
+      startTiming = puzzleData["Do Countdown"] and Puzzle.START_TIMINGS.countdown or Puzzle.START_TIMINGS.immediately,
       moves = puzzleData[Puzzle.PUZZLE_PROPERTY.MOVES],
       stack = puzzleData[Puzzle.PUZZLE_PROPERTY.STACK],
       stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],
@@ -263,9 +263,10 @@ function PuzzleSet.loadV3(puzzleSetData)
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
   for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
+    ---@type string
+    local puzzleTypeValue = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE]
     local args = {
-      puzzleType = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE],
-      startTiming = puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING],
+      puzzleType = string.lower(puzzleTypeValue),
       moves = puzzleData[Puzzle.PUZZLE_PROPERTY.MOVES],
       stack = puzzleData[Puzzle.PUZZLE_PROPERTY.STACK],
       stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],
@@ -276,10 +277,18 @@ function PuzzleSet.loadV3(puzzleSetData)
       helpDescription = puzzleData[Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION]
     }
     if puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] then
-      args.cursorStartLeft = {
-        row = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT][Puzzle.CURSOR_PROPERTY.ROW], 
-        column = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT][Puzzle.CURSOR_PROPERTY.COLUMN]
-      }
+      args.cursorStartLeft = {row = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Row, column = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Column}
+    end
+    if puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] then
+      if puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "First Swap" then
+        args.startTiming = Puzzle.START_TIMINGS.firstSwap
+      elseif puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "First Input" then
+        args.startTiming = Puzzle.START_TIMINGS.firstInput
+      elseif puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "Countdown" then
+        args.startTiming = Puzzle.START_TIMINGS.countdown
+      elseif puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "Immediately" then
+        args.startTiming = Puzzle.START_TIMINGS.immediately
+      end
     end
 
     local puzzle = Puzzle(args)

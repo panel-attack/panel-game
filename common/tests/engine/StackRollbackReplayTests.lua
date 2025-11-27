@@ -196,6 +196,18 @@ local function rollbackFromDeath()
   assert(stack.game_over_clock == 652)
 end
 
+local function liveDesync()
+  local match = StackReplayTestingUtils:setupReplayWithPath(testReplayFolder .. "v046-2023-01-28-02-39-32-JamBox-L10-vs-Galadic97-L10-Casual-P1wins.txt")
+  match.debug.vsFramesBehind = 120
+
+  StackReplayTestingUtils:fullySimulateMatch(match)
+
+  assert(match.ended and not match.aborted)
+  assert(not match:isIrrecoverablyDesynced())
+  assert(match.stacks[1].rollbackCount == 5)
+  assert(match.gameOverClock == 2039)
+end
+
 logger.info("running rollbackFromDeath")
 rollbackFromDeath()
 
@@ -207,3 +219,6 @@ rollbackNotPastAttackTest()
 
 logger.info("running rollbackFullyPastAttack")
 rollbackFullyPastAttack()
+
+logger.info("running liveDesync1")
+liveDesync()

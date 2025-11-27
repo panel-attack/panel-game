@@ -356,7 +356,9 @@ function DebugSettings.setShowRuntimeGraph(value)
   DebugSettings.set("showRuntimeGraph", value)
 end
 
--- Sets the VS frames behind value
+--- Sets the VS frames behind value <br>
+--- Careful with setting this too high when using this with replays: if stack 1 is the losing one it can happen that they never receive the garbage that topped them out
+--- because the second stack does not simulate far enough to send it, causing the replay to get stuck
 ---@param value number
 function DebugSettings.setVSFramesBehind(value)
   DebugSettings.set("vsFramesBehind", value)

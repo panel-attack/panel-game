@@ -121,10 +121,10 @@ function Health:saveRollbackCopy()
   end
 end
 
-function Health:rollbackToFrame(frame)
-  local copy = self.rollbackCopies[frame]
+function Health:rollbackToFrame(clock)
+  local copy = self.rollbackCopies[clock]
 
-  for i = frame + 1, self.clock do
+  for i = clock + 1, self.clock do
     self.rollbackCopyPool:push(self.rollbackCopies[i])
     self.rollbackCopies[i] = nil
   end
@@ -133,7 +133,7 @@ function Health:rollbackToFrame(frame)
   self.currentLines = copy.currentLines
   self.framesToppedOutToLose = copy.framesToppedOutToLose
   self.lastWasFourCombo = copy.lastWasFourCombo
-  self.clock = frame
+  self.clock = clock
 end
 
 ---@return HealthSettings

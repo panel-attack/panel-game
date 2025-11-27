@@ -9,11 +9,11 @@ local MatchRules = require("common.data.MatchRules")
 ---@field is_local boolean effectively if the Stack is receiving its inputs via local input
 ---@field framesBehindArray integer[] Records how far behind the stack was at each match clock time
 ---@field framesBehind integer How far behind the stack is at the current Match clock time
----@field clock integer how many times run has been called
----@field game_stopwatch integer how many times the simulation has run
----@field game_stopwatch_running boolean if the stack is simulating during runs
+---@field clock integer how many times run has been called; this is equivalent to how many inputs have been processed;<br>This is the chief timer to measure synchronicity and the driver of rollback and inputs
+---@field stopWatch integer how many times the game physics have run; unlike a clock and just like a stopWatch this frame timer only runs when the simulation is running
+---@field stopWatchIsRunning boolean if the stack is running the game physics during runs
 ---@field game_over_clock integer What the clock time was when the Stack went game over
----@field do_countdown boolean if the stack is performing a countdown at the start of the match
+---@field do_countdown boolean if the stack is currently performing a countdown / will perform a countdown at the start of the match;<br> this is state, the value will change at the end of countdown
 ---@field countdown_timer boolean? ephemeral timer used for tracking countdown progress at the start of the game
 ---@field outgoingGarbage GarbageQueue
 ---@field incomingGarbage GarbageQueue
@@ -61,8 +61,8 @@ function(self, args)
   self.framesBehindArray = {}
   self.framesBehind = 0
   self.clock = 0
-  self.game_stopwatch = 0
-  self.game_stopwatch_running = true
+  self.stopWatch = 0
+  self.stopWatchIsRunning = true
   self.game_over_clock = -1 -- the exact clock frame the stack lost, -1 while alive
   Signal.turnIntoEmitter(self)
   self:createSignal("gameOver")
@@ -116,7 +116,7 @@ end
 ---@param doCountdown boolean
 function BaseStack:setCountdown(doCountdown)
   self.do_countdown = doCountdown
-  self.game_stopwatch_running = not self.do_countdown
+  self.stopWatchIsRunning = not self.do_countdown
 end
 
 ---@param maxRunsPerFrame integer
@@ -161,15 +161,15 @@ function BaseStack:saveForRollback()
   error("did not implement saveForRollback")
 end
 
----@param frame integer the frame to rollback to if possible
+---@param clock integer the frame to rollback to if possible
 ---@return boolean success if rolling back succeeded
-function BaseStack:rollbackToFrame(frame)
+function BaseStack:rollbackToFrame(clock)
   error("did not implement rollbackToFrame")
 end
 
----@param frame integer the frame to rewind to if possible
+---@param clock integer the frame to rewind to if possible
 ---@return boolean success if rewinding succeeded
-function BaseStack:rewindToFrame(frame)
+function BaseStack:rewindToFrame(clock)
   error("did not implement rewindToFrame")
 end
 

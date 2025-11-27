@@ -39,40 +39,50 @@ function SimulatedStack:addHealth(healthSettings)
 end
 
 function SimulatedStack:run()
-  if self.do_countdown and self.countdown_timer > 0 then
+  if self.stopWatchIsRunning then
+    self:runPhysics()
+  elseif self.do_countdown and self.countdown_timer > 0 then
     if self.healthEngine then
       self.healthEngine.clock = self.clock
     end
     if self.clock >= consts.COUNTDOWN_START then
       self.countdown_timer = self.countdown_timer - 1
     end
+    if self.countdown_timer == 0 then
+      self.do_countdown = nil
+      self.stopWatchIsRunning = true
+    end
   else
-    if self.attackEngine then
-      self.attackEngine:run()
-    end
-
-    self.outgoingGarbage:processStagedGarbageForClock(self.game_stopwatch)
-
-    if self.healthEngine then
-      -- perform the equivalent of queued garbage being dropped
-      -- except a little quicker than on real stacks
-      for i = #self.incomingGarbage.stagedGarbage, 1, -1 do
-        self.healthEngine:receiveGarbage(self.clock, self.incomingGarbage:pop())
-      end
-
-      self.health = self.healthEngine:run()
-    end
-
-    if self.health <= 0 then
-      self:setGameOver()
-    end
-
-    self.game_stopwatch = self.game_stopwatch + 1
+    error("stopWatch of SimulatedStack is not running but neither is the countdown")
   end
 
   self.clock = self.clock + 1
 
   self:emitSignal("finishedRun")
+end
+
+function SimulatedStack:runPhysics()
+  if self.attackEngine then
+    self.attackEngine:run()
+  end
+
+  self.outgoingGarbage:processStagedGarbageForClock(self.stopWatch)
+
+  if self.healthEngine then
+    -- perform the equivalent of queued garbage being dropped
+    -- except a little quicker than on real stacks
+    for i = #self.incomingGarbage.stagedGarbage, 1, -1 do
+      self.healthEngine:receiveGarbage(self.clock, self.incomingGarbage:pop())
+    end
+
+    self.health = self.healthEngine:run()
+  end
+
+  if self.health <= 0 then
+    self:setGameOver()
+  end
+
+  self.stopWatch = self.stopWatch + 1
 end
 
 function SimulatedStack:setGameOver()
@@ -121,18 +131,18 @@ function SimulatedStack:saveForRollback()
     copy = {}
   end
 
-  self.incomingGarbage:saveForRollback(self.game_stopwatch)
+  self.incomingGarbage:saveForRollback(self.stopWatch)
 
   if self.healthEngine then
     self.healthEngine:saveRollbackCopy()
   end
 
   if self.attackEngine then
-    self.attackEngine:saveForRollback(self.game_stopwatch)
+    self.attackEngine:saveForRollback(self.stopWatch)
   end
 
   copy.health = self.health
-  copy.game_stopwatch = self.game_stopwatch
+  copy.stopWatch = self.stopWatch
   copy.game_over_clock = self.game_over_clock
 
   self.rollbackCopies[self.clock] = copy
@@ -144,11 +154,11 @@ function SimulatedStack:saveForRollback()
   end
 end
 
-local function internalRollbackToFrame(stack, frame)
-  local copy = stack.rollbackCopies[frame]
+local function internalRollbackToFrame(stack, clock)
+  local copy = stack.rollbackCopies[clock]
 
-  if copy and frame < stack.clock then
-    for f = frame, stack.clock do
+  if copy and clock < stack.clock then
+    for f = clock, stack.clock do
       if stack.rollbackCopies[f] then
         stack.rollbackCopyPool:push(stack.rollbackCopies[f])
         stack.rollbackCopies[f] = nil
@@ -156,13 +166,13 @@ local function internalRollbackToFrame(stack, frame)
     end
 
     if stack.healthEngine then
-      stack.healthEngine:rollbackToFrame(frame)
+      stack.healthEngine:rollbackToFrame(clock)
       stack.health = stack.healthEngine.framesToppedOutToLose
     else
       stack.health = copy.health
     end
 
-    stack.game_stopwatch = copy.game_stopwatch
+    stack.stopWatch = copy.stopWatch
     stack.game_over_clock = copy.game_over_clock
 
     return true
@@ -171,33 +181,33 @@ local function internalRollbackToFrame(stack, frame)
   return false
 end
 
-function SimulatedStack:rollbackToFrame(frame)
-  if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rollbackToFrame(self.game_stopwatch)
+function SimulatedStack:rollbackToFrame(clock)
+  if internalRollbackToFrame(self, clock) then
+    self.incomingGarbage:rollbackToFrame(self.stopWatch)
 
     if self.attackEngine then
-      self.attackEngine:rollbackToFrame(self.game_stopwatch)
+      self.attackEngine:rollbackToFrame(self.stopWatch)
     end
 
     self.lastRollbackFrame = self.clock
-    self.clock = frame
+    self.clock = clock
     return true
   end
 
   return false
 end
 
-function SimulatedStack:rewindToFrame(frame)
-  if internalRollbackToFrame(self, frame) then
-    self.incomingGarbage:rewindToFrame(self.game_stopwatch)
+function SimulatedStack:rewindToFrame(clock)
+  if internalRollbackToFrame(self, clock) then
+    self.incomingGarbage:rewindToFrame(self.stopWatch)
 
     if self.attackEngine then
-      self.attackEngine:rewindToFrame(self.game_stopwatch)
+      self.attackEngine:rewindToFrame(self.stopWatch)
     end
 
-     -- we did roll back but we want to stay here
-     self.lastRollbackFrame = frame
-    self.clock = frame
+    -- we did roll back but we want to stay here
+    self.lastRollbackFrame = clock
+    self.clock = clock
     return true
   end
 

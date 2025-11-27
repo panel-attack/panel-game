@@ -10,8 +10,6 @@ local system = require("client.src.system")
 ---@field row integer
 ---@field column integer
 
----@alias PuzzleType ("moves" | "chain" | "clear")
-
 ---@class PuzzleArgs
 ---@field puzzleType PuzzleType
 ---@field stack string representation of the panel colors, the last character is the bottom right panel
@@ -49,12 +47,12 @@ Puzzle = class(
 ---@param self Puzzle
 ---@param puzzleArgs GarbagePuzzleArgs
   function(self, puzzleArgs)
-    self.puzzleType = puzzleArgs.puzzleType or "moves"
+    self.puzzleType = puzzleArgs.puzzleType or Puzzle.PUZZLE_TYPES.moves
     self.cursorStartLeft = puzzleArgs.cursorStartLeft
     if puzzleArgs.startTiming then
       self.startTiming = puzzleArgs.startTiming
     else
-      if self.puzzleType == "clear" or self.puzzleType == "chain" then
+      if self.puzzleType == Puzzle.PUZZLE_TYPES.clear or self.puzzleType == Puzzle.PUZZLE_TYPES.chain then
         if self.cursorStartLeft then
           self.startTiming = Puzzle.START_TIMINGS.firstInput
         else
@@ -125,7 +123,8 @@ end
 ---@alias PuzzleStartTiming "countdown" | "immediately" | "firstInput" | "firstSwap"
 
 Puzzle.START_TIMINGS = { countdown = "countdown", immediately = "immediately", firstInput = "firstInput", firstSwap = "firstSwap" }
-Puzzle.PUZZLE_TYPES = { "moves", "chain", "clear" }
+---@enum PuzzleType
+Puzzle.PUZZLE_TYPES = { moves = "moves", chain = "chain", clear = "clear" }
 Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
 
 Puzzle.PUZZLE_PROPERTY = {
@@ -201,7 +200,7 @@ end
 function Puzzle:fillMissingPanelsInPuzzleString(width, height)
   local puzzleString = self.stack
   local boardSizeInPanels = width * height
-  if self.puzzleType == "clear" then
+  if self.puzzleType == Puzzle.PUZZLE_TYPES.clear then
     -- first fill up the currently started row
     local fillUpLength = (puzzleString:len() % width)
     if fillUpLength > 0 then
@@ -302,12 +301,12 @@ function Puzzle:validate()
     errMessage = errMessage .. "\nPuzzlestring contains invalid characters: " .. table.concat(illegalCharacters, ", ")
   end
 
-  if not tableUtils.contains(Puzzle.PUZZLE_TYPES, self.puzzleType) then
+  if not Puzzle.PUZZLE_TYPES[self.puzzleType] then
     errMessage = errMessage ..
     "\nInvalid puzzle type detected, available puzzle types are: " .. table.concat(Puzzle.PUZZLE_TYPES, ", ")
   end
 
-  if string.lower(self.puzzleType) == "moves" and (not tonumber(self.moves) or tonumber(self.moves) < 1 ) then
+  if self.puzzleType == Puzzle.PUZZLE_TYPES.moves and (not tonumber(self.moves) or tonumber(self.moves) < 1 ) then
     errMessage = errMessage ..
     "\nInvalid number of moves detected, expecting a number greater than zero but instead got " .. self.moves
   end
@@ -325,6 +324,7 @@ end
 -- Helper function to convert a single puzzle to save data format
 ---@return table
 function Puzzle:getSaveData()
+  ---@type table<string, any>
   local puzzleData = {
     [Puzzle.PUZZLE_PROPERTY.TYPE] = self.puzzleType,
     [Puzzle.PUZZLE_PROPERTY.START_TIMING] = self.startTiming,
@@ -408,7 +408,7 @@ function Puzzle:toGameMode()
     mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.SWAPS] = self.moves
   end
 
-  if self.puzzleType == "clear" then
+  if self.puzzleType == Puzzle.PUZZLE_TYPES.clear then
     mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
     mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
     mode.matchRules.stackSetupModifications.stopTime = self.stopTime
@@ -418,10 +418,10 @@ function Puzzle:toGameMode()
       allowManualRaise = false,
       passiveRaise = false,
     }
-    if self.puzzleType == "chain" then
+    if self.puzzleType == Puzzle.PUZZLE_TYPES.chain then
       mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.CHAIN] = false
       mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
-    elseif self.puzzleType == "moves" then
+    elseif self.puzzleType == Puzzle.PUZZLE_TYPES.moves then
       mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
     end
   end
