@@ -14,49 +14,54 @@ local logger = {
   messageBuffer = RingBuffer(2048)
 }
 
-logger.TRACE = 0 -- Log something that is very detailed verbose debug logging
-logger.DEBUG = 1 -- Log something that is only useful when debugging
-logger.INFO = 2 -- Log something that is useful in most normal conditions
-logger.WARN = 3 -- Log something that could be a problem
-logger.ERROR = 4 -- Log something that definitely is a problem
+---@enum LogLevel
+logger.levels = {
+  TRACE = 0, -- Log something that is very detailed verbose debug logging
+  DEBUG = 1, -- Log something that is only useful when debugging
+  INFO = 2, -- Log something that is useful in most normal conditions
+  WARN = 3, -- Log something that could be a problem
+  ERROR = 4 -- Log something that definitely is a problem
+}
 
-local LOG_LEVEL = logger.DEBUG
+---@type LogLevel
+local LOG_LEVEL = logger.levels.DEBUG
 
+---@param level LogLevel use logger.levels. to access presets
 function logger.setLogLevel(level)
   LOG_LEVEL = level
 end
 
 -- See comments above about when you should use each logging level
 function logger.trace(msg)
-  if LOG_LEVEL <= logger.TRACE then
+  if LOG_LEVEL <= logger.levels.TRACE then
     direct_log("TRACE", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.debug(msg)
-  if LOG_LEVEL <= logger.DEBUG then
+  if LOG_LEVEL <= logger.levels.DEBUG then
     direct_log("DEBUG", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.info(msg)
-  if LOG_LEVEL <= logger.INFO then
+  if LOG_LEVEL <= logger.levels.INFO then
     direct_log(" INFO", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.warn(msg)
-  if LOG_LEVEL <= logger.WARN then
+  if LOG_LEVEL <= logger.levels.WARN then
     direct_log(" WARN", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.error(msg)
-  if LOG_LEVEL <= logger.ERROR then
+  if LOG_LEVEL <= logger.levels.ERROR then
     direct_log("ERROR", msg);
   end
 end
