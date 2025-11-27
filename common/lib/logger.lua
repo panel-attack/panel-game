@@ -24,44 +24,44 @@ logger.levels = {
 }
 
 ---@type LogLevel
-local LOG_LEVEL = logger.levels.DEBUG
+logger.logLevel = logger.levels.DEBUG
 
 ---@param level LogLevel use logger.levels. to access presets
 function logger.setLogLevel(level)
-  LOG_LEVEL = level
+  logger.logLevel = level
 end
 
 -- See comments above about when you should use each logging level
 function logger.trace(msg)
-  if LOG_LEVEL <= logger.levels.TRACE then
+  if logger.logLevel <= logger.levels.TRACE then
     direct_log("TRACE", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.debug(msg)
-  if LOG_LEVEL <= logger.levels.DEBUG then
+  if logger.logLevel <= logger.levels.DEBUG then
     direct_log("DEBUG", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.info(msg)
-  if LOG_LEVEL <= logger.levels.INFO then
+  if logger.logLevel <= logger.levels.INFO then
     direct_log(" INFO", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.warn(msg)
-  if LOG_LEVEL <= logger.levels.WARN then
+  if logger.logLevel <= logger.levels.WARN then
     direct_log(" WARN", msg);
   end
 end
 
 -- See comments above about when you should use each logging level
 function logger.error(msg)
-  if LOG_LEVEL <= logger.levels.ERROR then
+  if logger.logLevel <= logger.levels.ERROR then
     direct_log("ERROR", msg);
   end
 end
