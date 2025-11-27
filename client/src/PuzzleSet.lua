@@ -493,7 +493,8 @@ function PuzzleSet:saveTargetPuzzleToFile(targetPuzzleSet, puzzleIndex, updatedP
   -- Find and update the specific puzzle within the JSON data structure
   local updated = self:updatePuzzleInFileData(originalData, targetPuzzleSet, puzzleIndex, updatedPuzzle)
   if not updated then
-    error("Cannot save puzzle: target puzzle set not found in file or puzzle index out of range")
+    logger.warn("Cannot save solution to old puzzle format, please upgrade your puzzles to the latest file format")
+    return -- Early return, this is likely an old puzzle format.
   end
   
   -- Extract directory and filename from fileSource path
