@@ -1,3 +1,6 @@
+local util = require("common.lib.util")
+util.addToCPath("./common/lib/??")
+util.addToCPath("./server/lib/??")
 local logger = require("common.lib.logger")
 
 if arg[1] == "debug" then
@@ -18,9 +21,6 @@ end
 
 -- We must launch the server from the root directory so all the requires are the right path relatively.
 require("server.server_globals")
-local util = require("common.lib.util")
-util.addToCPath("./common/lib/??")
-util.addToCPath("./server/lib/??")
 require("server.tests.ServerTests")
 require("server.tests.LeaderboardTests")
 require("server.tests.RoomTests")
