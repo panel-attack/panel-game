@@ -1,6 +1,19 @@
+local logger = require("common.lib.logger")
+
 if arg[1] == "debug" then
   -- for debugging in visual studio code
-  pcall(function() require("lldebugger").start() end)
+  if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
+    -- VS Code / VS Codium
+    require("lldebugger").start()
+  elseif pcall(function() require("mobdebug") end) then
+    -- ZeroBrane
+    -- afaik there is no good way to detect whether the game was started with zerobrane other than trying the require and succeeding
+    require("mobdebug").start()
+    require('mobdebug').coro()
+  end
+  logger.setLogLevel(logger.levels.DEBUG)
+else
+  logger.setLogLevel(logger.levels.INFO)
 end
 
 -- We must launch the server from the root directory so all the requires are the right path relatively.

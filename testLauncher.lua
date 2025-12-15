@@ -29,9 +29,9 @@ local logger = require("common.lib.logger")
 
 -- Set log level based on debug argument
 if arg[2] == "debug" then
-  logger.setLogLevel(logger.DEBUG)
+  logger.setLogLevel(logger.levels.DEBUG)
 else
-  logger.setLogLevel(logger.INFO)
+  logger.setLogLevel(logger.levels.INFO)
 end
 
 require("client.src.globals")
