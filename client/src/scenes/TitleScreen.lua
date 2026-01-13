@@ -4,6 +4,7 @@ local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local MainMenu = require("client.src.scenes.MainMenu")
 
 -- The title screen scene
 local TitleScreen = class(
@@ -29,7 +30,7 @@ function TitleScreen:update(dt)
   local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
   if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then
     GAME.theme:playValidationSfx()
-    self.triggerNextScene()
+    GAME.navigationStack:replace(MainMenu())
   end
 end
 

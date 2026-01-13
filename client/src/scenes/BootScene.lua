@@ -50,9 +50,33 @@ function BootScene:updateSelf(dt)
 
     if coroutine.status(self.setupRoutine) == "dead" then
       love.graphics.setFont(GraphicsUtil.getGlobalFont())
-      -- Delegate to SceneCoordinator to handle initial scene and setup flow
-      local SceneCoordinator = require("client.src.scenes.SceneCoordinator")
-      SceneCoordinator.handleStartupComplete(SceneCoordinator)
+
+      -- we need the late require for all scenes here because localization is only initialized by the coroutine and all scenes depend on it being loaded
+      if themes[config.theme].images.bg_title then
+        GAME.navigationStack:replace(require("client.src.scenes.TitleScreen")())
+      else
+        GAME.navigationStack:replace(require("client.src.scenes.MainMenu")())
+      end
+
+      -- scenes that are displayed before anything else on either first startup or if a new input device was found
+      -- they are just pushed on top and will pop off as the player works through them until the regular game start is left
+
+      local input = require("client.src.inputManager")
+
+      if input.hasUnsavedChanges or input:hasUnconfiguredJoysticks() then
+        local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
+        GAME.navigationStack:push(InputConfigMenu({}))
+      end
+
+      if not config.discordCommunityShown then
+        local DiscordCommunitySetup = require("client.src.scenes.DiscordCommunitySetup")
+        GAME.navigationStack:push(DiscordCommunitySetup({}))
+      end
+
+      if not config.language_code then
+        local LanguageSelectSetup = require("client.src.scenes.LanguageSelectSetup")
+        GAME.navigationStack:push(LanguageSelectSetup({}))
+      end
     end
   end
 end

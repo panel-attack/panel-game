@@ -7,9 +7,6 @@ local save = require("client.src.save")
 local logger = require("common.lib.logger")
 
 local LanguageSelectSetup = class(function(self, sceneParams)
-  assert(sceneParams, "LanguageSelectSetup requires sceneParams")
-  assert(sceneParams.triggerNextScene, "LanguageSelectSetup requires triggerNextScene callback")
-
   self.music = "main"
   self:load(sceneParams)
 end, Scene)
@@ -57,7 +54,7 @@ function LanguageSelectSetup:createLanguageMenu()
       config.language_code = language.code
       GAME:setLanguage(language.code)
       write_conf_file()
-      self.triggerNextScene()
+      GAME.navigationStack:pop()
     end))
   end
 

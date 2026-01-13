@@ -8,9 +8,6 @@ local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
 local logger = require("common.lib.logger")
 
 local DiscordCommunitySetup = class(function(self, sceneParams)
-  assert(sceneParams, "DiscordCommunitySetup requires sceneParams")
-  assert(sceneParams.triggerNextScene, "DiscordCommunitySetup requires triggerNextScene callback")
-
   self.music = "main"
 
   local titleFontSize = 28
@@ -96,7 +93,7 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
     GAME.theme:playValidationSfx()
     config.discordCommunityShown = true
     write_conf_file()
-    self.triggerNextScene()
+    GAME.navigationStack:pop()
   end)
   
   contentStack:addElement(ui.UiElement({

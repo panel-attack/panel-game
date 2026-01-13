@@ -17,7 +17,6 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 ---@field music sceneMusic
 ---@field fallbackMusic sceneMusic
 ---@field keepMusic boolean
----@field triggerNextScene function?
 ---@overload fun(sceneParams: table): Scene
 local Scene = class(
 ---@param self Scene
@@ -37,9 +36,6 @@ local Scene = class(
     --  the scene can alternatively specify it wants to keep the music that is currently playing
     --  if kept at false, the music will always change at scene switch
     self.keepMusic = false
-    -- callback provided by scene creator to trigger the next scene
-    -- scenes should call this when they complete their purpose
-    self.triggerNextScene = sceneParams.triggerNextScene
   end
 )
 

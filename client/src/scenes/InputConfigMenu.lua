@@ -246,11 +246,8 @@ function InputConfigMenu:createExitMenuFunction()
     if inputManager.hasUnsavedChanges then
       inputManager:saveInputConfigurationMappings()
     end
-    if self.triggerNextScene then
-      self.triggerNextScene()
-    else
-      GAME.navigationStack:pop()
-    end
+
+    GAME.navigationStack:pop()
   end
 end
 
