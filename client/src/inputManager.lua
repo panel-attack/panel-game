@@ -19,6 +19,7 @@ require("client.src.input.JoystickProvider")
 --   inputConfigurations: raw key inputs mapped to internal aliases for that configuration
 --   base (top level): the union of all inputConfigurations not already claimed by a player
 --   mouse: all mouse buttons and the position of the mouse
+---@class InputManager
 local inputManager = {
   isDown = {},
   isPressed = {},
@@ -80,6 +81,8 @@ function inputManager:keyReleased(key, scancode)
   self.allKeys.isUp[key] = KEY_CHANGE.DETECTED
 end
 
+---@param joystick love.Joystick
+---@return boolean? isNotConfigured
 function inputManager:onJoystickAdded(joystick)
   joystickManager:registerJoystick(joystick)
   local unconfiguredJoysticks = self:updateUnconfiguredJoysticksCache()
@@ -88,7 +91,7 @@ function inputManager:onJoystickAdded(joystick)
   for _, unconfiguredJoystick in ipairs(unconfiguredJoysticks) do
     if unconfiguredJoystick == joystick then
       self:emitSignal("unconfiguredJoystickAdded", joystick)
-      break
+      return true
     end
   end
 end

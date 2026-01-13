@@ -25,6 +25,7 @@ local Player = require("client.src.Player")
 local GameModes = require("common.data.GameModes")
 local NetClient = require("client.src.network.NetClient")
 local BootScene = require("client.src.scenes.BootScene")
+local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
 local SoundController = require("client.src.music.SoundController")
 require("client.src.BattleRoom")
 local prof = require("common.lib.zoneProfiler")
@@ -34,7 +35,6 @@ local ModController = require("client.src.mods.ModController")
 
 local RichPresence = require("client.lib.rich_presence.RichPresence")
 local DebugSettings = require("client.src.debug.DebugSettings")
-local SceneCoordinator = require("client.src.scenes.SceneCoordinator")
 local TextButton = require("client.src.ui.TextButton")
 local OverlayContainer = require("client.src.ui.OverlayContainer")
 local DebugMenu = require("client.src.debug.DebugMenu")
@@ -56,7 +56,7 @@ end
 ---@field globalCanvas love.graphics.Texture
 ---@field muteSound boolean
 ---@field rich_presence table
----@field input table
+---@field input InputManager
 ---@field backgroundImage table
 ---@field backgroundColor number[]
 ---@field updater table?
@@ -143,8 +143,6 @@ function Game:load()
   end
 
   inputManager:load()
-
-  self:setupInputSignals()
 
   self.navigationStack = NavigationStack({})
   self.navigationStack:push(BootScene({setupRoutine = self.setupRoutine}))
@@ -373,12 +371,15 @@ function Game:handleResize(newWidth, newHeight)
 end
 
 function Game:onJoystickAdded(joystick)
-  self.input:onJoystickAdded(joystick)
+  local isNotConfigured = self.input:onJoystickAdded(joystick)
+  if isNotConfigured and self.navigationStack.scenes[1].name ~= "BootScene" and config:initializationCompleted() and not self:hasOngoingMatch() then
+    -- Not critically occupied, so push the InputConfigMenu on top
+    GAME.navigationStack:push(InputConfigMenu({}))
+  end
 end
 
--- Setup signal listener for unconfigured joysticks
-function Game:setupInputSignals()
-  self.input:connectSignal("unconfiguredJoystickAdded", SceneCoordinator, SceneCoordinator.onUnconfiguredJoystickAdded)
+function Game:hasOngoingMatch()
+  return not not (GAME.battleRoom and GAME.battleRoom.match ~= nil)
 end
 
 -- Called every few fractions of a second to update the game
