@@ -24,7 +24,7 @@ local handleShortcuts = require("client.src.Shortcuts")
 local Player = require("client.src.Player")
 local GameModes = require("common.data.GameModes")
 local NetClient = require("client.src.network.NetClient")
-local StartUp = require("client.src.scenes.StartUp")
+local BootScene = require("client.src.scenes.BootScene")
 local SoundController = require("client.src.music.SoundController")
 require("client.src.BattleRoom")
 local prof = require("common.lib.zoneProfiler")
@@ -147,7 +147,7 @@ function Game:load()
   self:setupInputSignals()
 
   self.navigationStack = NavigationStack({})
-  self.navigationStack:push(StartUp({setupRoutine = self.setupRoutine}))
+  self.navigationStack:push(BootScene({setupRoutine = self.setupRoutine}))
 
   -- Add navigation stack to root UI
   self.uiRoot:addChild(self.navigationStack)

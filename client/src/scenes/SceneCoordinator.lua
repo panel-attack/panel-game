@@ -29,7 +29,7 @@ function SceneCoordinator:onUnconfiguredJoystickAdded(joystick)
   end
 end
 
--- Called when the StartUp scene completes asset loading
+-- Called when the BootScene completes asset loading
 -- Begins the setup flow sequence
 function SceneCoordinator:handleStartupComplete()
   self.startupComplete = true
