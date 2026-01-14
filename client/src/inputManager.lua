@@ -82,7 +82,8 @@ end
 
 function inputManager:onJoystickAdded(joystick)
   joystickManager:registerJoystick(joystick)
-  local unconfiguredJoysticks = self:updateUnconfiguredJoysticksCache()
+  self:updateUnconfiguredJoysticksCache()
+  local unconfiguredJoysticks = self:getUnconfiguredJoysticks()
 
   -- Check if the newly added joystick is unconfigured
   for _, unconfiguredJoystick in ipairs(unconfiguredJoysticks) do
@@ -94,25 +95,7 @@ function inputManager:onJoystickAdded(joystick)
 end
 
 function inputManager:onJoystickRemoved(joystick)
-  -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
-  -- the GUID is consistent across sessions
-  local guid = joystick:getGUID()
-  -- ID is a per-session identifier for each controller regardless of type
-  local id = joystick:getID()
-
-  local vendorID, productID, productVersion = joystick:getDeviceInfo()
-
-  logger.info("Disconnecting device " .. vendorID .. ";" .. productID .. ";" .. productVersion .. ";" .. joystick:getName() .. ";" .. guid .. ";" .. id)
-
-  if joystickManager.guidsToJoysticks[guid] then
-    joystickManager.guidsToJoysticks[guid][id] = nil
-
-    if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
-      joystickManager.guidsToJoysticks[guid] = nil
-    end
-  end
-
-  joystickManager.devices[id] = nil
+  joystickManager:unregisterJoystick(joystick)
   self:updateUnconfiguredJoysticksCache()
 end
 
@@ -765,7 +748,6 @@ function inputManager:updateUnconfiguredJoysticksCache()
 
   -- Update the cache
   self.unconfiguredJoysticksCache = unconfiguredJoysticks
-  return unconfiguredJoysticks
 end
 
 -- Gets a list of joysticks that don't have input configurations

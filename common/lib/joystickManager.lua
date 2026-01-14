@@ -170,4 +170,26 @@ function joystickManager:registerJoystick(joystick)
   joystickManager.devices[id] = device
 end
 
+function joystickManager:unregisterJoystick(joystick)
+-- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
+  -- the GUID is consistent across sessions
+  local guid = joystick:getGUID()
+  -- ID is a per-session identifier for each controller regardless of type
+  local id = joystick:getID()
+
+  local vendorID, productID, productVersion = joystick:getDeviceInfo()
+
+  logger.info("Disconnecting device " .. vendorID .. ";" .. productID .. ";" .. productVersion .. ";" .. joystick:getName() .. ";" .. guid .. ";" .. id)
+
+  if joystickManager.guidsToJoysticks[guid] then
+    joystickManager.guidsToJoysticks[guid][id] = nil
+
+    if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
+      joystickManager.guidsToJoysticks[guid] = nil
+    end
+  end
+
+  joystickManager.devices[id] = nil
+end
+
 return joystickManager
