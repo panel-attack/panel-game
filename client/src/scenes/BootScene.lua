@@ -58,6 +58,10 @@ function BootScene:updateSelf(dt)
         GAME.navigationStack:replace(require("client.src.scenes.MainMenu")())
       end
 
+      if next(ModLoader.invalidMods) then
+        GAME.navigationStack:push(require("client.src.scenes.ModValidationScene")())
+      end
+
       -- scenes that are displayed before anything else on either first startup or if a new input device was found
       -- they are just pushed on top and will pop off as the player works through them until the regular game start is left
 
