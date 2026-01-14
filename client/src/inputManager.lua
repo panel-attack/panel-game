@@ -455,14 +455,14 @@ function inputManager:getSaveKeyMap()
   return result
 end
 
-function inputManager:write_key_file()
+function inputManager:writeKeyConfigurationToFile()
   FileUtils.writeJson("", "keysV3.json", self:getSaveKeyMap())
   self.hasUnsavedChanges = false
 end
 
 -- Saves input configuration mappings to disk
 function inputManager:saveInputConfigurationMappings()
-  self:write_key_file()
+  self:writeKeyConfigurationToFile()
 end
 
 
@@ -610,7 +610,7 @@ function inputManager:changeKeyBindingOnInputConfiguration(inputConfiguration, k
   self:updateInputConfiguration(inputConfiguration)
   self:updateUnconfiguredJoysticksCache()
   if not skipSave then
-    self:write_key_file()
+    self:writeKeyConfigurationToFile()
   end
 end
 
@@ -623,7 +623,7 @@ function inputManager:clearKeyBindingsOnInputConfiguration(inputConfiguration)
   self.hasUnsavedChanges = true
   self:updateInputConfiguration(inputConfiguration)
   self:updateUnconfiguredJoysticksCache()
-  self:write_key_file()
+  self:writeKeyConfigurationToFile()
 end
 
 function inputManager:setupDefaultKeyConfigurations()
@@ -852,7 +852,7 @@ function inputManager:autoConfigureJoystick(joystick, shouldSave)
 
       self:updateUnconfiguredJoysticksCache()
       if shouldSave then
-        self:write_key_file()
+        self:writeKeyConfigurationToFile()
       end
       return configIndex
     end
