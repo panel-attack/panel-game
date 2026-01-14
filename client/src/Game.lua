@@ -376,6 +376,10 @@ function Game:onJoystickAdded(joystick)
   self.input:onJoystickAdded(joystick)
 end
 
+function Game:onJoystickRemoved(joystick)
+  self.input:onJoystickRemoved(joystick)
+end
+
 -- Setup signal listener for unconfigured joysticks
 function Game:setupInputSignals()
   self.input:connectSignal("unconfiguredJoystickAdded", SceneCoordinator, SceneCoordinator.onUnconfiguredJoystickAdded)
