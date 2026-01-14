@@ -100,13 +100,21 @@ function inputManager:onJoystickRemoved(joystick)
 end
 
 function inputManager:joystickPressed(joystick, button)
-  joystickManager:registerJoystick(joystick)
+  if not joystickManager:isRegistered(joystick) then
+    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
+    joystickManager:registerJoystick(joystick)
+  end
+
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isDown[key] = KEY_CHANGE.DETECTED
 end
 
 function inputManager:joystickReleased(joystick, button)
-  joystickManager:registerJoystick(joystick)
+  if not joystickManager:isRegistered(joystick) then
+    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
+    joystickManager:registerJoystick(joystick)
+  end
+
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isUp[key] = KEY_CHANGE.DETECTED
 end
