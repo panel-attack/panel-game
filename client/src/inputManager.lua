@@ -520,8 +520,8 @@ function inputManager:importConfigurations(configurations)
     end
   end
   -- Update all cached properties after importing
-  for _, config in ipairs(self.inputConfigurations) do
-    config:updateCachedProperties()
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    inputConfig:updateCachedProperties()
   end
   self:updateAllDeviceNumbers()
 end
@@ -558,21 +558,21 @@ end
 function inputManager:updateAllDeviceNumbers()
   local deviceTypeCounters = {}
 
-  for _, config in ipairs(self.inputConfigurations) do
+  for _, inputConfig in ipairs(self.inputConfigurations) do
     -- Only count non-empty configurations with bindings
-    if not config:isEmpty() and config.deviceType then
-      deviceTypeCounters[config.deviceType] = (deviceTypeCounters[config.deviceType] or 0) + 1
-      config.deviceNumber = deviceTypeCounters[config.deviceType]
+    if not inputConfig:isEmpty() and inputConfig.deviceType then
+      deviceTypeCounters[inputConfig.deviceType] = (deviceTypeCounters[inputConfig.deviceType] or 0) + 1
+      inputConfig.deviceNumber = deviceTypeCounters[inputConfig.deviceType]
     else
-      config.deviceNumber = nil
+      inputConfig.deviceNumber = nil
     end
   end
 end
 
 -- Updates a specific InputConfiguration when its bindings change
----@param config InputConfiguration Configuration to update
-function inputManager:updateInputConfiguration(config)
-  config:update()
+---@param inputConfig InputConfiguration Configuration to update
+function inputManager:updateInputConfiguration(inputConfig)
+  inputConfig:update()
   self:updateAllDeviceNumbers()
 end
 
@@ -583,10 +583,10 @@ function inputManager:clearButtonFromAllConfigs(buttonBinding)
     return
   end
 
-  for _, config in ipairs(self.inputConfigurations) do
+  for _, inputConfig in ipairs(self.inputConfigurations) do
     for _, keyName in ipairs(consts.KEY_NAMES) do
-      if config[keyName] == buttonBinding then
-        config[keyName] = nil
+      if inputConfig[keyName] == buttonBinding then
+        inputConfig[keyName] = nil
       end
     end
   end
@@ -673,8 +673,8 @@ function inputManager:setupDefaultKeyConfigurations()
   end
 
   -- Update all cached properties after setting defaults
-  for _, config in ipairs(self.inputConfigurations) do
-    config:updateCachedProperties()
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    inputConfig:updateCachedProperties()
   end
   self:updateAllDeviceNumbers()
 end
@@ -682,10 +682,10 @@ end
 ---@return table? Input configuration with active input, or nil
 function inputManager:detectActiveInputConfiguration()
   for i = 1, #self.inputConfigurations do
-    local config = self.inputConfigurations[i]
+    local inputConfig = self.inputConfigurations[i]
     for _, keyName in ipairs(consts.KEY_NAMES) do
-      if config.isDown and config.isDown[keyName] then
-        return config
+      if inputConfig.isDown and inputConfig.isDown[keyName] then
+        return inputConfig
       end
     end
   end
@@ -720,10 +720,10 @@ end
 function inputManager:getConfiguredJoystickGuids()
   local configuredGuids = {}
   for i = 1, self.maxConfigurations do
-    local config = self.inputConfigurations[i]
-    if config then
+    local inputConfig = self.inputConfigurations[i]
+    if inputConfig then
       for _, keyName in ipairs(consts.KEY_NAMES) do
-        local keyMapping = config[keyName]
+        local keyMapping = inputConfig[keyName]
         if keyMapping and type(keyMapping) == "string" then
           -- Extract GUID from mapping format like "guid:id:button"
           local guid = keyMapping:match("^([^:]+):")
@@ -838,15 +838,15 @@ function inputManager:autoConfigureJoystick(joystick, shouldSave)
     -- Only proceed if we got at least some mappings
     if next(basicMapping) then
       -- Ensure the configuration slot has all the keys we need
-      local config = self.inputConfigurations[configIndex]
+      local inputConfig = self.inputConfigurations[configIndex]
       for keyName, keyMapping in pairs(basicMapping) do
-        self:changeKeyBindingOnInputConfiguration(config, keyName, keyMapping, true)
+        self:changeKeyBindingOnInputConfiguration(inputConfig, keyName, keyMapping, true)
       end
 
       -- Make sure all required keys are set (fill any missing ones with nil to be explicit)
       for _, keyName in ipairs(consts.KEY_NAMES) do
-        if config[keyName] == nil and not basicMapping[keyName] then
-          self:changeKeyBindingOnInputConfiguration(config, keyName, nil, true)
+        if inputConfig[keyName] == nil and not basicMapping[keyName] then
+          self:changeKeyBindingOnInputConfiguration(inputConfig, keyName, nil, true)
         end
       end
 
@@ -867,9 +867,9 @@ function inputManager:getAssignableDevices()
   local devices = {}
 
   -- Add all non-empty InputConfigurations
-  for _, config in ipairs(self.inputConfigurations) do
-    if not config:isEmpty() then
-      devices[#devices + 1] = config
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    if not inputConfig:isEmpty() then
+      devices[#devices + 1] = inputConfig
     end
   end
 
