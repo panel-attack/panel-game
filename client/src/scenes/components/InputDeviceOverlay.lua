@@ -442,7 +442,7 @@ end
 ---@param dt number Delta time in seconds
 function InputDeviceOverlay:updateSelf(dt)
   if not self.active then
-    if not self.battleRoom.spectating and GAME.input:checkForUnassignedConfigurationInputs(self.battleRoom) then
+    if not self.battleRoom.spectating and GAME.input:checkForUnassignedConfigurationInputs(self.battleRoom:getLocalHumanPlayers()) then
       self.battleRoom:releaseAllLocalAssignments()
     end
 

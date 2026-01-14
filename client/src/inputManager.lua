@@ -698,10 +698,10 @@ function inputManager:detectActiveInputConfiguration()
   return nil
 end
 
----@param battleRoom BattleRoom?
+---@param localHumanPlayers Player[]
 ---@return boolean True if an unassigned configuration has active input
-function inputManager:checkForUnassignedConfigurationInputs(battleRoom)
-  if not battleRoom then
+function inputManager:checkForUnassignedConfigurationInputs(localHumanPlayers)
+  if #localHumanPlayers == 0 then
     return false
   end
 
@@ -711,7 +711,7 @@ function inputManager:checkForUnassignedConfigurationInputs(battleRoom)
   end
 
   local assignedConfigs = {}
-  for _, player in ipairs(battleRoom:getLocalHumanPlayers()) do
+  for _, player in ipairs(localHumanPlayers) do
     if player.inputConfiguration then
       assignedConfigs[player.inputConfiguration] = true
     end
