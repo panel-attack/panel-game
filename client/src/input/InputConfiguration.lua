@@ -4,6 +4,8 @@ local util = require("common.lib.util")
 local joystickManager = require("common.lib.joystickManager")
 require("client.src.input.JoystickProvider")
 
+---@alias InputDeviceType ("keyboard" | "controller" | "touch" | nil)
+
 -- Represents a single input configuration slot with key bindings
 ---@class InputConfiguration
 ---@field index number Configuration slot number (1-8)
@@ -15,7 +17,7 @@ require("client.src.input.JoystickProvider")
 ---@field isPressedWithRepeat function
 ---@field joystickProvider JoystickProvider
 ---@field id string Unique identifier (e.g., "config_1")
----@field deviceType string? Device type ("keyboard", "controller", "touch", or nil if empty)
+---@field deviceType InputDeviceType Device type ("keyboard", "controller", "touch", or nil if empty)
 ---@field deviceName string? Human-readable device name
 ---@field controllerImageVariant string? Controller icon variant
 ---@field deviceNumber number? Device count of this type (e.g., 2nd keyboard)
@@ -107,7 +109,7 @@ function InputConfiguration:parseControllerBinding(keyName)
 end
 
 -- Determine device type based on the first available binding
----@return "keyboard"|"controller"|"touch"|nil deviceType Type of device or nil if no bindings
+---@return InputDeviceType deviceType Type of device or nil if no bindings
 function InputConfiguration:getDeviceType()
   if self:isEmpty() then
     return nil

@@ -25,6 +25,7 @@ local inputManager = {
   isUp = {},
   allKeys = {isDown = {}, isPressed = {}, isUp = {}},
   mouse = {isDown = {}, isPressed = {}, isUp = {}, x = 0, y = 0},
+  ---@type InputConfiguration[]
   inputConfigurations = {},
   maxConfigurations = 8,
   hasUnsavedChanges = false,
@@ -526,6 +527,8 @@ function inputManager:importConfigurations(configurations)
   self:updateAllDeviceNumbers()
 end
 
+---@param player Player
+---@param inputConfiguration InputConfiguration
 function inputManager:claimConfiguration(player, inputConfiguration)
   if inputConfiguration.claimed and inputConfiguration.player ~= player then
     error("Trying to assign input configuration to player " .. player.playerNumber ..
@@ -540,6 +543,8 @@ function inputManager:claimConfiguration(player, inputConfiguration)
   return inputConfiguration
 end
 
+---@param player Player
+---@param inputConfiguration InputConfiguration
 function inputManager:releaseConfiguration(player, inputConfiguration)
   if not inputConfiguration.claimed then
     error("Trying to release an unclaimed inputConfiguration")
@@ -679,7 +684,7 @@ function inputManager:setupDefaultKeyConfigurations()
   self:updateAllDeviceNumbers()
 end
 
----@return table? Input configuration with active input, or nil
+---@return InputConfiguration? Input configuration with active input, or nil
 function inputManager:detectActiveInputConfiguration()
   for i = 1, #self.inputConfigurations do
     local inputConfig = self.inputConfigurations[i]
