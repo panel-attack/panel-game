@@ -61,7 +61,8 @@ function ClientMessages.challengePlayer(senderName, receiverName)
     game_request =
     {
       sender = senderName,
-      receiver = receiverName
+      receiver = receiverName,
+      gameType = "2P_VS",
     }
   }
 
@@ -89,7 +90,10 @@ function ClientMessages.requestSpectate(spectatorName, roomNumber)
 end
 
 function ClientMessages.requestLeaderboard()
-  local leaderboardRequestMessage = {leaderboard_request = true}
+  local leaderboardRequestMessage = {
+    leaderboard_request = true,
+    leaderboardType = "2P_VS",
+  }
 
   return {
     messageType = msgTypes.jsonMessage,
