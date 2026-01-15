@@ -258,7 +258,8 @@ end
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
-function Server:proposeGame(sender, receiver)
+---@param gameModeId GameModeID
+function Server:proposeGame(sender, receiver, gameModeId)
   logger.debug("propose game: " .. sender.name .. " " .. receiver.name)
 
   local proposals = self.proposals

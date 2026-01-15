@@ -115,7 +115,7 @@ function ClientMessages.sanitizeGameRequest(gameRequest)
     {
       sender = gameRequest.game_request.sender,
       receiver = gameRequest.game_request.receiver,
-      gameType = gameRequest.game_request.gameType or "2P_VS",
+      gameType = gameRequest.game_request.gameType or "TWO_PLAYER_VS",
     }
   }
 
@@ -139,7 +139,7 @@ function ClientMessages.sanitizeLeaderboardRequest(leaderboardRequest)
   local sanitized =
   {
     leaderboard_request = leaderboardRequest.leaderboard_request,
-    gameType = leaderboardRequest.leaderboardType or "2P_VS",
+    gameType = leaderboardRequest.leaderboardType or "TWO_PLAYER_VS",
   }
 
   return sanitized

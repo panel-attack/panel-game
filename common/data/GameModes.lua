@@ -4,6 +4,8 @@ local TIME_ATTACK_TIME = 120
 
 local GameModes = {}
 
+---@alias GameModeID ("ONE_PLAYER_VS_SELF"|"ONE_PLAYER_TIME_ATTACK"|"ONE_PLAYER_ENDLESS"|"ONE_PLAYER_TRAINING"|"ONE_PLAYER_PUZZLE"|"ONE_PLAYER_CHALLENGE"|"TWO_PLAYER_VS"|"TWO_PLAYER_TIME_ATTACK") Used as identifiers for the type of game that is being played
+
 ---@class GameMode
 ---@field stackInteraction StackInteractions
 ---@field matchRules MatchRules
@@ -15,6 +17,7 @@ local GameModes = {}
 ---@field style Styles
 ---@field richPresenceLabel string?
 ---@field updateLocalPlayersDerivedSettings function
+---@field gameModeId GameModeID
 local GameMode = class(function(self, properties)
   for key, value in pairs(properties) do
     self[key] = value
@@ -208,7 +211,7 @@ local TwoPlayerTimeAttack = GameMode({
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
 
----@type table<string, GameMode>
+---@type table<GameModeID, GameMode>
 local privateGameModes = {}
 privateGameModes.ONE_PLAYER_VS_SELF = OnePlayerVsSelf
 privateGameModes.ONE_PLAYER_TIME_ATTACK = OnePlayerTimeAttack
@@ -219,15 +222,8 @@ privateGameModes.ONE_PLAYER_CHALLENGE = OnePlayerChallenge
 privateGameModes.TWO_PLAYER_VS = TwoPlayerVersus
 privateGameModes.TWO_PLAYER_TIME_ATTACK = TwoPlayerTimeAttack
 
+---@param mode GameModeID
 ---@return GameMode
----@overload fun(mode: "ONE_PLAYER_VS_SELF"): GameMode
----@overload fun(mode: "ONE_PLAYER_TIME_ATTACK"): GameMode
----@overload fun(mode: "ONE_PLAYER_ENDLESS"): GameMode
----@overload fun(mode: "ONE_PLAYER_TRAINING"): GameMode
----@overload fun(mode: "ONE_PLAYER_PUZZLE"): GameMode
----@overload fun(mode: "ONE_PLAYER_CHALLENGE"): GameMode
----@overload fun(mode: "TWO_PLAYER_VS"): GameMode
----@overload fun(mode: "TWO_PLAYER_TIME_ATTACK"): GameMode
 function GameModes.getPreset(mode)
   assert(privateGameModes[mode], "Trying to access non existing mode " .. mode)
   return deepcpy(privateGameModes[mode])

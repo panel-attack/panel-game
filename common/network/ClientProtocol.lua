@@ -62,7 +62,7 @@ function ClientMessages.challengePlayer(senderName, receiverName)
     {
       sender = senderName,
       receiver = receiverName,
-      gameType = "2P_VS",
+      gameType = "TWO_PLAYER_VS",
     }
   }
 
@@ -92,7 +92,7 @@ end
 function ClientMessages.requestLeaderboard()
   local leaderboardRequestMessage = {
     leaderboard_request = true,
-    leaderboardType = "2P_VS",
+    leaderboardType = "TWO_PLAYER_VS",
   }
 
   return {
