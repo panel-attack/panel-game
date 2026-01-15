@@ -38,7 +38,7 @@ local time = os.time
 ---@field connectionNumberIndex integer GLOBAL counter of the next available connection index
 ---@field roomNumberIndex integer the next available room number
 ---@field rooms Room[] mapping of room number to room
----@field proposals table<ServerPlayer, table<ServerPlayer, table>> mapping of player name to a mapping of the players they have challenged
+---@field proposals table<PublicPlayerID, table<PublicPlayerID, GameModeID | "any">> mapping of player name to a mapping of the players they have challenged
 ---@field connections Connection[] mapping of connection number to connection
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
@@ -258,38 +258,72 @@ end
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
----@param gameModeId GameModeID
-function Server:proposeGame(sender, receiver, gameModeId)
-  logger.debug("propose game: " .. sender.name .. " " .. receiver.name)
+---@param gameModeId GameModeID?
+function Server:processGameRequest(sender, receiver, gameModeId)
+  logger.debug(sender.name .. " challenges " .. receiver.name .. " to a game of " .. (gameModeId or "their choice (any)"))
 
-  local proposals = self.proposals
   if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
-    proposals[sender] = proposals[sender] or {}
-    proposals[receiver] = proposals[receiver] or {}
-    if proposals[sender][receiver] then
-      if proposals[sender][receiver][receiver] then
-        self:create_room(GameModes.getPreset("TWO_PLAYER_VS"), sender, receiver)
+    local previouslyProposedGameMode = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
+    if previouslyProposedGameMode then
+      -- the challenged player issued a challenge prior to this
+      if previouslyProposedGameMode == gameModeId then
+        -- gameModeId ~= nil is implied because previouslyProposedGameMode is evidently not nil (but gameModeId also won't be "any")
+        ---@cast gameModeId GameModeID
+        self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
+      elseif previouslyProposedGameMode == "any" then
+        if gameModeId then
+          self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
+        else
+          -- both sent unspecific challenges at the same time, cannot create room
+          -- forward the challenge so that the client can see the problem
+          self:registerChallenge(sender, receiver, gameModeId)
+        end
+      else
+        if not gameModeId then
+          ---@cast previouslyProposedGameMode GameModeID
+          self:create_room(GameModes.getPreset(previouslyProposedGameMode), sender, receiver)
+        else
+          -- there is a conflict in which game mode they want to play, so no room
+          -- forward the challenge so that the client can see the problem
+          self:registerChallenge(sender, receiver, gameModeId)
+        end
       end
     else
-      receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver))
-      local prop = {[sender] = true}
-      proposals[sender][receiver] = prop
-      proposals[receiver][sender] = prop
+      -- no existing challenge
+      self:registerChallenge(sender, receiver, gameModeId)
     end
   end
 end
 
+---@param sender ServerPlayer
+---@param receiver ServerPlayer
+function Server:registerChallenge(sender, receiver, gameModeId)
+  local senderChallenges = self.proposals[sender.publicPlayerID] or {}
+  -- save as "any" if no specific game mode was proposed to differentiate with no challenge
+  senderChallenges[receiver.publicPlayerID] = gameModeId or "any"
+  
+  self.proposals[sender.publicPlayerID] = senderChallenges
+  receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver, gameModeId))
+end
+
+---@param sender ServerPlayer
+---@param receiver ServerPlayer
+function Server:cancelChallenge(sender, receiver)
+  local senderChallenges = self.proposals[sender.publicPlayerID] or {}
+  senderChallenges[receiver.publicPlayerID] = nil
+
+  self.proposals[sender.publicPlayerID] = senderChallenges
+
+  receiver:sendJson(ServerProtocol.cancelChallenge(sender, receiver))
+end
+
 ---@param player ServerPlayer
 function Server:clearProposals(player)
-  local proposals = self.proposals
-  if proposals[player] then
-    for otherPlayer, _ in pairs(proposals[player]) do
-      proposals[player][otherPlayer] = nil
-      if proposals[otherPlayer] then
-        proposals[otherPlayer][player] = nil
-      end
+  self.proposals[player.publicPlayerID] = {}
+  for _, challenges in pairs(self.proposals) do
+    if challenges[player.publicPlayerID] then
+      challenges[player.publicPlayerID] = nil
     end
-    proposals[player] = nil
   end
 end
 
@@ -589,7 +623,7 @@ function Server:processMessage(message, connection)
       return false
     elseif player.state == "lobby" and message.game_request then
       if message.game_request.sender == player.name then
-        self:proposeGame(player, self.nameToPlayer[message.game_request.receiver])
+        self:processGameRequest(player, self.nameToPlayer[message.game_request.receiver], message.game_request.gameModeId)
         return true
       end
     elseif player.state == "lobby" and message.roomRequest then

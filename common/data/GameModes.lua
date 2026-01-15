@@ -252,4 +252,28 @@ function GameModes.createFromServerData(gameModeData)
   return result
 end
 
+---@type table<GameModeID, string>
+GameModes.gameModeIdToName = {
+  TWO_PLAYER_VS = "VS",
+  ONE_PLAYER_TIME_ATTACK = "timeattack",
+  ONE_PLAYER_ENDLESS = "endless",
+  ONE_PLAYER_TRAINING = "training",
+  ONE_PLAYER_CHALLENGE = "challenge",
+  ONE_PLAYER_VS_SELF = "vsSelf",
+  ONE_PLAYER_PUZZLE = "puzzle",
+  TWO_PLAYER_TIME_ATTACK = "2p_timeattack",
+}
+
+---@type table<string, GameModeID>
+GameModes.nameToGameModeId = {
+  VS = "TWO_PLAYER_VS",
+  timeattack = "ONE_PLAYER_TIME_ATTACK",
+  endless = "ONE_PLAYER_ENDLESS",
+  training = "ONE_PLAYER_TRAINING",
+  challenge = "ONE_PLAYER_CHALLENGE",
+  vsSelf = "ONE_PLAYER_VS_SELF",
+  puzzle = "ONE_PLAYER_PUZZLE",
+  ["2p_timeattack"] = "TWO_PLAYER_TIME_ATTACK"
+}
+
 return GameModes

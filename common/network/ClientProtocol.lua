@@ -55,14 +55,17 @@ end
 -------------------------
 
 -- players are challenged by their current name on the server
-function ClientMessages.challengePlayer(senderName, receiverName)
+---@param senderName string
+---@param receiverName string
+---@param gameModeId GameModeID? nil if the challenged picks the game mode
+function ClientMessages.challengePlayer(senderName, receiverName, gameModeId)
   local playerChallengeMessage =
   {
     game_request =
     {
       sender = senderName,
       receiver = receiverName,
-      gameType = "TWO_PLAYER_VS",
+      gameModeId = gameModeId,
     }
   }
 

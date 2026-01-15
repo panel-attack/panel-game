@@ -22,6 +22,7 @@ local ServerGame = require("server.Game")
 ---@field matchCount integer
 ---@field game ServerGame?
 ---@field gameMode table -- only the data portion of the game mode
+---@field gameModeId GameModeID
 ---@field ranked boolean if the next match is anticipated to be ranked 
 ---@field rankedReasons string[]
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room

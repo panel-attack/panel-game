@@ -469,16 +469,40 @@ local challengeTemplate = {
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
+---@param gameModeId GameModeID? nil if the challenged picks the game mode
 ---@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.sendChallenge(sender, receiver)
+function ServerProtocol.sendChallenge(sender, receiver, gameModeId)
   local challengeMessage = challengeTemplate
   challengeMessage.senderId = sender.publicPlayerID
   challengeMessage.content.sender = sender.name
   challengeMessage.content.receiver = receiver.name
+  challengeMessage.content.gameModeId = gameModeId
 
   return {
     messageType = msgTypes.jsonMessage,
     messageText = challengeMessage,
+  }
+end
+
+local cancelChallengeTemplate = {
+  sender = "player",
+  senderId = nil,
+  type = "challengeCancelled",
+  content = {}
+}
+
+---@param sender ServerPlayer
+---@param receiver ServerPlayer
+---@return {messageType: table, messageText: ServerMessage}
+function ServerProtocol.cancelChallenge(sender, receiver)
+  local cancelChallengeMessage = cancelChallengeTemplate
+  cancelChallengeMessage.sender = sender.publicPlayerID
+  cancelChallengeMessage.content.sender = sender.name
+  cancelChallengeMessage.content.receiver = receiver.name
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = cancelChallengeMessage
   }
 end
 
