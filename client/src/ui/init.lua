@@ -14,6 +14,12 @@ https://luals.github.io/wiki/annotations/#source
 Intellisense for constructors that have their constructor annotated usually works fine if you type
 ui.UiElement({})
 and then navigate back into the {} and hit Ctrl+Space for suggestions
+
+"Go to source" on functions will work after annotating either
+---@operator call(argType): classname
+or
+---@overload fun(options: argType): classname
+on the class itself as luaLS only then correctly infers the return from the constructor
 ]]
 
 
