@@ -256,11 +256,67 @@ function Server:lobby_state()
   return {unpaired = names, spectatable = spectatableRooms, players = players}
 end
 
+---@alias LobbyPlayerV2 {publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>}
+---@alias LobbyRoomV2 {roomNumber: integer, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[]}
+---@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<integer, LobbyRoomV2> }
+
+---@return LobbyStateV2
+function Server:lobbyStateV2()
+  local players = {}
+  local rooms = {}
+
+  for _, connection in pairs(self.connections) do
+    local player = self.connectionToPlayer[connection]
+    if player then
+      logger.debug("Player " .. player.name .. " state is " .. player.state)
+    end
+
+    players[player.publicPlayerID] = {
+      publicId = player.publicPlayerID,
+      name = player.name,
+      state = player.state,
+      ratings = { },
+    }
+
+    if self.leaderboard and self.leaderboard.players[player.userId] and self.leaderboard.players[player.userId].placement_done then
+      players[player.publicPlayerID].ratings.TWO_PLAYER_VS = math.round(self.leaderboard.players[player.userId].rating)
+    end
+  end
+
+  for _, room in pairs(self.rooms) do
+    local lobbyRoom = {
+      roomNumber = room.roomNumber,
+      state = room:state(),
+      gameModeId = GameModes.nameToGameModeId[room.gameMode.name],
+      players = {},
+      spectators = {}
+    }
+
+    if room.game then
+      lobbyRoom.gameStartTime = os.date("*t", to_UTC(room.game.creationTime))
+    end
+
+    for i, player in ipairs(room.players) do
+      players[player.publicPlayerID].roomNumber = room.roomNumber
+      lobbyRoom.players[i] = player.publicPlayerID
+    end
+
+    for i, spectator in ipairs(room.spectators) do
+      players[spectator.publicPlayerID].roomNumber = room.roomNumber
+      lobbyRoom.spectators[i] = spectator.publicPlayerID
+    end
+
+    rooms[lobbyRoom.roomNumber] = lobbyRoom
+  end
+
+  return { players = players, rooms = rooms }
+end
+
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
 ---@param gameModeId GameModeID?
 function Server:processGameRequest(sender, receiver, gameModeId)
-  logger.debug(sender.name .. " challenges " .. receiver.name .. " to a game of " .. (gameModeId or "their choice (any)"))
+  logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, (gameModeId or "their choice (any)")))
 
   if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
     local previouslyProposedGameMode = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
@@ -515,11 +571,11 @@ local function handleError(msg)
 
   local trace = debug.traceback()
   ---@type any
-  local sanitizedmsg = {}
+  local sanitizedMsgTable = {}
 	for char in msg:gmatch(utf8.charpattern) do
-		table.insert(sanitizedmsg, char)
+		table.insert(sanitizedMsgTable, char)
 	end
-	sanitizedmsg = table.concat(sanitizedmsg)
+	local sanitizedmsg = table.concat(sanitizedMsgTable)
 
 	local err = {}
 
@@ -687,11 +743,14 @@ end
 function Server:broadCastLobbyIfChanged()
   if self.lobbyChanged then
     local lobbyState = self:lobby_state()
+    local lobbyStateV2 = self:lobbyStateV2()
     local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
+    local messageV2 = ServerProtocol.lobbyStateV2(lobbyStateV2.players, lobbyStateV2.rooms)
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player and player.state == "lobby" then
         connection:sendJson(message)
+        connection:sendJson(messageV2)
       end
     end
     self.lobbyChanged = false

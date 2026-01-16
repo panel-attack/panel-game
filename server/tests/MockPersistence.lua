@@ -1,7 +1,8 @@
----@diagnostic disable: missing-fields, duplicate-set-field
+---@diagnostic disable: missing-fields, duplicate-set-field, inject-field
 
 ---@type Persistence
 local MockPersistence = {}
+local testData
 
 -- this should be a reference to the same player data the Playerbase holds onto
 local PlayerData
@@ -63,7 +64,14 @@ function MockPersistence.getPlayerData()
 end
 
 ---@param privateUserId privateUserId
+---@return DB_Player?
 function MockPersistence.getPlayerInfo(privateUserId)
+  --publicPlayerID: integer, privatePlayerID: integer, username: string, lastLoginTime: integer
+  return {publicPlayerID = testData[tonumber(privateUserId)].publicPlayerID, privatePlayerID = privateUserId, username = testData[tonumber(privateUserId)].name, lastLoginTime = 0}
+end
+
+function MockPersistence.setTestData(playerData)
+  testData = playerData
 end
 
 return MockPersistence

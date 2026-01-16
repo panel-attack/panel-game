@@ -316,6 +316,25 @@ function ServerProtocol.lobbyState(unpaired, rooms, allPlayers)
   }
 end
 
+local lobbyState2Template = {
+  sender = "server",
+  type = "lobbyStateV2",
+  content = { }
+}
+
+---@return {messageType: table, messageText: ServerMessage}
+function ServerProtocol.lobbyStateV2(players, rooms)
+  local lobbyStateV2Message = lobbyState2Template
+
+  lobbyStateV2Message.content.players = players
+  lobbyStateV2Message.content.rooms = rooms
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = lobbyStateV2Message,
+  }
+end
+
 local loginResponseTemplate = {
   sender = "server",
   type = "loginResponse",

@@ -27,6 +27,9 @@ local function testLogin()
   assert(message and message.messageText.type == "loginResponse" and message.messageText.content.approved)
   message = bob.connection.outgoingMessageQueue:pop().messageText
   assert(message and message.type == "lobbyState" and message.content.unpaired and message.content.unpaired[1] == "Bob")
+  -- during migration we'll have both; remove old lobby state once clients have moved to V2
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[4].name == "Bob")
 end
 
 local function testRoomSetup()
@@ -122,6 +125,15 @@ local function testGameplay()
   assert(message.type == "lobbyState")
   assert(message.content.unpaired and #message.content.unpaired == 1)
   assert(#message.content.spectatable == 1 and message.content.spectatable[1].state == "playing" and message.content.spectatable[1].roomNumber == 1)
+
+  -- during migration we'll have both; remove old lobby state once clients have moved to V2
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyStateV2")
+  assert(message.content.players and tableUtils.length(message.content.players) == 3)
+  assert(tableUtils.length(message.content.rooms) == 1)
+  local roomNumber, lobbyRoomV2 = next(message.content.rooms)
+  assert(lobbyRoomV2.state == "playing" and lobbyRoomV2.roomNumber == 1)
+
   local matchStart = alice.connection.outgoingMessageQueue:pop().messageText
   assert(matchStart.type == "matchStart")
   matchStart = ben.connection.outgoingMessageQueue:pop().messageText
@@ -233,6 +245,12 @@ local function testDisconnect()
   assert(message.type == "lobbyState" and message.content.unpaired and #message.content.unpaired == 2)
   message = bob.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyState" and message.content.unpaired and #message.content.unpaired == 2)
+
+  -- during migration we'll have both; remove old lobby state once clients have moved to V2
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[5].name == "Alice" and message.content.players[5].state == "lobby")
+  message = bob.connection.outgoingMessageQueue:pop().messageText
+  assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[4].name == "Bob" and message.content.players[4].state == "lobby")
 end
 
 
@@ -277,6 +295,27 @@ local function testLobbyDataComposition()
 
   -- bob as a spectator is invisible rip
   assert(not message.players["Bob"])
+
+  -- and now for V2
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyStateV2")
+  message = message.content
+  ---@cast message LobbyStateV2
+  assert(message.players and tableUtils.length(message.players) == 5)
+  assert(message.rooms and tableUtils.length(message.rooms) == 1)
+  for id, player in pairs(message.players) do
+    assert(id == player.publicId)
+    assert((player.state == "lobby" and (player.name == "Alice" or player.name == "Berta") and tonumber(player.ratings.TWO_PLAYER_VS))
+        or (player.state == "character select" and (player.name == "Ben" or player.name == "Jerry"))
+        or (player.state == "spectating" and player.name == "Bob"))
+  end
+
+  local roomNumber, lobbyRoom = next(message.rooms)
+  assert(lobbyRoom.roomNumber == roomNumber)
+  assert(#lobbyRoom.players == 2 and #lobbyRoom.spectators == 1)
+  -- in the new lobby data spectators are not invisible anymore!
+  assert(message.players[lobbyRoom.spectators[1]].name == "Bob")
+  assert(lobbyRoom.gameModeId == "TWO_PLAYER_VS")
 end
 
 local function testSinglePlayer()
@@ -295,6 +334,11 @@ local function testSinglePlayer()
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyState")
   assert(#message.content.spectatable == 1)
+
+  -- during migration we'll have both; remove old lobby state once clients have moved to V2
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyStateV2")
+  assert(tableUtils.length(message.content.rooms) == 1)
 
   alice.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Alice", server.playerToRoom[bob].roomNumber).messageText))
   server:update()
@@ -325,6 +369,9 @@ local function testSinglePlayer()
   assert(message.type == "leaveRoom")
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyState")
+  -- during migration we'll have both; remove old lobby state once clients have moved to V2
+  message = alice.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "lobbyStateV2")
 
   alice.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Alice", server.playerToRoom[bob].roomNumber).messageText))
   server:update()

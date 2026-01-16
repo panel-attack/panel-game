@@ -33,6 +33,8 @@ local function get_timezone_offset(ts)
 end
 local currentTimeZoneOffset = get_timezone_offset(os.time())
 
+---@param time_to_convert integer
+---@return integer
 function to_UTC(time_to_convert)
   return time_to_convert + -1 * currentTimeZoneOffset
 end

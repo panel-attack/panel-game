@@ -58,6 +58,7 @@ function ServerTesting.addToLeaderboard(lb, player)
 end
 
 function ServerTesting.getTestServer()
+  MockPersistence.setTestData(ServerTesting.players)
   local testServer = Server(false, MockPersistence)
   testServer:initializePlayerData("", playerData)
 
