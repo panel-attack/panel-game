@@ -83,7 +83,7 @@ end
 function InputDeviceOverlay:buildUi()
   -- Title
   self.titleLabel = Label({
-    text = "press_button_device",
+    text = "hold_button_device",
     hAlign = "center",
     vAlign = "top",
     y = 60,
