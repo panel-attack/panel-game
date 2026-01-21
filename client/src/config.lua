@@ -144,7 +144,7 @@ end
       function()
         local encoded = json.encode(config)
         ---@cast encoded string
-        love.filesystem.write("conf.json", json.encode(config))
+        love.filesystem.write("conf.json", encoded)
       end
     )
   end

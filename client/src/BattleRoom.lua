@@ -448,6 +448,7 @@ function BattleRoom:restoreInputConfigurations()
 end
 
 -- Gets all local human players in the battle room
+---@return Player[] localHumanPlayers
 function BattleRoom:getLocalHumanPlayers()
   local localPlayers = {}
   for _, player in ipairs(self.players) do

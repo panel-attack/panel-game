@@ -196,7 +196,7 @@ end
 -- Intentional override
 ---@diagnostic disable-next-line: duplicate-set-field
 function love.joystickremoved(joystick)
-  inputManager:onJoystickRemoved(joystick)
+  GAME:onJoystickRemoved(joystick)
 end
 
 -- Handle a touch press

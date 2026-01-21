@@ -12,7 +12,6 @@ local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 local MatchRules = require("common.data.MatchRules")
-local DebugSettings = require("client.src.debug.DebugSettings")
 
 ---@class Match
 ---@field stacks (Stack | SimulatedStack)[] The stacks to run as part of the match

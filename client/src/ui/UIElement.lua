@@ -271,7 +271,7 @@ end
 
 ---Returns a formatted tree of this element and all children with class name, TYPE, and root position
 ---@return string
-function UIElement:debugTree()
+function UIElement:toStringWithDepth()
   local function getElementInfo(element, depth)
     local indent = string.rep("  ", depth)
     local typeStr = element.TYPE and (" [" .. element.TYPE .. "]") or ""
@@ -292,7 +292,7 @@ end
 
 ---Returns a formatted list of this element and its direct children only (non-recursive)
 ---@return string
-function UIElement:debugChildren()
+function UIElement:toString()
   local typeStr = self.TYPE and (" [" .. self.TYPE .. "]") or ""
   local x, y = self:getScreenPos()
   local lines = {string.format("%s @ (%.1f, %.1f)", typeStr, x, y)}

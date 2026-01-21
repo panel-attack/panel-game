@@ -382,6 +382,10 @@ function Game:hasOngoingMatch()
   return not not (GAME.battleRoom and GAME.battleRoom.match ~= nil)
 end
 
+function Game:onJoystickRemoved(joystick)
+  self.input:onJoystickRemoved(joystick)
+end
+
 -- Called every few fractions of a second to update the game
 -- dt is the amount of time in seconds that has passed.
 function Game:update(dt)
