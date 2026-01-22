@@ -40,8 +40,11 @@ local PLAYER_SLOT_SIZE = 150
 ---@field onClose fun()?
 ---@field onCancel fun()? Callback when user presses back/cancel
 
+---@class InputDeviceOverlay
+---@operator call(InputDeviceOverlayOptions): InputDeviceOverlay
+local InputDeviceOverlay = class(
 ---@param options InputDeviceOverlayOptions
-local InputDeviceOverlay = class(function(self, options)
+function(self, options)
   options = options or {}
   self.battleRoom = options.battleRoom
   self.holdThreshold = options.holdThreshold or HOLD_THRESHOLD
@@ -63,7 +66,7 @@ local InputDeviceOverlay = class(function(self, options)
 end, UiElement, "InputDeviceOverlay")
 
 ---@param config InputConfiguration Input configuration object
----@return number? Maximum hold duration across all checked keys
+---@return number? maxDuration Maximum hold duration across all checked keys
 local function getHoldDurationForInputConfiguration(config)
   local maxDuration = 0
 
@@ -123,14 +126,14 @@ function InputDeviceOverlay:buildUi()
   self:addChild(self.backButton)
 end
 
----@return Player[] Array of local human players
+---@return Player[] localHumanPlayers Array of local human players
 function InputDeviceOverlay:getLocalPlayers()
   assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
   return self.battleRoom:getLocalHumanPlayers()
 end
 
 -- Gets the next player that needs device assignment
----@return Player? Next unassigned player or nil if all assigned
+---@return Player? player Next unassigned player or nil if all assigned
 function InputDeviceOverlay:getNextUnassignedPlayer()
   for _, player in ipairs(self:getLocalPlayers()) do
     if not self.battleRoom:isPlayerAssigned(player) then
@@ -140,7 +143,7 @@ function InputDeviceOverlay:getNextUnassignedPlayer()
   return nil
 end
 
----@return PlayerInputDeviceSlot? Player slot under mouse cursor or nil
+---@return PlayerInputDeviceSlot? slot Player slot under mouse cursor or nil
 function InputDeviceOverlay:getPlayerSlotForTouch()
   for _, slot in ipairs(self.playerSlots) do
     if slot:isMouseOver() then
@@ -180,7 +183,7 @@ function InputDeviceOverlay:buildPlayerSlots()
 end
 
 ---@param player Player
----@return InputConfiguration? Input configuration if player is assigned, nil otherwise
+---@return InputConfiguration? inputConfig Input configuration if player is assigned, nil otherwise
 function InputDeviceOverlay:getAssignedDeviceForPlayer(player)
   if not self.battleRoom or not player then
     return nil
@@ -316,7 +319,7 @@ function InputDeviceOverlay:updateTouchHold(dt)
 end
 
 -- Checks if mouse is currently being held down
----@return boolean True if mouse button 1 is held
+---@return boolean # True if mouse button 1 is held
 function InputDeviceOverlay:isMouseHolding()
   local mousePressed = inputManager.mouse.isPressed[1]
   local mouseDown = inputManager.mouse.isDown[1]
@@ -325,7 +328,7 @@ end
 
 -- Checks if touch device is already assigned to any player
 ---@param touchConfig InputConfiguration Touch input configuration
----@return boolean True if touch is already assigned
+---@return boolean # True if touch is already assigned
 function InputDeviceOverlay:isTouchAlreadyAssigned(touchConfig)
   if not self.battleRoom then
     return false
@@ -413,7 +416,7 @@ function InputDeviceOverlay:clearTouchTarget()
   end
 end
 
----@return InputConfiguration? Touch input configuration or nil if not found
+---@return InputConfiguration? touchInputConfig Touch input configuration or nil if not found
 function InputDeviceOverlay:getTouchDescriptor()
   for _, config in ipairs(inputManager:getAssignableDevices()) do
     if config.deviceType == "touch" then
@@ -424,7 +427,7 @@ function InputDeviceOverlay:getTouchDescriptor()
 end
 
 -- Checks if any button is currently being pressed on any device
----@return boolean True if any device has active input
+---@return boolean # True if any device has active input
 function InputDeviceOverlay:isAnyButtonCurrentlyPressed()
   -- Check if mouse is being held (for touch)
   if self:isMouseHolding() then
@@ -480,8 +483,6 @@ function InputDeviceOverlay:openInputDeviceOverlayIfNeeded()
   end
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
 function InputDeviceOverlay:drawSelf()
   if not self.active then
     return
@@ -521,7 +522,7 @@ function InputDeviceOverlay:close()
   end
 end
 
----@return boolean True if overlay is currently active
+---@return boolean # True if overlay is currently active
 function InputDeviceOverlay:isActive()
   return self.active
 end
@@ -535,14 +536,14 @@ function InputDeviceOverlay:onBackPressed()
   end
 end
 
----@return boolean? True to block touch event propagation
+---@return boolean? # True to block touch event propagation
 function InputDeviceOverlay:onTouch()
   if self.active then
     return true
   end
 end
 
----@return boolean? True to block release event propagation
+---@return boolean? # True to block release event propagation
 function InputDeviceOverlay:onRelease()
   if self.active then
     return true
@@ -550,7 +551,6 @@ function InputDeviceOverlay:onRelease()
 end
 
 function InputDeviceOverlay:receiveInputs(input, dt)
-
   if input.isDown["MenuEsc"] then
     self.escapeHoldTime = self.escapeHoldTime + dt
   elseif input.isPressed["MenuEsc"] and self.escapeHoldTime > 0 then
