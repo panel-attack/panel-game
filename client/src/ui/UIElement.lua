@@ -146,8 +146,10 @@ function UIElement:refreshLocalization()
 end
 
 function UIElement:update(dt)
-  self:updateSelf(dt)
-  self:updateChildren(dt)
+  if self.isVisible then
+    self:updateSelf(dt)
+    self:updateChildren(dt)
+  end
 end
 
 -- UiElements can override this method to do custom update logic

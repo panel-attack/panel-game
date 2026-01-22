@@ -331,6 +331,9 @@ function CharacterSelect:createChangeInputButton()
     hFill = true,
     vFill = true,
     players = self.battleRoom.players,
+    openInputDeviceOverlay = function ()
+      self.inputDeviceOverlay:open()
+    end
   })
 end
 
@@ -1046,8 +1049,9 @@ function CharacterSelect:createDifficultyCarousel(player, height, getPresetFunc)
 end
 
 function CharacterSelect:updateSelf(dt)
-  local overlayActive = self.inputDeviceOverlay and self.inputDeviceOverlay:isActive()
-  if overlayActive then
+  self.inputDeviceOverlay:openInputDeviceOverlayIfNeeded()
+
+  if self.inputDeviceOverlay:isActive() then
     return
   end
 

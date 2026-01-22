@@ -9,7 +9,6 @@ local inputManager = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
-local Scene = require("client.src.scenes.Scene")
 local directsFocus = require("client.src.ui.FocusDirector")
 
 local HOLD_THRESHOLD = 0.25
@@ -112,7 +111,7 @@ function InputDeviceOverlay:buildUi()
 
   self.backButton = TextButton({
     label = Label({
-      text = "back"
+      text = "leave"
     }),
     hAlign = "center",
     vAlign = "bottom",
@@ -441,16 +440,6 @@ end
 
 ---@param dt number Delta time in seconds
 function InputDeviceOverlay:updateSelf(dt)
-  if not self.active then
-    if not self.battleRoom.spectating and GAME.input:checkForUnassignedConfigurationInputs(self.battleRoom:getLocalHumanPlayers()) then
-      self.battleRoom:releaseAllLocalAssignments()
-    end
-
-    self:openInputDeviceOverlayIfNeeded()
-
-    return
-  end
-
   for _, slot in ipairs(self.playerSlots) do
     if not slot.assignedDevice then
       slot:setHoldProgress(0, nil)

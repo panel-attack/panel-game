@@ -7,13 +7,13 @@ local StackPanel = require(PATH .. ".StackPanel")
 local UiElement = require(PATH .. ".UIElement")
 
 ---@class ChangeInputButtonOptions : ButtonOptions
----@field players Player[]?
----@field onChangeInputRequested fun()?
+---@field players Player[]
+---@field openInputDeviceOverlay fun()
 
 -- Button that displays current player input assignments and allows changing them
 ---@class ChangeInputButton : Button
----@field players Player[]? The players we query assignments for
----@field onChangeInputRequested fun() Callback invoked when button is clicked to change inputs
+---@field players Player[] The players we query assignments for
+---@field openInputDeviceOverlay fun() Callback invoked when button is clicked to change inputs
 ---@field titleLabel Label Title text label
 ---@field iconContainer StackPanel Container for player assignment icons
 ---@field signalConnections table[] Array of signal subscriptions for live updates
@@ -28,6 +28,8 @@ local ChangeInputButton = class(
         self.localHumanPlayers[#self.localHumanPlayers+1] = player
       end
     end
+
+    self.openInputDeviceOverlay = options.openInputDeviceOverlay
 
     self.signalConnections = {}
 
@@ -71,6 +73,7 @@ function ChangeInputButton:onClick()
 
     if released then
       GAME.theme:playCancelSfx()
+      self.openInputDeviceOverlay()
     else
       GAME.theme:playMoveSfx()
     end
