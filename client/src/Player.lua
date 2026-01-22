@@ -97,10 +97,6 @@ function Player:reset()
   self:unrestrictInputs()
 end
 
-function Player:isLocalHuman()
-  return self.isLocal and self.human
-end
-
 ---@param engineStack Stack
 ---@return PlayerStack
 function Player:createClientStack(engineStack)
