@@ -517,7 +517,7 @@ function BattleRoom:claimDeviceForPlayer(player, device)
 
   assert(not device.claimed or device.player == player, "device already claimed by another player")
 
-  self:clearPlayerAssignment(player)
+  player:clearInputDeviceAssignment()
 
   if device.deviceType == "touch" then
     player:setInputMethod("touch")
@@ -530,26 +530,12 @@ function BattleRoom:claimDeviceForPlayer(player, device)
   return true
 end
 
--- Clears input device assignment for a player
-function BattleRoom:clearPlayerAssignment(player)
-  assert(player, "player is required")
-  logger.debug(string.format("BattleRoom:clearPlayerAssignment player=%s", tostring(player.playerNumber)))
-
-  if player.inputConfiguration then
-    player:unrestrictInputs()
-  end
-
-  if player.settings.inputMethod ~= "controller" then
-    player:setInputMethod("controller")
-  end
-end
-
 -- Releases all input device assignments for local players
 function BattleRoom:releaseAllLocalAssignments()
   local released = false
   for _, player in ipairs(self:getLocalHumanPlayers()) do
     if player.inputConfiguration then
-      self:clearPlayerAssignment(player)
+      player:clearInputDeviceAssignment()
       released = true
     end
   end

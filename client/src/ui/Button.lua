@@ -21,14 +21,16 @@ local Button = class(
     self.currentlyPressed = false
 
     -- callbacks
-    self.onClick = options.onClick or function()
-      GAME.theme:playValidationSfx()
-    end
+    self.onClick = options.onClick
   end,
   UIElement
 )
 
 Button.TYPE = "Button"
+
+function Button:onClick()
+  GAME.theme:playValidationSfx()
+end
 
 function Button:onTouch(x, y)
   self.currentlyPressed = true

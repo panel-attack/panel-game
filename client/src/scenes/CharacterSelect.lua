@@ -331,27 +331,7 @@ function CharacterSelect:createChangeInputButton()
     hFill = true,
     vFill = true,
     players = self.battleRoom.players,
-    onChangeInputRequested = function()
-      self:onChangeInputDeviceRequested()
-    end
   })
-end
-
-function CharacterSelect:onChangeInputDeviceRequested()
-  if not self.battleRoom then
-    return
-  end
-
-  local hasLocalPlayers = #self.battleRoom:getLocalHumanPlayers() > 0
-  if not hasLocalPlayers then
-    return
-  end
-
-  if self.battleRoom:releaseAllLocalAssignments() then
-    GAME.theme:playCancelSfx()
-  else
-    GAME.theme:playMoveSfx()
-  end
 end
 
 local super_select_pixelcode = [[

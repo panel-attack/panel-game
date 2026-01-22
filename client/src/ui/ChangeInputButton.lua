@@ -2,8 +2,6 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local Button = require(PATH .. ".Button")
 local Label = require(PATH .. ".Label")
 local class = require("common.lib.class")
-local GraphicsUtil = require("client.src.graphics.graphics_util")
-local inputManager = require("client.src.inputManager")
 local InputPromptRenderer = require("client.src.graphics.InputPromptRenderer")
 local StackPanel = require(PATH .. ".StackPanel")
 local UiElement = require(PATH .. ".UIElement")
@@ -31,8 +29,6 @@ local ChangeInputButton = class(
       end
     end
 
-
-    self.onChangeInputRequested = options.onChangeInputRequested or function() end
     self.signalConnections = {}
 
     local width = 80
@@ -53,11 +49,6 @@ local ChangeInputButton = class(
 
     self:addChild(self.iconContainer)
 
-    self.onClick = function(selfElement, inputSource, holdTime)
-      selfElement.onChangeInputRequested()
-    end
-    self.onSelect = self.onClick
-
     -- Subscribe to player signals and update initial state
     self:subscribeToPlayerSignals()
     self:updateSummary()
@@ -65,6 +56,30 @@ local ChangeInputButton = class(
   Button
 )
 
+function ChangeInputButton:onClick()
+  if #self.localHumanPlayers == 0 then
+    GAME.theme:playCancelSfx()
+    return
+  else
+    local released = false
+    for i, player in ipairs(self.localHumanPlayers) do
+      if player.inputConfiguration then
+        player:clearInputDeviceAssignment()
+        released = true
+      end
+    end
+
+    if released then
+      GAME.theme:playCancelSfx()
+    else
+      GAME.theme:playMoveSfx()
+    end
+  end
+end
+
+function ChangeInputButton:onSelect()
+  self:onClick()
+end
 
 function ChangeInputButton:onResize()
   -- Icon container has fixed width now

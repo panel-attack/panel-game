@@ -235,6 +235,16 @@ function Player:unrestrictInputs()
   end
 end
 
+function Player:clearInputDeviceAssignment()
+  if self.inputConfiguration then
+    self:unrestrictInputs()
+  end
+
+  if self.settings.inputMethod ~= "controller" then
+    self:setInputMethod("controller")
+  end
+end
+
 ---@return Player
 function Player.createLocalPlayerFromConfig()
   local player = Player(config.name, -1, true)
