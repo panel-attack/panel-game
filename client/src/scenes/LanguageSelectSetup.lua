@@ -40,6 +40,18 @@ function LanguageSelectSetup:load(sceneParams)
   -- Language selection menu
   self.menu = self:createLanguageMenu()
   contentStack:addElement(self.menu)
+
+  contentStack:addElement(ui.UiElement({
+    width = 1,
+    height = 60
+  }))
+
+  self.disclaimerLabel = ui.Label({
+    text = "translation_disclaimer",
+    hAlign = "center"
+  })
+
+  contentStack:addElement(self.disclaimerLabel)
 end
 
 LanguageSelectSetup.name = "LanguageSelectSetup"
@@ -65,6 +77,19 @@ end
 function LanguageSelectSetup:update(dt)
   GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs()
+
+  for i, menuItem in ipairs(self.menu.menuItems) do
+    if menuItem.selected then
+      local code = Localization:getLanguageCode(menuItem.textButton.label.text)
+      if Localization:get_language() ~= code then
+        GAME:setLanguage(code)
+        self.disclaimerLabel.fontSize = Localization.languageCodeToFontData[code].fontSize
+      end
+
+      self.disclaimerLabel:refreshLocalization()
+    end
+  end
+
 end
 
 function LanguageSelectSetup:draw()
