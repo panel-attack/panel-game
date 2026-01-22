@@ -330,7 +330,7 @@ function CharacterSelect:createChangeInputButton()
   return ui.ChangeInputButton({
     hFill = true,
     vFill = true,
-    battleRoom = self.battleRoom,
+    players = self.battleRoom.players,
     onChangeInputRequested = function()
       self:onChangeInputDeviceRequested()
     end

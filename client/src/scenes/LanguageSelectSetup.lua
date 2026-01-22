@@ -76,8 +76,7 @@ end
 
 function LanguageSelectSetup:update(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.menu:receiveInputs()
-
+  
   for i, menuItem in ipairs(self.menu.menuItems) do
     if menuItem.selected then
       local code = Localization:getLanguageCode(menuItem.textButton.label.text)
@@ -85,11 +84,12 @@ function LanguageSelectSetup:update(dt)
         GAME:setLanguage(code)
         self.disclaimerLabel.fontSize = Localization.languageCodeToFontData[code].fontSize
       end
-
+      
       self.disclaimerLabel:refreshLocalization()
     end
   end
-
+  
+  self.menu:receiveInputs()
 end
 
 function LanguageSelectSetup:draw()

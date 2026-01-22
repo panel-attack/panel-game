@@ -9,12 +9,12 @@ local StackPanel = require(PATH .. ".StackPanel")
 local UiElement = require(PATH .. ".UIElement")
 
 ---@class ChangeInputButtonOptions : ButtonOptions
----@field battleRoom BattleRoom?
+---@field players Player[]?
 ---@field onChangeInputRequested fun()?
 
 -- Button that displays current player input assignments and allows changing them
 ---@class ChangeInputButton : Button
----@field battleRoom BattleRoom? Reference to battle room for querying player assignments
+---@field players Player[]? The players we query assignments for
 ---@field onChangeInputRequested fun() Callback invoked when button is clicked to change inputs
 ---@field titleLabel Label Title text label
 ---@field iconContainer StackPanel Container for player assignment icons
@@ -23,7 +23,15 @@ local ChangeInputButton = class(
   function(self, options)
     options = options or {}
 
-    self.battleRoom = options.battleRoom
+    self.players = options.players
+    self.localHumanPlayers = {}
+    for _, player in ipairs(self.players) do
+      if player.isLocal and player.human then
+        self.localHumanPlayers[#self.localHumanPlayers+1] = player
+      end
+    end
+
+
     self.onChangeInputRequested = options.onChangeInputRequested or function() end
     self.signalConnections = {}
 
@@ -68,13 +76,12 @@ function ChangeInputButton:updateSummary()
     self.iconContainer:remove(self.iconContainer.children[1])
   end
 
-  if not self.battleRoom then
+  if not self.localHumanPlayers then
     self.isEnabled = true
     return
   end
 
-  local players = self.battleRoom:getLocalHumanPlayers()
-  if #players == 0 then
+  if #self.localHumanPlayers == 0 then
     self.isEnabled = true
     return
   end
@@ -88,11 +95,11 @@ function ChangeInputButton:updateSummary()
   self.iconContainer:addElement(spacer)
       
   -- Create a row for each player
-  for i, player in ipairs(players) do
+  for i, player in ipairs(self.localHumanPlayers) do
     self:addPlayerRow(player, i)
 
     -- Add spacing between player rows (except after last)
-    if i < #players then
+    if i < #self.localHumanPlayers then
       spacer = UiElement({
         width = 1,
         height = 4
@@ -172,36 +179,15 @@ function ChangeInputButton:addPlayerIcons(playerRow, player, playerIndex)
   end
 end
 
----@param battleRoom BattleRoom
-function ChangeInputButton:setBattleRoom(battleRoom)
-  self:unsubscribeFromPlayerSignals()
-  self.battleRoom = battleRoom
-  self:subscribeToPlayerSignals()
-  self:updateSummary()
-end
-
 function ChangeInputButton:subscribeToPlayerSignals()
-  if not self.battleRoom then
+  if not self.localHumanPlayers then
     return
   end
 
-  local players = self.battleRoom:getLocalHumanPlayers()
-  for _, player in ipairs(players) do
-    local connection = player:connectSignal("inputConfigurationChanged", self, self.onInputConfigurationChanged)
+  for _, player in ipairs(self.localHumanPlayers) do
+    local connection = player:connectSignal("inputConfigurationChanged", self, self.updateSummary)
     self.signalConnections[#self.signalConnections + 1] = {player = player, connection = connection}
   end
 end
-
-function ChangeInputButton:unsubscribeFromPlayerSignals()
-  for _, connectionInfo in ipairs(self.signalConnections) do
-    connectionInfo.player:disconnectSignal("inputConfigurationChanged", connectionInfo.connection)
-  end
-  self.signalConnections = {}
-end
-
-function ChangeInputButton:onInputConfigurationChanged()
-  self:updateSummary()
-end
-
 
 return ChangeInputButton

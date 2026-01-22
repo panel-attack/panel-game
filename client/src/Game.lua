@@ -372,7 +372,7 @@ end
 
 function Game:onJoystickAdded(joystick)
   local isNotConfigured = self.input:onJoystickAdded(joystick)
-  if isNotConfigured and self.navigationStack.scenes[1].name ~= "BootScene" and config:initializationCompleted() and not self:hasOngoingMatch() then
+  if isNotConfigured and self.navigationStack.scenes[1].name ~= "BootScene" and (config.discordCommunityShown and config.language_code) and not self:hasOngoingMatch() then
     -- Not critically occupied, so push the InputConfigMenu on top
     GAME.navigationStack:push(InputConfigMenu({}))
   end

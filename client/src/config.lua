@@ -134,10 +134,6 @@ config = {
     discordCommunityShown         = false,
   }
 
-function config:initializationCompleted()
-  return self.discordCommunityShown and self.language_code
-end
-
   -- writes to the "conf.json" file
   function write_conf_file()
     pcall(
