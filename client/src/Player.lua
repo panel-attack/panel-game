@@ -33,6 +33,8 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field settings PlayerSettings
 ---@field publicId integer
 ---@field playerNumber integer?
+---@field inputConfiguration InputConfiguration?
+---@field lastUsedInputConfiguration InputConfiguration?
 ---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player
@@ -213,6 +215,7 @@ function Player:setLeague(league)
   end
 end
 
+---@param inputConfiguration InputConfiguration
 function Player:restrictInputs(inputConfiguration)
   if self.inputConfiguration and self.inputConfiguration ~= inputConfiguration then
     error("Player " .. self.playerNumber .. " is trying to claim a second input configuration")

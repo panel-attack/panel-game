@@ -181,7 +181,7 @@ end
 
 -- Maps controller names to specific image variants for theme selection (static helper)
 ---@param controllerName string? Controller name from Love2D
----@return string Image variant key (e.g., "playstation4", "xboxone", "generic")
+---@return string controllerImageVariant Image variant key (e.g., "playstation4", "xboxone", "generic")
 function InputConfiguration.getControllerImageVariantFromName(controllerName)
   if not controllerName then
     return "generic"
@@ -317,7 +317,7 @@ end
 -- Maps gamepad button IDs to display names (static helper)
 ---@param joystick PanelAttackJoystick? Joystick object
 ---@param buttonId string Button identifier (e.g., "0", "dpup11", "+y3")
----@return string Display name for the button
+---@return string displayName Display name for the button
 function InputConfiguration.getButtonNameFromMapping(joystick, buttonId)
   if not joystick or not joystick:isGamepad() then
     return buttonId
@@ -388,7 +388,7 @@ end
 
 -- Get human-readable display name for a key binding
 ---@param keyBinding string? Key binding string (e.g., "space", "guid:slot:button", nil)
----@return string Display name for the key binding
+---@return string displayName Display name for the key binding
 function InputConfiguration:getButtonDisplayName(keyBinding)
   if not keyBinding then
     return loc("op_none")
@@ -413,7 +413,7 @@ end
 local touchConfiguration = nil
 
 -- Gets or creates the special Touch InputConfiguration that wraps the mouse
----@return InputConfiguration Touch configuration
+---@return InputConfiguration touchConfig Touch configuration
 function InputConfiguration.getTouchConfiguration()
   if not touchConfiguration then
     -- Create a special InputConfiguration for touch

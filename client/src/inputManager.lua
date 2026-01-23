@@ -888,4 +888,8 @@ function inputManager:getAssignableDevices()
   return devices
 end
 
+function inputManager.getTouchInputConfiguration()
+  return InputConfiguration.getTouchConfiguration()
+end
+
 return inputManager

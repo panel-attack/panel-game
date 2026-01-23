@@ -13,6 +13,7 @@ local UiElement = require(PATH .. ".UIElement")
 -- Button that displays current player input assignments and allows changing them
 ---@class ChangeInputButton : Button
 ---@field players Player[] The players we query assignments for
+---@field localHumanPlayers Player[]
 ---@field openInputDeviceOverlay fun() Callback invoked when button is clicked to change inputs
 ---@field titleLabel Label Title text label
 ---@field iconContainer StackPanel Container for player assignment icons
