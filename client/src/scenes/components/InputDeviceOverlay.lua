@@ -225,14 +225,7 @@ function InputDeviceOverlay:assignDevice(inputConfig, targetPlayer)
   end
 
   if targetPlayer.inputConfiguration ~= inputConfig then
-    targetPlayer:clearInputDeviceAssignment()
-
-    if inputConfig.deviceType == "touch" then
-      targetPlayer:setInputMethod("touch")
-    else
-      targetPlayer:setInputMethod("controller")
-    end
-
+    targetPlayer:unrestrictInputs()
     targetPlayer:restrictInputs(inputConfig)
   end
 

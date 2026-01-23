@@ -67,7 +67,7 @@ function ChangeInputButton:onClick()
     local released = false
     for i, player in ipairs(self.localHumanPlayers) do
       if player.inputConfiguration then
-        player:clearInputDeviceAssignment()
+        player:unrestrictInputs()
         released = true
       end
     end

@@ -220,6 +220,12 @@ function Player:restrictInputs(inputConfiguration)
   if self.inputConfiguration and self.inputConfiguration ~= inputConfiguration then
     error("Player " .. self.playerNumber .. " is trying to claim a second input configuration")
   end
+  if inputConfiguration.deviceType == "touch" then
+    self:setInputMethod("touch")
+  else
+    self:setInputMethod("controller")
+  end
+
   self.inputConfiguration = input:claimConfiguration(self, inputConfiguration)
   self:emitSignal("inputConfigurationChanged", self.inputConfiguration)
 end
@@ -235,16 +241,6 @@ function Player:unrestrictInputs()
     input:releaseConfiguration(self, self.inputConfiguration)
     self.inputConfiguration = nil
     self:emitSignal("inputConfigurationChanged", nil)
-  end
-end
-
-function Player:clearInputDeviceAssignment()
-  if self.inputConfiguration then
-    self:unrestrictInputs()
-  end
-
-  if self.settings.inputMethod ~= "controller" then
-    self:setInputMethod("controller")
   end
 end
 
