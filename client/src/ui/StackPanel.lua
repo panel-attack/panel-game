@@ -5,9 +5,9 @@ local tableUtils = require("common.lib.tableUtils")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local DebugSettings = require("client.src.debug.DebugSettings")
 
+-- StackPanel is a layouting element that stacks up all its children in one direction based on an alignment setting
+-- Useful for auto-aligning multiple ui elements that only know one of their dimensions
 ---@class StackPanel : UiElement
----StackPanel is a layouting element that stacks up all its children in one direction based on an alignment setting.
----Useful for auto-aligning multiple ui elements that only know one of their dimensions.
 ---@field alignment "left"|"right"|"top"|"bottom" Direction in which children are stacked
 ---@field pixelsTaken number Tracks how many pixels are already taken in the stacking direction
 ---@field TYPE string Class type identifier

@@ -193,18 +193,20 @@ local function processMatchStartMessage(self, message)
 
           if player.isLocal then
             if not player.inputConfiguration then
+              -- fallback in case the player lost their input config while the server sent the message
               if player.settings.inputMethod == "touch" then
-                player:restrictInputs(GAME.input.mouse)
-              else
-                if player.lastUsedInputConfiguration and player.lastUsedInputConfiguration.x then
+                player:restrictInputs(GAME.input.getTouchInputConfiguration())
+              elseif player.lastUsedInputConfiguration then
+                if player.lastUsedInputConfiguration.deviceType == "touch" then
                   -- there is no configuration and the last one is a touch configuration
-                  -- there is no way to know which input configuration the player wanted to use in this scenario so throw an error
+                  -- while we could assume that the player wanted to use touch after all, if the server reports the setting as controller, we can no longer change
+                  -- because the other client already has us clocked as controller and the inputs have to match
+                  -- there is no way to know which input configuration the player would want to use in this scenario so throw an error
                   error("Player's input configuration does not match input method " .. player.settings.inputMethod .. " sent by server.")
                 else
                   player:restrictInputs(player.lastUsedInputConfiguration)
                 end
               end
-              -- fallback in case the player lost their input config while the server sent the message
             end
           end
           -- generally I don't think it's a good idea to try and rematch the other diverging settings here
