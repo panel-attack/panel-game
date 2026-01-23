@@ -459,51 +459,6 @@ function BattleRoom:getLocalHumanPlayers()
   return localPlayers
 end
 
--- Checks if a player has an assigned input device
-function BattleRoom:isPlayerAssigned(player)
-  assert(player, "player is required")
-  local assigned = player.inputConfiguration ~= nil
-  return assigned
-end
-
--- Checks if all local human players have assigned input devices
-function BattleRoom:areLocalPlayersAssigned()
-  for _, player in ipairs(self:getLocalHumanPlayers()) do
-    if not self:isPlayerAssigned(player) then
-      return false
-    end
-  end
-
-  return true
-end
-
--- Gets player by player number
-function BattleRoom:getPlayerByNumber(playerNumber)
-  for _, player in ipairs(self.players) do
-    if player.playerNumber == playerNumber then
-      return player
-    end
-  end
-  return nil
-end
-
--- Gets the player currently assigned to a specific input device
-function BattleRoom:getPlayerAssignedToDevice(device)
-  assert(device, "device is required")
-  logger.debug(string.format("BattleRoom:getPlayerAssignedToDevice device=%s", tostring(device)))
-  if device.player then
-    return device.player
-  end
-
-  for _, player in ipairs(self.players) do
-    if player.inputConfiguration == device then
-      return player
-    end
-  end
-
-  return nil
-end
-
 -- Claims an input device for a specific player
 function BattleRoom:claimDeviceForPlayer(player, device)
   assert(player, "player is required")

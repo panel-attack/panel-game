@@ -312,11 +312,9 @@ end
 
 function CharacterSelect:setChangeInputButtonVisibleIfNeeded()
   if self.ui and self.ui.changeInputButton then
-    if self.battleRoom and #self.battleRoom:getLocalHumanPlayers() == 0 then
-      return
+    if #self.battleRoom:getLocalHumanPlayers() > 0 then
+      self.ui.changeInputButton:setVisibility(true)
     end
-
-    self.ui.changeInputButton:setVisibility(true)
   end
 end
 
