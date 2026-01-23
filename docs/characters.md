@@ -226,7 +226,7 @@ The default option if not specified. Also deprecated, please use per_chain style
 	x4 plays "chain2",  
 	x5 plays "chain_echo",   
 	x6+ plays "chain2_echo"  
-Due to backwards compatibility reason the classic system remains as the default.  
+Due to backwards compatibility reasons the classic system remains as the default.  
 If you wish to use classic style chain sounds, you can use the per_chain system.  
 Simply rename the classic system's  
 "chain" as "chain2",  
@@ -255,7 +255,8 @@ Available options are "classic" and "per_combo".
 ##### classic
 
 The default option if not specified.  
-For combos of any size this will play the SFX "combo" (,"combo2", "combo3", ...) [selected at random if more than one]
+For combos of any size this will play the SFX "combo1" (,"combo2", "combo3", ...) [selected at random if more than one exists]  
+Combos **need** to be numbered sequentially, you cannot skip any number. You may use "combo" instead of "combo1" (legacy support).
 
 ##### per_combo
 

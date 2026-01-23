@@ -540,6 +540,26 @@ function Character:validate()
     return valid, err
   end
 
+  if self.combo_style == comboStyle.classic then
+    local files = fileUtils.getFilteredDirectoryItems(self.path, "file")
+    local comboFiles = fileUtils.getMatchingFiles(files, "combo", fileUtils.SUPPORTED_SOUND_FORMATS)
+    local indices = {}
+    for _, comboFile in ipairs(comboFiles) do
+      local index = tonumber(string.match(comboFile, "%d+", 6))
+      -- first one is typically unnumbered
+      indices[#indices+1] = index or 1
+    end
+
+    table.sort(indices)
+    local lastValue = 0
+    for _, index in ipairs(indices) do
+      if index - 1 > lastValue then
+        return false, "Characters with combo_style \"classic\" need to have their combo SFX sequentially numbered with no gaps. Missing combo" .. tostring(lastValue + 1)
+      end
+      lastValue = index
+    end
+  end
+
   return true
 end
 
