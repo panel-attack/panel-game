@@ -478,19 +478,6 @@ function BattleRoom:claimDeviceForPlayer(player, device)
   return true
 end
 
--- Releases all input device assignments for local players
-function BattleRoom:releaseAllLocalAssignments()
-  local released = false
-  for _, player in ipairs(self:getLocalHumanPlayers()) do
-    if player.inputConfiguration then
-      player:unrestrictInputs()
-      released = true
-    end
-  end
-
-  return released
-end
-
 function BattleRoom:update(dt)
   -- if there are still unloaded assets, we can load them 1 asset a frame in the background
   ModController:update()
