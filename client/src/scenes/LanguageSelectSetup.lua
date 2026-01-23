@@ -67,6 +67,9 @@ function LanguageSelectSetup:createLanguageMenu()
       GAME:setLanguage(language.code)
       write_conf_file()
       GAME.navigationStack:pop()
+      for _, scene in ipairs(GAME.navigationStack.scenes) do
+        scene:refreshLocalization()
+      end
     end))
   end
 
