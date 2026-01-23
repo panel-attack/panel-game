@@ -67,7 +67,7 @@ function BootScene:updateSelf(dt)
 
       local input = require("client.src.inputManager")
 
-      if input.hasUnsavedChanges or input:hasUnconfiguredJoysticks() then
+      if input.hasUnsavedChanges or input:hasUnconfiguredJoysticks() or not config.discordCommunityShown then
         local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
         GAME.navigationStack:push(InputConfigMenu({}))
       end
