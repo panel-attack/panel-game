@@ -295,7 +295,7 @@ end
 function CharacterSelect:createInputDeviceOverlay()
 
   self.inputDeviceOverlay = InputDeviceOverlay({
-    battleRoom = self.battleRoom,
+    players = self.battleRoom.players,
     onClose = function()
       self:onInputDeviceOverlayClosed()
     end,

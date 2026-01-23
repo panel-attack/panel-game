@@ -17,10 +17,9 @@ local PLAYER_SLOT_SIZE = 150
 
 -- Modal overlay that blocks game start until all local players have assigned input devices using hold-to-confirm interaction
 ---@class InputDeviceOverlay : UiElement
----@field battleRoom BattleRoom Reference to battle room for player/device management
+---@field players Player[] Reference to players that can reassign their input device with this overlay
 ---@field holdThreshold number Duration in seconds required to confirm assignment (default 0.25)
 ---@field active boolean True when overlay is open and processing input
----@field hasFocus boolean True when overlay has keyboard/input focus (managed by FocusDirector)
 ---@field playerSlots PlayerInputDeviceSlot[] Array of player slot UI elements
 ---@field deviceState table<string, {confirmTriggered:boolean, holdTime:number}> Tracks hold state per device
 ---@field touchTargetSlot PlayerInputDeviceSlot? Slot where touch started (locked for duration of touch)
@@ -35,7 +34,7 @@ local PLAYER_SLOT_SIZE = 150
 ---@field cancelHintLabel Label Hint text for escape key to cancel
 
 ---@class InputDeviceOverlayOptions
----@field battleRoom BattleRoom
+---@field players Player[] Reference to players that may be eligible for reassigning their input device with this overlay
 ---@field holdThreshold number?
 ---@field onClose fun()?
 ---@field onCancel fun()? Callback when user presses back/cancel
@@ -43,10 +42,18 @@ local PLAYER_SLOT_SIZE = 150
 ---@class InputDeviceOverlay
 ---@operator call(InputDeviceOverlayOptions): InputDeviceOverlay
 local InputDeviceOverlay = class(
+---@param self InputDeviceOverlay
 ---@param options InputDeviceOverlayOptions
 function(self, options)
   options = options or {}
-  self.battleRoom = options.battleRoom
+  self.players = {}
+
+  for _, player in ipairs(options.players) do
+    if player.isLocal and player.human then
+      self.players[#self.players+1] = player
+    end
+  end
+
   self.holdThreshold = options.holdThreshold or HOLD_THRESHOLD
   self.onClose = options.onClose
   self.onCancel = options.onCancel
@@ -128,15 +135,14 @@ end
 
 ---@return Player[] localHumanPlayers Array of local human players
 function InputDeviceOverlay:getLocalPlayers()
-  assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
-  return self.battleRoom:getLocalHumanPlayers()
+  return self.players
 end
 
 -- Gets the next player that needs device assignment
 ---@return Player? player Next unassigned player or nil if all assigned
 function InputDeviceOverlay:getNextUnassignedPlayer()
   for _, player in ipairs(self:getLocalPlayers()) do
-    if not self.battleRoom:isPlayerAssigned(player) then
+    if not player:hasInputConfiguration() then
       return player
     end
   end
@@ -175,29 +181,11 @@ function InputDeviceOverlay:buildPlayerSlots()
     end
 
     -- Check if player is already assigned
-    local assignedDevice = self:getAssignedDeviceForPlayer(player)
-    if assignedDevice then
-      slot:setAssignedDevice(assignedDevice)
+    local assignedInputConfig = player.inputConfiguration
+    if assignedInputConfig then
+      slot:setAssignedDevice(assignedInputConfig)
     end
   end
-end
-
----@param player Player
----@return InputConfiguration? inputConfig Input configuration if player is assigned, nil otherwise
-function InputDeviceOverlay:getAssignedDeviceForPlayer(player)
-  if not self.battleRoom or not player then
-    return nil
-  end
-
-  for _, config in ipairs(inputManager:getAssignableDevices()) do
-    if config then
-      local assignedPlayer = self.battleRoom:getPlayerAssignedToDevice(config)
-      if assignedPlayer == player then
-        return config
-      end
-    end
-  end
-  return nil
 end
 
 function InputDeviceOverlay:updatePlayerSlots()
@@ -211,8 +199,8 @@ function InputDeviceOverlay:updatePlayerSlots()
       if players then
         local player = players[i]
         if player then
-          local assignedDevice = self:getAssignedDeviceForPlayer(player)
-          slot:setAssignedDevice(assignedDevice)
+          local assignedInputConfig = player.inputConfiguration
+          slot:setAssignedDevice(assignedInputConfig)
         end
       end
     end
@@ -223,11 +211,10 @@ end
 
 
 -- Assigns a device to a player and plays feedback
----@param config InputConfiguration Input configuration to assign
+---@param inputConfig InputConfiguration Input configuration to assign
 ---@param targetPlayer Player? Player to assign to, or nil to assign to next unassigned player
-function InputDeviceOverlay:assignDevice(config, targetPlayer)
-  assert(config, "config is required")
-  assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
+function InputDeviceOverlay:assignDevice(inputConfig, targetPlayer)
+  assert(inputConfig, "config is required")
 
   if not targetPlayer then
     targetPlayer = self:getNextUnassignedPlayer()
@@ -237,26 +224,43 @@ function InputDeviceOverlay:assignDevice(config, targetPlayer)
     return
   end
 
-  local success = self.battleRoom:claimDeviceForPlayer(targetPlayer, config)
-  if success then
-    if GAME.theme and GAME.theme.playValidationSfx then
-      GAME.theme:playValidationSfx()
-    end
-    self:updatePlayerSlots()
+  if targetPlayer.inputConfiguration ~= inputConfig then
+    targetPlayer:clearInputDeviceAssignment()
 
-    -- Trigger pop animation on the slot that was just assigned
-    local players = self:getLocalPlayers()
-    for i, player in ipairs(players) do
-      if player == targetPlayer and self.playerSlots[i] then
-        self.playerSlots[i]:triggerPopAnimation()
-        break
-      end
+    if inputConfig.deviceType == "touch" then
+      targetPlayer:setInputMethod("touch")
+    else
+      targetPlayer:setInputMethod("controller")
     end
 
-    if self.battleRoom:areLocalPlayersAssigned() then
-      self.autoCloseTimer = AUTO_CLOSE_DELAY
+    targetPlayer:restrictInputs(inputConfig)
+  end
+
+  GAME.theme:playValidationSfx()
+  self:updatePlayerSlots()
+
+  -- Trigger pop animation on the slot that was just assigned
+  for i, player in ipairs(self.players) do
+    if player == targetPlayer and self.playerSlots[i] then
+      self.playerSlots[i]:triggerPopAnimation()
+      break
     end
   end
+
+  if self:allPlayersAssigned() then
+    self.autoCloseTimer = AUTO_CLOSE_DELAY
+  end
+end
+
+---@return boolean # true if all players are assigned, false otherwise
+function InputDeviceOverlay:allPlayersAssigned()
+  for _, player in ipairs(self.players) do
+    if not player:hasInputConfiguration() then
+      return false
+    end
+  end
+
+  return true
 end
 
 -- Processes hold input for a configuration device
@@ -330,12 +334,17 @@ end
 ---@param touchConfig InputConfiguration Touch input configuration
 ---@return boolean # True if touch is already assigned
 function InputDeviceOverlay:isTouchAlreadyAssigned(touchConfig)
-  if not self.battleRoom then
-    return false
+  assert(touchConfig.deviceType == "touch", "Checked device is not a touch device")
+
+  if touchConfig.claimed then
+    for _, player in ipairs(self.players) do
+      if touchConfig.player == player and player.inputConfiguration == touchConfig then
+        return true
+      end
+    end
   end
 
-  local assignedPlayer = self.battleRoom:getPlayerAssignedToDevice(touchConfig)
-  return assignedPlayer ~= nil
+  return false
 end
 
 -- Processes touch hold logic when mouse is held down
@@ -359,8 +368,6 @@ function InputDeviceOverlay:processTouchHold(dt, touchConfig)
     self.touchTargetSlot:setTouchTarget(true)
   end
 
-  local targetSlot = self.touchTargetSlot
-
   local state = self.deviceState[touchConfig.id]
   if not state then
     state = {confirmTriggered = false, holdTime = 0}
@@ -371,10 +378,10 @@ function InputDeviceOverlay:processTouchHold(dt, touchConfig)
   self.escapeHoldTime = 0
 
   local progress = math.min(state.holdTime / self.holdThreshold, 1)
-  targetSlot:setHoldProgress(progress, "touch")
+  self.touchTargetSlot:setHoldProgress(progress, "touch")
 
   if state.holdTime >= self.holdThreshold and not state.confirmTriggered then
-    self:assignTouchToSlot(touchConfig, targetSlot)
+    self:assignTouchToSlot(touchConfig, self.touchTargetSlot)
     state.confirmTriggered = true
   elseif state.holdTime < self.holdThreshold then
     state.confirmTriggered = false
@@ -473,12 +480,12 @@ function InputDeviceOverlay:openInputDeviceOverlayIfNeeded()
     return
   end
 
-  local hasLocalPlayers = #self.battleRoom:getLocalHumanPlayers() > 0
-  if not hasLocalPlayers then
+  if #self.players == 0 then
+    -- no local players
     return
   end
 
-  if not self.battleRoom.hasShutdown and not self.battleRoom:areLocalPlayersAssigned() then
+  if not self:allPlayersAssigned() then
     self:open()
   end
 end
@@ -495,8 +502,6 @@ function InputDeviceOverlay:drawSelf()
 end
 
 function InputDeviceOverlay:open()
-  assert(self.battleRoom, "InputDeviceOverlay requires a battleRoom reference")
-
   self.deviceState = {}
   self.touchTargetSlot = nil
   self.autoCloseTimer = 0

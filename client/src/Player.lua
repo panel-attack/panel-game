@@ -245,6 +245,11 @@ function Player:clearInputDeviceAssignment()
   end
 end
 
+function Player:hasInputConfiguration()
+  local assigned = (self.inputConfiguration ~= nil)
+  return assigned
+end
+
 ---@return Player
 function Player.createLocalPlayerFromConfig()
   local player = Player(config.name, -1, true)

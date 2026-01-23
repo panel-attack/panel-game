@@ -870,7 +870,7 @@ end
 
 -- Gets list of all assignable input devices (controllers, keyboard, touch)
 -- Returns InputConfiguration objects directly with all metadata already calculated
----@return InputConfiguration[] Array of InputConfiguration objects
+---@return InputConfiguration[] inputConfigurations Array of InputConfiguration objects
 function inputManager:getAssignableDevices()
   local devices = {}
 
