@@ -34,7 +34,7 @@ function KeyBindingMenuItem.create(options)
     text = string.lower(options.keyName),
     vAlign = "center",
     fontSize = 12,
-    width = 96
+    width = 224
   })
 
   -- Create binding button (right side)

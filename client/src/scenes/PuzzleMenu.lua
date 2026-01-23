@@ -698,8 +698,9 @@ end
 
 
 function PuzzleMenu:updateSelf(dt)
-  local overlayActive = self.inputDeviceOverlay and self.inputDeviceOverlay:isActive()
-  if overlayActive then
+  self.inputDeviceOverlay:openInputDeviceOverlayIfNeeded()
+
+  if self.inputDeviceOverlay:isActive() then
     return
   end
 
