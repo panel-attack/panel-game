@@ -545,7 +545,7 @@ function Character:validate()
     local comboFiles = fileUtils.getMatchingFiles(files, "combo", fileUtils.SUPPORTED_SOUND_FORMATS)
     local indices = {}
     for _, comboFile in ipairs(comboFiles) do
-      local index = tonumber(string.match(comboFile, "%d+", 6))
+      local index = tonumber(string.match(fileUtils.getFileNameWithoutExtension(comboFile), "%d+", 6))
       -- first one is typically unnumbered
       indices[#indices+1] = index or 1
     end
