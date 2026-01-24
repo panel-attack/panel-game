@@ -1,62 +1,95 @@
-local PATH = (...):gsub('%.init$', '')
+-- import is getting "live replaced" for intellisense via the lua LS plugin so the editor incorrectly detects it as unused-local
+-- but without lua LS it is a real function that manages the relative require
+---@diagnostic disable-next-line: unused-local
+local import = require("common.lib.import")
+
+--[[
+tag each with
+---@source relative path
+that way "Go to source" on an import of ui elsewhere will lead to the respective source instead of this file
+the "./" is assumed given for relative paths but it's still a path so adding the file extension is necessary
+when addressing files in subdirectories of ui use forward slashes as the path separator
+https://luals.github.io/wiki/annotations/#source
+
+Intellisense for constructors that have their constructor annotated usually works fine if you type
+ui.UiElement({})
+and then navigate back into the {} and hit Ctrl+Space for suggestions
+
+"Go to source" on functions will work after annotating either
+---@operator call(argType): classname
+or
+---@overload fun(options: argType): classname
+on the class itself as luaLS only then correctly infers the return from the constructor
+]]
+
 
 local ui = {
-  ---@see BoolSelector
-  ---@type fun(options: BoolSelectorOptions): BoolSelector
-  BoolSelector = require(PATH .. ".BoolSelector"),
-  ---@see Button
-  ---@type fun(options: ButtonOptions): Button
-  Button = require(PATH .. ".Button"),
-  ButtonGroup = require(PATH .. ".ButtonGroup"),
-  Carousel = require(PATH .. ".Carousel"),
-  ---@see ChangeInputButton
-  ---@type fun(options: ChangeInputButtonOptions): ChangeInputButton
-  ChangeInputButton = require(PATH .. ".ChangeInputButton"),
-  Focusable = require(PATH .. ".Focusable"),
-  FocusDirector = require(PATH .. ".FocusDirector"),
-  Grid = require(PATH .. ".Grid"),
-  GridCursor = require(PATH .. ".GridCursor"),
-  ---@see ImageButton
-  ---@type fun(options: ImageButtonOptions): ImageButton
-  ImageButton = require(PATH .. ".ImageButton"),
-  ImageContainer = require(PATH .. ".ImageContainer"),
-  InputField = require(PATH .. ".InputField"),
-  KeyBindingMenuItem = require(PATH .. ".KeyBindingMenuItem"),
-  ---@see Label
-  ---@type fun(options: LabelOptions): Label
-  Label = require(PATH .. ".Label"),
-  Leaderboard = require(PATH .. ".Leaderboard"),
-  ---@see LevelSlider
-  ---@type fun(options: SliderOptions): LevelSlider
-  LevelSlider = require(PATH .. ".LevelSlider"),
-  Menu = require(PATH .. ".Menu"),
-  MenuItem = require(PATH .. ".MenuItem"),
-  MultiPlayerSelectionWrapper = require(PATH .. ".MultiPlayerSelectionWrapper"),
-  PagedUniGrid = require(PATH .. ".PagedUniGrid"),
-  PanelCarousel = require(PATH .. ".PanelCarousel"),
-  ---@see PixelFontLabel
-  ---@type fun(options: PixelFontLabelOptions): PixelFontLabel
-  PixelFontLabel = require(PATH .. ".PixelFontLabel"),
-  ---@see ScrollContainer
-  ---@type fun(options: ScrollContainerOptions): ScrollContainer
-  ScrollContainer = require(PATH .. ".ScrollContainer"),
-  ScrollText = require(PATH .. ".ScrollText"),
-  ---@see Slider
-  ---@type fun(options: SliderOptions): Slider
-  Slider = require(PATH .. ".Slider"),
-  SliderMenuItem = require(PATH .. ".SliderMenuItem"),
+  ---@source BoolSelector.lua
+  BoolSelector = import("./BoolSelector"),
+  ---@source Button.lua
+  Button = import("./Button"),
+  ---@source ButtonGroup.lua
+  ButtonGroup = import("./ButtonGroup"),
+  ---@source Carousel.lua
+  Carousel = import("./Carousel"),
+  ---@source ChangeInputButton.lua
+  ChangeInputButton = import("./ChangeInputButton"),
+  ---@source Focusable.lua
+  Focusable = import("./Focusable"),
+  ---@source FocusDirector.lua
+  FocusDirector = import("./FocusDirector"),
+  ---@source Grid.lua
+  Grid = import("./Grid"),
+  ---@source GridCursor.lua
+  GridCursor = import("./GridCursor"),
+  ---@source ImageButton.lua
+  ImageButton = import("./ImageButton"),
+  ---@source ImageContainer.lua
+  ImageContainer = import("./ImageContainer"),
+  ---@source InputField.lua
+  InputField = import("./InputField"),
+  ---@source KeyBindingMenuItem.lua
+  KeyBindingMenuItem = import("./KeyBindingMenuItem"),
+  ---@source Label.lua
+  Label = import("./Label"),
+  ---@source Leaderboard.lua
+  Leaderboard = import("./Leaderboard"),
+  ---@source LevelSlider.lua
+  LevelSlider = import("./LevelSlider"),
+  ---@source Menu.lua
+  Menu = import("./Menu"),
+  ---@source MenuItem.lua
+  MenuItem = import("./MenuItem"),
+  ---@source MultiPlayerSelectionWrapper.lua
+  MultiPlayerSelectionWrapper = import("./MultiPlayerSelectionWrapper"),
+  ---@source PagedUniGrid.lua
+  PagedUniGrid = import("./PagedUniGrid"),
+  ---@source PanelCarousel.lua
+  PanelCarousel = import("./PanelCarousel"),
+  ---@source PixelFontLabel.lua
+  PixelFontLabel = import("./PixelFontLabel"),
+  ---@source ScrollContainer.lua
+  ScrollContainer = import("./ScrollContainer"),
+  ---@source ScrollText.lua
+  ScrollText = import("./ScrollText"),
+  ---@source Slider.lua
+  Slider = import("./Slider"),
+  ---@source SliderMenuItem.lua
+  SliderMenuItem = import("./SliderMenuItem"),
   ---@source StackElement.lua
-  StackElement = require(PATH .. ".StackElement"),
-  StackPanel = require(PATH .. ".StackPanel"),
-  StageCarousel = require(PATH .. ".StageCarousel"),
-  Stepper = require(PATH .. ".Stepper"),
-  ---@see TextButton
-  ---@type fun(options: TextButtonOptions): TextButton
-  TextButton = require(PATH .. ".TextButton"),
-  ---@see UiElement
-  ---@type fun(options:UiElementOptions): UiElement
-  UiElement = require(PATH .. ".UIElement"),
-  ValueLabel = require(PATH .. ".ValueLabel"),
+  StackElement = import("./StackElement"),
+  ---@source StackPanel.lua
+  StackPanel = import("./StackPanel"),
+  ---@source StageCarousel.lua
+  StageCarousel = import("./StageCarousel"),
+  ---@source Stepper.lua
+  Stepper = import("./Stepper"),
+  ---@source TextButton.lua
+  TextButton = import("./TextButton"),
+  ---@source UiElement.lua
+  UiElement = import("./UIElement"),
+  ---@source ValueLabel.lua
+  ValueLabel = import("./ValueLabel"),
 }
 
 return ui
