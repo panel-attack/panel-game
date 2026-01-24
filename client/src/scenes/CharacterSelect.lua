@@ -4,11 +4,12 @@ local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.data.GameModes")
-local LevelPresets = require("common.data.LevelPresets")
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Character = require("client.src.mods.Character")
+local LevelPresets = require("common.data.LevelPresets")
+local InputDeviceOverlay = require("client.src.scenes.components.InputDeviceOverlay")
 
 -- The character select screen scene
 ---@class CharacterSelect : Scene
@@ -57,8 +58,12 @@ function CharacterSelect:load()
   self.ui.cursors = {}
   self.ui.characterIcons = {}
   self.ui.playerInfos = {}
-
   self:customLoad()
+  
+  self:createInputDeviceOverlay()
+
+  self:setChangeInputButtonVisibility(false)
+  self:setChangeInputButtonVisibleIfNeeded()
 
   for _, player in ipairs(self.players) do
     if player:isHuman() then
@@ -285,6 +290,49 @@ function CharacterSelect:createStageCarousel(player, width)
   stageCarousel:addChild(stageCarousel.playerNumberIcon)
 
   return stageCarousel
+end
+
+function CharacterSelect:createInputDeviceOverlay()
+
+  self.inputDeviceOverlay = InputDeviceOverlay({
+    players = self.battleRoom.players,
+    onClose = function()
+      self:onInputDeviceOverlayClosed()
+    end,
+    onCancel = function()
+      self:leave()
+    end
+  })
+  self.uiRoot:addChild(self.inputDeviceOverlay)
+end
+
+function CharacterSelect:onInputDeviceOverlayClosed()
+  self:setChangeInputButtonVisibleIfNeeded()
+end
+
+function CharacterSelect:setChangeInputButtonVisibleIfNeeded()
+  if self.ui and self.ui.changeInputButton then
+    if #self.battleRoom:getLocalHumanPlayers() > 0 then
+      self.ui.changeInputButton:setVisibility(true)
+    end
+  end
+end
+
+function CharacterSelect:setChangeInputButtonVisibility(isVisible)
+  if self.ui and self.ui.changeInputButton then
+    self.ui.changeInputButton:setVisibility(isVisible)
+  end
+end
+
+function CharacterSelect:createChangeInputButton()
+  return ui.ChangeInputButton({
+    hFill = true,
+    vFill = true,
+    players = self.battleRoom.players,
+    openInputDeviceOverlay = function ()
+      self.inputDeviceOverlay:open()
+    end
+  })
 end
 
 local super_select_pixelcode = [[
@@ -999,6 +1047,12 @@ function CharacterSelect:createDifficultyCarousel(player, height, getPresetFunc)
 end
 
 function CharacterSelect:updateSelf(dt)
+  self.inputDeviceOverlay:openInputDeviceOverlayIfNeeded()
+
+  if self.inputDeviceOverlay:isActive() then
+    return
+  end
+
   for _, cursor in ipairs(self.ui.cursors) do
     if cursor.player.isLocal and cursor.player.human then
       if not cursor.player.inputConfiguration then

@@ -10,8 +10,9 @@ local classMetaTable = {__call = newTable}
 
 ---@param init function function called on new objects of the class after the metatables have been applied
 ---@param parent any? parent class that has its own constructor called before init
+---@param typeName string? optional type name for the class, sets classTable.TYPE if provided
 ---@return table classTable table acting as metatable for the class and acting as the constructor; uses the parent as its metatable
-local class = function(init, parent)
+local class = function(init, parent, typeName)
   local classTable = {}
   -- class table acts as the metatable for new tables
   -- all function calls on the table should find the functions on the class table, so set __index
@@ -21,6 +22,11 @@ local class = function(init, parent)
   classTable.__call = newTable
   -- make parent functions accessible, even if they may be shadowed
   classTable.super = parent
+
+  -- Set TYPE if provided
+  if typeName then
+    classTable.TYPE = typeName
+  end
   classTable.initializeObject = function(new, super, ...)
     if new.super then
       if not super then

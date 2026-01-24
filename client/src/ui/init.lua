@@ -32,6 +32,8 @@ local ui = {
   ButtonGroup = import("./ButtonGroup"),
   ---@source Carousel.lua
   Carousel = import("./Carousel"),
+  ---@source ChangeInputButton.lua
+  ChangeInputButton = import("./ChangeInputButton"),
   ---@source Focusable.lua
   Focusable = import("./Focusable"),
   ---@source FocusDirector.lua
@@ -46,6 +48,8 @@ local ui = {
   ImageContainer = import("./ImageContainer"),
   ---@source InputField.lua
   InputField = import("./InputField"),
+  ---@source KeyBindingMenuItem.lua
+  KeyBindingMenuItem = import("./KeyBindingMenuItem"),
   ---@source Label.lua
   Label = import("./Label"),
   ---@source Leaderboard.lua
@@ -70,6 +74,8 @@ local ui = {
   ScrollText = import("./ScrollText"),
   ---@source Slider.lua
   Slider = import("./Slider"),
+  ---@source SliderMenuItem.lua
+  SliderMenuItem = import("./SliderMenuItem"),
   ---@source StackElement.lua
   StackElement = import("./StackElement"),
   ---@source StackPanel.lua

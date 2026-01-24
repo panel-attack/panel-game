@@ -3,6 +3,7 @@ local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local ModLoader = require("client.src.mods.ModLoader")
 local inputs = require("client.src.inputManager")
+local system = require("client.src.system")
 
 local SCROLL_STEP = 14
 
@@ -14,7 +15,12 @@ function(self, sceneParams)
     text = text .. "Failed to validate mod " .. mod.id .. " at path " .. mod.path .. " for the following reason:\n" .. reason .. "\n"
   end
 
-  text = text .. "\n\nThe mentioned mods have been disabled\nPress Escape to continue"
+  text = text .. "\n\nThe mentioned mods have been disabled"
+  if system.isMobileOS() then
+    text = text .. "\nPress the Back button to continue"
+  else
+    text = text .. "\nPress Escape to continue"
+  end
 
   local modWarningLabel = ui.Label({text = text, translate = false, x = 10})
   self.scrollContainer:addChild(modWarningLabel)

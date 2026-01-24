@@ -104,6 +104,9 @@ function EndlessMenu:loadUserInterface()
 
   self.ui.pageTurnButtons = self:createPageTurnButtons(self.ui.characterGrid)
 
+  self.ui.changeInputButton = self:createChangeInputButton()
+  self.ui.grid:createElementAt(8, 6, 1, 1, "changeInputButton", self.ui.changeInputButton)
+
   self.ui.leaveButton = self:createLeaveButton()
   self.ui.grid:createElementAt(9, 6, 1, 1, "leaveButton", self.ui.leaveButton)
 

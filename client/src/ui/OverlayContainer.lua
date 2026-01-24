@@ -26,7 +26,7 @@ local OverlayContainer = class(
       self.content.vAlign = "center"
     end
   end,
-  UiElement
+  UiElement, "OverlayContainer"
 )
 
 -- Opens the overlay

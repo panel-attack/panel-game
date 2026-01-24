@@ -15,7 +15,7 @@ local LevelPresets = require("common.data.LevelPresets")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local analytics = require("client.src.analytics")
-local input = require("client.src.inputManager")
+local inputManager = require("client.src.inputManager")
 local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local save = require("client.src.save")
 local fileUtils = require("client.src.FileUtils")
@@ -24,7 +24,8 @@ local handleShortcuts = require("client.src.Shortcuts")
 local Player = require("client.src.Player")
 local GameModes = require("common.data.GameModes")
 local NetClient = require("client.src.network.NetClient")
-local StartUp = require("client.src.scenes.StartUp")
+local BootScene = require("client.src.scenes.BootScene")
+local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
 local SoundController = require("client.src.music.SoundController")
 require("client.src.BattleRoom")
 local prof = require("common.lib.zoneProfiler")
@@ -34,7 +35,6 @@ local ModController = require("client.src.mods.ModController")
 
 local RichPresence = require("client.lib.rich_presence.RichPresence")
 local DebugSettings = require("client.src.debug.DebugSettings")
-local Button = require("client.src.ui.Button")
 local TextButton = require("client.src.ui.TextButton")
 local OverlayContainer = require("client.src.ui.OverlayContainer")
 local DebugMenu = require("client.src.debug.DebugMenu")
@@ -56,7 +56,7 @@ end
 ---@field globalCanvas love.graphics.Texture
 ---@field muteSound boolean
 ---@field rich_presence table
----@field input table
+---@field input InputManager
 ---@field backgroundImage table
 ---@field backgroundColor number[]
 ---@field updater table?
@@ -74,7 +74,7 @@ end
 local Game = class(
   function(self)
     self.scores = Scores.createFromScoreFile()
-    self.input = input
+    self.input = inputManager
     self.match = nil -- Match - the current match going on or nil if inbetween games
     self.battleRoom = nil -- BattleRoom - the current room being used for battles
     self.focused = true -- if the window is focused
@@ -141,13 +141,11 @@ function Game:load()
   else
     logger.debug("Launching game without updater")
   end
-  local user_input_conf = save.read_key_file()
-  if user_input_conf then
-    self.input:importConfigurations(user_input_conf)
-  end
+
+  inputManager:load()
 
   self.navigationStack = NavigationStack({})
-  self.navigationStack:push(StartUp({setupRoutine = self.setupRoutine}))
+  self.navigationStack:push(BootScene({setupRoutine = self.setupRoutine}))
 
   -- Add navigation stack to root UI
   self.uiRoot:addChild(self.navigationStack)
@@ -241,7 +239,7 @@ end
 
 function Game:setupRoutine()
   -- loading various assets into the game
-  self:setLanguage(config.language_code)
+  self:setLanguage(Localization:getCurrentLanguageCode())
 
   detectHardwareProblems()
 
@@ -370,6 +368,22 @@ function Game:handleResize(newWidth, newHeight)
     end
     self.showGameScaleUntil = self.timer + 5
   end
+end
+
+function Game:onJoystickAdded(joystick)
+  local isNotConfigured = self.input:onJoystickAdded(joystick)
+  if isNotConfigured and self.navigationStack.scenes[1].name ~= "BootScene" and (config.discordCommunityShown and config.language_code) and not self:hasOngoingMatch() then
+    -- Not critically occupied, so push the InputConfigMenu on top
+    GAME.navigationStack:push(InputConfigMenu({}))
+  end
+end
+
+function Game:hasOngoingMatch()
+  return not not (GAME.battleRoom and GAME.battleRoom.match ~= nil)
+end
+
+function Game:onJoystickRemoved(joystick)
+  self.input:onJoystickRemoved(joystick)
 end
 
 -- Called every few fractions of a second to update the game
@@ -643,7 +657,7 @@ function Game:refreshCanvasAndImagesForNewScale()
   characters_reload_graphics()
 
   -- Reload loc to get the new font
-  self:setLanguage(config.language_code)
+  self:setLanguage(Localization:getCurrentLanguageCode())
 end
 
 -- Transform from window coordinates to game coordinates
@@ -670,13 +684,12 @@ function Game:setLanguage(lang_code)
       break
     end
   end
-  config.language_code = Localization.codes[Localization.lang_index]
 
   if themes[config.theme] and themes[config.theme].font and themes[config.theme].font.path then
     GraphicsUtil.setGlobalFont(themes[config.theme].font.path, themes[config.theme].font.size, self:newCanvasSnappedScale())
-  elseif config.language_code == "JP" then
+  elseif lang_code == "JP" then
     GraphicsUtil.setGlobalFont("client/assets/fonts/jp.ttf", 14, self:newCanvasSnappedScale())
-  elseif config.language_code == "TH" then
+  elseif lang_code == "TH" then
     GraphicsUtil.setGlobalFont("client/assets/fonts/th.otf", 14, self:newCanvasSnappedScale())
   else
     GraphicsUtil.setGlobalFont(nil, 12, self:newCanvasSnappedScale())

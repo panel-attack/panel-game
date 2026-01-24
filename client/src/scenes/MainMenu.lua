@@ -13,7 +13,6 @@ local TrainingMenu = require("client.src.scenes.TrainingMenu")
 local ChallengeModeMenu = require("client.src.scenes.ChallengeModeMenu")
 local Lobby = require("client.src.scenes.Lobby")
 local LocalGameModeSelectionScene = require("client.src.scenes.LocalGameModeSelectionScene")
-local CharacterSelect2p = require("client.src.scenes.CharacterSelect2p")
 local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
 local SetNameMenu = require("client.src.scenes.SetNameMenu")
@@ -24,7 +23,6 @@ local system = require("client.src.system")
 local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local EndlessGame = require("client.src.scenes.EndlessGame")
 local VsSelfGame = require("client.src.scenes.VsSelfGame")
-local GameBase = require("client.src.scenes.GameBase")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 
 -- Scene for the main menu
@@ -160,7 +158,7 @@ end
 
 function MainMenu:updateSelf(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(GAME.input, dt)
 
   self:checkForUpdates()
 end

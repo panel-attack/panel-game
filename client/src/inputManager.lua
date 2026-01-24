@@ -1,7 +1,11 @@
+local FileUtils = require("client.src.FileUtils")
 local tableUtils = require("common.lib.tableUtils")
 local joystickManager = require("common.lib.joystickManager")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
+local InputConfiguration = require("client.src.input.InputConfiguration")
+local Signal = require("common.lib.signal")
+require("client.src.input.JoystickProvider")
 
 -- table containing the set of keys in various states 
 -- base structure: 
@@ -15,27 +19,18 @@ local logger = require("common.lib.logger")
 --   inputConfigurations: raw key inputs mapped to internal aliases for that configuration
 --   base (top level): the union of all inputConfigurations not already claimed by a player
 --   mouse: all mouse buttons and the position of the mouse
+---@class InputManager
 local inputManager = {
   isDown = {},
   isPressed = {},
   isUp = {},
   allKeys = {isDown = {}, isPressed = {}, isUp = {}},
   mouse = {isDown = {}, isPressed = {}, isUp = {}, x = 0, y = 0},
+  ---@type InputConfiguration[]
   inputConfigurations = {},
   maxConfigurations = 8,
-  defaultKeys = {
-    Up = "up",
-    Down = "down",
-    Left = "left",
-    Right = "right",
-    Swap1 = "z",
-    Swap2 = "x",
-    TauntUp = "y",
-    TauntDown = "u",
-    Raise1 = "c",
-    Raise2 = "v",
-    Start = "return"
-  }
+  hasUnsavedChanges = false,
+  unconfiguredJoysticksCache = nil
 }
 
 -- Represents the state of love.run while the key in isDown/isUp is active
@@ -87,18 +82,43 @@ function inputManager:keyReleased(key, scancode)
   self.allKeys.isUp[key] = KEY_CHANGE.DETECTED
 end
 
-function inputManager:joystickPressed(joystick, button)
-  if not joystickManager.devices[joystick:getID()] then
-    love.joystickadded(joystick)
+---@param joystick love.Joystick
+---@return boolean? isNotConfigured
+function inputManager:onJoystickAdded(joystick)
+  joystickManager:registerJoystick(joystick)
+  self:updateUnconfiguredJoysticksCache()
+  local unconfiguredJoysticks = self:getUnconfiguredJoysticks()
+
+  -- Check if the newly added joystick is unconfigured
+  for _, unconfiguredJoystick in ipairs(unconfiguredJoysticks) do
+    if unconfiguredJoystick == joystick then
+      self:emitSignal("unconfiguredJoystickAdded", joystick)
+      return true
+    end
   end
+end
+
+function inputManager:onJoystickRemoved(joystick)
+  joystickManager:unregisterJoystick(joystick)
+  self:updateUnconfiguredJoysticksCache()
+end
+
+function inputManager:joystickPressed(joystick, button)
+  if not joystickManager:isRegistered(joystick) then
+    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
+    joystickManager:registerJoystick(joystick)
+  end
+
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isDown[key] = KEY_CHANGE.DETECTED
 end
 
 function inputManager:joystickReleased(joystick, button)
-  if not joystickManager.devices[joystick:getID()] then
-    love.joystickadded(joystick)
+  if not joystickManager:isRegistered(joystick) then
+    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
+    joystickManager:registerJoystick(joystick)
   end
+
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isUp[key] = KEY_CHANGE.DETECTED
 end
@@ -439,18 +459,63 @@ function inputManager:getSaveKeyMap()
   return result
 end
 
+function inputManager:writeKeyConfigurationToFile()
+  FileUtils.writeJson("", "keysV3.json", self:getSaveKeyMap())
+  self.hasUnsavedChanges = false
+end
+
+-- Saves input configuration mappings to disk
+function inputManager:saveInputConfigurationMappings()
+  self:writeKeyConfigurationToFile()
+end
+
+
+local currentVersionFilename = "keysV3.json"
+local previousVersionFilename = "keysV2.json"
+
+function inputManager:hasKeyFile()
+  local filename = nil
+  local migrateInputs = false
+  if FileUtils.exists(currentVersionFilename) then
+    filename = currentVersionFilename
+  elseif FileUtils.exists(previousVersionFilename) then
+    filename = previousVersionFilename
+    migrateInputs = true
+  end
+
+  return filename, migrateInputs
+end
+
+-- Loads input file and setups defaults
+function inputManager:load()
+  local filename, migrateInputs = self:hasKeyFile()
+
+  if filename == nil then
+    -- No key file exists - set up default keys
+    inputManager:setupDefaultKeyConfigurations()
+    return inputManager.inputConfigurations
+  end
+
+  local inputConfigs = FileUtils.readJsonFile(filename)
+
+  if migrateInputs then
+    -- migrate old input configs
+    inputConfigs = inputManager:migrateInputConfigs(inputConfigs)
+  end
+  self:importConfigurations(inputConfigs)
+  
+  return inputConfigs
+end
+
 for i = 1, inputManager.maxConfigurations do
-  inputManager.inputConfigurations[i] = {
-    isDown = {},
-    isPressed = {},
-    isUp = {},
-    isPressedWithRepeat = isPressedWithRepeat,
-    claimed = false,
-    player = nil
-  }
+  inputManager.inputConfigurations[i] = InputConfiguration(i, isPressedWithRepeat, love.joystick)
 end
 
 inputManager.allKeys.isPressedWithRepeat = isPressedWithRepeat
+
+-- Turn inputManager into a Signal emitter
+Signal.turnIntoEmitter(inputManager)
+inputManager:createSignal("unconfiguredJoystickAdded")
 
 function inputManager:importConfigurations(configurations)
   for i = 1, #configurations do
@@ -458,8 +523,15 @@ function inputManager:importConfigurations(configurations)
       self.inputConfigurations[i][key] = value
     end
   end
+  -- Update all cached properties after importing
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    inputConfig:updateCachedProperties()
+  end
+  self:updateAllDeviceNumbers()
 end
 
+---@param player Player
+---@param inputConfiguration InputConfiguration
 function inputManager:claimConfiguration(player, inputConfiguration)
   if inputConfiguration.claimed and inputConfiguration.player ~= player then
     error("Trying to assign input configuration to player " .. player.playerNumber ..
@@ -474,6 +546,8 @@ function inputManager:claimConfiguration(player, inputConfiguration)
   return inputConfiguration
 end
 
+---@param player Player
+---@param inputConfiguration InputConfiguration
 function inputManager:releaseConfiguration(player, inputConfiguration)
   if not inputConfiguration.claimed then
     error("Trying to release an unclaimed inputConfiguration")
@@ -486,6 +560,336 @@ function inputManager:releaseConfiguration(player, inputConfiguration)
   inputConfiguration.player = nil
 
   self:updateKeyMaps()
+end
+
+-- Updates deviceNumber for all InputConfigurations based on device type counts
+function inputManager:updateAllDeviceNumbers()
+  local deviceTypeCounters = {}
+
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    -- Only count non-empty configurations with bindings
+    if not inputConfig:isEmpty() and inputConfig.deviceType then
+      deviceTypeCounters[inputConfig.deviceType] = (deviceTypeCounters[inputConfig.deviceType] or 0) + 1
+      inputConfig.deviceNumber = deviceTypeCounters[inputConfig.deviceType]
+    else
+      inputConfig.deviceNumber = nil
+    end
+  end
+end
+
+-- Updates a specific InputConfiguration when its bindings change
+---@param inputConfig InputConfiguration Configuration to update
+function inputManager:updateInputConfiguration(inputConfig)
+  inputConfig:update()
+  self:updateAllDeviceNumbers()
+end
+
+-- Clears a button binding from all other input configurations
+---@param buttonBinding string The button binding to clear (e.g., "space", "guid:slot:button")
+function inputManager:clearButtonFromAllConfigs(buttonBinding)
+  if not buttonBinding then
+    return
+  end
+
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    for _, keyName in ipairs(consts.KEY_NAMES) do
+      if inputConfig[keyName] == buttonBinding then
+        inputConfig[keyName] = nil
+      end
+    end
+  end
+end
+
+-- Changes a key binding on an input configuration
+---@param inputConfiguration InputConfiguration Configuration to modify
+---@param keyName string Key name to change (e.g., "Up", "Down", "Swap1")
+---@param keyToUse string? New key binding (nil to clear)
+---@param skipSave boolean? If true, skip writing to file (for batch operations)
+function inputManager:changeKeyBindingOnInputConfiguration(inputConfiguration, keyName, keyToUse, skipSave)
+
+  -- Clear the new binding from all other configurations
+  if keyToUse then
+    self:clearButtonFromAllConfigs(keyToUse)
+  end
+
+  inputConfiguration[keyName] = keyToUse
+
+  self.hasUnsavedChanges = true
+  self:updateInputConfiguration(inputConfiguration)
+  self:updateUnconfiguredJoysticksCache()
+  if not skipSave then
+    self:writeKeyConfigurationToFile()
+  end
+end
+
+-- Clears all key bindings on an input configuration
+---@param inputConfiguration InputConfiguration Configuration to clear
+function inputManager:clearKeyBindingsOnInputConfiguration(inputConfiguration)
+  for _, keyName in ipairs(consts.KEY_NAMES) do
+    inputConfiguration[keyName] = nil
+  end
+  self.hasUnsavedChanges = true
+  self:updateInputConfiguration(inputConfiguration)
+  self:updateUnconfiguredJoysticksCache()
+  self:writeKeyConfigurationToFile()
+end
+
+function inputManager:setupDefaultKeyConfigurations()
+  local defaultKeys = {}
+  defaultKeys[#defaultKeys+1] = {
+    Up = "up",
+    Down = "down",
+    Left = "left",
+    Right = "right",
+    Swap1 = "z",
+    Swap2 = "x",
+    TauntUp = "y",
+    TauntDown = "u",
+    Raise1 = "c",
+    Raise2 = "v",
+    Start = "return"
+  }
+  defaultKeys[#defaultKeys+1] = {
+    Up = "w",
+    Down = "s",
+    Left = "a",
+    Right = "d",
+    Swap1 = "j",
+    Swap2 = "k",
+    TauntUp = "i",
+    TauntDown = "l",
+    Raise1 = "o",
+    Raise2 = "u",
+    Start = "space"
+  }
+  for i = 1, inputManager.maxConfigurations do
+    if i <= #defaultKeys then
+      for keyName, key in pairs(defaultKeys[i]) do
+        self.inputConfigurations[i][keyName] = key
+      end
+    else
+      for _, keyName in ipairs(consts.KEY_NAMES) do
+        self.inputConfigurations[i][keyName] = nil
+      end
+    end
+  end
+
+  -- Auto-configure all connected gamepads
+  local connectedJoysticks = love.joystick.getJoysticks()
+  for _, joystick in ipairs(connectedJoysticks) do
+    self:autoConfigureJoystick(joystick, false)
+  end
+
+  -- Update all cached properties after setting defaults
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    inputConfig:updateCachedProperties()
+  end
+  self:updateAllDeviceNumbers()
+end
+
+---@return InputConfiguration? Input configuration with active input, or nil
+function inputManager:detectActiveInputConfiguration()
+  for i = 1, #self.inputConfigurations do
+    local inputConfig = self.inputConfigurations[i]
+    for _, keyName in ipairs(consts.KEY_NAMES) do
+      if inputConfig.isDown and inputConfig.isDown[keyName] then
+        return inputConfig
+      end
+    end
+  end
+
+  return nil
+end
+
+---@param localHumanPlayers Player[]
+---@return boolean True if an unassigned configuration has active input
+function inputManager:checkForUnassignedConfigurationInputs(localHumanPlayers)
+  if #localHumanPlayers == 0 then
+    return false
+  end
+
+  local activeConfig = self:detectActiveInputConfiguration()
+  if not activeConfig then
+    return false
+  end
+
+  local assignedConfigs = {}
+  for _, player in ipairs(localHumanPlayers) do
+    if player.inputConfiguration then
+      assignedConfigs[player.inputConfiguration] = true
+    end
+  end
+
+  return not assignedConfigs[activeConfig]
+end
+
+-- Gets all configured joystick GUIDs from input configurations
+---@return table<string, boolean> Map of configured GUIDs
+function inputManager:getConfiguredJoystickGuids()
+  local configuredGuids = {}
+  for i = 1, self.maxConfigurations do
+    local inputConfig = self.inputConfigurations[i]
+    if inputConfig then
+      for _, keyName in ipairs(consts.KEY_NAMES) do
+        local keyMapping = inputConfig[keyName]
+        if keyMapping and type(keyMapping) == "string" then
+          -- Extract GUID from mapping format like "guid:id:button"
+          local guid = keyMapping:match("^([^:]+):")
+          if guid then
+            configuredGuids[guid] = true
+          end
+        end
+      end
+    end
+  end
+  return configuredGuids
+end
+
+-- Updates the unconfigured joysticks cache immediately
+function inputManager:updateUnconfiguredJoysticksCache()
+  -- Build the list
+  local unconfiguredJoysticks = {}
+  local connectedJoysticks = love.joystick.getJoysticks()
+  local configuredGuids = self:getConfiguredJoystickGuids()
+
+  for _, joystick in ipairs(connectedJoysticks) do
+    local guid = joystick:getGUID()
+    -- Check if this joystick could be auto-configured (has gamepad mapping)
+    local customId = joystickManager.guidsToJoysticks[guid] and joystickManager.guidsToJoysticks[guid][joystick:getID()]
+
+    if customId and not configuredGuids[guid] then
+      unconfiguredJoysticks[#unconfiguredJoysticks + 1] = joystick
+    end
+  end
+
+  -- Update the cache
+  self.unconfiguredJoysticksCache = unconfiguredJoysticks
+end
+
+-- Gets a list of joysticks that don't have input configurations
+---@return love.Joystick[] Array of unconfigured joysticks
+function inputManager:getUnconfiguredJoysticks()
+  -- Return cached value (always fresh since we update immediately)
+  return self.unconfiguredJoysticksCache or {}
+end
+
+-- Check if there are any connected joysticks that aren't configured
+function inputManager:hasUnconfiguredJoysticks()
+  local unconfigured = self:getUnconfiguredJoysticks()
+  return #unconfigured > 0
+end
+
+-- Finds the next available (empty) input configuration slot
+---@return number? Index of empty configuration, or nil if all slots are full
+function inputManager:findNextAvailableConfig()
+  for i = 1, self.maxConfigurations do
+    local isEmpty = self.inputConfigurations[i]:isEmpty()
+    if isEmpty then
+      return i
+    end
+  end
+  -- If all slots are full, return nil to indicate no available slot
+  return nil
+end
+
+-- Automatically configures a joystick by mapping gamepad buttons to Panel Attack actions
+---@param joystick love.Joystick The joystick to configure
+---@param shouldSave boolean if the configuration should be saved to disk
+---@return number? configIndex The index of the configuration that was set up, or nil if configuration failed
+function inputManager:autoConfigureJoystick(joystick, shouldSave)
+  local configIndex = self:findNextAvailableConfig()
+
+  -- If no available slot, skip configuration
+  if not configIndex then
+    return nil
+  end
+
+  -- Only auto-configure gamepads (devices with known button mappings)
+  if not joystick:isGamepad() then
+    return nil
+  end
+
+  logger.debug("Autoconfiguring joystick at index " .. configIndex)
+
+  local guid = joystick:getGUID()
+  local customId = joystickManager.guidsToJoysticks[guid] and joystickManager.guidsToJoysticks[guid][joystick:getID()]
+
+  if customId ~= nil then
+    -- Map Panel Attack actions to Love2D gamepad button names
+    local gamepadButtonMappings = {
+      Up = "dpup",
+      Down = "dpdown",
+      Left = "dpleft",
+      Right = "dpright",
+      Swap1 = "a",
+      Swap2 = "b",
+      TauntUp = "y",
+      TauntDown = "x",
+      Raise1 = "leftshoulder",
+      Raise2 = "rightshoulder",
+      Start = "start"
+    }
+
+    local basicMapping = {}
+
+    -- Query the actual button mappings from Love2D
+    for panelAttackAction, gamepadButton in pairs(gamepadButtonMappings) do
+      local inputtype, inputindex, _ = joystick:getGamepadMapping(gamepadButton)
+      if inputtype == "button" then
+        basicMapping[panelAttackAction] = guid .. ":" .. customId .. ":" .. inputindex
+      elseif inputtype == "hat" then
+        -- Some controllers use hat for D-pad instead of individual buttons
+        basicMapping[panelAttackAction] = guid .. ":" .. customId .. ":" .. gamepadButton .. inputindex
+      end
+    end
+
+    -- Only proceed if we got at least some mappings
+    if next(basicMapping) then
+      -- Ensure the configuration slot has all the keys we need
+      local inputConfig = self.inputConfigurations[configIndex]
+      for keyName, keyMapping in pairs(basicMapping) do
+        self:changeKeyBindingOnInputConfiguration(inputConfig, keyName, keyMapping, true)
+      end
+
+      -- Make sure all required keys are set (fill any missing ones with nil to be explicit)
+      for _, keyName in ipairs(consts.KEY_NAMES) do
+        if inputConfig[keyName] == nil and not basicMapping[keyName] then
+          self:changeKeyBindingOnInputConfiguration(inputConfig, keyName, nil, true)
+        end
+      end
+
+      self:updateUnconfiguredJoysticksCache()
+      if shouldSave then
+        self:writeKeyConfigurationToFile()
+      end
+      return configIndex
+    end
+  end
+  return nil
+end
+
+-- Gets list of all assignable input devices (controllers, keyboard, touch)
+-- Returns InputConfiguration objects directly with all metadata already calculated
+---@return InputConfiguration[] inputConfigurations Array of InputConfiguration objects
+function inputManager:getAssignableDevices()
+  local devices = {}
+
+  -- Add all non-empty InputConfigurations
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    if not inputConfig:isEmpty() then
+      devices[#devices + 1] = inputConfig
+    end
+  end
+
+  -- Add touch configuration
+  local touchConfig = InputConfiguration.getTouchConfiguration()
+  devices[#devices + 1] = touchConfig
+
+  return devices
+end
+
+function inputManager.getTouchInputConfiguration()
+  return InputConfiguration.getTouchConfiguration()
 end
 
 return inputManager

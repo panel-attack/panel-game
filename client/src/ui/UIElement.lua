@@ -1,5 +1,7 @@
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local DebugSettings = require("client.src.debug.DebugSettings")
+local logger = require("common.lib.logger")
 
 ---@class UiElement
 ---@field x number relative x offset to the parent element (canvas if no parent)
@@ -163,6 +165,11 @@ end
 
 function UIElement:draw()
   if self.isVisible then
+    if DebugSettings.showUIElementBorders() then
+      GraphicsUtil.setColor(0, 0, 1, 1)
+      GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+      GraphicsUtil.setColor(1, 1, 1, 1)
+    end
     self:drawSelf()
     -- if DEBUG_ENABLED then
     --   GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, 1, 1, 1, 0.5)
@@ -174,7 +181,7 @@ function UIElement:draw()
   end
 end
 
--- UiElements can overrid this method to do custom drawing
+-- UiElements can override this method to do custom drawing
 -- implementation is optional
 function UIElement:drawSelf()
 end
@@ -219,10 +226,15 @@ function UIElement:isTouchable()
   or self.onRelease
 end
 
+---Returns the foremost visible, enabled element containing the given screen-space coordinates.
+---@param x number screen x coordinate of the touch
+---@param y number screen y coordinate of the touch
+---@return UiElement? element the coordinates intersect, or nil when none match
 function UIElement:getTouchedElement(x, y)
   if self.isVisible and self.isEnabled and self:inBounds(x, y) then
     local touchedElement
-    for i = 1, #self.children do
+    -- Check children in reverse order (last drawn = first touched)
+    for i = #self.children, 1, -1 do
       touchedElement = self.children[i]:getTouchedElement(x, y)
       if touchedElement then
         return touchedElement
@@ -257,6 +269,43 @@ function UIElement:handleFocusedInput(inputs, dt)
   end
   
   return false -- No focused element found
+end
+
+---Returns a formatted tree of this element and all children with class name, TYPE, and root position
+---@return string
+function UIElement:toStringWithDepth()
+  local function getElementInfo(element, depth)
+    local indent = string.rep("  ", depth)
+    local typeStr = element.TYPE and (" [" .. element.TYPE .. "]") or ""
+    local x, y = element:getScreenPos()
+    local info = string.format("%s%s @ (%.1f, %.1f)", indent, typeStr, x, y)
+
+    local lines = {info}
+    for _, child in ipairs(element.children) do
+      local childInfo = getElementInfo(child, depth + 1)
+      table.insert(lines, childInfo)
+    end
+
+    return table.concat(lines, "\n")
+  end
+
+  return getElementInfo(self, 0)
+end
+
+---Returns a formatted list of this element and its direct children only (non-recursive)
+---@return string
+function UIElement:toString()
+  local typeStr = self.TYPE and (" [" .. self.TYPE .. "]") or ""
+  local x, y = self:getScreenPos()
+  local lines = {string.format("%s @ (%.1f, %.1f)", typeStr, x, y)}
+
+  for _, child in ipairs(self.children) do
+    local childTypeStr = child.TYPE and (" [" .. child.TYPE .. "]") or ""
+    local childX, childY = child:getScreenPos()
+    table.insert(lines, string.format("  %s @ (%.1f, %.1f)", childTypeStr, childX, childY))
+  end
+
+  return table.concat(lines, "\n")
 end
 
 return UIElement
