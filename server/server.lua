@@ -38,7 +38,7 @@ local time = os.time
 ---@field connectionNumberIndex integer GLOBAL counter of the next available connection index
 ---@field roomNumberIndex integer the next available room number
 ---@field rooms Room[] mapping of room number to room
----@field proposals table<PublicPlayerID, table<PublicPlayerID, GameModeID | "any">> mapping of player name to a mapping of the players they have challenged
+---@field proposals table<PublicPlayerID, table<PublicPlayerID, table<GameModeID, boolean>>> mapping of player name to a mapping of the players they have challenged for each game mode
 ---@field connections Connection[] mapping of connection number to connection
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
@@ -256,9 +256,9 @@ function Server:lobby_state()
   return {unpaired = names, spectatable = spectatableRooms, players = players}
 end
 
----@alias LobbyPlayerV2 {publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>}
----@alias LobbyRoomV2 {roomNumber: integer, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[]}
----@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<integer, LobbyRoomV2> }
+---@alias LobbyPlayerV2 { publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>, roomNumber: roomNumber? }
+---@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[] }
+---@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<roomNumber, LobbyRoomV2> }
 
 ---@return LobbyStateV2
 function Server:lobbyStateV2()
@@ -289,7 +289,8 @@ function Server:lobbyStateV2()
       state = room:state(),
       gameModeId = GameModes.nameToGameModeId[room.gameMode.name],
       players = {},
-      spectators = {}
+      spectators = {},
+      wins = {},
     }
 
     if room.game then
@@ -299,6 +300,7 @@ function Server:lobbyStateV2()
     for i, player in ipairs(room.players) do
       players[player.publicPlayerID].roomNumber = room.roomNumber
       lobbyRoom.players[i] = player.publicPlayerID
+      lobbyRoom.wins[i] = room.win_counts[i]
     end
 
     for i, spectator in ipairs(room.spectators) do
@@ -314,38 +316,16 @@ end
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
----@param gameModeId GameModeID?
+---@param gameModeId GameModeID
 function Server:processGameRequest(sender, receiver, gameModeId)
-  logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, (gameModeId or "their choice (any)")))
+  logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
 
   if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
-    local previouslyProposedGameMode = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
-    if previouslyProposedGameMode then
-      -- the challenged player issued a challenge prior to this
-      if previouslyProposedGameMode == gameModeId then
-        -- gameModeId ~= nil is implied because previouslyProposedGameMode is evidently not nil (but gameModeId also won't be "any")
-        ---@cast gameModeId GameModeID
-        self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
-      elseif previouslyProposedGameMode == "any" then
-        if gameModeId then
-          self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
-        else
-          -- both sent unspecific challenges at the same time, cannot create room
-          -- forward the challenge so that the client can see the problem
-          self:registerChallenge(sender, receiver, gameModeId)
-        end
-      else
-        if not gameModeId then
-          ---@cast previouslyProposedGameMode GameModeID
-          self:create_room(GameModes.getPreset(previouslyProposedGameMode), sender, receiver)
-        else
-          -- there is a conflict in which game mode they want to play, so no room
-          -- forward the challenge so that the client can see the problem
-          self:registerChallenge(sender, receiver, gameModeId)
-        end
-      end
+    local previouslyProposedGameModes = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
+    if previouslyProposedGameModes[gameModeId] then
+      self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
     else
-      -- no existing challenge
+      -- no existing challenge for this game mode
       self:registerChallenge(sender, receiver, gameModeId)
     end
   end
@@ -353,10 +333,11 @@ end
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
+---@param gameModeId GameModeID
 function Server:registerChallenge(sender, receiver, gameModeId)
   local senderChallenges = self.proposals[sender.publicPlayerID] or {}
-  -- save as "any" if no specific game mode was proposed to differentiate with no challenge
-  senderChallenges[receiver.publicPlayerID] = gameModeId or "any"
+  senderChallenges[receiver.publicPlayerID] = senderChallenges[receiver.publicPlayerID] or {}
+  senderChallenges[receiver.publicPlayerID][gameModeId] = true
   
   self.proposals[sender.publicPlayerID] = senderChallenges
   receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver, gameModeId))
@@ -364,13 +345,18 @@ end
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
-function Server:cancelChallenge(sender, receiver)
+---@param gameModeId GameModeID
+function Server:cancelChallenge(sender, receiver, gameModeId)
   local senderChallenges = self.proposals[sender.publicPlayerID] or {}
-  senderChallenges[receiver.publicPlayerID] = nil
-
-  self.proposals[sender.publicPlayerID] = senderChallenges
-
-  receiver:sendJson(ServerProtocol.cancelChallenge(sender, receiver))
+  if not senderChallenges[receiver.publicPlayerID] then
+    -- can end up here if the server cleared out the challenges after the recipient accepted a different challenge or logged off
+    -- no handling needed in this case, the sender will already receive refreshed lobby data to reflect that
+  else
+    senderChallenges[receiver.publicPlayerID][gameModeId] = false
+    self.proposals[sender.publicPlayerID] = senderChallenges
+  
+    receiver:sendJson(ServerProtocol.cancelChallenge(sender, receiver, gameModeId))
+  end
 end
 
 ---@param player ServerPlayer

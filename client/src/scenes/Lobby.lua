@@ -121,14 +121,16 @@ function Lobby:playerRatingString(playerName)
   return rating
 end
 
--- challenges the opponent with that name
-function Lobby:requestGameFunction(opponentName)
+-- sends a challenge for the opponent with that id
+---@param publicId PublicPlayerID
+---@param gameModeId GameModeID?
+function Lobby:requestGameFunction(publicId, gameModeId)
   return function()
     if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
       GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
       GAME.netClient:sendPlayerSettings(GAME.localPlayer)
     end
-    GAME.netClient:challengePlayer(opponentName)
+    GAME.netClient:challengePlayerById(publicId, gameModeId)
     GAME.theme:playValidationSfx()
   end
 end
@@ -139,6 +141,143 @@ function Lobby:requestSpectateFunction(room)
     GAME.netClient:requestSpectate(room.roomNumber)
     GAME.theme:playValidationSfx()
   end
+end
+
+---@param publicId PublicPlayerID
+---@param gameModeId GameModeID?
+---@return string
+function Lobby.getPlayerNameWithRating(publicId, gameModeId)
+  local player = GAME.netClient.lobbyDataV2.players[publicId]
+
+  if not player then
+    logger.warn("Tried to get rating for unknown player id " .. publicId)
+    return tostring(publicId)
+  else
+    gameModeId = gameModeId or "TWO_PLAYER_VS"
+    if player.rating[gameModeId] then
+      return player.name .. " (" .. player.rating[gameModeId] .. ")"
+    else
+      return player.name
+    end
+  end
+end
+
+---@param personalizedLobbyData PersonalizedLobbyDataV2
+function Lobby:createPlayerButtons(personalizedLobbyData)
+  local playerButtons = {}
+
+  for publicId, player in pairs(personalizedLobbyData.players) do
+    local playerName
+    if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
+      playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
+    elseif personalizedLobbyData.outgoingChallenges[publicId] and next(personalizedLobbyData.outgoingChallenges[publicId]) then
+      playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_request")
+    else
+      playerName = Lobby.getPlayerNameWithRating(publicId)
+    end
+
+    local button = ui.MenuItem.createButtonMenuItem(playerName, nil, false, self:requestGameFunction(publicId))
+    button.player = player
+    playerButtons[#playerButtons+1] = button
+  end
+
+  table.sort(playerButtons, function(a, b)
+    -- a more sensible order could be login time or idle status but the server does not track those at the moment
+    -- but we need a consistent order
+    return a.player.publicId < b.player.publicId
+  end)
+
+  return playerButtons
+end
+
+---@param personalizedLobbyData PersonalizedLobbyDataV2
+function Lobby:createRoomButtons(personalizedLobbyData)
+  local roomButtons = {}
+
+  for _, room in pairs(personalizedLobbyData.rooms) do
+    ---@type table<integer, string>
+    local playerStrings = {}
+    for i, playerId in ipairs(room.playerIds) do
+      playerStrings[i] = Lobby.getPlayerNameWithRating(playerId, room.gameModeId)
+    end
+
+    local roomName
+
+    if #room.players == 1 then
+      roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " (" .. room.state .. ")"
+    else
+      roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " vs " .. playerStrings[2] .. " (" .. room.state .. ")"
+    end
+
+    local button = ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room))
+    button.room = room
+    roomButtons[#roomButtons+1] = button
+  end
+
+  table.sort(roomButtons, function(a, b)
+    return a.room.roomNumber < b.room.roomNumber
+  end)
+
+  return roomButtons
+end
+
+---@param playerId PublicPlayerID
+function Lobby:openPlayerSubMenu(playerId)
+  local lobbyData = GAME.netClient.lobbyData
+
+  local menu = ui.Menu({
+    x = 0,
+    y = 0,
+    hAlign = "center",
+    vAlign = "center",
+    height = themes[config.theme].main_menu_max_height
+  })
+
+  local backButton = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
+    menu:detach()
+  end)
+
+  if lobbyData.incomingChallenges[playerId] then
+    local gameMode = lobbyData.incomingChallenges[playerId]
+    if gameMode == "TWO_PLAYER_VS" or gameMode == "any" then
+      local button = ui.MenuItem.createButtonMenuItem("vs", nil, true, function()
+        self:requestGameFunction(playerId, "TWO_PLAYER_VS")
+        menu:detach()
+      end)
+      menu:addMenuItem(button)
+    end
+    if gameMode == "TWO_PLAYER_TIME_ATTACK" or gameMode == "any" then
+      local button = ui.MenuItem.createButtonMenuItem("gm_time_attack", nil, true, function()
+        self:requestGameFunction(playerId, "TWO_PLAYER_TIME_ATTACK")
+        menu:detach()
+      end)
+      menu:addMenuItem(button)
+    end
+  elseif lobbyData.outgoingChallenges[playerId] then
+
+  else
+    local vsButton = ui.MenuItem.createButtonMenuItem("vs", nil, true, function()
+      self:requestGameFunction(playerId, "TWO_PLAYER_VS")
+      menu:detach()
+    end)
+    menu:addMenuItem(vsButton)
+
+    local timeAttack = ui.MenuItem.createButtonMenuItem("gm_time_attack", nil, true, function()
+      self:requestGameFunction(playerId, "TWO_PLAYER_TIME_ATTACK")
+      menu:detach()
+    end)
+    menu:addMenuItem(timeAttack)
+
+    local anyButton = ui.MenuItem.createButtonMenuItem("lb_mode_choice", nil, true, function()
+      self:requestGameFunction(playerId)
+      menu:detach()
+    end)
+    menu:addMenuItem(anyButton)
+  end
+
+  menu:addMenuItem(backButton)
+
+  self.uiRoot:addChild(menu)
 end
 
 -- rebuilds the UI based on the new lobby information
@@ -155,28 +294,16 @@ function Lobby:onLobbyStateUpdate(lobbyState)
   end
   self.lobbyMenu:setSelectedIndex(1)
 
-  for _, v in ipairs(lobbyState.unpairedPlayers) do
-    if v ~= config.name then
-      local unmatchedPlayer = v .. self:playerRatingString(v)
-      if lobbyState.sentRequests[v] then
-        unmatchedPlayer = unmatchedPlayer .. " " .. loc("lb_request")
-      end
-      if lobbyState.willingPlayers[v] then
-        unmatchedPlayer = unmatchedPlayer .. " " .. loc("lb_received")
-      end
-      self.lobbyMenu:addMenuItem(2, ui.MenuItem.createButtonMenuItem(unmatchedPlayer, nil, false, self:requestGameFunction(v)))
-    end
+  local playerButtons = Lobby:createPlayerButtons(GAME.netClient.lobbyData)
+
+  for _, button in ipairs(playerButtons) do
+    self.lobbyMenu:addMenuItem(2, button)
   end
-  for _, room in ipairs(lobbyState.spectatableRooms) do
-    if room.b then
-      local playerA = room.a .. self:playerRatingString(room.a)
-      local playerB = room.b .. self:playerRatingString(room.b)
-      local roomName = loc("lb_spectate") .. " " .. playerA .. " vs " .. playerB .. " (" .. room.state .. ")"
-      self.lobbyMenu:addMenuItem(2, ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)))
-    else
-      local roomName = loc("lb_spectate") .. " " .. room.name .. " (" .. room.state .. ")"
-      self.lobbyMenu:addMenuItem(2, ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room)))
-    end
+
+  local roomButtons = Lobby:createRoomButtons(GAME.netClient.lobbyData)
+
+  for _, button in ipairs(roomButtons) do
+    self.lobbyMenu:addMenuItem(2, button)
   end
 
   if self.lobbyMenuStartingUp then

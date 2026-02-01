@@ -638,3 +638,5 @@ mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submod
 mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
 mm_2_time,,2P time attack,2J contre la montre,2J contra o tempo,2P スコアアタック,2J Contrareloj,2P Time Attack,2P a tempo,2P time attack
 op_about_puzzles,,About custom puzzles,À propos des puzzles personnalisés,Sobre quebra-cabeças personalizados,カスタムパズルについて,Acerca de rompecabezas personalizados,How to: Eigene Puzzles erstellen,A proposito dei puzzle personalizzabili,เกี่ยวกับ custom puzzles
+gm_time_attack,Name of the score attack game mode with time limit,Time Attack,Contre la montre,Contra o tempo,スコアアタック,Contrareloj,Time Attack,A Tempo,Time Attack
+lb_mode_choice,Label indicating that the choice of game mode is left to the opponent,Their choice,,,,,Gegner wählt Spielmodus,,,

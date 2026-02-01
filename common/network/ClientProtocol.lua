@@ -75,6 +75,26 @@ function ClientMessages.challengePlayer(senderName, receiverName, gameModeId)
   }
 end
 
+---@param senderId PublicPlayerID
+---@param receiverId PublicPlayerID
+---@param gameModeId GameModeID
+function ClientMessages.challengePlayerV2(senderId, receiverId, gameModeId)
+  local playerChallengeV2Message =
+  {
+    gameRequestV2 =
+    {
+      senderId = senderId,
+      receiverId = receiverId,
+      gameModeId = gameModeId,
+    }
+  }
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = playerChallengeV2Message,
+  }
+end
+
 function ClientMessages.requestSpectate(spectatorName, roomNumber)
   local spectateRequestMessage =
   {

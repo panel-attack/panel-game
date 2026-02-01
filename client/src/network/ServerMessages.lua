@@ -133,6 +133,8 @@ function ServerMessages.sanitizeServerMessage(message)
     end
   elseif message.type == "lobbyState" then
     return message.content
+  elseif message.type == "lobbyStateV2" then
+    return { lobbyStateV2 = true, content = message.content }
   elseif message.type == "leaderboardReport" then
     return { leaderboard_report = message.content }
   elseif message.type == "spectateRequestGranted" then

@@ -316,13 +316,16 @@ function ServerProtocol.lobbyState(unpaired, rooms, allPlayers)
   }
 end
 
+---@class LobbyStateV2Message : ServerMessage
+---@field content LobbyStateV2
+
 local lobbyState2Template = {
   sender = "server",
   type = "lobbyStateV2",
   content = { }
 }
 
----@return {messageType: table, messageText: ServerMessage}
+---@return {messageType: table, messageText: LobbyStateV2Message}
 function ServerProtocol.lobbyStateV2(players, rooms)
   local lobbyStateV2Message = lobbyState2Template
 
@@ -512,12 +515,14 @@ local cancelChallengeTemplate = {
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
+---@param gameModeId GameModeID
 ---@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.cancelChallenge(sender, receiver)
+function ServerProtocol.cancelChallenge(sender, receiver, gameModeId)
   local cancelChallengeMessage = cancelChallengeTemplate
   cancelChallengeMessage.sender = sender.publicPlayerID
   cancelChallengeMessage.content.sender = sender.name
   cancelChallengeMessage.content.receiver = receiver.name
+  cancelChallengeMessage.content.gameModeId = gameModeId
 
   return {
     messageType = msgTypes.jsonMessage,

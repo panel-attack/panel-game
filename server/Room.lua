@@ -8,13 +8,15 @@ local ServerPlayer = require("server.Player")
 local Signal = require("common.lib.signal")
 local ServerGame = require("server.Game")
 
+---@alias roomNumber integer
+
 -- Object that represents a current session of play between two connections
 -- Players alternate between the character select state and playing, and spectators can join and leave
 ---@class Room : Signal
 ---@field players ServerPlayer[]
 ---@field leaderboard Leaderboard?
 ---@field name string
----@field roomNumber integer
+---@field roomNumber roomNumber
 ---@field stage string? stage for the game, randomly picked from both players
 ---@field spectators ServerPlayer[] array of spectator connection objects
 ---@field win_counts integer[] win counts by player number

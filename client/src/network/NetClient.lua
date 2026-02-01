@@ -29,6 +29,20 @@ local function resetLobbyData(self)
     spectatableRooms = {},
     sentRequests = {}
   }
+
+  ---@class PersonalizedLobbyDataV2
+  self.lobbyDataV2 = {
+    ---@type table<PublicPlayerID, LobbyPlayerV2>
+    players = {},
+    ---@type LobbyPlayerV2[]
+    availablePlayers = {},
+    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
+    outgoingChallenges = {},
+    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
+    incomingChallenges = {},
+    ---@type table<roomNumber, LobbyRoomV2>
+    rooms = {}
+  }
 end
 
 local function updateLobbyState(self, lobbyState)
@@ -55,6 +69,43 @@ local function updateLobbyState(self, lobbyState)
   end
 
   self:emitSignal("lobbyStateUpdate", self.lobbyData)
+end
+
+---@param lobbyStateV2Message { content: LobbyStateV2 }
+local function updateLobbyStateV2(self, lobbyStateV2Message)
+  local lobbyStateV2 = lobbyStateV2Message.content
+  if lobbyStateV2.players then
+    self.lobbyDataV2.players = lobbyStateV2.players
+  end
+
+  local availablePlayers = {}
+  for publicId, player in pairs(lobbyStateV2.players) do
+    if not player.roomNumber then
+      availablePlayers[#availablePlayers+1] = player
+    end
+  end
+
+  -- if a player we challenged is not in lobby data or is in a room, they cannot accept our challenge anymore
+  for publicId, player in pairs(self.lobbyDataV2.outgoingChallenges) do
+    if not self.lobbyDataV2.players[publicId] then
+      self.lobbyDataV2.outgoingChallenges[publicId] = nil
+    elseif self.lobbyDataV2.players[publicId].roomNumber then
+      self.lobbyDataV2.outgoingChallenges[publicId] = nil
+    end
+  end
+
+  -- if a player that challenged us is not in lobby data or is in a room, we cannot accept their challenge anymore
+  for publicId, player in pairs(self.lobbyData.incomingChallenges) do
+    if not self.lobbyDataV2.players[publicId] then
+      self.lobbyDataV2.incomingChallenges[publicId] = nil
+    elseif self.lobbyDataV2.players[publicId].roomNumber then
+      self.lobbyDataV2.incomingChallenges[publicId] = nil
+    end
+  end
+
+  self.lobbyData.rooms = lobbyStateV2.rooms
+
+  self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 
 ---@param room BattleRoom
@@ -328,6 +379,7 @@ local function createListeners(self)
   local messageListeners = {}
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
   messageListeners.players = createListener(self, "unpaired", updateLobbyState)
+  messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
   messageListeners.game_request = createListener(self, "game_request", processGameRequest)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)
@@ -366,6 +418,7 @@ local NetClient = class(function(self)
   -- all listeners running while online but not in a room/match
   self.lobbyListeners = {
     players = messageListeners.players,
+    lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
     game_request = messageListeners.game_request,
   }
@@ -396,6 +449,7 @@ local NetClient = class(function(self)
 
   Signal.turnIntoEmitter(self)
   self:createSignal("lobbyStateUpdate")
+  self:createSignal("lobbyDataV2Update")
   self:createSignal("leaderboardUpdate")
   -- only fires for unintended disconnects
   self:createSignal("clientDisconnected")
@@ -455,6 +509,18 @@ function NetClient:challengePlayer(name)
     self.lobbyData.sentRequests[name] = true
     self:emitSignal("lobbyStateUpdate", self.lobbyData)
   end
+end
+
+---@param opponentId PublicPlayerID
+---@param gameModeId GameModeID
+function NetClient:challengePlayerById(opponentId, gameModeId)
+  if not self.lobbyDataV2.outgoingChallenges[opponentId] then
+    self.tcpClient:sendRequest(ClientMessages.challengePlayerV2(GAME.localPlayer.publicId, opponentId, gameModeId))
+    self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
+    self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
+    self:emitSignal("lobbyDataV2Update", self.lobbyDataV2)
+  end
+
 end
 
 function NetClient:requestSpectate(roomNumber)
