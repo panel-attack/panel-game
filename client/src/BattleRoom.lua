@@ -126,7 +126,7 @@ function BattleRoom.createFromServerMessage(message)
 
   battleRoom:updateRankedStatus(message.ranked)
 
-  battleRoom:assignInputConfigurations()
+  battleRoom:restoreInputConfigurations()
   GAME.netClient:registerPlayerUpdates(battleRoom)
 
   return battleRoom
@@ -159,7 +159,7 @@ function BattleRoom.createLocalFromGameMode(gameMode, gameScene, settingChangesU
     end
   end
 
-  if battleRoom:assignInputConfigurations() then
+  if battleRoom:restoreInputConfigurations() then
     return battleRoom
   else
     return nil
@@ -413,87 +413,69 @@ function BattleRoom:startLoadingNewAssets()
   end
 end
 
--- updates a player's input configuration
--- if lock is true it tries to claim the first unclaim inputConfiguration for which a key is down (may not claim any)
--- if lock is false it unclaims the player's current inputConfiguration
-function BattleRoom.updateInputConfigurationForPlayer(player, lock)
-  if lock then
-    for i, inputConfiguration in ipairs(GAME.input.inputConfigurations) do
-      if not inputConfiguration.claimed and tableUtils.length(inputConfiguration.isDown) > 0 then
-        -- assign the first unclaimed input configuration that is used
-        player:setInputMethod("controller")
-        logger.debug("Claiming input configuration " .. i .. " for player " .. player.playerNumber)
-        player:restrictInputs(inputConfiguration)
-        break
-      end
-    end
-    if not player.inputConfiguration and not GAME.input.mouse.claimed then
-      if tableUtils.length(GAME.input.mouse.isDown) > 0 or tableUtils.length(GAME.input.mouse.isPressed) > 0 then
-        player:setInputMethod("touch")
-        logger.debug("Claiming touch configuration for player " .. player.playerNumber)
-        player:restrictInputs(GAME.input.mouse)
-      end
-    end
-  else
-    -- player can always go from controller to touch but not the other way around
-    player:setInputMethod("controller")
-    player:unrestrictInputs()
-  end
-end
+-- Validates that there are enough input configurations for local players and attempts to restore previous assignments
+function BattleRoom:restoreInputConfigurations()
+  local localPlayers = self:getLocalHumanPlayers()
 
--- sets up the process to get an input configuration assigned for every local player
--- returns false if there are more players than input configurations
-function BattleRoom:assignInputConfigurations()
-  local localPlayers = {}
-  for i = 1, #self.players do
-    if self.players[i].isLocal and self.players[i].human then
-      localPlayers[#localPlayers + 1] = self.players[i]
-    end
-  end
-
-  -- assert that there are enough valid input configurations actually configured
-  -- 1 is the baseline because you can always use touch without configuration
-  local validInputConfigurationCount = 1
-  for _, inputConfiguration in ipairs(GAME.input.inputConfigurations) do
-    if inputConfiguration["Swap1"] then
-      validInputConfigurationCount = validInputConfigurationCount + 1
-    end
-  end
-
-  if validInputConfigurationCount < #localPlayers then
-    local messageText = "There are more local players than input configurations configured." ..
-    "\nPlease configure enough input configurations and try again"
-    local transition = MessageTransition(GAME.timer, 5, messageText)
+  if #GAME.input:getAssignableDevices() < #localPlayers then
+    local transition = MessageTransition(GAME.timer, 5, "more_players_than_configs")
     GAME.navigationStack:popToTop(transition, function() self:shutdown() end)
     return false
-  else
-    if #localPlayers == 1 then
-      -- lock the inputConfiguration whenever the player readies up (and release it when they unready)
-      -- the ready up press guarantees that at least 1 input config has a key down
-      localPlayers[1]:connectSignal("wantsReadyChanged", localPlayers[1], self.updateInputConfigurationForPlayer)
-    elseif #localPlayers > 1 then
-      -- with multiple local players we need to lock immediately so they can configure
-      -- set a flag so this is continuously attempted in update
-      self.tryLockInputs = true
+  end
+
+  -- Try to restore previous device assignments
+  for _, player in ipairs(localPlayers) do
+    if player.lastUsedInputConfiguration then
+      -- Check if the device is available (not already claimed by another player)
+      local deviceAvailable = true
+      for _, otherPlayer in ipairs(localPlayers) do
+        if otherPlayer ~= player and otherPlayer.inputConfiguration == player.lastUsedInputConfiguration then
+          deviceAvailable = false
+          break
+        end
+      end
+
+      if deviceAvailable then
+        local success = self:claimDeviceForPlayer(player, player.lastUsedInputConfiguration)
+        if success then
+          logger.debug(string.format("BattleRoom: restored device for player %d", player.playerNumber))
+        end
+      end
     end
   end
 
   return true
 end
 
--- tries to assign unclaimed input configurations for all local players based on currently used inputs
-function BattleRoom:tryAssignInputConfigurations()
-  if self.tryLockInputs then
-    for _, player in ipairs(self.players) do
-      if player.isLocal and player.human and not player.inputConfiguration then
-        BattleRoom.updateInputConfigurationForPlayer(player, true)
-      end
+-- Gets all local human players in the battle room
+---@return Player[] localHumanPlayers
+function BattleRoom:getLocalHumanPlayers()
+  local localPlayers = {}
+  for _, player in ipairs(self.players) do
+    if player.isLocal and player.human then
+      localPlayers[#localPlayers + 1] = player
     end
-    self.tryLockInputs = tableUtils.trueForAny(self.players,
-                          function(p)
-                            return p.isLocal and p.human and not p.inputConfiguration
-                          end)
   end
+  return localPlayers
+end
+
+-- Claims an input device for a specific player
+function BattleRoom:claimDeviceForPlayer(player, device)
+  assert(player, "player is required")
+  assert(device, "device is required")
+  logger.debug(string.format("BattleRoom:claimDeviceForPlayer player=%s device=%s", tostring(player.playerNumber), tostring(device)))
+
+  if player.inputConfiguration == device then
+    logger.debug("BattleRoom:claimDeviceForPlayer device already assigned to player")
+    return true
+  end
+
+  assert(not device.claimed or device.player == player, "device already claimed by another player")
+
+  player:unrestrictInputs()
+  player:restrictInputs(device)
+
+  return true
 end
 
 function BattleRoom:update(dt)
@@ -502,7 +484,6 @@ function BattleRoom:update(dt)
 
   if self.state == BattleRoom.states.Setup then
     -- the setup phase of the room
-    self:tryAssignInputConfigurations()
     self:updateLoadingState()
     self:refreshReadyStates()
     if self:allReady() then

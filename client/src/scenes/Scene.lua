@@ -21,6 +21,7 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
+    sceneParams = sceneParams or {}
     self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
     directsFocus(self.uiRoot)
     -- scenes may specify theme music to use that is played once they are switched to

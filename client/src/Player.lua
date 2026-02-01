@@ -33,6 +33,8 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field settings PlayerSettings
 ---@field publicId integer
 ---@field playerNumber integer?
+---@field inputConfiguration InputConfiguration?
+---@field lastUsedInputConfiguration InputConfiguration?
 ---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player
@@ -82,6 +84,7 @@ function(self, name, publicId, isLocal)
   self:createSignal("levelChanged")
   self:createSignal("levelDataChanged")
   self:createSignal("inputMethodChanged")
+  self:createSignal("inputConfigurationChanged")
   self:createSignal("puzzleSetChanged")
   self:createSignal("ratingChanged")
   self:createSignal("leagueChanged")
@@ -212,11 +215,19 @@ function Player:setLeague(league)
   end
 end
 
+---@param inputConfiguration InputConfiguration
 function Player:restrictInputs(inputConfiguration)
   if self.inputConfiguration and self.inputConfiguration ~= inputConfiguration then
     error("Player " .. self.playerNumber .. " is trying to claim a second input configuration")
   end
+  if inputConfiguration.deviceType == "touch" then
+    self:setInputMethod("touch")
+  else
+    self:setInputMethod("controller")
+  end
+
   self.inputConfiguration = input:claimConfiguration(self, inputConfiguration)
+  self:emitSignal("inputConfigurationChanged", self.inputConfiguration)
 end
 
 function Player:unrestrictInputs()
@@ -229,7 +240,13 @@ function Player:unrestrictInputs()
     self.lastUsedInputConfiguration = self.inputConfiguration
     input:releaseConfiguration(self, self.inputConfiguration)
     self.inputConfiguration = nil
+    self:emitSignal("inputConfigurationChanged", nil)
   end
+end
+
+function Player:hasInputConfiguration()
+  local assigned = (self.inputConfiguration ~= nil)
+  return assigned
 end
 
 ---@return Player

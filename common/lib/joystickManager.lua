@@ -40,6 +40,7 @@ local joystickHatToDirs = {
   rd = {"right", "down"}
 }
 
+---@param joystick love.Joystick
 function joystickManager:getJoystickButtonName(joystick, button)
   return string.format("%s:%s:%s", joystick:getGUID(), joystickManager.guidsToJoysticks[joystick:getGUID()][joystick:getID()], button)
 end
@@ -90,6 +91,7 @@ end
 -- end
 
 -- maps dpad dir to buttons
+---@param joystick love.Joystick
 function joystickManager:getDPadState(joystick, hatIndex)
   local dir = joystick:getHat(hatIndex)
   local activeButtons = joystickHatToDirs[dir]
@@ -101,9 +103,14 @@ function joystickManager:getDPadState(joystick, hatIndex)
   }
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
-function love.joystickadded(joystick)
+---@param joystick love.Joystick
+function joystickManager:isRegistered(joystick)
+  -- converting the joystick into a bool
+  return not not joystickManager.devices[joystick:getID()]
+end
+
+---@param joystick love.Joystick
+function joystickManager:registerJoystick(joystick)
   -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions
   local guid = joystick:getGUID()
@@ -167,16 +174,15 @@ function love.joystickadded(joystick)
   joystickManager.devices[id] = device
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
-function love.joystickremoved(joystick)
-  -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
+---@param joystick love.Joystick
+function joystickManager:unregisterJoystick(joystick)
+-- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions
   local guid = joystick:getGUID()
   -- ID is a per-session identifier for each controller regardless of type
   local id = joystick:getID()
 
-  local vendorID, productID, productVersion = joystick:getDeviceInfo( )
+  local vendorID, productID, productVersion = joystick:getDeviceInfo()
 
   logger.info("Disconnecting device " .. vendorID .. ";" .. productID .. ";" .. productVersion .. ";" .. joystick:getName() .. ";" .. guid .. ";" .. id)
 

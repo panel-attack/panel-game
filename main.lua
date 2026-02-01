@@ -187,6 +187,18 @@ function love.joystickreleased(joystick, button)
   inputManager:joystickReleased(joystick, button)
 end
 
+-- Intentional override
+---@diagnostic disable-next-line: duplicate-set-field
+function love.joystickadded(joystick)
+  GAME:onJoystickAdded(joystick)
+end
+
+-- Intentional override
+---@diagnostic disable-next-line: duplicate-set-field
+function love.joystickremoved(joystick)
+  GAME:onJoystickRemoved(joystick)
+end
+
 -- Handle a touch press
 -- Note we are specifically not implementing this because mousepressed above handles mouse and touch
 -- function love.touchpressed(id, x, y, dx, dy, pressure)

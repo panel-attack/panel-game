@@ -1,41 +1,9 @@
-local inputManager = require("client.src.inputManager")
 local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
 
 -- the save.lua file contains the read/write functions
 
 local save = {}
-
--- writes to the "keys.txt" file
-function save.write_key_file()
-  FileUtils.writeJson("", "keysV3.json", inputManager:getSaveKeyMap())
-end
-
--- reads the "keys.txt" file
-function save.read_key_file()
-  local filename
-  local migrateInputs = false
-
-  if FileUtils.exists("keysV3.json") then
-    filename = "keysV3.json"
-  else
-    filename = "keysV2.txt"
-    migrateInputs = true
-  end
-
-  if not FileUtils.exists(filename) then
-    return inputManager.inputConfigurations
-  else
-    local inputConfigs = FileUtils.readJsonFile(filename)
-
-    if migrateInputs then
-      -- migrate old input configs
-      inputConfigs = inputManager:migrateInputConfigs(inputConfigs)
-    end
-
-    return inputConfigs
-  end
-end
 
 -- reads the .txt file of the given path and filename
 function save.read_txt_file(path_and_filename)

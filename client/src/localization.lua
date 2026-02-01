@@ -2,24 +2,40 @@
 local FILENAME = "client/assets/localization.csv"
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
-local GraphicsUtil = require("client.src.graphics.graphics_util")
+local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local fileUtils = require("client.src.FileUtils")
+
+---@alias LanguageCode ("EN" | "FR" | "PT" | "JP" | "ES" | "GE" | "IT" | "TH")
 
 -- Holds all the data for localizing the game
 Localization = {
     data = {},
     langs = {},
+    ---@type LanguageCode[]
     codes = {},
     lang_index = 1,
     init = false,
 }
 
-function Localization.get_list_codes(self)
+---@type table<LanguageCode, { fontPath: string?, fontSize: integer }>
+Localization.languageCodeToFontData =
+{
+  EN = { fontPath = nil, fontSize = 12 },
+  FR = { fontPath = nil, fontSize = 12 },
+  PT = { fontPath = nil, fontSize = 12 },
+  JP = { fontPath = "client/assets/fonts/jp.ttf", fontSize = 14 },
+  ES = { fontPath = nil, fontSize = 12 },
+  GE = { fontPath = nil, fontSize = 12 },
+  IT = { fontPath = nil, fontSize = 12 },
+  TH = { fontPath = "client/assets/fonts/th.otf", fontSize = 14 },
+}
+
+function Localization:get_list_codes()
   return self.codes
 end
 
-function Localization.get_language(self)
+function Localization:get_language()
   return self.codes[self.lang_index]
 end
 
@@ -150,17 +166,72 @@ function Localization.init(self)
 end
 
 -- Gets the localized string for a loc key
-function loc(text_key, ...)
+---@param textKey string
+---@param ... string?
+function loc(textKey, ...)
   local code = Localization.codes[Localization.lang_index]
 
-  if not code or not Localization.data[code] then
-    code = Localization.codes[1]
+  return Localization.localize(code, textKey, ...)
+end
+
+function Localization:getCurrentLanguageCode()
+  if config.language_code then
+    return config.language_code
   end
-  assert(code)
+  return "EN"
+end
+
+-- Creates language labels by temporarily switching to each language to load proper fonts
+-- Returns: array of {code, name} pairs, array of labels with proper fonts
+function Localization:getLanguageLabelsWithFonts()
+  local languageData = {}
+  local languageLabels = {}
+  local originalLanguageCode = self:getCurrentLanguageCode()
+
+  for k, languageCode in ipairs(self:get_list_codes()) do
+    GAME:setLanguage(languageCode)
+    local languageName = self.data[languageCode]["LANG"]
+    languageData[#languageData + 1] = {code = languageCode, name = languageName}
+    languageLabels[#languageLabels + 1] = ui.Label({text = languageName, translate = false})
+  end
+
+  GAME:setLanguage(originalLanguageCode)
+
+  return languageData, languageLabels
+end
+
+-- Gets the index of a language code in the list
+function Localization:getLanguageIndex(languageCode)
+  for k, code in ipairs(self:get_list_codes()) do
+    if code == languageCode then
+      return k
+    end
+  end
+  return 1
+end
+
+---@return LanguageCode?
+function Localization:getLanguageCode(languageName)
+  for languageCode, translations in pairs(self.data) do
+    if translations["LANG"] == languageName then
+      return languageCode
+    end
+  end
+end
+
+---@param languageCode LanguageCode
+---@param textKey string
+---@param ... string?
+---@return string
+function Localization.localize(languageCode, textKey, ...)
+  if not languageCode or not Localization.data[languageCode] then
+    languageCode = Localization.codes[1]
+  end
+  assert(languageCode)
 
   local ret = nil
   if Localization.init then
-    ret = Localization.data[code][text_key]
+    ret = Localization.data[languageCode][textKey]
   end
 
   if ret then
@@ -169,8 +240,8 @@ function loc(text_key, ...)
       ret = ret:gsub("%%" .. i, tmp)
     end
   else
-    love.filesystem.append("warnings.txt", text_key .. ",,,,,,,,," .. "\n")
-    ret = "#" .. text_key
+    love.filesystem.append("warnings.txt", textKey .. ",,,,,,,,," .. "\n")
+    ret = "#" .. textKey
     for i = 1, select("#", ...) do
       ret = ret .. " " .. select(i, ...)
     end

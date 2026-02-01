@@ -10,6 +10,7 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 
 --- A BoolSelector is a UIElement that shows if a setting is on or off and lets you toggle it.
 ---@class BoolSelector : UiElement
+---@operator call(BoolSelectorOptions): BoolSelector
 ---@field value boolean
 ---@field vertical boolean
 ---@field circleRadius number

@@ -149,29 +149,23 @@ function OptionsMenu:loadInfoScreen(text)
 end
 
 function OptionsMenu:loadBaseMenu()
-  local languageNumber
-  local languageName = {}
-  for k, v in ipairs(Localization:get_list_codes()) do
-    languageName[#languageName + 1] = {v, Localization.data[v]["LANG"]}
-    if Localization:get_language() == v then
-      languageNumber = k
-    end
-  end
-  local languageLabels = {}
-  for k, v in ipairs(languageName) do
-    local lang = config.language_code
-    GAME:setLanguage(v[1])
-    languageLabels[#languageLabels + 1] = ui.Label({text = v[2], translate = false})
-    GAME:setLanguage(lang)
+  local languageData, languageLabels = Localization:getLanguageLabelsWithFonts()
+  local currentLanguageCode = Localization:getCurrentLanguageCode()
+  local languageIndex = Localization:getLanguageIndex(currentLanguageCode)
+
+  local languageCodes = {}
+  for i, language in ipairs(languageData) do
+    languageCodes[#languageCodes + 1] = language.code
   end
 
   local languageStepper = ui.Stepper({
     labels = languageLabels,
-    values = languageName,
-    selectedIndex = languageNumber,
+    values = languageCodes,
+    selectedIndex = languageIndex,
     onChange = function(value)
       GAME.theme:playMoveSfx()
-      GAME:setLanguage(value[1])
+      config.language_code = value
+      GAME:setLanguage(value)
       self:updateMenuLanguage()
     end
   })
