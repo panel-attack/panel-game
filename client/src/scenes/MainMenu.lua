@@ -190,7 +190,7 @@ function MainMenu:drawSelf()
 
 
     local showUpdaterUpdateWarning = false
-    if GAME.updater.version.major < 1 or (GAME.updater.version.major == 1 and GAME.updater.version.minor < 1) then
+    if system.meetsLoveVersionRequirement(12, 0) and GAME.updater.version.major < 2 or (GAME.updater.version.major == 2 and GAME.updater.version.minor < 0) then
       showUpdaterUpdateWarning = true
     elseif GAME.updater.version.major == 1 and GAME.updater.version.minor < 2 then
       local _, _, vendor, _ = love.graphics.getRendererInfo( )
