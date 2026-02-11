@@ -155,7 +155,7 @@ end
 
 function Menu:addMenuItem(index, menuItem)
   local needsIncreasedIndex = false
-  if index <= self.selectedIndex then
+  if index <= self.selectedIndex and #self.menuItems > 0 then
     needsIncreasedIndex = true
   end
   table.insert(self.menuItems, index, menuItem)
@@ -218,7 +218,10 @@ function Menu:setSelectedIndex(index)
   if #self.menuItems >= self.selectedIndex then
     self.menuItems[self.selectedIndex]:setSelected(false)
   end
-  if self.firstActiveIndex > index then
+  if self.firstActiveIndex == nil then
+    -- first element that was added on an empty menu
+    self.yOffset = self.menuItemYOffsets[index]
+  elseif self.firstActiveIndex > index then
     self.yOffset = self.menuItemYOffsets[index]
   elseif self.lastActiveIndex < index then
     local currentIndex = 1

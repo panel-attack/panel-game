@@ -95,7 +95,7 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
   end
 
   -- if a player that challenged us is not in lobby data or is in a room, we cannot accept their challenge anymore
-  for publicId, player in pairs(self.lobbyData.incomingChallenges) do
+  for publicId, player in pairs(self.lobbyDataV2.incomingChallenges) do
     if not self.lobbyDataV2.players[publicId] then
       self.lobbyDataV2.incomingChallenges[publicId] = nil
     elseif self.lobbyDataV2.players[publicId].roomNumber then
@@ -103,7 +103,7 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     end
   end
 
-  self.lobbyData.rooms = lobbyStateV2.rooms
+  self.lobbyDataV2.rooms = lobbyStateV2.rooms
 
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
@@ -111,7 +111,7 @@ end
 ---@param room BattleRoom
 local function getSceneFromRoom(room)
   -- this is so hacky oh my god
-  if room.mode.name == "VS" then
+  if room.mode.name == "VS" or room.mode.name == "2p_timeattack" then
     return CharacterSelect2p({battleRoom = room})
   elseif room.mode.name == "endless" then
     return require("client.src.scenes.EndlessMenu")({battleRoom = room})
@@ -335,6 +335,17 @@ local function processGameRequest(self, gameRequestMessage)
   end
 end
 
+---@param self NetClient
+local function processChallengeUpdate(self, challengeUpdateMessage)
+  if challengeUpdateMessage.challengeUpdate then
+    local challengeUpdate = challengeUpdateMessage.challengeUpdate
+    local challenges = self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] or {}
+    challenges[challengeUpdate.gameModeId] = challengeUpdate.challengeActive
+    self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] = challenges
+    self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+  end
+end
+
 -- starts to spectate a 2p vs online match
 local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
   resetLobbyData(self)
@@ -383,6 +394,7 @@ local function createListeners(self)
   messageListeners.players = createListener(self, "unpaired", updateLobbyState)
   messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
   messageListeners.game_request = createListener(self, "game_request", processGameRequest)
+  messageListeners.challengeUpdate = createListener(self, "challengeUpdate", processChallengeUpdate)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)
   messageListeners.leave_room = createListener(self, "leave_room", processLeaveRoomMessage)
@@ -406,6 +418,7 @@ end
 ---@field messageListeners table
 ---@field room BattleRoom?
 ---@field lobbyData table
+---@field lobbyDataV2 PersonalizedLobbyDataV2
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
@@ -422,7 +435,8 @@ local NetClient = class(function(self)
     players = messageListeners.players,
     lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
-    game_request = messageListeners.game_request,
+    --game_request = messageListeners.game_request,
+    challengeUpdate = messageListeners.challengeUpdate,
   }
 
   -- all listeners running while in a room but not in a match
@@ -451,7 +465,7 @@ local NetClient = class(function(self)
 
   Signal.turnIntoEmitter(self)
   self:createSignal("lobbyStateUpdate")
-  self:createSignal("lobbyDataV2Update")
+  self:createSignal("lobbyStateV2Update")
   self:createSignal("leaderboardUpdate")
   -- only fires for unintended disconnects
   self:createSignal("clientDisconnected")
@@ -517,12 +531,11 @@ end
 ---@param gameModeId GameModeID
 function NetClient:challengePlayerById(opponentId, gameModeId)
   if not self.lobbyDataV2.outgoingChallenges[opponentId] then
-    self.tcpClient:sendRequest(ClientMessages.challengePlayerV2(GAME.localPlayer.publicId, opponentId, gameModeId))
+    self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
     self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
     self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
-    self:emitSignal("lobbyDataV2Update", self.lobbyDataV2)
+    self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
   end
-
 end
 
 function NetClient:requestSpectate(roomNumber)

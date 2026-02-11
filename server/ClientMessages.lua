@@ -13,6 +13,8 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeLoginRequest(clientMessage)
   elseif clientMessage.game_request then
     return ClientMessages.sanitizeGameRequest(clientMessage)
+  elseif clientMessage.challengeUpdate then
+    return ClientMessages.sanitizeChallengeUpdate(clientMessage)
   elseif clientMessage.menu_state then
     return ClientMessages.sanitizeMenuState(clientMessage.menu_state)
   elseif clientMessage.spectate_request then
@@ -117,6 +119,21 @@ function ClientMessages.sanitizeGameRequest(gameRequest)
       receiver = gameRequest.game_request.receiver,
       -- default value only for slow adaption, remove and sanity check once clients send this properly
       gameModeId = gameRequest.game_request.gameModeId or "TWO_PLAYER_VS",
+    }
+  }
+
+  return sanitized
+end
+
+function ClientMessages.sanitizeChallengeUpdate(message)
+  local sanitized =
+  {
+    challengeUpdate =
+    {
+      senderId = message.challengeUpdate.senderId,
+      receiverId = message.challengeUpdate.receiverId,
+      gameModeId = message.challengeUpdate.gameModeId,
+      challengeActive = message.challengeUpdate.challengeActive,
     }
   }
 

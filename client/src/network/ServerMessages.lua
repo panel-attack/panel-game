@@ -204,13 +204,15 @@ function ServerMessages.sanitizePlayerMessage(message)
       index = content.index,
       player_number = content.playerNumber,
     }
-  elseif message.type == "challenge" then
+  elseif message.type == "challengeUpdate" then
     return
     {
-      game_request =
+      challengeUpdate =
       {
-        sender = content.sender,
-        receiver = content.receiver,
+        senderId = content.senderId,
+        receiverId = content.receiverId,
+        gameModeId = content.gameModeId,
+        challengeActive = content.challengeActive,
       }
     }
   end

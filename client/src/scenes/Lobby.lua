@@ -48,7 +48,7 @@ function Lobby:load(sceneParams)
     GAME.netClient:login(sceneParams.serverIp, sceneParams.serverPort)
   end
 
-  GAME.netClient:connectSignal("lobbyStateUpdate", self, self.onLobbyStateUpdate)
+  GAME.netClient:connectSignal("lobbyStateV2Update", self, self.onLobbyStateUpdate)
   GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
   GAME.netClient:connectSignal("leaderboardUpdate", self.leaderboard, self.leaderboard.updateData)
   GAME.netClient:connectSignal("loginFinished", self, self.onLoginFinish)
@@ -154,8 +154,8 @@ function Lobby.getPlayerNameWithRating(publicId, gameModeId)
     return tostring(publicId)
   else
     gameModeId = gameModeId or "TWO_PLAYER_VS"
-    if player.rating[gameModeId] then
-      return player.name .. " (" .. player.rating[gameModeId] .. ")"
+    if player.ratings[gameModeId] then
+      return player.name .. " (" .. player.ratings[gameModeId] .. ")"
     else
       return player.name
     end
@@ -167,18 +167,26 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
   local playerButtons = {}
 
   for publicId, player in pairs(personalizedLobbyData.players) do
-    local playerName
-    if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
-      playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
-    elseif personalizedLobbyData.outgoingChallenges[publicId] and next(personalizedLobbyData.outgoingChallenges[publicId]) then
-      playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_request")
-    else
-      playerName = Lobby.getPlayerNameWithRating(publicId)
-    end
+    --if publicId ~= GAME.localPlayer.publicId then
+      local playerName
+      if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
+        playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
+      elseif personalizedLobbyData.outgoingChallenges[publicId] and next(personalizedLobbyData.outgoingChallenges[publicId]) then
+        playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_request")
+      else
+        playerName = Lobby.getPlayerNameWithRating(publicId)
+      end
 
-    local button = ui.MenuItem.createButtonMenuItem(playerName, nil, false, self:requestGameFunction(publicId))
-    button.player = player
-    playerButtons[#playerButtons+1] = button
+      local menuItem = ui.MenuItem.createButtonMenuItem(playerName, nil, false, 
+        function(button)
+          self:openPlayerSubMenu(publicId, button)
+        end
+      )
+      ui.Focusable(menuItem.textButton)
+      ui.FocusDirector(menuItem.textButton)
+      menuItem.player = player
+      playerButtons[#playerButtons+1] = menuItem
+    --end
   end
 
   table.sort(playerButtons, function(a, b)
@@ -209,9 +217,9 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " vs " .. playerStrings[2] .. " (" .. room.state .. ")"
     end
 
-    local button = ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room))
-    button.room = room
-    roomButtons[#roomButtons+1] = button
+    local menuItem = ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room))
+    menuItem.room = room
+    roomButtons[#roomButtons+1] = menuItem
   end
 
   table.sort(roomButtons, function(a, b)
@@ -222,66 +230,97 @@ function Lobby:createRoomButtons(personalizedLobbyData)
 end
 
 ---@param playerId PublicPlayerID
-function Lobby:openPlayerSubMenu(playerId)
-  local lobbyData = GAME.netClient.lobbyData
-
-  local menu = ui.Menu({
-    x = 0,
-    y = 0,
-    hAlign = "center",
-    vAlign = "center",
-    height = themes[config.theme].main_menu_max_height
-  })
-
-  local backButton = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
-    menu:detach()
-  end)
-
-  if lobbyData.incomingChallenges[playerId] then
-    local gameMode = lobbyData.incomingChallenges[playerId]
-    if gameMode == "TWO_PLAYER_VS" or gameMode == "any" then
-      local button = ui.MenuItem.createButtonMenuItem("vs", nil, true, function()
-        self:requestGameFunction(playerId, "TWO_PLAYER_VS")
-        menu:detach()
-      end)
-      menu:addMenuItem(button)
-    end
-    if gameMode == "TWO_PLAYER_TIME_ATTACK" or gameMode == "any" then
-      local button = ui.MenuItem.createButtonMenuItem("gm_time_attack", nil, true, function()
-        self:requestGameFunction(playerId, "TWO_PLAYER_TIME_ATTACK")
-        menu:detach()
-      end)
-      menu:addMenuItem(button)
-    end
-  elseif lobbyData.outgoingChallenges[playerId] then
-
-  else
-    local vsButton = ui.MenuItem.createButtonMenuItem("vs", nil, true, function()
-      self:requestGameFunction(playerId, "TWO_PLAYER_VS")
-      menu:detach()
-    end)
-    menu:addMenuItem(vsButton)
-
-    local timeAttack = ui.MenuItem.createButtonMenuItem("gm_time_attack", nil, true, function()
-      self:requestGameFunction(playerId, "TWO_PLAYER_TIME_ATTACK")
-      menu:detach()
-    end)
-    menu:addMenuItem(timeAttack)
-
-    local anyButton = ui.MenuItem.createButtonMenuItem("lb_mode_choice", nil, true, function()
-      self:requestGameFunction(playerId)
-      menu:detach()
-    end)
-    menu:addMenuItem(anyButton)
+---@param button Button the button the click that opens this submenu originated from
+function Lobby:openPlayerSubMenu(playerId, button)
+  if self.playerSubMenu then
+    self.playerSubMenu:yieldFocus()
+    --self.playerSubMenu:detach()
+    self.playerSubMenu = nil
   end
 
-  menu:addMenuItem(backButton)
+  local lobbyDataV2 = GAME.netClient.lobbyDataV2
 
-  self.uiRoot:addChild(menu)
+  local x, y = button:getScreenPos()
+
+  local subMenu = ui.Menu({
+    x = x + button.width + 8,
+    y = y,
+    hAlign = "left",
+    vAlign = "top",
+    height = 0,
+    width = 120,
+    menuItems = {},
+  })
+
+  subMenu.playerId = playerId
+
+  local backButton = ui.TextButton({
+    label = ui.Label({text = "back"}),
+    width = 120,
+    onClick = function()
+      subMenu:yieldFocus()
+      self.playerSubMenu = nil
+    end})
+
+  local vsButton = ui.LobbyChallengeButton({
+    gameModeId = "TWO_PLAYER_VS",
+    iconSize = 16,
+    playerId = playerId,
+    text = "vs",
+    acceptImage = GAME.theme:comboImage(4),
+    proposeImage = GAME.theme:comboImage(5),
+    withdrawImage = GAME.theme:comboImage(6),
+    height = 24,
+    width = 120
+  })
+  
+  subMenu:addMenuItem(1, ui.MenuItem.createMenuItem(vsButton))
+
+  local timeAttackButton = ui.LobbyChallengeButton({
+    gameModeId = "TWO_PLAYER_TIME_ATTACK",
+    iconSize = 16,
+    playerId = playerId,
+    text = "gm_time_attack",
+    acceptImage = GAME.theme:comboImage(4),
+    proposeImage = GAME.theme:comboImage(5),
+    withdrawImage = GAME.theme:comboImage(6),
+    height = 24,
+    width = 120
+  })
+  subMenu:addMenuItem(2, ui.MenuItem.createMenuItem(timeAttackButton))
+
+  if lobbyDataV2.outgoingChallenges[playerId] then
+    if lobbyDataV2.outgoingChallenges[playerId]["TWO_PLAYER_VS"] == true then
+      vsButton:setState(vsButton.challengeStates.PROPOSING)
+    end
+    if lobbyDataV2.outgoingChallenges[playerId]["TWO_PLAYER_TIME_ATTACK"] == true then
+      timeAttackButton:setState(timeAttackButton.challengeStates.PROPOSING)
+    end
+  end
+
+  if lobbyDataV2.incomingChallenges[playerId] then
+    if lobbyDataV2.incomingChallenges[playerId]["TWO_PLAYER_VS"] then
+      vsButton:setState(vsButton.challengeStates.CHALLENGED)
+    end
+    if lobbyDataV2.incomingChallenges[playerId]["TWO_PLAYER_TIME_ATTACK"] then
+      timeAttackButton:setState(timeAttackButton.challengeStates.CHALLENGED)
+    end
+  end
+
+  subMenu:addMenuItem(3, ui.MenuItem.createMenuItem(backButton))
+  self.playerSubMenu = subMenu
+
+  button:setFocus(subMenu, function()
+    subMenu:detach()
+    button:yieldFocus()
+  end)
+
+  self.uiRoot:addChild(subMenu)
 end
 
 -- rebuilds the UI based on the new lobby information
-function Lobby:onLobbyStateUpdate(lobbyState)
+---@param lobbyDataV2 PersonalizedLobbyDataV2
+function Lobby:onLobbyStateUpdate(lobbyDataV2)
   local previousText
   if self.lobbyMenu.menuItems[self.lobbyMenu.selectedIndex].textButton then
     previousText = self.lobbyMenu.menuItems[self.lobbyMenu.selectedIndex].textButton.children[1].text
@@ -294,13 +333,13 @@ function Lobby:onLobbyStateUpdate(lobbyState)
   end
   self.lobbyMenu:setSelectedIndex(1)
 
-  local playerButtons = Lobby:createPlayerButtons(GAME.netClient.lobbyData)
+  local playerButtons = self:createPlayerButtons(lobbyDataV2)
 
   for _, button in ipairs(playerButtons) do
     self.lobbyMenu:addMenuItem(2, button)
   end
 
-  local roomButtons = Lobby:createRoomButtons(GAME.netClient.lobbyData)
+  local roomButtons = self:createRoomButtons(lobbyDataV2)
 
   for _, button in ipairs(roomButtons) do
     self.lobbyMenu:addMenuItem(2, button)
@@ -317,6 +356,29 @@ function Lobby:onLobbyStateUpdate(lobbyState)
       end
     end
     self.lobbyMenu:setSelectedIndex(util.bound(2, desiredIndex, #self.lobbyMenu.menuItems))
+  end
+
+  if self.playerSubMenu then
+    if not lobbyDataV2.players[self.playerSubMenu.playerId] then
+      self.playerSubMenu:yieldFocus()
+      self.playerSubMenu = nil
+    else
+      for _, menuItem in ipairs(self.playerSubMenu.children) do
+        for _, item in ipairs(menuItem.children) do
+          if item.gameModeId then
+            ---@cast item LobbyChallengeButton
+            if lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId] and lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId][item.gameModeId] == true then
+              item:setState(item.challengeStates.CHALLENGED)
+            elseif lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId] and lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId][item.gameModeId] == true then
+              item:setState(item.challengeStates.PROPOSING)
+            else
+              item:setState(item.challengeStates.NEUTRAL)
+            end
+          end
+          
+        end
+      end
+    end
   end
 end
 

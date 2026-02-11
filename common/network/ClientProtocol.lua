@@ -78,14 +78,15 @@ end
 ---@param senderId PublicPlayerID
 ---@param receiverId PublicPlayerID
 ---@param gameModeId GameModeID
-function ClientMessages.challengePlayerV2(senderId, receiverId, gameModeId)
+function ClientMessages.updateChallengeStatus(senderId, receiverId, gameModeId, challengeActive)
   local playerChallengeV2Message =
   {
-    gameRequestV2 =
+    challengeUpdate =
     {
       senderId = senderId,
       receiverId = receiverId,
       gameModeId = gameModeId,
+      challengeActive = challengeActive,
     }
   }
 

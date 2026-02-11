@@ -56,6 +56,8 @@ local ui = {
   Leaderboard = import("./Leaderboard"),
   ---@source LevelSlider.lua
   LevelSlider = import("./LevelSlider"),
+  ---@source LobbyChallengeButton.lua
+  LobbyChallengeButton = import("./LobbyChallengeButton"),
   ---@source Menu.lua
   Menu = import("./Menu"),
   ---@source MenuItem.lua

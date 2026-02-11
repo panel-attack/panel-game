@@ -482,51 +482,31 @@ function ServerProtocol.taunt(player, type, index)
   }
 end
 
-local challengeTemplate = {
+local challengeUpdateTemplate = {
   sender = "player",
   senderId = nil,
-  type = "challenge",
+  type = "challengeUpdate",
   content = {}
 }
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
 ---@param gameModeId GameModeID? nil if the challenged picks the game mode
+---@param challengeActive boolean
 ---@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.sendChallenge(sender, receiver, gameModeId)
-  local challengeMessage = challengeTemplate
+function ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive)
+  local challengeMessage = challengeUpdateTemplate
   challengeMessage.senderId = sender.publicPlayerID
   challengeMessage.content.sender = sender.name
+  challengeMessage.content.senderId = sender.publicPlayerID
   challengeMessage.content.receiver = receiver.name
+  challengeMessage.content.receiverId = receiver.publicPlayerID
   challengeMessage.content.gameModeId = gameModeId
+  challengeMessage.content.challengeActive = challengeActive
 
   return {
     messageType = msgTypes.jsonMessage,
     messageText = challengeMessage,
-  }
-end
-
-local cancelChallengeTemplate = {
-  sender = "player",
-  senderId = nil,
-  type = "challengeCancelled",
-  content = {}
-}
-
----@param sender ServerPlayer
----@param receiver ServerPlayer
----@param gameModeId GameModeID
----@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.cancelChallenge(sender, receiver, gameModeId)
-  local cancelChallengeMessage = cancelChallengeTemplate
-  cancelChallengeMessage.sender = sender.publicPlayerID
-  cancelChallengeMessage.content.sender = sender.name
-  cancelChallengeMessage.content.receiver = receiver.name
-  cancelChallengeMessage.content.gameModeId = gameModeId
-
-  return {
-    messageType = msgTypes.jsonMessage,
-    messageText = cancelChallengeMessage
   }
 end
 

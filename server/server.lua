@@ -43,6 +43,7 @@ local time = os.time
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
 ---@field connectionToPlayer table<Connection, ServerPlayer> Mapping of connections to the player they send for
+---@field publicIdToPlayer table<PublicPlayerID, ServerPlayer> Mapping of publicId to the logged in ServerPlayer
 ---@field playerToRoom table<ServerPlayer, Room>
 ---@field spectatorToRoom table<ServerPlayer, Room>
 ---@field nameToPlayer table<string, ServerPlayer>
@@ -65,6 +66,7 @@ local Server = class(
     self.nameToConnectionIndex = {}
     self.socketToConnectionIndex = {}
     self.connectionToPlayer = {}
+    self.publicIdToPlayer = {}
     self.playerToRoom = {}
     self.spectatorToRoom = {}
     self.nameToPlayer = {}
@@ -317,51 +319,41 @@ end
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
 ---@param gameModeId GameModeID
-function Server:processGameRequest(sender, receiver, gameModeId)
-  logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
-
+---@param challengeActive boolean
+function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive)
   if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
+    logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
     local previouslyProposedGameModes = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
-    if previouslyProposedGameModes[gameModeId] then
+    if previouslyProposedGameModes and previouslyProposedGameModes[gameModeId] then
       self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
     else
       -- no existing challenge for this game mode
-      self:registerChallenge(sender, receiver, gameModeId)
+      self:updateChallenge(sender, receiver, gameModeId, challengeActive)
+      receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive))
     end
+  else
+    -- this message won't be handled because one of the parties is no longer in lobby
+    -- related things would be handled in the state change / logout
   end
 end
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
 ---@param gameModeId GameModeID
-function Server:registerChallenge(sender, receiver, gameModeId)
+---@param challengeActive boolean
+function Server:updateChallenge(sender, receiver, gameModeId, challengeActive)
   local senderChallenges = self.proposals[sender.publicPlayerID] or {}
   senderChallenges[receiver.publicPlayerID] = senderChallenges[receiver.publicPlayerID] or {}
-  senderChallenges[receiver.publicPlayerID][gameModeId] = true
+  senderChallenges[receiver.publicPlayerID][gameModeId] = challengeActive
   
   self.proposals[sender.publicPlayerID] = senderChallenges
-  receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver, gameModeId))
-end
-
----@param sender ServerPlayer
----@param receiver ServerPlayer
----@param gameModeId GameModeID
-function Server:cancelChallenge(sender, receiver, gameModeId)
-  local senderChallenges = self.proposals[sender.publicPlayerID] or {}
-  if not senderChallenges[receiver.publicPlayerID] then
-    -- can end up here if the server cleared out the challenges after the recipient accepted a different challenge or logged off
-    -- no handling needed in this case, the sender will already receive refreshed lobby data to reflect that
-  else
-    senderChallenges[receiver.publicPlayerID][gameModeId] = false
-    self.proposals[sender.publicPlayerID] = senderChallenges
-  
-    receiver:sendJson(ServerProtocol.cancelChallenge(sender, receiver, gameModeId))
-  end
 end
 
 ---@param player ServerPlayer
 function Server:clearProposals(player)
+  -- blanket reset for the player
   self.proposals[player.publicPlayerID] = {}
+  -- reset all challenges to the player
   for _, challenges in pairs(self.proposals) do
     if challenges[player.publicPlayerID] then
       challenges[player.publicPlayerID] = nil
@@ -663,9 +655,10 @@ function Server:processMessage(message, connection)
     if message.logout then
       self:closeConnection(connection, player.name .. " logged out")
       return false
-    elseif player.state == "lobby" and message.game_request then
-      if message.game_request.sender == player.name then
-        self:processGameRequest(player, self.nameToPlayer[message.game_request.receiver], message.game_request.gameModeId)
+    elseif player.state == "lobby" and message.challengeUpdate then
+      local receiver = self.publicIdToPlayer[message.challengeUpdate.receiverId]
+      if message.challengeUpdate.senderId == player.publicPlayerID and receiver then
+        self:processChallengeUpdate(player, receiver, message.challengeUpdate.gameModeId, message.challengeUpdate.challengeActive)
         return true
       end
     elseif player.state == "lobby" and message.roomRequest then
@@ -735,7 +728,7 @@ function Server:broadCastLobbyIfChanged()
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player and player.state == "lobby" then
-        connection:sendJson(message)
+        --connection:sendJson(message)
         connection:sendJson(messageV2)
       end
     end
@@ -809,6 +802,7 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     player:updateSettings(loginMessage.playerSettings)
     self.nameToConnectionIndex[name] = connection.index
     self.connectionToPlayer[connection] = player
+    self.publicIdToPlayer[player.publicPlayerID] = player
     self.nameToPlayer[name] = player
     if self.leaderboard then
       self.leaderboard:update_timestamp(userId)
@@ -928,6 +922,7 @@ function Server:closeConnection(connection, reason)
   if player then
     self:clearProposals(player)
     self:handleLeaveRoom(player, reason)
+    self.publicIdToPlayer[player.publicPlayerID] = nil
     self.playerToRoom[player] = nil
     self.spectatorToRoom[player] = nil
     self.nameToPlayer[player.name] = nil
