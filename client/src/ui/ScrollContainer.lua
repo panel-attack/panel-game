@@ -105,6 +105,7 @@ local loveMajor = love.getVersion()
 
 function ScrollContainer:draw()
   if self.isVisible then
+    self:drawDebugOutline()
     -- make a stencil according to width/height
     if loveMajor >= 12 then
       love.graphics.setStencilMode("draw", 1)

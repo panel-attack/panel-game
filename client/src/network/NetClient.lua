@@ -325,16 +325,6 @@ local function processInputMessages(self)
   end
 end
 
-local function processGameRequest(self, gameRequestMessage)
-  if gameRequestMessage.game_request then
-    self.lobbyData.willingPlayers[gameRequestMessage.game_request.sender] = true
-    love.window.requestAttention()
-    SoundController:playSfx(themes[config.theme].sounds.notification)
-    -- this might be moot if the server sends a lobby update to everyone after receiving the challenge
-    self:emitSignal("lobbyStateUpdate", self.lobbyData)
-  end
-end
-
 ---@param self NetClient
 local function processChallengeUpdate(self, challengeUpdateMessage)
   if challengeUpdateMessage.challengeUpdate then
@@ -393,7 +383,6 @@ local function createListeners(self)
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
   messageListeners.players = createListener(self, "unpaired", updateLobbyState)
   messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
-  messageListeners.game_request = createListener(self, "game_request", processGameRequest)
   messageListeners.challengeUpdate = createListener(self, "challengeUpdate", processChallengeUpdate)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)
@@ -435,7 +424,6 @@ local NetClient = class(function(self)
     players = messageListeners.players,
     lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
-    --game_request = messageListeners.game_request,
     challengeUpdate = messageListeners.challengeUpdate,
   }
 

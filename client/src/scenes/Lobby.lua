@@ -6,6 +6,7 @@ local util = require("common.lib.util")
 local NetClient = require("client.src.network.NetClient")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GameModes = require("common.data.GameModes")
+local tableUtils = require("common.lib.tableUtils")
 
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
 local Lobby = class(function(self, sceneParams)
@@ -58,34 +59,53 @@ function Lobby:load(sceneParams)
 end
 
 function Lobby:initLobbyMenu()
-  local menuItems = {
-    ui.MenuItem.createMenuItem(self.lobbyMessage),
-    ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
+  self.lobbyMenuWidth = 140
+  self.onePlayerEndlessButton = ui.TextButton({
+    label = ui.Label({text = "mm_1_endless"}),
+    width = self.lobbyMenuWidth,
+    onClick = function()
       GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_ENDLESS"))
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
+    end
+  })
+  self.onePlayerTimeAttackButton = ui.TextButton({
+    label = ui.Label({text = "mm_1_time"}),
+    width = self.lobbyMenuWidth,
+    onClick = function()
       GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"))
-    end),
-    ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
+    end
+  })
+  self.onePlayerVsButton = ui.TextButton({
+    label = ui.Label({text = "mm_1_vs"}),
+    width = self.lobbyMenuWidth,
+    onClick = function()
       if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
         GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
         GAME.netClient:sendPlayerSettings(GAME.localPlayer)
       end
       GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
-    end),
-    ui.MenuItem.createButtonMenuItem("lb_show_board", nil, nil, function()
+    end
+  })
+  self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})
+  self.showLeaderboardButton = ui.TextButton({
+    label = self.leaderboardToggleLabel,
+    width = self.lobbyMenuWidth,
+    onClick = function()
       if self.leaderboard.hasFocus then
         self.leaderboard:yieldFocus()
       else
         self:toggleLeaderboard()
       end
-    end),
-    ui.MenuItem.createButtonMenuItem("lb_back", nil, nil, exitMenu)
-  }
-  self.leaderboardToggleLabel = menuItems[5].textButton.children[1]
+    end
+  })
+  self.backButton = ui.TextButton({
+    label = ui.Label({text = "lb_back"}),
+    width = self.lobbyMenuWidth,
+    onClick = exitMenu
+  })
+
 
   self.lobbyMenuStartingUp = true
-  self.lobbyMenu = ui.Menu.createCenteredMenu(menuItems)
+  self.lobbyMenu = ui.ScrollMenu({height = 540, width = 300, hAlign = "center", vAlign = "center"})
   self.lobbyMenu.x = self.lobbyMenuXoffsetMap[false]
 
   self.uiRoot:addChild(self.lobbyMenu)
@@ -177,15 +197,18 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
         playerName = Lobby.getPlayerNameWithRating(publicId)
       end
 
-      local menuItem = ui.MenuItem.createButtonMenuItem(playerName, nil, false, 
-        function(button)
-          self:openPlayerSubMenu(publicId, button)
-        end
-      )
-      ui.Focusable(menuItem.textButton)
-      ui.FocusDirector(menuItem.textButton)
-      menuItem.player = player
-      playerButtons[#playerButtons+1] = menuItem
+      local button = ui.TextButton({
+        label = ui.Label({text = playerName, translate = false}),
+        width = self.lobbyMenuWidth,
+        onClick =
+          function(button)
+            self:openPlayerSubMenu(publicId, button)
+            GAME.theme:playValidationSfx()
+          end
+        })
+      button.lobbyType = "player"
+      button.player = player
+      playerButtons[#playerButtons+1] = button
     --end
   end
 
@@ -217,9 +240,14 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " vs " .. playerStrings[2] .. " (" .. room.state .. ")"
     end
 
-    local menuItem = ui.MenuItem.createButtonMenuItem(roomName, nil, false, self:requestSpectateFunction(room))
-    menuItem.room = room
-    roomButtons[#roomButtons+1] = menuItem
+    local button = ui.TextButton({
+      label = ui.Label({text = roomName, translate = false}),
+      width = self.lobbyMenuWidth,
+      onClick = function() self:requestSpectateFunction(room) end
+    })
+    button.lobbyType = "room"
+    button.room = room
+    roomButtons[#roomButtons+1] = button
   end
 
   table.sort(roomButtons, function(a, b)
@@ -234,60 +262,49 @@ end
 function Lobby:openPlayerSubMenu(playerId, button)
   if self.playerSubMenu then
     self.playerSubMenu:yieldFocus()
-    --self.playerSubMenu:detach()
-    self.playerSubMenu = nil
   end
 
   local lobbyDataV2 = GAME.netClient.lobbyDataV2
 
   local x, y = button:getScreenPos()
 
-  local subMenu = ui.Menu({
-    x = x + button.width + 8,
+  local subMenu = ui.ScrollMenu({
+    x = x + self.lobbyMenu.width + 8,
     y = y,
     hAlign = "left",
     vAlign = "top",
-    height = 0,
+    height = 88,
     width = 120,
-    menuItems = {},
+    padding = 0,
+    childGap = 8,
   })
 
   subMenu.playerId = playerId
-
-  local backButton = ui.TextButton({
-    label = ui.Label({text = "back"}),
-    width = 120,
-    onClick = function()
-      subMenu:yieldFocus()
-      self.playerSubMenu = nil
-    end})
 
   local vsButton = ui.LobbyChallengeButton({
     gameModeId = "TWO_PLAYER_VS",
     iconSize = 16,
     playerId = playerId,
-    text = "vs",
+    label = ui.Label({text = "vs"}),
     acceptImage = GAME.theme:comboImage(4),
     proposeImage = GAME.theme:comboImage(5),
     withdrawImage = GAME.theme:comboImage(6),
-    height = 24,
     width = 120
   })
   
-  subMenu:addMenuItem(1, ui.MenuItem.createMenuItem(vsButton))
+  subMenu:addChild(vsButton)
 
   local timeAttackButton = ui.LobbyChallengeButton({
     gameModeId = "TWO_PLAYER_TIME_ATTACK",
     iconSize = 16,
     playerId = playerId,
-    text = "gm_time_attack",
+    label = ui.Label({text = "gm_time_attack"}),
     acceptImage = GAME.theme:comboImage(4),
     proposeImage = GAME.theme:comboImage(5),
     withdrawImage = GAME.theme:comboImage(6),
-    height = 24,
     width = 120
   })
-  subMenu:addMenuItem(2, ui.MenuItem.createMenuItem(timeAttackButton))
+  subMenu:addChild(timeAttackButton)
 
   if lobbyDataV2.outgoingChallenges[playerId] then
     if lobbyDataV2.outgoingChallenges[playerId]["TWO_PLAYER_VS"] == true then
@@ -307,55 +324,109 @@ function Lobby:openPlayerSubMenu(playerId, button)
     end
   end
 
-  subMenu:addMenuItem(3, ui.MenuItem.createMenuItem(backButton))
+  local backButton = ui.TextButton({
+    label = ui.Label({text = "back"}),
+    width = 120,
+    onClick = function()
+      GAME.theme:playCancelSfx()
+      subMenu:yieldFocus()
+    end})
+
+  subMenu:addChild(backButton)
+  subMenu:select(vsButton)
   self.playerSubMenu = subMenu
 
-  button:setFocus(subMenu, function()
-    subMenu:detach()
-    button:yieldFocus()
+  local subMenuLine = ui.Line({
+    x = x + button.width + 8,
+    y = y + button.height / 2,
+    height = button.height,
+    points = {x + button.width + 8, y + button.height / 2, subMenu.x - 8, y + button.height / 2}
+  })
+  self.subMenuLine = subMenuLine
+
+  self.lobbyMenu:setFocus(subMenu, function()
+    self.playerSubMenu:detach()
+    self.playerSubMenu = nil
+    self.subMenuLine:detach()
+    self.subMenuLine = nil
   end)
 
   self.uiRoot:addChild(subMenu)
+  self.uiRoot:addChild(subMenuLine)
 end
 
 -- rebuilds the UI based on the new lobby information
 ---@param lobbyDataV2 PersonalizedLobbyDataV2
 function Lobby:onLobbyStateUpdate(lobbyDataV2)
-  local previousText
-  if self.lobbyMenu.menuItems[self.lobbyMenu.selectedIndex].textButton then
-    previousText = self.lobbyMenu.menuItems[self.lobbyMenu.selectedIndex].textButton.children[1].text
-  end
-  local desiredIndex = self.lobbyMenu.selectedIndex
+  local copy = shallowcpy(self.lobbyMenu.children)
+  local previousIndex = self.lobbyMenu.selectedIndex
 
-  -- cleanup previous lobby menu
-  while #self.lobbyMenu.menuItems > 6 do
-    self.lobbyMenu:removeMenuItemAtIndex(2)
+  self.lobbyMenu.selectedIndex = nil
+
+  for i, child in ipairs(self.lobbyMenu.children) do
+    child:detach()
   end
-  self.lobbyMenu:setSelectedIndex(1)
+
+  self.lobbyMenu:addChild(self.lobbyMessage)
 
   local playerButtons = self:createPlayerButtons(lobbyDataV2)
 
   for _, button in ipairs(playerButtons) do
-    self.lobbyMenu:addMenuItem(2, button)
+    self.lobbyMenu:addChild(button)
   end
 
   local roomButtons = self:createRoomButtons(lobbyDataV2)
 
   for _, button in ipairs(roomButtons) do
-    self.lobbyMenu:addMenuItem(2, button)
+    self.lobbyMenu:addChild(button)
   end
 
+  self.lobbyMenu:addChild(self.onePlayerEndlessButton)
+  self.lobbyMenu:addChild(self.onePlayerTimeAttackButton)
+  self.lobbyMenu:addChild(self.onePlayerVsButton)
+  self.lobbyMenu:addChild(self.showLeaderboardButton)
+  self.lobbyMenu:addChild(self.backButton)
+
   if self.lobbyMenuStartingUp then
-    self.lobbyMenu:setSelectedIndex(2)
+    self.lobbyMenu:select(self.lobbyMenu.children[2])
     self.lobbyMenuStartingUp = false
-  else
-    for i = 1, #self.lobbyMenu.menuItems do
-      if self.lobbyMenu.menuItems[i].textButton and self.lobbyMenu.menuItems[i].textButton.children[1].text == previousText then
-        desiredIndex = i
-        break
+  elseif previousIndex then
+    if copy[previousIndex].lobbyType then
+      local prev = copy[previousIndex]
+      if prev.lobbyType == "player" then
+        for i, playerButton in ipairs(playerButtons) do
+          if prev.player.publicId == playerButton.player.publicId then
+            self.lobbyMenu:select(playerButton)
+            break
+          end
+        end
+      elseif prev.lobbyType == "room" then
+        for i, roomButton in ipairs(roomButtons) do
+          if prev.room.roomNumber == roomButton.room.roomNumber then
+            self.lobbyMenu:select(roomButton)
+            break
+          end
+        end
+      end
+    elseif previousIndex == 1 then
+      self.lobbyMenu:select(self.lobbyMessage)
+    else
+      local reverseOffset = #copy - previousIndex
+      if reverseOffset == 0 then
+        self.lobbyMenu:select(self.backButton)
+      elseif reverseOffset == 1 then
+        self.lobbyMenu:select(self.showLeaderboardButton)
+      elseif reverseOffset == 2 then
+        self.lobbyMenu:select(self.onePlayerVsButton)
+      elseif reverseOffset == 3 then
+        self.lobbyMenu:select(self.onePlayerTimeAttackButton)
+      elseif reverseOffset == 4 then
+        self.lobbyMenu:select(self.onePlayerEndlessButton)
+      else
+        logger.warn("Unexpectedly couldn't find previous non-player/room selection, resetting to 1")
+        self.lobbyMenu:select(self.lobbyMessage)
       end
     end
-    self.lobbyMenu:setSelectedIndex(util.bound(2, desiredIndex, #self.lobbyMenu.menuItems))
   end
 
   if self.playerSubMenu then
@@ -375,7 +446,6 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
               item:setState(item.challengeStates.NEUTRAL)
             end
           end
-          
         end
       end
     end
@@ -399,7 +469,7 @@ function Lobby:updateSelf(dt)
         self.lobbyMessage:setText("lb_select_player", nil, true)
       end
     end
-    self.lobbyMenu:receiveInputs()
+    self.lobbyMenu:receiveInputs(GAME.input)
   end
 end
 

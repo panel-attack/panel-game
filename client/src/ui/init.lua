@@ -56,6 +56,8 @@ local ui = {
   Leaderboard = import("./Leaderboard"),
   ---@source LevelSlider.lua
   LevelSlider = import("./LevelSlider"),
+  ---@source Line.lua
+  Line = import("./Line"),
   ---@source LobbyChallengeButton.lua
   LobbyChallengeButton = import("./LobbyChallengeButton"),
   ---@source Menu.lua
@@ -72,6 +74,8 @@ local ui = {
   PixelFontLabel = import("./PixelFontLabel"),
   ---@source ScrollContainer.lua
   ScrollContainer = import("./ScrollContainer"),
+  ---@source ScrollMenu.lua
+  ScrollMenu = import("./ScrollMenu"),
   ---@source ScrollText.lua
   ScrollText = import("./ScrollText"),
   ---@source Slider.lua

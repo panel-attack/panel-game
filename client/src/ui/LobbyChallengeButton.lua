@@ -1,12 +1,12 @@
 local import = require("common.lib.import")
-local Button = import("./Button")
+local TextButton = import("./TextButton")
 local Label = import("./Label")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local GameModes = require("common.data.GameModes")
 
 ---@class LobbyChallengeButtonOptions : ButtonOptions
----@field text string
+---@field label Label
 ---@field proposeImage love.Texture
 ---@field acceptImage love.Texture
 ---@field withdrawImage love.Texture
@@ -15,14 +15,14 @@ local GameModes = require("common.data.GameModes")
 ---@field playerId PublicPlayerID
 
 
----@class LobbyChallengeButton : Button
+---@class LobbyChallengeButton : TextButton
 ---@operator call(LobbyChallengeButtonOptions): LobbyChallengeButton
 ---@field proposeImage love.Texture
 ---@field acceptImage love.Texture
 ---@field withdrawImage love.Texture
 ---@field challengeState ChallengeState
 ---@field iconSize integer
----@field text string
+---@field label Label
 ---@field gameModeId GameModeID
 ---@field playerId PublicPlayerID
 ---@overload fun(options: LobbyChallengeButtonOptions): LobbyChallengeButton
@@ -30,7 +30,7 @@ local LobbyChallengeButton = class(
 ---@param self LobbyChallengeButton
 ---@param options LobbyChallengeButtonOptions
 function(self, options)
-  self.text = options.text
+  self.label = options.label
   self.challengeState = self.challengeStates.NEUTRAL
   self.proposeImage = options.proposeImage
   self.acceptImage = options.acceptImage
@@ -38,8 +38,13 @@ function(self, options)
   self.iconSize = options.iconSize
   self.playerId = options.playerId
   self.gameModeId = options.gameModeId
+
+  local width, _ = self.label:getEffectiveDimensions()
+  self.width = math.max(width + self.WIDTH_PADDING * 4 + self.iconSize, self.width)
+  self.label.x = self.WIDTH_PADDING * 3 + self.iconSize
+  self.label.hAlign = "left"
 end,
-Button, "LobbyChallengeButton")
+TextButton, "LobbyChallengeButton")
 
 LobbyChallengeButton.TYPE = "LobbyChallengeButton"
 
@@ -65,12 +70,21 @@ function LobbyChallengeButton:onClick()
   end
 end
 
-local padding = 4
+function LobbyChallengeButton:receiveInputs(input)
+  if input.isDown["MenuSelect"] then
+    self:onClick()
+    -- this is a really stupid way to make sure you can activate back buttons with escape
+  elseif input.isDown["MenuEsc"] then
+    self:onClick()
+  end
+end
 
+
+local padding = 4
 function LobbyChallengeButton:drawSelf()
   self:drawBackground()
   self:drawOutline()
-
+  
   local icon
   if self.challengeState == LobbyChallengeButton.challengeStates.NEUTRAL then
     icon = self.proposeImage
@@ -79,12 +93,12 @@ function LobbyChallengeButton:drawSelf()
   elseif self.challengeState == LobbyChallengeButton.challengeStates.PROPOSING then
     icon = self.withdrawImage
   end
-
+  
   local imageWidth, imageHeight = icon:getDimensions()
   local scale = math.min(self.iconSize / imageWidth, self.iconSize / imageHeight)
   GraphicsUtil.draw(icon, self.x + padding, self.y + padding, 0, scale, scale)
 
-  GraphicsUtil.printf(loc(self.text), self.x + padding * 2 + self.iconSize, self.y + padding, self.width - (padding * 2 + self.iconSize), "left")
+  --GraphicsUtil.printf(loc(self.text), self.x + padding * 2 + self.iconSize, self.y + padding, self.width - (padding * 2 + self.iconSize), "left")
 end
 
 return LobbyChallengeButton

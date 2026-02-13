@@ -59,20 +59,7 @@ end
 ---@param receiverName string
 ---@param gameModeId GameModeID? nil if the challenged picks the game mode
 function ClientMessages.challengePlayer(senderName, receiverName, gameModeId)
-  local playerChallengeMessage =
-  {
-    game_request =
-    {
-      sender = senderName,
-      receiver = receiverName,
-      gameModeId = gameModeId,
-    }
-  }
-
-  return {
-    messageType = msgTypes.jsonMessage,
-    messageText = playerChallengeMessage,
-  }
+  error("game_request has been retired")
 end
 
 ---@param senderId PublicPlayerID

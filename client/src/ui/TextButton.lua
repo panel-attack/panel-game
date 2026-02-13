@@ -2,9 +2,6 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local Button = require(PATH .. ".Button")
 local class = require("common.lib.class")
 
-local TEXT_WIDTH_PADDING = 6
-local TEXT_HEIGHT_PADDING = 6
-
 ---@class TextButtonOptions : ButtonOptions
 ---@field label Label
 
@@ -20,10 +17,12 @@ local TextButton = class(function(self, options)
 
   -- stretch to fit text
   local width, height = self.label:getEffectiveDimensions()
-  self.width = math.max(width + TEXT_WIDTH_PADDING, self.width)
-  self.height = math.max(height + TEXT_HEIGHT_PADDING, self.height)
-
+  self.width = math.max(width + self.WIDTH_PADDING * 2, self.width)
+  self.height = math.max(height + self.HEIGHT_PADDING * 2, self.height)
 end, Button)
 TextButton.TYPE = "TextButton"
+
+TextButton.WIDTH_PADDING = 3
+TextButton.HEIGHT_PADDING = 3
 
 return TextButton
