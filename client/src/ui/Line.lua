@@ -28,4 +28,8 @@ function Line:drawSelf()
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
+function Line:setPoints(points)
+  self.points = points
+end
+
 return Line

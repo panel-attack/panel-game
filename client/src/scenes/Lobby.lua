@@ -228,7 +228,7 @@ function Lobby:createRoomButtons(personalizedLobbyData)
   for _, room in pairs(personalizedLobbyData.rooms) do
     ---@type table<integer, string>
     local playerStrings = {}
-    for i, playerId in ipairs(room.playerIds) do
+    for i, playerId in ipairs(room.players) do
       playerStrings[i] = Lobby.getPlayerNameWithRating(playerId, room.gameModeId)
     end
 
@@ -286,9 +286,9 @@ function Lobby:openPlayerSubMenu(playerId, button)
     iconSize = 16,
     playerId = playerId,
     label = ui.Label({text = "vs"}),
-    acceptImage = GAME.theme:comboImage(4),
-    proposeImage = GAME.theme:comboImage(5),
-    withdrawImage = GAME.theme:comboImage(6),
+    acceptImage = GAME.theme:getFightImage(),
+    proposeImage = GAME.theme:getCheckboxImage(false),
+    withdrawImage = GAME.theme:getCheckboxImage(true),
     width = 120
   })
   
@@ -299,9 +299,9 @@ function Lobby:openPlayerSubMenu(playerId, button)
     iconSize = 16,
     playerId = playerId,
     label = ui.Label({text = "gm_time_attack"}),
-    acceptImage = GAME.theme:comboImage(4),
-    proposeImage = GAME.theme:comboImage(5),
-    withdrawImage = GAME.theme:comboImage(6),
+    acceptImage = GAME.theme:getFightImage(),
+    proposeImage = GAME.theme:getCheckboxImage(false),
+    withdrawImage = GAME.theme:getCheckboxImage(true),
     width = 120
   })
   subMenu:addChild(timeAttackButton)
@@ -363,8 +363,8 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
 
   self.lobbyMenu.selectedIndex = nil
 
-  for i, child in ipairs(self.lobbyMenu.children) do
-    child:detach()
+  for i = #self.lobbyMenu.children, 1, -1 do
+    self.lobbyMenu.children[i]:detach()
   end
 
   self.lobbyMenu:addChild(self.lobbyMessage)
@@ -387,22 +387,25 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   self.lobbyMenu:addChild(self.showLeaderboardButton)
   self.lobbyMenu:addChild(self.backButton)
 
+  local previousButton
+
   if self.lobbyMenuStartingUp then
     self.lobbyMenu:select(self.lobbyMenu.children[2])
     self.lobbyMenuStartingUp = false
   elseif previousIndex then
     if copy[previousIndex].lobbyType then
-      local prev = copy[previousIndex]
-      if prev.lobbyType == "player" then
+      previousButton = copy[previousIndex]
+      if previousButton.lobbyType == "player" then
         for i, playerButton in ipairs(playerButtons) do
-          if prev.player.publicId == playerButton.player.publicId then
+          if previousButton.player.publicId == playerButton.player.publicId then
             self.lobbyMenu:select(playerButton)
+            previousButton = playerButton
             break
           end
         end
-      elseif prev.lobbyType == "room" then
+      elseif previousButton.lobbyType == "room" then
         for i, roomButton in ipairs(roomButtons) do
-          if prev.room.roomNumber == roomButton.room.roomNumber then
+          if previousButton.room.roomNumber == roomButton.room.roomNumber then
             self.lobbyMenu:select(roomButton)
             break
           end
@@ -432,22 +435,26 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   if self.playerSubMenu then
     if not lobbyDataV2.players[self.playerSubMenu.playerId] then
       self.playerSubMenu:yieldFocus()
-      self.playerSubMenu = nil
     else
-      for _, menuItem in ipairs(self.playerSubMenu.children) do
-        for _, item in ipairs(menuItem.children) do
-          if item.gameModeId then
-            ---@cast item LobbyChallengeButton
-            if lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId] and lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId][item.gameModeId] == true then
-              item:setState(item.challengeStates.CHALLENGED)
-            elseif lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId] and lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId][item.gameModeId] == true then
-              item:setState(item.challengeStates.PROPOSING)
-            else
-              item:setState(item.challengeStates.NEUTRAL)
-            end
+      for _, button in ipairs(self.playerSubMenu.children) do
+        if button.gameModeId then
+          ---@cast button LobbyChallengeButton
+          if lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId] and lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId][button.gameModeId] == true then
+            button:setState(button.challengeStates.CHALLENGED)
+          elseif lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId] and lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId][button.gameModeId] == true then
+            button:setState(button.challengeStates.PROPOSING)
+          else
+            button:setState(button.challengeStates.NEUTRAL)
           end
         end
       end
+
+      local x, y = previousButton:getScreenPos()
+
+      self.subMenuLine.x = x + previousButton.width + 8
+      self.subMenuLine.y = y + previousButton.height / 2
+      self.subMenuLine:setPoints({self.subMenuLine.x, self.subMenuLine.y, self.playerSubMenu.x - 8, self.subMenuLine.y})
+      self.playerSubMenu.y = y
     end
   end
 end

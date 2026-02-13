@@ -518,10 +518,17 @@ end
 ---@param opponentId PublicPlayerID
 ---@param gameModeId GameModeID
 function NetClient:challengePlayerById(opponentId, gameModeId)
-  if not self.lobbyDataV2.outgoingChallenges[opponentId] then
-    self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
+  self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
+  self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
+  self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
+  self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+end
+
+function NetClient:withdrawChallengeForId(opponentId, gameModeId)
+  if self.lobbyDataV2.outgoingChallenges[opponentId] then
+    self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false))
     self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
-    self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
+    self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = false
     self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
   end
 end

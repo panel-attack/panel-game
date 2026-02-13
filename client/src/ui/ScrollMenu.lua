@@ -26,6 +26,9 @@ function ScrollMenu:onRelease(x, y, duration)
   if self.touchedChild and self.focused and self.focused ~= self.touchedChild then
     self.focused:yieldFocus()
   end
+  if not self.scrolling then
+    self:select(self.touchedChild)
+  end
   ScrollContainer.onRelease(self, x, y, duration)
 end
 
@@ -84,6 +87,7 @@ function ScrollMenu:select(uiElement)
   for i, child in ipairs(self.children) do
     if child == uiElement then
       self.selectedIndex = i
+      self:keepVisible(-child.y, child.height)
     end
   end
 end

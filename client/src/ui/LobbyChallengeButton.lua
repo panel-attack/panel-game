@@ -58,7 +58,7 @@ end
 
 function LobbyChallengeButton:onClick()
   if self.challengeState == LobbyChallengeButton.challengeStates.PROPOSING then
-    --GAME.netClient:withdrawChallenge(self.playerId, self.gameModeId)
+    GAME.netClient:withdrawChallengeForId(self.playerId, self.gameModeId)
     GAME.theme:playValidationSfx()
   else
     if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
@@ -73,12 +73,8 @@ end
 function LobbyChallengeButton:receiveInputs(input)
   if input.isDown["MenuSelect"] then
     self:onClick()
-    -- this is a really stupid way to make sure you can activate back buttons with escape
-  elseif input.isDown["MenuEsc"] then
-    self:onClick()
   end
 end
-
 
 local padding = 4
 function LobbyChallengeButton:drawSelf()
