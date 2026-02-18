@@ -187,7 +187,7 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
   local playerButtons = {}
 
   for publicId, player in pairs(personalizedLobbyData.players) do
-    --if publicId ~= GAME.localPlayer.publicId then
+    if publicId ~= GAME.localPlayer.publicId and not personalizedLobbyData.players.roomNumber then
       local playerName
       if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
@@ -209,7 +209,7 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
       button.lobbyType = "player"
       button.player = player
       playerButtons[#playerButtons+1] = button
-    --end
+    end
   end
 
   table.sort(playerButtons, function(a, b)
@@ -237,11 +237,24 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     if #room.players == 1 then
       roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " (" .. room.state .. ")"
     else
-      roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " vs " .. playerStrings[2] .. " (" .. room.state .. ")"
+      roomName = loc("lb_spectate") .. "\n" .. playerStrings[1] .. "\nvs\n" .. playerStrings[2] .. "\n(" .. room.state .. ")"
     end
 
-    local button = ui.TextButton({
-      label = ui.Label({text = roomName, translate = false}),
+    local icon
+    if room.gameModeId == "TWO_PLAYER_VS" or room.gameModeId == "ONE_PLAYER_VS_SELF" then
+      icon = GAME.theme:getFightImage()
+    elseif room.gameModeId == "TWO_PLAYER_TIME_ATTACK" or room.gameModeId == "ONE_PLAYER_TIME_ATTACK" then
+      icon = GAME.theme:getStopwatchImage()
+    elseif room.gameModeId == "ONE_PLAYER_ENDLESS" then
+      icon = GAME.theme:getEndlessImage()
+    else
+      icon = GAME.theme:chainImage(0)
+    end
+
+    local button = ui.IconTextButton({
+      label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenu.width - 19}),
+      iconSize = 16,
+      icon = icon,
       width = self.lobbyMenuWidth,
       onClick = function() self:requestSpectateFunction(room) end
     })

@@ -454,6 +454,7 @@ function Theme:loadSelectionGraphics()
   self.images.IMG_checkBox[false] = self:load_theme_img("checkbox_unchecked")
   self.images.fight = self:load_theme_img("fight")
   self.images.stopWatch = self:load_theme_img("stopwatch")
+  self.images.endless = self:load_theme_img("endless")
 end
 
 function Theme:loadIngameGraphics()
@@ -1187,6 +1188,14 @@ end
 
 function Theme:getFightImage()
   return self.images.fight
+end
+
+function Theme:getStopwatchImage()
+  return self.images.stopWatch
+end
+
+function Theme:getEndlessImage()
+  return self.images.endless
 end
 
 ---@param index integer

@@ -42,6 +42,8 @@ local ui = {
   Grid = import("./Grid"),
   ---@source GridCursor.lua
   GridCursor = import("./GridCursor"),
+  ---@source IconTextButton.lua
+  IconTextButton = import("./IconTextButton"),
   ---@source ImageButton.lua
   ImageButton = import("./ImageButton"),
   ---@source ImageContainer.lua

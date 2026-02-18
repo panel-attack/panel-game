@@ -22,7 +22,4 @@ local TextButton = class(function(self, options)
 end, Button)
 TextButton.TYPE = "TextButton"
 
-TextButton.WIDTH_PADDING = 3
-TextButton.HEIGHT_PADDING = 3
-
 return TextButton
