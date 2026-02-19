@@ -156,6 +156,8 @@ function Lobby:requestGameFunction(publicId, gameModeId)
 end
 
 -- requests to spectate the specified room
+---@param room LobbyRoomV2
+---@return function
 function Lobby:requestSpectateFunction(room)
   return function()
     GAME.netClient:requestSpectate(room.roomNumber)
@@ -256,7 +258,7 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       iconSize = 16,
       icon = icon,
       width = self.lobbyMenuWidth,
-      onClick = function() self:requestSpectateFunction(room) end
+      onClick = self:requestSpectateFunction(room)
     })
     button.lobbyType = "room"
     button.room = room
