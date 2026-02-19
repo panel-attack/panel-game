@@ -259,7 +259,7 @@ function Server:lobby_state()
 end
 
 ---@alias LobbyPlayerV2 { publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>, roomNumber: roomNumber? }
----@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[] }
+---@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[], gameStartTime: integer? }
 ---@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<roomNumber, LobbyRoomV2> }
 
 ---@return LobbyStateV2

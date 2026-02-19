@@ -103,12 +103,39 @@ function Lobby:initLobbyMenu()
     onClick = exitMenu
   })
 
+  self.roomPanel = ui.UiElement({
+    x = 440,
+    hAlign = "center",
+    vAlign = "center",
+    width = 300,
+    height = 540,
+    isVisible = false
+  })
+
+  self.roomInfo = ui.Label({
+    text = "",
+    translate = false,
+    hAlign = "left",
+    vAlign = "top",
+  })
+
+  self.roomTimer = ui.Label({
+    text = "00:00",
+    translate = false,
+    hAlign = "left",
+    vAlign = "top",
+    y = GAME.theme.font.size * 4
+  })
+
+  self.roomPanel:addChild(self.roomInfo)
+  self.roomPanel:addChild(self.roomTimer)
 
   self.lobbyMenuStartingUp = true
   self.lobbyMenu = ui.ScrollMenu({height = 540, width = 300, hAlign = "center", vAlign = "center"})
   self.lobbyMenu.x = self.lobbyMenuXoffsetMap[false]
 
   self.uiRoot:addChild(self.lobbyMenu)
+  self.uiRoot:addChild(self.roomPanel)
 end
 
 -----------------
@@ -472,6 +499,8 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
       self.playerSubMenu.y = y
     end
   end
+
+  self:updateRoomPanel(true)
 end
 
 ------------------------------
@@ -480,6 +509,8 @@ end
 local loginStateLabel = ui.Label({text = loc("lb_login"), translate = false, x = 500, y = 350})
 function Lobby:updateSelf(dt)
   self.backgroundImg:update(dt)
+
+  self:updateRoomPanel()
 
   if GAME.netClient.state == NetClient.STATES.LOGIN then
     loginStateLabel:setText(GAME.netClient.loginState or "")
@@ -492,6 +523,50 @@ function Lobby:updateSelf(dt)
       end
     end
     self.lobbyMenu:receiveInputs(GAME.input)
+  end
+end
+
+---@param updateInfo boolean? if the info text should be updated even if the room number did not change
+function Lobby:updateRoomPanel(updateInfo)
+  local selected = self.lobbyMenu.children[self.lobbyMenu.selectedIndex]
+  if not selected or not selected.room then
+    if self.roomPanel.isVisible then
+      self.roomPanel:setVisibility(false)
+    end
+  else
+    if not self.roomPanel.isVisible then
+      self.roomPanel:setVisibility(true)
+    end
+
+    local room = selected.room
+    if room.roomNumber ~= self.roomPanel.roomNumber or updateInfo then
+      self.roomPanel.roomNumber = room.roomNumber
+      local text
+      if #room.players == 2 then
+        text = string.format("%s %d : %d %s\n%s\n%s %d", GAME.netClient.lobbyDataV2.players[room.players[1]].name, room.wins[1], room.wins[2], GAME.netClient.lobbyDataV2.players[room.players[2]].name, room.state, loc("pl_spectators"), #room.spectators)
+      elseif #room.players == 1 then
+        text = string.format("%s\n%s %d", room.state, loc("pl_spectators"), #room.spectators)
+      end
+      self.roomInfo:setText(text, nil, false)
+    end
+
+    local timer = self.roomTimer.text
+    if room.state == "playing" then
+      if room.gameStartTime then
+        local durationInSeconds = os.difftime(to_UTC(os.time()), os.time(room.gameStartTime)) - 3
+        if durationInSeconds < 0 then
+          timer = string.format("-00:%02d", math.abs(durationInSeconds))
+        else
+          timer = string.format("%02d:%02d", math.floor(durationInSeconds / 60), durationInSeconds % 60)
+        end
+      end
+  
+      if timer ~= self.roomTimer.text then
+        self.roomTimer:setText(timer, nil, false)
+      end
+    elseif timer ~= "00:00" then
+      self.roomTimer:setText("00:00", nil, false)
+    end
   end
 end
 
