@@ -507,6 +507,7 @@ function NetClient:requestLeaderboard()
   end
 end
 
+---@deprecated
 function NetClient:challengePlayer(name)
   if not self.lobbyData.sentRequests[name] then
     self.tcpClient:sendRequest(ClientMessages.challengePlayer(config.name, name))

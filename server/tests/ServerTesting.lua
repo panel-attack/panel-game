@@ -110,9 +110,9 @@ function ServerTesting.setupRoom(server, player1, player2, alreadyLoggedIn)
     player2 = ServerTesting.login(server, player2)
     ServerTesting.clearOutgoingMessages({player1, player2})
   end
-  player1.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer(player1.name, player2.name).messageText))
+  player1.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(player1.publicPlayerID, player2.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
   server:update()
-  player2.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer(player2.name, player1.name).messageText))
+  player2.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(player2.publicPlayerID, player1.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
   server:update()
   ServerTesting.clearOutgoingMessages({player1, player2})
 

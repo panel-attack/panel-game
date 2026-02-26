@@ -26,9 +26,6 @@ local function testLogin()
   local message = bob.connection.outgoingMessageQueue:pop()
   assert(message and message.messageText.type == "loginResponse" and message.messageText.content.approved)
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message and message.type == "lobbyState" and message.content.unpaired and message.content.unpaired[1] == "Bob")
-  -- during migration we'll have both; remove old lobby state once clients have moved to V2
-  message = bob.connection.outgoingMessageQueue:pop().messageText
   assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[4].name == "Bob")
 end
 
@@ -40,14 +37,14 @@ local function testRoomSetup()
   -- there are other tests to verify lobby data
   ServerTesting.clearOutgoingMessages({alice, ben, bob})
 
-  alice.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer("Alice", "Ben").messageText))
+  alice.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(alice.publicPlayerID, ben.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
   server:update()
-  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID] == "TWO_PLAYER_VS")
+  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID]["TWO_PLAYER_VS"] == true)
   local message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "challenge" and message.content.sender == "Alice" and message.content.receiver == "Ben")
+  assert(message.type == "challengeUpdate" and message.content.sender == "Alice" and message.content.receiver == "Ben")
   assert(ben.connection.outgoingMessageQueue:len() == 0)
 
-  ben.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer("Ben", "Alice").messageText))
+  ben.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(ben.publicPlayerID, alice.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
   server:update()
   assert(server.proposals[alice.publicPlayerID] == nil or next(server.proposals[alice.publicPlayerID]) == nil)
   assert(server.proposals[ben.publicPlayerID] == nil or next(server.proposals[ben.publicPlayerID]) == nil)
@@ -62,8 +59,8 @@ local function testRoomSetup()
   assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
 
   message = bob.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.unpaired and #message.unpaired == 1)
-  assert(message.spectatable and #message.spectatable == 1)
+  assert(message.players and tableUtils.length(message.players) == 3)
+  assert(message.rooms and tableUtils.length(message.rooms) == 1)
 end
 
 -- same as the other one, except we're specifying TWO_PLAYER_TIME_ATTACK as the game mode for the challenges
@@ -75,14 +72,14 @@ local function testRoomSetup2()
   -- there are other tests to verify lobby data
   ServerTesting.clearOutgoingMessages({alice, ben, bob})
 
-  alice.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer("Alice", "Ben", "TWO_PLAYER_TIME_ATTACK").messageText))
+  alice.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(alice.publicPlayerID, ben.publicPlayerID, "TWO_PLAYER_TIME_ATTACK", true).messageText))
   server:update()
-  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID] == "TWO_PLAYER_TIME_ATTACK")
+  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID]["TWO_PLAYER_TIME_ATTACK"] == true)
   local message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "challenge" and message.content.sender == "Alice" and message.content.receiver == "Ben")
+  assert(message.type == "challengeUpdate" and message.content.sender == "Alice" and message.content.receiver == "Ben")
   assert(ben.connection.outgoingMessageQueue:len() == 0)
 
-  ben.connection:receiveMessage(json.encode(ClientProtocol.challengePlayer("Ben", "Alice", "TWO_PLAYER_TIME_ATTACK").messageText))
+  ben.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(ben.publicPlayerID, alice.publicPlayerID, "TWO_PLAYER_TIME_ATTACK", true).messageText))
   server:update()
   assert(server.proposals[alice.publicPlayerID] == nil or next(server.proposals[alice.publicPlayerID]) == nil)
   assert(server.proposals[ben.publicPlayerID] == nil or next(server.proposals[ben.publicPlayerID]) == nil)
@@ -97,8 +94,8 @@ local function testRoomSetup2()
   assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
 
   message = bob.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.unpaired and #message.unpaired == 1)
-  assert(message.spectatable and #message.spectatable == 1)
+  assert(message.players and tableUtils.length(message.players) == 3)
+  assert(message.rooms and tableUtils.length(message.rooms) == 1)
 end
 
 local readyMessage = json.encode({menu_state = {wants_ready = true, loaded = true, ready = true}})
@@ -121,12 +118,6 @@ local function testGameplay()
   -- primarily we want to make sure that messages coming in via the connections are correctly routed to the Room
   -- and messages that should be sent as the result of room events back to the players
   -- so just do a cursory check if ONE of the expected things changed is enough to verify the message (probably) ended up where it should
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "lobbyState")
-  assert(message.content.unpaired and #message.content.unpaired == 1)
-  assert(#message.content.spectatable == 1 and message.content.spectatable[1].state == "playing" and message.content.spectatable[1].roomNumber == 1)
-
-  -- during migration we'll have both; remove old lobby state once clients have moved to V2
   message = bob.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyStateV2")
   assert(message.content.players and tableUtils.length(message.content.players) == 3)
@@ -210,11 +201,11 @@ local function testGameplay()
 
   -- everyone is back to lobby
   message = alice.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
+  assert(message.players and tableUtils.length(message.players) == 3 and tableUtils.length(message.rooms) == 0)
   message = bob.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
+  assert(message.players and tableUtils.length(message.players) == 3 and tableUtils.length(message.rooms) == 0)
   message = ben.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.unpaired and #message.unpaired == 3 and #message.spectatable == 0)
+  assert(message.players and tableUtils.length(message.players) == 3 and tableUtils.length(message.rooms) == 0)
 end
 
 local function testDisconnect()
@@ -241,12 +232,6 @@ local function testDisconnect()
   server:update()
 
   -- the people that got kicked out get the new lobby state
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "lobbyState" and message.content.unpaired and #message.content.unpaired == 2)
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "lobbyState" and message.content.unpaired and #message.content.unpaired == 2)
-
-  -- during migration we'll have both; remove old lobby state once clients have moved to V2
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[5].name == "Alice" and message.content.players[5].state == "lobby")
   message = bob.connection.outgoingMessageQueue:pop().messageText
@@ -277,27 +262,6 @@ local function testLobbyDataComposition()
   -- so check what alice can see
 
   local message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "lobbyState")
-  message = message.content
-  assert(message.unpaired and #message.unpaired == 2)
-  assert(message.players)
-  assert(message.spectatable and #message.spectatable == 1)
-  for _, unpaired in ipairs(message.unpaired) do
-    assert(unpaired == "Alice" or unpaired == "Berta")
-    -- alice and berta both have a rating
-    assert(message.players[unpaired] and tonumber(message.players[unpaired].rating))
-  end
-
-  -- Jerry does not have a rating yet
-  assert(message.players[message.spectatable[1].a] and not message.players[message.spectatable[1].a].rating)
-  -- but Ben does
-  assert(message.players[message.spectatable[1].b] and tonumber(message.players[message.spectatable[1].b].rating))
-
-  -- bob as a spectator is invisible rip
-  assert(not message.players["Bob"])
-
-  -- and now for V2
-  message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyStateV2")
   message = message.content
   ---@cast message LobbyStateV2
@@ -332,11 +296,6 @@ local function testSinglePlayer()
   assert(message.type == "createRoom")
 
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "lobbyState")
-  assert(#message.content.spectatable == 1)
-
-  -- during migration we'll have both; remove old lobby state once clients have moved to V2
-  message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyStateV2")
   assert(tableUtils.length(message.content.rooms) == 1)
 
@@ -367,9 +326,6 @@ local function testSinglePlayer()
   assert(message.type == "spectatorUpdate")
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "leaveRoom")
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "lobbyState")
-  -- during migration we'll have both; remove old lobby state once clients have moved to V2
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyStateV2")
 
