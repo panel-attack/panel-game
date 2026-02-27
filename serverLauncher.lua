@@ -33,7 +33,7 @@ local Persistence = require("server.Persistence")
 
 local server = Server(database, Persistence)
 server:initializePlayerData("players.txt")
-server:initializeLeaderboard(GameModes.getPreset("TWO_PLAYER_VS"), "leaderboard.csv")
+server:initializeLeaderboard(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS), "leaderboard.csv")
 local isPlayerTableEmpty = database:getPlayerRecordCount() == 0
 if isPlayerTableEmpty then
   server:importDatabase()

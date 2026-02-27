@@ -40,7 +40,7 @@ local ChallengeMode = class(
 )
 
 function ChallengeMode.create(difficulty, stageIndex)
-  return ChallengeMode(GameModes.getPreset("ONE_PLAYER_CHALLENGE"), Game1pChallenge, difficulty, stageIndex)
+  return ChallengeMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_CHALLENGE), Game1pChallenge, difficulty, stageIndex)
 end
 
 ChallengeMode.numDifficulties = 8

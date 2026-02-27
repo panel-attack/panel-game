@@ -14,6 +14,7 @@ local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelData = require("common.data.LevelData")
+local GameModes = require("common.data.GameModes")
 
 ---@enum NetClientStates
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
@@ -22,14 +23,6 @@ local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 --  that get automatically processed via NetClient:update
 
 local function resetLobbyData(self)
-  self.lobbyData = {
-    players = {},
-    unpairedPlayers = {},
-    willingPlayers = {},
-    spectatableRooms = {},
-    sentRequests = {}
-  }
-
   ---@class PersonalizedLobbyDataV2
   self.lobbyDataV2 = {
     ---@type table<PublicPlayerID, LobbyPlayerV2>
@@ -43,32 +36,6 @@ local function resetLobbyData(self)
     ---@type table<roomNumber, LobbyRoomV2>
     rooms = {}
   }
-end
-
-local function updateLobbyState(self, lobbyState)
-  if lobbyState.players then
-    self.lobbyData.players = lobbyState.players
-  end
-
-  if lobbyState.unpaired then
-    self.lobbyData.unpairedPlayers = lobbyState.unpaired
-    -- players who leave the unpaired list no longer have standing invitations to us.\
-    -- we also no longer have a standing invitation to them, so we'll remove them from sentRequests
-    local newWillingPlayers = {}
-    local newSentRequests = {}
-    for _, player in ipairs(self.lobbyData.unpairedPlayers) do
-      newWillingPlayers[player] = self.lobbyData.willingPlayers[player]
-      newSentRequests[player] = self.lobbyData.sentRequests[player]
-    end
-    self.lobbyData.willingPlayers = newWillingPlayers
-    self.lobbyData.sentRequests = newSentRequests
-  end
-
-  if lobbyState.spectatable then
-    self.lobbyData.spectatableRooms = lobbyState.spectatable
-  end
-
-  self:emitSignal("lobbyStateUpdate", self.lobbyData)
 end
 
 ---@param lobbyStateV2Message { content: LobbyStateV2 }
@@ -381,7 +348,6 @@ local function createListeners(self)
   -- messageListener holds *all* available listeners
   local messageListeners = {}
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
-  messageListeners.players = createListener(self, "unpaired", updateLobbyState)
   messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
   messageListeners.challengeUpdate = createListener(self, "challengeUpdate", processChallengeUpdate)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
@@ -501,18 +467,11 @@ function NetClient:sendInput(input)
   end
 end
 
-function NetClient:requestLeaderboard()
+---@param gameModeId GameModeID?
+function NetClient:requestLeaderboard(gameModeId)
   if not self.pendingResponses.leaderboardUpdate then
-    self.pendingResponses.leaderboardUpdate = self.tcpClient:sendRequest(ClientMessages.requestLeaderboard())
-  end
-end
-
----@deprecated
-function NetClient:challengePlayer(name)
-  if not self.lobbyData.sentRequests[name] then
-    self.tcpClient:sendRequest(ClientMessages.challengePlayer(config.name, name))
-    self.lobbyData.sentRequests[name] = true
-    self:emitSignal("lobbyStateUpdate", self.lobbyData)
+    gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
+    self.pendingResponses.leaderboardUpdate = self.tcpClient:sendRequest(ClientMessages.requestLeaderboard(gameModeId))
   end
 end
 

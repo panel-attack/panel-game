@@ -7,6 +7,7 @@ local LevelPresets = require("common.data.LevelPresets")
 local LevelData = require("common.data.LevelData")
 local StackBehaviours = require("common.data.StackBehaviours")
 local InputCompression = require("common.data.InputCompression")
+local GameModes = require("common.data.GameModes")
 
 local REPLAY_VERSION = 2
 
@@ -173,16 +174,16 @@ function ReplayV2.createFromLegacyReplay(legacyReplay, timestamp, winnerIndex)
   if legacyReplay.vs then
     mode = "vs"
     if legacyReplay.vs.P2_char then
-      gameMode = LegacyGameModes.getPreset("TWO_PLAYER_VS")
+      gameMode = LegacyGameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS)
     else
-      gameMode = LegacyGameModes.getPreset("ONE_PLAYER_VS_SELF")
+      gameMode = LegacyGameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF)
     end
   elseif legacyReplay.time then
     mode = "time"
-    gameMode = LegacyGameModes.getPreset("ONE_PLAYER_TIME_ATTACK")
+    gameMode = LegacyGameModes.getPreset(GameModes.IDs.ONE_PLAYER_TIME_ATTACK)
   elseif legacyReplay.endless then
     mode = "endless"
-    gameMode = LegacyGameModes.getPreset("ONE_PLAYER_ENDLESS")
+    gameMode = LegacyGameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS)
   end
   local v1r = legacyReplay[mode]
   -- doCountdown used to be configurable client side for time attack / endless

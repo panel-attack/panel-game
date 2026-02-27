@@ -64,14 +64,14 @@ function Lobby:initLobbyMenu()
     label = ui.Label({text = "mm_1_endless"}),
     width = self.lobbyMenuWidth,
     onClick = function()
-      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_ENDLESS"))
+      GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS))
     end
   })
   self.onePlayerTimeAttackButton = ui.TextButton({
     label = ui.Label({text = "mm_1_time"}),
     width = self.lobbyMenuWidth,
     onClick = function()
-      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"))
+      GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TIME_ATTACK))
     end
   })
   self.onePlayerVsButton = ui.TextButton({
@@ -82,7 +82,7 @@ function Lobby:initLobbyMenu()
         GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
         GAME.netClient:sendPlayerSettings(GAME.localPlayer)
       end
-      GAME.netClient:requestRoom(GameModes.getPreset("ONE_PLAYER_VS_SELF"))
+      GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF))
     end
   })
   self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})
@@ -146,7 +146,7 @@ function Lobby:toggleLeaderboard()
   GAME.theme:playMoveSfx()
   if not self.leaderboard.isVisible then
     self.leaderboardToggleLabel:setText("lb_hide_board")
-    GAME.netClient:requestLeaderboard()
+    GAME.netClient:requestLeaderboard(GameModes.IDs.TWO_PLAYER_VS)
     self.lobbyMenu:setFocus(self.leaderboard, function() self:toggleLeaderboard() end)
   else
     self.leaderboardToggleLabel:setText("lb_show_board")
@@ -202,7 +202,7 @@ function Lobby.getPlayerNameWithRating(publicId, gameModeId)
     logger.warn("Tried to get rating for unknown player id " .. publicId)
     return tostring(publicId)
   else
-    gameModeId = gameModeId or "TWO_PLAYER_VS"
+    gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
     if player.ratings[gameModeId] then
       return player.name .. " (" .. player.ratings[gameModeId] .. ")"
     else
@@ -270,11 +270,11 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     end
 
     local icon
-    if room.gameModeId == "TWO_PLAYER_VS" or room.gameModeId == "ONE_PLAYER_VS_SELF" then
+    if room.gameModeId == GameModes.IDs.TWO_PLAYER_VS or room.gameModeId == GameModes.IDs.ONE_PLAYER_VS_SELF then
       icon = GAME.theme:getFightImage()
-    elseif room.gameModeId == "TWO_PLAYER_TIME_ATTACK" or room.gameModeId == "ONE_PLAYER_TIME_ATTACK" then
+    elseif room.gameModeId == GameModes.IDs.TWO_PLAYER_TIME_ATTACK or room.gameModeId == GameModes.IDs.ONE_PLAYER_TIME_ATTACK then
       icon = GAME.theme:getStopwatchImage()
-    elseif room.gameModeId == "ONE_PLAYER_ENDLESS" then
+    elseif room.gameModeId == GameModes.IDs.ONE_PLAYER_ENDLESS then
       icon = GAME.theme:getEndlessImage()
     else
       icon = GAME.theme:chainImage(0)
@@ -324,7 +324,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
   subMenu.playerId = playerId
 
   local vsButton = ui.LobbyChallengeButton({
-    gameModeId = "TWO_PLAYER_VS",
+    gameModeId = GameModes.IDs.TWO_PLAYER_VS,
     iconSize = 16,
     playerId = playerId,
     label = ui.Label({text = "vs"}),
@@ -337,7 +337,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
   subMenu:addChild(vsButton)
 
   local timeAttackButton = ui.LobbyChallengeButton({
-    gameModeId = "TWO_PLAYER_TIME_ATTACK",
+    gameModeId = GameModes.IDs.TWO_PLAYER_TIME_ATTACK,
     iconSize = 16,
     playerId = playerId,
     label = ui.Label({text = "gm_time_attack"}),
@@ -349,19 +349,19 @@ function Lobby:openPlayerSubMenu(playerId, button)
   subMenu:addChild(timeAttackButton)
 
   if lobbyDataV2.outgoingChallenges[playerId] then
-    if lobbyDataV2.outgoingChallenges[playerId]["TWO_PLAYER_VS"] == true then
+    if lobbyDataV2.outgoingChallenges[playerId][GameModes.IDs.TWO_PLAYER_VS] == true then
       vsButton:setState(vsButton.challengeStates.PROPOSING)
     end
-    if lobbyDataV2.outgoingChallenges[playerId]["TWO_PLAYER_TIME_ATTACK"] == true then
+    if lobbyDataV2.outgoingChallenges[playerId][GameModes.IDs.TWO_PLAYER_TIME_ATTACK] == true then
       timeAttackButton:setState(timeAttackButton.challengeStates.PROPOSING)
     end
   end
 
   if lobbyDataV2.incomingChallenges[playerId] then
-    if lobbyDataV2.incomingChallenges[playerId]["TWO_PLAYER_VS"] then
+    if lobbyDataV2.incomingChallenges[playerId][GameModes.IDs.TWO_PLAYER_VS] then
       vsButton:setState(vsButton.challengeStates.CHALLENGED)
     end
-    if lobbyDataV2.incomingChallenges[playerId]["TWO_PLAYER_TIME_ATTACK"] then
+    if lobbyDataV2.incomingChallenges[playerId][GameModes.IDs.TWO_PLAYER_TIME_ATTACK] then
       timeAttackButton:setState(timeAttackButton.challengeStates.CHALLENGED)
     end
   end

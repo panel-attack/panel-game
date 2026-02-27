@@ -5,6 +5,7 @@ local ClientProtocol = require("common.network.ClientProtocol")
 local MockConnection = require("server.tests.MockConnection")
 local Player = require("server.Player")
 local json = require("common.lib.dkjson")
+local GameModes = require("common.data.GameModes")
 
 local ServerTesting = {}
 
@@ -110,9 +111,9 @@ function ServerTesting.setupRoom(server, player1, player2, alreadyLoggedIn)
     player2 = ServerTesting.login(server, player2)
     ServerTesting.clearOutgoingMessages({player1, player2})
   end
-  player1.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(player1.publicPlayerID, player2.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
+  player1.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(player1.publicPlayerID, player2.publicPlayerID, GameModes.IDs.TWO_PLAYER_VS, true).messageText))
   server:update()
-  player2.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(player2.publicPlayerID, player1.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
+  player2.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(player2.publicPlayerID, player1.publicPlayerID, GameModes.IDs.TWO_PLAYER_VS, true).messageText))
   server:update()
   ServerTesting.clearOutgoingMessages({player1, player2})
 

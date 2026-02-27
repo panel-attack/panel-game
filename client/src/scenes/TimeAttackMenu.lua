@@ -7,7 +7,7 @@ local ui = require("client.src.ui")
 -- Scene for the time attack game setup menu
 local TimeAttackMenu = class(
   function(self, sceneParams)
-    self.gameMode = GameModes.getPreset("ONE_PLAYER_TIME_ATTACK")
+    self.gameMode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TIME_ATTACK)
     self.gameScene = "TimeAttackGame"
   end,
   CharacterSelect

@@ -4,8 +4,6 @@ local TIME_ATTACK_TIME = 120
 
 local GameModes = {}
 
----@alias GameModeID ("ONE_PLAYER_VS_SELF"|"ONE_PLAYER_TIME_ATTACK"|"ONE_PLAYER_ENDLESS"|"ONE_PLAYER_TRAINING"|"ONE_PLAYER_PUZZLE"|"ONE_PLAYER_CHALLENGE"|"TWO_PLAYER_VS"|"TWO_PLAYER_TIME_ATTACK") Used as identifiers for the type of game that is being played
-
 ---@class GameMode
 ---@field stackInteraction StackInteractions
 ---@field matchRules MatchRules
@@ -211,16 +209,28 @@ local TwoPlayerTimeAttack = GameMode({
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
 
+---@enum (key) GameModeID Used as identifier for the type of game that is being played
+GameModes.IDs = {
+  TWO_PLAYER_VS = "TWO_PLAYER_VS",
+  ONE_PLAYER_TIME_ATTACK = "ONE_PLAYER_TIME_ATTACK",
+  ONE_PLAYER_ENDLESS = "ONE_PLAYER_ENDLESS",
+  ONE_PLAYER_TRAINING = "ONE_PLAYER_TRAINING",
+  ONE_PLAYER_CHALLENGE = "ONE_PLAYER_CHALLENGE",
+  ONE_PLAYER_VS_SELF = "ONE_PLAYER_VS_SELF",
+  ONE_PLAYER_PUZZLE = "ONE_PLAYER_PUZZLE",
+  TWO_PLAYER_TIME_ATTACK = "TWO_PLAYER_TIME_ATTACK",
+}
+
 ---@type table<GameModeID, GameMode>
 local privateGameModes = {}
-privateGameModes.ONE_PLAYER_VS_SELF = OnePlayerVsSelf
-privateGameModes.ONE_PLAYER_TIME_ATTACK = OnePlayerTimeAttack
-privateGameModes.ONE_PLAYER_ENDLESS = OnePlayerEndless
-privateGameModes.ONE_PLAYER_TRAINING = OnePlayerTraining
-privateGameModes.ONE_PLAYER_PUZZLE = OnePlayerPuzzle
-privateGameModes.ONE_PLAYER_CHALLENGE = OnePlayerChallenge
-privateGameModes.TWO_PLAYER_VS = TwoPlayerVersus
-privateGameModes.TWO_PLAYER_TIME_ATTACK = TwoPlayerTimeAttack
+privateGameModes[GameModes.IDs.ONE_PLAYER_VS_SELF] = OnePlayerVsSelf
+privateGameModes[GameModes.IDs.ONE_PLAYER_TIME_ATTACK] = OnePlayerTimeAttack
+privateGameModes[GameModes.IDs.ONE_PLAYER_ENDLESS] = OnePlayerEndless
+privateGameModes[GameModes.IDs.ONE_PLAYER_TRAINING] = OnePlayerTraining
+privateGameModes[GameModes.IDs.ONE_PLAYER_PUZZLE] = OnePlayerPuzzle
+privateGameModes[GameModes.IDs.ONE_PLAYER_CHALLENGE] = OnePlayerChallenge
+privateGameModes[GameModes.IDs.TWO_PLAYER_VS] = TwoPlayerVersus
+privateGameModes[GameModes.IDs.TWO_PLAYER_TIME_ATTACK] = TwoPlayerTimeAttack
 
 ---@param mode GameModeID
 ---@return GameMode

@@ -37,14 +37,14 @@ local function testRoomSetup()
   -- there are other tests to verify lobby data
   ServerTesting.clearOutgoingMessages({alice, ben, bob})
 
-  alice.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(alice.publicPlayerID, ben.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
+  alice.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(alice.publicPlayerID, ben.publicPlayerID, GameModes.IDs.TWO_PLAYER_VS, true).messageText))
   server:update()
-  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID]["TWO_PLAYER_VS"] == true)
+  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID][GameModes.IDs.TWO_PLAYER_VS] == true)
   local message = ben.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "challengeUpdate" and message.content.sender == "Alice" and message.content.receiver == "Ben")
   assert(ben.connection.outgoingMessageQueue:len() == 0)
 
-  ben.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(ben.publicPlayerID, alice.publicPlayerID, "TWO_PLAYER_VS", true).messageText))
+  ben.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(ben.publicPlayerID, alice.publicPlayerID, GameModes.IDs.TWO_PLAYER_VS, true).messageText))
   server:update()
   assert(server.proposals[alice.publicPlayerID] == nil or next(server.proposals[alice.publicPlayerID]) == nil)
   assert(server.proposals[ben.publicPlayerID] == nil or next(server.proposals[ben.publicPlayerID]) == nil)
@@ -52,7 +52,7 @@ local function testRoomSetup()
   local room = server.playerToRoom[alice]
   assert(room and room.roomNumber == 1)
   assert(room == server.playerToRoom[ben])
-  assert(room.gameMode.name == GameModes.gameModeIdToName["TWO_PLAYER_VS"])
+  assert(room.gameMode.name == GameModes.gameModeIdToName[GameModes.IDs.TWO_PLAYER_VS])
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
   message = ben.connection.outgoingMessageQueue:pop().messageText
@@ -72,14 +72,14 @@ local function testRoomSetup2()
   -- there are other tests to verify lobby data
   ServerTesting.clearOutgoingMessages({alice, ben, bob})
 
-  alice.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(alice.publicPlayerID, ben.publicPlayerID, "TWO_PLAYER_TIME_ATTACK", true).messageText))
+  alice.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(alice.publicPlayerID, ben.publicPlayerID, GameModes.IDs.TWO_PLAYER_TIME_ATTACK, true).messageText))
   server:update()
-  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID]["TWO_PLAYER_TIME_ATTACK"] == true)
+  assert(server.proposals[alice.publicPlayerID][ben.publicPlayerID][GameModes.IDs.TWO_PLAYER_TIME_ATTACK] == true)
   local message = ben.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "challengeUpdate" and message.content.sender == "Alice" and message.content.receiver == "Ben")
   assert(ben.connection.outgoingMessageQueue:len() == 0)
 
-  ben.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(ben.publicPlayerID, alice.publicPlayerID, "TWO_PLAYER_TIME_ATTACK", true).messageText))
+  ben.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(ben.publicPlayerID, alice.publicPlayerID, GameModes.IDs.TWO_PLAYER_TIME_ATTACK, true).messageText))
   server:update()
   assert(server.proposals[alice.publicPlayerID] == nil or next(server.proposals[alice.publicPlayerID]) == nil)
   assert(server.proposals[ben.publicPlayerID] == nil or next(server.proposals[ben.publicPlayerID]) == nil)
@@ -87,7 +87,7 @@ local function testRoomSetup2()
   local room = server.playerToRoom[alice]
   assert(room and room.roomNumber == 1)
   assert(room == server.playerToRoom[ben])
-  assert(room.gameMode.name == GameModes.gameModeIdToName["TWO_PLAYER_TIME_ATTACK"])
+  assert(room.gameMode.name == GameModes.gameModeIdToName[GameModes.IDs.TWO_PLAYER_TIME_ATTACK])
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
   message = ben.connection.outgoingMessageQueue:pop().messageText
@@ -241,7 +241,7 @@ end
 
 local function testLobbyDataComposition()
   local server = ServerTesting.getTestServer()
-  local leaderboard = Leaderboard(GameModes.getPreset("TWO_PLAYER_VS"), MockPersistence)
+  local leaderboard = Leaderboard(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS), MockPersistence)
   for i, player in ipairs(ServerTesting.players) do
     ServerTesting.addToLeaderboard(leaderboard, player)
   end
@@ -279,7 +279,7 @@ local function testLobbyDataComposition()
   assert(#lobbyRoom.players == 2 and #lobbyRoom.spectators == 1)
   -- in the new lobby data spectators are not invisible anymore!
   assert(message.players[lobbyRoom.spectators[1]].name == "Bob")
-  assert(lobbyRoom.gameModeId == "TWO_PLAYER_VS")
+  assert(lobbyRoom.gameModeId == GameModes.IDs.TWO_PLAYER_VS)
 end
 
 local function testSinglePlayer()
@@ -289,7 +289,7 @@ local function testSinglePlayer()
 
   ServerTesting.clearOutgoingMessages({bob, alice})
 
-  bob.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset("ONE_PLAYER_VS_SELF")).messageText))
+  bob.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF)).messageText))
   server:update()
   assert(server.playerToRoom[bob])
   local message = bob.connection.outgoingMessageQueue:pop().messageText
@@ -307,7 +307,7 @@ local function testSinglePlayer()
   assert(message.type == "spectatorUpdate")
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectateRequestGranted" and message.content.replay == nil)
-  assert(tableUtils.deep_content_equal(message.content.gameMode, GameModes.getPreset("ONE_PLAYER_VS_SELF"):getGameModeJSONData()))
+  assert(tableUtils.deep_content_equal(message.content.gameMode, GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF):getGameModeJSONData()))
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "spectatorUpdate")
 

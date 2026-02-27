@@ -126,7 +126,7 @@ local function testLegacyStartingBoard1()
   local difficulty = "easy"
   -- endless easy deviates by 1 color from time attack easy which is the default easy preset
   local colorCount = 5
-  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_ENDLESS"), difficulty, nil, colorCount, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS), difficulty, nil, colorCount, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(true)
 
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
@@ -145,7 +145,7 @@ testLegacyStartingBoard1()
 local function testLegacyStartingBoard2()
   local seed = 8
   local level = 10
-  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF), nil, level, nil, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(false)
 
   -- expected starting 7 rows (unprocessed):    312132464356316131624643241456614364463521
@@ -174,7 +174,7 @@ local function testLegacyStartingBoard3()
   -- this seed tests for a certain bug that occured when the first character was a possible metal location for generating the starting board
   local seed = 351545
   local level = 10
-  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF), nil, level, nil, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(false)
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)
   checkPanels(panelSource.panelBuffer, 6)
@@ -187,7 +187,7 @@ local function testLegacyStartingBoard4()
   -- this seed tests for a certain bug that occured when a starting board row had no shock assignments left:
   local seed = 4530333
   local level = 8
-  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset("ONE_PLAYER_VS_SELF"), nil, level, nil, seed)
+  local stack, panelSource = createStackWithLegacySource(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF), nil, level, nil, seed)
   panelSource:setAllowAdjacentColorsOnStartingBoard(false)
 
   panelSource.panelBuffer = panelSource:generateStartingBoard(stack)

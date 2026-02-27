@@ -397,7 +397,7 @@ end
 
 ---@return GameMode
 function Puzzle:toGameMode()
-  local mode = GameModes.getPreset("ONE_PLAYER_PUZZLE")
+  local mode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_PUZZLE)
   if not mode.matchRules.stackSetupModifications then
     mode.matchRules.stackSetupModifications = { behaviours = {}}
   elseif not mode.matchRules.stackSetupModifications.behaviours then

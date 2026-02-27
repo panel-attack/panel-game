@@ -52,25 +52,25 @@ end
 function MainMenu:createMainMenu()
 
   local menuItems = {ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"), EndlessGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS), EndlessGame)
       if GAME.battleRoom then
         switchToScene(EndlessMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_PUZZLE"), PuzzleGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_PUZZLE), PuzzleGame)
       if GAME.battleRoom then
         switchToScene(PuzzleMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TIME_ATTACK), TimeAttackGame)
       if GAME.battleRoom then
         switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF), VsSelfGame)
       if GAME.battleRoom then
         switchToScene(CharacterSelectVsSelf({battleRoom = GAME.battleRoom}))
       end

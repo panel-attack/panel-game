@@ -4,6 +4,7 @@
 -- and changes in server code likewise only affect this abstraction layer instead of the ClientProtocol
 local logger = require("common.lib.logger")
 local LevelData = require("common.data.LevelData")
+local GameModes = require("common.data.GameModes")
 
 local ClientMessages = {}
 
@@ -11,8 +12,6 @@ local ClientMessages = {}
 function ClientMessages.sanitizeMessage(clientMessage)
   if clientMessage.login_request then
     return ClientMessages.sanitizeLoginRequest(clientMessage)
-  elseif clientMessage.game_request then
-    return ClientMessages.sanitizeGameRequest(clientMessage)
   elseif clientMessage.challengeUpdate then
     return ClientMessages.sanitizeChallengeUpdate(clientMessage)
   elseif clientMessage.menu_state then
@@ -110,21 +109,6 @@ function ClientMessages.sanitizeLoginRequest(loginRequest)
   return sanitized
 end
 
-function ClientMessages.sanitizeGameRequest(gameRequest)
-  local sanitized =
-  {
-    game_request =
-    {
-      sender = gameRequest.game_request.sender,
-      receiver = gameRequest.game_request.receiver,
-      -- default value only for slow adaption, remove and sanity check once clients send this properly
-      gameModeId = gameRequest.game_request.gameModeId or "TWO_PLAYER_VS",
-    }
-  }
-
-  return sanitized
-end
-
 function ClientMessages.sanitizeChallengeUpdate(message)
   local sanitized =
   {
@@ -158,7 +142,7 @@ function ClientMessages.sanitizeLeaderboardRequest(leaderboardRequest)
   {
     leaderboard_request = leaderboardRequest.leaderboard_request,
     -- default value only for slow adaption, remove and sanity check later
-    gameModeId = leaderboardRequest.leaderboardType or "TWO_PLAYER_VS",
+    gameModeId = leaderboardRequest.leaderboardType or GameModes.IDs.TWO_PLAYER_VS,
   }
 
   return sanitized

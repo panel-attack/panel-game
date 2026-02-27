@@ -54,14 +54,6 @@ end
 -- Lobby related requests
 -------------------------
 
--- players are challenged by their current name on the server
----@param senderName string
----@param receiverName string
----@param gameModeId GameModeID? nil if the challenged picks the game mode
-function ClientMessages.challengePlayer(senderName, receiverName, gameModeId)
-  error("game_request has been retired")
-end
-
 ---@param senderId PublicPlayerID
 ---@param receiverId PublicPlayerID
 ---@param gameModeId GameModeID
@@ -100,10 +92,11 @@ function ClientMessages.requestSpectate(spectatorName, roomNumber)
   }
 end
 
-function ClientMessages.requestLeaderboard()
+---@param gameModeId GameModeID
+function ClientMessages.requestLeaderboard(gameModeId)
   local leaderboardRequestMessage = {
     leaderboard_request = true,
-    leaderboardType = "TWO_PLAYER_VS",
+    leaderboardType = gameModeId,
   }
 
   return {

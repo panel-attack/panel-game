@@ -13,9 +13,9 @@ local GarbageQueueTestingUtils = {}
 function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   local mode
   if attackFile then
-    mode = GameModes.getPreset("ONE_PLAYER_TRAINING")
+    mode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TRAINING)
   else
-    mode = GameModes.getPreset("ONE_PLAYER_VS_SELF")
+    mode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF)
   end
 
   local levelData = LevelPresets.getModern(1)
