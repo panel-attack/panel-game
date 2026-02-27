@@ -360,6 +360,7 @@ function ServerProtocol.approveLogin(publicId, notice, newId, newName, oldName)
   content.newName = newName
   content.oldName = oldName
   content.nameChanged = (newName ~= nil)
+  content.serverTime = os.time()
 
   approveLoginMessage.content = content
 
