@@ -374,12 +374,14 @@ end
 ---@field room BattleRoom?
 ---@field lobbyData table
 ---@field lobbyDataV2 PersonalizedLobbyDataV2
+---@field serverTimeDelta integer in seconds
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
   self.leaderboard = nil
   self.pendingResponses = {}
   self.state = states.OFFLINE
+  self.serverTimeDelta = 0
 
   resetLobbyData(self)
 
@@ -607,6 +609,7 @@ function NetClient:update()
         self:setState(states.ONLINE)
         self.loginState = result.message
         self.loginTime = love.timer.getTime()
+        self.serverTimeDelta = os.difftime(to_UTC(os.time()), os.time(result.serverTime))
       else
         self.loginState = result.message
         self:setState(states.OFFLINE)

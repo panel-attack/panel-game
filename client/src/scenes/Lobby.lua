@@ -553,7 +553,7 @@ function Lobby:updateRoomPanel(updateInfo)
     local timer = self.roomTimer.text
     if room.state == "playing" then
       if room.gameStartTime then
-        local durationInSeconds = os.difftime(to_UTC(os.time()), os.time(room.gameStartTime)) - 3
+        local durationInSeconds = os.difftime(to_UTC(os.time()), os.time(room.gameStartTime)) - 3 - GAME.netClient.serverTimeDelta
         if durationInSeconds < 0 then
           timer = string.format("-00:%02d", math.abs(durationInSeconds))
         else

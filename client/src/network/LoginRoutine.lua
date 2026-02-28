@@ -86,6 +86,7 @@ local function login(tcpClient, ip, port)
             if value.publicId then
               GAME.localPlayer.publicId = value.publicId
             end
+            result.serverTime = value.serverTime
 
             return result
           else --if result.login_denied then
