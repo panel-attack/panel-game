@@ -2,13 +2,13 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local msgTypes = NetworkProtocol.clientMessageTypes
 local consts = require("common.engine.consts")
 
-local ClientMessages = {}
+local ClientProtocol = {}
 
 -------------------------
 -- login related requests
 -------------------------
 
-function ClientMessages.requestLogin(userId, name, level, inputMethod, panels, bundleCharacter, character, bundleStage, stage, wantsRanked, saveReplaysPublicly)
+function ClientProtocol.requestLogin(userId, name, level, inputMethod, panels, bundleCharacter, character, bundleStage, stage, wantsRanked, saveReplaysPublicly)
   local loginRequestMessage =
   {
     login_request = true,
@@ -33,7 +33,7 @@ function ClientMessages.requestLogin(userId, name, level, inputMethod, panels, b
   }
 end
 
-function ClientMessages.logout()
+function ClientProtocol.logout()
   local logoutMessage = {logout = true}
 
   return {
@@ -42,7 +42,7 @@ function ClientMessages.logout()
   }
 end
 
-function ClientMessages.requestVersionCompatibilityCheck()
+function ClientProtocol.requestVersionCompatibilityCheck()
   return {
     messageType = msgTypes.versionCheck,
     messageText = nil,
@@ -57,7 +57,7 @@ end
 ---@param senderId PublicPlayerID
 ---@param receiverId PublicPlayerID
 ---@param gameModeId GameModeID
-function ClientMessages.updateChallengeStatus(senderId, receiverId, gameModeId, challengeActive)
+function ClientProtocol.updateChallengeStatus(senderId, receiverId, gameModeId, challengeActive)
   local playerChallengeV2Message =
   {
     challengeUpdate =
@@ -75,7 +75,7 @@ function ClientMessages.updateChallengeStatus(senderId, receiverId, gameModeId, 
   }
 end
 
-function ClientMessages.requestSpectate(spectatorName, roomNumber)
+function ClientProtocol.requestSpectate(spectatorName, roomNumber)
   local spectateRequestMessage =
   {
     spectate_request =
@@ -93,7 +93,7 @@ function ClientMessages.requestSpectate(spectatorName, roomNumber)
 end
 
 ---@param gameModeId GameModeID
-function ClientMessages.requestLeaderboard(gameModeId)
+function ClientProtocol.requestLeaderboard(gameModeId)
   local leaderboardRequestMessage = {
     leaderboard_request = true,
     leaderboardType = gameModeId,
@@ -109,7 +109,7 @@ end
 ------------------------------
 -- BattleRoom related requests
 ------------------------------
-function ClientMessages.leaveRoom()
+function ClientProtocol.leaveRoom()
   local leaveRoomMessage = {leave_room = true}
   return {
     messageType = msgTypes.jsonMessage,
@@ -117,7 +117,7 @@ function ClientMessages.leaveRoom()
   }
 end
 
-function ClientMessages.reportLocalGameResult(outcome)
+function ClientProtocol.reportLocalGameResult(outcome)
   local gameResultMessage = {game_over = true, outcome = outcome}
   return {
     messageType = msgTypes.jsonMessage,
@@ -125,7 +125,7 @@ function ClientMessages.reportLocalGameResult(outcome)
   }
 end
 
-function ClientMessages.sendPlayerSettings(menuState)
+function ClientProtocol.sendPlayerSettings(menuState)
   local menuStateMessage = {menu_state = menuState}
   return {
     messageType = msgTypes.jsonMessage,
@@ -133,7 +133,7 @@ function ClientMessages.sendPlayerSettings(menuState)
   }
 end
 
-function ClientMessages.sendTaunt(direction, index)
+function ClientProtocol.sendTaunt(direction, index)
   local type = "taunt_" .. string.lower(direction) .. "s"
   local tauntMessage = {taunt = true, type = type, index = index}
   return {
@@ -143,7 +143,7 @@ function ClientMessages.sendTaunt(direction, index)
 end
 
 ---@param gameMode GameMode
-function ClientMessages.sendRoomRequest(gameMode)
+function ClientProtocol.sendRoomRequest(gameMode)
   local gameModeData = gameMode:getGameModeJSONData()
   local roomRequestMessage = {
     recipient = "server",
@@ -156,7 +156,7 @@ function ClientMessages.sendRoomRequest(gameMode)
   }
 end
 
-function ClientMessages.sendMatchAbort(roomNumber)
+function ClientProtocol.sendMatchAbort(roomNumber)
   local matchAbortMessage = {
     recipient = "room",
     recipientId = roomNumber,
@@ -169,11 +169,26 @@ function ClientMessages.sendMatchAbort(roomNumber)
   }
 end
 
+---@param pause boolean if the client is paused
+function ClientProtocol.sendPauseToggle(roomNumber, pause)
+  local pauseToggleMessage = {
+    recipient = "room",
+    recipientId = roomNumber,
+    type = "pauseToggle",
+    content = pause,
+  }
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = pauseToggleMessage
+  }
+end
+
 -------------------------
 -- miscellaneous requests
 -------------------------
 
-function ClientMessages.sendErrorReport(errorData)
+function ClientProtocol.sendErrorReport(errorData)
   local errorReportMessage = {error_report = errorData}
   return {
     messageType = msgTypes.jsonMessage,
@@ -181,4 +196,4 @@ function ClientMessages.sendErrorReport(errorData)
   }
 end
 
-return ClientMessages
+return ClientProtocol

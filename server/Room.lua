@@ -83,6 +83,7 @@ function(self, roomNumber, players, gameMode, leaderboard)
   Signal.turnIntoEmitter(self)
   self:createSignal("matchStart")
   self:createSignal("matchEnd")
+  self:createSignal("pauseToggled")
 end
 )
 
@@ -145,7 +146,7 @@ function Room:prepare_character_select()
   end
 end
 
----@return "character select"|"lobby"|"not_logged_in"|"playing"|"spectating"|"closed"
+---@return PlayerState | "closed"
 function Room:state()
   if #self.players == 0 then
     return "closed"
@@ -419,6 +420,21 @@ function Room:abortGame(sender)
   self:emitSignal("matchEnd", self.game)
   self:prepare_character_select()
   self.game = nil
+end
+
+function Room:togglePause(sender, paused)
+  if #self.players == 1 and self.players[1] == sender and paused ~= (self:state() == "paused") then
+    self:broadcastJson(ServerProtocol.sendPauseNotification(self.roomNumber, sender, paused), sender)
+    self:emitSignal("pauseToggled")
+
+    for i, player in ipairs(self.players) do
+      if paused then
+        player:setState("paused")
+      else
+        player:setState("playing")
+      end
+    end
+  end
 end
 
 return Room

@@ -529,4 +529,27 @@ function ServerProtocol.sendGameAbort(source)
   }
 end
 
+local pauseNotificationTemplate = {
+  sender = "room",
+  senderId = nil,
+  type = "pauseNotification",
+  content = {
+    source = nil,
+    paused = nil,
+  }
+}
+
+---@param source ServerPlayer who paused the game
+function ServerProtocol.sendPauseNotification(roomNumber, source, paused)
+  local pauseNotificationMessage = pauseNotificationTemplate
+  pauseNotificationMessage.content.source = source.publicPlayerID
+  pauseNotificationMessage.content.paused = paused
+  pauseNotificationMessage.senderId = roomNumber
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = pauseNotificationMessage,
+  }
+end
+
 return ServerProtocol

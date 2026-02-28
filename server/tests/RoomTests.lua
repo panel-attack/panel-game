@@ -174,7 +174,51 @@ local function abortTest3()
   assert(message.type == "gameResult" and message.content[1].placement == 0 and message.content[2].placement == 0)
 end
 
+local function pauseTest()
+  local p1 = ServerTesting.players[1]
+  p1:updateSettings({inputMethod = "controller", level = 10})
+  -- don't want to deal with I/O for the test
+  p1.save_replays_publicly = "not at all"
+  local room = Room(1, {p1}, GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS))
+  local notificationCatcher = { catchCount = 0, catch = function(self) self.catchCount = self.catchCount + 1 end }
+  room:connectSignal("pauseToggled", notificationCatcher, notificationCatcher.catch)
+  local p2 = ServerTesting.players[2]
+  room:add_spectator(p2)
+  room:start_match()
+  for i = 1, 120 do
+    room:broadcastInput("A", p1)
+  end
+
+  assert(notificationCatcher.catchCount == 0)
+
+  p2.connection.outgoingMessageQueue:clear()
+  room:togglePause(p1, true)
+
+  local message = p2.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "pauseNotification" and message.content.source == p1.publicPlayerID and message.content.paused == true)
+  assert(notificationCatcher.catchCount == 1)
+
+  p1.connection.outgoingMessageQueue:clear()
+  room:togglePause(p2, false)
+  -- p2 cannot toggle pause
+  assert(p1.connection.outgoingMessageQueue:len() == 0)
+  assert(p2.connection.outgoingMessageQueue:len() == 0)
+  assert(notificationCatcher.catchCount == 1)
+
+  room:togglePause(p1, true)
+  -- the game is already paused so nothing should happen)
+  assert(p1.connection.outgoingMessageQueue:len() == 0)
+  assert(p2.connection.outgoingMessageQueue:len() == 0)
+  assert(notificationCatcher.catchCount == 1)
+
+  room:togglePause(p1, false)
+  assert(notificationCatcher.catchCount == 2)
+  message = p2.connection.outgoingMessageQueue:pop().messageText
+  assert(message.type == "pauseNotification" and message.content.source == p1.publicPlayerID and message.content.paused == false)
+end
+
 basicTest()
 abortTest1()
 abortTest2()
 abortTest3()
+pauseTest()

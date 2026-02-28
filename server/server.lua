@@ -382,6 +382,7 @@ function Server:create_room(gameMode, ...)
   local newRoom = Room(self.roomNumberIndex, players, gameMode, leaderboard)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.processGameEnd)
+  newRoom:connectSignal("pauseToggled", self, self.setLobbyChanged)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
   for _, player in ipairs(players) do
@@ -408,16 +409,6 @@ function Server:closeRoom(room, reason)
 
   room:close(reason)
   self:setLobbyChanged()
-end
-
----@param roomNr integer
----@return Room? room
-function Server:roomNumberToRoom(roomNr)
-  for k, v in pairs(self.rooms) do
-    if self.rooms[k].roomNumber and self.rooms[k].roomNumber == roomNr then
-      return v
-    end
-  end
 end
 
 ---@param name string
@@ -687,6 +678,8 @@ function Server:processMessage(message, connection)
     elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
       self:handleLeaveRoom(player, player.name .. " left")
       return true
+    elseif player.state == "playing" and message.type == "pauseToggle" then
+      self.rooms[message.roomNumber]:togglePause(player, message.paused)
     elseif (player.state == "spectating") and message.leave_room then
       if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
         self:setLobbyChanged()
@@ -877,7 +870,7 @@ end
 ---@param message table
 ---@param player ServerPlayer
 function Server:handleSpectateRequest(message, player)
-  local requestedRoom = self:roomNumberToRoom(message.spectate_request.roomNumber)
+  local requestedRoom = self.rooms[message.spectate_request.roomNumber]
 
   if requestedRoom then
     local roomState = requestedRoom:state()

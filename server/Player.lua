@@ -6,7 +6,7 @@ local tableUtils = require("common.lib.tableUtils")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 
----@alias PlayerState ("lobby" | "character select" | "playing" | "spectating")
+---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating" | "paused")
 ---@alias PublicPlayerID integer
 
 ---@class ServerPlayer : Signal

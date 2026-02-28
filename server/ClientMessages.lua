@@ -32,6 +32,8 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeRoomRequest(clientMessage)
   elseif clientMessage.type and clientMessage.type == "matchAbort" then
     return ClientMessages.sanitizeMatchAbort(clientMessage)
+  elseif clientMessage.type and clientMessage.type == "pauseToggle" then
+    return ClientMessages.sanitizePauseToggle(clientMessage)
   elseif clientMessage.error_report then
     return clientMessage
   else
@@ -191,7 +193,19 @@ end
 function ClientMessages.sanitizeMatchAbort(matchAbort)
   local sanitized =
   {
+    roomNumber = matchAbort.recipientId,
     matchAbort = true
+  }
+
+  return sanitized
+end
+
+function sanitizePauseToggle(pauseToggle)
+  local sanitized =
+  {
+    roomNumber = pauseToggle.recipientId,
+    paused = pauseToggle.content,
+    type = "pauseToggle",
   }
 
   return sanitized
