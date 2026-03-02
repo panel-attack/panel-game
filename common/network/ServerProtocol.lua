@@ -296,26 +296,6 @@ function ServerProtocol.startMatch(roomNumber, replay)
   }
 end
 
-local lobbyStateTemplate = {
-  sender = "server",
-  type = "lobbyState",
-  content = { }
-}
-
----@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.lobbyState(unpaired, rooms, allPlayers)
-  local lobbyStateMessage = lobbyStateTemplate
-
-  lobbyStateMessage.content.unpaired = unpaired
-  lobbyStateMessage.content.spectatable = rooms
-  lobbyStateMessage.content.players = allPlayers
-
-  return {
-    messageType = msgTypes.jsonMessage,
-    messageText = lobbyStateMessage,
-  }
-end
-
 ---@class LobbyStateV2Message : ServerMessage
 ---@field content LobbyStateV2
 

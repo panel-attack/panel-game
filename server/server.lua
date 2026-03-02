@@ -212,50 +212,8 @@ function Server:importDatabase()
   self.database:commitTransaction() -- bulk commit every statement from the start of beginTransaction
 end
 
-local function addPublicPlayerData(players, player, ratingInfo)
-  if not players or not ratingInfo then
-    return
-  end
-
-  if not players[player.name] then
-    players[player.name] = { publicId = player.publicPlayerID }
-  end
-
-  if ratingInfo and ratingInfo.placement_done then
-    players[player.name].rating = math.round(ratingInfo.rating)
-  end
-end
-
 function Server:setLobbyChanged()
   self.lobbyChanged = true
-end
-
-function Server:lobby_state()
-  local names = {}
-  local players = {}
-  for _, connection in pairs(self.connections) do
-    local player = self.connectionToPlayer[connection]
-    if player then
-      logger.debug("Player " .. player.name .. " state is " .. player.state)
-    end
-    if player and player.state == "lobby" then
-      names[#names + 1] = player.name
-      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
-    end
-  end
-  local spectatableRooms = {}
-  for _, room in pairs(self.rooms) do
-    spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, state = room:state()}
-    for i, player in ipairs(room.players) do
-      if i == 1 then
-        spectatableRooms[#spectatableRooms].a = room.players[i].name
-      else
-        spectatableRooms[#spectatableRooms].b = room.players[i].name
-      end
-      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
-    end
-  end
-  return {unpaired = names, spectatable = spectatableRooms, players = players}
 end
 
 ---@alias LobbyPlayerV2 { publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>, roomNumber: roomNumber? }
@@ -714,14 +672,11 @@ end
 
 function Server:broadCastLobbyIfChanged()
   if self.lobbyChanged then
-    local lobbyState = self:lobby_state()
     local lobbyStateV2 = self:lobbyStateV2()
-    local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
     local messageV2 = ServerProtocol.lobbyStateV2(lobbyStateV2.players, lobbyStateV2.rooms)
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player and player.state == "lobby" then
-        --connection:sendJson(message)
         connection:sendJson(messageV2)
       end
     end
