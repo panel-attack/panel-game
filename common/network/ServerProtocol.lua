@@ -296,23 +296,25 @@ function ServerProtocol.startMatch(roomNumber, replay)
   }
 end
 
-local lobbyStateTemplate = {
+---@class LobbyStateV2Message : ServerMessage
+---@field content LobbyStateV2
+
+local lobbyState2Template = {
   sender = "server",
-  type = "lobbyState",
+  type = "lobbyStateV2",
   content = { }
 }
 
----@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.lobbyState(unpaired, rooms, allPlayers)
-  local lobbyStateMessage = lobbyStateTemplate
+---@return {messageType: table, messageText: LobbyStateV2Message}
+function ServerProtocol.lobbyStateV2(players, rooms)
+  local lobbyStateV2Message = lobbyState2Template
 
-  lobbyStateMessage.content.unpaired = unpaired
-  lobbyStateMessage.content.spectatable = rooms
-  lobbyStateMessage.content.players = allPlayers
+  lobbyStateV2Message.content.players = players
+  lobbyStateV2Message.content.rooms = rooms
 
   return {
     messageType = msgTypes.jsonMessage,
-    messageText = lobbyStateMessage,
+    messageText = lobbyStateV2Message,
   }
 end
 
@@ -338,6 +340,7 @@ function ServerProtocol.approveLogin(publicId, notice, newId, newName, oldName)
   content.newName = newName
   content.oldName = oldName
   content.nameChanged = (newName ~= nil)
+  content.serverTime = os.time()
 
   approveLoginMessage.content = content
 
@@ -460,21 +463,27 @@ function ServerProtocol.taunt(player, type, index)
   }
 end
 
-local challengeTemplate = {
+local challengeUpdateTemplate = {
   sender = "player",
   senderId = nil,
-  type = "challenge",
+  type = "challengeUpdate",
   content = {}
 }
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
+---@param gameModeId GameModeID? nil if the challenged picks the game mode
+---@param challengeActive boolean
 ---@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.sendChallenge(sender, receiver)
-  local challengeMessage = challengeTemplate
+function ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive)
+  local challengeMessage = challengeUpdateTemplate
   challengeMessage.senderId = sender.publicPlayerID
   challengeMessage.content.sender = sender.name
+  challengeMessage.content.senderId = sender.publicPlayerID
   challengeMessage.content.receiver = receiver.name
+  challengeMessage.content.receiverId = receiver.publicPlayerID
+  challengeMessage.content.gameModeId = gameModeId
+  challengeMessage.content.challengeActive = challengeActive
 
   return {
     messageType = msgTypes.jsonMessage,
@@ -497,6 +506,29 @@ function ServerProtocol.sendGameAbort(source)
   return {
     messageType = msgTypes.jsonMessage,
     messageText = abortGameMessage,
+  }
+end
+
+local pauseNotificationTemplate = {
+  sender = "room",
+  senderId = nil,
+  type = "pauseNotification",
+  content = {
+    source = nil,
+    paused = nil,
+  }
+}
+
+---@param source ServerPlayer who paused the game
+function ServerProtocol.sendPauseNotification(roomNumber, source, paused)
+  local pauseNotificationMessage = pauseNotificationTemplate
+  pauseNotificationMessage.content.source = source.publicPlayerID
+  pauseNotificationMessage.content.paused = paused
+  pauseNotificationMessage.senderId = roomNumber
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = pauseNotificationMessage,
   }
 end
 

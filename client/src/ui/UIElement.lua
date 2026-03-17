@@ -163,13 +163,17 @@ function UIElement:updateChildren(dt)
   end
 end
 
+function UIElement:drawDebugOutline()
+  if DebugSettings.showUIElementBorders() then
+    GraphicsUtil.setColor(0, 0, 1, 1)
+    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.setColor(1, 1, 1, 1)
+  end
+end
+
 function UIElement:draw()
   if self.isVisible then
-    if DebugSettings.showUIElementBorders() then
-      GraphicsUtil.setColor(0, 0, 1, 1)
-      GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
-      GraphicsUtil.setColor(1, 1, 1, 1)
-    end
+    self:drawDebugOutline()
     self:drawSelf()
     -- if DEBUG_ENABLED then
     --   GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, 1, 1, 1, 0.5)

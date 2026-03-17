@@ -43,7 +43,7 @@ function TrainingMenu:goToCharacterSelect(value, width, height)
   if value == nil then
     value = createBasicTrainingMode("", width, height)
   end
-  GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TRAINING"), GameBase)
+  GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TRAINING), GameBase)
   if GAME.battleRoom then
     GAME.localPlayer:setAttackEngineSettings(value)
     GAME.navigationStack:push(CharacterSelectVsSelf({battleRoom = GAME.battleRoom}))

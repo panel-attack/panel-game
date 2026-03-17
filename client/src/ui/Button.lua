@@ -27,6 +27,8 @@ local Button = class(
 )
 
 Button.TYPE = "Button"
+Button.WIDTH_PADDING = 3
+Button.HEIGHT_PADDING = 3
 
 function Button:onClick()
   GAME.theme:playValidationSfx()

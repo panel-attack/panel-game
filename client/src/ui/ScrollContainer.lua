@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class ScrollContainerOptions : UiElementOptions
 ---@field scrollOrientation ("vertical" | "horizontal" | nil)
@@ -105,6 +106,7 @@ local loveMajor = love.getVersion()
 
 function ScrollContainer:draw()
   if self.isVisible then
+    self:drawDebugOutline()
     -- make a stencil according to width/height
     if loveMajor >= 12 then
       love.graphics.setStencilMode("draw", 1)
@@ -135,6 +137,25 @@ function ScrollContainer:draw()
       love.graphics.setStencilMode()
     else
       love.graphics.setStencilTest()
+    end
+
+    if self.maxScrollOffset > 0 then
+      local fontSize = GraphicsUtil.fontSize
+      if self.scrollOrientation == "vertical" then
+        if self.scrollOffset < 0 then
+          GraphicsUtil.print("^", self.x + self.width / 2 - fontSize / 2, self.y - 20)
+        end
+        if math.abs(self.scrollOffset) < self.maxScrollOffset then
+          GraphicsUtil.print("v", self.x + self.width / 2 - fontSize  / 2, self.y + self.height + 8)
+        end
+      else
+        if self.scrollOffset < 0 then
+          GraphicsUtil.print("<", self.x - 20, self.y + self.height / 2 - fontSize / 2)
+        end
+        if math.abs(self.scrollOffset) < self.maxScrollOffset then
+          GraphicsUtil.print(">", self.x + self.width + 8, self.y + self.height / 2 - fontSize / 2)
+        end
+      end
     end
   end
 end

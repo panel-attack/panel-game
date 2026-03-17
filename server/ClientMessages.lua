@@ -4,6 +4,7 @@
 -- and changes in server code likewise only affect this abstraction layer instead of the ClientProtocol
 local logger = require("common.lib.logger")
 local LevelData = require("common.data.LevelData")
+local GameModes = require("common.data.GameModes")
 
 local ClientMessages = {}
 
@@ -11,8 +12,8 @@ local ClientMessages = {}
 function ClientMessages.sanitizeMessage(clientMessage)
   if clientMessage.login_request then
     return ClientMessages.sanitizeLoginRequest(clientMessage)
-  elseif clientMessage.game_request then
-    return ClientMessages.sanitizeGameRequest(clientMessage)
+  elseif clientMessage.challengeUpdate then
+    return ClientMessages.sanitizeChallengeUpdate(clientMessage)
   elseif clientMessage.menu_state then
     return ClientMessages.sanitizeMenuState(clientMessage.menu_state)
   elseif clientMessage.spectate_request then
@@ -31,6 +32,8 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeRoomRequest(clientMessage)
   elseif clientMessage.type and clientMessage.type == "matchAbort" then
     return ClientMessages.sanitizeMatchAbort(clientMessage)
+  elseif clientMessage.type and clientMessage.type == "pauseToggle" then
+    return ClientMessages.sanitizePauseToggle(clientMessage)
   elseif clientMessage.error_report then
     return clientMessage
   else
@@ -108,13 +111,15 @@ function ClientMessages.sanitizeLoginRequest(loginRequest)
   return sanitized
 end
 
-function ClientMessages.sanitizeGameRequest(gameRequest)
+function ClientMessages.sanitizeChallengeUpdate(message)
   local sanitized =
   {
-    game_request =
+    challengeUpdate =
     {
-      sender = gameRequest.game_request.sender,
-      receiver = gameRequest.game_request.receiver,
+      senderId = message.challengeUpdate.senderId,
+      receiverId = message.challengeUpdate.receiverId,
+      gameModeId = message.challengeUpdate.gameModeId,
+      challengeActive = message.challengeUpdate.challengeActive,
     }
   }
 
@@ -137,7 +142,9 @@ end
 function ClientMessages.sanitizeLeaderboardRequest(leaderboardRequest)
   local sanitized =
   {
-    leaderboard_request = leaderboardRequest.leaderboard_request
+    leaderboard_request = leaderboardRequest.leaderboard_request,
+    -- default value only for slow adaption, remove and sanity check later
+    gameModeId = leaderboardRequest.leaderboardType or GameModes.IDs.TWO_PLAYER_VS,
   }
 
   return sanitized
@@ -186,7 +193,19 @@ end
 function ClientMessages.sanitizeMatchAbort(matchAbort)
   local sanitized =
   {
+    roomNumber = matchAbort.recipientId,
     matchAbort = true
+  }
+
+  return sanitized
+end
+
+function sanitizePauseToggle(pauseToggle)
+  local sanitized =
+  {
+    roomNumber = pauseToggle.recipientId,
+    paused = pauseToggle.content,
+    type = "pauseToggle",
   }
 
   return sanitized

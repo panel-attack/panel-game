@@ -131,8 +131,8 @@ function ServerMessages.sanitizeServerMessage(message)
         ban_duration = message.content.banDuration,
       }
     end
-  elseif message.type == "lobbyState" then
-    return message.content
+  elseif message.type == "lobbyStateV2" then
+    return { lobbyStateV2 = true, content = message.content }
   elseif message.type == "leaderboardReport" then
     return { leaderboard_report = message.content }
   elseif message.type == "spectateRequestGranted" then
@@ -202,13 +202,15 @@ function ServerMessages.sanitizePlayerMessage(message)
       index = content.index,
       player_number = content.playerNumber,
     }
-  elseif message.type == "challenge" then
+  elseif message.type == "challengeUpdate" then
     return
     {
-      game_request =
+      challengeUpdate =
       {
-        sender = content.sender,
-        receiver = content.receiver,
+        senderId = content.senderId,
+        receiverId = content.receiverId,
+        gameModeId = content.gameModeId,
+        challengeActive = content.challengeActive,
       }
     }
   end

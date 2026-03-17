@@ -6,12 +6,13 @@ local tableUtils = require("common.lib.tableUtils")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 
----@alias PlayerState ("lobby" | "character select" | "playing" | "spectating")
+---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating" | "paused")
+---@alias PublicPlayerID integer
 
 ---@class ServerPlayer : Signal
 ---@field package connection Connection ONLY FOR SENDING; accessing this in tests is fine, otherwise not, all message processing has to go through server
 ---@field userId privateUserId
----@field publicPlayerID integer
+---@field publicPlayerID PublicPlayerID
 ---@field character string id of the specific character that was picked
 ---@field character_is_random string? id of the character (bundle) that was selected; will match character if not a bundle
 ---@field stage string id of the specific stage that was picked

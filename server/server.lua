@@ -38,11 +38,12 @@ local time = os.time
 ---@field connectionNumberIndex integer GLOBAL counter of the next available connection index
 ---@field roomNumberIndex integer the next available room number
 ---@field rooms Room[] mapping of room number to room
----@field proposals table<ServerPlayer, table<ServerPlayer, table>> mapping of player name to a mapping of the players they have challenged
+---@field proposals table<PublicPlayerID, table<PublicPlayerID, table<GameModeID, boolean>>> mapping of player name to a mapping of the players they have challenged for each game mode
 ---@field connections Connection[] mapping of connection number to connection
 ---@field nameToConnectionIndex table<string, integer> mapping of player names to their unique connectionNumberIndex
 ---@field socketToConnectionIndex table<TcpSocket, integer> mapping of sockets to their unique connectionNumberIndex
 ---@field connectionToPlayer table<Connection, ServerPlayer> Mapping of connections to the player they send for
+---@field publicIdToPlayer table<PublicPlayerID, ServerPlayer> Mapping of publicId to the logged in ServerPlayer
 ---@field playerToRoom table<ServerPlayer, Room>
 ---@field spectatorToRoom table<ServerPlayer, Room>
 ---@field nameToPlayer table<string, ServerPlayer>
@@ -65,6 +66,7 @@ local Server = class(
     self.nameToConnectionIndex = {}
     self.socketToConnectionIndex = {}
     self.connectionToPlayer = {}
+    self.publicIdToPlayer = {}
     self.playerToRoom = {}
     self.spectatorToRoom = {}
     self.nameToPlayer = {}
@@ -210,85 +212,110 @@ function Server:importDatabase()
   self.database:commitTransaction() -- bulk commit every statement from the start of beginTransaction
 end
 
-local function addPublicPlayerData(players, player, ratingInfo)
-  if not players or not ratingInfo then
-    return
-  end
-
-  if not players[player.name] then
-    players[player.name] = { publicId = player.publicPlayerID }
-  end
-
-  if ratingInfo and ratingInfo.placement_done then
-    players[player.name].rating = math.round(ratingInfo.rating)
-  end
-end
-
 function Server:setLobbyChanged()
   self.lobbyChanged = true
 end
 
-function Server:lobby_state()
-  local names = {}
+---@alias LobbyPlayerV2 { publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>, roomNumber: roomNumber? }
+---@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[], gameStartTime: integer? }
+---@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<roomNumber, LobbyRoomV2> }
+
+---@return LobbyStateV2
+function Server:lobbyStateV2()
   local players = {}
+  local rooms = {}
+
   for _, connection in pairs(self.connections) do
     local player = self.connectionToPlayer[connection]
     if player then
       logger.debug("Player " .. player.name .. " state is " .. player.state)
     end
-    if player and player.state == "lobby" then
-      names[#names + 1] = player.name
-      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
+
+    players[player.publicPlayerID] = {
+      publicId = player.publicPlayerID,
+      name = player.name,
+      state = player.state,
+      ratings = { },
+    }
+
+    if self.leaderboard and self.leaderboard.players[player.userId] and self.leaderboard.players[player.userId].placement_done then
+      players[player.publicPlayerID].ratings.TWO_PLAYER_VS = math.round(self.leaderboard.players[player.userId].rating)
     end
   end
-  local spectatableRooms = {}
+
   for _, room in pairs(self.rooms) do
-    spectatableRooms[#spectatableRooms + 1] = {roomNumber = room.roomNumber, name = room.name, state = room:state()}
-    for i, player in ipairs(room.players) do
-      if i == 1 then
-        spectatableRooms[#spectatableRooms].a = room.players[i].name
-      else
-        spectatableRooms[#spectatableRooms].b = room.players[i].name
-      end
-      addPublicPlayerData(players, player, (self.leaderboard and self.leaderboard.players[player.userId] or nil))
+    local lobbyRoom = {
+      roomNumber = room.roomNumber,
+      state = room:state(),
+      gameModeId = GameModes.nameToGameModeId[room.gameMode.name],
+      players = {},
+      spectators = {},
+      wins = {},
+    }
+
+    if room.game then
+      lobbyRoom.gameStartTime = os.date("*t", to_UTC(room.game.creationTime))
     end
+
+    for i, player in ipairs(room.players) do
+      players[player.publicPlayerID].roomNumber = room.roomNumber
+      lobbyRoom.players[i] = player.publicPlayerID
+      lobbyRoom.wins[i] = room.win_counts[i]
+    end
+
+    for i, spectator in ipairs(room.spectators) do
+      players[spectator.publicPlayerID].roomNumber = room.roomNumber
+      lobbyRoom.spectators[i] = spectator.publicPlayerID
+    end
+
+    rooms[lobbyRoom.roomNumber] = lobbyRoom
   end
-  return {unpaired = names, spectatable = spectatableRooms, players = players}
+
+  return { players = players, rooms = rooms }
 end
 
 ---@param sender ServerPlayer
 ---@param receiver ServerPlayer
-function Server:proposeGame(sender, receiver)
-  logger.debug("propose game: " .. sender.name .. " " .. receiver.name)
-
-  local proposals = self.proposals
+---@param gameModeId GameModeID
+---@param challengeActive boolean
+function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive)
   if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
-    proposals[sender] = proposals[sender] or {}
-    proposals[receiver] = proposals[receiver] or {}
-    if proposals[sender][receiver] then
-      if proposals[sender][receiver][receiver] then
-        self:create_room(GameModes.getPreset("TWO_PLAYER_VS"), sender, receiver)
-      end
+    logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
+    local previouslyProposedGameModes = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
+    if previouslyProposedGameModes and previouslyProposedGameModes[gameModeId] then
+      self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
     else
-      receiver:sendJson(ServerProtocol.sendChallenge(sender, receiver))
-      local prop = {[sender] = true}
-      proposals[sender][receiver] = prop
-      proposals[receiver][sender] = prop
+      -- no existing challenge for this game mode
+      self:updateChallenge(sender, receiver, gameModeId, challengeActive)
+      receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive))
     end
+  else
+    -- this message won't be handled because one of the parties is no longer in lobby
+    -- related things would be handled in the state change / logout
   end
+end
+
+---@param sender ServerPlayer
+---@param receiver ServerPlayer
+---@param gameModeId GameModeID
+---@param challengeActive boolean
+function Server:updateChallenge(sender, receiver, gameModeId, challengeActive)
+  local senderChallenges = self.proposals[sender.publicPlayerID] or {}
+  senderChallenges[receiver.publicPlayerID] = senderChallenges[receiver.publicPlayerID] or {}
+  senderChallenges[receiver.publicPlayerID][gameModeId] = challengeActive
+  
+  self.proposals[sender.publicPlayerID] = senderChallenges
 end
 
 ---@param player ServerPlayer
 function Server:clearProposals(player)
-  local proposals = self.proposals
-  if proposals[player] then
-    for otherPlayer, _ in pairs(proposals[player]) do
-      proposals[player][otherPlayer] = nil
-      if proposals[otherPlayer] then
-        proposals[otherPlayer][player] = nil
-      end
+  -- blanket reset for the player
+  self.proposals[player.publicPlayerID] = {}
+  -- reset all challenges to the player
+  for _, challenges in pairs(self.proposals) do
+    if challenges[player.publicPlayerID] then
+      challenges[player.publicPlayerID] = nil
     end
-    proposals[player] = nil
   end
 end
 
@@ -313,6 +340,7 @@ function Server:create_room(gameMode, ...)
   local newRoom = Room(self.roomNumberIndex, players, gameMode, leaderboard)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.processGameEnd)
+  newRoom:connectSignal("pauseToggled", self, self.setLobbyChanged)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
   for _, player in ipairs(players) do
@@ -339,16 +367,6 @@ function Server:closeRoom(room, reason)
 
   room:close(reason)
   self:setLobbyChanged()
-end
-
----@param roomNr integer
----@return Room? room
-function Server:roomNumberToRoom(roomNr)
-  for k, v in pairs(self.rooms) do
-    if self.rooms[k].roomNumber and self.rooms[k].roomNumber == roomNr then
-      return v
-    end
-  end
 end
 
 ---@param name string
@@ -480,11 +498,11 @@ local function handleError(msg)
 
   local trace = debug.traceback()
   ---@type any
-  local sanitizedmsg = {}
+  local sanitizedMsgTable = {}
 	for char in msg:gmatch(utf8.charpattern) do
-		table.insert(sanitizedmsg, char)
+		table.insert(sanitizedMsgTable, char)
 	end
-	sanitizedmsg = table.concat(sanitizedmsg)
+	local sanitizedmsg = table.concat(sanitizedMsgTable)
 
 	local err = {}
 
@@ -586,9 +604,10 @@ function Server:processMessage(message, connection)
     if message.logout then
       self:closeConnection(connection, player.name .. " logged out")
       return false
-    elseif player.state == "lobby" and message.game_request then
-      if message.game_request.sender == player.name then
-        self:proposeGame(player, self.nameToPlayer[message.game_request.receiver])
+    elseif player.state == "lobby" and message.challengeUpdate then
+      local receiver = self.publicIdToPlayer[message.challengeUpdate.receiverId]
+      if message.challengeUpdate.senderId == player.publicPlayerID and receiver then
+        self:processChallengeUpdate(player, receiver, message.challengeUpdate.gameModeId, message.challengeUpdate.challengeActive)
         return true
       end
     elseif player.state == "lobby" and message.roomRequest then
@@ -617,6 +636,8 @@ function Server:processMessage(message, connection)
     elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
       self:handleLeaveRoom(player, player.name .. " left")
       return true
+    elseif player.state == "playing" and message.type == "pauseToggle" then
+      self.rooms[message.roomNumber]:togglePause(player, message.paused)
     elseif (player.state == "spectating") and message.leave_room then
       if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
         self:setLobbyChanged()
@@ -651,12 +672,12 @@ end
 
 function Server:broadCastLobbyIfChanged()
   if self.lobbyChanged then
-    local lobbyState = self:lobby_state()
-    local message = ServerProtocol.lobbyState(lobbyState.unpaired, lobbyState.spectatable, lobbyState.players)
+    local lobbyStateV2 = self:lobbyStateV2()
+    local messageV2 = ServerProtocol.lobbyStateV2(lobbyStateV2.players, lobbyStateV2.rooms)
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player and player.state == "lobby" then
-        connection:sendJson(message)
+        connection:sendJson(messageV2)
       end
     end
     self.lobbyChanged = false
@@ -729,6 +750,7 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     player:updateSettings(loginMessage.playerSettings)
     self.nameToConnectionIndex[name] = connection.index
     self.connectionToPlayer[connection] = player
+    self.publicIdToPlayer[player.publicPlayerID] = player
     self.nameToPlayer[name] = player
     if self.leaderboard then
       self.leaderboard:update_timestamp(userId)
@@ -803,7 +825,7 @@ end
 ---@param message table
 ---@param player ServerPlayer
 function Server:handleSpectateRequest(message, player)
-  local requestedRoom = self:roomNumberToRoom(message.spectate_request.roomNumber)
+  local requestedRoom = self.rooms[message.spectate_request.roomNumber]
 
   if requestedRoom then
     local roomState = requestedRoom:state()
@@ -848,6 +870,7 @@ function Server:closeConnection(connection, reason)
   if player then
     self:clearProposals(player)
     self:handleLeaveRoom(player, reason)
+    self.publicIdToPlayer[player.publicPlayerID] = nil
     self.playerToRoom[player] = nil
     self.spectatorToRoom[player] = nil
     self.nameToPlayer[player.name] = nil

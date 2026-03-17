@@ -8,7 +8,7 @@ local ui = require("client.src.ui")
 ---@class EndlessMenu : CharacterSelect
 local EndlessMenu = class(
   function(self, sceneParams)
-    self.gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+    self.gameMode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS)
     self.gameScene = "EndlessGame"
   end,
   CharacterSelect

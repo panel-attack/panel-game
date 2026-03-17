@@ -448,6 +448,13 @@ function Theme:loadSelectionGraphics()
   loadPlayerNumberIcons(self)
   loadInputPromptIcons(self)
   loadGridCursors(self)
+
+  self.images.IMG_checkBox = {}
+  self.images.IMG_checkBox[true] = self:load_theme_img("checkbox_checked")
+  self.images.IMG_checkBox[false] = self:load_theme_img("checkbox_unchecked")
+  self.images.fight = self:load_theme_img("fight")
+  self.images.stopWatch = self:load_theme_img("stopwatch")
+  self.images.endless = self:load_theme_img("endless")
 end
 
 function Theme:loadIngameGraphics()
@@ -1171,6 +1178,24 @@ function Theme:getTimePixelFont()
   end
 
   return self.fontMaps.time
+end
+
+---@param checked boolean
+---@return love.Texture
+function Theme:getCheckboxImage(checked)
+  return self.images.IMG_checkBox[checked]
+end
+
+function Theme:getFightImage()
+  return self.images.fight
+end
+
+function Theme:getStopwatchImage()
+  return self.images.stopWatch
+end
+
+function Theme:getEndlessImage()
+  return self.images.endless
 end
 
 ---@param index integer

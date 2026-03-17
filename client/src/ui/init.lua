@@ -42,6 +42,8 @@ local ui = {
   Grid = import("./Grid"),
   ---@source GridCursor.lua
   GridCursor = import("./GridCursor"),
+  ---@source IconTextButton.lua
+  IconTextButton = import("./IconTextButton"),
   ---@source ImageButton.lua
   ImageButton = import("./ImageButton"),
   ---@source ImageContainer.lua
@@ -56,6 +58,10 @@ local ui = {
   Leaderboard = import("./Leaderboard"),
   ---@source LevelSlider.lua
   LevelSlider = import("./LevelSlider"),
+  ---@source Line.lua
+  Line = import("./Line"),
+  ---@source LobbyChallengeButton.lua
+  LobbyChallengeButton = import("./LobbyChallengeButton"),
   ---@source Menu.lua
   Menu = import("./Menu"),
   ---@source MenuItem.lua
@@ -70,6 +76,8 @@ local ui = {
   PixelFontLabel = import("./PixelFontLabel"),
   ---@source ScrollContainer.lua
   ScrollContainer = import("./ScrollContainer"),
+  ---@source ScrollMenu.lua
+  ScrollMenu = import("./ScrollMenu"),
   ---@source ScrollText.lua
   ScrollText = import("./ScrollText"),
   ---@source Slider.lua

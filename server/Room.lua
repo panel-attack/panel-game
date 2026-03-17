@@ -8,13 +8,15 @@ local ServerPlayer = require("server.Player")
 local Signal = require("common.lib.signal")
 local ServerGame = require("server.Game")
 
+---@alias roomNumber integer
+
 -- Object that represents a current session of play between two connections
 -- Players alternate between the character select state and playing, and spectators can join and leave
 ---@class Room : Signal
 ---@field players ServerPlayer[]
 ---@field leaderboard Leaderboard?
 ---@field name string
----@field roomNumber integer
+---@field roomNumber roomNumber
 ---@field stage string? stage for the game, randomly picked from both players
 ---@field spectators ServerPlayer[] array of spectator connection objects
 ---@field win_counts integer[] win counts by player number
@@ -22,6 +24,7 @@ local ServerGame = require("server.Game")
 ---@field matchCount integer
 ---@field game ServerGame?
 ---@field gameMode table -- only the data portion of the game mode
+---@field gameModeId GameModeID
 ---@field ranked boolean if the next match is anticipated to be ranked 
 ---@field rankedReasons string[]
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
@@ -80,6 +83,7 @@ function(self, roomNumber, players, gameMode, leaderboard)
   Signal.turnIntoEmitter(self)
   self:createSignal("matchStart")
   self:createSignal("matchEnd")
+  self:createSignal("pauseToggled")
 end
 )
 
@@ -142,7 +146,7 @@ function Room:prepare_character_select()
   end
 end
 
----@return "character select"|"lobby"|"not_logged_in"|"playing"|"spectating"|"closed"
+---@return PlayerState | "closed"
 function Room:state()
   if #self.players == 0 then
     return "closed"
@@ -416,6 +420,21 @@ function Room:abortGame(sender)
   self:emitSignal("matchEnd", self.game)
   self:prepare_character_select()
   self.game = nil
+end
+
+function Room:togglePause(sender, paused)
+  if #self.players == 1 and self.players[1] == sender and paused ~= (self:state() == "paused") then
+    self:broadcastJson(ServerProtocol.sendPauseNotification(self.roomNumber, sender, paused), sender)
+    self:emitSignal("pauseToggled")
+
+    for i, player in ipairs(self.players) do
+      if paused then
+        player:setState("paused")
+      else
+        player:setState("playing")
+      end
+    end
+  end
 end
 
 return Room

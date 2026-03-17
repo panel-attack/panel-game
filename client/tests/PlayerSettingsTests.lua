@@ -8,7 +8,7 @@ local function testDifficultyCarouselShouldNotMutatePlayerOnCreation()
 
   local player = Player("TestPlayer", 1, true)
 
-  local gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+  local gameMode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS)
   local battleRoom = BattleRoom(gameMode)
   battleRoom:addPlayer(player)
 
@@ -35,7 +35,7 @@ testDifficultyCarouselShouldNotMutatePlayerOnCreation()
 
 local function testEndlessModeClassicDifficulty1SetsCorrectSettings()
 
-  local gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+  local gameMode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS)
   local battleRoom = BattleRoom.createLocalFromGameMode(gameMode, nil, false)
 
   assert(battleRoom ~= nil, "BattleRoom should be created successfully")
@@ -60,7 +60,7 @@ testEndlessModeClassicDifficulty1SetsCorrectSettings()
 
 local function testVsSelfChangesEndlessClassicSettingsToModern()
   -- First create an endless battle room with classic difficulty 1
-  local gameMode = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+  local gameMode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS)
   local endlessBattleRoom = BattleRoom.createLocalFromGameMode(gameMode, nil, false)
 
   assert(endlessBattleRoom ~= nil, "Endless BattleRoom should be created successfully")
@@ -79,7 +79,7 @@ local function testVsSelfChangesEndlessClassicSettingsToModern()
   endlessBattleRoom:shutdown()
 
   -- Now create a vs self battle room which should change settings to modern
-  local vsSelfGameMode = GameModes.getPreset("ONE_PLAYER_VS_SELF")
+  local vsSelfGameMode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF)
   local vsSelfBattleRoom = BattleRoom.createLocalFromGameMode(vsSelfGameMode, nil, false)
 
   assert(vsSelfBattleRoom ~= nil, "Vs self BattleRoom should be created successfully")

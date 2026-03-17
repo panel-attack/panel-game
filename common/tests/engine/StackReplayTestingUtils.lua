@@ -18,7 +18,7 @@ end
 
 ---@return Match
 function StackReplayTestingUtils.createEndlessMatch(speed, difficulty, level, playerCount)
-  local endless = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+  local endless = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS)
   if playerCount == nil then
     playerCount = 1
   end
