@@ -112,7 +112,7 @@ Kitti
 ## German
 Wassergeist, Ultra, Endaris
 ## Spanish
-fabri600, Nixu, Pull
+fabri600, Nixu, Pull, El Javi
 ## Portuguese
 LittleQueenie
 ## Japanese
