@@ -76,10 +76,7 @@ function read(path, sep, tonum, null)
   sep = sep or ","
   null = null or ""
   local csvFile = {}
-  local file = io.open(path, "r")
-  if not file then
-    return nil
-  end
+  local file = assert(io.open(path, "r"))
   for line in file:lines() do
     fields = line:split(sep)
     if tonum then -- convert numeric fields to numbers
