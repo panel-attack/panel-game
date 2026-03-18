@@ -227,4 +227,24 @@ function tableUtils.count(tab, func)
   return count
 end
 
+-- A helper function to deal with artifacts from json serialization+deserialization</br>
+-- Json only allows strings as keys so the serializer will treat sparse arrays as key-value pairs and convert integer keys to strings.
+-- This makes sense because if the array is both big and sparse, we would have a huge overhead in `nil,` entries and it would be difficult to deduce an index for a value. </br>
+-- This function can be called to convert every number-like key on a table back to a number to revert this effect.
+---@generic T
+---@param tab T
+---@return T
+function tableUtils.keysToNumber(tab)
+  for key, value in pairs(tab) do
+    if type(key) == "string" then
+      local numberKey = tonumber(key)
+      if numberKey then
+        tab[numberKey] = value
+        tab[key] = nil
+      end
+    end
+  end
+  return tab
+end
+
 return tableUtils

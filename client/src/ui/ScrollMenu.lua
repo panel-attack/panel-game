@@ -128,7 +128,6 @@ end
 ---@param uiElement UiElement
 function ScrollMenu:addChild(uiElement)
   local lastChild = self.children[#self.children]
-  local newIndex = #self.children + 1
   local y
   if lastChild then
     y = lastChild.y + lastChild.height + self.childGap

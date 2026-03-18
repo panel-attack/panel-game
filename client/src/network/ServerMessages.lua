@@ -1,5 +1,6 @@
 local ReplayV3 = require("common.data.ReplayV3")
 local GameModes = require("common.data.GameModes")
+local tableUtils = require("common.lib.tableUtils")
 -- this file forms an abstraction layer to translate the messages sent by the server to a format understood by the client
 -- the client should expect the formats specified in common/network/ServerProtocol which may extend to other standardised interop formats in common/data
 -- e.g. Replay or LevelData
@@ -132,7 +133,12 @@ function ServerMessages.sanitizeServerMessage(message)
       }
     end
   elseif message.type == "lobbyStateV2" then
-    return { lobbyStateV2 = true, content = message.content }
+    ---@type LobbyStateV2
+    local content = message.content
+    content.players = tableUtils.keysToNumber(content.players)
+    content.rooms = tableUtils.keysToNumber(content.rooms)
+    
+    return { lobbyStateV2 = true, content = content }
   elseif message.type == "leaderboardReport" then
     return { leaderboard_report = message.content }
   elseif message.type == "spectateRequestGranted" then

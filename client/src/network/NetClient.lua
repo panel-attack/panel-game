@@ -27,8 +27,6 @@ local function resetLobbyData(self)
   self.lobbyDataV2 = {
     ---@type table<PublicPlayerID, LobbyPlayerV2>
     players = {},
-    ---@type LobbyPlayerV2[]
-    availablePlayers = {},
     ---@type table<PublicPlayerID, table<GameModeID, boolean>>
     outgoingChallenges = {},
     ---@type table<PublicPlayerID, table<GameModeID, boolean>>
@@ -38,18 +36,12 @@ local function resetLobbyData(self)
   }
 end
 
+---@param self NetClient
 ---@param lobbyStateV2Message { content: LobbyStateV2 }
 local function updateLobbyStateV2(self, lobbyStateV2Message)
   local lobbyStateV2 = lobbyStateV2Message.content
   if lobbyStateV2.players then
     self.lobbyDataV2.players = lobbyStateV2.players
-  end
-
-  local availablePlayers = {}
-  for publicId, player in pairs(lobbyStateV2.players) do
-    if not player.roomNumber then
-      availablePlayers[#availablePlayers+1] = player
-    end
   end
 
   -- if a player we challenged is not in lobby data or is in a room, they cannot accept our challenge anymore
@@ -372,7 +364,6 @@ end
 ---@field matchListeners table
 ---@field messageListeners table
 ---@field room BattleRoom?
----@field lobbyData table
 ---@field lobbyDataV2 PersonalizedLobbyDataV2
 ---@field serverTimeDelta integer in seconds
 ---@overload fun(): NetClient

@@ -159,18 +159,9 @@ end
 -- Processing server messages --
 --------------------------------
 
-function Lobby:playerRatingString(playerName)
-  local rating = ""
-  local playerData = GAME.netClient.lobbyData.players[playerName]
-  if playerData and playerData.rating then
-    rating = " (" .. playerData.rating .. ")"
-  end
-  return rating
-end
-
 -- sends a challenge for the opponent with that id
 ---@param publicId PublicPlayerID
----@param gameModeId GameModeID?
+---@param gameModeId GameModeID
 function Lobby:requestGameFunction(publicId, gameModeId)
   return function()
     if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
@@ -216,7 +207,7 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
   local playerButtons = {}
 
   for publicId, player in pairs(personalizedLobbyData.players) do
-    if publicId ~= GAME.localPlayer.publicId and not personalizedLobbyData.players.roomNumber then
+    if tonumber(publicId) ~= GAME.localPlayer.publicId and not personalizedLobbyData.players.roomNumber then
       local playerName
       if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
@@ -516,7 +507,7 @@ function Lobby:updateSelf(dt)
     loginStateLabel:setText(GAME.netClient.loginState or "")
   else
     if GAME.timer > GAME.netClient.loginTime + 5 then
-      if #GAME.netClient.lobbyData.players == 1 then
+      if tableUtils.length(GAME.netClient.lobbyDataV2.players) == 1 then
         self.lobbyMessage:setText("lb_alone", nil, true)
       else
         self.lobbyMessage:setText("lb_select_player", nil, true)
