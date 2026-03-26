@@ -28,6 +28,7 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 ---@field gameScene table
 ---@field match ClientMatch
 ---@field panelSource table?
+---@field roomNumber integer?
 ---@field sceneParameters table?
 ---@field preferredStageId string? if set, this stage will be used for all matches in the session
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
@@ -43,6 +44,7 @@ function(self, mode, gameScene)
   self.state = 1
   self.matchesPlayed = 0
   self.panelSource = nil
+  self.roomNumber = nil
   self.gameScene = gameScene or require("client.src.scenes." .. mode.gameScene)
   self.sceneParameters = nil
   -- this is a bit naive but effective for now
@@ -62,6 +64,7 @@ BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 function BattleRoom.createFromServerMessage(message)
   local gameMode = GameModes.createFromServerData(message.gameMode)
   local battleRoom = BattleRoom(gameMode)
+  battleRoom.roomNumber = message.roomNumber
 
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
@@ -337,6 +340,7 @@ end
 
 -- creates a match based on the room and player settings, starts it up and switches to the Game scene
 ---@param replay ReplayV3?
+---@return ClientMatch match
 function BattleRoom:startMatch(replay)
   local match
   if replay then
@@ -371,6 +375,8 @@ function BattleRoom:startMatch(replay)
   local scene = self:createScene(match)
   scene:load()
   GAME.navigationStack:push(scene, transition)
+
+  return match
 end
 
 function BattleRoom:createScene(match)

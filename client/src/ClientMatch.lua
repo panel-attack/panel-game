@@ -362,6 +362,9 @@ function ClientMatch:getWinningPlayerCharacter()
 end
 
 function ClientMatch:togglePause()
+  if not self.supportsPause then
+    error("Tried to pause a non-pausable match")
+  end
   self.isPaused = not self.isPaused
   self:emitSignal("pauseChanged", self)
 end

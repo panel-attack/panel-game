@@ -238,8 +238,11 @@ local function processMatchStartMessage(self, message)
   end
 
   self.tcpClient:dropOldInputMessages()
-  self.room:startMatch(message.replay)
+  local match = self.room:startMatch(message.replay)
   self:setState(states.INGAME)
+  if match.supportsPause and match:hasLocalPlayer() then
+    match:connectSignal("pauseChanged", self, self.sendPauseToggle)
+  end
 end
 
 ---@param self NetClient
@@ -460,6 +463,13 @@ function NetClient:sendInput(input)
   end
 end
 
+---@param clientMatch ClientMatch
+function NetClient:sendPauseToggle(clientMatch)
+  if self:isConnected() and self.room and self.room.roomNumber then
+    self.tcpClient:sendRequest(ClientMessages.sendPauseToggle(self.room.roomNumber, clientMatch.isPaused))
+  end
+end
+
 ---@param gameModeId GameModeID?
 function NetClient:requestLeaderboard(gameModeId)
   if not self.pendingResponses.leaderboardUpdate then
@@ -600,7 +610,8 @@ function NetClient:update()
         self:setState(states.ONLINE)
         self.loginState = result.message
         self.loginTime = love.timer.getTime()
-        self.serverTimeDelta = os.difftime(to_UTC(os.time()), os.time(result.serverTime))
+        local t = os.time()
+        self.serverTimeDelta = os.difftime(t, result.serverTime)
       else
         self.loginState = result.message
         self:setState(states.OFFLINE)

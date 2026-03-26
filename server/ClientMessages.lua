@@ -200,7 +200,7 @@ function ClientMessages.sanitizeMatchAbort(matchAbort)
   return sanitized
 end
 
-function sanitizePauseToggle(pauseToggle)
+function ClientMessages.sanitizePauseToggle(pauseToggle)
   local sanitized =
   {
     roomNumber = pauseToggle.recipientId,

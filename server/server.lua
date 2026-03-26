@@ -829,7 +829,7 @@ function Server:handleSpectateRequest(message, player)
 
   if requestedRoom then
     local roomState = requestedRoom:state()
-    if (roomState == "character select" or roomState == "playing") then
+    if (roomState == "character select" or roomState == "playing" or roomState == "paused") then
       logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
       self.spectatorToRoom[player] = requestedRoom
       requestedRoom:add_spectator(player)

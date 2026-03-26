@@ -207,7 +207,9 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
   local playerButtons = {}
 
   for publicId, player in pairs(personalizedLobbyData.players) do
-    if tonumber(publicId) ~= GAME.localPlayer.publicId and not personalizedLobbyData.players.roomNumber then
+    local isLocalPlayer = (publicId ~= GAME.localPlayer.publicId)
+    local hasRoom = not not player.roomNumber
+    if isLocalPlayer and not hasRoom then
       local playerName
       if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")

@@ -123,6 +123,7 @@ function ServerMessages.sanitizeServerMessage(message)
         new_name = message.content.newName,
         old_name = message.content.oldName,
         name_changed = message.content.nameChanged,
+        serverTime = message.content.serverTime
       }
     else
       return
@@ -186,6 +187,7 @@ function ServerMessages.sanitizeServerMessage(message)
       create_room = true,
       ranked = message.content.ranked,
       players = players,
+      roomNumber = message.content.roomNumber,
       gameMode = message.content.gameMode
     }
   else
