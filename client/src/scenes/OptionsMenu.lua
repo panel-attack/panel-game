@@ -304,6 +304,11 @@ function OptionsMenu:loadGeneralMenu()
     self:switchToScreen("baseMenu")
     if GAME.updater and GAME.updater.releaseStreams then
       if releaseStreamSelection.value ~= GAME.updater.activeReleaseStream.name then
+        -- in fullscreen the messagebox would pop behind the window leading to confusion
+        -- so make sure to un-fullscreen before popping this one
+        if love.window.getFullscreen() and love.system.getOS() == "Windows" then
+          GAME:toggleFullscreen()
+        end
         love.window.showMessageBox("Changing Release Stream", "Please restart the game to launch the selected release stream")
       end
     end
