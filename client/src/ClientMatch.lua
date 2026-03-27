@@ -276,7 +276,7 @@ function ClientMatch:start()
       self.panicTicksPlayed[i] = false
     end
 
-    self.panicTickStartTime = (self.engine.timeLimit - 15) * 60
+    self.panicTickStartTime = self.engine.timeLimit - 15 * 60
     if self.engine.doCountdown then
       self.panicTickStartTime = self.panicTickStartTime + consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
     end
