@@ -641,7 +641,6 @@ function Game:refreshCanvasAndImagesForNewScale()
   end
 
   self:drawLoadingString(loc("ld_characters"))
-  coroutine.yield()
 
   self.globalCanvas = love.graphics.newCanvas(GAME.globalCanvas:getWidth(), GAME.globalCanvas:getHeight(), {dpiscale=self:newCanvasSnappedScale()})
   -- We need to reload all assets and fonts to get the new scaling info and filters
