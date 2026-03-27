@@ -83,13 +83,17 @@ function ScrollMenu:getLastIndex()
   end
 end
 
+---@param uiElement UiElement
+---@return boolean # if the selection was successful
 function ScrollMenu:select(uiElement)
   for i, child in ipairs(self.children) do
-    if child == uiElement then
+    if child == uiElement and child.receiveInputs and child.isEnabled and child.isVisible then
       self.selectedIndex = i
       self:keepVisible(-child.y, child.height)
+      return true
     end
   end
+  return false
 end
 
 ---@param inputs InputConfiguration

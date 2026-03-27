@@ -9,7 +9,11 @@ local GameModes = require("common.data.GameModes")
 local tableUtils = require("common.lib.tableUtils")
 
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
-local Lobby = class(function(self, sceneParams)
+---@class LobbyScene : Scene
+---@field lobbyMenu ScrollMenu
+---@field lobbyMessage Label
+local Lobby = class(
+function(self, sceneParams)
   self.music = "main"
 
   -- ui
@@ -207,9 +211,9 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
   local playerButtons = {}
 
   for publicId, player in pairs(personalizedLobbyData.players) do
-    local isLocalPlayer = (publicId ~= GAME.localPlayer.publicId)
+    local isLocalPlayer = (publicId == GAME.localPlayer.publicId)
     local hasRoom = not not player.roomNumber
-    if isLocalPlayer and not hasRoom then
+    if not isLocalPlayer and not hasRoom then
       local playerName
       if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
@@ -446,8 +450,17 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
           end
         end
       end
+
+      -- if our previous selection disappeared, default to whatever is in its place now or the next selectable element before it
+      for index = previousIndex, 2, -1 do
+        local newButton = self.lobbyMenu.children[index]
+        local success = self.lobbyMenu:select(newButton)
+        if success then
+          break
+        end
+      end
     elseif previousIndex == 1 then
-      self.lobbyMenu:select(self.lobbyMessage)
+      self.lobbyMenu:select(self.onePlayerEndlessButton)
     else
       local reverseOffset = #copy - previousIndex
       if reverseOffset == 0 then
@@ -461,8 +474,8 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
       elseif reverseOffset == 4 then
         self.lobbyMenu:select(self.onePlayerEndlessButton)
       else
-        logger.warn("Unexpectedly couldn't find previous non-player/room selection, resetting to 1")
-        self.lobbyMenu:select(self.lobbyMessage)
+        logger.warn("Unexpectedly couldn't find previous non-player/room selection, resetting to first interactable element")
+        self.lobbyMenu:select(self.onePlayerEndlessButton)
       end
     end
   end
