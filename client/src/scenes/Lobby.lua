@@ -549,7 +549,13 @@ function Lobby:updateRoomPanel(updateInfo)
       self.roomPanel.roomNumber = room.roomNumber
       local text
       if #room.players == 2 then
-        text = string.format("%s %d : %d %s\n%s\n%s %d", GAME.netClient.lobbyDataV2.players[room.players[1]].name, room.wins[1], room.wins[2], GAME.netClient.lobbyDataV2.players[room.players[2]].name, room.state, loc("pl_spectators"), #room.spectators)
+        local p1Id = room.players[1]
+        local p2Id = room.players[2]
+        local p1Info = GAME.netClient.lobbyDataV2.players[p1Id]
+        local p2Info = GAME.netClient.lobbyDataV2.players[p2Id]
+        local p1Name = p1Info.name
+        local p2Name = p2Info.name
+        text = string.format("%s %d : %d %s\n%s\n%s %d", p1Name, room.wins[1], room.wins[2], p2Name, room.state, loc("pl_spectators"), #room.spectators)
       elseif #room.players == 1 then
         text = string.format("%s\n%s %d", room.state, loc("pl_spectators"), #room.spectators)
       end
