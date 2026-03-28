@@ -631,12 +631,12 @@ function Server:processMessage(message, connection)
       ---@diagnostic disable-next-line: param-type-mismatch
       self.playerToRoom[player]:handleGameOverOutcome(message, player)
       return true
-    elseif (player.state == "playing") and message.matchAbort then
+    elseif (player.state == "playing" or player.state == "paused") and message.matchAbort then
       self.playerToRoom[player]:abortGame(player)
-    elseif (player.state == "playing" or player.state == "character select") and message.leave_room then
+    elseif (player.state == "playing" or player.state == "character select" or player.state == "paused") and message.leave_room then
       self:handleLeaveRoom(player, player.name .. " left")
       return true
-    elseif player.state == "playing" and message.type == "pauseToggle" then
+    elseif (player.state == "playing" or player.state == "paused") and message.type == "pauseToggle" then
       self.rooms[message.roomNumber]:togglePause(player, message.paused)
     elseif (player.state == "spectating") and message.leave_room then
       if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
