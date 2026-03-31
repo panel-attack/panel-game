@@ -165,6 +165,7 @@ function ReplayBrowser:update()
         SoundController:stopMusic()
         local match = ClientMatch.createFromReplay(selectedReplay)
         match.renderDuringPause = true
+        match.supportsPause = true
         match:start()
         GAME.navigationStack:push(ReplayGame({match = match}))
       else
