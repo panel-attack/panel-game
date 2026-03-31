@@ -206,10 +206,6 @@ function ChallengeMode:onMatchEnded(match)
   end
 
   if match.engine.aborted then
-    -- in challenge mode, an abort is always a manual pause and leave by the local player
-    -- match:deinit is the responsibility of the one switching out of the game scene
-    GAME.navigationStack:pop(nil, function() match:deinit() end)
-
     -- when challenge mode becomes spectatable, there needs to be a network abort that isn't leave_room for spectators
   end
 
