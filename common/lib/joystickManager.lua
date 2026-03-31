@@ -95,12 +95,18 @@ end
 function joystickManager:getDPadState(joystick, hatIndex)
   local dir = joystick:getHat(hatIndex)
   local activeButtons = joystickHatToDirs[dir]
-  return {
-    [joystickManager:getJoystickButtonName(joystick, "up"..hatIndex)] = tableUtils.contains(activeButtons, "up"),
-    [joystickManager:getJoystickButtonName(joystick, "down"..hatIndex)] = tableUtils.contains(activeButtons, "down"),
-    [joystickManager:getJoystickButtonName(joystick, "left"..hatIndex)] = tableUtils.contains(activeButtons, "left"),
-    [joystickManager:getJoystickButtonName(joystick, "right"..hatIndex)] = tableUtils.contains(activeButtons, "right")
-  }
+  if activeButtons then
+    return {
+      [joystickManager:getJoystickButtonName(joystick, "up"..hatIndex)] = tableUtils.contains(activeButtons, "up"),
+      [joystickManager:getJoystickButtonName(joystick, "down"..hatIndex)] = tableUtils.contains(activeButtons, "down"),
+      [joystickManager:getJoystickButtonName(joystick, "left"..hatIndex)] = tableUtils.contains(activeButtons, "left"),
+      [joystickManager:getJoystickButtonName(joystick, "right"..hatIndex)] = tableUtils.contains(activeButtons, "right")
+    }
+  else
+    local joystickType = joystick:isGamepad() and "gamepad" or "joystick"
+    error("joystick:getHat returned invalid direction for " .. joystickType .. " " .. joystick:getName() .. " " .. joystick:getGUID() .. " upon querying hatIndex " .. hatIndex
+        .. "\nGot " .. dir .. ", expected love.JoystickHat constant (c, d, l, ld, lu, r, rd, ru or d)")
+  end
 end
 
 ---@param joystick love.Joystick
