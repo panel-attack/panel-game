@@ -38,16 +38,6 @@ function BootScene:updateSelf(dt)
       error(status)
     end
   else
-    local success, status = coroutine.resume(self.setupRoutine, GAME)
-    if success then
-      if status then
-        self.message = status
-      end
-    else
-      GAME.crashTrace = debug.traceback(self.setupRoutine)
-      error(status)
-    end
-
     if coroutine.status(self.setupRoutine) == "dead" then
       love.graphics.setFont(GraphicsUtil.getGlobalFont())
 
@@ -80,6 +70,16 @@ function BootScene:updateSelf(dt)
       if not config.language_code then
         local LanguageSelectSetup = require("client.src.scenes.LanguageSelectSetup")
         GAME.navigationStack:push(LanguageSelectSetup({}))
+      end
+    else
+      local success, status = coroutine.resume(self.setupRoutine, GAME)
+      if success then
+        if status then
+          self.message = status
+        end
+      else
+        GAME.crashTrace = debug.traceback(self.setupRoutine)
+        error(status)
       end
     end
   end
