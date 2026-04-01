@@ -21,10 +21,10 @@ end
 
 -- We must launch the server from the root directory so all the requires are the right path relatively.
 require("server.server_globals")
---require("server.tests.LoginTests")
---require("server.tests.ServerTests")
---require("server.tests.LeaderboardTests")
---require("server.tests.RoomTests")
+require("server.tests.LoginTests")
+require("server.tests.ServerTests")
+require("server.tests.LeaderboardTests")
+require("server.tests.RoomTests")
 
 local database = require("server.PADatabase")
 local Server = require("server.server")

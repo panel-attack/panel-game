@@ -290,7 +290,7 @@ function GameBase:readyToProceedToNextScene()
 end
 
 function GameBase:startNextScene()
-  GAME.navigationStack:pop(nil, function() match:deinit() end)
+  GAME.navigationStack:pop(nil, function() self.match:deinit() end)
 end
 
 function GameBase:runGame(dt)
