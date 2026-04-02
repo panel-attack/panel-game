@@ -612,6 +612,10 @@ function NetClient:update()
         self.loginTime = love.timer.getTime()
         local t = os.time()
         self.serverTimeDelta = os.difftime(t, result.serverTime)
+        local date = os.date("*t")
+        if date.isdst then
+          self.serverTimeDelta = self.serverTimeDelta - 3600
+        end
       else
         self.loginState = result.message
         self:setState(states.OFFLINE)

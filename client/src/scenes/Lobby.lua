@@ -553,9 +553,14 @@ function Lobby:updateRoomPanel(updateInfo)
         local p2Id = room.players[2]
         local p1Info = GAME.netClient.lobbyDataV2.players[p1Id]
         local p2Info = GAME.netClient.lobbyDataV2.players[p2Id]
-        local p1Name = p1Info.name
-        local p2Name = p2Info.name
-        text = string.format("%s %d : %d %s\n%s\n%s %d", p1Name, room.wins[1], room.wins[2], p2Name, room.state, loc("pl_spectators"), #room.spectators)
+        if p1Info and p2Info then
+          local p1Name = p1Info.name
+          local p2Name = p2Info.name
+          text = string.format("%s %d : %d %s\n%s\n%s %d", p1Name, room.wins[1], room.wins[2], p2Name, room.state, loc("pl_spectators"), #room.spectators)
+        else
+          logger.warn(string.format("Failed to retrieve data for playerId %d or %d\nLobby data is %s", p1Id, p2Id, table_to_string(GAME.netClient.lobbyDataV2)))
+          text = string.format("%d : %d \n%s\n%s %d\n%s", room.wins[1], room.wins[2], room.state, loc("pl_spectators"), #room.spectators, "Failed to retrieve player info")
+        end
       elseif #room.players == 1 then
         text = string.format("%s\n%s %d", room.state, loc("pl_spectators"), #room.spectators)
       end
