@@ -294,6 +294,10 @@ local function processChallengeUpdate(self, challengeUpdateMessage)
     local challenges = self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] or {}
     challenges[challengeUpdate.gameModeId] = challengeUpdate.challengeActive
     self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] = challenges
+    if challengeUpdate.challengeActive then
+      love.window.requestAttention()
+      SoundController:playSfx(themes[config.theme].sounds.notification)
+    end
     self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
   end
 end
