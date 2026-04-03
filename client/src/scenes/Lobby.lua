@@ -434,18 +434,28 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   elseif previousIndex then
     if copy[previousIndex].lobbyType then
       previousButton = copy[previousIndex]
+      local found = false
       if previousButton.lobbyType == "player" then
         for i, playerButton in ipairs(playerButtons) do
           if previousButton.player.publicId == playerButton.player.publicId then
             self.lobbyMenu:select(playerButton)
             previousButton = playerButton
+            found = true
             break
+          end
+        end
+
+        if not found then
+          if self.playerSubMenu and previousButton.player.publicId == self.playerSubMenu.playerId then
+            -- the player left or started to spectate so if there's still a playerSubMenu
+            self.playerSubMenu:yieldFocus()
           end
         end
       elseif previousButton.lobbyType == "room" then
         for i, roomButton in ipairs(roomButtons) do
           if previousButton.room.roomNumber == roomButton.room.roomNumber then
             self.lobbyMenu:select(roomButton)
+            found = true
             break
           end
         end
