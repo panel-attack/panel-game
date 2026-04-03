@@ -225,21 +225,16 @@ function Server:lobbyStateV2()
   local players = {}
   local rooms = {}
 
-  for _, connection in pairs(self.connections) do
-    local player = self.connectionToPlayer[connection]
-    if player then
-      logger.debug("Player " .. player.name .. " state is " .. player.state)
-    end
-
-    players[player.publicPlayerID] = {
-      publicId = player.publicPlayerID,
+  for publicId, player in pairs(self.publicIdToPlayer) do
+    players[publicId] = {
+      publicId = publicId,
       name = player.name,
       state = player.state,
       ratings = { },
     }
 
     if self.leaderboard and self.leaderboard.players[player.userId] and self.leaderboard.players[player.userId].placement_done then
-      players[player.publicPlayerID].ratings.TWO_PLAYER_VS = math.round(self.leaderboard.players[player.userId].rating)
+      players[publicId].ratings.TWO_PLAYER_VS = math.round(self.leaderboard.players[player.userId].rating)
     end
   end
 
