@@ -206,6 +206,16 @@ function Lobby.getPlayerNameWithRating(publicId, gameModeId)
   end
 end
 
+---@param gameModeChallengeState table<GameModeID, boolean>
+local function challengeActive(gameModeChallengeState)
+  for gameMode, challenging in pairs(gameModeChallengeState) do
+    if challenging then
+      return true
+    end
+  end
+  return false
+end
+
 ---@param personalizedLobbyData PersonalizedLobbyDataV2
 function Lobby:createPlayerButtons(personalizedLobbyData)
   local playerButtons = {}
@@ -215,9 +225,9 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
     local hasRoom = not not player.roomNumber
     if not isLocalPlayer and not hasRoom then
       local playerName
-      if personalizedLobbyData.incomingChallenges[publicId] and next(personalizedLobbyData.incomingChallenges[publicId]) then 
+      if personalizedLobbyData.incomingChallenges[publicId] and challengeActive(personalizedLobbyData.incomingChallenges[publicId]) then
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
-      elseif personalizedLobbyData.outgoingChallenges[publicId] and next(personalizedLobbyData.outgoingChallenges[publicId]) then
+      elseif personalizedLobbyData.outgoingChallenges[publicId] and challengeActive(personalizedLobbyData.outgoingChallenges[publicId]) then
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_request")
       else
         playerName = Lobby.getPlayerNameWithRating(publicId)
