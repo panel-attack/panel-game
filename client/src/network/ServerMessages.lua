@@ -136,8 +136,8 @@ function ServerMessages.sanitizeServerMessage(message)
   elseif message.type == "lobbyStateV2" then
     ---@type LobbyStateV2
     local content = message.content
-    content.players = tableUtils.keysToNumber(content.players)
-    content.rooms = tableUtils.keysToNumber(content.rooms)
+    content.players = tableUtils.reassignIntegerKeysAfterJsonification(content.players)
+    content.rooms = tableUtils.reassignIntegerKeysAfterJsonification(content.rooms)
     
     return { lobbyStateV2 = true, content = content }
   elseif message.type == "leaderboardReport" then

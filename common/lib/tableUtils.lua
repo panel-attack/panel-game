@@ -234,20 +234,31 @@ end
 ---@generic T
 ---@param tab T
 ---@return T
-function tableUtils.keysToNumber(tab)
-  local tNew = {}
-  for key, value in pairs(tab) do
-    if type(key) == "string" then
-      local numberKey = tonumber(key)
-      if numberKey then
-        tNew[numberKey] = value
-        tab[key] = nil
-      else
-        error("Found non-number key " .. key .. " in table")
+function tableUtils.reassignIntegerKeysAfterJsonification(tab)
+  local index, _ = next(tab)
+  if index == nil then
+    -- table is empty
+    return tab
+  elseif type(index) == "number" then
+    -- the table already uses number keys so the json used a sparse array instead of a key-value notation
+    -- this can happen if the highest index is low or there are little or no gaps
+    return tab
+  elseif type(index) == "string" then
+    local tNew = {}
+    for key, value in pairs(tab) do
+      if type(key) == "string" then
+        local numberKey = tonumber(key)
+        if numberKey then
+          tNew[numberKey] = value
+        else
+          error("Found non-number key " .. key .. " in table")
+        end
       end
     end
+    return tNew
+  else
+    error("Unexpected key type " .. type(index) .. " as table index")
   end
-  return tNew
 end
 
 return tableUtils
