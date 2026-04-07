@@ -235,16 +235,19 @@ end
 ---@param tab T
 ---@return T
 function tableUtils.keysToNumber(tab)
+  local tNew = {}
   for key, value in pairs(tab) do
     if type(key) == "string" then
       local numberKey = tonumber(key)
       if numberKey then
-        tab[numberKey] = value
+        tNew[numberKey] = value
         tab[key] = nil
+      else
+        error("Found non-number key " .. key .. " in table")
       end
     end
   end
-  return tab
+  return tNew
 end
 
 return tableUtils
