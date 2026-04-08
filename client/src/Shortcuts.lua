@@ -77,7 +77,7 @@ local function handleDumpAttackPattern(playerNumber)
       if data then
         FileUtils.writeJson("training", data.extraInfo.dateGenerated .. "_" .. data.extraInfo.playerName .. "_" .. data.extraInfo.gpm .. "gpm.json", data, state)
       else
-        logger.warn("Tried to export attack patterns from a game that has not run physics yet")
+        logger.debug("Tried to export attack patterns from a stack that did not send any attacks")
       end
       return true
     end

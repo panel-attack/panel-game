@@ -1482,6 +1482,10 @@ function Stack:getAttackPatternData()
     end
   end
 
+  if #data.attackPatterns == 0 then
+    return
+  end
+
   local state = {keyorder = {"extraInfo", "playerName", "gpm", "matchLength", "dateGenerated", "mergeComboMetalQueue", "delayBeforeStart", "delayBeforeRepeat", "attackPatterns"}}
 
   return data, state

@@ -69,7 +69,7 @@ function save.readAttackFiles(path)
         save.readAttackFiles(current_path)
       else
         local training_conf = save.readAttackFile(current_path)
-        if training_conf ~= nil then
+        if training_conf ~= nil and training_conf.attackPatterns and #training_conf.attackPatterns > 0 then
           results[#results+1] = training_conf
         end
       end
