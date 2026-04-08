@@ -23,12 +23,13 @@ function Game1pChallenge:customLoad()
 end
 
 function Game1pChallenge:startNextScene()
+  -- match:deinit is the responsibility of the one switching out of the game scene
   if GAME.battleRoom.challengeComplete then
     -- We passed the last level, go to the recap.
-    GAME.navigationStack:replace(ChallengeModeRecapScene({challengeMode = GAME.battleRoom}))
+    GAME.navigationStack:replace(ChallengeModeRecapScene({challengeMode = GAME.battleRoom}), nil, function() self.match:deinit() end)
   else
     -- Level is done, go back to ready screen.
-    GAME.navigationStack:pop()
+    GAME.navigationStack:pop(nil, function() self.match:deinit() end)
   end
 end
 

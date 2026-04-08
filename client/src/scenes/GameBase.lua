@@ -290,6 +290,7 @@ function GameBase:readyToProceedToNextScene()
 end
 
 function GameBase:startNextScene()
+  -- match:deinit is the responsibility of the one switching out of the game scene
   GAME.navigationStack:pop(nil, function() self.match:deinit() end)
 end
 

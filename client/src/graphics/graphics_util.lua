@@ -13,6 +13,11 @@ local GraphicsUtil = {
   quadPool = {}
 }
 
+-- a local table to quickly crosscheck whether a quad is in the quadpool or not by using the quad as the index
+-- the calling code can always try to release the same quad twice and by keeping a reference we can make sure that doesn't happen
+---@type table<love.Quad, true?>
+local quadReference = {}
+
 ---@class PixelFontMap
 ---@field charWidth number
 ---@field charHeight number
@@ -174,6 +179,7 @@ function GraphicsUtil:newRecycledQuad(x, y, width, height, sw, sh)
     result = love.graphics.newQuad(x, y, width, height, sw, sh)
   else
     result = self.quadPool[#self.quadPool]
+    quadReference[result] = nil
     self.quadPool[#self.quadPool] = nil
     result:setViewport(x, y, width, height, sw, sh)
   end
@@ -185,9 +191,12 @@ end
 ---@param quad love.Quad?
 function GraphicsUtil:releaseQuad(quad)
   if quad then
-    if #self.quadPool >= maxQuadPool then
+    if quadReference[quad] then
+      logger.warn("Tried to release quad that is already in quad pool")
+    elseif #self.quadPool >= maxQuadPool then
       quad:release()
     else
+      quadReference[quad] = true
       self.quadPool[#self.quadPool+1] = quad
     end
   end

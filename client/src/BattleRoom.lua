@@ -540,9 +540,6 @@ function BattleRoom:onMatchEnded(match)
       GAME.netClient:reportLocalGameResult(winners)
     end
   else
-    -- match:deinit is the responsibility of the one switching out of the game scene
-    match:deinit()
-
     -- in the case of a network based abort (== opponent left / disconnected in some way),
     --  the network part of the battleRoom would unregister from the onMatchEnded signal
     --  and initialise the transition to wherever else before calling abort on the match to finalize it
