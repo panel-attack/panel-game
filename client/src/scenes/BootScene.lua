@@ -116,12 +116,12 @@ function BootScene:checkIfMigrationIsPossible()
         path = path .. "LOVE/"
       end
       path = path .. love.filesystem.getIdentity()
-      logger.debug("Trying to mount old install under " .. path)
 
       if not love.filesystem.mountFullPath(path, "oldInstall") then
         -- if we couldn't mount that directory, that means there is no old install
         logger.debug("No old install found")
       else
+        logger.debug("Successfully mounted old install under " .. path)
         if fileUtils.exists("oldInstall/conf.json") then
           return path
         end
