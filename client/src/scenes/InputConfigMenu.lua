@@ -6,6 +6,7 @@ local inputManager = require("client.src.inputManager")
 local class = require("common.lib.class")
 local InputConfigSlider = require("client.src.ui.InputConfigSlider")
 local KeyBindingMenuItem = require("client.src.ui.KeyBindingMenuItem")
+local InputDebugMenu = require("client.src.scenes.InputDebugMenu")
 
 -- Sometimes controllers register buttons as "pressed" even though they aren't. If they have been pressed longer than this they don't count.
 local MAX_PRESS_DURATION = 0.5
@@ -328,6 +329,7 @@ function InputConfigMenu:loadUI()
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("op_all_keys", nil, nil, function() self:setAllKeysStart() end)
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("Clear All Inputs", nil, false, function() self:clearAllInputs() end)
   menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("Reset Keys To Default", nil, false, function() self:resetToDefault() end)
+  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("Debug Input", nil, false, function() GAME.navigationStack:push(InputDebugMenu({})) end)
 
   -- Back button with warning for incomplete configurations
   self.backMenuItem = ui.MenuItem.createButtonMenuItem("back", nil, nil, self:createExitMenuFunction())
