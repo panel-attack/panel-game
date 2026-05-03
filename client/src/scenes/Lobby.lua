@@ -437,6 +437,7 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   self.lobbyMenu:addChild(self.backButton)
 
   local previousButton
+  local found = false
 
   if self.lobbyMenuStartingUp then
     self.lobbyMenu:select(self.lobbyMenu.children[2])
@@ -444,7 +445,6 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   elseif previousIndex then
     if copy[previousIndex].lobbyType then
       previousButton = copy[previousIndex]
-      local found = false
       if previousButton.lobbyType == "player" then
         for i, playerButton in ipairs(playerButtons) do
           if previousButton.player.publicId == playerButton.player.publicId then
@@ -501,7 +501,7 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   end
 
   if self.playerSubMenu then
-    if not lobbyDataV2.players[self.playerSubMenu.playerId] then
+    if not lobbyDataV2.players[self.playerSubMenu.playerId] or not found then
       self.playerSubMenu:yieldFocus()
     else
       for _, button in ipairs(self.playerSubMenu.children) do
