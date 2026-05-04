@@ -574,9 +574,9 @@ function Theme:loadCards()
     -- with backup from default theme
     self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "")
   end
-  -- load as many more chain cards as there are available until 999, we will substitute in the mystery card if a card is missing
-  self.chainCardLimit = 999
-  for i = 14, 999 do
+  -- load as many more chain cards as there are available until 9999, we will stop upon the first missing card
+  self.chainCardLimit = 9999
+  for i = 14, self.chainCardLimit do
     -- without backup from default theme
     self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "", wantsBackupChainCards)
     if self.images.IMG_cards[true][i] == nil then
