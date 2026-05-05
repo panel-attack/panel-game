@@ -56,7 +56,7 @@ Posición Puntos Jugador","Rangliste
  Rang  Punkte  Spieler","Classifica
   Posizione  Punteggio   Giocatore","ตารางคะแนน
 แรงค์ เรทติ้ง ผู้เล่น"
-lb_show_board,,Show Leaderboard,Afficher le classement,Mostrar Placar de Classificação,ランキングを表示,Mostrar Tabla de Puntuación,Rangliste anzeigen,Mostra la classifica,แสดงตารางคะแนน
+lb_show_board,,Show Leaderboard,Afficher le classement,Mostrar Placar de Classificação,ランキングを表示,Mostrar clasificación,Rangliste anzeigen,Mostra la classifica,แสดงตารางคะแนน
 lb_login,,Logging in...,Connexion en cours...,Iniciando sessão ...,ログインしています...,Iniciando Sesión,Anmeldung...,Accesso in corso...,กำลังเข้าสู่ระบบ
 lb_login_timeout,,"Login for ranked matches timed out.
 This server probably doesn't support ranking.
@@ -89,11 +89,11 @@ Puoi continuare a giocare in modalità non clasificata.","การ Login เข
 แต่คุณสามารถเล่นต่อแบบไม่ใช่ระบบ ranked ได้"
 lb_new_id,,need a new user id,besoin d'un nouvel identifiant utilisateur,necessário novo ID de usuário,新しいユーザーIDが必要です,Se necesita un nuevo ID de usuario,Du benötigst eine neue Spieler-ID.,Necessario nuovo ID utente.,ต้องการ user id ใหม่
 lb_received,,(wants to play with you :o),(vous invite à jouer :o),(quer jogar com você :o),（対戦を申し込まれました！（・o・））,(quiere jugar contigo :o),(möchte mit dir spielen),(vuole giocare con te :o),(อยากเล่นกับคุณ :o)
-lb_request,,(request sent),(demande envoyée),(solicitação enviada),（対戦申請中）,(petición enviada),(Anfrage gesendet),(richiesta inviata),คำร้องถูกส่งแล้ว
+lb_request,,(request sent),(demande envoyée),(solicitação enviada),（対戦申請中）,(solicitud enviada),(Anfrage gesendet),(richiesta inviata),คำร้องถูกส่งแล้ว
 lb_select_player,,Select a player name to ask for a match.,Selectionnez un joueur avec qui jouer.,Selecione um nome de jogador para solicitar uma partida.,プレイヤー名を選択して対戦を申し込んで下さい。,Selecciona un jugador para enviarle solicitud de partida.,"Wähle einen Spieler aus, um ihn herauszufordern.",Seleziona il nome di un giocatore con cui giocare.,กดที่ชื่อผู้เล่น เพื่อขอเล่นด้วย
 lb_set_connect,,Setting up connection...,Préparation de la connexion...,Estabelecendo conexão...,接続しています…,Estableciendo conexión...,Verbindungsaufbau...,Stabilendo la connessione...,กำลังเชื่ื่อมต่อ
-lb_hide_board,,Hide Leaderboard,Cacher le classement,Ocultar Placar de Classificação,ランキングを非表示,Ocultar Tabla de Puntuación,Rangliste verbergen,Nascondi la classifica,ซ่อนตารางคะแนน
-lb_spectate,,spectate,regarder,assistir,観戦する,mirar,zuschauen,Assisti,ดูคนอื่นเล่น
+lb_hide_board,,Hide Leaderboard,Cacher le classement,Ocultar Placar de Classificação,ランキングを非表示,Ocultar clasificación,Rangliste verbergen,Nascondi la classifica,ซ่อนตารางคะแนน
+lb_spectate,,spectate,regarder,assistir,観戦する,mirar a,zuschauen,Assisti,ดูคนอื่นเล่น
 lb_used_name,,"Error: name is taken :<
 
 
@@ -123,7 +123,7 @@ Pressione Trocar ou Voltar para continuar.","エラー：ユーザー名が使�
 Panel Attackが同時に2回起動されている場合発生する可能性もあります。
 
 
-入れ替えボタン、またはもどるボタンを押して下さい。","Error：El nombre ya está siendo usado :<
+入れ替えボタン、またはもどるボタンを押して下さい。","Error：El nombre ya está en uso :<
 
 
 Si justo has salido del servidor
@@ -151,7 +151,7 @@ Premi ""Swap"" o Indietro per continuare.","Error: ชื่อนี้มี�
 หรืออาจเกิดจากการเปิด Panel Attack สอง instance พร้อมกัน
 
 กดปุ่ม Swap หรือ Back เพื่อดำเนินการต่อ"
-lb_user_new,,"Welcome, new user: %1","Bienvenue, nouvel utilisateur : %1","Bem-vindo(a), novo usuário(a): %1",ようこそ、新しいユーザー：%1,Bienvenido: nuevo usuario %1,"Willkommen, neuer Spieler %1","Benvenuto, nuovo utente: %1","ยินดีต้อนรับ, new user: %1"
+lb_user_new,,"Welcome, new user: %1","Bienvenue, nouvel utilisateur : %1","Bem-vindo(a), novo usuário(a): %1",ようこそ、新しいユーザー：%1,Bienvenido: nuevo usuario: %1,"Willkommen, neuer Spieler %1","Benvenuto, nuovo utente: %1","ยินดีต้อนรับ, new user: %1"
 lb_user_update,,"Welcome, your username has been updated. 
 
 Old name:  ""%1""
@@ -196,10 +196,10 @@ mm_1_time,,1P time attack,1J contre la montre,1J contra o tempo,1P スコアア�
 mm_1_training,Vs training mode,1P training,Entraînement 1J,treinamento 1P,1P トレーニング,1J entrenamiento,1P Training,Allenamento 1P,1P ฝึกซ้อม
 mm_1_challenge_mode,Challenge Mode,Challenge Mode,Mode défi,Modo desafio,チャレンジモード,Modo Desafío,Herausforderungsmodus,Modalità sfida,โหมดท้าทาย
 mm_1_vs,,1P vs yourself,1J contre soi-même,1J vs você mesmo,1P じぶんとのたたかい,1J vs ti mismo,1P gegen dich selbst,1P vs te stesso,1P สู้กับตัวเอง
-mm_2_vs_local,,2P vs local game,2J en local,2J vs jogo local,2P ローカルVS,2J vs partida local,2P lokal,2P vs in locale,2P แข่งกันสองคน บนคอมเครื่องเดียวกัน
-mm_2_vs_online,,2P vs online %1,2J en ligne %1,2J vs online %1,2P オンラインVS %1,2J vs partida en línea %1,2P online %1,2P vs online %1,2P แข่งกับคนอื่นออนไลน์ %1
+mm_2_vs_local,,2P vs local game,2J en local,2J vs jogo local,2P ローカルVS,2J local,2P lokal,2P vs in locale,2P แข่งกันสองคน บนคอมเครื่องเดียวกัน
+mm_2_vs_online,,2P vs online %1,2J en ligne %1,2J vs online %1,2P オンラインVS %1,2J en línea %1,2P online %1,2P vs online %1,2P แข่งกับคนอื่นออนไลน์ %1
 mm_2_vs,,2P vs,2J VS,2J vs,2P VS,2J vs,2SP vs,2P vs,2P แข่งกับคนอื่น
-mm_configure,,Configure input,Configurer les touches,Configurar teclas,入力コンフィグ,Configurar teclas,Tastenkonfiguration,Configura i tasti,ตั้งค่าปุ่ม
+mm_configure,,Configure input,Configurer les touches,Configurar teclas,入力コンフィグ,Configurar entrada,Tastenkonfiguration,Configura i tasti,ตั้งค่าปุ่ม
 mm_fullscreen,,Fullscreen %1,Plein écran %1,Tela cheia %1,フルスクリーン %1,Pantalla completa %1,Vollbild %1,Schermo inteto 1%,เต็มจอ %1
 mm_music_test,,Music test,Test des musiques,Teste de música,サウンドテスト,Prueba de música,Musik-Test,Testa la musica,ทดสอบเพลง
 mm_no_support_fullscreen,,Your graphics card doesn't support canvases for fullscreen,Votre carte graphique ne supporte pas le plein écran,Sua placa de vídeo não suporta tela cheia,お使いのグラフィックカードはフルスクリーンのキャンバスに対応していません,Tu tarjeta gráfica no soporta bordes en pantalla completa.,Deine Grafikkarte unterstützt keine Vollbildauflösungen.,La tua scheda grafica non supporta la modalità schermo intero.,กราฟฟิคการ์ดของคุณไม่รองรับ canvas สำหรับเล่นเต็มจอ
@@ -210,7 +210,7 @@ mm_set_name,,Set name,Changer de pseudo,Trocar apelido,ユーザー名設定,Cam
 nt_ver_err,Shown when connecting to server with wrong version,"Your game version is out of date, DOWNLOAD the latest version of the game from https://panelattack.com","Votre version de jeu est obsolète, téléchargez la dernière version du jeu à partir de https://panelattack.com","Sua versão do jogo está desatualizada, faça o download da versão mais recente do jogo em https://panelattack.com",ゲームバージョンは古くなっています。http://panelatcack.comからゲームの最新バージョンをダウンロードしてください,"Tu versión de juego está desactualizada, descarga la última versión desde https://panelattack.com",Ihre Spielversion ist veraltet und laden Sie die neueste Version des Spiels von https://panelattack.com herunter,"La versione del gioco è obsoleta, scarica l'ultima versione del gioco da https://panelattack.com",เวอร์ชันเกมของคุณล้าสมัยดาวน์โหลดเกมล่าสุดจาก https://panelattack.com
 nt_conn_timeout,,Failed to connect to the server.,Impossible de se connecter au serveur.,Falha ao conectar o servidor.,サーバーに接続が失敗しました。,Error al conectarse al servidor.,Es konnte keine Verbindung zum Server hergestellt werden.,Errore di connessione al server.,การเชื่อมต่อกับ server ล้มเหลว
 nt_msg_err,,"Network error, message could not be decoded: ""%1""","Erreur réseau, le message ne peut pas être décodé: ""%1""","Erro de conexão, a mensagem não pôde ser codificada: ""%1""","ネットワークエラー、メッセージのデコード失敗: ""%1""","Error de red, el mensaje no pudo ser decodificado: ""%1""",Netzwerkfehler: Die folgende Nachricht konnte nicht entschlüsselt werden: %1,"Errore di network, il messaggio non può essere decodificato: ""%1""","การเชื่อมต่อล้มเหลว ข้อความไม่สามารถถอดรหัสได้: ""%1"""
-nt_player_err,,Server did not send number of players.,Le serveur n'a pas envoyé le nombre de joueurs.,O servidor não emitiu nº de jogadores.,サーバーからプレイヤー人数を受信しませんでした。,El servidor no envio la cantidad de jugadores.,Server schickte die Anzahl der Spieler nicht.,Il server non ha inviato il numero di giocatori.,server ไม่ได้แจ้งจำนวนผู้เล่น
+nt_player_err,,Server did not send number of players.,Le serveur n'a pas envoyé le nombre de joueurs.,O servidor não emitiu nº de jogadores.,サーバーからプレイヤー人数を受信しませんでした。,El servidor no envió la cantidad de jugadores.,Server schickte die Anzahl der Spieler nicht.,Il server non ha inviato il numero di giocatori.,server ไม่ได้แจ้งจำนวนผู้เล่น
 op_general,Options: General,General,Général,Em geral,全般的,General,Allgemein,Generale,ทั่วไป
 op_graphics,Options: Graphics,Graphics,Graphismes,Gráficos,グラフィック,Gráficos,Grafik,Grafica,กราฟฟิค
 op_audio,Options: Audio,Audio,Audio,Áudio.,オーディオ,Audio,Audio,Audio,เสียง
@@ -220,11 +220,11 @@ op_none,,none,rien,Nenhum,無し,Nada,keiner,Niente,ไม่มี
 op_on,,On,On,Ativ.,ON,On,An,On,เปิด
 op_off,,Off,Off,Desat.,OFF,Off,Aus,Off,ปิด
 op_all_keys,,Set all keys,Définir toutes les touches,Definir todas as teclas,すべてのキーを設定する,Definir todas las teclas,Alle Tasten festlegen,Imposta tutti i tasti,ตั้งค่าปุ่มทั้งหมด
-op_about_characters,,About custom characters,À propos des personnages personnalisés,Sobre personagens personalizados,カスタムキャラクターについて,Acerca de personajes personalizados,How to: Eigene Charaktere hinzufügen,A propostio dei personaggi personalizzabili,เกี่ยวกับตัวละคร custom
-op_about_themes,,About custom themes,À propos des thèmes personnalisés,Sobre temas personalizados,カスタムテーマについて,Acerca de temas personalizados,How to: Eigene Themes entwickeln,A proposito dei temi personalizzabili,เกี่ยวกับ custom themes
-op_about_stages,,About custom stages,À propos des terrains personnalisés,Sobre cenários personalizados,カスタムステージについて,Acerca de escenarios personalizados,How to: Eigene Arenen erstellen,A proposito degli scenari personalizzabili,เกี่ยวกับด่าน custom 
-op_about_panels,,About custom panels,À propos des blocs personnalisés,Sobre painéis personalizados,カスタムパネルについて,Acerca de paneles personalizados,How to: Eigene Panels kreieren,A propostio delle tessere personalizzabili,เกี่ยวกับ custom panels
-op_analytics,,Enable analytics,Activer les statistiques,Ativar estatísticas,解析を有効にする,Habilitar estadísticas,Statistiken aktivieren,Attiva statistiche,เปิด analytics
+op_about_characters,,About custom characters,À propos des personnages personnalisés,Sobre personagens personalizados,カスタムキャラクターについて,Acerca de los personajes personalizados,How to: Eigene Charaktere hinzufügen,A propostio dei personaggi personalizzabili,เกี่ยวกับตัวละคร custom
+op_about_themes,,About custom themes,À propos des thèmes personnalisés,Sobre temas personalizados,カスタムテーマについて,Acerca de los temas personalizados,How to: Eigene Themes entwickeln,A proposito dei temi personalizzabili,เกี่ยวกับ custom themes
+op_about_stages,,About custom stages,À propos des terrains personnalisés,Sobre cenários personalizados,カスタムステージについて,Acerca de los escenarios personalizados,How to: Eigene Arenen erstellen,A proposito degli scenari personalizzabili,เกี่ยวกับด่าน custom
+op_about_panels,,About custom panels,À propos des blocs personnalisés,Sobre painéis personalizados,カスタムパネルについて,Acerca de los paneles personalizados,How to: Eigene Panels kreieren,A propostio delle tessere personalizzabili,เกี่ยวกับ custom panels
+op_analytics,,Enable analytics,Activer les statistiques,Ativar estatísticas,解析を有効にする,Activar estadísticas,Statistiken aktivieren,Attiva statistiche,เปิด analytics
 op_copy_files,,"Hold on.  Copying an example folder to make this easier...
 
 
@@ -274,8 +274,8 @@ Non preoccuparti se la finestra diventa inattiva o ""non risponde"".","กรุ
 op_countdown,,Ready countdown,Compte à rebours de début de partie,Contagem regressiva,READYカウントダウン,Cuenta regresiva lista,Ready Countdown,Pronto per il conto alla rovescia,เตรียมพร้อมนับถอยหลัง
 op_debug_mode,Debug Mode button in options menu,Debug Mode,Mode debug,Modo de Depuração,デバッグモード,Modo Depuración,Debug Modus,Modalità Debug,โหมด debug
 op_default_char,,Use default characters,Utiliser les personnages par défaut,Usar personagens padrão,デフォルトのキャラクターを使用,Usar personajes por defecto.,Standardcharaktere verwenden,Usa i personaggi di base,ใช้ตัวละครค่าเริ่มต้น
-op_enter_name,,Enter your name:,Entrez votre pseudo :,Digite seu apelido:,ユーザー名を入力して下さい：,Ingresa tu nombre:,Gib deinen Benutzernamen ein:,Inserisci il tuo nome:,กรอกชื่อของคุณ:
-op_fps,,Show FPS,Afficher les IPS,Mostrar FPS,FPS表示,Mostrar FPS (cuadros por segundo),FPS anzeigen,Mostra FPS (frame al secondo),แสดง FPS
+op_enter_name,,Enter your name:,Entrez votre pseudo :,Digite seu apelido:,ユーザー名を入力して下さい：,Introduce tu nombre:,Gib deinen Benutzernamen ein:,Inserisci il tuo nome:,กรอกชื่อของคุณ:
+op_fps,,Show FPS,Afficher les IPS,Mostrar FPS,FPS表示,Mostrar FPS (fotogramas por segundo),FPS anzeigen,Mostra FPS (frame al secondo),แสดง FPS
 op_language,,Language,Langue,Idioma,言語,Idioma,Sprache,Lingua,ภาษา
 op_theme,,Theme,Thème,Tema,テーマ,Tema,Theme,Tema,ธีม
 op_scale,Setting that controls how much the game is scaled (resolution),Game Scale,Mise à l'échelle du jeu,Escala de jogo,ゲームスケール,Escala del juego,Spielskala,Scala del gioco,เสกลหน้าจอเกม
@@ -369,7 +369,7 @@ Sincronizando...","Du bist einem laufenden Spiel beigetreten.
 Hole zum aktuellen Stand auf...","Caricamento di una partita in corso.
 Sincronizzazione...","เข้าร่วมเกมที่กำลังแข่งอยู่สำเร็จ
 กำลังอัพเดทข้อมูลล่าสุด"
-pl_spectators,,Spectator(s):,Spectateurs(s) :,Espectador(es):,観客：,Espectador(es)：,Zuschauer:,Spettatori:,คนดู:
+pl_spectators,,Spectator(s):,Spectateurs(s) :,Espectador(es):,観客：,Espectador(es):,Zuschauer:,Spettatori:,คนดู:
 pl_speed,,Speed: %1,Vitesse : %1,Velocidade: %1,SPEED LV：%1,Velocidad: %1,Geschwindigkeit: %1,Velocità: %1,ความเร็ว: %1
 pl_stop,,Stop: %1,Délai stop : %1,Parada: %1,ストップ：%1,Pausa: %1,Stop: %1,Stop: %1,หยุด: %1
 pl_time,,Time: %1,Temps : %1,Tempo: %1,時間：%1,Tiempo: %1,Zeit: %1,Tempo: %1,เวลา: %1
@@ -381,7 +381,7 @@ Ceci est un bug connu, mais vous pouvez le signaler sur notre Discord sur :
 Este é um bug conhecido, mas você pode postar em #panel-attack-bugs-features
 se quiser.","ゲームの開始がタイムアウトしました。
 これは既知のバグですが、＃panel-attack-bugs-featuresに報告してもいいですよ。","Se ha agotado el tiempo para empezar la partida.
-Este es un error conocido, pero si queres puedes postearlo en #panel-attack-bugs-features","Die verfügbare Zeit für den Spielstart wurde überschritten.
+Este es un error conocido, pero si quieres puedes enseñarlo en #panel-attack-bugs-features","Die verfügbare Zeit für den Spielstart wurde überschritten.
 Das ist ein bekanntes Problem, aber du kannst es trotzdem in #panel-attack-bugs melden, wenn du möchtest.","Il caricamento della partita ha richiesto troppo tempo.
 Questo è un bug gà noto, ma puoi postarlo su #panel-attack-bugs-features
 se ti va.","ช่วงเริ่มเกมใช้เวลามากเกินปกติ
@@ -483,7 +483,7 @@ ss_touch,"Type of input method – touch, as in “touch screen”",Touch,Tactil
 ss_winrate,,Winrate:,Taux de victoire :,Taxa de vitórias:,勝率：,Tasa de victorias:,Gewinnrate:,Rateo delle vittorie:,อัตราการชนะ:
 ss_wins,,Wins:,Victoires :,Vitórias:,勝ち：,Victorias:,Siege:,Vittorie:,จำนวนเกมที่ชนะ:
 ss_ex_mode,,EX Mode,Mode EX,Modo EX,EXモード,Modo EX,EX,Modalità EX,โหมด EX 
-rp_browser_header,,~ Replay Browser ~,~ Bibliothèque des replays ~,~ Navegador de Replays ~,～リプレイブラウザ～,~ Explorador de Repeticiones ~,~ Replay Browser ~,~ Navigatore Replay ~,- คลัง replay -
+rp_browser_header,,~ Replay Browser ~,~ Bibliothèque des replays ~,~ Navegador de Replays ~,～リプレイブラウザ～,~ Navegador de repeticiones ~,~ Replay Browser ~,~ Navigatore Replay ~,- คลัง replay -
 rp_browser_info_header,,~ Replay Information ~,~ Informations du replay ~,~ Informações de Replays ~,～リプレイ情報～,~ Información de la repetición ~,~ Replay Informationen ~,~ Informazioni Replay ~,- ข้อมูล replay -
 rp_browser_current_dir,,Current directory: %1,Dossier actuel : %1,Pasta atual: %1,現在のディレクトリ：%1,Directorio actual: %1,Aktuelles Verzeichnis: %1,Elenco corrente: %1,ไดเรคทอรี่ปัจจุบัน: %1
 rp_browser_up,,up,monter,acima,戻る,volver,zurück ins übergeordnete Verzeichnis,su,ขึ้น
@@ -520,7 +520,7 @@ challenge_difficulty_6,level 10 - an average level 10 challenge,Whirlwind,Tourbi
 challenge_difficulty_7,level 10 - a hard level 10 challenge,Tempest,Tempête,Tempestade,嵐,Tempestad,Sturm,Tempesta,Tempest
 challenge_difficulty_8,level 10 - a really hard level 10 challenge,Hurricane,Ouragan,Furacão,ハリケーン,Huracán,Hurrikan,Uragano,Hurricane
 challenge_difficulty_9,level 11? - unused right now,Tornado,Tornade,Tornado,竜巻,Tornado,Tornado,Tornado,Tornado
-auto_updater_version_warning,Warning shown to users with an old autoupdater,"New updater available, please download from","Nouveau gestionnaire de mises à jour disponible, veuillez installer à partir de","Novo autoupdater disponível, instale de",新しいautoupdaterを利用できます。からインストールしてください,"Nuevo autoupdater disponible, instálalo desde","Ein neuer Updater ist verfügbar, bitte lade ihn unter folgendem Link herunter:","Nuovo autoupdater disponibile, installa da",มีระบบอัพเดทอัตโนมัติเวอร์ชั่นใหม่ กรุณา Install โดยใช้ระบบนั้น
+auto_updater_version_warning,Warning shown to users with an old autoupdater,"New updater available, please download from","Nouveau gestionnaire de mises à jour disponible, veuillez installer à partir de","Novo autoupdater disponível, instale de",新しいautoupdaterを利用できます。からインストールしてください,"Nuevo autoactualizador disponible, instálalo desde","Ein neuer Updater ist verfügbar, bitte lade ihn unter folgendem Link herunter:","Nuovo autoupdater disponibile, installa da",มีระบบอัพเดทอัตโนมัติเวอร์ชั่นใหม่ กรุณา Install โดยใช้ระบบนั้น
 username_blank_warning,shown in user name input when nothing is entered,Username cannot be blank,Le nom d'utilisateur ne peut pas être vide,O nome de usuário não pode ficar em branco,ユーザー名を空白にすることはできません,El nombre de usuario no puede estar en blanco,Benutzername darf nicht leer sein,Il nome utente non può essere vuoto,Username ไม่สามารถเป็นค่าว่างได้
 op_shakeIntensity,Option for the intensity of the shake animation,Shake Animation Intensity,Intensité de l'animation de secousse,Intensidade da animação de tremor,揺れアニメーション強度,Intensidad de la animación de sacudida,Stärke der Aufprallanimation,Intensità dell'animazione di scuotimento,ความเข้มของแอนิเมชันสั่น
 pause_resume,Label for the resume button in the pause menu,Resume,Continuer,Retomar,再開,Continuar,Fortsetzen,Riprendi,ดำเนินต่อ
@@ -634,7 +634,7 @@ puzzle_help_solution_playing,When solution is currently playing,Solution playing
 op_about_attack_files,Information about attack files and mod installation,About Attack Files,À propos des fichiers Attack,Sobre arquivos de ataque,アタックファイルについて,Acerca de los archivos de ataque,Über Attack-Dateien,Informazioni sui file di attacco,เกี่ยวกับ Attack Files
 op_system_info,Button for showing system information,System Info,Informations système,Informações do sistema,システム情報,Información del sistema,Systeminformationen,Informazioni di sistema,ข้อมูลระบบ
 op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,Performance/Consommation de la batterie,Desempenho/Dreno de bateria,パフォーマンス/バッテリー消費,Rendimiento/Consumo de batería,Performance/Stromverbrauch,Prestazioni/Consumo batteria,ประสิทธิภาพ/การใช้แบตเตอรี่
-op_about_installing_mods,Information about installing mods,Installing Mods,Installation de mods,Instalando mods,MODのインストール,Instalando mods,Mods installieren,Installazione mod,การติดตั้งม็อด
+op_about_installing_mods,Information about installing mods,Installing Mods,Installation de mods,Instalando mods,MODのインストール,Cómo instalar mods,Mods installieren,Installazione mod,การติดตั้งม็อด
 mod_manage_icon,Label for icon in mod management,Icon,Icône,Ícone,アイコン,Icono,Symbol,Icona,ไอคอน
 mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Name,Nome,ชื่อ
 mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
@@ -644,7 +644,7 @@ mm_2_time,,2P time attack,2J contre la montre,2J contra o tempo,2P スコアア�
 op_about_puzzles,,About custom puzzles,À propos des puzzles personnalisés,Sobre quebra-cabeças personalizados,カスタムパズルについて,Acerca de los puzles personalizados,How to: Eigene Puzzles erstellen,A proposito dei puzzle personalizzabili,เกี่ยวกับ custom puzzles
 discord_welcome_title,Title for Discord community welcome screen,Welcome to Panel Attack!,Bienvenue dans Panel Attack!,Bem-vindo ao Panel Attack!,パネルアタックへようこそ！,¡Bienvenido a Panel Attack!,Willkommen bei Panel Attack!,Benvenuti in Panel Attack!,ยินดีต้อนรับสู่ Panel Attack!
 discord_message_line1,First line of Discord welcome message,"Join our Discord to meet players, share ideas, and talk all things Panel Attack.","Rejoignez notre Discord pour rencontrer des joueurs, partager vos idées et discuter de tout ce qui concerne Panel Attack.","Junte-se ao nosso Discord para conhecer jogadores, compartilhar ideias e falar tudo sobre Panel Attack.",Discordに参加してプレイヤーと出会い、アイデアを共有し、パネルアタックのすべてについて語り合いましょう。,"Únete a nuestro Discord para conocer jugadores, compartir ideas y hablar de todo lo relacionado con Panel Attack.","Tritt unserem Discord bei, lerne Spieler kennen, teile Ideen und sprich über alles rund um Panel Attack.","Unisciti al nostro Discord per conoscere giocatori, condividere idee e parlare di tutto ciò che riguarda Panel Attack.",เข้าร่วม Discord ของเราเพื่อพบปะผู้เล่น แชร์ไอเดีย และพูดคุยทุกเรื่องเกี่ยวกับ Panel Attack
-discord_message_line2,Second line of Discord welcome message,"Show off your mods and art, rediscover classic characters and stages, and create exciting new ones.","Présentez vos mods et vos créations, redécouvrez des personnages et des stages classiques, et créez-en de nouveaux passionnants.","Mostre seus mods e artes, redescubra personagens e fases clássicas e crie novidades empolgantes.",自分のMODやアートを披露し、クラシックなキャラクターやステージを再発見し、ワクワクする新しい作品を作りましょう。,"Presume tus mods y arte, redescubre personajes y escenarios clásicos y crea otros nuevos emocionantes.","Zeige deine Mods und Kunst, entdecke bekannte Charaktere und Arenen neu und erschaffe deine eigenen.","Mostra i tuoi mod e le tue opere, riscopri personaggi e stage classici e crea nuove emozionanti creazioni.",โชว์ม็อดและงานศิลป์ของคุณ ค้นพบตัวละครและฉากคลาสสิกอีกครั้ง และสร้างสิ่งใหม่ที่น่าตื่นเต้น
+discord_message_line2,Second line of Discord welcome message,"Show off your mods and art, rediscover classic characters and stages, and create exciting new ones.","Présentez vos mods et vos créations, redécouvrez des personnages et des stages classiques, et créez-en de nouveaux passionnants.","Mostre seus mods e artes, redescubra personagens e fases clássicas e crie novidades empolgantes.",自分のMODやアートを披露し、クラシックなキャラクターやステージを再発見し、ワクワクする新しい作品を作りましょう。,"Presume de tus mods y arte, redescubre personajes y escenarios clásicos y crea otros nuevos emocionantes.","Zeige deine Mods und Kunst, entdecke bekannte Charaktere und Arenen neu und erschaffe deine eigenen.","Mostra i tuoi mod e le tue opere, riscopri personaggi e stage classici e crea nuove emozionanti creazioni.",โชว์ม็อดและงานศิลป์ของคุณ ค้นพบตัวละครและฉากคลาสสิกอีกครั้ง และสร้างสิ่งใหม่ที่น่าตื่นเต้น
 discord_message_line3,Third line of Discord welcome message,Compete in monthly tournaments and join events for players of every skill level!,Participez à des tournois mensuels et rejoignez des événements pour tous les niveaux !,Compita em torneios mensais e participe de eventos para jogadores de todos os níveis!,毎月のトーナメントで競い合い、あらゆるスキルレベルのプレイヤー向けのイベントに参加しましょう！,Compite en torneos mensuales y únete a eventos para jugadores de todos los niveles.,Tritt in monatlichen Turnieren an und nimm an Events für Spielende aller Fähigkeitsstufen teil!,Competi nei tornei mensili e partecipa a eventi per giocatori di ogni livello di abilità!,เข้าร่วมแข่งขันในทัวร์นาเมนต์รายเดือนและกิจกรรมสำหรับผู้เล่นทุกระดับฝีมือ!
 discord_join_link,Button to join Discord server,Join Discord Server,Rejoindre le serveur Discord,Entrar no servidor Discord,Discordサーバーに参加,Unirse al servidor de Discord,Discord-Server beitreten,Unisciti al server Discord,เข้าร่วมเซิร์ฟเวอร์ Discord
 next_button,Text shown to continue to next screen,Next,Suivant,Próximo,次へ,Siguiente,Weiter,Avanti,ถัดไป
