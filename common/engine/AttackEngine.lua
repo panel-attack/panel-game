@@ -1,6 +1,7 @@
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
+local Queue = require("common.lib.Queue")
 
 -- A pattern for sending garbage
 ---@class AttackPattern
@@ -115,7 +116,7 @@ function AttackEngine.run(self)
   -- assumption is that only things like combo storm don't disable the queue limit
   -- as all garbage gets collected to a single timer thanks to the mechanic of the outgoing garbage queue having any value greater than 1 in the queue means
   --  that the recipient is stalling acceptance so we shouldn't push more inside
-  if self.disableQueueLimit or self.outgoingGarbage.transitTimers:len() <= 6 then
+  if self.disableQueueLimit or Queue.len(self.outgoingGarbage.transitTimers) <= 6 then
     for i = 1, #self.attackPatterns do
       if self.stopWatch >= self.attackPatterns[i].startTime then
         local difference = self.stopWatch - self.attackPatterns[i].startTime

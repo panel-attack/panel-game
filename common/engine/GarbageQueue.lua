@@ -103,14 +103,16 @@ end
 -- Holds garbage in a queue and follows a specific order for which types should be popped out first.
 ---@class GarbageQueue : Signal
 ---@field stagedGarbage Garbage[] all garbage that is in the staging stage, garbage is reordered from lowest to highest priority with every new piece of garbage
----@field garbageInTransit table<integer, Garbage[]> holds all garbage that left staging phase in a non-continously integer indexed hash <br>
---- the clock time for delivery is used as the index, meaning it has a lot of gaps
----@field history Garbage[] references all garbage that was ever pushed to this queue in the order that it was pushed <br>
---- mainly exists for easier evaluation / testcases
----@field transitTimers Queue holds the clock times for which garbageInTransit has garbage in a continuously integer indexed ordered array
---- for easier access and order sensitive iteration <br>
---- all calls to Queue functions should be done via access to the class function: Queue.func(self.transitTimers, args) <br>
---- that is in order to avoid having to rollback copy the metatable along with the actual content
+---
+---holds all garbage that left staging phase in a non-continously integer indexed hash <br>
+---the clock time for delivery is used as the index, meaning it has a lot of gaps
+---@field garbageInTransit table<integer, Garbage[]>
+---@field history Garbage[] references all garbage that was ever pushed to this queue in the order that it was pushed <br> mainly exists for easier evaluation / testcases
+---
+---holds the clock times for which garbageInTransit has garbage in a continuously integer indexed ordered array for easier access and order sensitive iteration <br>
+---all calls to Queue functions should be done via access to the class function: Queue.func(self.transitTimers, args) <br>
+---that is in order to avoid having to rollback copy the metatable along with the actual content
+---@field transitTimers Queue
 ---@field currentChain ChainGarbage? the chain garbage that is currently being grown
 ---@field illegalStuffIsAllowed boolean? illegal stuff means that chains may be queued as combos instead
 ---@field treatMetalAsCombo boolean?
