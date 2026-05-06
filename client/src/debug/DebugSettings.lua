@@ -77,7 +77,7 @@ local settingDefinitions = {
     default = 0,
     label = "VS Frames Behind",
     min = 0,
-    max = 200,
+    max = 256,
     debugBuildOnly = true
   },
   {

@@ -332,8 +332,16 @@ local function handleGameAbort(self, gameAbortMessage)
     self.room.match:abort()
     self.room.match:deinit()
     self.state = states.ROOM
-    transition = MessageTransition(love.timer.getTime(), 5, "Game aborted by " .. (gameAbortMessage.source or "unknown"), false)
-    GAME.navigationStack:pop(transition)
+    if not gameAbortMessage.source or gameAbortMessage.source ~= GAME.localPlayer.name then
+      -- only pop if the local player is not the source of the abort
+      -- otherwise this might obscure the network error
+      local infoMessage = loc("game_abort", gameAbortMessage.source or loc("unknown_player"))
+      if gameAbortMessage.reason and gameAbortMessage.reason == "latency_error" then
+        infoMessage = infoMessage .. ": " .. loc("ss_latency_error")
+      end
+      transition = MessageTransition(love.timer.getTime(), 5, infoMessage, false)
+      GAME.navigationStack:pop(transition)
+    end
   end
 end
 

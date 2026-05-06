@@ -627,7 +627,7 @@ function Server:processMessage(message, connection)
       self.playerToRoom[player]:handleGameOverOutcome(message, player)
       return true
     elseif (player.state == "playing" or player.state == "paused") and message.matchAbort then
-      self.playerToRoom[player]:abortGame(player)
+      self.playerToRoom[player]:handleGameAbort(player)
     elseif (player.state == "playing" or player.state == "character select" or player.state == "paused") and message.leave_room then
       self:handleLeaveRoom(player, player.name .. " left")
       return true

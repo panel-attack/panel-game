@@ -499,9 +499,11 @@ local abortGameTemplate = {
 }
 
 ---@param source ServerPlayer who requested the abort
-function ServerProtocol.sendGameAbort(source)
+---@param reason string? additional information to localize; may be nil for 1p aborts
+function ServerProtocol.sendGameAbort(source, reason)
   local abortGameMessage = abortGameTemplate
   abortGameMessage.content.source = source.name
+  abortGameMessage.content.reason = reason
 
   return {
     messageType = msgTypes.jsonMessage,
