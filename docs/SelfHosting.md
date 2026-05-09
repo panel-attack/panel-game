@@ -1,6 +1,6 @@
 # Self-Hosting a Panel Attack Server
 
-Guide for running your own server on a Hetzner VPS, completely separate from panelattack.com and betaserver.panelattack.com.
+Guide for running your own server on a Vultr VPS, completely separate from panelattack.com and betaserver.panelattack.com.
 
 **Why separate?** Player accounts, rankings, replays, and the database all live on the VPS — nothing is shared with production. The client stores credentials per server IP, so players get a fresh account on your server automatically.
 
@@ -13,26 +13,35 @@ Two production connections have been cut in `bramp/multi-player`:
 | `client/src/scenes/MainMenu.lua:85` | "2 vs Online" now defaults to `localhost` instead of `panelattack.com` |
 | `main.lua:298` | Crash reporter disabled — errors no longer sent to production |
 
-Once you have your Hetzner IP, update `MainMenu.lua:85` from `"localhost"` to your server IP (and keep it out of git with `git update-index --assume-unchanged`).
+Once you have your server IP, update `MainMenu.lua:85` from `"localhost"` to your server IP (and keep it out of git with `git update-index --assume-unchanged client/src/scenes/MainMenu.lua`).
 
 ---
 
-## 1. Provision a Hetzner VPS (~5 min)
+## 1. Provision a Vultr VPS (~5 min)
 
-1. Create an account at [hetzner.com/cloud](https://hetzner.com/cloud)
-2. New Project → **Add Server**:
-   - **Location:** Ashburn, VA (US East) or Hillsboro, OR (US West)
-   - **Image:** Ubuntu 24.04
-   - **Type:** CX22 (2 vCPU, 4 GB RAM, ~$4.20/mo)
-   - **SSH Key:** paste your public key (`cat ~/.ssh/id_ed25519.pub`)
-   - **Firewall:** create one, add rule — TCP inbound port `49569`
-3. Click Create, note the IP address
+1. Sign up at **vultr.com**
+2. Deploy → **Cloud Compute**
+3. Choose settings:
+   - **Location:** New York, Chicago, Atlanta, or Dallas (US East/Central for low latency)
+   - **Image:** Ubuntu 24.04 LTS
+   - **Plan:** Regular Cloud Compute — **$5/mo** (1 vCPU, 1 GB RAM) or $3.50/mo (512 MB, IPv6 + IPv4)
+   - **SSH Keys:** add your public key (`cat ~/.ssh/id_ed25519.pub`)
+4. Click Deploy — server is live in ~60 seconds, note the IP
+
+**Firewall:** Go to **Manage → Settings → Firewall** (or Network → Firewall Groups) and allow TCP inbound port `49569`.
 
 ---
 
-## 2. Run the Setup Script
+## 2. Open the Firewall Port
 
-Copy the script below, save it as `setup_server.sh`, upload and run it on the VPS:
+In Vultr dashboard → your instance → **Settings → Firewall** (or go to **Networking → Firewall Groups**):
+- Add a rule: Protocol **TCP**, Port **49569**, Source **Any**
+
+Or just do it on the server itself after SSHing in (step 3 handles this via ufw if needed).
+
+## 3. Run the Setup Script
+
+Save the script below as `setup_server.sh`, then upload and run it:
 
 ```sh
 scp setup_server.sh root@YOUR_SERVER_IP:~/
@@ -123,12 +132,10 @@ local debugMenuItems = {
 
 Enable the debug menu in-game: **Options → Debug → Show Debug Servers**
 
-> **Do not commit this change.** Your server IP doesn't belong in the public repo.
-> Keep it as a local-only edit with:
+> **Do not commit this change.** Keep it local:
 > ```sh
 > git update-index --assume-unchanged client/src/scenes/MainMenu.lua
 > ```
-> To start tracking it again: `git update-index --no-assume-unchanged client/src/scenes/MainMenu.lua`
 
 ---
 
@@ -140,34 +147,26 @@ systemctl status panel-attack      # should show: active (running)
 journalctl -u panel-attack -f      # should show server tests passing, then quiet
 ```
 
-Then in the game client: Main Menu → **My Server** → should reach the lobby.
+Then in the game client: **Options → Debug → Show Debug Servers** → Main Menu → **My Server** → should reach the lobby.
 
 ---
 
 ## Ongoing Maintenance
 
-**Deploy a code update:**
 ```sh
+# Deploy a code update
 ssh root@YOUR_SERVER_IP
-cd /opt/panel-attack && git pull
+cd /opt/panel-attack && git pull && systemctl restart panel-attack
+
+# View live logs
+journalctl -u panel-attack -f
+
+# Change server config (port, engine version, etc.)
+# Edit server/server_globals.lua then restart
 systemctl restart panel-attack
 ```
 
-**View live logs:**
-```sh
-journalctl -u panel-attack -f
-```
-
-**Change server config** (port, engine version, etc.): edit `server/server_globals.lua` on the VPS, then `systemctl restart panel-attack`.
-
 ---
-
-## Notes
-
-- Server data (SQLite DB, players, replays) lives in `/opt/panel-attack/` — delete this directory to reset everything
-- Client stores per-server credentials in `servers/{SERVER_IP}/user_id.txt` locally — each server gets independent accounts
-- The `lsqlite3`, `socket`, and `lfs` `.so` files in the repo are pre-compiled for dev machines; the luarocks install above provides fresh builds for the VPS
-- If you want ranked play, generate a new `csprng_seed.txt` on the server (the default one is shared via the public repo)
 
 ## What's Protected by .gitignore
 
