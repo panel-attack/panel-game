@@ -451,6 +451,7 @@ end
 ---@return function
 function Lobby:requestJoinRoomFunction(room, slotNumber)
   return function()
+    logger.debug("Requesting to join room " .. tostring(room.roomNumber) .. " at slot " .. tostring(slotNumber))
     GAME.netClient:requestJoinRoom(room.roomNumber, slotNumber)
     GAME.theme:playValidationSfx()
   end
@@ -746,6 +747,23 @@ function Lobby:openPlayerSubMenu(playerId, button)
           onClick = self:requestJoinRoomFunction(targetRoom, slotNumber)
         })
         subMenu:addChild(quickJoin)
+      end
+    end
+  end
+
+  -- If LOCAL player is in a partial team room, offer invite buttons
+  local localPlayerInfo = lobbyDataV2.players[GAME.localPlayer.publicId]
+  if localPlayerInfo and localPlayerInfo.roomNumber then
+    local myRoom = lobbyDataV2.rooms[localPlayerInfo.roomNumber]
+    if myRoom and myRoom.openSlots and #myRoom.openSlots > 0 then
+      for _, slotNumber in ipairs(myRoom.openSlots) do
+        local slotLabel = getSlotLabel(myRoom, slotNumber)
+        local inviteButton = ui.TextButton({
+          label = ui.Label({text = "Invite to " .. slotLabel, translate = false}),
+          width = 120,
+          onClick = self:requestInviteFunction(playerId, myRoom, slotNumber)
+        })
+        subMenu:addChild(inviteButton)
       end
     end
   end

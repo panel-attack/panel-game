@@ -406,12 +406,8 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
-  -- Check if the slot is valid (next available slot)
-  local expectedSlot = #room.players + 1
-  if slotNumber ~= expectedSlot then
-    logger.warn("Player " .. player.name .. " tried to join room " .. roomNumber .. " at invalid slot " .. slotNumber .. " (expected " .. expectedSlot .. ")")
-    return false
-  end
+  -- Slot number is informational - we always add to the next available position
+  local actualSlot = #room.players + 1
 
   -- Enable no delay for multiplayer
   ---@diagnostic disable-next-line: invisible
@@ -427,7 +423,7 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     -- Send addToRoom message to the joining player
     player:sendJson(ServerProtocol.addToRoom(room, nil))
 
-    logger.info("Player " .. player.name .. " joined room " .. roomNumber .. " as player " .. slotNumber)
+    logger.info("Player " .. player.name .. " joined room " .. roomNumber .. " as player " .. actualSlot)
   end
 
   return success
@@ -750,8 +746,17 @@ function Server:broadCastLobbyIfChanged()
     local messageV2 = ServerProtocol.lobbyStateV2(lobbyStateV2.players, lobbyStateV2.rooms)
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
-      if player and player.state == "lobby" then
-        connection:sendJson(messageV2)
+      if player then
+        -- Send to players in lobby OR players in partial rooms (waiting for more players)
+        local inLobby = player.state == "lobby"
+        local inPartialRoom = false
+        local room = self.playerToRoom[player]
+        if room and not room:isFull() then
+          inPartialRoom = true
+        end
+        if inLobby or inPartialRoom then
+          connection:sendJson(messageV2)
+        end
       end
     end
     self.lobbyChanged = false
