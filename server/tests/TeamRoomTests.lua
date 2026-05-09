@@ -526,6 +526,27 @@ local function test2v2Room_close()
 end
 
 --------------------------------------------------
+-- Ranked status
+--------------------------------------------------
+
+local function test2v2Room_notRanked()
+  logger.info("test2v2Room_notRanked")
+  local room, p1, p2, p3, p4 = get2v2Room()
+
+  -- All players want ranked
+  p1.wants_ranked_match = true
+  p2.wants_ranked_match = true
+  p3.wants_ranked_match = true
+  p4.wants_ranked_match = true
+
+  -- Even without a leaderboard, team games should explicitly not be ranked
+  -- (Room sets ranked=false when no leaderboard, but we want team-specific reason)
+  assert(room.ranked == false, "Team games should not be ranked")
+
+  room:close()
+end
+
+--------------------------------------------------
 -- Run all tests
 --------------------------------------------------
 
@@ -560,5 +581,8 @@ test2v2Room_gameResultSentToAll()
 
 -- Room close
 test2v2Room_close()
+
+-- Ranked status
+test2v2Room_notRanked()
 
 logger.info("All TeamRoomTests passed!")

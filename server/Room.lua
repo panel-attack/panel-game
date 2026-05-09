@@ -301,6 +301,10 @@ end
 ---@return boolean # if the players may play ranked
 ---@return string[] reasons why or why not they may play ranked or what caveats apply to playing ranked
 function Room:rating_adjustment_approved()
+  if self.teams then
+    return false, {"Team games are not ranked"}
+  end
+
   if not self.leaderboard then
     return false, {"Room has no leaderboard"}
   end
