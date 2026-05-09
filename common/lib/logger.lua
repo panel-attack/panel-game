@@ -11,8 +11,15 @@ else
 end
 
 local logger = {
-  messageBuffer = RingBuffer(2048)
+  messageBuffer = RingBuffer(2048),
+  logFile = nil
 }
+
+if love then
+  local sourceDir = love.filesystem.getSourceBaseDirectory()
+  local logPath = sourceDir .. "/logs/client.log"
+  logger.logFile = io.open(logPath, "w")
+end
 
 ---@enum LogLevel
 logger.levels = {
@@ -76,7 +83,10 @@ function direct_log(prefix, msg)
   print(message)
   logger.messageBuffer:push(message)
   if not SERVER_MODE then
-    -- the space in the string below is on purpose
+    if logger.logFile then
+      logger.logFile:write(message .. "\n")
+      logger.logFile:flush()
+    end
     if prefix == "ERROR" or prefix == " WARN" then
       love.filesystem.append("warnings.txt", message .. "\n")
     end

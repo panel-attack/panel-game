@@ -127,9 +127,7 @@ function Lobby:initLobbyMenu()
     label = self.teamCreateButtonLabel,
     width = self.lobbyMenuWidth,
     onClick = function(button)
-      logger.debug("teamCreateButton clicked")
       if self:isLocalPlayerInRoom() then
-        logger.debug("  isLocalPlayerInRoom = true, leaving room")
         local playerCount = self:getRoomPlayerCount()
         if playerCount > 1 then
           -- Show confirmation dialog
@@ -143,14 +141,11 @@ function Lobby:initLobbyMenu()
 
       -- open team composition options first, then go one level deeper for garbage mode
       if self.teamCreateMenu then
-        logger.debug("  teamCreateMenu exists, yielding focus")
         self.teamCreateMenu:yieldFocus()
         return
       end
 
-      logger.debug("  creating team submenu")
       local x, y = button:getScreenPos()
-      logger.debug("  button pos: " .. tostring(x) .. ", " .. tostring(y))
       local subMenu = ui.ScrollMenu({
         x = x + self.lobbyMenu.width + 8,
         y = y,
@@ -258,7 +253,6 @@ function Lobby:initLobbyMenu()
         subMenu:select(subMenu.children[1])
       end
 
-      logger.debug("  subMenu children count: " .. #subMenu.children)
       self.teamCreateMenu = subMenu
       self.lobbyMenu:setFocus(subMenu, function()
         if self.teamGarbageMenu then
@@ -269,7 +263,6 @@ function Lobby:initLobbyMenu()
         self.teamCreateMenu = nil
       end)
       self.uiRoot:addChild(subMenu)
-      logger.debug("  subMenu added to uiRoot")
     end
   })
   self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})

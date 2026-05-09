@@ -98,9 +98,39 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   local maxPlayers = self.room.mode.playerCount or 2
   if playerCount < maxPlayers then
     -- Stay in lobby - room will show in lobby list with open slots
-    -- lobbyStateV2 update will refresh the display
     logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
-    self.state = states.LOBBY
+    self.state = states.ONLINE
+
+    -- Update local lobby data with the new room so UI can display it
+    if self.lobbyDataV2 and self.room.roomNumber then
+      local roomNumber = self.room.roomNumber
+      local playerIds = {}
+      for i, player in ipairs(self.room.players) do
+        playerIds[i] = player.publicId
+      end
+      -- Calculate open slots
+      local openSlots = {}
+      for slot = playerCount + 1, maxPlayers do
+        openSlots[#openSlots + 1] = slot
+      end
+      self.lobbyDataV2.rooms[roomNumber] = {
+        roomNumber = roomNumber,
+        players = playerIds,
+        spectators = {},
+        state = "waiting",
+        wins = {},
+        gameModeId = self.room.mode.name,
+        maxPlayers = maxPlayers,
+        openSlots = openSlots,
+      }
+      -- Update local player's room assignment
+      local localId = GAME.localPlayer.publicId
+      if self.lobbyDataV2.players[localId] then
+        self.lobbyDataV2.players[localId].roomNumber = roomNumber
+      end
+      -- Emit signal to refresh lobby UI
+      self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+    end
     return
   end
 
@@ -168,6 +198,7 @@ local function processLeaveRoomMessage(self, message)
     -- and then shutdown the room
     self.room:shutdown()
     self.room = nil
+    GAME.battleRoom = nil
 
     self.state = states.ONLINE
     GAME.navigationStack:popToName("Lobby", transition)
@@ -473,6 +504,7 @@ local NetClient = class(function(self)
     create_room = messageListeners.create_room,
     addToRoom = messageListeners.addToRoom,
     challengeUpdate = messageListeners.challengeUpdate,
+    leave_room = messageListeners.leave_room,
   }
 
   -- all listeners running while in a room but not in a match
@@ -518,6 +550,23 @@ function NetClient:leaveRoom()
 
     -- the server sends us back the confirmation that we left the room
     -- so we reenter ONLINE state via processLeaveRoomMessage, not here
+  elseif self.room then
+    -- Connection lost but we're still in a room locally - clean up
+    logger.info("Cleaning up room locally (disconnected)")
+    local roomNumber = self.room.roomNumber
+    self.room:shutdown()
+    self.room = nil
+    GAME.battleRoom = nil
+
+    -- Update local lobby data
+    if self.lobbyDataV2 and roomNumber then
+      self.lobbyDataV2.rooms[roomNumber] = nil
+      local localId = GAME.localPlayer.publicId
+      if self.lobbyDataV2.players[localId] then
+        self.lobbyDataV2.players[localId].roomNumber = nil
+      end
+      self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+    end
   end
 end
 

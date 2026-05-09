@@ -9,8 +9,11 @@ require("client.src.developer")
 function love.conf(t)
   -- Set the identity before loading the config file
   -- as we need it set to get to the correct load directory.
-  love.filesystem.setIdentity("Panel Attack")
+  love.filesystem.setIdentity(os.getenv("LOVE_IDENTITY") or "Panel Attack")
   readConfigFile(config)
+  if os.getenv("PLAYER_NAME") then
+    config.name = os.getenv("PLAYER_NAME")
+  end
 
   --t.identity = "" -- (already set above) -- The name of the save directory (string)
   t.appendidentity = false            -- Search files in source directory before save directory (boolean)

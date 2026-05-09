@@ -88,6 +88,7 @@ common/
 
 **Client:** terminal + saved to `logs/client.log`
 - Read: `tail -f logs/client.log` or `cat logs/client.log`
+- Always use `zsh run_client.sh` — never run love directly or hardcode the love path
 
 **Local server:** terminal + saved to `logs/server.log`
 - Read: `tail -f logs/server.log` or `cat logs/server.log`
