@@ -1,0 +1,14 @@
+# Server data — generated at runtime, never commit
+csprng_seed.txt
+PADatabase.sqlite3
+players.txt
+leaderboard.csv
+GameResults.csv
+ftp/
+reports/
+placement_matches/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp

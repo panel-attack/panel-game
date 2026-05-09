@@ -82,7 +82,7 @@ function MainMenu:createMainMenu()
       switchToScene(ChallengeModeMenu())
     end),
     ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
-      switchToScene(Lobby({serverIp = "panelattack.com"}))
+      switchToScene(Lobby({serverIp = "localhost"}))
     end),
     ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
       switchToScene(LocalGameModeSelectionScene())

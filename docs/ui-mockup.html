@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Attack - Multi-Player UI Mockups</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 20px;
+    }
+    h1 { text-align: center; margin-bottom: 30px; color: #fff; }
+    h2 { margin: 40px 0 20px; color: #8be9fd; border-bottom: 1px solid #444; padding-bottom: 10px; }
+    h3 { margin: 20px 0 10px; color: #f8f8f2; }
+
+    .canvas {
+      width: 1280px;
+      height: 720px;
+      background: #16213e;
+      border: 2px solid #0f3460;
+      margin: 20px auto;
+      position: relative;
+      transform-origin: top left;
+    }
+
+    .scale-50 { transform: scale(0.5); margin-bottom: -360px; }
+
+    .stack {
+      position: absolute;
+      background: linear-gradient(180deg, #1a1a3e 0%, #0d0d1a 100%);
+      border: 3px solid #4a4a8a;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .stack.team-a { border-color: #4a9eff; }
+    .stack.team-b { border-color: #ff6b6b; }
+    .stack.solo { border-color: #50fa7b; }
+    .stack.local { border-color: #50fa7b; border-width: 4px; }
+
+    .stack-header {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .stack.team-a .stack-header { background: rgba(74, 158, 255, 0.2); }
+    .stack.team-b .stack-header { background: rgba(255, 107, 107, 0.2); }
+    .stack.solo .stack-header { background: rgba(80, 250, 123, 0.2); }
+    .stack.local .stack-header { background: rgba(80, 250, 123, 0.3); }
+
+    .panel-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(12, 1fr);
+      gap: 2px;
+      padding: 8px;
+      background: #0a0a15;
+    }
+
+    .panel {
+      border-radius: 3px;
+      opacity: 0.8;
+    }
+
+    .panel.red { background: #ff5555; }
+    .panel.green { background: #50fa7b; }
+    .panel.blue { background: #8be9fd; }
+    .panel.yellow { background: #f1fa8c; }
+    .panel.purple { background: #bd93f9; }
+    .panel.cyan { background: #00d9ff; }
+    .panel.empty { background: transparent; }
+
+    .stack-footer {
+      padding: 8px;
+      background: rgba(0,0,0,0.3);
+      font-size: 12px;
+    }
+
+    .stack-footer div { margin: 2px 0; }
+
+    .health-bar {
+      position: absolute;
+      width: 20px;
+      background: #333;
+      border: 2px solid #555;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .health-fill {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: linear-gradient(0deg, #ff5555 0%, #ffaa00 50%, #50fa7b 100%);
+    }
+
+    .label {
+      position: absolute;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .label.team-a { background: rgba(74, 158, 255, 0.3); color: #4a9eff; }
+    .label.team-b { background: rgba(255, 107, 107, 0.3); color: #ff6b6b; }
+    .label.you { background: rgba(80, 250, 123, 0.3); color: #50fa7b; }
+    .label.teammate { background: rgba(74, 158, 255, 0.2); color: #8be9fd; }
+    .label.enemy { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+
+    .description {
+      max-width: 900px;
+      margin: 0 auto 20px;
+      padding: 15px;
+      background: #2a2a4e;
+      border-radius: 5px;
+      line-height: 1.6;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .section-divider {
+      border-top: 2px solid #4a4a8a;
+      margin: 60px 0 40px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Panel Attack - Multi-Player UI Mockups</h1>
+  <p class="description" style="text-align: center;">
+    <strong>Core Principle:</strong> Local player (YOU) is ALWAYS full size on the left.<br>
+    Other players (teammates + enemies) are smaller on the right.
+  </p>
+
+  <!-- CURRENT 1v1 -->
+  <h2>Reference: Current 1v1 Layout</h2>
+  <p class="description">
+    Two stacks at 3x scale (312x612 pixels each). This is the baseline - YOUR stack always looks like this.
+  </p>
+  <div class="canvas scale-50" id="canvas-1v1">
+    <div class="stack team-a" style="left: 128px; top: 54px; width: 312px; height: 612px;">
+      <div class="stack-header">Player 1 - Level 10</div>
+      <div class="panel-grid" id="grid-p1-1v1"></div>
+      <div class="stack-footer">
+        <div>Score: 12,450</div>
+        <div>Speed: 25</div>
+      </div>
+    </div>
+    <div class="health-bar" style="left: 96px; top: 100px; height: 500px;">
+      <div class="health-fill" style="height: 75%;"></div>
+    </div>
+
+    <div class="stack team-b" style="right: 128px; top: 54px; width: 312px; height: 612px;">
+      <div class="stack-header">Player 2 - Level 10</div>
+      <div class="panel-grid" id="grid-p2-1v1"></div>
+      <div class="stack-footer">
+        <div>Score: 10,230</div>
+        <div>Speed: 23</div>
+      </div>
+    </div>
+    <div class="health-bar" style="right: 96px; top: 100px; height: 500px;">
+      <div class="health-fill" style="height: 60%;"></div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- 2v2 FROM P1 PERSPECTIVE -->
+  <h2>2v2: Your View (as P1 on Team A)</h2>
+  <p class="description">
+    <strong>You</strong> are full size on the left. Your <strong>teammate (P2)</strong> and <strong>enemies (P3, P4)</strong> are smaller on the right.
+  </p>
+  <div class="canvas scale-50" id="canvas-2v2-you">
+    <div class="label you" style="left: 200px; top: 15px;">YOU (P1)</div>
+    <div class="label teammate" style="right: 280px; top: 15px;">TEAMMATE</div>
+    <div class="label enemy" style="right: 100px; top: 15px;">ENEMIES</div>
+
+    <!-- YOU - Full size left -->
+    <div class="stack local" style="left: 100px; top: 54px; width: 312px; height: 612px;">
+      <div class="stack-header">YOU (P1) - Team A - Level 10</div>
+      <div class="panel-grid" id="grid-2v2-you"></div>
+      <div class="stack-footer">
+        <div>Score: 12,450</div>
+        <div>Speed: 25</div>
+      </div>
+    </div>
+    <div class="health-bar" style="left: 68px; top: 100px; height: 500px;">
+      <div class="health-fill" style="height: 75%;"></div>
+    </div>
+
+    <!-- Teammate - smaller, top right -->
+    <div class="stack team-a" style="right: 360px; top: 54px; width: 180px; height: 320px;">
+      <div class="stack-header">P2 (Teammate)</div>
+      <div class="panel-grid" id="grid-2v2-teammate"></div>
+    </div>
+
+    <!-- Enemies - smaller, stacked on far right -->
+    <div class="stack team-b" style="right: 100px; top: 54px; width: 180px; height: 320px;">
+      <div class="stack-header">P3 (Enemy)</div>
+      <div class="panel-grid" id="grid-2v2-enemy1"></div>
+    </div>
+    <div class="stack team-b" style="right: 100px; top: 394px; width: 180px; height: 320px;">
+      <div class="stack-header">P4 (Enemy)</div>
+      <div class="panel-grid" id="grid-2v2-enemy2"></div>
+    </div>
+  </div>
+  <p class="note">"All" mode: Your combos hit BOTH P3 and P4. "Shared" mode: Round-robin targeting.</p>
+
+  <!-- 1v2 SOLO PERSPECTIVE -->
+  <h2>1v2: Your View (as Solo Player)</h2>
+  <p class="description">
+    <strong>You</strong> are the solo player, full size on the left. Both <strong>enemies</strong> are smaller on the right.
+  </p>
+  <div class="canvas scale-50" id="canvas-1v2-solo">
+    <div class="label you" style="left: 200px; top: 15px;">YOU (SOLO)</div>
+    <div class="label enemy" style="right: 180px; top: 15px;">ENEMIES (TEAM)</div>
+
+    <!-- YOU - Solo, full size -->
+    <div class="stack local" style="left: 100px; top: 54px; width: 312px; height: 612px;">
+      <div class="stack-header">YOU (Solo) - Level 10</div>
+      <div class="panel-grid" id="grid-1v2-solo"></div>
+      <div class="stack-footer">
+        <div>Score: 15,200</div>
+        <div>Speed: 28</div>
+      </div>
+    </div>
+    <div class="health-bar" style="left: 68px; top: 100px; height: 500px;">
+      <div class="health-fill" style="height: 80%;"></div>
+    </div>
+
+    <!-- Enemies - smaller, stacked right -->
+    <div class="stack team-b" style="right: 100px; top: 54px; width: 200px; height: 320px;">
+      <div class="stack-header">P2 (Enemy)</div>
+      <div class="panel-grid" id="grid-1v2-enemy1"></div>
+    </div>
+    <div class="stack team-b" style="right: 100px; top: 394px; width: 200px; height: 320px;">
+      <div class="stack-header">P3 (Enemy)</div>
+      <div class="panel-grid" id="grid-1v2-enemy2"></div>
+    </div>
+  </div>
+  <p class="note">No advantage for solo. Your combos hit both enemies. Both enemies' combos hit you.</p>
+
+  <!-- 1v2 TEAM MEMBER PERSPECTIVE -->
+  <h2>1v2: Your View (as Team Member vs Solo)</h2>
+  <p class="description">
+    <strong>You</strong> are on the team, full size on the left. Your <strong>teammate</strong> and the <strong>solo enemy</strong> are on the right.
+  </p>
+  <div class="canvas scale-50" id="canvas-1v2-team">
+    <div class="label you" style="left: 200px; top: 15px;">YOU (P2)</div>
+    <div class="label teammate" style="right: 280px; top: 15px;">TEAMMATE</div>
+    <div class="label enemy" style="right: 100px; top: 15px;">ENEMY</div>
+
+    <!-- YOU - Team member, full size -->
+    <div class="stack local" style="left: 100px; top: 54px; width: 312px; height: 612px;">
+      <div class="stack-header">YOU (P2) - Team - Level 10</div>
+      <div class="panel-grid" id="grid-1v2-you"></div>
+      <div class="stack-footer">
+        <div>Score: 8,400</div>
+        <div>Speed: 22</div>
+      </div>
+    </div>
+    <div class="health-bar" style="left: 68px; top: 100px; height: 500px;">
+      <div class="health-fill" style="height: 65%;"></div>
+    </div>
+
+    <!-- Teammate - smaller -->
+    <div class="stack team-a" style="right: 360px; top: 180px; width: 180px; height: 360px;">
+      <div class="stack-header">P3 (Teammate)</div>
+      <div class="panel-grid" id="grid-1v2-yourteammate"></div>
+    </div>
+
+    <!-- Solo Enemy - smaller -->
+    <div class="stack team-b" style="right: 100px; top: 180px; width: 180px; height: 360px;">
+      <div class="stack-header">P1 (Solo Enemy)</div>
+      <div class="panel-grid" id="grid-1v2-soloenemy"></div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- AFTER DEATH -->
+  <h2>2v2: After Teammate Dies</h2>
+  <p class="description">
+    Your teammate (P2) was eliminated. <strong>You continue fighting</strong> both enemies alone.
+    Game ends when YOUR entire team is eliminated.
+  </p>
+  <div class="canvas scale-50" id="canvas-death">
+    <div class="label you" style="left: 200px; top: 15px;">YOU (P1) - LAST ALIVE</div>
+    <div class="label" style="right: 280px; top: 15px; background: rgba(100,100,100,0.3); color: #666;">DEFEATED</div>
+    <div class="label enemy" style="right: 100px; top: 15px;">ENEMIES</div>
+
+    <!-- YOU - Still fighting -->
+    <div class="stack local" style="left: 100px; top: 54px; width: 312px; height: 612px;">
+      <div class="stack-header">YOU (P1) - FIGHTING 1v2!</div>
+      <div class="panel-grid" id="grid-death-you"></div>
+      <div class="stack-footer">
+        <div>Score: 18,700</div>
+        <div>Speed: 30</div>
+      </div>
+    </div>
+    <div class="health-bar" style="left: 68px; top: 100px; height: 500px;">
+      <div class="health-fill" style="height: 40%;"></div>
+    </div>
+
+    <!-- Dead teammate - faded -->
+    <div class="stack" style="right: 360px; top: 180px; width: 180px; height: 360px; opacity: 0.25; border-color: #555;">
+      <div class="stack-header" style="background: rgba(50,50,50,0.5);">P2 - DEFEATED</div>
+      <div class="panel-grid"></div>
+    </div>
+
+    <!-- Enemies - still active -->
+    <div class="stack team-b" style="right: 100px; top: 54px; width: 180px; height: 320px;">
+      <div class="stack-header">P3 (Enemy)</div>
+      <div class="panel-grid" id="grid-death-enemy1"></div>
+    </div>
+    <div class="stack team-b" style="right: 100px; top: 394px; width: 180px; height: 320px;">
+      <div class="stack-header">P4 (Enemy)</div>
+      <div class="panel-grid" id="grid-death-enemy2"></div>
+    </div>
+  </div>
+  <p class="note">You must now defeat both P3 and P4 alone. If you die, Team B wins.</p>
+
+  <script>
+    const colors = ['red', 'green', 'blue', 'yellow', 'purple', 'cyan'];
+
+    function fillGrid(gridId, emptyRows = 6) {
+      const grid = document.getElementById(gridId);
+      if (!grid) return;
+
+      for (let row = 0; row < 12; row++) {
+        for (let col = 0; col < 6; col++) {
+          const panel = document.createElement('div');
+          panel.className = 'panel';
+          if (row < emptyRows) {
+            panel.classList.add('empty');
+          } else {
+            panel.classList.add(colors[Math.floor(Math.random() * colors.length)]);
+          }
+          grid.appendChild(panel);
+        }
+      }
+    }
+
+    // Reference 1v1
+    fillGrid('grid-p1-1v1', 5);
+    fillGrid('grid-p2-1v1', 6);
+
+    // 2v2 view
+    fillGrid('grid-2v2-you', 4);
+    fillGrid('grid-2v2-teammate', 5);
+    fillGrid('grid-2v2-enemy1', 5);
+    fillGrid('grid-2v2-enemy2', 6);
+
+    // 1v2 solo view
+    fillGrid('grid-1v2-solo', 4);
+    fillGrid('grid-1v2-enemy1', 5);
+    fillGrid('grid-1v2-enemy2', 6);
+
+    // 1v2 team view
+    fillGrid('grid-1v2-you', 5);
+    fillGrid('grid-1v2-yourteammate', 5);
+    fillGrid('grid-1v2-soloenemy', 4);
+
+    // After death
+    fillGrid('grid-death-you', 3);
+    fillGrid('grid-death-enemy1', 5);
+    fillGrid('grid-death-enemy2', 4);
+  </script>
+</body>
+</html>

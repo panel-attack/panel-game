@@ -295,7 +295,7 @@ function love.errorhandler(msg)
     local detailedErrorLogString = Game.detailedErrorLogString(errorData)
     errorData.detailedErrorLogString = detailedErrorLogString
     if GAME.updater and not DEBUG_ENABLED and not os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") then
-      GAME.netClient:sendErrorReport(errorData, consts.SERVER_LOCATION, 49569)
+      -- crash reporting disabled on this branch (bramp/multi-player uses a separate server)
     end
     return detailedErrorLogString
   end
