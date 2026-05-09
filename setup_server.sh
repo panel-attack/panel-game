@@ -25,7 +25,7 @@ useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/d
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 
 echo "==> Writing start wrapper"
-cat > /usr/local/bin/panel-attack-server <<'WRAPPER'
+cat > /usr/local/bin/panel-attack-server << 'WRAPPER'
 #!/bin/bash
 eval "$(luarocks path --lua-version 5.1)"
 exec /usr/bin/luajit serverLauncher.lua "$@"
@@ -33,15 +33,15 @@ WRAPPER
 chmod +x /usr/local/bin/panel-attack-server
 
 echo "==> Writing systemd service"
-cat > /etc/systemd/system/panel-attack.service <<EOF
+cat > /etc/systemd/system/panel-attack.service << 'EOF'
 [Unit]
 Description=Panel Attack Game Server
 After=network.target
 
 [Service]
 Type=simple
-User=$SERVICE_USER
-WorkingDirectory=$INSTALL_DIR
+User=panelattack
+WorkingDirectory=/opt/panel-attack
 ExecStart=/usr/local/bin/panel-attack-server
 Restart=on-failure
 RestartSec=5
