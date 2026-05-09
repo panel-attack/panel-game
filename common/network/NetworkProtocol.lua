@@ -29,6 +29,8 @@ NetworkProtocol.serverMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the server
   opponentInput = {prefix="I", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client about it's opponent
   secondOpponentInput = {prefix="U", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client for player two if spectating
+  thirdOpponentInput = {prefix="V", size=nil, verbose = true}, -- Player input for player three in 3-4 player games
+  fourthOpponentInput = {prefix="W", size=nil, verbose = true}, -- Player input for player four in 4 player games
   versionCorrect = {prefix="H", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is allowed
   versionWrong = {prefix="N", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is not allowed
   ping = {prefix="E", size=1, verbose = true} -- Sent to the client to confirm they are still connected
@@ -38,12 +40,14 @@ for _, value in pairs(NetworkProtocol.serverMessageTypes) do
   NetworkProtocol.serverPrefixToMessageType[value.prefix] = value
 end
 
--- Returns if the message type prefix is one of the ones that happens all the time (ping or player input) 
+-- Returns if the message type prefix is one of the ones that happens all the time (ping or player input)
 -- thus may be too verbose to print all the time in debug
 function NetworkProtocol.isMessageTypeVerbose(type)
-  if type == NetworkProtocol.serverMessageTypes.ping.prefix or 
-    type == NetworkProtocol.serverMessageTypes.opponentInput.prefix or 
-    type == NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix then
+  if type == NetworkProtocol.serverMessageTypes.ping.prefix or
+    type == NetworkProtocol.serverMessageTypes.opponentInput.prefix or
+    type == NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix or
+    type == NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix or
+    type == NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix then
     return true
   end
   return false

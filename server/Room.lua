@@ -267,18 +267,24 @@ function Room:broadcastInput(input, sender)
 
   self.game:receiveInput(sender, input)
 
-  local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.opponentInput.prefix, input)
+  -- Determine prefix based on sender's player number
+  local prefixes = {
+    NetworkProtocol.serverMessageTypes.opponentInput.prefix,       -- Player 1
+    NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix, -- Player 2
+    NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix,  -- Player 3
+    NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix, -- Player 4
+  }
+  local inputPrefix = prefixes[sender.player_number] or prefixes[1]
+  local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, input)
 
+  -- Send to all other players
   for i, player in ipairs(self.players) do
     if i ~= sender.player_number then
       player:send(inputMessage)
     end
   end
 
-  if sender.player_number == 1 then
-    inputMessage = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix, input)
-  end
-
+  -- Send to spectators (same prefix - identifies the sender)
   for _, v in pairs(self.spectators) do
     if v then
       v:send(inputMessage)

@@ -16,7 +16,8 @@ function MockConnection:update(t) end
 
 function MockConnection:send(message)
   local prefix = message:sub(1, 1)
-  if prefix == "I" or prefix == "J" then
+  -- I, U, V, W are input prefixes for players 1-4
+  if prefix == "I" or prefix == "U" or prefix == "V" or prefix == "W" or prefix == "J" then
     self.outgoingInputQueue:push(message)
   end
 end

@@ -277,7 +277,12 @@ local function processMenuStateMessage(player, message)
 end
 
 local function processInputMessages(self)
-  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(NetworkProtocol.serverMessageTypes.opponentInput.prefix, NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix)
+  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
+    NetworkProtocol.serverMessageTypes.opponentInput.prefix,
+    NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix,
+    NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix,
+    NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix
+  )
   if self.room and self.room.match then
     for _, msg in ipairs(messages) do
       for type, data in pairs(msg) do

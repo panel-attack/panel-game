@@ -308,7 +308,11 @@ function ClientMatch:moveStacks()
   if self.replay and self.replay.metadata.completed then
     if tableUtils.trueForAll(self.replay.metadata.stacks, function(s) return s.renderIndex end) then
       for _, stackMetadata in ipairs(self.replay.metadata.stacks) do
-        self.stacks[stackMetadata.stackIndex]:moveForRenderIndex(stackMetadata.renderIndex)
+        if #self.stacks > 2 then
+          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex4Player(stackMetadata.renderIndex)
+        else
+          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex(stackMetadata.renderIndex)
+        end
       end
       return
     end
@@ -327,7 +331,11 @@ function ClientMatch:moveStacks()
   end)
 
   for i, stack in ipairs(stacks) do
-    stack:moveForRenderIndex(i)
+    if #self.stacks > 2 then
+      stack:moveForRenderIndex4Player(i)
+    else
+      stack:moveForRenderIndex(i)
+    end
   end
 end
 
@@ -706,25 +714,21 @@ function ClientMatch:getWinners()
   end
 end
 
----@param prefix "I" | "U"
+---@param prefix string input prefix indicating sender (I=player1, U=player2, V=player3, W=player4)
 ---@param input string
 function ClientMatch:receiveInput(prefix, input)
-  if self:hasLocalPlayer() then
-    if self.players[1].human and self.players[1].isLocal then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      self.stacks[2]:receiveConfirmedInput(input)
-    elseif self.players[2].human and self.players[2].isLocal then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      self.stacks[1]:receiveConfirmedInput(input)
-    end
-  else
-    if prefix == NetworkProtocol.serverMessageTypes.opponentInput.prefix then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      self.stacks[2]:receiveConfirmedInput(input)
-    else
-      ---@diagnostic disable-next-line: param-type-mismatch
-      self.stacks[1]:receiveConfirmedInput(input)
-    end
+  -- Map prefix to player index
+  local prefixToPlayerIndex = {
+    [NetworkProtocol.serverMessageTypes.opponentInput.prefix] = 1,
+    [NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix] = 2,
+    [NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix] = 3,
+    [NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix] = 4,
+  }
+
+  local senderIndex = prefixToPlayerIndex[prefix]
+  if senderIndex and self.stacks[senderIndex] then
+    ---@diagnostic disable-next-line: param-type-mismatch
+    self.stacks[senderIndex]:receiveConfirmedInput(input)
   end
 end
 

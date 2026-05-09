@@ -229,7 +229,9 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
 end
 
 -- Sets up renderIndex-specific properties and assets
--- Configures stack positioning parameters for a specific render index (1 for left, 2 for right)
+-- Configures stack positioning parameters for a specific render index (1-4)
+-- For 2-player: 1=left, 2=right
+-- For 4-player: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
 function ClientStack:setupForRenderIndex(renderIndex)
   self.renderIndex = renderIndex
 
@@ -239,10 +241,18 @@ function ClientStack:setupForRenderIndex(renderIndex)
   elseif renderIndex == 2 then
     self.mirror_x = -1
     self.multiplication = 1
+  elseif renderIndex == 3 then
+    self.mirror_x = 1
+    self.multiplication = 0
+  elseif renderIndex == 4 then
+    self.mirror_x = -1
+    self.multiplication = 1
   else
-    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1 or 2.")
+    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1-4.")
   end
-  self:assignAssets(GAME.theme:getIngameAssetPack(renderIndex))
+  -- Use modulo to map 3->1, 4->2 for asset packs (only 2 asset packs exist)
+  local assetIndex = ((renderIndex - 1) % 2) + 1
+  self:assignAssets(GAME.theme:getIngameAssetPack(assetIndex))
 end
 
 -- Calculates the horizontal position for centering a stack around a given coordinate
@@ -283,11 +293,39 @@ function ClientStack:moveForRenderIndex(renderIndex)
   self:moveToPosition(frameOriginNonScaled, self.baseWidth + self.panelOriginXOffset)
 end
 
+-- Positions the stack in a 4-player 2x2 grid layout
+-- renderIndex: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
+function ClientStack:moveForRenderIndex4Player(renderIndex)
+  self:setupForRenderIndex(renderIndex)
+
+  local canvasWidth = GAME.globalCanvas:getWidth()
+  local canvasHeight = GAME.globalCanvas:getHeight()
+  local stackWidth = self:canvasWidth()
+
+  -- Calculate grid positions
+  local leftX = 80  -- Left column
+  local rightX = canvasWidth - stackWidth - 80  -- Right column
+  local topY = self.baseWidth + self.panelOriginXOffset  -- Same as 2-player top
+  local bottomY = canvasHeight / 2 + 20  -- Bottom row
+
+  local positions = {
+    {x = leftX, y = topY},      -- 1: top-left
+    {x = rightX, y = topY},     -- 2: top-right
+    {x = leftX, y = bottomY},   -- 3: bottom-left
+    {x = rightX, y = bottomY},  -- 4: bottom-right
+  }
+
+  local pos = positions[renderIndex]
+  if pos then
+    self:moveToPosition(pos.x, pos.y)
+  end
+end
+
 -- Positions the stack centered on screen (for puzzle mode)
 function ClientStack:moveToCenterPosition()
   local centerX = (GAME.globalCanvas:getWidth() / 2)
   local outerNonScaled = self:calculateHorizontallyCenteredPosition(centerX)
-  
+
   self:moveToPosition(outerNonScaled, self.baseWidth + self.panelOriginXOffset)
 end
 
