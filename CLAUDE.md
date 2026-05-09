@@ -32,12 +32,23 @@ Also needs **love 12** (not love 11) for the client. Add it to PATH in `~/.zshrc
 
 ### Scripts
 ```sh
-zsh run_server.sh   # start local server (localhost:49569)
+zsh run_server.sh   # start local server (localhost:49569) — also runs ALL server tests on startup
 zsh run_client.sh   # start game client
-zsh run_tests.sh    # run full test suite (requires love, not luajit)
+zsh run_tests.sh    # run full test suite including client tests (requires love, not luajit)
 ```
 
 Run server first, then client. Client connects to localhost automatically on this branch.
+
+### How tests work
+
+**Server tests** (`LoginTests`, `LeaderboardTests`, `RoomTests`, `TeamRoomTests`, `ServerTests`):
+- Run via `zsh run_server.sh` — `serverLauncher.lua` runs all server tests automatically on startup before entering the main loop
+- Do NOT run these through love — `lfs` and `lsqlite3` are not available in the love environment
+- Do NOT run individual test files directly with `luajit server/tests/Foo.lua` — they depend on globals set up by `serverLauncher.lua`
+
+**Client/common tests** (`PuzzleTests`, `NetworkProtocolTests`, etc.):
+- Run via `zsh run_tests.sh` — uses love to run `testLauncher.lua`
+- These cannot run via luajit — they depend on love APIs
 
 **First time:** Set a player name in-game (Main Menu → Set Name) before connecting.
 
