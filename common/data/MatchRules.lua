@@ -16,7 +16,7 @@
 local MatchRules = {}
 
 ---@enum  MatchEndCondition
-MatchRules.MatchEndConditions = { STACKS_ACTIVE = "STACKS_ACTIVE", TIME_LIMIT = "TIME_LIMIT" }
+MatchRules.MatchEndConditions = { STACKS_ACTIVE = "STACKS_ACTIVE", TIME_LIMIT = "TIME_LIMIT", TEAMS_ACTIVE = "TEAMS_ACTIVE" }
 
 ---@enum MatchWinCriteria
 MatchRules.MatchWinCriterias = { GAME_OVER_CLOCK = "GAME_OVER_CLOCK", SCORE = "SCORE", TIME = "TIME" }

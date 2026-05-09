@@ -5,6 +5,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 local LevelPresets    = require("common.data.LevelPresets")
+local TeamUtils = require("common.data.TeamUtils")
 
 ---@class ServerGame
 ---@field id integer?
@@ -13,6 +14,8 @@ local LevelPresets    = require("common.data.LevelPresets")
 ---@field replay ReplayV3
 ---@field winnerId integer?
 ---@field winnerIndex integer?
+---@field winnerTeamIndex integer?
+---@field teams Team[]?
 ---@field ranked boolean
 ---@field package inputs string[][]
 ---@field package outcomeReports integer[]
@@ -41,6 +44,7 @@ function Game.createFromRoomState(room)
 
   local roomIsRanked, reasons = room:rating_adjustment_approved()
   game.ranked = roomIsRanked
+  game.teams = room.teams
 
   local replayPanelSource = {
     sourceType = 3,
@@ -109,6 +113,31 @@ function Game.createFromRoomState(room)
         recipients = recipients,
       }
     end
+  elseif room.gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
+    -- Team versus: each player sends garbage to enemies only (not teammates)
+    if room.teams then
+      for i = 1, #replay.stacks do
+        local enemyIndices = TeamUtils.getEnemyPlayerIndices(room.teams, i)
+        replay.garbageFlows[#replay.garbageFlows+1] = {
+          source = i,
+          recipients = enemyIndices,
+        }
+      end
+    else
+      -- Fallback to regular VERSUS if no teams configured
+      for i = 1, #replay.stacks do
+        local recipients = {}
+        for j = 1, #replay.stacks do
+          if i ~= j then
+            recipients[#recipients+1] = j
+          end
+        end
+        replay.garbageFlows[#replay.garbageFlows+1] = {
+          source = i,
+          recipients = recipients,
+        }
+      end
+    end
   end
 
   game.replay = replay
@@ -156,7 +185,7 @@ function Game:receiveOutcomeReport(player, outcome)
     end
   end
 
-  local result = Game.getOutcome(self.outcomeReports)
+  local result, winnerTeamIndex = Game.getOutcome(self.outcomeReports, self.teams)
   if not result then
     --if clients disagree, the server needs to decide the outcome, perhaps by watching a replay it had created during the game.
     --for now though...
@@ -167,6 +196,7 @@ function Game:receiveOutcomeReport(player, outcome)
     if result ~= 0 then
       self.winnerIndex = result
       self.winnerId = self.players[result].publicPlayerID
+      self.winnerTeamIndex = winnerTeamIndex
     end
     self.aborted = false
   end
@@ -176,20 +206,64 @@ function Game:receiveOutcomeReport(player, outcome)
 end
 
 ---@param outcomeReports integer[]
----@return integer? winnerIndex the winner of the game, 0 if tie, nil if the players disagreed on the outcome
-function Game.getOutcome(outcomeReports)
-  for i, outcomeA in ipairs(outcomeReports) do
-    for j, outcomeB in ipairs(outcomeReports) do
-      if i ~= j then
-        if outcomeA ~= outcomeB then
-          return
+---@param teams Team[]?
+---@return integer? winnerIndex the winner of the game (player index), 0 if tie, nil if the players disagreed on the outcome
+---@return integer? winnerTeamIndex the winning team index (only for team games)
+function Game.getOutcome(outcomeReports, teams)
+  if teams then
+    -- Team game: validate team-based outcomes
+    -- outcome = 1 means "my team won", outcome = 2 means "my team lost", outcome = 0 means tie
+    local teamOutcomes = {}
+
+    for playerIndex, outcome in ipairs(outcomeReports) do
+      local teamIndex = TeamUtils.getPlayerTeamIndex(teams, playerIndex)
+      if teamIndex then
+        if not teamOutcomes[teamIndex] then
+          teamOutcomes[teamIndex] = outcome
+        elseif teamOutcomes[teamIndex] ~= outcome then
+          -- Teammates disagree
+          return nil, nil
         end
       end
     end
-  end
 
-  -- everyone agrees on the outcome
-  return outcomeReports[1]
+    -- Validate that outcomes are complementary (one team won, others lost)
+    local winningTeam = nil
+    for teamIndex, outcome in pairs(teamOutcomes) do
+      if outcome == 1 then
+        if winningTeam then
+          -- Multiple teams claim victory
+          return nil, nil
+        end
+        winningTeam = teamIndex
+      elseif outcome == 0 then
+        -- Tie reported
+        return 0, nil
+      end
+    end
+
+    if winningTeam then
+      -- Return first player of winning team as the winner
+      local team = teams[winningTeam]
+      return team.playerIndices[1], winningTeam
+    end
+
+    return 0, nil  -- No winner determined
+  else
+    -- Non-team game: all players must agree on the same winner
+    for i, outcomeA in ipairs(outcomeReports) do
+      for j, outcomeB in ipairs(outcomeReports) do
+        if i ~= j then
+          if outcomeA ~= outcomeB then
+            return nil, nil
+          end
+        end
+      end
+    end
+
+    -- everyone agrees on the outcome
+    return outcomeReports[1], nil
+  end
 end
 
 ---@param result integer?

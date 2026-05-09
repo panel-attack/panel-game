@@ -25,6 +25,7 @@ require("server.tests.LoginTests")
 require("server.tests.ServerTests")
 require("server.tests.LeaderboardTests")
 require("server.tests.RoomTests")
+require("server.tests.TeamRoomTests")
 
 local database = require("server.PADatabase")
 local Server = require("server.server")

@@ -1,5 +1,5 @@
 local logger = require("common.lib.logger")
-local sqlite3 = require("lsqlite3")
+local sqlite3 = (pcall(require, "lsqlite3") and require("lsqlite3")) or require("lsqlite3complete")
 ---@class SqliteDB
 ---@field exec function
 ---@field errmsg function

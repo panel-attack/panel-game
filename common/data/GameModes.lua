@@ -42,7 +42,7 @@ end
 ---@enum Styles
 local Styles = { CHOOSE = 0, CLASSIC = 1, MODERN = 2}
 ---@enum StackInteractions
-local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3 }
+local StackInteractions = { NONE = 0, VERSUS = 1, SELF = 2, ATTACK_ENGINE = 3, TEAM_VERSUS = 4 }
 
 ---@type GameMode
 local OnePlayerVsSelf = GameMode({
@@ -206,6 +206,94 @@ local TwoPlayerTimeAttack = GameMode({
 
 })
 
+---@type GameMode
+local FourPlayerTeamVersusAll = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "2v2 Team VS (All)",
+  name = "team_vs_all",
+
+  playerCount = 4,
+  teamCount = 2,
+  playersPerTeam = 2,
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+
+})
+
+---@type GameMode
+local FourPlayerTeamVersusShared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "2v2 Team VS (Shared)",
+  name = "team_vs_shared",
+
+  playerCount = 4,
+  teamCount = 2,
+  playersPerTeam = 2,
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+
+})
+
+---@type GameMode
+local ThreePlayerVersusAll = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v2 VS (All)",
+  name = "three_player_vs_all",
+
+  playerCount = 3,
+  teamCount = 2,
+  playersPerTeam = {1, 2},  -- Asymmetric: 1 solo vs 2 team
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+
+})
+
+---@type GameMode
+local ThreePlayerVersusShared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v2 VS (Shared)",
+  name = "three_player_vs_shared",
+
+  playerCount = 3,
+  teamCount = 2,
+  playersPerTeam = {1, 2},  -- Asymmetric: 1 solo vs 2 team
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+
+})
+
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
 
@@ -219,6 +307,11 @@ GameModes.IDs = {
   ONE_PLAYER_VS_SELF = "ONE_PLAYER_VS_SELF",
   ONE_PLAYER_PUZZLE = "ONE_PLAYER_PUZZLE",
   TWO_PLAYER_TIME_ATTACK = "TWO_PLAYER_TIME_ATTACK",
+  -- Team game modes
+  FOUR_PLAYER_TEAM_VS_ALL = "FOUR_PLAYER_TEAM_VS_ALL",
+  FOUR_PLAYER_TEAM_VS_SHARED = "FOUR_PLAYER_TEAM_VS_SHARED",
+  THREE_PLAYER_VS_ALL = "THREE_PLAYER_VS_ALL",
+  THREE_PLAYER_VS_SHARED = "THREE_PLAYER_VS_SHARED",
 }
 
 ---@type table<GameModeID, GameMode>
@@ -231,6 +324,10 @@ privateGameModes[GameModes.IDs.ONE_PLAYER_PUZZLE] = OnePlayerPuzzle
 privateGameModes[GameModes.IDs.ONE_PLAYER_CHALLENGE] = OnePlayerChallenge
 privateGameModes[GameModes.IDs.TWO_PLAYER_VS] = TwoPlayerVersus
 privateGameModes[GameModes.IDs.TWO_PLAYER_TIME_ATTACK] = TwoPlayerTimeAttack
+privateGameModes[GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL] = FourPlayerTeamVersusAll
+privateGameModes[GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED] = FourPlayerTeamVersusShared
+privateGameModes[GameModes.IDs.THREE_PLAYER_VS_ALL] = ThreePlayerVersusAll
+privateGameModes[GameModes.IDs.THREE_PLAYER_VS_SHARED] = ThreePlayerVersusShared
 
 ---@param mode GameModeID
 ---@return GameMode
@@ -272,6 +369,10 @@ GameModes.gameModeIdToName = {
   ONE_PLAYER_VS_SELF = "vsSelf",
   ONE_PLAYER_PUZZLE = "puzzle",
   TWO_PLAYER_TIME_ATTACK = "2p_timeattack",
+  FOUR_PLAYER_TEAM_VS_ALL = "team_vs_all",
+  FOUR_PLAYER_TEAM_VS_SHARED = "team_vs_shared",
+  THREE_PLAYER_VS_ALL = "three_player_vs_all",
+  THREE_PLAYER_VS_SHARED = "three_player_vs_shared",
 }
 
 ---@type table<string, GameModeID>
@@ -283,7 +384,11 @@ GameModes.nameToGameModeId = {
   challenge = "ONE_PLAYER_CHALLENGE",
   vsSelf = "ONE_PLAYER_VS_SELF",
   puzzle = "ONE_PLAYER_PUZZLE",
-  ["2p_timeattack"] = "TWO_PLAYER_TIME_ATTACK"
+  ["2p_timeattack"] = "TWO_PLAYER_TIME_ATTACK",
+  team_vs_all = "FOUR_PLAYER_TEAM_VS_ALL",
+  team_vs_shared = "FOUR_PLAYER_TEAM_VS_SHARED",
+  three_player_vs_all = "THREE_PLAYER_VS_ALL",
+  three_player_vs_shared = "THREE_PLAYER_VS_SHARED",
 }
 
 return GameModes

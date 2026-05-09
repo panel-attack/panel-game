@@ -12,11 +12,15 @@ local LegacyPanelSource = require("common.compatibility.LegacyPanelSource")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 local MatchRules = require("common.data.MatchRules")
+local TeamUtils = require("common.data.TeamUtils")
 
 ---@class Match
 ---@field stacks (Stack | SimulatedStack)[] The stacks to run as part of the match
 ---@field garbageTargets table<integer, table<integer, Stack>> assignments by index where each stack's garbage is directed
 ---@field garbageSources table<Stack, table<integer, Stack>> assignments by index where each stack's incoming garbage comes from
+---@field teams Team[]? Array of teams for team-based game modes
+---@field garbageMode string? Garbage distribution mode: "all" (hits all enemies) or "shared" (round-robin)
+---@field teamGarbageState table<integer, table>? Round-robin state for shared garbage mode, indexed by team
 ---@field engineVersion string
 ---@field rules MatchRules
 ---@field doCountdown boolean if a countdown is performed at the start of the match; mirror of rules.doCountdown for easier access
@@ -558,6 +562,25 @@ function Match:hasEnded()
     end
   end
 
+  -- Team-based end condition: match ends when only 1 team remains active
+  if self.rules.matchEndConditions[MatchRules.MatchEndConditions.TEAMS_ACTIVE] and self.teams then
+    local activeTeamCount = TeamUtils.countActiveTeams(self.teams, self.stacks)
+    if activeTeamCount <= self.rules.matchEndConditions[MatchRules.MatchEndConditions.TEAMS_ACTIVE] then
+      local gameOverClock = math.huge
+      for _, stack in ipairs(self.stacks) do
+        if stack.game_over_clock > 0 then
+          gameOverClock = math.min(stack.game_over_clock, gameOverClock)
+        end
+      end
+      self.gameOverClock = gameOverClock
+      -- make sure everyone has run to the currently known game over clock
+      if tableUtils.trueForAll(self.stacks, function(stack) return stack.clock and stack.clock > gameOverClock end) then
+        self.ended = true
+        return true
+      end
+    end
+  end
+
   if deadCount == #self.stacks then
     -- everyone died, match is over!
     self.ended = true
@@ -743,6 +766,80 @@ function Match:padRewindDataIfNeeded()
       end
     end
   end
+end
+
+-- Team-related methods
+
+--- Sets the teams for this match
+---@param teams Team[]
+function Match:setTeams(teams)
+  self.teams = teams
+end
+
+--- Sets the garbage distribution mode
+---@param mode string "all" or "shared"
+function Match:setGarbageMode(mode)
+  self.garbageMode = mode
+end
+
+--- Sets up garbage targets based on team configuration and garbage mode
+--- Must be called after setTeams and setGarbageMode, and after stacks are created
+function Match:setupTeamGarbageTargets()
+  if not self.teams then
+    return
+  end
+
+  -- Initialize garbage targets for each stack
+  for i = 1, #self.stacks do
+    self.garbageTargets[i] = {}
+    self.garbageSources[self.stacks[i]] = {}
+  end
+
+  if self.garbageMode == "all" then
+    -- "All" mode: each player sends garbage to ALL enemies
+    for i, stack in ipairs(self.stacks) do
+      local enemyIndices = TeamUtils.getEnemyPlayerIndices(self.teams, i)
+      for _, enemyIndex in ipairs(enemyIndices) do
+        local enemyStack = self.stacks[enemyIndex]
+        if enemyStack then
+          self:addTarget(stack, enemyStack)
+        end
+      end
+    end
+  elseif self.garbageMode == "shared" then
+    -- "Shared" mode: round-robin targeting within team
+    -- Initialize team garbage state for round-robin
+    self.teamGarbageState = {}
+    for teamIndex, team in ipairs(self.teams) do
+      local enemyIndices = TeamUtils.getEnemyPlayerIndices(self.teams, team.playerIndices[1])
+      self.teamGarbageState[teamIndex] = {
+        currentTargetIndex = 1,
+        enemyIndices = enemyIndices
+      }
+    end
+
+    -- For shared mode, targets are determined dynamically during play
+    -- For now, set up targets to ALL enemies (garbage routing handles round-robin)
+    for i, stack in ipairs(self.stacks) do
+      local enemyIndices = TeamUtils.getEnemyPlayerIndices(self.teams, i)
+      for _, enemyIndex in ipairs(enemyIndices) do
+        local enemyStack = self.stacks[enemyIndex]
+        if enemyStack then
+          self:addTarget(stack, enemyStack)
+        end
+      end
+    end
+  end
+end
+
+--- Returns the winning team (if any)
+--- Returns nil if no winner yet, or if it's a draw
+---@return Team|nil
+function Match:getWinningTeam()
+  if not self.teams then
+    return nil
+  end
+  return TeamUtils.getWinningTeam(self.teams, self.stacks)
 end
 
 return Match

@@ -7,6 +7,7 @@ local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
 local Signal = require("common.lib.signal")
 local ServerGame = require("server.Game")
+local TeamUtils = require("common.data.TeamUtils")
 
 ---@alias roomNumber integer
 
@@ -25,9 +26,10 @@ local ServerGame = require("server.Game")
 ---@field game ServerGame?
 ---@field gameMode table -- only the data portion of the game mode
 ---@field gameModeId GameModeID
----@field ranked boolean if the next match is anticipated to be ranked 
+---@field ranked boolean if the next match is anticipated to be ranked
 ---@field rankedReasons string[]
 ---@field recentGameAbort boolean tracks if the most recent game was ended by an abort
+---@field teams Team[]? teams for team-based game modes
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
 local Room = class(
 ---@param self Room
@@ -46,6 +48,11 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.matchCount = 0
   self.gameMode = gameMode
   self.recentGameAbort = false
+
+  -- Initialize teams for team-based game modes
+  if gameMode.teamCount and gameMode.playersPerTeam then
+    self.teams = TeamUtils.createTeams(#self.players, gameMode.teamCount, gameMode.playersPerTeam)
+  end
 
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
