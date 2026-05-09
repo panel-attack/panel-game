@@ -84,6 +84,24 @@ common/
 - Handshake version: `006` (`common/network/NetworkProtocol.lua`)
 - Per-server player accounts stored client-side in `servers/{SERVER_IP}/user_id.txt`
 
+## Logs
+
+**Client:** terminal + saved to `logs/client.log`
+- Read: `tail -f logs/client.log` or `cat logs/client.log`
+
+**Local server:** terminal + saved to `logs/server.log`
+- Read: `tail -f logs/server.log` or `cat logs/server.log`
+- If port 49569 is already in use, `run_server.sh` kills the previous instance automatically before starting
+
+**Remote server (Vultr — 104.156.250.136):**
+```sh
+ssh root@104.156.250.136
+journalctl -u panel-attack -f      # live tail
+journalctl -u panel-attack         # full history
+```
+
+`logs/` is gitignored.
+
 ## Key Conventions
 - Lua 5.1 / LuaJIT throughout (no Lua 5.4 features)
 - Server runs headless via `luajit`; client runs via `love`

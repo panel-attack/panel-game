@@ -127,7 +127,9 @@ function Lobby:initLobbyMenu()
     label = self.teamCreateButtonLabel,
     width = self.lobbyMenuWidth,
     onClick = function(button)
+      logger.debug("teamCreateButton clicked")
       if self:isLocalPlayerInRoom() then
+        logger.debug("  isLocalPlayerInRoom = true, leaving room")
         local playerCount = self:getRoomPlayerCount()
         if playerCount > 1 then
           -- Show confirmation dialog
@@ -141,11 +143,14 @@ function Lobby:initLobbyMenu()
 
       -- open team composition options first, then go one level deeper for garbage mode
       if self.teamCreateMenu then
+        logger.debug("  teamCreateMenu exists, yielding focus")
         self.teamCreateMenu:yieldFocus()
         return
       end
 
+      logger.debug("  creating team submenu")
       local x, y = button:getScreenPos()
+      logger.debug("  button pos: " .. tostring(x) .. ", " .. tostring(y))
       local subMenu = ui.ScrollMenu({
         x = x + self.lobbyMenu.width + 8,
         y = y,
@@ -253,6 +258,7 @@ function Lobby:initLobbyMenu()
         subMenu:select(subMenu.children[1])
       end
 
+      logger.debug("  subMenu children count: " .. #subMenu.children)
       self.teamCreateMenu = subMenu
       self.lobbyMenu:setFocus(subMenu, function()
         if self.teamGarbageMenu then
@@ -263,6 +269,7 @@ function Lobby:initLobbyMenu()
         self.teamCreateMenu = nil
       end)
       self.uiRoot:addChild(subMenu)
+      logger.debug("  subMenu added to uiRoot")
     end
   })
   self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})
@@ -1006,7 +1013,70 @@ function Lobby:updateRoomPanel(updateInfo)
     if room.roomNumber ~= self.roomPanel.roomNumber or updateInfo then
       self.roomPanel.roomNumber = room.roomNumber
       local text
-      if #room.players == 2 then
+      local hasOpenSlots = room.openSlots and #room.openSlots > 0
+      local localPublicId = GAME.localPlayer.publicId
+
+      -- Get game mode name
+      local gameModeName = ""
+      local ok, gm = pcall(GameModes.getPreset, room.gameModeId)
+      if ok and gm then
+        gameModeName = gm.name or ""
+      end
+
+      if hasOpenSlots then
+        -- Room is waiting for players - show team slot info
+        local lines = {}
+
+        -- Header with game mode
+        if gameModeName ~= "" then
+          lines[#lines + 1] = gameModeName
+        end
+
+        -- Show players in their slots
+        for i, playerId in ipairs(room.players) do
+          local slotLabel = getSlotLabel(room, i)
+          local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
+          local playerName = playerInfo and playerInfo.name or "?"
+          if playerId == localPublicId then
+            lines[#lines + 1] = slotLabel .. ": " .. playerName .. " (You)"
+          else
+            lines[#lines + 1] = slotLabel .. ": " .. playerName
+          end
+        end
+
+        -- Show waiting slots
+        if #room.openSlots > 0 then
+          local waitingSlots = {}
+          for _, slotNumber in ipairs(room.openSlots) do
+            waitingSlots[#waitingSlots + 1] = getSlotLabel(room, slotNumber)
+          end
+          lines[#lines + 1] = "Waiting: " .. table.concat(waitingSlots, ", ")
+        end
+
+        text = table.concat(lines, "\n")
+      elseif #room.players >= 3 then
+        -- Team room in progress (3-4 players)
+        local lines = {}
+
+        -- Header with game mode
+        if gameModeName ~= "" then
+          lines[#lines + 1] = gameModeName
+        end
+
+        -- Show all players with their slots
+        for i, playerId in ipairs(room.players) do
+          local slotLabel = getSlotLabel(room, i)
+          local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
+          local playerName = playerInfo and playerInfo.name or "?"
+          lines[#lines + 1] = slotLabel .. ": " .. playerName
+        end
+
+        -- Show state and spectators
+        lines[#lines + 1] = room.state
+        lines[#lines + 1] = loc("pl_spectators") .. " " .. #room.spectators
+
+        text = table.concat(lines, "\n")
+      elseif #room.players == 2 then
         local p1Id = room.players[1]
         local p2Id = room.players[2]
         local p1Info = GAME.netClient.lobbyDataV2.players[p1Id]
@@ -1035,7 +1105,7 @@ function Lobby:updateRoomPanel(updateInfo)
           timer = string.format("%02d:%02d", math.floor(durationInSeconds / 60), durationInSeconds % 60)
         end
       end
-  
+
       if timer ~= self.roomTimer.text then
         self.roomTimer:setText(timer, nil, false)
       end

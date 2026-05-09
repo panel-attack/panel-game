@@ -12,3 +12,4 @@ placement_matches/
 .DS_Store
 Thumbs.db
 *.swp
+logs/
