@@ -78,17 +78,39 @@ local function getSceneFromRoom(room)
     return require("client.src.scenes.TimeAttackMenu")({battleRoom = room})
   elseif room.mode.name == "vsSelf" then
     return require("client.src.scenes.CharacterSelectVsSelf")({battleRoom = room})
+  elseif room.mode.name == "team_vs_all" or room.mode.name == "team_vs_shared"
+      or room.mode.name == "three_player_vs_all" or room.mode.name == "three_player_vs_shared" then
+    -- Team modes use the same character select for now
+    return CharacterSelect2p({battleRoom = room})
   end
 end
 
--- starts a 2p vs online match
+-- starts a 2p vs online match (or joins a team room)
 local function start2pVsOnlineMatch(self, createRoomMessage)
   resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
   self.room = GAME.battleRoom
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
-  GAME.navigationStack:push(getSceneFromRoom(self.room))
+
+  -- Check if this is a partial team room (waiting for more players)
+  local playerCount = #self.room.players
+  local maxPlayers = self.room.mode.playerCount or 2
+  if playerCount < maxPlayers then
+    -- Stay in lobby - room will show in lobby list with open slots
+    -- lobbyStateV2 update will refresh the display
+    logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
+    self.state = states.LOBBY
+    return
+  end
+
+  -- Room is full - navigate to game scene
+  local roomScene = getSceneFromRoom(self.room)
+  if roomScene then
+    GAME.navigationStack:push(roomScene)
+  else
+    logger.warn("No room scene available for mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'. Staying in current scene.")
+  end
   self.state = states.ROOM
 end
 
@@ -280,6 +302,20 @@ local function processPlayerJoinedRoom(self, message)
     self.room:addPlayer(player)
     love.window.requestAttention()
     SoundController:playSfx(themes[config.theme].sounds.notification)
+
+    -- Check if room is now full - if so, navigate to CharacterSelect
+    local playerCount = #self.room.players
+    local maxPlayers = self.room.mode.playerCount or 2
+    if playerCount >= maxPlayers then
+      logger.info("Room " .. (self.room.roomNumber or "?") .. " is now full (" .. playerCount .. "/" .. maxPlayers .. "). Navigating to game scene.")
+      local roomScene = getSceneFromRoom(self.room)
+      if roomScene then
+        GAME.navigationStack:push(roomScene)
+        self.state = states.ROOM
+      else
+        logger.warn("No room scene available for mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'.")
+      end
+    end
   end
 end
 
@@ -333,6 +369,7 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
   resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(spectateRequestGrantedMessage)
   self.room = GAME.battleRoom
+  local roomScene = getSceneFromRoom(self.room)
   if GAME.battleRoom.match then
     self.state = states.INGAME
     local vsScene = GameBase({match = GAME.battleRoom.match})
@@ -340,11 +377,19 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
     local catchUp = GameCatchUp(vsScene)
     -- need to push character select, otherwise the pop on match end will return to lobby
     -- directly add to the stack so it isn't getting displayed
-    GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = getSceneFromRoom(self.room)
+    if roomScene then
+      GAME.navigationStack.scenes[#GAME.navigationStack.scenes+1] = roomScene
+    else
+      logger.warn("No room scene available for spectator mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'.")
+    end
     GAME.navigationStack:push(catchUp)
   else
     self.state = states.ROOM
-    GAME.navigationStack:push(getSceneFromRoom(self.room))
+    if roomScene then
+      GAME.navigationStack:push(roomScene)
+    else
+      logger.warn("No room scene available for spectator mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'. Staying in current scene.")
+    end
   end
 end
 

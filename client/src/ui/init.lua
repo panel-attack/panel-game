@@ -68,6 +68,8 @@ local ui = {
   MenuItem = import("./MenuItem"),
   ---@source MultiPlayerSelectionWrapper.lua
   MultiPlayerSelectionWrapper = import("./MultiPlayerSelectionWrapper"),
+  ---@source OverlayContainer.lua
+  OverlayContainer = import("./OverlayContainer"),
   ---@source PagedUniGrid.lua
   PagedUniGrid = import("./PagedUniGrid"),
   ---@source PanelCarousel.lua

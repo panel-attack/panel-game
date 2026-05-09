@@ -89,6 +89,182 @@ function Lobby:initLobbyMenu()
       GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF))
     end
   })
+  self.teamCreateButtonLabel = ui.Label({text = "Create team game", translate = false})
+
+  -- Create confirmation overlay for leaving team games
+  self.leaveConfirmOverlay = ui.OverlayContainer({})
+  local confirmPanel = ui.StackPanel({
+    alignment = "center",
+    hFill = true,
+    childGap = 12,
+  })
+  confirmPanel:addChild(ui.Label({text = "Leave this team game?", translate = false}))
+  local confirmButtonPanel = ui.StackPanel({
+    alignment = "center",
+    orientation = "horizontal",
+    hFill = true,
+    childGap = 16,
+  })
+  confirmButtonPanel:addChild(ui.TextButton({
+    label = ui.Label({text = "Yes", translate = false}),
+    width = 80,
+    onClick = function()
+      self.leaveConfirmOverlay:close()
+      GAME.netClient:leaveRoom()
+    end
+  }))
+  confirmButtonPanel:addChild(ui.TextButton({
+    label = ui.Label({text = "No", translate = false}),
+    width = 80,
+    onClick = function()
+      self.leaveConfirmOverlay:close()
+    end
+  }))
+  confirmPanel:addChild(confirmButtonPanel)
+  self.leaveConfirmOverlay:setContent(confirmPanel)
+
+  self.teamCreateButton = ui.TextButton({
+    label = self.teamCreateButtonLabel,
+    width = self.lobbyMenuWidth,
+    onClick = function(button)
+      if self:isLocalPlayerInRoom() then
+        local playerCount = self:getRoomPlayerCount()
+        if playerCount > 1 then
+          -- Show confirmation dialog
+          self.leaveConfirmOverlay:open()
+        else
+          -- Leave immediately if alone
+          GAME.netClient:leaveRoom()
+        end
+        return
+      end
+
+      -- open team composition options first, then go one level deeper for garbage mode
+      if self.teamCreateMenu then
+        self.teamCreateMenu:yieldFocus()
+        return
+      end
+
+      local x, y = button:getScreenPos()
+      local subMenu = ui.ScrollMenu({
+        x = x + self.lobbyMenu.width + 8,
+        y = y,
+        hAlign = "left",
+        vAlign = "top",
+        height = 132,
+        width = 220,
+        padding = 0,
+        childGap = 8,
+      })
+
+      local function openGarbageMenu(compositionButton, options)
+        if self.teamGarbageMenu then
+          self.teamGarbageMenu:yieldFocus()
+        end
+
+        local bx, by = compositionButton:getScreenPos()
+        local garbageMenu = ui.ScrollMenu({
+          x = bx + compositionButton.width + 8,
+          y = by,
+          hAlign = "left",
+          vAlign = "top",
+          height = 88,
+          width = 260,
+          padding = 0,
+          childGap = 8,
+        })
+
+        local allBtn = ui.TextButton({
+          label = ui.Label({text = options.labelPrefix .. " - garbage hits all opponents", translate = false}),
+          width = 260,
+          onClick = function()
+            GAME.netClient:requestRoom(GameModes.getPreset(options.allMode))
+            garbageMenu:yieldFocus()
+            subMenu:yieldFocus()
+          end
+        })
+        garbageMenu:addChild(allBtn)
+
+        local sharedBtn = ui.TextButton({
+          label = ui.Label({text = options.labelPrefix .. " - garbage shared by enemy team", translate = false}),
+          width = 260,
+          onClick = function()
+            GAME.netClient:requestRoom(GameModes.getPreset(options.sharedMode))
+            garbageMenu:yieldFocus()
+            subMenu:yieldFocus()
+          end
+        })
+        garbageMenu:addChild(sharedBtn)
+
+        if #garbageMenu.children > 0 then
+          garbageMenu:select(garbageMenu.children[1])
+        end
+
+        self.teamGarbageMenu = garbageMenu
+        subMenu:setFocus(garbageMenu, function()
+          subMenu:select(compositionButton)
+          self.teamGarbageMenu:detach()
+          self.teamGarbageMenu = nil
+        end)
+        self.uiRoot:addChild(garbageMenu)
+      end
+
+      local abbBtn = ui.TextButton({
+        label = ui.Label({text = "ABB (1v2)", translate = false}),
+        width = 220,
+        onClick = function(b)
+          openGarbageMenu(b, {
+            labelPrefix = "ABB",
+            allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
+            sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED
+          })
+        end
+      })
+      subMenu:addChild(abbBtn)
+
+      local aabbBtn = ui.TextButton({
+        label = ui.Label({text = "AABB (2v2)", translate = false}),
+        width = 220,
+        onClick = function(b)
+          openGarbageMenu(b, {
+            labelPrefix = "AABB",
+            allMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL,
+            sharedMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED
+          })
+        end
+      })
+      subMenu:addChild(aabbBtn)
+
+      local aabBtn = ui.TextButton({
+        label = ui.Label({text = "AAB (2v1)", translate = false}),
+        width = 220,
+        onClick = function(b)
+          -- reverse-path variant using the same 3-player team rule set
+          openGarbageMenu(b, {
+            labelPrefix = "AAB",
+            allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
+            sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED
+          })
+        end
+      })
+      subMenu:addChild(aabBtn)
+
+      if #subMenu.children > 0 then
+        subMenu:select(subMenu.children[1])
+      end
+
+      self.teamCreateMenu = subMenu
+      self.lobbyMenu:setFocus(subMenu, function()
+        if self.teamGarbageMenu then
+          self.teamGarbageMenu:detach()
+          self.teamGarbageMenu = nil
+        end
+        self.teamCreateMenu:detach()
+        self.teamCreateMenu = nil
+      end)
+      self.uiRoot:addChild(subMenu)
+    end
+  })
   self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})
   self.showLeaderboardButton = ui.TextButton({
     label = self.leaderboardToggleLabel,
@@ -140,6 +316,88 @@ function Lobby:initLobbyMenu()
 
   self.uiRoot:addChild(self.lobbyMenu)
   self.uiRoot:addChild(self.roomPanel)
+  self.uiRoot:addChild(self.leaveConfirmOverlay)
+end
+
+---@param lobbyDataV2 PersonalizedLobbyDataV2?
+---@return boolean
+function Lobby:isLocalPlayerInRoom(lobbyDataV2)
+  if GAME.netClient.room then
+    return true
+  end
+
+  lobbyDataV2 = lobbyDataV2 or GAME.netClient.lobbyDataV2
+  local localData = lobbyDataV2 and lobbyDataV2.players and lobbyDataV2.players[GAME.localPlayer.publicId]
+  return localData and localData.roomNumber ~= nil
+end
+
+---@param lobbyDataV2 PersonalizedLobbyDataV2?
+function Lobby:updateTeamCreateButtonState(lobbyDataV2)
+  if self:isLocalPlayerInRoom(lobbyDataV2) then
+    self.teamCreateButtonLabel:setText("Leave team game", nil, false)
+  else
+    self.teamCreateButtonLabel:setText("Create team game", nil, false)
+  end
+end
+
+-- Gets the number of players in the local player's current room
+---@return number
+function Lobby:getRoomPlayerCount()
+  -- First check the active BattleRoom
+  if GAME.netClient.room and GAME.netClient.room.players then
+    return #GAME.netClient.room.players
+  end
+
+  -- Fall back to lobby data
+  local lobbyData = GAME.netClient.lobbyDataV2
+  if not lobbyData then
+    return 0
+  end
+
+  local localData = lobbyData.players and lobbyData.players[GAME.localPlayer.publicId]
+  if not localData or not localData.roomNumber then
+    return 0
+  end
+
+  local room = lobbyData.rooms and lobbyData.rooms[localData.roomNumber]
+  if room and room.players then
+    return #room.players
+  end
+
+  return 0
+end
+
+-- Helper to format a slot number into a team label like A1/B2 based on game mode
+local function getSlotLabel(room, slotNumber)
+  if not room or not room.gameModeId then
+    return "Slot " .. tostring(slotNumber)
+  end
+
+  local ok, gm = pcall(GameModes.getPreset, room.gameModeId)
+  if not ok or not gm then
+    return "Slot " .. tostring(slotNumber)
+  end
+
+  local playersPerTeam = gm.playersPerTeam
+  if type(playersPerTeam) == "number" then
+    local n = playersPerTeam
+    local teamIndex = math.floor((slotNumber - 1) / n) + 1
+    local within = ((slotNumber - 1) % n) + 1
+    local teamLetter = (teamIndex == 1) and "A" or "B"
+    return teamLetter .. tostring(within)
+  elseif type(playersPerTeam) == "table" then
+    local cumulative = 0
+    for idx, count in ipairs(playersPerTeam) do
+      if slotNumber <= cumulative + count then
+        local within = slotNumber - cumulative
+        local teamLetter = (idx == 1) and "A" or "B"
+        return teamLetter .. tostring(within)
+      end
+      cumulative = cumulative + count
+    end
+  end
+
+  return "Slot " .. tostring(slotNumber)
 end
 
 -----------------
@@ -271,8 +529,18 @@ end
 ---@param personalizedLobbyData PersonalizedLobbyDataV2
 function Lobby:createRoomButtons(personalizedLobbyData)
   local roomButtons = {}
+  local localPublicId = GAME.localPlayer.publicId
 
   for _, room in pairs(personalizedLobbyData.rooms) do
+    -- Check if local player is in this room
+    local isLocalPlayerRoom = false
+    for _, playerId in ipairs(room.players) do
+      if playerId == localPublicId then
+        isLocalPlayerRoom = true
+        break
+      end
+    end
+
     ---@type table<integer, string>
     local playerStrings = {}
     for i, playerId in ipairs(room.players) do
@@ -282,14 +550,52 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     -- Check if room is waiting for players (has open slots)
     local hasOpenSlots = room.openSlots and #room.openSlots > 0
     local roomName
+    local onClick
 
-    if hasOpenSlots then
+    if isLocalPlayerRoom and hasOpenSlots then
+      -- This is the local player's team room - show status
+      local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
+
+      -- Build player list with slot labels
+      local playerLines = {}
+      for i, playerId in ipairs(room.players) do
+        local slotLabel = getSlotLabel(room, i)
+        local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
+        if playerId == localPublicId then
+          playerLines[#playerLines + 1] = slotLabel .. ": " .. playerName .. " (You)"
+        else
+          playerLines[#playerLines + 1] = slotLabel .. ": " .. playerName
+        end
+      end
+
+      -- Build waiting list
+      local waitingSlots = {}
+      for _, slotNumber in ipairs(room.openSlots) do
+        waitingSlots[#waitingSlots + 1] = getSlotLabel(room, slotNumber)
+      end
+
+      roomName = "Your Team Room " .. slotsText .. "\n" .. table.concat(playerLines, "\n")
+      if #waitingSlots > 0 then
+        roomName = roomName .. "\nWaiting: " .. table.concat(waitingSlots, ", ")
+      end
+
+      -- Clicking does nothing (or could show options like "Leave")
+      onClick = function()
+        -- Already in this room, no action needed
+        GAME.theme:playMoveSfx()
+      end
+    elseif hasOpenSlots then
       -- Waiting room - show join option
       local slotsText = string.format("%d/%d", #room.players, room.maxPlayers or 2)
       if #room.players == 1 then
         roomName = loc("lb_join") .. " " .. playerStrings[1] .. " [" .. slotsText .. "]"
       else
         roomName = loc("lb_join") .. "\n" .. table.concat(playerStrings, "\nvs\n") .. "\n[" .. slotsText .. "]"
+      end
+      -- Clicking opens room submenu for joining
+      onClick = function(button)
+        self:openRoomSubMenu(room, button)
+        GAME.theme:playValidationSfx()
       end
     else
       -- Full room - show spectate option
@@ -298,6 +604,7 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       else
         roomName = loc("lb_spectate") .. "\n" .. playerStrings[1] .. "\nvs\n" .. playerStrings[2] .. "\n(" .. room.state .. ")"
       end
+      onClick = self:requestSpectateFunction(room)
     end
 
     local icon
@@ -311,17 +618,6 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       icon = GAME.theme:chainImage(0)
     end
 
-    local onClick
-    if hasOpenSlots then
-      -- Clicking opens room submenu for joining
-      onClick = function(button)
-        self:openRoomSubMenu(room, button)
-        GAME.theme:playValidationSfx()
-      end
-    else
-      onClick = self:requestSpectateFunction(room)
-    end
-
     local button = ui.IconTextButton({
       label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenu.width - 19}),
       iconSize = 16,
@@ -331,10 +627,15 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     })
     button.lobbyType = "room"
     button.room = room
+    button.isLocalPlayerRoom = isLocalPlayerRoom
     roomButtons[#roomButtons+1] = button
   end
 
+  -- Sort: local player's room first, then by room number
   table.sort(roomButtons, function(a, b)
+    if a.isLocalPlayerRoom ~= b.isLocalPlayerRoom then
+      return a.isLocalPlayerRoom
+    end
     return a.room.roomNumber < b.room.roomNumber
   end)
 
@@ -366,8 +667,9 @@ function Lobby:openRoomSubMenu(room, button)
   -- Add join button for each open slot
   if room.openSlots then
     for _, slotNumber in ipairs(room.openSlots) do
+      local slotLabel = getSlotLabel(room, slotNumber)
       local joinButton = ui.TextButton({
-        label = ui.Label({text = loc("lb_join") .. " " .. loc("lb_slot") .. " " .. slotNumber, translate = false}),
+        label = ui.Label({text = loc("lb_join") .. " " .. slotLabel, translate = false}),
         width = 120,
         onClick = self:requestJoinRoomFunction(room, slotNumber)
       })
@@ -431,6 +733,22 @@ function Lobby:openPlayerSubMenu(playerId, button)
   })
 
   subMenu.playerId = playerId
+  -- If the target player is in a room with open slots, offer quick join-slot buttons
+  local playerInfo = lobbyDataV2.players[playerId]
+  if playerInfo and playerInfo.roomNumber then
+    local targetRoom = lobbyDataV2.rooms[playerInfo.roomNumber]
+    if targetRoom and targetRoom.openSlots then
+      for _, slotNumber in ipairs(targetRoom.openSlots) do
+        local slotLabel = getSlotLabel(targetRoom, slotNumber)
+        local quickJoin = ui.TextButton({
+          label = ui.Label({text = loc("lb_join") .. " " .. slotLabel, translate = false}),
+          width = 120,
+          onClick = self:requestJoinRoomFunction(targetRoom, slotNumber)
+        })
+        subMenu:addChild(quickJoin)
+      end
+    end
+  end
 
   local vsButton = ui.LobbyChallengeButton({
     gameModeId = GameModes.IDs.TWO_PLAYER_VS,
@@ -484,7 +802,9 @@ function Lobby:openPlayerSubMenu(playerId, button)
     end})
 
   subMenu:addChild(backButton)
-  subMenu:select(vsButton)
+  if #subMenu.children > 0 then
+    subMenu:select(subMenu.children[1])
+  end
   self.playerSubMenu = subMenu
 
   local subMenuLine = ui.Line({
@@ -535,6 +855,10 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   self.lobbyMenu:addChild(self.onePlayerEndlessButton)
   self.lobbyMenu:addChild(self.onePlayerTimeAttackButton)
   self.lobbyMenu:addChild(self.onePlayerVsButton)
+  self:updateTeamCreateButtonState(lobbyDataV2)
+  if self.teamCreateButton then
+    self.lobbyMenu:addChild(self.teamCreateButton)
+  end
   self.lobbyMenu:addChild(self.showLeaderboardButton)
   self.lobbyMenu:addChild(self.backButton)
 
@@ -590,10 +914,12 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
       elseif reverseOffset == 1 then
         self.lobbyMenu:select(self.showLeaderboardButton)
       elseif reverseOffset == 2 then
-        self.lobbyMenu:select(self.onePlayerVsButton)
+        self.lobbyMenu:select(self.teamCreateButton)
       elseif reverseOffset == 3 then
-        self.lobbyMenu:select(self.onePlayerTimeAttackButton)
+        self.lobbyMenu:select(self.onePlayerVsButton)
       elseif reverseOffset == 4 then
+        self.lobbyMenu:select(self.onePlayerTimeAttackButton)
+      elseif reverseOffset == 5 then
         self.lobbyMenu:select(self.onePlayerEndlessButton)
       else
         logger.warn("Unexpectedly couldn't find previous non-player/room selection, resetting to first interactable element")
