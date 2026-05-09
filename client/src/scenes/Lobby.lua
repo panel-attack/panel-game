@@ -187,6 +187,17 @@ function Lobby:requestSpectateFunction(room)
   end
 end
 
+-- requests to join the specified room at a slot
+---@param room LobbyRoomV2
+---@param slotNumber integer
+---@return function
+function Lobby:requestJoinRoomFunction(room, slotNumber)
+  return function()
+    GAME.netClient:requestJoinRoom(room.roomNumber, slotNumber)
+    GAME.theme:playValidationSfx()
+  end
+end
+
 ---@param publicId PublicPlayerID
 ---@param gameModeId GameModeID?
 ---@return string

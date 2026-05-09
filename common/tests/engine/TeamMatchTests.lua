@@ -71,6 +71,9 @@ local function testMatchEnds_whenOneTeamEliminated_2v2()
 
   local match, teams = createTeamMatch(4, 2, 2)
 
+  -- Run a frame first so clock > 0 (game_over_clock=0 means "not set")
+  runFrames(match, 1)
+
   -- Verify match hasn't ended yet
   assert(match:hasEnded() == false, "Match should not have ended yet")
 
@@ -93,6 +96,9 @@ local function testMatchContinues_whenOnePlayerDies_2v2()
 
   local match, teams = createTeamMatch(4, 2, 2)
 
+  -- Run 1 frame so clock > 0 (game_over_clock=0 means "not set")
+  runFrames(match, 1)
+
   -- Kill only player 1 (Team A still has player 2)
   killStack(match.stacks[1])
 
@@ -106,6 +112,9 @@ local function testMatchEnds_whenLastTeamMemberDies_2v2()
   logger.info("testMatchEnds_whenLastTeamMemberDies_2v2")
 
   local match, teams = createTeamMatch(4, 2, 2)
+
+  -- Run 1 frame so clock > 0 (game_over_clock=0 means "not set")
+  runFrames(match, 1)
 
   -- Kill player 1
   killStack(match.stacks[1])
@@ -132,6 +141,7 @@ local function testMatchEnds_whenSoloEliminated_1v2()
   logger.info("testMatchEnds_whenSoloEliminated_1v2")
 
   local match, teams = createTeamMatch(3, 2, {1, 2})  -- 1v2 asymmetric
+  runFrames(match, 1)  -- Clock > 0 so game_over_clock works
 
   -- Kill solo player (player 1)
   killStack(match.stacks[1])
@@ -149,6 +159,7 @@ local function testMatchEnds_whenTeamEliminated_1v2()
   logger.info("testMatchEnds_whenTeamEliminated_1v2")
 
   local match, teams = createTeamMatch(3, 2, {1, 2})  -- 1v2 asymmetric
+  runFrames(match, 1)  -- Clock > 0 so game_over_clock works
 
   -- Kill both team members (players 2 and 3)
   killStack(match.stacks[2])
@@ -167,6 +178,7 @@ local function testMatchContinues_whenOneTeamMemberDies_1v2()
   logger.info("testMatchContinues_whenOneTeamMemberDies_1v2")
 
   local match, teams = createTeamMatch(3, 2, {1, 2})  -- 1v2 asymmetric
+  runFrames(match, 1)  -- Clock > 0 so game_over_clock works
 
   -- Kill one team member (player 2)
   killStack(match.stacks[2])
@@ -184,6 +196,7 @@ local function testMatchEnds_3v3()
   logger.info("testMatchEnds_3v3")
 
   local match, teams = createTeamMatch(6, 2, 3)
+  runFrames(match, 1)  -- Clock > 0 so game_over_clock works
 
   -- Kill all of Team B (players 4, 5, 6)
   killStack(match.stacks[4])
@@ -199,6 +212,7 @@ local function testMatchContinues_3v3_partialDeath()
   logger.info("testMatchContinues_3v3_partialDeath")
 
   local match, teams = createTeamMatch(6, 2, 3)
+  runFrames(match, 1)  -- Clock > 0 so game_over_clock works
 
   -- Kill 2 of 3 Team A members
   killStack(match.stacks[1])
@@ -217,6 +231,7 @@ local function testMatchEnds_draw()
   logger.info("testMatchEnds_draw")
 
   local match, teams = createTeamMatch(4, 2, 2)
+  runFrames(match, 1)  -- Clock > 0 so game_over_clock works
 
   -- Kill all players simultaneously
   killStack(match.stacks[1])
@@ -266,6 +281,7 @@ local function testGetWinners_returnsTeamMembers()
   logger.info("testGetWinners_returnsTeamMembers")
 
   local match, teams = createTeamMatch(4, 2, 2)
+  runFrames(match, 1)  -- Clock > 0 so game_over_clock works
 
   -- Kill Team B
   killStack(match.stacks[3])

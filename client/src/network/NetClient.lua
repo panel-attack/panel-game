@@ -262,6 +262,27 @@ local function processRankedStatusMessage(self, message)
   self.room:updateRankedStatus(rankedStatus, comments)
 end
 
+---@param self NetClient
+local function processPlayerJoinedRoom(self, message)
+  if not self.room then
+    return
+  end
+
+  -- A new player joined the room - create a Player and add them to the BattleRoom
+  local playerData = message.playerJoinedRoom
+  if playerData then
+    local Player = require("client.src.Player")
+    local player = Player(playerData.name, playerData.publicId, false)
+    player.playerNumber = playerData.playerNumber
+    if playerData.settings then
+      player:updateSettings(playerData.settings)
+    end
+    self.room:addPlayer(player)
+    love.window.requestAttention()
+    SoundController:playSfx(themes[config.theme].sounds.notification)
+  end
+end
+
 local function processMenuStateMessage(player, message)
   local menuState = message.menu_state
   if menuState.playerNumber then
@@ -360,6 +381,8 @@ local function createListeners(self)
   -- messageListener holds *all* available listeners
   local messageListeners = {}
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
+  messageListeners.addToRoom = createListener(self, "addToRoom", start2pVsOnlineMatch)
+  messageListeners.playerJoinedRoom = createListener(self, "playerJoinedRoom", processPlayerJoinedRoom)
   messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
   messageListeners.challengeUpdate = createListener(self, "challengeUpdate", processChallengeUpdate)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
@@ -403,6 +426,7 @@ local NetClient = class(function(self)
     players = messageListeners.players,
     lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
+    addToRoom = messageListeners.addToRoom,
     challengeUpdate = messageListeners.challengeUpdate,
   }
 
@@ -413,6 +437,7 @@ local NetClient = class(function(self)
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
     gameResult = messageListeners.gameResult,
+    playerJoinedRoom = messageListeners.playerJoinedRoom,
   }
 
   -- all listeners running while in a match
@@ -516,6 +541,14 @@ end
 function NetClient:requestSpectate(roomNumber)
   if not self.pendingResponses.spectateResponse then
     self.pendingResponses.spectateResponse = self.tcpClient:sendRequest(ClientMessages.requestSpectate(config.name, roomNumber))
+  end
+end
+
+---@param roomNumber integer
+---@param slotNumber integer
+function NetClient:requestJoinRoom(roomNumber, slotNumber)
+  if self:isConnected() then
+    self.tcpClient:sendRequest(ClientMessages.requestJoinRoom(roomNumber, slotNumber))
   end
 end
 

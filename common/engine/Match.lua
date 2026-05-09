@@ -265,6 +265,9 @@ function Match:run()
 
     self:updateClock()
 
+    -- Distribute multi-target garbage after all stacks have run for this iteration
+    self:distributeGarbageToTargets()
+
     -- Since the stacks can affect each other, don't save rollback until after all have run
     for i, stack in ipairs(self.stacks) do
       if runs[i] > runsSoFar then
@@ -295,27 +298,110 @@ function Match:run()
   return runs
 end
 
+--- Distributes ready garbage from each sender to their targets
+--- For "all" mode: sends to ALL targets at once
+--- For "shared" mode: sends to ONE target based on round-robin
+function Match:distributeGarbageToTargets()
+  for senderIndex, targets in ipairs(self.garbageTargets) do
+    if #targets > 1 then
+      -- Multi-target: handle based on garbage mode
+      local sender = self.stacks[senderIndex]
+      local oldestTransitTime = sender:getOldestFinishedGarbageTransitTime()
+      if oldestTransitTime then
+        -- Find the minimum stopWatch among all living targets
+        local minStopWatch = math.huge
+        local livingTargets = {}
+        for _, target in ipairs(targets) do
+          if not target:game_ended() then
+            minStopWatch = math.min(minStopWatch, target.stopWatch)
+            livingTargets[#livingTargets + 1] = target
+          end
+        end
+
+        -- If any living target is ready to receive
+        if #livingTargets > 0 and minStopWatch >= oldestTransitTime then
+          local garbageDelivery = sender:getReadyGarbageAt(oldestTransitTime)
+          if garbageDelivery then
+            if self.garbageMode == "shared" then
+              -- Shared mode: pick one target using round-robin
+              local senderTeamIndex = self.teams and TeamUtils.getPlayerTeamIndex(self.teams, senderIndex) or 1
+              local teamState = self.teamGarbageState and self.teamGarbageState[senderTeamIndex]
+
+              if teamState then
+                -- Get the next valid target from round-robin
+                local targetIndex = teamState.currentTargetIndex
+                local targetStack = nil
+                local attempts = 0
+
+                -- Find next living target
+                while attempts < #teamState.enemyIndices do
+                  local enemyIndex = teamState.enemyIndices[targetIndex]
+                  targetStack = self.stacks[enemyIndex]
+                  if targetStack and not targetStack:game_ended() then
+                    break
+                  end
+                  targetIndex = (targetIndex % #teamState.enemyIndices) + 1
+                  attempts = attempts + 1
+                  targetStack = nil
+                end
+
+                -- Advance round-robin for next time
+                teamState.currentTargetIndex = (targetIndex % #teamState.enemyIndices) + 1
+
+                if targetStack then
+                  -- Clone and send garbage to single target
+                  local garbageCopy = {}
+                  for i, g in ipairs(garbageDelivery) do
+                    garbageCopy[i] = shallowcpy(g)
+                  end
+                  targetStack:receiveGarbage(garbageCopy)
+                end
+              end
+            else
+              -- "All" mode: send to ALL living targets
+              for _, target in ipairs(livingTargets) do
+                -- Clone the garbage for each recipient
+                local garbageCopy = {}
+                for i, g in ipairs(garbageDelivery) do
+                  garbageCopy[i] = shallowcpy(g)
+                end
+                target:receiveGarbage(garbageCopy)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
 ---@param stack BaseStack
 function Match:pushGarbageTo(stack)
   -- check if anyone wants to push garbage into the stack's queue
   for _, st in ipairs(self.garbageSources[stack]) do
-    local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
-    if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-      if stack.stopWatch > oldestTransitTime then
-        -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
-        -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
-        --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
-        --  which may even include another rollback
-        if not self:rollbackToStopWatch(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
-          -- if we can't rollback, it's a desync
-          self.desyncError = true
-          self:abort()
+    -- Skip multi-target senders (handled by distributeGarbageToTargets)
+    local senderIndex = tableUtils.indexOf(self.stacks, st)
+    if senderIndex and #self.garbageTargets[senderIndex] > 1 then
+      -- Multi-target garbage is distributed separately, skip this sender
+    else
+      local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
+      if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
+        if stack.stopWatch > oldestTransitTime then
+          -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
+          -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
+          --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
+          --  which may even include another rollback
+          if not self:rollbackToStopWatch(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
+            -- if we can't rollback, it's a desync
+            self.desyncError = true
+            self:abort()
+          end
         end
-      end
-      local garbageDelivery = st:getReadyGarbageAt(stack.stopWatch)
-      if garbageDelivery then
-        --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
-        stack:receiveGarbage(garbageDelivery)
+        local garbageDelivery = st:getReadyGarbageAt(stack.stopWatch)
+        if garbageDelivery then
+          --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
+          stack:receiveGarbage(garbageDelivery)
+        end
       end
     end
   end
@@ -574,7 +660,10 @@ function Match:hasEnded()
       end
       self.gameOverClock = gameOverClock
       -- make sure everyone has run to the currently known game over clock
-      if tableUtils.trueForAll(self.stacks, function(stack) return stack.clock and stack.clock > gameOverClock end) then
+      -- dead stacks are considered "past" their game over clock (they won't run anymore)
+      if tableUtils.trueForAll(self.stacks, function(stack)
+        return stack:game_ended() or (stack.clock and stack.clock > gameOverClock)
+      end) then
         self.ended = true
         return true
       end

@@ -1,7 +1,7 @@
 -- TeamGarbageTests.lua
 -- Integration tests for garbage distribution in team modes
--- These tests will FAIL until team garbage logic is implemented (TDD red phase)
 
+require("client.src.globals")
 local logger = require("common.lib.logger")
 local Match = require("common.engine.Match")
 local GameModes = require("common.data.GameModes")
@@ -9,6 +9,7 @@ local LevelPresets = require("common.data.LevelPresets")
 local GeneratorSource = require("common.engine.GeneratorSource")
 local TeamUtils = require("common.data.TeamUtils")
 local GarbageQueueTestingUtils = require("common.tests.engine.GarbageQueueTestingUtils")
+local tableUtils = require("common.lib.tableUtils")
 
 -- Helper to create a team match configured for garbage testing
 local function createGarbageTestMatch(playerCount, teamCount, playersPerTeam, garbageMode)
@@ -56,10 +57,12 @@ local function stackReceivedGarbage(stack)
   return stack.incomingGarbage and stack.incomingGarbage:len() > 0
 end
 
--- Helper to get total incoming garbage for a stack
+-- Helper to get total incoming garbage for a stack (uses history to count all garbage ever received)
 local function getIncomingGarbageCount(stack)
   if not stack.incomingGarbage then return 0 end
-  return stack.incomingGarbage:len()
+  -- Use history instead of :len() because :len() only counts staged garbage
+  -- which gets consumed when garbage drops onto the stack
+  return #stack.incomingGarbage.history
 end
 
 -- Helper to kill a stack
@@ -81,14 +84,42 @@ local function testGarbageAllMode_hitsAllEnemies()
   local p3Stack = match.stacks[3]  -- Enemy
   local p4Stack = match.stacks[4]  -- Enemy
 
+  -- Debug: check garbage targets setup
+  logger.info("P1 targets: " .. #(match.garbageTargets[1] or {}))
+  logger.info("P3 sources: " .. #(match.garbageSources[p3Stack] or {}))
+
   -- Run to frame 100
   runToFrame(match, 100)
 
   -- P1 sends garbage (4 wide combo)
   GarbageQueueTestingUtils.sendGarbage(p1Stack, 4, 1)
+  logger.info("P1 outgoing garbage len: " .. p1Stack.outgoingGarbage:len())
+  logger.info("P1 stopWatch when sent: " .. p1Stack.stopWatch)
+
+  -- Run a bit to let processStagedGarbageForClock move garbage to transit
+  runToFrame(match, 200)
+  logger.info("After frame 200:")
+  logger.info("P1 outgoing garbage len: " .. p1Stack.outgoingGarbage:len())
+  logger.info("P1 outgoing garbageInTransit: " .. tableUtils.length(p1Stack.outgoingGarbage.garbageInTransit or {}))
+  logger.info("P1 transitTimers first: " .. tostring(p1Stack.outgoingGarbage.transitTimers.first))
+  logger.info("P1 transitTimers last: " .. tostring(p1Stack.outgoingGarbage.transitTimers.last))
 
   -- Run until garbage arrives (garbage transit time)
   runToFrame(match, 300)
+
+  -- Debug: check what happened
+  logger.info("After run to 300:")
+  logger.info("P1 clock=" .. p1Stack.clock .. " stopWatch=" .. p1Stack.stopWatch)
+  logger.info("P3 clock=" .. p3Stack.clock .. " stopWatch=" .. p3Stack.stopWatch)
+  logger.info("P1 outgoing garbage len: " .. p1Stack.outgoingGarbage:len())
+  logger.info("P1 outgoing garbageInTransit: " .. tableUtils.length(p1Stack.outgoingGarbage.garbageInTransit or {}))
+  for k, v in pairs(p1Stack.outgoingGarbage.garbageInTransit or {}) do
+    logger.info("  transit key: " .. tostring(k) .. " value count: " .. #v)
+  end
+  logger.info("P1 oldest transit time: " .. tostring(p1Stack:getOldestFinishedGarbageTransitTime()))
+  logger.info("P3 incoming garbage len: " .. getIncomingGarbageCount(p3Stack))
+  logger.info("P3 incoming garbageInTransit: " .. tableUtils.length(p3Stack.incomingGarbage.garbageInTransit or {}))
+  logger.info("P4 incoming garbage len: " .. getIncomingGarbageCount(p4Stack))
 
   -- P3 should receive garbage
   assert(getIncomingGarbageCount(p3Stack) > 0, "P3 (enemy) should receive garbage")

@@ -246,6 +246,8 @@ function Server:lobbyStateV2()
       players = {},
       spectators = {},
       wins = {},
+      maxPlayers = room.maxPlayers,
+      openSlots = room:getOpenSlots(),
     }
 
     if room.game then
