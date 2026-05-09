@@ -374,7 +374,18 @@ end
 function Room:updateWinCounts(game)
   for i, player in ipairs(self.players) do
     logger.debug("checking if player " .. i .. " scored...")
-    if player.player_number == game.winnerIndex then
+    local playerWon = false
+
+    if game.winnerTeamIndex and self.teams then
+      -- Team game: all members of winning team get credit
+      local playerTeamIndex = TeamUtils.getPlayerTeamIndex(self.teams, player.player_number)
+      playerWon = (playerTeamIndex == game.winnerTeamIndex)
+    else
+      -- Non-team game: only individual winner gets credit
+      playerWon = (player.player_number == game.winnerIndex)
+    end
+
+    if playerWon then
       logger.trace("Player " .. i .. " scored")
       self.win_counts[i] = self.win_counts[i] + 1
     end

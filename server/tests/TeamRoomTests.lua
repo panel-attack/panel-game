@@ -461,11 +461,11 @@ local function test2v2Room_winCountsUpdate()
   room:handleGameOverOutcome({outcome = 2}, p3)
   room:handleGameOverOutcome({outcome = 2}, p4)
 
-  -- Win count goes to first player of winning team (the representative winner)
-  assert(room.win_counts[1] == 1, "P1 win count should be 1 (first player of winning team)")
-  assert(room.win_counts[2] == 0, "P2 win count should be 0")
-  assert(room.win_counts[3] == 0, "P3 win count should be 0")
-  assert(room.win_counts[4] == 0, "P4 win count should be 0")
+  -- All winning team members get win credit
+  assert(room.win_counts[1] == 1, "P1 win count should be 1 (Team A won)")
+  assert(room.win_counts[2] == 1, "P2 win count should be 1 (Team A won)")
+  assert(room.win_counts[3] == 0, "P3 win count should be 0 (Team B lost)")
+  assert(room.win_counts[4] == 0, "P4 win count should be 0 (Team B lost)")
 end
 
 --------------------------------------------------
@@ -493,11 +493,12 @@ local function test2v2Room_gameResultSentToAll()
 
   clearMessages({p1, p2, p3, p4})
 
-  -- All players report same outcome (player 1 won)
+  -- Team A (P1, P2) reports they won (outcome = 1)
+  -- Team B (P3, P4) reports they lost (outcome = 2)
   room:handleGameOverOutcome({outcome = 1}, p1)
   room:handleGameOverOutcome({outcome = 1}, p2)
-  room:handleGameOverOutcome({outcome = 1}, p3)
-  room:handleGameOverOutcome({outcome = 1}, p4)
+  room:handleGameOverOutcome({outcome = 2}, p3)
+  room:handleGameOverOutcome({outcome = 2}, p4)
 
   -- All players should receive gameResult
   for i, player in ipairs({p1, p2, p3, p4}) do
