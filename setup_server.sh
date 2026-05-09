@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REPO_URL="https://github.com/panel-attack/panel-game.git"
+REPO_URL="https://github.com/briankeegan/panel-game.git"
 BRANCH="bramp/multi-player"
 INSTALL_DIR="/opt/panel-attack"
 SERVICE_USER="panelattack"
