@@ -57,7 +57,10 @@ end
 ---@param senderId PublicPlayerID
 ---@param receiverId PublicPlayerID
 ---@param gameModeId GameModeID
-function ClientProtocol.updateChallengeStatus(senderId, receiverId, gameModeId, challengeActive)
+---@param challengeActive boolean
+---@param roomNumber integer? optional room number for team room invites
+---@param slotNumber integer? optional slot number (player index) for team room invites
+function ClientProtocol.updateChallengeStatus(senderId, receiverId, gameModeId, challengeActive, roomNumber, slotNumber)
   local playerChallengeV2Message =
   {
     challengeUpdate =
@@ -66,12 +69,31 @@ function ClientProtocol.updateChallengeStatus(senderId, receiverId, gameModeId, 
       receiverId = receiverId,
       gameModeId = gameModeId,
       challengeActive = challengeActive,
+      roomNumber = roomNumber,
+      slotNumber = slotNumber,
     }
   }
 
   return {
     messageType = msgTypes.jsonMessage,
     messageText = playerChallengeV2Message,
+  }
+end
+
+--- Request to join an existing room at a specific slot
+---@param roomNumber integer
+---@param slotNumber integer the player index to join as
+function ClientProtocol.requestJoinRoom(roomNumber, slotNumber)
+  local joinRoomMessage = {
+    joinRoomRequest = {
+      roomNumber = roomNumber,
+      slotNumber = slotNumber,
+    }
+  }
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = joinRoomMessage,
   }
 end
 

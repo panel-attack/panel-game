@@ -273,16 +273,40 @@ end
 ---@param receiver ServerPlayer
 ---@param gameModeId GameModeID
 ---@param challengeActive boolean
-function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive)
+---@param roomNumber integer? optional room number for team room invites
+---@param slotNumber integer? optional slot number for team room invites
+function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber)
   if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
-    logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
-    local previouslyProposedGameModes = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
-    if previouslyProposedGameModes and previouslyProposedGameModes[gameModeId] then
-      self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
+    -- Check if this is a room invite (joining existing room)
+    if roomNumber then
+      local room = self.rooms[roomNumber]
+      if room and not room:isFull() then
+        logger.debug(string.format("%s invites %s to join room %d at slot %d", sender.name, receiver.name, roomNumber, slotNumber or 0))
+
+        -- Check if receiver has previously invited sender to this room (mutual acceptance)
+        local proposalKey = "room_" .. roomNumber .. "_" .. (slotNumber or 0)
+        local previouslyProposed = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID][proposalKey]
+
+        if previouslyProposed then
+          -- Mutual acceptance - add receiver to room
+          self:handleJoinRoom(receiver, roomNumber, slotNumber)
+        else
+          -- Send invite to receiver
+          self:updateChallenge(sender, receiver, proposalKey, challengeActive)
+          receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber))
+        end
+      end
     else
-      -- no existing challenge for this game mode
-      self:updateChallenge(sender, receiver, gameModeId, challengeActive)
-      receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive))
+      -- Standard 2-player game challenge
+      logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
+      local previouslyProposedGameModes = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
+      if previouslyProposedGameModes and previouslyProposedGameModes[gameModeId] then
+        self:create_room(GameModes.getPreset(gameModeId), sender, receiver)
+      else
+        -- no existing challenge for this game mode
+        self:updateChallenge(sender, receiver, gameModeId, challengeActive)
+        receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive))
+      end
     end
   else
     -- this message won't be handled because one of the parties is no longer in lobby
@@ -362,6 +386,49 @@ function Server:closeRoom(room, reason)
 
   room:close(reason)
   self:setLobbyChanged()
+end
+
+---@param player ServerPlayer
+---@param roomNumber integer
+---@param slotNumber integer
+---@return boolean success
+function Server:handleJoinRoom(player, roomNumber, slotNumber)
+  local room = self.rooms[roomNumber]
+  if not room then
+    logger.warn("Player " .. player.name .. " tried to join non-existent room " .. roomNumber)
+    return false
+  end
+
+  if room:isFull() then
+    logger.warn("Player " .. player.name .. " tried to join full room " .. roomNumber)
+    return false
+  end
+
+  -- Check if the slot is valid (next available slot)
+  local expectedSlot = #room.players + 1
+  if slotNumber ~= expectedSlot then
+    logger.warn("Player " .. player.name .. " tried to join room " .. roomNumber .. " at invalid slot " .. slotNumber .. " (expected " .. expectedSlot .. ")")
+    return false
+  end
+
+  -- Enable no delay for multiplayer
+  ---@diagnostic disable-next-line: invisible
+  player.connection:enableNoDelay(true)
+
+  -- Add player to the room
+  local success = room:addPlayer(player)
+  if success then
+    self:clearProposals(player)
+    self.playerToRoom[player] = room
+    self:setLobbyChanged()
+
+    -- Send addToRoom message to the joining player
+    player:sendJson(ServerProtocol.addToRoom(room, nil))
+
+    logger.info("Player " .. player.name .. " joined room " .. roomNumber .. " as player " .. slotNumber)
+  end
+
+  return success
 end
 
 ---@param name string
@@ -602,11 +669,21 @@ function Server:processMessage(message, connection)
     elseif player.state == "lobby" and message.challengeUpdate then
       local receiver = self.publicIdToPlayer[message.challengeUpdate.receiverId]
       if message.challengeUpdate.senderId == player.publicPlayerID and receiver then
-        self:processChallengeUpdate(player, receiver, message.challengeUpdate.gameModeId, message.challengeUpdate.challengeActive)
+        self:processChallengeUpdate(
+          player,
+          receiver,
+          message.challengeUpdate.gameModeId,
+          message.challengeUpdate.challengeActive,
+          message.challengeUpdate.roomNumber,
+          message.challengeUpdate.slotNumber
+        )
         return true
       end
     elseif player.state == "lobby" and message.roomRequest then
       self:create_room(message.gameMode, player)
+      return true
+    elseif player.state == "lobby" and message.joinRoomRequest then
+      self:handleJoinRoom(player, message.joinRoomRequest.roomNumber, message.joinRoomRequest.slotNumber)
       return true
     elseif message.leaderboard_request then
       connection:sendJson(ServerProtocol.sendLeaderboard(self.leaderboard:get_report(self, self.connectionToPlayer[connection].userId)))

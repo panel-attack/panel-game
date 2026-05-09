@@ -15,6 +15,7 @@ local TeamUtils = require("common.data.TeamUtils")
 -- Players alternate between the character select state and playing, and spectators can join and leave
 ---@class Room : Signal
 ---@field players ServerPlayer[]
+---@field maxPlayers integer maximum players for this room's game mode
 ---@field leaderboard Leaderboard?
 ---@field name string
 ---@field roomNumber roomNumber
@@ -48,9 +49,10 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.matchCount = 0
   self.gameMode = gameMode
   self.recentGameAbort = false
+  self.maxPlayers = gameMode.playerCount or #players
 
-  -- Initialize teams for team-based game modes
-  if gameMode.teamCount and gameMode.playersPerTeam then
+  -- Initialize teams for team-based game modes (only when room is full)
+  if gameMode.teamCount and gameMode.playersPerTeam and #self.players == self.maxPlayers then
     self.teams = TeamUtils.createTeams(#self.players, gameMode.teamCount, gameMode.playersPerTeam)
   end
 
@@ -93,9 +95,55 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self:createSignal("matchStart")
   self:createSignal("matchEnd")
   self:createSignal("pauseToggled")
+  self:createSignal("playerJoined")
 end
 )
 
+---@return boolean true if room has all required players
+function Room:isFull()
+  return #self.players >= self.maxPlayers
+end
+
+---@return integer[] list of open slot indices
+function Room:getOpenSlots()
+  local slots = {}
+  for i = #self.players + 1, self.maxPlayers do
+    slots[#slots + 1] = i
+  end
+  return slots
+end
+
+---@param player ServerPlayer
+---@return boolean success
+function Room:addPlayer(player)
+  if self:isFull() then
+    logger.warn("Cannot add player " .. player.name .. " to full room " .. self.roomNumber)
+    return false
+  end
+
+  local playerIndex = #self.players + 1
+  self.players[playerIndex] = player
+  player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
+  player:addToRoom(self)
+  self.win_counts[playerIndex] = 0
+  player.cursor = "__Ready"
+  player.player_number = playerIndex
+
+  -- Update room name
+  self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
+
+  -- Initialize teams when room becomes full
+  if self:isFull() and self.gameMode.teamCount and self.gameMode.playersPerTeam and not self.teams then
+    self.teams = TeamUtils.createTeams(#self.players, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+  end
+
+  -- Notify everyone in room about the new player
+  self:broadcastJson(ServerProtocol.playerJoinedRoom(self, player))
+  self:emitSignal("playerJoined", player)
+
+  logger.info("Player " .. player.name .. " joined room " .. self.roomNumber .. " as player " .. playerIndex)
+  return true
+end
 
 function Room:onPlayerSettingsUpdate(player)
   if self:state() == "character select" then
@@ -118,6 +166,11 @@ function Room:onPlayerSettingsUpdate(player)
 end
 
 function Room:start_match()
+  if not self:isFull() then
+    logger.warn("Cannot start match in room " .. self.roomNumber .. " - waiting for " .. (self.maxPlayers - #self.players) .. " more players")
+    return false
+  end
+
   self.matchCount = self.matchCount + 1
   logger.info("Starting match " .. self.matchCount .. " for " .. self.roomNumber .. " " .. self.name)
 
@@ -170,7 +223,13 @@ function Room:state()
 end
 
 ---@param newSpectator ServerPlayer
+---@return boolean success
 function Room:add_spectator(newSpectator)
+  if not self:isFull() then
+    logger.warn("Cannot add spectator " .. newSpectator.name .. " to room " .. self.roomNumber .. " - room not full yet")
+    return false
+  end
+
   newSpectator.state = "spectating"
   newSpectator:addToRoom(self)
   self.spectators[#self.spectators + 1] = newSpectator
@@ -187,6 +246,7 @@ function Room:add_spectator(newSpectator)
   local spectatorList = self:spectator_names()
   logger.debug("sending spectator list: " .. json.encode(spectatorList))
   self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, spectatorList))
+  return true
 end
 
 ---@return string[]

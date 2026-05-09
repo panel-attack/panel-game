@@ -474,8 +474,10 @@ local challengeUpdateTemplate = {
 ---@param receiver ServerPlayer
 ---@param gameModeId GameModeID? nil if the challenged picks the game mode
 ---@param challengeActive boolean
+---@param roomNumber integer? optional room number for team room invites
+---@param slotNumber integer? optional slot number for team room invites
 ---@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive)
+function ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber)
   local challengeMessage = challengeUpdateTemplate
   challengeMessage.senderId = sender.publicPlayerID
   challengeMessage.content.sender = sender.name
@@ -484,6 +486,8 @@ function ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challe
   challengeMessage.content.receiverId = receiver.publicPlayerID
   challengeMessage.content.gameModeId = gameModeId
   challengeMessage.content.challengeActive = challengeActive
+  challengeMessage.content.roomNumber = roomNumber
+  challengeMessage.content.slotNumber = slotNumber
 
   return {
     messageType = msgTypes.jsonMessage,
@@ -531,6 +535,35 @@ function ServerProtocol.sendPauseNotification(roomNumber, source, paused)
   return {
     messageType = msgTypes.jsonMessage,
     messageText = pauseNotificationMessage,
+  }
+end
+
+local playerJoinedRoomTemplate = {
+  sender = "room",
+  senderId = nil,
+  type = "playerJoinedRoom",
+  content = {
+    playerNumber = nil,
+    name = nil,
+    publicId = nil,
+    settings = nil,
+  }
+}
+
+---@param room Room
+---@param player ServerPlayer
+---@return {messageType: table, messageText: ServerMessage}
+function ServerProtocol.playerJoinedRoom(room, player)
+  local playerJoinedRoomMessage = playerJoinedRoomTemplate
+  playerJoinedRoomMessage.senderId = room.roomNumber
+  playerJoinedRoomMessage.content.playerNumber = player.player_number
+  playerJoinedRoomMessage.content.name = player.name
+  playerJoinedRoomMessage.content.publicId = player.publicPlayerID
+  playerJoinedRoomMessage.content.settings = player:getSettings()
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = playerJoinedRoomMessage,
   }
 end
 

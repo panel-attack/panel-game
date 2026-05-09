@@ -547,6 +547,212 @@ local function test2v2Room_notRanked()
 end
 
 --------------------------------------------------
+-- Partial room / late join tests
+--------------------------------------------------
+
+-- Helper to get a partial room with only creator
+local function getPartialRoom()
+  for _, room in ipairs(activeRooms) do
+    if room.players and #room.players > 0 then
+      room:close()
+    end
+  end
+  activeRooms = {}
+  resetTestPlayers()
+
+  local p1 = ServerTesting.players[3]  -- Creator
+  local p2 = ServerTesting.players[4]
+  local p3 = ServerTesting.players[5]
+  local p4 = ServerTesting.players[6]
+
+  for _, p in ipairs({p1, p2, p3, p4}) do
+    p:updateSettings({inputMethod = "controller", level = 10})
+    p.save_replays_publicly = "not at all"
+  end
+
+  -- Create room with only 1 player, but for 2v2 mode
+  local room = Room(97, {p1}, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL))
+  activeRooms[#activeRooms + 1] = room
+
+  return room, p1, p2, p3, p4
+end
+
+local function testPartialRoom_notFull()
+  logger.info("testPartialRoom_notFull")
+
+  local room, p1, p2, p3, p4 = getPartialRoom()
+
+  assert(room:isFull() == false, "Room with 1 player should not be full")
+  assert(room.maxPlayers == 4, "maxPlayers should be 4 for 2v2")
+
+  local slots = room:getOpenSlots()
+  assert(#slots == 3, "Should have 3 open slots")
+  assert(slots[1] == 2, "First open slot should be 2")
+  assert(slots[2] == 3, "Second open slot should be 3")
+  assert(slots[3] == 4, "Third open slot should be 4")
+
+  room:close()
+end
+
+local function testPartialRoom_noTeamsUntilFull()
+  logger.info("testPartialRoom_noTeamsUntilFull")
+
+  local room, p1, p2, p3, p4 = getPartialRoom()
+
+  -- Teams should NOT be created until room is full
+  assert(room.teams == nil, "Teams should not exist in partial room")
+
+  room:close()
+end
+
+local function testPartialRoom_addPlayer()
+  logger.info("testPartialRoom_addPlayer")
+
+  local room, p1, p2, p3, p4 = getPartialRoom()
+
+  -- Add second player
+  local success = room:addPlayer(p2)
+  assert(success == true, "Should successfully add player 2")
+  assert(#room.players == 2, "Room should have 2 players")
+  assert(room:isFull() == false, "Room with 2/4 players should not be full")
+  assert(room.teams == nil, "Teams should not exist yet")
+  assert(p2.player_number == 2, "Player 2 should have player_number=2")
+
+  -- Add third player
+  success = room:addPlayer(p3)
+  assert(success == true, "Should successfully add player 3")
+  assert(#room.players == 3, "Room should have 3 players")
+  assert(room:isFull() == false, "Room with 3/4 players should not be full")
+  assert(room.teams == nil, "Teams should not exist yet")
+
+  -- Add fourth player - room becomes full
+  success = room:addPlayer(p4)
+  assert(success == true, "Should successfully add player 4")
+  assert(#room.players == 4, "Room should have 4 players")
+  assert(room:isFull() == true, "Room with 4/4 players should be full")
+
+  -- Teams should now exist
+  assert(room.teams ~= nil, "Teams should exist now that room is full")
+  assert(#room.teams == 2, "Should have 2 teams")
+
+  room:close()
+end
+
+local function testPartialRoom_addPlayerFull()
+  logger.info("testPartialRoom_addPlayerFull")
+
+  local room, p1, p2, p3, p4 = get2v2Room()
+
+  -- Room is already full, try to add another player
+  local extra = ServerTesting.players[1]  -- Bob
+  extra:updateSettings({inputMethod = "controller", level = 10})
+
+  local success = room:addPlayer(extra)
+  assert(success == false, "Should not be able to add player to full room")
+  assert(#room.players == 4, "Room should still have 4 players")
+
+  room:close()
+end
+
+local function testPartialRoom_noSpectators()
+  logger.info("testPartialRoom_noSpectators")
+
+  local room, p1, p2, p3, p4 = getPartialRoom()
+
+  -- Try to add spectator to partial room
+  local spectator = ServerTesting.players[1]  -- Bob
+  spectator.state = "lobby"
+
+  local success = room:add_spectator(spectator)
+  assert(success == false, "Should not be able to add spectator to partial room")
+  assert(#room.spectators == 0, "Room should have no spectators")
+  assert(spectator.state == "lobby", "Spectator should still be in lobby")
+
+  room:close()
+end
+
+local function testPartialRoom_spectatorsAllowedWhenFull()
+  logger.info("testPartialRoom_spectatorsAllowedWhenFull")
+
+  local room, p1, p2, p3, p4 = get2v2Room()
+  clearMessages({p1, p2, p3, p4})
+
+  -- Try to add spectator to full room
+  local spectator = ServerTesting.players[1]  -- Bob
+  spectator.state = "lobby"
+  spectator.room = nil
+
+  local success = room:add_spectator(spectator)
+  assert(success == true, "Should be able to add spectator to full room")
+  assert(#room.spectators == 1, "Room should have 1 spectator")
+  assert(spectator.state == "spectating", "Spectator should be spectating")
+
+  room:close()
+end
+
+local function testPartialRoom_noMatchStart()
+  logger.info("testPartialRoom_noMatchStart")
+
+  local room, p1, p2, p3, p4 = getPartialRoom()
+
+  -- All present players ready up
+  p1:updateSettings({wants_ready = true, loaded = true, ready = true})
+
+  -- Match should NOT start (not enough players)
+  assert(room.matchCount == 0, "Match should not have started")
+  assert(room.game == nil, "Game should not exist")
+
+  room:close()
+end
+
+local function testPartialRoom_playerJoinedMessage()
+  logger.info("testPartialRoom_playerJoinedMessage")
+
+  local room, p1, p2, p3, p4 = getPartialRoom()
+  clearMessages({p1})
+
+  -- Add second player
+  room:addPlayer(p2)
+
+  -- P1 should receive playerJoinedRoom message
+  local foundMessage = false
+  local msg = p1.connection.outgoingMessageQueue:pop()
+  while msg ~= nil do
+    if msg.messageText and msg.messageText.type == "playerJoinedRoom" then
+      foundMessage = true
+      assert(msg.messageText.content.playerNumber == 2, "Should be player 2")
+      assert(msg.messageText.content.name == p2.name, "Should have player 2's name")
+      break
+    end
+    msg = p1.connection.outgoingMessageQueue:pop()
+  end
+  assert(foundMessage, "P1 should receive playerJoinedRoom message")
+
+  room:close()
+end
+
+local function testPartialRoom_roomNameUpdates()
+  logger.info("testPartialRoom_roomNameUpdates")
+
+  local room, p1, p2, p3, p4 = getPartialRoom()
+
+  -- Initial name should just be creator
+  assert(room.name == p1.name, "Room name should initially be creator's name")
+
+  -- Add players and verify name updates
+  room:addPlayer(p2)
+  assert(room.name == p1.name .. " vs " .. p2.name, "Room name should update with 2 players")
+
+  room:addPlayer(p3)
+  assert(room.name == p1.name .. " vs " .. p2.name .. " vs " .. p3.name, "Room name should update with 3 players")
+
+  room:addPlayer(p4)
+  assert(room.name == p1.name .. " vs " .. p2.name .. " vs " .. p3.name .. " vs " .. p4.name, "Room name should update with 4 players")
+
+  room:close()
+end
+
+--------------------------------------------------
 -- Run all tests
 --------------------------------------------------
 
@@ -584,5 +790,16 @@ test2v2Room_close()
 
 -- Ranked status
 test2v2Room_notRanked()
+
+-- Partial room / late join
+testPartialRoom_notFull()
+testPartialRoom_noTeamsUntilFull()
+testPartialRoom_addPlayer()
+testPartialRoom_addPlayerFull()
+testPartialRoom_noSpectators()
+testPartialRoom_spectatorsAllowedWhenFull()
+testPartialRoom_noMatchStart()
+testPartialRoom_playerJoinedMessage()
+testPartialRoom_roomNameUpdates()
 
 logger.info("All TeamRoomTests passed!")
