@@ -279,12 +279,25 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       playerStrings[i] = Lobby.getPlayerNameWithRating(playerId, room.gameModeId)
     end
 
+    -- Check if room is waiting for players (has open slots)
+    local hasOpenSlots = room.openSlots and #room.openSlots > 0
     local roomName
 
-    if #room.players == 1 then
-      roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " (" .. room.state .. ")"
+    if hasOpenSlots then
+      -- Waiting room - show join option
+      local slotsText = string.format("%d/%d", #room.players, room.maxPlayers or 2)
+      if #room.players == 1 then
+        roomName = loc("lb_join") .. " " .. playerStrings[1] .. " [" .. slotsText .. "]"
+      else
+        roomName = loc("lb_join") .. "\n" .. table.concat(playerStrings, "\nvs\n") .. "\n[" .. slotsText .. "]"
+      end
     else
-      roomName = loc("lb_spectate") .. "\n" .. playerStrings[1] .. "\nvs\n" .. playerStrings[2] .. "\n(" .. room.state .. ")"
+      -- Full room - show spectate option
+      if #room.players == 1 then
+        roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " (" .. room.state .. ")"
+      else
+        roomName = loc("lb_spectate") .. "\n" .. playerStrings[1] .. "\nvs\n" .. playerStrings[2] .. "\n(" .. room.state .. ")"
+      end
     end
 
     local icon
@@ -298,12 +311,23 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       icon = GAME.theme:chainImage(0)
     end
 
+    local onClick
+    if hasOpenSlots then
+      -- Clicking opens room submenu for joining
+      onClick = function(button)
+        self:openRoomSubMenu(room, button)
+        GAME.theme:playValidationSfx()
+      end
+    else
+      onClick = self:requestSpectateFunction(room)
+    end
+
     local button = ui.IconTextButton({
       label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenu.width - 19}),
       iconSize = 16,
       icon = icon,
       width = self.lobbyMenuWidth,
-      onClick = self:requestSpectateFunction(room)
+      onClick = onClick
     })
     button.lobbyType = "room"
     button.room = room
@@ -315,6 +339,73 @@ function Lobby:createRoomButtons(personalizedLobbyData)
   end)
 
   return roomButtons
+end
+
+---@param room LobbyRoomV2
+---@param button Button the button click that opens this submenu originated from
+function Lobby:openRoomSubMenu(room, button)
+  if self.roomSubMenu then
+    self.roomSubMenu:yieldFocus()
+  end
+
+  local x, y = button:getScreenPos()
+
+  local subMenu = ui.ScrollMenu({
+    x = x + self.lobbyMenu.width + 8,
+    y = y,
+    hAlign = "left",
+    vAlign = "top",
+    height = 88,
+    width = 120,
+    padding = 0,
+    childGap = 8,
+  })
+
+  subMenu.roomNumber = room.roomNumber
+
+  -- Add join button for each open slot
+  if room.openSlots then
+    for _, slotNumber in ipairs(room.openSlots) do
+      local joinButton = ui.TextButton({
+        label = ui.Label({text = loc("lb_join") .. " " .. loc("lb_slot") .. " " .. slotNumber, translate = false}),
+        width = 120,
+        onClick = self:requestJoinRoomFunction(room, slotNumber)
+      })
+      subMenu:addChild(joinButton)
+    end
+  end
+
+  local backButton = ui.TextButton({
+    label = ui.Label({text = "back"}),
+    width = 120,
+    onClick = function()
+      GAME.theme:playCancelSfx()
+      subMenu:yieldFocus()
+    end})
+
+  subMenu:addChild(backButton)
+  if #subMenu.children > 0 then
+    subMenu:select(subMenu.children[1])
+  end
+  self.roomSubMenu = subMenu
+
+  local subMenuLine = ui.Line({
+    x = x + button.width + 8,
+    y = y + button.height / 2,
+    height = button.height,
+    points = {x + button.width + 8, y + button.height / 2, subMenu.x - 8, y + button.height / 2}
+  })
+  self.roomSubMenuLine = subMenuLine
+
+  self.lobbyMenu:setFocus(subMenu, function()
+    self.roomSubMenu:detach()
+    self.roomSubMenu = nil
+    self.roomSubMenuLine:detach()
+    self.roomSubMenuLine = nil
+  end)
+
+  self.uiRoot:addChild(subMenu)
+  self.uiRoot:addChild(subMenuLine)
 end
 
 ---@param playerId PublicPlayerID
@@ -534,6 +625,16 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
       self.subMenuLine.y = y + previousButton.height / 2
       self.subMenuLine:setPoints({self.subMenuLine.x, self.subMenuLine.y, self.playerSubMenu.x - 8, self.subMenuLine.y})
       self.playerSubMenu.y = y
+    end
+  end
+
+  -- Handle room submenu: close if room is no longer joinable
+  if self.roomSubMenu then
+    local room = lobbyDataV2.rooms[self.roomSubMenu.roomNumber]
+    local hasOpenSlots = room and room.openSlots and #room.openSlots > 0
+    if not room or not hasOpenSlots then
+      -- Room disappeared or is now full
+      self.roomSubMenu:yieldFocus()
     end
   end
 

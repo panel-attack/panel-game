@@ -94,6 +94,8 @@ lb_select_player,,Select a player name to ask for a match.,Selectionnez un joueu
 lb_set_connect,,Setting up connection...,Préparation de la connexion...,Estabelecendo conexão...,接続しています…,Estableciendo conexión...,Verbindungsaufbau...,Stabilendo la connessione...,กำลังเชื่ื่อมต่อ
 lb_hide_board,,Hide Leaderboard,Cacher le classement,Ocultar Placar de Classificação,ランキングを非表示,Ocultar clasificación,Rangliste verbergen,Nascondi la classifica,ซ่อนตารางคะแนน
 lb_spectate,,spectate,regarder,assistir,観戦する,mirar a,zuschauen,Assisti,ดูคนอื่นเล่น
+lb_join,,join,rejoindre,entrar,参加する,unirse,beitreten,unisciti,เข้าร่วม
+lb_slot,,Slot,Place,Vaga,スロット,Espacio,Platz,Posto,ช่อง
 lb_used_name,,"Error: name is taken :<
 
 
