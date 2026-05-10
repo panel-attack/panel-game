@@ -31,15 +31,8 @@ LobbyChallengeButton, "LobbyRoomInviteButton")
 LobbyRoomInviteButton.TYPE = "LobbyRoomInviteButton"
 
 function LobbyRoomInviteButton:onClick()
-  if self.challengeState == LobbyChallengeButton.challengeStates.PROPOSING then
-    -- Withdraw the invite
-    GAME.netClient:withdrawRoomInvite(self.playerId, self.roomNumber, self.slotNumber, self.gameModeId)
-    GAME.theme:playValidationSfx()
-  else
-    -- Send the invite (or accept an incoming one)
-    GAME.netClient:invitePlayerToRoom(self.playerId, self.roomNumber, self.slotNumber, self.gameModeId)
-    GAME.theme:playValidationSfx()
-  end
+  -- Reuse shared room-invite handling so slot-open guards and conflict checks apply consistently.
+  LobbyChallengeButton.onClick(self)
 end
 
 return LobbyRoomInviteButton

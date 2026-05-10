@@ -81,16 +81,32 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     if type(inviteKey) ~= "string" then
       return false
     end
-    local roomNumberStr = inviteKey:match("^room_(%d+)_%d+$")
-    if not roomNumberStr then
+    local roomNumberStr, slotNumberStr = inviteKey:match("^room_(%d+)_(%d+)$")
+    if not roomNumberStr or not slotNumberStr then
       return false
     end
 
     local targetRoomNumber = self.lobbyDataV2.players[targetPlayerId] and self.lobbyDataV2.players[targetPlayerId].roomNumber
     local inviteRoomNumber = tonumber(roomNumberStr)
+    local inviteSlotNumber = tonumber(slotNumberStr)
+    local room = inviteRoomNumber and self.lobbyDataV2.rooms[inviteRoomNumber]
+    local slotStillOpen = false
+    if room and room.openSlots and inviteSlotNumber then
+      for _, openSlot in ipairs(room.openSlots) do
+        if tonumber(openSlot) == inviteSlotNumber then
+          slotStillOpen = true
+          break
+        end
+      end
+    end
+
     -- Only clear when the target is already in the local player's room.
-    -- This avoids breaking outsider->owner pending join requests.
-    return targetRoomNumber ~= nil and localRoomNumber ~= nil and targetRoomNumber == localRoomNumber and inviteRoomNumber == localRoomNumber
+    -- Also keep other slot invites intact; only remove this key when its slot is no longer open.
+    return targetRoomNumber ~= nil
+      and localRoomNumber ~= nil
+      and targetRoomNumber == localRoomNumber
+      and inviteRoomNumber == localRoomNumber
+      and not slotStillOpen
   end
 
   -- if a player we challenged is not in lobby data or is in a room, they cannot accept our challenge anymore
@@ -265,6 +281,7 @@ end
 
 local function processLeaveRoomMessage(self, message)
   if self.room then
+    local leavingRoomNumber = self.room.roomNumber
     local transition
     if self.room.match then
       -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
@@ -284,6 +301,19 @@ local function processLeaveRoomMessage(self, message)
     self.room:shutdown()
     self.room = nil
     GAME.battleRoom = nil
+
+    -- Immediately clear stale local lobby room assignment so room-invite UI cannot linger
+    -- while waiting for the next lobbyStateV2 broadcast.
+    if self.lobbyDataV2 then
+      if leavingRoomNumber then
+        self.lobbyDataV2.rooms[leavingRoomNumber] = nil
+      end
+      local localId = GAME.localPlayer and GAME.localPlayer.publicId
+      if localId and self.lobbyDataV2.players[localId] then
+        self.lobbyDataV2.players[localId].roomNumber = nil
+      end
+      self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+    end
 
     self.state = states.ONLINE
     GAME.navigationStack:popToName("Lobby", transition)

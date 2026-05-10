@@ -139,7 +139,6 @@ function Lobby:initLobbyMenu()
         return
       end
 
-      -- open team composition options first, then go one level deeper for garbage mode
       if self.teamCreateMenu then
         self.teamCreateMenu:yieldFocus()
         return
@@ -151,12 +150,14 @@ function Lobby:initLobbyMenu()
         y = y,
         hAlign = "left",
         vAlign = "top",
-        height = 132,
-        width = 220,
+        height = 68,
+        width = 180,
         padding = 0,
         childGap = 8,
       })
+      subMenu.originButton = button
 
+      -- Level 3: garbage mode (team only)
       local function openGarbageMenu(compositionButton, options)
         if self.teamGarbageMenu then
           self.teamGarbageMenu:yieldFocus()
@@ -168,117 +169,173 @@ function Lobby:initLobbyMenu()
           y = by,
           hAlign = "left",
           vAlign = "top",
-          height = 88,
+          height = 68,
           width = 260,
           padding = 0,
           childGap = 8,
         })
 
-        local allBtn = ui.TextButton({
-          label = ui.Label({text = options.labelPrefix .. " - garbage hits all opponents", translate = false}),
+        garbageMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "Garbage hits all opponents", translate = false}),
           width = 260,
           onClick = function()
             GAME.netClient:requestRoom(GameModes.getPreset(options.allMode))
             garbageMenu:yieldFocus()
+            self.teamCompositionMenu:yieldFocus()
             subMenu:yieldFocus()
           end
-        })
-        garbageMenu:addChild(allBtn)
-
-        local sharedBtn = ui.TextButton({
-          label = ui.Label({text = options.labelPrefix .. " - garbage shared by enemy team", translate = false}),
+        }))
+        garbageMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "Garbage shared by enemy team", translate = false}),
           width = 260,
           onClick = function()
             GAME.netClient:requestRoom(GameModes.getPreset(options.sharedMode))
             garbageMenu:yieldFocus()
+            self.teamCompositionMenu:yieldFocus()
             subMenu:yieldFocus()
           end
-        })
-        garbageMenu:addChild(sharedBtn)
-
-        if #garbageMenu.children > 0 then
-          garbageMenu:select(garbageMenu.children[1])
-        end
+        }))
+        garbageMenu:select(garbageMenu.children[1])
 
         self.teamGarbageMenu = garbageMenu
-        subMenu:setFocus(garbageMenu, function()
-          subMenu:select(compositionButton)
+        self.teamCompositionMenu:setFocus(garbageMenu, function()
+          self.teamCompositionMenu:select(compositionButton)
           self.teamGarbageMenu:detach()
           self.teamGarbageMenu = nil
         end)
         self.uiRoot:addChild(garbageMenu)
       end
-        subMenu.originButton = button
 
-      local abbBtn = ui.TextButton({
-        label = ui.Label({text = "ABB (1v2)", translate = false}),
-        width = 220,
-        onClick = function(b)
-          openGarbageMenu(b, {
-            labelPrefix = "ABB",
-            allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
-            sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED
-          })
+      -- Level 2: team composition
+      local function openTeamCompositionMenu(level1Button)
+        if self.teamCompositionMenu then
+          self.teamCompositionMenu:yieldFocus()
         end
-      })
-      subMenu:addChild(abbBtn)
 
-      local aabbBtn = ui.TextButton({
-        label = ui.Label({text = "AABB (2v2)", translate = false}),
-        width = 220,
-        onClick = function(b)
-          openGarbageMenu(b, {
-            labelPrefix = "AABB",
-            allMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL,
-            sharedMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED
-          })
-        end
-      })
-      subMenu:addChild(aabbBtn)
+        local bx, by = level1Button:getScreenPos()
+        local compositionMenu = ui.ScrollMenu({
+          x = bx + level1Button.width + 8,
+          y = by,
+          hAlign = "left",
+          vAlign = "top",
+          height = 108,
+          width = 180,
+          padding = 0,
+          childGap = 8,
+        })
 
-      local aabBtn = ui.TextButton({
-        label = ui.Label({text = "AAB (2v1)", translate = false}),
-        width = 220,
-        onClick = function(b)
-          -- reverse-path variant using the same 3-player team rule set
-          openGarbageMenu(b, {
-            labelPrefix = "AAB",
-            allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
-            sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED
-          })
-        end
-      })
-      subMenu:addChild(aabBtn)
+        compositionMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "1 vs 2", translate = false}),
+          width = 180,
+          onClick = function(b)
+            openGarbageMenu(b, {
+              allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
+              sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED,
+            })
+          end
+        }))
+        compositionMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "2 vs 2", translate = false}),
+          width = 180,
+          onClick = function(b)
+            openGarbageMenu(b, {
+              allMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL,
+              sharedMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED,
+            })
+          end
+        }))
+        compositionMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "2 vs 1", translate = false}),
+          width = 180,
+          onClick = function(b)
+            openGarbageMenu(b, {
+              allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
+              sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED,
+            })
+          end
+        }))
+        compositionMenu:select(compositionMenu.children[1])
 
-      local ffaBtn3 = ui.TextButton({
-        label = ui.Label({text = "1v1v1 (FFA)", translate = false}),
-        width = 220,
-        onClick = function()
-          GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA))
-          subMenu:yieldFocus()
-        end
-      })
-      subMenu:addChild(ffaBtn3)
-
-      local ffaBtn4 = ui.TextButton({
-        label = ui.Label({text = "1v1v1v1 (FFA)", translate = false}),
-        width = 220,
-        onClick = function()
-          GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA))
-          subMenu:yieldFocus()
-        end
-      })
-      subMenu:addChild(ffaBtn4)
-
-      if #subMenu.children > 0 then
-        subMenu:select(subMenu.children[1])
+        self.teamCompositionMenu = compositionMenu
+        subMenu:setFocus(compositionMenu, function()
+          if self.teamGarbageMenu then
+            self.teamGarbageMenu:detach()
+            self.teamGarbageMenu = nil
+          end
+          self.teamCompositionMenu:detach()
+          self.teamCompositionMenu = nil
+        end)
+        self.uiRoot:addChild(compositionMenu)
       end
+
+      -- Level 2: survival player count
+      local function openSurvivalMenu(level1Button)
+        if self.teamCompositionMenu then
+          self.teamCompositionMenu:yieldFocus()
+        end
+
+        local bx, by = level1Button:getScreenPos()
+        local survivalMenu = ui.ScrollMenu({
+          x = bx + level1Button.width + 8,
+          y = by,
+          hAlign = "left",
+          vAlign = "top",
+          height = 68,
+          width = 180,
+          padding = 0,
+          childGap = 8,
+        })
+
+        survivalMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "3 Players (1v1v1)", translate = false}),
+          width = 180,
+          onClick = function()
+            GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA))
+            survivalMenu:yieldFocus()
+            subMenu:yieldFocus()
+          end
+        }))
+        survivalMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "4 Players (1v1v1v1)", translate = false}),
+          width = 180,
+          onClick = function()
+            GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA))
+            survivalMenu:yieldFocus()
+            subMenu:yieldFocus()
+          end
+        }))
+        survivalMenu:select(survivalMenu.children[1])
+
+        self.teamCompositionMenu = survivalMenu
+        subMenu:setFocus(survivalMenu, function()
+          self.teamCompositionMenu:detach()
+          self.teamCompositionMenu = nil
+        end)
+        self.uiRoot:addChild(survivalMenu)
+      end
+
+      -- Level 1 buttons
+      subMenu:addChild(ui.TextButton({
+        label = ui.Label({text = "Team Match", translate = false}),
+        width = 180,
+        onClick = function(b) openTeamCompositionMenu(b) end
+      }))
+      subMenu:addChild(ui.TextButton({
+        label = ui.Label({text = "Survival", translate = false}),
+        width = 180,
+        onClick = function(b) openSurvivalMenu(b) end
+      }))
+      subMenu:select(subMenu.children[1])
 
       self.teamCreateMenu = subMenu
       self.lobbyMenu:setFocus(subMenu, function()
         if self.teamGarbageMenu then
           self.teamGarbageMenu:detach()
           self.teamGarbageMenu = nil
+        end
+        if self.teamCompositionMenu then
+          self.teamCompositionMenu:detach()
+          self.teamCompositionMenu = nil
         end
         self.teamCreateMenu:detach()
         self.teamCreateMenu = nil
@@ -389,6 +446,19 @@ function Lobby:getRoomPlayerCount()
 end
 
 -- Helper to format a slot number into a team label like A1/B2 based on game mode
+local function getTeamLetter(teamIndex)
+  if type(teamIndex) ~= "number" or teamIndex < 1 then
+    return "T?"
+  end
+
+  -- A-Z for the first 26 teams, then T27, T28, ... as fallback.
+  if teamIndex <= 26 then
+    return string.char(string.byte("A") + teamIndex - 1)
+  end
+
+  return "T" .. tostring(teamIndex)
+end
+
 local function getSlotLabel(room, slotNumber)
   if not room or not room.gameModeId then
     return "Slot " .. tostring(slotNumber)
@@ -404,14 +474,14 @@ local function getSlotLabel(room, slotNumber)
     local n = playersPerTeam
     local teamIndex = math.floor((slotNumber - 1) / n) + 1
     local within = ((slotNumber - 1) % n) + 1
-    local teamLetter = (teamIndex == 1) and "A" or "B"
+    local teamLetter = getTeamLetter(teamIndex)
     return teamLetter .. tostring(within)
   elseif type(playersPerTeam) == "table" then
     local cumulative = 0
     for idx, count in ipairs(playersPerTeam) do
       if slotNumber <= cumulative + count then
         local within = slotNumber - cumulative
-        local teamLetter = (idx == 1) and "A" or "B"
+        local teamLetter = getTeamLetter(idx)
         return teamLetter .. tostring(within)
       end
       cumulative = cumulative + count

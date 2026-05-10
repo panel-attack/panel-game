@@ -390,6 +390,17 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
       end
       local room = self.rooms[roomNumber]
       if room and not room:isFull() then
+        local requestedSlot = tonumber(slotNumber)
+        if requestedSlot then
+          local slotOpen = tableUtils.trueForAny(room:getOpenSlots(), function(openSlot)
+            return tonumber(openSlot) == requestedSlot
+          end)
+          if not slotOpen then
+            logger.debug(string.format("Room invite rejected: requested slot %s is not open in room %d", tostring(slotNumber), roomNumber))
+            return
+          end
+        end
+
         logger.debug(string.format("%s invites %s to join room %d at slot %d", sender.name, receiver.name, roomNumber, slotNumber or 0))
 
         -- Check if receiver has previously invited sender to this room (mutual acceptance)
@@ -547,6 +558,16 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
+  if slotNumber ~= nil then
+    local slotOpen = tableUtils.trueForAny(room:getOpenSlots(), function(openSlot)
+      return tonumber(openSlot) == slotNumber
+    end)
+    if not slotOpen then
+      logger.warn("Player " .. player.name .. " tried to join unavailable slot " .. tostring(slotNumber) .. " in room " .. roomNumber)
+      return false
+    end
+  end
+
   -- Slot number is informational - we always add to the next available position
   local actualSlot = #room.players + 1
 
@@ -557,7 +578,10 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
   -- Add player to the room
   local success = room:addPlayer(player)
   if success then
+    -- Clear only proposals involving the joining player.
+    -- Keep other players' pending slot requests intact.
     self:clearProposals(player)
+
     self.playerToRoom[player] = room
     self:setLobbyChanged()
 

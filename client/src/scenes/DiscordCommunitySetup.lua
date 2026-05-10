@@ -11,7 +11,7 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
   self.music = "main"
 
   local titleFontSize = 28
-  local bodyFontSize = 14
+  local bodyFontSize = 16
 
   -- Create a centered vertical stack panel for all content
   local contentStack = ui.StackPanel({
@@ -24,7 +24,8 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
   -- Title
   local titleLabel = ui.Label({
     fontSize = titleFontSize,
-    text = "discord_welcome_title",
+    text = "Unofficial Beta Build",
+    translate = false,
     hAlign = "center",
     vAlign = "center"
   })
@@ -35,24 +36,11 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
     height = 10
   }))
   
-  -- Discord logo
-  local discordLogo = ui.ImageContainer({
-    image = love.graphics.newImage("client/assets/themes/Panel Attack Modern/discord_logo.png"),
-    width = 160,
-    height = 160,
-    hAlign = "center"
-  })
-  contentStack:addElement(discordLogo)
-  
-  contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 10
-  }))
-  
   -- Message lines
   local messageLine1 = ui.Label({
     fontSize = bodyFontSize,
-    text = "discord_message_line1",
+    text = "This is an unofficial version of Panel Attack.",
+    translate = false,
     hAlign = "center",
     vAlign = "center"
   })
@@ -65,7 +53,8 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
 
   local messageLine2 = ui.Label({
     fontSize = bodyFontSize,
-    text = "discord_message_line2",
+    text = "Please do NOT report bugs to the official Panel Attack team.",
+    translate = false,
     hAlign = "center",
     vAlign = "center"
   })
@@ -78,18 +67,14 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
 
   local messageLine3 = ui.Label({
     fontSize = bodyFontSize,
-    text = "discord_message_line3",
+    text = "This build is beta. If you have questions or bugs, contact bramp.",
+    translate = false,
     hAlign = "center",
     vAlign = "center"
   })
   contentStack:addElement(messageLine3)
 
-  local discordLinkButton = ui.MenuItem.createButtonMenuItem("discord_join_link", nil, nil, function()
-    GAME.theme:playValidationSfx()
-    love.system.openURL("https://discord.panelattack.com")
-  end)
-  
-  local continueButton = ui.MenuItem.createButtonMenuItem("next_button", nil, nil, function()
+  local continueButton = ui.MenuItem.createButtonMenuItem("Continue", nil, false, function()
     GAME.theme:playValidationSfx()
     config.discordCommunityShown = true
     write_conf_file()
@@ -102,7 +87,7 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
   }))
   
   -- Menu buttons
-  local menu = ui.Menu.createCenteredMenu({discordLinkButton, continueButton}, 0)
+  local menu = ui.Menu.createCenteredMenu({continueButton}, 0)
   contentStack:addElement(menu)
   self.menu = menu
 
