@@ -93,8 +93,9 @@ end
 
 ---@param replay ReplayV3
 ---@param players MatchParticipant[]?
+---@param gameMode GameMode? optional — when provided, restores team setup on the engine for online play
 ---@return ClientMatch
-function ClientMatch.createFromReplay(replay, players)
+function ClientMatch.createFromReplay(replay, players, gameMode)
   local engine = Match.createFromReplay(replay)
 
   -- we only need to reconstruct the players from the metadata
@@ -128,6 +129,25 @@ function ClientMatch.createFromReplay(replay, players)
   clientMatch:setStage(replay.metadata.stageId)
 
   clientMatch.players = players
+
+  -- Online team games: restore the team configuration on the engine. Without this,
+  -- Match:hasEnded skips the TEAMS_ACTIVE check (it requires self.teams) and the
+  -- match never ends until literally every stack dies — even the surviving team.
+  -- garbage targets are already populated above from replay.garbageFlows; we just
+  -- need teams + garbageMode for hasEnded and shared-mode distribution to work.
+  if gameMode then
+    clientMatch.gameMode = gameMode
+    clientMatch.stackInteraction = gameMode.stackInteraction
+    clientMatch.matchRules = gameMode.matchRules
+    if gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS
+        and gameMode.teamCount and gameMode.playersPerTeam then
+      local teams = TeamUtils.createTeams(#players, gameMode.teamCount, gameMode.playersPerTeam)
+      clientMatch.engine:setTeams(teams)
+      if gameMode.garbageMode then
+        clientMatch.engine:setGarbageMode(gameMode.garbageMode)
+      end
+    end
+  end
 
   -- and assign their stacks from the engine
   for i, player in ipairs(clientMatch.players) do

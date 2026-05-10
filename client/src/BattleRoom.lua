@@ -76,7 +76,10 @@ function BattleRoom.createFromServerMessage(message)
     logger.debug("Joining a match as spectator")
     if message.replay then
       local replay = message.replay
-      local match = ClientMatch.createFromReplay(replay)
+      -- Spectator path: pass gameMode so team-based hasEnded works for the spectator
+      -- view of the match too. Without this, the spectator's local engine never ends
+      -- a 4p_ffa or team match until the last surviving player dies.
+      local match = ClientMatch.createFromReplay(replay, nil, gameMode)
       for i = 1, #match.players do
         battleRoom:addPlayer(match.players[i])
       end
@@ -379,7 +382,10 @@ end
 function BattleRoom:startMatch(replay)
   local match
   if replay then
-    match = ClientMatch.createFromReplay(replay, self.players)
+    -- Pass self.mode through so createFromReplay can restore the team config on the
+    -- engine (otherwise Match:hasEnded's TEAMS_ACTIVE check is silently skipped on
+    -- online team/FFA games and the match never ends until everyone dies).
+    match = ClientMatch.createFromReplay(replay, self.players, self.mode)
   else
     match = ClientMatch.createFromBattleRoom(self)
   end
