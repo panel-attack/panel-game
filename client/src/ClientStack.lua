@@ -789,9 +789,7 @@ function ClientStack:drawPlayerName()
   local chipX = centerX - chipWidth / 2
 
   local color = self._teamColor or ClientStack.DEFAULT_TEAM_COLOR
-  GraphicsUtil.setColor(color[1], color[2], color[3], color[4] or 0.85)
-  GraphicsUtil.drawRectangle("fill", chipX, chipY, chipWidth, chipHeight, 0)
-  GraphicsUtil.setColor(1, 1, 1, 1)
+  GraphicsUtil.drawRectangle("fill", chipX, chipY, chipWidth, chipHeight, color[1], color[2], color[3], color[4] or 0.85)
 
   local fontDelta = 8                                          -- bump default font size
   GraphicsUtil.printf(username, chipX, chipY + 6, chipWidth, "center", nil, nil, fontDelta)

@@ -64,31 +64,24 @@ function Button:receiveInputs(input)
 end
 
 function Button:drawBackground()
-  if self.backgroundColor[4] > 0 then
-    local alpha = self.backgroundColor[4]
-    if self.currentlyPressed or self.selected then
-      alpha = 1.0
-    end
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height,
-      self.backgroundColor[1], self.backgroundColor[2], self.backgroundColor[3], alpha,
-      self.CORNER_RADIUS, self.CORNER_RADIUS)
-    GraphicsUtil.setColor(1, 1, 1, 1)
-  end
+  local bgColor = (self.selected or self.currentlyPressed)
+    and GAME.theme.colors.menuSelectedBackgroundColor
+    or  GAME.theme.colors.menuDefaultBackgroundColor
+  GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height,
+    bgColor[1], bgColor[2], bgColor[3], bgColor[4],
+    self.CORNER_RADIUS, self.CORNER_RADIUS)
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 function Button:drawOutline()
-  local outlineColor = self.outlineColor
-
-  if self.selected then
-    outlineColor = {1.0, 0.84, 0.0, 1.0}
-  end
-
-  for w = 1, self.BORDER_WIDTH do
-    GraphicsUtil.drawRectangle("line", self.x - w, self.y - w, self.width + 2*w, self.height + 2*w,
-      outlineColor[1], outlineColor[2], outlineColor[3], outlineColor[4],
+  local borderColor = self.selected
+    and GAME.theme.colors.menuSelectedBorderColor
+    or  GAME.theme.colors.menuDefaultBorderColor
+  for w = 0, self.BORDER_WIDTH - 1 do
+    GraphicsUtil.drawRectangle("line", self.x + w, self.y + w, self.width - 2*w, self.height - 2*w,
+      borderColor[1], borderColor[2], borderColor[3], borderColor[4],
       self.CORNER_RADIUS, self.CORNER_RADIUS)
   end
-
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 

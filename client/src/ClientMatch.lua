@@ -13,6 +13,10 @@ local CharacterLoader = require("client.src.mods.CharacterLoader")
 local ReplayV3 = require("common.data.ReplayV3")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Telegraph = require("client.src.graphics.Telegraph")
+
+-- Lua 5.1 / LuaJIT has `unpack` as a global; 5.2+ moved it to `table.unpack`.
+-- LÖVE 11.x runs on LuaJIT so call sites using `table.unpack` crash here.
+local unpack = table.unpack or unpack
 local MatchParticipant = require("client.src.MatchParticipant")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 local NetworkProtocol = require("common.network.NetworkProtocol")
@@ -695,11 +699,11 @@ function ClientMatch:drawTeamScoreboard()
     local t1Name = clampTextToWidth(table.concat(t1.names, ", "), nameWidth, font)
     local t2Name = clampTextToWidth(table.concat(t2.names, ", "), nameWidth, font)
 
-    GraphicsUtil.setColor(table.unpack(teamColors[1]))
+    GraphicsUtil.setColor(unpack(teamColors[1]))
     GraphicsUtil.printf(t1Name, centerX - 440, topY, nameWidth, "center")
     GraphicsUtil.printf(tostring(t1.wins), centerX - 65, topY, scoreWidth, "center", nil, 2)
 
-    GraphicsUtil.setColor(table.unpack(teamColors[2]))
+    GraphicsUtil.setColor(unpack(teamColors[2]))
     GraphicsUtil.printf(tostring(t2.wins), centerX - 5, topY, scoreWidth, "center", nil, 2)
     GraphicsUtil.printf(t2Name, centerX + 40, topY, nameWidth, "center")
   else
@@ -707,7 +711,7 @@ function ClientMatch:drawTeamScoreboard()
     for t = 1, teamCount do
       local data = teamData[t]
       if data then
-        GraphicsUtil.setColor(table.unpack(teamColors[t] or teamColors[1]))
+        GraphicsUtil.setColor(unpack(teamColors[t] or teamColors[1]))
         local label = table.concat(data.names, "+") .. "  " .. data.wins
         label = clampTextToWidth(label, sectionWidth - 8, font)
         GraphicsUtil.printf(label, (t - 1) * sectionWidth, topY, sectionWidth, "center")

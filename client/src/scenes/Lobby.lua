@@ -155,13 +155,14 @@ function Lobby:initLobbyMenu()
       end
 
       local x, y = button:getScreenPos()
+      local subMenuWidth = 180
       local subMenu = ui.ScrollMenu({
-        x = x + self.lobbyMenu.width + 8,
+        x = x + self.lobbyMenu.width + 4,
         y = y,
         hAlign = "left",
         vAlign = "top",
         height = 68,
-        width = 180,
+        width = subMenuWidth,
         padding = 0,
         childGap = 8,
       })
@@ -175,7 +176,7 @@ function Lobby:initLobbyMenu()
 
         local bx, by = compositionButton:getScreenPos()
         local garbageMenu = ui.ScrollMenu({
-          x = bx + compositionButton.width + 8,
+          x = bx + compositionButton.width + 4,
           y = by,
           hAlign = "left",
           vAlign = "top",
@@ -224,7 +225,7 @@ function Lobby:initLobbyMenu()
 
         local bx, by = level1Button:getScreenPos()
         local compositionMenu = ui.ScrollMenu({
-          x = bx + level1Button.width + 8,
+          x = bx + level1Button.width + 4,
           y = by,
           hAlign = "left",
           vAlign = "top",
@@ -286,7 +287,7 @@ function Lobby:initLobbyMenu()
 
         local bx, by = level1Button:getScreenPos()
         local survivalMenu = ui.ScrollMenu({
-          x = bx + level1Button.width + 8,
+          x = bx + level1Button.width + 4,
           y = by,
           hAlign = "left",
           vAlign = "top",

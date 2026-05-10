@@ -37,6 +37,10 @@ function ScrollMenu:selectPrevious()
     return
   end
 
+  if self.children[self.selectedIndex] and self.children[self.selectedIndex].setSelected then
+    self.children[self.selectedIndex]:setSelected(false)
+  end
+
   local child
   for i = self.selectedIndex - 1, self.selectedIndex - #self.children, -1 do
     local index = wrap(1, i, #self.children)
@@ -46,6 +50,7 @@ function ScrollMenu:selectPrevious()
       break
     end
   end
+  if child and child.setSelected then child:setSelected(true) end
   self:keepVisible(-child.y, child.height)
   GAME.theme:playMoveSfx()
 end
@@ -53,6 +58,10 @@ end
 function ScrollMenu:selectNext()
   if not self.selectedIndex then
     return
+  end
+
+  if self.children[self.selectedIndex] and self.children[self.selectedIndex].setSelected then
+    self.children[self.selectedIndex]:setSelected(false)
   end
 
   local child
@@ -64,6 +73,7 @@ function ScrollMenu:selectNext()
       break
     end
   end
+  if child and child.setSelected then child:setSelected(true) end
   self:keepVisible(-child.y, child.height)
   GAME.theme:playMoveSfx()
 end
@@ -88,7 +98,11 @@ end
 function ScrollMenu:select(uiElement)
   for i, child in ipairs(self.children) do
     if child == uiElement and child.receiveInputs and child.isEnabled and child.isVisible then
+      if self.selectedIndex and self.children[self.selectedIndex] and self.children[self.selectedIndex].setSelected then
+        self.children[self.selectedIndex]:setSelected(false)
+      end
       self.selectedIndex = i
+      if child.setSelected then child:setSelected(true) end
       self:keepVisible(-child.y, child.height)
       return true
     end
@@ -145,11 +159,6 @@ end
 function ScrollMenu:drawChildren()
   for i, uiElement in ipairs(self.children) do
     if uiElement.isVisible then
-      if self.selectedIndex and i == self.selectedIndex then
-        GraphicsUtil.setColor(0.6, 0.6, 1, 0.5)
-        love.graphics.rectangle("fill", uiElement.x, uiElement.y, uiElement.width, uiElement.height)
-        love.graphics.rectangle("line", uiElement.x, uiElement.y, uiElement.width, uiElement.height)
-      end
       uiElement:draw()
     end
   end

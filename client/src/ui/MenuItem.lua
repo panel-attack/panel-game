@@ -246,8 +246,8 @@ function MenuItem:drawSelf()
 
     GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], 1.0, cornerRadius, cornerRadius)
 
-    for w = 1, borderWidth do
-      GraphicsUtil.drawRectangle("line", self.x - w, self.y - w, self.width + 2*w, self.height + 2*w,
+    for w = 0, borderWidth - 1 do
+      GraphicsUtil.drawRectangle("line", self.x + w, self.y + w, self.width - 2*w, self.height - 2*w,
         borderColor[1], borderColor[2], borderColor[3], 1.0, cornerRadius, cornerRadius)
     end
   else
@@ -256,8 +256,8 @@ function MenuItem:drawSelf()
 
     GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], bgColor[4], cornerRadius, cornerRadius)
 
-    for w = 1, 1 do
-      GraphicsUtil.drawRectangle("line", self.x - w, self.y - w, self.width + 2*w, self.height + 2*w,
+    for w = 0, 0 do
+      GraphicsUtil.drawRectangle("line", self.x + w, self.y + w, self.width - 2*w, self.height - 2*w,
         borderColor[1], borderColor[2], borderColor[3], borderColor[4], cornerRadius, cornerRadius)
     end
   end

@@ -39,6 +39,27 @@ local function teamColorForStack(match, stack, stackIndex)
   return TEAM_COLORS[idx] or TEAM_COLORS[1]
 end
 
+-- "Shared team mode" = TEAM_VERSUS with at least one team containing multiple
+-- players. FFA (3p/4p) is technically TEAM_VERSUS in the data model but every
+-- team is size 1, so wins are per-individual — we treat it like a non-team mode
+-- for HUD purposes (LSS shows WINS, no top team scoreboard).
+local function isSharedTeamMode(gameMode)
+  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
+    return false
+  end
+  local p = gameMode.playersPerTeam
+  if type(p) == "number" then return p > 1 end
+  if type(p) == "table" then
+    for _, n in ipairs(p) do
+      if n > 1 then return true end
+    end
+    return false
+  end
+  return false
+end
+
+GameBase.isSharedTeamMode = isSharedTeamMode
+
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
 ---@field saveReplay boolean
@@ -537,12 +558,13 @@ end
 
 function GameBase:drawHUD()
   if not self.match.isPaused then
+    -- "shared team" = real teams with multiple players (2v2, 1v2 asymmetric).
+    -- FFA (3p/4p) falls through this and shows per-player WINS in the LSS column.
+    local isTeamMode = isSharedTeamMode(self.match.gameMode)
+
     for i, stack in ipairs(self.match.stacks) do
-      -- Make the team color available to drawPlayerName inside the wrapper.
       stack._teamColor = teamColorForStack(self.match, stack, i)
 
-      -- Render every stack's HUD inside its own panel transform so minis use
-      -- exactly the same draw code as Player 1, just translated and scaled.
       stack:withPanelTransform(function()
         if stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
           stack:drawMoveCount()
@@ -557,13 +579,15 @@ function GameBase:drawHUD()
 
         if stack.player then
           stack:drawPlayerName()
-          -- Per-player win count is redundant in team modes (it equals the team
-          -- score shown in the header scoreboard). Suppress it everywhere.
           stack:drawRating()
+          -- Non-team modes: per-player wins go in the LSS panel below SPEED
+          -- (theme winLabel_Pos is anchored there). Team modes suppress it
+          -- because the team scoreboard at the top already shows team W/L.
+          if not isTeamMode then
+            stack:drawWinCount()
+          end
         end
 
-        -- Analytics first so the semi-transparent rectangle background doesn't
-        -- darken the LEVEL panel drawn next.
         if stack.analytic and not DebugSettings.showStackDebugInfo() then
           stack:drawAnalyticData()
         end
