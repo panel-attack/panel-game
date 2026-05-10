@@ -130,11 +130,21 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
 
   clientMatch.players = players
 
-  -- Online team games: restore the team configuration on the engine. Without this,
-  -- Match:hasEnded skips the TEAMS_ACTIVE check (it requires self.teams) and the
-  -- match never ends until literally every stack dies — even the surviving team.
-  -- garbage targets are already populated above from replay.garbageFlows; we just
-  -- need teams + garbageMode for hasEnded and shared-mode distribution to work.
+  -- Resolve gameMode from the replay metadata when the caller didn't pass one
+  -- (saved-replay viewing via ReplayBrowser, etc). This way every match constructed
+  -- via createFromReplay gets the correct end-condition / team behavior automatically.
+  if not gameMode and replay.metadata and replay.metadata.gameModeName then
+    local modeId = GameModes.nameToGameModeId[replay.metadata.gameModeName]
+    if modeId then
+      gameMode = GameModes.getPreset(modeId)
+    end
+  end
+
+  -- Restore team configuration on the engine. Without this, Match:hasEnded skips
+  -- the TEAMS_ACTIVE check (it requires self.teams) and a team match never ends
+  -- until literally every stack dies — even the surviving team. Garbage targets
+  -- are already populated above from replay.garbageFlows; we just need teams +
+  -- garbageMode for hasEnded and shared-mode distribution to work.
   if gameMode then
     clientMatch.gameMode = gameMode
     clientMatch.stackInteraction = gameMode.stackInteraction
