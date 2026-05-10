@@ -7,6 +7,7 @@ local tableUtils = require("common.lib.tableUtils")
 local ServerPlayer = require("server.Player")
 local Signal = require("common.lib.signal")
 local ServerGame = require("server.Game")
+local GameModes = require("common.data.GameModes")
 local TeamUtils = require("common.data.TeamUtils")
 
 ---@alias roomNumber integer
@@ -42,60 +43,52 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.players = players
   self.leaderboard = leaderboard
   self.roomNumber = roomNumber
+  self.gameMode = gameMode
+  self.gameModeId = gameMode and (gameMode.gameModeId or gameMode.id or GameModes.nameToGameModeId[gameMode.name]) or nil
+  self.maxPlayers = (gameMode and gameMode.playerCount) or #players
   self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
   self.spectators = {}
   self.win_counts = {}
   self.ratings = {}
   self.matchCount = 0
-  self.gameMode = gameMode
+  self.ranked = false
+  self.rankedReasons = {}
   self.recentGameAbort = false
-  self.maxPlayers = gameMode.playerCount or #players
 
-  -- Initialize teams for team-based game modes (only when room is full)
-  if gameMode.teamCount and gameMode.playersPerTeam and #self.players == self.maxPlayers then
-    self.teams = TeamUtils.createTeams(#self.players, gameMode.teamCount, gameMode.playersPerTeam)
-  end
+  Signal.turnIntoEmitter(self)
+  self:createSignal("playerJoined")
+  self:createSignal("matchStart")
+  self:createSignal("matchEnd")
+  self:createSignal("pauseToggled")
 
+  -- Initialize all initially passed players the same way addPlayer does.
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
     player:addToRoom(self)
+    player.state = "character select"
     self.win_counts[i] = 0
-    if self.leaderboard then
-      local rating = math.round(self.leaderboard:getRating(player) or 0)
-      local placementProgress = self.leaderboard:getPlacementProgress(player)
-      self.ratings[i] = {
-        old = rating,
-        new = rating,
-        difference = 0,
-        placement_match_progress = placementProgress
-      }
-      if placementProgress then
-        self.ratings[i].league = self.leaderboard:get_league(0)
-      else
-        self.ratings[i].league = self.leaderboard:get_league(rating)
-      end
-    end
     player.cursor = "__Ready"
     player.player_number = i
   end
+
+  -- Only create teams once room is full; partial rooms should not have teams yet.
+  self.teams = nil
+  if gameMode
+      and #self.players >= self.maxPlayers
+      and gameMode.teamCount
+      and gameMode.playersPerTeam then
+    self.teams = TeamUtils.createTeams(#self.players, gameMode.teamCount, gameMode.playersPerTeam)
+  end
+
 
   if self.leaderboard then
     self.ranked, self.rankedReasons = self:rating_adjustment_approved()
   else
     self.ranked = false
-    self.rankedReasons = { "No leaderboard attached to the room" }
+    self.rankedReasons = {"Room has no leaderboard"}
   end
 
-  self:prepare_character_select()
-
-  local message = ServerProtocol.createRoom(self)
-  self:broadcastJson(message)
-
-  Signal.turnIntoEmitter(self)
-  self:createSignal("matchStart")
-  self:createSignal("matchEnd")
-  self:createSignal("pauseToggled")
-  self:createSignal("playerJoined")
+  return self
 end
 )
 
@@ -474,40 +467,26 @@ function Room:handleGameAbort(sender)
     logger.debug(sender.name .. " aborted the game")
     self:abortGame(sender)
   elseif #self.players >= 2 and isPlayerInRoom then
-    -- aborts in multiplayer room are a bigger deal so we should log them as info
     logger.info(sender.name .. " aborted the game")
 
-    -- there is obviously some abuse potential here, e.g. by sending aborts instead of a game result
-    -- the room should only accept the abort if there is a significant difference in inputs on Game, suggesting the abort is legitimate
     local inputCountDifference = self.game:getInputCountDifference()
     if inputCountDifference > 100 then
       logger.info("abort was judged as legitimate with an inputCountDifference of " .. inputCountDifference)
       self:abortGame(sender, "latency_error")
     else
       logger.info("abort was judged as illegitimate with an inputCountDifference of " .. inputCountDifference)
-      -- if that is not the case, we're in a bit of a pickle as the sender already stopped the match client side
-      --  but there is no indication for the abort actually being legitimate
-      -- I don't think there is a truly fair way to resolve that situation as the assumption of manipulation makes it impossible to make a correct decision
-      --  as long as clients are given the "power" to abort (and realistically they can always do that just by Alt+F4)
-      -- ; up to now closing the room was the effective outcome either way
-      -- even running a simulation of the game to the end to see if there was a winner would not resolve it as clients could be modified to not send an input that leads to a game over
 
-      -- I think the fair thing is to assume that the client reported a loss in that scenario
-      -- if both clients end up sending an abort that is denied by above criteria they'll both report a loss
-      -- this leads to the outcome resolving as a tie which is fair as long as ties are discarded for the ladder (currently they are)
-      -- that would be a scenario in which the above condition was simply not enough to validate the abort
+      -- Illegitimate aborts:
+      -- - 2p: keep legacy behavior (aborting player loses, opponent wins)
+      -- - 3+p: report self-loss using own player_number (no hardcoded winner)
       local outcome
-      if sender.player_number == 1 then
-        outcome = 2
+      if #self.players == 2 then
+        outcome = (sender.player_number == 1) and 2 or 1
       else
-        outcome = 1
+        outcome = sender.player_number
       end
-      self:handleGameOverOutcome({outcome = outcome}, sender)
 
-      -- it could naturally still happen that one player aborts and the other reports a win leading to a win instead of a tie
-      -- while clients could be manipulated to just report a win instead of an abort in this scenario,
-      --  the general occurence of the situation should be rare enough that consequences of abuse in this manner should be minimal
-      --  as the abuser does only have control over their own connection to the server
+      self:handleGameOverOutcome({outcome = outcome}, sender)
     end
   else
     logger.warn(self.roomNumber .. ": Unexpected abort from player with publicID " .. sender.publicPlayerID)

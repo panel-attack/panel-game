@@ -521,6 +521,9 @@ function Theme:loadIngameLabels()
       self.fontMaps.numbers[i] = self.fontMaps.numbers[1]
     elseif numberAtlas then
       self.fontMaps.numbers[i] = GraphicsUtil.createPixelFontMap(numberAtlasCharacters, numberAtlas)
+    else
+      -- nil guard: if neither player-specific nor fallback exists, set to nil
+      self.fontMaps.numbers[i] = nil
     end
   end
 
@@ -632,6 +635,9 @@ function Theme:loadLevelNumberAtlasses()
       self.images.levelNumberAtlas[i].quads = quads
       self.images.levelNumberAtlas[i].charWidth = charWidth
       self.images.levelNumberAtlas[i].charHeight = charHeight
+    else
+      -- nil guard: if neither player-specific nor fallback exists, set to nil
+      self.images.levelNumberAtlas[i] = nil
     end
   end
 end

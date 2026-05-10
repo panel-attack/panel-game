@@ -74,9 +74,9 @@ local function testRoomSetup()
   assert(room == server.playerToRoom[ben])
   assert(room.gameMode.name == GameModes.gameModeIdToName[GameModes.IDs.TWO_PLAYER_VS])
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
+  assert(message.type == "addToRoom" and tableUtils.length(message.content.players) == 2)
   message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
+  assert(message.type == "addToRoom" and tableUtils.length(message.content.players) == 2)
 
   message = bob.connection.outgoingMessageQueue:pop().messageText.content
   assert(message.players and tableUtils.length(message.players) == 3)
@@ -109,9 +109,9 @@ local function testRoomSetup2()
   assert(room == server.playerToRoom[ben])
   assert(room.gameMode.name == GameModes.gameModeIdToName[GameModes.IDs.TWO_PLAYER_TIME_ATTACK])
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
+  assert(message.type == "addToRoom" and tableUtils.length(message.content.players) == 2)
   message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "createRoom" and tableUtils.length(message.content.players) == 2)
+  assert(message.type == "addToRoom" and tableUtils.length(message.content.players) == 2)
 
   message = bob.connection.outgoingMessageQueue:pop().messageText.content
   assert(message.players and tableUtils.length(message.players) == 3)
@@ -332,7 +332,7 @@ local function testSinglePlayer()
   server:update()
   assert(server.playerToRoom[bob])
   local message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "createRoom")
+  assert(message.type == "addToRoom")
 
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyStateV2")
@@ -462,6 +462,129 @@ local function testJoinPartialRoomSetsCharacterSelectState()
   assert(benLobbyEntry and benLobbyEntry.state == "character select")
 end
 
+local function testTeamRoomRequestCreatesPartialRoom()
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+
+  ServerTesting.clearOutgoingMessages({alice, bob})
+
+  alice.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_VS_ALL)).messageText))
+  server:update()
+
+  local room = server.playerToRoom[alice]
+  assert(room, "Expected a room to be created for team room request")
+  assert(server.playerToRoom[alice] == room)
+  assert(alice.state == "character select")
+  assert(room.gameModeId == GameModes.IDs.THREE_PLAYER_VS_ALL)
+  assert(room.gameMode and room.gameMode.name == GameModes.gameModeIdToName[GameModes.IDs.THREE_PLAYER_VS_ALL])
+  assert(room.maxPlayers == 3)
+  assert(#room.players == 1)
+  assert(room.players[1] == alice)
+  assert(room:isFull() == false)
+
+  local foundRoomAck = false
+  while alice.connection.outgoingMessageQueue:len() > 0 do
+    local msg = alice.connection.outgoingMessageQueue:pop().messageText
+    if msg and (msg.type == "addToRoom" or msg.type == "createRoom") then
+      foundRoomAck = true
+      break
+    end
+  end
+  assert(foundRoomAck, "Expected room acknowledgement message for creator")
+
+  local lobbyStateMessage = nil
+  while bob.connection.outgoingMessageQueue:len() > 0 do
+    local msg = bob.connection.outgoingMessageQueue:pop().messageText
+    if msg and msg.type == "lobbyStateV2" then
+      lobbyStateMessage = msg
+      break
+    end
+  end
+
+  assert(lobbyStateMessage and lobbyStateMessage.content and lobbyStateMessage.content.rooms)
+  assert(tableUtils.length(lobbyStateMessage.content.rooms) == 1)
+  local _, lobbyRoom = next(lobbyStateMessage.content.rooms)
+  assert(lobbyRoom.roomNumber == room.roomNumber)
+  assert(lobbyRoom.gameModeId == GameModes.IDs.THREE_PLAYER_VS_ALL)
+  assert(lobbyRoom.maxPlayers == 3)
+  assert(#lobbyRoom.players == 1)
+  assert(lobbyRoom.players[1] == alice.publicPlayerID)
+  assert(#lobbyRoom.openSlots == 2)
+  assert(lobbyRoom.openSlots[1] == 2 and lobbyRoom.openSlots[2] == 3)
+end
+
+local function testTeamRoomRequestAcceptsFallbackGameModeShape()
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+
+  ServerTesting.clearOutgoingMessages({alice, bob})
+
+  alice.connection:receiveMessage(json.encode({
+    recipient = "server",
+    type = "roomRequest",
+    gameMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
+  }))
+  server:update()
+
+  local room = server.playerToRoom[alice]
+  assert(room, "Expected a room to be created from fallback roomRequest shape")
+  assert(room.gameModeId == GameModes.IDs.THREE_PLAYER_VS_ALL)
+  assert(room.maxPlayers == 3)
+  assert(alice.state == "character select")
+
+  local lobbyStateMessage = nil
+  while bob.connection.outgoingMessageQueue:len() > 0 do
+    local msg = bob.connection.outgoingMessageQueue:pop().messageText
+    if msg and msg.type == "lobbyStateV2" then
+      lobbyStateMessage = msg
+      break
+    end
+  end
+
+  assert(lobbyStateMessage and lobbyStateMessage.content and lobbyStateMessage.content.rooms)
+  assert(tableUtils.length(lobbyStateMessage.content.rooms) == 1)
+  local _, lobbyRoom = next(lobbyStateMessage.content.rooms)
+  assert(lobbyRoom.gameModeId == GameModes.IDs.THREE_PLAYER_VS_ALL)
+  assert(lobbyRoom.maxPlayers == 3)
+  assert(lobbyRoom.openSlots[1] == 2 and lobbyRoom.openSlots[2] == 3)
+end
+
+local function testJoinRoomRequestUsesSanitizedJoinMessage()
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+
+  ServerTesting.clearOutgoingMessages({alice, bob})
+
+  alice.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_VS_ALL)).messageText))
+  server:update()
+
+  local room = server.playerToRoom[alice]
+  assert(room, "Expected a room to exist before sending a joinRoomRequest")
+
+  ServerTesting.clearOutgoingMessages({alice, bob})
+
+  bob.connection:receiveMessage(json.encode(ClientProtocol.requestJoinRoom(room.roomNumber, 2).messageText))
+  server:update()
+
+  assert(server.playerToRoom[bob] == room)
+  assert(bob.state == "character select")
+  assert(#room.players == 2)
+
+  local joinAck = nil
+  while bob.connection.outgoingMessageQueue:len() > 0 do
+    local msg = bob.connection.outgoingMessageQueue:pop().messageText
+    if msg and msg.type == "addToRoom" then
+      joinAck = msg
+      break
+    end
+  end
+
+  assert(joinAck and joinAck.content and joinAck.content.roomNumber == room.roomNumber)
+end
+
 testLogin()
 testRoomSetup()
 testRoomSetup2()
@@ -471,3 +594,6 @@ testLobbyDataComposition()
 testSinglePlayer()
 testCannotSpectateWhileInRoom()
 testJoinPartialRoomSetsCharacterSelectState()
+testTeamRoomRequestCreatesPartialRoom()
+testTeamRoomRequestAcceptsFallbackGameModeShape()
+testJoinRoomRequestUsesSanitizedJoinMessage()

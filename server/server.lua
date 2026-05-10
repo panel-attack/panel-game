@@ -24,6 +24,38 @@ local util = require("common.lib.util")
 local FileIO = require("server.FileIO")
 local GameModes = require("common.data.GameModes")
 
+local function resolveRequestedGameMode(requestedGameMode)
+  if type(requestedGameMode) == "table" then
+    local requestedId = requestedGameMode.gameModeId or requestedGameMode.id
+    if requestedId and GameModes.IDs[requestedId] then
+      return GameModes.getPreset(requestedId)
+    end
+
+    local requestedName = requestedGameMode.name
+    if requestedName then
+      local canonicalId = GameModes.nameToGameModeId[requestedName]
+      if canonicalId then
+        return GameModes.getPreset(canonicalId)
+      end
+    end
+
+    if requestedGameMode.gameMode then
+      return resolveRequestedGameMode(requestedGameMode.gameMode)
+    end
+  elseif type(requestedGameMode) == "string" then
+    if GameModes.IDs[requestedGameMode] then
+      return GameModes.getPreset(requestedGameMode)
+    end
+
+    local canonicalId = GameModes.nameToGameModeId[requestedGameMode]
+    if canonicalId then
+      return GameModes.getPreset(canonicalId)
+    end
+  end
+
+  return nil
+end
+
 local pairs = pairs
 local ipairs = ipairs
 local time = os.time
@@ -259,7 +291,7 @@ function Server:lobbyStateV2()
     local lobbyRoom = {
       roomNumber = room.roomNumber,
       state = roomState,
-      gameModeId = GameModes.nameToGameModeId[room.gameMode.name],
+      gameModeId = room.gameModeId or (room.gameMode and GameModes.nameToGameModeId[room.gameMode.name]) or nil,
       ownerId = room.players[1] and room.players[1].publicPlayerID or nil,
       players = {},
       spectators = {},
@@ -433,9 +465,11 @@ function Server:create_room(gameMode, ...)
   newRoom:connectSignal("pauseToggled", self, self.setLobbyChanged)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
+
   for _, player in ipairs(players) do
     self:clearProposals(player)
     self.playerToRoom[player] = newRoom
+    player:sendJson(ServerProtocol.addToRoom(newRoom, nil))
   end
 end
 
@@ -761,8 +795,15 @@ function Server:processMessage(message, connection)
         return true
       end
     elseif player.state == "lobby" and message.roomRequest then
-      self:create_room(message.gameMode, player)
-      return true
+      local requestedGameMode = resolveRequestedGameMode(message.gameMode)
+      if requestedGameMode then
+        self:create_room(requestedGameMode, player)
+        return true
+      else
+        logger.warn("Rejected roomRequest from " .. player.name .. ": unknown/invalid game mode payload " .. tostring(message.gameMode and message.gameMode.name or message.gameMode and message.gameMode.gameModeId or message.gameMode))
+        return false
+      end
+
     elseif player.state == "lobby" and message.joinRoomRequest then
       logger.info("Received joinRoomRequest from " .. player.name .. " for room " .. tostring(message.joinRoomRequest.roomNumber) .. " slot " .. tostring(message.joinRoomRequest.slotNumber))
       self:handleJoinRoom(player, message.joinRoomRequest.roomNumber, message.joinRoomRequest.slotNumber)
@@ -956,8 +997,6 @@ function Server:canLogin(userID, name, IP_logging_in, engineVersion)
   elseif string.lower(name) == "anonymous" then
     denyReason = 'Username cannot be "anonymous"'
   elseif name:lower():match("d+e+f+a+u+l+t+n+a+m+e?") then
-    denyReason = 'Username cannot be "defaultname" or a variation of it'
-  elseif name:find("[^_%w]") then
     denyReason = "Usernames are limited to alphanumeric and underscores"
   elseif utf8.len(name) > NAME_LENGTH_LIMIT then
     denyReason = "The name length limit is " .. NAME_LENGTH_LIMIT .. " characters"

@@ -36,7 +36,13 @@ end
 ---@param playerIndex integer?
 ---@return love.Texture
 local function getPlayerNumberIcon(playerIndex)
-  return themes[config.theme]:getPlayerNumberIcon(playerIndex or 1)
+  playerIndex = playerIndex or 1
+  local icon = themes[config.theme]:getPlayerNumberIcon(playerIndex)
+  -- Fallback: if icon is nil or theme has no 3P icon, return player 1 icon
+  if not icon and playerIndex > 1 then
+    icon = themes[config.theme]:getPlayerNumberIcon(1)
+  end
+  return icon
 end
 -- updates specific to the child scene
 function CharacterSelect:customUpdate(sceneParams)

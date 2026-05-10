@@ -26,6 +26,8 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeTaunt(clientMessage)
   elseif clientMessage.game_over then
     return ClientMessages.sanitizeGameResult(clientMessage)
+  elseif clientMessage.joinRoomRequest then
+    return ClientMessages.sanitizeJoinRoomRequest(clientMessage)
   elseif clientMessage.logout then
     return clientMessage
   elseif clientMessage.type and clientMessage.type == "roomRequest" then
@@ -183,13 +185,43 @@ function ClientMessages.sanitizeTaunt(taunt)
 end
 
 function ClientMessages.sanitizeRoomRequest(roomRequest)
-  local sanitized =
-  {
-    roomRequest = true,
-    gameMode = roomRequest.content.gameMode
-  }
+  local gameMode = nil
 
-  return sanitized
+  -- Preferred format from ClientProtocol.sendRoomRequest
+  if roomRequest.content then
+    gameMode = roomRequest.content.gameMode
+      or roomRequest.content.gameModeId
+      or roomRequest.content.gameModeName
+      or roomRequest.content.mode
+  end
+
+  -- Legacy/fallback formats
+  if not gameMode then
+    gameMode = roomRequest.gameMode
+      or roomRequest.gameModeId
+      or roomRequest.gameModeName
+      or roomRequest.mode
+  end
+
+  -- Some older callers may place the serialized game mode directly in content.
+  if not gameMode and roomRequest.content and roomRequest.content.name then
+    gameMode = roomRequest.content
+  end
+
+  return {
+    roomRequest = true,
+    gameMode = gameMode
+  }
+end
+
+function ClientMessages.sanitizeJoinRoomRequest(joinRoomRequest)
+  local request = joinRoomRequest.joinRoomRequest or {}
+  return {
+    joinRoomRequest = {
+      roomNumber = request.roomNumber,
+      slotNumber = request.slotNumber,
+    }
+  }
 end
 
 function ClientMessages.sanitizeMatchAbort(matchAbort)
