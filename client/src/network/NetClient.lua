@@ -863,6 +863,13 @@ function NetClient:sendMatchAbort()
   end
 end
 
+---@param frame integer game_over_clock frame at which the local stack died
+function NetClient:sendStackEliminated(frame)
+  if self:isConnected() then
+    self.tcpClient:sendRequest(ClientMessages.sendStackEliminated(frame))
+  end
+end
+
 function sendPlayerSettings(player)
   GAME.netClient.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end

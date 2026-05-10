@@ -522,8 +522,11 @@ function GameBase:drawHUD()
       end
       if config.show_ingame_infos then
         if not stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
-          stack:drawScore()
-          stack:drawSpeed()
+          -- Only show score/speed for full-size Player 1 stack in team matches
+          if stack.renderIndex == 1 then
+            stack:drawScore()
+            stack:drawSpeed()
+          end
         end
         stack:drawMultibar()
       end

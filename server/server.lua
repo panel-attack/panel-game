@@ -383,14 +383,18 @@ function Server:lobbyStateV2()
     end
 
     for i, player in ipairs(room.players) do
-      players[player.publicPlayerID].roomNumber = room.roomNumber
-      players[player.publicPlayerID].state = roomState
+      if players[player.publicPlayerID] then
+        players[player.publicPlayerID].roomNumber = room.roomNumber
+        players[player.publicPlayerID].state = roomState
+      end
       lobbyRoom.players[i] = player.publicPlayerID
       lobbyRoom.wins[i] = room.win_counts[i]
     end
 
     for i, spectator in ipairs(room.spectators) do
-      players[spectator.publicPlayerID].roomNumber = room.roomNumber
+      if players[spectator.publicPlayerID] then
+        players[spectator.publicPlayerID].roomNumber = room.roomNumber
+      end
       lobbyRoom.spectators[i] = spectator.publicPlayerID
     end
 
@@ -811,6 +815,7 @@ function Server:update()
 
   self:updateConnections()
   self:processMessages()
+  self:flushBufferedInputsForAllRooms()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
@@ -963,6 +968,15 @@ function Server:processMessages()
   end
 end
 
+---Flush buffered inputs for all active rooms
+function Server:flushBufferedInputsForAllRooms()
+  for _, room in pairs(self.rooms) do
+    if room and room.game then
+      room:flushBufferedInputs()
+    end
+  end
+end
+
 ---@param connection Connection
 ---@return boolean? # if messages from this connection should continue to get processed
 function Server:processMessage(message, connection)
@@ -1045,6 +1059,9 @@ function Server:processMessage(message, connection)
       -- Revisit when we have real annotations on server
       ---@diagnostic disable-next-line: param-type-mismatch
       self.playerToRoom[player]:handleGameOverOutcome(message, player)
+      return true
+    elseif (player.state == "playing" or player.state == "paused") and message.stackEliminated then
+      self.playerToRoom[player]:handleStackEliminated(player, message.frame)
       return true
     elseif (player.state == "playing" or player.state == "paused") and message.matchAbort then
       self.playerToRoom[player]:handleGameAbort(player)

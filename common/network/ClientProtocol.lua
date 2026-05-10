@@ -195,6 +195,16 @@ function ClientProtocol.sendMatchAbort(roomNumber)
   }
 end
 
+---Notify the server that the local stack has reached game over so the server can
+---idle-fill inputs for this player and keep broadcasting frames to surviving stacks.
+---@param frame integer the game_over_clock frame at which the stack died
+function ClientProtocol.sendStackEliminated(frame)
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = { stackEliminated = true, frame = frame }
+  }
+end
+
 ---@param pause boolean if the client is paused
 function ClientProtocol.sendPauseToggle(roomNumber, pause)
   local pauseToggleMessage = {

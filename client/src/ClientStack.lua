@@ -362,7 +362,8 @@ function ClientStack:moveForRenderIndex3Player(renderIndex)
     local canvasWidth = GAME.globalCanvas:getWidth()
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
-    local gap = 12
+    -- Gap between rows must reserve room for the lower stack's name / WINS / LEVEL labels.
+    local gap = ClientStack.MINI_LABEL_AREA
     local rightMargin = 24
 
     -- Responsive scaling for 2 stacks on the right
@@ -398,7 +399,8 @@ function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
     local gapX = 12
-    local gapY = 10
+    -- Vertical gap reserves the label area above the bottom row's mini stacks.
+    local gapY = ClientStack.MINI_LABEL_AREA
     local rightMargin = 24
 
     -- Keep the center gap around player 1 and fit a 2-column by 2-row right-side zone.
@@ -418,7 +420,7 @@ function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
     local startX = minRightColumnLeftX + math.max(0, (rightZoneWidth - gridWidth) / 2)
     local startY = topMargin + math.max(0, (rightZoneHeight - gridHeight) / 2)
     local row2Y = startY + stackHeight + gapY
-    
+
     if renderIndex == 2 then
       self:moveToPosition(startX, startY)
     elseif renderIndex == 3 then
@@ -444,7 +446,8 @@ function ClientStack:moveForRenderIndex5Player(renderIndex)
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
     local gapX = 12
-    local gapY = 10
+    -- Vertical gap reserves the label area above the bottom row's mini stacks.
+    local gapY = ClientStack.MINI_LABEL_AREA
     local rightMargin = 24
 
     local minRightColumnLeftX = (canvasWidth / 2) + 100
@@ -487,7 +490,8 @@ function ClientStack:moveForRenderIndex4Player(renderIndex)
   local bottomMargin = 12
   local sideMargin = 24
   local gapX = 20
-  local gapY = 12
+  -- Vertical gap reserves the label area above the bottom row's mini stacks.
+  local gapY = ClientStack.MINI_LABEL_AREA
 
   -- Fit a 2x2 stack grid inside the drawable area by constraining scale on both axes.
   local availableWidth = canvasWidth - (sideMargin * 2) - gapX
@@ -685,14 +689,52 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   end
 end
 
+-- Top-of-element offsets (in screen pixels above the mini stack's frame top).
+-- Layout above the frame, going down toward the frame:
+--   NAME (top) -> WINS label -> WINS number -> LEVEL label -> LEVEL number -> frame
+ClientStack.MINI_LABEL_AREA = 100
+ClientStack.MINI_NAME_TOP_OFFSET = 98
+ClientStack.MINI_WINS_LABEL_TOP_OFFSET = 78
+ClientStack.MINI_WINS_NUMBER_TOP_OFFSET = 58
+ClientStack.MINI_LEVEL_LABEL_TOP_OFFSET = 38
+ClientStack.MINI_LEVEL_NUMBER_TOP_OFFSET = 18
+ClientStack.MINI_LABEL_MAX_SCALE = 0.6
+
+function ClientStack:miniLabelScale(themeScale)
+  return math.min(themeScale * (self.gfxScale / NORMAL_GFX_SCALE), ClientStack.MINI_LABEL_MAX_SCALE)
+end
+
 function ClientStack:drawPlayerName()
   local username = (self.player.name or "")
-  self:drawString(username, themes[config.theme].name_Pos, true, themes[config.theme].name_Font_Size)
+  if self.gfxScale < NORMAL_GFX_SCALE then
+    local centerX = (self.frameOriginX + self.baseWidth / 2) * self.gfxScale
+    local frameTop = self.frameOriginY * self.gfxScale
+    local y = frameTop - ClientStack.MINI_NAME_TOP_OFFSET
+    GraphicsUtil.printf(username, centerX - 100, y, 200, "center", nil, nil, 0)
+  else
+    local useLegacyOffsets = true
+    self:drawString(username, themes[config.theme].name_Pos, useLegacyOffsets, themes[config.theme].name_Font_Size)
+  end
 end
 
 function ClientStack:drawWinCount()
-  self:drawLabel(self.assets.wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, true)
-  self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, true)
+  if self.gfxScale < NORMAL_GFX_SCALE then
+    local centerX = (self.frameOriginX + self.baseWidth / 2) * self.gfxScale
+    local frameTop = self.frameOriginY * self.gfxScale
+    local labelScale = self:miniLabelScale(self.theme.winLabel_Scale)
+    local labelWidth = self.assets.wins:getWidth()
+
+    local labelY = frameTop - ClientStack.MINI_WINS_LABEL_TOP_OFFSET
+    GraphicsUtil.draw(self.assets.wins, centerX - (labelWidth * labelScale) / 2, labelY, 0, labelScale, labelScale)
+
+    local numScale = self:miniLabelScale(self.theme.win_Scale)
+    local numberY = frameTop - ClientStack.MINI_WINS_NUMBER_TOP_OFFSET
+    GraphicsUtil.drawPixelFont(self.player:getWinCountForDisplay(), self.assets.numberPixelFont, centerX, numberY, numScale, numScale, "center", 0)
+  else
+    local useLegacyOffsets = true
+    self:drawLabel(self.assets.wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, useLegacyOffsets)
+    self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, useLegacyOffsets)
+  end
 end
 
 function ClientStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)

@@ -321,24 +321,44 @@ function Room:broadcastInput(input, sender)
     end
   end
 
-  self.game:receiveInput(sender, input)
+  -- Buffer the input instead of broadcasting immediately
+  self.game:bufferInput(sender, input)
+end
 
-  local inputPrefix = NetworkProtocol.getInputPrefixForPlayer(sender.player_number)
-      or NetworkProtocol.getInputPrefixForPlayer(1)
-  local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, input)
-
-  -- Send to all other players
-  for i, player in ipairs(self.players) do
-    if i ~= sender.player_number then
-      player:send(inputMessage)
-    end
+---Flush all complete frames and broadcast them to players
+function Room:flushBufferedInputs()
+  if not self.game or self.game.complete then
+    return
   end
-
-  -- Send to spectators (same prefix - identifies the sender)
-  for _, v in pairs(self.spectators) do
-    if v then
-      v:send(inputMessage)
+  
+  -- Keep flushing frames as long as all players have submitted inputs for them
+  while self.game:canFlushNextFrame() do
+    local frameInputs = self.game:flushNextFrame()
+    
+    logger.trace("Room " .. self.roomNumber .. " flushing frame " .. self.game.currentFrameNumber .. " with inputs: " .. json.encode(frameInputs))
+    
+    -- Broadcast frame inputs to all players
+    -- For each player, send their input with the appropriate prefix
+    for playerNum, inputData in pairs(frameInputs) do
+      local inputPrefix = NetworkProtocol.getInputPrefixForPlayer(playerNum)
+          or NetworkProtocol.getInputPrefixForPlayer(1)
+      local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, inputData)
+      
+      -- Send to all OTHER players
+      for i, player in ipairs(self.players) do
+        if i ~= playerNum then
+          player:send(inputMessage)
+        end
+      end
+      
+      -- Send to spectators (same prefix - identifies the sender)
+      for _, v in pairs(self.spectators) do
+        if v then
+          v:send(inputMessage)
+        end
+      end
     end
+    
   end
 end
 
@@ -474,10 +494,13 @@ function Room:handleGameAbort(sender)
 
       -- Illegitimate aborts:
       -- - 2p: keep legacy behavior (aborting player loses, opponent wins)
-      -- - 3+p: report self-loss using own player_number (no hardcoded winner)
+      -- - Team game: report self-team loss (2)
+      -- - 3+p FFA: report self-loss using own player_number (no hardcoded winner)
       local outcome
       if #self.players == 2 then
         outcome = (sender.player_number == 1) and 2 or 1
+      elseif self.teams then
+        outcome = 2
       else
         outcome = sender.player_number
       end
@@ -486,6 +509,15 @@ function Room:handleGameAbort(sender)
     end
   else
     logger.warn(self.roomNumber .. ": Unexpected abort from player with publicID " .. sender.publicPlayerID)
+  end
+end
+
+---@param sender ServerPlayer
+---@param frame integer? frame when sender's stack died
+function Room:handleStackEliminated(sender, frame)
+  if self.game then
+    self.game:markPlayerEliminated(sender, frame)
+    logger.info(self.roomNumber .. ": " .. sender.name .. " eliminated at frame " .. tostring(frame))
   end
 end
 

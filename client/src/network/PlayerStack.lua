@@ -21,6 +21,24 @@ function PlayerStack.idleInput(self)
   return (self.inputMethod == "touch" and touchIdleInput) or KeyDataEncoding.base64encode[1]
 end
 
+-- Override of the base PlayerStack stub. Tells the server our stack reached
+-- game over so it can idle-fill our inputs and keep broadcasting frames to
+-- surviving stacks (without this, canFlushNextFrame stalls and the match
+-- never reaches Match:hasEnded on any client).
+function PlayerStack:notifyServerStackEliminated()
+  if not self.is_local then
+    return
+  end
+  if self._stackEliminationSent then
+    return
+  end
+  if not GAME.netClient or not GAME.netClient:isConnected() then
+    return
+  end
+  self._stackEliminationSent = true
+  GAME.netClient:sendStackEliminated(self.engine.game_over_clock)
+end
+
 function PlayerStack:send_controls()
   if self.is_local and GAME.netClient:isConnected() and #self.engine.confirmedInput > 0 and self.garbageTarget and #self.garbageTarget.engine.confirmedInput == 0 then
     -- Send 1 frame at clock time 0 then wait till we get our first input from the other player.
