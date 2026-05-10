@@ -105,6 +105,16 @@ function ServerMessages.sanitizeRoomMessage(message)
       ranked_match_approved = message.content.ranked,
       reasons = message.content.reasons,
     }
+  elseif message.type == "playerJoinedRoom" then
+    local joined = message.content
+    return {
+      playerJoinedRoom = {
+        playerNumber = joined.playerNumber,
+        name = joined.name,
+        publicId = joined.publicId,
+        settings = joined.settings and sanitizePlayerSettings1(joined.settings, joined.publicId) or nil,
+      }
+    }
   elseif message.type == "gameAbort" then
     return { gameAbort = true, source = message.content.source }
   end

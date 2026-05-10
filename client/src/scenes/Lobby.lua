@@ -526,20 +526,21 @@ end
 
 ---@param personalizedLobbyData PersonalizedLobbyDataV2
 function Lobby:createPlayerButtons(personalizedLobbyData)
-  if self:isLocalPlayerInRoom(personalizedLobbyData) then
-    return {}
-  end
-
   local playerButtons = {}
 
   for publicId, player in pairs(personalizedLobbyData.players) do
     local isLocalPlayer = (publicId == GAME.localPlayer.publicId)
     local hasRoom = (player.roomNumber ~= nil) or isPlayerInAnyRoom(personalizedLobbyData, publicId)
-    if not isLocalPlayer and not hasRoom then
+    local hasIncoming = personalizedLobbyData.incomingChallenges[publicId] and challengeActive(personalizedLobbyData.incomingChallenges[publicId])
+    local hasOutgoing = personalizedLobbyData.outgoingChallenges[publicId] and challengeActive(personalizedLobbyData.outgoingChallenges[publicId])
+
+    -- Keep players in rooms hidden by default, except when there is an active
+    -- invite/request state to show (e.g. team room invite notifications).
+    if not isLocalPlayer and ((not hasRoom) or hasIncoming or hasOutgoing) then
       local playerName
-      if personalizedLobbyData.incomingChallenges[publicId] and challengeActive(personalizedLobbyData.incomingChallenges[publicId]) then
+      if hasIncoming then
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
-      elseif personalizedLobbyData.outgoingChallenges[publicId] and challengeActive(personalizedLobbyData.outgoingChallenges[publicId]) then
+      elseif hasOutgoing then
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_request")
       else
         playerName = Lobby.getPlayerNameWithRating(publicId)

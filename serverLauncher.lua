@@ -21,11 +21,16 @@ end
 
 -- We must launch the server from the root directory so all the requires are the right path relatively.
 require("server.server_globals")
-require("server.tests.LoginTests")
-require("server.tests.ServerTests")
-require("server.tests.LeaderboardTests")
-require("server.tests.RoomTests")
-require("server.tests.TeamRoomTests")
+
+-- Server runtime should not depend on tests passing.
+-- Run tests separately via run_tests.sh, or set PA_RUN_SERVER_TESTS=1 to keep old behavior.
+if os.getenv("PA_RUN_SERVER_TESTS") == "1" then
+  require("server.tests.LoginTests")
+  require("server.tests.ServerTests")
+  require("server.tests.LeaderboardTests")
+  require("server.tests.RoomTests")
+  require("server.tests.TeamRoomTests")
+end
 
 local database = require("server.PADatabase")
 local Server = require("server.server")

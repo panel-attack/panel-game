@@ -816,17 +816,20 @@ function Server:broadCastLobbyIfChanged()
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player then
-        -- Send to players in lobby, partial rooms, or full rooms that are still in character select.
-        -- The full-room character select phase still needs lobby sync so the UI can resolve pending
-        -- room membership and remove stale join-slot options.
+        -- Send to players in lobby, partial rooms, or full TEAM rooms (3p/4p) that are
+        -- still in character select. Team room clients need this extra sync to resolve
+        -- room membership and clear stale join-slot options.
         local inLobby = player.state == "lobby"
         local inPartialRoom = false
-        local inCharacterSelectRoom = player.state == "character select"
+        local inCharacterSelectTeamRoom = false
         local room = self.playerToRoom[player]
         if room and not room:isFull() then
           inPartialRoom = true
+        elseif room and player.state == "character select" then
+          local playerCount = room.gameMode and room.gameMode.playerCount or 2
+          inCharacterSelectTeamRoom = playerCount > 2
         end
-        if inLobby or inPartialRoom or inCharacterSelectRoom then
+        if inLobby or inPartialRoom or inCharacterSelectTeamRoom then
           connection:sendJson(messageV2)
         end
       end
