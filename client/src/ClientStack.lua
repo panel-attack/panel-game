@@ -293,7 +293,91 @@ function ClientStack:moveForRenderIndex(renderIndex)
   self:moveToPosition(frameOriginNonScaled, self.baseWidth + self.panelOriginXOffset)
 end
 
--- Positions the stack in a 4-player 2x2 grid layout
+-- Calculates responsive scale so right-side stacks fit vertically with margins and gaps
+---@param numStacksOnRight integer
+---@param topMargin number
+---@param bottomMargin number
+---@param gap number
+function ClientStack:calculateResponsiveScale(numStacksOnRight, topMargin, bottomMargin, gap)
+  local canvasHeight = GAME.globalCanvas:getHeight()
+  local availableHeight = canvasHeight - topMargin - bottomMargin - (numStacksOnRight - 1) * gap
+  local maxScale = availableHeight / (self.baseHeight * numStacksOnRight)
+
+  -- allow sub-1 scales for 4-player while preventing tiny unreadable stacks
+  return math.max(0.85, math.min(2.5, maxScale))
+end
+
+-- Positions the stack in a 3-player layout with responsive scaling
+-- renderIndex: 1=left (full size), 2=top-right (smaller), 3=bottom-right (smaller)
+-- Uses responsive scaling based on canvas height to ensure both right stacks fit
+function ClientStack:moveForRenderIndex3Player(renderIndex)
+  if renderIndex == 1 then
+    -- Player 1 uses EXACTLY the same positioning as 2-player PvP
+    self:moveForRenderIndex(1)
+  else
+    -- Players 2 & 3 on the right with responsive scaling
+    self:setupForRenderIndex(renderIndex)
+
+    local canvasWidth = GAME.globalCanvas:getWidth()
+    local topMargin = self.baseWidth + self.panelOriginXOffset
+    local bottomMargin = 12
+    local gap = 12
+
+    -- Responsive scaling for 2 stacks on the right
+    self.gfxScale = self:calculateResponsiveScale(2, topMargin, bottomMargin, gap)
+    local stackWidth = self:canvasWidth()
+    local stackHeight = self:canvasHeight()
+    local rightX = canvasWidth - stackWidth - 24  -- Right side with margin
+    
+    if renderIndex == 2 then
+      -- Top-right
+      self:moveToPosition(rightX, topMargin)
+    elseif renderIndex == 3 then
+      -- Bottom-right
+      local bottomY = topMargin + stackHeight + gap
+      self:moveToPosition(rightX, bottomY)
+    end
+  end
+end
+
+-- Positions the stack in a 4-player layout with responsive scaling (all right side, vertically stacked)
+-- renderIndex: 1=left (full size), 2=top-right, 3=middle-right, 4=bottom-right (smaller)
+-- Uses responsive scaling based on canvas height to ensure all 3 right stacks fit
+function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
+  if renderIndex == 1 then
+    -- Player 1 uses EXACTLY the same positioning as 2-player PvP
+    self:moveForRenderIndex(1)
+  else
+    -- Players 2, 3, 4 on the right with responsive scaling
+    self:setupForRenderIndex(renderIndex)
+
+    local canvasWidth = GAME.globalCanvas:getWidth()
+    local topMargin = self.baseWidth + self.panelOriginXOffset
+    local bottomMargin = 12
+    local gap = 8
+
+    -- Responsive scaling for 3 stacks on the right
+    self.gfxScale = self:calculateResponsiveScale(3, topMargin, bottomMargin, gap)
+    local stackWidth = self:canvasWidth()
+    local stackHeight = self:canvasHeight()
+    local rightX = canvasWidth - stackWidth - 24  -- Right side with margin
+    
+    if renderIndex == 2 then
+      -- Top-right
+      self:moveToPosition(rightX, topMargin)
+    elseif renderIndex == 3 then
+      -- Middle-right
+      local middleY = topMargin + stackHeight + gap
+      self:moveToPosition(rightX, middleY)
+    elseif renderIndex == 4 then
+      -- Bottom-right
+      local bottomY = topMargin + (stackHeight + gap) * 2
+      self:moveToPosition(rightX, bottomY)
+    end
+  end
+end
+
+-- Positions the stack in a 4-player 2x2 grid layout (alternative layout)
 -- renderIndex: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
 function ClientStack:moveForRenderIndex4Player(renderIndex)
   self:setupForRenderIndex(renderIndex)

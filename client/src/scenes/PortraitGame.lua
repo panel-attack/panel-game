@@ -2,6 +2,7 @@ local GameBase = require("client.src.scenes.GameBase")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Telegraph = require("client.src.graphics.Telegraph")
+local GameModes = require("common.data.GameModes")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
@@ -9,6 +10,72 @@ local system = require("client.src.system")
 local DebugSettings = require("client.src.debug.DebugSettings")
 
 local PortraitGame = class(function(self, sceneParams)
+
+local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
+  if not gameMode or not gameMode.playersPerTeam then
+    return nil
+  end
+
+  local playersPerTeam = gameMode.playersPerTeam
+  if type(playersPerTeam) == "number" then
+    return math.floor((playerPosition - 1) / playersPerTeam) + 1
+  elseif type(playersPerTeam) == "table" then
+    local cumulative = 0
+    for idx, count in ipairs(playersPerTeam) do
+      if playerPosition <= cumulative + count then
+        return idx
+      end
+      cumulative = cumulative + count
+    end
+  end
+
+  return nil
+end
+
+local function teamLetter(teamIndex)
+  return (teamIndex == 1) and "A" or "B"
+end
+
+local function buildTeamResultText(match, winners)
+  local teams = {}
+  local winnerTeams = {}
+
+  for index, player in ipairs(match.players) do
+    local teamIndex = getTeamIndexForPlayerPosition(match.gameMode, index)
+    if teamIndex then
+      teams[teamIndex] = teams[teamIndex] or {}
+      teams[teamIndex][#teams[teamIndex] + 1] = player.name
+    end
+  end
+
+  for _, winner in ipairs(winners) do
+    for index, player in ipairs(match.players) do
+      if player == winner then
+        local teamIndex = getTeamIndexForPlayerPosition(match.gameMode, index)
+        if teamIndex then
+          winnerTeams[teamIndex] = true
+        end
+        break
+      end
+    end
+  end
+
+  local winnerTeamIndex = nil
+  local winnerTeamCount = 0
+  for teamIndex, _ in pairs(winnerTeams) do
+    winnerTeamIndex = teamIndex
+    winnerTeamCount = winnerTeamCount + 1
+  end
+
+  local teamA = teams[1] and table.concat(teams[1], ", ") or "-"
+  local teamB = teams[2] and table.concat(teams[2], ", ") or "-"
+
+  if winnerTeamCount == 1 and winnerTeamIndex then
+    return "Team " .. teamLetter(winnerTeamIndex) .. " wins | Team A: " .. teamA .. " | Team B: " .. teamB
+  end
+
+  return "Draw | Team A: " .. teamA .. " | Team B: " .. teamB
+end
 end,
 GameBase)
 
@@ -175,7 +242,9 @@ function PortraitGame:draw()
     local winners = self.match:getWinners()
     local pos = themes[config.theme].gameover_text_Pos
     local message
-    if #winners == 1 then
+    if self.match.gameMode and self.match.gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
+      message = buildTeamResultText(self.match, winners)
+    elseif #winners == 1 then
       message = loc("ss_p_wins", winners[1].name)
     else
       message = loc("ss_draw")

@@ -308,8 +308,10 @@ function ClientMatch:moveStacks()
   if self.replay and self.replay.metadata.completed then
     if tableUtils.trueForAll(self.replay.metadata.stacks, function(s) return s.renderIndex end) then
       for _, stackMetadata in ipairs(self.replay.metadata.stacks) do
-        if #self.stacks > 2 then
-          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex4Player(stackMetadata.renderIndex)
+        if #self.stacks == 3 then
+          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex3Player(stackMetadata.renderIndex)
+        elseif #self.stacks == 4 then
+          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex4PlayerHorizontal(stackMetadata.renderIndex)
         else
           self.stacks[stackMetadata.stackIndex]:moveForRenderIndex(stackMetadata.renderIndex)
         end
@@ -331,8 +333,10 @@ function ClientMatch:moveStacks()
   end)
 
   for i, stack in ipairs(stacks) do
-    if #self.stacks > 2 then
-      stack:moveForRenderIndex4Player(i)
+    if #self.stacks == 3 then
+      stack:moveForRenderIndex3Player(i)
+    elseif #self.stacks == 4 then
+      stack:moveForRenderIndex4PlayerHorizontal(i)
     else
       stack:moveForRenderIndex(i)
     end
@@ -567,6 +571,68 @@ function ClientMatch:drawTimer()
   self:drawMatchTime(timeString, themes[config.theme].time_Pos, themes[config.theme].time_Scale)
 end
 
+local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
+  if not gameMode or not gameMode.playersPerTeam then
+    return nil
+  end
+
+  local playersPerTeam = gameMode.playersPerTeam
+  if type(playersPerTeam) == "number" then
+    return math.floor((playerPosition - 1) / playersPerTeam) + 1
+  elseif type(playersPerTeam) == "table" then
+    local cumulative = 0
+    for idx, count in ipairs(playersPerTeam) do
+      if playerPosition <= cumulative + count then
+        return idx
+      end
+      cumulative = cumulative + count
+    end
+  end
+
+  return nil
+end
+
+function ClientMatch:drawTeamScoreboard()
+  if self.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
+    return
+  end
+
+  local teamNames = { [1] = {}, [2] = {} }
+  local teamWins = { [1] = 0, [2] = 0 }
+
+  for i, player in ipairs(self.players) do
+    local teamIndex = getTeamIndexForPlayerPosition(self.gameMode, i)
+    if not teamIndex then
+      if #self.players == 3 then
+        teamIndex = (i == 1) and 1 or 2
+      elseif #self.players == 4 then
+        teamIndex = (i <= 2) and 1 or 2
+      end
+    end
+    if teamIndex and teamIndex <= 2 then
+      teamNames[teamIndex][#teamNames[teamIndex] + 1] = player.name or ("P" .. tostring(i))
+      teamWins[teamIndex] = math.max(teamWins[teamIndex], player:getWinCountForDisplay())
+    end
+  end
+
+  local blueNames = (#teamNames[1] > 0) and table.concat(teamNames[1], ", ") or "-"
+  local redNames = (#teamNames[2] > 0) and table.concat(teamNames[2], ", ") or "-"
+
+  local topY = 8
+  local nameWidth = 430
+  local scoreWidth = 70
+  local centerX = consts.CANVAS_WIDTH / 2
+
+  GraphicsUtil.setColor(0.45, 0.7, 1, 1)
+  GraphicsUtil.printf(blueNames, centerX - 440, topY, nameWidth, "center")
+  GraphicsUtil.printf(tostring(teamWins[1]), centerX - 65, topY, scoreWidth, "center", nil, 2)
+
+  GraphicsUtil.setColor(1, 0.45, 0.45, 1)
+  GraphicsUtil.printf(tostring(teamWins[2]), centerX - 5, topY, scoreWidth, "center", nil, 2)
+  GraphicsUtil.printf(redNames, centerX + 40, topY, nameWidth, "center")
+  GraphicsUtil.setColor(1, 1, 1, 1)
+end
+
 function ClientMatch:drawMatchType()
   local matchImage = nil
   if self.ranked then
@@ -666,6 +732,7 @@ function ClientMatch:render()
     end
 
     self:drawTimer()
+    self:drawTeamScoreboard()
   end
 end
 

@@ -414,3 +414,35 @@ local function testCenterPositioning()
 end
 
 test(testCenterPositioning)
+-- Test for 3-player layout
+local function test3PlayerLayout()
+  local match = createEndlessClientMatch(3, defaultTheme)
+  
+  assert(match ~= nil)
+  assert(#match.stacks == 3)
+  
+  -- Test that moveStacks() properly handles 3 players
+  match:moveStacks()
+  
+  -- Player 1 (local, full size) should be on the left with renderIndex 1
+  local stack1 = match.stacks[1]
+  assert(stack1.renderIndex == 1)
+  assert(stack1.mirror_x == 1)
+  
+  -- Players 2 and 3 (smaller) should be on the right
+  local stack2 = match.stacks[2]
+  local stack3 = match.stacks[3]
+  
+  assert(stack2.renderIndex == 2)
+  assert(stack3.renderIndex == 3)
+  
+  -- Verify that stacks are positioned differently
+  -- Stack 1 should have different frameOriginX than stacks 2 and 3
+  assert(stack1.frameOriginX ~= stack2.frameOriginX)
+  assert(stack2.frameOriginX == stack3.frameOriginX)  -- Stacks 2 and 3 should have same X (right side)
+  
+  -- Verify Y positions: stack 2 should be higher than stack 3
+  assert(stack2.frameOriginY < stack3.frameOriginY)
+end
+
+test(test3PlayerLayout)

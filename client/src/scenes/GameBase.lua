@@ -15,6 +15,7 @@ local ui = require("client.src.ui")
 local FileUtils = require("client.src.FileUtils")
 local ClientStack = require("client.src.ClientStack")
 local MatchRules = require("common.data.MatchRules")
+local GameModes = require("common.data.GameModes")
 local DebugSettings = require("client.src.debug.DebugSettings")
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
@@ -83,6 +84,93 @@ function GameBase:customRun() end
 function GameBase:customGameOverSetup() end
 
 -- end abstract functions
+
+local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
+  if not gameMode or not gameMode.playersPerTeam then
+    return nil
+  end
+
+  local playersPerTeam = gameMode.playersPerTeam
+  if type(playersPerTeam) == "number" then
+    return math.floor((playerPosition - 1) / playersPerTeam) + 1
+  elseif type(playersPerTeam) == "table" then
+    local cumulative = 0
+    for idx, count in ipairs(playersPerTeam) do
+      if playerPosition <= cumulative + count then
+        return idx
+      end
+      cumulative = cumulative + count
+    end
+  end
+
+  return nil
+end
+
+local function teamLetter(teamIndex)
+  return (teamIndex == 1) and "A" or "B"
+end
+
+local function joinPlayerNames(players)
+  local names = {}
+  for _, player in ipairs(players) do
+    names[#names + 1] = player.name
+  end
+  return table.concat(names, ", ")
+end
+
+local function buildTeamResultText(match, winners)
+  local gameMode = match.gameMode
+  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
+    return nil
+  end
+
+  local teams = {}
+  local winnerTeams = {}
+  local localTeam = nil
+
+  for index, player in ipairs(match.players) do
+    local teamIndex = getTeamIndexForPlayerPosition(gameMode, index)
+    if teamIndex then
+      teams[teamIndex] = teams[teamIndex] or {}
+      teams[teamIndex][#teams[teamIndex] + 1] = player
+      if player.isLocal then
+        localTeam = teamIndex
+      end
+    end
+  end
+
+  for _, winner in ipairs(winners) do
+    for index, player in ipairs(match.players) do
+      if player == winner then
+        local teamIndex = getTeamIndexForPlayerPosition(gameMode, index)
+        if teamIndex then
+          winnerTeams[teamIndex] = true
+        end
+        break
+      end
+    end
+  end
+
+  local winnerTeamIndex = nil
+  local winnerTeamCount = 0
+  for teamIndex, _ in pairs(winnerTeams) do
+    winnerTeamIndex = teamIndex
+    winnerTeamCount = winnerTeamCount + 1
+  end
+
+  local teamA = teams[1] and joinPlayerNames(teams[1]) or "-"
+  local teamB = teams[2] and joinPlayerNames(teams[2]) or "-"
+
+  if winnerTeamCount == 1 and winnerTeamIndex then
+    local prefix = ""
+    if localTeam then
+      prefix = (localTeam == winnerTeamIndex) and "WIN - " or "LOSE - "
+    end
+    return prefix .. "Team " .. teamLetter(winnerTeamIndex) .. " wins | Team A: " .. teamA .. " | Team B: " .. teamB
+  end
+
+  return "Draw | Team A: " .. teamA .. " | Team B: " .. teamB
+end
 
 -- returns "stage" or "character" depending on which should be used according to the config.use_music_from setting
 function GameBase:getPreferredMusicSourceType()
@@ -258,6 +346,8 @@ function GameBase:setupGameOver()
   if self.text == nil then
     if #self.match.players == 1 then
       self.text = loc("pl_gameover")
+    elseif self.match.gameMode and self.match.gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
+      self.text = buildTeamResultText(self.match, winners)
     elseif #winners == 1 then
       self.text = loc("ss_p_wins", winners[1].name)
     else
@@ -440,8 +530,10 @@ function GameBase:drawHUD()
 
       -- Draw VS HUD
       if stack.player then
-        stack:drawPlayerName()
-        stack:drawWinCount()
+        if self.match.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
+          stack:drawPlayerName()
+          stack:drawWinCount()
+        end
         stack:drawRating()
       end
 
