@@ -968,7 +968,15 @@ function Theme:getGridCursor(index)
     loadGridCursors(self)
   end
 
-  return self.images.IMG_char_sel_cursors[index]
+  if self.images.IMG_char_sel_cursors and self.images.IMG_char_sel_cursors[index] and self.images.IMG_char_sel_cursors[index][1] then
+    return self.images.IMG_char_sel_cursors[index]
+  end
+
+  if self.images.IMG_char_sel_cursors and self.images.IMG_char_sel_cursors[1] and self.images.IMG_char_sel_cursors[1][1] then
+    return self.images.IMG_char_sel_cursors[1]
+  end
+
+  error("Theme is missing character select cursor assets")
 end
 
 ---@return love.Texture
@@ -1087,7 +1095,21 @@ function Theme:getPlayerNumberIcon(index)
     loadPlayerNumberIcons(self)
   end
 
-  return self.images.IMG_players[index]
+  if self.images.IMG_players and self.images.IMG_players[index] then
+    return self.images.IMG_players[index]
+  end
+
+  if self.images.IMG_players and self.images.IMG_players[1] then
+    return self.images.IMG_players[1]
+  end
+
+  for _, icon in pairs(self.images.IMG_players or {}) do
+    if icon then
+      return icon
+    end
+  end
+
+  error("Theme is missing player number icons")
 end
 
 ---@param deviceType string

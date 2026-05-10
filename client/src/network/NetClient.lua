@@ -43,9 +43,53 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
   if lobbyStateV2.players then
     self.lobbyDataV2.players = lobbyStateV2.players
   end
+  self.lobbyDataV2.rooms = lobbyStateV2.rooms or {}
+  local localId = GAME.localPlayer and GAME.localPlayer.publicId
+  local localRoomNumber = localId and self.lobbyDataV2.players[localId] and self.lobbyDataV2.players[localId].roomNumber
 
   local function isRoomInviteKey(key)
     return type(key) == "string" and key:match("^room_%d+_%d+$") ~= nil
+  end
+
+  local function isInviteSlotStillOpen(inviteKey)
+    if type(inviteKey) ~= "string" then
+      return false
+    end
+
+    local roomNumberStr, slotNumberStr = inviteKey:match("^room_(%d+)_(%d+)$")
+    if not roomNumberStr or not slotNumberStr then
+      return false
+    end
+
+    local room = self.lobbyDataV2.rooms[tonumber(roomNumberStr)]
+    local slotNumber = tonumber(slotNumberStr)
+    if not room or not room.openSlots or not slotNumber then
+      return false
+    end
+
+    for _, openSlot in ipairs(room.openSlots) do
+      if tonumber(openSlot) == slotNumber then
+        return true
+      end
+    end
+
+    return false
+  end
+
+  local function isInviteObsoleteForJoinedPlayer(targetPlayerId, inviteKey)
+    if type(inviteKey) ~= "string" then
+      return false
+    end
+    local roomNumberStr = inviteKey:match("^room_(%d+)_%d+$")
+    if not roomNumberStr then
+      return false
+    end
+
+    local targetRoomNumber = self.lobbyDataV2.players[targetPlayerId] and self.lobbyDataV2.players[targetPlayerId].roomNumber
+    local inviteRoomNumber = tonumber(roomNumberStr)
+    -- Only clear when the target is already in the local player's room.
+    -- This avoids breaking outsider->owner pending join requests.
+    return targetRoomNumber ~= nil and localRoomNumber ~= nil and targetRoomNumber == localRoomNumber and inviteRoomNumber == localRoomNumber
   end
 
   -- if a player we challenged is not in lobby data or is in a room, they cannot accept our challenge anymore
@@ -53,9 +97,13 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     local roomNumber = self.lobbyDataV2.players[publicId] and self.lobbyDataV2.players[publicId].roomNumber
     if not self.lobbyDataV2.players[publicId] then
       self.lobbyDataV2.outgoingChallenges[publicId] = nil
-    elseif roomNumber then
+    else
       for challengeKey, active in pairs(playerChallenges) do
-        if not isRoomInviteKey(challengeKey) then
+        if isRoomInviteKey(challengeKey) and not isInviteSlotStillOpen(challengeKey) then
+          playerChallenges[challengeKey] = nil
+        elseif isRoomInviteKey(challengeKey) and isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+          playerChallenges[challengeKey] = nil
+        elseif roomNumber and not isRoomInviteKey(challengeKey) then
           playerChallenges[challengeKey] = nil
         end
       end
@@ -67,16 +115,18 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     local roomNumber = self.lobbyDataV2.players[publicId] and self.lobbyDataV2.players[publicId].roomNumber
     if not self.lobbyDataV2.players[publicId] then
       self.lobbyDataV2.incomingChallenges[publicId] = nil
-    elseif roomNumber then
+    else
       for challengeKey, active in pairs(playerChallenges) do
-        if not isRoomInviteKey(challengeKey) then
+        if isRoomInviteKey(challengeKey) and not isInviteSlotStillOpen(challengeKey) then
+          playerChallenges[challengeKey] = nil
+        elseif isRoomInviteKey(challengeKey) and isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+          playerChallenges[challengeKey] = nil
+        elseif roomNumber and not isRoomInviteKey(challengeKey) then
           playerChallenges[challengeKey] = nil
         end
       end
     end
   end
-
-  self.lobbyDataV2.rooms = lobbyStateV2.rooms
 
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end

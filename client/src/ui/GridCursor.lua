@@ -21,6 +21,9 @@ local GridCursor = class(function(self, options)
   self.player = options.player
   self.player.cursor = self
   self.frameImages = options.frameImages or themes[config.theme]:getGridCursor(self.player.playerNumber)
+  if not (self.frameImages and self.frameImages[1]) then
+    self.frameImages = themes[config.theme]:getGridCursor(1)
+  end
   self.imageWidth, self.imageHeight = self.frameImages[1]:getDimensions()
   self.quads = {}
   self.quads.left = love.graphics.newQuad(0, 0, self.imageWidth / 2, self.imageHeight, self.imageWidth, self.imageHeight)

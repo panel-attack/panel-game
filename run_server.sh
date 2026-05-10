@@ -12,6 +12,8 @@ if [[ -n "$port_pids" ]]; then
 	# Give the OS a brief moment to release the port before relaunching.
 	sleep 0.2
 fi
+
+echo "Starting server on port 49569 (output is activity-driven; idle server may appear silent)."
 luajit serverLauncher.lua debug 2>&1 | tee logs/server.log
 exit_code=${pipestatus[1]}
 if [[ $exit_code -ne 0 ]]; then

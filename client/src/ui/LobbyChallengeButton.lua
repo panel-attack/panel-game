@@ -43,6 +43,57 @@ LobbyChallengeButton.TYPE = "LobbyChallengeButton"
 ---@enum ChallengeState
 LobbyChallengeButton.challengeStates  = { CHALLENGED = "CHALLENGED", PROPOSING = "PROPOSING", NEUTRAL = "NEUTRAL" }
 
+---@param challengeMap table<string, boolean>?
+---@param roomNumber integer
+---@param slotNumber integer?
+---@return boolean
+local function hasOtherActiveRoomInvite(challengeMap, roomNumber, slotNumber)
+  if not challengeMap then
+    return false
+  end
+
+  for key, active in pairs(challengeMap) do
+    if active and type(key) == "string" then
+      local roomStr, slotStr = key:match("^room_(%d+)_(%d+)$")
+      if roomStr and slotStr and tonumber(roomStr) == tonumber(roomNumber) then
+        local invitedSlot = tonumber(slotStr)
+        if invitedSlot and invitedSlot ~= tonumber(slotNumber) then
+          return true
+        end
+      end
+    end
+  end
+
+  return false
+end
+
+---@param lobbyData PersonalizedLobbyDataV2
+---@param roomNumber integer
+---@param slotNumber integer?
+---@param targetPlayerId PublicPlayerID
+---@return boolean
+local function hasSameSlotInviteForOtherPlayer(lobbyData, roomNumber, slotNumber, targetPlayerId)
+  if not lobbyData or not roomNumber or not slotNumber then
+    return false
+  end
+
+  local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
+
+  for otherPlayerId, challenges in pairs(lobbyData.outgoingChallenges or {}) do
+    if otherPlayerId ~= targetPlayerId and challenges and challenges[inviteKey] == true then
+      return true
+    end
+  end
+
+  for otherPlayerId, challenges in pairs(lobbyData.incomingChallenges or {}) do
+    if otherPlayerId ~= targetPlayerId and challenges and challenges[inviteKey] == true then
+      return true
+    end
+  end
+
+  return false
+end
+
 ---@param challengeState ChallengeState
 function LobbyChallengeButton:setState(challengeState)
   self.challengeState = challengeState
@@ -69,6 +120,14 @@ function LobbyChallengeButton:onClick()
       GAME.netClient:sendPlayerSettings(GAME.localPlayer)
     end
     if self.roomNumber then
+      local outgoing = GAME.netClient.lobbyDataV2.outgoingChallenges[self.playerId]
+      local incoming = GAME.netClient.lobbyDataV2.incomingChallenges[self.playerId]
+      if hasOtherActiveRoomInvite(outgoing, self.roomNumber, self.slotNumber)
+        or hasOtherActiveRoomInvite(incoming, self.roomNumber, self.slotNumber)
+        or hasSameSlotInviteForOtherPlayer(GAME.netClient.lobbyDataV2, self.roomNumber, self.slotNumber, self.playerId) then
+        GAME.theme:playCancelSfx()
+        return
+      end
       GAME.netClient:invitePlayerToRoom(self.playerId, self.roomNumber, self.slotNumber, self.gameModeId)
     else
       GAME.netClient:challengePlayerById(self.playerId, self.gameModeId)

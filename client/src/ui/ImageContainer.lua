@@ -2,6 +2,25 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local logger = require("common.lib.logger")
+
+local fallbackImage = nil
+
+---@return love.Texture?
+local function getFallbackImage()
+  if fallbackImage then
+    return fallbackImage
+  end
+
+  if love and love.image and love.graphics then
+    local data = love.image.newImageData(1, 1)
+    data:setPixel(0, 0, 1, 1, 1, 0)
+    fallbackImage = love.graphics.newImage(data)
+    return fallbackImage
+  end
+
+  return nil
+end
 
 ---@class ImageContainer : UiElement
 local ImageContainer = class(function(self, options)
@@ -12,8 +31,17 @@ local ImageContainer = class(function(self, options)
 end, UiElement)
 
 function ImageContainer:setImage(image, width, height, scale)
-  self.image = image
-  self.imageWidth, self.imageHeight = self.image:getDimensions()
+  if not image then
+    logger.warn("ImageContainer received nil image; using 1x1 transparent fallback")
+  end
+
+  self.image = image or getFallbackImage()
+  if self.image then
+    self.imageWidth, self.imageHeight = self.image:getDimensions()
+  else
+    -- Defensive fallback for environments where love.graphics is unavailable.
+    self.imageWidth, self.imageHeight = 1, 1
+  end
 
   if self.hFill and self.vFill then
     self.scale = math.min(self.width / self.imageWidth, self.height / self.imageHeight)
@@ -44,7 +72,9 @@ function ImageContainer:onResize()
 end
 
 function ImageContainer:drawSelf()
-  GraphicsUtil.draw(self.image, self.x, self.y, 0, self.scale, self.scale)
+  if self.image then
+    GraphicsUtil.draw(self.image, self.x, self.y, 0, self.scale, self.scale)
+  end
 
   if self.drawBorders then
     -- border is just drawn on top, not around

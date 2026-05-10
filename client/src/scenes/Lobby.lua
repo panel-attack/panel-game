@@ -524,6 +524,46 @@ local function isPlayerInAnyRoom(lobbyData, publicId)
   return false
 end
 
+---@param lobbyData PersonalizedLobbyDataV2
+---@param roomNumber integer
+---@param slotNumber integer
+---@param targetPlayerId PublicPlayerID
+---@return boolean
+local function slotInviteActiveForDifferentPlayer(lobbyData, roomNumber, slotNumber, targetPlayerId)
+  if not lobbyData then
+    return false
+  end
+
+  local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
+
+  local function playerAlreadyInRoom(otherPlayerId)
+    local room = lobbyData.rooms and lobbyData.rooms[roomNumber]
+    if not room or not room.players then
+      return false
+    end
+    for _, pId in ipairs(room.players) do
+      if pId == otherPlayerId then
+        return true
+      end
+    end
+    return false
+  end
+
+  for otherPlayerId, challenges in pairs(lobbyData.outgoingChallenges or {}) do
+    if otherPlayerId ~= targetPlayerId and not playerAlreadyInRoom(otherPlayerId) and challenges and challenges[inviteKey] == true then
+      return true
+    end
+  end
+
+  for otherPlayerId, challenges in pairs(lobbyData.incomingChallenges or {}) do
+    if otherPlayerId ~= targetPlayerId and not playerAlreadyInRoom(otherPlayerId) and challenges and challenges[inviteKey] == true then
+      return true
+    end
+  end
+
+  return false
+end
+
 ---@param personalizedLobbyData PersonalizedLobbyDataV2
 function Lobby:createPlayerButtons(personalizedLobbyData)
   local playerButtons = {}
@@ -534,9 +574,8 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
     local hasIncoming = personalizedLobbyData.incomingChallenges[publicId] and challengeActive(personalizedLobbyData.incomingChallenges[publicId])
     local hasOutgoing = personalizedLobbyData.outgoingChallenges[publicId] and challengeActive(personalizedLobbyData.outgoingChallenges[publicId])
 
-    -- Keep players in rooms hidden by default, except when there is an active
-    -- invite/request state to show (e.g. team room invite notifications).
-    if not isLocalPlayer and ((not hasRoom) or hasIncoming or hasOutgoing) then
+    -- Players in rooms are not shown in the lobby player list.
+    if not isLocalPlayer and not hasRoom then
       local playerName
       if hasIncoming then
         playerName = Lobby.getPlayerNameWithRating(publicId) .. " " .. loc("lb_received")
@@ -934,7 +973,26 @@ function Lobby:openPlayerSubMenu(playerId, button)
   -- If LOCAL player leads a partial team room, offer invite buttons
   if isLocalTeamLeader then
     if myRoom and myRoom.openSlots and #myRoom.openSlots > 0 then
+      local outgoing = lobbyDataV2.outgoingChallenges[playerId]
+      local incoming = lobbyDataV2.incomingChallenges[playerId]
+      local activeInviteSlot
       for _, slotNumber in ipairs(myRoom.openSlots) do
+        local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
+        if (outgoing and outgoing[inviteKey]) or (incoming and incoming[inviteKey]) then
+          activeInviteSlot = slotNumber
+          break
+        end
+      end
+
+      for _, slotNumber in ipairs(myRoom.openSlots) do
+        if slotInviteActiveForDifferentPlayer(lobbyDataV2, myRoom.roomNumber, slotNumber, playerId) then
+          goto continue_invite_slot
+        end
+
+        if activeInviteSlot and activeInviteSlot ~= slotNumber then
+          goto continue_invite_slot
+        end
+
         local slotLabel = getSlotLabel(myRoom, slotNumber)
         local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
         local inviteBtn = ui.LobbyChallengeButton({
@@ -950,14 +1008,14 @@ function Lobby:openPlayerSubMenu(playerId, button)
           width = 120,
         })
         -- Set initial state
-        local outgoing = lobbyDataV2.outgoingChallenges[playerId]
-        local incoming = lobbyDataV2.incomingChallenges[playerId]
         if incoming and incoming[inviteKey] then
           inviteBtn:setState(inviteBtn.challengeStates.CHALLENGED)
         elseif outgoing and outgoing[inviteKey] then
           inviteBtn:setState(inviteBtn.challengeStates.PROPOSING)
         end
         subMenu:addChild(inviteBtn)
+
+        ::continue_invite_slot::
       end
     end
   end

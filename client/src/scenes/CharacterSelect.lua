@@ -721,7 +721,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
+    image = getPlayerNumberIcon(playerIndex),
     hAlign = "left",
     vAlign = "center",
     scale = 2,
