@@ -470,13 +470,6 @@ function Room:handleGameOverOutcome(message, sender)
       )
     )
     self.game = nil
-    -- Tear the room down once the result is broadcast. Keeps server state from drifting
-    -- away from clients, who unconditionally pop back to the lobby on leaveRoom.
-    -- Skip for single-player rooms (vsSelf, etc.) — there's only one client, so no
-    -- state-divergence risk, and players want to stay in the room to play another round.
-    if #self.players > 1 then
-      self:emitSignal("roomShouldClose", self, "match ended")
-    end
   end
 end
 
@@ -525,6 +518,15 @@ function Room:handleGameAbort(sender)
       self:handlePlayerDisconnect(sender, "latency_error")
     else
       logger.info("abort was judged as illegitimate with an inputCountDifference of " .. inputCountDifference)
+
+      -- Mark the aborter as eliminated so the server stops waiting on their inputs.
+      -- Without this, canFlushNextFrame stalls until the connection watchdog fires
+      -- (~60s) because the aborter has stopped sending inputs but isn't disconnected.
+      -- markPlayerEliminated only sets eliminatedPlayers; it does not touch
+      -- outcomeReports, so the constructed loss-outcome below still applies.
+      if self.game then
+        self.game:markPlayerEliminated(sender, sender.player_number)
+      end
 
       -- Illegitimate aborts:
       -- - 2p: keep legacy behavior (aborting player loses, opponent wins)
@@ -594,7 +596,6 @@ function Room:abortGame(sender, reason)
   self:prepare_character_select()
   self.game = nil
   self.recentGameAbort = true
-  self:emitSignal("roomShouldClose", self, reason or "match aborted")
 end
 
 function Room:togglePause(sender, paused)
