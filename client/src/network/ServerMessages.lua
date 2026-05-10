@@ -200,6 +200,26 @@ function ServerMessages.sanitizeServerMessage(message)
       roomNumber = message.content.roomNumber,
       gameMode = message.content.gameMode
     }
+  elseif message.type == "addToRoom" then
+    local players = {}
+    for i, player in ipairs(message.content.players) do
+      players[player.playerNumber] = {
+        playerNumber = player.playerNumber,
+        ratingInfo = player.rating,
+        name = player.name,
+        publicId = player.publicId,
+        settings = sanitizePlayerSettings1(player.settings),
+      }
+      players[player.playerNumber].settings.playerNumber = player.playerNumber
+    end
+
+    return {
+      addToRoom = true,
+      ranked = message.content.ranked,
+      players = players,
+      roomNumber = message.content.roomNumber,
+      gameMode = message.content.gameMode
+    }
   else
     return message
   end

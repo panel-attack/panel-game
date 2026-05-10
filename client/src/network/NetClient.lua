@@ -484,6 +484,12 @@ local function processChallengeUpdate(self, challengeUpdateMessage)
     local key = challengeUpdate.roomNumber
       and ("room_" .. challengeUpdate.roomNumber .. "_" .. (challengeUpdate.slotNumber or 0))
       or challengeUpdate.gameModeId
+    logger.info(string.format("Received challengeUpdate from %s: key=%s, active=%s, room=%s, slot=%s",
+      tostring(challengeUpdate.senderId),
+      tostring(key),
+      tostring(challengeUpdate.challengeActive),
+      tostring(challengeUpdate.roomNumber),
+      tostring(challengeUpdate.slotNumber)))
     challenges[key] = challengeUpdate.challengeActive
     self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] = challenges
     if challengeUpdate.challengeActive then
@@ -731,9 +737,11 @@ end
 function NetClient:invitePlayerToRoom(opponentId, roomNumber, slotNumber, gameModeId)
   gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
   local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
+  logger.info(string.format("Sending invite to player %s for room %d slot %d (key=%s)", tostring(opponentId), roomNumber, slotNumber, inviteKey))
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
   self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true, roomNumber, slotNumber))
   self.lobbyDataV2.outgoingChallenges[opponentId][inviteKey] = true
+  logger.info(string.format("outgoingChallenges after invite: %s", json.encode(self.lobbyDataV2.outgoingChallenges)))
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 

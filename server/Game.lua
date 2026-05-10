@@ -324,12 +324,22 @@ end
 
 ---@return integer
 function Game:getInputCountDifference()
-  if #self.inputs == 1 then
+  if #self.inputs <= 1 then
     return 0
   elseif #self.inputs == 2 then
     return math.abs(#self.inputs[1] - #self.inputs[2])
   else
-    return 0
+    -- For 3+ players, find the maximum difference between any two players
+    local maxDiff = 0
+    for i = 1, #self.inputs do
+      for j = i + 1, #self.inputs do
+        local diff = math.abs(#self.inputs[i] - #self.inputs[j])
+        if diff > maxDiff then
+          maxDiff = diff
+        end
+      end
+    end
+    return maxDiff
   end
 end
 

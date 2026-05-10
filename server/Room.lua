@@ -468,10 +468,12 @@ end
 
 ---@param sender ServerPlayer
 function Room:handleGameAbort(sender)
+  local isPlayerInRoom = tableUtils.trueForAny(self.players, function(p) return p.publicPlayerID == sender.publicPlayerID end)
+
   if #self.players == 1 and self.players[1] == sender then
     logger.debug(sender.name .. " aborted the game")
     self:abortGame(sender)
-  elseif #self.players == 2 and tableUtils.trueForAny(self.players, function(p) return p.publicPlayerID == sender.publicPlayerID end) then
+  elseif #self.players >= 2 and isPlayerInRoom then
     -- aborts in multiplayer room are a bigger deal so we should log them as info
     logger.info(sender.name .. " aborted the game")
 

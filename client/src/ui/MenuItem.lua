@@ -25,6 +25,7 @@ end,
 UiElement)
 
 MenuItem.PADDING = 2
+MenuItem.GROUP_PADDING = 10
 
 ---Takes a label and an optional extra element and makes and combines them into a menu item which is suitable for inserting into a menu
 ---@param label UiElement the label or left element to display
@@ -48,7 +49,7 @@ function MenuItem.createMenuItem(label, item)
   end
 
   if item ~= nil then
-    local spaceBetween = 16
+    local spaceBetween = 24
     item.x = label.width + spaceBetween
     item.vAlign = "center"
     if system.isMobileOS() or DebugSettings.simulateMobileOS() then
@@ -57,10 +58,29 @@ function MenuItem.createMenuItem(label, item)
     menuItem.width = item.x + item.width + MenuItem.PADDING
     menuItem:addChild(item)
   end
+
+  -- Support section headers / team separators.
+  if label.isSectionHeader then
+    menuItem.height = menuItem.height + (2 * MenuItem.GROUP_PADDING)
+    label.y = MenuItem.GROUP_PADDING
+  end
+
   menuItem:addChild(label)
-
-
   return menuItem
+end
+
+function MenuItem.createSectionHeader(text)
+  local label = Label({
+    text = text,
+    translate = false,
+    hAlign = "center",
+    vAlign = "center"
+  })
+  label.isSectionHeader = true
+
+  local section = MenuItem.createMenuItem(label)
+  section.height = section.height + (2 * MenuItem.GROUP_PADDING)
+  return section
 end
 
 ---Creates a menu item with just a button, using a pre-created Label

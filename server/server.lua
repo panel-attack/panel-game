@@ -311,13 +311,23 @@ end
 ---@param roomNumber integer? optional room number for team room invites
 ---@param slotNumber integer? optional slot number for team room invites
 function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber)
+  logger.debug(string.format("processChallengeUpdate: sender=%s, receiver=%s, gameMode=%s, active=%s, room=%s, slot=%s",
+    sender and sender.name or "nil",
+    receiver and receiver.name or "nil",
+    tostring(gameModeId),
+    tostring(challengeActive),
+    tostring(roomNumber),
+    tostring(slotNumber)))
   if sender and receiver then
     -- Check if this is a room invite (joining existing room)
     if roomNumber then
+      logger.debug(string.format("Room invite: sender.state=%s, receiver.state=%s", sender.state, receiver.state))
       if sender.state ~= "lobby" and sender.state ~= "character select" then
+        logger.debug("Rejecting: sender not in lobby or character select")
         return
       end
       if receiver.state ~= "lobby" and receiver.state ~= "character select" then
+        logger.debug("Rejecting: receiver not in lobby or character select")
         return
       end
       local room = self.rooms[roomNumber]
@@ -350,9 +360,12 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
           end
         else
           -- Send invite to receiver
+          logger.debug(string.format("Storing proposal and sending challengeUpdate to %s for slot %s", receiver.name, tostring(slotNumber)))
           self:updateChallenge(sender, receiver, proposalKey, challengeActive)
           receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber))
         end
+      else
+        logger.debug(string.format("Room invite rejected: room=%s, isFull=%s", tostring(room ~= nil), tostring(room and room:isFull())))
       end
     elseif sender.state == "lobby" and receiver.state == "lobby" then
       -- Standard 2-player game challenge
