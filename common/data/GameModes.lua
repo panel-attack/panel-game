@@ -294,6 +294,48 @@ local ThreePlayerVersusShared = GameMode({
 
 })
 
+---@type GameMode
+local ThreePlayerFFA = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v1v1 FFA",
+  name = "3p_ffa",
+
+  playerCount = 3,
+  teamCount = 3,
+  playersPerTeam = 1,
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local FourPlayerFFA = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v1v1v1 FFA",
+  name = "4p_ffa",
+
+  playerCount = 4,
+  teamCount = 4,
+  playersPerTeam = 1,
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
 
@@ -312,6 +354,9 @@ GameModes.IDs = {
   FOUR_PLAYER_TEAM_VS_SHARED = "FOUR_PLAYER_TEAM_VS_SHARED",
   THREE_PLAYER_VS_ALL = "THREE_PLAYER_VS_ALL",
   THREE_PLAYER_VS_SHARED = "THREE_PLAYER_VS_SHARED",
+  -- Free-for-all modes
+  THREE_PLAYER_FFA = "THREE_PLAYER_FFA",
+  FOUR_PLAYER_FFA = "FOUR_PLAYER_FFA",
 }
 
 ---@type table<GameModeID, GameMode>
@@ -328,6 +373,8 @@ privateGameModes[GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL] = FourPlayerTeamVersusAl
 privateGameModes[GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED] = FourPlayerTeamVersusShared
 privateGameModes[GameModes.IDs.THREE_PLAYER_VS_ALL] = ThreePlayerVersusAll
 privateGameModes[GameModes.IDs.THREE_PLAYER_VS_SHARED] = ThreePlayerVersusShared
+privateGameModes[GameModes.IDs.THREE_PLAYER_FFA] = ThreePlayerFFA
+privateGameModes[GameModes.IDs.FOUR_PLAYER_FFA] = FourPlayerFFA
 
 ---@param mode GameModeID
 ---@return GameMode
@@ -373,6 +420,8 @@ GameModes.gameModeIdToName = {
   FOUR_PLAYER_TEAM_VS_SHARED = "team_vs_shared",
   THREE_PLAYER_VS_ALL = "three_player_vs_all",
   THREE_PLAYER_VS_SHARED = "three_player_vs_shared",
+  THREE_PLAYER_FFA = "3p_ffa",
+  FOUR_PLAYER_FFA = "4p_ffa",
 }
 
 ---@type table<string, GameModeID>
@@ -389,6 +438,8 @@ GameModes.nameToGameModeId = {
   team_vs_shared = "FOUR_PLAYER_TEAM_VS_SHARED",
   three_player_vs_all = "THREE_PLAYER_VS_ALL",
   three_player_vs_shared = "THREE_PLAYER_VS_SHARED",
+  ["3p_ffa"] = "THREE_PLAYER_FFA",
+  ["4p_ffa"] = "FOUR_PLAYER_FFA",
 }
 
 return GameModes

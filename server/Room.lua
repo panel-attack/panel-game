@@ -323,14 +323,8 @@ function Room:broadcastInput(input, sender)
 
   self.game:receiveInput(sender, input)
 
-  -- Determine prefix based on sender's player number
-  local prefixes = {
-    NetworkProtocol.serverMessageTypes.opponentInput.prefix,       -- Player 1
-    NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix, -- Player 2
-    NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix,  -- Player 3
-    NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix, -- Player 4
-  }
-  local inputPrefix = prefixes[sender.player_number] or prefixes[1]
+  local inputPrefix = NetworkProtocol.getInputPrefixForPlayer(sender.player_number)
+      or NetworkProtocol.getInputPrefixForPlayer(1)
   local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, input)
 
   -- Send to all other players

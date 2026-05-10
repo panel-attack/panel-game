@@ -209,10 +209,7 @@ end
 
 -- Adds the message to the network queue or processes it immediately in a couple cases
 function TcpClient:queueMessage(type, data)
-  if type == NetworkProtocol.serverMessageTypes.opponentInput.prefix
-      or type == NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix
-      or type == NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix
-      or type == NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix then
+  if NetworkProtocol.isInputPrefix(type) then
     local dataMessage = {}
     dataMessage[type] = data
     logger.trace("Queuing: " .. type .. " with data:" .. data)
@@ -243,10 +240,14 @@ function TcpClient:dropOldInputMessages()
       break
     end
 
-    if not message[NetworkProtocol.serverMessageTypes.opponentInput.prefix]
-        and not message[NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix]
-        and not message[NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix]
-        and not message[NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix] then
+    local isInputMessage = false
+    for key in pairs(message) do
+      if NetworkProtocol.isInputPrefix(key) then
+        isInputMessage = true
+        break
+      end
+    end
+    if not isInputMessage then
       break -- Found a non user input message. Stop. Future data is for next game
     else
       self.receivedMessageQueue:pop() -- old data, drop it

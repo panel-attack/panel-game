@@ -678,12 +678,30 @@ function NetClient:leaveRoom()
 end
 
 function NetClient:reportLocalGameResult(winners)
-  if #winners == 2 then
-    -- we need to translate the result for the server to understand it
-    -- two winners means a draw which the server thinks of as 0
-    self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(0))
-  elseif #winners == 1 then
-    self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(winners[1].playerNumber))
+  if #winners == 0 then
+    return  -- aborted match, handled separately via sendMatchAbort
+  end
+
+  local gameMode = self.room and self.room.mode
+  local isTeamGame = gameMode and gameMode.teamCount
+
+  if isTeamGame then
+    local totalPlayers = gameMode.playerCount or #self.room.players
+    if #winners >= totalPlayers then
+      -- all players tied (everyone died simultaneously)
+      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(0))
+    else
+      -- 1 = my team won, 2 = my team lost
+      local localWon = tableUtils.trueForAny(winners, function(p) return p.isLocal end)
+      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(localWon and 1 or 2))
+    end
+  else
+    -- non-team: report winner's player number, or 0 for any tie
+    if #winners >= 2 then
+      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(0))
+    else
+      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(winners[1].playerNumber))
+    end
   end
 end
 

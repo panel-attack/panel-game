@@ -599,44 +599,61 @@ local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
   return nil
 end
 
+local teamColors = {
+  {0.45, 0.7,  1,    1},  -- blue
+  {1,    0.45, 0.45, 1},  -- red
+  {0.45, 1,    0.45, 1},  -- green
+  {1,    1,    0.45, 1},  -- yellow
+  {1,    0.6,  0.2,  1},  -- orange
+  {0.8,  0.45, 1,    1},  -- purple
+  {0.45, 1,    1,    1},  -- cyan
+  {1,    0.45, 1,    1},  -- magenta
+}
+
 function ClientMatch:drawTeamScoreboard()
   if self.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
     return
   end
 
-  local teamNames = { [1] = {}, [2] = {} }
-  local teamWins = { [1] = 0, [2] = 0 }
-
+  local teamData = {}
   for i, player in ipairs(self.players) do
-    local teamIndex = getTeamIndexForPlayerPosition(self.gameMode, i)
-    if not teamIndex then
-      if #self.players == 3 then
-        teamIndex = (i == 1) and 1 or 2
-      elseif #self.players == 4 then
-        teamIndex = (i <= 2) and 1 or 2
-      end
+    local teamIndex = getTeamIndexForPlayerPosition(self.gameMode, i) or i
+    if not teamData[teamIndex] then
+      teamData[teamIndex] = {names = {}, wins = 0}
     end
-    if teamIndex and teamIndex <= 2 then
-      teamNames[teamIndex][#teamNames[teamIndex] + 1] = player.name or ("P" .. tostring(i))
-      teamWins[teamIndex] = math.max(teamWins[teamIndex], player:getWinCountForDisplay())
+    teamData[teamIndex].names[#teamData[teamIndex].names + 1] = player.name or ("P" .. i)
+    teamData[teamIndex].wins = math.max(teamData[teamIndex].wins, player:getWinCountForDisplay())
+  end
+
+  local teamCount = self.gameMode.teamCount or 2
+  local topY = 8
+  local centerX = consts.CANVAS_WIDTH / 2
+
+  if teamCount == 2 then
+    local nameWidth = 430
+    local scoreWidth = 70
+    local t1 = teamData[1] or {names = {}, wins = 0}
+    local t2 = teamData[2] or {names = {}, wins = 0}
+
+    GraphicsUtil.setColor(table.unpack(teamColors[1]))
+    GraphicsUtil.printf(table.concat(t1.names, ", "), centerX - 440, topY, nameWidth, "center")
+    GraphicsUtil.printf(tostring(t1.wins), centerX - 65, topY, scoreWidth, "center", nil, 2)
+
+    GraphicsUtil.setColor(table.unpack(teamColors[2]))
+    GraphicsUtil.printf(tostring(t2.wins), centerX - 5, topY, scoreWidth, "center", nil, 2)
+    GraphicsUtil.printf(table.concat(t2.names, ", "), centerX + 40, topY, nameWidth, "center")
+  else
+    local sectionWidth = consts.CANVAS_WIDTH / teamCount
+    for t = 1, teamCount do
+      local data = teamData[t]
+      if data then
+        GraphicsUtil.setColor(table.unpack(teamColors[t] or teamColors[1]))
+        local label = table.concat(data.names, "+") .. "  " .. data.wins
+        GraphicsUtil.printf(label, (t - 1) * sectionWidth, topY, sectionWidth, "center")
+      end
     end
   end
 
-  local blueNames = (#teamNames[1] > 0) and table.concat(teamNames[1], ", ") or "-"
-  local redNames = (#teamNames[2] > 0) and table.concat(teamNames[2], ", ") or "-"
-
-  local topY = 8
-  local nameWidth = 430
-  local scoreWidth = 70
-  local centerX = consts.CANVAS_WIDTH / 2
-
-  GraphicsUtil.setColor(0.45, 0.7, 1, 1)
-  GraphicsUtil.printf(blueNames, centerX - 440, topY, nameWidth, "center")
-  GraphicsUtil.printf(tostring(teamWins[1]), centerX - 65, topY, scoreWidth, "center", nil, 2)
-
-  GraphicsUtil.setColor(1, 0.45, 0.45, 1)
-  GraphicsUtil.printf(tostring(teamWins[2]), centerX - 5, topY, scoreWidth, "center", nil, 2)
-  GraphicsUtil.printf(redNames, centerX + 40, topY, nameWidth, "center")
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
@@ -788,18 +805,10 @@ function ClientMatch:getWinners()
   end
 end
 
----@param prefix string input prefix indicating sender (I=player1, U=player2, V=player3, W=player4)
+---@param prefix string input prefix indicating sender
 ---@param input string
 function ClientMatch:receiveInput(prefix, input)
-  -- Map prefix to player index
-  local prefixToPlayerIndex = {
-    [NetworkProtocol.serverMessageTypes.opponentInput.prefix] = 1,
-    [NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix] = 2,
-    [NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix] = 3,
-    [NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix] = 4,
-  }
-
-  local senderIndex = prefixToPlayerIndex[prefix]
+  local senderIndex = NetworkProtocol.playerIndexForInputPrefix[prefix]
   if senderIndex and self.stacks[senderIndex] then
     ---@diagnostic disable-next-line: param-type-mismatch
     self.stacks[senderIndex]:receiveConfirmedInput(input)

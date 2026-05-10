@@ -250,6 +250,26 @@ function Lobby:initLobbyMenu()
       })
       subMenu:addChild(aabBtn)
 
+      local ffaBtn3 = ui.TextButton({
+        label = ui.Label({text = "1v1v1 (FFA)", translate = false}),
+        width = 220,
+        onClick = function()
+          GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA))
+          subMenu:yieldFocus()
+        end
+      })
+      subMenu:addChild(ffaBtn3)
+
+      local ffaBtn4 = ui.TextButton({
+        label = ui.Label({text = "1v1v1v1 (FFA)", translate = false}),
+        width = 220,
+        onClick = function()
+          GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA))
+          subMenu:yieldFocus()
+        end
+      })
+      subMenu:addChild(ffaBtn4)
+
       if #subMenu.children > 0 then
         subMenu:select(subMenu.children[1])
       end

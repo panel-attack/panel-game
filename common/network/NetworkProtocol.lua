@@ -25,12 +25,20 @@ for _, value in pairs(NetworkProtocol.clientMessageTypes) do
   NetworkProtocol.clientPrefixToMessageType[value.prefix] = value
 end
 
+-- Input prefixes for each player slot (server → client). Reserves I,U,V,W for slots 1-4
+-- and extends with X,Y,Z,Q for slots 5-8. Non-input prefixes in use: J,E,H,N.
+NetworkProtocol.playerInputPrefixes = {"I", "U", "V", "W", "X", "Y", "Z", "Q"}
+
 NetworkProtocol.serverMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the server
   opponentInput = {prefix="I", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client about it's opponent
   secondOpponentInput = {prefix="U", size=nil, verbose = true}, -- Player input (touch or controller) sent to the client for player two if spectating
   thirdOpponentInput = {prefix="V", size=nil, verbose = true}, -- Player input for player three in 3-4 player games
   fourthOpponentInput = {prefix="W", size=nil, verbose = true}, -- Player input for player four in 4 player games
+  fifthOpponentInput = {prefix="X", size=nil, verbose = true},
+  sixthOpponentInput = {prefix="Y", size=nil, verbose = true},
+  seventhOpponentInput = {prefix="Z", size=nil, verbose = true},
+  eighthOpponentInput = {prefix="Q", size=nil, verbose = true},
   versionCorrect = {prefix="H", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is allowed
   versionWrong = {prefix="N", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is not allowed
   ping = {prefix="E", size=1, verbose = true} -- Sent to the client to confirm they are still connected
@@ -40,17 +48,26 @@ for _, value in pairs(NetworkProtocol.serverMessageTypes) do
   NetworkProtocol.serverPrefixToMessageType[value.prefix] = value
 end
 
--- Returns if the message type prefix is one of the ones that happens all the time (ping or player input)
--- thus may be too verbose to print all the time in debug
+local inputPrefixSet = {}
+for _, p in ipairs(NetworkProtocol.playerInputPrefixes) do
+  inputPrefixSet[p] = true
+end
+
+NetworkProtocol.playerIndexForInputPrefix = {}
+for i, p in ipairs(NetworkProtocol.playerInputPrefixes) do
+  NetworkProtocol.playerIndexForInputPrefix[p] = i
+end
+
+function NetworkProtocol.isInputPrefix(prefix)
+  return inputPrefixSet[prefix] == true
+end
+
+function NetworkProtocol.getInputPrefixForPlayer(playerNumber)
+  return NetworkProtocol.playerInputPrefixes[playerNumber]
+end
+
 function NetworkProtocol.isMessageTypeVerbose(type)
-  if type == NetworkProtocol.serverMessageTypes.ping.prefix or
-    type == NetworkProtocol.serverMessageTypes.opponentInput.prefix or
-    type == NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix or
-    type == NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix or
-    type == NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix then
-    return true
-  end
-  return false
+  return type == NetworkProtocol.serverMessageTypes.ping.prefix or NetworkProtocol.isInputPrefix(type)
 end
 
 -- Creates a UTF8 message string with the type at the beginning and the end marker at the end
