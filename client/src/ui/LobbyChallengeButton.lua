@@ -9,6 +9,8 @@ local GameModes = require("common.data.GameModes")
 ---@field withdrawImage love.Texture
 ---@field gameModeId GameModeID
 ---@field playerId PublicPlayerID
+---@field roomNumber integer?
+---@field slotNumber integer?
 ---@field challengeState ChallengeState?
 ---@field icon nil
 
@@ -30,6 +32,8 @@ function(self, options)
   self.withdrawImage = options.withdrawImage
   self.playerId = options.playerId
   self.gameModeId = options.gameModeId
+  self.roomNumber = options.roomNumber
+  self.slotNumber = options.slotNumber
   self:setState(options.challengeState or self.challengeStates.NEUTRAL)
 end,
 IconTextButton, "LobbyChallengeButton")
@@ -53,14 +57,22 @@ end
 
 function LobbyChallengeButton:onClick()
   if self.challengeState == LobbyChallengeButton.challengeStates.PROPOSING then
-    GAME.netClient:withdrawChallengeForId(self.playerId, self.gameModeId)
+    if self.roomNumber then
+      GAME.netClient:withdrawRoomInvite(self.playerId, self.roomNumber, self.slotNumber, self.gameModeId)
+    else
+      GAME.netClient:withdrawChallengeForId(self.playerId, self.gameModeId)
+    end
     GAME.theme:playValidationSfx()
   else
     if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
       GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
       GAME.netClient:sendPlayerSettings(GAME.localPlayer)
     end
-    GAME.netClient:challengePlayerById(self.playerId, self.gameModeId)
+    if self.roomNumber then
+      GAME.netClient:invitePlayerToRoom(self.playerId, self.roomNumber, self.slotNumber, self.gameModeId)
+    else
+      GAME.netClient:challengePlayerById(self.playerId, self.gameModeId)
+    end
     GAME.theme:playValidationSfx()
   end
 end

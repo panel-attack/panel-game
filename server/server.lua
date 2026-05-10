@@ -101,7 +101,7 @@ function Server:start()
 
   -- Retrying helps when a previous local server instance just exited and the port
   -- is not yet immediately reusable on all platforms.
-  local attempts = 10
+  local attempts = 50
   local s
   for i = 1, attempts do
     s = socket.bind("*", port)
@@ -110,7 +110,7 @@ function Server:start()
     end
     if i < attempts then
       logger.warn("Port " .. port .. " not available yet (attempt " .. i .. "/" .. attempts .. "), retrying...")
-      socket.sleep(0.2)
+      socket.sleep(0.25)
     end
   end
 
@@ -259,12 +259,27 @@ function Server:lobbyStateV2()
       roomNumber = room.roomNumber,
       state = room:state(),
       gameModeId = GameModes.nameToGameModeId[room.gameMode.name],
+      ownerId = room.players[1] and room.players[1].publicPlayerID or nil,
       players = {},
       spectators = {},
       wins = {},
       maxPlayers = room.maxPlayers,
       openSlots = room:getOpenSlots(),
+      slotRequests = {},
     }
+
+    for senderId, receivers in pairs(self.proposals) do
+      for receiverId, proposals in pairs(receivers) do
+        for proposalKey, active in pairs(proposals) do
+          if active then
+            local roomNumberStr, slotNumberStr = proposalKey:match("^room_(%d+)_(%d+)$")
+            if roomNumberStr and tonumber(roomNumberStr) == room.roomNumber then
+              lobbyRoom.slotRequests[tonumber(slotNumberStr)] = senderId
+            end
+          end
+        end
+      end
+    end
 
     if room.game then
       lobbyRoom.gameStartTime = os.date("*t", to_UTC(room.game.creationTime))
@@ -294,10 +309,13 @@ end
 ---@param roomNumber integer? optional room number for team room invites
 ---@param slotNumber integer? optional slot number for team room invites
 function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber)
-  if sender and receiver and receiver.state == "lobby" then
+  if sender and receiver then
     -- Check if this is a room invite (joining existing room)
     if roomNumber then
       if sender.state ~= "lobby" and sender.state ~= "character select" then
+        return
+      end
+      if receiver.state ~= "lobby" and receiver.state ~= "character select" then
         return
       end
       local room = self.rooms[roomNumber]
@@ -309,15 +327,32 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
         local previouslyProposed = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID][proposalKey]
 
         if previouslyProposed then
-          -- Mutual acceptance - add receiver to room
-          self:handleJoinRoom(receiver, roomNumber, slotNumber)
+          -- Mutual acceptance - add whoever is not already in the *target room*.
+          -- This mirrors vs/time-attack handshake for both directions:
+          -- 1) room owner invites first, target accepts
+          -- 2) target requests first, owner approves
+          local senderInTargetRoom = tableUtils.trueForAny(room.players, function(p)
+            return p and p.publicPlayerID == sender.publicPlayerID
+          end)
+          local receiverInTargetRoom = tableUtils.trueForAny(room.players, function(p)
+            return p and p.publicPlayerID == receiver.publicPlayerID
+          end)
+
+          if senderInTargetRoom and not receiverInTargetRoom then
+            self:handleJoinRoom(receiver, roomNumber, slotNumber)
+          elseif receiverInTargetRoom and not senderInTargetRoom then
+            self:handleJoinRoom(sender, roomNumber, slotNumber)
+          else
+            -- Fallback for unexpected state: default to sender (accepting/clicking side).
+            self:handleJoinRoom(sender, roomNumber, slotNumber)
+          end
         else
           -- Send invite to receiver
           self:updateChallenge(sender, receiver, proposalKey, challengeActive)
           receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber))
         end
       end
-    elseif sender.state == "lobby" then
+    elseif sender.state == "lobby" and receiver.state == "lobby" then
       -- Standard 2-player game challenge
       logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
       local previouslyProposedGameModes = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
@@ -424,6 +459,11 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
   local room = self.rooms[roomNumber]
   if not room then
     logger.warn("Player " .. player.name .. " tried to join non-existent room " .. roomNumber)
+    return false
+  end
+
+  if self.playerToRoom[player] == room then
+    logger.warn("Player " .. player.name .. " is already in room " .. roomNumber .. "; ignoring duplicate join")
     return false
   end
 
@@ -601,10 +641,10 @@ local function handleError(msg)
 
 	table.insert(err, "\n")
 
-	for l in trace:gmatch("(.-)\n") do
-		if not l:match("boot.lua") then
-			l = l:gsub("stack traceback:", "Traceback\n")
-			table.insert(err, l)
+  for line in trace:gmatch("(.-)\n") do
+    if not line:match("boot.lua") then
+      line = line:gsub("stack traceback:", "Traceback\n")
+      table.insert(err, line)
 		end
 	end
 
@@ -776,14 +816,17 @@ function Server:broadCastLobbyIfChanged()
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player then
-        -- Send to players in lobby OR players in partial rooms (waiting for more players)
+        -- Send to players in lobby, partial rooms, or full rooms that are still in character select.
+        -- The full-room character select phase still needs lobby sync so the UI can resolve pending
+        -- room membership and remove stale join-slot options.
         local inLobby = player.state == "lobby"
         local inPartialRoom = false
+        local inCharacterSelectRoom = player.state == "character select"
         local room = self.playerToRoom[player]
         if room and not room:isFull() then
           inPartialRoom = true
         end
-        if inLobby or inPartialRoom then
+        if inLobby or inPartialRoom or inCharacterSelectRoom then
           connection:sendJson(messageV2)
         end
       end

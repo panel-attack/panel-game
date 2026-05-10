@@ -120,6 +120,8 @@ function ClientMessages.sanitizeChallengeUpdate(message)
       receiverId = message.challengeUpdate.receiverId,
       gameModeId = message.challengeUpdate.gameModeId,
       challengeActive = message.challengeUpdate.challengeActive,
+      roomNumber = message.challengeUpdate.roomNumber,
+      slotNumber = message.challengeUpdate.slotNumber,
     }
   }
 

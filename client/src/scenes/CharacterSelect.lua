@@ -33,6 +33,11 @@ end, Scene)
 function CharacterSelect:customLoad()
 end
 
+---@param playerIndex integer?
+---@return love.Texture
+local function getPlayerNumberIcon(playerIndex)
+  return themes[config.theme]:getPlayerNumberIcon(playerIndex or 1)
+end
 -- updates specific to the child scene
 function CharacterSelect:customUpdate(sceneParams)
   -- error("The function customUpdate needs to be implemented on the scene")
@@ -147,7 +152,7 @@ function CharacterSelect:createPlayerIcon(player)
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
+    image = getPlayerNumberIcon(playerIndex),
     hAlign = "left",
     vAlign = "bottom",
     x = 2,
@@ -272,7 +277,7 @@ function CharacterSelect:createStageCarousel(player, width)
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
+    image = getPlayerNumberIcon(playerIndex),
     scale = 2,
   })
 
@@ -623,7 +628,7 @@ function CharacterSelect:createPanelCarousel(player, height)
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
+    image = getPlayerNumberIcon(playerIndex),
     hAlign = "left",
     vAlign = "center",
     scale = 2,
@@ -737,7 +742,7 @@ function CharacterSelect:createRankedSelection(player, width)
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
+    image = getPlayerNumberIcon(playerIndex),
     scale = 2,
     vAlign = "center"
   })
@@ -778,7 +783,7 @@ function CharacterSelect:createStyleSelection(player, width)
   -- player number icon
   local playerIndex = tableUtils.indexOf(self.players, player)
   local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
+    image = getPlayerNumberIcon(playerIndex),
     scale = 2,
     vAlign = "center"
   })

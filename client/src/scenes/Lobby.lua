@@ -208,6 +208,7 @@ function Lobby:initLobbyMenu()
         end)
         self.uiRoot:addChild(garbageMenu)
       end
+        subMenu.originButton = button
 
       local abbBtn = ui.TextButton({
         label = ui.Label({text = "ABB (1v2)", translate = false}),
@@ -451,8 +452,13 @@ end
 ---@return function
 function Lobby:requestJoinRoomFunction(room, slotNumber)
   return function()
-    logger.info("Requesting team-room invite for room " .. tostring(room.roomNumber) .. " at slot " .. tostring(slotNumber))
-    GAME.netClient:invitePlayerToRoom(GAME.localPlayer.publicId, room.roomNumber, slotNumber, room.gameModeId)
+    local roomOwnerId = room.ownerId or (room.players and room.players[1])
+    logger.info("Requesting approval to join room " .. tostring(room.roomNumber) .. " at slot " .. tostring(slotNumber) .. " from owner " .. tostring(roomOwnerId))
+    if roomOwnerId then
+      GAME.netClient:invitePlayerToRoom(roomOwnerId, room.roomNumber, slotNumber, room.gameModeId)
+    else
+      GAME.netClient:requestJoinRoom(room.roomNumber, slotNumber)
+    end
     GAME.theme:playValidationSfx()
   end
 end
@@ -497,13 +503,38 @@ local function challengeActive(gameModeChallengeState)
   return false
 end
 
+---@param lobbyData PersonalizedLobbyDataV2
+---@param publicId PublicPlayerID
+---@return boolean
+local function isPlayerInAnyRoom(lobbyData, publicId)
+  if not lobbyData or not lobbyData.rooms then
+    return false
+  end
+
+  for _, room in pairs(lobbyData.rooms) do
+    if room.players then
+      for _, playerId in ipairs(room.players) do
+        if playerId == publicId then
+          return true
+        end
+      end
+    end
+  end
+
+  return false
+end
+
 ---@param personalizedLobbyData PersonalizedLobbyDataV2
 function Lobby:createPlayerButtons(personalizedLobbyData)
+  if self:isLocalPlayerInRoom(personalizedLobbyData) then
+    return {}
+  end
+
   local playerButtons = {}
 
   for publicId, player in pairs(personalizedLobbyData.players) do
     local isLocalPlayer = (publicId == GAME.localPlayer.publicId)
-    local hasRoom = not not player.roomNumber
+    local hasRoom = (player.roomNumber ~= nil) or isPlayerInAnyRoom(personalizedLobbyData, publicId)
     if not isLocalPlayer and not hasRoom then
       local playerName
       if personalizedLobbyData.incomingChallenges[publicId] and challengeActive(personalizedLobbyData.incomingChallenges[publicId]) then
@@ -542,8 +573,14 @@ end
 function Lobby:createRoomButtons(personalizedLobbyData)
   local roomButtons = {}
   local localPublicId = GAME.localPlayer.publicId
+  local localInRoom = self:isLocalPlayerInRoom(personalizedLobbyData)
+  local localRoomNumber = personalizedLobbyData.players[localPublicId] and personalizedLobbyData.players[localPublicId].roomNumber
 
   for _, room in pairs(personalizedLobbyData.rooms) do
+    if localInRoom and room.roomNumber ~= localRoomNumber then
+      goto continue
+    end
+
     -- Check if local player is in this room
     local isLocalPlayerRoom = false
     for _, playerId in ipairs(room.players) do
@@ -583,7 +620,14 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       -- Build waiting list
       local waitingSlots = {}
       for _, slotNumber in ipairs(room.openSlots) do
-        waitingSlots[#waitingSlots + 1] = getSlotLabel(room, slotNumber)
+        local slotLabel = getSlotLabel(room, slotNumber)
+        if room.slotRequests and room.slotRequests[slotNumber] then
+          local requester = personalizedLobbyData.players[room.slotRequests[slotNumber]]
+          if requester then
+            slotLabel = slotLabel .. " ← " .. requester.name
+          end
+        end
+        waitingSlots[#waitingSlots + 1] = slotLabel
       end
 
       roomName = "Your Team Room " .. slotsText .. "\n" .. table.concat(playerLines, "\n")
@@ -641,6 +685,8 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     button.room = room
     button.isLocalPlayerRoom = isLocalPlayerRoom
     roomButtons[#roomButtons+1] = button
+
+    ::continue::
   end
 
   -- Sort: local player's room first, then by room number
@@ -661,6 +707,24 @@ function Lobby:openRoomSubMenu(room, button)
     self.roomSubMenu:yieldFocus()
   end
 
+  local lobbyDataV2 = GAME.netClient.lobbyDataV2
+  local localPlayerInfo = lobbyDataV2 and lobbyDataV2.players and lobbyDataV2.players[GAME.localPlayer.publicId]
+  local localRoomNumber = localPlayerInfo and localPlayerInfo.roomNumber or (GAME.netClient.room and GAME.netClient.room.roomNumber)
+  local localIsMemberOfRoom = room.players and tableUtils.trueForAny(room.players, function(playerId)
+    return playerId == GAME.localPlayer.publicId
+  end)
+
+  -- If this is effectively the local player's room, force local room actions only.
+  if localIsMemberOfRoom or (localRoomNumber and localRoomNumber == room.roomNumber) then
+    self:openLocalRoomSubMenu(room, button)
+    return
+  end
+
+  if self:isLocalPlayerInRoom(lobbyDataV2) and localRoomNumber ~= room.roomNumber then
+    -- Players already in a room cannot request other room slots.
+    return
+  end
+
   local x, y = button:getScreenPos()
 
   local subMenu = ui.ScrollMenu({
@@ -678,15 +742,29 @@ function Lobby:openRoomSubMenu(room, button)
 
   -- Add join button for each open slot
   if room.openSlots then
+    local roomOwnerId = room.ownerId or (room.players and room.players[1])
     for _, slotNumber in ipairs(room.openSlots) do
       local slotLabel = getSlotLabel(room, slotNumber)
-      local joinButton = ui.IconTextButton({
-        icon = GAME.theme:getCheckboxImage(false),
+      local joinButton = ui.LobbyChallengeButton({
+        playerId = roomOwnerId,
         iconSize = 16,
+        roomNumber = room.roomNumber,
+        slotNumber = slotNumber,
+        gameModeId = room.gameModeId,
         label = ui.Label({text = loc("lb_join") .. " " .. slotLabel, translate = false}),
+        acceptImage = GAME.theme:getFightImage(),
+        proposeImage = GAME.theme:getCheckboxImage(false),
+        withdrawImage = GAME.theme:getCheckboxImage(true),
         width = 120,
-        onClick = self:requestJoinRoomFunction(room, slotNumber)
       })
+      local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
+      local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
+      local inviteKey = "room_" .. room.roomNumber .. "_" .. slotNumber
+      if localIncoming and localIncoming[inviteKey] then
+        joinButton:setState(joinButton.challengeStates.CHALLENGED)
+      elseif localOutgoing and localOutgoing[inviteKey] then
+        joinButton:setState(joinButton.challengeStates.PROPOSING)
+      end
       subMenu:addChild(joinButton)
     end
   end
@@ -808,8 +886,13 @@ function Lobby:openPlayerSubMenu(playerId, button)
 
   subMenu.playerId = playerId
   local localPlayerInfo = lobbyDataV2.players[GAME.localPlayer.publicId]
-  local localInRoom = localPlayerInfo and localPlayerInfo.roomNumber ~= nil
-  local myRoom = localInRoom and lobbyDataV2.rooms[localPlayerInfo.roomNumber] or nil
+  local localInRoom = self:isLocalPlayerInRoom(lobbyDataV2)
+  local myRoom
+  if localPlayerInfo and localPlayerInfo.roomNumber then
+    myRoom = lobbyDataV2.rooms[localPlayerInfo.roomNumber]
+  elseif GAME.netClient.room and GAME.netClient.room.roomNumber then
+    myRoom = lobbyDataV2.rooms[GAME.netClient.room.roomNumber]
+  end
   local isLocalTeamLeader = myRoom and myRoom.players and myRoom.players[1] == GAME.localPlayer.publicId
 
   -- If the target player is in a room with open slots, offer quick join-slot buttons
@@ -817,13 +900,29 @@ function Lobby:openPlayerSubMenu(playerId, button)
   if (not localInRoom) and playerInfo and playerInfo.roomNumber then
     local targetRoom = lobbyDataV2.rooms[playerInfo.roomNumber]
     if targetRoom and targetRoom.openSlots then
+      local roomOwnerId = targetRoom.ownerId or (targetRoom.players and targetRoom.players[1])
       for _, slotNumber in ipairs(targetRoom.openSlots) do
         local slotLabel = getSlotLabel(targetRoom, slotNumber)
-        local quickJoin = ui.TextButton({
+        local quickJoin = ui.LobbyChallengeButton({
+          playerId = roomOwnerId,
+          roomNumber = targetRoom.roomNumber,
+          slotNumber = slotNumber,
+          gameModeId = targetRoom.gameModeId,
+          iconSize = 16,
           label = ui.Label({text = loc("lb_join") .. " " .. slotLabel, translate = false}),
+          acceptImage = GAME.theme:getFightImage(),
+          proposeImage = GAME.theme:getCheckboxImage(false),
+          withdrawImage = GAME.theme:getCheckboxImage(true),
           width = 120,
-          onClick = self:requestJoinRoomFunction(targetRoom, slotNumber)
         })
+        local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
+        local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
+        local inviteKey = "room_" .. targetRoom.roomNumber .. "_" .. slotNumber
+        if localIncoming and localIncoming[inviteKey] then
+          quickJoin:setState(quickJoin.challengeStates.CHALLENGED)
+        elseif localOutgoing and localOutgoing[inviteKey] then
+          quickJoin:setState(quickJoin.challengeStates.PROPOSING)
+        end
         subMenu:addChild(quickJoin)
       end
     end
@@ -835,7 +934,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
       for _, slotNumber in ipairs(myRoom.openSlots) do
         local slotLabel = getSlotLabel(myRoom, slotNumber)
         local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
-        local inviteBtn = ui.LobbyRoomInviteButton({
+        local inviteBtn = ui.LobbyChallengeButton({
           roomNumber = myRoom.roomNumber,
           slotNumber = slotNumber,
           gameModeId = myRoom.gameModeId,
@@ -1049,8 +1148,20 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
         if button.TYPE == "LobbyRoomInviteButton" then
           ---@cast button LobbyRoomInviteButton
           local inviteKey = button.inviteKey
-          local incoming = lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId]
-          local outgoing = lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId]
+          local incoming = lobbyDataV2.incomingChallenges[button.playerId]
+          local outgoing = lobbyDataV2.outgoingChallenges[button.playerId]
+          if incoming and incoming[inviteKey] then
+            button:setState(button.challengeStates.CHALLENGED)
+          elseif outgoing and outgoing[inviteKey] then
+            button:setState(button.challengeStates.PROPOSING)
+          else
+            button:setState(button.challengeStates.NEUTRAL)
+          end
+        elseif button.TYPE == "LobbyChallengeButton" and button.roomNumber then
+          ---@cast button LobbyChallengeButton
+          local inviteKey = "room_" .. button.roomNumber .. "_" .. (button.slotNumber or 0)
+          local incoming = lobbyDataV2.incomingChallenges[button.playerId]
+          local outgoing = lobbyDataV2.outgoingChallenges[button.playerId]
           if incoming and incoming[inviteKey] then
             button:setState(button.challengeStates.CHALLENGED)
           elseif outgoing and outgoing[inviteKey] then
@@ -1083,9 +1194,47 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   if self.roomSubMenu then
     local room = lobbyDataV2.rooms[self.roomSubMenu.roomNumber]
     local hasOpenSlots = room and room.openSlots and #room.openSlots > 0
-    if not room or not hasOpenSlots then
+    local localMember = room and room.players and tableUtils.trueForAny(room.players, function(playerId)
+      return playerId == GAME.localPlayer.publicId
+    end)
+
+    if room and localMember then
+      local originButton = self.roomSubMenu.originButton
+      self.roomSubMenu:yieldFocus()
+      if originButton then
+        self:openLocalRoomSubMenu(room, originButton)
+      end
+    elseif not room or not hasOpenSlots then
       -- Room disappeared or is now full
       self.roomSubMenu:yieldFocus()
+    else
+      local roomOwnerId = room.ownerId or (room.players and room.players[1])
+      for _, button in ipairs(self.roomSubMenu.children) do
+        if button.TYPE == "LobbyRoomInviteButton" then
+          local inviteKey = button.inviteKey
+          local incoming = lobbyDataV2.incomingChallenges[button.playerId]
+          local outgoing = lobbyDataV2.outgoingChallenges[button.playerId]
+          if incoming and incoming[inviteKey] then
+            button:setState(button.challengeStates.CHALLENGED)
+          elseif outgoing and outgoing[inviteKey] then
+            button:setState(button.challengeStates.PROPOSING)
+          else
+            button:setState(button.challengeStates.NEUTRAL)
+          end
+        elseif button.TYPE == "LobbyChallengeButton" and button.roomNumber then
+          ---@cast button LobbyChallengeButton
+          local inviteKey = "room_" .. button.roomNumber .. "_" .. (button.slotNumber or 0)
+          local incoming = roomOwnerId and lobbyDataV2.incomingChallenges[roomOwnerId] or nil
+          local outgoing = roomOwnerId and lobbyDataV2.outgoingChallenges[roomOwnerId] or nil
+          if incoming and incoming[inviteKey] then
+            button:setState(button.challengeStates.CHALLENGED)
+          elseif outgoing and outgoing[inviteKey] then
+            button:setState(button.challengeStates.PROPOSING)
+          else
+            button:setState(button.challengeStates.NEUTRAL)
+          end
+        end
+      end
     end
   end
 

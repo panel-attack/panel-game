@@ -219,6 +219,8 @@ function ServerMessages.sanitizePlayerMessage(message)
         receiverId = content.receiverId,
         gameModeId = content.gameModeId,
         challengeActive = content.challengeActive,
+        roomNumber = content.roomNumber,
+        slotNumber = content.slotNumber,
       }
     }
   end

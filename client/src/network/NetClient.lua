@@ -44,21 +44,35 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     self.lobbyDataV2.players = lobbyStateV2.players
   end
 
+  local function isRoomInviteKey(key)
+    return type(key) == "string" and key:match("^room_%d+_%d+$") ~= nil
+  end
+
   -- if a player we challenged is not in lobby data or is in a room, they cannot accept our challenge anymore
-  for publicId, player in pairs(self.lobbyDataV2.outgoingChallenges) do
+  for publicId, playerChallenges in pairs(self.lobbyDataV2.outgoingChallenges) do
+    local roomNumber = self.lobbyDataV2.players[publicId] and self.lobbyDataV2.players[publicId].roomNumber
     if not self.lobbyDataV2.players[publicId] then
       self.lobbyDataV2.outgoingChallenges[publicId] = nil
-    elseif self.lobbyDataV2.players[publicId].roomNumber then
-      self.lobbyDataV2.outgoingChallenges[publicId] = nil
+    elseif roomNumber then
+      for challengeKey, active in pairs(playerChallenges) do
+        if not isRoomInviteKey(challengeKey) then
+          playerChallenges[challengeKey] = nil
+        end
+      end
     end
   end
 
   -- if a player that challenged us is not in lobby data or is in a room, we cannot accept their challenge anymore
-  for publicId, player in pairs(self.lobbyDataV2.incomingChallenges) do
+  for publicId, playerChallenges in pairs(self.lobbyDataV2.incomingChallenges) do
+    local roomNumber = self.lobbyDataV2.players[publicId] and self.lobbyDataV2.players[publicId].roomNumber
     if not self.lobbyDataV2.players[publicId] then
       self.lobbyDataV2.incomingChallenges[publicId] = nil
-    elseif self.lobbyDataV2.players[publicId].roomNumber then
-      self.lobbyDataV2.incomingChallenges[publicId] = nil
+    elseif roomNumber then
+      for challengeKey, active in pairs(playerChallenges) do
+        if not isRoomInviteKey(challengeKey) then
+          playerChallenges[challengeKey] = nil
+        end
+      end
     end
   end
 
@@ -87,7 +101,6 @@ end
 
 -- starts a 2p vs online match (or joins a team room)
 local function start2pVsOnlineMatch(self, createRoomMessage)
-  resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
   self.room = GAME.battleRoom
   love.window.requestAttention()
@@ -135,6 +148,8 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   end
 
   -- Room is full - navigate to game scene
+  -- We are leaving lobby context now, so clear stale lobby/challenge data.
+  resetLobbyData(self)
   local roomScene = getSceneFromRoom(self.room)
   if roomScene then
     GAME.navigationStack:push(roomScene)
