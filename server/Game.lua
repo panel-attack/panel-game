@@ -293,6 +293,7 @@ end
 ---@param player ServerPlayer
 function Game:markPlayerDisconnected(player)
   self.disconnectedPlayers[player.player_number] = true
+  self.inputBuffer[player.player_number] = nil
   if self.outcomeReports[player.player_number] == nil then
     self.outcomeReports[player.player_number] = false
   end
@@ -305,6 +306,7 @@ end
 function Game:markPlayerEliminated(player, frame)
   if not self.eliminatedPlayers[player.player_number] then
     self.eliminatedPlayers[player.player_number] = frame or 0
+    self.inputBuffer[player.player_number] = nil
   end
 end
 
