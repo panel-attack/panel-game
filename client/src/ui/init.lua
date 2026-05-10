@@ -62,6 +62,8 @@ local ui = {
   Line = import("./Line"),
   ---@source LobbyChallengeButton.lua
   LobbyChallengeButton = import("./LobbyChallengeButton"),
+  ---@source LobbyRoomInviteButton.lua
+  LobbyRoomInviteButton = import("./LobbyRoomInviteButton"),
   ---@source Menu.lua
   Menu = import("./Menu"),
   ---@source MenuItem.lua

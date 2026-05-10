@@ -385,7 +385,11 @@ local function processChallengeUpdate(self, challengeUpdateMessage)
   if challengeUpdateMessage.challengeUpdate then
     local challengeUpdate = challengeUpdateMessage.challengeUpdate
     local challenges = self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] or {}
-    challenges[challengeUpdate.gameModeId] = challengeUpdate.challengeActive
+    -- Use slot-specific key for room invites so each slot tracks independently
+    local key = challengeUpdate.roomNumber
+      and ("room_" .. challengeUpdate.roomNumber .. "_" .. (challengeUpdate.slotNumber or 0))
+      or challengeUpdate.gameModeId
+    challenges[key] = challengeUpdate.challengeActive
     self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] = challenges
     if challengeUpdate.challengeActive then
       love.window.requestAttention()
@@ -620,6 +624,32 @@ function NetClient:challengePlayerById(opponentId, gameModeId)
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
   self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
   self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
+  self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+end
+
+---@param opponentId PublicPlayerID
+---@param roomNumber integer
+---@param slotNumber integer
+---@param gameModeId GameModeID?
+function NetClient:invitePlayerToRoom(opponentId, roomNumber, slotNumber, gameModeId)
+  gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
+  local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
+  self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
+  self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true, roomNumber, slotNumber))
+  self.lobbyDataV2.outgoingChallenges[opponentId][inviteKey] = true
+  self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+end
+
+---@param opponentId PublicPlayerID
+---@param roomNumber integer
+---@param slotNumber integer
+---@param gameModeId GameModeID?
+function NetClient:withdrawRoomInvite(opponentId, roomNumber, slotNumber, gameModeId)
+  gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
+  local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
+  self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
+  self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false, roomNumber, slotNumber))
+  self.lobbyDataV2.outgoingChallenges[opponentId][inviteKey] = false
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 

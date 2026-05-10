@@ -458,6 +458,17 @@ function Lobby:requestJoinRoomFunction(room, slotNumber)
 end
 
 ---@param publicId PublicPlayerID
+---@param room LobbyRoomV2
+---@param slotNumber integer
+---@return function
+function Lobby:requestInviteFunction(publicId, room, slotNumber)
+  return function()
+    GAME.netClient:invitePlayerToRoom(publicId, room.roomNumber, slotNumber, room.gameModeId)
+    GAME.theme:playValidationSfx()
+  end
+end
+
+---@param publicId PublicPlayerID
 ---@param gameModeId GameModeID?
 ---@return string
 function Lobby.getPlayerNameWithRating(publicId, gameModeId)
@@ -758,12 +769,28 @@ function Lobby:openPlayerSubMenu(playerId, button)
     if myRoom and myRoom.openSlots and #myRoom.openSlots > 0 then
       for _, slotNumber in ipairs(myRoom.openSlots) do
         local slotLabel = getSlotLabel(myRoom, slotNumber)
-        local inviteButton = ui.TextButton({
-          label = ui.Label({text = "Invite to " .. slotLabel, translate = false}),
+        local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
+        local inviteBtn = ui.LobbyRoomInviteButton({
+          roomNumber = myRoom.roomNumber,
+          slotNumber = slotNumber,
+          gameModeId = myRoom.gameModeId,
+          playerId = playerId,
+          iconSize = 16,
+          label = ui.Label({text = "Invite " .. slotLabel, translate = false}),
+          acceptImage = GAME.theme:getFightImage(),
+          proposeImage = GAME.theme:getCheckboxImage(false),
+          withdrawImage = GAME.theme:getCheckboxImage(true),
           width = 120,
-          onClick = self:requestInviteFunction(playerId, myRoom, slotNumber)
         })
-        subMenu:addChild(inviteButton)
+        -- Set initial state
+        local outgoing = lobbyDataV2.outgoingChallenges[playerId]
+        local incoming = lobbyDataV2.incomingChallenges[playerId]
+        if incoming and incoming[inviteKey] then
+          inviteBtn:setState(inviteBtn.challengeStates.CHALLENGED)
+        elseif outgoing and outgoing[inviteKey] then
+          inviteBtn:setState(inviteBtn.challengeStates.PROPOSING)
+        end
+        subMenu:addChild(inviteBtn)
       end
     end
   end
@@ -951,7 +978,19 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
       self.playerSubMenu:yieldFocus()
     else
       for _, button in ipairs(self.playerSubMenu.children) do
-        if button.gameModeId then
+        if button.TYPE == "LobbyRoomInviteButton" then
+          ---@cast button LobbyRoomInviteButton
+          local inviteKey = button.inviteKey
+          local incoming = lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId]
+          local outgoing = lobbyDataV2.outgoingChallenges[self.playerSubMenu.playerId]
+          if incoming and incoming[inviteKey] then
+            button:setState(button.challengeStates.CHALLENGED)
+          elseif outgoing and outgoing[inviteKey] then
+            button:setState(button.challengeStates.PROPOSING)
+          else
+            button:setState(button.challengeStates.NEUTRAL)
+          end
+        elseif button.gameModeId then
           ---@cast button LobbyChallengeButton
           if lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId] and lobbyDataV2.incomingChallenges[self.playerSubMenu.playerId][button.gameModeId] == true then
             button:setState(button.challengeStates.CHALLENGED)

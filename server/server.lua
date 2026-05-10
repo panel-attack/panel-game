@@ -278,9 +278,12 @@ end
 ---@param roomNumber integer? optional room number for team room invites
 ---@param slotNumber integer? optional slot number for team room invites
 function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber)
-  if sender and sender.state == "lobby" and receiver and receiver.state == "lobby" then
+  if sender and receiver and receiver.state == "lobby" then
     -- Check if this is a room invite (joining existing room)
     if roomNumber then
+      if sender.state ~= "lobby" and sender.state ~= "character select" then
+        return
+      end
       local room = self.rooms[roomNumber]
       if room and not room:isFull() then
         logger.debug(string.format("%s invites %s to join room %d at slot %d", sender.name, receiver.name, roomNumber, slotNumber or 0))
@@ -298,7 +301,7 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
           receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber))
         end
       end
-    else
+    elseif sender.state == "lobby" then
       -- Standard 2-player game challenge
       logger.debug(string.format("%s challenges %s to a game of %s", sender.name, receiver.name, gameModeId))
       local previouslyProposedGameModes = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID]
@@ -664,9 +667,11 @@ function Server:processMessage(message, connection)
     if message.logout then
       self:closeConnection(connection, player.name .. " logged out")
       return false
-    elseif player.state == "lobby" and message.challengeUpdate then
+    elseif message.challengeUpdate then
       local receiver = self.publicIdToPlayer[message.challengeUpdate.receiverId]
-      if message.challengeUpdate.senderId == player.publicPlayerID and receiver then
+      local isRoomInvite = message.challengeUpdate.roomNumber ~= nil
+      local senderCanSend = player.state == "lobby" or (isRoomInvite and player.state == "character select")
+      if message.challengeUpdate.senderId == player.publicPlayerID and receiver and senderCanSend then
         self:processChallengeUpdate(
           player,
           receiver,
