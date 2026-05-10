@@ -783,9 +783,10 @@ function NetClient:requestJoinRoom(roomNumber, slotNumber)
 end
 
 ---@param gameMode GameMode
-function NetClient:requestRoom(gameMode)
+---@param latencyTolerance ("strict"|"normal"|"relaxed")?
+function NetClient:requestRoom(gameMode, latencyTolerance)
   if self:isConnected() then
-    self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode))
+    self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode, latencyTolerance))
   end
 end
 
