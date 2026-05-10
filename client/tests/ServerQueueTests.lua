@@ -29,3 +29,14 @@ assert(queue:size() == 1)
 assert(queue:pop_next_with("test") == table1)
 assert(queue:size() == 0)
 
+local q2 = ServerQueue()
+local a = {a = true}
+local b = {b = true}
+q2:push(a)
+q2:push(b)
+
+local removed = q2:pop_all_with("a")
+assert(removed[1] == a)
+assert(q2:top() == b)
+assert(q2:size() == 1)
+

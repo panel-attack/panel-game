@@ -139,6 +139,18 @@ function ServerQueue.remove(self, index)
 end
 
 function ServerQueue.top(self)
+  if self.first > self.last then
+    return nil
+  end
+
+  while self.first <= self.last and self.data[self.first] == nil do
+    self.first = self.first + 1
+    if self.empties > 0 then
+      self.empties = self.empties - 1
+    end
+  end
+
+  self:check_empty()
   return self.data[self.first]
 end
 
