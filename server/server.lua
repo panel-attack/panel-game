@@ -1234,6 +1234,8 @@ function Server:canLogin(userID, name, IP_logging_in, engineVersion)
   elseif string.lower(name) == "anonymous" then
     denyReason = 'Username cannot be "anonymous"'
   elseif name:lower():match("d+e+f+a+u+l+t+n+a+m+e?") then
+    denyReason = 'Username cannot be "defaultname" or a variation of it'
+  elseif name:find("[^_%w]") then
     denyReason = "Usernames are limited to alphanumeric and underscores"
   elseif utf8.len(name) > NAME_LENGTH_LIMIT then
     denyReason = "The name length limit is " .. NAME_LENGTH_LIMIT .. " characters"
