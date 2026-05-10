@@ -4,6 +4,9 @@ local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ModController = require("client.src.mods.ModController")
 
+-- gfxScale at which theme label sizes are calibrated; also the default scale for a full-size stack
+local NORMAL_GFX_SCALE = 3
+
 -- Draws an image at the given spot while scaling all coordinate and scale values with stack.gfxScale
 local function drawGfxScaled(stack, img, x, y, rot, xScale, yScale)
   xScale = xScale or 1
@@ -67,7 +70,7 @@ function(self, args)
   self.baseHeight = 204
   self.panelOriginXOffset = 4
   self.panelOriginYOffset = 4
-  self.gfxScale = ClientStack.NORMAL_GFX_SCALE
+  self.gfxScale = NORMAL_GFX_SCALE
   -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
   self.canvas = true
@@ -79,8 +82,7 @@ function(self, args)
   self:createSignal("dangerMusicChanged")
 end)
 
--- gfxScale at which theme label sizes are calibrated (used to proportionally scale HUD elements)
-ClientStack.NORMAL_GFX_SCALE = 3
+ClientStack.NORMAL_GFX_SCALE = NORMAL_GFX_SCALE
 
 -- Provides the X origin to draw an element of the stack
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
@@ -169,7 +171,7 @@ function ClientStack:drawLabel(drawable, themePositionOffset, scale, cameFromLeg
     cameFromLegacyScoreOffset = false
   end
 
-  local effectiveScale = scale * (self.gfxScale / ClientStack.NORMAL_GFX_SCALE)
+  local effectiveScale = scale * (self.gfxScale / NORMAL_GFX_SCALE)
 
   local percentWidthShift = 0
   -- If we are mirroring from the right, move the full width left
@@ -203,7 +205,7 @@ function ClientStack:drawNumber(number, themePositionOffset, scale, cameFromLega
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
-  local effectiveScale = scale * (self.gfxScale / ClientStack.NORMAL_GFX_SCALE)
+  local effectiveScale = scale * (self.gfxScale / NORMAL_GFX_SCALE)
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   GraphicsUtil.drawPixelFont(number, self.assets.numberPixelFont, x, y, effectiveScale, effectiveScale, "center", 0)
@@ -229,7 +231,7 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   if fontSize == nil then
     fontSize = GraphicsUtil.fontSize
   end
-  local effectiveFontSize = fontSize * (self.gfxScale / ClientStack.NORMAL_GFX_SCALE)
+  local effectiveFontSize = fontSize * (self.gfxScale / NORMAL_GFX_SCALE)
   local fontDelta = effectiveFontSize - GraphicsUtil.fontSize
 
   GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
