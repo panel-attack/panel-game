@@ -1075,8 +1075,13 @@ function Server:processMessage(message, connection)
       ---@diagnostic disable-next-line: param-type-mismatch
       self.playerToRoom[player]:handleGameOverOutcome(message, player)
       return true
-    elseif (player.state == "playing" or player.state == "paused") and message.stackEliminated then
-      self.playerToRoom[player]:handleStackEliminated(player, message.frame)
+    elseif message.stackEliminated then
+      -- Always consume — even if it arrives after the room transitioned out of "playing"
+      -- (close-room race), it's a harmless no-op. Dropping the elseif's state check also
+      -- prevents the message-processing loop from discarding everything queued behind it.
+      if (player.state == "playing" or player.state == "paused") and self.playerToRoom[player] then
+        self.playerToRoom[player]:handleStackEliminated(player, message.frame)
+      end
       return true
     elseif (player.state == "playing" or player.state == "paused") and message.matchAbort then
       self.playerToRoom[player]:handleGameAbort(player)

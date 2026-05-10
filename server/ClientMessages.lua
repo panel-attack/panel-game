@@ -26,6 +26,8 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizeTaunt(clientMessage)
   elseif clientMessage.game_over then
     return ClientMessages.sanitizeGameResult(clientMessage)
+  elseif clientMessage.stackEliminated then
+    return ClientMessages.sanitizeStackEliminated(clientMessage)
   elseif clientMessage.joinRoomRequest then
     return ClientMessages.sanitizeJoinRoomRequest(clientMessage)
   elseif clientMessage.logout then
@@ -171,6 +173,13 @@ function ClientMessages.sanitizeGameResult(gameResult)
   }
 
   return sanitized
+end
+
+function ClientMessages.sanitizeStackEliminated(message)
+  return {
+    stackEliminated = message.stackEliminated,
+    frame = tonumber(message.frame),
+  }
 end
 
 function ClientMessages.sanitizeTaunt(taunt)
