@@ -899,8 +899,15 @@ function Match:setupTeamGarbageTargets()
       end
     end
   elseif self.garbageMode == "shared" then
-    -- "Shared" mode: round-robin targeting within team
-    -- Initialize team garbage state for round-robin
+    -- "Shared" mode: round-robin TARGETING. Senders with multiple enemies pick one
+    -- enemy per attack instead of hitting all of them; team members share the same
+    -- round-robin counter so the team's attacks fan out across enemies evenly.
+    --
+    -- Note: this only changes targeting, not output rate. Team members each retain
+    -- their full per-player attack rate. For symmetric 2v2 that produces a balanced
+    -- game (both teams have multi-target senders); for asymmetric 1v2 the solo will
+    -- effectively deal 1× per tick while taking 2× from the team, since team members
+    -- only have one enemy and bypass distributeGarbageToTargets entirely.
     self.teamGarbageState = {}
     for teamIndex, team in ipairs(self.teams) do
       local enemyIndices = TeamUtils.getEnemyPlayerIndices(self.teams, team.playerIndices[1])
@@ -910,8 +917,8 @@ function Match:setupTeamGarbageTargets()
       }
     end
 
-    -- For shared mode, targets are determined dynamically during play
-    -- For now, set up targets to ALL enemies (garbage routing handles round-robin)
+    -- Set up the same target list as "all" mode here; the actual single-target
+    -- selection happens at delivery time in Match:distributeGarbageToTargets.
     for i, stack in ipairs(self.stacks) do
       local enemyIndices = TeamUtils.getEnemyPlayerIndices(self.teams, i)
       for _, enemyIndex in ipairs(enemyIndices) do
