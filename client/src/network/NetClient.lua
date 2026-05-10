@@ -116,10 +116,17 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
       self.lobbyDataV2.outgoingChallenges[publicId] = nil
     else
       for challengeKey, active in pairs(playerChallenges) do
-        if isRoomInviteKey(challengeKey) and not isInviteSlotStillOpen(challengeKey) then
-          playerChallenges[challengeKey] = nil
-        elseif isRoomInviteKey(challengeKey) and isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
-          playerChallenges[challengeKey] = nil
+        if isRoomInviteKey(challengeKey) then
+          -- Only remove the outgoing invite if the room is FULL or the challenge is obsolete.
+          -- Don't remove it just because that specific slot filled up - another slot might still be available!
+          local roomNumberStr, slotNumberStr = challengeKey:match("^room_(%d+)_(%d+)$")
+          local roomNum = tonumber(roomNumberStr)
+          local room = roomNum and self.lobbyDataV2.rooms[roomNum]
+          local roomIsFull = room and room.openSlots and #room.openSlots == 0
+          
+          if roomIsFull or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+            playerChallenges[challengeKey] = nil
+          end
         elseif roomNumber and not isRoomInviteKey(challengeKey) then
           playerChallenges[challengeKey] = nil
         end
@@ -134,10 +141,17 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
       self.lobbyDataV2.incomingChallenges[publicId] = nil
     else
       for challengeKey, active in pairs(playerChallenges) do
-        if isRoomInviteKey(challengeKey) and not isInviteSlotStillOpen(challengeKey) then
-          playerChallenges[challengeKey] = nil
-        elseif isRoomInviteKey(challengeKey) and isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
-          playerChallenges[challengeKey] = nil
+        if isRoomInviteKey(challengeKey) then
+          -- Only remove the incoming invite if the room is FULL or the challenge is obsolete.
+          -- Don't remove it just because that specific slot filled up - another slot might still be available!
+          local roomNumberStr, slotNumberStr = challengeKey:match("^room_(%d+)_(%d+)$")
+          local roomNum = tonumber(roomNumberStr)
+          local room = roomNum and self.lobbyDataV2.rooms[roomNum]
+          local roomIsFull = room and room.openSlots and #room.openSlots == 0
+          
+          if roomIsFull or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+            playerChallenges[challengeKey] = nil
+          end
         elseif roomNumber and not isRoomInviteKey(challengeKey) then
           playerChallenges[challengeKey] = nil
         end
@@ -178,8 +192,8 @@ getSceneFromRoom = function(room)
   elseif room.mode.name == "vsSelf" then
     return require("client.src.scenes.CharacterSelectVsSelf")({battleRoom = room})
   elseif room.mode.name == "team_vs_all" or room.mode.name == "team_vs_shared"
-      or room.mode.name == "three_player_vs_all" or room.mode.name == "three_player_vs_shared" then
-    -- Team modes use the same character select for now
+      or room.mode.name == "three_player_vs_all" or room.mode.name == "three_player_vs_shared"
+      or room.mode.name == "3p_ffa" or room.mode.name == "4p_ffa" then
     return CharacterSelect2p({battleRoom = room})
   end
 end

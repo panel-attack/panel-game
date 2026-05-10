@@ -40,7 +40,7 @@ function Localization:get_language()
 end
 
 function Localization.refresh_global_strings(self)
-  join_community_msg = loc("join_community" ,"\ndiscord." .. consts.SERVER_LOCATION)
+  join_community_msg = "Unofficial build: contact bramp for issues"
 end
 
 function Localization.csv_line(line, acc)

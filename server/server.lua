@@ -469,13 +469,31 @@ end
 ---@param player ServerPlayer
 function Server:clearProposals(player)
   -- blanket reset for the player
-  self.proposals[player.publicPlayerID] = {}
-  -- reset all challenges to the player
-  for _, challenges in pairs(self.proposals) do
-    if challenges[player.publicPlayerID] then
-      challenges[player.publicPlayerID] = nil
+  local playerId = player.publicPlayerID
+  logger.debug(string.format("clearProposals(%s) called", player.name))
+  
+  -- Log what we're clearing
+  if self.proposals[playerId] then
+    for receiverId, keys in pairs(self.proposals[playerId]) do
+      for key in pairs(keys) do
+        logger.debug(string.format("  Clearing outgoing: [%s] → [%s] : %s", playerId, receiverId, key))
+      end
     end
   end
+  
+  self.proposals[playerId] = {}
+  
+  -- reset all challenges to the player
+  for senderId, challenges in pairs(self.proposals) do
+    if challenges[playerId] then
+      for key in pairs(challenges[playerId]) do
+        logger.debug(string.format("  Clearing incoming: [%s] → [%s] : %s", senderId, playerId, key))
+      end
+      challenges[playerId] = nil
+    end
+  end
+  
+  logger.debug(string.format("clearProposals(%s) complete", player.name))
 end
 
 ---@param gameMode GameMode

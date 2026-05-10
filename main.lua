@@ -302,7 +302,8 @@ function love.errorhandler(msg)
 
   local success, detailedErrorLogString = pcall(getGameErrorData, sanitizedMessage, sanitizedTrace)
   local errorLines = {}
-  table.insert(errorLines, "Error: Please share your crash.log with the developers to get help with this!\n")
+  table.insert(errorLines, "Unofficial build notice: Do NOT report this to official Panel Attack / Discord developers.")
+  table.insert(errorLines, "Contact bramp and share your crash.log to get help with this!\n")
   if success then
     table.insert(errorLines, detailedErrorLogString)
     logger.info(detailedErrorLogString)

@@ -203,7 +203,7 @@ function Game:writeReleaseStreamDefinition()
           versioningType = "timestamp",
           serverEndPoint = {
             type = "filesystem",
-            url = "https://panelattack.com/downloads/updates/stable",
+            url = "https://panelattack.com/downloads/updates/stable", -- official upstream endpoint; this branch build is unofficial
             prefix = "panel-"
           }
         },
@@ -212,7 +212,7 @@ function Game:writeReleaseStreamDefinition()
           versioningType = "timestamp",
           serverEndPoint = {
             type = "filesystem",
-            url = "https://panelattack.com/downloads/updates/beta",
+            url = "https://panelattack.com/downloads/updates/beta", -- official upstream endpoint; this branch build is unofficial
             prefix = "panel-beta-"
           }
         }
