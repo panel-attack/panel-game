@@ -18,6 +18,7 @@ local GameModes = require("common.data.GameModes")
 
 ---@enum NetClientStates
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
+local getSceneFromRoom
 
 -- Most functions of NetClient are private as they only should get triggered via incoming server messages
 --  that get automatically processed via NetClient:update
@@ -128,11 +129,29 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     end
   end
 
+  -- Fallback transition: if the local player's room is now full, leave lobby and enter room scene.
+  -- This mirrors PvP behavior even if a playerJoinedRoom message was missed or processed out-of-order.
+  local localId = GAME.localPlayer and GAME.localPlayer.publicId
+  local localRoomNumber = (self.room and self.room.roomNumber)
+    or (localId and self.lobbyDataV2.players[localId] and self.lobbyDataV2.players[localId].roomNumber)
+  local localLobbyRoom = localRoomNumber and self.lobbyDataV2.rooms[localRoomNumber]
+  local roomIsFull = localLobbyRoom and (
+    (localLobbyRoom.maxPlayers and localLobbyRoom.players and #localLobbyRoom.players >= localLobbyRoom.maxPlayers)
+    or (localLobbyRoom.openSlots and #localLobbyRoom.openSlots == 0)
+  )
+  if self.room and roomIsFull and self.state == states.ONLINE then
+    local roomScene = getSceneFromRoom(self.room)
+    if roomScene then
+      GAME.navigationStack:push(roomScene)
+      self.state = states.ROOM
+    end
+  end
+
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 
 ---@param room BattleRoom
-local function getSceneFromRoom(room)
+getSceneFromRoom = function(room)
   -- this is so hacky oh my god
   if room.mode.name == "VS" or room.mode.name == "2p_timeattack" then
     return CharacterSelect2p({battleRoom = room})
@@ -153,6 +172,7 @@ end
 local function start2pVsOnlineMatch(self, createRoomMessage)
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
   self.room = GAME.battleRoom
+  self:registerPlayerUpdates(self.room)
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
 
@@ -389,13 +409,23 @@ local function processPlayerJoinedRoom(self, message)
   -- A new player joined the room - create a Player and add them to the BattleRoom
   local playerData = message.playerJoinedRoom
   if playerData then
-    local Player = require("client.src.Player")
-    local player = Player(playerData.name, playerData.publicId, false)
-    player.playerNumber = playerData.playerNumber
-    if playerData.settings then
-      player:updateSettings(playerData.settings)
+    local existingPlayer = tableUtils.first(self.room.players, function(p)
+      return p.publicId == playerData.publicId
+    end)
+    if existingPlayer then
+      if playerData.settings then
+        existingPlayer:updateSettings(playerData.settings)
+      end
+    else
+      local Player = require("client.src.Player")
+      local player = Player(playerData.name, playerData.publicId, false)
+      player.playerNumber = playerData.playerNumber
+      if playerData.settings then
+        player:updateSettings(playerData.settings)
+      end
+      self.room:addPlayer(player)
     end
-    self.room:addPlayer(player)
+    self:registerPlayerUpdates(self.room)
     love.window.requestAttention()
     SoundController:playSfx(themes[config.theme].sounds.notification)
 
@@ -469,6 +499,7 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
   resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(spectateRequestGrantedMessage)
   self.room = GAME.battleRoom
+  self:registerPlayerUpdates(self.room)
   local roomScene = getSceneFromRoom(self.room)
   if GAME.battleRoom.match then
     self.state = states.INGAME
@@ -769,20 +800,23 @@ function NetClient:registerPlayerUpdates(room)
   local listener = MessageListener("menu_state")
   for _, player in ipairs(room.players) do
     if player.isLocal then
-      -- seems a bit silly to subscribe a player to itself but it works and the player doesn't have to become part of the closure
-      player:connectSignal("characterIdChanged", player, sendPlayerSettings)
-      player:connectSignal("selectedCharacterIdChanged", player, sendPlayerSettings)
-      player:connectSignal("stageIdChanged", player, sendPlayerSettings)
-      player:connectSignal("selectedStageIdChanged", player, sendPlayerSettings)
-      player:connectSignal("panelIdChanged", player, sendPlayerSettings)
-      player:connectSignal("wantsRankedChanged", player, sendPlayerSettings)
-      player:connectSignal("wantsReadyChanged", player, sendPlayerSettings)
-      player:connectSignal("difficultyChanged", player, sendPlayerSettings)
-      player:connectSignal("startingSpeedChanged", player, sendPlayerSettings)
-      player:connectSignal("levelChanged", player, sendPlayerSettings)
-      player:connectSignal("levelDataChanged", player, sendPlayerSettings)
-      player:connectSignal("inputMethodChanged", player, sendPlayerSettings)
-      player:connectSignal("hasLoadedChanged", player, sendPlayerSettings)
+      if not player._netClientSettingsHooked then
+        -- seems a bit silly to subscribe a player to itself but it works and the player doesn't have to become part of the closure
+        player:connectSignal("characterIdChanged", player, sendPlayerSettings)
+        player:connectSignal("selectedCharacterIdChanged", player, sendPlayerSettings)
+        player:connectSignal("stageIdChanged", player, sendPlayerSettings)
+        player:connectSignal("selectedStageIdChanged", player, sendPlayerSettings)
+        player:connectSignal("panelIdChanged", player, sendPlayerSettings)
+        player:connectSignal("wantsRankedChanged", player, sendPlayerSettings)
+        player:connectSignal("wantsReadyChanged", player, sendPlayerSettings)
+        player:connectSignal("difficultyChanged", player, sendPlayerSettings)
+        player:connectSignal("startingSpeedChanged", player, sendPlayerSettings)
+        player:connectSignal("levelChanged", player, sendPlayerSettings)
+        player:connectSignal("levelDataChanged", player, sendPlayerSettings)
+        player:connectSignal("inputMethodChanged", player, sendPlayerSettings)
+        player:connectSignal("hasLoadedChanged", player, sendPlayerSettings)
+        player._netClientSettingsHooked = true
+      end
     else
       listener:subscribe(player, processMenuStateMessage)
     end

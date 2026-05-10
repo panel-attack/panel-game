@@ -255,9 +255,10 @@ function Server:lobbyStateV2()
   end
 
   for _, room in pairs(self.rooms) do
+    local roomState = room:state()
     local lobbyRoom = {
       roomNumber = room.roomNumber,
-      state = room:state(),
+      state = roomState,
       gameModeId = GameModes.nameToGameModeId[room.gameMode.name],
       ownerId = room.players[1] and room.players[1].publicPlayerID or nil,
       players = {},
@@ -287,6 +288,7 @@ function Server:lobbyStateV2()
 
     for i, player in ipairs(room.players) do
       players[player.publicPlayerID].roomNumber = room.roomNumber
+      players[player.publicPlayerID].state = roomState
       lobbyRoom.players[i] = player.publicPlayerID
       lobbyRoom.wins[i] = room.win_counts[i]
     end
@@ -816,20 +818,12 @@ function Server:broadCastLobbyIfChanged()
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player then
-        -- Send to players in lobby, partial rooms, or full TEAM rooms (3p/4p) that are
-        -- still in character select. Team room clients need this extra sync to resolve
-        -- room membership and clear stale join-slot options.
+        -- Send to lobby players and anyone already attached to a room.
+        -- Room members still need lobby state updates so their clients can keep
+        -- the room entry in sync and transition cleanly when the room becomes full.
         local inLobby = player.state == "lobby"
-        local inPartialRoom = false
-        local inCharacterSelectTeamRoom = false
-        local room = self.playerToRoom[player]
-        if room and not room:isFull() then
-          inPartialRoom = true
-        elseif room and player.state == "character select" then
-          local playerCount = room.gameMode and room.gameMode.playerCount or 2
-          inCharacterSelectTeamRoom = playerCount > 2
-        end
-        if inLobby or inPartialRoom or inCharacterSelectTeamRoom then
+        local inRoom = self.playerToRoom[player] ~= nil
+        if inLobby or inRoom then
           connection:sendJson(messageV2)
         end
       end
@@ -981,13 +975,27 @@ end
 function Server:handleSpectateRequest(message, player)
   local requestedRoom = self.rooms[message.spectate_request.roomNumber]
 
+  if self.playerToRoom[player] then
+    logger.warn("Player " .. player.name .. " tried to spectate while being in room " .. self.playerToRoom[player].roomNumber)
+    return
+  end
+
   if requestedRoom then
     local roomState = requestedRoom:state()
     if (roomState == "character select" or roomState == "playing" or roomState == "paused") then
       logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
-      self.spectatorToRoom[player] = requestedRoom
-      requestedRoom:add_spectator(player)
-      self:setLobbyChanged()
+      local currentSpectatorRoom = self.spectatorToRoom[player]
+      if currentSpectatorRoom and currentSpectatorRoom ~= requestedRoom then
+        currentSpectatorRoom:remove_spectator(player)
+        self.spectatorToRoom[player] = nil
+      end
+
+      if requestedRoom:add_spectator(player) then
+        self.spectatorToRoom[player] = requestedRoom
+        self:setLobbyChanged()
+      else
+        logger.warn("Failed to add spectator " .. player.name .. " to room " .. requestedRoom.roomNumber)
+      end
     else
       logger.warn("tried to join room in invalid state " .. roomState)
     end

@@ -13,8 +13,6 @@ CharacterSelect2p.name = "CharacterSelect2p"
 
 function CharacterSelect2p:customLoad(sceneParams)
   self:loadUserInterface()
-  self.uiRoot.rankedStatus = self:createRankedStatusPanel()
-  self.uiRoot:addChild(self.uiRoot.rankedStatus)
 end
 
 function CharacterSelect2p:loadUserInterface()
@@ -38,23 +36,18 @@ function CharacterSelect2p:loadUserInterface()
 
   self.ui.leaveButton = self:createLeaveButton()
   self.ui.changeInputButton = self:createChangeInputButton()
-  self.ui.rankedSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
-  self.ui.rankedSelection:setTitle("ss_ranked")
 
   local levelHeight
   local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / #self.battleRoom.players - self.ui.panelSelection.height
   local stageWidth
-  local rankedWidth
 
   if self.battleRoom.online then
     self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
-    self.ui.grid:createElementAt(3, 2, 2, 1, "rankedSelection", self.ui.rankedSelection, nil, true)
     self.ui.grid:createElementAt(5, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
     self.ui.grid:createElementAt(7, 2, 2, 1, "levelSelection", self.ui.levelSelection, nil, true)
 
     levelHeight = 12
     stageWidth = self.ui.grid.unitSize - self.ui.grid.unitMargin * 2
-    rankedWidth = stageWidth
   else
     self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
     self.ui.grid:createElementAt(3, 2, 3, 1, "stageSelection", self.ui.stageSelection, nil, true)
@@ -62,7 +55,6 @@ function CharacterSelect2p:loadUserInterface()
 
     levelHeight = 20
     stageWidth = self.ui.grid.unitSize * 1.5 - self.ui.grid.unitMargin * 2
-    rankedWidth = stageWidth
   end
 
   self.ui.grid:createElementAt(9, 2, 1, 1, "readyButton", self.ui.readyButton)
@@ -77,11 +69,10 @@ function CharacterSelect2p:loadUserInterface()
     local panelCarousel = self:createPanelCarousel(player, panelHeight)
     self.ui.panelSelection:addElement(panelCarousel, player)
 
-    local rankedSelector = self:createRankedSelection(player, rankedWidth)
-    self.ui.rankedSelection:addElement(rankedSelector, player)
-
-    local stageCarousel = self:createStageCarousel(player, stageWidth)
-    self.ui.stageSelection:addElement(stageCarousel, player)
+    if player.isLocal then
+      local stageCarousel = self:createStageCarousel(player, stageWidth)
+      self.ui.stageSelection:addElement(stageCarousel, player)
+    end
 
     local levelSlider = self:createLevelSlider(player, levelHeight, panelHeight)
     self.ui.levelSelection:addElement(levelSlider, player)
@@ -99,10 +90,19 @@ function CharacterSelect2p:loadUserInterface()
     self.ui.playerInfos[i] = self:createPlayerInfo(player)
   end
 
-  self.ui.grid:createElementAt(1, 1, 1, 1, "p1 icon", self.ui.characterIcons[1])
-  self.ui.grid:createElementAt(2, 1, 1, 1, "player 1 info", self.ui.playerInfos[1])
-  self.ui.grid:createElementAt(7, 1, 1, 1, "p2 icon", self.ui.characterIcons[2])
-  self.ui.grid:createElementAt(8, 1, 1, 1, "player 2 info", self.ui.playerInfos[2])
+  local topSlots = {
+    { iconX = 1, infoX = 2 },
+    { iconX = 3, infoX = 4 },
+    { iconX = 5, infoX = 6 },
+    { iconX = 7, infoX = 8 },
+  }
+  for i, player in ipairs(self.players) do
+    local slot = topSlots[i]
+    if slot then
+      self.ui.grid:createElementAt(slot.iconX, 1, 1, 1, "p" .. i .. " icon", self.ui.characterIcons[i])
+      self.ui.grid:createElementAt(slot.infoX, 1, 1, 1, "player " .. i .. " info", self.ui.playerInfos[i])
+    end
+  end
 
   -- need to be created at the end after the character grid has been settled in
   -- otherwise the placement will be wrong

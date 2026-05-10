@@ -641,8 +641,8 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     local roomName
     local onClick
 
-    if isLocalPlayerRoom and hasOpenSlots then
-      -- This is the local player's team room - show status
+    if isLocalPlayerRoom then
+      -- This is the local player's room - show status and local room actions
       local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
 
       -- Build player list with slot labels
@@ -673,9 +673,11 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       roomName = "Your Team Room " .. slotsText .. "\n" .. table.concat(playerLines, "\n")
       if #waitingSlots > 0 then
         roomName = roomName .. "\nWaiting: " .. table.concat(waitingSlots, ", ")
+      else
+        roomName = roomName .. "\n(" .. room.state .. ")"
       end
 
-      -- Clicking the local team's room opens room actions instead of doing nothing
+      -- Clicking the local room opens room actions
       onClick = function(button)
         self:openLocalRoomSubMenu(room, button)
         GAME.theme:playValidationSfx()

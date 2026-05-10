@@ -101,9 +101,11 @@ function BattleRoom.createFromServerMessage(message)
     local gameMode = message.gameMode
     for i, player in ipairs(message.players) do
       local p
+      local samePublicId = (player.publicId and GAME.localPlayer.publicId and GAME.localPlayer.publicId > 0 and player.publicId == GAME.localPlayer.publicId)
+      local sameName = (player.name == GAME.localPlayer.name)
 
-      -- match by name so devs can play against themselves still; eventually we'll want to match by publicId instead
-      if player.name == GAME.localPlayer.name then
+      -- Match local player by publicId when available; fallback to name for dev/self-play setups.
+      if samePublicId or sameName then
         logger.debug("Local player is player number " .. player.playerNumber)
         p = GAME.localPlayer
         if GAME.localPlayer.publicId < 0 and player.publicId > 0 then

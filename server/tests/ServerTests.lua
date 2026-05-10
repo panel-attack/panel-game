@@ -23,10 +23,30 @@ local function testLogin()
   assert(p)
   assert(server.nameToConnectionIndex["Bob"] == 1)
   assert(server.nameToPlayer["Bob"] == p)
-  local message = bob.connection.outgoingMessageQueue:pop()
-  assert(message and message.messageText.type == "loginResponse" and message.messageText.content.approved)
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[4].name == "Bob")
+
+  local loginApproved = false
+  local lobbyStateMessage = nil
+  while bob.connection.outgoingMessageQueue:len() > 0 do
+    local queuedMessage = bob.connection.outgoingMessageQueue:pop()
+    local message = queuedMessage and queuedMessage.messageText
+    if message and message.type == "loginResponse" and message.content and message.content.approved then
+      loginApproved = true
+    elseif message and message.type == "lobbyStateV2" then
+      lobbyStateMessage = message
+      break
+    end
+  end
+
+  assert(loginApproved)
+  assert(lobbyStateMessage and lobbyStateMessage.content.players)
+  local bobFound = false
+  for _, playerData in pairs(lobbyStateMessage.content.players) do
+    if playerData and playerData.name == "Bob" then
+      bobFound = true
+      break
+    end
+  end
+  assert(bobFound)
 end
 
 local function testRoomSetup()
@@ -152,24 +172,43 @@ local function testGameplay()
   assert(replay.stacks[1].inputs == "g1")
 
   -- everyone gets the spectator update
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectatorUpdate" and message.content and message.content[1] == "Bob")
-  message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectatorUpdate" and message.content and message.content[1] == "Bob")
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectatorUpdate" and message.content and message.content[1] == "Bob")
+  local function assertNextSpectatorUpdate(connection, spectatorName)
+    local found = false
+    while connection.outgoingMessageQueue:len() > 0 do
+      local queuedMessage = connection.outgoingMessageQueue:pop().messageText
+      if queuedMessage.type == "spectatorUpdate" then
+        assert(queuedMessage.content and queuedMessage.content[1] == spectatorName)
+        found = true
+        break
+      end
+    end
+    assert(found)
+  end
+
+  assertNextSpectatorUpdate(alice.connection, "Bob")
+  assertNextSpectatorUpdate(ben.connection, "Bob")
+  assertNextSpectatorUpdate(bob.connection, "Bob")
 
   alice.connection:receiveMessage(json.encode(ClientProtocol.reportLocalGameResult(2).messageText))
   server:update()
   ben.connection:receiveMessage(json.encode(ClientProtocol.reportLocalGameResult(2).messageText))
   server:update()
 
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "gameResult")
-  message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "gameResult")
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "gameResult")
+  local function assertNextGameResult(connection)
+    local found = false
+    while connection.outgoingMessageQueue:len() > 0 do
+      local queuedMessage = connection.outgoingMessageQueue:pop().messageText
+      if queuedMessage.type == "gameResult" then
+        found = true
+        break
+      end
+    end
+    assert(found)
+  end
+
+  assertNextGameResult(alice.connection)
+  assertNextGameResult(ben.connection)
+  assertNextGameResult(bob.connection)
 
   -- with some bad luck we'll also get a ranked status update which the server sends way too many of
   alice.connection:receiveMessage(readyMessage)
@@ -346,6 +385,73 @@ local function testSinglePlayer()
   assert(message.type == "gameAbort")
 end
 
+local function testCannotSpectateWhileInRoom()
+  local server = ServerTesting.getTestServer()
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+
+  ServerTesting.clearOutgoingMessages({bob})
+
+  bob.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF)).messageText))
+  server:update()
+
+  local room = server.playerToRoom[bob]
+  assert(room)
+  ServerTesting.clearOutgoingMessages({bob})
+
+  bob.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Bob", room.roomNumber).messageText))
+  server:update()
+
+  assert(server.playerToRoom[bob] == room)
+  assert(server.spectatorToRoom[bob] == nil)
+  assert(#room.spectators == 0)
+
+  while bob.connection.outgoingMessageQueue:len() > 0 do
+    local message = bob.connection.outgoingMessageQueue:pop().messageText
+    assert(message.type ~= "spectateRequestGranted")
+  end
+end
+
+local function testJoinPartialRoomSetsCharacterSelectState()
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben = ServerTesting.login(server, ServerTesting.players[3])
+
+  alice.state = "lobby"
+  ben.state = "lobby"
+
+  ServerTesting.clearOutgoingMessages({alice, ben})
+
+  alice.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_VS_ALL)).messageText))
+  server:update()
+
+  local room = server.playerToRoom[alice]
+  assert(room)
+  assert(alice.state == "character select")
+
+  ServerTesting.clearOutgoingMessages({alice, ben})
+
+  alice.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(alice.publicPlayerID, ben.publicPlayerID, GameModes.IDs.THREE_PLAYER_VS_ALL, true, room.roomNumber, 2).messageText))
+  server:update()
+
+  ben.connection:receiveMessage(json.encode(ClientProtocol.updateChallengeStatus(ben.publicPlayerID, alice.publicPlayerID, GameModes.IDs.THREE_PLAYER_VS_ALL, true, room.roomNumber, 2).messageText))
+  server:update()
+
+  assert(server.playerToRoom[ben] == room)
+  assert(ben.state == "character select")
+
+  local lobbyStateMessage
+  while alice.connection.outgoingMessageQueue:len() > 0 do
+    local message = alice.connection.outgoingMessageQueue:pop().messageText
+    if message and message.type == "lobbyStateV2" then
+      lobbyStateMessage = message
+    end
+  end
+
+  assert(lobbyStateMessage and lobbyStateMessage.content and lobbyStateMessage.content.players)
+  local benLobbyEntry = lobbyStateMessage.content.players[ben.publicPlayerID]
+  assert(benLobbyEntry and benLobbyEntry.state == "character select")
+end
+
 testLogin()
 testRoomSetup()
 testRoomSetup2()
@@ -353,3 +459,5 @@ testGameplay()
 testDisconnect()
 testLobbyDataComposition()
 testSinglePlayer()
+testCannotSpectateWhileInRoom()
+testJoinPartialRoomSetsCharacterSelectState()

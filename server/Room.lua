@@ -125,6 +125,7 @@ function Room:addPlayer(player)
   self.players[playerIndex] = player
   player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   player:addToRoom(self)
+  player.state = "character select"
   self.win_counts[playerIndex] = 0
   player.cursor = "__Ready"
   player.player_number = playerIndex
