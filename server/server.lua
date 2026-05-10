@@ -386,11 +386,26 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
       end
 
       -- Reject malformed IDs defensively to avoid corrupt proposal keys/state.
-      if type(sender.publicPlayerID) ~= "string" or sender.publicPlayerID == "" then
+      -- PublicPlayerID is integer in this codebase; keep string support only for safety.
+      local function isValidPublicId(id)
+        if id == nil then
+          return false
+        end
+        local t = type(id)
+        if t == "number" then
+          return true
+        end
+        if t == "string" then
+          return id ~= ""
+        end
+        return false
+      end
+
+      if not isValidPublicId(sender.publicPlayerID) then
         logger.debug("Invalid sender publicPlayerID, ignoring challenge update")
         return
       end
-      if type(receiver.publicPlayerID) ~= "string" or receiver.publicPlayerID == "" then
+      if not isValidPublicId(receiver.publicPlayerID) then
         logger.debug("Invalid receiver publicPlayerID, ignoring challenge update")
         return
       end
