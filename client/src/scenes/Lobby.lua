@@ -3,6 +3,8 @@ local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local util = require("common.lib.util")
+local consts = require("common.engine.consts")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 local NetClient = require("client.src.network.NetClient")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GameModes = require("common.data.GameModes")
@@ -42,6 +44,14 @@ local function exitMenu()
   GAME.theme:playCancelSfx()
   GAME.netClient:logout()
   GAME.navigationStack:pop()
+end
+
+local function drawUnofficialHeader()
+  local headerWidth = consts.CANVAS_WIDTH
+  local y = 26
+
+  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y + 2, headerWidth, "center", {0.12, 0.06, 0.18, 0.85}, nil, 26)
+  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y, headerWidth, "center", {0.88, 0.72, 1, 1}, nil, 26)
 end
 
 -------------
@@ -1235,7 +1245,12 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
   local found = false
 
   if self.lobbyMenuStartingUp then
-    self.lobbyMenu:select(self.lobbyMenu.children[2])
+    for _, child in ipairs(self.lobbyMenu.children) do
+      if child.onClick then
+        self.lobbyMenu:select(child)
+        break
+      end
+    end
     self.lobbyMenuStartingUp = false
   elseif previousIndex then
     if copy[previousIndex].lobbyType then
@@ -1583,6 +1598,7 @@ end
 
 function Lobby:draw()
   self.backgroundImg:draw()
+  drawUnofficialHeader()
   self:drawCommunityMessage()
   if GAME.netClient.state == NetClient.STATES.LOGIN then
     loginStateLabel:draw()

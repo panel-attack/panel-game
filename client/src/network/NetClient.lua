@@ -124,8 +124,9 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
           local room = roomNum and self.lobbyDataV2.rooms[roomNum]
           local roomIsFull = room and room.openSlots and #room.openSlots == 0
           local slotStillOpen = isInviteSlotStillOpen(challengeKey)
+          local shouldClearForClosedSlot = room and (not slotStillOpen)
           
-          if roomIsFull or not slotStillOpen or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+          if roomIsFull or shouldClearForClosedSlot or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
             playerChallenges[challengeKey] = nil
           end
         elseif roomNumber and not isRoomInviteKey(challengeKey) then
@@ -150,8 +151,9 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
           local room = roomNum and self.lobbyDataV2.rooms[roomNum]
           local roomIsFull = room and room.openSlots and #room.openSlots == 0
           local slotStillOpen = isInviteSlotStillOpen(challengeKey)
+          local shouldClearForClosedSlot = room and (not slotStillOpen)
           
-          if roomIsFull or not slotStillOpen or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+          if roomIsFull or shouldClearForClosedSlot or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
             playerChallenges[challengeKey] = nil
           end
         elseif roomNumber and not isRoomInviteKey(challengeKey) then
@@ -902,12 +904,7 @@ end
 ---@param server string
 ---@param port integer
 function NetClient:sendErrorReport(errorData, server, port)
-  if not self:isConnected() then
-    self.tcpClient:connectToServer(server, port)
-  end
-  self.tcpClient:sendRequest(ClientMessages.sendErrorReport(errorData))
-  self.tcpClient:resetNetwork()
-  self:setState(states.OFFLINE)
+  logger.warn("sendErrorReport blocked in unofficial build; no report sent")
 end
 
 function NetClient:isConnected()

@@ -334,7 +334,7 @@ function Theme:loadMenuGraphics()
 
   self:loadFont()
 
-  local titleImage = self:load_theme_img("background/title", false)
+  local titleImage = self:load_theme_img("background/unofficial_brand_full", false) or self:load_theme_img("background/title", false)
   if titleImage then
     self.images.bg_title = UpdatingImage(titleImage, self.bg_title_is_tiled, self.bg_title_speed_x, self.bg_title_speed_y, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
   end

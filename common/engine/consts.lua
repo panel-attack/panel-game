@@ -43,7 +43,7 @@ consts.PUZZLES_LOAD_DIRECTORY = "client/assets/default_data/puzzles"
 
 consts.SERVER_SAVE_DIRECTORY = "servers/"
 consts.LEGACY_SERVER_LOCATION = "18.188.43.50"
-consts.SERVER_LOCATION = "panelattack.com"
+consts.SERVER_LOCATION = "localhost"
 
 consts.SUPER_SELECTION_DURATION = 0.5 -- seconds
 consts.SUPER_SELECTION_START = 0.1 -- time held at which super enable is considered started

@@ -25,20 +25,13 @@ local function titleDrawPressStart(percent)
   GraphicsUtil.printf(loc("continue_button"), x, y, textMaxWidth, "center", {1,1,1,percent}, nil, 16)
 end
 
-local function drawCustomTitleLogo(image)
-  local imageWidth, imageHeight = image:getDimensions()
-  local maxWidth = 420
-  local maxHeight = 260
-  local scale = math.min(maxWidth / imageWidth, maxHeight / imageHeight)
-  local drawWidth = imageWidth * scale
-  local drawHeight = imageHeight * scale
-  local x = (consts.CANVAS_WIDTH - drawWidth) / 2
-  local y = 70
+local function titleDrawUnofficialHeader()
+  local headerWidth = consts.CANVAS_WIDTH
+  local y = 26
 
-  -- Draw a subtle backing plate so the replacement logo cleanly covers baked-in title logos.
-  GraphicsUtil.drawRectangle("fill", x - 12, y - 12, drawWidth + 24, drawHeight + 24, 0, 0, 0, 0.78)
-  GraphicsUtil.drawRectangle("line", x - 12, y - 12, drawWidth + 24, drawHeight + 24, 1, 1, 1, 0.2)
-  GraphicsUtil.draw(image, x, y, 0, scale, scale)
+  -- Soft shadow + larger text for readability without a boxed banner.
+  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y + 2, headerWidth, "center", {0.12, 0.06, 0.18, 0.85}, nil, 26)
+  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y, headerWidth, "center", {0.88, 0.72, 1, 1}, nil, 26)
 end
 
 function TitleScreen:update(dt)
@@ -52,9 +45,7 @@ end
 
 function TitleScreen:draw()
   self.backgroundImg:draw()
-  if GAME.theme.images.unofficial_brand_square then
-    drawCustomTitleLogo(GAME.theme.images.unofficial_brand_square)
-  end
+  titleDrawUnofficialHeader()
   titleDrawPressStart(((math.sin(5 * love.timer.getTime()) / 2 + .5) ^ .5) / 2 + .5)
 end
 

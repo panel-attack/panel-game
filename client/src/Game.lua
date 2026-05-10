@@ -129,18 +129,9 @@ function Game:load()
   DebugSettings.init()
   PuzzleLibrary.cleanupDefaultPuzzles(consts.PUZZLES_SAVE_DIRECTORY)
 
-  -- move to constructor
-  self.updater = GAME_UPDATER or nil
-  if self.updater then
-    logger.debug("Launching game with updater")
-    local success = pcall(self.updater.init, self.updater)
-    if not success then
-      logger.debug("updater:init failed")
-      self.updater = nil
-    end
-  else
-    logger.debug("Launching game without updater")
-  end
+  -- Unofficial build: disable updater integration to avoid upstream network calls.
+  self.updater = nil
+  logger.debug("Launching game without updater (unofficial build)")
 
   inputManager:load()
 
