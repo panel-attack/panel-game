@@ -17,6 +17,7 @@ local MatchParticipant = require("client.src.MatchParticipant")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local TeamUtils = require("common.data.TeamUtils")
 ---@module "client.src.ChallengeModePlayerStack"
 
 ---@class ClientMatch
@@ -190,6 +191,12 @@ function ClientMatch:setupFromGameMode()
         end
       end
     end
+  elseif self.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
+    local gm = self.gameMode
+    local teams = TeamUtils.createTeams(#self.players, gm.teamCount, gm.playersPerTeam)
+    self.engine:setTeams(teams)
+    self.engine:setGarbageMode(gm.garbageMode)
+    self.engine:setupTeamGarbageTargets()
   end
 
   self:sharedSetup()

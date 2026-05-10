@@ -570,45 +570,6 @@ local function isPlayerInAnyRoom(lobbyData, publicId)
   return false
 end
 
----@param lobbyData PersonalizedLobbyDataV2
----@param roomNumber integer
----@param slotNumber integer
----@param targetPlayerId PublicPlayerID
----@return boolean
-local function slotInviteActiveForDifferentPlayer(lobbyData, roomNumber, slotNumber, targetPlayerId)
-  if not lobbyData then
-    return false
-  end
-
-  local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
-
-  local function playerAlreadyInRoom(otherPlayerId)
-    local room = lobbyData.rooms and lobbyData.rooms[roomNumber]
-    if not room or not room.players then
-      return false
-    end
-    for _, pId in ipairs(room.players) do
-      if pId == otherPlayerId then
-        return true
-      end
-    end
-    return false
-  end
-
-  for otherPlayerId, challenges in pairs(lobbyData.outgoingChallenges or {}) do
-    if otherPlayerId ~= targetPlayerId and not playerAlreadyInRoom(otherPlayerId) and challenges and challenges[inviteKey] == true then
-      return true
-    end
-  end
-
-  for otherPlayerId, challenges in pairs(lobbyData.incomingChallenges or {}) do
-    if otherPlayerId ~= targetPlayerId and not playerAlreadyInRoom(otherPlayerId) and challenges and challenges[inviteKey] == true then
-      return true
-    end
-  end
-
-  return false
-end
 
 ---@param personalizedLobbyData PersonalizedLobbyDataV2
 function Lobby:createPlayerButtons(personalizedLobbyData)
@@ -738,7 +699,19 @@ function Lobby:createRoomButtons(personalizedLobbyData)
         waitingLines[#waitingLines + 1] = slotLabel .. ": " .. playerName
       end
 
-      roomName = loc("lb_join") .. "\n" .. table.concat(waitingLines, "\n") .. "\n[" .. slotsText .. "]"
+      local roomOwnerId = room.ownerId or (room.players and room.players[1])
+      local hasInvite = false
+      if roomOwnerId and personalizedLobbyData.incomingChallenges[roomOwnerId] then
+        for _, slotNumber in ipairs(room.openSlots) do
+          if personalizedLobbyData.incomingChallenges[roomOwnerId]["room_" .. room.roomNumber .. "_" .. slotNumber] then
+            hasInvite = true
+            break
+          end
+        end
+      end
+
+      local joinLabel = hasInvite and (loc("lb_join") .. " (invited)") or loc("lb_join")
+      roomName = joinLabel .. "\n" .. table.concat(waitingLines, "\n") .. "\n[" .. slotsText .. "]"
       -- Clicking opens room submenu for joining
       onClick = function(button)
         self:openRoomSubMenu(room, button)
@@ -1026,24 +999,8 @@ function Lobby:openPlayerSubMenu(playerId, button)
     if myRoom and myRoom.openSlots and #myRoom.openSlots > 0 then
       local outgoing = lobbyDataV2.outgoingChallenges[playerId]
       local incoming = lobbyDataV2.incomingChallenges[playerId]
-      local activeInviteSlot
-      for _, slotNumber in ipairs(myRoom.openSlots) do
-        local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
-        if (outgoing and outgoing[inviteKey]) or (incoming and incoming[inviteKey]) then
-          activeInviteSlot = slotNumber
-          break
-        end
-      end
 
       for _, slotNumber in ipairs(myRoom.openSlots) do
-        if slotInviteActiveForDifferentPlayer(lobbyDataV2, myRoom.roomNumber, slotNumber, playerId) then
-          goto continue_invite_slot
-        end
-
-        if activeInviteSlot and activeInviteSlot ~= slotNumber then
-          goto continue_invite_slot
-        end
-
         local slotLabel = getSlotLabel(myRoom, slotNumber)
         local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
         local inviteBtn = ui.LobbyChallengeButton({
@@ -1065,8 +1022,6 @@ function Lobby:openPlayerSubMenu(playerId, button)
           inviteBtn:setState(inviteBtn.challengeStates.PROPOSING)
         end
         subMenu:addChild(inviteBtn)
-
-        ::continue_invite_slot::
       end
     end
   end
@@ -1256,18 +1211,30 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
     if not lobbyDataV2.players[self.playerSubMenu.playerId] or not found then
       self.playerSubMenu:yieldFocus()
     else
+      local localPlayerInfo = lobbyDataV2.players[GAME.localPlayer.publicId]
+      local myRoom = localPlayerInfo and localPlayerInfo.roomNumber and lobbyDataV2.rooms[localPlayerInfo.roomNumber]
+      local openSlotSet = {}
+      if myRoom and myRoom.openSlots then
+        for _, s in ipairs(myRoom.openSlots) do openSlotSet[s] = true end
+      end
+
+      local toDetach = {}
       for _, button in ipairs(self.playerSubMenu.children) do
         if button.TYPE == "LobbyRoomInviteButton" then
           ---@cast button LobbyRoomInviteButton
-          local inviteKey = button.inviteKey
-          local incoming = lobbyDataV2.incomingChallenges[button.playerId]
-          local outgoing = lobbyDataV2.outgoingChallenges[button.playerId]
-          if incoming and incoming[inviteKey] then
-            button:setState(button.challengeStates.CHALLENGED)
-          elseif outgoing and outgoing[inviteKey] then
-            button:setState(button.challengeStates.PROPOSING)
+          if not openSlotSet[button.slotNumber] then
+            toDetach[#toDetach + 1] = button
           else
-            button:setState(button.challengeStates.NEUTRAL)
+            local inviteKey = button.inviteKey
+            local incoming = lobbyDataV2.incomingChallenges[button.playerId]
+            local outgoing = lobbyDataV2.outgoingChallenges[button.playerId]
+            if incoming and incoming[inviteKey] then
+              button:setState(button.challengeStates.CHALLENGED)
+            elseif outgoing and outgoing[inviteKey] then
+              button:setState(button.challengeStates.PROPOSING)
+            else
+              button:setState(button.challengeStates.NEUTRAL)
+            end
           end
         elseif button.TYPE == "LobbyChallengeButton" and button.roomNumber then
           ---@cast button LobbyChallengeButton
@@ -1291,6 +1258,10 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
             button:setState(button.challengeStates.NEUTRAL)
           end
         end
+      end
+
+      for _, button in ipairs(toDetach) do
+        button:detach()
       end
 
       local x, y = previousButton:getScreenPos()

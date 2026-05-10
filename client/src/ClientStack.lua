@@ -85,7 +85,7 @@ function ClientStack:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlr
   assert(cameFromLegacyScoreOffset ~= nil)
   assert(legacyOffsetIsAlreadyScaled ~= nil)
   local x = 546
-  if self.renderIndex == 2 then
+  if self.renderIndex == 2 or self.renderIndex == 4 then
     x = 642
   end
   if cameFromLegacyScoreOffset == false or themes[config.theme]:offsetsAreFixed() then

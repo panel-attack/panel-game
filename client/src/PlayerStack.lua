@@ -1105,7 +1105,7 @@ function PlayerStack:drawAnalyticData()
   local width = 160
   local height = 600
   local x = paddingToAnalytics + backgroundPadding
-  if self.renderIndex == 2 then
+  if self.renderIndex >= 2 then
     x = consts.CANVAS_WIDTH - paddingToAnalytics - width + backgroundPadding
   end
   local y = self.frameOriginY * self.gfxScale + backgroundPadding
