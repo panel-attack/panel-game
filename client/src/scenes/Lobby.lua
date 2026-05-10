@@ -654,12 +654,14 @@ function Lobby:createRoomButtons(personalizedLobbyData)
         GAME.theme:playValidationSfx()
       end
     else
-      -- Full room - show spectate option
-      if #room.players == 1 then
-        roomName = loc("lb_spectate") .. " " .. playerStrings[1] .. " (" .. room.state .. ")"
-      else
-        roomName = loc("lb_spectate") .. "\n" .. playerStrings[1] .. "\nvs\n" .. playerStrings[2] .. "\n(" .. room.state .. ")"
+      -- Full room - show spectate option with everyone in the room
+      local playerLines = {}
+      for i, playerId in ipairs(room.players) do
+        local slotLabel = getSlotLabel(room, i)
+        local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
+        playerLines[#playerLines + 1] = slotLabel .. ": " .. playerName
       end
+      roomName = loc("lb_spectate") .. "\n" .. table.concat(playerLines, "\n") .. "\n(" .. room.state .. ")"
       onClick = self:requestSpectateFunction(room)
     end
 
