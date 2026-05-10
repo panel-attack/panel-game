@@ -89,7 +89,9 @@ function ServerMessages.sanitizeRoomMessage(message)
       player.ratingInfo = player.rating
       player.rating = nil
     end
-    return { gameResult = message.content }
+    -- teamWins lives at the outer message level (sibling of content) to keep `content`
+    -- a JSON array — see ServerProtocol.gameResult for why.
+    return { gameResult = message.content, teamWins = message.teamWins }
   elseif message.type == "matchStart" then
     local replay = ReplayV3.createFromTable(message.content, false)
 
@@ -198,7 +200,8 @@ function ServerMessages.sanitizeServerMessage(message)
       ranked = message.content.ranked,
       players = players,
       roomNumber = message.content.roomNumber,
-      gameMode = message.content.gameMode
+      gameMode = message.content.gameMode,
+      teamWins = message.content.teamWins,
     }
   elseif message.type == "addToRoom" then
     local players = {}
@@ -218,7 +221,8 @@ function ServerMessages.sanitizeServerMessage(message)
       ranked = message.content.ranked,
       players = players,
       roomNumber = message.content.roomNumber,
-      gameMode = message.content.gameMode
+      gameMode = message.content.gameMode,
+      teamWins = message.content.teamWins,
     }
   else
     return message

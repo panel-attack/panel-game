@@ -187,6 +187,13 @@ function ServerProtocol.addToRoom(room, replay)
     }
   end
 
+  if room.team_win_counts then
+    content.teamWins = {}
+    for teamIndex, wins in ipairs(room.team_win_counts) do
+      content.teamWins[teamIndex] = wins
+    end
+  end
+
   return {
     messageType = msgTypes.jsonMessage,
     messageText = addToRoomMessage,
@@ -390,6 +397,20 @@ function ServerProtocol.gameResult(game, room)
   end
 
   gameResultMessage.content = content
+
+  -- For team games, attach per-team wins as a sibling field on the message itself rather
+  -- than inside content. content is encoded as a JSON array (integer keys); adding a
+  -- string-keyed sibling there would force dkjson to encode the whole thing as an object,
+  -- which would break every client that does `for i in ipairs(content)` or
+  -- `content[playerNumber]`. Keeping teamWins outside content sidesteps that.
+  gameResultMessage.teamWins = nil
+  if room.team_win_counts then
+    local teamWins = {}
+    for teamIndex, wins in ipairs(room.team_win_counts) do
+      teamWins[teamIndex] = wins
+    end
+    gameResultMessage.teamWins = teamWins
+  end
 
   return {
     messageType = msgTypes.jsonMessage,

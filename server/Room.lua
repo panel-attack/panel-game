@@ -22,7 +22,8 @@ local TeamUtils = require("common.data.TeamUtils")
 ---@field roomNumber roomNumber
 ---@field stage string? stage for the game, randomly picked from both players
 ---@field spectators ServerPlayer[] array of spectator connection objects
----@field win_counts integer[] win counts by player number
+---@field win_counts integer[] win counts by player number (mirrors team wins for team-game players)
+---@field team_win_counts integer[]? wins indexed by team_index, only for team games
 ---@field ratings table[] ratings by player number
 ---@field matchCount integer
 ---@field game ServerGame?
@@ -79,11 +80,16 @@ function(self, roomNumber, players, gameMode, leaderboard)
 
   -- Only create teams once room is full; partial rooms should not have teams yet.
   self.teams = nil
+  self.team_win_counts = nil
   if gameMode
       and #self.players >= self.maxPlayers
       and gameMode.teamCount
       and gameMode.playersPerTeam then
     self.teams = TeamUtils.createTeams(#self.players, gameMode.teamCount, gameMode.playersPerTeam)
+    self.team_win_counts = {}
+    for teamIndex = 1, #self.teams do
+      self.team_win_counts[teamIndex] = 0
+    end
   end
 
 
@@ -135,6 +141,10 @@ function Room:addPlayer(player)
   -- Initialize teams when room becomes full
   if self:isFull() and self.gameMode.teamCount and self.gameMode.playersPerTeam and not self.teams then
     self.teams = TeamUtils.createTeams(#self.players, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+    self.team_win_counts = {}
+    for teamIndex = 1, #self.teams do
+      self.team_win_counts[teamIndex] = 0
+    end
   end
 
   -- Notify everyone in room about the new player
@@ -472,24 +482,28 @@ end
 
 ---@param game ServerGame
 function Room:updateWinCounts(game)
-  for i, player in ipairs(self.players) do
-    logger.debug("checking if player " .. i .. " scored...")
-    local playerWon = false
-
-    if game.winnerTeamIndex and self.teams then
-      -- Team game: all members of winning team get credit
-      local playerTeamIndex = TeamUtils.getPlayerTeamIndex(self.teams, player.player_number)
-      playerWon = (playerTeamIndex == game.winnerTeamIndex)
-    else
-      -- Non-team game: only individual winner gets credit
-      playerWon = (player.player_number == game.winnerIndex)
+  -- Team games: track per-team. Each player's per-player win_counts mirrors their team's
+  -- count so old per-player UI ("P1: 2 wins") shows the team total instead of individual
+  -- contribution, and so a player who joined late displays the team's accumulated wins
+  -- rather than their personal subset.
+  if self.teams and self.team_win_counts then
+    if game.winnerTeamIndex then
+      self.team_win_counts[game.winnerTeamIndex] = (self.team_win_counts[game.winnerTeamIndex] or 0) + 1
     end
-
-    if playerWon then
-      logger.trace("Player " .. i .. " scored")
-      self.win_counts[i] = self.win_counts[i] + 1
+    for i, player in ipairs(self.players) do
+      local playerTeamIndex = TeamUtils.getPlayerTeamIndex(self.teams, player.player_number)
+      self.win_counts[i] = playerTeamIndex and self.team_win_counts[playerTeamIndex] or self.win_counts[i] or 0
+    end
+  else
+    -- Non-team game: only the individual winner gets credit.
+    for i, player in ipairs(self.players) do
+      if player.player_number == game.winnerIndex then
+        logger.trace("Player " .. i .. " scored")
+        self.win_counts[i] = self.win_counts[i] + 1
+      end
     end
   end
+
   if not game.winnerId then
     logger.debug("tie.  Nobody scored")
   end

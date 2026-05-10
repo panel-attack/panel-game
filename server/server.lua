@@ -319,7 +319,7 @@ function Server:setLobbyChanged()
 end
 
 ---@alias LobbyPlayerV2 { publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>, roomNumber: roomNumber? }
----@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[], gameStartTime: integer? }
+---@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[], teamWins: integer[]?, gameStartTime: integer? }
 ---@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<roomNumber, LobbyRoomV2> }
 
 ---@return LobbyStateV2
@@ -389,6 +389,13 @@ function Server:lobbyStateV2()
       end
       lobbyRoom.players[i] = player.publicPlayerID
       lobbyRoom.wins[i] = room.win_counts[i]
+    end
+
+    if room.team_win_counts then
+      lobbyRoom.teamWins = {}
+      for teamIndex, wins in ipairs(room.team_win_counts) do
+        lobbyRoom.teamWins[teamIndex] = wins
+      end
     end
 
     for i, spectator in ipairs(room.spectators) do

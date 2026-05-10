@@ -53,6 +53,12 @@ function(self, mode, gameScene)
     GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
   end
 
+  -- Per-team wins for team game modes (nil for non-team modes). Indexed by team_index.
+  -- Populated from server payloads (addToRoom, gameResult, lobbyStateV2). Use this in
+  -- preference to per-player win counts when displaying team scoreboards so a player
+  -- who joined late shows the team's accumulated wins rather than only their own.
+  self.teamWins = nil
+
   Signal.turnIntoEmitter(self)
   self:createSignal("rankedStatusChanged")
   self:createSignal("allAssetsLoadedChanged")
@@ -131,6 +137,10 @@ function BattleRoom.createFromServerMessage(message)
 
   battleRoom:updateRankedStatus(message.ranked)
 
+  if message.teamWins then
+    battleRoom:setTeamWins(message.teamWins)
+  end
+
   battleRoom:restoreInputConfigurations()
   GAME.netClient:registerPlayerUpdates(battleRoom)
 
@@ -178,6 +188,11 @@ function BattleRoom.setWinCounts(self, winCounts)
   end
 
   self:updateWinrates()
+end
+
+---@param teamWins integer[]? per-team win counts indexed by team_index, or nil for non-team modes
+function BattleRoom:setTeamWins(teamWins)
+  self.teamWins = teamWins
 end
 
 function BattleRoom:updateWinrates()

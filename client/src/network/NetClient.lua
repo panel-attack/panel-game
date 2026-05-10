@@ -283,13 +283,19 @@ local function processGameResultMessage(self, message)
 
   for _, roomPlayer in ipairs(self.room.players) do
     local messagePlayer = message.gameResult[roomPlayer.playerNumber]
-    roomPlayer:setWinCount(messagePlayer.winCount)
+    if messagePlayer then
+      roomPlayer:setWinCount(messagePlayer.winCount)
 
-    if messagePlayer.ratingInfo then
-      local ratingInfo = messagePlayer.ratingInfo
-      roomPlayer:setRating(ratingInfo.placement_match_progress or ratingInfo.new)
-      roomPlayer:setLeague(ratingInfo.league)
+      if messagePlayer.ratingInfo then
+        local ratingInfo = messagePlayer.ratingInfo
+        roomPlayer:setRating(ratingInfo.placement_match_progress or ratingInfo.new)
+        roomPlayer:setLeague(ratingInfo.league)
+      end
     end
+  end
+
+  if message.teamWins then
+    self.room:setTeamWins(message.teamWins)
   end
 
   self.room:updateWinrates()
