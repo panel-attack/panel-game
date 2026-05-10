@@ -462,7 +462,11 @@ function Room:handleGameOverOutcome(message, sender)
     self.game = nil
     -- Tear the room down once the result is broadcast. Keeps server state from drifting
     -- away from clients, who unconditionally pop back to the lobby on leaveRoom.
-    self:emitSignal("roomShouldClose", self, "match ended")
+    -- Skip for single-player rooms (vsSelf, etc.) — there's only one client, so no
+    -- state-divergence risk, and players want to stay in the room to play another round.
+    if #self.players > 1 then
+      self:emitSignal("roomShouldClose", self, "match ended")
+    end
   end
 end
 

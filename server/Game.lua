@@ -279,7 +279,11 @@ function Game:receiveOutcomeReport(player, outcome)
   if not result then
     --if clients disagree, the server needs to decide the outcome, perhaps by watching a replay it had created during the game.
     --for now though...
-    logger.warn("clients " .. self.players[1].name .. " and " .. self.players[2].name .. " disagree on their game outcome. So the server will declare a tie.")
+    local reportSummary = {}
+    for i, p in ipairs(self.players) do
+      reportSummary[i] = string.format("%s=%s", tostring(p.name), tostring(self.outcomeReports[i]))
+    end
+    logger.warn("clients disagree on game outcome (" .. table.concat(reportSummary, ", ") .. "). Server declares a tie.")
     result = 0
     self.aborted = true
   else
