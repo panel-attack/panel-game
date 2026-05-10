@@ -171,6 +171,11 @@ end
 ---@param input string
 function Game:bufferInput(player, input)
   local playerNum = player.player_number
+  -- Eliminated/disconnected slots are filled with idle inputs by the server; ignore late
+  -- in-flight inputs from the client so they don't pile up unread.
+  if self.disconnectedPlayers[playerNum] or self.eliminatedPlayers[playerNum] then
+    return
+  end
   if not self.inputBuffer[playerNum] then
     self.inputBuffer[playerNum] = {}
   end
