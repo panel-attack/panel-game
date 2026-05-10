@@ -971,6 +971,11 @@ function NetClient:disconnect(voluntary)
   -- this is because the online updates are currently subscribed to the player itself
   -- that should probably get changed because while mildly convenient it is unexpected for the interaction
   GAME.localPlayer:disconnectSubscriber(GAME.localPlayer)
+  -- Clear the "already hooked" flag so registerPlayerUpdates re-attaches signals on
+  -- the next connection. Without this, after a disconnect+reconnect, ready/loaded
+  -- changes fire locally but never reach the server: the subscriptions are gone but
+  -- the flag still marks the player as hooked, so registration skips the re-attach.
+  GAME.localPlayer._netClientSettingsHooked = nil
   self:emitSignal("clientDisconnected", voluntary)
 end
 
