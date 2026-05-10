@@ -468,7 +468,7 @@ function Room:handleGameAbort(sender)
     local inputCountDifference = self.game:getInputCountDifference()
     if inputCountDifference > self.abortInputGapThreshold then
       logger.info("abort was judged as legitimate with an inputCountDifference of " .. inputCountDifference)
-      self:abortGame(sender, "latency_error")
+      self:handlePlayerDisconnect(sender, "latency_error")
     else
       logger.info("abort was judged as illegitimate with an inputCountDifference of " .. inputCountDifference)
 
@@ -486,6 +486,20 @@ function Room:handleGameAbort(sender)
     end
   else
     logger.warn(self.roomNumber .. ": Unexpected abort from player with publicID " .. sender.publicPlayerID)
+  end
+end
+
+---@param sender ServerPlayer
+---@param reason string?
+function Room:handlePlayerDisconnect(sender, reason)
+  if self.game then
+    self.game:markPlayerDisconnected(sender)
+  end
+
+  if reason then
+    logger.info(self.roomNumber .. ": treating disconnect from " .. sender.name .. " as a forfeit (" .. reason .. ")")
+  else
+    logger.info(self.roomNumber .. ": treating disconnect from " .. sender.name .. " as a forfeit")
   end
 end
 

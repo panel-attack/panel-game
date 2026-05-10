@@ -82,6 +82,32 @@ local function resolveAbortInputGapThreshold(latencyTolerance, playerCount)
   end
 end
 
+local function resolveConnectionWatchdogSettings(latencyTolerance, playerCount)
+  local count = tonumber(playerCount) or 2
+  local tolerance = latencyTolerance
+  if tolerance ~= "strict" and tolerance ~= "normal" and tolerance ~= "relaxed" then
+    tolerance = "normal"
+  end
+
+  if count >= 3 then
+    if tolerance == "strict" then
+      return 30, 10
+    elseif tolerance == "relaxed" then
+      return 120, 20
+    else
+      return 60, 15
+    end
+  else
+    if tolerance == "strict" then
+      return 20, 8
+    elseif tolerance == "relaxed" then
+      return 90, 15
+    else
+      return 45, 10
+    end
+  end
+end
+
 local pairs = pairs
 local ipairs = ipairs
 local time = os.time
@@ -990,6 +1016,7 @@ function Server:processMessage(message, connection)
       if requestedGameMode then
         requestedGameMode.latencyTolerance = message.latencyTolerance
         requestedGameMode.abortInputGapThreshold = resolveAbortInputGapThreshold(message.latencyTolerance, requestedGameMode.playerCount)
+        requestedGameMode.connectionTimeoutSeconds, requestedGameMode.sendRetryLimit = resolveConnectionWatchdogSettings(message.latencyTolerance, requestedGameMode.playerCount)
         self:create_room(requestedGameMode, player)
         return true
       else
@@ -1279,7 +1306,12 @@ function Server:closeConnection(connection, reason)
   connection:close()
   if player then
     self:clearProposals(player)
-    self:handleLeaveRoom(player, reason)
+    local room = self.playerToRoom[player]
+    if room and room.game and room:state() == "playing" then
+      room:handlePlayerDisconnect(player, reason)
+    else
+      self:handleLeaveRoom(player, reason)
+    end
     self.publicIdToPlayer[player.publicPlayerID] = nil
     self.playerToRoom[player] = nil
     self.spectatorToRoom[player] = nil

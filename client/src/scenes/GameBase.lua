@@ -530,10 +530,9 @@ function GameBase:drawHUD()
 
       -- Draw VS HUD
       if stack.player then
-        if self.match.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
-          stack:drawPlayerName()
-          stack:drawWinCount()
-        end
+        -- Team modes still need per-stack labels so players can identify each board quickly.
+        stack:drawPlayerName()
+        stack:drawWinCount()
         stack:drawRating()
       end
 

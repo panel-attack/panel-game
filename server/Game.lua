@@ -19,6 +19,7 @@ local TeamUtils = require("common.data.TeamUtils")
 ---@field ranked boolean
 ---@field package inputs string[][]
 ---@field package outcomeReports integer[]
+---@field package disconnectedPlayers table<integer, boolean>
 ---@field complete boolean
 ---@field creationTime integer
 local Game = class(
@@ -33,6 +34,7 @@ function(self, players, id)
   end
   self.id = id
   self.outcomeReports = {}
+  self.disconnectedPlayers = {}
   self.complete = false
   self.creationTime = os.time()
 end)
@@ -180,12 +182,12 @@ function Game:receiveOutcomeReport(player, outcome)
   -- so if we have the report for player 2 but not player 1, #self.outcomeReports may return 2 instead of 0
   -- see https://www.lua.org/manual/5.1/manual.html#2.5.5
   for i = 1, #self.players do
-    if not self.outcomeReports[i] then
+    if not self.disconnectedPlayers[i] and self.outcomeReports[i] == nil then
       return
     end
   end
 
-  local result, winnerTeamIndex = Game.getOutcome(self.outcomeReports, self.teams)
+  local result, winnerTeamIndex = Game.getOutcome(self.outcomeReports, self.teams, self.disconnectedPlayers)
   if not result then
     --if clients disagree, the server needs to decide the outcome, perhaps by watching a replay it had created during the game.
     --for now though...
@@ -205,24 +207,35 @@ function Game:receiveOutcomeReport(player, outcome)
   self:finalizeReplay(result)
 end
 
+---@param player ServerPlayer
+function Game:markPlayerDisconnected(player)
+  self.disconnectedPlayers[player.player_number] = true
+  if self.outcomeReports[player.player_number] == nil then
+    self.outcomeReports[player.player_number] = false
+  end
+end
+
 ---@param outcomeReports integer[]
 ---@param teams Team[]?
+---@param disconnectedPlayers table<integer, boolean>?
 ---@return integer? winnerIndex the winner of the game (player index), 0 if tie, nil if the players disagreed on the outcome
 ---@return integer? winnerTeamIndex the winning team index (only for team games)
-function Game.getOutcome(outcomeReports, teams)
+function Game.getOutcome(outcomeReports, teams, disconnectedPlayers)
   if teams then
     -- Team game: validate team-based outcomes
     -- outcome = 1 means "my team won", outcome = 2 means "my team lost", outcome = 0 means tie
     local teamOutcomes = {}
 
     for playerIndex, outcome in ipairs(outcomeReports) do
-      local teamIndex = TeamUtils.getPlayerTeamIndex(teams, playerIndex)
-      if teamIndex then
-        if not teamOutcomes[teamIndex] then
-          teamOutcomes[teamIndex] = outcome
-        elseif teamOutcomes[teamIndex] ~= outcome then
-          -- Teammates disagree
-          return nil, nil
+      if not (disconnectedPlayers and disconnectedPlayers[playerIndex]) then
+        local teamIndex = TeamUtils.getPlayerTeamIndex(teams, playerIndex)
+        if teamIndex then
+          if not teamOutcomes[teamIndex] then
+            teamOutcomes[teamIndex] = outcome
+          elseif teamOutcomes[teamIndex] ~= outcome then
+            -- Teammates disagree
+            return nil, nil
+          end
         end
       end
     end
@@ -252,10 +265,12 @@ function Game.getOutcome(outcomeReports, teams)
   else
     -- Non-team game: all players must agree on the same winner
     for i, outcomeA in ipairs(outcomeReports) do
-      for j, outcomeB in ipairs(outcomeReports) do
-        if i ~= j then
-          if outcomeA ~= outcomeB then
-            return nil, nil
+      if not (disconnectedPlayers and disconnectedPlayers[i]) then
+        for j, outcomeB in ipairs(outcomeReports) do
+          if i ~= j and not (disconnectedPlayers and disconnectedPlayers[j]) then
+            if outcomeA ~= outcomeB then
+              return nil, nil
+            end
           end
         end
       end
@@ -311,6 +326,10 @@ end
 ---@param player ServerPlayer
 ---@return integer
 function Game:getPlacement(player)
+  if self.disconnectedPlayers and self.disconnectedPlayers[player.player_number] then
+    return 2
+  end
+
   if not self.winnerId then
     return 0
   else

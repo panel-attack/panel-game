@@ -614,6 +614,28 @@ local teamColors = {
   {1,    0.45, 1,    1},  -- magenta
 }
 
+---@param text string
+---@param maxWidth number
+---@param font love.Font
+---@return string
+local function clampTextToWidth(text, maxWidth, font)
+  if font:getWidth(text) <= maxWidth then
+    return text
+  end
+
+  local ellipsis = "..."
+  local result = text
+  while #result > 0 and font:getWidth(result .. ellipsis) > maxWidth do
+    result = result:sub(1, #result - 1)
+  end
+
+  if result == "" then
+    return ellipsis
+  end
+
+  return result .. ellipsis
+end
+
 function ClientMatch:drawTeamScoreboard()
   if self.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
     return
@@ -630,34 +652,71 @@ function ClientMatch:drawTeamScoreboard()
   end
 
   local teamCount = self.gameMode.teamCount or 2
-  local topY = 8
-  local centerX = consts.CANVAS_WIDTH / 2
+  local canvasWidth = GAME.globalCanvas:getWidth()
+  local topY = (#self.stacks >= 4) and 4 or 8
+  local centerX = canvasWidth / 2
+  local font = GraphicsUtil.getGlobalFont()
 
   if teamCount == 2 then
     local nameWidth = 430
     local scoreWidth = 70
     local t1 = teamData[1] or {names = {}, wins = 0}
     local t2 = teamData[2] or {names = {}, wins = 0}
+    local t1Name = clampTextToWidth(table.concat(t1.names, ", "), nameWidth, font)
+    local t2Name = clampTextToWidth(table.concat(t2.names, ", "), nameWidth, font)
 
     GraphicsUtil.setColor(table.unpack(teamColors[1]))
-    GraphicsUtil.printf(table.concat(t1.names, ", "), centerX - 440, topY, nameWidth, "center")
+    GraphicsUtil.printf(t1Name, centerX - 440, topY, nameWidth, "center")
     GraphicsUtil.printf(tostring(t1.wins), centerX - 65, topY, scoreWidth, "center", nil, 2)
 
     GraphicsUtil.setColor(table.unpack(teamColors[2]))
     GraphicsUtil.printf(tostring(t2.wins), centerX - 5, topY, scoreWidth, "center", nil, 2)
-    GraphicsUtil.printf(table.concat(t2.names, ", "), centerX + 40, topY, nameWidth, "center")
+    GraphicsUtil.printf(t2Name, centerX + 40, topY, nameWidth, "center")
   else
-    local sectionWidth = consts.CANVAS_WIDTH / teamCount
+    local sectionWidth = canvasWidth / teamCount
     for t = 1, teamCount do
       local data = teamData[t]
       if data then
         GraphicsUtil.setColor(table.unpack(teamColors[t] or teamColors[1]))
         local label = table.concat(data.names, "+") .. "  " .. data.wins
+        label = clampTextToWidth(label, sectionWidth - 8, font)
         GraphicsUtil.printf(label, (t - 1) * sectionWidth, topY, sectionWidth, "center")
       end
     end
   end
 
+  GraphicsUtil.setColor(1, 1, 1, 1)
+end
+
+function ClientMatch:drawStackSeparators()
+  if #self.stacks ~= 4 then
+    return
+  end
+
+  local byRenderIndex = {}
+  for _, stack in ipairs(self.stacks) do
+    byRenderIndex[stack.renderIndex] = stack
+  end
+
+  local s1 = byRenderIndex[1]
+  local s2 = byRenderIndex[2]
+  local s3 = byRenderIndex[3]
+  local s4 = byRenderIndex[4]
+  if not (s1 and s2 and s3 and s4) then
+    return
+  end
+
+  local function leftX(stack) return stack.frameOriginX * stack.gfxScale end
+  local function rightX(stack) return leftX(stack) + stack:canvasWidth() end
+  local function topY(stack) return stack.frameOriginY * stack.gfxScale end
+  local function bottomY(stack) return topY(stack) + stack:canvasHeight() end
+
+  local separatorX = (math.max(rightX(s1), rightX(s3)) + math.min(leftX(s2), leftX(s4))) / 2
+  local separatorY = (math.max(bottomY(s1), bottomY(s2)) + math.min(topY(s3), topY(s4))) / 2
+
+  GraphicsUtil.setColor(1, 1, 1, 0.2)
+  GraphicsUtil.drawRectangle("fill", separatorX - 1, 0, 2, GAME.globalCanvas:getHeight())
+  GraphicsUtil.drawRectangle("fill", 0, separatorY - 1, GAME.globalCanvas:getWidth(), 2)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 

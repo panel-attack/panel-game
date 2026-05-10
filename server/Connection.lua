@@ -4,7 +4,8 @@ local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
 local Queue = require("common.lib.Queue")
 
-local TIME_OUT = 10
+local DEFAULT_TIMEOUT_SECONDS = 10
+local DEFAULT_SEND_RETRY_LIMIT = 5
 
 ---@alias InputProcessor { processInput: function }
 
@@ -21,6 +22,7 @@ local TIME_OUT = 10
 ---@field incomingInputQueue Queue
 ---@field sendRetryCount integer
 ---@field sendRetryLimit integer
+---@field timeoutSeconds integer
 ---@field inputProcessor InputProcessor?
 ---@overload fun(socket: any, index: integer) : Connection
 local Connection = class(
@@ -38,7 +40,8 @@ local Connection = class(
     self.outgoingMessageQueue = Queue()
     self.incomingInputQueue = Queue()
     self.sendRetryCount = 0
-    self.sendRetryLimit = 5
+    self.sendRetryLimit = DEFAULT_SEND_RETRY_LIMIT
+    self.timeoutSeconds = DEFAULT_TIMEOUT_SECONDS
   end
 )
 
@@ -157,14 +160,14 @@ end
 function Connection:update(t, canRead, canSend)
   if canRead then
     if not read(self) then
-      logger.info("Closing connection " .. self.index .. ". Connection.read failed with closed error.")
+      logger.info("[DISCONNECT-PATH-1] Closing connection " .. self.index .. ". Socket read failed with closed error.")
       return false
     end
   end
 
   if canSend then
     if not sendQueuedMessages(self) then
-      logger.info("Send for connection " .. self.index .. " failed because the socket has been closed or the retry limit has been surpassed")
+      logger.info("[DISCONNECT-PATH-2] Closing connection " .. self.index .. ". Send failed (retries=" .. self.sendRetryCount .. "/" .. self.sendRetryLimit .. ")")
       return false
     end
   end
@@ -172,16 +175,22 @@ function Connection:update(t, canRead, canSend)
   if not canRead and not canSend then
     -- it is possible for the socket to "close" based on internal status as luasocket implements its own connection keeping
     -- luasocket does not give a good way to check this easily as closed sockets are ignored in socket.select so we need to check
-    if (not self.socket) or (self.socket:getpeername() == nil) then
+    if (not self.socket) then
+      logger.info("[DISCONNECT-PATH-3a] Closing connection " .. self.index .. ". Socket object is nil.")
+      return false
+    elseif (self.socket:getpeername() == nil) then
+      logger.info("[DISCONNECT-PATH-3b] Closing connection " .. self.index .. ". Peer lookup failed (getpeername returned nil).")
       return false
     end
   end
 
   if t ~= self.lastCommunicationTime then
-    if t - self.lastCommunicationTime > TIME_OUT then
-      logger.info("Closing connection for " .. self.index .. ". Connection timed out (>10 sec)")
+    local timeoutSeconds = self.timeoutSeconds or DEFAULT_TIMEOUT_SECONDS
+    local timeSinceLastComm = t - self.lastCommunicationTime
+    if timeSinceLastComm > timeoutSeconds then
+      logger.info("[DISCONNECT-PATH-4] Closing connection " .. self.index .. ". Inactivity timeout (" .. timeSinceLastComm .. ">" .. timeoutSeconds .. " sec)")
       return false
-    elseif t > self.lastPingTime and t - self.lastCommunicationTime > 1 then
+    elseif t > self.lastPingTime and timeSinceLastComm > 1 then
       -- Request a ping to make sure the connection is still active
       self:send(NetworkProtocol.serverMessageTypes.ping.prefix)
       -- we don't want to ping for every run we're waiting for an answer

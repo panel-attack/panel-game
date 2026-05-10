@@ -324,6 +324,30 @@ function ClientStack:calculateResponsiveScale(numStacksOnRight, topMargin, botto
   return math.max(0.85, math.min(2.5, maxScale))
 end
 
+-- Calculates responsive scale for right-column stacks with both height and width constraints.
+-- Keeps the center gap around the local left-side player unchanged.
+---@param numStacksOnRight integer
+---@param topMargin number
+---@param bottomMargin number
+---@param gap number
+---@param rightMargin number
+function ClientStack:calculateResponsiveScaleForRightColumn(numStacksOnRight, topMargin, bottomMargin, gap, rightMargin)
+  local canvasWidth = GAME.globalCanvas:getWidth()
+  local canvasHeight = GAME.globalCanvas:getHeight()
+
+  local availableHeight = canvasHeight - topMargin - bottomMargin - (numStacksOnRight - 1) * gap
+  local heightBoundScale = availableHeight / (self.baseHeight * numStacksOnRight)
+
+  -- Preserve the classic two-player center gutter:
+  -- left player right edge at centerX - 100, right column left edge not before centerX + 100.
+  local centerX = canvasWidth / 2
+  local minRightColumnLeftX = centerX + 100
+  local availableWidth = (canvasWidth - rightMargin) - minRightColumnLeftX
+  local widthBoundScale = availableWidth / self.baseWidth
+
+  return math.max(0.85, math.min(NORMAL_GFX_SCALE, widthBoundScale, heightBoundScale))
+end
+
 -- Positions the stack in a 3-player layout with responsive scaling
 -- renderIndex: 1=left (full size), 2=top-right (smaller), 3=bottom-right (smaller)
 -- Uses responsive scaling based on canvas height to ensure both right stacks fit
@@ -339,12 +363,13 @@ function ClientStack:moveForRenderIndex3Player(renderIndex)
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
     local gap = 12
+    local rightMargin = 24
 
     -- Responsive scaling for 2 stacks on the right
-    self.gfxScale = self:calculateResponsiveScale(2, topMargin, bottomMargin, gap)
+    self.gfxScale = self:calculateResponsiveScaleForRightColumn(2, topMargin, bottomMargin, gap, rightMargin)
     local stackWidth = self:canvasWidth()
     local stackHeight = self:canvasHeight()
-    local rightX = canvasWidth - stackWidth - 24  -- Right side with margin
+    local rightX = canvasWidth - stackWidth - rightMargin  -- Right side with margin
     
     if renderIndex == 2 then
       -- Top-right
@@ -357,45 +382,57 @@ function ClientStack:moveForRenderIndex3Player(renderIndex)
   end
 end
 
--- Positions the stack in a 4-player layout with responsive scaling (all right side, vertically stacked)
--- renderIndex: 1=left (full size), 2=top-right, 3=middle-right, 4=bottom-right (smaller)
--- Uses responsive scaling based on canvas height to ensure all 3 right stacks fit
+-- Positions the stack in a 4-player layout with fixed local anchor and right-side matrix.
+-- Layout rule: row1 = 2,4 ; row2 = 3 (centered)
+-- renderIndex: 1=left (unchanged), 2=top-left-right-zone, 4=top-right-right-zone, 3=bottom-center-right-zone
 function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
   if renderIndex == 1 then
     -- Player 1 uses EXACTLY the same positioning as 2-player PvP
     self:moveForRenderIndex(1)
   else
-    -- Players 2, 3, 4 on the right with responsive scaling
+    -- Players 2, 3, 4 in a 2x2-capable zone on the right
     self:setupForRenderIndex(renderIndex)
 
     local canvasWidth = GAME.globalCanvas:getWidth()
+    local canvasHeight = GAME.globalCanvas:getHeight()
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
-    local gap = 8
+    local gapX = 12
+    local gapY = 10
+    local rightMargin = 24
 
-    -- Responsive scaling for 3 stacks on the right
-    self.gfxScale = self:calculateResponsiveScale(3, topMargin, bottomMargin, gap)
+    -- Keep the center gap around player 1 and fit a 2-column by 2-row right-side zone.
+    local minRightColumnLeftX = (canvasWidth / 2) + 100
+    local rightZoneWidth = (canvasWidth - rightMargin) - minRightColumnLeftX
+    local rightZoneHeight = canvasHeight - topMargin - bottomMargin
+
+    local widthBoundScale = (rightZoneWidth - gapX) / (self.baseWidth * 2)
+    local heightBoundScale = (rightZoneHeight - gapY) / (self.baseHeight * 2)
+    self.gfxScale = math.max(0.85, math.min(NORMAL_GFX_SCALE, widthBoundScale, heightBoundScale))
+
     local stackWidth = self:canvasWidth()
     local stackHeight = self:canvasHeight()
-    local rightX = canvasWidth - stackWidth - 24  -- Right side with margin
+    local gridWidth = (stackWidth * 2) + gapX
+    local gridHeight = (stackHeight * 2) + gapY
+
+    local startX = minRightColumnLeftX + math.max(0, (rightZoneWidth - gridWidth) / 2)
+    local startY = topMargin + math.max(0, (rightZoneHeight - gridHeight) / 2)
+    local row2Y = startY + stackHeight + gapY
     
     if renderIndex == 2 then
-      -- Top-right
-      self:moveToPosition(rightX, topMargin)
+      self:moveToPosition(startX, startY)
     elseif renderIndex == 3 then
-      -- Middle-right
-      local middleY = topMargin + stackHeight + gap
-      self:moveToPosition(rightX, middleY)
+      -- Bottom row has only one stack in 4p rule, left-aligned under the first slot.
+      self:moveToPosition(startX, row2Y)
     elseif renderIndex == 4 then
-      -- Bottom-right
-      local bottomY = topMargin + (stackHeight + gap) * 2
-      self:moveToPosition(rightX, bottomY)
+      self:moveToPosition(startX + stackWidth + gapX, startY)
     end
   end
 end
 
--- Positions the stack in a 5-player layout with responsive scaling (all right side, vertically stacked)
--- renderIndex: 1=left (full size), 2=top-right, 3, 4, 5=stacked below (smaller)
+-- Positions the stack in a 5-player layout with fixed local anchor and right-side matrix.
+-- Layout rule: row1 = 2,4 ; row2 = 3,5
+-- renderIndex: 1=left (unchanged), 2/4 top row, 3/5 bottom row
 function ClientStack:moveForRenderIndex5Player(renderIndex)
   if renderIndex == 1 then
     self:moveForRenderIndex(1)
@@ -403,18 +440,39 @@ function ClientStack:moveForRenderIndex5Player(renderIndex)
     self:setupForRenderIndex(renderIndex)
 
     local canvasWidth = GAME.globalCanvas:getWidth()
+    local canvasHeight = GAME.globalCanvas:getHeight()
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
-    local gap = 8
+    local gapX = 12
+    local gapY = 10
+    local rightMargin = 24
 
-    -- Responsive scaling for 4 stacks on the right
-    self.gfxScale = self:calculateResponsiveScale(4, topMargin, bottomMargin, gap)
+    local minRightColumnLeftX = (canvasWidth / 2) + 100
+    local rightZoneWidth = (canvasWidth - rightMargin) - minRightColumnLeftX
+    local rightZoneHeight = canvasHeight - topMargin - bottomMargin
+
+    local widthBoundScale = (rightZoneWidth - gapX) / (self.baseWidth * 2)
+    local heightBoundScale = (rightZoneHeight - gapY) / (self.baseHeight * 2)
+    self.gfxScale = math.max(0.85, math.min(NORMAL_GFX_SCALE, widthBoundScale, heightBoundScale))
+
     local stackWidth = self:canvasWidth()
     local stackHeight = self:canvasHeight()
-    local rightX = canvasWidth - stackWidth - 24
+    local gridWidth = (stackWidth * 2) + gapX
+    local gridHeight = (stackHeight * 2) + gapY
 
-    local slot = renderIndex - 2  -- 0-indexed slot on the right side
-    self:moveToPosition(rightX, topMargin + slot * (stackHeight + gap))
+    local startX = minRightColumnLeftX + math.max(0, (rightZoneWidth - gridWidth) / 2)
+    local startY = topMargin + math.max(0, (rightZoneHeight - gridHeight) / 2)
+    local row2Y = startY + stackHeight + gapY
+
+    if renderIndex == 2 then
+      self:moveToPosition(startX, startY)
+    elseif renderIndex == 4 then
+      self:moveToPosition(startX + stackWidth + gapX, startY)
+    elseif renderIndex == 3 then
+      self:moveToPosition(startX, row2Y)
+    elseif renderIndex == 5 then
+      self:moveToPosition(startX + stackWidth + gapX, row2Y)
+    end
   end
 end
 
@@ -425,19 +483,32 @@ function ClientStack:moveForRenderIndex4Player(renderIndex)
 
   local canvasWidth = GAME.globalCanvas:getWidth()
   local canvasHeight = GAME.globalCanvas:getHeight()
-  local stackWidth = self:canvasWidth()
+  local topMargin = self.baseWidth + self.panelOriginXOffset
+  local bottomMargin = 12
+  local sideMargin = 24
+  local gapX = 20
+  local gapY = 12
 
-  -- Calculate grid positions
-  local leftX = 80  -- Left column
-  local rightX = canvasWidth - stackWidth - 80  -- Right column
-  local topY = self.baseWidth + self.panelOriginXOffset  -- Same as 2-player top
-  local bottomY = canvasHeight / 2 + 20  -- Bottom row
+  -- Fit a 2x2 stack grid inside the drawable area by constraining scale on both axes.
+  local availableWidth = canvasWidth - (sideMargin * 2) - gapX
+  local availableHeight = canvasHeight - topMargin - bottomMargin - gapY
+  local widthBoundScale = availableWidth / (self.baseWidth * 2)
+  local heightBoundScale = availableHeight / (self.baseHeight * 2)
+  self.gfxScale = math.max(0.85, math.min(NORMAL_GFX_SCALE, widthBoundScale, heightBoundScale))
+
+  local stackWidth = self:canvasWidth()
+  local stackHeight = self:canvasHeight()
+  local gridWidth = (stackWidth * 2) + gapX
+  local gridHeight = (stackHeight * 2) + gapY
+
+  local startX = (canvasWidth - gridWidth) / 2
+  local startY = topMargin + math.max(0, (availableHeight - gridHeight) / 2)
 
   local positions = {
-    {x = leftX, y = topY},      -- 1: top-left
-    {x = rightX, y = topY},     -- 2: top-right
-    {x = leftX, y = bottomY},   -- 3: bottom-left
-    {x = rightX, y = bottomY},  -- 4: bottom-right
+    {x = startX, y = startY},
+    {x = startX + stackWidth + gapX, y = startY},
+    {x = startX, y = startY + stackHeight + gapY},
+    {x = startX + stackWidth + gapX, y = startY + stackHeight + gapY},
   }
 
   local pos = positions[renderIndex]
