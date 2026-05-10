@@ -17,6 +17,27 @@ local ClientStack = require("client.src.ClientStack")
 local MatchRules = require("common.data.MatchRules")
 local GameModes = require("common.data.GameModes")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local TeamUtils = require("common.data.TeamUtils")
+
+-- Player chip background colors keyed by team index. Mirrors the palette used by
+-- ClientMatch:drawTeamScoreboard so the chip above each stack matches the
+-- scoreboard tint at the top of the screen.
+local TEAM_COLORS = {
+  {0.45, 0.7,  1,    0.85}, -- blue
+  {1,    0.45, 0.45, 0.85}, -- red
+  {0.45, 1,    0.45, 0.85}, -- green
+  {1,    1,    0.45, 0.85}, -- yellow
+  {1,    0.6,  0.2,  0.85}, -- orange
+  {0.8,  0.45, 1,    0.85}, -- purple
+  {0.45, 1,    1,    0.85}, -- cyan
+  {1,    0.45, 1,    0.85}, -- magenta
+}
+
+local function teamColorForStack(match, stack, stackIndex)
+  local teams = match.engine and match.engine.teams
+  local idx = teams and TeamUtils.getPlayerTeamIndex(teams, stackIndex) or stackIndex
+  return TEAM_COLORS[idx] or TEAM_COLORS[1]
+end
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
@@ -517,34 +538,37 @@ end
 function GameBase:drawHUD()
   if not self.match.isPaused then
     for i, stack in ipairs(self.match.stacks) do
-      if stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
-        stack:drawMoveCount()
-      end
-      if config.show_ingame_infos then
-        if not stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
-          -- Only show score/speed for full-size Player 1 stack in team matches
-          if stack.renderIndex == 1 then
+      -- Make the team color available to drawPlayerName inside the wrapper.
+      stack._teamColor = teamColorForStack(self.match, stack, i)
+
+      -- Render every stack's HUD inside its own panel transform so minis use
+      -- exactly the same draw code as Player 1, just translated and scaled.
+      stack:withPanelTransform(function()
+        if stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
+          stack:drawMoveCount()
+        end
+        if config.show_ingame_infos then
+          if not stack.engine.stackOverConditions[MatchRules.StackOverConditions.SWAPS] then
             stack:drawScore()
             stack:drawSpeed()
           end
+          stack:drawMultibar()
         end
-        stack:drawMultibar()
-      end
 
-      -- Draw VS HUD
-      if stack.player then
-        -- Team modes still need per-stack labels so players can identify each board quickly.
-        stack:drawPlayerName()
-        stack:drawWinCount()
-        stack:drawRating()
-      end
+        if stack.player then
+          stack:drawPlayerName()
+          -- Per-player win count is redundant in team modes (it equals the team
+          -- score shown in the header scoreboard). Suppress it everywhere.
+          stack:drawRating()
+        end
 
-      stack:drawLevel()
-      if stack.analytic and not DebugSettings.showStackDebugInfo() then
-        --prof.push("Stack:drawAnalyticData")
-        stack:drawAnalyticData()
-        --prof.pop("Stack:drawAnalyticData")
-      end
+        -- Analytics first so the semi-transparent rectangle background doesn't
+        -- darken the LEVEL panel drawn next.
+        if stack.analytic and not DebugSettings.showStackDebugInfo() then
+          stack:drawAnalyticData()
+        end
+        stack:drawLevel()
+      end)
     end
 
     if not DebugSettings.showStackDebugInfo() and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details

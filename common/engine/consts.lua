@@ -48,7 +48,7 @@ consts.SERVER_LOCATION = "localhost"
 consts.SUPER_SELECTION_DURATION = 0.5 -- seconds
 consts.SUPER_SELECTION_START = 0.1 -- time held at which super enable is considered started
 
-consts.DEFAULT_THEME_DIRECTORY = "Panel Attack Modern"
+consts.DEFAULT_THEME_DIRECTORY = "Girly Vibrant"
 
 consts.SCOREMODE_TA    = 1
 consts.SCOREMODE_PDP64 = 2 -- currently not used

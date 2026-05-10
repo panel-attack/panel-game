@@ -963,11 +963,6 @@ function PlayerStack:drawRating()
   end
 
   if rating then
-    if self.gfxScale < ClientStack.NORMAL_GFX_SCALE then
-      -- Mini boards skip rating to save vertical space; the right-side label area is reserved
-      -- for name / WINS / LEVEL.
-      return
-    end
     local useLegacyOffsets = true
     self:drawLabel(self.assets.rating, self.theme.ratingLabel_Pos, self.theme.ratingLabel_Scale, useLegacyOffsets)
     self:drawNumber(rating, self.theme.rating_Pos, self.theme.rating_Scale, useLegacyOffsets)
@@ -1096,33 +1091,13 @@ function PlayerStack:drawSpeed()
 end
 
 function PlayerStack:drawLevel()
-  if not self.level then
-    return
-  end
-
-  if self.gfxScale < ClientStack.NORMAL_GFX_SCALE then
-    local centerX = (self.frameOriginX + self.baseWidth / 2) * self.gfxScale
-    local frameTop = self.frameOriginY * self.gfxScale
-    local labelScale = self:miniLabelScale(self.theme.levelLabel_Scale)
-    local labelWidth = self.assets.level:getWidth()
-
-    local labelY = frameTop - ClientStack.MINI_LEVEL_LABEL_TOP_OFFSET
-    GraphicsUtil.draw(self.assets.level, centerX - (labelWidth * labelScale) / 2, labelY, 0, labelScale, labelScale)
-
-    local levelAtlas = self.assets.levelAtlas
-    local numberScaleRatio = math.min(self.gfxScale / ClientStack.NORMAL_GFX_SCALE, ClientStack.MINI_LABEL_MAX_SCALE)
-    local iconScale = 28 / levelAtlas.charWidth * self.theme.level_Scale * numberScaleRatio
-    local iconWidth = 28 * iconScale
-    local numberY = frameTop - ClientStack.MINI_LEVEL_NUMBER_TOP_OFFSET
-    GraphicsUtil.drawQuad(levelAtlas.image, levelAtlas.quads[self.level], centerX - iconWidth / 2, numberY, 0, iconScale, iconScale, 0, 0, self.multiplication)
-  else
-    self:drawLabel(self.assets.level, self.theme.levelLabel_Pos, self.theme.levelLabel_Scale)
-    local x = self:elementOriginXWithOffset(self.theme.level_Pos, false)
-    local y = self:elementOriginYWithOffset(self.theme.level_Pos, false)
-    local levelAtlas = self.assets.levelAtlas
-    local scaleRatio = self.gfxScale / ClientStack.NORMAL_GFX_SCALE
-    GraphicsUtil.drawQuad(levelAtlas.image, levelAtlas.quads[self.level], x, y, 0, 28 / levelAtlas.charWidth * self.theme.level_Scale * scaleRatio, 26 / levelAtlas.charHeight * self.theme.level_Scale * scaleRatio, 0, 0, self.multiplication)
-  end
+  if not self.level then return end
+  self:drawLabel(self.assets.level, self.theme.levelLabel_Pos, self.theme.levelLabel_Scale)
+  local x = self:elementOriginXWithOffset(self.theme.level_Pos, false)
+  local y = self:elementOriginYWithOffset(self.theme.level_Pos, false)
+  local levelAtlas = self.assets.levelAtlas
+  local scaleRatio = self.gfxScale / ClientStack.NORMAL_GFX_SCALE
+  GraphicsUtil.drawQuad(levelAtlas.image, levelAtlas.quads[self.level], x, y, 0, 28 / levelAtlas.charWidth * self.theme.level_Scale * scaleRatio, 26 / levelAtlas.charHeight * self.theme.level_Scale * scaleRatio, 0, 0, self.multiplication)
 end
 
 function PlayerStack:drawAnalyticData()
@@ -1130,15 +1105,15 @@ function PlayerStack:drawAnalyticData()
     return
   end
 
+  -- Position is hardcoded for Player 1; minis go through withPanelTransform
+  -- which puts them in Player-1 coordinate space and then scales/translates
+  -- the result onto each mini's actual screen location.
   local analytic = self.analytic
   local backgroundPadding = 18
   local paddingToAnalytics = 16
   local width = 160
   local height = 600
   local x = paddingToAnalytics + backgroundPadding
-  if self.renderIndex >= 2 then
-    x = consts.CANVAS_WIDTH - paddingToAnalytics - width + backgroundPadding
-  end
   local y = self.frameOriginY * self.gfxScale + backgroundPadding
 
   local iconToTextSpacing = 30

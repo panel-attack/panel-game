@@ -60,19 +60,19 @@ Theme =
     self.main_menu_max_height = 0
 
     self.colors = {
-      menuDefaultBackgroundColor = {1, 1, 1, 0.15},
-      menuDefaultBorderColor = {1, 1, 1, 0.15},
-      menuSelectedBackgroundColor = {0.6, 0.6, 1, 0.15},
-      menuSelectedBorderColor = {0.6, 0.6, 1, 0.15},
-      activeBackgroundColor = {0.2, 0.3, 0.4, 0.9},
-      darkTransparentBackgroundColor = {0, 0, 0, 0.75},
-      highlightTextColor = {1, 1, 0.3, 1},
-      inputSlotDefaultBackgroundColor = {0.2, 0.2, 0.2, 0.9},
-      inputSlotDefaultBorderColor = {0.4, 0.4, 0.4, 0.9},
-      inputSlotSelectedBackgroundColor = {0.2, 0.2, 0.34, 1.0},
-      inputSlotSelectedBorderColor = {0.5, 0.5, 0.8, 1.0},
-      incompleteConfigBackgroundColor = {0.918, 0.251, 0.275, 1.0},
-      configCorrectBackgroundColor = {0.3, .3, .3, 0.7}
+      menuDefaultBackgroundColor = {0.58, 0.22, 0.85, 0.90},
+      menuDefaultBorderColor = {1.0, 0.50, 0.82, 1.0},
+      menuSelectedBackgroundColor = {1.0, 0.08, 0.58, 1.0},
+      menuSelectedBorderColor = {1.0, 0.84, 0.0, 1.0},
+      activeBackgroundColor = {1.0, 0.08, 0.58, 0.95},
+      darkTransparentBackgroundColor = {0.22, 0.05, 0.40, 0.92},
+      highlightTextColor = {1.0, 0.84, 0.0, 1.0},
+      inputSlotDefaultBackgroundColor = {0.58, 0.22, 0.85, 0.90},
+      inputSlotDefaultBorderColor = {1.0, 0.50, 0.82, 1.0},
+      inputSlotSelectedBackgroundColor = {1.0, 0.08, 0.58, 1.0},
+      inputSlotSelectedBorderColor = {1.0, 0.84, 0.0, 1.0},
+      incompleteConfigBackgroundColor = {1.0, 0.08, 0.58, 1.0},
+      configCorrectBackgroundColor = {0.0, 0.85, 0.40, 0.9}
     }
   end
 )

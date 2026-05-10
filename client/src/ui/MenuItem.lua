@@ -24,8 +24,8 @@ local MenuItem = class(
 end,
 UiElement)
 
-MenuItem.PADDING = 2
-MenuItem.GROUP_PADDING = 10
+MenuItem.PADDING = 8
+MenuItem.GROUP_PADDING = 15
 
 ---Takes a label and an optional extra element and makes and combines them into a menu item which is suitable for inserting into a menu
 ---@param label UiElement the label or left element to display
@@ -237,20 +237,29 @@ end
 
 ---Draws the menu item background and selection highlight
 function MenuItem:drawSelf()
-  local baseOpacity = 0.15
+  local cornerRadius = 32
+  local borderWidth = 4
+
   if self.selected then
-    local selectedAdditionalOpacity = 0.5
-    local fillOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 16 + baseOpacity + selectedAdditionalOpacity
-    local borderOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 4 + baseOpacity + selectedAdditionalOpacity
     local bgColor = GAME.theme.colors.menuSelectedBackgroundColor
     local borderColor = GAME.theme.colors.menuSelectedBorderColor
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], fillOpacity)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, borderColor[1], borderColor[2], borderColor[3], borderOpacity)
+
+    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], 1.0, cornerRadius, cornerRadius)
+
+    for w = 1, borderWidth do
+      GraphicsUtil.drawRectangle("line", self.x - w, self.y - w, self.width + 2*w, self.height + 2*w,
+        borderColor[1], borderColor[2], borderColor[3], 1.0, cornerRadius, cornerRadius)
+    end
   else
     local bgColor = GAME.theme.colors.menuDefaultBackgroundColor
     local borderColor = GAME.theme.colors.menuDefaultBorderColor
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], baseOpacity)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, borderColor[1], borderColor[2], borderColor[3], baseOpacity)
+
+    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], bgColor[4], cornerRadius, cornerRadius)
+
+    for w = 1, 1 do
+      GraphicsUtil.drawRectangle("line", self.x - w, self.y - w, self.width + 2*w, self.height + 2*w,
+        borderColor[1], borderColor[2], borderColor[3], borderColor[4], cornerRadius, cornerRadius)
+    end
   end
 end
 

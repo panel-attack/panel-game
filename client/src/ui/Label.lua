@@ -186,13 +186,10 @@ function Label:drawSelf()
   
   local textX = self.x + self.paddingLeft
   local textY = self.y + self.paddingTop
-  if self.textColor then
-    GraphicsUtil.setColor(self.textColor[1], self.textColor[2], self.textColor[3], self.textColor[4])
-    GraphicsUtil.draw(self.drawable, math.round(textX), math.round(textY))
-    GraphicsUtil.setColor(1, 1, 1, 1)
-  else
-    GraphicsUtil.drawClearText(self.drawable, math.round(textX), math.round(textY))
-  end
+  local color = self.textColor or {1, 1, 1, 1}
+  GraphicsUtil.setColor(color[1], color[2], color[3], color[4])
+  GraphicsUtil.draw(self.drawable, math.round(textX), math.round(textY))
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 return Label

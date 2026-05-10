@@ -84,6 +84,85 @@ end)
 
 ClientStack.NORMAL_GFX_SCALE = NORMAL_GFX_SCALE
 
+--------------------------------------------------------------------------------
+-- Shared panel component
+--
+-- Strategy: render every stack as if it were Player 1 (gfxScale = NORMAL), and
+-- wrap the HUD draw in a translate+scale transform that maps Player 1's
+-- coordinate system onto wherever this stack actually lives on the canvas.
+--
+-- For Player 1 the transform is identity. For minis the transform translates
+-- to that mini's panel origin and scales by gfxScale/NORMAL. The existing draw
+-- functions don't have to know whether they're full or mini.
+--
+-- STACK_X / STACK_Y must equal Player 1's actual screen-pixel frame position
+-- so that "Player 1 coords inside the transform" lands at the real stack frame
+-- after the transform is applied.
+--------------------------------------------------------------------------------
+ClientStack.PANEL_LAYOUT = {
+  STACK_X = 228,  -- Player 1's frameOriginX * NORMAL_GFX_SCALE  (76 * 3)
+  STACK_Y = 108,  -- Player 1's frameOriginY * NORMAL_GFX_SCALE  (baseWidth + panelOriginXOffset)
+}
+
+-- Vertical gap between rows of mini stacks; sized so each mini's panel
+-- (which extends above and below its stack frame for HUD) doesn't overlap
+-- the row above. Used by every multi-row mini layout below.
+ClientStack.MINI_LABEL_AREA = 100
+
+-- (panelOriginX, panelOriginY, panelScale) — translate+scale that puts a
+-- Player-1-coord HUD draw at the right screen location for THIS stack.
+function ClientStack:getPanelTransform()
+  local panelScale = self.gfxScale / NORMAL_GFX_SCALE
+  local frameScreenX = self.frameOriginX * self.gfxScale
+  local frameScreenY = self.frameOriginY * self.gfxScale
+  local panelOriginX = frameScreenX - ClientStack.PANEL_LAYOUT.STACK_X * panelScale
+  local panelOriginY = frameScreenY - ClientStack.PANEL_LAYOUT.STACK_Y * panelScale
+  return panelOriginX, panelOriginY, panelScale
+end
+
+-- Wrap fn() so all draw calls inside use Player 1's coordinate system.
+-- The stack's positioning state is temporarily swapped to Player 1's values;
+-- the panel transform then re-projects everything to this stack's actual
+-- screen position and size.
+function ClientStack:withPanelTransform(fn)
+  local panelOriginX, panelOriginY, panelScale = self:getPanelTransform()
+
+  local saved = {
+    gfxScale = self.gfxScale,
+    frameOriginX = self.frameOriginX,
+    frameOriginY = self.frameOriginY,
+    panelOriginX = self.panelOriginX,
+    panelOriginY = self.panelOriginY,
+    origin_x = self.origin_x,
+    mirror_x = self.mirror_x,
+    multiplication = self.multiplication,
+    renderIndex = self.renderIndex,
+  }
+
+  -- Pretend to be Player 1.
+  self.gfxScale = NORMAL_GFX_SCALE
+  self.frameOriginX = ClientStack.PANEL_LAYOUT.STACK_X / NORMAL_GFX_SCALE
+  self.frameOriginY = ClientStack.PANEL_LAYOUT.STACK_Y / NORMAL_GFX_SCALE
+  self.panelOriginX = self.frameOriginX + self.panelOriginXOffset
+  self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
+  self.mirror_x = 1
+  self.multiplication = 0
+  self.renderIndex = 1
+  self.origin_x = self.panelOriginXOffset + self.frameOriginX
+
+  love.graphics.push("transform")
+  love.graphics.translate(panelOriginX, panelOriginY)
+  love.graphics.scale(panelScale, panelScale)
+
+  fn()
+
+  love.graphics.pop()
+
+  for k, v in pairs(saved) do
+    self[k] = v
+  end
+end
+
 -- Provides the X origin to draw an element of the stack
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
 function ClientStack:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
@@ -398,7 +477,9 @@ function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
     local canvasHeight = GAME.globalCanvas:getHeight()
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
-    local gapX = 12
+    -- gapX must fit each mini's analytics column (which sits to the LEFT of its
+    -- frame as part of the shared panel component) between adjacent stacks.
+    local gapX = 100
     -- Vertical gap reserves the label area above the bottom row's mini stacks.
     local gapY = ClientStack.MINI_LABEL_AREA
     local rightMargin = 24
@@ -445,7 +526,9 @@ function ClientStack:moveForRenderIndex5Player(renderIndex)
     local canvasHeight = GAME.globalCanvas:getHeight()
     local topMargin = self.baseWidth + self.panelOriginXOffset
     local bottomMargin = 12
-    local gapX = 12
+    -- gapX must fit each mini's analytics column (which sits to the LEFT of its
+    -- frame as part of the shared panel component) between adjacent stacks.
+    local gapX = 100
     -- Vertical gap reserves the label area above the bottom row's mini stacks.
     local gapY = ClientStack.MINI_LABEL_AREA
     local rightMargin = 24
@@ -689,52 +772,34 @@ function ClientStack:drawAbsoluteMultibar(stop_time, shake_time, pre_stop_time)
   end
 end
 
--- Top-of-element offsets (in screen pixels above the mini stack's frame top).
--- Layout above the frame, going down toward the frame:
---   NAME (top) -> WINS label -> WINS number -> LEVEL label -> LEVEL number -> frame
-ClientStack.MINI_LABEL_AREA = 100
-ClientStack.MINI_NAME_TOP_OFFSET = 98
-ClientStack.MINI_WINS_LABEL_TOP_OFFSET = 78
-ClientStack.MINI_WINS_NUMBER_TOP_OFFSET = 58
-ClientStack.MINI_LEVEL_LABEL_TOP_OFFSET = 38
-ClientStack.MINI_LEVEL_NUMBER_TOP_OFFSET = 18
-ClientStack.MINI_LABEL_MAX_SCALE = 0.6
+-- Default team color used when no team assignment is available (e.g. solo / non-team modes).
+ClientStack.DEFAULT_TEAM_COLOR = {0.2, 0.2, 0.25, 0.85}
 
-function ClientStack:miniLabelScale(themeScale)
-  return math.min(themeScale * (self.gfxScale / NORMAL_GFX_SCALE), ClientStack.MINI_LABEL_MAX_SCALE)
-end
-
+-- Drawn inside withPanelTransform → coordinates are panel-local at scale 1.
+-- Renders a team-colored chip with the player's name centered above the stack.
 function ClientStack:drawPlayerName()
   local username = (self.player.name or "")
-  if self.gfxScale < NORMAL_GFX_SCALE then
-    local centerX = (self.frameOriginX + self.baseWidth / 2) * self.gfxScale
-    local frameTop = self.frameOriginY * self.gfxScale
-    local y = frameTop - ClientStack.MINI_NAME_TOP_OFFSET
-    GraphicsUtil.printf(username, centerX - 100, y, 200, "center", nil, nil, 0)
-  else
-    local useLegacyOffsets = true
-    self:drawString(username, themes[config.theme].name_Pos, useLegacyOffsets, themes[config.theme].name_Font_Size)
-  end
+  local layout = ClientStack.PANEL_LAYOUT
+  local stackWidth = self.baseWidth * NORMAL_GFX_SCALE      -- 312 at NORMAL scale
+  local centerX = layout.STACK_X + stackWidth / 2
+
+  local chipWidth = 240
+  local chipHeight = 36
+  local chipY = layout.STACK_Y - chipHeight - 6              -- sits just above the frame top
+  local chipX = centerX - chipWidth / 2
+
+  local color = self._teamColor or ClientStack.DEFAULT_TEAM_COLOR
+  GraphicsUtil.setColor(color[1], color[2], color[3], color[4] or 0.85)
+  GraphicsUtil.drawRectangle("fill", chipX, chipY, chipWidth, chipHeight, 0)
+  GraphicsUtil.setColor(1, 1, 1, 1)
+
+  local fontDelta = 8                                          -- bump default font size
+  GraphicsUtil.printf(username, chipX, chipY + 6, chipWidth, "center", nil, nil, fontDelta)
 end
 
 function ClientStack:drawWinCount()
-  if self.gfxScale < NORMAL_GFX_SCALE then
-    local centerX = (self.frameOriginX + self.baseWidth / 2) * self.gfxScale
-    local frameTop = self.frameOriginY * self.gfxScale
-    local labelScale = self:miniLabelScale(self.theme.winLabel_Scale)
-    local labelWidth = self.assets.wins:getWidth()
-
-    local labelY = frameTop - ClientStack.MINI_WINS_LABEL_TOP_OFFSET
-    GraphicsUtil.draw(self.assets.wins, centerX - (labelWidth * labelScale) / 2, labelY, 0, labelScale, labelScale)
-
-    local numScale = self:miniLabelScale(self.theme.win_Scale)
-    local numberY = frameTop - ClientStack.MINI_WINS_NUMBER_TOP_OFFSET
-    GraphicsUtil.drawPixelFont(self.player:getWinCountForDisplay(), self.assets.numberPixelFont, centerX, numberY, numScale, numScale, "center", 0)
-  else
-    local useLegacyOffsets = true
-    self:drawLabel(self.assets.wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, useLegacyOffsets)
-    self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, useLegacyOffsets)
-  end
+  self:drawLabel(self.assets.wins, themes[config.theme].winLabel_Pos, themes[config.theme].winLabel_Scale, true)
+  self:drawNumber(self.player:getWinCountForDisplay(), themes[config.theme].win_Pos, themes[config.theme].win_Scale, true)
 end
 
 function ClientStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
