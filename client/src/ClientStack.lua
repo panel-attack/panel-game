@@ -132,6 +132,11 @@ function ClientStack:elementOriginXWithOffset(themePositionOffset, cameFromLegac
   if cameFromLegacyScoreOffset == false and themes[config.theme]:offsetsAreFixed() == false and legacyOffsetIsAlreadyScaled == false then
     xOffset = xOffset * self.gfxScale
   end
+  -- Fixed-theme offsets are screen-space values calibrated for NORMAL_GFX_SCALE; scale them so
+  -- HUD elements stay correctly positioned relative to mini panels at smaller gfxScale values.
+  if themes[config.theme]:offsetsAreFixed() then
+    xOffset = xOffset * (self.gfxScale / NORMAL_GFX_SCALE)
+  end
   local x = self:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled) + xOffset
   return x
 end
@@ -146,6 +151,11 @@ function ClientStack:elementOriginYWithOffset(themePositionOffset, cameFromLegac
   local yOffset = themePositionOffset[2]
   if cameFromLegacyScoreOffset == false and themes[config.theme]:offsetsAreFixed() == false and legacyOffsetIsAlreadyScaled == false then
     yOffset = yOffset * self.gfxScale
+  end
+  -- Fixed-theme offsets are screen-space values calibrated for NORMAL_GFX_SCALE; scale them so
+  -- HUD elements stay correctly positioned relative to mini panels at smaller gfxScale values.
+  if themes[config.theme]:offsetsAreFixed() then
+    yOffset = yOffset * (self.gfxScale / NORMAL_GFX_SCALE)
   end
   local y = self:elementOriginY(cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled) + yOffset
   return y

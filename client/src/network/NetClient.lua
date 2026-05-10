@@ -117,14 +117,15 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     else
       for challengeKey, active in pairs(playerChallenges) do
         if isRoomInviteKey(challengeKey) then
-          -- Only remove the outgoing invite if the room is FULL or the challenge is obsolete.
-          -- Don't remove it just because that specific slot filled up - another slot might still be available!
+          -- Remove stale slot-specific invites when their slot closes, while preserving
+          -- other slot invites for the same room/player.
           local roomNumberStr, slotNumberStr = challengeKey:match("^room_(%d+)_(%d+)$")
           local roomNum = tonumber(roomNumberStr)
           local room = roomNum and self.lobbyDataV2.rooms[roomNum]
           local roomIsFull = room and room.openSlots and #room.openSlots == 0
+          local slotStillOpen = isInviteSlotStillOpen(challengeKey)
           
-          if roomIsFull or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+          if roomIsFull or not slotStillOpen or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
             playerChallenges[challengeKey] = nil
           end
         elseif roomNumber and not isRoomInviteKey(challengeKey) then
@@ -142,14 +143,15 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     else
       for challengeKey, active in pairs(playerChallenges) do
         if isRoomInviteKey(challengeKey) then
-          -- Only remove the incoming invite if the room is FULL or the challenge is obsolete.
-          -- Don't remove it just because that specific slot filled up - another slot might still be available!
+          -- Remove stale slot-specific invites when their slot closes, while preserving
+          -- other slot invites for the same room/player.
           local roomNumberStr, slotNumberStr = challengeKey:match("^room_(%d+)_(%d+)$")
           local roomNum = tonumber(roomNumberStr)
           local room = roomNum and self.lobbyDataV2.rooms[roomNum]
           local roomIsFull = room and room.openSlots and #room.openSlots == 0
+          local slotStillOpen = isInviteSlotStillOpen(challengeKey)
           
-          if roomIsFull or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
+          if roomIsFull or not slotStillOpen or isInviteObsoleteForJoinedPlayer(publicId, challengeKey) then
             playerChallenges[challengeKey] = nil
           end
         elseif roomNumber and not isRoomInviteKey(challengeKey) then

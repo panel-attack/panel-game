@@ -25,6 +25,22 @@ local function titleDrawPressStart(percent)
   GraphicsUtil.printf(loc("continue_button"), x, y, textMaxWidth, "center", {1,1,1,percent}, nil, 16)
 end
 
+local function drawCustomTitleLogo(image)
+  local imageWidth, imageHeight = image:getDimensions()
+  local maxWidth = 420
+  local maxHeight = 260
+  local scale = math.min(maxWidth / imageWidth, maxHeight / imageHeight)
+  local drawWidth = imageWidth * scale
+  local drawHeight = imageHeight * scale
+  local x = (consts.CANVAS_WIDTH - drawWidth) / 2
+  local y = 70
+
+  -- Draw a subtle backing plate so the replacement logo cleanly covers baked-in title logos.
+  GraphicsUtil.drawRectangle("fill", x - 12, y - 12, drawWidth + 24, drawHeight + 24, 0, 0, 0, 0.78)
+  GraphicsUtil.drawRectangle("line", x - 12, y - 12, drawWidth + 24, drawHeight + 24, 1, 1, 1, 0.2)
+  GraphicsUtil.draw(image, x, y, 0, scale, scale)
+end
+
 function TitleScreen:update(dt)
   self.backgroundImg:update(dt)
   local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
@@ -36,6 +52,9 @@ end
 
 function TitleScreen:draw()
   self.backgroundImg:draw()
+  if GAME.theme.images.unofficial_brand_square then
+    drawCustomTitleLogo(GAME.theme.images.unofficial_brand_square)
+  end
   titleDrawPressStart(((math.sin(5 * love.timer.getTime()) / 2 + .5) ^ .5) / 2 + .5)
 end
 

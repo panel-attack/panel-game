@@ -35,6 +35,20 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
     width = 1,
     height = 10
   }))
+
+  if GAME.theme.images.unofficial_brand_square then
+    local brandImage = ui.ImageContainer({
+      image = GAME.theme.images.unofficial_brand_square,
+      width = 220,
+      height = 220,
+      hAlign = "center"
+    })
+    contentStack:addElement(brandImage)
+    contentStack:addElement(ui.UiElement({
+      width = 1,
+      height = 12
+    }))
+  end
   
   -- Message lines
   local messageLine1 = ui.Label({

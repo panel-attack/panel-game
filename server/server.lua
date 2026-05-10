@@ -112,6 +112,7 @@ local time = os.time
 ---@field leaderboard Leaderboard
 ---@field persistence Persistence
 ---@field _shuttingDown boolean
+---@field recentJoinRequests table<string, number> last timestamp of join request per player (key: "playerId_roomNumber")
 local Server = class(
 ---@param self Server
 ---@param databaseParam ServerDB
@@ -128,6 +129,7 @@ local Server = class(
     self.playerToRoom = {}
     self.spectatorToRoom = {}
     self.nameToPlayer = {}
+    self.recentJoinRequests = {}  -- Track timestamps of recent join requests for idempotency
     assert(databaseParam ~= nil)
     self.database = databaseParam
     self.persistence = persistence
@@ -327,7 +329,17 @@ function Server:lobbyStateV2()
       slotRequests = {},
     }
 
+    -- Iterate a shallow snapshot so clearProposals can safely mutate self.proposals
+    -- elsewhere in the same tick without invalidating this traversal.
+    local proposalsSnapshot = {}
     for senderId, receivers in pairs(self.proposals) do
+      proposalsSnapshot[senderId] = {}
+      for receiverId, proposals in pairs(receivers) do
+        proposalsSnapshot[senderId][receiverId] = proposals
+      end
+    end
+
+    for senderId, receivers in pairs(proposalsSnapshot) do
       for receiverId, proposals in pairs(receivers) do
         for proposalKey, active in pairs(proposals) do
           if active then
@@ -369,16 +381,66 @@ end
 ---@param roomNumber integer? optional room number for team room invites
 ---@param slotNumber integer? optional slot number for team room invites
 function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber)
-  logger.debug(string.format("processChallengeUpdate: sender=%s, receiver=%s, gameMode=%s, active=%s, room=%s, slot=%s",
+      if not sender or not receiver then
+        return
+      end
+
+      -- Reject malformed IDs defensively to avoid corrupt proposal keys/state.
+      if type(sender.publicPlayerID) ~= "string" or sender.publicPlayerID == "" then
+        logger.debug("Invalid sender publicPlayerID, ignoring challenge update")
+        return
+      end
+      if type(receiver.publicPlayerID) ~= "string" or receiver.publicPlayerID == "" then
+        logger.debug("Invalid receiver publicPlayerID, ignoring challenge update")
+        return
+      end
+
+      -- CRITICAL: Validate sender and receiver still exist before proceeding (#44)
+      if not self.publicIdToPlayer[sender.publicPlayerID] then
+        logger.debug("Sender no longer exists, ignoring challenge update")
+        return
+      end
+      if not self.publicIdToPlayer[receiver.publicPlayerID] then
+        logger.debug("Receiver no longer exists, ignoring challenge update")
+        return
+      end
+      
+      logger.debug(string.format("processChallengeUpdate: sender=%s, receiver=%s, gameMode=%s, active=%s, room=%s, slot=%s",
     sender and sender.name or "nil",
     receiver and receiver.name or "nil",
     tostring(gameModeId),
     tostring(challengeActive),
     tostring(roomNumber),
     tostring(slotNumber)))
+  
+  -- Idempotency: if this is a room invite (with roomNumber), reject duplicate requests within 2 seconds
+  if roomNumber and challengeActive then
+    roomNumber = tonumber(roomNumber)
+    local requestedSlot = tonumber(slotNumber)
+    if not roomNumber then
+      logger.debug("Room invite rejected: invalid room number")
+      return
+    end
+    -- Team-room invites are slot specific; require a sane positive integer slot.
+    if not requestedSlot or requestedSlot < 1 or requestedSlot ~= math.floor(requestedSlot) then
+      logger.debug("Room invite rejected: invalid slot number")
+      return
+    end
+    local now = time()
+    local inviteKey = roomNumber .. "_" .. requestedSlot
+    local requestKey = sender.publicPlayerID .. "_" .. receiver.publicPlayerID .. "_invite_" .. inviteKey
+    local lastRequestTime = self.recentJoinRequests[requestKey]
+    if lastRequestTime and (now - lastRequestTime) < 2 then
+      logger.debug("Player " .. sender.name .. " room invite to " .. receiver.name .. " rejected (duplicate within 2s)")
+      return
+    end
+    self.recentJoinRequests[requestKey] = now
+  end
   if sender and receiver then
     -- Check if this is a room invite (joining existing room)
     if roomNumber then
+      roomNumber = tonumber(roomNumber)
+      slotNumber = tonumber(slotNumber)
       logger.debug(string.format("Room invite: sender.state=%s, receiver.state=%s", sender.state, receiver.state))
       if sender.state ~= "lobby" and sender.state ~= "character select" then
         logger.debug("Rejecting: sender not in lobby or character select")
@@ -390,25 +452,37 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
       end
       local room = self.rooms[roomNumber]
       if room and not room:isFull() then
-        local requestedSlot = tonumber(slotNumber)
-        if requestedSlot then
-          local slotOpen = tableUtils.trueForAny(room:getOpenSlots(), function(openSlot)
-            return tonumber(openSlot) == requestedSlot
-          end)
-          if not slotOpen then
-            logger.debug(string.format("Room invite rejected: requested slot %s is not open in room %d", tostring(slotNumber), roomNumber))
-            return
-          end
+        if not slotNumber or slotNumber < 1 or slotNumber ~= math.floor(slotNumber) then
+          logger.debug(string.format("Room invite rejected: invalid slot %s", tostring(slotNumber)))
+          return
+        end
+        if room.maxPlayers and slotNumber > room.maxPlayers then
+          logger.debug(string.format("Room invite rejected: requested slot %d exceeds max players %d", slotNumber, room.maxPlayers))
+          return
+        end
+        local slotOpen = tableUtils.trueForAny(room:getOpenSlots(), function(openSlot)
+          return tonumber(openSlot) == slotNumber
+        end)
+        if not slotOpen then
+          logger.debug(string.format("Room invite rejected: requested slot %s is not open in room %d", tostring(slotNumber), roomNumber))
+          return
         end
 
-        logger.debug(string.format("%s invites %s to join room %d at slot %d", sender.name, receiver.name, roomNumber, slotNumber or 0))
+        logger.debug(string.format("%s invites %s to join room %d at slot %d", sender.name, receiver.name, roomNumber, slotNumber))
 
         -- Check if receiver has previously invited sender to this room (mutual acceptance)
-        local proposalKey = "room_" .. roomNumber .. "_" .. (slotNumber or 0)
+        local proposalKey = "room_" .. roomNumber .. "_" .. slotNumber
         local previouslyProposed = self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID][proposalKey]
 
         if previouslyProposed then
-          -- Mutual acceptance - add whoever is not already in the *target room*.
+            -- CRITICAL: Prevent simultaneous mutual acceptances (#59)
+            -- Clear proposal BEFORE join to prevent race condition where both directions trigger join
+            local proposalKey = "room_" .. roomNumber .. "_" .. slotNumber
+            if self.proposals[receiver.publicPlayerID] and self.proposals[receiver.publicPlayerID][sender.publicPlayerID] then
+              self.proposals[receiver.publicPlayerID][sender.publicPlayerID][proposalKey] = nil
+            end
+            
+            -- Mutual acceptance - add whoever is not already in the *target room*.
           -- This mirrors vs/time-attack handshake for both directions:
           -- 1) room owner invites first, target accepts
           -- 2) target requests first, owner approves
@@ -560,10 +634,31 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
+  -- Idempotency check: reject duplicate join requests within 2 seconds (button mashing protection)
+  local requestKey = player.publicPlayerID .. "_" .. roomNumber
+  local now = time()
+  local lastRequestTime = self.recentJoinRequests[requestKey]
+  if lastRequestTime and (now - lastRequestTime) < 2 then
+    logger.debug("Player " .. player.name .. " join request to room " .. roomNumber .. " rejected (duplicate within 2s)")
+    return false
+  end
+  self.recentJoinRequests[requestKey] = now
+
   local room = self.rooms[roomNumber]
   if not room then
     logger.warn("Player " .. player.name .. " tried to join non-existent room " .. roomNumber)
     return false
+  end
+
+  if slotNumber ~= nil then
+    if slotNumber < 1 or slotNumber ~= math.floor(slotNumber) then
+      logger.warn("Player " .. player.name .. " sent invalid slot number for join request: " .. tostring(slotNumber))
+      return false
+    end
+    if room.maxPlayers and slotNumber > room.maxPlayers then
+      logger.warn("Player " .. player.name .. " sent out-of-range slot for join request: " .. tostring(slotNumber))
+      return false
+    end
   end
 
   if self.playerToRoom[player] == room then
@@ -576,22 +671,35 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
-  if slotNumber ~= nil then
-    local slotOpen = tableUtils.trueForAny(room:getOpenSlots(), function(openSlot)
-      return tonumber(openSlot) == slotNumber
-    end)
-    if not slotOpen then
-      logger.warn("Player " .. player.name .. " tried to join unavailable slot " .. tostring(slotNumber) .. " in room " .. roomNumber)
-      return false
-    end
+  -- Critical: Don't allow joins if game already started or is over
+  local roomState = room:state()
+  if roomState ~= "lobby" and roomState ~= "character select" then
+    logger.warn("Player " .. player.name .. " tried to join room " .. roomNumber .. " in state '" .. roomState .. "'")
+    return false
   end
 
-  -- Slot number is informational - we always add to the next available position
+  -- Also check player state
+  if player.state ~= "lobby" and player.state ~= "character select" then
+    logger.warn("Player " .. player.name .. " cannot join room while in state '" .. player.state .. "'")
+    return false
+  end
+
+  -- Slot number is informational - we always add to the next available position.
+  -- (Note: slotNumber parameter is request intent, not enforced assignment)
   local actualSlot = #room.players + 1
+  if slotNumber then
+    logger.debug(string.format("Player %s requested slot %d, assigning to actual slot %d", player.name, slotNumber, actualSlot))
+  end
 
   -- Enable no delay for multiplayer
   ---@diagnostic disable-next-line: invisible
   player.connection:enableNoDelay(true)
+
+  -- Re-check room lifecycle before mutating it; the room may have closed between validation and join.
+  if not self.rooms[roomNumber] or self.rooms[roomNumber] ~= room then
+    logger.warn("Player " .. player.name .. " join aborted: room " .. roomNumber .. " no longer available")
+    return false
+  end
 
   -- Add player to the room
   local success = room:addPlayer(player)
