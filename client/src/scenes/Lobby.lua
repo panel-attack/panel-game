@@ -451,8 +451,8 @@ end
 ---@return function
 function Lobby:requestJoinRoomFunction(room, slotNumber)
   return function()
-    logger.debug("Requesting to join room " .. tostring(room.roomNumber) .. " at slot " .. tostring(slotNumber))
-    GAME.netClient:requestJoinRoom(room.roomNumber, slotNumber)
+    logger.info("Requesting team-room invite for room " .. tostring(room.roomNumber) .. " at slot " .. tostring(slotNumber))
+    GAME.netClient:invitePlayerToRoom(GAME.localPlayer.publicId, room.roomNumber, slotNumber, room.gameModeId)
     GAME.theme:playValidationSfx()
   end
 end
@@ -591,10 +591,10 @@ function Lobby:createRoomButtons(personalizedLobbyData)
         roomName = roomName .. "\nWaiting: " .. table.concat(waitingSlots, ", ")
       end
 
-      -- Clicking does nothing (or could show options like "Leave")
-      onClick = function()
-        -- Already in this room, no action needed
-        GAME.theme:playMoveSfx()
+      -- Clicking the local team's room opens room actions instead of doing nothing
+      onClick = function(button)
+        self:openLocalRoomSubMenu(room, button)
+        GAME.theme:playValidationSfx()
       end
     elseif hasOpenSlots then
       -- Waiting room - show join option
@@ -680,7 +680,9 @@ function Lobby:openRoomSubMenu(room, button)
   if room.openSlots then
     for _, slotNumber in ipairs(room.openSlots) do
       local slotLabel = getSlotLabel(room, slotNumber)
-      local joinButton = ui.TextButton({
+      local joinButton = ui.IconTextButton({
+        icon = GAME.theme:getCheckboxImage(false),
+        iconSize = 16,
         label = ui.Label({text = loc("lb_join") .. " " .. slotLabel, translate = false}),
         width = 120,
         onClick = self:requestJoinRoomFunction(room, slotNumber)
@@ -722,6 +724,66 @@ function Lobby:openRoomSubMenu(room, button)
   self.uiRoot:addChild(subMenuLine)
 end
 
+---@param room LobbyRoomV2
+---@param button Button the button click that opens this submenu originated from
+function Lobby:openLocalRoomSubMenu(room, button)
+  if self.localRoomSubMenu then
+    self.localRoomSubMenu:yieldFocus()
+  end
+
+  local x, y = button:getScreenPos()
+
+  local subMenu = ui.ScrollMenu({
+    x = x + self.lobbyMenu.width + 8,
+    y = y,
+    hAlign = "left",
+    vAlign = "top",
+    height = 88,
+    width = 120,
+    padding = 0,
+    childGap = 8,
+  })
+
+  local leaveButton = ui.TextButton({
+    label = ui.Label({text = "Leave team game", translate = false}),
+    width = 120,
+    onClick = function()
+      self.teamCreateButton:onClick(button)
+    end
+  })
+  subMenu:addChild(leaveButton)
+
+  local backButton = ui.TextButton({
+    label = ui.Label({text = "back"}),
+    width = 120,
+    onClick = function()
+      GAME.theme:playCancelSfx()
+      subMenu:yieldFocus()
+    end})
+
+  subMenu:addChild(backButton)
+  subMenu:select(subMenu.children[1])
+  self.localRoomSubMenu = subMenu
+
+  local subMenuLine = ui.Line({
+    x = x + button.width + 8,
+    y = y + button.height / 2,
+    height = button.height,
+    points = {x + button.width + 8, y + button.height / 2, subMenu.x - 8, y + button.height / 2}
+  })
+  self.localRoomSubMenuLine = subMenuLine
+
+  self.lobbyMenu:setFocus(subMenu, function()
+    self.localRoomSubMenu:detach()
+    self.localRoomSubMenu = nil
+    self.localRoomSubMenuLine:detach()
+    self.localRoomSubMenuLine = nil
+  end)
+
+  self.uiRoot:addChild(subMenu)
+  self.uiRoot:addChild(subMenuLine)
+end
+
 ---@param playerId PublicPlayerID
 ---@param button Button the button the click that opens this submenu originated from
 function Lobby:openPlayerSubMenu(playerId, button)
@@ -745,9 +807,14 @@ function Lobby:openPlayerSubMenu(playerId, button)
   })
 
   subMenu.playerId = playerId
+  local localPlayerInfo = lobbyDataV2.players[GAME.localPlayer.publicId]
+  local localInRoom = localPlayerInfo and localPlayerInfo.roomNumber ~= nil
+  local myRoom = localInRoom and lobbyDataV2.rooms[localPlayerInfo.roomNumber] or nil
+  local isLocalTeamLeader = myRoom and myRoom.players and myRoom.players[1] == GAME.localPlayer.publicId
+
   -- If the target player is in a room with open slots, offer quick join-slot buttons
   local playerInfo = lobbyDataV2.players[playerId]
-  if playerInfo and playerInfo.roomNumber then
+  if (not localInRoom) and playerInfo and playerInfo.roomNumber then
     local targetRoom = lobbyDataV2.rooms[playerInfo.roomNumber]
     if targetRoom and targetRoom.openSlots then
       for _, slotNumber in ipairs(targetRoom.openSlots) do
@@ -762,10 +829,8 @@ function Lobby:openPlayerSubMenu(playerId, button)
     end
   end
 
-  -- If LOCAL player is in a partial team room, offer invite buttons
-  local localPlayerInfo = lobbyDataV2.players[GAME.localPlayer.publicId]
-  if localPlayerInfo and localPlayerInfo.roomNumber then
-    local myRoom = lobbyDataV2.rooms[localPlayerInfo.roomNumber]
+  -- If LOCAL player leads a partial team room, offer invite buttons
+  if isLocalTeamLeader then
     if myRoom and myRoom.openSlots and #myRoom.openSlots > 0 then
       for _, slotNumber in ipairs(myRoom.openSlots) do
         local slotLabel = getSlotLabel(myRoom, slotNumber)
@@ -795,46 +860,49 @@ function Lobby:openPlayerSubMenu(playerId, button)
     end
   end
 
-  local vsButton = ui.LobbyChallengeButton({
-    gameModeId = GameModes.IDs.TWO_PLAYER_VS,
-    iconSize = 16,
-    playerId = playerId,
-    label = ui.Label({text = "vs"}),
-    acceptImage = GAME.theme:getFightImage(),
-    proposeImage = GAME.theme:getCheckboxImage(false),
-    withdrawImage = GAME.theme:getCheckboxImage(true),
-    width = 120
-  })
-  
-  subMenu:addChild(vsButton)
+  -- If local player is already in a room, hide regular VS/Time Attack challenges
+  if not localInRoom then
+    local vsButton = ui.LobbyChallengeButton({
+      gameModeId = GameModes.IDs.TWO_PLAYER_VS,
+      iconSize = 16,
+      playerId = playerId,
+      label = ui.Label({text = "vs"}),
+      acceptImage = GAME.theme:getFightImage(),
+      proposeImage = GAME.theme:getCheckboxImage(false),
+      withdrawImage = GAME.theme:getCheckboxImage(true),
+      width = 120
+    })
 
-  local timeAttackButton = ui.LobbyChallengeButton({
-    gameModeId = GameModes.IDs.TWO_PLAYER_TIME_ATTACK,
-    iconSize = 16,
-    playerId = playerId,
-    label = ui.Label({text = "gm_time_attack"}),
-    acceptImage = GAME.theme:getFightImage(),
-    proposeImage = GAME.theme:getCheckboxImage(false),
-    withdrawImage = GAME.theme:getCheckboxImage(true),
-    width = 120
-  })
-  subMenu:addChild(timeAttackButton)
+    subMenu:addChild(vsButton)
 
-  if lobbyDataV2.outgoingChallenges[playerId] then
-    if lobbyDataV2.outgoingChallenges[playerId][GameModes.IDs.TWO_PLAYER_VS] == true then
-      vsButton:setState(vsButton.challengeStates.PROPOSING)
-    end
-    if lobbyDataV2.outgoingChallenges[playerId][GameModes.IDs.TWO_PLAYER_TIME_ATTACK] == true then
-      timeAttackButton:setState(timeAttackButton.challengeStates.PROPOSING)
-    end
-  end
+    local timeAttackButton = ui.LobbyChallengeButton({
+      gameModeId = GameModes.IDs.TWO_PLAYER_TIME_ATTACK,
+      iconSize = 16,
+      playerId = playerId,
+      label = ui.Label({text = "gm_time_attack"}),
+      acceptImage = GAME.theme:getFightImage(),
+      proposeImage = GAME.theme:getCheckboxImage(false),
+      withdrawImage = GAME.theme:getCheckboxImage(true),
+      width = 120
+    })
+    subMenu:addChild(timeAttackButton)
 
-  if lobbyDataV2.incomingChallenges[playerId] then
-    if lobbyDataV2.incomingChallenges[playerId][GameModes.IDs.TWO_PLAYER_VS] then
-      vsButton:setState(vsButton.challengeStates.CHALLENGED)
+    if lobbyDataV2.outgoingChallenges[playerId] then
+      if lobbyDataV2.outgoingChallenges[playerId][GameModes.IDs.TWO_PLAYER_VS] == true then
+        vsButton:setState(vsButton.challengeStates.PROPOSING)
+      end
+      if lobbyDataV2.outgoingChallenges[playerId][GameModes.IDs.TWO_PLAYER_TIME_ATTACK] == true then
+        timeAttackButton:setState(timeAttackButton.challengeStates.PROPOSING)
+      end
     end
-    if lobbyDataV2.incomingChallenges[playerId][GameModes.IDs.TWO_PLAYER_TIME_ATTACK] then
-      timeAttackButton:setState(timeAttackButton.challengeStates.CHALLENGED)
+
+    if lobbyDataV2.incomingChallenges[playerId] then
+      if lobbyDataV2.incomingChallenges[playerId][GameModes.IDs.TWO_PLAYER_VS] then
+        vsButton:setState(vsButton.challengeStates.CHALLENGED)
+      end
+      if lobbyDataV2.incomingChallenges[playerId][GameModes.IDs.TWO_PLAYER_TIME_ATTACK] then
+        timeAttackButton:setState(timeAttackButton.challengeStates.CHALLENGED)
+      end
     end
   end
 
@@ -1018,6 +1086,17 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
     if not room or not hasOpenSlots then
       -- Room disappeared or is now full
       self.roomSubMenu:yieldFocus()
+    end
+  end
+
+  if self.localRoomSubMenu then
+    local localData = lobbyDataV2.players[GAME.localPlayer.publicId]
+    local room = localData and localData.roomNumber and lobbyDataV2.rooms[localData.roomNumber]
+    local isLocalRoom = room and room.players and tableUtils.trueForAny(room.players, function(playerId)
+      return playerId == GAME.localPlayer.publicId
+    end)
+    if not isLocalRoom then
+      self.localRoomSubMenu:yieldFocus()
     end
   end
 

@@ -20,11 +20,6 @@ local NavigationStack = class(
 )
 
 function NavigationStack:push(newScene, transition)
-  if not newScene then
-    logger.error("Tried to push a nil scene onto NavigationStack")
-    return false
-  end
-
   local activeScene = self.scenes[#self.scenes]
   if not transition then
     transition = DirectTransition()
@@ -44,8 +39,6 @@ function NavigationStack:push(newScene, transition)
     logger.debug("Pushing scene " .. newScene.name .. " on top of stack")
     self.scenes[#self.scenes+1] = newScene
   end
-
-  return true
 end
 
 -- transitions to the previous scene optionally using a specified transition

@@ -96,12 +96,28 @@ local Server = class(
 )
 
 function Server:start()
-  logger.info("Starting up server with port: " .. (SERVER_PORT or 49569))
-  local s = socket.bind("*", SERVER_PORT or 49569)
+  local port = SERVER_PORT or 49569
+  logger.info("Starting up server with port: " .. port)
+
+  -- Retrying helps when a previous local server instance just exited and the port
+  -- is not yet immediately reusable on all platforms.
+  local attempts = 10
+  local s
+  for i = 1, attempts do
+    s = socket.bind("*", port)
+    if s then
+      break
+    end
+    if i < attempts then
+      logger.warn("Port " .. port .. " not available yet (attempt " .. i .. "/" .. attempts .. "), retrying...")
+      socket.sleep(0.2)
+    end
+  end
+
   if s then
     self.socket = s
   else
-    error("Failed to create server socket. Check if there are any other instances blocking the port")
+    error("Failed to create server socket on port " .. port .. ". Check for another running server instance.")
   end
   self.socket:settimeout(0)
 
@@ -398,6 +414,13 @@ end
 ---@param slotNumber integer
 ---@return boolean success
 function Server:handleJoinRoom(player, roomNumber, slotNumber)
+  roomNumber = tonumber(roomNumber)
+  slotNumber = tonumber(slotNumber)
+  if not roomNumber then
+    logger.warn("Player " .. player.name .. " sent invalid room number for join request: " .. tostring(roomNumber))
+    return false
+  end
+
   local room = self.rooms[roomNumber]
   if not room then
     logger.warn("Player " .. player.name .. " tried to join non-existent room " .. roomNumber)
@@ -686,6 +709,7 @@ function Server:processMessage(message, connection)
       self:create_room(message.gameMode, player)
       return true
     elseif player.state == "lobby" and message.joinRoomRequest then
+      logger.info("Received joinRoomRequest from " .. player.name .. " for room " .. tostring(message.joinRoomRequest.roomNumber) .. " slot " .. tostring(message.joinRoomRequest.slotNumber))
       self:handleJoinRoom(player, message.joinRoomRequest.roomNumber, message.joinRoomRequest.slotNumber)
       return true
     elseif message.leaderboard_request then

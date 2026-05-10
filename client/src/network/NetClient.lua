@@ -507,6 +507,7 @@ local NetClient = class(function(self)
     lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
     addToRoom = messageListeners.addToRoom,
+    playerJoinedRoom = messageListeners.playerJoinedRoom,
     challengeUpdate = messageListeners.challengeUpdate,
     leave_room = messageListeners.leave_room,
   }
@@ -672,6 +673,7 @@ end
 ---@param slotNumber integer
 function NetClient:requestJoinRoom(roomNumber, slotNumber)
   if self:isConnected() then
+    logger.info("Sending joinRoomRequest for room " .. tostring(roomNumber) .. " slot " .. tostring(slotNumber))
     self.tcpClient:sendRequest(ClientMessages.requestJoinRoom(roomNumber, slotNumber))
   end
 end
