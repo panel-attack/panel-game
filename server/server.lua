@@ -818,12 +818,15 @@ function Server:broadCastLobbyIfChanged()
     for _, connection in pairs(self.connections) do
       local player = self.connectionToPlayer[connection]
       if player then
-        -- Send to lobby players and anyone already attached to a room.
-        -- Room members still need lobby state updates so their clients can keep
-        -- the room entry in sync and transition cleanly when the room becomes full.
+        -- Send to lobby players and players in partial rooms.
+        -- Full rooms should transition via room/game messages instead of another lobby snapshot.
         local inLobby = player.state == "lobby"
-        local inRoom = self.playerToRoom[player] ~= nil
-        if inLobby or inRoom then
+        local inPartialRoom = false
+        local room = self.playerToRoom[player]
+        if room and not room:isFull() then
+          inPartialRoom = true
+        end
+        if inLobby or inPartialRoom then
           connection:sendJson(messageV2)
         end
       end

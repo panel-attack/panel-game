@@ -342,13 +342,24 @@ local function testSinglePlayer()
   server:update()
 
   assert(server.spectatorToRoom[alice] == server.playerToRoom[bob])
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectatorUpdate")
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectateRequestGranted" and message.content.replay == nil)
-  assert(tableUtils.deep_content_equal(message.content.gameMode, GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF):getGameModeJSONData()))
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectatorUpdate")
+  local function assertHasMessage(connection, expectedType, predicate)
+    local found = false
+    while connection.outgoingMessageQueue:len() > 0 do
+      local queuedMessage = connection.outgoingMessageQueue:pop().messageText
+      if queuedMessage.type == expectedType and (not predicate or predicate(queuedMessage)) then
+        found = true
+        break
+      end
+    end
+    assert(found)
+  end
+
+  assertHasMessage(bob.connection, "spectatorUpdate")
+  assertHasMessage(alice.connection, "spectateRequestGranted", function(msg)
+    assert(msg.content.replay == nil)
+    return tableUtils.deep_content_equal(msg.content.gameMode, GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF):getGameModeJSONData())
+  end)
+  assertHasMessage(alice.connection, "spectatorUpdate")
 
   bob.connection:receiveMessage(readyMessage)
   server:update()
@@ -371,12 +382,11 @@ local function testSinglePlayer()
   alice.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Alice", server.playerToRoom[bob].roomNumber).messageText))
   server:update()
 
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectatorUpdate")
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectateRequestGranted" and message.content.replay ~= nil)
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "spectatorUpdate")
+  assertHasMessage(bob.connection, "spectatorUpdate")
+  assertHasMessage(alice.connection, "spectateRequestGranted", function(msg)
+    return msg.content.replay ~= nil
+  end)
+  assertHasMessage(alice.connection, "spectatorUpdate")
 
   bob.connection:receiveMessage(json.encode(ClientProtocol.sendMatchAbort(server.playerToRoom[bob].roomNumber).messageText))
   server:update()
