@@ -56,6 +56,32 @@ local function resolveRequestedGameMode(requestedGameMode)
   return nil
 end
 
+local function resolveAbortInputGapThreshold(latencyTolerance, playerCount)
+  local count = tonumber(playerCount) or 2
+  local tolerance = latencyTolerance
+  if tolerance ~= "strict" and tolerance ~= "normal" and tolerance ~= "relaxed" then
+    tolerance = "normal"
+  end
+
+  if count >= 3 then
+    if tolerance == "strict" then
+      return 140
+    elseif tolerance == "relaxed" then
+      return 320
+    else
+      return 220
+    end
+  else
+    if tolerance == "strict" then
+      return 80
+    elseif tolerance == "relaxed" then
+      return 180
+    else
+      return 100
+    end
+  end
+end
+
 local pairs = pairs
 local ipairs = ipairs
 local time = os.time
@@ -797,6 +823,8 @@ function Server:processMessage(message, connection)
     elseif player.state == "lobby" and message.roomRequest then
       local requestedGameMode = resolveRequestedGameMode(message.gameMode)
       if requestedGameMode then
+        requestedGameMode.latencyTolerance = message.latencyTolerance
+        requestedGameMode.abortInputGapThreshold = resolveAbortInputGapThreshold(message.latencyTolerance, requestedGameMode.playerCount)
         self:create_room(requestedGameMode, player)
         return true
       else

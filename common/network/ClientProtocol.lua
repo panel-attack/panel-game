@@ -165,12 +165,16 @@ function ClientProtocol.sendTaunt(direction, index)
 end
 
 ---@param gameMode GameMode
-function ClientProtocol.sendRoomRequest(gameMode)
+---@param latencyTolerance ("strict"|"normal"|"relaxed")? optional room abort-latency tolerance
+function ClientProtocol.sendRoomRequest(gameMode, latencyTolerance)
   local gameModeData = gameMode:getGameModeJSONData()
   local roomRequestMessage = {
     recipient = "server",
     type = "roomRequest",
-    content = { gameMode = gameModeData }
+    content = {
+      gameMode = gameModeData,
+      latencyTolerance = latencyTolerance,
+    }
   }
   return {
     messageType = msgTypes.jsonMessage,

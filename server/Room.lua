@@ -31,6 +31,7 @@ local TeamUtils = require("common.data.TeamUtils")
 ---@field ranked boolean if the next match is anticipated to be ranked
 ---@field rankedReasons string[]
 ---@field recentGameAbort boolean tracks if the most recent game was ended by an abort
+---@field abortInputGapThreshold integer threshold for treating abort as latency error
 ---@field teams Team[]? teams for team-based game modes
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
 local Room = class(
@@ -54,6 +55,7 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.ranked = false
   self.rankedReasons = {}
   self.recentGameAbort = false
+  self.abortInputGapThreshold = (gameMode and gameMode.abortInputGapThreshold) or ((self.maxPlayers >= 3) and 220 or 100)
 
   Signal.turnIntoEmitter(self)
   self:createSignal("playerJoined")
@@ -470,7 +472,7 @@ function Room:handleGameAbort(sender)
     logger.info(sender.name .. " aborted the game")
 
     local inputCountDifference = self.game:getInputCountDifference()
-    if inputCountDifference > 100 then
+    if inputCountDifference > self.abortInputGapThreshold then
       logger.info("abort was judged as legitimate with an inputCountDifference of " .. inputCountDifference)
       self:abortGame(sender, "latency_error")
     else

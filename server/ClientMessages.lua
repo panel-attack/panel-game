@@ -186,6 +186,7 @@ end
 
 function ClientMessages.sanitizeRoomRequest(roomRequest)
   local gameMode = nil
+  local latencyTolerance = nil
 
   -- Preferred format from ClientProtocol.sendRoomRequest
   if roomRequest.content then
@@ -208,9 +209,18 @@ function ClientMessages.sanitizeRoomRequest(roomRequest)
     gameMode = roomRequest.content
   end
 
+  if roomRequest.content then
+    latencyTolerance = roomRequest.content.latencyTolerance
+  end
+
+  if not latencyTolerance then
+    latencyTolerance = roomRequest.latencyTolerance
+  end
+
   return {
     roomRequest = true,
-    gameMode = gameMode
+    gameMode = gameMode,
+    latencyTolerance = latencyTolerance,
   }
 end
 
