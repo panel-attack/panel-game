@@ -187,6 +187,10 @@ function ServerProtocol.addToRoom(room, replay)
     }
   end
 
+  -- Always clear before conditionally re-setting because addToRoomTemplate is shared
+  -- across calls (every call does `addToRoomMessage = addToRoomTemplate`); a leftover
+  -- teamWins from a previous team-room call would otherwise leak into a non-team room.
+  content.teamWins = nil
   if room.team_win_counts then
     content.teamWins = {}
     for teamIndex, wins in ipairs(room.team_win_counts) do
