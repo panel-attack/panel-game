@@ -62,6 +62,10 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self:createSignal("matchStart")
   self:createSignal("matchEnd")
   self:createSignal("pauseToggled")
+  -- Emitted after a match ends (cleanly, by abort, or by forfeit) to signal that the
+  -- room should be torn down so server and client state cannot diverge. Listened to by
+  -- the Server (Server:create_room wires this to closeRoom).
+  self:createSignal("roomShouldClose")
 
   -- Initialize all initially passed players the same way addPlayer does.
   for i, player in ipairs(self.players) do
@@ -150,6 +154,15 @@ function Room:onPlayerSettingsUpdate(player)
         self:broadcastJson(ServerProtocol.updateRankedStatus(self.roomNumber, ranked_match_approved, reasons))
       end
     end
+
+    -- Diagnostic: print every player's readiness flags after every settings update so we
+    -- can see exactly which player is blocking the match-start handshake.
+    local readyParts = {}
+    for i, p in ipairs(self.players) do
+      readyParts[i] = string.format("%s[wantsReady=%s loaded=%s ready=%s isReady=%s]",
+        tostring(p.name), tostring(p.wantsReady), tostring(p.loaded), tostring(p.ready), tostring(ServerPlayer.isReady(p)))
+    end
+    logger.info("Room " .. self.roomNumber .. " readiness after " .. tostring(player.name) .. " update: " .. table.concat(readyParts, " "))
 
     if tableUtils.trueForAll(self.players, ServerPlayer.isReady) then
       self:start_match()
@@ -447,6 +460,9 @@ function Room:handleGameOverOutcome(message, sender)
       )
     )
     self.game = nil
+    -- Tear the room down once the result is broadcast. Keeps server state from drifting
+    -- away from clients, who unconditionally pop back to the lobby on leaveRoom.
+    self:emitSignal("roomShouldClose", self, "match ended")
   end
 end
 
@@ -533,6 +549,23 @@ function Room:handlePlayerDisconnect(sender, reason)
   else
     logger.info(self.roomNumber .. ": treating disconnect from " .. sender.name .. " as a forfeit")
   end
+
+  -- If every player has now disconnected mid-game, no one will ever submit an outcome
+  -- report, so handleGameOverOutcome won't fire and the room would become a zombie.
+  -- Force-close in that case so server state cannot drift.
+  if self.game then
+    local allDisconnected = true
+    for i = 1, #self.players do
+      if not self.game.disconnectedPlayers[i] then
+        allDisconnected = false
+        break
+      end
+    end
+    if allDisconnected then
+      logger.info(self.roomNumber .. ": all players disconnected mid-game, closing room")
+      self:emitSignal("roomShouldClose", self, "all players disconnected")
+    end
+  end
 end
 
 ---@param sender ServerPlayer
@@ -543,6 +576,7 @@ function Room:abortGame(sender, reason)
   self:prepare_character_select()
   self.game = nil
   self.recentGameAbort = true
+  self:emitSignal("roomShouldClose", self, reason or "match aborted")
 end
 
 function Room:togglePause(sender, paused)

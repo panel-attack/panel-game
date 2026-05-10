@@ -637,6 +637,9 @@ function Server:create_room(gameMode, ...)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.processGameEnd)
   newRoom:connectSignal("pauseToggled", self, self.setLobbyChanged)
+  -- After every match (clean end or abort) the room emits roomShouldClose; the Server
+  -- is the only thing that owns playerToRoom and self.rooms, so closing must happen here.
+  newRoom:connectSignal("roomShouldClose", self, self.onRoomShouldClose)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
 
@@ -644,6 +647,18 @@ function Server:create_room(gameMode, ...)
     self:clearProposals(player)
     self.playerToRoom[player] = newRoom
     player:sendJson(ServerProtocol.addToRoom(newRoom, nil))
+  end
+end
+
+---Signal handler for Room:roomShouldClose. Signal callbacks are invoked as
+---callback(subscriber, ...emitArgs); Room emits with (self, reason), so we receive
+---(server, room, reason). Idempotent against rooms that were already closed by
+---another path (disconnect, explicit leave) since closeRoom checks self.rooms.
+---@param room Room the room asking to be closed
+---@param reason string? human-readable reason, forwarded to clients via leaveRoom
+function Server:onRoomShouldClose(room, reason)
+  if room and self.rooms[room.roomNumber] == room then
+    self:closeRoom(room, reason)
   end
 end
 

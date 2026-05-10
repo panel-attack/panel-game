@@ -277,14 +277,32 @@ end
 
 function BattleRoom:updateLoadingState()
   local fullyLoaded = true
+  local blockerName, blockerAsset = nil, nil
   for i = 1, #self.players do
     local player = self.players[i]
-    if not characters[player.settings.characterId].fullyLoaded or not stages[player.settings.stageId].fullyLoaded then
+    local character = characters[player.settings.characterId]
+    local stage = stages[player.settings.stageId]
+    if not character or not character.fullyLoaded then
       fullyLoaded = false
+      if not blockerName then
+        blockerName, blockerAsset = player.name, "character " .. tostring(player.settings.characterId)
+      end
+    end
+    if not stage or not stage.fullyLoaded then
+      fullyLoaded = false
+      if not blockerName then
+        blockerName, blockerAsset = player.name, "stage " .. tostring(player.settings.stageId)
+      end
     end
   end
 
   if self.allAssetsLoaded ~= fullyLoaded then
+    if fullyLoaded then
+      logger.info("BattleRoom: allAssetsLoaded -> true")
+    else
+      logger.info(string.format("BattleRoom: allAssetsLoaded -> false (blocker: %s needs %s)",
+        tostring(blockerName), tostring(blockerAsset)))
+    end
     self.allAssetsLoaded = fullyLoaded
     self:emitSignal("allAssetsLoadedChanged", self.allAssetsLoaded)
     if self.allAssetsLoaded then

@@ -163,8 +163,12 @@ end
 
 function MatchParticipant:setWantsReady(wantsReady)
   if wantsReady ~= self.settings.wantsReady then
+    logger.info(string.format("setWantsReady %s -> %s for %s (isLocal=%s)",
+      tostring(self.settings.wantsReady), tostring(wantsReady), tostring(self.name), tostring(self.isLocal)))
     self.settings.wantsReady = wantsReady
     self:emitSignal("wantsReadyChanged", wantsReady)
+  else
+    logger.info(string.format("setWantsReady noop %s for %s", tostring(wantsReady), tostring(self.name)))
   end
 end
 
@@ -177,6 +181,8 @@ end
 
 function MatchParticipant:setLoaded(hasLoaded)
   if hasLoaded ~= self.hasLoaded then
+    logger.info(string.format("setLoaded %s -> %s for %s (isLocal=%s)",
+      tostring(self.hasLoaded), tostring(hasLoaded), tostring(self.name), tostring(self.isLocal)))
     self.hasLoaded = hasLoaded
     self:emitSignal("hasLoadedChanged", hasLoaded)
   end
