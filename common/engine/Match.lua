@@ -706,7 +706,10 @@ end
 function Match:isIrrecoverablyDesynced()
   for target, sourceArray in pairs(self.garbageSources) do
     for i, source in ipairs(sourceArray) do
-      if source.clock + MAX_LAG < target.clock then
+      -- Once a stack has ended, its clock can stop advancing while survivors still run.
+      -- Treating that as a desync causes false "network unstable" aborts in 3+ player games
+      -- right after an elimination.
+      if not source:game_ended() and not target:game_ended() and source.clock + MAX_LAG < target.clock then
         return true
       end
     end
