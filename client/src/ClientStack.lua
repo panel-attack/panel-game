@@ -67,7 +67,7 @@ function(self, args)
   self.baseHeight = 204
   self.panelOriginXOffset = 4
   self.panelOriginYOffset = 4
-  self.gfxScale = 3
+  self.gfxScale = ClientStack.NORMAL_GFX_SCALE
   -- stacks no longer have a canvas but some functions bool check it to determine whether they should run or not
   -- mostly for tests / not running extra in some scenarios; should be removed once they have been adjusted
   self.canvas = true
@@ -78,6 +78,9 @@ function(self, args)
   Signal.turnIntoEmitter(self)
   self:createSignal("dangerMusicChanged")
 end)
+
+-- gfxScale at which theme label sizes are calibrated (used to proportionally scale HUD elements)
+ClientStack.NORMAL_GFX_SCALE = 3
 
 -- Provides the X origin to draw an element of the stack
 -- cameFromLegacyScoreOffset - set to true if this used to use the "score" position in legacy themes
@@ -166,6 +169,8 @@ function ClientStack:drawLabel(drawable, themePositionOffset, scale, cameFromLeg
     cameFromLegacyScoreOffset = false
   end
 
+  local effectiveScale = scale * (self.gfxScale / ClientStack.NORMAL_GFX_SCALE)
+
   local percentWidthShift = 0
   -- If we are mirroring from the right, move the full width left
   if cameFromLegacyScoreOffset == false or themes[config.theme]:offsetsAreFixed() then
@@ -174,10 +179,10 @@ function ClientStack:drawLabel(drawable, themePositionOffset, scale, cameFromLeg
     end
   end
 
-  local x = self:labelOriginXWithOffset(themePositionOffset, scale, cameFromLegacyScoreOffset, drawable:getWidth(), percentWidthShift, legacyOffsetIsAlreadyScaled)
+  local x = self:labelOriginXWithOffset(themePositionOffset, effectiveScale, cameFromLegacyScoreOffset, drawable:getWidth(), percentWidthShift, legacyOffsetIsAlreadyScaled)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset, legacyOffsetIsAlreadyScaled)
 
-  GraphicsUtil.draw(drawable, x, y, 0, scale, scale)
+  GraphicsUtil.draw(drawable, x, y, 0, effectiveScale, effectiveScale)
 end
 
 function ClientStack:drawBar(image, quad, themePositionOffset, height, yOffset, rotate, scale)
@@ -198,9 +203,10 @@ function ClientStack:drawNumber(number, themePositionOffset, scale, cameFromLega
   if cameFromLegacyScoreOffset == nil then
     cameFromLegacyScoreOffset = false
   end
+  local effectiveScale = scale * (self.gfxScale / ClientStack.NORMAL_GFX_SCALE)
   local x = self:elementOriginXWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
   local y = self:elementOriginYWithOffset(themePositionOffset, cameFromLegacyScoreOffset)
-  GraphicsUtil.drawPixelFont(number, self.assets.numberPixelFont, x, y, scale, scale, "center", 0)
+  GraphicsUtil.drawPixelFont(number, self.assets.numberPixelFont, x, y, effectiveScale, effectiveScale, "center", 0)
 end
 
 function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScoreOffset, fontSize)
@@ -223,34 +229,33 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   if fontSize == nil then
     fontSize = GraphicsUtil.fontSize
   end
-  local fontDelta = fontSize - GraphicsUtil.fontSize
+  local effectiveFontSize = fontSize * (self.gfxScale / ClientStack.NORMAL_GFX_SCALE)
+  local fontDelta = effectiveFontSize - GraphicsUtil.fontSize
 
   GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
 end
 
 -- Sets up renderIndex-specific properties and assets
--- Configures stack positioning parameters for a specific render index (1-4)
+-- Configures stack positioning parameters for a specific render index (1-5)
 -- For 2-player: 1=left, 2=right
--- For 4-player: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
+-- For 3-5 player: 1=left (full size), 2-N=stacked right (smaller)
 function ClientStack:setupForRenderIndex(renderIndex)
   self.renderIndex = renderIndex
 
-  if renderIndex == 1 then
+  -- odd renderIndex = left-oriented (mirror_x=1), even = right-oriented (mirror_x=-1)
+  if renderIndex % 2 == 1 then
     self.mirror_x = 1
     self.multiplication = 0
-  elseif renderIndex == 2 then
-    self.mirror_x = -1
-    self.multiplication = 1
-  elseif renderIndex == 3 then
-    self.mirror_x = 1
-    self.multiplication = 0
-  elseif renderIndex == 4 then
-    self.mirror_x = -1
-    self.multiplication = 1
   else
-    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1-4.")
+    self.mirror_x = -1
+    self.multiplication = 1
   end
-  -- Use modulo to map 3->1, 4->2 for asset packs (only 2 asset packs exist)
+
+  if renderIndex < 1 or renderIndex > 5 then
+    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1-5.")
+  end
+
+  -- Use modulo to map to one of 2 asset packs
   local assetIndex = ((renderIndex - 1) % 2) + 1
   self:assignAssets(GAME.theme:getIngameAssetPack(assetIndex))
 end
@@ -374,6 +379,30 @@ function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
       local bottomY = topMargin + (stackHeight + gap) * 2
       self:moveToPosition(rightX, bottomY)
     end
+  end
+end
+
+-- Positions the stack in a 5-player layout with responsive scaling (all right side, vertically stacked)
+-- renderIndex: 1=left (full size), 2=top-right, 3, 4, 5=stacked below (smaller)
+function ClientStack:moveForRenderIndex5Player(renderIndex)
+  if renderIndex == 1 then
+    self:moveForRenderIndex(1)
+  else
+    self:setupForRenderIndex(renderIndex)
+
+    local canvasWidth = GAME.globalCanvas:getWidth()
+    local topMargin = self.baseWidth + self.panelOriginXOffset
+    local bottomMargin = 12
+    local gap = 8
+
+    -- Responsive scaling for 4 stacks on the right
+    self.gfxScale = self:calculateResponsiveScale(4, topMargin, bottomMargin, gap)
+    local stackWidth = self:canvasWidth()
+    local stackHeight = self:canvasHeight()
+    local rightX = canvasWidth - stackWidth - 24
+
+    local slot = renderIndex - 2  -- 0-indexed slot on the right side
+    self:moveToPosition(rightX, topMargin + slot * (stackHeight + gap))
   end
 end
 

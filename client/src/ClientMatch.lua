@@ -319,6 +319,8 @@ function ClientMatch:moveStacks()
           self.stacks[stackMetadata.stackIndex]:moveForRenderIndex3Player(stackMetadata.renderIndex)
         elseif #self.stacks == 4 then
           self.stacks[stackMetadata.stackIndex]:moveForRenderIndex4PlayerHorizontal(stackMetadata.renderIndex)
+        elseif #self.stacks == 5 then
+          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex5Player(stackMetadata.renderIndex)
         else
           self.stacks[stackMetadata.stackIndex]:moveForRenderIndex(stackMetadata.renderIndex)
         end
@@ -344,6 +346,8 @@ function ClientMatch:moveStacks()
       stack:moveForRenderIndex3Player(i)
     elseif #self.stacks == 4 then
       stack:moveForRenderIndex4PlayerHorizontal(i)
+    elseif #self.stacks == 5 then
+      stack:moveForRenderIndex5Player(i)
     else
       stack:moveForRenderIndex(i)
     end

@@ -1090,7 +1090,8 @@ function PlayerStack:drawLevel()
     local x = self:elementOriginXWithOffset(self.theme.level_Pos, false)
     local y = self:elementOriginYWithOffset(self.theme.level_Pos, false)
     local levelAtlas = self.assets.levelAtlas
-    GraphicsUtil.drawQuad(levelAtlas.image, levelAtlas.quads[self.level], x, y, 0, 28 / levelAtlas.charWidth * self.theme.level_Scale, 26 / levelAtlas.charHeight * self.theme.level_Scale, 0, 0, self.multiplication)
+    local scaleRatio = self.gfxScale / ClientStack.NORMAL_GFX_SCALE
+    GraphicsUtil.drawQuad(levelAtlas.image, levelAtlas.quads[self.level], x, y, 0, 28 / levelAtlas.charWidth * self.theme.level_Scale * scaleRatio, 26 / levelAtlas.charHeight * self.theme.level_Scale * scaleRatio, 0, 0, self.multiplication)
   end
 end
 
