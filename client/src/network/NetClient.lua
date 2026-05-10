@@ -15,6 +15,7 @@ local LoginRoutine = require("client.src.network.LoginRoutine")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelData = require("common.data.LevelData")
 local GameModes = require("common.data.GameModes")
+local TeamUtils = require("common.data.TeamUtils")
 
 ---@enum NetClientStates
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
@@ -745,9 +746,28 @@ function NetClient:reportLocalGameResult(winners)
       -- all players tied (everyone died simultaneously)
       self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(0))
     else
-      -- 1 = my team won, 2 = my team lost
-      local localWon = tableUtils.trueForAny(winners, function(p) return p.isLocal end)
-      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(localWon and 1 or 2))
+      -- "Did MY TEAM win" — not "is my own stack in the winners list". A teammate
+      -- who died is still on the winning team if their teammate finished off the
+      -- enemies. Without this, the dead teammate would report 2 (lost) while the
+      -- alive teammate reports 1 (won), the server would see the team disagree, and
+      -- the whole match would resolve as a tie instead of a team win.
+      local localTeamWon = false
+      local match = self.room.match
+      if match and match.engine and match.engine.teams then
+        local winningTeam = match.engine:getWinningTeam()
+        if winningTeam then
+          for i, player in ipairs(match.players) do
+            if player.isLocal then
+              local localTeamIndex = TeamUtils.getPlayerTeamIndex(match.engine.teams, i)
+              if localTeamIndex == winningTeam.id then
+                localTeamWon = true
+              end
+              break
+            end
+          end
+        end
+      end
+      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(localTeamWon and 1 or 2))
     end
   else
     -- non-team: report winner's player number, or 0 for any tie
