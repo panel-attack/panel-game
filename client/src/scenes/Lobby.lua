@@ -191,15 +191,15 @@ function Lobby:initLobbyMenu()
     end
 
     garbageMenu:addChild(garbageButton(
-      "Garbage hits all opponents",
-      "Each attack hits every enemy player individually — great for aggressive solo play.",
+      "Broadcast",
+      "Your attack is cloned and sent to every enemy simultaneously. Total damage scales with enemy count — in a 2v2 your combos deal twice the total damage of a 1v1.",
       function(b)
         openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.allMode), closeTeamMenuChain)
       end
     ))
     garbageMenu:addChild(garbageButton(
-      "Garbage shared by enemy team",
-      "Attacks are pooled and split evenly across the enemy team — rewards coordinated team play.",
+      "Round Robin",
+      "Attacks rotate through enemies one at a time. Your team shares one rotation counter, so attacks fan out evenly — total output rate stays the same regardless of enemy count.",
       function(b)
         openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.sharedMode), closeTeamMenuChain)
       end
