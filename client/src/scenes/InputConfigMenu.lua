@@ -47,6 +47,9 @@ function InputConfigMenu:setSettingKeyState(keySettingState)
   self.settingKey = keySettingState ~= KEY_SETTING_STATE.NOT_SETTING
   self.settingKeyState = keySettingState
   self.menu:setEnabled(not self.settingKey)
+  if self.backMenuItem and self.backMenuItem.textButton then
+    self.backMenuItem.textButton:setEnabled(not self.settingKey)
+  end
 
   -- Update back button color based on configuration completeness
   if self.backMenuItem and self.backMenuItem.textButton then
@@ -359,6 +362,9 @@ function InputConfigMenu:update(dt)
   -- Only allow menu navigation when not setting a key
   if self.menu and not self.settingKey then
     self.menu:receiveInputs()
+    if self.backMenuItem and self.backMenuItem.textButton then
+      self.backMenuItem.textButton:receiveInputs(GAME.input)
+    end
   end
 
   local noKeysHeld = (tableUtils.first(inputManager.allKeys.isPressed, function (value)
