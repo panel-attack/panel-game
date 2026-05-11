@@ -1315,6 +1315,11 @@ function Server:handleSpectateRequest(message, player)
   end
 
   if requestedRoom then
+    if requestedRoom.reservedSlots[player.publicPlayerID] then
+      logger.info("Player " .. player.name .. " has a reserved slot in room " .. requestedRoom.roomNumber .. " — redirecting spectate to player join")
+      self:handleJoinRoom(player, requestedRoom.roomNumber, nil)
+      return
+    end
     local roomState = requestedRoom:state()
     if (roomState == "character select" or roomState == "playing" or roomState == "paused") then
       logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
