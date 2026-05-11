@@ -160,6 +160,7 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
       if gameMode.garbageMode then
         clientMatch.engine:setGarbageMode(gameMode.garbageMode)
       end
+      clientMatch.engine:setupTeamGarbageTargets()
     end
   end
 
@@ -274,6 +275,23 @@ function ClientMatch:run()
   self:playCountdownSfx()
   self:playTimeLimitDepletingSfx()
 
+  -- drain visuals and confirm elimination for stacks that died mid-match
+  local liveCount = 0
+  for _, stack in ipairs(self.stacks) do
+    if stack:game_ended() then
+      stack:runGameOver(self.engine.clock)
+    end
+    if stack.canvas then
+      liveCount = liveCount + 1
+    end
+  end
+
+  -- reposition survivors when a board retires
+  if self._lastLiveCount and liveCount ~= self._lastLiveCount then
+    self:repositionLiveStacks()
+  end
+  self._lastLiveCount = liveCount
+
   if self.engine:hasEnded() then
     self.engine:handleMatchEnd()
     self:handleMatchEnd()
@@ -290,7 +308,7 @@ end
 
 function ClientMatch:runGameOver()
   for _, stack in ipairs(self.stacks) do
-    stack:runGameOver()
+    stack:runGameOver(self.engine.clock)
   end
 end
 
@@ -307,6 +325,7 @@ function ClientMatch:start()
   -- here on client side we can simply acknowledge that only up to 2 players per match are supported
 
   self:moveStacks()
+  self._lastLiveCount = #self.stacks
   for _, stack in ipairs(self.stacks) do
     stack:connectSignal("dangerMusicChanged", self, self.updateDangerMusic)
   end
@@ -382,6 +401,37 @@ function ClientMatch:moveStacks()
       stack:moveForRenderIndex4PlayerHorizontal(i)
     elseif #self.stacks == 5 then
       stack:moveForRenderIndex5Player(i)
+    else
+      stack:moveForRenderIndex(i)
+    end
+  end
+end
+
+-- Repositions only live (canvas ~= nil) stacks using the appropriate layout for their count.
+-- Called when a player retires mid-match to transition survivors to a tighter layout.
+function ClientMatch:repositionLiveStacks()
+  local liveStacks = {}
+  for _, stack in ipairs(self.stacks) do
+    if stack.canvas then
+      liveStacks[#liveStacks + 1] = stack
+    end
+  end
+
+  table.sort(liveStacks, function(a, b)
+    if a.is_local == b.is_local then
+      return a.player_number < b.player_number
+    else
+      return a.is_local
+    end
+  end)
+
+  for i, stack in ipairs(liveStacks) do
+    if #liveStacks >= 5 then
+      stack:moveForRenderIndex5Player(i)
+    elseif #liveStacks == 4 then
+      stack:moveForRenderIndex4PlayerHorizontal(i)
+    elseif #liveStacks == 3 then
+      stack:moveForRenderIndex3Player(i)
     else
       stack:moveForRenderIndex(i)
     end
@@ -838,7 +888,7 @@ function ClientMatch:render()
         stack:render(self.engine.ended)
       end
 
-      if stack.garbageTarget then
+      if stack.garbageTarget and stack.canvas then
         Telegraph:render(stack, stack.garbageTarget)
       end
     end

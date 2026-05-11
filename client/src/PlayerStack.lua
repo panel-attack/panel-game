@@ -127,12 +127,21 @@ end
 
 function PlayerStack:onGameOver(engine)
   SoundController:playSfx(themes[config.theme].sounds.game_over)
+  -- Defer panel flip and elimination notify — let in-flight pop animations finish first.
+  -- applyVisualDeath() and notifyServerStackEliminated() are called from runGameOver().
+  self._pendingVisualDeath = true
+  self._pendingEliminationClock = engine.game_over_clock
+end
 
+-- Flips all panels to dead state and spawns the death pop effects.
+-- Called from runGameOver() once in-flight animations have drained.
+function PlayerStack:applyVisualDeath()
+  self._pendingVisualDeath = nil
   if self.canvas then
     local popsize = "small"
-    local panels = engine.panels
+    local panels = self.engine.panels
     for row = 1, #panels do
-      for col = 1, engine.width do
+      for col = 1, self.engine.width do
         local panel = panels[row][col]
         panel.state = "dead"
         if row == #panels then
@@ -141,8 +150,8 @@ function PlayerStack:onGameOver(engine)
       end
     end
   end
-
-  self:notifyServerStackEliminated()
+  -- once the death pop effects above drain, the board slot is vacated
+  self._retireAfterDeath = true
 end
 
 -- Default no-op; overridden in client/src/network/PlayerStack.lua for network play.
@@ -263,6 +272,14 @@ function PlayerStack:onRollback(engine)
   --prof.push("rollback copy analytics")
   self.analytic:rollbackToFrame(self.clock)
   --prof.pop("rollback copy analytics")
+
+  -- If rollback restored us to a pre-death state, cancel all deferred death actions
+  if engine.game_over_clock <= 0 then
+    self._pendingVisualDeath = nil
+    self._retireAfterDeath = nil
+    self._pendingEliminationClock = nil
+    self.canvas = true  -- restore render if we'd already vacated
+  end
 end
 
 function PlayerStack:onRollbackSaved(frame)
@@ -304,7 +321,25 @@ function PlayerStack:rewindToFrame(frame)
   self.engine:rewindToFrame(frame)
 end
 
-function PlayerStack:runGameOver()
+-- Called each frame for dead stacks (and each frame once the whole match ends).
+-- matchClock is Match.clock, which keeps advancing even after this stack stopped running.
+function PlayerStack:runGameOver(matchClock)
+  -- vacate the board slot once death pop effects have finished
+  if self._retireAfterDeath and self.pop_q:len() == 0 then
+    self._retireAfterDeath = nil
+    self.canvas = nil
+  end
+
+  -- flip panels to dead once pre-death pop effects have drained
+  if self._pendingVisualDeath and self.pop_q:len() == 0 then
+    self:applyVisualDeath()
+  end
+
+  -- send elimination once the death is confirmed past the rollback window
+  if self._pendingEliminationClock and matchClock and matchClock > self._pendingEliminationClock + GARBAGE_DELAY_LAND_TIME then
+    self:notifyServerStackEliminated()
+  end
+
   self:update_popfxs()
   self:update_cards()
 end
