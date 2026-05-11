@@ -115,15 +115,13 @@ function TeamBannerHeader.draw(gameMode, players, teamWins, canvasWidth)
   GraphicsUtil.drawRectangle("fill", t1X, bannerY, bannerWidth, bannerHeight,
     TEAM_COLORS[1][1], TEAM_COLORS[1][2], TEAM_COLORS[1][3], 0.85)
   GraphicsUtil.printf(t1Name, t1X, bannerY + 10, bannerWidth, "center", nil, nil, 4)
-  GraphicsUtil.setColor(TEAM_COLORS[1][1], TEAM_COLORS[1][2], TEAM_COLORS[1][3], 1)
-  GraphicsUtil.printf(tostring(t1.wins), t1X, winY, bannerWidth, "center", nil, 4)
+  GraphicsUtil.printf(tostring(t1.wins), t1X, winY, bannerWidth, "center", TEAM_COLORS[1], nil, 4)
 
   local t2X = math.min(canvasWidth - sideMargin - bannerWidth, centerX + timerHalfGap)
   GraphicsUtil.drawRectangle("fill", t2X, bannerY, bannerWidth, bannerHeight,
     TEAM_COLORS[2][1], TEAM_COLORS[2][2], TEAM_COLORS[2][3], 0.85)
   GraphicsUtil.printf(t2Name, t2X, bannerY + 10, bannerWidth, "center", nil, nil, 4)
-  GraphicsUtil.setColor(TEAM_COLORS[2][1], TEAM_COLORS[2][2], TEAM_COLORS[2][3], 1)
-  GraphicsUtil.printf(tostring(t2.wins), t2X, winY, bannerWidth, "center", nil, 4)
+  GraphicsUtil.printf(tostring(t2.wins), t2X, winY, bannerWidth, "center", TEAM_COLORS[2], nil, 4)
 
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
