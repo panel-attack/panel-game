@@ -603,24 +603,30 @@ end
 
 -- RGBA for the per-team background tint behind a row. Covers up to 8 teams
 -- so FFA (3p/4p) gets distinct colors per slot, not just pink/purple.
+-- Alpha pushed up + slight saturation so the stripes assert against a darker
+-- button background (orange + pink shared R/G channels — they couldn't visually
+-- separate at lower alpha).
 local TEAM_ROW_TINT = {
-  [1] = {1,    0.55, 0.75, 0.65},  -- pink
-  [2] = {0.65, 0.4,  0.95, 0.65},  -- purple
-  [3] = {0.45, 1,    0.45, 0.65},  -- green
-  [4] = {1,    1,    0.45, 0.65},  -- yellow
-  [5] = {1,    0.6,  0.2,  0.65},  -- orange
-  [6] = {0.45, 0.7,  1,    0.65},  -- blue
-  [7] = {0.45, 1,    1,    0.65},  -- cyan
-  [8] = {1,    0.45, 0.45, 0.65},  -- red
+  [1] = {1,    0.45, 0.7,  0.92},  -- pink
+  [2] = {0.55, 0.3,  0.95, 0.92},  -- purple
+  [3] = {0.35, 0.85, 0.4,  0.92},  -- green
+  [4] = {0.95, 0.85, 0.3,  0.92},  -- yellow
+  [5] = {1,    0.55, 0.15, 0.92},  -- orange
+  [6] = {0.3,  0.6,  1,    0.92},  -- blue
+  [7] = {0.35, 0.95, 0.95, 0.92},  -- cyan
+  [8] = {1,    0.35, 0.35, 0.92},  -- red
 }
 
 local function teamRowTint(teamIndex)
   return TEAM_ROW_TINT[teamIndex] or TEAM_ROW_TINT[1]
 end
 
--- Orange button background — picked specifically so the pink and purple row
--- stripes both have clear contrast against the underlying button color.
-local TEAM_ROOM_BUTTON_BG = {1, 0.55, 0.15, 0.9}
+-- Dark navy button background — neutral so any team color reads cleanly on top.
+-- (Tried orange — pink/orange share R/G channels, so pink barely registered.)
+local TEAM_ROOM_BUTTON_BG = {0.12, 0.15, 0.24, 0.95}
+-- Solid-color accent down the left edge of each tinted row, full alpha. Doubles
+-- the readability win on top of the row fill.
+local TEAM_ROW_ACCENT_W = 6
 
 
 -----------------
@@ -954,19 +960,20 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     button.isLocalPlayerRoom = isLocalPlayerRoom
 
     -- Per-row team tints behind the label (only the local team room sets this).
-    -- drawSelf is overridden so we first paint our own orange button background
-    -- (so pink + purple stripes both contrast), then paint the team-tinted row
-    -- stripes, then let the label render normally on top via drawChildren.
+    -- Draw order inside the override:
+    --   1) dark-navy button background (neutral → pink/purple read clearly on top)
+    --   2) outline
+    --   3) full-alpha team-color accent down the left edge of each row
+    --   4) soft team-color fill across the rest of the row
+    -- Label text is rendered later in drawChildren, on top of the stripes.
     if rowTints and #rowTints > 0 then
       button._rowTints = rowTints
       button.drawSelf = function(self)
-        -- Orange background instead of the default Button background.
         GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height,
           TEAM_ROOM_BUTTON_BG[1], TEAM_ROOM_BUTTON_BG[2], TEAM_ROOM_BUTTON_BG[3], TEAM_ROOM_BUTTON_BG[4],
           self.CORNER_RADIUS, self.CORNER_RADIUS)
         self:drawOutline()
 
-        -- Team-colored stripes per row, lined up with the label rows.
         local font = self.label.drawable:getFont()
         local lineHeight = font:getHeight()
         local stripeX = self.x + 6
@@ -975,8 +982,12 @@ function Lobby:createRoomButtons(personalizedLobbyData)
         for i, tint in ipairs(self._rowTints) do
           if tint then
             local stripeY = labelTopY + (i - 1) * lineHeight
+            -- Soft fill across the row
             GraphicsUtil.drawRectangle("fill", stripeX, stripeY, stripeW, lineHeight,
                                        tint[1], tint[2], tint[3], tint[4])
+            -- Solid accent on the left edge for unmistakable team identity
+            GraphicsUtil.drawRectangle("fill", stripeX, stripeY, TEAM_ROW_ACCENT_W, lineHeight,
+                                       tint[1], tint[2], tint[3], 1)
           end
         end
         GraphicsUtil.setColor(1, 1, 1, 1)
