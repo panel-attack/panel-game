@@ -30,8 +30,8 @@ local function titleDrawUnofficialHeader()
   local y = 26
 
   -- Soft shadow + larger text for readability without a boxed banner.
-  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y + 2, headerWidth, "center", {0.12, 0.06, 0.18, 0.85}, nil, 26)
-  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y, headerWidth, "center", {0.88, 0.72, 1, 1}, nil, 26)
+  GraphicsUtil.printf("Unofficial Team & FFA Mode", 0, y + 2, headerWidth, "center", {0.12, 0.06, 0.18, 0.85}, nil, 26)
+  GraphicsUtil.printf("Unofficial Team & FFA Mode", 0, y, headerWidth, "center", {0.88, 0.72, 1, 1}, nil, 26)
 end
 
 function TitleScreen:update(dt)

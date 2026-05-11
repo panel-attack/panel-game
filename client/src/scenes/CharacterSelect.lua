@@ -1102,26 +1102,21 @@ function CharacterSelect:drawTeamBannerHeader()
                         GAME.globalCanvas:getWidth())
 end
 
--- Tints a soft team-colored panel behind each player's waiting-room slot so
--- "who's on which team" reads at a glance. Only fires for shared team modes.
+-- Paints team-wide colored bands behind the character-select layout so
+-- "who's on which team" is unmistakable. Fires only for shared team modes
+-- (2v2, asymmetric) — skipped in FFA and solo where players aren't grouped.
 function CharacterSelect:drawTeamPlayerBackgrounds()
   if not (self.battleRoom and self.battleRoom.mode) then return end
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
   if not TeamBannerHeader.isSharedTeamMode(self.battleRoom.mode) then return end
 
-  local TeamUtils = require("common.data.TeamUtils")
-  local teams = self.battleRoom.mode and self.battleRoom.mode.playersPerTeam
-  if not teams then return end
-
   local GraphicsUtil = require("client.src.graphics.graphics_util")
   local consts = require("common.engine.consts")
-  local panelW = consts.CANVAS_WIDTH / math.max(1, #self.battleRoom.players)
-  local panelTop = 90       -- below the banner header (banner ends ~y=86)
-  local panelBottom = consts.CANVAS_HEIGHT - 60
-  local panelH = panelBottom - panelTop
+  local mode = self.battleRoom.mode
+  local players = self.battleRoom.players
 
   local function teamIndexForPosition(i)
-    local p = self.battleRoom.mode.playersPerTeam
+    local p = mode.playersPerTeam
     if type(p) == "number" then return math.floor((i - 1) / p) + 1 end
     if type(p) == "table" then
       local cum = 0
@@ -1133,12 +1128,40 @@ function CharacterSelect:drawTeamPlayerBackgrounds()
     return i
   end
 
-  for i, player in ipairs(self.battleRoom.players) do
-    local idx = teamIndexForPosition(i)
-    local color = TeamBannerHeader.colors[idx] or TeamBannerHeader.colors[1]
-    GraphicsUtil.drawRectangle("fill", (i - 1) * panelW, panelTop, panelW, panelH,
-                               color[1], color[2], color[3], 0.18)
+  -- Player slots are laid out left-to-right by index across the canvas.
+  -- A team's band spans the columns occupied by its players. Painting in
+  -- two passes (band + top accent stripe) makes the split read instantly
+  -- without needing to peek at the small banner up top.
+  local slotW = consts.CANVAS_WIDTH / math.max(1, #players)
+  local bandTop = 92         -- below the team-banner header (header ends ~y=86)
+  local bandBottom = consts.CANVAS_HEIGHT - 56
+  local bandH = bandBottom - bandTop
+  local accentH = 6          -- bright top stripe per band
+
+  -- Group consecutive same-team slots into one band rectangle each.
+  local bands = {}            -- { {teamIndex = N, startSlot = i, endSlot = j}, ... }
+  for i = 1, #players do
+    local t = teamIndexForPosition(i)
+    local last = bands[#bands]
+    if last and last.teamIndex == t and last.endSlot == i - 1 then
+      last.endSlot = i
+    else
+      bands[#bands + 1] = {teamIndex = t, startSlot = i, endSlot = i}
+    end
   end
+
+  for _, band in ipairs(bands) do
+    local color = TeamBannerHeader.colors[band.teamIndex] or TeamBannerHeader.colors[1]
+    local x = (band.startSlot - 1) * slotW
+    local w = (band.endSlot - band.startSlot + 1) * slotW
+    -- Main translucent fill
+    GraphicsUtil.drawRectangle("fill", x + 2, bandTop, w - 4, bandH,
+                               color[1], color[2], color[3], 0.28)
+    -- Solid accent stripe at the top of each team band
+    GraphicsUtil.drawRectangle("fill", x + 2, bandTop, w - 4, accentH,
+                               color[1], color[2], color[3], 0.85)
+  end
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 function CharacterSelect:leave()

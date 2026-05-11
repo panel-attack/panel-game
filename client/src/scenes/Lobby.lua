@@ -50,8 +50,8 @@ local function drawUnofficialHeader()
   local headerWidth = consts.CANVAS_WIDTH
   local y = 26
 
-  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y + 2, headerWidth, "center", {0.12, 0.06, 0.18, 0.85}, nil, 26)
-  GraphicsUtil.printf("Unofficial Team & Survival Mode", 0, y, headerWidth, "center", {0.88, 0.72, 1, 1}, nil, 26)
+  GraphicsUtil.printf("Unofficial Team & FFA Mode", 0, y + 2, headerWidth, "center", {0.12, 0.06, 0.18, 0.85}, nil, 26)
+  GraphicsUtil.printf("Unofficial Team & FFA Mode", 0, y, headerWidth, "center", {0.88, 0.72, 1, 1}, nil, 26)
 end
 
 -------------
@@ -279,14 +279,14 @@ function Lobby:initLobbyMenu()
         self.uiRoot:addChild(compositionMenu)
       end
 
-      -- Level 2: survival player count
-      local function openSurvivalMenu(level1Button)
+      -- Level 2: FFA player count
+      local function openFfaMenu(level1Button)
         if self.teamCompositionMenu then
           self.teamCompositionMenu:yieldFocus()
         end
 
         local bx, by = level1Button:getScreenPos()
-        local survivalMenu = ui.ScrollMenu({
+        local ffaMenu = ui.ScrollMenu({
           x = bx + level1Button.width + 3,
           y = by,
           hAlign = "left",
@@ -297,32 +297,32 @@ function Lobby:initLobbyMenu()
           childGap = 8,
         })
 
-        survivalMenu:addChild(ui.TextButton({
+        ffaMenu:addChild(ui.TextButton({
           label = ui.Label({text = "3 Players (1v1v1)", translate = false}),
           width = 180,
           onClick = function()
             GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA))
-            survivalMenu:yieldFocus()
+            ffaMenu:yieldFocus()
             subMenu:yieldFocus()
           end
         }))
-        survivalMenu:addChild(ui.TextButton({
+        ffaMenu:addChild(ui.TextButton({
           label = ui.Label({text = "4 Players (1v1v1v1)", translate = false}),
           width = 180,
           onClick = function()
             GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA))
-            survivalMenu:yieldFocus()
+            ffaMenu:yieldFocus()
             subMenu:yieldFocus()
           end
         }))
-        survivalMenu:select(survivalMenu.children[1])
+        ffaMenu:select(ffaMenu.children[1])
 
-        self.teamCompositionMenu = survivalMenu
-        subMenu:setFocus(survivalMenu, function()
+        self.teamCompositionMenu = ffaMenu
+        subMenu:setFocus(ffaMenu, function()
           self.teamCompositionMenu:detach()
           self.teamCompositionMenu = nil
         end)
-        self.uiRoot:addChild(survivalMenu)
+        self.uiRoot:addChild(ffaMenu)
       end
 
       -- Level 1 buttons
@@ -332,9 +332,9 @@ function Lobby:initLobbyMenu()
         onClick = function(b) openTeamCompositionMenu(b) end
       }))
       subMenu:addChild(ui.TextButton({
-        label = ui.Label({text = "Survival", translate = false}),
+        label = ui.Label({text = "FFA", translate = false}),
         width = 180,
-        onClick = function(b) openSurvivalMenu(b) end
+        onClick = function(b) openFfaMenu(b) end
       }))
       subMenu:select(subMenu.children[1])
 
@@ -529,26 +529,26 @@ local function getTeamIndexForSlot(room, slotNumber)
   return nil
 end
 
--- Team-color swatch (used for empty waiting seats — color only, no mascot).
-local function teamColorSwatch(teamIndex)
-  if teamIndex == 1 then return "🩷"
-  elseif teamIndex == 2 then return "🟣"
-  else return "⚪" end
-end
-
--- Mascot for a given (teamIndex, positionWithinTeam) — gives every player in
--- a team room their own creature so 2 pinks aren't visually identical.
--- Pink (team 1): 🦩 flamingo / 🌺 hibiscus
--- Purple (team 2): 🦄 unicorn / 🍇 grapes
-local TEAM_MASCOTS = {
-  [1] = {"🦩", "🌺"},
-  [2] = {"🦄", "🍇"},
+-- The bundled lobby font is missing most emoji and even some geometric glyphs,
+-- so we use plain ASCII tags that always render. The colored row backgrounds
+-- (TEAM_ROW_TINT below) carry the pink/purple team signal visually.
+--
+-- Team 1 (pink):    [A1] / [A2]
+-- Team 2 (purple):  [B1] / [B2]
+local TEAM_SHAPES = {
+  [1] = {"[A1]", "[A2]"},
+  [2] = {"[B1]", "[B2]"},
 }
 
-local function teamMascot(teamIndex, positionWithinTeam)
-  local set = TEAM_MASCOTS[teamIndex]
-  if not set then return "" end
-  return set[positionWithinTeam] or set[#set] or ""
+local function teamFilledShape(teamIndex)
+  local set = TEAM_SHAPES[teamIndex]
+  return (set and set[1]) or "[?]"
+end
+
+local function teamSlotShape(teamIndex, positionWithinTeam)
+  local set = TEAM_SHAPES[teamIndex]
+  if not set then return "[?]" end
+  return set[positionWithinTeam] or set[#set] or "[?]"
 end
 
 -- (teamIndex, positionWithinTeam) for a given absolute slot number.
@@ -574,18 +574,29 @@ local function getTeamSlotInfo(room, slotNumber)
   return nil, nil
 end
 
--- Filled-row prefix:  🩷🦩  /  🟣🍇  (color swatch + per-position mascot)
+-- Filled-row prefix: ♥ / ♡ / ★ / ☆ depending on team + slot position.
 local function teamFilledPrefix(room, slotNumber)
   local teamIndex, pos = getTeamSlotInfo(room, slotNumber)
   if not teamIndex then return "" end
-  return teamColorSwatch(teamIndex) .. teamMascot(teamIndex, pos)
+  return teamSlotShape(teamIndex, pos)
 end
 
--- Empty/waiting prefix:  🩷  /  🟣  (color swatch only — no mascot for an empty seat)
+-- Empty/waiting prefix: filled shape of the team — color comes from the row's background.
 local function teamEmptyPrefix(room, slotNumber)
   local teamIndex = (getTeamSlotInfo(room, slotNumber))
-  if not teamIndex then return "" end
-  return teamColorSwatch(teamIndex)
+  if not teamIndex then return "•" end
+  return teamFilledShape(teamIndex)
+end
+
+-- RGBA for the per-team background tint behind a row. Soft alpha so the
+-- chip lights up the row without overpowering the existing button color.
+local TEAM_ROW_TINT = {
+  [1] = {1,    0.55, 0.75, 0.55},  -- pink
+  [2] = {0.65, 0.4,  0.95, 0.55},  -- purple
+}
+
+local function teamRowTint(teamIndex)
+  return TEAM_ROW_TINT[teamIndex]
 end
 
 
@@ -790,20 +801,25 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     local roomName
     local onClick
 
+    -- For the local team room we collect per-row team tints alongside lines so
+    -- the button can paint a colored stripe behind each row (drawn in the
+    -- override below). nil = no tint (header / state lines).
+    local rowTints
     if isLocalPlayerRoom then
+      rowTints = {}
       -- This is the local player's room - show status and local room actions
       local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
 
-      -- Build player list:  🩷🦩 Amber (You)
       local playerLines = {}
       for i, playerId in ipairs(room.players) do
         local prefix = teamFilledPrefix(room, i)
         local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
         local suffix = (playerId == localPublicId) and " (You)" or ""
         playerLines[#playerLines + 1] = prefix .. " " .. playerName .. suffix
+        local tIdx = (getTeamSlotInfo(room, i))
+        rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
       end
 
-      -- Build waiting list:  🩷 (waiting...) or 🩷 ← Bev wants in
       local waitingLines = {}
       for _, slotNumber in ipairs(room.openSlots) do
         local prefix = teamEmptyPrefix(room, slotNumber)
@@ -811,18 +827,24 @@ function Lobby:createRoomButtons(personalizedLobbyData)
         if room.slotRequests and room.slotRequests[slotNumber] then
           local requester = personalizedLobbyData.players[room.slotRequests[slotNumber]]
           local requesterName = (requester and requester.name) or "someone"
-          line = prefix .. " ← " .. requesterName .. " wants in"
+          line = prefix .. " <- " .. requesterName .. " wants in"
         else
           line = prefix .. " (waiting...)"
         end
         waitingLines[#waitingLines + 1] = line
+        local tIdx = (getTeamSlotInfo(room, slotNumber))
+        rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
       end
 
-      roomName = "Your Team Room " .. slotsText .. "\n" .. table.concat(playerLines, "\n")
+      -- Header occupies row 1 (no tint). Insert nil at front of rowTints.
+      table.insert(rowTints, 1, false)
+
+      roomName = "YOUR TEAM ROOM  " .. slotsText .. "\n" .. table.concat(playerLines, "\n")
       if #waitingLines > 0 then
         roomName = roomName .. "\n" .. table.concat(waitingLines, "\n")
       else
         roomName = roomName .. "\n(" .. room.state .. ")"
+        rowTints[#rowTints + 1] = false
       end
 
       -- Clicking the local room opens room actions
@@ -876,27 +898,40 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       onClick = self:requestSpectateFunction(room)
     end
 
-    local icon
-    if room.gameModeId == GameModes.IDs.TWO_PLAYER_VS or room.gameModeId == GameModes.IDs.ONE_PLAYER_VS_SELF then
-      icon = GAME.theme:getFightImage()
-    elseif room.gameModeId == GameModes.IDs.TWO_PLAYER_TIME_ATTACK or room.gameModeId == GameModes.IDs.ONE_PLAYER_TIME_ATTACK then
-      icon = GAME.theme:getStopwatchImage()
-    elseif room.gameModeId == GameModes.IDs.ONE_PLAYER_ENDLESS then
-      icon = GAME.theme:getEndlessImage()
-    else
-      icon = GAME.theme:chainImage(0)
-    end
-
-    local button = ui.IconTextButton({
-      label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenu.width - 19}),
-      iconSize = 16,
-      icon = icon,
+    local label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenuWidth - 16})
+    local button = ui.TextButton({
+      label = label,
       width = self.lobbyMenuWidth,
-      onClick = onClick
+      onClick = onClick,
     })
     button.lobbyType = "room"
     button.room = room
     button.isLocalPlayerRoom = isLocalPlayerRoom
+
+    -- Per-row team tints behind the label (only the local team room sets this).
+    -- We hook drawSelf so the tint stripes paint AFTER the button background but
+    -- BEFORE the label text, which renders later in drawChildren.
+    if rowTints and #rowTints > 0 then
+      button._rowTints = rowTints
+      local origDrawSelf = button.drawSelf
+      button.drawSelf = function(self)
+        origDrawSelf(self)
+        local font = self.label.drawable:getFont()
+        local lineHeight = font:getHeight()
+        local stripeX = self.x + 6
+        local stripeW = self.width - 12
+        local labelTopY = self.y + (self.height - self.label.height) / 2
+        for i, tint in ipairs(self._rowTints) do
+          if tint then
+            local stripeY = labelTopY + (i - 1) * lineHeight
+            GraphicsUtil.drawRectangle("fill", stripeX, stripeY, stripeW, lineHeight,
+                                       tint[1], tint[2], tint[3], tint[4])
+          end
+        end
+        GraphicsUtil.setColor(1, 1, 1, 1)
+      end
+    end
+
     roomButtons[#roomButtons+1] = button
 
     ::continue::
@@ -1591,10 +1626,10 @@ function Lobby:updateRoomPanel(updateInfo)
         end
 
         if #pinkNames > 0 then
-          lines[#lines + 1] = "🩷 Pink Team: " .. table.concat(pinkNames, ", ")
+          lines[#lines + 1] = "[A] " .. table.concat(pinkNames, ", ")
         end
         if #purpleNames > 0 then
-          lines[#lines + 1] = "🟣 Purple Team: " .. table.concat(purpleNames, ", ")
+          lines[#lines + 1] = "[B] " .. table.concat(purpleNames, ", ")
         end
 
         -- Show state and spectators
