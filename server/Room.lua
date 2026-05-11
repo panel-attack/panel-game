@@ -63,6 +63,7 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.recentGameAbort = false
   self.voided = false
   self.voidReason = nil
+  self.reservedSlots = {} -- publicId -> true for players allowed to rejoin
   self.abortInputGapThreshold = (gameMode and gameMode.abortInputGapThreshold) or ((self.maxPlayers >= 3) and 220 or 100)
 
   Signal.turnIntoEmitter(self)
@@ -621,7 +622,9 @@ end
 function Room:voidByLeave(leaver, reason)
   if not self.game then
     -- Pre-match: leave the room open so the player can rejoin from the lobby.
-    logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (room stays open)")
+    -- Reserve their slot so no one else can fill it.
+    self.reservedSlots[leaver.publicPlayerID] = true
+    logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (slot reserved for rejoin)")
     self:_removeFromPlayersAndAnnounce(leaver)
     return
   end

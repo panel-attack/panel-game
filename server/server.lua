@@ -722,6 +722,11 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
+  if next(room.reservedSlots) and not room.reservedSlots[player.publicPlayerID] then
+    logger.warn("Player " .. player.name .. " tried to join room " .. roomNumber .. " with reserved slots (not their slot)")
+    return false
+  end
+
   if slotNumber ~= nil then
     if slotNumber < 1 or slotNumber ~= math.floor(slotNumber) then
       logger.warn("Player " .. player.name .. " sent invalid slot number for join request: " .. tostring(slotNumber))
@@ -782,6 +787,9 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
 
     self.playerToRoom[player] = room
     self:setLobbyChanged()
+
+    -- Clear the reserved slot for this player (rejoin complete)
+    room.reservedSlots[player.publicPlayerID] = nil
 
     -- Send addToRoom message to the joining player
     player:sendJson(ServerProtocol.addToRoom(room, nil))
