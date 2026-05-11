@@ -49,9 +49,9 @@ function MainMenu:refresh()
   self.uiRoot:addChild(self.menu)
 end
 
-function MainMenu:createMainMenu()
-
-  local menuItems = {ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
+function MainMenu:createOgMenu()
+  local ogItems = {
+    ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS), EndlessGame)
       if GAME.battleRoom then
         switchToScene(EndlessMenu({battleRoom = GAME.battleRoom}))
@@ -81,14 +81,24 @@ function MainMenu:createMainMenu()
     ui.MenuItem.createButtonMenuItem("mm_1_challenge_mode", nil, nil, function()
       switchToScene(ChallengeModeMenu())
     end),
-    ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
-      switchToScene(Lobby({serverIp = "localhost"}))
-    end),
     ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
       switchToScene(LocalGameModeSelectionScene())
     end),
-    ui.MenuItem.createButtonMenuItem("mm_replay_browser", nil, nil, function()
-      switchToScene(ReplayBrowser())
+    ui.MenuItem.createButtonMenuItem("lb_back", nil, nil, function()
+      GAME.theme:playCancelSfx()
+      self.menu:detach()
+      self.menu = self:createMainMenu()
+      self.uiRoot:addChild(self.menu)
+    end),
+  }
+  return ui.Menu.createCenteredMenu(ogItems)
+end
+
+function MainMenu:createMainMenu()
+
+  local menuItems = {
+    ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
+      switchToScene(Lobby({serverIp = "localhost"}))
     end),
     ui.MenuItem.createButtonMenuItem("mm_configure", nil, nil, function()
       switchToScene(InputConfigMenu())
@@ -103,35 +113,28 @@ function MainMenu:createMainMenu()
       GAME.theme:playValidationSfx()
       GAME:toggleFullscreen()
     end),
-    ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end )
+    ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end),
+    ui.MenuItem.createButtonMenuItem("og stuff", nil, false, function()
+      self.menu:detach()
+      self.menu = self:createOgMenu()
+      self.uiRoot:addChild(self.menu)
+    end),
   }
 
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
-                        }
-
-  local function addDebugMenuItems()
-    if DebugSettings.showDebugServers() then
-      for i, menuItem in ipairs(debugMenuItems) do
-        menu:addMenuItem(i + 7, menuItem)
-      end
-    end
-    if DebugSettings.showDesignHelper() then
-      menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
-          switchToScene(DesignHelper())
-        end))
-    end
+  if DebugSettings.showDebugServers() then
+    menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Replay Browser", nil, false, function() switchToScene(ReplayBrowser()) end))
+    menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end))
+    menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("My Server", nil, false, function() switchToScene(Lobby({serverIp = "104.156.250.136"})) end))
+    menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end))
+  end
+  if DebugSettings.showDesignHelper() then
+    menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
+      switchToScene(DesignHelper())
+    end))
   end
 
-  local function removeDebugMenuItems()
-    for i, menuItem in ipairs(debugMenuItems) do
-      menu:removeMenuItem(menuItem[1].id)
-    end
-  end
-
-  addDebugMenuItems()
   return menu
 end
 
