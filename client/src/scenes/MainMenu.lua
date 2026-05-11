@@ -98,7 +98,7 @@ function MainMenu:createMainMenu()
 
   local menuItems = {
     ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
-      switchToScene(Lobby({serverIp = "localhost"}))
+      switchToScene(Lobby({serverIp = "104.156.250.136"}))
     end),
     ui.MenuItem.createButtonMenuItem("mm_configure", nil, nil, function()
       switchToScene(InputConfigMenu())
@@ -126,7 +126,6 @@ function MainMenu:createMainMenu()
   if DebugSettings.showDebugServers() then
     menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Replay Browser", nil, false, function() switchToScene(ReplayBrowser()) end))
     menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end))
-    menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("My Server", nil, false, function() switchToScene(Lobby({serverIp = "104.156.250.136"})) end))
     menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end))
   end
   if DebugSettings.showDesignHelper() then
