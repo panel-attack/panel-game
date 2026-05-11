@@ -303,7 +303,7 @@ function Lobby:initLobbyMenu()
 
     for _, n in ipairs({3, 4, 5}) do
       playerCountMenu:addChild(ui.TextButton({
-        label = ui.Label({text = n .. " Players", translate = false}),
+        label = ui.Label({text = tostring(n), translate = false}),
         width = 180,
         onClick = function(b) openCompositionForCount(b, n) end,
       }))
