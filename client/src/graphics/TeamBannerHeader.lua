@@ -135,9 +135,9 @@ local function garbageModeLabel(gameMode)
   if not gameMode then return nil end
   if not isSharedTeamMode(gameMode) then return nil end
   if gameMode.garbageMode == "shared" then
-    return "Garbage shared by team"
+    return "Shared garbage"
   elseif gameMode.garbageMode == "all" then
-    return "Garbage hits all opponents"
+    return "All-target garbage"
   end
   return nil
 end

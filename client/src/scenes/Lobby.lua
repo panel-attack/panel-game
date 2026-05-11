@@ -974,18 +974,25 @@ function Lobby:createRoomButtons(personalizedLobbyData)
           self.CORNER_RADIUS, self.CORNER_RADIUS)
         self:drawOutline()
 
-        local font = self.label.drawable:getFont()
-        local lineHeight = font:getHeight()
         local stripeX = self.x + 6
         local stripeW = self.width - 12
+        -- Use the *measured* label height divided by the rowTints count so the
+        -- stripes line up with what's actually rendered even if a line wrapped
+        -- onto two display rows. Falls back to raw font line height if the
+        -- label hasn't measured yet.
+        local rowCount = #self._rowTints
+        local lineHeight
+        if rowCount > 0 and self.label.height and self.label.height > 0 then
+          lineHeight = self.label.height / rowCount
+        else
+          lineHeight = self.label.drawable:getFont():getHeight()
+        end
         local labelTopY = self.y + (self.height - self.label.height) / 2
         for i, tint in ipairs(self._rowTints) do
           if tint then
             local stripeY = labelTopY + (i - 1) * lineHeight
-            -- Soft fill across the row
             GraphicsUtil.drawRectangle("fill", stripeX, stripeY, stripeW, lineHeight,
                                        tint[1], tint[2], tint[3], tint[4])
-            -- Solid accent on the left edge for unmistakable team identity
             GraphicsUtil.drawRectangle("fill", stripeX, stripeY, TEAM_ROW_ACCENT_W, lineHeight,
                                        tint[1], tint[2], tint[3], 1)
           end
