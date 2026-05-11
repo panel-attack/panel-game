@@ -681,6 +681,7 @@ function ClientMatch:drawTeamScoreboard()
   -- Shared 2-team banner header (pink/purple). Returns silently for FFA / non-team modes.
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
   TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth)
+  TeamBannerHeader.drawGarbageModeBelowBanner(self.gameMode, canvasWidth)
 
   -- For >2 teams, fall through to the legacy section-row layout below.
   local teamCount = self.gameMode.teamCount or 2

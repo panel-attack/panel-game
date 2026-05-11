@@ -117,6 +117,14 @@ function ServerMessages.sanitizeRoomMessage(message)
         settings = joined.settings and sanitizePlayerSettings1(joined.settings, joined.publicId) or nil,
       }
     }
+  elseif message.type == "playerLeftRoom" then
+    return {
+      playerLeftRoom = {
+        publicId = message.content.publicId,
+        name = message.content.name,
+        voidReason = message.content.voidReason,
+      }
+    }
   elseif message.type == "gameAbort" then
     return { gameAbort = true, source = message.content.source }
   end

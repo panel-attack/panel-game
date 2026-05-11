@@ -186,30 +186,45 @@ function Lobby:initLobbyMenu()
           childGap = 8,
         })
 
-        garbageMenu:addChild(ui.TextButton({
-          label = ui.Label({text = "Garbage hits all opponents", translate = false}),
-          width = 260,
-          onClick = function()
+        local function garbageButton(text, description, onClick)
+          local btn = ui.TextButton({
+            label = ui.Label({text = text, translate = false}),
+            width = 260,
+            onClick = onClick,
+          })
+          local origSetSelected = btn.setSelected
+          btn.setSelected = function(b, selected)
+            origSetSelected(b, selected)
+            self.garbageTooltip = selected and description or ""
+          end
+          return btn
+        end
+
+        garbageMenu:addChild(garbageButton(
+          "Garbage hits all opponents",
+          "Each attack hits every enemy player individually — great for aggressive solo play.",
+          function()
             GAME.netClient:requestRoom(GameModes.getPreset(options.allMode))
             garbageMenu:yieldFocus()
             self.teamCompositionMenu:yieldFocus()
             subMenu:yieldFocus()
           end
-        }))
-        garbageMenu:addChild(ui.TextButton({
-          label = ui.Label({text = "Garbage shared by enemy team", translate = false}),
-          width = 260,
-          onClick = function()
+        ))
+        garbageMenu:addChild(garbageButton(
+          "Garbage shared by enemy team",
+          "Attacks are pooled and split evenly across the enemy team — rewards coordinated team play.",
+          function()
             GAME.netClient:requestRoom(GameModes.getPreset(options.sharedMode))
             garbageMenu:yieldFocus()
             self.teamCompositionMenu:yieldFocus()
             subMenu:yieldFocus()
           end
-        }))
+        ))
         garbageMenu:select(garbageMenu.children[1])
 
         self.teamGarbageMenu = garbageMenu
         self.teamCompositionMenu:setFocus(garbageMenu, function()
+          self.garbageTooltip = ""
           self.teamCompositionMenu:select(compositionButton)
           self.teamGarbageMenu:detach()
           self.teamGarbageMenu = nil
@@ -529,26 +544,22 @@ local function getTeamIndexForSlot(room, slotNumber)
   return nil
 end
 
--- The bundled lobby font is missing most emoji and even some geometric glyphs,
--- so we use plain ASCII tags that always render. The colored row backgrounds
--- (TEAM_ROW_TINT below) carry the pink/purple team signal visually.
---
--- Team 1 (pink):    [A1] / [A2]
--- Team 2 (purple):  [B1] / [B2]
-local TEAM_SHAPES = {
-  [1] = {"[A1]", "[A2]"},
-  [2] = {"[B1]", "[B2]"},
-}
+-- ASCII team tags so we never depend on font glyphs. Each team gets its own
+-- letter; position-within-team is appended (e.g. [A1], [A2] for 2v2; [A1] [B1]
+-- [C1] [D1] for 4-player FFA where every team has size 1).
+local function teamLetter(teamIndex)
+  -- A, B, C, D, ... E, F, ...  (covers any reasonable team count)
+  return string.char(string.byte("A") + (teamIndex - 1))
+end
 
 local function teamFilledShape(teamIndex)
-  local set = TEAM_SHAPES[teamIndex]
-  return (set and set[1]) or "[?]"
+  if not teamIndex then return "[?]" end
+  return "[" .. teamLetter(teamIndex) .. "1]"
 end
 
 local function teamSlotShape(teamIndex, positionWithinTeam)
-  local set = TEAM_SHAPES[teamIndex]
-  if not set then return "[?]" end
-  return set[positionWithinTeam] or set[#set] or "[?]"
+  if not teamIndex then return "[?]" end
+  return "[" .. teamLetter(teamIndex) .. tostring(positionWithinTeam or 1) .. "]"
 end
 
 -- (teamIndex, positionWithinTeam) for a given absolute slot number.
@@ -588,16 +599,26 @@ local function teamEmptyPrefix(room, slotNumber)
   return teamFilledShape(teamIndex)
 end
 
--- RGBA for the per-team background tint behind a row. Soft alpha so the
--- chip lights up the row without overpowering the existing button color.
+-- RGBA for the per-team background tint behind a row. Covers up to 8 teams
+-- so FFA (3p/4p) gets distinct colors per slot, not just pink/purple.
 local TEAM_ROW_TINT = {
-  [1] = {1,    0.55, 0.75, 0.55},  -- pink
-  [2] = {0.65, 0.4,  0.95, 0.55},  -- purple
+  [1] = {1,    0.55, 0.75, 0.65},  -- pink
+  [2] = {0.65, 0.4,  0.95, 0.65},  -- purple
+  [3] = {0.45, 1,    0.45, 0.65},  -- green
+  [4] = {1,    1,    0.45, 0.65},  -- yellow
+  [5] = {1,    0.6,  0.2,  0.65},  -- orange
+  [6] = {0.45, 0.7,  1,    0.65},  -- blue
+  [7] = {0.45, 1,    1,    0.65},  -- cyan
+  [8] = {1,    0.45, 0.45, 0.65},  -- red
 }
 
 local function teamRowTint(teamIndex)
-  return TEAM_ROW_TINT[teamIndex]
+  return TEAM_ROW_TINT[teamIndex] or TEAM_ROW_TINT[1]
 end
+
+-- Orange button background — picked specifically so the pink and purple row
+-- stripes both have clear contrast against the underlying button color.
+local TEAM_ROOM_BUTTON_BG = {1, 0.55, 0.15, 0.9}
 
 
 -----------------
@@ -811,11 +832,13 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
 
       local playerLines = {}
+      local presentNames = {}
       for i, playerId in ipairs(room.players) do
         local prefix = teamFilledPrefix(room, i)
         local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
         local suffix = (playerId == localPublicId) and " (You)" or ""
         playerLines[#playerLines + 1] = prefix .. " " .. playerName .. suffix
+        presentNames[#presentNames + 1] = playerName
         local tIdx = (getTeamSlotInfo(room, i))
         rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
       end
@@ -839,7 +862,27 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       -- Header occupies row 1 (no tint). Insert nil at front of rowTints.
       table.insert(rowTints, 1, false)
 
-      roomName = "YOUR TEAM ROOM  " .. slotsText .. "\n" .. table.concat(playerLines, "\n")
+      -- Header shows whoever's already in the room:
+      --   "Amber's Room [1/4]"        (just you)
+      --   "Amber, Bev's Room [3/4]"   (you + teammates)
+      local roomTitle
+      if #presentNames == 0 then
+        roomTitle = "Empty Room"
+      elseif #presentNames == 1 then
+        roomTitle = presentNames[1] .. "'s Room"
+      else
+        roomTitle = table.concat(presentNames, ", ") .. "'s Room"
+      end
+      roomName = roomTitle .. "  " .. slotsText
+      -- Garbage rule subtitle (team modes only — nil in FFA / solo).
+      local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
+      local ok, gmPreset = pcall(GameModes.getPreset, room.gameModeId)
+      local garbageLabel = ok and gmPreset and TeamBannerHeader.garbageModeLabel(gmPreset) or nil
+      if garbageLabel then
+        roomName = roomName .. "\n" .. garbageLabel
+        table.insert(rowTints, 2, false)  -- second row is the subtitle, no tint
+      end
+      roomName = roomName .. "\n" .. table.concat(playerLines, "\n")
       if #waitingLines > 0 then
         roomName = roomName .. "\n" .. table.concat(waitingLines, "\n")
       else
@@ -909,13 +952,19 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     button.isLocalPlayerRoom = isLocalPlayerRoom
 
     -- Per-row team tints behind the label (only the local team room sets this).
-    -- We hook drawSelf so the tint stripes paint AFTER the button background but
-    -- BEFORE the label text, which renders later in drawChildren.
+    -- drawSelf is overridden so we first paint our own orange button background
+    -- (so pink + purple stripes both contrast), then paint the team-tinted row
+    -- stripes, then let the label render normally on top via drawChildren.
     if rowTints and #rowTints > 0 then
       button._rowTints = rowTints
-      local origDrawSelf = button.drawSelf
       button.drawSelf = function(self)
-        origDrawSelf(self)
+        -- Orange background instead of the default Button background.
+        GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height,
+          TEAM_ROOM_BUTTON_BG[1], TEAM_ROOM_BUTTON_BG[2], TEAM_ROOM_BUTTON_BG[3], TEAM_ROOM_BUTTON_BG[4],
+          self.CORNER_RADIUS, self.CORNER_RADIUS)
+        self:drawOutline()
+
+        -- Team-colored stripes per row, lined up with the label rows.
         local font = self.label.drawable:getFont()
         local lineHeight = font:getHeight()
         local stripeX = self.x + 6
@@ -1316,13 +1365,13 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
     self.lobbyMenu:addChild(button)
   end
 
-  self.lobbyMenu:addChild(self.onePlayerEndlessButton)
-  self.lobbyMenu:addChild(self.onePlayerTimeAttackButton)
-  self.lobbyMenu:addChild(self.onePlayerVsButton)
   self:updateTeamCreateButtonState(lobbyDataV2)
   if self.teamCreateButton then
     self.lobbyMenu:addChild(self.teamCreateButton)
   end
+  self.lobbyMenu:addChild(self.onePlayerEndlessButton)
+  self.lobbyMenu:addChild(self.onePlayerTimeAttackButton)
+  self.lobbyMenu:addChild(self.onePlayerVsButton)
   self.lobbyMenu:addChild(self.showLeaderboardButton)
   self.lobbyMenu:addChild(self.backButton)
 
@@ -1684,6 +1733,16 @@ function Lobby:draw()
     loginStateLabel:draw()
   else
     self.uiRoot:draw()
+  end
+  if self.garbageTooltip and self.garbageTooltip ~= "" then
+    local pad = 12
+    local fontSize = GraphicsUtil.fontSize
+    local bh = fontSize + pad * 2
+    local by = consts.CANVAS_HEIGHT - bh - 8
+    love.graphics.setColor(0.10, 0.04, 0.20, 0.88)
+    love.graphics.rectangle("fill", 0, by, consts.CANVAS_WIDTH, bh)
+    love.graphics.setColor(1, 1, 1, 1)
+    GraphicsUtil.printf(self.garbageTooltip, 0, by + pad, consts.CANVAS_WIDTH, "center")
   end
 end
 

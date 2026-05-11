@@ -128,7 +128,33 @@ function TeamBannerHeader.draw(gameMode, players, teamWins, canvasWidth)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
+-- Short human-readable summary of the team game's garbage rule. Returns nil
+-- for non-team modes and for FFA (where every team is size 1 so the "team
+-- garbage" concept doesn't apply).
+local function garbageModeLabel(gameMode)
+  if not gameMode then return nil end
+  if not isSharedTeamMode(gameMode) then return nil end
+  if gameMode.garbageMode == "shared" then
+    return "Garbage shared by team"
+  elseif gameMode.garbageMode == "all" then
+    return "Garbage hits all opponents"
+  end
+  return nil
+end
+
+-- Draws the garbage-mode label centered just under the banner header. Pass the
+-- same gameMode you'd give to TeamBannerHeader.draw. No-op outside shared team
+-- modes so it doesn't draw anywhere it shouldn't.
+function TeamBannerHeader.drawGarbageModeBelowBanner(gameMode, canvasWidth)
+  local label = garbageModeLabel(gameMode)
+  if not label then return end
+  -- Two-pass shadow + light text so it reads on top of any background.
+  GraphicsUtil.printf(label, 0, 50, canvasWidth, "center", {0.1, 0.05, 0.15, 0.85}, nil, 6)
+  GraphicsUtil.printf(label, 0, 48, canvasWidth, "center", {1, 0.9, 0.7, 1}, nil, 6)
+end
+
 TeamBannerHeader.colors = TEAM_COLORS
 TeamBannerHeader.isSharedTeamMode = isSharedTeamMode
+TeamBannerHeader.garbageModeLabel = garbageModeLabel
 
 return TeamBannerHeader

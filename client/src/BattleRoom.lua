@@ -59,6 +59,13 @@ function(self, mode, gameScene)
   -- who joined late shows the team's accumulated wins rather than only their own.
   self.teamWins = nil
 
+  -- Set true when the server tells us a player left/disconnected from this room.
+  -- Voided rooms can't start a new match; the UI should disable Ready and surface
+  -- the voidReason ("X left"). Players can still see the final state and leave
+  -- manually; the room is fully torn down when the last player navigates back.
+  self.voided = false
+  self.voidReason = nil
+
   Signal.turnIntoEmitter(self)
   self:createSignal("rankedStatusChanged")
   self:createSignal("allAssetsLoadedChanged")
@@ -182,6 +189,38 @@ function BattleRoom.createLocalFromGameMode(gameMode, gameScene, settingChangesU
   else
     return nil
   end
+end
+
+---Removes a player from the local room view by publicId. Used when the server
+---broadcasts playerLeftRoom (someone left/disconnected mid-room). Doesn't tear
+---down the room — remaining players keep the room visible until they manually leave.
+---@param publicId integer
+function BattleRoom:removePlayerByPublicId(publicId)
+  for i = #self.players, 1, -1 do
+    if self.players[i].publicId == publicId then
+      local p = self.players[i]
+      table.remove(self.players, i)
+      -- Renumber remaining players to match server (server does the same compaction)
+      for j, remaining in ipairs(self.players) do
+        remaining.playerNumber = j
+      end
+      logger.info("BattleRoom: removed player " .. tostring(p.name) .. " (publicId " .. tostring(publicId) .. ")")
+      return p
+    end
+  end
+end
+
+---Mark the local room as voided (no more matches can start). Stores the reason for
+---display in CharacterSelect / banner. Use room:isVoided() to check.
+---@param reason string?
+function BattleRoom:setVoided(reason)
+  self.voided = true
+  self.voidReason = reason
+end
+
+---@return boolean
+function BattleRoom:isVoided()
+  return self.voided == true
 end
 
 function BattleRoom.setWinCounts(self, winCounts)

@@ -1329,7 +1329,22 @@ end
 function Server:handleLeaveRoom(player, reason)
   local room = self.playerToRoom[player]
   if room then
-    self:closeRoom(room, reason)
+    -- 3+ player rooms: void the room (game over for everyone, no new matches),
+    -- send the leaver their leaveRoom, and let remaining players keep the room
+    -- visible until they manually leave (last leaver triggers actual close).
+    -- 2-player and solo rooms: nothing meaningful to keep alive — close immediately.
+    if #room.players >= 3 then
+      self.playerToRoom[player] = nil
+      player:removeFromRoom(room, reason)  -- sends leaveRoom to leaver, sets state=lobby
+      room:voidByLeave(player, reason)     -- aborts in-progress match, removes leaver, broadcasts playerLeftRoom
+      if #room.players == 0 then
+        self:closeRoom(room, "all players left")
+      else
+        self:setLobbyChanged()
+      end
+    else
+      self:closeRoom(room, reason)
+    end
   else
     room = self.spectatorToRoom[player]
     if room then
@@ -1352,12 +1367,11 @@ function Server:closeConnection(connection, reason)
   connection:close()
   if player then
     self:clearProposals(player)
-    local room = self.playerToRoom[player]
-    if room and room.game and room:state() == "playing" then
-      room:handlePlayerDisconnect(player, reason)
-    else
-      self:handleLeaveRoom(player, reason)
-    end
+    -- All disconnects (mid-match or otherwise) route through handleLeaveRoom now.
+    -- For 2P rooms it closes the whole room; for 3+ rooms it voids the room (aborts
+    -- any in-progress match, removes the leaver, broadcasts playerLeftRoom) so
+    -- remaining players can see the final state until they manually leave.
+    self:handleLeaveRoom(player, reason)
     self.publicIdToPlayer[player.publicPlayerID] = nil
     self.playerToRoom[player] = nil
     self.spectatorToRoom[player] = nil

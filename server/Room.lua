@@ -34,6 +34,11 @@ local TeamUtils = require("common.data.TeamUtils")
 ---@field recentGameAbort boolean tracks if the most recent game was ended by an abort
 ---@field abortInputGapThreshold integer threshold for treating abort as latency error
 ---@field teams Team[]? teams for team-based game modes
+---@field voided boolean if true, the room is "dead" — no new matches can start.
+---  Set when any player leaves/disconnects in a multi-player room. Remaining players
+---  keep the room visible until they manually leave; the Server cleans the room up
+---  when the last player leaves.
+---@field voidReason string? human-readable reason this room was voided (e.g. "Bev left")
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
 local Room = class(
 ---@param self Room
@@ -56,6 +61,8 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.ranked = false
   self.rankedReasons = {}
   self.recentGameAbort = false
+  self.voided = false
+  self.voidReason = nil
   self.abortInputGapThreshold = (gameMode and gameMode.abortInputGapThreshold) or ((self.maxPlayers >= 3) and 220 or 100)
 
   Signal.turnIntoEmitter(self)
@@ -187,6 +194,11 @@ end
 function Room:start_match()
   if not self:isFull() then
     logger.warn("Cannot start match in room " .. self.roomNumber .. " - waiting for " .. (self.maxPlayers - #self.players) .. " more players")
+    return false
+  end
+
+  if self.voided then
+    logger.warn("Cannot start match in voided room " .. self.roomNumber .. " (" .. tostring(self.voidReason) .. ")")
     return false
   end
 
@@ -586,6 +598,58 @@ function Room:handlePlayerDisconnect(sender, reason)
       self:emitSignal("roomShouldClose", self, "all players disconnected")
     end
   end
+end
+
+---Mark the room as void (no further matches can start) because a player left or
+---disconnected. If a match is in progress, abort it for the remaining players. The
+---leaver is removed from the room (the caller is responsible for sending them their
+---own leaveRoom). Remaining players + spectators are notified via playerLeftRoom so
+---their clients can show "X left" and disable Ready.
+---@param leaver ServerPlayer the player who is leaving / disconnected
+---@param reason string? human-readable reason (forwarded to remaining clients)
+function Room:voidByLeave(leaver, reason)
+  if self.voided then
+    -- already void; just log and return so subsequent leaves don't fight each other
+    logger.debug(self.roomNumber .. ": voidByLeave called on already-voided room")
+  else
+    self.voided = true
+    self.voidReason = (leaver.name or "A player") .. " left" .. (reason and (" (" .. reason .. ")") or "")
+    logger.info(self.roomNumber .. ": voiding room (" .. self.voidReason .. ")")
+  end
+
+  -- If a match is in progress, abort it for remaining players. broadcastJson
+  -- excludes the leaver (they get their own leaveRoom from the caller path).
+  if self.game then
+    self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
+    self:emitSignal("matchEnd", self.game)
+    self:prepare_character_select()
+    self.game = nil
+    self.recentGameAbort = true
+  end
+
+  -- Remove the leaver from the room. Compact the players array so the remaining
+  -- player_numbers stay 1..N-1 and indexes match win_counts entries.
+  local leaverIndex
+  for i, p in ipairs(self.players) do
+    if p == leaver then
+      leaverIndex = i
+      break
+    end
+  end
+  if leaverIndex then
+    table.remove(self.players, leaverIndex)
+    table.remove(self.win_counts, leaverIndex)
+    for i, p in ipairs(self.players) do
+      p.player_number = i
+    end
+  end
+  -- Teams are no longer valid for this room (player count changed) but team_win_counts
+  -- stays so the per-team scoreboard still shows the matches that already happened.
+  self.teams = nil
+
+  -- Notify remaining players + spectators. Spectators get the same broadcast since
+  -- their UI also needs to show "X left."
+  self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason))
 end
 
 ---@param sender ServerPlayer

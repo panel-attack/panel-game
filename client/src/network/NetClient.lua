@@ -500,6 +500,24 @@ local function processPlayerJoinedRoom(self, message)
   end
 end
 
+---@param self NetClient
+local function processPlayerLeftRoom(self, message)
+  if not self.room then
+    return
+  end
+
+  local data = message.playerLeftRoom
+  if not data or not data.publicId then
+    return
+  end
+
+  -- Remove the leaver from the local room view and mark the room voided so
+  -- CharacterSelect can show "X left" + disable Ready. Remaining players keep
+  -- the room visible and their win counts; they navigate to the lobby manually.
+  self.room:removePlayerByPublicId(data.publicId)
+  self.room:setVoided(data.voidReason or ((data.name or "A player") .. " left"))
+end
+
 local function processMenuStateMessage(player, message)
   local menuState = message.menu_state
   if menuState.playerNumber then
@@ -620,6 +638,7 @@ local function createListeners(self)
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
   messageListeners.addToRoom = createListener(self, "addToRoom", start2pVsOnlineMatch)
   messageListeners.playerJoinedRoom = createListener(self, "playerJoinedRoom", processPlayerJoinedRoom)
+  messageListeners.playerLeftRoom = createListener(self, "playerLeftRoom", processPlayerLeftRoom)
   messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
   messageListeners.challengeUpdate = createListener(self, "challengeUpdate", processChallengeUpdate)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
@@ -677,6 +696,7 @@ local NetClient = class(function(self)
     spectators = messageListeners.spectators,
     gameResult = messageListeners.gameResult,
     playerJoinedRoom = messageListeners.playerJoinedRoom,
+    playerLeftRoom = messageListeners.playerLeftRoom,
   }
 
   -- all listeners running while in a match
@@ -688,6 +708,7 @@ local NetClient = class(function(self)
     spectators = messageListeners.spectators,
     gameResult = messageListeners.gameResult,
     gameAbort = messageListeners.gameAbort,
+    playerLeftRoom = messageListeners.playerLeftRoom,
   }
 
   self.messageListeners = messageListeners

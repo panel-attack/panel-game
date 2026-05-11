@@ -223,6 +223,13 @@ function CharacterSelect:createReadyButton()
 
   -- assign player generic callback
   readyButton.onClick = function(self, inputSource, holdTime)
+    -- Voided rooms (someone left mid-room) can't start a new match — server's
+    -- Room:start_match refuses them. Swallow the click on the client side too so
+    -- we don't send a pointless menu_state update.
+    if GAME.battleRoom and GAME.battleRoom.isVoided and GAME.battleRoom:isVoided() then
+      GAME.theme:playCancelSfx()
+      return
+    end
     local player
     if inputSource and inputSource.player then
       player = inputSource.player
@@ -1090,16 +1097,35 @@ function CharacterSelect:drawSelf()
   self:drawTeamPlayerBackgrounds()
   self:drawTeamBannerHeader()
   self:customDraw()
+  self:drawVoidedRoomBanner()
+end
+
+-- Draws a centered "<reason>" banner over CharacterSelect when the server has told
+-- us a player left/disconnected. Voided rooms can't start a new match — this gives
+-- remaining players a clear cue to leave when they're done looking around.
+function CharacterSelect:drawVoidedRoomBanner()
+  if not (self.battleRoom and self.battleRoom.isVoided and self.battleRoom:isVoided()) then
+    return
+  end
+  local GraphicsUtil = require("client.src.graphics.graphics_util")
+  local consts = require("common.engine.consts")
+  local text = (self.battleRoom.voidReason or "A player left")
+    .. " — game over. Press leave to return to lobby."
+  local bannerY = math.floor(consts.CANVAS_HEIGHT / 2) - 18
+  GraphicsUtil.drawRectangle("fill", 0, bannerY, consts.CANVAS_WIDTH, 36, 0, 0, 0, 0.7)
+  GraphicsUtil.printf(text, 0, bannerY + 10, consts.CANVAS_WIDTH, "center", {1, 0.85, 0.4, 1})
 end
 
 -- Top-of-screen pink/purple banner pair (same component as in-game).
 function CharacterSelect:drawTeamBannerHeader()
   if not (self.battleRoom and self.battleRoom.mode) then return end
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
+  local canvasWidth = GAME.globalCanvas:getWidth()
   TeamBannerHeader.draw(self.battleRoom.mode,
                         self.battleRoom.players,
                         self.battleRoom.teamWins,
-                        GAME.globalCanvas:getWidth())
+                        canvasWidth)
+  TeamBannerHeader.drawGarbageModeBelowBanner(self.battleRoom.mode, canvasWidth)
 end
 
 -- Paints team-wide colored bands behind the character-select layout so
