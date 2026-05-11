@@ -717,6 +717,11 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
+  if room.voided then
+    logger.warn("Player " .. player.name .. " tried to join voided room " .. roomNumber .. " (" .. tostring(room.voidReason) .. ")")
+    return false
+  end
+
   if slotNumber ~= nil then
     if slotNumber < 1 or slotNumber ~= math.floor(slotNumber) then
       logger.warn("Player " .. player.name .. " sent invalid slot number for join request: " .. tostring(slotNumber))
