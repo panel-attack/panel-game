@@ -184,24 +184,24 @@ function Lobby:initLobbyMenu()
       return btn
     end
 
+    local function closeTeamMenuChain()
+      if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
+      if self.teamCompositionMenu then self.teamCompositionMenu:yieldFocus() end
+      if self.teamPlayerCountMenu then self.teamPlayerCountMenu:yieldFocus() end
+    end
+
     garbageMenu:addChild(garbageButton(
       "Garbage hits all opponents",
       "Each attack hits every enemy player individually — great for aggressive solo play.",
       function(b)
-        openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.allMode), function()
-          if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
-          if self.teamCompositionMenu then self.teamCompositionMenu:yieldFocus() end
-        end)
+        openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.allMode), closeTeamMenuChain)
       end
     ))
     garbageMenu:addChild(garbageButton(
       "Garbage shared by enemy team",
       "Attacks are pooled and split evenly across the enemy team — rewards coordinated team play.",
       function(b)
-        openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.sharedMode), function()
-          if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
-          if self.teamCompositionMenu then self.teamCompositionMenu:yieldFocus() end
-        end)
+        openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.sharedMode), closeTeamMenuChain)
       end
     ))
     garbageMenu:select(garbageMenu.children[1])
@@ -216,98 +216,58 @@ function Lobby:initLobbyMenu()
     self.uiRoot:addChild(garbageMenu)
   end
 
-  -- Team composition menu
-  local function openTeamCompositionMenu(parentButton)
+  -- Divisions available per player count. Each entry feeds openGarbageMenu.
+  local TEAM_DIVISIONS = {
+    [3] = {
+      { label = "1 vs 2", allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,     sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED },
+      { label = "2 vs 1", allMode = GameModes.IDs.THREE_PLAYER_VS_ALL_2V1, sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED_2V1 },
+    },
+    [4] = {
+      { label = "2 vs 2", allMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL, sharedMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED },
+    },
+    [5] = {
+      { label = "1 vs 4", allMode = GameModes.IDs.FIVE_PLAYER_1V4_ALL, sharedMode = GameModes.IDs.FIVE_PLAYER_1V4_SHARED },
+      { label = "4 vs 1", allMode = GameModes.IDs.FIVE_PLAYER_4V1_ALL, sharedMode = GameModes.IDs.FIVE_PLAYER_4V1_SHARED },
+      { label = "2 vs 3", allMode = GameModes.IDs.FIVE_PLAYER_2V3_ALL, sharedMode = GameModes.IDs.FIVE_PLAYER_2V3_SHARED },
+      { label = "3 vs 2", allMode = GameModes.IDs.FIVE_PLAYER_3V2_ALL, sharedMode = GameModes.IDs.FIVE_PLAYER_3V2_SHARED },
+    },
+  }
+
+  -- Level 2: division menu (e.g. "1 vs 2", "2 vs 1") for a chosen player count.
+  local function openCompositionForCount(parentButton, playerCount)
     if self.teamCompositionMenu then
       self.teamCompositionMenu:yieldFocus()
     end
 
     local bx, by = parentButton:getScreenPos()
+    local divisions = TEAM_DIVISIONS[playerCount] or {}
+    local rowHeight = 32  -- TextButton default + childGap budget
     local compositionMenu = ui.ScrollMenu({
       x = bx + parentButton.width + 3,
       y = by,
       hAlign = "left",
       vAlign = "top",
-      height = 336,
+      height = math.max(160, #divisions * (rowHeight + 8) + 8),
       width = 180,
       padding = 0,
       childGap = 8,
     })
 
-    compositionMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "1 vs 2", translate = false}),
-      width = 180,
-      onClick = function(b)
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
-          sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED,
-        })
-      end
-    }))
-    compositionMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "2 vs 2", translate = false}),
-      width = 180,
-      onClick = function(b)
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL,
-          sharedMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED,
-        })
-      end
-    }))
-    compositionMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "2 vs 1", translate = false}),
-      width = 180,
-      onClick = function(b)
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.THREE_PLAYER_VS_ALL_2V1,
-          sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED_2V1,
-        })
-      end
-    }))
-    compositionMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "1 vs 4", translate = false}),
-      width = 180,
-      onClick = function(b)
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.FIVE_PLAYER_1V4_ALL,
-          sharedMode = GameModes.IDs.FIVE_PLAYER_1V4_SHARED,
-        })
-      end
-    }))
-    compositionMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "4 vs 1", translate = false}),
-      width = 180,
-      onClick = function(b)
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.FIVE_PLAYER_4V1_ALL,
-          sharedMode = GameModes.IDs.FIVE_PLAYER_4V1_SHARED,
-        })
-      end
-    }))
-    compositionMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "2 vs 3", translate = false}),
-      width = 180,
-      onClick = function(b)
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.FIVE_PLAYER_2V3_ALL,
-          sharedMode = GameModes.IDs.FIVE_PLAYER_2V3_SHARED,
-        })
-      end
-    }))
-    compositionMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "3 vs 2", translate = false}),
-      width = 180,
-      onClick = function(b)
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.FIVE_PLAYER_3V2_ALL,
-          sharedMode = GameModes.IDs.FIVE_PLAYER_3V2_SHARED,
-        })
-      end
-    }))
-    compositionMenu:select(compositionMenu.children[1])
+    for _, div in ipairs(divisions) do
+      compositionMenu:addChild(ui.TextButton({
+        label = ui.Label({text = div.label, translate = false}),
+        width = 180,
+        onClick = function(b)
+          openGarbageMenu(b, { allMode = div.allMode, sharedMode = div.sharedMode })
+        end
+      }))
+    end
+    if compositionMenu.children[1] then
+      compositionMenu:select(compositionMenu.children[1])
+    end
 
     self.teamCompositionMenu = compositionMenu
-    self.lobbyMenu:setFocus(compositionMenu, function()
+    self.teamPlayerCountMenu:setFocus(compositionMenu, function()
       if self.latencyMenu then
         self.latencyMenu:detach()
         self.latencyMenu = nil
@@ -316,10 +276,58 @@ function Lobby:initLobbyMenu()
         self.teamGarbageMenu:detach()
         self.teamGarbageMenu = nil
       end
+      self.teamPlayerCountMenu:select(parentButton)
       self.teamCompositionMenu:detach()
       self.teamCompositionMenu = nil
     end)
     self.uiRoot:addChild(compositionMenu)
+  end
+
+  -- Level 1: player count menu (3 / 4 / 5).
+  local function openTeamCompositionMenu(parentButton)
+    if self.teamPlayerCountMenu then
+      self.teamPlayerCountMenu:yieldFocus()
+    end
+
+    local bx, by = parentButton:getScreenPos()
+    local playerCountMenu = ui.ScrollMenu({
+      x = bx + parentButton.width + 3,
+      y = by,
+      hAlign = "left",
+      vAlign = "top",
+      height = 160,
+      width = 180,
+      padding = 0,
+      childGap = 8,
+    })
+
+    for _, n in ipairs({3, 4, 5}) do
+      playerCountMenu:addChild(ui.TextButton({
+        label = ui.Label({text = n .. " Players", translate = false}),
+        width = 180,
+        onClick = function(b) openCompositionForCount(b, n) end,
+      }))
+    end
+    playerCountMenu:select(playerCountMenu.children[1])
+
+    self.teamPlayerCountMenu = playerCountMenu
+    self.lobbyMenu:setFocus(playerCountMenu, function()
+      if self.latencyMenu then
+        self.latencyMenu:detach()
+        self.latencyMenu = nil
+      end
+      if self.teamGarbageMenu then
+        self.teamGarbageMenu:detach()
+        self.teamGarbageMenu = nil
+      end
+      if self.teamCompositionMenu then
+        self.teamCompositionMenu:detach()
+        self.teamCompositionMenu = nil
+      end
+      self.teamPlayerCountMenu:detach()
+      self.teamPlayerCountMenu = nil
+    end)
+    self.uiRoot:addChild(playerCountMenu)
   end
 
   -- FFA player count menu
