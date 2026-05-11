@@ -90,17 +90,33 @@ function CharacterSelect2p:loadUserInterface()
     self.ui.playerInfos[i] = self:createPlayerInfo(player)
   end
 
-  local topSlots = {
-    { iconX = 1, infoX = 2 },
-    { iconX = 3, infoX = 4 },
-    { iconX = 5, infoX = 6 },
-    { iconX = 7, infoX = 8 },
-  }
+  -- Up to 4 players: (icon, info) pairs across columns 1-8 (col 9 = readyButton row 2).
+  -- 5 players: drop the info column and space 5 icons every-other-column (1,3,5,7,9)
+  -- so they fit in the 9-wide grid without overflowing the readyButton column.
+  local topSlots
+  if #self.players >= 5 then
+    topSlots = {
+      { iconX = 1 },
+      { iconX = 3 },
+      { iconX = 5 },
+      { iconX = 7 },
+      { iconX = 9 },
+    }
+  else
+    topSlots = {
+      { iconX = 1, infoX = 2 },
+      { iconX = 3, infoX = 4 },
+      { iconX = 5, infoX = 6 },
+      { iconX = 7, infoX = 8 },
+    }
+  end
   for i, player in ipairs(self.players) do
     local slot = topSlots[i]
     if slot then
       self.ui.grid:createElementAt(slot.iconX, 1, 1, 1, "p" .. i .. " icon", self.ui.characterIcons[i])
-      self.ui.grid:createElementAt(slot.infoX, 1, 1, 1, "player " .. i .. " info", self.ui.playerInfos[i])
+      if slot.infoX then
+        self.ui.grid:createElementAt(slot.infoX, 1, 1, 1, "player " .. i .. " info", self.ui.playerInfos[i])
+      end
     end
   end
 

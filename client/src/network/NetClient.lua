@@ -198,7 +198,9 @@ getSceneFromRoom = function(room)
     return require("client.src.scenes.CharacterSelectVsSelf")({battleRoom = room})
   elseif room.mode.name == "team_vs_all" or room.mode.name == "team_vs_shared"
       or room.mode.name == "three_player_vs_all" or room.mode.name == "three_player_vs_shared"
-      or room.mode.name == "3p_ffa" or room.mode.name == "4p_ffa" then
+      or room.mode.name == "3p_ffa" or room.mode.name == "4p_ffa" or room.mode.name == "5p_ffa"
+      or room.mode.name == "five_player_1v4_all" or room.mode.name == "five_player_1v4_shared"
+      or room.mode.name == "five_player_2v3_all" or room.mode.name == "five_player_2v3_shared" then
     return CharacterSelect2p({battleRoom = room})
   end
 end

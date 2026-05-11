@@ -1,4 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local ui = require("client.src.ui")
 local consts = require("common.engine.consts")
@@ -324,19 +325,29 @@ function InputConfigMenu:loadUI()
     menuOptions[#menuOptions + 1] = keyBindingItem
   end
 
-  -- 3. Action buttons
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("op_all_keys", nil, nil, function() self:setAllKeysStart() end)
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("Clear All Inputs", nil, false, function() self:clearAllInputs() end)
-  menuOptions[#menuOptions + 1] = ui.MenuItem.createButtonMenuItem("Reset Keys To Default", nil, false, function() self:resetToDefault() end)
+  -- 3. Action buttons (teal tint to distinguish from key binding buttons)
+  local actionColor = {0.1, 0.7, 0.7, 0.85}
+  local function addActionButton(text, translate, onClick)
+    local item = ui.MenuItem.createButtonMenuItem(text, nil, translate, onClick)
+    if item.textButton then item.textButton.backgroundColor = actionColor end
+    menuOptions[#menuOptions + 1] = item
+  end
+  addActionButton("op_all_keys", nil, function() self:setAllKeysStart() end)
+  addActionButton("Clear All Inputs", false, function() self:clearAllInputs() end)
+  addActionButton("Reset Keys To Default", false, function() self:resetToDefault() end)
 
-  -- Back button with warning for incomplete configurations
-  self.backMenuItem = ui.MenuItem.createButtonMenuItem("back", nil, nil, self:createExitMenuFunction())
-  menuOptions[#menuOptions + 1] = self.backMenuItem
-
-  self.menu = ui.Menu.createCenteredMenu(menuOptions, 0)
+  self.menu = ui.Menu.createCenteredMenu(menuOptions, 630)
   contentStack:addElement(self.menu)
 
   self.uiRoot:addChild(contentStack)
+
+  -- Back button pinned at bottom-left, outside the scrollable menu
+  self.backMenuItem = ui.MenuItem.createButtonMenuItem("back", nil, nil, self:createExitMenuFunction())
+  if self.backMenuItem.textButton then
+    self.backMenuItem.textButton.x = 20
+    self.backMenuItem.textButton.y = consts.CANVAS_HEIGHT - 60
+  end
+  self.uiRoot:addChild(self.backMenuItem.textButton)
 end
 
 function InputConfigMenu:update(dt)
@@ -379,6 +390,7 @@ end
 
 function InputConfigMenu:draw()
   themes[config.theme].images.bg_main:draw()
+  GraphicsUtil.drawRectangle("fill", 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, 0, 0, 0, 0.55)
   self.uiRoot:draw()
 end
 
