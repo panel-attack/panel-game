@@ -336,6 +336,111 @@ local FourPlayerFFA = GameMode({
   },
 })
 
+---@type GameMode
+local FivePlayerFFA = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v1v1v1v1 FFA",
+  name = "5p_ffa",
+
+  playerCount = 5,
+  teamCount = 5,
+  playersPerTeam = 1,
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local FivePlayerTeamVs1v4All = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v4 VS (All)",
+  name = "five_player_1v4_all",
+
+  playerCount = 5,
+  teamCount = 2,
+  playersPerTeam = {1, 4},
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local FivePlayerTeamVs1v4Shared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v4 VS (Shared)",
+  name = "five_player_1v4_shared",
+
+  playerCount = 5,
+  teamCount = 2,
+  playersPerTeam = {1, 4},
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local FivePlayerTeamVs2v3All = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "2v3 VS (All)",
+  name = "five_player_2v3_all",
+
+  playerCount = 5,
+  teamCount = 2,
+  playersPerTeam = {2, 3},
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local FivePlayerTeamVs2v3Shared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "2v3 VS (Shared)",
+  name = "five_player_2v3_shared",
+
+  playerCount = 5,
+  teamCount = 2,
+  playersPerTeam = {2, 3},
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
 
@@ -357,6 +462,12 @@ GameModes.IDs = {
   -- Free-for-all modes
   THREE_PLAYER_FFA = "THREE_PLAYER_FFA",
   FOUR_PLAYER_FFA = "FOUR_PLAYER_FFA",
+  FIVE_PLAYER_FFA = "FIVE_PLAYER_FFA",
+  -- 5-player team modes
+  FIVE_PLAYER_1V4_ALL = "FIVE_PLAYER_1V4_ALL",
+  FIVE_PLAYER_1V4_SHARED = "FIVE_PLAYER_1V4_SHARED",
+  FIVE_PLAYER_2V3_ALL = "FIVE_PLAYER_2V3_ALL",
+  FIVE_PLAYER_2V3_SHARED = "FIVE_PLAYER_2V3_SHARED",
 }
 
 ---@type table<GameModeID, GameMode>
@@ -375,6 +486,11 @@ privateGameModes[GameModes.IDs.THREE_PLAYER_VS_ALL] = ThreePlayerVersusAll
 privateGameModes[GameModes.IDs.THREE_PLAYER_VS_SHARED] = ThreePlayerVersusShared
 privateGameModes[GameModes.IDs.THREE_PLAYER_FFA] = ThreePlayerFFA
 privateGameModes[GameModes.IDs.FOUR_PLAYER_FFA] = FourPlayerFFA
+privateGameModes[GameModes.IDs.FIVE_PLAYER_FFA] = FivePlayerFFA
+privateGameModes[GameModes.IDs.FIVE_PLAYER_1V4_ALL] = FivePlayerTeamVs1v4All
+privateGameModes[GameModes.IDs.FIVE_PLAYER_1V4_SHARED] = FivePlayerTeamVs1v4Shared
+privateGameModes[GameModes.IDs.FIVE_PLAYER_2V3_ALL] = FivePlayerTeamVs2v3All
+privateGameModes[GameModes.IDs.FIVE_PLAYER_2V3_SHARED] = FivePlayerTeamVs2v3Shared
 
 ---@param mode GameModeID
 ---@return GameMode
@@ -422,6 +538,11 @@ GameModes.gameModeIdToName = {
   THREE_PLAYER_VS_SHARED = "three_player_vs_shared",
   THREE_PLAYER_FFA = "3p_ffa",
   FOUR_PLAYER_FFA = "4p_ffa",
+  FIVE_PLAYER_FFA = "5p_ffa",
+  FIVE_PLAYER_1V4_ALL = "five_player_1v4_all",
+  FIVE_PLAYER_1V4_SHARED = "five_player_1v4_shared",
+  FIVE_PLAYER_2V3_ALL = "five_player_2v3_all",
+  FIVE_PLAYER_2V3_SHARED = "five_player_2v3_shared",
 }
 
 ---@type table<string, GameModeID>
@@ -440,6 +561,11 @@ GameModes.nameToGameModeId = {
   three_player_vs_shared = "THREE_PLAYER_VS_SHARED",
   ["3p_ffa"] = "THREE_PLAYER_FFA",
   ["4p_ffa"] = "FOUR_PLAYER_FFA",
+  ["5p_ffa"] = "FIVE_PLAYER_FFA",
+  five_player_1v4_all = "FIVE_PLAYER_1V4_ALL",
+  five_player_1v4_shared = "FIVE_PLAYER_1V4_SHARED",
+  five_player_2v3_all = "FIVE_PLAYER_2V3_ALL",
+  five_player_2v3_shared = "FIVE_PLAYER_2V3_SHARED",
 }
 
 return GameModes

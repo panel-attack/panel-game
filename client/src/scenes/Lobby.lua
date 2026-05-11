@@ -244,7 +244,7 @@ function Lobby:initLobbyMenu()
           y = by,
           hAlign = "left",
           vAlign = "top",
-          height = 160,
+          height = 336,
           width = 180,
           padding = 0,
           childGap = 8,
@@ -277,6 +277,46 @@ function Lobby:initLobbyMenu()
             openGarbageMenu(b, {
               allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
               sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED,
+            })
+          end
+        }))
+        compositionMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "1 vs 4", translate = false}),
+          width = 180,
+          onClick = function(b)
+            openGarbageMenu(b, {
+              allMode = GameModes.IDs.FIVE_PLAYER_1V4_ALL,
+              sharedMode = GameModes.IDs.FIVE_PLAYER_1V4_SHARED,
+            })
+          end
+        }))
+        compositionMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "4 vs 1", translate = false}),
+          width = 180,
+          onClick = function(b)
+            openGarbageMenu(b, {
+              allMode = GameModes.IDs.FIVE_PLAYER_1V4_ALL,
+              sharedMode = GameModes.IDs.FIVE_PLAYER_1V4_SHARED,
+            })
+          end
+        }))
+        compositionMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "2 vs 3", translate = false}),
+          width = 180,
+          onClick = function(b)
+            openGarbageMenu(b, {
+              allMode = GameModes.IDs.FIVE_PLAYER_2V3_ALL,
+              sharedMode = GameModes.IDs.FIVE_PLAYER_2V3_SHARED,
+            })
+          end
+        }))
+        compositionMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "3 vs 2", translate = false}),
+          width = 180,
+          onClick = function(b)
+            openGarbageMenu(b, {
+              allMode = GameModes.IDs.FIVE_PLAYER_2V3_ALL,
+              sharedMode = GameModes.IDs.FIVE_PLAYER_2V3_SHARED,
             })
           end
         }))
@@ -326,6 +366,15 @@ function Lobby:initLobbyMenu()
           width = 180,
           onClick = function()
             GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA))
+            ffaMenu:yieldFocus()
+            subMenu:yieldFocus()
+          end
+        }))
+        ffaMenu:addChild(ui.TextButton({
+          label = ui.Label({text = "5 Players (1v1v1v1v1)", translate = false}),
+          width = 180,
+          onClick = function()
+            GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.FIVE_PLAYER_FFA))
             ffaMenu:yieldFocus()
             subMenu:yieldFocus()
           end
