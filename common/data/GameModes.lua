@@ -402,6 +402,33 @@ local FivePlayerFFA = GameMode({
 })
 
 ---@type GameMode
+-- Open FFA: dynamic roster, public drop-in. The room accepts 2-5 players and a
+-- match starts when at least minPlayers are present + everyone is ready. New
+-- joiners between matches drop straight into the next round; mid-match joiners
+-- spectate until the current match ends, then promote up to maxPlayers.
+-- playerCount/teamCount are left nil here and filled in at match start from
+-- the actual roster.
+local OpenFFA = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "Open FFA",
+  name = "open_ffa",
+
+  minPlayers = 2,
+  maxPlayers = 5,
+  playersPerTeam = 1,
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
 local FivePlayerTeamVs1v4All = GameMode({
   gameScene = "GameBase",
   richPresenceLabel = "1v4 VS (All)",
@@ -595,6 +622,7 @@ GameModes.IDs = {
   THREE_PLAYER_FFA = "THREE_PLAYER_FFA",
   FOUR_PLAYER_FFA = "FOUR_PLAYER_FFA",
   FIVE_PLAYER_FFA = "FIVE_PLAYER_FFA",
+  OPEN_FFA = "OPEN_FFA",
   -- 5-player team modes
   FIVE_PLAYER_1V4_ALL = "FIVE_PLAYER_1V4_ALL",
   FIVE_PLAYER_1V4_SHARED = "FIVE_PLAYER_1V4_SHARED",
@@ -633,6 +661,7 @@ privateGameModes[GameModes.IDs.FIVE_PLAYER_2V3_ALL] = FivePlayerTeamVs2v3All
 privateGameModes[GameModes.IDs.FIVE_PLAYER_2V3_SHARED] = FivePlayerTeamVs2v3Shared
 privateGameModes[GameModes.IDs.FIVE_PLAYER_3V2_ALL] = FivePlayerTeamVs3v2All
 privateGameModes[GameModes.IDs.FIVE_PLAYER_3V2_SHARED] = FivePlayerTeamVs3v2Shared
+privateGameModes[GameModes.IDs.OPEN_FFA] = OpenFFA
 
 ---@param mode GameModeID
 ---@return GameMode
@@ -691,6 +720,7 @@ GameModes.gameModeIdToName = {
   FIVE_PLAYER_2V3_SHARED = "five_player_2v3_shared",
   FIVE_PLAYER_3V2_ALL = "five_player_3v2_all",
   FIVE_PLAYER_3V2_SHARED = "five_player_3v2_shared",
+  OPEN_FFA = "open_ffa",
 }
 
 ---@type table<string, GameModeID>
@@ -720,6 +750,7 @@ GameModes.nameToGameModeId = {
   five_player_2v3_shared = "FIVE_PLAYER_2V3_SHARED",
   five_player_3v2_all = "FIVE_PLAYER_3V2_ALL",
   five_player_3v2_shared = "FIVE_PLAYER_3V2_SHARED",
+  open_ffa = "OPEN_FFA",
 }
 
 return GameModes

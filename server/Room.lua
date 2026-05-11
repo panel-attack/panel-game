@@ -52,7 +52,10 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.roomNumber = roomNumber
   self.gameMode = gameMode
   self.gameModeId = gameMode and (gameMode.gameModeId or gameMode.id or GameModes.nameToGameModeId[gameMode.name]) or nil
-  self.maxPlayers = (gameMode and gameMode.playerCount) or #players
+  -- Dynamic-roster modes (e.g. open_ffa) carry minPlayers/maxPlayers on the preset.
+  -- Fixed-roster modes use playerCount for both bounds.
+  self.minPlayers = (gameMode and gameMode.minPlayers) or (gameMode and gameMode.playerCount) or #players
+  self.maxPlayers = (gameMode and gameMode.maxPlayers) or (gameMode and gameMode.playerCount) or #players
   self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
   self.spectators = {}
   self.win_counts = {}
@@ -182,7 +185,7 @@ function Room:onPlayerSettingsUpdate(player)
     end
     logger.info("Room " .. self.roomNumber .. " readiness after " .. tostring(player.name) .. " update: " .. table.concat(readyParts, " "))
 
-    if tableUtils.trueForAll(self.players, ServerPlayer.isReady) then
+    if #self.players >= self.minPlayers and tableUtils.trueForAll(self.players, ServerPlayer.isReady) then
       self:start_match()
     else
       local settings = player:getSettings()
@@ -193,8 +196,8 @@ function Room:onPlayerSettingsUpdate(player)
 end
 
 function Room:start_match()
-  if not self:isFull() then
-    logger.warn("Cannot start match in room " .. self.roomNumber .. " - waiting for " .. (self.maxPlayers - #self.players) .. " more players")
+  if #self.players < self.minPlayers then
+    logger.warn("Cannot start match in room " .. self.roomNumber .. " - waiting for " .. (self.minPlayers - #self.players) .. " more players (min " .. self.minPlayers .. ")")
     return false
   end
 
@@ -205,6 +208,21 @@ function Room:start_match()
 
   self.matchCount = self.matchCount + 1
   logger.info("Starting match " .. self.matchCount .. " for " .. self.roomNumber .. " " .. self.name)
+
+  -- Dynamic-roster modes resolve their final playerCount/teamCount at match start
+  -- from the actual roster (e.g. open_ffa with 3 of 5 slots filled → 3-player FFA).
+  if self.gameMode and not self.gameMode.playerCount then
+    self.gameMode.playerCount = #self.players
+    self.gameMode.teamCount = self.gameMode.teamCount or #self.players
+  end
+  -- Recompute teams every match so drop-ins / drop-outs are reflected.
+  if self.gameMode and self.gameMode.teamCount and self.gameMode.playersPerTeam then
+    self.teams = TeamUtils.createTeams(#self.players, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+    self.team_win_counts = self.team_win_counts or {}
+    for teamIndex = 1, #self.teams do
+      self.team_win_counts[teamIndex] = self.team_win_counts[teamIndex] or 0
+    end
+  end
 
   for _, player in ipairs(self.players) do
     player.wantsReady = false

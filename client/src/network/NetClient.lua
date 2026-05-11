@@ -200,6 +200,7 @@ getSceneFromRoom = function(room)
       or room.mode.name == "three_player_vs_all" or room.mode.name == "three_player_vs_shared"
       or room.mode.name == "three_player_vs_all_2v1" or room.mode.name == "three_player_vs_shared_2v1"
       or room.mode.name == "3p_ffa" or room.mode.name == "4p_ffa" or room.mode.name == "5p_ffa"
+      or room.mode.name == "open_ffa"
       or room.mode.name == "five_player_1v4_all" or room.mode.name == "five_player_1v4_shared"
       or room.mode.name == "five_player_4v1_all" or room.mode.name == "five_player_4v1_shared"
       or room.mode.name == "five_player_2v3_all" or room.mode.name == "five_player_2v3_shared"
@@ -216,10 +217,12 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
 
-  -- Check if this is a partial team room (waiting for more players)
+  -- Open FFA goes straight to the waiting room (drop-in by design); every other
+  -- mode stays in the lobby with open slots until it fills.
+  local isOpenFfa = self.room.mode.name == "open_ffa"
   local playerCount = #self.room.players
-  local maxPlayers = self.room.mode.playerCount or 2
-  if playerCount < maxPlayers then
+  local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
+  if not isOpenFfa and playerCount < maxPlayers then
     -- Stay in lobby - room will show in lobby list with open slots
     logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
     self.state = states.ONLINE
@@ -489,10 +492,14 @@ local function processPlayerJoinedRoom(self, message)
     love.window.requestAttention()
     SoundController:playSfx(themes[config.theme].sounds.notification)
 
-    -- Check if room is now full - if so, navigate to CharacterSelect
+    -- Check if room is now full - if so, navigate to CharacterSelect.
+    -- Skip this for open_ffa (local player is already in the waiting room since
+    -- creation) and for clients already in the room scene (avoid duplicate push).
     local playerCount = #self.room.players
-    local maxPlayers = self.room.mode.playerCount or 2
-    if playerCount >= maxPlayers then
+    local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
+    local alreadyInRoom = self.state == states.ROOM or self.state == states.INGAME
+    local isOpenFfa = self.room.mode.name == "open_ffa"
+    if playerCount >= maxPlayers and not alreadyInRoom and not isOpenFfa then
       logger.info("Room " .. (self.room.roomNumber or "?") .. " is now full (" .. playerCount .. "/" .. maxPlayers .. "). Navigating to game scene.")
       local roomScene = getSceneFromRoom(self.room)
       if roomScene then

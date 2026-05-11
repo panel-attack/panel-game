@@ -348,37 +348,36 @@ function Lobby:initLobbyMenu()
       childGap = 8,
     })
 
+    local function closeInviteOnlyChain()
+      if self.ffaPlayerCountMenu then self.ffaPlayerCountMenu:yieldFocus() end
+      if self.ffaTypeMenu then self.ffaTypeMenu:yieldFocus() end
+    end
+
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "3 Players (1v1v1)", translate = false}),
       width = 180,
       onClick = function(b)
-        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA), function()
-          if self.ffaPlayerCountMenu then self.ffaPlayerCountMenu:yieldFocus() end
-        end)
+        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA), closeInviteOnlyChain)
       end
     }))
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "4 Players (1v1v1v1)", translate = false}),
       width = 180,
       onClick = function(b)
-        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA), function()
-          if self.ffaPlayerCountMenu then self.ffaPlayerCountMenu:yieldFocus() end
-        end)
+        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA), closeInviteOnlyChain)
       end
     }))
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "5 Players (1v1v1v1v1)", translate = false}),
       width = 180,
       onClick = function(b)
-        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FIVE_PLAYER_FFA), function()
-          if self.ffaPlayerCountMenu then self.ffaPlayerCountMenu:yieldFocus() end
-        end)
+        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FIVE_PLAYER_FFA), closeInviteOnlyChain)
       end
     }))
     ffaMenu:select(ffaMenu.children[1])
 
     self.ffaPlayerCountMenu = ffaMenu
-    self.lobbyMenu:setFocus(ffaMenu, function()
+    self.ffaTypeMenu:setFocus(ffaMenu, function()
       if self.latencyMenu then
         self.latencyMenu:detach()
         self.latencyMenu = nil
@@ -387,6 +386,57 @@ function Lobby:initLobbyMenu()
       self.ffaPlayerCountMenu = nil
     end)
     self.uiRoot:addChild(ffaMenu)
+  end
+
+  -- Top-level FFA picker: Invite-only (fixed roster, owner invites) vs Open
+  -- (public drop-in, 2-5 dynamic roster).
+  local function openFfaTypeMenu(parentButton)
+    if self.ffaTypeMenu then
+      self.ffaTypeMenu:yieldFocus()
+    end
+
+    local bx, by = parentButton:getScreenPos()
+    local typeMenu = ui.ScrollMenu({
+      x = bx + parentButton.width + 3,
+      y = by,
+      hAlign = "left",
+      vAlign = "top",
+      height = 160,
+      width = 220,
+      padding = 0,
+      childGap = 8,
+    })
+
+    typeMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "Invite-only", translate = false}),
+      width = 220,
+      onClick = function(b) openFfaMenu(b) end,
+    }))
+    typeMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "Open (2-5, drop-in)", translate = false}),
+      width = 220,
+      onClick = function(b)
+        openLatencyMenu(typeMenu, b, GameModes.getPreset(GameModes.IDs.OPEN_FFA), function()
+          if self.ffaTypeMenu then self.ffaTypeMenu:yieldFocus() end
+        end)
+      end,
+    }))
+    typeMenu:select(typeMenu.children[1])
+
+    self.ffaTypeMenu = typeMenu
+    self.lobbyMenu:setFocus(typeMenu, function()
+      if self.latencyMenu then
+        self.latencyMenu:detach()
+        self.latencyMenu = nil
+      end
+      if self.ffaPlayerCountMenu then
+        self.ffaPlayerCountMenu:detach()
+        self.ffaPlayerCountMenu = nil
+      end
+      self.ffaTypeMenu:detach()
+      self.ffaTypeMenu = nil
+    end)
+    self.uiRoot:addChild(typeMenu)
   end
 
   self.teamCreateButtonLabel = ui.Label({text = "Create Team Game", translate = false})
@@ -414,11 +464,11 @@ function Lobby:initLobbyMenu()
         GAME.netClient:leaveRoom()
         return
       end
-      if self.ffaPlayerCountMenu then
-        self.ffaPlayerCountMenu:yieldFocus()
+      if self.ffaTypeMenu then
+        self.ffaTypeMenu:yieldFocus()
         return
       end
-      openFfaMenu(button)
+      openFfaTypeMenu(button)
     end
   })
   self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})
