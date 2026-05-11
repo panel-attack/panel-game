@@ -1334,11 +1334,12 @@ end
 function Server:handleLeaveRoom(player, reason)
   local room = self.playerToRoom[player]
   if room then
-    -- 3+ player rooms: void the room (game over for everyone, no new matches),
-    -- send the leaver their leaveRoom, and let remaining players keep the room
-    -- visible until they manually leave (last leaver triggers actual close).
-    -- 2-player and solo rooms: nothing meaningful to keep alive — close immediately.
-    if #room.players >= 3 then
+    -- Use voidByLeave when the room is multi-player (3+ at start) OR was already
+    -- voided by a previous leave. The latter is important: once we void a room,
+    -- subsequent leaves should keep removing players one at a time so survivors
+    -- can keep viewing — not collapse the whole thing on the second leaver. Only
+    -- 2-player VS rooms and solo rooms collapse immediately on a single leave.
+    if #room.players >= 3 or room.voided then
       self.playerToRoom[player] = nil
       player:removeFromRoom(room, reason)  -- sends leaveRoom to leaver, sets state=lobby
       room:voidByLeave(player, reason)     -- aborts in-progress match, removes leaver, broadcasts playerLeftRoom
