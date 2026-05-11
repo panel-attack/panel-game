@@ -236,8 +236,8 @@ function Lobby:initLobbyMenu()
           width = 180,
           onClick = function(b)
             openGarbageMenu(b, {
-              allMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
-              sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED,
+              allMode = GameModes.IDs.THREE_PLAYER_VS_ALL_2V1,
+              sharedMode = GameModes.IDs.THREE_PLAYER_VS_SHARED_2V1,
             })
           end
         }))
@@ -256,8 +256,8 @@ function Lobby:initLobbyMenu()
           width = 180,
           onClick = function(b)
             openGarbageMenu(b, {
-              allMode = GameModes.IDs.FIVE_PLAYER_1V4_ALL,
-              sharedMode = GameModes.IDs.FIVE_PLAYER_1V4_SHARED,
+              allMode = GameModes.IDs.FIVE_PLAYER_4V1_ALL,
+              sharedMode = GameModes.IDs.FIVE_PLAYER_4V1_SHARED,
             })
           end
         }))
@@ -276,8 +276,8 @@ function Lobby:initLobbyMenu()
           width = 180,
           onClick = function(b)
             openGarbageMenu(b, {
-              allMode = GameModes.IDs.FIVE_PLAYER_2V3_ALL,
-              sharedMode = GameModes.IDs.FIVE_PLAYER_2V3_SHARED,
+              allMode = GameModes.IDs.FIVE_PLAYER_3V2_ALL,
+              sharedMode = GameModes.IDs.FIVE_PLAYER_3V2_SHARED,
             })
           end
         }))
