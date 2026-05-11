@@ -529,24 +529,65 @@ local function getTeamIndexForSlot(room, slotNumber)
   return nil
 end
 
-local function teamColorPrefix(teamIndex)
-  if teamIndex == 1 then
-    return "🔵"
-  elseif teamIndex == 2 then
-    return "🔴"
-  else
-    return "⚪"
-  end
+-- Team-color swatch (used for empty waiting seats — color only, no mascot).
+local function teamColorSwatch(teamIndex)
+  if teamIndex == 1 then return "🩷"
+  elseif teamIndex == 2 then return "🟣"
+  else return "⚪" end
 end
 
-local function getColoredSlotLabel(room, slotNumber)
-  local slotLabel = getSlotLabel(room, slotNumber)
-  local teamIndex = getTeamIndexForSlot(room, slotNumber)
-  if teamIndex then
-    return teamColorPrefix(teamIndex) .. " " .. slotLabel
-  end
-  return slotLabel
+-- Mascot for a given (teamIndex, positionWithinTeam) — gives every player in
+-- a team room their own creature so 2 pinks aren't visually identical.
+-- Pink (team 1): 🦩 flamingo / 🌺 hibiscus
+-- Purple (team 2): 🦄 unicorn / 🍇 grapes
+local TEAM_MASCOTS = {
+  [1] = {"🦩", "🌺"},
+  [2] = {"🦄", "🍇"},
+}
+
+local function teamMascot(teamIndex, positionWithinTeam)
+  local set = TEAM_MASCOTS[teamIndex]
+  if not set then return "" end
+  return set[positionWithinTeam] or set[#set] or ""
 end
+
+-- (teamIndex, positionWithinTeam) for a given absolute slot number.
+local function getTeamSlotInfo(room, slotNumber)
+  if not room or not room.gameModeId then return nil, nil end
+  local ok, gm = pcall(GameModes.getPreset, room.gameModeId)
+  if not ok or not gm then return nil, nil end
+
+  local p = gm.playersPerTeam
+  if type(p) == "number" then
+    local teamIndex = math.floor((slotNumber - 1) / p) + 1
+    local pos = ((slotNumber - 1) % p) + 1
+    return teamIndex, pos
+  elseif type(p) == "table" then
+    local cumulative = 0
+    for idx, count in ipairs(p) do
+      if slotNumber <= cumulative + count then
+        return idx, slotNumber - cumulative
+      end
+      cumulative = cumulative + count
+    end
+  end
+  return nil, nil
+end
+
+-- Filled-row prefix:  🩷🦩  /  🟣🍇  (color swatch + per-position mascot)
+local function teamFilledPrefix(room, slotNumber)
+  local teamIndex, pos = getTeamSlotInfo(room, slotNumber)
+  if not teamIndex then return "" end
+  return teamColorSwatch(teamIndex) .. teamMascot(teamIndex, pos)
+end
+
+-- Empty/waiting prefix:  🩷  /  🟣  (color swatch only — no mascot for an empty seat)
+local function teamEmptyPrefix(room, slotNumber)
+  local teamIndex = (getTeamSlotInfo(room, slotNumber))
+  if not teamIndex then return "" end
+  return teamColorSwatch(teamIndex)
+end
+
 
 -----------------
 -- leaderboard --
@@ -753,34 +794,33 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       -- This is the local player's room - show status and local room actions
       local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
 
-      -- Build player list with slot labels
+      -- Build player list:  🩷🦩 Amber (You)
       local playerLines = {}
       for i, playerId in ipairs(room.players) do
-        local slotLabel = getColoredSlotLabel(room, i)
+        local prefix = teamFilledPrefix(room, i)
         local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
-        if playerId == localPublicId then
-          playerLines[#playerLines + 1] = slotLabel .. ": " .. playerName .. " (You)"
-        else
-          playerLines[#playerLines + 1] = slotLabel .. ": " .. playerName
-        end
+        local suffix = (playerId == localPublicId) and " (You)" or ""
+        playerLines[#playerLines + 1] = prefix .. " " .. playerName .. suffix
       end
 
-      -- Build waiting list
-      local waitingSlots = {}
+      -- Build waiting list:  🩷 (waiting...) or 🩷 ← Bev wants in
+      local waitingLines = {}
       for _, slotNumber in ipairs(room.openSlots) do
-        local slotLabel = getColoredSlotLabel(room, slotNumber)
+        local prefix = teamEmptyPrefix(room, slotNumber)
+        local line
         if room.slotRequests and room.slotRequests[slotNumber] then
           local requester = personalizedLobbyData.players[room.slotRequests[slotNumber]]
-          if requester then
-            slotLabel = slotLabel .. " ← " .. requester.name
-          end
+          local requesterName = (requester and requester.name) or "someone"
+          line = prefix .. " ← " .. requesterName .. " wants in"
+        else
+          line = prefix .. " (waiting...)"
         end
-        waitingSlots[#waitingSlots + 1] = slotLabel
+        waitingLines[#waitingLines + 1] = line
       end
 
       roomName = "Your Team Room " .. slotsText .. "\n" .. table.concat(playerLines, "\n")
-      if #waitingSlots > 0 then
-        roomName = roomName .. "\nWaiting: " .. table.concat(waitingSlots, ", ")
+      if #waitingLines > 0 then
+        roomName = roomName .. "\n" .. table.concat(waitingLines, "\n")
       else
         roomName = roomName .. "\n(" .. room.state .. ")"
       end
@@ -795,23 +835,29 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       local slotsText = string.format("%d/%d", #room.players, room.maxPlayers or 2)
       local waitingLines = {}
       for i, playerId in ipairs(room.players) do
-        local slotLabel = getColoredSlotLabel(room, i)
+        local prefix = teamFilledPrefix(room, i)
         local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
-        waitingLines[#waitingLines + 1] = slotLabel .. ": " .. playerName
+        waitingLines[#waitingLines + 1] = prefix .. " " .. playerName
       end
 
       local roomOwnerId = room.ownerId or (room.players and room.players[1])
-      local hasInvite = false
+      local invitedSlot = nil
       if roomOwnerId and personalizedLobbyData.incomingChallenges[roomOwnerId] then
         for _, slotNumber in ipairs(room.openSlots) do
           if personalizedLobbyData.incomingChallenges[roomOwnerId]["room_" .. room.roomNumber .. "_" .. slotNumber] then
-            hasInvite = true
+            invitedSlot = slotNumber
             break
           end
         end
       end
 
-      local joinLabel = hasInvite and (loc("lb_join") .. " (invited)") or loc("lb_join")
+      -- "(invited)" tag includes the team color of the seat you've been invited to.
+      local joinLabel
+      if invitedSlot then
+        joinLabel = loc("lb_join") .. " " .. teamEmptyPrefix(room, invitedSlot) .. " (invited)"
+      else
+        joinLabel = loc("lb_join")
+      end
       roomName = joinLabel .. "\n" .. table.concat(waitingLines, "\n") .. "\n[" .. slotsText .. "]"
       -- Clicking opens room submenu for joining
       onClick = function(button)
@@ -822,9 +868,9 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       -- Full room - show spectate option with everyone in the room
       local playerLines = {}
       for i, playerId in ipairs(room.players) do
-        local slotLabel = getColoredSlotLabel(room, i)
+        local prefix = teamFilledPrefix(room, i)
         local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
-        playerLines[#playerLines + 1] = slotLabel .. ": " .. playerName
+        playerLines[#playerLines + 1] = prefix .. " " .. playerName
       end
       roomName = loc("lb_spectate") .. "\n" .. table.concat(playerLines, "\n") .. "\n(" .. room.state .. ")"
       onClick = self:requestSpectateFunction(room)
@@ -911,14 +957,15 @@ function Lobby:openRoomSubMenu(room, button)
   if room.openSlots then
     local roomOwnerId = room.ownerId or (room.players and room.players[1])
     for _, slotNumber in ipairs(room.openSlots) do
-      local slotLabel = getSlotLabel(room, slotNumber)
+      -- "Join 🩷" / "Join 🟣" — color = team you'd be filling.
+      local joinLbl = loc("lb_join") .. " " .. teamEmptyPrefix(room, slotNumber)
       local joinButton = ui.LobbyChallengeButton({
         playerId = roomOwnerId,
         iconSize = 16,
         roomNumber = room.roomNumber,
         slotNumber = slotNumber,
         gameModeId = room.gameModeId,
-        label = ui.Label({text = loc("lb_join") .. " " .. slotLabel, translate = false}),
+        label = ui.Label({text = joinLbl, translate = false}),
         acceptImage = GAME.theme:getFightImage(),
         proposeImage = GAME.theme:getCheckboxImage(false),
         withdrawImage = GAME.theme:getCheckboxImage(true),
@@ -1069,14 +1116,15 @@ function Lobby:openPlayerSubMenu(playerId, button)
     if targetRoom and targetRoom.openSlots then
       local roomOwnerId = targetRoom.ownerId or (targetRoom.players and targetRoom.players[1])
       for _, slotNumber in ipairs(targetRoom.openSlots) do
-        local slotLabel = getSlotLabel(targetRoom, slotNumber)
+        -- "Join 🟣" — show the team color of the seat you'd fill.
+        local quickJoinLabel = loc("lb_join") .. " " .. teamEmptyPrefix(targetRoom, slotNumber)
         local quickJoin = ui.LobbyChallengeButton({
           playerId = roomOwnerId,
           roomNumber = targetRoom.roomNumber,
           slotNumber = slotNumber,
           gameModeId = targetRoom.gameModeId,
           iconSize = 16,
-          label = ui.Label({text = loc("lb_join") .. " " .. slotLabel, translate = false}),
+          label = ui.Label({text = quickJoinLabel, translate = false}),
           acceptImage = GAME.theme:getFightImage(),
           proposeImage = GAME.theme:getCheckboxImage(false),
           withdrawImage = GAME.theme:getCheckboxImage(true),
@@ -1102,7 +1150,8 @@ function Lobby:openPlayerSubMenu(playerId, button)
       local incoming = lobbyDataV2.incomingChallenges[playerId]
 
       for _, slotNumber in ipairs(myRoom.openSlots) do
-        local slotLabel = getSlotLabel(myRoom, slotNumber)
+        -- "Invite to 🩷" / "Invite to 🟣" — show which team's seat would be filled.
+        local inviteLabel = "Invite to " .. teamEmptyPrefix(myRoom, slotNumber)
         local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
         local inviteBtn = ui.LobbyChallengeButton({
           roomNumber = myRoom.roomNumber,
@@ -1110,7 +1159,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
           gameModeId = myRoom.gameModeId,
           playerId = playerId,
           iconSize = 16,
-          label = ui.Label({text = "Invite " .. slotLabel, translate = false}),
+          label = ui.Label({text = inviteLabel, translate = false}),
           acceptImage = GAME.theme:getFightImage(),
           proposeImage = GAME.theme:getCheckboxImage(false),
           withdrawImage = GAME.theme:getCheckboxImage(true),
@@ -1501,23 +1550,18 @@ function Lobby:updateRoomPanel(updateInfo)
 
         -- Show players in their slots
         for i, playerId in ipairs(room.players) do
-          local slotLabel = getColoredSlotLabel(room, i)
+          local prefix = teamFilledPrefix(room, i)
           local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
           local playerName = playerInfo and playerInfo.name or "?"
-          if playerId == localPublicId then
-            lines[#lines + 1] = slotLabel .. ": " .. playerName .. " (You)"
-          else
-            lines[#lines + 1] = slotLabel .. ": " .. playerName
-          end
+          local suffix = (playerId == localPublicId) and " (You)" or ""
+          lines[#lines + 1] = prefix .. " " .. playerName .. suffix
         end
 
-        -- Show waiting slots
+        -- Show waiting slots:  🩷 (waiting...)  /  🟣 (waiting...)
         if #room.openSlots > 0 then
-          local waitingSlots = {}
           for _, slotNumber in ipairs(room.openSlots) do
-            waitingSlots[#waitingSlots + 1] = getColoredSlotLabel(room, slotNumber)
+            lines[#lines + 1] = teamEmptyPrefix(room, slotNumber) .. " (waiting...)"
           end
-          lines[#lines + 1] = "Waiting: " .. table.concat(waitingSlots, ", ")
         end
 
         text = table.concat(lines, "\n")
@@ -1530,27 +1574,27 @@ function Lobby:updateRoomPanel(updateInfo)
           lines[#lines + 1] = gameModeName
         end
 
-        -- Show teams clearly for in-progress team games
-        local blueNames = {}
-        local redNames = {}
+        -- Show teams clearly for in-progress team games (pink/purple).
+        local pinkNames = {}
+        local purpleNames = {}
         for i, playerId in ipairs(room.players) do
           local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
           local playerName = playerInfo and playerInfo.name or "?"
           local teamIndex = getTeamIndexForSlot(room, i)
           if teamIndex == 1 then
-            blueNames[#blueNames + 1] = playerName
+            pinkNames[#pinkNames + 1] = playerName
           elseif teamIndex == 2 then
-            redNames[#redNames + 1] = playerName
+            purpleNames[#purpleNames + 1] = playerName
           else
-            lines[#lines + 1] = getColoredSlotLabel(room, i) .. ": " .. playerName
+            lines[#lines + 1] = teamFilledPrefix(room, i) .. " " .. playerName
           end
         end
 
-        if #blueNames > 0 then
-          lines[#lines + 1] = "🔵 Blue Team: " .. table.concat(blueNames, ", ")
+        if #pinkNames > 0 then
+          lines[#lines + 1] = "🩷 Pink Team: " .. table.concat(pinkNames, ", ")
         end
-        if #redNames > 0 then
-          lines[#lines + 1] = "🔴 Red Team: " .. table.concat(redNames, ", ")
+        if #purpleNames > 0 then
+          lines[#lines + 1] = "🟣 Purple Team: " .. table.concat(purpleNames, ", ")
         end
 
         -- Show state and spectators
