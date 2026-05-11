@@ -638,14 +638,14 @@ local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
 end
 
 local teamColors = {
-  {0.45, 0.7,  1,    1},  -- blue
-  {1,    0.45, 0.45, 1},  -- red
+  {1,    0.55, 0.75, 1},  -- pink   (team 1)
+  {0.65, 0.4,  0.95, 1},  -- purple (team 2)
   {0.45, 1,    0.45, 1},  -- green
   {1,    1,    0.45, 1},  -- yellow
   {1,    0.6,  0.2,  1},  -- orange
-  {0.8,  0.45, 1,    1},  -- purple
+  {0.45, 0.7,  1,    1},  -- blue
   {0.45, 1,    1,    1},  -- cyan
-  {1,    0.45, 1,    1},  -- magenta
+  {1,    0.45, 0.45, 1},  -- red
 }
 
 ---@param text string
@@ -675,6 +675,17 @@ function ClientMatch:drawTeamScoreboard()
     return
   end
 
+  local canvasWidth = GAME.globalCanvas:getWidth()
+  local teamWins = GAME.battleRoom and GAME.battleRoom.teamWins
+
+  -- Shared 2-team banner header (pink/purple). Returns silently for FFA / non-team modes.
+  local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
+  TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth)
+
+  -- For >2 teams, fall through to the legacy section-row layout below.
+  local teamCount = self.gameMode.teamCount or 2
+  if teamCount == 2 then return end
+
   local teamData = {}
   for i, player in ipairs(self.players) do
     local teamIndex = getTeamIndexForPlayerPosition(self.gameMode, i) or i
@@ -682,31 +693,17 @@ function ClientMatch:drawTeamScoreboard()
       teamData[teamIndex] = {names = {}, wins = 0}
     end
     teamData[teamIndex].names[#teamData[teamIndex].names + 1] = player.name or ("P" .. i)
-    teamData[teamIndex].wins = math.max(teamData[teamIndex].wins, player:getWinCountForDisplay())
+    if teamWins and teamWins[teamIndex] then
+      teamData[teamIndex].wins = teamWins[teamIndex]
+    else
+      teamData[teamIndex].wins = math.max(teamData[teamIndex].wins, player:getWinCountForDisplay())
+    end
   end
 
-  local teamCount = self.gameMode.teamCount or 2
-  local canvasWidth = GAME.globalCanvas:getWidth()
   local topY = (#self.stacks >= 4) and 4 or 8
-  local centerX = canvasWidth / 2
   local font = GraphicsUtil.getGlobalFont()
 
-  if teamCount == 2 then
-    local nameWidth = 430
-    local scoreWidth = 70
-    local t1 = teamData[1] or {names = {}, wins = 0}
-    local t2 = teamData[2] or {names = {}, wins = 0}
-    local t1Name = clampTextToWidth(table.concat(t1.names, ", "), nameWidth, font)
-    local t2Name = clampTextToWidth(table.concat(t2.names, ", "), nameWidth, font)
-
-    GraphicsUtil.setColor(unpack(teamColors[1]))
-    GraphicsUtil.printf(t1Name, centerX - 440, topY, nameWidth, "center")
-    GraphicsUtil.printf(tostring(t1.wins), centerX - 65, topY, scoreWidth, "center", nil, 2)
-
-    GraphicsUtil.setColor(unpack(teamColors[2]))
-    GraphicsUtil.printf(tostring(t2.wins), centerX - 5, topY, scoreWidth, "center", nil, 2)
-    GraphicsUtil.printf(t2Name, centerX + 40, topY, nameWidth, "center")
-  else
+  do
     local sectionWidth = canvasWidth / teamCount
     for t = 1, teamCount do
       local data = teamData[t]

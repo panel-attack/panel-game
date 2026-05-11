@@ -23,14 +23,14 @@ local TeamUtils = require("common.data.TeamUtils")
 -- ClientMatch:drawTeamScoreboard so the chip above each stack matches the
 -- scoreboard tint at the top of the screen.
 local TEAM_COLORS = {
-  {0.45, 0.7,  1,    0.85}, -- blue
-  {1,    0.45, 0.45, 0.85}, -- red
+  {1,    0.55, 0.75, 0.85}, -- pink   (team 1)
+  {0.65, 0.4,  0.95, 0.85}, -- purple (team 2)
   {0.45, 1,    0.45, 0.85}, -- green
   {1,    1,    0.45, 0.85}, -- yellow
   {1,    0.6,  0.2,  0.85}, -- orange
-  {0.8,  0.45, 1,    0.85}, -- purple
+  {0.45, 0.7,  1,    0.85}, -- blue
   {0.45, 1,    1,    0.85}, -- cyan
-  {1,    0.45, 1,    0.85}, -- magenta
+  {1,    0.45, 0.45, 0.85}, -- red
 }
 
 local function teamColorForStack(match, stack, stackIndex)
@@ -57,8 +57,6 @@ local function isSharedTeamMode(gameMode)
   end
   return false
 end
-
-GameBase.isSharedTeamMode = isSharedTeamMode
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
@@ -200,18 +198,15 @@ local function buildTeamResultText(match, winners)
     winnerTeamCount = winnerTeamCount + 1
   end
 
-  local teamA = teams[1] and joinPlayerNames(teams[1]) or "-"
-  local teamB = teams[2] and joinPlayerNames(teams[2]) or "-"
-
   if winnerTeamCount == 1 and winnerTeamIndex then
-    local prefix = ""
     if localTeam then
-      prefix = (localTeam == winnerTeamIndex) and "WIN - " or "LOSE - "
+      return (localTeam == winnerTeamIndex) and "YOUR TEAM WINS" or "YOUR TEAM LOSES"
     end
-    return prefix .. "Team " .. teamLetter(winnerTeamIndex) .. " wins | Team A: " .. teamA .. " | Team B: " .. teamB
+    -- Spectator without a team allegiance: keep a minimal neutral message.
+    return "Team " .. teamLetter(winnerTeamIndex) .. " wins"
   end
 
-  return "Draw | Team A: " .. teamA .. " | Team B: " .. teamB
+  return "DRAW"
 end
 
 -- returns "stage" or "character" depending on which should be used according to the config.use_music_from setting

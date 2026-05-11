@@ -167,8 +167,6 @@ function MatchParticipant:setWantsReady(wantsReady)
       tostring(self.settings.wantsReady), tostring(wantsReady), tostring(self.name), tostring(self.isLocal)))
     self.settings.wantsReady = wantsReady
     self:emitSignal("wantsReadyChanged", wantsReady)
-  else
-    logger.info(string.format("setWantsReady noop %s for %s", tostring(wantsReady), tostring(self.name)))
   end
 end
 

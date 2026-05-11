@@ -1087,7 +1087,58 @@ end
 
 function CharacterSelect:drawSelf()
   self.backgroundImg:draw()
+  self:drawTeamPlayerBackgrounds()
+  self:drawTeamBannerHeader()
   self:customDraw()
+end
+
+-- Top-of-screen pink/purple banner pair (same component as in-game).
+function CharacterSelect:drawTeamBannerHeader()
+  if not (self.battleRoom and self.battleRoom.mode) then return end
+  local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
+  TeamBannerHeader.draw(self.battleRoom.mode,
+                        self.battleRoom.players,
+                        self.battleRoom.teamWins,
+                        GAME.globalCanvas:getWidth())
+end
+
+-- Tints a soft team-colored panel behind each player's waiting-room slot so
+-- "who's on which team" reads at a glance. Only fires for shared team modes.
+function CharacterSelect:drawTeamPlayerBackgrounds()
+  if not (self.battleRoom and self.battleRoom.mode) then return end
+  local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
+  if not TeamBannerHeader.isSharedTeamMode(self.battleRoom.mode) then return end
+
+  local TeamUtils = require("common.data.TeamUtils")
+  local teams = self.battleRoom.mode and self.battleRoom.mode.playersPerTeam
+  if not teams then return end
+
+  local GraphicsUtil = require("client.src.graphics.graphics_util")
+  local consts = require("common.engine.consts")
+  local panelW = consts.CANVAS_WIDTH / math.max(1, #self.battleRoom.players)
+  local panelTop = 90       -- below the banner header (banner ends ~y=86)
+  local panelBottom = consts.CANVAS_HEIGHT - 60
+  local panelH = panelBottom - panelTop
+
+  local function teamIndexForPosition(i)
+    local p = self.battleRoom.mode.playersPerTeam
+    if type(p) == "number" then return math.floor((i - 1) / p) + 1 end
+    if type(p) == "table" then
+      local cum = 0
+      for idx, n in ipairs(p) do
+        if i <= cum + n then return idx end
+        cum = cum + n
+      end
+    end
+    return i
+  end
+
+  for i, player in ipairs(self.battleRoom.players) do
+    local idx = teamIndexForPosition(i)
+    local color = TeamBannerHeader.colors[idx] or TeamBannerHeader.colors[1]
+    GraphicsUtil.drawRectangle("fill", (i - 1) * panelW, panelTop, panelW, panelH,
+                               color[1], color[2], color[3], 0.18)
+  end
 end
 
 function CharacterSelect:leave()

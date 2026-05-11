@@ -157,7 +157,7 @@ function Lobby:initLobbyMenu()
       local x, y = button:getScreenPos()
       local subMenuWidth = 180
       local subMenu = ui.ScrollMenu({
-        x = x + self.lobbyMenu.width + 4,
+        x = x + button.width + 3,
         y = y,
         hAlign = "left",
         vAlign = "top",
@@ -176,7 +176,7 @@ function Lobby:initLobbyMenu()
 
         local bx, by = compositionButton:getScreenPos()
         local garbageMenu = ui.ScrollMenu({
-          x = bx + compositionButton.width + 4,
+          x = bx + compositionButton.width + 3,
           y = by,
           hAlign = "left",
           vAlign = "top",
@@ -225,11 +225,11 @@ function Lobby:initLobbyMenu()
 
         local bx, by = level1Button:getScreenPos()
         local compositionMenu = ui.ScrollMenu({
-          x = bx + level1Button.width + 4,
+          x = bx + level1Button.width + 3,
           y = by,
           hAlign = "left",
           vAlign = "top",
-          height = 108,
+          height = 135,
           width = 180,
           padding = 0,
           childGap = 8,
@@ -287,7 +287,7 @@ function Lobby:initLobbyMenu()
 
         local bx, by = level1Button:getScreenPos()
         local survivalMenu = ui.ScrollMenu({
-          x = bx + level1Button.width + 4,
+          x = bx + level1Button.width + 3,
           y = by,
           hAlign = "left",
           vAlign = "top",
@@ -895,7 +895,7 @@ function Lobby:openRoomSubMenu(room, button)
   local x, y = button:getScreenPos()
 
   local subMenu = ui.ScrollMenu({
-    x = x + self.lobbyMenu.width + 8,
+    x = x + self.lobbyMenu.width + 3,
     y = y,
     hAlign = "left",
     vAlign = "top",
@@ -951,10 +951,10 @@ function Lobby:openRoomSubMenu(room, button)
   self.roomSubMenu = subMenu
 
   local subMenuLine = ui.Line({
-    x = x + button.width + 8,
+    x = x + button.width + 3,
     y = y + button.height / 2,
     height = button.height,
-    points = {x + button.width + 8, y + button.height / 2, subMenu.x - 8, y + button.height / 2}
+    points = {x + button.width + 3, y + button.height / 2, subMenu.x - 3, y + button.height / 2}
   })
   self.roomSubMenuLine = subMenuLine
 
@@ -979,7 +979,7 @@ function Lobby:openLocalRoomSubMenu(room, button)
   local x, y = button:getScreenPos()
 
   local subMenu = ui.ScrollMenu({
-    x = x + self.lobbyMenu.width + 8,
+    x = x + self.lobbyMenu.width + 3,
     y = y,
     hAlign = "left",
     vAlign = "top",
@@ -1011,10 +1011,10 @@ function Lobby:openLocalRoomSubMenu(room, button)
   self.localRoomSubMenu = subMenu
 
   local subMenuLine = ui.Line({
-    x = x + button.width + 8,
+    x = x + button.width + 3,
     y = y + button.height / 2,
     height = button.height,
-    points = {x + button.width + 8, y + button.height / 2, subMenu.x - 8, y + button.height / 2}
+    points = {x + button.width + 3, y + button.height / 2, subMenu.x - 3, y + button.height / 2}
   })
   self.localRoomSubMenuLine = subMenuLine
 
@@ -1041,7 +1041,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
   local x, y = button:getScreenPos()
 
   local subMenu = ui.ScrollMenu({
-    x = x + self.lobbyMenu.width + 8,
+    x = x + self.lobbyMenu.width + 3,
     y = y,
     hAlign = "left",
     vAlign = "top",
@@ -1188,10 +1188,10 @@ function Lobby:openPlayerSubMenu(playerId, button)
   self.playerSubMenu = subMenu
 
   local subMenuLine = ui.Line({
-    x = x + button.width + 8,
+    x = x + button.width + 3,
     y = y + button.height / 2,
     height = button.height,
-    points = {x + button.width + 8, y + button.height / 2, subMenu.x - 8, y + button.height / 2}
+    points = {x + button.width + 3, y + button.height / 2, subMenu.x - 3, y + button.height / 2}
   })
   self.subMenuLine = subMenuLine
 
