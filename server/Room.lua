@@ -482,6 +482,16 @@ function Room:handleGameOverOutcome(message, sender)
       )
     )
     self.game = nil
+
+    -- Process leavers who left mid-match while their stack was already eliminated.
+    -- We deferred their removal until now so player_number / disconnectedPlayers
+    -- indexing stayed stable while the survivors finished out the match.
+    if self.pendingLeaverRemovals then
+      for _, leaver in ipairs(self.pendingLeaverRemovals) do
+        self:_removeFromPlayersAndAnnounce(leaver)
+      end
+      self.pendingLeaverRemovals = nil
+    end
   end
 end
 
@@ -609,7 +619,7 @@ end
 ---@param reason string? human-readable reason (forwarded to remaining clients)
 function Room:voidByLeave(leaver, reason)
   if self.voided then
-    -- already void; just log and return so subsequent leaves don't fight each other
+    -- already void; just log and continue (subsequent leaver from a voided room)
     logger.debug(self.roomNumber .. ": voidByLeave called on already-voided room")
   else
     self.voided = true
@@ -617,18 +627,47 @@ function Room:voidByLeave(leaver, reason)
     logger.info(self.roomNumber .. ": voiding room (" .. self.voidReason .. ")")
   end
 
-  -- If a match is in progress, abort it for remaining players. broadcastJson
-  -- excludes the leaver (they get their own leaveRoom from the caller path).
   if self.game then
-    self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
-    self:emitSignal("matchEnd", self.game)
-    self:prepare_character_select()
-    self.game = nil
-    self.recentGameAbort = true
+    -- Mid-match. Two cases:
+    --   1. Leaver was already eliminated (their stack died, they were just
+    --      spectating their own match). Don't interrupt the survivors — server
+    --      idle-fills the leaver's input slot, the match plays out naturally,
+    --      and we queue the leaver's removal for after the match ends so player_
+    --      number / game.disconnectedPlayers indexing stays stable mid-flight.
+    --   2. Leaver was alive. Their absence would stall input flow (they've
+    --      stopped sending). Abort the match cleanly for the survivors.
+    if self.game.eliminatedPlayers[leaver.player_number] then
+      self.game:markPlayerDisconnected(leaver)
+      self.pendingLeaverRemovals = self.pendingLeaverRemovals or {}
+      self.pendingLeaverRemovals[#self.pendingLeaverRemovals + 1] = leaver
+      -- Surface the void state to remaining players immediately so the banner
+      -- shows up; their match keeps running.
+      self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason))
+      return
+    else
+      self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
+      self:emitSignal("matchEnd", self.game)
+      self:prepare_character_select()
+      self.game = nil
+      self.recentGameAbort = true
+      -- Abort just collapsed the match. Any earlier dead-leavers we were waiting
+      -- to remove at match-end won't get that signal, so flush them now.
+      if self.pendingLeaverRemovals then
+        for _, queuedLeaver in ipairs(self.pendingLeaverRemovals) do
+          self:_removeFromPlayersAndAnnounce(queuedLeaver)
+        end
+        self.pendingLeaverRemovals = nil
+      end
+    end
   end
 
-  -- Remove the leaver from the room. Compact the players array so the remaining
-  -- player_numbers stay 1..N-1 and indexes match win_counts entries.
+  -- Not mid-match (or leaver was alive and we just aborted): remove + announce now.
+  self:_removeFromPlayersAndAnnounce(leaver)
+end
+
+---Internal: removes a player from self.players, compacts win_counts, broadcasts
+---playerLeftRoom. Caller is responsible for setting voided/voidReason.
+function Room:_removeFromPlayersAndAnnounce(leaver)
   local leaverIndex
   for i, p in ipairs(self.players) do
     if p == leaver then
@@ -643,12 +682,10 @@ function Room:voidByLeave(leaver, reason)
       p.player_number = i
     end
   end
-  -- Teams are no longer valid for this room (player count changed) but team_win_counts
-  -- stays so the per-team scoreboard still shows the matches that already happened.
+  -- Teams are no longer valid (player count changed). team_win_counts stays so
+  -- the per-team scoreboard keeps showing matches that already happened.
   self.teams = nil
 
-  -- Notify remaining players + spectators. Spectators get the same broadcast since
-  -- their UI also needs to show "X left."
   self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason))
 end
 

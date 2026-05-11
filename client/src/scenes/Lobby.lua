@@ -592,11 +592,13 @@ local function teamFilledPrefix(room, slotNumber)
   return teamSlotShape(teamIndex, pos)
 end
 
--- Empty/waiting prefix: filled shape of the team — color comes from the row's background.
+-- Empty/waiting prefix: keeps the per-position shape so an empty A2 still
+-- reads "A2" (not "A1") — necessary in shared-team 2v2 where teammates
+-- otherwise look identical.
 local function teamEmptyPrefix(room, slotNumber)
-  local teamIndex = (getTeamSlotInfo(room, slotNumber))
-  if not teamIndex then return "•" end
-  return teamFilledShape(teamIndex)
+  local teamIndex, pos = getTeamSlotInfo(room, slotNumber)
+  if not teamIndex then return "[?]" end
+  return teamSlotShape(teamIndex, pos)
 end
 
 -- RGBA for the per-team background tint behind a row. Covers up to 8 teams
