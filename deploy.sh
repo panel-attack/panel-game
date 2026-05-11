@@ -9,7 +9,7 @@ echo "==> Pushing branch '$BRANCH' to origin..."
 git push origin "$BRANCH"
 
 echo "==> Deploying to $SERVER..."
-ssh "$SERVER" "cd $INSTALL_DIR && git pull && systemctl restart panel-attack"
+ssh "$SERVER" "git config --global --add safe.directory $INSTALL_DIR; cd $INSTALL_DIR && git pull && systemctl restart panel-attack"
 
 echo "==> Tailing logs (Ctrl+C to exit)..."
 ssh "$SERVER" "journalctl -u panel-attack -f --no-pager"

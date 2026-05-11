@@ -1,0 +1,33 @@
+name: unofficial-team-release
+
+on:
+  push:
+    branches:
+      - "bramp/multi-player"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build .love file
+        run: ./build.sh just-love
+
+      - name: Move .love to workspace
+        run: mv ../dev-build/panel-attack.love ./unofficial-panel-attack-team-vs.love
+
+      - name: Create GitHub release
+        run: |
+          TAG="unofficial-team-vs-$(date +'%Y-%m-%d_%H-%M-%S')"
+          gh release create "$TAG" \
+            unofficial-panel-attack-team-vs.love \
+            --target bramp/multi-player \
+            --prerelease \
+            --title "Unofficial Panel Attack Team vs — $TAG"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
