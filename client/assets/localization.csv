@@ -199,7 +199,7 @@ mm_1_training,Vs training mode,1P training,Entraînement 1J,treinamento 1P,1P �
 mm_1_challenge_mode,Challenge Mode,Challenge Mode,Mode défi,Modo desafio,チャレンジモード,Modo Desafío,Herausforderungsmodus,Modalità sfida,โหมดท้าทาย
 mm_1_vs,,1P vs yourself,1J contre soi-même,1J vs você mesmo,1P じぶんとのたたかい,1J vs ti mismo,1P gegen dich selbst,1P vs te stesso,1P สู้กับตัวเอง
 mm_2_vs_local,,2P vs local game,2J en local,2J vs jogo local,2P ローカルVS,2J local,2P lokal,2P vs in locale,2P แข่งกันสองคน บนคอมเครื่องเดียวกัน
-mm_2_vs_online,,2P vs online %1,2J en ligne %1,2J vs online %1,2P オンラインVS %1,2J en línea %1,2P online %1,2P vs online %1,2P แข่งกับคนอื่นออนไลน์ %1
+mm_2_vs_online,,Team & FFA Online %1,2J en ligne %1,2J vs online %1,2P オンラインVS %1,2J en línea %1,2P online %1,2P vs online %1,2P แข่งกับคนอื่นออนไลน์ %1
 mm_2_vs,,2P vs,2J VS,2J vs,2P VS,2J vs,2SP vs,2P vs,2P แข่งกับคนอื่น
 mm_configure,,Configure input,Configurer les touches,Configurar teclas,入力コンフィグ,Configurar entrada,Tastenkonfiguration,Configura i tasti,ตั้งค่าปุ่ม
 mm_fullscreen,,Fullscreen %1,Plein écran %1,Tela cheia %1,フルスクリーン %1,Pantalla completa %1,Vollbild %1,Schermo inteto 1%,เต็มจอ %1
