@@ -624,6 +624,9 @@ end
 -- Dark navy button background — neutral so any team color reads cleanly on top.
 -- (Tried orange — pink/orange share R/G channels, so pink barely registered.)
 local TEAM_ROOM_BUTTON_BG = {0.12, 0.15, 0.24, 0.95}
+-- Gold background for rooms where the local player has been invited — makes
+-- the inbox-worthy room obvious in the lobby list.
+local TEAM_ROOM_BUTTON_BG_INVITED = {0.55, 0.45, 0.1, 0.95}
 -- Solid-color accent down the left edge of each tinted row, full alpha. Doubles
 -- the readability win on top of the row fill.
 local TEAM_ROW_ACCENT_W = 6
@@ -825,33 +828,75 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       playerStrings[i] = Lobby.getPlayerNameWithRating(playerId, room.gameModeId)
     end
 
-    -- Check if room is waiting for players (has open slots)
     local hasOpenSlots = room.openSlots and #room.openSlots > 0
-    local roomName
-    local onClick
 
-    -- For the local team room we collect per-row team tints alongside lines so
-    -- the button can paint a colored stripe behind each row (drawn in the
-    -- override below). nil = no tint (header / state lines).
-    local rowTints
-    if isLocalPlayerRoom then
-      rowTints = {}
-      -- This is the local player's room - show status and local room actions
-      local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
-
-      local playerLines = {}
-      local presentNames = {}
-      for i, playerId in ipairs(room.players) do
-        local prefix = teamFilledPrefix(room, i)
-        local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
-        local suffix = (playerId == localPublicId) and " (You)" or ""
-        playerLines[#playerLines + 1] = prefix .. " " .. playerName .. suffix
-        presentNames[#presentNames + 1] = playerName
-        local tIdx = (getTeamSlotInfo(room, i))
-        rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
+    -- Detect an incoming invite to this room (someone in the room has invited
+    -- the local player to one of its open slots). When present, the button
+    -- gets a highlighted header line so it stands out from every other room.
+    local roomOwnerId = room.ownerId or (room.players and room.players[1])
+    local invitedSlot = nil
+    if not isLocalPlayerRoom and roomOwnerId
+        and personalizedLobbyData.incomingChallenges[roomOwnerId]
+        and room.openSlots then
+      for _, slotNumber in ipairs(room.openSlots) do
+        if personalizedLobbyData.incomingChallenges[roomOwnerId]["room_" .. room.roomNumber .. "_" .. slotNumber] then
+          invitedSlot = slotNumber
+          break
+        end
       end
+    end
 
-      local waitingLines = {}
+    -- One render path for every room. Each row builds its tint alongside its
+    -- text so the drawSelf override below can paint per-row team stripes.
+    local rowTints = {}
+    local lines = {}
+
+    -- Top "INVITED" marker (matched by a bottom one below) when this room has
+    -- an open invite for the local player.
+    if invitedSlot then
+      lines[#lines + 1] = "INVITED"
+      rowTints[#rowTints + 1] = false
+    end
+
+    -- Title:  "Name1, Name2's Room   [n/m]"  (or "Empty Room" if vacant)
+    local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
+    local presentNames = {}
+    for _, playerId in ipairs(room.players) do
+      local info = personalizedLobbyData.players[playerId]
+      presentNames[#presentNames + 1] = (info and info.name) or "?"
+    end
+    local roomTitle
+    if #presentNames == 0 then
+      roomTitle = "Empty Room"
+    elseif #presentNames == 1 then
+      roomTitle = presentNames[1] .. "'s Room"
+    else
+      roomTitle = table.concat(presentNames, ", ") .. "'s Room"
+    end
+    lines[#lines + 1] = roomTitle .. "  " .. slotsText
+    rowTints[#rowTints + 1] = false
+
+    -- Garbage subtitle (only renders something in shared team modes).
+    local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
+    local okGM, gmPreset = pcall(GameModes.getPreset, room.gameModeId)
+    local garbageLabel = okGM and gmPreset and TeamBannerHeader.garbageModeLabel(gmPreset) or nil
+    if garbageLabel then
+      lines[#lines + 1] = garbageLabel
+      rowTints[#rowTints + 1] = false
+    end
+
+    -- Player rows
+    for i, playerId in ipairs(room.players) do
+      local prefix = teamFilledPrefix(room, i)
+      local name = (personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name) or "?"
+      local suffix = (playerId == localPublicId) and " (You)" or ""
+      lines[#lines + 1] = prefix .. " " .. name .. suffix
+      local tIdx = (getTeamSlotInfo(room, i))
+      rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
+    end
+
+    -- Open-slot rows
+    if hasOpenSlots then
       for _, slotNumber in ipairs(room.openSlots) do
         local prefix = teamEmptyPrefix(room, slotNumber)
         local line
@@ -862,90 +907,36 @@ function Lobby:createRoomButtons(personalizedLobbyData)
         else
           line = prefix .. " (waiting...)"
         end
-        waitingLines[#waitingLines + 1] = line
+        lines[#lines + 1] = line
         local tIdx = (getTeamSlotInfo(room, slotNumber))
         rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
       end
+    else
+      lines[#lines + 1] = "(" .. room.state .. ")"
+      rowTints[#rowTints + 1] = false
+    end
 
-      -- Header occupies row 1 (no tint). Insert nil at front of rowTints.
-      table.insert(rowTints, 1, false)
+    -- Bottom "INVITED" marker, mirroring the top one.
+    if invitedSlot then
+      lines[#lines + 1] = "INVITED"
+      rowTints[#rowTints + 1] = false
+    end
 
-      -- Header shows whoever's already in the room:
-      --   "Amber's Room [1/4]"        (just you)
-      --   "Amber, Bev's Room [3/4]"   (you + teammates)
-      local roomTitle
-      if #presentNames == 0 then
-        roomTitle = "Empty Room"
-      elseif #presentNames == 1 then
-        roomTitle = presentNames[1] .. "'s Room"
-      else
-        roomTitle = table.concat(presentNames, ", ") .. "'s Room"
-      end
-      roomName = roomTitle .. "  " .. slotsText
-      -- Garbage rule subtitle (team modes only — nil in FFA / solo).
-      local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
-      local ok, gmPreset = pcall(GameModes.getPreset, room.gameModeId)
-      local garbageLabel = ok and gmPreset and TeamBannerHeader.garbageModeLabel(gmPreset) or nil
-      if garbageLabel then
-        roomName = roomName .. "\n" .. garbageLabel
-        table.insert(rowTints, 2, false)  -- second row is the subtitle, no tint
-      end
-      roomName = roomName .. "\n" .. table.concat(playerLines, "\n")
-      if #waitingLines > 0 then
-        roomName = roomName .. "\n" .. table.concat(waitingLines, "\n")
-      else
-        roomName = roomName .. "\n(" .. room.state .. ")"
-        rowTints[#rowTints + 1] = false
-      end
+    local roomName = table.concat(lines, "\n")
 
-      -- Clicking the local room opens room actions
+    -- Click behavior depends on relationship to the room.
+    local onClick
+    if isLocalPlayerRoom then
       onClick = function(button)
         self:openLocalRoomSubMenu(room, button)
         GAME.theme:playValidationSfx()
       end
-    elseif hasOpenSlots then
-      -- Waiting room - show join option
-      local slotsText = string.format("%d/%d", #room.players, room.maxPlayers or 2)
-      local waitingLines = {}
-      for i, playerId in ipairs(room.players) do
-        local prefix = teamFilledPrefix(room, i)
-        local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
-        waitingLines[#waitingLines + 1] = prefix .. " " .. playerName
-      end
-
-      local roomOwnerId = room.ownerId or (room.players and room.players[1])
-      local invitedSlot = nil
-      if roomOwnerId and personalizedLobbyData.incomingChallenges[roomOwnerId] then
-        for _, slotNumber in ipairs(room.openSlots) do
-          if personalizedLobbyData.incomingChallenges[roomOwnerId]["room_" .. room.roomNumber .. "_" .. slotNumber] then
-            invitedSlot = slotNumber
-            break
-          end
-        end
-      end
-
-      -- "(invited)" tag includes the team color of the seat you've been invited to.
-      local joinLabel
-      if invitedSlot then
-        joinLabel = loc("lb_join") .. " " .. teamEmptyPrefix(room, invitedSlot) .. " (invited)"
-      else
-        joinLabel = loc("lb_join")
-      end
-      roomName = joinLabel .. "\n" .. table.concat(waitingLines, "\n") .. "\n[" .. slotsText .. "]"
-      -- Clicking opens room submenu for joining
+    elseif invitedSlot or hasOpenSlots then
       onClick = function(button)
         self:openRoomSubMenu(room, button)
         GAME.theme:playValidationSfx()
       end
     else
-      -- Full room - show spectate option with everyone in the room
-      local playerLines = {}
-      for i, playerId in ipairs(room.players) do
-        local prefix = teamFilledPrefix(room, i)
-        local playerName = personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name or "?"
-        playerLines[#playerLines + 1] = prefix .. " " .. playerName
-      end
-      roomName = loc("lb_spectate") .. "\n" .. table.concat(playerLines, "\n") .. "\n(" .. room.state .. ")"
       onClick = self:requestSpectateFunction(room)
     end
 
@@ -959,46 +950,38 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     button.room = room
     button.isLocalPlayerRoom = isLocalPlayerRoom
 
-    -- Per-row team tints behind the label (only the local team room sets this).
-    -- Draw order inside the override:
-    --   1) dark-navy button background (neutral → pink/purple read clearly on top)
-    --   2) outline
-    --   3) full-alpha team-color accent down the left edge of each row
-    --   4) soft team-color fill across the rest of the row
-    -- Label text is rendered later in drawChildren, on top of the stripes.
-    if rowTints and #rowTints > 0 then
-      button._rowTints = rowTints
-      button.drawSelf = function(self)
-        GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height,
-          TEAM_ROOM_BUTTON_BG[1], TEAM_ROOM_BUTTON_BG[2], TEAM_ROOM_BUTTON_BG[3], TEAM_ROOM_BUTTON_BG[4],
-          self.CORNER_RADIUS, self.CORNER_RADIUS)
-        self:drawOutline()
+    -- Every room renders with the same panel: dark navy background, team-color
+    -- stripes per row, label on top. Invited rooms swap the background to a
+    -- gold glow so they stand out at a glance.
+    button._rowTints = rowTints
+    button._invited = invitedSlot ~= nil
+    button.drawSelf = function(self)
+      local bg = self._invited and TEAM_ROOM_BUTTON_BG_INVITED or TEAM_ROOM_BUTTON_BG
+      GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height,
+        bg[1], bg[2], bg[3], bg[4],
+        self.CORNER_RADIUS, self.CORNER_RADIUS)
+      self:drawOutline()
 
-        local stripeX = self.x + 6
-        local stripeW = self.width - 12
-        -- Use the *measured* label height divided by the rowTints count so the
-        -- stripes line up with what's actually rendered even if a line wrapped
-        -- onto two display rows. Falls back to raw font line height if the
-        -- label hasn't measured yet.
-        local rowCount = #self._rowTints
-        local lineHeight
-        if rowCount > 0 and self.label.height and self.label.height > 0 then
-          lineHeight = self.label.height / rowCount
-        else
-          lineHeight = self.label.drawable:getFont():getHeight()
-        end
-        local labelTopY = self.y + (self.height - self.label.height) / 2
-        for i, tint in ipairs(self._rowTints) do
-          if tint then
-            local stripeY = labelTopY + (i - 1) * lineHeight
-            GraphicsUtil.drawRectangle("fill", stripeX, stripeY, stripeW, lineHeight,
-                                       tint[1], tint[2], tint[3], tint[4])
-            GraphicsUtil.drawRectangle("fill", stripeX, stripeY, TEAM_ROW_ACCENT_W, lineHeight,
-                                       tint[1], tint[2], tint[3], 1)
-          end
-        end
-        GraphicsUtil.setColor(1, 1, 1, 1)
+      local stripeX = self.x + 6
+      local stripeW = self.width - 12
+      local rowCount = #self._rowTints
+      local lineHeight
+      if rowCount > 0 and self.label.height and self.label.height > 0 then
+        lineHeight = self.label.height / rowCount
+      else
+        lineHeight = self.label.drawable:getFont():getHeight()
       end
+      local labelTopY = self.y + (self.height - self.label.height) / 2
+      for i, tint in ipairs(self._rowTints) do
+        if tint then
+          local stripeY = labelTopY + (i - 1) * lineHeight
+          GraphicsUtil.drawRectangle("fill", stripeX, stripeY, stripeW, lineHeight,
+                                     tint[1], tint[2], tint[3], tint[4])
+          GraphicsUtil.drawRectangle("fill", stripeX, stripeY, TEAM_ROW_ACCENT_W, lineHeight,
+                                     tint[1], tint[2], tint[3], 1)
+        end
+      end
+      GraphicsUtil.setColor(1, 1, 1, 1)
     end
 
     roomButtons[#roomButtons+1] = button
