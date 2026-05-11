@@ -593,8 +593,6 @@ function GameBase:drawHUD()
     if not DebugSettings.showStackDebugInfo() and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details
       GraphicsUtil.print(GAME.battleRoom.spectatorString, themes[config.theme].spectators_Pos[1], themes[config.theme].spectators_Pos[2])
     end
-
-    self:drawCommunityMessage()
   end
 end
 
