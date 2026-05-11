@@ -67,6 +67,10 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.voided = false
   self.voidReason = nil
   self.reservedSlots = {} -- publicId -> true for players allowed to rejoin
+  -- Spectators who joined mid-match wanting to become players when the next
+  -- match starts. Insertion-ordered for first-come-first-served promotion up
+  -- to maxPlayers. Used by open FFA (dynamic-roster) modes only.
+  self.pendingJoiners = {}
   self.abortInputGapThreshold = (gameMode and gameMode.abortInputGapThreshold) or ((self.maxPlayers >= 3) and 220 or 100)
 
   Signal.turnIntoEmitter(self)
@@ -78,6 +82,9 @@ function(self, roomNumber, players, gameMode, leaderboard)
   -- room should be torn down so server and client state cannot diverge. Listened to by
   -- the Server (Server:create_room wires this to closeRoom).
   self:createSignal("roomShouldClose")
+  -- Emitted when prepare_character_select runs with queued mid-match joiners.
+  -- Server listens and drains the queue via handleJoinRoom.
+  self:createSignal("readyForPendingJoiners")
 
   -- Initialize all initially passed players the same way addPlayer does.
   for i, player in ipairs(self.players) do
@@ -257,6 +264,13 @@ function Room:prepare_character_select()
     player.cursor = "__Ready"
     player.ready = false
   end
+
+  -- Open FFA: mid-match joiners who queued up while a match was running get
+  -- joined now that character select reopens. The server is the only thing
+  -- that owns handleJoinRoom semantics, so emit and let it drain the queue.
+  if self.pendingJoiners and #self.pendingJoiners > 0 then
+    self:emitSignal("readyForPendingJoiners")
+  end
 end
 
 ---@return PlayerState | "closed"
@@ -273,10 +287,15 @@ function Room:state()
 end
 
 ---@param newSpectator ServerPlayer
+---@param pendingPromote boolean? if true, queue this spectator for promotion to
+---  player at the next match end (open FFA mid-match join flow).
 ---@return boolean success
-function Room:add_spectator(newSpectator)
-  if not self:isFull() then
-    logger.warn("Cannot add spectator " .. newSpectator.name .. " to room " .. self.roomNumber .. " - room not full yet")
+function Room:add_spectator(newSpectator, pendingPromote)
+  -- Pending-promote (drop-in to become a player) requires a live match.
+  -- Pure spectators can join any room that exists (character select or playing).
+  local hasLiveMatch = self.game ~= nil
+  if pendingPromote and not hasLiveMatch then
+    logger.warn("Cannot queue " .. newSpectator.name .. " as pending player in room " .. self.roomNumber .. " - no live match")
     return false
   end
 
@@ -284,6 +303,11 @@ function Room:add_spectator(newSpectator)
   newSpectator:addToRoom(self)
   self.spectators[#self.spectators + 1] = newSpectator
   logger.debug(newSpectator.name .. " joined " .. self.name .. " as a spectator")
+
+  if pendingPromote then
+    self.pendingJoiners[#self.pendingJoiners + 1] = { player = newSpectator }
+    logger.info(newSpectator.name .. " queued as pending player for room " .. self.roomNumber)
+  end
 
   local replay
   if self.game then
@@ -297,6 +321,13 @@ function Room:add_spectator(newSpectator)
   logger.debug("sending spectator list: " .. json.encode(spectatorList))
   self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, spectatorList))
   return true
+end
+
+-- True for an open_ffa-style mode where the roster is bounded by min/max
+-- rather than a fixed playerCount; mid-match joiners go into pendingJoiners
+-- and get promoted at prepare_character_select.
+function Room:isDynamicRoster()
+  return self.gameMode ~= nil and self.gameMode.minPlayers ~= nil
 end
 
 ---@return string[]
@@ -319,6 +350,13 @@ function Room:remove_spectator(spectator)
       spectator:removeFromRoom(self)
       lobbyChanged = true
       break
+    end
+  end
+
+  -- Drop them from the pending-promote queue too, if they were waiting.
+  for i = #self.pendingJoiners, 1, -1 do
+    if self.pendingJoiners[i].player == spectator then
+      table.remove(self.pendingJoiners, i)
     end
   end
 
