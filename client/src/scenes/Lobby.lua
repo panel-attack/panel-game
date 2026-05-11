@@ -101,51 +101,12 @@ function Lobby:initLobbyMenu()
   })
   self.teamCreateButtonLabel = ui.Label({text = "Create team game", translate = false})
 
-  -- Create confirmation overlay for leaving team games
-  self.leaveConfirmOverlay = ui.OverlayContainer({})
-  local confirmPanel = ui.StackPanel({
-    alignment = "center",
-    hFill = true,
-    childGap = 12,
-  })
-  confirmPanel:addChild(ui.Label({text = "Leave this team game?", translate = false}))
-  local confirmButtonPanel = ui.StackPanel({
-    alignment = "center",
-    orientation = "horizontal",
-    hFill = true,
-    childGap = 16,
-  })
-  confirmButtonPanel:addChild(ui.TextButton({
-    label = ui.Label({text = "Yes", translate = false}),
-    width = 80,
-    onClick = function()
-      self.leaveConfirmOverlay:close()
-      GAME.netClient:leaveRoom()
-    end
-  }))
-  confirmButtonPanel:addChild(ui.TextButton({
-    label = ui.Label({text = "No", translate = false}),
-    width = 80,
-    onClick = function()
-      self.leaveConfirmOverlay:close()
-    end
-  }))
-  confirmPanel:addChild(confirmButtonPanel)
-  self.leaveConfirmOverlay:setContent(confirmPanel)
-
   self.teamCreateButton = ui.TextButton({
     label = self.teamCreateButtonLabel,
     width = self.lobbyMenuWidth,
     onClick = function(button)
       if self:isLocalPlayerInRoom() then
-        local playerCount = self:getRoomPlayerCount()
-        if playerCount > 1 then
-          -- Show confirmation dialog
-          self.leaveConfirmOverlay:open()
-        else
-          -- Leave immediately if alone
-          GAME.netClient:leaveRoom()
-        end
+        GAME.netClient:leaveRoom()
         return
       end
 
@@ -469,7 +430,6 @@ function Lobby:initLobbyMenu()
 
   self.uiRoot:addChild(self.lobbyMenu)
   self.uiRoot:addChild(self.roomPanel)
-  self.uiRoot:addChild(self.leaveConfirmOverlay)
 end
 
 ---@param lobbyDataV2 PersonalizedLobbyDataV2?
@@ -1702,38 +1662,37 @@ function Lobby:updateRoomPanel(updateInfo)
 
         text = table.concat(lines, "\n")
       elseif #room.players >= 3 then
-        -- Team room in progress (3-4 players)
+        -- Team room in progress (3-5 players, team or FFA).
         local lines = {}
 
-        -- Header with game mode
         if gameModeName ~= "" then
           lines[#lines + 1] = gameModeName
         end
 
-        -- Show teams clearly for in-progress team games (pink/purple).
-        local pinkNames = {}
-        local purpleNames = {}
+        -- Bucket players by team and emit one "[X] name1, name2" row per team.
+        -- Works for shared-team (1v2/2v2/1v4/2v3) and FFA (1-per-team) alike.
+        local teamBuckets = {}
+        local maxTeamIndex = 0
         for i, playerId in ipairs(room.players) do
           local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
           local playerName = playerInfo and playerInfo.name or "?"
           local teamIndex = getTeamIndexForSlot(room, i)
-          if teamIndex == 1 then
-            pinkNames[#pinkNames + 1] = playerName
-          elseif teamIndex == 2 then
-            purpleNames[#purpleNames + 1] = playerName
+          if teamIndex then
+            teamBuckets[teamIndex] = teamBuckets[teamIndex] or {}
+            teamBuckets[teamIndex][#teamBuckets[teamIndex] + 1] = playerName
+            if teamIndex > maxTeamIndex then maxTeamIndex = teamIndex end
           else
             lines[#lines + 1] = teamFilledPrefix(room, i) .. " " .. playerName
           end
         end
-
-        if #pinkNames > 0 then
-          lines[#lines + 1] = "[A] " .. table.concat(pinkNames, ", ")
+        for i = 1, maxTeamIndex do
+          local names = teamBuckets[i]
+          if names and #names > 0 then
+            local letter = string.char(string.byte("A") + (i - 1))
+            lines[#lines + 1] = "[" .. letter .. "] " .. table.concat(names, ", ")
+          end
         end
-        if #purpleNames > 0 then
-          lines[#lines + 1] = "[B] " .. table.concat(purpleNames, ", ")
-        end
 
-        -- Show state and spectators
         lines[#lines + 1] = room.state
         lines[#lines + 1] = loc("pl_spectators") .. " " .. #room.spectators
 

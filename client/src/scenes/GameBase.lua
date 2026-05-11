@@ -147,7 +147,7 @@ local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
 end
 
 local function teamLetter(teamIndex)
-  return (teamIndex == 1) and "A" or "B"
+  return string.char(string.byte("A") + (teamIndex - 1))
 end
 
 local function joinPlayerNames(players)

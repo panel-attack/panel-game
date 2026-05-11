@@ -33,18 +33,20 @@ local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
 end
 
 local function teamLetter(teamIndex)
-  return (teamIndex == 1) and "A" or "B"
+  return string.char(string.byte("A") + (teamIndex - 1))
 end
 
 local function buildTeamResultText(match, winners)
   local teams = {}
   local winnerTeams = {}
+  local maxTeamIndex = 0
 
   for index, player in ipairs(match.players) do
     local teamIndex = getTeamIndexForPlayerPosition(match.gameMode, index)
     if teamIndex then
       teams[teamIndex] = teams[teamIndex] or {}
       teams[teamIndex][#teams[teamIndex] + 1] = player.name
+      if teamIndex > maxTeamIndex then maxTeamIndex = teamIndex end
     end
   end
 
@@ -67,14 +69,18 @@ local function buildTeamResultText(match, winners)
     winnerTeamCount = winnerTeamCount + 1
   end
 
-  local teamA = teams[1] and table.concat(teams[1], ", ") or "-"
-  local teamB = teams[2] and table.concat(teams[2], ", ") or "-"
+  local rosterParts = {}
+  for i = 1, maxTeamIndex do
+    local names = teams[i] and table.concat(teams[i], ", ") or "-"
+    rosterParts[#rosterParts + 1] = "Team " .. teamLetter(i) .. ": " .. names
+  end
+  local roster = table.concat(rosterParts, " | ")
 
   if winnerTeamCount == 1 and winnerTeamIndex then
-    return "Team " .. teamLetter(winnerTeamIndex) .. " wins | Team A: " .. teamA .. " | Team B: " .. teamB
+    return "Team " .. teamLetter(winnerTeamIndex) .. " wins | " .. roster
   end
 
-  return "Draw | Team A: " .. teamA .. " | Team B: " .. teamB
+  return "Draw | " .. roster
 end
 end,
 GameBase)
