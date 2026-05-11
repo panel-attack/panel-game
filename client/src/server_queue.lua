@@ -48,7 +48,17 @@ end
 
 -- push a server message in queue
 function ServerQueue.push(self, msg)
-  if not msg[NetworkProtocol.serverMessageTypes.opponentInput.prefix] and not msg[NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix] then
+  -- Suppress per-frame opponent-input spam from the debug log for all 8 slots.
+  local types = NetworkProtocol.serverMessageTypes
+  local isInputOnly = msg[types.opponentInput.prefix]
+    or msg[types.secondOpponentInput.prefix]
+    or msg[types.thirdOpponentInput.prefix]
+    or msg[types.fourthOpponentInput.prefix]
+    or msg[types.fifthOpponentInput.prefix]
+    or msg[types.sixthOpponentInput.prefix]
+    or msg[types.seventhOpponentInput.prefix]
+    or msg[types.eighthOpponentInput.prefix]
+  if not isInputOnly then
     logger.debug("message received:\n" .. table_to_string(msg))
   end
   local last = self.last + 1

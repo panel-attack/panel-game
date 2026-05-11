@@ -535,11 +535,19 @@ local function processMenuStateMessage(player, message)
 end
 
 local function processInputMessages(self)
+  -- Pop input messages for all 8 player slots. Stopping at 4 silently dropped
+  -- inputs for slots 5-8: each non-slot-5 client would wait indefinitely on the
+  -- 5th stack, the server's abortInputGapThreshold would fire, and some clients
+  -- would lock up before the abort reached them.
   local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
     NetworkProtocol.serverMessageTypes.opponentInput.prefix,
     NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix,
     NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix
+    NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix,
+    NetworkProtocol.serverMessageTypes.fifthOpponentInput.prefix,
+    NetworkProtocol.serverMessageTypes.sixthOpponentInput.prefix,
+    NetworkProtocol.serverMessageTypes.seventhOpponentInput.prefix,
+    NetworkProtocol.serverMessageTypes.eighthOpponentInput.prefix
   )
   if self.room and self.room.match then
     for _, msg in ipairs(messages) do
