@@ -605,11 +605,12 @@ local playerLeftRoomTemplate = {
 
 ---Sent to remaining players + spectators when a player leaves/disconnects from a
 ---multi-player room. Tells the client to remove that player from the local room
----view and mark the room as voided (no further matches can start).
+---view. If voidReason is set the client also marks the room voided (mid-game abort);
+---nil means the room stays open and the leaver can rejoin from the lobby.
 ---@param roomNumber roomNumber
 ---@param publicId integer the leaver's publicPlayerID
 ---@param name string the leaver's display name
----@param voidReason string human-readable reason ("X left")
+---@param voidReason string? human-readable reason, nil when room stays open
 ---@return {messageType: table, messageText: ServerMessage}
 function ServerProtocol.playerLeftRoom(roomNumber, publicId, name, voidReason)
   local msg = playerLeftRoomTemplate

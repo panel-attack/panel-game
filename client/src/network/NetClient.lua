@@ -516,11 +516,13 @@ local function processPlayerLeftRoom(self, message)
     return
   end
 
-  -- Remove the leaver from the local room view and mark the room voided so
-  -- CharacterSelect can show "X left" + disable Ready. Remaining players keep
-  -- the room visible and their win counts; they navigate to the lobby manually.
+  -- Remove the leaver from the local room view. Only void the room when the
+  -- server says so (mid-game abort); no voidReason means the room stays open
+  -- and the leaver can rejoin from the lobby.
   self.room:removePlayerByPublicId(data.publicId)
-  self.room:setVoided(data.voidReason or ((data.name or "A player") .. " left"))
+  if data.voidReason then
+    self.room:setVoided(data.voidReason)
+  end
 end
 
 local function processMenuStateMessage(player, message)

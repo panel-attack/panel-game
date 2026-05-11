@@ -140,15 +140,29 @@ local function garbageModeLabel(gameMode)
   return nil
 end
 
--- Draws the garbage-mode label centered just under the banner header. Pass the
--- same gameMode you'd give to TeamBannerHeader.draw. No-op outside shared team
--- modes so it doesn't draw anywhere it shouldn't.
+-- Draws the garbage-mode label (team modes) and latency tolerance label centered
+-- just under the banner header. Two-pass shadow+text so it reads on any background.
 function TeamBannerHeader.drawGarbageModeBelowBanner(gameMode, canvasWidth)
-  local label = garbageModeLabel(gameMode)
-  if not label then return end
-  -- Two-pass shadow + light text so it reads on top of any background.
-  GraphicsUtil.printf(label, 0, 50, canvasWidth, "center", {0.1, 0.05, 0.15, 0.85}, nil, 6)
-  GraphicsUtil.printf(label, 0, 48, canvasWidth, "center", {1, 0.9, 0.7, 1}, nil, 6)
+  if not gameMode then return end
+
+  local gLabel = garbageModeLabel(gameMode)
+  local latLabel = gameMode.latencyTolerance
+    and (gameMode.latencyTolerance:sub(1,1):upper() .. gameMode.latencyTolerance:sub(2) .. " latency")
+    or nil
+
+  if not gLabel and not latLabel then return end
+
+  local y = 48
+  if gLabel then
+    GraphicsUtil.printf(gLabel, 0, y + 2, canvasWidth, "center", {0.1, 0.05, 0.15, 0.85}, nil, 6)
+    GraphicsUtil.printf(gLabel, 0, y,     canvasWidth, "center", {1, 0.9, 0.7, 1},          nil, 6)
+    y = y + 16
+  end
+
+  if latLabel then
+    GraphicsUtil.printf(latLabel, 0, y + 2, canvasWidth, "center", {0.1, 0.05, 0.15, 0.85}, nil, 6)
+    GraphicsUtil.printf(latLabel, 0, y,     canvasWidth, "center", {0.75, 0.92, 1, 0.9},     nil, 6)
+  end
 end
 
 TeamBannerHeader.colors = TEAM_COLORS

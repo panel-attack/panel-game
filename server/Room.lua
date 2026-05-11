@@ -610,14 +610,22 @@ function Room:handlePlayerDisconnect(sender, reason)
   end
 end
 
----Mark the room as void (no further matches can start) because a player left or
----disconnected. If a match is in progress, abort it for the remaining players. The
----leaver is removed from the room (the caller is responsible for sending them their
----own leaveRoom). Remaining players + spectators are notified via playerLeftRoom so
----their clients can show "X left" and disable Ready.
+---Handle a player leaving or disconnecting. If a match is in progress, the room is
+---voided and the match is aborted for remaining players. If no match is in progress,
+---the player is simply removed and the room stays open so they can rejoin from the
+---lobby. The leaver is removed from the room (the caller is responsible for sending
+---them their own leaveRoom). Remaining players + spectators are notified via
+---playerLeftRoom.
 ---@param leaver ServerPlayer the player who is leaving / disconnected
----@param reason string? human-readable reason (forwarded to remaining clients)
+---@param reason string? human-readable reason (forwarded to remaining clients only when mid-game)
 function Room:voidByLeave(leaver, reason)
+  if not self.game then
+    -- Pre-match: leave the room open so the player can rejoin from the lobby.
+    logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (room stays open)")
+    self:_removeFromPlayersAndAnnounce(leaver)
+    return
+  end
+
   if self.voided then
     -- already void; just log and continue (subsequent leaver from a voided room)
     logger.debug(self.roomNumber .. ": voidByLeave called on already-voided room")
@@ -627,41 +635,38 @@ function Room:voidByLeave(leaver, reason)
     logger.info(self.roomNumber .. ": voiding room (" .. self.voidReason .. ")")
   end
 
-  if self.game then
-    -- Mid-match. Two cases:
-    --   1. Leaver was already eliminated (their stack died, they were just
-    --      spectating their own match). Don't interrupt the survivors — server
-    --      idle-fills the leaver's input slot, the match plays out naturally,
-    --      and we queue the leaver's removal for after the match ends so player_
-    --      number / game.disconnectedPlayers indexing stays stable mid-flight.
-    --   2. Leaver was alive. Their absence would stall input flow (they've
-    --      stopped sending). Abort the match cleanly for the survivors.
-    if self.game.eliminatedPlayers[leaver.player_number] then
-      self.game:markPlayerDisconnected(leaver)
-      self.pendingLeaverRemovals = self.pendingLeaverRemovals or {}
-      self.pendingLeaverRemovals[#self.pendingLeaverRemovals + 1] = leaver
-      -- Surface the void state to remaining players immediately so the banner
-      -- shows up; their match keeps running.
-      self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason))
-      return
-    else
-      self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
-      self:emitSignal("matchEnd", self.game)
-      self:prepare_character_select()
-      self.game = nil
-      self.recentGameAbort = true
-      -- Abort just collapsed the match. Any earlier dead-leavers we were waiting
-      -- to remove at match-end won't get that signal, so flush them now.
-      if self.pendingLeaverRemovals then
-        for _, queuedLeaver in ipairs(self.pendingLeaverRemovals) do
-          self:_removeFromPlayersAndAnnounce(queuedLeaver)
-        end
-        self.pendingLeaverRemovals = nil
+  -- Mid-match. Two cases:
+  --   1. Leaver was already eliminated (their stack died, they were just
+  --      spectating their own match). Don't interrupt the survivors — server
+  --      idle-fills the leaver's input slot, the match plays out naturally,
+  --      and we queue the leaver's removal for after the match ends so player_
+  --      number / game.disconnectedPlayers indexing stays stable mid-flight.
+  --   2. Leaver was alive. Their absence would stall input flow (they've
+  --      stopped sending). Abort the match cleanly for the survivors.
+  if self.game.eliminatedPlayers[leaver.player_number] then
+    self.game:markPlayerDisconnected(leaver)
+    self.pendingLeaverRemovals = self.pendingLeaverRemovals or {}
+    self.pendingLeaverRemovals[#self.pendingLeaverRemovals + 1] = leaver
+    -- Surface the void state to remaining players immediately so the banner
+    -- shows up; their match keeps running.
+    self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason))
+    return
+  else
+    self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
+    self:emitSignal("matchEnd", self.game)
+    self:prepare_character_select()
+    self.game = nil
+    self.recentGameAbort = true
+    -- Abort just collapsed the match. Any earlier dead-leavers we were waiting
+    -- to remove at match-end won't get that signal, so flush them now.
+    if self.pendingLeaverRemovals then
+      for _, queuedLeaver in ipairs(self.pendingLeaverRemovals) do
+        self:_removeFromPlayersAndAnnounce(queuedLeaver)
       end
+      self.pendingLeaverRemovals = nil
     end
   end
 
-  -- Not mid-match (or leaver was alive and we just aborted): remove + announce now.
   self:_removeFromPlayersAndAnnounce(leaver)
 end
 
