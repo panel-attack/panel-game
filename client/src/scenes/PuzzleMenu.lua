@@ -1,4 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local BattleRoom = require("client.src.BattleRoom")
@@ -709,6 +710,7 @@ end
 
 function PuzzleMenu:draw()
   themes[config.theme].images.bg_main:draw()
+  GraphicsUtil.drawRectangle("fill", 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, 0, 0, 0, 0.55)
   self.uiRoot:draw()
 end
 

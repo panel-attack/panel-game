@@ -1,4 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
 local inputs = require("client.src.inputManager")
@@ -283,6 +284,7 @@ end
 
 function ModManagement:draw()
   themes[config.theme].images.bg_main:draw()
+  GraphicsUtil.drawRectangle("fill", 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, 0, 0, 0, 0.55)
   self.uiRoot:draw()
 end
 

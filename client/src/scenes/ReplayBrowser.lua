@@ -1,4 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
+local consts = require("common.engine.consts")
 local input = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local fileUtils = require("client.src.FileUtils")
@@ -177,6 +178,7 @@ end
 
 function ReplayBrowser:draw()
   themes[config.theme].images.bg_main:draw()
+  GraphicsUtil.drawRectangle("fill", 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, 0, 0, 0, 0.55)
 
   if state == "browser" then
     GraphicsUtil.print(loc("rp_browser_header"), menu_x + 170, menu_y - 40)

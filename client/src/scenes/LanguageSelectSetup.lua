@@ -97,6 +97,7 @@ end
 
 function LanguageSelectSetup:draw()
   GAME.theme.images.bg_main:draw()
+  GraphicsUtil.drawRectangle("fill", 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, 0, 0, 0, 0.55)
   self.uiRoot:draw()
 end
 

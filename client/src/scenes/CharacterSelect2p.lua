@@ -38,7 +38,17 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.changeInputButton = self:createChangeInputButton()
 
   local levelHeight
-  local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / #self.battleRoom.players - self.ui.panelSelection.height
+  -- Online play has exactly one local player whose selectors are interactive; remote
+  -- players' selections come from the server. Stacking N rows into a fixed 100px
+  -- band crushes per-row height (5p → ~3px each), so for online we only show the
+  -- local row and size the carousel for one row.
+  local rowsToShow
+  if self.battleRoom.online then
+    rowsToShow = 1
+  else
+    rowsToShow = #self.battleRoom.players
+  end
+  local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / rowsToShow - self.ui.panelSelection.height
   local stageWidth
 
   if self.battleRoom.online then
@@ -66,16 +76,24 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.characterIcons = {}
 
   for i, player in ipairs(self.players) do
-    local panelCarousel = self:createPanelCarousel(player, panelHeight)
-    self.ui.panelSelection:addElement(panelCarousel, player)
+    -- Online: only add the local player's selectors so the wrapper sizes for one
+    -- row instead of cramming N rows into the same space. Stage was already
+    -- local-only; panels and level now match.
+    local showSelectors = (not self.battleRoom.online) or player.isLocal
+    if showSelectors then
+      local panelCarousel = self:createPanelCarousel(player, panelHeight)
+      self.ui.panelSelection:addElement(panelCarousel, player)
+    end
 
     if player.isLocal then
       local stageCarousel = self:createStageCarousel(player, stageWidth)
       self.ui.stageSelection:addElement(stageCarousel, player)
     end
 
-    local levelSlider = self:createLevelSlider(player, levelHeight, panelHeight)
-    self.ui.levelSelection:addElement(levelSlider, player)
+    if showSelectors then
+      local levelSlider = self:createLevelSlider(player, levelHeight, panelHeight)
+      self.ui.levelSelection:addElement(levelSlider, player)
+    end
 
     local cursor = self:createCursor(self.ui.grid, player)
     cursor.raise1Callback = function()
