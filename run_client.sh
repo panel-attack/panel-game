@@ -18,7 +18,12 @@ if [[ -f "$pidfile" ]]; then
   rm -f "$pidfile"
 fi
 
-LOVE_IDENTITY="Panel Attack $identity_arg" PLAYER_NAME="$player_name" love "$project_dir" &
+# Running this script implies local development, so surface the Localhost server
+# (and other debug servers) in the main menu automatically. Override by exporting
+# PA_SHOW_LOCAL=false before invoking the script.
+: ${PA_SHOW_LOCAL:=true}
+
+LOVE_IDENTITY="Panel Attack $identity_arg" PLAYER_NAME="$player_name" PA_SHOW_LOCAL="$PA_SHOW_LOCAL" love "$project_dir" &
 love_pid=$!
 echo "$love_pid" > "$pidfile"
 trap 'rm -f "$pidfile"' EXIT

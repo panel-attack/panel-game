@@ -96,10 +96,24 @@ end
 
 function MainMenu:createMainMenu()
 
+  -- run_client.sh exports PA_SHOW_LOCAL=true so local dev always sees the Localhost option
+  -- without having to toggle the in-game debug setting.
+  local showLocalEnv = os.getenv("PA_SHOW_LOCAL") == "true"
+  local showDebugServers = DebugSettings.showDebugServers() or showLocalEnv
+
   local menuItems = {
     ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
       switchToScene(Lobby({serverIp = "104.156.250.136"}))
     end),
+  }
+
+  if showDebugServers then
+    menuItems[#menuItems + 1] = ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function()
+      switchToScene(Lobby({serverIp = "Localhost"}))
+    end)
+  end
+
+  local restItems = {
     ui.MenuItem.createButtonMenuItem("mm_configure", nil, nil, function()
       switchToScene(InputConfigMenu())
     end),
@@ -120,12 +134,15 @@ function MainMenu:createMainMenu()
     end),
   }
 
+  for _, item in ipairs(restItems) do
+    menuItems[#menuItems + 1] = item
+  end
+
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  if DebugSettings.showDebugServers() then
+  if showDebugServers then
     menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Replay Browser", nil, false, function() switchToScene(ReplayBrowser()) end))
     menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end))
-    menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end))
   end
   if DebugSettings.showDesignHelper() then
     menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
