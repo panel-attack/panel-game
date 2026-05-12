@@ -179,6 +179,42 @@ function Lobby:initLobbyMenu()
     self.uiRoot:addChild(latMenu)
   end
 
+  ---Resolve a game mode and apply lobby-selected roster behavior.
+  ---Open: min=2, max=count. Invite-only: min=max=count.
+  ---@param gameModeOrId GameMode|GameModeID|string
+  ---@param openRoom boolean
+  ---@return GameMode?
+  local function getRoomModeWithRosterBounds(gameModeOrId, openRoom)
+    local modeId = nil
+    if type(gameModeOrId) == "string" then
+      modeId = gameModeOrId
+    elseif type(gameModeOrId) == "table" then
+      modeId = gameModeOrId.gameModeId or gameModeOrId.id or (gameModeOrId.name and GameModes.nameToGameModeId[gameModeOrId.name])
+    end
+
+    if not modeId then
+      return nil
+    end
+
+    local ok, mode = pcall(GameModes.getPreset, modeId)
+    if not ok or not mode then
+      return nil
+    end
+
+    local count = tonumber(mode.playerCount) or tonumber(mode.maxPlayers) or tonumber(mode.minPlayers) or 2
+    count = math.max(2, math.floor(count))
+
+    if openRoom then
+      mode.minPlayers = 2
+      mode.maxPlayers = count
+    else
+      mode.minPlayers = count
+      mode.maxPlayers = count
+    end
+
+    return mode
+  end
+
   -- Garbage mode menu (used by both team and FFA flows). Parameterized so each
   -- flow passes its own parent menu and "close everything" chain — the menu's
   -- focus/teardown wiring differs between flows even though the UI is shared.
@@ -220,14 +256,14 @@ function Lobby:initLobbyMenu()
       "Broadcast",
       "Your attack is cloned and sent to every enemy simultaneously. Total damage scales with enemy count — in a 2v2 your combos deal twice the total damage of a 1v1.",
       function(b)
-        openLatencyMenu(garbageMenu, b, options.allMode, closeChain)
+        openLatencyMenu(garbageMenu, b, getRoomModeWithRosterBounds(options.allMode, options.openRoom == true), closeChain)
       end
     ))
     garbageMenu:addChild(garbageButton(
       "Round Robin",
       "Attacks rotate through enemies one at a time. Your team shares one rotation counter, so attacks fan out evenly — total output rate stays the same regardless of enemy count.",
       function(b)
-        openLatencyMenu(garbageMenu, b, options.sharedMode, closeChain)
+        openLatencyMenu(garbageMenu, b, getRoomModeWithRosterBounds(options.sharedMode, options.openRoom == true), closeChain)
       end
     ))
     garbageMenu:addChild(ui.TextButton({
@@ -269,7 +305,7 @@ function Lobby:initLobbyMenu()
   }
 
   -- Level 2: division menu (e.g. "1 vs 2", "2 vs 1") for a chosen player count.
-  local function openCompositionForCount(parentButton, playerCount)
+  local function openCompositionForCount(parentButton, playerCount, openRoom)
     if self.teamCompositionMenu then
       self.teamCompositionMenu:yieldFocus()
     end
@@ -292,13 +328,14 @@ function Lobby:initLobbyMenu()
       if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
       if self.teamCompositionMenu then self.teamCompositionMenu:yieldFocus() end
       if self.teamPlayerCountMenu then self.teamPlayerCountMenu:yieldFocus() end
+      if self.teamTypeMenu then self.teamTypeMenu:yieldFocus() end
     end
 
     for _, div in ipairs(divisions) do
       compositionMenu:addChild(ui.TextButton({
         label = ui.Label({text = div.label, translate = false}),
         onClick = function(b)
-          openGarbageMenu(b, { allMode = div.allMode, sharedMode = div.sharedMode },
+          openGarbageMenu(b, { allMode = div.allMode, sharedMode = div.sharedMode, openRoom = openRoom },
             compositionMenu, closeTeamMenuChain)
         end
       }))
@@ -332,7 +369,7 @@ function Lobby:initLobbyMenu()
   end
 
   -- Level 1: player count menu (3 / 4 / 5).
-  local function openTeamCompositionMenu(parentButton)
+  local function openTeamCompositionMenu(parentButton, openRoom, parentMenu)
     if self.teamPlayerCountMenu then
       self.teamPlayerCountMenu:yieldFocus()
     end
@@ -352,7 +389,7 @@ function Lobby:initLobbyMenu()
     for _, n in ipairs({3, 4, 5}) do
       playerCountMenu:addChild(ui.TextButton({
         label = ui.Label({text = tostring(n), translate = false}),
-        onClick = function(b) openCompositionForCount(b, n) end,
+        onClick = function(b) openCompositionForCount(b, n, openRoom) end,
       }))
     end
     playerCountMenu:addChild(ui.TextButton({
@@ -365,7 +402,8 @@ function Lobby:initLobbyMenu()
     playerCountMenu:select(playerCountMenu.children[1])
 
     self.teamPlayerCountMenu = playerCountMenu
-    self.lobbyMenu:setFocus(playerCountMenu, function()
+    parentMenu = parentMenu or self.lobbyMenu
+    parentMenu:setFocus(playerCountMenu, function()
       if self.latencyMenu then
         self.latencyMenu:detach()
         self.latencyMenu = nil
@@ -378,14 +416,75 @@ function Lobby:initLobbyMenu()
         self.teamCompositionMenu:detach()
         self.teamCompositionMenu = nil
       end
+      if parentMenu.select then
+        parentMenu:select(parentButton)
+      end
       self.teamPlayerCountMenu:detach()
       self.teamPlayerCountMenu = nil
     end)
     self.uiRoot:addChild(playerCountMenu)
   end
 
+  local function openTeamTypeMenu(parentButton)
+    if self.teamTypeMenu then
+      self.teamTypeMenu:yieldFocus()
+    end
+
+    local bx, by = parentButton:getScreenPos()
+    local typeMenu = ui.ScrollMenu({
+      x = bx + parentButton.width + 3,
+      y = by,
+      hAlign = "left",
+      vAlign = "top",
+      height = 160,
+      width = 200,
+      padding = 0,
+      childGap = 8,
+    })
+
+    typeMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "Invite-only", translate = false}),
+      onClick = function(b) openTeamCompositionMenu(b, false, typeMenu) end,
+    }))
+    typeMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "Open", translate = false}),
+      onClick = function(b) openTeamCompositionMenu(b, true, typeMenu) end,
+    }))
+    typeMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "back"}),
+      onClick = function()
+        GAME.theme:playCancelSfx()
+        typeMenu:yieldFocus()
+      end,
+    }))
+    typeMenu:select(typeMenu.children[1])
+
+    self.teamTypeMenu = typeMenu
+    self.lobbyMenu:setFocus(typeMenu, function()
+      if self.latencyMenu then
+        self.latencyMenu:detach()
+        self.latencyMenu = nil
+      end
+      if self.teamGarbageMenu then
+        self.teamGarbageMenu:detach()
+        self.teamGarbageMenu = nil
+      end
+      if self.teamCompositionMenu then
+        self.teamCompositionMenu:detach()
+        self.teamCompositionMenu = nil
+      end
+      if self.teamPlayerCountMenu then
+        self.teamPlayerCountMenu:detach()
+        self.teamPlayerCountMenu = nil
+      end
+      self.teamTypeMenu:detach()
+      self.teamTypeMenu = nil
+    end)
+    self.uiRoot:addChild(typeMenu)
+  end
+
   -- FFA player count menu
-  local function openFfaMenu(parentButton)
+  local function openFfaMenu(parentButton, openRoom)
     if self.ffaPlayerCountMenu then
       self.ffaPlayerCountMenu:yieldFocus()
     end
@@ -414,6 +513,7 @@ function Lobby:initLobbyMenu()
         openGarbageMenu(b, {
           allMode = GameModes.IDs.THREE_PLAYER_FFA,
           sharedMode = GameModes.IDs.THREE_PLAYER_FFA_SHARED,
+          openRoom = openRoom,
         }, ffaMenu, closeInviteOnlyChain)
       end
     }))
@@ -423,6 +523,7 @@ function Lobby:initLobbyMenu()
         openGarbageMenu(b, {
           allMode = GameModes.IDs.FOUR_PLAYER_FFA,
           sharedMode = GameModes.IDs.FOUR_PLAYER_FFA_SHARED,
+          openRoom = openRoom,
         }, ffaMenu, closeInviteOnlyChain)
       end
     }))
@@ -432,6 +533,7 @@ function Lobby:initLobbyMenu()
         openGarbageMenu(b, {
           allMode = GameModes.IDs.FIVE_PLAYER_FFA,
           sharedMode = GameModes.IDs.FIVE_PLAYER_FFA_SHARED,
+          openRoom = openRoom,
         }, ffaMenu, closeInviteOnlyChain)
       end
     }))
@@ -477,20 +579,11 @@ function Lobby:initLobbyMenu()
 
     typeMenu:addChild(ui.TextButton({
       label = ui.Label({text = "Invite-only", translate = false}),
-      onClick = function(b) openFfaMenu(b) end,
+      onClick = function(b) openFfaMenu(b, false) end,
     }))
     typeMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "Open (2-5, drop-in)", translate = false}),
-      onClick = function(b)
-        local function closeOpenFfaChain()
-          if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
-          if self.ffaTypeMenu then self.ffaTypeMenu:yieldFocus() end
-        end
-        openGarbageMenu(b, {
-          allMode = GameModes.IDs.OPEN_FFA,
-          sharedMode = GameModes.IDs.OPEN_FFA_SHARED,
-        }, typeMenu, closeOpenFfaChain)
-      end,
+      label = ui.Label({text = "Open", translate = false}),
+      onClick = function(b) openFfaMenu(b, true) end,
     }))
     typeMenu:addChild(ui.TextButton({
       label = ui.Label({text = "back"}),
@@ -530,7 +623,15 @@ function Lobby:initLobbyMenu()
         self.teamCompositionMenu:yieldFocus()
         return
       end
-      openTeamCompositionMenu(button)
+      if self.teamPlayerCountMenu then
+        self.teamPlayerCountMenu:yieldFocus()
+        return
+      end
+      if self.teamTypeMenu then
+        self.teamTypeMenu:yieldFocus()
+        return
+      end
+      openTeamTypeMenu(button)
     end
   })
 
@@ -1230,7 +1331,9 @@ function Lobby:openRoomSubMenu(room, button)
   -- team rooms gate joining through the owner's accept (handshake flow).
   if room.openSlots then
     local roomOwnerId = room.ownerId or (room.players and room.players[1])
-    local isDynamicRoster = room.minPlayers ~= nil
+    -- Room payload always carries minPlayers/maxPlayers; dynamic roster is the
+    -- open-FFA case where min < max.
+    local isDynamicRoster = room.minPlayers ~= nil and room.maxPlayers ~= nil and room.minPlayers < room.maxPlayers
     for _, slotNumber in ipairs(room.openSlots) do
       -- "Join 🩷" / "Join 🟣" — color = team you'd be filling.
       local joinLbl = loc("lb_join") .. " " .. teamEmptyPrefix(room, slotNumber)

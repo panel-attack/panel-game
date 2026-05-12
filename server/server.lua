@@ -24,18 +24,43 @@ local util = require("common.lib.util")
 local FileIO = require("server.FileIO")
 local GameModes = require("common.data.GameModes")
 
+local function applyRequestedRoomBounds(resolvedMode, requestedGameMode)
+  if type(resolvedMode) ~= "table" or type(requestedGameMode) ~= "table" then
+    return resolvedMode
+  end
+
+  local requestedMin = tonumber(requestedGameMode.minPlayers)
+  local requestedMax = tonumber(requestedGameMode.maxPlayers)
+  local modeCount = tonumber(resolvedMode.playerCount) or tonumber(resolvedMode.maxPlayers)
+
+  if requestedMax and requestedMax == math.floor(requestedMax) and requestedMax >= 2 then
+    if not modeCount or requestedMax <= modeCount then
+      resolvedMode.maxPlayers = requestedMax
+    end
+  end
+
+  local effectiveMax = tonumber(resolvedMode.maxPlayers) or modeCount
+  if requestedMin and requestedMin == math.floor(requestedMin) and requestedMin >= 2 then
+    if not effectiveMax or requestedMin <= effectiveMax then
+      resolvedMode.minPlayers = requestedMin
+    end
+  end
+
+  return resolvedMode
+end
+
 local function resolveRequestedGameMode(requestedGameMode)
   if type(requestedGameMode) == "table" then
     local requestedId = requestedGameMode.gameModeId or requestedGameMode.id
     if requestedId and GameModes.IDs[requestedId] then
-      return GameModes.getPreset(requestedId)
+      return applyRequestedRoomBounds(GameModes.getPreset(requestedId), requestedGameMode)
     end
 
     local requestedName = requestedGameMode.name
     if requestedName then
       local canonicalId = GameModes.nameToGameModeId[requestedName]
       if canonicalId then
-        return GameModes.getPreset(canonicalId)
+        return applyRequestedRoomBounds(GameModes.getPreset(canonicalId), requestedGameMode)
       end
     end
 
@@ -514,8 +539,10 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
           return tonumber(openSlot) == slotNumber
         end)
         if not slotOpen then
-          logger.debug(string.format("Room invite rejected: requested slot %s is not open in room %d", tostring(slotNumber), roomNumber))
-          return
+          -- Slot numbers are request intent only; join assignment is determined
+          -- by handleJoinRoom/addPlayer. Accepting here avoids deadlocks when
+          -- invitees accept out-of-order in fixed-roster rooms.
+          logger.debug(string.format("Room invite slot %s no longer open in room %d; continuing with invite handshake", tostring(slotNumber), roomNumber))
         end
 
         logger.debug(string.format("%s invites %s to join room %d at slot %d", sender.name, receiver.name, roomNumber, slotNumber))

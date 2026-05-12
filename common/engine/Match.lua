@@ -302,17 +302,10 @@ end
 --- For "all" mode: sends to ALL targets at once
 --- For "shared" mode: sends to the next target in the round-robin queue
 ---
---- Loose-sync note: the round-robin counter advances by exactly 1 per
---- delivery, independent of how many targets are alive. This makes the
---- counter state deterministic across all clients (it depends only on
---- the sender's delivery history, which is itself deterministic from the
---- input stream). The chosen target then walks forward over any dead
---- enemies to find the next living one — the "re-give to next living"
---- semantic. Each client runs this walk against its own live view of
---- the targets; the walk result can briefly differ on different machines
---- at death boundaries, but the authoritative G event from the sender's
---- own machine wins for gameplay, so the divergence is visual-only and
---- self-correcting as D events propagate.
+--- Shared-mode note: round-robin state is tracked per SENDER and the
+--- rotation itself only advances over LIVING enemies. Dead players are
+--- skipped for both selection and advancement so the next delivery always
+--- rotates to the next living opponent for that sender.
 function Match:distributeGarbageToTargets()
   for senderIndex, targets in ipairs(self.garbageTargets) do
     if #targets > 1 then
@@ -323,31 +316,37 @@ function Match:distributeGarbageToTargets()
         local garbageDelivery = sender:getReadyGarbageAt(oldestTransitTime)
         if garbageDelivery then
           if self.garbageMode == "shared" then
-            local senderTeamIndex = self.teams and TeamUtils.getPlayerTeamIndex(self.teams, senderIndex) or 1
-            local teamState = self.teamGarbageState and self.teamGarbageState[senderTeamIndex]
+            local teamState = self.teamGarbageState and self.teamGarbageState[senderIndex]
 
             if teamState and #teamState.enemyIndices > 0 then
               local startIndex = teamState.currentTargetIndex
-              -- Advance the counter unconditionally so all clients keep
-              -- the same rotation state regardless of how the walk-forward
-              -- below resolves on each machine.
-              teamState.currentTargetIndex = (startIndex % #teamState.enemyIndices) + 1
-
-              -- Walk forward from startIndex to find a living target. If all
-              -- enemies are dead the garbage is dropped (the team's already
-              -- lost; the match-end check will catch it).
+              -- Pick the next living target from the current cursor.
               local targetStack = nil
+              local pickedIndex = nil
               local i = startIndex
               for _ = 1, #teamState.enemyIndices do
                 local candidate = self.stacks[teamState.enemyIndices[i]]
                 if candidate and not candidate:game_ended() then
                   targetStack = candidate
+                  pickedIndex = i
                   break
                 end
                 i = (i % #teamState.enemyIndices) + 1
               end
 
               if targetStack then
+                -- Advance to the NEXT living target after the one we just
+                -- picked, so rotation stays over living players only.
+                local nextIndex = pickedIndex
+                for _ = 1, #teamState.enemyIndices do
+                  nextIndex = (nextIndex % #teamState.enemyIndices) + 1
+                  local nextCandidate = self.stacks[teamState.enemyIndices[nextIndex]]
+                  if nextCandidate and not nextCandidate:game_ended() then
+                    teamState.currentTargetIndex = nextIndex
+                    break
+                  end
+                end
+
                 local garbageCopy = {}
                 for j, g in ipairs(garbageDelivery) do
                   garbageCopy[j] = shallowcpy(g)
@@ -1004,8 +1003,8 @@ function Match:setupTeamGarbageTargets()
     end
   elseif self.garbageMode == "shared" then
     -- "Shared" mode: round-robin TARGETING. Senders with multiple enemies pick one
-    -- enemy per attack instead of hitting all of them; team members share the same
-    -- round-robin counter so the team's attacks fan out across enemies evenly.
+    -- enemy per attack instead of hitting all of them. Rotation is tracked per
+    -- sender, so each player cycles independently through their living enemies.
     --
     -- Note: this only changes targeting, not output rate. Team members each retain
     -- their full per-player attack rate. For symmetric 2v2 that produces a balanced
@@ -1013,9 +1012,9 @@ function Match:setupTeamGarbageTargets()
     -- effectively deal 1× per tick while taking 2× from the team, since team members
     -- only have one enemy and bypass distributeGarbageToTargets entirely.
     self.teamGarbageState = {}
-    for teamIndex, team in ipairs(self.teams) do
-      local enemyIndices = TeamUtils.getEnemyPlayerIndices(self.teams, team.playerIndices[1])
-      self.teamGarbageState[teamIndex] = {
+    for i = 1, #self.stacks do
+      local enemyIndices = TeamUtils.getEnemyPlayerIndices(self.teams, i)
+      self.teamGarbageState[i] = {
         currentTargetIndex = 1,
         enemyIndices = enemyIndices
       }

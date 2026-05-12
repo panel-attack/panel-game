@@ -626,12 +626,12 @@ function GameBase:drawSpectatorHint()
     local nameText = "Viewing: " .. focusName
     local nameW = font:getWidth(nameText)
     local nameX = (consts.CANVAS_WIDTH - nameW) / 2
-    GraphicsUtil.print(nameText, nameX + 1, hintY - font:getHeight() - 3 + 1, 0, 1, 1, 0, 0, 0, 0.7)
-    GraphicsUtil.print(nameText, nameX,     hintY - font:getHeight() - 3,     0, 1, 1, 1, 1, 1, 1)
+    GraphicsUtil.print(nameText, nameX + 1, hintY - font:getHeight() - 3 + 1, {0, 0, 0, 0.7})
+    GraphicsUtil.print(nameText, nameX,     hintY - font:getHeight() - 3,     {1, 1, 1, 1})
   end
 
-  GraphicsUtil.print(hint, hintX + 1, hintY + 1, 0, 1, 1, 0, 0, 0, 0.7)
-  GraphicsUtil.print(hint, hintX,     hintY,     0, 1, 1, 1, 1, 0.6, 1)
+  GraphicsUtil.print(hint, hintX + 1, hintY + 1, {0, 0, 0, 0.7})
+  GraphicsUtil.print(hint, hintX,     hintY,     {1, 1, 0.6, 1})
 end
 
 function GameBase:drawEndGameText()

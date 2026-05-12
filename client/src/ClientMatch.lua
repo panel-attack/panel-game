@@ -262,6 +262,10 @@ function ClientMatch:run()
 
   local runs = math.max(unpack(self.engine:run()))
 
+  -- Keep shared-mode telegraph targets aligned with the next living recipient
+  -- selected by the engine's round-robin cursor.
+  self:refreshSharedModeTelegraphTargets()
+
   if self.panicTickStartTime and self.panicTickStartTime == self.engine.clock then
     self:updateDangerMusic()
   end
@@ -377,6 +381,9 @@ function ClientMatch:moveStacks()
   -- so we solve the rendering requirement via a shallowcpy and assigning positions directly to the stacks rather than starting reordering shenanigans all across the code base
   local stacks = shallowcpy(self.stacks)
   table.sort(stacks, function(a, b)
+    local aFocused = self.spectatorFocus ~= nil and a.player_number == self.spectatorFocus
+    local bFocused = self.spectatorFocus ~= nil and b.player_number == self.spectatorFocus
+    if aFocused ~= bFocused then return aFocused end
     if a.is_local == b.is_local then
       return a.player_number < b.player_number
     else
@@ -417,6 +424,7 @@ function ClientMatch:cycleSpectatorFocus(direction)
     idx = ((idx - 1 + direction) % #live) + 1
     self.spectatorFocus = live[idx]
   end
+  self:moveStacks()
 end
 
 function ClientMatch:setStage(stageId)
@@ -560,6 +568,55 @@ function ClientMatch:initializeTelegraphRelationships()
     for _, engineStack in ipairs(garbageSources) do
       local index = tableUtils.indexOf(self.engine.stacks, engineStack)
       self.stacks[recipientIndex]:setGarbageSource(self.stacks[index])
+    end
+  end
+
+  self:refreshSharedModeTelegraphTargets()
+end
+
+function ClientMatch:refreshSharedModeTelegraphTargets()
+  if not self.engine then
+    return
+  end
+
+  local garbageMode = (self.gameMode and self.gameMode.garbageMode)
+    or (self.engine and self.engine.garbageMode)
+  if garbageMode ~= "shared" then
+    return
+  end
+
+  local teamStateBySender = self.engine.teamGarbageState
+  if not teamStateBySender then
+    return
+  end
+
+  for senderIndex, engineTargets in ipairs(self.engine.garbageTargets) do
+    if #engineTargets > 1 then
+      local teamState = teamStateBySender[senderIndex]
+      if teamState and teamState.enemyIndices and #teamState.enemyIndices > 0 then
+        local startIndex = teamState.currentTargetIndex or 1
+        local chosenRecipientIndex = nil
+        local i = startIndex
+
+        for _ = 1, #teamState.enemyIndices do
+          local recipientIndex = teamState.enemyIndices[i]
+          local recipientStack = self.engine.stacks[recipientIndex]
+          if recipientStack and not recipientStack:game_ended() then
+            chosenRecipientIndex = recipientIndex
+            break
+          end
+          i = (i % #teamState.enemyIndices) + 1
+        end
+
+        local senderClientStack = self.stacks[senderIndex]
+        if senderClientStack then
+          if chosenRecipientIndex and self.stacks[chosenRecipientIndex] then
+            senderClientStack:setGarbageTargets({ self.stacks[chosenRecipientIndex] })
+          else
+            senderClientStack:setGarbageTargets({})
+          end
+        end
+      end
     end
   end
 end

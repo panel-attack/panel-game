@@ -332,26 +332,30 @@ local function testGarbageSharedMode_teamSharesRotation()
 
   runToFrame(match, 100)
 
-  -- P1 sends combo (should go to P3)
+  -- P1 sends combo (should go to one enemy)
   GarbageQueueTestingUtils.sendGarbage(p1Stack, 3, 1)
   runToFrame(match, 300)
 
   local p3AfterP1 = getIncomingGarbageCount(p3Stack)
   local p4AfterP1 = getIncomingGarbageCount(p4Stack)
 
-  -- P2 sends combo (should continue rotation, go to P4)
+  -- P2 sends combo; per-sender shared mode should keep P2's own cursor,
+  -- so this should not affect P1's next target.
   GarbageQueueTestingUtils.sendGarbage(p2Stack, 3, 1)
   runToFrame(match, 500)
 
-  local p3AfterP2 = getIncomingGarbageCount(p3Stack)
-  local p4AfterP2 = getIncomingGarbageCount(p4Stack)
+  -- P1 sends again; this should alternate relative to P1's first delivery,
+  -- independent of P2's attack in between.
+  GarbageQueueTestingUtils.sendGarbage(p1Stack, 3, 1)
+  runToFrame(match, 700)
 
-  -- Rotation should be shared by team
-  -- If P1's combo went to P3, P2's should go to P4
+  local p3AfterP1Second = getIncomingGarbageCount(p3Stack)
+  local p4AfterP1Second = getIncomingGarbageCount(p4Stack)
+
   if p3AfterP1 > 0 then
-    assert(p4AfterP2 > p4AfterP1, "P2's combo should go to P4 (continuing team rotation)")
+    assert(p4AfterP1Second > p4AfterP1, "P1 should alternate to P4 on second send")
   else
-    assert(p3AfterP2 > p3AfterP1, "P2's combo should go to P3 (continuing team rotation)")
+    assert(p3AfterP1Second > p3AfterP1, "P1 should alternate to P3 on second send")
   end
 end
 
