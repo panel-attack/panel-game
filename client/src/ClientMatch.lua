@@ -942,13 +942,25 @@ function ClientMatch:receiveInput(prefix, input)
 end
 
 ---Loose-sync: handle an incoming GarbageEvent from the server.
----Step 6 stub — just logs. Step 7 wires this into the receiving stack's
----incomingGarbage queue with adaptive telegraph timing.
+---Applies the garbage to local-authoritative recipient stacks. Remote
+---view-stacks are not touched here; each client's local sim already pushes
+---visual garbage onto its view of the opponent in deliverOutgoingGarbage.
 ---@param body table parsed event payload: {sender, senderFrame, serverWallClockMs, recipients, garbage}
 function ClientMatch:applyGarbageEvent(body)
-  logger.debug(string.format("GarbageEvent received: sender=%s senderFrame=%s serverWallClockMs=%s recipients=%s",
-    tostring(body and body.sender), tostring(body and body.senderFrame),
-    tostring(body and body.serverWallClockMs), tostring(body and body.recipients)))
+  if not body or type(body.recipients) ~= "table" or type(body.garbage) ~= "table" then
+    logger.warn("applyGarbageEvent: malformed body, dropping")
+    return
+  end
+
+  for _, recipientIndex in ipairs(body.recipients) do
+    local stack = self.stacks[recipientIndex]
+    if stack and stack.is_local then
+      logger.debug(string.format(
+        "applyGarbageEvent: sender=%s senderFrame=%s -> stack[%d] (local), %d garbage pieces",
+        tostring(body.sender), tostring(body.senderFrame), recipientIndex, #body.garbage))
+      stack:receiveGarbage(body.garbage)
+    end
+  end
 end
 
 ---Loose-sync: handle an incoming DeathEvent from the server.

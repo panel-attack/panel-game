@@ -354,7 +354,7 @@ function Match:distributeGarbageToTargets()
                   for i, g in ipairs(garbageDelivery) do
                     garbageCopy[i] = shallowcpy(g)
                   end
-                  targetStack:receiveGarbage(garbageCopy)
+                  self:deliverOutgoingGarbage(sender, targetStack, garbageCopy)
                 end
               end
             else
@@ -365,7 +365,7 @@ function Match:distributeGarbageToTargets()
                 for i, g in ipairs(garbageDelivery) do
                   garbageCopy[i] = shallowcpy(g)
                 end
-                target:receiveGarbage(garbageCopy)
+                self:deliverOutgoingGarbage(sender, target, garbageCopy)
               end
             end
           end
@@ -392,11 +392,51 @@ function Match:pushGarbageTo(stack)
         -- clock; the receiver's telegraph window absorbs the timing slack.
         local garbageDelivery = st:getReadyGarbageAt(stack.stopWatch)
         if garbageDelivery then
-          stack:receiveGarbage(garbageDelivery)
+          self:deliverOutgoingGarbage(st, stack, garbageDelivery)
         end
       end
     end
   end
+end
+
+---Deliver garbage from a sender stack to a target stack, honoring the loose-sync
+---routing rules:
+---  * If the source is local-authoritative and the target is remote (a view of
+---    another player), emit a G event so the target's own machine applies the
+---    garbage authoritatively. Locally also push the garbage onto the view for
+---    visual consistency on the sender's screen.
+---  * If the source is remote and the target is local-authoritative, SUPPRESS
+---    the local-sim push — the authoritative G event from the source's machine
+---    will deliver. Without this, garbage would land twice on the local player.
+---  * Otherwise (local↔local self-attack, or remote↔remote on spectator), keep
+---    the existing direct push.
+---@param source BaseStack
+---@param target BaseStack
+---@param garbageDelivery table garbage payload (array of Garbage records)
+function Match:deliverOutgoingGarbage(source, target, garbageDelivery)
+  local looseSyncActive = LOOSE_SYNC_GARBAGE
+      and GAME and GAME.netClient and GAME.netClient:isConnected()
+
+  if looseSyncActive then
+    if source.is_local and not target.is_local then
+      -- Local source → remote target: emit G, then keep local visual push so
+      -- the sender's own view of the opponent shows garbage landing.
+      local recipientIndex = tableUtils.indexOf(self.stacks, target)
+      GAME.netClient:sendGarbageEvent({
+        senderFrame = source.stopWatch,
+        recipients = { recipientIndex },
+        garbage = garbageDelivery,
+      })
+      target:receiveGarbage(garbageDelivery)
+      return
+    elseif target.is_local and not source.is_local then
+      -- Remote source → local target: the authoritative G will arrive separately.
+      -- Suppress to avoid double-counting.
+      return
+    end
+  end
+
+  target:receiveGarbage(garbageDelivery)
 end
 
 ---@param stack BaseStack

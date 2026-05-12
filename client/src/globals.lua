@@ -15,6 +15,10 @@ else
 end
 NAME_LENGTH_LIMIT = 16
 
+-- Loose-sync feature flags. Toggle off to fall back to the old implicit-sim
+-- garbage delivery path for debugging / A-B comparison.
+LOOSE_SYNC_GARBAGE = true
+
 themes = {} -- initialized in theme.lua
 
 THEME_DIRECTORY_PATH = "themes/"
