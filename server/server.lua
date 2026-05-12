@@ -877,11 +877,11 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
-  -- Slot number is informational - we always add to the next available position.
-  -- (Note: slotNumber parameter is request intent, not enforced assignment)
-  local actualSlot = #room.players + 1
+  -- Slot is now honored when valid and free (see Room:addPlayer). This is how
+  -- invite-mode 2v2 "join purple" lands the player at slot 3 (purple team)
+  -- instead of the lowest free slot.
   if slotNumber then
-    logger.debug(string.format("Player %s requested slot %d, assigning to actual slot %d", player.name, slotNumber, actualSlot))
+    logger.debug(string.format("Player %s requested slot %d", player.name, slotNumber))
   end
 
   -- Enable no delay for multiplayer
@@ -895,7 +895,7 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
   end
 
   -- Add player to the room
-  local success = room:addPlayer(player)
+  local success = room:addPlayer(player, slotNumber)
   if success then
     -- Clear only proposals involving the joining player.
     -- Keep other players' pending slot requests intact.

@@ -160,16 +160,28 @@ function CharacterSelect2p:refreshRoster()
     self.ui.grid:removeElementsIn(1, 1, self.ui.grid.gridWidth, 1)
   end
 
-  -- Clear the panel/stage/level wrappers but preserve their title labels.
+  -- Clear the panel/stage/level wrappers and reset their stacking state. Using
+  -- bare child:detach() leaves StackPanel.pixelsTaken/height stale (see the
+  -- IMPORTANT note on StackPanel:remove) — next addElement positions children
+  -- at the stale y offset, pushing carousels/sliders outside their cell. We
+  -- nuke the children entirely (including the title), reset stack counters to
+  -- zero, then re-add the title via StackPanel.addElement so its y/height
+  -- bookkeeping starts fresh.
   for _, wrapper in ipairs({self.ui.panelSelection, self.ui.stageSelection, self.ui.levelSelection}) do
     if wrapper and wrapper.children then
       for i = #wrapper.children, 1, -1 do
-        local child = wrapper.children[i]
-        if child ~= wrapper.title then
-          child:detach()
-        end
+        wrapper.children[i]:detach()
       end
+      wrapper.pixelsTaken = 0
+      wrapper.height = 0
+      wrapper.width = 0
       wrapper.wrappedElements = {}
+      if wrapper.title then
+        wrapper.title.x = 0
+        wrapper.title.y = 0
+        wrapper:applyStackPanelSettings(wrapper.title)
+        wrapper:addChild(wrapper.title)
+      end
     end
   end
 

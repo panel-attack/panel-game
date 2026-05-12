@@ -154,9 +154,43 @@ function(self, roomNumber, players, gameMode, leaderboard)
 end
 )
 
+---Count non-nil entries in self.players. Use this instead of `#self.players`
+---because self.players is keyed by slot (1..maxPlayers) and may be sparse — a
+---partially-filled team room can have {[1]=A, [3]=B} with slots 2 and 4 nil,
+---and the `#` operator stops at the first gap.
+---@return integer
+function Room:countPlayers()
+  local count = 0
+  for _, player in pairs(self.players) do
+    if player then
+      count = count + 1
+    end
+  end
+  return count
+end
+
+---Stateless iterator over occupied slots: yields (slot, player) for each
+---non-nil entry in self.players, in ascending slot order. Use instead of
+---`ipairs(self.players)`, which stops at the first nil. Order is critical for
+---deterministic broadcast / team-assignment paths.
+---@return fun(): integer?, ServerPlayer?
+function Room:eachPlayer()
+  local i = 0
+  return function()
+    while i < self.maxPlayers do
+      i = i + 1
+      local p = self.players[i]
+      if p then
+        return i, p
+      end
+    end
+    return nil
+  end
+end
+
 ---@return boolean true if room has all required players
 function Room:isFull()
-  return #self.players >= self.maxPlayers
+  return self:countPlayers() >= self.maxPlayers
 end
 
 ---Open slots are positions any lobby player can claim. Held slots (reserved for
@@ -166,14 +200,22 @@ end
 --- players first, then open rows, then held rows.
 ---@return integer[] list of open slot indices
 function Room:getOpenSlots()
-  local heldCount = 0
-  for _ in pairs(self.reservedSlots) do
-    heldCount = heldCount + 1
+  -- A slot is "open" when it has no player and no reservation. Held slots
+  -- (reservedSlots keyed by publicId, but holding a specific slot index — see
+  -- below) are excluded. We walk every slot 1..maxPlayers because players is
+  -- sparse now: slot 3 may be filled while slot 2 is empty (B clicked purple).
+  local reservedIndexes = {}
+  -- reservedSlots is keyed by publicId; the slot index for each reservation
+  -- lives in the "held slot" list returned by getHeldSlots. Rebuild the
+  -- inverse here so we can ask "is slot N held?" cheaply.
+  for _, entry in ipairs(self:getHeldSlots()) do
+    reservedIndexes[entry.slotNumber] = true
   end
   local slots = {}
-  local lastOpenSlot = self.maxPlayers - heldCount
-  for i = #self.players + 1, lastOpenSlot do
-    slots[#slots + 1] = i
+  for i = 1, self.maxPlayers do
+    if not self.players[i] and not reservedIndexes[i] then
+      slots[#slots + 1] = i
+    end
   end
   return slots
 end
@@ -202,15 +244,34 @@ function Room:getHeldSlots()
 end
 
 ---@param player ServerPlayer
+---@param slotNumber integer? requested slot (1..maxPlayers). For invite games
+---  the inviter pre-picks the slot; this is how 2v2 "join purple" lands B at
+---  slot 3 instead of the next sequential index. Falls back to first-free.
 ---@return boolean success
-function Room:addPlayer(player)
+function Room:addPlayer(player, slotNumber)
   if self:isFull() then
     logger.warn("Cannot add player " .. player.name .. " to full room " .. self.roomNumber)
     return false
   end
 
   self:noteActivity()
-  local playerIndex = #self.players + 1
+
+  -- Honor the requested slot when it's valid and free; otherwise pick the
+  -- lowest free slot. Slot determines team membership in fixed-roster team
+  -- modes (TeamUtils splits 2v2 as {1,2} vs {3,4}, so B must land at slot 3
+  -- to be on the purple team — not at the next-available index).
+  local playerIndex
+  if slotNumber and slotNumber >= 1 and slotNumber <= self.maxPlayers and not self.players[slotNumber] then
+    playerIndex = slotNumber
+  else
+    for i = 1, self.maxPlayers do
+      if not self.players[i] then
+        playerIndex = i
+        break
+      end
+    end
+  end
+
   self.players[playerIndex] = player
   player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   player:addToRoom(self)
@@ -219,12 +280,16 @@ function Room:addPlayer(player)
   player.cursor = "__Ready"
   player.player_number = playerIndex
 
-  -- Update room name
-  self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
+  -- Update room name (slot order, skipping any gaps).
+  local names = {}
+  for _, p in self:eachPlayer() do
+    names[#names + 1] = p.name
+  end
+  self.name = table.concat(names, " vs ")
 
   -- Initialize teams when room becomes full
   if self:isFull() and self.gameMode.teamCount and self.gameMode.playersPerTeam and not self.teams then
-    self.teams = TeamUtils.createTeams(#self.players, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+    self.teams = TeamUtils.createTeams(self:countPlayers(), self.gameMode.teamCount, self.gameMode.playersPerTeam)
     self.team_win_counts = {}
     for teamIndex = 1, #self.teams do
       self.team_win_counts[teamIndex] = 0
