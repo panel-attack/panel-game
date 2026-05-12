@@ -17,6 +17,8 @@ local messageEndMarker = "←J←"
 NetworkProtocol.clientMessageTypes = {
   jsonMessage = {prefix="J", size=nil}, -- Generic JSON message sent from the client
   playerInput = {prefix="I", size=nil}, -- Player input (touch or controller) from the client
+  garbageEvent = {prefix="G", size=nil}, -- Loose-sync: sender-emitted garbage delivery event (JSON body)
+  deathEvent = {prefix="D", size=nil}, -- Loose-sync: sender-emitted death notification (JSON body)
   acknowledgedPing = {prefix="E", size=1}, -- Respond back from the servers ping to confirm we are still connected
   versionCheck = {prefix="H", size=4} -- Sent on initial connection with the NETWORK_VERSION number to confirm client and server agree
 }
@@ -26,7 +28,7 @@ for _, value in pairs(NetworkProtocol.clientMessageTypes) do
 end
 
 -- Input prefixes for each player slot (server → client). Reserves I,U,V,W for slots 1-4
--- and extends with X,Y,Z,Q for slots 5-8. Non-input prefixes in use: J,E,H,N.
+-- and extends with X,Y,Z,Q for slots 5-8. Non-input prefixes in use: J,E,H,N,G,D,K.
 NetworkProtocol.playerInputPrefixes = {"I", "U", "V", "W", "X", "Y", "Z", "Q"}
 
 NetworkProtocol.serverMessageTypes = {
@@ -39,6 +41,9 @@ NetworkProtocol.serverMessageTypes = {
   sixthOpponentInput = {prefix="Y", size=nil, verbose = true},
   seventhOpponentInput = {prefix="Z", size=nil, verbose = true},
   eighthOpponentInput = {prefix="Q", size=nil, verbose = true},
+  garbageEvent = {prefix="G", size=nil, verbose = true}, -- Loose-sync: relayed sender-emitted garbage delivery event
+  deathEvent = {prefix="D", size=nil}, -- Loose-sync: relayed sender-emitted death notification
+  koArbitration = {prefix="K", size=nil}, -- Loose-sync: server-authored simultaneous-KO arbitration result
   versionCorrect = {prefix="H", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is allowed
   versionWrong = {prefix="N", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is not allowed
   ping = {prefix="E", size=1, verbose = true} -- Sent to the client to confirm they are still connected
