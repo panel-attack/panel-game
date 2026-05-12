@@ -581,6 +581,42 @@ local function processInputMessages(self)
 end
 
 ---@param self NetClient
+local function processGarbageEvents(self)
+  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
+    NetworkProtocol.serverMessageTypes.garbageEvent.prefix)
+  if self.room and self.room.match then
+    for _, msg in ipairs(messages) do
+      local body = msg[NetworkProtocol.serverMessageTypes.garbageEvent.prefix]
+      self.room.match:applyGarbageEvent(body)
+    end
+  end
+end
+
+---@param self NetClient
+local function processDeathEvents(self)
+  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
+    NetworkProtocol.serverMessageTypes.deathEvent.prefix)
+  if self.room and self.room.match then
+    for _, msg in ipairs(messages) do
+      local body = msg[NetworkProtocol.serverMessageTypes.deathEvent.prefix]
+      self.room.match:applyDeathEvent(body)
+    end
+  end
+end
+
+---@param self NetClient
+local function processKOArbitrations(self)
+  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
+    NetworkProtocol.serverMessageTypes.koArbitration.prefix)
+  if self.room and self.room.match then
+    for _, msg in ipairs(messages) do
+      local body = msg[NetworkProtocol.serverMessageTypes.koArbitration.prefix]
+      self.room.match:applyKOArbitration(body)
+    end
+  end
+end
+
+---@param self NetClient
 local function processChallengeUpdate(self, challengeUpdateMessage)
   if challengeUpdateMessage.challengeUpdate then
     local challengeUpdate = challengeUpdateMessage.challengeUpdate
@@ -849,6 +885,27 @@ end
 function NetClient:sendInput(input)
   if self:isConnected() then
     local message = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.clientMessageTypes.playerInput.prefix, input)
+    self.tcpClient:send(message)
+  end
+end
+
+---Loose-sync: send a GarbageEvent from the local sim. body is JSON-encoded inline
+---(no Request wrapper — these are fire-and-forget like inputs).
+---@param body table parsed event payload
+function NetClient:sendGarbageEvent(body)
+  if self:isConnected() then
+    local message = NetworkProtocol.markedMessageForTypeAndBody(
+      NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))
+    self.tcpClient:send(message)
+  end
+end
+
+---Loose-sync: send a DeathEvent from the local sim.
+---@param body table parsed event payload
+function NetClient:sendDeathEvent(body)
+  if self:isConnected() then
+    local message = NetworkProtocol.markedMessageForTypeAndBody(
+      NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
     self.tcpClient:send(message)
   end
 end
@@ -1124,6 +1181,9 @@ function NetClient:update()
     end
   elseif self.state == states.INGAME then
     processInputMessages(self)
+    processGarbageEvents(self)
+    processDeathEvents(self)
+    processKOArbitrations(self)
 
     for _, listener in pairs(self.matchListeners) do
       listener:listen()

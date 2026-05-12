@@ -20,6 +20,8 @@ local DEFAULT_SEND_RETRY_LIMIT = 5
 ---@field incomingMessageQueue Queue
 ---@field outgoingMessageQueue Queue
 ---@field incomingInputQueue Queue
+---@field incomingGarbageQueue Queue loose-sync GarbageEvent bodies awaiting room relay
+---@field incomingDeathQueue Queue loose-sync DeathEvent bodies awaiting room relay
 ---@field sendRetryCount integer
 ---@field sendRetryLimit integer
 ---@field timeoutSeconds integer
@@ -39,6 +41,8 @@ local Connection = class(
     self.incomingMessageQueue = Queue()
     self.outgoingMessageQueue = Queue()
     self.incomingInputQueue = Queue()
+    self.incomingGarbageQueue = Queue()
+    self.incomingDeathQueue = Queue()
     self.sendRetryCount = 0
     self.sendRetryLimit = DEFAULT_SEND_RETRY_LIMIT
     self.timeoutSeconds = DEFAULT_TIMEOUT_SECONDS
@@ -75,6 +79,8 @@ function Connection:close()
   self.incomingMessageQueue:clear()
   self.outgoingMessageQueue:clear()
   self.incomingInputQueue:clear()
+  self.incomingGarbageQueue:clear()
+  self.incomingDeathQueue:clear()
   self.socket:close()
   self.socket = nil
 end
@@ -209,6 +215,10 @@ function Connection:processMessage(messageType, data)
     self.incomingMessageQueue:push(data)
   elseif messageType == "I" then
     self.incomingInputQueue:push(data)
+  elseif messageType == "G" then
+    self.incomingGarbageQueue:push(data)
+  elseif messageType == "D" then
+    self.incomingDeathQueue:push(data)
   elseif messageType == "H" then
     H(self, data)
   elseif messageType == "E" then

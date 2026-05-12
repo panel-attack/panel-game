@@ -223,6 +223,19 @@ function TcpClient:queueMessage(type, data)
   elseif type == NetworkProtocol.serverMessageTypes.ping.prefix then
     self:send(NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix)
     self.connectionUptime = self.connectionUptime + 1
+  elseif type == NetworkProtocol.serverMessageTypes.garbageEvent.prefix
+      or type == NetworkProtocol.serverMessageTypes.deathEvent.prefix
+      or type == NetworkProtocol.serverMessageTypes.koArbitration.prefix then
+    -- Loose-sync: decode the JSON body and queue under the prefix key.
+    -- NetClient pops these with pop_all_with("G"), pop_all_with("D"), pop_all_with("K").
+    local body = json.decode(data)
+    if not body then
+      logger.warn("Failed to decode " .. type .. " body: " .. (data or "nil"))
+      return
+    end
+    local dataMessage = {}
+    dataMessage[type] = body
+    self.receivedMessageQueue:push(dataMessage)
   elseif type == NetworkProtocol.serverMessageTypes.jsonMessage.prefix then
     logger.trace("Queuing JSON: " .. dump(data))
     local current_message = json.decode(data)

@@ -205,6 +205,26 @@ function ClientProtocol.sendStackEliminated(frame)
   }
 end
 
+---Loose-sync: send a GarbageEvent — sender's local sim has resolved garbage
+---for one or more remote targets. Body is wrapped as a marked G-prefix message,
+---not a JSON envelope.
+---@param body table parsed payload (will be JSON-encoded on send)
+function ClientProtocol.sendGarbageEvent(body)
+  return {
+    messageType = msgTypes.garbageEvent,
+    messageText = body,
+  }
+end
+
+---Loose-sync: send a DeathEvent — sender's local sim has reached game over.
+---@param body table parsed payload (will be JSON-encoded on send)
+function ClientProtocol.sendDeathEvent(body)
+  return {
+    messageType = msgTypes.deathEvent,
+    messageText = body,
+  }
+end
+
 ---@param pause boolean if the client is paused
 function ClientProtocol.sendPauseToggle(roomNumber, pause)
   local pauseToggleMessage = {

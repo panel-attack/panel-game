@@ -1,5 +1,6 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
+local socket = require("common.lib.socket")
 local ServerProtocol = require("common.network.ServerProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 ---@module "common.data.GameModes"
@@ -434,6 +435,82 @@ function Room:broadcastInput(input, sender)
   for _, v in pairs(self.spectators) do
     if v then
       v:send(inputMessage)
+    end
+  end
+end
+
+---Relay a loose-sync GarbageEvent. Body is JSON sent from the client; we stamp
+---serverWallClockMs (used by receivers for adaptive telegraph timing), record
+---it on the game for the replay log, then forward to non-sender players and
+---all spectators with the same G prefix.
+---@param sender ServerPlayer
+---@param body string raw JSON body from the client
+function Room:broadcastGarbageEvent(sender, body)
+  if not self.game or self.game.complete then
+    return
+  end
+
+  local ok, parsed = pcall(json.decode, body)
+  if not ok or type(parsed) ~= "table" then
+    logger.warn(self.roomNumber .. ": malformed GarbageEvent from " .. (sender.name or sender.userId or "?"))
+    return
+  end
+
+  parsed.sender = sender.player_number
+  parsed.serverWallClockMs = math.floor(socket.gettime() * 1000)
+
+  self.game:recordGarbageEvent(sender, parsed)
+
+  local stamped = json.encode(parsed)
+  local message = NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.serverMessageTypes.garbageEvent.prefix, stamped)
+
+  for _, player in ipairs(self.players) do
+    if player ~= sender then
+      player:send(message)
+    end
+  end
+
+  for _, spec in pairs(self.spectators) do
+    if spec then
+      spec:send(message)
+    end
+  end
+end
+
+---Relay a loose-sync DeathEvent. Same wire shape as GarbageEvent.
+---KO arbitration is wired in Step 9a; for now we just relay.
+---@param sender ServerPlayer
+---@param body string raw JSON body from the client
+function Room:broadcastDeathEvent(sender, body)
+  if not self.game or self.game.complete then
+    return
+  end
+
+  local ok, parsed = pcall(json.decode, body)
+  if not ok or type(parsed) ~= "table" then
+    logger.warn(self.roomNumber .. ": malformed DeathEvent from " .. (sender.name or sender.userId or "?"))
+    return
+  end
+
+  parsed.sender = sender.player_number
+  parsed.serverWallClockMs = math.floor(socket.gettime() * 1000)
+
+  self.game:recordDeathEvent(sender, parsed)
+
+  local stamped = json.encode(parsed)
+  local message = NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.serverMessageTypes.deathEvent.prefix, stamped)
+
+  for _, player in ipairs(self.players) do
+    if player ~= sender then
+      player:send(message)
+    end
+  end
+
+  for _, spec in pairs(self.spectators) do
+    if spec then
+      spec:send(message)
     end
   end
 end

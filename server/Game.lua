@@ -36,6 +36,10 @@ function(self, players, id)
   self.outcomeReports = {}
   self.disconnectedPlayers = {}
   self.eliminatedPlayers = {}
+  ---@type table[] loose-sync GarbageEvent payloads, in arrival order
+  self.garbageEvents = {}
+  ---@type table[] loose-sync DeathEvent payloads, in arrival order
+  self.deathEvents = {}
   self.complete = false
   self.creationTime = os.time()
 end)
@@ -153,6 +157,25 @@ end
 function Game:receiveInput(player, input)
   if not self.complete then
     self.inputs[player.player_number][#self.inputs[player.player_number] + 1] = input
+  end
+end
+
+---Append a loose-sync GarbageEvent body to the replay log.
+---The body has already been stamped with sender + serverWallClockMs by the room.
+---@param player ServerPlayer
+---@param body table parsed JSON event body
+function Game:recordGarbageEvent(player, body)
+  if not self.complete then
+    self.garbageEvents[#self.garbageEvents + 1] = body
+  end
+end
+
+---Append a loose-sync DeathEvent body to the replay log.
+---@param player ServerPlayer
+---@param body table parsed JSON event body
+function Game:recordDeathEvent(player, body)
+  if not self.complete then
+    self.deathEvents[#self.deathEvents + 1] = body
   end
 end
 
