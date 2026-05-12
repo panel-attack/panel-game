@@ -265,7 +265,7 @@ function Lobby:initLobbyMenu()
       y = by,
       hAlign = "left",
       vAlign = "top",
-      height = math.max(160, #divisions * (rowHeight + 8) + 8),
+      height = math.max(160, (#divisions + 1) * (rowHeight + 8) + 8),
       width = 160,
       padding = 0,
       childGap = 8,
@@ -279,6 +279,13 @@ function Lobby:initLobbyMenu()
         end
       }))
     end
+    compositionMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "back"}),
+      onClick = function()
+        GAME.theme:playCancelSfx()
+        compositionMenu:yieldFocus()
+      end,
+    }))
     if compositionMenu.children[1] then
       compositionMenu:select(compositionMenu.children[1])
     end
@@ -324,6 +331,13 @@ function Lobby:initLobbyMenu()
         onClick = function(b) openCompositionForCount(b, n) end,
       }))
     end
+    playerCountMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "back"}),
+      onClick = function()
+        GAME.theme:playCancelSfx()
+        playerCountMenu:yieldFocus()
+      end,
+    }))
     playerCountMenu:select(playerCountMenu.children[1])
 
     self.teamPlayerCountMenu = playerCountMenu
@@ -387,6 +401,13 @@ function Lobby:initLobbyMenu()
         openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FIVE_PLAYER_FFA), closeInviteOnlyChain)
       end
     }))
+    ffaMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "back"}),
+      onClick = function()
+        GAME.theme:playCancelSfx()
+        ffaMenu:yieldFocus()
+      end,
+    }))
     ffaMenu:select(ffaMenu.children[1])
 
     self.ffaPlayerCountMenu = ffaMenu
@@ -430,6 +451,13 @@ function Lobby:initLobbyMenu()
         openLatencyMenu(typeMenu, b, GameModes.getPreset(GameModes.IDs.OPEN_FFA), function()
           if self.ffaTypeMenu then self.ffaTypeMenu:yieldFocus() end
         end)
+      end,
+    }))
+    typeMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "back"}),
+      onClick = function()
+        GAME.theme:playCancelSfx()
+        typeMenu:yieldFocus()
       end,
     }))
     typeMenu:select(typeMenu.children[1])

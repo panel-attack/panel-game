@@ -113,7 +113,6 @@ function MainMenu:createMainMenu()
       GAME.theme:playValidationSfx()
       GAME:toggleFullscreen()
     end),
-    ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end),
     ui.MenuItem.createButtonMenuItem("og stuff", nil, false, function()
       self.menu:detach()
       self.menu = self:createOgMenu()
@@ -133,6 +132,9 @@ function MainMenu:createMainMenu()
       switchToScene(DesignHelper())
     end))
   end
+
+  -- Quit is appended last so MenuEsc jumps straight to it (matches the back-button convention).
+  menu:addMenuItem(#menu.menuItems + 1, ui.MenuItem.createButtonMenuItem("mm_quit", nil, nil, function() love.event.quit() end))
 
   return menu
 end
