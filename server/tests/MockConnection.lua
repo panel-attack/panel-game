@@ -10,14 +10,20 @@ local MockConnection = class(function(self)
   self.outgoingInputQueue = Queue()
   self.incomingMessageQueue = Queue()
   self.incomingInputQueue = Queue()
+  -- Loose-sync queues; match the real Connection's field set so
+  -- Server:processMessages doesn't crash dereferencing them.
+  self.incomingGarbageQueue = Queue()
+  self.incomingDeathQueue = Queue()
 end)
 
 function MockConnection:update(t) end
 
 function MockConnection:send(message)
   local prefix = message:sub(1, 1)
-  -- I, U, V, W are input prefixes for players 1-4
-  if prefix == "I" or prefix == "U" or prefix == "V" or prefix == "W" or prefix == "J" then
+  -- I, U, V, W are input prefixes for players 1-4. G/D/K are loose-sync
+  -- event prefixes (GarbageEvent, DeathEvent, KOArbitration).
+  if prefix == "I" or prefix == "U" or prefix == "V" or prefix == "W"
+      or prefix == "J" or prefix == "G" or prefix == "D" or prefix == "K" then
     self.outgoingInputQueue:push(message)
   end
 end
