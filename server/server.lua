@@ -820,9 +820,8 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
   -- watches the live match. drainPendingJoiners (called from prepare_character_select)
   -- promotes them to a player slot when character select reopens.
   local roomState = room:state()
-  local isDynamicRoster = room.gameMode and room.gameMode.minPlayers ~= nil
   if roomState ~= "lobby" and roomState ~= "character select" then
-    if isDynamicRoster and roomState == "playing" and not room:isFull() then
+    if room:isDynamicRoster() and roomState == "playing" and not room:isFull() then
       -- Avoid duplicate queue entries.
       for _, entry in ipairs(room.pendingJoiners) do
         if entry.player == player then

@@ -338,9 +338,14 @@ end
 
 -- True for an open_ffa-style mode where the roster is bounded by min/max
 -- rather than a fixed playerCount; mid-match joiners go into pendingJoiners
--- and get promoted at prepare_character_select.
+-- and get promoted at prepare_character_select. Invite-only team rooms also
+-- carry minPlayers (set equal to maxPlayers by the client), so the real
+-- discriminator is min < max, not "is minPlayers set".
 function Room:isDynamicRoster()
-  return self.gameMode ~= nil and self.gameMode.minPlayers ~= nil
+  return self.gameMode ~= nil
+    and self.gameMode.minPlayers ~= nil
+    and self.gameMode.maxPlayers ~= nil
+    and self.gameMode.minPlayers < self.gameMode.maxPlayers
 end
 
 ---@return string[]
