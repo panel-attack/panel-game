@@ -168,6 +168,93 @@ local function test_applyDeathEvent_idempotent()
 end
 
 ----------------------------------------------------------------------
+-- Regression: 1v1 live match must end when the remote opponent's
+-- game_over_clock is set via a DeathEvent, even though the view-stack's
+-- clock has not (and cannot) catch up.
+----------------------------------------------------------------------
+-- The dead opponent stops sending inputs after their D event, so the
+-- survivor's view-stack of the opponent has clock pinned below
+-- game_over_clock. Stack:game_ended() requires clock >= game_over_clock,
+-- so naive use of game_ended() leaves the survivor's match running forever
+-- — no game-over UI, opponent stays "alive."
+--
+-- The fix: in live (non-replay) mode, Match:hasEnded treats any stack
+-- with game_over_clock > 0 as "done."
+
+local function test_hasEnded_live_1v1_remote_death_pinned_clock()
+  logger.info("test_hasEnded_live_1v1_remote_death_pinned_clock")
+
+  local MatchRules = require("common.data.MatchRules")
+  local function makeStub(spec)
+    return {
+      clock = spec.clock,
+      game_over_clock = spec.game_over_clock,
+      stopWatch = spec.stopWatch or 0,
+      game_ended = function(self)
+        return self.game_over_clock > 0 and self.clock >= self.game_over_clock
+      end,
+    }
+  end
+
+  -- Live match: p1 alive at clock=1000; p2 has D event applied
+  -- (game_over_clock=500) but its view-stack only advanced to clock=300.
+  local match = {
+    fromReplay = false,
+    stacks = {
+      makeStub({ clock = 1000, game_over_clock = -1 }),   -- p1 alive
+      makeStub({ clock = 300,  game_over_clock = 500 }),  -- p2 dead (per D), clock pinned
+    },
+    rules = {
+      matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 1 },
+      matchWinRuleset = {},
+    },
+    ended = false,
+    aborted = false,
+    isIrrecoverablyDesynced = function(self) return false end,
+  }
+
+  local hasEnded = Match.hasEnded(match)
+  assert(hasEnded == true,
+    "live 1v1 with one remote death (clock pinned below game_over_clock) should report hasEnded=true")
+end
+
+-- Mirror: in replay mode the strict path still applies (clock must catch up).
+local function test_hasEnded_replay_requires_clock_catchup()
+  logger.info("test_hasEnded_replay_requires_clock_catchup")
+
+  local MatchRules = require("common.data.MatchRules")
+  local function makeStub(spec)
+    return {
+      clock = spec.clock,
+      game_over_clock = spec.game_over_clock,
+      stopWatch = spec.stopWatch or 0,
+      game_ended = function(self)
+        return self.game_over_clock > 0 and self.clock >= self.game_over_clock
+      end,
+    }
+  end
+
+  local match = {
+    fromReplay = true,
+    stacks = {
+      makeStub({ clock = 1000, game_over_clock = -1 }),
+      makeStub({ clock = 300,  game_over_clock = 500 }),
+    },
+    rules = {
+      matchEndConditions = { [MatchRules.MatchEndConditions.STACKS_ACTIVE] = 1 },
+      matchWinRuleset = {},
+    },
+    ended = false,
+    aborted = false,
+    isIrrecoverablyDesynced = function(self) return false end,
+  }
+
+  local hasEnded = Match.hasEnded(match)
+  assert(hasEnded == false,
+    "replay must wait for survivor.clock > game_over_clock before ending (strict)")
+end
+
+----------------------------------------------------------------------
 -- Test 5: deliverOutgoingGarbage local→remote emits G (no local visual push)
 ----------------------------------------------------------------------
 -- Expected: when a local stack delivers garbage to a remote target while
@@ -537,6 +624,8 @@ test_applyGarbageEvent_applies_to_all_recipients()
 test_applyDeathEvent_marks_remote_stack()
 test_applyDeathEvent_skips_local_stack()
 test_applyDeathEvent_idempotent()
+test_hasEnded_live_1v1_remote_death_pinned_clock()
+test_hasEnded_replay_requires_clock_catchup()
 test_deliverOutgoingGarbage_local_to_remote()
 test_deliverOutgoingGarbage_remote_to_local()
 test_deliverOutgoingGarbage_offline_direct()

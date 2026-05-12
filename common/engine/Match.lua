@@ -670,11 +670,25 @@ function Match:hasEnded()
     return true
   end
 
+  -- Loose-sync: in a live match, a remote stack with game_over_clock set
+  -- counts as "done" even if its sim clock hasn't caught up. The dead
+  -- opponent stops sending inputs after their DeathEvent, so the view-stack
+  -- on the survivor's machine is permanently pinned below game_over_clock —
+  -- stack:game_ended() (which requires clock >= game_over_clock) stays false
+  -- without this bypass, and the match never ends.
+  local liveMatch = not self.fromReplay
+  local function isDone(stack)
+    if liveMatch and stack.game_over_clock and stack.game_over_clock > 0 then
+      return true
+    end
+    return stack:game_ended()
+  end
+
   local aliveCount = 0
   -- dead is more like done as the stack could also have ended by fulfilling a win condition
   local deadCount = 0
   for i = 1, #self.stacks do
-    if self.stacks[i]:game_ended() then
+    if isDone(self.stacks[i]) then
       deadCount = deadCount + 1
     else
       aliveCount = aliveCount + 1
@@ -692,17 +706,10 @@ function Match:hasEnded()
       self.gameOverClock = gameOverClock
       -- Strict (replays / offline): every stack must have run past
       -- gameOverClock so we know nobody else also died on the next frame.
-      -- This preserves recorded-match behavior for replay playback.
-      --
-      -- Loose-sync live (not fromReplay): a game_ended stack counts as
-      -- "done" even if its clock is pinned below gameOverClock. The dead
-      -- opponent's view-stack on the survivor's machine stops receiving
-      -- inputs once the opponent quits sending after setGameOver, so its
-      -- clock is permanently pinned. Without the bypass the match never
-      -- ends and no game-over UI fires.
-      local liveMatch = not self.fromReplay
+      -- Live: isDone() accepts stacks with game_over_clock set without
+      -- requiring clock catchup (see comment above).
       if tableUtils.trueForAll(self.stacks, function(stack)
-        if liveMatch and stack:game_ended() then return true end
+        if isDone(stack) then return true end
         return stack.clock and stack.clock > gameOverClock
       end) then
         self.ended = true
@@ -725,7 +732,7 @@ function Match:hasEnded()
       -- make sure everyone has run to the currently known game over clock
       -- dead stacks are considered "past" their game over clock (they won't run anymore)
       if tableUtils.trueForAll(self.stacks, function(stack)
-        return stack:game_ended() or (stack.clock and stack.clock > gameOverClock)
+        return isDone(stack) or (stack.clock and stack.clock > gameOverClock)
       end) then
         self.ended = true
         return true
