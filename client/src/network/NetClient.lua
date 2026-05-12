@@ -586,9 +586,6 @@ local function processGarbageEvents(self)
     NetworkProtocol.serverMessageTypes.garbageEvent.prefix)
   for _, msg in ipairs(messages) do
     local body = msg[NetworkProtocol.serverMessageTypes.garbageEvent.prefix]
-    if body then
-      self:updateLatencyFromArrival(body.serverWallClockMs)
-    end
     if self.room and self.room.match then
       self.room.match:applyGarbageEvent(body)
     end
@@ -601,9 +598,6 @@ local function processDeathEvents(self)
     NetworkProtocol.serverMessageTypes.deathEvent.prefix)
   for _, msg in ipairs(messages) do
     local body = msg[NetworkProtocol.serverMessageTypes.deathEvent.prefix]
-    if body then
-      self:updateLatencyFromArrival(body.serverWallClockMs)
-    end
     if self.room and self.room.match then
       self.room.match:applyDeathEvent(body)
     end
@@ -747,15 +741,6 @@ local NetClient = class(function(self)
   self.pendingResponses = {}
   self.state = states.OFFLINE
   self.serverTimeDelta = 0
-
-  -- Loose-sync adaptive telegraph state. minServerOffsetMs is the smallest
-  -- observed (local_now_ms - serverWallClockMs) across G/D arrivals; we treat
-  -- it as the baseline (clock skew + minimum one-way latency). The current
-  -- offset minus that baseline is the "excess latency" we feed into adaptive
-  -- telegraph math. ewmaExcessLatencyMs is a low-pass over recent samples so
-  -- a single network spike doesn't slam the whole match.
-  self.minServerOffsetMs = nil
-  self.ewmaExcessLatencyMs = 0
 
   resetLobbyData(self)
 
@@ -902,37 +887,6 @@ function NetClient:sendInput(input)
     local message = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.clientMessageTypes.playerInput.prefix, input)
     self.tcpClient:send(message)
   end
-end
-
----Update the running latency estimate from an inbound G/D message body.
----Called from the process helpers below. Maintains a min-offset baseline
----(skew + minimum latency) plus an EWMA on the excess over that baseline.
----@param serverWallClockMs integer? millisecond timestamp the server stamped on relay
-function NetClient:updateLatencyFromArrival(serverWallClockMs)
-  if type(serverWallClockMs) ~= "number" then
-    return
-  end
-  local nowMs = math.floor(love.timer.getTime() * 1000)
-  local offset = nowMs - serverWallClockMs
-  if not self.minServerOffsetMs or offset < self.minServerOffsetMs then
-    self.minServerOffsetMs = offset
-  end
-  local excess = math.max(0, offset - self.minServerOffsetMs)
-  -- EWMA alpha = 0.25. Bias toward recent latency without making the estimate
-  -- jitter on every packet.
-  self.ewmaExcessLatencyMs = 0.25 * excess + 0.75 * self.ewmaExcessLatencyMs
-end
-
----Return the EWMA-smoothed excess-latency estimate in ms.
----@return number
-function NetClient:estimatedExcessLatencyMs()
-  return self.ewmaExcessLatencyMs or 0
-end
-
----Same estimate converted to 60Hz frames.
----@return integer
-function NetClient:estimatedExcessLatencyFrames()
-  return math.floor((self.ewmaExcessLatencyMs or 0) * 60 / 1000 + 0.5)
 end
 
 ---Loose-sync: send a GarbageEvent from the local sim. body is JSON-encoded inline

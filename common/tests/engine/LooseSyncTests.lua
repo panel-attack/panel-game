@@ -58,7 +58,6 @@ local function withMockNetClient(opts)
       sent[#sent + 1] = body
     end,
     sendDeathEvent = function(self, body) end,
-    estimatedExcessLatencyFrames = function(self) return 0 end,
   }
   return sent, function() GAME.netClient = original end
 end
