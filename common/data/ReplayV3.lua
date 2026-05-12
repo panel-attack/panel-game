@@ -10,7 +10,7 @@ local tableUtils = require("common.lib.tableUtils")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV2 = require("common.compatibility.ReplayV2")
 
-local REPLAY_VERSION = 3
+local REPLAY_VERSION = 4
 
 ---@class ReplayPanelSource
 ---@field sourceType ReplayPanelSourceType
@@ -64,6 +64,23 @@ local REPLAY_VERSION = 3
 ---@field duration integer? How long the game took in frames
 ---@field gameModeName ("timeattack" | "endless" | "vsSelf" | "training" | "challenge" | "VS" | "puzzle")?
 
+---@class CrossPlayerGarbageEvent
+---@field sender integer slot of the sender (the player who attacked)
+---@field senderFrame integer the sender's stopWatch when garbage was emitted
+---@field recipients integer[] slot indices of the recipient stacks
+---@field garbage table garbage payload (array of Garbage records)
+---@field serverWallClockMs integer? when the server relayed it (latency telemetry)
+
+---@class CrossPlayerDeathEvent
+---@field sender integer slot of the dead player
+---@field senderFrame integer the dead stack's game_over_clock
+---@field reason string? cause of death (e.g. "topOut")
+---@field serverWallClockMs integer? when the server relayed it
+
+---@class CrossPlayerEvents
+---@field garbage CrossPlayerGarbageEvent[]
+---@field deaths CrossPlayerDeathEvent[]
+
 ---@class ReplayV3
 ---@field engineVersion string The engine version the replay was generated with
 ---@field replayVersion integer Indicates the version of the replay's data format
@@ -71,6 +88,7 @@ local REPLAY_VERSION = 3
 ---@field rules MatchRules
 ---@field stacks ReplayBaseStack[]
 ---@field garbageFlows GarbageFlow[]
+---@field crossPlayerEvents CrossPlayerEvents? loose-sync authoritative event log (V4+)
 ---@field metadata ReplayMetadata
 ---@overload fun(engineVersion: string, rules: MatchRules, panelSource: ReplayPanelSource): ReplayV3
 local ReplayV3 = class(
@@ -85,11 +103,16 @@ function(self, engineVersion, rules, panelSource)
   self.panelSource = panelSource
   self.stacks = {}
   self.garbageFlows = {}
+  -- Loose-sync V4: authoritative event log captured server-side at relay time.
+  -- Empty for vsSelf/puzzle/training/local replays; populated for networked
+  -- play so playback can apply the exact same garbage + death events that
+  -- happened live, instead of re-deriving them from a synchronized sim.
+  self.crossPlayerEvents = { garbage = {}, deaths = {} }
   self.metadata = { stacks = {}, timestamp = to_UTC(os.time()) }
 end)
 
 -- so that json.encode always has the same basic structure
-ReplayV3.keyOrder = {keyorder = {"engineVersion", "replayVersion", "panelSource", "rules", "stacks", "garbageFlows", "metadata"}}
+ReplayV3.keyOrder = {keyorder = {"engineVersion", "replayVersion", "panelSource", "rules", "stacks", "garbageFlows", "crossPlayerEvents", "metadata"}}
 
 ---@enum ReplayPanelSourceType
 ReplayV3.panelSourceTypes = { seedV1 = 1, puzzle = 2, seedV2 = 3 }
@@ -295,6 +318,19 @@ function ReplayV3.createFromV3Data(replayData)
 
   ---@cast replayData ReplayV3
 
+  -- Backfill the loose-sync event log for replays saved before V4 — empty
+  -- is the right default for non-networked / pre-loose-sync replays since
+  -- playback falls back to the simulation-derived garbage path.
+  if not replayData.crossPlayerEvents then
+    replayData.crossPlayerEvents = { garbage = {}, deaths = {} }
+  end
+  if not replayData.crossPlayerEvents.garbage then
+    replayData.crossPlayerEvents.garbage = {}
+  end
+  if not replayData.crossPlayerEvents.deaths then
+    replayData.crossPlayerEvents.deaths = {}
+  end
+
   for i, stack in ipairs(replayData.stacks) do
     if stack.stackType == 1 then
       ---@cast stack ReplayStack
@@ -321,7 +357,9 @@ function ReplayV3.createFromTable(t, completed)
     -- there was a problem reading the file
     return replay
   else
-    if t.replayVersion == 3 then
+    if t.replayVersion == 3 or t.replayVersion == 4 then
+      -- V3 and V4 share the loader path; V4 adds crossPlayerEvents on top.
+      -- createFromV3Data backfills the field to empty for V3 inputs.
       replay = ReplayV3.createFromV3Data(t)
       t.metadata.completed = completed
     else

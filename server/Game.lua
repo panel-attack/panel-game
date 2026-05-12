@@ -334,6 +334,14 @@ function Game:finalizeReplay(result)
     end
   end
 
+  -- Loose-sync V4: persist the authoritative cross-player event log so
+  -- playback can apply the exact garbage + death events that happened
+  -- during the live match.
+  if self.replay.crossPlayerEvents then
+    self.replay.crossPlayerEvents.garbage = self.garbageEvents
+    self.replay.crossPlayerEvents.deaths = self.deathEvents
+  end
+
   for i, player in ipairs(self.players) do
     if player.save_replays_publicly == "anonymously" then
       local playerMetadata = self.replay.metadata.stacks[i]
