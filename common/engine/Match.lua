@@ -386,20 +386,12 @@ function Match:pushGarbageTo(stack)
     else
       local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
       if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-        if stack.stopWatch > oldestTransitTime then
-          -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
-          -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
-          --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
-          --  which may even include another rollback
-          if not self:rollbackToStopWatch(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
-            -- if we can't rollback, it's a desync
-            self.desyncError = true
-            self:abort()
-          end
-        end
+        -- Loose-sync: if the receiver's clock is past the sender's transit time,
+        -- we no longer rollback to absorb the late garbage (that abort hatch is
+        -- lockstep-era). Just deliver whatever's ready at the receiver's current
+        -- clock; the receiver's telegraph window absorbs the timing slack.
         local garbageDelivery = st:getReadyGarbageAt(stack.stopWatch)
         if garbageDelivery then
-          --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
           stack:receiveGarbage(garbageDelivery)
         end
       end
