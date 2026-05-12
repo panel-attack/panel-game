@@ -248,6 +248,9 @@ function Room:start_match()
   self.arbitrationDeaths = {}
   self.arbitrationWindowEndsAtMs = nil
   self.arbitrationEmitted = false
+  -- Reset diagnostic flags so dropped-input warnings can fire once per slot per match.
+  self._loggedInputDropDisconnect = nil
+  self._loggedInputDropEliminated = nil
 
   local replay = self.game:getPartialReplay(false)
   -- games generated via createFromRoomState always have a replay
@@ -425,7 +428,31 @@ function Room:broadcastInput(input, sender)
 
   local senderNum = sender.player_number
   -- Loose-sync: skip inputs from eliminated/disconnected slots so they don't pollute the replay log.
-  if self.game.disconnectedPlayers[senderNum] or self.game.eliminatedPlayers[senderNum] then
+  if self.game.disconnectedPlayers[senderNum] then
+    -- Log the FIRST dropped input per disconnect so we can diagnose "P2 sees their own game
+    -- but P1 never sees P2's moves" without spamming for every dropped frame.
+    if not self._loggedInputDropDisconnect then
+      self._loggedInputDropDisconnect = {}
+    end
+    if not self._loggedInputDropDisconnect[senderNum] then
+      self._loggedInputDropDisconnect[senderNum] = true
+      logger.warn(string.format(
+        "%d: dropping input from %s (slot %d) — player is marked disconnected server-side",
+        self.roomNumber, sender.name, senderNum))
+    end
+    return
+  end
+  if self.game.eliminatedPlayers[senderNum] then
+    if not self._loggedInputDropEliminated then
+      self._loggedInputDropEliminated = {}
+    end
+    if not self._loggedInputDropEliminated[senderNum] then
+      self._loggedInputDropEliminated[senderNum] = true
+      logger.warn(string.format(
+        "%d: dropping input from %s (slot %d) — player is marked eliminated at frame %s",
+        self.roomNumber, sender.name, senderNum,
+        tostring(self.game.eliminatedPlayers[senderNum])))
+    end
     return
   end
 
