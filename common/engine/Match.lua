@@ -307,70 +307,69 @@ end
 
 --- Distributes ready garbage from each sender to their targets
 --- For "all" mode: sends to ALL targets at once
---- For "shared" mode: sends to ONE target based on round-robin
+--- For "shared" mode: sends to the next target in the round-robin queue
+---
+--- Loose-sync note: the round-robin counter advances by exactly 1 per
+--- delivery, independent of how many targets are alive. This makes the
+--- counter state deterministic across all clients (it depends only on
+--- the sender's delivery history, which is itself deterministic from the
+--- input stream). The chosen target then walks forward over any dead
+--- enemies to find the next living one — the "re-give to next living"
+--- semantic. Each client runs this walk against its own live view of
+--- the targets; the walk result can briefly differ on different machines
+--- at death boundaries, but the authoritative G event from the sender's
+--- own machine wins for gameplay, so the divergence is visual-only and
+--- self-correcting as D events propagate.
 function Match:distributeGarbageToTargets()
   for senderIndex, targets in ipairs(self.garbageTargets) do
     if #targets > 1 then
       -- Multi-target: handle based on garbage mode
       local sender = self.stacks[senderIndex]
       local oldestTransitTime = sender:getOldestFinishedGarbageTransitTime()
-      if oldestTransitTime then
-        -- Find the minimum stopWatch among all living targets
-        local minStopWatch = math.huge
-        local livingTargets = {}
-        for _, target in ipairs(targets) do
-          if not target:game_ended() then
-            minStopWatch = math.min(minStopWatch, target.stopWatch)
-            livingTargets[#livingTargets + 1] = target
-          end
-        end
+      if oldestTransitTime and sender.stopWatch >= oldestTransitTime then
+        local garbageDelivery = sender:getReadyGarbageAt(oldestTransitTime)
+        if garbageDelivery then
+          if self.garbageMode == "shared" then
+            local senderTeamIndex = self.teams and TeamUtils.getPlayerTeamIndex(self.teams, senderIndex) or 1
+            local teamState = self.teamGarbageState and self.teamGarbageState[senderTeamIndex]
 
-        -- If any living target is ready to receive
-        if #livingTargets > 0 and minStopWatch >= oldestTransitTime then
-          local garbageDelivery = sender:getReadyGarbageAt(oldestTransitTime)
-          if garbageDelivery then
-            if self.garbageMode == "shared" then
-              -- Shared mode: pick one target using round-robin
-              local senderTeamIndex = self.teams and TeamUtils.getPlayerTeamIndex(self.teams, senderIndex) or 1
-              local teamState = self.teamGarbageState and self.teamGarbageState[senderTeamIndex]
+            if teamState and #teamState.enemyIndices > 0 then
+              local startIndex = teamState.currentTargetIndex
+              -- Advance the counter unconditionally so all clients keep
+              -- the same rotation state regardless of how the walk-forward
+              -- below resolves on each machine.
+              teamState.currentTargetIndex = (startIndex % #teamState.enemyIndices) + 1
 
-              if teamState then
-                -- Get the next valid target from round-robin
-                local targetIndex = teamState.currentTargetIndex
-                local targetStack = nil
-                local attempts = 0
-
-                -- Find next living target
-                while attempts < #teamState.enemyIndices do
-                  local enemyIndex = teamState.enemyIndices[targetIndex]
-                  targetStack = self.stacks[enemyIndex]
-                  if targetStack and not targetStack:game_ended() then
-                    break
-                  end
-                  targetIndex = (targetIndex % #teamState.enemyIndices) + 1
-                  attempts = attempts + 1
-                  targetStack = nil
+              -- Walk forward from startIndex to find a living target. If all
+              -- enemies are dead the garbage is dropped (the team's already
+              -- lost; the match-end check will catch it).
+              local targetStack = nil
+              local i = startIndex
+              for _ = 1, #teamState.enemyIndices do
+                local candidate = self.stacks[teamState.enemyIndices[i]]
+                if candidate and not candidate:game_ended() then
+                  targetStack = candidate
+                  break
                 end
-
-                -- Advance round-robin for next time
-                teamState.currentTargetIndex = (targetIndex % #teamState.enemyIndices) + 1
-
-                if targetStack then
-                  -- Clone and send garbage to single target
-                  local garbageCopy = {}
-                  for i, g in ipairs(garbageDelivery) do
-                    garbageCopy[i] = shallowcpy(g)
-                  end
-                  self:deliverOutgoingGarbage(sender, targetStack, garbageCopy)
-                end
+                i = (i % #teamState.enemyIndices) + 1
               end
-            else
-              -- "All" mode: send to ALL living targets
-              for _, target in ipairs(livingTargets) do
-                -- Clone the garbage for each recipient
+
+              if targetStack then
                 local garbageCopy = {}
-                for i, g in ipairs(garbageDelivery) do
-                  garbageCopy[i] = shallowcpy(g)
+                for j, g in ipairs(garbageDelivery) do
+                  garbageCopy[j] = shallowcpy(g)
+                end
+                self:deliverOutgoingGarbage(sender, targetStack, garbageCopy)
+              end
+            end
+          else
+            -- "All" mode: send to every living target. Dead targets are
+            -- skipped (no point queuing on a stack that's stopped running).
+            for _, target in ipairs(targets) do
+              if not target:game_ended() then
+                local garbageCopy = {}
+                for j, g in ipairs(garbageDelivery) do
+                  garbageCopy[j] = shallowcpy(g)
                 end
                 self:deliverOutgoingGarbage(sender, target, garbageCopy)
               end
