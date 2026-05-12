@@ -150,8 +150,6 @@ function PlayerStack:applyVisualDeath()
       end
     end
   end
-  -- once the death pop effects above drain, the board slot is vacated
-  self._retireAfterDeath = true
 end
 
 -- Default no-op; overridden in client/src/network/PlayerStack.lua for network play.
@@ -276,9 +274,7 @@ function PlayerStack:onRollback(engine)
   -- If rollback restored us to a pre-death state, cancel all deferred death actions
   if engine.game_over_clock <= 0 then
     self._pendingVisualDeath = nil
-    self._retireAfterDeath = nil
     self._pendingEliminationClock = nil
-    self.canvas = true  -- restore render if we'd already vacated
   end
 end
 
@@ -324,12 +320,6 @@ end
 -- Called each frame for dead stacks (and each frame once the whole match ends).
 -- matchClock is Match.clock, which keeps advancing even after this stack stopped running.
 function PlayerStack:runGameOver(matchClock)
-  -- vacate the board slot once death pop effects have finished
-  if self._retireAfterDeath and self.pop_q:len() == 0 then
-    self._retireAfterDeath = nil
-    self.canvas = nil
-  end
-
   -- flip panels to dead once pre-death pop effects have drained
   if self._pendingVisualDeath and self.pop_q:len() == 0 then
     self:applyVisualDeath()

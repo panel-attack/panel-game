@@ -276,21 +276,11 @@ function ClientMatch:run()
   self:playTimeLimitDepletingSfx()
 
   -- drain visuals and confirm elimination for stacks that died mid-match
-  local liveCount = 0
   for _, stack in ipairs(self.stacks) do
     if stack:game_ended() then
       stack:runGameOver(self.engine.clock)
     end
-    if stack.canvas then
-      liveCount = liveCount + 1
-    end
   end
-
-  -- reposition survivors when a board retires
-  if self._lastLiveCount and liveCount ~= self._lastLiveCount then
-    self:repositionLiveStacks()
-  end
-  self._lastLiveCount = liveCount
 
   if self.engine:hasEnded() then
     self.engine:handleMatchEnd()
@@ -326,7 +316,6 @@ function ClientMatch:start()
 
   self.spectatorFocus = nil
   self:moveStacks()
-  self._lastLiveCount = #self.stacks
   for _, stack in ipairs(self.stacks) do
     stack:connectSignal("dangerMusicChanged", self, self.updateDangerMusic)
   end
@@ -427,37 +416,6 @@ function ClientMatch:cycleSpectatorFocus(direction)
     end
     idx = ((idx - 1 + direction) % #live) + 1
     self.spectatorFocus = live[idx]
-  end
-end
-
--- Repositions only live (canvas ~= nil) stacks using the appropriate layout for their count.
--- Called when a player retires mid-match to transition survivors to a tighter layout.
-function ClientMatch:repositionLiveStacks()
-  local liveStacks = {}
-  for _, stack in ipairs(self.stacks) do
-    if stack.canvas then
-      liveStacks[#liveStacks + 1] = stack
-    end
-  end
-
-  table.sort(liveStacks, function(a, b)
-    if a.is_local == b.is_local then
-      return a.player_number < b.player_number
-    else
-      return a.is_local
-    end
-  end)
-
-  for i, stack in ipairs(liveStacks) do
-    if #liveStacks >= 5 then
-      stack:moveForRenderIndex5Player(i)
-    elseif #liveStacks == 4 then
-      stack:moveForRenderIndex4PlayerHorizontal(i)
-    elseif #liveStacks == 3 then
-      stack:moveForRenderIndex3Player(i)
-    else
-      stack:moveForRenderIndex(i)
-    end
   end
 end
 
