@@ -101,7 +101,7 @@ function Lobby:initLobbyMenu()
   })
 
   -- Latency tolerance menu — final step for all 3+P games
-  local function openLatencyMenu(parentMenu, parentButton, gameMode, closeAll)
+  local function openLatencyMenu(parentMenu, parentButton, gameModeOrId, closeAll)
     if self.latencyMenu then
       self.latencyMenu:yieldFocus()
       return
@@ -123,8 +123,25 @@ function Lobby:initLobbyMenu()
       local btn = ui.TextButton({
         label = ui.Label({text = text, translate = false}),
         onClick = function()
-          logger.warn("latButton onClick: tolerance=" .. tostring(tolerance) .. " gameMode=" .. tostring(gameMode and gameMode.name))
-          GAME.netClient:requestRoom(gameMode, tolerance)
+          local gameMode = nil
+          local gameModeId = nil
+          if type(gameModeOrId) == "string" then
+            gameModeId = gameModeOrId
+            local ok, resolved = pcall(GameModes.getPreset, gameModeId)
+            if ok then
+              gameMode = resolved
+            end
+          elseif type(gameModeOrId) == "table" and type(gameModeOrId.getGameModeJSONData) == "function" then
+            gameMode = gameModeOrId
+            gameModeId = gameMode.gameModeId or gameMode.id or GameModes.nameToGameModeId[gameMode.name]
+          end
+
+          if gameMode then
+            logger.warn("latButton onClick: tolerance=" .. tostring(tolerance) .. " gameModeId=" .. tostring(gameModeId) .. " gameMode=" .. tostring(gameMode.name))
+            GAME.netClient:requestRoom(gameMode, tolerance)
+          else
+            logger.error("latButton failed to resolve game mode payload")
+          end
           latMenu:yieldFocus()
           if closeAll then closeAll() end
         end,
@@ -193,14 +210,14 @@ function Lobby:initLobbyMenu()
       "Broadcast",
       "Your attack is cloned and sent to every enemy simultaneously. Total damage scales with enemy count — in a 2v2 your combos deal twice the total damage of a 1v1.",
       function(b)
-        openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.allMode), closeTeamMenuChain)
+        openLatencyMenu(garbageMenu, b, options.allMode, closeTeamMenuChain)
       end
     ))
     garbageMenu:addChild(garbageButton(
       "Round Robin",
       "Attacks rotate through enemies one at a time. Your team shares one rotation counter, so attacks fan out evenly — total output rate stays the same regardless of enemy count.",
       function(b)
-        openLatencyMenu(garbageMenu, b, GameModes.getPreset(options.sharedMode), closeTeamMenuChain)
+        openLatencyMenu(garbageMenu, b, options.sharedMode, closeTeamMenuChain)
       end
     ))
     garbageMenu:select(garbageMenu.children[1])

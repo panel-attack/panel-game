@@ -1100,14 +1100,17 @@ function Server:processMessage(message, connection)
       end
     elseif message.roomRequest and (player.state == "lobby" or (player.state == "character select" and self.playerToRoom[player] and not self.playerToRoom[player]:isFull() and not self.playerToRoom[player].game)) then
       logger.warn("roomRequest received from " .. player.name .. " state=" .. player.state .. " mode=" .. tostring(message.gameMode and message.gameMode.name) .. " latency=" .. tostring(message.latencyTolerance))
-      -- If the player is in a partial (not-yet-full, no match started) room, close it first
-      -- so they can switch room config from the lobby UI without having to explicitly leave.
-      local existingRoom = self.playerToRoom[player]
-      if existingRoom then
-        self:closeRoom(existingRoom, "host changed room settings")
-      end
       local requestedGameMode = resolveRequestedGameMode(message.gameMode)
       if requestedGameMode then
+        -- If the player is in a partial (not-yet-full, no match started) room, close it first
+        -- so they can switch room config from the lobby UI without having to explicitly leave.
+        -- Important: only do this after we validated the requested game mode, otherwise a malformed
+        -- request would tear down the existing room and still fail to create a new one.
+        local existingRoom = self.playerToRoom[player]
+        if existingRoom then
+          self:closeRoom(existingRoom, "host changed room settings")
+        end
+
         requestedGameMode.latencyTolerance = message.latencyTolerance
         -- For dynamic-roster modes (open_ffa) playerCount is nil at request time;
         -- fall back to maxPlayers so we use 3+ player thresholds. The actual

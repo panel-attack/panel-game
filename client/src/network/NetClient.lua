@@ -878,12 +878,22 @@ function NetClient:challengePlayerById(opponentId, gameModeId)
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 
+---@param roomNumber integer
+---@return GameModeID?
+local function getRoomGameModeId(roomNumber)
+  local lobbyRoom = GAME.netClient
+    and GAME.netClient.lobbyDataV2
+    and GAME.netClient.lobbyDataV2.rooms
+    and GAME.netClient.lobbyDataV2.rooms[roomNumber]
+  return lobbyRoom and lobbyRoom.gameModeId or nil
+end
+
 ---@param opponentId PublicPlayerID
 ---@param roomNumber integer
 ---@param slotNumber integer
 ---@param gameModeId GameModeID?
 function NetClient:invitePlayerToRoom(opponentId, roomNumber, slotNumber, gameModeId)
-  gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
+  gameModeId = gameModeId or getRoomGameModeId(roomNumber) or GameModes.IDs.TWO_PLAYER_VS
   local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
   logger.info(string.format("Sending invite to player %s for room %d slot %d (key=%s)", tostring(opponentId), roomNumber, slotNumber, inviteKey))
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
@@ -898,7 +908,7 @@ end
 ---@param slotNumber integer
 ---@param gameModeId GameModeID?
 function NetClient:withdrawRoomInvite(opponentId, roomNumber, slotNumber, gameModeId)
-  gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
+  gameModeId = gameModeId or getRoomGameModeId(roomNumber) or GameModes.IDs.TWO_PLAYER_VS
   local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
   self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false, roomNumber, slotNumber))
@@ -930,10 +940,25 @@ function NetClient:requestJoinRoom(roomNumber, slotNumber)
   end
 end
 
----@param gameMode GameMode
+---@param gameMode GameMode|GameModeID|string
 ---@param latencyTolerance ("strict"|"normal"|"relaxed")?
 function NetClient:requestRoom(gameMode, latencyTolerance)
   if self:isConnected() then
+    if type(gameMode) == "string" then
+      local ok, resolvedGameMode = pcall(GameModes.getPreset, gameMode)
+      if ok then
+        gameMode = resolvedGameMode
+      else
+        logger.error("Refusing room request for unknown game mode id: " .. tostring(gameMode))
+        return
+      end
+    end
+
+    if type(gameMode) ~= "table" or type(gameMode.getGameModeJSONData) ~= "function" then
+      logger.error("Refusing room request with invalid game mode payload")
+      return
+    end
+
     self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode, latencyTolerance))
   end
 end
