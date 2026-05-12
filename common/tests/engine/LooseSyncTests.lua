@@ -16,20 +16,29 @@ local ReplayV3 = require("common.data.ReplayV3")
 ----------------------------------------------------------------------
 
 -- Build a minimal match-like object for unit-testing methods that only touch
--- self.stacks. Each stack records every receiveGarbage call so the test can
--- assert call counts and payloads.
+-- self.stacks. ClientMatch stacks are wrappers — the actual engine stack
+-- (and methods like receiveGarbage / fields like game_over_clock) lives on
+-- stack.engine. We mock that shape: a thin wrapper with is_local on top and
+-- an .engine table with receivedGarbage tracking + game_over_clock.
 local function makeMatchWithStacks(stackSpecs)
   local match = { stacks = {} }
   for i, spec in ipairs(stackSpecs) do
-    match.stacks[i] = {
+    local engine = {
       which = i,
-      is_local = spec.is_local,
       game_over_clock = spec.game_over_clock or -1,
       stopWatch = spec.stopWatch or 0,
       receivedGarbage = {},
-      receiveGarbage = function(self, payload)
-        self.receivedGarbage[#self.receivedGarbage + 1] = payload
-      end,
+    }
+    engine.receiveGarbage = function(self, payload)
+      self.receivedGarbage[#self.receivedGarbage + 1] = payload
+    end
+    match.stacks[i] = {
+      which = i,
+      is_local = spec.is_local,
+      engine = engine,
+      -- Expose receivedGarbage on the wrapper for test assertions so callers
+      -- can keep writing `match.stacks[i].receivedGarbage`.
+      receivedGarbage = engine.receivedGarbage,
     }
   end
   return match
@@ -109,8 +118,8 @@ local function test_applyDeathEvent_marks_remote_stack()
     reason = "topOut",
   })
 
-  assert(match.stacks[2].game_over_clock == 500,
-    "remote stack[2] game_over_clock should be set to 500, got " .. tostring(match.stacks[2].game_over_clock))
+  assert(match.stacks[2].engine.game_over_clock == 500,
+    "remote stack[2] engine.game_over_clock should be set to 500, got " .. tostring(match.stacks[2].engine.game_over_clock))
 end
 
 ----------------------------------------------------------------------
@@ -132,8 +141,8 @@ local function test_applyDeathEvent_skips_local_stack()
     reason = "topOut",
   })
 
-  assert(match.stacks[1].game_over_clock == -1,
-    "local stack should NOT have game_over_clock overwritten by D event")
+  assert(match.stacks[1].engine.game_over_clock == -1,
+    "local stack should NOT have engine.game_over_clock overwritten by D event")
 end
 
 ----------------------------------------------------------------------
@@ -155,8 +164,8 @@ local function test_applyDeathEvent_idempotent()
     reason = "topOut",
   })
 
-  assert(match.stacks[1].game_over_clock == 400,
-    "earlier game_over_clock should not be overwritten by later D event, got " .. tostring(match.stacks[1].game_over_clock))
+  assert(match.stacks[1].engine.game_over_clock == 400,
+    "earlier engine.game_over_clock should not be overwritten by later D event, got " .. tostring(match.stacks[1].engine.game_over_clock))
 end
 
 ----------------------------------------------------------------------

@@ -961,12 +961,14 @@ function ClientMatch:applyGarbageEvent(body)
 
   for _, recipientIndex in ipairs(body.recipients) do
     local stack = self.stacks[recipientIndex]
-    if stack then
+    if stack and stack.engine then
       logger.debug(string.format(
         "applyGarbageEvent: sender=%s senderFrame=%s -> stack[%d] (is_local=%s)",
         tostring(body.sender), tostring(body.senderFrame), recipientIndex,
         tostring(stack.is_local)))
-      stack:receiveGarbage(body.garbage)
+      -- self.stacks[i] is a ClientStack wrapper; the actual engine stack
+      -- (and the receiveGarbage method) lives on stack.engine.
+      stack.engine:receiveGarbage(body.garbage)
     end
   end
 end
@@ -983,8 +985,8 @@ function ClientMatch:applyDeathEvent(body)
   end
 
   local stack = self.stacks[body.sender]
-  if not stack then
-    logger.warn("applyDeathEvent: no stack at slot " .. tostring(body.sender))
+  if not stack or not stack.engine then
+    logger.warn("applyDeathEvent: no stack/engine at slot " .. tostring(body.sender))
     return
   end
 
@@ -993,8 +995,10 @@ function ClientMatch:applyDeathEvent(body)
     return
   end
 
-  if stack.game_over_clock <= 0 then
-    stack.game_over_clock = body.senderFrame
+  -- ClientStack wraps the engine stack; game_over_clock lives on engine.
+  local engine = stack.engine
+  if engine.game_over_clock <= 0 then
+    engine.game_over_clock = body.senderFrame
     logger.info(string.format("DeathEvent applied: stack[%d] game_over_clock=%d (reason=%s)",
       body.sender, body.senderFrame, tostring(body and body.reason)))
   end

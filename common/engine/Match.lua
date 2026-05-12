@@ -73,12 +73,6 @@ function(self, panelSource, matchRules)
   self.ended = false
   self.aborted = false
 
-  -- Loose-sync: pending remote garbage queued by applyGarbageEvent, applied
-  -- to recipient stacks when their stopWatch reaches the (adaptive) landing
-  -- frame. Each entry: {targetIndex, garbage, landingFrame}. Drained at the
-  -- start of every Match:run loop iteration.
-  self.pendingRemoteGarbage = {}
-
   -- Initialize internal debug configuration with non-debug defaults
   self.debug = {
     vsFramesBehind = 0
@@ -260,7 +254,6 @@ function Match:run()
 
   local runsSoFar = 0
   while tableUtils.contains(runs, runsSoFar) do
-    self:drainPendingRemoteGarbage()
     for i, stack in ipairs(self.stacks) do
       if stack and self:shouldRun(stack, runsSoFar) then
         self:pushGarbageTo(stack)
@@ -379,50 +372,6 @@ function Match:distributeGarbageToTargets()
       end
     end
   end
-end
-
----Schedule a loose-sync remote-garbage delivery to land on a specific stack at
----a specific frame. Called from ClientMatch:applyGarbageEvent after the
----adaptive timing math has decided when the garbage should hit. Falls through
----to direct delivery if landingFrame is in the past or equal to the stack's
----current clock.
----@param targetStack BaseStack
----@param garbage table
----@param landingFrame integer
-function Match:scheduleRemoteGarbage(targetStack, garbage, landingFrame)
-  local targetIndex = tableUtils.indexOf(self.stacks, targetStack)
-  if not targetIndex then
-    return
-  end
-  if targetStack.stopWatch >= landingFrame then
-    -- Landing frame is now-or-past — apply immediately.
-    targetStack:receiveGarbage(garbage)
-    return
-  end
-  self.pendingRemoteGarbage[#self.pendingRemoteGarbage + 1] = {
-    targetIndex = targetIndex,
-    garbage = garbage,
-    landingFrame = landingFrame,
-  }
-end
-
----Apply any pending remote-garbage entries whose landing frame has been
----reached by their target stack. Called at the top of every Match:run loop
----iteration. Compact the list afterwards so it doesn't grow unbounded.
-function Match:drainPendingRemoteGarbage()
-  if #self.pendingRemoteGarbage == 0 then
-    return
-  end
-  local kept = {}
-  for _, entry in ipairs(self.pendingRemoteGarbage) do
-    local target = self.stacks[entry.targetIndex]
-    if target and target.stopWatch >= entry.landingFrame then
-      target:receiveGarbage(entry.garbage)
-    else
-      kept[#kept + 1] = entry
-    end
-  end
-  self.pendingRemoteGarbage = kept
 end
 
 ---@param stack BaseStack
