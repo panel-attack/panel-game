@@ -1191,31 +1191,50 @@ function Lobby:openRoomSubMenu(room, button)
 
   subMenu.roomNumber = room.roomNumber
 
-  -- Add join button for each open slot
+  -- Add join button for each open slot. Open FFA (dynamic-roster) rooms are
+  -- public drop-in: every empty slot gets an instant-join button. Fixed-roster
+  -- team rooms gate joining through the owner's accept (handshake flow).
   if room.openSlots then
     local roomOwnerId = room.ownerId or (room.players and room.players[1])
+    local isDynamicRoster = room.minPlayers ~= nil
     for _, slotNumber in ipairs(room.openSlots) do
       -- "Join 🩷" / "Join 🟣" — color = team you'd be filling.
       local joinLbl = loc("lb_join") .. " " .. teamEmptyPrefix(room, slotNumber)
-      local joinButton = ui.LobbyChallengeButton({
-        playerId = roomOwnerId,
-        iconSize = 16,
-        roomNumber = room.roomNumber,
-        slotNumber = slotNumber,
-        gameModeId = room.gameModeId,
-        label = ui.Label({text = joinLbl, translate = false}),
-        acceptImage = GAME.theme:getFightImage(),
-        proposeImage = GAME.theme:getCheckboxImage(false),
-        withdrawImage = GAME.theme:getCheckboxImage(true),
-        width = 120,
-      })
-      local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
-      local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
-      local inviteKey = "room_" .. room.roomNumber .. "_" .. slotNumber
-      if localIncoming and localIncoming[inviteKey] then
-        joinButton:setState(joinButton.challengeStates.CHALLENGED)
-      elseif localOutgoing and localOutgoing[inviteKey] then
-        joinButton:setState(joinButton.challengeStates.PROPOSING)
+      local joinButton
+      if isDynamicRoster then
+        joinButton = ui.LobbyRoomJoinButton({
+          playerId = roomOwnerId,
+          iconSize = 16,
+          roomNumber = room.roomNumber,
+          slotNumber = slotNumber,
+          gameModeId = room.gameModeId,
+          label = ui.Label({text = joinLbl, translate = false}),
+          acceptImage = GAME.theme:getFightImage(),
+          proposeImage = GAME.theme:getFightImage(),
+          withdrawImage = GAME.theme:getFightImage(),
+          width = 120,
+        })
+      else
+        joinButton = ui.LobbyChallengeButton({
+          playerId = roomOwnerId,
+          iconSize = 16,
+          roomNumber = room.roomNumber,
+          slotNumber = slotNumber,
+          gameModeId = room.gameModeId,
+          label = ui.Label({text = joinLbl, translate = false}),
+          acceptImage = GAME.theme:getFightImage(),
+          proposeImage = GAME.theme:getCheckboxImage(false),
+          withdrawImage = GAME.theme:getCheckboxImage(true),
+          width = 120,
+        })
+        local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
+        local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
+        local inviteKey = "room_" .. room.roomNumber .. "_" .. slotNumber
+        if localIncoming and localIncoming[inviteKey] then
+          joinButton:setState(joinButton.challengeStates.CHALLENGED)
+        elseif localOutgoing and localOutgoing[inviteKey] then
+          joinButton:setState(joinButton.challengeStates.PROPOSING)
+        end
       end
       subMenu:addChild(joinButton)
     end

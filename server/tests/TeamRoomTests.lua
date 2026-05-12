@@ -654,22 +654,10 @@ local function testPartialRoom_addPlayerFull()
   room:close()
 end
 
-local function testPartialRoom_noSpectators()
-  logger.info("testPartialRoom_noSpectators")
-
-  local room, p1, p2, p3, p4 = getPartialRoom()
-
-  -- Try to add spectator to partial room
-  local spectator = ServerTesting.players[1]  -- Bob
-  spectator.state = "lobby"
-
-  local success = room:add_spectator(spectator)
-  assert(success == false, "Should not be able to add spectator to partial room")
-  assert(#room.spectators == 0, "Room should have no spectators")
-  assert(spectator.state == "lobby", "Spectator should still be in lobby")
-
-  room:close()
-end
+-- testPartialRoom_noSpectators removed: commit b2bda5cf intentionally inverted
+-- the behavior — spectators ARE now allowed in partial rooms. The positive
+-- replacement test lives in server/tests/LooseSyncServerTests.lua as
+-- test_partialRoom_spectators_allowed. See docs/PRE_EXISTING_TEST_AUDIT.md.
 
 local function testPartialRoom_spectatorsAllowedWhenFull()
   logger.info("testPartialRoom_spectatorsAllowedWhenFull")
@@ -796,7 +784,7 @@ testPartialRoom_notFull()
 testPartialRoom_noTeamsUntilFull()
 testPartialRoom_addPlayer()
 testPartialRoom_addPlayerFull()
-testPartialRoom_noSpectators()
+-- testPartialRoom_noSpectators removed; see LooseSyncServerTests for the positive replacement.
 testPartialRoom_spectatorsAllowedWhenFull()
 testPartialRoom_noMatchStart()
 testPartialRoom_playerJoinedMessage()

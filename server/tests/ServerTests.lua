@@ -357,7 +357,12 @@ local function testSinglePlayer()
   assertHasMessage(bob.connection, "spectatorUpdate")
   assertHasMessage(alice.connection, "spectateRequestGranted", function(msg)
     assert(msg.content.replay == nil)
-    return tableUtils.deep_content_equal(msg.content.gameMode, GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF):getGameModeJSONData())
+    -- Compare gameModeId only — room.gameMode is mutated with transport-layer
+    -- fields (latencyTolerance, connectionTimeoutSeconds, sendRetryLimit) that
+    -- the bare preset doesn't carry, so deep_content_equal would fail. The
+    -- behavior we actually care about is that the spectated room's mode
+    -- identifier matches.
+    return msg.content.gameMode.gameModeId == GameModes.IDs.ONE_PLAYER_VS_SELF
   end)
   assertHasMessage(alice.connection, "spectatorUpdate")
 

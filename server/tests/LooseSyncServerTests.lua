@@ -358,6 +358,44 @@ local function test_arbitration_2v2_team_wipe()
 end
 
 ----------------------------------------------------------------------
+-- Test 19: Spectators CAN join partial rooms
+----------------------------------------------------------------------
+-- Expected: in a partial (not-yet-full) team room, room:add_spectator
+-- succeeds. Spectator's state becomes "spectating" and room.spectators is
+-- updated.
+--
+-- Replaces the deleted testPartialRoom_noSpectators in TeamRoomTests, which
+-- asserted the opposite. Commit b2bda5cf inverted the behavior to let
+-- spectators watch waiting rooms before they fill.
+
+local function test_partialRoom_spectators_allowed()
+  logger.info("test_partialRoom_spectators_allowed")
+  -- Use players 3-4 for the partial room (matching TeamRoomTests convention)
+  -- so we don't clash with the 2-player tests above that use 1-2.
+  local p1 = ServerTesting.players[3]
+  local p2 = ServerTesting.players[4]
+  resetPlayers({ p1, p2 })
+
+  -- Create a 4-player team room with only 2 players (partial)
+  local room = Room(1, { p1, p2 }, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL))
+  assert(not room:isFull(), "room should be partial (only 2 of 4 players)")
+
+  local spectator = ServerTesting.players[1]
+  spectator.state = "lobby"
+  spectator.connection.outgoingMessageQueue:clear()
+
+  local success = room:add_spectator(spectator)
+  assert(success == true,
+    "spectators should be allowed to join partial rooms, got success=" .. tostring(success))
+  assert(#room.spectators == 1,
+    "room should have 1 spectator after add_spectator, got " .. #room.spectators)
+  assert(spectator.state == "spectating",
+    "spectator state should be 'spectating', got " .. tostring(spectator.state))
+
+  room:close()
+end
+
+----------------------------------------------------------------------
 -- Run all tests
 ----------------------------------------------------------------------
 
@@ -368,5 +406,6 @@ test_arbitration_singleDeath_emits_winner()
 test_arbitration_doubleDeath_tie()
 test_arbitration_window_extends()
 test_arbitration_2v2_team_wipe()
+test_partialRoom_spectators_allowed()
 
 logger.info("All LooseSyncServerTests passed!")

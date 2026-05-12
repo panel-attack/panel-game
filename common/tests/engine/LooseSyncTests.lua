@@ -8,6 +8,7 @@ require("client.src.globals")
 local logger = require("common.lib.logger")
 local ClientMatch = require("client.src.ClientMatch")
 local Match = require("common.engine.Match")
+local Stack = require("common.engine.Stack")
 local ReplayV3 = require("common.data.ReplayV3")
 
 ----------------------------------------------------------------------
@@ -442,6 +443,69 @@ local function test_replayV3_backwards_compat()
 end
 
 ----------------------------------------------------------------------
+-- Test 19: Stack:shouldRun catches up multiple frames per tick when behind
+----------------------------------------------------------------------
+-- Expected: a remote stack (is_local=false) with a deep input buffer
+-- (>=15 frames behind its current clock) runs at max_runs_per_frame instead
+-- of the normal 1 frame per tick. This is how opponent stacks catch up
+-- after network jitter without forcing the whole match to stall.
+--
+-- Replaces the deleted liveDesync test, which exercised the lockstep-era
+-- rollback-on-late-garbage trigger. Loose-sync handles input lag entirely
+-- through catch-up rather than rollback.
+
+local function test_shouldRun_catches_up_when_behind()
+  logger.info("test_shouldRun_catches_up_when_behind")
+  -- Mock stack: 20 frames of input queued, clock at 0 → buffer_len=20 (>=15).
+  local stack = {
+    is_local = false,
+    confirmedInput = {},
+    clock = 0,
+    max_runs_per_frame = 4,
+    game_ended = function(self) return false end,
+    behindRollback = function(self) return false end,
+  }
+  for i = 1, 20 do stack.confirmedInput[i] = "A" end
+
+  local runs = 0
+  while Stack.shouldRun(stack, runs) do
+    runs = runs + 1
+    if runs > 100 then error("infinite loop in shouldRun") end
+  end
+  assert(runs == stack.max_runs_per_frame,
+    "shouldRun should return true exactly max_runs_per_frame times when buffer_len >= 15, got " .. runs)
+
+  -- Sanity: a stack that's only 1 frame behind runs once.
+  local stack2 = {
+    is_local = false,
+    confirmedInput = { "A" },
+    clock = 0,
+    max_runs_per_frame = 4,
+    game_ended = function(self) return false end,
+    behindRollback = function(self) return false end,
+  }
+  runs = 0
+  while Stack.shouldRun(stack2, runs) do
+    runs = runs + 1
+    if runs > 100 then error("infinite loop in shouldRun") end
+  end
+  assert(runs == 1,
+    "shouldRun should fire once when buffer_len == 1, got " .. runs)
+
+  -- And a fully-caught-up stack doesn't run at all.
+  local stack3 = {
+    is_local = false,
+    confirmedInput = { "A" },
+    clock = 1,
+    max_runs_per_frame = 4,
+    game_ended = function(self) return false end,
+    behindRollback = function(self) return false end,
+  }
+  assert(not Stack.shouldRun(stack3, 0),
+    "shouldRun should be false when buffer_len == 0")
+end
+
+----------------------------------------------------------------------
 -- Run all tests
 ----------------------------------------------------------------------
 
@@ -456,5 +520,6 @@ test_roundRobin_counter_advances_by_one()
 test_roundRobin_walks_over_dead()
 test_replayV4_roundtrip()
 test_replayV3_backwards_compat()
+test_shouldRun_catches_up_when_behind()
 
 logger.info("All LooseSyncTests passed!")

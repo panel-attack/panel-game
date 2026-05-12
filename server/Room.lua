@@ -846,10 +846,16 @@ end
 ---@param reason string? human-readable reason (forwarded to remaining clients only when mid-game)
 function Room:voidByLeave(leaver, reason)
   if not self.game then
-    -- Pre-match: leave the room open so the player can rejoin from the lobby.
-    -- Reserve their slot so no one else can fill it.
-    self.reservedSlots[leaver.publicPlayerID] = true
-    logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (slot reserved for rejoin)")
+    -- Pre-match: leave the room open so others (or the leaver) can fill the slot.
+    -- Fixed-roster rooms reserve the slot for the leaver's rejoin. Open FFA is
+    -- first-come-first-served — no reservation; the next lobby player to click
+    -- Join takes the freed slot.
+    if not self:isDynamicRoster() then
+      self.reservedSlots[leaver.publicPlayerID] = true
+      logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (slot reserved for rejoin)")
+    else
+      logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (open FFA, slot free for fcfs)")
+    end
     self:_removeFromPlayersAndAnnounce(leaver)
     return
   end

@@ -26,8 +26,11 @@ local function basicTest()
   local room, p1, p2, gameCatcher = getRoom()
   for i, player in ipairs(room.players) do
     assert(player.state == "character select")
-    local firstMsg = player.connection.outgoingMessageQueue:pop()
-    assert(firstMsg.messageText.type == "createRoom", "Expected create_room message")
+    -- Note: createRoom is emitted by Server:create_room, not Room() directly.
+    -- This test constructs Room directly, so no createRoom is in the queue.
+    -- We still drain initialization messages so subsequent assertions start
+    -- from a clean queue.
+    player.connection.outgoingMessageQueue:clear()
   end
   p1:updateSettings({wants_ready = true, loaded = false, ready = false})
   p2:updateSettings({wants_ready = false, loaded = true, ready = false})

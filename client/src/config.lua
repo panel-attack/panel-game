@@ -89,7 +89,7 @@ config = {
     master_volume                 = 50,
     SFX_volume                    = 50,
     music_volume                  = 50,
-    enableMenuMusic               = true,
+    enableMenuMusic               = false,
     -- Debug settings persisted separately
     debug                         = DebugSettings.getDefaultConfigValues(),
 

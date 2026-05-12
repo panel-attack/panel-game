@@ -642,13 +642,35 @@ function Server:drainPendingJoiners(room)
   if not room or not room.pendingJoiners then return end
   local queue = room.pendingJoiners
   room.pendingJoiners = {}
+  local spectatorListChanged = false
   for _, entry in ipairs(queue) do
-    if entry.player and not room:isFull() then
+    local player = entry.player
+    if player and not room:isFull() then
+      -- They were spectating while queued. Demote out of spectator state
+      -- in-place so handleJoinRoom accepts them as a lobby joiner. We bypass
+      -- Room:remove_spectator here so the client doesn't see a leaveRoom; the
+      -- subsequent addPlayer/addToRoom transitions them straight into the
+      -- player seat.
+      if self.spectatorToRoom[player] == room then
+        for i, s in ipairs(room.spectators) do
+          if s == player then
+            table.remove(room.spectators, i)
+            break
+          end
+        end
+        self.spectatorToRoom[player] = nil
+        player.state = "lobby"
+        player.room = nil
+        spectatorListChanged = true
+      end
       -- Idempotency check in handleJoinRoom would block back-to-back joins,
       -- so reset the rate-limit entry first.
-      self.recentJoinRequests[entry.player.publicPlayerID .. "_" .. room.roomNumber] = nil
-      self:handleJoinRoom(entry.player, room.roomNumber, nil)
+      self.recentJoinRequests[player.publicPlayerID .. "_" .. room.roomNumber] = nil
+      self:handleJoinRoom(player, room.roomNumber, nil)
     end
+  end
+  if spectatorListChanged then
+    room:broadcastJson(ServerProtocol.updateSpectators(room.roomNumber, room:spectator_names()))
   end
 end
 
@@ -743,10 +765,11 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
-  -- Dynamic-roster modes (open FFA): mid-match join attempts are queued. The
-  -- joiner doesn't spectate — they stay in the lobby. When the current match
-  -- ends, Room:prepare_character_select drains the queue via the normal
-  -- handleJoinRoom path so each gets a regular addToRoom flow.
+  -- Dynamic-roster modes (open FFA): mid-match join attempts are routed into
+  -- the spectator seat and also queued for player promotion. add_spectator(_, true)
+  -- handles both — pushes onto pendingJoiners and adds to spectators so the joiner
+  -- watches the live match. drainPendingJoiners (called from prepare_character_select)
+  -- promotes them to a player slot when character select reopens.
   local roomState = room:state()
   local isDynamicRoster = room.gameMode and room.gameMode.minPlayers ~= nil
   if roomState ~= "lobby" and roomState ~= "character select" then
@@ -758,9 +781,12 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
           return false
         end
       end
-      room.pendingJoiners[#room.pendingJoiners + 1] = { player = player }
-      logger.info("Player " .. player.name .. " queued for open room " .. roomNumber .. " (match in progress)")
-      player:sendJson(ServerProtocol.joinQueued(roomNumber))
+      if not room:add_spectator(player, true) then
+        return false
+      end
+      self.spectatorToRoom[player] = room
+      logger.info("Player " .. player.name .. " spectating + queued for open room " .. roomNumber .. " (match in progress)")
+      self:setLobbyChanged()
       return true
     end
     logger.warn("Player " .. player.name .. " tried to join room " .. roomNumber .. " in state '" .. roomState .. "'")
