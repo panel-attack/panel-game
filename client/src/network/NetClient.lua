@@ -202,7 +202,8 @@ getSceneFromRoom = function(room)
       or room.mode.name == "four_player_1v3_all" or room.mode.name == "four_player_1v3_shared"
       or room.mode.name == "four_player_3v1_all" or room.mode.name == "four_player_3v1_shared"
       or room.mode.name == "3p_ffa" or room.mode.name == "4p_ffa" or room.mode.name == "5p_ffa"
-      or room.mode.name == "open_ffa"
+      or room.mode.name == "3p_ffa_shared" or room.mode.name == "4p_ffa_shared" or room.mode.name == "5p_ffa_shared"
+      or room.mode.name == "open_ffa" or room.mode.name == "open_ffa_shared"
       or room.mode.name == "five_player_1v4_all" or room.mode.name == "five_player_1v4_shared"
       or room.mode.name == "five_player_4v1_all" or room.mode.name == "five_player_4v1_shared"
       or room.mode.name == "five_player_2v3_all" or room.mode.name == "five_player_2v3_shared"
@@ -221,7 +222,8 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
 
   -- Open FFA goes straight to the waiting room (drop-in by design); every other
   -- mode stays in the lobby with open slots until it fills.
-  local isOpenFfa = self.room.mode.name == "open_ffa"
+  local modeName = self.room.mode.name
+  local isOpenFfa = modeName == "open_ffa" or modeName == "open_ffa_shared"
   local playerCount = #self.room.players
   local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
   if not isOpenFfa and playerCount < maxPlayers then
@@ -509,7 +511,8 @@ local function processPlayerJoinedRoom(self, message)
     local playerCount = #self.room.players
     local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
     local alreadyInRoom = self.state == states.ROOM or self.state == states.INGAME
-    local isOpenFfa = self.room.mode.name == "open_ffa"
+    local modeName2 = self.room.mode.name
+    local isOpenFfa = modeName2 == "open_ffa" or modeName2 == "open_ffa_shared"
     if playerCount >= maxPlayers and not alreadyInRoom and not isOpenFfa then
       logger.info("Room " .. (self.room.roomNumber or "?") .. " is now full (" .. playerCount .. "/" .. maxPlayers .. "). Navigating to game scene.")
       local roomScene = getSceneFromRoom(self.room)

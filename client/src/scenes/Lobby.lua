@@ -179,15 +179,21 @@ function Lobby:initLobbyMenu()
     self.uiRoot:addChild(latMenu)
   end
 
-  -- Garbage mode menu (team only)
-  local function openGarbageMenu(compositionButton, options)
+  -- Garbage mode menu (used by both team and FFA flows). Parameterized so each
+  -- flow passes its own parent menu and "close everything" chain — the menu's
+  -- focus/teardown wiring differs between flows even though the UI is shared.
+  ---@param parentButton table button on the parent menu that opened this menu
+  ---@param options table { allMode = GameModeID, sharedMode = GameModeID }
+  ---@param parentMenu table the parent ScrollMenu that owns parentButton
+  ---@param closeChain function called by latency confirm to dismiss every menu
+  local function openGarbageMenu(parentButton, options, parentMenu, closeChain)
     if self.teamGarbageMenu then
       self.teamGarbageMenu:yieldFocus()
     end
 
-    local bx, by = compositionButton:getScreenPos()
+    local bx, by = parentButton:getScreenPos()
     local garbageMenu = ui.ScrollMenu({
-      x = bx + compositionButton.width + 3,
+      x = bx + parentButton.width + 3,
       y = by,
       hAlign = "left",
       vAlign = "top",
@@ -210,24 +216,18 @@ function Lobby:initLobbyMenu()
       return btn
     end
 
-    local function closeTeamMenuChain()
-      if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
-      if self.teamCompositionMenu then self.teamCompositionMenu:yieldFocus() end
-      if self.teamPlayerCountMenu then self.teamPlayerCountMenu:yieldFocus() end
-    end
-
     garbageMenu:addChild(garbageButton(
       "Broadcast",
       "Your attack is cloned and sent to every enemy simultaneously. Total damage scales with enemy count — in a 2v2 your combos deal twice the total damage of a 1v1.",
       function(b)
-        openLatencyMenu(garbageMenu, b, options.allMode, closeTeamMenuChain)
+        openLatencyMenu(garbageMenu, b, options.allMode, closeChain)
       end
     ))
     garbageMenu:addChild(garbageButton(
       "Round Robin",
       "Attacks rotate through enemies one at a time. Your team shares one rotation counter, so attacks fan out evenly — total output rate stays the same regardless of enemy count.",
       function(b)
-        openLatencyMenu(garbageMenu, b, options.sharedMode, closeTeamMenuChain)
+        openLatencyMenu(garbageMenu, b, options.sharedMode, closeChain)
       end
     ))
     garbageMenu:addChild(ui.TextButton({
@@ -240,9 +240,9 @@ function Lobby:initLobbyMenu()
     garbageMenu:select(garbageMenu.children[1])
 
     self.teamGarbageMenu = garbageMenu
-    self.teamCompositionMenu:setFocus(garbageMenu, function()
+    parentMenu:setFocus(garbageMenu, function()
       self.garbageTooltip = ""
-      self.teamCompositionMenu:select(compositionButton)
+      parentMenu:select(parentButton)
       self.teamGarbageMenu:detach()
       self.teamGarbageMenu = nil
     end)
@@ -288,11 +288,18 @@ function Lobby:initLobbyMenu()
       childGap = 8,
     })
 
+    local function closeTeamMenuChain()
+      if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
+      if self.teamCompositionMenu then self.teamCompositionMenu:yieldFocus() end
+      if self.teamPlayerCountMenu then self.teamPlayerCountMenu:yieldFocus() end
+    end
+
     for _, div in ipairs(divisions) do
       compositionMenu:addChild(ui.TextButton({
         label = ui.Label({text = div.label, translate = false}),
         onClick = function(b)
-          openGarbageMenu(b, { allMode = div.allMode, sharedMode = div.sharedMode })
+          openGarbageMenu(b, { allMode = div.allMode, sharedMode = div.sharedMode },
+            compositionMenu, closeTeamMenuChain)
         end
       }))
     end
@@ -396,6 +403,7 @@ function Lobby:initLobbyMenu()
     })
 
     local function closeInviteOnlyChain()
+      if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
       if self.ffaPlayerCountMenu then self.ffaPlayerCountMenu:yieldFocus() end
       if self.ffaTypeMenu then self.ffaTypeMenu:yieldFocus() end
     end
@@ -403,19 +411,28 @@ function Lobby:initLobbyMenu()
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "3 Players (1v1v1)", translate = false}),
       onClick = function(b)
-        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA), closeInviteOnlyChain)
+        openGarbageMenu(b, {
+          allMode = GameModes.IDs.THREE_PLAYER_FFA,
+          sharedMode = GameModes.IDs.THREE_PLAYER_FFA_SHARED,
+        }, ffaMenu, closeInviteOnlyChain)
       end
     }))
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "4 Players (1v1v1v1)", translate = false}),
       onClick = function(b)
-        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA), closeInviteOnlyChain)
+        openGarbageMenu(b, {
+          allMode = GameModes.IDs.FOUR_PLAYER_FFA,
+          sharedMode = GameModes.IDs.FOUR_PLAYER_FFA_SHARED,
+        }, ffaMenu, closeInviteOnlyChain)
       end
     }))
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "5 Players (1v1v1v1v1)", translate = false}),
       onClick = function(b)
-        openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FIVE_PLAYER_FFA), closeInviteOnlyChain)
+        openGarbageMenu(b, {
+          allMode = GameModes.IDs.FIVE_PLAYER_FFA,
+          sharedMode = GameModes.IDs.FIVE_PLAYER_FFA_SHARED,
+        }, ffaMenu, closeInviteOnlyChain)
       end
     }))
     ffaMenu:addChild(ui.TextButton({
@@ -465,9 +482,14 @@ function Lobby:initLobbyMenu()
     typeMenu:addChild(ui.TextButton({
       label = ui.Label({text = "Open (2-5, drop-in)", translate = false}),
       onClick = function(b)
-        openLatencyMenu(typeMenu, b, GameModes.getPreset(GameModes.IDs.OPEN_FFA), function()
+        local function closeOpenFfaChain()
+          if self.teamGarbageMenu then self.teamGarbageMenu:yieldFocus() end
           if self.ffaTypeMenu then self.ffaTypeMenu:yieldFocus() end
-        end)
+        end
+        openGarbageMenu(b, {
+          allMode = GameModes.IDs.OPEN_FFA,
+          sharedMode = GameModes.IDs.OPEN_FFA_SHARED,
+        }, typeMenu, closeOpenFfaChain)
       end,
     }))
     typeMenu:addChild(ui.TextButton({

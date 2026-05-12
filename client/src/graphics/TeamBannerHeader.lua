@@ -126,12 +126,18 @@ function TeamBannerHeader.draw(gameMode, players, teamWins, canvasWidth)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
--- Short human-readable summary of the team game's garbage rule. Returns nil
--- for non-team modes and for FFA (where every team is size 1 so the "team
--- garbage" concept doesn't apply).
+-- Short human-readable summary of the garbage routing rule. Returns nil for
+-- non-team modes and for 1v1 (where there is only one enemy and the label is
+-- meaningless). Shows for both team modes and FFA — round-robin is now a valid
+-- FFA option, and showing "Broadcast" in "all" FFA is informative too.
 local function garbageModeLabel(gameMode)
   if not gameMode then return nil end
-  if not isSharedTeamMode(gameMode) then return nil end
+  if gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then return nil end
+  if not gameMode.garbageMode then return nil end
+  -- Skip if there's only one possible enemy per sender (no observable
+  -- difference between broadcast and round-robin in that case).
+  local playerCount = gameMode.playerCount or gameMode.maxPlayers or 0
+  if playerCount > 0 and playerCount < 3 then return nil end
   if gameMode.garbageMode == "shared" then
     return "Round Robin"
   elseif gameMode.garbageMode == "all" then
