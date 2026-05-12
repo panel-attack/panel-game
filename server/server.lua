@@ -419,7 +419,12 @@ function Server:lobbyStateV2()
       lobbyRoom.gameStartTime = os.date("*t", to_UTC(room.game.creationTime))
     end
 
-    for i, player in ipairs(room.players) do
+    -- Iterate by slot (sparse-safe): a partially-filled 2v2 room may have
+    -- {[1]=A, [3]=B} after B clicks "join purple", and ipairs would silently
+    -- stop at slot 2. eachPlayer skips holes and walks 1..maxPlayers, so the
+    -- lobby snapshot correctly shows slot 3 as occupied even though slot 2 is
+    -- still open.
+    for i, player in room:eachPlayer() do
       if players[player.publicPlayerID] then
         players[player.publicPlayerID].roomNumber = room.roomNumber
         players[player.publicPlayerID].state = roomState
@@ -767,7 +772,10 @@ end
 
 ---@param room Room
 function Server:closeRoom(room, reason)
-  for _, player in ipairs(room.players) do
+  -- room.players is slot-keyed and may be sparse (e.g. partial team rooms
+  -- with B at slot 3, slot 2 empty). ipairs would stop at the first gap and
+  -- leave a stale playerToRoom entry pointing at the closed room.
+  for _, player in room:eachPlayer() do
     self.playerToRoom[player] = nil
     ---@diagnostic disable-next-line: invisible
     player.connection:enableNoDelay(false)
@@ -1579,7 +1587,9 @@ function Server:handleLeaveRoom(player, reason)
     -- in it after voidByLeave runs, or when there's no match in progress and
     -- the room would be empty.
     local hadMatch = room.game ~= nil
-    if #room.players >= 3 or room.voided or hadMatch then
+    -- countPlayers() instead of #room.players because room.players is sparse:
+    -- a partial team room with {[1]=A, [3]=B} would give an undefined length.
+    if room:countPlayers() >= 3 or room.voided or hadMatch then
       self.playerToRoom[player] = nil
       -- Order matters: voidByLeave reads leaver.player_number (to look up
       -- eliminatedPlayers and to seed the synthesized DeathEvent), but
@@ -1588,7 +1598,7 @@ function Server:handleLeaveRoom(player, reason)
       -- removeFromRoom then sends the leaver their own leaveRoom message.
       room:voidByLeave(player, reason)     -- synthesizes death-event mid-match, removes leaver from room state, broadcasts playerLeftRoom
       player:removeFromRoom(room, reason)  -- sends leaveRoom to leaver, sets state=lobby
-      if #room.players == 0 then
+      if room:countPlayers() == 0 then
         self:closeRoom(room, "all players left")
       else
         self:setLobbyChanged()

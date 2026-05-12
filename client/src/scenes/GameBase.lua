@@ -58,6 +58,13 @@ local function isSharedTeamMode(gameMode)
   return false
 end
 
+local function isFFA(gameMode)
+  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
+    return false
+  end
+  return not isSharedTeamMode(gameMode)
+end
+
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
 ---@field saveReplay boolean
@@ -383,6 +390,27 @@ function GameBase:setupGameOver()
   if self.text == nil then
     if #self.match.players == 1 then
       self.text = loc("pl_gameover")
+    elseif isFFA(self.match.gameMode) then
+      if self.match:hasLocalPlayer() then
+        local localWon = false
+        for _, winner in ipairs(winners) do
+          if winner.isLocal then
+            localWon = true
+            break
+          end
+        end
+        if localWon then
+          self.text = loc("pl_you_win")
+        elseif #winners > 0 then
+          self.text = loc("pl_you_lose")
+        else
+          self.text = loc("ss_draw")
+        end
+      elseif #winners == 1 then
+        self.text = loc("ss_p_wins", winners[1].name)
+      else
+        self.text = loc("ss_draw")
+      end
     elseif self.match.gameMode and self.match.gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
       self.text = buildTeamResultText(self.match, winners)
     elseif #winners == 1 then
@@ -526,10 +554,12 @@ function GameBase:update(dt)
       if isDeadLocal and not self.match.spectatorFocus then
         -- First moment after death: snap focus to your own stack so the
         -- "Viewing: <yourname>" label appears immediately. Arrow keys cycle
-        -- to live teammates from there.
+        -- to live teammates from there, which swaps the focused stack into
+        -- the big-left container via ClientMatch:cycleSpectatorFocus.
         for _, stack in ipairs(self.match.stacks) do
           if stack.is_local then
             self.match.spectatorFocus = stack.player_number
+            self.match:moveStacks()
             break
           end
         end

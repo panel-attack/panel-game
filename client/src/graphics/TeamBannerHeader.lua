@@ -148,7 +148,7 @@ end
 
 -- Draws the garbage-mode label (team modes) and latency tolerance label centered
 -- just under the banner header. Two-pass shadow+text so it reads on any background.
-function TeamBannerHeader.drawGarbageModeBelowBanner(gameMode, canvasWidth)
+function TeamBannerHeader.drawGarbageModeBelowBanner(gameMode, canvasWidth, context)
   if not gameMode then return end
 
   local gLabel = garbageModeLabel(gameMode)
@@ -158,7 +158,18 @@ function TeamBannerHeader.drawGarbageModeBelowBanner(gameMode, canvasWidth)
 
   if not gLabel and not latLabel then return end
 
-  local y = 48
+  -- Shared-team modes have the pink/purple banner at y=4-46, so labels sit
+  -- below it at y=48. FFA waiting room has no banner above and no top-of-screen
+  -- content to clear, so it can sit at the very top. In-game FFA needs a bit of
+  -- breathing room above the playfield, so it drops slightly.
+  local y
+  if isSharedTeamMode(gameMode) then
+    y = 48
+  elseif context == "match" then
+    y = 80
+  else
+    y = 4
+  end
   if gLabel then
     GraphicsUtil.printf(gLabel, 0, y + 2, canvasWidth, "center", {0.1, 0.05, 0.15, 0.85}, nil, 6)
     GraphicsUtil.printf(gLabel, 0, y,     canvasWidth, "center", {1, 0.9, 0.7, 1},          nil, 6)

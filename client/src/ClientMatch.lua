@@ -400,8 +400,22 @@ function ClientMatch:moveStacks()
   -- we want to render the stacks in a particular order so that the local player ends up as P1 (left side)
   -- BUT: we want to keep player indexing consistent over boundaries (client <-> replay <- server) to not mess with replay saving
   -- so we solve the rendering requirement via a shallowcpy and assigning positions directly to the stacks rather than starting reordering shenanigans all across the code base
+  --
+  -- Spectator-focus override: when the viewer is spectating (pure spectator or a
+  -- dead local player using the spectator UI), pressing left/right shouldn't
+  -- just outline a different stack — it should rotate the focused stack into
+  -- the big-left container so we're actually watching that player. The small
+  -- containers stay in place; only which-player-renders-where changes.
   local stacks = shallowcpy(self.stacks)
+  local focus = self.spectatorFocus
   table.sort(stacks, function(a, b)
+    if focus then
+      local aFocused = a.player_number == focus
+      local bFocused = b.player_number == focus
+      if aFocused ~= bFocused then
+        return aFocused
+      end
+    end
     if a.is_local == b.is_local then
       return a.player_number < b.player_number
     else
@@ -427,6 +441,8 @@ function ClientMatch:moveStacks()
 end
 
 -- Cycles spectator focus forward (direction=1) or backward (direction=-1) through live stacks.
+-- The focused stack moves into the big-left render position via moveStacks;
+-- containers stay where they are, only the players inside them swap.
 function ClientMatch:cycleSpectatorFocus(direction)
   local live = {}
   for _, stack in ipairs(self.stacks) do
@@ -446,6 +462,9 @@ function ClientMatch:cycleSpectatorFocus(direction)
     idx = ((idx - 1 + direction) % #live) + 1
     self.spectatorFocus = live[idx]
   end
+  -- Restamp positions so the newly focused stack lands in renderIndex 1
+  -- (big-left); other stacks shift into the small containers around it.
+  self:moveStacks()
 end
 
 function ClientMatch:setStage(stageId)
@@ -815,7 +834,7 @@ function ClientMatch:drawTeamScoreboard()
   -- Shared 2-team banner header (pink/purple). Returns silently for FFA / non-team modes.
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
   TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth)
-  TeamBannerHeader.drawGarbageModeBelowBanner(self.gameMode, canvasWidth)
+  TeamBannerHeader.drawGarbageModeBelowBanner(self.gameMode, canvasWidth, "match")
 
   -- For >2 teams, fall through to the legacy section-row layout below.
   local teamCount = self.gameMode.teamCount or 2

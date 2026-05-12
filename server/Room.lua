@@ -326,9 +326,9 @@ function Room:onPlayerSettingsUpdate(player)
     -- Diagnostic: print every player's readiness flags after every settings update so we
     -- can see exactly which player is blocking the match-start handshake.
     local readyParts = {}
-    for i, p in ipairs(self.players) do
-      readyParts[i] = string.format("%s[wantsReady=%s loaded=%s ready=%s isReady=%s]",
-        tostring(p.name), tostring(p.wantsReady), tostring(p.loaded), tostring(p.ready), tostring(ServerPlayer.isReady(p)))
+    for i, p in self:eachPlayer() do
+      readyParts[#readyParts + 1] = string.format("slot%d:%s[wantsReady=%s loaded=%s ready=%s isReady=%s]",
+        i, tostring(p.name), tostring(p.wantsReady), tostring(p.loaded), tostring(p.ready), tostring(ServerPlayer.isReady(p)))
     end
     logger.info("Room " .. self.roomNumber .. " readiness after " .. tostring(player.name) .. " update: " .. table.concat(readyParts, " "))
 
@@ -336,9 +336,17 @@ function Room:onPlayerSettingsUpdate(player)
     -- roster must meet the mode's minimum. Open-FFA and invite games share the
     -- same rule — "everyone in the waiting room readies up before we go". If a
     -- late joiner isn't ready yet, the others wait for them instead of starting
-    -- without them.
-    local canStart = #self.players >= self.minPlayers
-                     and tableUtils.trueForAll(self.players, ServerPlayer.isReady)
+    -- without them. Iterate via eachPlayer because self.players is sparse
+    -- during partial team-room fills (slot 3 occupied, slot 2 empty); ipairs
+    -- and trueForAll would silently skip every player past the first gap.
+    local allReady = true
+    for _, p in self:eachPlayer() do
+      if not ServerPlayer.isReady(p) then
+        allReady = false
+        break
+      end
+    end
+    local canStart = self:countPlayers() >= self.minPlayers and allReady
 
     if canStart then
       self:start_match()
@@ -351,8 +359,9 @@ function Room:onPlayerSettingsUpdate(player)
 end
 
 function Room:start_match()
-  if #self.players < self.minPlayers then
-    logger.warn("Cannot start match in room " .. self.roomNumber .. " - waiting for " .. (self.minPlayers - #self.players) .. " more players (min " .. self.minPlayers .. ")")
+  local playerCount = self:countPlayers()
+  if playerCount < self.minPlayers then
+    logger.warn("Cannot start match in room " .. self.roomNumber .. " - waiting for " .. (self.minPlayers - playerCount) .. " more players (min " .. self.minPlayers .. ")")
     return false
   end
 
@@ -373,27 +382,36 @@ function Room:start_match()
   -- player indices, which then crashes the client when it tries to wire up
   -- garbage targets for those phantom recipients.
   if self.gameMode and self:isDynamicRoster() then
-    self.gameMode.playerCount = #self.players
-    self.gameMode.teamCount = #self.players
+    self.gameMode.playerCount = playerCount
+    self.gameMode.teamCount = playerCount
   elseif self.gameMode and not self.gameMode.playerCount then
-    self.gameMode.playerCount = #self.players
-    self.gameMode.teamCount = self.gameMode.teamCount or #self.players
+    self.gameMode.playerCount = playerCount
+    self.gameMode.teamCount = self.gameMode.teamCount or playerCount
   end
   -- Recompute teams every match so drop-ins / drop-outs are reflected.
   if self.gameMode and self.gameMode.teamCount and self.gameMode.playersPerTeam then
-    self.teams = TeamUtils.createTeams(#self.players, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+    self.teams = TeamUtils.createTeams(playerCount, self.gameMode.teamCount, self.gameMode.playersPerTeam)
     self.team_win_counts = self.team_win_counts or {}
     for teamIndex = 1, #self.teams do
       self.team_win_counts[teamIndex] = self.team_win_counts[teamIndex] or 0
     end
   end
 
-  for _, player in ipairs(self.players) do
+  -- Snapshot the slot-ordered player list once; we use it both for clearing
+  -- wantsReady and for the random-stage pick below. self.players is sparse
+  -- after pre-match leaves on open-FFA, so a plain ipairs would miss slots
+  -- past the first hole.
+  local activePlayers = {}
+  for _, p in self:eachPlayer() do
+    activePlayers[#activePlayers + 1] = p
+  end
+
+  for _, player in ipairs(activePlayers) do
     player.wantsReady = false
   end
 
-  local stageIndex = math.random(1, #self.players)
-  self.stageId = self.players[stageIndex].stage
+  local stageIndex = math.random(1, #activePlayers)
+  self.stageId = activePlayers[stageIndex].stage
 
   self.game = ServerGame.createFromRoomState(self)
   -- Reset KO arbitration state for the new match.
@@ -410,7 +428,7 @@ function Room:start_match()
   local message = ServerProtocol.startMatch(self.roomNumber, replay)
   self:broadcastJson(message)
 
-  for i, player in ipairs(self.players) do
+  for _, player in self:eachPlayer() do
     player:setup_game()
   end
 
@@ -449,14 +467,17 @@ end
 
 ---@return PlayerState | "closed"
 function Room:state()
-  if #self.players == 0 then
+  -- Sparse self.players: don't assume slot 1 exists (the owner may have left
+  -- a partial room and B is at slot 3 alone). Pull the first occupied slot.
+  local _, anyPlayer = self:eachPlayer()()
+  if not anyPlayer then
     return "closed"
-  elseif self.players[1].state == "character select" then
+  elseif anyPlayer.state == "character select" then
     return "character select"
-  elseif self.players[1].state == "playing" then
+  elseif anyPlayer.state == "playing" then
     return "playing"
   else
-    return self.players[1].state
+    return anyPlayer.state
   end
 end
 
@@ -551,11 +572,20 @@ end
 function Room:close(reason)
   logger.info("Closing room " .. self.roomNumber .. " " .. self.name)
 
-  for i = #self.players, 1, -1 do
-    local player = self.players[i]
+  -- Walk every possible slot (sparse-safe). `#self.players` is undefined when
+  -- the room is partially filled (e.g. slot 1 + slot 3 with slot 2 empty), so
+  -- a reverse for-loop over `#self.players` would skip the player at slot 3
+  -- on its way down. Collect slot indices first so the disconnect doesn't
+  -- mutate what we're iterating.
+  local slots = {}
+  for slot, _ in self:eachPlayer() do
+    slots[#slots + 1] = slot
+  end
+  for _, slot in ipairs(slots) do
+    local player = self.players[slot]
     self.disconnectSignal(player, "settingsUpdated", self)
     player:removeFromRoom(self, reason)
-    self.players[i] = nil
+    self.players[slot] = nil
   end
 
   for i = #self.spectators, 1, -1 do
@@ -1028,8 +1058,8 @@ function Room:_finalizeMatch()
   end
 
   logger.debug("*******************************")
-  for i, player in ipairs(self.players) do
-    logger.debug("***" .. player.name .. " " .. self.win_counts[i] .. "***")
+  for slot, player in self:eachPlayer() do
+    logger.debug("***" .. player.name .. " " .. (self.win_counts[slot] or 0) .. "***")
   end
   logger.debug("*******************************\n")
 
@@ -1078,20 +1108,24 @@ function Room:updateWinCounts(game)
   -- count so old per-player UI ("P1: 2 wins") shows the team total instead of individual
   -- contribution, and so a player who joined late displays the team's accumulated wins
   -- rather than their personal subset.
+  -- self.players is sparse (slot 2 can be nil while slot 3 holds a player after
+  -- a mid-room leaver). Use eachPlayer, not ipairs — ipairs stops at the first
+  -- nil and silently skips any winners in higher slots, which then propagates
+  -- as a stale winCount in the gameResult broadcast.
   if self.teams and self.team_win_counts then
     if game.winnerTeamIndex then
       self.team_win_counts[game.winnerTeamIndex] = (self.team_win_counts[game.winnerTeamIndex] or 0) + 1
     end
-    for i, player in ipairs(self.players) do
+    for slot, player in self:eachPlayer() do
       local playerTeamIndex = TeamUtils.getPlayerTeamIndex(self.teams, player.player_number)
-      self.win_counts[i] = playerTeamIndex and self.team_win_counts[playerTeamIndex] or self.win_counts[i] or 0
+      self.win_counts[slot] = playerTeamIndex and self.team_win_counts[playerTeamIndex] or self.win_counts[slot] or 0
     end
   else
     -- Non-team game: only the individual winner gets credit.
-    for i, player in ipairs(self.players) do
+    for slot, player in self:eachPlayer() do
       if player.player_number == game.winnerIndex then
-        logger.trace("Player " .. i .. " scored")
-        self.win_counts[i] = self.win_counts[i] + 1
+        logger.trace("Player " .. slot .. " scored")
+        self.win_counts[slot] = self.win_counts[slot] + 1
       end
     end
   end
@@ -1304,22 +1338,25 @@ function Room:voidByLeave(leaver, reason)
   self:_removeFromPlayersAndAnnounce(leaver)
 end
 
----Internal: removes a player from self.players, compacts win_counts, broadcasts
----playerLeftRoom. Caller is responsible for setting voided/voidReason.
+---Internal: removes a player from self.players, broadcasts playerLeftRoom.
+---Caller is responsible for setting voided/voidReason.
 function Room:_removeFromPlayersAndAnnounce(leaver)
-  local leaverIndex
-  for i, p in ipairs(self.players) do
+  -- self.players is sparse (slot-keyed). table.remove would compact the array
+  -- and renumber surviving players, which would scramble team assignments
+  -- (slot 3 = purple in 2v2 — you can't promote it to slot 2 without changing
+  -- which team that player is on). Just nil out the leaver's slot; their
+  -- index becomes a hole until someone joins (or the room closes). Other
+  -- players' player_number / team membership stays exactly as it was.
+  local leaverSlot
+  for slot, p in self:eachPlayer() do
     if p == leaver then
-      leaverIndex = i
+      leaverSlot = slot
       break
     end
   end
-  if leaverIndex then
-    table.remove(self.players, leaverIndex)
-    table.remove(self.win_counts, leaverIndex)
-    for i, p in ipairs(self.players) do
-      p.player_number = i
-    end
+  if leaverSlot then
+    self.players[leaverSlot] = nil
+    self.win_counts[leaverSlot] = nil
   end
   -- Teams are no longer valid (player count changed). team_win_counts stays so
   -- the per-team scoreboard keeps showing matches that already happened.

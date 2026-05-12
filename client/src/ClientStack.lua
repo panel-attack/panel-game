@@ -434,7 +434,11 @@ end
 -- Uses responsive scaling based on canvas height to ensure both right stacks fit
 function ClientStack:moveForRenderIndex3Player(renderIndex)
   if renderIndex == 1 then
-    -- Player 1 uses EXACTLY the same positioning as 2-player PvP
+    -- Player 1 uses EXACTLY the same positioning as 2-player PvP.
+    -- Reset gfxScale to its full size — a stack moving back into the big-left
+    -- container (e.g. spectator focus rotated to this player) would otherwise
+    -- keep the smaller scale assigned during its previous right-column stint.
+    self.gfxScale = NORMAL_GFX_SCALE
     self:moveForRenderIndex(1)
   else
     -- Players 2 & 3 on the right with responsive scaling
@@ -469,7 +473,10 @@ end
 -- renderIndex: 1=left (unchanged), 2=top-left-right-zone, 4=top-right-right-zone, 3=bottom-center-right-zone
 function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
   if renderIndex == 1 then
-    -- Player 1 uses EXACTLY the same positioning as 2-player PvP
+    -- Player 1 uses EXACTLY the same positioning as 2-player PvP.
+    -- Reset gfxScale: a stack returning to the big-left container from a
+    -- right-column slot would otherwise stay at the reduced scale.
+    self.gfxScale = NORMAL_GFX_SCALE
     self:moveForRenderIndex(1)
   else
     -- Players 2, 3, 4 in a 2x2-capable zone on the right
@@ -520,6 +527,8 @@ end
 -- renderIndex: 1=left (unchanged), 2/4 top row, 3/5 bottom row
 function ClientStack:moveForRenderIndex5Player(renderIndex)
   if renderIndex == 1 then
+    -- Reset gfxScale for stacks returning from a right-column slot.
+    self.gfxScale = NORMAL_GFX_SCALE
     self:moveForRenderIndex(1)
   else
     self:setupForRenderIndex(renderIndex)
@@ -572,6 +581,8 @@ end
 -- Pattern: 11246 / 1135.
 function ClientStack:moveForRenderIndex6Player(renderIndex)
   if renderIndex == 1 then
+    -- Reset gfxScale for stacks returning from a right-column slot.
+    self.gfxScale = NORMAL_GFX_SCALE
     self:moveForRenderIndex(1)
   else
     self:_positionInRightGrid3x2(renderIndex)
@@ -586,6 +597,8 @@ end
 -- Pattern: 11246 / 11357
 function ClientStack:moveForRenderIndex7Player(renderIndex)
   if renderIndex == 1 then
+    -- Reset gfxScale for stacks returning from a right-column slot.
+    self.gfxScale = NORMAL_GFX_SCALE
     self:moveForRenderIndex(1)
   else
     self:_positionInRightGrid3x2(renderIndex)

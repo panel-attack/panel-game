@@ -135,10 +135,6 @@ local function abortTest2()
   assert(game.complete == true)
 
   local message = p2.connection.outgoingMessageQueue:pop().messageText
-  print("DEBUG gameResult content:")
-  for k, v in pairs(message.content or {}) do
-    print("  ", k, "placement=" .. tostring(v.placement))
-  end
   assert(message.type == "gameResult" and message.content[1].placement == 2 and message.content[2].placement == 1)
   message = p1.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "gameResult" and message.content[1].placement == 2 and message.content[2].placement == 1)

@@ -36,6 +36,21 @@ local function teamLetter(teamIndex)
   return string.char(string.byte("A") + (teamIndex - 1))
 end
 
+local function isFFA(gameMode)
+  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
+    return false
+  end
+  local p = gameMode.playersPerTeam
+  if type(p) == "number" then return p <= 1 end
+  if type(p) == "table" then
+    for _, n in ipairs(p) do
+      if n > 1 then return false end
+    end
+    return true
+  end
+  return false
+end
+
 local function buildTeamResultText(match, winners)
   local teams = {}
   local winnerTeams = {}
@@ -252,7 +267,28 @@ function PortraitGame:draw()
     local winners = self.match:getWinners()
     local pos = themes[config.theme].gameover_text_Pos
     local message
-    if self.match.gameMode and self.match.gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
+    if isFFA(self.match.gameMode) then
+      if self.match:hasLocalPlayer() then
+        local localWon = false
+        for _, winner in ipairs(winners) do
+          if winner.isLocal then
+            localWon = true
+            break
+          end
+        end
+        if localWon then
+          message = loc("pl_you_win")
+        elseif #winners > 0 then
+          message = loc("pl_you_lose")
+        else
+          message = loc("ss_draw")
+        end
+      elseif #winners == 1 then
+        message = loc("ss_p_wins", winners[1].name)
+      else
+        message = loc("ss_draw")
+      end
+    elseif self.match.gameMode and self.match.gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
       message = buildTeamResultText(self.match, winners)
     elseif #winners == 1 then
       message = loc("ss_p_wins", winners[1].name)
