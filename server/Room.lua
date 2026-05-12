@@ -579,6 +579,16 @@ function Room:broadcastGarbageEvent(sender, body)
 
   self.game:recordGarbageEvent(sender, parsed)
 
+  do
+    local rstr = {}
+    for _, r in ipairs(parsed.recipients) do rstr[#rstr + 1] = tostring(r) end
+    logger.info(string.format(
+      "%d: G relay: sender=%d recipients=[%s] garbageCount=%d",
+      self.roomNumber, sender.player_number,
+      table.concat(rstr, ","),
+      (type(parsed.garbage) == "table") and #parsed.garbage or 0))
+  end
+
   local stamped = json.encode(parsed)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
     NetworkProtocol.serverMessageTypes.garbageEvent.prefix, stamped)

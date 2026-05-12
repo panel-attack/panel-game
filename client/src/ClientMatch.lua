@@ -523,10 +523,35 @@ function ClientMatch:finalizeReplay()
 end
 
 function ClientMatch:initializeTelegraphRelationships()
-  for i, garbageTargets in ipairs(self.engine.garbageTargets) do
-    for _, engineStack in ipairs(garbageTargets) do
-      local index = tableUtils.indexOf(self.engine.stacks, engineStack)
-      self.stacks[i]:setGarbageTarget(self.stacks[index])
+  -- Build a target LIST per stack so N-player FFA/team modes render a Telegraph
+  -- to every enemy. The legacy 1v1 code path used setGarbageTarget (singular),
+  -- which silently overwrote when called more than once — keeping only the last
+  -- enemy. The render loop below iterates stack.garbageTargets so all enemies
+  -- get the flying-icon animation.
+  --
+  -- Shared (round-robin) mode caveat: the engine's garbageTargets list contains
+  -- every enemy because the round-robin pick happens at delivery time, not at
+  -- setup. If we rendered to all of them we'd visually show every enemy taking
+  -- a hit while only one actually receives. For shared mode, restrict the
+  -- client list to a single target (the first enemy — matches the round-robin
+  -- counter's initial position). For "all" mode and 1v1, take every target.
+  local garbageMode = (self.gameMode and self.gameMode.garbageMode)
+    or (self.engine and self.engine.garbageMode)
+  local sharedMode = garbageMode == "shared"
+  for i, engineTargets in ipairs(self.engine.garbageTargets) do
+    local clientStack = self.stacks[i]
+    if clientStack then
+      local clientTargets = {}
+      for _, engineStack in ipairs(engineTargets) do
+        local index = tableUtils.indexOf(self.engine.stacks, engineStack)
+        if self.stacks[index] then
+          clientTargets[#clientTargets + 1] = self.stacks[index]
+          if sharedMode and #engineTargets > 1 then
+            break
+          end
+        end
+      end
+      clientStack:setGarbageTargets(clientTargets)
     end
   end
 
@@ -869,8 +894,14 @@ function ClientMatch:render()
         stack:render(self.engine.ended)
       end
 
-      if stack.garbageTarget and stack.canvas and not stack:game_ended() then
-        Telegraph:render(stack, stack.garbageTarget)
+      if stack.canvas and not stack:game_ended() then
+        if stack.garbageTargets and #stack.garbageTargets > 0 then
+          for _, target in ipairs(stack.garbageTargets) do
+            Telegraph:render(stack, target)
+          end
+        elseif stack.garbageTarget then
+          Telegraph:render(stack, stack.garbageTarget)
+        end
       end
     end
 
@@ -962,10 +993,11 @@ function ClientMatch:applyGarbageEvent(body)
   for _, recipientIndex in ipairs(body.recipients) do
     local stack = self.stacks[recipientIndex]
     if stack and stack.engine then
-      logger.debug(string.format(
-        "applyGarbageEvent: sender=%s senderFrame=%s -> stack[%d] (is_local=%s)",
+      logger.info(string.format(
+        "G apply: sender=%s senderFrame=%s -> stack[%d] (is_local=%s) garbageCount=%d",
         tostring(body.sender), tostring(body.senderFrame), recipientIndex,
-        tostring(stack.is_local)))
+        tostring(stack.is_local),
+        (type(body.garbage) == "table") and #body.garbage or 0))
       -- self.stacks[i] is a ClientStack wrapper; the actual engine stack
       -- (and the receiveGarbage method) lives on stack.engine.
       stack.engine:receiveGarbage(body.garbage)

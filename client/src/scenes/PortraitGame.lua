@@ -238,7 +238,11 @@ function PortraitGame:draw()
         end
       end
 
-      if stack.garbageTarget then --and stack.garbageTarget.is_local and stack.garbageTarget.inputMethod == "touch" then
+      if stack.garbageTargets and #stack.garbageTargets > 0 then
+        for _, target in ipairs(stack.garbageTargets) do
+          Telegraph:render(stack, target)
+        end
+      elseif stack.garbageTarget then
         Telegraph:render(stack, stack.garbageTarget)
       end
     end

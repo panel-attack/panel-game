@@ -37,6 +37,8 @@ end
 ---@field multi_shakeQuad love.Quad
 ---@field danger_music boolean
 ---@field garbageSource ClientStack The stack the garbage assets are used from
+---@field garbageTarget GarbageTarget? Convenience alias for garbageTargets[1] (legacy 1v1 paths)
+---@field garbageTargets GarbageTarget[]? All targets this stack visually attacks (Telegraph render loops over these)
 ---@field assets IngameAssetPack
 ---@field renderIndex integer determines the position of the stack and how some elements are rendered
 ---@field player_number integer used for display ordering
@@ -859,9 +861,26 @@ end
 
 ---@alias GarbageTarget {frameOriginX: number, frameOriginY: number, mirror_x: integer, canvasWidth: number}
 
+---Replace the target list with a single target (legacy 1v1 caller).
 ---@param garbageTarget GarbageTarget
 function ClientStack:setGarbageTarget(garbageTarget)
+  self.garbageTargets = { garbageTarget }
   self.garbageTarget = garbageTarget
+end
+
+---Replace the target list with an array of targets (N-target FFA/team modes).
+---@param garbageTargets GarbageTarget[]
+function ClientStack:setGarbageTargets(garbageTargets)
+  self.garbageTargets = garbageTargets or {}
+  self.garbageTarget = self.garbageTargets[1]
+end
+
+---Append a single target to the existing list.
+---@param garbageTarget GarbageTarget
+function ClientStack:addGarbageTarget(garbageTarget)
+  self.garbageTargets = self.garbageTargets or {}
+  self.garbageTargets[#self.garbageTargets + 1] = garbageTarget
+  self.garbageTarget = self.garbageTargets[1]
 end
 
 --------------------------------

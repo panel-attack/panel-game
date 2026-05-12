@@ -435,7 +435,12 @@ function Match:deliverOutgoingGarbage(source, target, garbageDelivery)
       -- if the original target died between our emit and the server's
       -- processing (Room:broadcastGarbageEvent handles round-robin walk-
       -- forward in that case).
+      local senderIndex = tableUtils.indexOf(self.stacks, source)
       local recipientIndex = tableUtils.indexOf(self.stacks, target)
+      logger.info(string.format(
+        "G emit: stack[%d] -> stack[%d] frame=%d count=%d",
+        senderIndex or -1, recipientIndex or -1, source.stopWatch or -1,
+        garbageDelivery and #garbageDelivery or 0))
       GAME.netClient:sendGarbageEvent({
         senderFrame = source.stopWatch,
         recipients = { recipientIndex },

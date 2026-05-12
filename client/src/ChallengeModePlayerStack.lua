@@ -159,6 +159,11 @@ function ChallengeModePlayerStack:setGarbageTarget(garbageTarget)
   ClientStack.setGarbageTarget(self, garbageTarget)
 end
 
+---@param garbageTargets GarbageTarget[]
+function ChallengeModePlayerStack:setGarbageTargets(garbageTargets)
+  ClientStack.setGarbageTargets(self, garbageTargets)
+end
+
 function ChallengeModePlayerStack:drawScore()
   -- no fake score for simulated stacks yet
   -- could be fun for fake 1p time attack vs later on, lol

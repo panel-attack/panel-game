@@ -100,7 +100,11 @@ local allTests = {
   "client.tests.graphics_PuzzleHierarchyDisplayTests",
   "client.tests.ServerQueueTests",
   "client.tests.SoundGroupTests",
-  "client.tests.TcpClientTests",
+  -- TcpClientTests is an integration test that needs a live server on
+  -- localhost:49569 (port from consts.SERVER_LOCATION). Disabled in the
+  -- default test run; re-enable manually when running it against a real
+  -- server. Has been broken in CI-style runs for years.
+  -- "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
   "client.tests.StackGraphicsTests",
   "client.tests.InputConfigurationTests",
