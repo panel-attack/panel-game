@@ -374,6 +374,10 @@ function Server:lobbyStateV2()
       minPlayers = room.minPlayers,
       maxPlayers = room.maxPlayers,
       openSlots = room:getOpenSlots(),
+      -- Slots held for specific leavers to rejoin (fixed-roster rooms only).
+      -- Empty array for open-FFA rooms. UI uses this to render a "Held — <name>"
+      -- row and to offer a "Rejoin" action when the local player is the holder.
+      heldSlots = room:getHeldSlots(),
       slotRequests = {},
       pendingJoinerCount = (room.pendingJoiners and #room.pendingJoiners) or 0,
     }

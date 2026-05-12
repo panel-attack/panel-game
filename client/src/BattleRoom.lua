@@ -66,6 +66,13 @@ function(self, mode, gameScene)
   self.voided = false
   self.voidReason = nil
 
+  -- Held slots — seats reserved for a specific leaver to rejoin (fixed-roster
+  -- invite rooms only; always empty for open FFA). Updated from addToRoom and
+  -- playerLeftRoom payloads. Character-select scenes can render these as
+  -- "waiting for <name>" rows.
+  ---@type {publicId:integer, name:string, slotNumber:integer}[]
+  self.heldSlots = {}
+
   Signal.turnIntoEmitter(self)
   self:createSignal("rankedStatusChanged")
   self:createSignal("allAssetsLoadedChanged")
@@ -153,6 +160,8 @@ function BattleRoom.createFromServerMessage(message)
   if message.teamWins then
     battleRoom:setTeamWins(message.teamWins)
   end
+
+  battleRoom.heldSlots = message.heldSlots or {}
 
   battleRoom:restoreInputConfigurations()
   GAME.netClient:registerPlayerUpdates(battleRoom)

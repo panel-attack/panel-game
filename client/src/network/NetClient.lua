@@ -170,9 +170,15 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
   local localRoomNumber = (self.room and self.room.roomNumber)
     or (localId and self.lobbyDataV2.players[localId] and self.lobbyDataV2.players[localId].roomNumber)
   local localLobbyRoom = localRoomNumber and self.lobbyDataV2.rooms[localRoomNumber]
+  -- "Full" here means every seat is held by a present player. A held slot
+  -- (reserved for a leaver) counts as empty even though openSlots is empty,
+  -- so the fallback below must not treat openSlots==0 as full when heldSlots
+  -- still has entries — otherwise we'd hard-skip the lobby and push the room
+  -- scene with an absent player.
+  local heldCount = (localLobbyRoom and localLobbyRoom.heldSlots and #localLobbyRoom.heldSlots) or 0
   local roomIsFull = localLobbyRoom and (
     (localLobbyRoom.maxPlayers and localLobbyRoom.players and #localLobbyRoom.players >= localLobbyRoom.maxPlayers)
-    or (localLobbyRoom.openSlots and #localLobbyRoom.openSlots == 0)
+    or (localLobbyRoom.openSlots and #localLobbyRoom.openSlots == 0 and heldCount == 0)
   )
   if self.room and roomIsFull and self.state == states.ONLINE then
     local roomScene = getSceneFromRoom(self.room)
@@ -222,11 +228,16 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
 
   -- Open FFA goes straight to the waiting room (drop-in by design); every other
   -- mode stays in the lobby with open slots until it fills.
+  -- Rejoin exception: if the room has held slots, the existing members are
+  -- already in character select (they didn't navigate back when a peer left).
+  -- A rejoiner needs to land in the same scene rather than getting stuck in
+  -- lobby with no one to play against.
   local modeName = self.room.mode.name
   local isOpenFfa = modeName == "open_ffa" or modeName == "open_ffa_shared"
   local playerCount = #self.room.players
   local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
-  if not isOpenFfa and playerCount < maxPlayers then
+  local hasHeldSlots = self.room.heldSlots and #self.room.heldSlots > 0
+  if not isOpenFfa and playerCount < maxPlayers and not hasHeldSlots then
     -- Stay in lobby - room will show in lobby list with open slots
     logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
     self.state = states.ONLINE
@@ -252,6 +263,10 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
         gameModeId = self.room.mode.name,
         maxPlayers = maxPlayers,
         openSlots = openSlots,
+        -- Held slots only get populated after someone leaves a fixed-roster room;
+        -- this is the fresh-join path so there's nothing held yet. Next
+        -- lobbyStateV2 from the server is authoritative.
+        heldSlots = {},
       }
       -- Update local player's room assignment
       local localId = GAME.localPlayer.publicId
@@ -501,6 +516,17 @@ local function processPlayerJoinedRoom(self, message)
       end
       self.room:addPlayer(player)
     end
+    -- If this joiner was the holder of a reserved seat, release it locally so
+    -- the in-room view stops showing "waiting for <name>". The server clears
+    -- the reservation on join too; this just mirrors that state without
+    -- waiting for the next lobbyStateV2 snapshot.
+    if self.room.heldSlots and playerData.publicId then
+      for i = #self.room.heldSlots, 1, -1 do
+        if self.room.heldSlots[i].publicId == playerData.publicId then
+          table.remove(self.room.heldSlots, i)
+        end
+      end
+    end
     self:registerPlayerUpdates(self.room)
     love.window.requestAttention()
     SoundController:playSfx(themes[config.theme].sounds.notification)
@@ -544,6 +570,10 @@ local function processPlayerLeftRoom(self, message)
   if data.voidReason then
     self.room:setVoided(data.voidReason)
   end
+  -- Refresh held-slot snapshot so the room view can show "waiting for <name>"
+  -- on the seat just vacated (fixed-roster rooms) or leave it empty for fcfs
+  -- (open-FFA). Server sends an empty array for the latter.
+  self.room.heldSlots = data.heldSlots or {}
 end
 
 local function processMenuStateMessage(player, message)

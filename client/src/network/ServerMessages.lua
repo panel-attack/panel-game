@@ -123,6 +123,7 @@ function ServerMessages.sanitizeRoomMessage(message)
         publicId = message.content.publicId,
         name = message.content.name,
         voidReason = message.content.voidReason,
+        heldSlots = message.content.heldSlots,
       }
     }
   elseif message.type == "gameAbort" then
@@ -231,6 +232,7 @@ function ServerMessages.sanitizeServerMessage(message)
       roomNumber = message.content.roomNumber,
       gameMode = message.content.gameMode,
       teamWins = message.content.teamWins,
+      heldSlots = message.content.heldSlots,
     }
   else
     return message

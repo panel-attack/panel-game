@@ -66,7 +66,13 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.recentGameAbort = false
   self.voided = false
   self.voidReason = nil
-  self.reservedSlots = {} -- publicId -> true for players allowed to rejoin
+  -- publicId -> name for players whose slot is held while they're away. Name is
+  -- stored as the value (rather than a bare boolean) so the protocol can emit a
+  -- "Held — <name>" hint without doing a name lookup elsewhere. Cleared by
+  -- handleJoinRoom on successful rejoin. Only ever populated for fixed-roster
+  -- (invite) rooms — dynamic-roster (open FFA) rooms keep this empty so freed
+  -- slots are first-come-first-served.
+  self.reservedSlots = {}
   -- Spectators who joined mid-match wanting to become players when the next
   -- match starts. Insertion-ordered for first-come-first-served promotion up
   -- to maxPlayers. Used by open FFA (dynamic-roster) modes only.
@@ -132,13 +138,46 @@ function Room:isFull()
   return #self.players >= self.maxPlayers
 end
 
+---Open slots are positions any lobby player can claim. Held slots (reserved for
+---a specific leaver to rejoin) are NOT open and are reported separately by
+---getHeldSlots. We deliberately number open slots from the low end and held
+---slots from the high end so the lobby UI renders them in a stable order:
+--- players first, then open rows, then held rows.
 ---@return integer[] list of open slot indices
 function Room:getOpenSlots()
+  local heldCount = 0
+  for _ in pairs(self.reservedSlots) do
+    heldCount = heldCount + 1
+  end
   local slots = {}
-  for i = #self.players + 1, self.maxPlayers do
+  local lastOpenSlot = self.maxPlayers - heldCount
+  for i = #self.players + 1, lastOpenSlot do
     slots[#slots + 1] = i
   end
   return slots
+end
+
+---Held slots — empty positions reserved for a specific leaver to rejoin.
+---Returns an array sorted by publicId so the protocol is deterministic.
+---slotNumber is purely a display hint; actual seat assignment happens in
+---addPlayer (next-available append).
+---@return {publicId: integer, name: string, slotNumber: integer}[]
+function Room:getHeldSlots()
+  local sortedIds = {}
+  for publicId in pairs(self.reservedSlots) do
+    sortedIds[#sortedIds + 1] = publicId
+  end
+  table.sort(sortedIds)
+  local result = {}
+  local startSlot = self.maxPlayers - #sortedIds + 1
+  for i, publicId in ipairs(sortedIds) do
+    result[#result + 1] = {
+      publicId = publicId,
+      name = self.reservedSlots[publicId],
+      slotNumber = startSlot + i - 1,
+    }
+  end
+  return result
 end
 
 ---@param player ServerPlayer
@@ -984,7 +1023,7 @@ function Room:voidByLeave(leaver, reason)
     -- first-come-first-served — no reservation; the next lobby player to click
     -- Join takes the freed slot.
     if not self:isDynamicRoster() then
-      self.reservedSlots[leaver.publicPlayerID] = true
+      self.reservedSlots[leaver.publicPlayerID] = leaver.name
       logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (slot reserved for rejoin)")
     else
       logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (open FFA, slot free for fcfs)")
@@ -1041,7 +1080,7 @@ function Room:voidByLeave(leaver, reason)
     self.pendingLeaverRemovals[#self.pendingLeaverRemovals + 1] = leaver
     -- Surface the void state to remaining players immediately so the banner
     -- shows up; their match keeps running.
-    self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason))
+    self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason, self:getHeldSlots()))
     return
   else
     self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
@@ -1083,7 +1122,7 @@ function Room:_removeFromPlayersAndAnnounce(leaver)
   -- the per-team scoreboard keeps showing matches that already happened.
   self.teams = nil
 
-  self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason))
+  self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason, self:getHeldSlots()))
 end
 
 ---@param sender ServerPlayer

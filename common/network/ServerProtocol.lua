@@ -189,7 +189,7 @@ function ServerProtocol.addToRoom(room, replay)
 
   -- Always clear before conditionally re-setting because addToRoomTemplate is shared
   -- across calls (every call does `addToRoomMessage = addToRoomTemplate`); a leftover
-  -- teamWins from a previous team-room call would otherwise leak into a non-team room.
+  -- teamWins/heldSlots from a previous call would otherwise leak into a fresh room.
   content.teamWins = nil
   if room.team_win_counts then
     content.teamWins = {}
@@ -197,6 +197,10 @@ function ServerProtocol.addToRoom(room, replay)
       content.teamWins[teamIndex] = wins
     end
   end
+
+  -- Held slots: empty array for open-FFA rooms, populated when a fixed-roster
+  -- invite room has leavers whose slots are reserved for rejoin.
+  content.heldSlots = room.getHeldSlots and room:getHeldSlots() or {}
 
   return {
     messageType = msgTypes.jsonMessage,
@@ -600,6 +604,7 @@ local playerLeftRoomTemplate = {
     publicId = nil,
     name = nil,
     voidReason = nil,
+    heldSlots = nil,
   }
 }
 
@@ -607,17 +612,21 @@ local playerLeftRoomTemplate = {
 ---multi-player room. Tells the client to remove that player from the local room
 ---view. If voidReason is set the client also marks the room voided (mid-game abort);
 ---nil means the room stays open and the leaver can rejoin from the lobby.
+---heldSlots reflects the room's reservation state after the leave so room members
+---can render "Held — <name>" rows without waiting for the next lobby snapshot.
 ---@param roomNumber roomNumber
 ---@param publicId integer the leaver's publicPlayerID
 ---@param name string the leaver's display name
 ---@param voidReason string? human-readable reason, nil when room stays open
+---@param heldSlots {publicId:integer, name:string, slotNumber:integer}[]? snapshot of held slots after the leave
 ---@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.playerLeftRoom(roomNumber, publicId, name, voidReason)
+function ServerProtocol.playerLeftRoom(roomNumber, publicId, name, voidReason, heldSlots)
   local msg = playerLeftRoomTemplate
   msg.senderId = roomNumber
   msg.content.publicId = publicId
   msg.content.name = name
   msg.content.voidReason = voidReason
+  msg.content.heldSlots = heldSlots or {}
   return {
     messageType = msgTypes.jsonMessage,
     messageText = msg,

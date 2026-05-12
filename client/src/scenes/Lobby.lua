@@ -1195,7 +1195,28 @@ function Lobby:createRoomButtons(personalizedLobbyData)
         local tIdx = (getTeamSlotInfo(room, slotNumber))
         rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
       end
-    else
+    end
+
+    -- Held-slot rows: a player left this fixed-roster room pre-match; their
+    -- seat is reserved for rejoin and not joinable by anyone else. Render
+    -- below the open rows so the layout stays: present players → open seats →
+    -- held seats.
+    if room.heldSlots and #room.heldSlots > 0 then
+      for _, held in ipairs(room.heldSlots) do
+        local prefix = teamEmptyPrefix(room, held.slotNumber)
+        local label
+        if held.publicId == localPublicId then
+          label = prefix .. " (your seat — click to rejoin)"
+        else
+          label = prefix .. " (held — " .. (held.name or "?") .. ")"
+        end
+        lines[#lines + 1] = label
+        local tIdx = (getTeamSlotInfo(room, held.slotNumber))
+        rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
+      end
+    end
+
+    if not hasOpenSlots and not (room.heldSlots and #room.heldSlots > 0) then
       lines[#lines + 1] = "(" .. room.state .. ")"
       rowTints[#rowTints + 1] = false
     end
@@ -1326,14 +1347,23 @@ function Lobby:openRoomSubMenu(room, button)
 
   subMenu.roomNumber = room.roomNumber
 
-  -- Add join button for each open slot. Open FFA (dynamic-roster) rooms are
-  -- public drop-in: every empty slot gets an instant-join button. Fixed-roster
-  -- team rooms gate joining through the owner's accept (handshake flow).
+  -- Two distinct paths for filling empty seats:
+  --
+  --   OPEN room  (min < max, e.g. open_ffa)  → LobbyRoomJoinButton (direct join,
+  --                                              no handshake). Any lobby player
+  --                                              can grab any open slot.
+  --   INVITE room (min == max, e.g. 2v2)     → LobbyChallengeButton (invite
+  --                                              handshake). Owner must accept.
+  --
+  -- A third case lives on top of INVITE: a held slot (someone left pre-match,
+  -- their seat is reserved). The holder gets a direct "Rejoin" button — same
+  -- path as open join — bypassing the handshake. Everyone else sees no button
+  -- at all for that slot (server.lua:791 would reject them anyway).
+  local roomOwnerId = room.ownerId or (room.players and room.players[1])
+  local localPublicId = GAME.localPlayer.publicId
+  local isDynamicRoster = room.minPlayers ~= nil and room.maxPlayers ~= nil and room.minPlayers < room.maxPlayers
+
   if room.openSlots then
-    local roomOwnerId = room.ownerId or (room.players and room.players[1])
-    -- Room payload always carries minPlayers/maxPlayers; dynamic roster is the
-    -- open-FFA case where min < max.
-    local isDynamicRoster = room.minPlayers ~= nil and room.maxPlayers ~= nil and room.minPlayers < room.maxPlayers
     for _, slotNumber in ipairs(room.openSlots) do
       -- "Join 🩷" / "Join 🟣" — color = team you'd be filling.
       local joinLbl = loc("lb_join") .. " " .. teamEmptyPrefix(room, slotNumber)
@@ -1374,6 +1404,27 @@ function Lobby:openRoomSubMenu(room, button)
         end
       end
       subMenu:addChild(joinButton)
+    end
+  end
+
+  if room.heldSlots then
+    for _, held in ipairs(room.heldSlots) do
+      if held.publicId == localPublicId then
+        local rejoinLbl = "Rejoin " .. teamEmptyPrefix(room, held.slotNumber)
+        local rejoinButton = ui.LobbyRoomJoinButton({
+          playerId = roomOwnerId,
+          iconSize = 16,
+          roomNumber = room.roomNumber,
+          slotNumber = held.slotNumber,
+          gameModeId = room.gameModeId,
+          label = ui.Label({text = rejoinLbl, translate = false}),
+          acceptImage = GAME.theme:getFightImage(),
+          proposeImage = GAME.theme:getFightImage(),
+          withdrawImage = GAME.theme:getFightImage(),
+          width = 120,
+        })
+        subMenu:addChild(rejoinButton)
+      end
     end
   end
 
