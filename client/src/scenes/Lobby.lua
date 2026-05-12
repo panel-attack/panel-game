@@ -123,6 +123,7 @@ function Lobby:initLobbyMenu()
       local btn = ui.TextButton({
         label = ui.Label({text = text, translate = false}),
         onClick = function()
+          logger.warn("latButton onClick: tolerance=" .. tostring(tolerance) .. " gameMode=" .. tostring(gameMode and gameMode.name))
           GAME.netClient:requestRoom(gameMode, tolerance)
           latMenu:yieldFocus()
           if closeAll then closeAll() end

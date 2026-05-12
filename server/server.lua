@@ -1099,6 +1099,7 @@ function Server:processMessage(message, connection)
         return true
       end
     elseif message.roomRequest and (player.state == "lobby" or (player.state == "character select" and self.playerToRoom[player] and not self.playerToRoom[player]:isFull() and not self.playerToRoom[player].game)) then
+      logger.warn("roomRequest received from " .. player.name .. " state=" .. player.state .. " mode=" .. tostring(message.gameMode and message.gameMode.name) .. " latency=" .. tostring(message.latencyTolerance))
       -- If the player is in a partial (not-yet-full, no match started) room, close it first
       -- so they can switch room config from the lobby UI without having to explicitly leave.
       local existingRoom = self.playerToRoom[player]
