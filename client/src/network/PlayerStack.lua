@@ -23,7 +23,8 @@ end
 
 -- Override of the base PlayerStack stub. Tells the server our stack reached
 -- game over so it can stop relaying our (now-absent) inputs and let the
--- surviving stacks finish the match.
+-- surviving stacks finish the match. Other players get the death applied
+-- authoritatively via the D-event relay.
 function PlayerStack:notifyServerStackEliminated()
   if not self.is_local then
     return
@@ -35,7 +36,10 @@ function PlayerStack:notifyServerStackEliminated()
     return
   end
   self._stackEliminationSent = true
-  GAME.netClient:sendStackEliminated(self.engine.game_over_clock)
+  GAME.netClient:sendDeathEvent({
+    senderFrame = self.engine.game_over_clock,
+    reason = "topOut",
+  })
 end
 
 function PlayerStack:send_controls()

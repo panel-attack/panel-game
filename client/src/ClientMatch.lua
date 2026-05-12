@@ -964,13 +964,32 @@ function ClientMatch:applyGarbageEvent(body)
 end
 
 ---Loose-sync: handle an incoming DeathEvent from the server.
----Step 6 stub — just logs. Step 8 wires this into authoritative remote-stack
----game-over marking.
+---Marks the (remote) sender's stack as game-ended at body.senderFrame.
+---Skips local-authoritative stacks — those set their own game_over_clock via
+---the engine's natural top-out detection, no override needed.
 ---@param body table parsed event payload: {sender, senderFrame, serverWallClockMs, reason}
 function ClientMatch:applyDeathEvent(body)
-  logger.debug(string.format("DeathEvent received: sender=%s senderFrame=%s reason=%s",
-    tostring(body and body.sender), tostring(body and body.senderFrame),
-    tostring(body and body.reason)))
+  if not body or type(body.sender) ~= "number" or type(body.senderFrame) ~= "number" then
+    logger.warn("applyDeathEvent: malformed body, dropping")
+    return
+  end
+
+  local stack = self.stacks[body.sender]
+  if not stack then
+    logger.warn("applyDeathEvent: no stack at slot " .. tostring(body.sender))
+    return
+  end
+
+  if stack.is_local then
+    -- Our own death — we already set game_over_clock when the local sim hit it.
+    return
+  end
+
+  if stack.game_over_clock <= 0 then
+    stack.game_over_clock = body.senderFrame
+    logger.info(string.format("DeathEvent applied: stack[%d] game_over_clock=%d (reason=%s)",
+      body.sender, body.senderFrame, tostring(body and body.reason)))
+  end
 end
 
 ---Loose-sync: handle a server-authored KOArbitration result.

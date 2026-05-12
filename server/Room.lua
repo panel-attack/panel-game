@@ -479,6 +479,8 @@ function Room:broadcastGarbageEvent(sender, body)
 end
 
 ---Relay a loose-sync DeathEvent. Same wire shape as GarbageEvent.
+---Also marks the sender as eliminated server-side so we stop relaying their
+---now-absent inputs (replacing the legacy J{stackEliminated} path).
 ---KO arbitration is wired in Step 9a; for now we just relay.
 ---@param sender ServerPlayer
 ---@param body string raw JSON body from the client
@@ -497,6 +499,8 @@ function Room:broadcastDeathEvent(sender, body)
   parsed.serverWallClockMs = math.floor(socket.gettime() * 1000)
 
   self.game:recordDeathEvent(sender, parsed)
+  self.game:markPlayerEliminated(sender, parsed.senderFrame)
+  logger.info(self.roomNumber .. ": " .. sender.name .. " died at frame " .. tostring(parsed.senderFrame))
 
   local stamped = json.encode(parsed)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
