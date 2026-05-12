@@ -19,6 +19,12 @@ NAME_LENGTH_LIMIT = 16
 -- garbage delivery path for debugging / A-B comparison.
 LOOSE_SYNC_GARBAGE = true
 
+-- Loose-sync adaptive telegraph: minimum frames between G arrival on the
+-- receiver and the resulting garbage actually landing on their board. Floor
+-- for the adaptive landing-offset math in ClientMatch:applyGarbageEvent so the
+-- receiver always sees a visible telegraph window even under terrible latency.
+MIN_REACTION_FRAMES = 45
+
 themes = {} -- initialized in theme.lua
 
 THEME_DIRECTORY_PATH = "themes/"
