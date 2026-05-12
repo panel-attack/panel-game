@@ -40,14 +40,6 @@ function PlayerStack:notifyServerStackEliminated()
 end
 
 function PlayerStack:send_controls()
-  if self.is_local and GAME.netClient:isConnected() and #self.engine.confirmedInput > 0 and self.garbageTarget and #self.garbageTarget.engine.confirmedInput == 0 then
-    -- Send 1 frame at clock time 0 then wait till we get our first input from the other player.
-    -- This will cause a player that got the start message earlier than the other player to wait for the other player just once.
-    -- print("self.confirmedInput="..(self.confirmedInput or "nil"))
-    -- print("send_controls returned immediately")
-    return
-  end
-
   local buffer_len = #self.engine.confirmedInput - self.engine.clock
   if buffer_len > 0 then
     return
