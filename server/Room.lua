@@ -694,6 +694,31 @@ function Room:voidByLeave(leaver, reason)
     logger.info(self.roomNumber .. ": voiding room (" .. self.voidReason .. ")")
   end
 
+  -- Grace check: clients defer their stackEliminated message by 60 frames so a
+  -- rollback can cancel a false death. If a player times out inside that window
+  -- the server hasn't been told yet — but the leaver almost certainly died,
+  -- because clients stop sending inputs once game_ended() is true. Detect this
+  -- by looking at the gap between the leaver's confirmed input count and the
+  -- rest of the room: a meaningful gap means they stopped sending. Mark them
+  -- eliminated so we take the "continue match" branch below instead of aborting.
+  if not self.game.eliminatedPlayers[leaver.player_number] then
+    local DEATH_GAP_THRESHOLD = 30  -- frames; half a second at 60fps
+    local leaverInputs = #self.game.inputs[leaver.player_number]
+    local maxInputs = 0
+    for i = 1, #self.game.players do
+      if i ~= leaver.player_number
+        and not self.game.disconnectedPlayers[i]
+        and not self.game.eliminatedPlayers[i] then
+        maxInputs = math.max(maxInputs, #self.game.inputs[i])
+      end
+    end
+    if maxInputs - leaverInputs > DEATH_GAP_THRESHOLD then
+      logger.info(self.roomNumber .. ": " .. leaver.name .. " left with " ..
+        (maxInputs - leaverInputs) .. "-frame input gap; assuming they died and continuing the match")
+      self.game:markPlayerEliminated(leaver, leaverInputs)
+    end
+  end
+
   -- Mid-match. Two cases:
   --   1. Leaver was already eliminated (their stack died, they were just
   --      spectating their own match). Don't interrupt the survivors — server

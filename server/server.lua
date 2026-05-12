@@ -1102,12 +1102,18 @@ function Server:processMessage(message, connection)
       logger.warn("roomRequest received from " .. player.name .. " state=" .. player.state .. " mode=" .. tostring(message.gameMode and message.gameMode.name) .. " latency=" .. tostring(message.latencyTolerance))
       local requestedGameMode = resolveRequestedGameMode(message.gameMode)
       if requestedGameMode then
-        -- If the player is in a partial (not-yet-full, no match started) room, close it first
-        -- so they can switch room config from the lobby UI without having to explicitly leave.
-        -- Important: only do this after we validated the requested game mode, otherwise a malformed
-        -- request would tear down the existing room and still fail to create a new one.
+        -- If the player is in a partial (not-yet-full, no match started) room with
+        -- no one else in it yet, close it first so they can switch room config
+        -- from the lobby UI without having to explicitly leave.
+        -- Reject the request when other players have already joined — otherwise
+        -- closing the room here yanks invitees out of CharacterSelect and the
+        -- team match never starts.
         local existingRoom = self.playerToRoom[player]
         if existingRoom then
+          if #existingRoom.players > 1 then
+            logger.warn("Rejected roomRequest from " .. player.name .. ": existing room " .. tostring(existingRoom.roomNumber) .. " has " .. #existingRoom.players .. " players")
+            return false
+          end
           self:closeRoom(existingRoom, "host changed room settings")
         end
 

@@ -127,8 +127,11 @@ end
 
 function PlayerStack:onGameOver(engine)
   SoundController:playSfx(themes[config.theme].sounds.game_over)
-  -- Defer panel flip and elimination notify — let in-flight pop animations finish first.
-  -- applyVisualDeath() and notifyServerStackEliminated() are called from runGameOver().
+  -- Defer panel flip and elimination notify — let in-flight pop animations finish first,
+  -- and let the rollback window expire so a rewind-past-death doesn't leak a false-death
+  -- to the server. The disconnect-during-death case is handled server-side: voidByLeave
+  -- treats a leaver who fell far behind in inputs as eliminated (clients stop sending
+  -- inputs after game_ended, so a large input gap is a strong death signal).
   self._pendingVisualDeath = true
   self._pendingEliminationClock = engine.game_over_clock
 end
@@ -328,6 +331,7 @@ function PlayerStack:runGameOver(matchClock)
   -- send elimination once the death is confirmed past the rollback window
   if self._pendingEliminationClock and matchClock and matchClock > self._pendingEliminationClock + GARBAGE_DELAY_LAND_TIME then
     self:notifyServerStackEliminated()
+    self._pendingEliminationClock = nil
   end
 
   self:update_popfxs()

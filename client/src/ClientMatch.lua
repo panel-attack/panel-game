@@ -869,7 +869,7 @@ function ClientMatch:render()
         stack:render(self.engine.ended)
       end
 
-      if stack.garbageTarget and stack.canvas then
+      if stack.garbageTarget and stack.canvas and not stack:game_ended() then
         Telegraph:render(stack, stack.garbageTarget)
       end
     end
