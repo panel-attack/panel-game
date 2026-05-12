@@ -224,6 +224,25 @@ function CharacterSelect:createPlayerIcon(player)
   })
   playerIcon:addChild(playerName)
 
+  -- wins counter on the icon itself — shown for 5+ player rooms because the
+  -- full info card (which carries the standard wins display) gets dropped to
+  -- make room for more icons. For ≤4 players the info card already shows it.
+  if #self.players >= 5 then
+    local winsLabel = ui.Label({
+      text = loc("ss_wins") .. " " .. player:getWinCountForDisplay(),
+      translate = false,
+      hAlign = "right",
+      vAlign = "top",
+      x = -4,
+      y = 2,
+    })
+    winsLabel.updateLabel = function(self, winCount)
+      self:setText(loc("ss_wins") .. " " .. winCount, nil, false)
+    end
+    player:connectSignal("winsChanged", winsLabel, winsLabel.updateLabel)
+    playerIcon:addChild(winsLabel)
+  end
+
   -- load icon
   local loadIcon = ui.ImageContainer({
     image = themes[config.theme].images.IMG_loading,
@@ -269,8 +288,25 @@ function CharacterSelect:createReadyButton()
     outlineColor = {1, 1, 1, 1}
   })
 
+  local scene = self
+
   -- assign player generic callback
   readyButton.onClick = function(self, inputSource, holdTime)
+    -- Dead local player came back to the waiting room while teammates are
+    -- still fighting. The room's match is still alive on BattleRoom — clicking
+    -- ready here means "take me back to watch", not "start a new match".
+    -- Push a fresh game scene that renders the in-progress match; the dead
+    -- player can use the spectator left/right arrows to cycle focus.
+    if GAME.battleRoom and GAME.battleRoom.match then
+      GAME.theme:playValidationSfx()
+      local gameScene = scene.battleRoom:createScene(GAME.battleRoom.match)
+      if gameScene then
+        gameScene:load()
+        GAME.navigationStack:push(gameScene)
+      end
+      return
+    end
+
     -- Voided rooms (someone left mid-room) can't start a new match — server's
     -- Room:start_match refuses them. Swallow the click on the client side too so
     -- we don't send a pointless menu_state update.

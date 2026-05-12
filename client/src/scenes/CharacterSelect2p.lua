@@ -117,14 +117,18 @@ function CharacterSelect2p:setupRoster()
     self.ui.playerInfos[i] = self:createPlayerInfo(player)
   end
 
-  -- Up to 4 players: (icon, info) pairs across columns 1-8 (col 9 = readyButton row 2).
-  -- 5 players: drop the info column and space 5 icons every-other-column (1,3,5,7,9)
-  -- so they fit in the 9-wide grid without overflowing the readyButton column.
-  -- TODO(7p UI): 6-7 players currently reuse the 5-slot layout — only the first 5
-  -- icons land in the grid. Will need a compact row (or wrap to row 2) when we
-  -- design the proper UI for 6/7-player rooms.
-  local topSlots
-  if #self.players >= 5 then
+  -- Slot layouts on the 9-wide grid (col 9 row 2 = readyButton):
+  --   ≤4: (icon, info) pairs in cols 1-8 — info card carries the wins display.
+  --   5:  icons every-other-col 1,3,5,7,9 — evenly distributed, no info cards.
+  --   6+: icons in consecutive cols 1..N — info cards dropped, wins shown on
+  --       the icon itself (see CharacterSelect:createPlayerIcon).
+  local topSlots = {}
+  local playerCount = #self.players
+  if playerCount >= 6 then
+    for i = 1, playerCount do
+      topSlots[i] = { iconX = i }
+    end
+  elseif playerCount == 5 then
     topSlots = {
       { iconX = 1 },
       { iconX = 3 },
@@ -133,12 +137,9 @@ function CharacterSelect2p:setupRoster()
       { iconX = 9 },
     }
   else
-    topSlots = {
-      { iconX = 1, infoX = 2 },
-      { iconX = 3, infoX = 4 },
-      { iconX = 5, infoX = 6 },
-      { iconX = 7, infoX = 8 },
-    }
+    for i = 1, playerCount do
+      topSlots[i] = { iconX = (i - 1) * 2 + 1, infoX = (i - 1) * 2 + 2 }
+    end
   end
   for i, player in ipairs(self.players) do
     local slot = topSlots[i]

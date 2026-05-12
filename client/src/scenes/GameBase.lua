@@ -421,6 +421,14 @@ function GameBase:startNextScene()
   GAME.navigationStack:pop(nil, function() self.match:deinit() end)
 end
 
+-- Pop back to the waiting room (CharacterSelect2p) without aborting or
+-- deiniting the match. Used when a dead local player wants to leave the game
+-- view but stay in the room — teammates keep playing, and the match stays on
+-- BattleRoom so they can spectate it again from CharacterSelect.
+function GameBase:exitToWaitingRoom()
+  GAME.navigationStack:pop()
+end
+
 function GameBase:runGame(dt)
   self:handlePause()
 
@@ -487,7 +495,10 @@ function GameBase:update(dt)
   if self.match.ended then
     self:runGameOver()
   else
-    if not self.match:hasLocalPlayer() then
+    local isPureSpectator = not self.match:hasLocalPlayer()
+    local isDeadLocal = self.match:isLocalPlayerEliminated()
+
+    if isPureSpectator then
       if input.isDown["MenuEsc"] then
         GAME.theme:playCancelSfx()
         self.match:abort()
@@ -496,6 +507,32 @@ function GameBase:update(dt)
         end
         GAME.navigationStack:popToName("Lobby")
         return
+      end
+    elseif isDeadLocal then
+      -- Dead local player: let them duck back to the waiting room without
+      -- aborting the match. Teammates keep playing on the server; this client
+      -- just unmounts the game scene. The match stays on BattleRoom so they
+      -- can re-enter to spectate by clicking ready in CharacterSelect.
+      if input.isDown["MenuEsc"] then
+        GAME.theme:playCancelSfx()
+        self:exitToWaitingRoom()
+        return
+      end
+    end
+
+    -- Spectator focus cycling: available to pure spectators AND to dead local
+    -- players who chose to keep watching from the game scene.
+    if isPureSpectator or isDeadLocal then
+      if isDeadLocal and not self.match.spectatorFocus then
+        -- First moment after death: snap focus to your own stack so the
+        -- "Viewing: <yourname>" label appears immediately. Arrow keys cycle
+        -- to live teammates from there.
+        for _, stack in ipairs(self.match.stacks) do
+          if stack.is_local then
+            self.match.spectatorFocus = stack.player_number
+            break
+          end
+        end
       end
       if input:isPressedWithRepeat("MenuLeft") then
         self.match:cycleSpectatorFocus(-1)
@@ -603,7 +640,10 @@ function GameBase:drawHUD()
 end
 
 function GameBase:drawSpectatorHint()
-  if self.match:hasLocalPlayer() then return end
+  -- Pure spectators and dead-but-still-watching local players both get the
+  -- "<  >  Switch Player" hint and the focused-player highlight. Live local
+  -- players don't (they're playing, not spectating).
+  if self.match:hasLocalPlayer() and not self.match:isLocalPlayerEliminated() then return end
   local consts = require("common.engine.consts")
   local font = GraphicsUtil.getGlobalFont()
   local hint = "<  >  Switch Player"

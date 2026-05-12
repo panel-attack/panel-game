@@ -73,7 +73,11 @@ function Lobby:load(sceneParams)
 end
 
 function Lobby:initLobbyMenu()
-  self.lobbyMenuWidth = 140
+  -- Wider than legacy 140 so consolidated invite labels ("Join Pink Team",
+  -- "Invite to Purple Team") and 1-2 player room titles fit on one line.
+  -- Single-line guarantee matters here: room-card color stripes are indexed by
+  -- logical line, so any wrap visually drifts the team tint off its row.
+  self.lobbyMenuWidth = 220
   self.onePlayerEndlessButton = ui.TextButton({
     label = ui.Label({text = "mm_1_endless"}),
     width = self.lobbyMenuWidth,
@@ -442,14 +446,29 @@ function Lobby:initLobbyMenu()
       childGap = 8,
     })
 
-    typeMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "Invite-only", translate = false}),
-      onClick = function(b) openTeamCompositionMenu(b, false, typeMenu) end,
-    }))
-    typeMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "Open", translate = false}),
-      onClick = function(b) openTeamCompositionMenu(b, true, typeMenu) end,
-    }))
+    local function typeButton(text, description, onClick)
+      local btn = ui.TextButton({
+        label = ui.Label({text = text, translate = false}),
+        onClick = onClick,
+      })
+      local origSetSelected = btn.setSelected
+      btn.setSelected = function(b, selected)
+        origSetSelected(b, selected)
+        self.garbageTooltip = selected and description or ""
+      end
+      return btn
+    end
+
+    typeMenu:addChild(typeButton(
+      "Invite-only",
+      "Closed room. You invite specific players to fill every seat. The match only starts once every seat is filled.",
+      function(b) openTeamCompositionMenu(b, false, typeMenu) end
+    ))
+    typeMenu:addChild(typeButton(
+      "Open",
+      "Public room — anyone in the lobby can drop in. The match starts as soon as 2 players are ready; remaining seats stay open for more to join later.",
+      function(b) openTeamCompositionMenu(b, true, typeMenu) end
+    ))
     typeMenu:addChild(ui.TextButton({
       label = ui.Label({text = "back"}),
       onClick = function()
@@ -461,6 +480,7 @@ function Lobby:initLobbyMenu()
 
     self.teamTypeMenu = typeMenu
     self.lobbyMenu:setFocus(typeMenu, function()
+      self.garbageTooltip = ""
       if self.latencyMenu then
         self.latencyMenu:detach()
         self.latencyMenu = nil
@@ -587,14 +607,29 @@ function Lobby:initLobbyMenu()
       childGap = 8,
     })
 
-    typeMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "Invite-only", translate = false}),
-      onClick = function(b) openFfaMenu(b, false) end,
-    }))
-    typeMenu:addChild(ui.TextButton({
-      label = ui.Label({text = "Open", translate = false}),
-      onClick = function(b) openFfaMenu(b, true) end,
-    }))
+    local function typeButton(text, description, onClick)
+      local btn = ui.TextButton({
+        label = ui.Label({text = text, translate = false}),
+        onClick = onClick,
+      })
+      local origSetSelected = btn.setSelected
+      btn.setSelected = function(b, selected)
+        origSetSelected(b, selected)
+        self.garbageTooltip = selected and description or ""
+      end
+      return btn
+    end
+
+    typeMenu:addChild(typeButton(
+      "Invite-only",
+      "Closed room. You invite specific players to fill every seat. The match only starts once every seat is filled.",
+      function(b) openFfaMenu(b, false) end
+    ))
+    typeMenu:addChild(typeButton(
+      "Open",
+      "Public room — anyone in the lobby can drop in. The match starts as soon as 2 players are ready; remaining seats stay open for more to join later.",
+      function(b) openFfaMenu(b, true) end
+    ))
     typeMenu:addChild(ui.TextButton({
       label = ui.Label({text = "back"}),
       onClick = function()
@@ -606,6 +641,7 @@ function Lobby:initLobbyMenu()
 
     self.ffaTypeMenu = typeMenu
     self.lobbyMenu:setFocus(typeMenu, function()
+      self.garbageTooltip = ""
       if self.latencyMenu then
         self.latencyMenu:detach()
         self.latencyMenu = nil
@@ -911,6 +947,93 @@ local function teamRowTint(teamIndex)
   return TEAM_ROW_TINT[teamIndex] or TEAM_ROW_TINT[1]
 end
 
+-- Display names per team index, in the same order as TEAM_ROW_TINT. The lobby
+-- groups invites/joins by team rather than by slot, so these names are what
+-- users actually see ("Join Pink Team", "Invite to Purple Team").
+local TEAM_NAMES = {
+  [1] = "Pink Team",
+  [2] = "Purple Team",
+  [3] = "Green Team",
+  [4] = "Yellow Team",
+  [5] = "Orange Team",
+  [6] = "Blue Team",
+  [7] = "Cyan Team",
+  [8] = "Red Team",
+}
+
+local function teamDisplayName(teamIndex)
+  return TEAM_NAMES[teamIndex] or ("Team " .. tostring(teamIndex))
+end
+
+-- FFA modes (playersPerTeam == 1) are treated as one undifferentiated group:
+-- a single "Join FFA" / "Invite to FFA" button regardless of how many seats
+-- are open. Team modes are bucketed by team so each team gets one consolidated
+-- button. Returns a list of groups, each:
+--   { isFfa = true,  slots = {...} }                        -- FFA
+--   { isFfa = false, teamIndex = N, slots = {...} }         -- team modes
+-- with `slots` listing every currently-open absolute slot number in the group,
+-- in ascending order. The caller picks slots[1] as the proposal-key
+-- representative and scans all of `slots` when reconciling existing
+-- pending/incoming invites.
+local function groupOpenSlotsByTeam(room)
+  if not room or not room.openSlots or #room.openSlots == 0 then
+    return {}
+  end
+
+  local ok, gm = pcall(GameModes.getPreset, room.gameModeId)
+  if not ok or not gm then
+    return { { isFfa = true, slots = room.openSlots } }
+  end
+
+  local playersPerTeam = gm.playersPerTeam
+  local isFfa = playersPerTeam == 1
+    or playersPerTeam == nil
+    or (type(playersPerTeam) == "number" and playersPerTeam <= 1)
+
+  if isFfa then
+    return { { isFfa = true, slots = room.openSlots } }
+  end
+
+  local byTeam = {}
+  local orderedTeams = {}
+  for _, slotNumber in ipairs(room.openSlots) do
+    local teamIndex = getTeamIndexForSlot(room, slotNumber)
+    if teamIndex then
+      if not byTeam[teamIndex] then
+        byTeam[teamIndex] = { isFfa = false, teamIndex = teamIndex, slots = {} }
+        orderedTeams[#orderedTeams + 1] = teamIndex
+      end
+      table.insert(byTeam[teamIndex].slots, slotNumber)
+    end
+  end
+
+  table.sort(orderedTeams)
+  local groups = {}
+  for _, teamIndex in ipairs(orderedTeams) do
+    groups[#groups + 1] = byTeam[teamIndex]
+  end
+  return groups
+end
+
+-- Walk `slots` looking for the first one with an outstanding invite recorded
+-- on the given challenge map (incomingChallenges[ownerId] / outgoing[ownerId]).
+-- Returns the matching slot so the button's slotNumber binds to the actual
+-- proposal key — that way withdraw/accept resolves the same record the server
+-- has stored, even though the *visible* label collapsed N slots into one
+-- "Invite to Pink Team" button.
+local function findExistingInviteSlot(slots, challengeMap, roomNumber)
+  if not challengeMap or not slots or not roomNumber then
+    return nil
+  end
+  for _, slotNumber in ipairs(slots) do
+    local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
+    if challengeMap[inviteKey] then
+      return slotNumber
+    end
+  end
+  return nil
+end
+
 -- Dark navy button background — neutral so any team color reads cleanly on top.
 -- (Tried orange — pink/orange share R/G channels, so pink barely registered.)
 local TEAM_ROOM_BUTTON_BG = {0.12, 0.15, 0.24, 0.95}
@@ -1179,27 +1302,28 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       rowTints[#rowTints + 1] = false
     end
 
-    -- Player rows
+    -- Player rows. Slot numbers are intentionally hidden from the UI; the
+    -- per-row color stripe (via rowTints + getTeamSlotInfo) carries the team
+    -- identity instead.
     for i, playerId in ipairs(room.players) do
-      local prefix = teamFilledPrefix(room, i)
       local name = (personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name) or "?"
       local suffix = (playerId == localPublicId) and " (You)" or ""
-      lines[#lines + 1] = prefix .. " " .. name .. suffix
+      lines[#lines + 1] = name .. suffix
       local tIdx = (getTeamSlotInfo(room, i))
       rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
     end
 
-    -- Open-slot rows
+    -- Open-slot rows: still one row per open slot so the visual capacity is
+    -- obvious, but with no slot label — only the team-tinted "(waiting...)".
     if hasOpenSlots then
       for _, slotNumber in ipairs(room.openSlots) do
-        local prefix = teamEmptyPrefix(room, slotNumber)
         local line
         if room.slotRequests and room.slotRequests[slotNumber] then
           local requester = personalizedLobbyData.players[room.slotRequests[slotNumber]]
           local requesterName = (requester and requester.name) or "someone"
-          line = prefix .. " <- " .. requesterName .. " wants in"
+          line = "<- " .. requesterName .. " wants in"
         else
-          line = prefix .. " (waiting...)"
+          line = "(waiting...)"
         end
         lines[#lines + 1] = line
         local tIdx = (getTeamSlotInfo(room, slotNumber))
@@ -1213,12 +1337,11 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     -- held seats.
     if room.heldSlots and #room.heldSlots > 0 then
       for _, held in ipairs(room.heldSlots) do
-        local prefix = teamEmptyPrefix(room, held.slotNumber)
         local label
         if held.publicId == localPublicId then
-          label = prefix .. " (your seat — click to rejoin)"
+          label = "(your seat — click to rejoin)"
         else
-          label = prefix .. " (held — " .. (held.name or "?") .. ")"
+          label = "(held — " .. (held.name or "?") .. ")"
         end
         lines[#lines + 1] = label
         local tIdx = (getTeamSlotInfo(room, held.slotNumber))
@@ -1256,7 +1379,17 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       end
     end
 
-    local label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenuWidth - 16})
+    -- Each row sits inside its colored stripe (which starts at button.x + 6).
+    -- Offset the label x by 16 so text has ~10px of breathing room from the
+    -- stripe's left edge; cut wrapWidth to fit so right-side text doesn't
+    -- spill past the stripe. After construction we re-set hAlign because
+    -- TextButton forces "center" in its ctor.
+    local TEXT_LEFT_OFFSET = 16
+    local label = ui.Label({
+      text = roomName,
+      translate = false,
+      wrapWidth = self.lobbyMenuWidth - TEXT_LEFT_OFFSET - 8,
+    })
     local button = ui.TextButton({
       label = label,
       width = self.lobbyMenuWidth,
@@ -1265,6 +1398,9 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     button.lobbyType = "room"
     button.room = room
     button.isLocalPlayerRoom = isLocalPlayerRoom
+
+    button.label.x = TEXT_LEFT_OFFSET
+    button.label:setWrap(self.lobbyMenuWidth - TEXT_LEFT_OFFSET - 8, "left")
 
     -- Every room renders with the same panel: dark navy background, team-color
     -- stripes per row, label on top. Invited rooms swap the background to a
@@ -1350,7 +1486,7 @@ function Lobby:openRoomSubMenu(room, button)
     hAlign = "left",
     vAlign = "top",
     height = 300,
-    width = 120,
+    width = 220,
     padding = 0,
     childGap = 8,
   })
@@ -1369,58 +1505,93 @@ function Lobby:openRoomSubMenu(room, button)
   -- their seat is reserved). The holder gets a direct "Rejoin" button — same
   -- path as open join — bypassing the handshake. Everyone else sees no button
   -- at all for that slot (server.lua:791 would reject them anyway).
+  --
+  -- Slot numbers are intentionally hidden from the UI: groupOpenSlotsByTeam
+  -- collapses N open seats per team into one button ("Join Pink Team") and the
+  -- server places the joiner at the next-available position regardless.
   local roomOwnerId = room.ownerId or (room.players and room.players[1])
   local localPublicId = GAME.localPlayer.publicId
   local isDynamicRoster = room.minPlayers ~= nil and room.maxPlayers ~= nil and room.minPlayers < room.maxPlayers
 
-  if room.openSlots then
-    for _, slotNumber in ipairs(room.openSlots) do
-      -- "Join 🩷" / "Join 🟣" — color = team you'd be filling.
-      local joinLbl = loc("lb_join") .. " " .. teamEmptyPrefix(room, slotNumber)
-      local joinButton
-      if isDynamicRoster then
-        joinButton = ui.LobbyRoomJoinButton({
-          playerId = roomOwnerId,
-          iconSize = 16,
-          roomNumber = room.roomNumber,
-          slotNumber = slotNumber,
-          gameModeId = room.gameModeId,
-          label = ui.Label({text = joinLbl, translate = false}),
-          acceptImage = GAME.theme:getFightImage(),
-          proposeImage = GAME.theme:getFightImage(),
-          withdrawImage = GAME.theme:getFightImage(),
-          width = 120,
-        })
-      else
-        joinButton = ui.LobbyChallengeButton({
-          playerId = roomOwnerId,
-          iconSize = 16,
-          roomNumber = room.roomNumber,
-          slotNumber = slotNumber,
-          gameModeId = room.gameModeId,
-          label = ui.Label({text = joinLbl, translate = false}),
-          acceptImage = GAME.theme:getFightImage(),
-          proposeImage = GAME.theme:getCheckboxImage(false),
-          withdrawImage = GAME.theme:getCheckboxImage(true),
-          width = 120,
-        })
-        local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
-        local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
-        local inviteKey = "room_" .. room.roomNumber .. "_" .. slotNumber
-        if localIncoming and localIncoming[inviteKey] then
-          joinButton:setState(joinButton.challengeStates.CHALLENGED)
-        elseif localOutgoing and localOutgoing[inviteKey] then
-          joinButton:setState(joinButton.challengeStates.PROPOSING)
-        end
-      end
-      subMenu:addChild(joinButton)
+  for _, group in ipairs(groupOpenSlotsByTeam(room)) do
+    local groupLabel
+    if group.isFfa then
+      groupLabel = loc("lb_join") .. " FFA"
+    else
+      groupLabel = loc("lb_join") .. " " .. teamDisplayName(group.teamIndex)
     end
+
+    -- Representative slot for the invite handshake / proposal key. Defaults to
+    -- the lowest open slot in the group; if there's already a proposal in
+    -- flight for one of the group's slots, bind to that slot so withdraw/accept
+    -- resolves the existing record.
+    local repSlot = group.slots[1]
+    local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
+    local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
+    local pendingState = nil
+    local incomingSlot = findExistingInviteSlot(group.slots, localIncoming, room.roomNumber)
+    if incomingSlot then
+      repSlot = incomingSlot
+      pendingState = "CHALLENGED"
+    else
+      local outgoingSlot = findExistingInviteSlot(group.slots, localOutgoing, room.roomNumber)
+      if outgoingSlot then
+        repSlot = outgoingSlot
+        pendingState = "PROPOSING"
+      end
+    end
+
+    local joinButton
+    if isDynamicRoster then
+      joinButton = ui.LobbyRoomJoinButton({
+        playerId = roomOwnerId,
+        iconSize = 16,
+        roomNumber = room.roomNumber,
+        slotNumber = repSlot,
+        gameModeId = room.gameModeId,
+        label = ui.Label({text = groupLabel, translate = false}),
+        acceptImage = GAME.theme:getFightImage(),
+        proposeImage = GAME.theme:getFightImage(),
+        withdrawImage = GAME.theme:getFightImage(),
+        width = 200,
+      })
+    else
+      joinButton = ui.LobbyChallengeButton({
+        playerId = roomOwnerId,
+        iconSize = 16,
+        roomNumber = room.roomNumber,
+        slotNumber = repSlot,
+        gameModeId = room.gameModeId,
+        label = ui.Label({text = groupLabel, translate = false}),
+        acceptImage = GAME.theme:getFightImage(),
+        proposeImage = GAME.theme:getCheckboxImage(false),
+        withdrawImage = GAME.theme:getCheckboxImage(true),
+        width = 200,
+      })
+      if pendingState == "CHALLENGED" then
+        joinButton:setState(joinButton.challengeStates.CHALLENGED)
+      elseif pendingState == "PROPOSING" then
+        joinButton:setState(joinButton.challengeStates.PROPOSING)
+      end
+    end
+    subMenu:addChild(joinButton)
   end
 
   if room.heldSlots then
     for _, held in ipairs(room.heldSlots) do
       if held.publicId == localPublicId then
-        local rejoinLbl = "Rejoin " .. teamEmptyPrefix(room, held.slotNumber)
+        -- Held slots are leaver-specific; the team is fixed by the original
+        -- seat, so we label by team rather than seat. FFA falls back to a
+        -- generic "Rejoin" since no team identity matters.
+        local heldTeamIndex = getTeamIndexForSlot(room, held.slotNumber)
+        local rejoinLbl
+        local okGm, gmPreset = pcall(GameModes.getPreset, room.gameModeId)
+        local isFfaRoom = okGm and gmPreset and (gmPreset.playersPerTeam == 1 or gmPreset.playersPerTeam == nil)
+        if isFfaRoom or not heldTeamIndex then
+          rejoinLbl = "Rejoin"
+        else
+          rejoinLbl = "Rejoin " .. teamDisplayName(heldTeamIndex)
+        end
         local rejoinButton = ui.LobbyRoomJoinButton({
           playerId = roomOwnerId,
           iconSize = 16,
@@ -1431,7 +1602,7 @@ function Lobby:openRoomSubMenu(room, button)
           acceptImage = GAME.theme:getFightImage(),
           proposeImage = GAME.theme:getFightImage(),
           withdrawImage = GAME.theme:getFightImage(),
-          width = 120,
+          width = 200,
         })
         subMenu:addChild(rejoinButton)
       end
@@ -1442,7 +1613,7 @@ function Lobby:openRoomSubMenu(room, button)
   -- Server gates on whether the room actually has a live match to watch.
   local spectateButton = ui.TextButton({
     label = ui.Label({text = "Spectate", translate = false}),
-    width = 120,
+    width = 200,
     onClick = function()
       GAME.netClient:requestSpectate(room.roomNumber)
       subMenu:yieldFocus()
@@ -1452,7 +1623,7 @@ function Lobby:openRoomSubMenu(room, button)
 
   local backButton = ui.TextButton({
     label = ui.Label({text = "back"}),
-    width = 120,
+    width = 200,
     onClick = function()
       GAME.theme:playCancelSfx()
       subMenu:yieldFocus()
@@ -1555,14 +1726,14 @@ function Lobby:openLocalRoomSubMenu(room, button)
     hAlign = "left",
     vAlign = "top",
     height = 300,
-    width = 120,
+    width = 220,
     padding = 0,
     childGap = 8,
   })
 
   local leaveButton = ui.TextButton({
     label = ui.Label({text = "Leave team game", translate = false}),
-    width = 120,
+    width = 200,
     onClick = function()
       self.teamCreateButton:onClick(button)
     end
@@ -1571,7 +1742,7 @@ function Lobby:openLocalRoomSubMenu(room, button)
 
   local backButton = ui.TextButton({
     label = ui.Label({text = "back"}),
-    width = 120,
+    width = 200,
     onClick = function()
       GAME.theme:playCancelSfx()
       subMenu:yieldFocus()
@@ -1617,7 +1788,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
     hAlign = "left",
     vAlign = "top",
     height = 300,
-    width = 120,
+    width = 220,
     padding = 0,
     childGap = 8,
   })
@@ -1633,33 +1804,52 @@ function Lobby:openPlayerSubMenu(playerId, button)
   end
   local isLocalTeamLeader = myRoom and myRoom.players and myRoom.players[1] == GAME.localPlayer.publicId
 
-  -- If the target player is in a room with open slots, offer quick join-slot buttons
+  -- If the target player is in a room with open slots, offer one Join button
+  -- per team-with-openings (FFA collapses to a single "Join FFA").
   local playerInfo = lobbyDataV2.players[playerId]
   if (not localInRoom) and playerInfo and playerInfo.roomNumber then
     local targetRoom = lobbyDataV2.rooms[playerInfo.roomNumber]
     if targetRoom and targetRoom.openSlots then
       local roomOwnerId = targetRoom.ownerId or (targetRoom.players and targetRoom.players[1])
-      for _, slotNumber in ipairs(targetRoom.openSlots) do
-        -- "Join 🟣" — show the team color of the seat you'd fill.
-        local quickJoinLabel = loc("lb_join") .. " " .. teamEmptyPrefix(targetRoom, slotNumber)
+      local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
+      local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
+      for _, group in ipairs(groupOpenSlotsByTeam(targetRoom)) do
+        local quickJoinLabel
+        if group.isFfa then
+          quickJoinLabel = loc("lb_join") .. " FFA"
+        else
+          quickJoinLabel = loc("lb_join") .. " " .. teamDisplayName(group.teamIndex)
+        end
+
+        local repSlot = group.slots[1]
+        local pendingState = nil
+        local incomingSlot = findExistingInviteSlot(group.slots, localIncoming, targetRoom.roomNumber)
+        if incomingSlot then
+          repSlot = incomingSlot
+          pendingState = "CHALLENGED"
+        else
+          local outgoingSlot = findExistingInviteSlot(group.slots, localOutgoing, targetRoom.roomNumber)
+          if outgoingSlot then
+            repSlot = outgoingSlot
+            pendingState = "PROPOSING"
+          end
+        end
+
         local quickJoin = ui.LobbyChallengeButton({
           playerId = roomOwnerId,
           roomNumber = targetRoom.roomNumber,
-          slotNumber = slotNumber,
+          slotNumber = repSlot,
           gameModeId = targetRoom.gameModeId,
           iconSize = 16,
           label = ui.Label({text = quickJoinLabel, translate = false}),
           acceptImage = GAME.theme:getFightImage(),
           proposeImage = GAME.theme:getCheckboxImage(false),
           withdrawImage = GAME.theme:getCheckboxImage(true),
-          width = 120,
+          width = 200,
         })
-        local localOutgoing = lobbyDataV2.outgoingChallenges[roomOwnerId]
-        local localIncoming = lobbyDataV2.incomingChallenges[roomOwnerId]
-        local inviteKey = "room_" .. targetRoom.roomNumber .. "_" .. slotNumber
-        if localIncoming and localIncoming[inviteKey] then
+        if pendingState == "CHALLENGED" then
           quickJoin:setState(quickJoin.challengeStates.CHALLENGED)
-        elseif localOutgoing and localOutgoing[inviteKey] then
+        elseif pendingState == "PROPOSING" then
           quickJoin:setState(quickJoin.challengeStates.PROPOSING)
         end
         subMenu:addChild(quickJoin)
@@ -1667,19 +1857,38 @@ function Lobby:openPlayerSubMenu(playerId, button)
     end
   end
 
-  -- If LOCAL player leads a partial team room, offer invite buttons
+  -- If LOCAL player leads a partial team room, offer one Invite button per
+  -- team-with-openings (FFA collapses to a single "Invite to FFA").
   if isLocalTeamLeader then
     if myRoom and myRoom.openSlots and #myRoom.openSlots > 0 then
       local outgoing = lobbyDataV2.outgoingChallenges[playerId]
       local incoming = lobbyDataV2.incomingChallenges[playerId]
 
-      for _, slotNumber in ipairs(myRoom.openSlots) do
-        -- "Invite to 🩷" / "Invite to 🟣" — show which team's seat would be filled.
-        local inviteLabel = "Invite to " .. teamEmptyPrefix(myRoom, slotNumber)
-        local inviteKey = "room_" .. myRoom.roomNumber .. "_" .. slotNumber
+      for _, group in ipairs(groupOpenSlotsByTeam(myRoom)) do
+        local inviteLabel
+        if group.isFfa then
+          inviteLabel = "Invite to FFA"
+        else
+          inviteLabel = "Invite to " .. teamDisplayName(group.teamIndex)
+        end
+
+        local repSlot = group.slots[1]
+        local pendingState = nil
+        local incomingSlot = findExistingInviteSlot(group.slots, incoming, myRoom.roomNumber)
+        if incomingSlot then
+          repSlot = incomingSlot
+          pendingState = "CHALLENGED"
+        else
+          local outgoingSlot = findExistingInviteSlot(group.slots, outgoing, myRoom.roomNumber)
+          if outgoingSlot then
+            repSlot = outgoingSlot
+            pendingState = "PROPOSING"
+          end
+        end
+
         local inviteBtn = ui.LobbyChallengeButton({
           roomNumber = myRoom.roomNumber,
-          slotNumber = slotNumber,
+          slotNumber = repSlot,
           gameModeId = myRoom.gameModeId,
           playerId = playerId,
           iconSize = 16,
@@ -1687,12 +1896,11 @@ function Lobby:openPlayerSubMenu(playerId, button)
           acceptImage = GAME.theme:getFightImage(),
           proposeImage = GAME.theme:getCheckboxImage(false),
           withdrawImage = GAME.theme:getCheckboxImage(true),
-          width = 120,
+          width = 200,
         })
-        -- Set initial state
-        if incoming and incoming[inviteKey] then
+        if pendingState == "CHALLENGED" then
           inviteBtn:setState(inviteBtn.challengeStates.CHALLENGED)
-        elseif outgoing and outgoing[inviteKey] then
+        elseif pendingState == "PROPOSING" then
           inviteBtn:setState(inviteBtn.challengeStates.PROPOSING)
         end
         subMenu:addChild(inviteBtn)
@@ -1710,7 +1918,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
       acceptImage = GAME.theme:getFightImage(),
       proposeImage = GAME.theme:getCheckboxImage(false),
       withdrawImage = GAME.theme:getCheckboxImage(true),
-      width = 120
+      width = 200
     })
 
     subMenu:addChild(vsButton)
@@ -1723,7 +1931,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
       acceptImage = GAME.theme:getFightImage(),
       proposeImage = GAME.theme:getCheckboxImage(false),
       withdrawImage = GAME.theme:getCheckboxImage(true),
-      width = 120
+      width = 200
     })
     subMenu:addChild(timeAttackButton)
 
@@ -1748,7 +1956,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
 
   local backButton = ui.TextButton({
     label = ui.Label({text = "back"}),
-    width = 120,
+    width = 200,
     onClick = function()
       GAME.theme:playCancelSfx()
       subMenu:yieldFocus()
@@ -2032,7 +2240,12 @@ function Lobby:updateSelf(dt)
     loginStateLabel:setText(GAME.netClient.loginState or "")
   else
     if GAME.timer > GAME.netClient.loginTime + 5 then
-      if tableUtils.length(GAME.netClient.lobbyDataV2.players) == 1 then
+      -- "You are all alone in the lobby :(" only makes sense when you have
+      -- nowhere to be. Sitting in your own open room counts as being busy —
+      -- show nothing rather than awkwardly overlapping the room card.
+      if self:isLocalPlayerInRoom() then
+        self.lobbyMessage:setText("", nil, false)
+      elseif tableUtils.length(GAME.netClient.lobbyDataV2.players) == 1 then
         self.lobbyMessage:setText("lb_alone", nil, true)
       else
         self.lobbyMessage:setText("lb_select_player", nil, true)
@@ -2077,19 +2290,19 @@ function Lobby:updateRoomPanel(updateInfo)
           lines[#lines + 1] = gameModeName
         end
 
-        -- Show players in their slots
+        -- Show players (no slot labels — team identity surfaces via colored
+        -- stripes on the lobby card).
         for i, playerId in ipairs(room.players) do
-          local prefix = teamFilledPrefix(room, i)
           local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
           local playerName = playerInfo and playerInfo.name or "?"
           local suffix = (playerId == localPublicId) and " (You)" or ""
-          lines[#lines + 1] = prefix .. " " .. playerName .. suffix
+          lines[#lines + 1] = playerName .. suffix
         end
 
-        -- Show waiting slots:  🩷 (waiting...)  /  🟣 (waiting...)
+        -- Waiting slots without per-slot tags.
         if #room.openSlots > 0 then
-          for _, slotNumber in ipairs(room.openSlots) do
-            lines[#lines + 1] = teamEmptyPrefix(room, slotNumber) .. " (waiting...)"
+          for _ = 1, #room.openSlots do
+            lines[#lines + 1] = "(waiting...)"
           end
         end
 
@@ -2102,27 +2315,36 @@ function Lobby:updateRoomPanel(updateInfo)
           lines[#lines + 1] = gameModeName
         end
 
-        -- Bucket players by team and emit one "[X] name1, name2" row per team.
-        -- Works for shared-team (1v2/2v2/1v4/2v3) and FFA (1-per-team) alike.
-        local teamBuckets = {}
-        local maxTeamIndex = 0
-        for i, playerId in ipairs(room.players) do
-          local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
-          local playerName = playerInfo and playerInfo.name or "?"
-          local teamIndex = getTeamIndexForSlot(room, i)
-          if teamIndex then
-            teamBuckets[teamIndex] = teamBuckets[teamIndex] or {}
-            teamBuckets[teamIndex][#teamBuckets[teamIndex] + 1] = playerName
-            if teamIndex > maxTeamIndex then maxTeamIndex = teamIndex end
-          else
-            lines[#lines + 1] = teamFilledPrefix(room, i) .. " " .. playerName
+        -- Bucket players by team. For team modes emit one row per team labeled
+        -- by team name ("Pink Team: Alice, Bob"); for FFA (playersPerTeam == 1)
+        -- a "team header" per player would just be noise, so fall through to a
+        -- flat per-player list.
+        local isFfaRoom = gm and (gm.playersPerTeam == 1 or gm.playersPerTeam == nil)
+        if isFfaRoom then
+          for _, playerId in ipairs(room.players) do
+            local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
+            lines[#lines + 1] = playerInfo and playerInfo.name or "?"
           end
-        end
-        for i = 1, maxTeamIndex do
-          local names = teamBuckets[i]
-          if names and #names > 0 then
-            local letter = string.char(string.byte("A") + (i - 1))
-            lines[#lines + 1] = "[" .. letter .. "] " .. table.concat(names, ", ")
+        else
+          local teamBuckets = {}
+          local maxTeamIndex = 0
+          for i, playerId in ipairs(room.players) do
+            local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
+            local playerName = playerInfo and playerInfo.name or "?"
+            local teamIndex = getTeamIndexForSlot(room, i)
+            if teamIndex then
+              teamBuckets[teamIndex] = teamBuckets[teamIndex] or {}
+              teamBuckets[teamIndex][#teamBuckets[teamIndex] + 1] = playerName
+              if teamIndex > maxTeamIndex then maxTeamIndex = teamIndex end
+            else
+              lines[#lines + 1] = playerName
+            end
+          end
+          for i = 1, maxTeamIndex do
+            local names = teamBuckets[i]
+            if names and #names > 0 then
+              lines[#lines + 1] = teamDisplayName(i) .. ": " .. table.concat(names, ", ")
+            end
           end
         end
 

@@ -218,6 +218,70 @@ getSceneFromRoom = function(room)
   end
 end
 
+-- Decide whether a (multiplayer) room has enough players to leave the lobby
+-- and enter the waiting room.
+--
+--  * Fixed-roster rooms (min == max, e.g. invite-only): wait for the full slate.
+--  * Dynamic-roster FFA (playersPerTeam == 1, e.g. open_ffa / "open" 7p_ffa):
+--    transition once playerCount >= minPlayers.
+--  * Dynamic-roster team rooms (playersPerTeam > 1 or table): transition once
+--    every team has at least one player. Slots are assigned in arrival order
+--    using `playersPerTeam`, so for symmetric brackets (2v2) this naturally
+--    requires the first joiner on the second team; for asymmetric brackets
+--    (1v3) it can fire as early as the second join.
+---@param room BattleRoom
+---@return boolean
+local function isRoomReadyForWaitingRoom(room)
+  local mode = room and room.mode
+  if not mode then return false end
+  local playerCount = #room.players
+  local maxPlayers = mode.playerCount or mode.maxPlayers or 2
+  local minPlayers = mode.minPlayers or maxPlayers
+
+  -- Fixed-roster room.
+  if minPlayers >= maxPlayers then
+    return playerCount >= maxPlayers
+  end
+
+  local playersPerTeam = mode.playersPerTeam
+  local isTeamMode = playersPerTeam ~= nil and (
+    (type(playersPerTeam) == "number" and playersPerTeam > 1) or
+    type(playersPerTeam) == "table"
+  )
+
+  if isTeamMode then
+    local teamCount = mode.teamCount or 2
+    local seen = {}
+    local covered = 0
+    for _, p in ipairs(room.players) do
+      local pos = p.playerNumber
+      if pos then
+        local teamIdx
+        if type(playersPerTeam) == "number" then
+          teamIdx = math.floor((pos - 1) / playersPerTeam) + 1
+        else
+          local acc = 0
+          for idx, count in ipairs(playersPerTeam) do
+            acc = acc + count
+            if pos <= acc then
+              teamIdx = idx
+              break
+            end
+          end
+        end
+        if teamIdx and not seen[teamIdx] then
+          seen[teamIdx] = true
+          covered = covered + 1
+        end
+      end
+    end
+    return covered >= teamCount
+  end
+
+  -- Dynamic-roster FFA.
+  return playerCount >= minPlayers
+end
+
 -- starts a 2p vs online match (or joins a team room)
 local function start2pVsOnlineMatch(self, createRoomMessage)
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
@@ -226,18 +290,15 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
 
-  -- Open FFA goes straight to the waiting room (drop-in by design); every other
-  -- mode stays in the lobby with open slots until it fills.
+  -- See isRoomReadyForWaitingRoom for the per-mode transition rule.
   -- Rejoin exception: if the room has held slots, the existing members are
   -- already in character select (they didn't navigate back when a peer left).
   -- A rejoiner needs to land in the same scene rather than getting stuck in
   -- lobby with no one to play against.
-  local modeName = self.room.mode.name
-  local isOpenFfa = modeName == "open_ffa" or modeName == "open_ffa_shared"
   local playerCount = #self.room.players
   local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
   local hasHeldSlots = self.room.heldSlots and #self.room.heldSlots > 0
-  if not isOpenFfa and playerCount < maxPlayers and not hasHeldSlots then
+  if not isRoomReadyForWaitingRoom(self.room) and not hasHeldSlots then
     -- Stay in lobby - room will show in lobby list with open slots
     logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
     self.state = states.ONLINE
@@ -279,7 +340,7 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
     return
   end
 
-  -- Room is full - navigate to game scene
+  -- Min players reached (or fixed-roster room filled) - navigate to game scene.
   -- We are leaving lobby context now, so clear stale lobby/challenge data.
   resetLobbyData(self)
   local roomScene = getSceneFromRoom(self.room)
@@ -531,16 +592,12 @@ local function processPlayerJoinedRoom(self, message)
     love.window.requestAttention()
     SoundController:playSfx(themes[config.theme].sounds.notification)
 
-    -- Check if room is now full - if so, navigate to CharacterSelect.
-    -- Skip this for open_ffa (local player is already in the waiting room since
-    -- creation) and for clients already in the room scene (avoid duplicate push).
-    local playerCount = #self.room.players
-    local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
+    -- Navigate to the waiting room (CharacterSelect) once the room is ready,
+    -- per the per-mode rule in isRoomReadyForWaitingRoom. Skip for clients
+    -- already in the room scene (avoid duplicate push).
     local alreadyInRoom = self.state == states.ROOM or self.state == states.INGAME
-    local modeName2 = self.room.mode.name
-    local isOpenFfa = modeName2 == "open_ffa" or modeName2 == "open_ffa_shared"
-    if playerCount >= maxPlayers and not alreadyInRoom and not isOpenFfa then
-      logger.info("Room " .. (self.room.roomNumber or "?") .. " is now full (" .. playerCount .. "/" .. maxPlayers .. "). Navigating to game scene.")
+    if isRoomReadyForWaitingRoom(self.room) and not alreadyInRoom then
+      logger.info("Room " .. (self.room.roomNumber or "?") .. " ready for waiting room (" .. #self.room.players .. " player(s)). Navigating to game scene.")
       local roomScene = getSceneFromRoom(self.room)
       if roomScene then
         GAME.navigationStack:push(roomScene)

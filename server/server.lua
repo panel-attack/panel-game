@@ -202,6 +202,16 @@ local Server = class(
   end
 )
 
+-- Seconds of "nothing happened in this room" before the per-second sweep
+-- closes it. Players in the room get kicked back to lobby via leaveRoom.
+Server.ROOM_IDLE_TIMEOUT = 60 * 60
+
+-- Seconds a player can sit in the lobby after being challenged without sending
+-- any lobby message before their connection is closed. "Any message" includes
+-- accepting/declining the challenge, browsing, or any client-driven traffic —
+-- pings are at the connection layer and don't count.
+Server.CHALLENGE_IDLE_TIMEOUT = 30 * 60
+
 function Server:start()
   local port = SERVER_PORT or 49569
   logger.info("Starting up server with port: " .. port)
@@ -586,6 +596,7 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
           -- Send invite to receiver
           logger.debug(string.format("Storing proposal and sending challengeUpdate to %s for slot %s", receiver.name, tostring(slotNumber)))
           self:updateChallenge(sender, receiver, proposalKey, challengeActive)
+          self:noteChallengeDeliveredTo(receiver, challengeActive)
           receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive, roomNumber, slotNumber))
         end
       else
@@ -600,12 +611,27 @@ function Server:processChallengeUpdate(sender, receiver, gameModeId, challengeAc
       else
         -- no existing challenge for this game mode
         self:updateChallenge(sender, receiver, gameModeId, challengeActive)
+        self:noteChallengeDeliveredTo(receiver, challengeActive)
         receiver:sendJson(ServerProtocol.sendChallengeUpdate(sender, receiver, gameModeId, challengeActive))
       end
     end
   else
     -- this message won't be handled because one of the parties is no longer in lobby
     -- related things would be handled in the state change / logout
+  end
+end
+
+---Record that a challenge has just been delivered to `receiver`. The
+---per-second sweep in Server:update closes the connection of any player who
+---ignores their challenge for longer than Server.CHALLENGE_IDLE_TIMEOUT.
+---Only sets the timestamp on `challengeActive=true` (the "please respond" prod);
+---and only on the first delivery so repeated nudges from the sender can't keep
+---the receiver's deadline rolling.
+---@param receiver ServerPlayer
+---@param challengeActive boolean
+function Server:noteChallengeDeliveredTo(receiver, challengeActive)
+  if challengeActive and not receiver.challengedAt then
+    receiver.challengedAt = time()
   end
 end
 
@@ -947,6 +973,8 @@ function Server:update()
   local currentTime = time()
   if currentTime ~= self.lastProcessTime then
     self:flushLogs(currentTime)
+    self:sweepIdleRooms(currentTime)
+    self:sweepChallengedPlayers(currentTime)
     self.lastProcessTime = currentTime
   end
 
@@ -960,6 +988,55 @@ function Server:tickArbitrations()
   for _, room in pairs(self.rooms) do
     if room then
       room:tickArbitration(nowMs)
+    end
+  end
+end
+
+---Disconnect lobby players who haven't sent any message since being
+---challenged. Frees up the slot for an attentive opponent. Runs once per
+---second from Server:update.
+---@param currentTime integer wall-clock seconds (from os.time())
+function Server:sweepChallengedPlayers(currentTime)
+  local kicks = nil
+  for _, player in pairs(self.publicIdToPlayer) do
+    if player and player.challengedAt and (currentTime - player.challengedAt) > Server.CHALLENGE_IDLE_TIMEOUT then
+      kicks = kicks or {}
+      kicks[#kicks + 1] = { player = player, idleFor = currentTime - player.challengedAt }
+    end
+  end
+  if kicks then
+    for _, entry in ipairs(kicks) do
+      logger.info("Kicking " .. entry.player.name ..
+        " — idle " .. entry.idleFor .. "s after being challenged (limit " .. Server.CHALLENGE_IDLE_TIMEOUT .. "s)")
+      entry.player.challengedAt = nil
+      if entry.player.connection then
+        self:closeConnection(entry.player.connection, "idle after challenge")
+      end
+    end
+  end
+end
+
+---Close rooms that have been idle (no player input, no settings changes, no
+---match transitions) for longer than ROOM_IDLE_TIMEOUT seconds. closeRoom
+---moves any remaining players/spectators back to the lobby. Runs once per
+---second from Server:update.
+---@param currentTime integer wall-clock seconds (from os.time())
+function Server:sweepIdleRooms(currentTime)
+  local closures = nil
+  for roomNumber, room in pairs(self.rooms) do
+    if room and room.lastActivityTime then
+      local idleFor = currentTime - room.lastActivityTime
+      if idleFor > Server.ROOM_IDLE_TIMEOUT then
+        closures = closures or {}
+        closures[#closures + 1] = { room = room, idleFor = idleFor }
+      end
+    end
+  end
+  if closures then
+    for _, entry in ipairs(closures) do
+      logger.info("Closing room " .. entry.room.roomNumber ..
+        " — idle for " .. entry.idleFor .. "s (limit " .. Server.ROOM_IDLE_TIMEOUT .. "s)")
+      self:closeRoom(entry.room, "room idle timeout")
     end
   end
 end
@@ -1161,6 +1238,12 @@ function Server:processMessage(message, connection)
     end
   else
     local player = self.connectionToPlayer[connection]
+    -- Any client-driven message proves the player is at the keyboard, so the
+    -- post-challenge idle deadline is satisfied. Pings live on the connection
+    -- layer and never get here, so this only counts real lobby activity.
+    if player and player.challengedAt then
+      player.challengedAt = nil
+    end
     if message.logout then
       self:closeConnection(connection, player.name .. " logged out")
       return false
@@ -1498,8 +1581,13 @@ function Server:handleLeaveRoom(player, reason)
     local hadMatch = room.game ~= nil
     if #room.players >= 3 or room.voided or hadMatch then
       self.playerToRoom[player] = nil
+      -- Order matters: voidByLeave reads leaver.player_number (to look up
+      -- eliminatedPlayers and to seed the synthesized DeathEvent), but
+      -- removeFromRoom clears player_number on graceful leaves with a live
+      -- socket. Run voidByLeave first so it sees the intact slot index;
+      -- removeFromRoom then sends the leaver their own leaveRoom message.
+      room:voidByLeave(player, reason)     -- synthesizes death-event mid-match, removes leaver from room state, broadcasts playerLeftRoom
       player:removeFromRoom(room, reason)  -- sends leaveRoom to leaver, sets state=lobby
-      room:voidByLeave(player, reason)     -- synthesizes death-event mid-match, removes leaver, broadcasts playerLeftRoom
       if #room.players == 0 then
         self:closeRoom(room, "all players left")
       else

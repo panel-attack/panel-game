@@ -200,18 +200,32 @@ function Game:getPartialReplay(compressInputs)
 end
 
 function Game:receiveOutcomeReport(player, outcome)
-  self.outcomeReports[player.player_number] = outcome
+  local idx = player.player_number
+
+  -- Only living players get a vote. A dead stack has already lost — its
+  -- vote can't decide who won (most importantly, can't unilaterally declare
+  -- a tie). Discard at the door. The arbitration path in Room:tickArbitration
+  -- is the authoritative match-end for any case the server already knows
+  -- (livingTeams <= 1); this filter is a belt-and-suspenders for the vote
+  -- path so a stale "I think it's a tie" can't slip in and poison things.
+  if self.eliminatedPlayers[idx] or self.disconnectedPlayers[idx] then
+    return
+  end
+
+  self.outcomeReports[idx] = outcome
 
   -- cannot compare #self.outcomeReports == #self.players because # is undefined regarding gaps near 0
   -- so if we have the report for player 2 but not player 1, #self.outcomeReports may return 2 instead of 0
   -- see https://www.lua.org/manual/5.1/manual.html#2.5.5
   for i = 1, #self.players do
-    if not self.disconnectedPlayers[i] and self.outcomeReports[i] == nil then
+    if not self.disconnectedPlayers[i]
+        and not self.eliminatedPlayers[i]
+        and self.outcomeReports[i] == nil then
       return
     end
   end
 
-  local result, winnerTeamIndex = Game.getOutcome(self.outcomeReports, self.teams, self.disconnectedPlayers)
+  local result, winnerTeamIndex = Game.getOutcome(self.outcomeReports, self.teams, self.disconnectedPlayers, self.eliminatedPlayers)
   if not result then
     --if clients disagree, the server needs to decide the outcome, perhaps by watching a replay it had created during the game.
     --for now though...
@@ -256,16 +270,23 @@ end
 ---@param outcomeReports integer[]
 ---@param teams Team[]?
 ---@param disconnectedPlayers table<integer, boolean>?
+---@param eliminatedPlayers table<integer, integer>?
 ---@return integer? winnerIndex the winner of the game (player index), 0 if tie, nil if the players disagreed on the outcome
 ---@return integer? winnerTeamIndex the winning team index (only for team games)
-function Game.getOutcome(outcomeReports, teams, disconnectedPlayers)
+function Game.getOutcome(outcomeReports, teams, disconnectedPlayers, eliminatedPlayers)
+  local function isOut(idx)
+    return (disconnectedPlayers and disconnectedPlayers[idx])
+        or (eliminatedPlayers and eliminatedPlayers[idx])
+  end
+
   if teams then
     -- Team game: validate team-based outcomes
-    -- outcome = 1 means "my team won", outcome = 2 means "my team lost", outcome = 0 means tie
+    -- outcome = 1 means "my team won", outcome = 2 means "my team lost", outcome = 0 means "I don't claim victory"
+    -- (a single 0 is NOT a tie veto — a real tie only happens when no team reports outcome == 1)
     local teamOutcomes = {}
 
     for playerIndex, outcome in ipairs(outcomeReports) do
-      if not (disconnectedPlayers and disconnectedPlayers[playerIndex]) then
+      if not isOut(playerIndex) then
         local teamIndex = TeamUtils.getPlayerTeamIndex(teams, playerIndex)
         if teamIndex then
           if not teamOutcomes[teamIndex] then
@@ -278,7 +299,9 @@ function Game.getOutcome(outcomeReports, teams, disconnectedPlayers)
       end
     end
 
-    -- Validate that outcomes are complementary (one team won, others lost)
+    -- Find the winning team. A team reporting `outcome == 0` is a "no claim",
+    -- not a tie veto — keep scanning. Multiple teams claiming victory is the
+    -- only consensus failure.
     local winningTeam = nil
     for teamIndex, outcome in pairs(teamOutcomes) do
       if outcome == 1 then
@@ -287,9 +310,6 @@ function Game.getOutcome(outcomeReports, teams, disconnectedPlayers)
           return nil, nil
         end
         winningTeam = teamIndex
-      elseif outcome == 0 then
-        -- Tie reported
-        return 0, nil
       end
     end
 
@@ -299,13 +319,13 @@ function Game.getOutcome(outcomeReports, teams, disconnectedPlayers)
       return team.playerIndices[1], winningTeam
     end
 
-    return 0, nil  -- No winner determined
+    return 0, nil  -- No team claimed victory → tie
   else
     -- Non-team game: all players must agree on the same winner
     for i, outcomeA in ipairs(outcomeReports) do
-      if not (disconnectedPlayers and disconnectedPlayers[i]) then
+      if not isOut(i) then
         for j, outcomeB in ipairs(outcomeReports) do
-          if i ~= j and not (disconnectedPlayers and disconnectedPlayers[j]) then
+          if i ~= j and not isOut(j) then
             if outcomeA ~= outcomeB then
               return nil, nil
             end
@@ -314,8 +334,13 @@ function Game.getOutcome(outcomeReports, teams, disconnectedPlayers)
       end
     end
 
-    -- everyone agrees on the outcome
-    return outcomeReports[1], nil
+    -- everyone agrees on the outcome — take the first non-excluded report
+    for i, outcome in ipairs(outcomeReports) do
+      if not isOut(i) then
+        return outcome, nil
+      end
+    end
+    return 0, nil  -- everyone excluded → tie
   end
 end
 

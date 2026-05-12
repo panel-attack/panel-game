@@ -349,6 +349,23 @@ function ClientMatch:hasLocalPlayer()
   return false
 end
 
+-- True when the match has at least one local player AND every local player's
+-- stack has been eliminated (game_over_clock set). Used by the game scene to
+-- offer a "back to waiting room" exit while teammates fight on.
+---@return boolean
+function ClientMatch:isLocalPlayerEliminated()
+  local sawLocal = false
+  for _, stack in ipairs(self.stacks) do
+    if stack.is_local then
+      sawLocal = true
+      if not stack.engine or stack.engine.game_over_clock <= 0 then
+        return false
+      end
+    end
+  end
+  return sawLocal
+end
+
 -- Should be called prior to clearing the match.
 -- Consider recycling any memory that might leave around a lot of garbage.
 -- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.

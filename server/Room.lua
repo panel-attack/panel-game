@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local socket = require("common.lib.socket")
+local time = os.time
 local ServerProtocol = require("common.network.ServerProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 ---@module "common.data.GameModes"
@@ -84,6 +85,13 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.arbitrationWindowEndsAtMs = nil
   self.arbitrationEmitted = false
 
+  -- Wall-clock timestamp of the last player-driven activity in this room
+  -- (input, death, settings/ready change, match start, character select reset).
+  -- The server's update loop closes rooms that have been idle for too long so
+  -- abandoned/forgotten rooms don't accumulate in the lobby. Initialized to
+  -- "now" so a freshly-created room gets a full window before timing out.
+  self.lastActivityTime = time()
+
   Signal.turnIntoEmitter(self)
   self:createSignal("playerJoined")
   self:createSignal("matchStart")
@@ -97,7 +105,19 @@ function(self, roomNumber, players, gameMode, leaderboard)
   -- Server listens and drains the queue via handleJoinRoom.
   self:createSignal("readyForPendingJoiners")
 
-  -- Initialize all initially passed players the same way addPlayer does.
+  -- self.players is keyed by slot number (== player.player_number). For team
+  -- modes the slot determines team membership (TeamUtils.createTeams returns
+  -- playerIndices that ARE slot numbers), so a player who requested slot 3
+  -- must land at self.players[3] — not the next-available index. That means
+  -- self.players is SPARSE while the room is filling: a partial 2v2 room may
+  -- have {[1]=A, [3]=B} with slots 2 and 4 empty. Use self:countPlayers() and
+  -- self:eachPlayer() instead of `#self.players` / `ipairs(self.players)`,
+  -- since Lua's length operator and ipairs both stop at the first nil.
+
+  -- Initialize all initially passed players the same way addPlayer does. The
+  -- varargs received by create_room have no per-player slot intent, so we
+  -- assign them slots 1..N in order; this matches the previous behavior for
+  -- 1v1 rooms (which is how every code path constructs a Room today).
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
     player:addToRoom(self)
@@ -110,11 +130,12 @@ function(self, roomNumber, players, gameMode, leaderboard)
   -- Only create teams once room is full; partial rooms should not have teams yet.
   self.teams = nil
   self.team_win_counts = nil
+  local initialCount = self:countPlayers()
   if gameMode
-      and #self.players >= self.maxPlayers
+      and initialCount >= self.maxPlayers
       and gameMode.teamCount
       and gameMode.playersPerTeam then
-    self.teams = TeamUtils.createTeams(#self.players, gameMode.teamCount, gameMode.playersPerTeam)
+    self.teams = TeamUtils.createTeams(initialCount, gameMode.teamCount, gameMode.playersPerTeam)
     self.team_win_counts = {}
     for teamIndex = 1, #self.teams do
       self.team_win_counts[teamIndex] = 0
@@ -188,6 +209,7 @@ function Room:addPlayer(player)
     return false
   end
 
+  self:noteActivity()
   local playerIndex = #self.players + 1
   self.players[playerIndex] = player
   player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
@@ -217,7 +239,16 @@ function Room:addPlayer(player)
   return true
 end
 
+---Reset the room's idle-timeout clock. Call any time something a player did
+---visibly changes the room: ready toggle, character pick, input, match start,
+---returning to character select, joining/leaving. The server's update loop
+---closes any room whose lastActivityTime hasn't moved in 1 hour.
+function Room:noteActivity()
+  self.lastActivityTime = time()
+end
+
 function Room:onPlayerSettingsUpdate(player)
+  self:noteActivity()
   if self:state() == "character select" then
     if self.leaderboard then
       if self.ranked or player.wants_ranked_match then
@@ -236,21 +267,13 @@ function Room:onPlayerSettingsUpdate(player)
     end
     logger.info("Room " .. self.roomNumber .. " readiness after " .. tostring(player.name) .. " update: " .. table.concat(readyParts, " "))
 
-    -- Check if we can start the match
-    local canStart = false
-    if self:isDynamicRoster() then
-      -- Open FFA: start when minPlayers are ready (others wait in character select)
-      local readyCount = 0
-      for _, p in ipairs(self.players) do
-        if ServerPlayer.isReady(p) then
-          readyCount = readyCount + 1
-        end
-      end
-      canStart = readyCount >= self.minPlayers
-    else
-      -- Invite games: all players must be ready
-      canStart = #self.players >= self.minPlayers and tableUtils.trueForAll(self.players, ServerPlayer.isReady)
-    end
+    -- Match start: every player currently in the room must be ready, and the
+    -- roster must meet the mode's minimum. Open-FFA and invite games share the
+    -- same rule — "everyone in the waiting room readies up before we go". If a
+    -- late joiner isn't ready yet, the others wait for them instead of starting
+    -- without them.
+    local canStart = #self.players >= self.minPlayers
+                     and tableUtils.trueForAll(self.players, ServerPlayer.isReady)
 
     if canStart then
       self:start_match()
@@ -273,12 +296,21 @@ function Room:start_match()
     return false
   end
 
+  self:noteActivity()
   self.matchCount = self.matchCount + 1
   logger.info("Starting match " .. self.matchCount .. " for " .. self.roomNumber .. " " .. self.name)
 
   -- Dynamic-roster modes resolve their final playerCount/teamCount at match start
   -- from the actual roster (e.g. open_ffa with 3 of 7 slots filled → 3-player FFA).
-  if self.gameMode and not self.gameMode.playerCount then
+  -- ALWAYS refresh these for dynamic-roster rooms — locking them in on the first
+  -- match means a smaller roster on match 2 (someone left pre-match) would call
+  -- createTeams with a too-large teamCount and assign team slots to non-existent
+  -- player indices, which then crashes the client when it tries to wire up
+  -- garbage targets for those phantom recipients.
+  if self.gameMode and self:isDynamicRoster() then
+    self.gameMode.playerCount = #self.players
+    self.gameMode.teamCount = #self.players
+  elseif self.gameMode and not self.gameMode.playerCount then
     self.gameMode.playerCount = #self.players
     self.gameMode.teamCount = self.gameMode.teamCount or #self.players
   end
@@ -327,6 +359,7 @@ end
 
 function Room:prepare_character_select()
   logger.debug("Called Server.lua Room.character_select")
+  self:noteActivity()
   for _, player in ipairs(self.players) do
     player.state = "character select"
     player.cursor = "__Ready"
@@ -338,6 +371,14 @@ function Room:prepare_character_select()
   -- that owns handleJoinRoom semantics, so emit and let it drain the queue.
   if self.pendingJoiners and #self.pendingJoiners > 0 then
     self:emitSignal("readyForPendingJoiners")
+  end
+
+  -- Voided rooms (someone alive left mid-match) can't host another match. Now
+  -- that the current match has resolved one way or another, close the room so
+  -- it doesn't sit in the lobby rejecting join requests.
+  if self.voided then
+    logger.info(self.roomNumber .. ": voided room reached character select — closing")
+    self:emitSignal("roomShouldClose", self, self.voidReason or "room voided")
   end
 end
 
@@ -486,6 +527,7 @@ function Room:broadcastInput(input, sender)
     end
   end
 
+  self:noteActivity()
   local senderNum = sender.player_number
   -- Loose-sync: skip inputs from eliminated/disconnected slots so they don't pollute the replay log.
   if self.game.disconnectedPlayers[senderNum] then
@@ -818,6 +860,31 @@ function Room:tickArbitration(nowMs)
   self.arbitrationEmitted = true
   self.arbitrationDeaths = {}
   self.arbitrationWindowEndsAtMs = nil
+
+  -- Server-authoritative match end. The server already knows who's alive
+  -- (eliminatedPlayers from DeathEvents + disconnectedPlayers). When only one
+  -- team remains, that team wins; if everyone died inside the same window,
+  -- it's a true tie. Don't wait for client outcome votes — for FFA those
+  -- never converge anyway (each player reports their own perspective), and
+  -- a vote from a player whose stack already lost can otherwise overrule
+  -- the actual survivor (the "DRAW with 2 players still alive" bug).
+  if #livingTeams == 1 then
+    local winnerSlot = representatives[1]
+    self.game.winnerIndex = winnerSlot
+    self.game.winnerId = self.players[winnerSlot].publicPlayerID
+    if self.teams then
+      self.game.winnerTeamIndex = livingTeams[1]
+    end
+    self.game.aborted = false
+    self.game.complete = true
+    self.game:finalizeReplay(winnerSlot)
+    self:_finalizeMatch()
+  elseif #livingTeams == 0 then
+    self.game.aborted = false
+    self.game.complete = true
+    self.game:finalizeReplay(0)
+    self:_finalizeMatch()
+  end
 end
 
 -- broadcasts the message to everyone in the room
@@ -872,49 +939,71 @@ function Room:handleTaunt(message, sender)
   self:broadcastJson(msg, sender)
 end
 
+---Post-game work: update win tracking, broadcast the result, prepare the
+---next character-select round, run any deferred leaver removals. Assumes the
+---game object has already had winnerIndex / winnerId / winnerTeamIndex (or
+---aborted = true) populated, and `complete` set. Used by both the legacy
+---client-vote path (handleGameOverOutcome) and the server-authoritative
+---arbitration path (tickArbitration → _finalizeMatchFromLivingTeams).
+function Room:_finalizeMatch()
+  if not self.game or not self.game.complete then
+    return
+  end
+
+  self:updateWinCounts(self.game)
+  logger.info(self.roomNumber .. " " .. self.name .. " match " .. self.matchCount .. " ended with winner " .. (self.game.winnerIndex or ""))
+  self:emitSignal("matchEnd", self.game)
+
+  if self.game.ranked and self.game.winnerId then
+    local ratingUpdates = self.leaderboard:processGameResult(self.game)
+    for i, _ in ipairs(self.players) do
+      ratingUpdates[i].userId = nil
+    end
+    self.ratings = ratingUpdates
+  end
+
+  logger.debug("*******************************")
+  for i, player in ipairs(self.players) do
+    logger.debug("***" .. player.name .. " " .. self.win_counts[i] .. "***")
+  end
+  logger.debug("*******************************\n")
+
+  self:prepare_character_select()
+  self:broadcastJson(
+    ServerProtocol.gameResult(
+      self.game,
+      self
+    )
+  )
+  self.game = nil
+
+  -- Process leavers who left mid-match while their stack was already eliminated.
+  -- We deferred their removal until now so player_number / disconnectedPlayers
+  -- indexing stayed stable while the survivors finished out the match.
+  if self.pendingLeaverRemovals then
+    for _, leaver in ipairs(self.pendingLeaverRemovals) do
+      self:_removeFromPlayersAndAnnounce(leaver)
+    end
+    self.pendingLeaverRemovals = nil
+  end
+end
+
 ---@param message { outcome: integer, [any]: any }
 ---@param sender ServerPlayer
 function Room:handleGameOverOutcome(message, sender)
+  -- A late vote arriving after the server already finalized the match (e.g.
+  -- arbitration declared the survivor while a dead-and-rejoined client's stale
+  -- outcome was in flight) is a no-op — the game state is already gone.
+  if not self.game then
+    logger.debug(self.roomNumber .. ": Ignoring late game result from " .. sender.name .. "; match already finalized")
+    return
+  end
+
   logger.debug(self.roomNumber .. ": Received game result from " .. sender.name .. ": " .. message.outcome)
   self.game:receiveOutcomeReport(sender, message.outcome)
 
   if self.game.complete then
-    self:updateWinCounts(self.game)
-    logger.info(self.roomNumber .. " " .. self.name .. " match " .. self.matchCount .. " ended with winner " .. (self.game.winnerIndex or ""))
-    self:emitSignal("matchEnd", self.game)
-
-    if self.game.ranked and self.game.winnerId then
-      local ratingUpdates = self.leaderboard:processGameResult(self.game)
-      for i, _ in ipairs(self.players) do
-        ratingUpdates[i].userId = nil
-      end
-      self.ratings = ratingUpdates
-    end
-
-    logger.debug("*******************************")
-    for i, player in ipairs(self.players) do
-      logger.debug("***" .. player.name .. " " .. self.win_counts[i] .. "***")
-    end
-    logger.debug("*******************************\n")
-
-    self:prepare_character_select()
-    self:broadcastJson(
-      ServerProtocol.gameResult(
-        self.game,
-        self
-      )
-    )
-    self.game = nil
-
-    -- Process leavers who left mid-match while their stack was already eliminated.
-    -- We deferred their removal until now so player_number / disconnectedPlayers
-    -- indexing stayed stable while the survivors finished out the match.
-    if self.pendingLeaverRemovals then
-      for _, leaver in ipairs(self.pendingLeaverRemovals) do
-        self:_removeFromPlayersAndAnnounce(leaver)
-      end
-      self.pendingLeaverRemovals = nil
-    end
+    self:_finalizeMatch()
   end
 end
 
@@ -1051,6 +1140,12 @@ function Room:voidByLeave(leaver, reason)
   if self.voided then
     -- already void; just log and continue (subsequent leaver from a voided room)
     logger.debug(self.roomNumber .. ": voidByLeave called on already-voided room")
+  elseif self.game.eliminatedPlayers[leaver.player_number] then
+    -- Eliminated player walking away from a match they already lost shouldn't
+    -- poison the room for the survivors. Keep the room open so the remaining
+    -- players (and the leaver, if they want to rejoin from the lobby) can
+    -- queue up a rematch once the current match resolves.
+    logger.info(self.roomNumber .. ": eliminated player " .. (leaver.name or "?") .. " left mid-match — room stays open")
   else
     self.voided = true
     self.voidReason = (leaver.name or "A player") .. " left" .. (reason and (" (" .. reason .. ")") or "")
@@ -1103,7 +1198,27 @@ function Room:voidByLeave(leaver, reason)
     self.pendingLeaverRemovals[#self.pendingLeaverRemovals + 1] = leaver
     -- Surface the void state to remaining players immediately so the banner
     -- shows up; their match keeps running.
-    self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason, self:getHeldSlots()))
+    -- Exclude the leaver from the broadcast: they're still in self.players
+    -- at this point (handleLeaveRoom now calls voidByLeave before
+    -- removeFromRoom so player_number stays intact for the elimination
+    -- lookup). They'll get their own leaveRoom shortly via removeFromRoom.
+    self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason, self:getHeldSlots()), leaver)
+
+    -- Last-leaver short-circuit: if every player slot is now disconnected
+    -- (everyone either died-and-left or hard-DC'd), no one will ever submit an
+    -- outcome report and handleGameOverOutcome won't fire to clean the room.
+    -- Close it now so it doesn't sit as a ghost in the lobby.
+    local allDisconnected = true
+    for i = 1, #self.players do
+      if not self.game.disconnectedPlayers[i] then
+        allDisconnected = false
+        break
+      end
+    end
+    if allDisconnected then
+      logger.info(self.roomNumber .. ": all players gone after leave — closing room")
+      self:emitSignal("roomShouldClose", self, "all players left")
+    end
     return
   else
     self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
@@ -1145,7 +1260,10 @@ function Room:_removeFromPlayersAndAnnounce(leaver)
   -- the per-team scoreboard keeps showing matches that already happened.
   self.teams = nil
 
-  self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason, self:getHeldSlots()))
+  -- Exclude the leaver from the broadcast — they're about to receive their
+  -- own leaveRoom via removeFromRoom, and shouldn't get a parallel "you
+  -- left the room" event for themselves.
+  self:broadcastJson(ServerProtocol.playerLeftRoom(self.roomNumber, leaver.publicPlayerID, leaver.name, self.voidReason, self:getHeldSlots()), leaver)
 end
 
 ---@param sender ServerPlayer
