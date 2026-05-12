@@ -502,13 +502,6 @@ function GameBase:update(dt)
       elseif input:isPressedWithRepeat("MenuRight") then
         self.match:cycleSpectatorFocus(1)
       end
-      if input.mouse.isPressed[1] then
-        local mx, my = GAME:transform_coordinates(love.mouse.getPosition())
-        local stack = self.match:getStackAtScreenPosition(mx, my)
-        if stack then
-          self.match:setSpectatorFocus(stack.player_number)
-        end
-      end
     end
     self:runGame(dt)
   end
@@ -532,6 +525,7 @@ function GameBase:draw()
       self:customDraw()
     end
     self:drawForegroundOverlay()
+    self:drawSpectatorHint()
     prof.pop("GameBase:draw")
   end
 
@@ -606,6 +600,38 @@ function GameBase:drawHUD()
       GraphicsUtil.print(GAME.battleRoom.spectatorString, themes[config.theme].spectators_Pos[1], themes[config.theme].spectators_Pos[2])
     end
   end
+end
+
+function GameBase:drawSpectatorHint()
+  if self.match:hasLocalPlayer() then return end
+  local consts = require("common.engine.consts")
+  local font = GraphicsUtil.getGlobalFont()
+  local hint = "<  >  Switch Player"
+  local hintW = font:getWidth(hint)
+  local hintX = (consts.CANVAS_WIDTH - hintW) / 2
+  local hintY = consts.CANVAS_HEIGHT - font:getHeight() - 6
+
+  -- focused player name
+  local focusName
+  if self.match.spectatorFocus then
+    for _, stack in ipairs(self.match.stacks) do
+      if stack.player_number == self.match.spectatorFocus and stack.player then
+        focusName = stack.player.name
+        break
+      end
+    end
+  end
+
+  if focusName then
+    local nameText = "Viewing: " .. focusName
+    local nameW = font:getWidth(nameText)
+    local nameX = (consts.CANVAS_WIDTH - nameW) / 2
+    GraphicsUtil.print(nameText, nameX + 1, hintY - font:getHeight() - 3 + 1, 0, 1, 1, 0, 0, 0, 0.7)
+    GraphicsUtil.print(nameText, nameX,     hintY - font:getHeight() - 3,     0, 1, 1, 1, 1, 1, 1)
+  end
+
+  GraphicsUtil.print(hint, hintX + 1, hintY + 1, 0, 1, 1, 0, 0, 0, 0.7)
+  GraphicsUtil.print(hint, hintX,     hintY,     0, 1, 1, 1, 1, 0.6, 1)
 end
 
 function GameBase:drawEndGameText()

@@ -388,9 +388,6 @@ function ClientMatch:moveStacks()
   -- so we solve the rendering requirement via a shallowcpy and assigning positions directly to the stacks rather than starting reordering shenanigans all across the code base
   local stacks = shallowcpy(self.stacks)
   table.sort(stacks, function(a, b)
-    local aFocused = self.spectatorFocus ~= nil and a.player_number == self.spectatorFocus
-    local bFocused = self.spectatorFocus ~= nil and b.player_number == self.spectatorFocus
-    if aFocused ~= bFocused then return aFocused end
     if a.is_local == b.is_local then
       return a.player_number < b.player_number
     else
@@ -409,13 +406,6 @@ function ClientMatch:moveStacks()
       stack:moveForRenderIndex(i)
     end
   end
-end
-
--- Sets the spectator's focused player by player_number and re-layouts.
--- The focused stack gets render index 1 (large, left side).
-function ClientMatch:setSpectatorFocus(playerNumber)
-  self.spectatorFocus = playerNumber
-  self:moveStacks()
 end
 
 -- Cycles spectator focus forward (direction=1) or backward (direction=-1) through live stacks.
@@ -437,20 +427,6 @@ function ClientMatch:cycleSpectatorFocus(direction)
     end
     idx = ((idx - 1 + direction) % #live) + 1
     self.spectatorFocus = live[idx]
-  end
-  self:moveStacks()
-end
-
--- Returns the stack whose rendered frame contains screen position (x, y), or nil.
-function ClientMatch:getStackAtScreenPosition(x, y)
-  for _, stack in ipairs(self.stacks) do
-    if stack.canvas then
-      local sx = stack.frameOriginX * stack.gfxScale
-      local sy = stack.frameOriginY * stack.gfxScale
-      if x >= sx and x <= sx + stack:canvasWidth() and y >= sy and y <= sy + stack:canvasHeight() then
-        return stack
-      end
-    end
   end
 end
 

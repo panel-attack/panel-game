@@ -114,7 +114,7 @@ function Lobby:initLobbyMenu()
       hAlign = "left",
       vAlign = "top",
       height = 160,
-      width = 220,
+      width = 160,
       padding = 0,
       childGap = 8,
     })
@@ -122,7 +122,6 @@ function Lobby:initLobbyMenu()
     local function latButton(text, tolerance, description)
       local btn = ui.TextButton({
         label = ui.Label({text = text, translate = false}),
-        width = 220,
         onClick = function()
           GAME.netClient:requestRoom(gameMode, tolerance)
           latMenu:yieldFocus()
@@ -165,7 +164,7 @@ function Lobby:initLobbyMenu()
       hAlign = "left",
       vAlign = "top",
       height = 160,
-      width = 260,
+      width = 200,
       padding = 0,
       childGap = 8,
     })
@@ -173,7 +172,6 @@ function Lobby:initLobbyMenu()
     local function garbageButton(text, description, onClick)
       local btn = ui.TextButton({
         label = ui.Label({text = text, translate = false}),
-        width = 260,
         onClick = onClick,
       })
       local origSetSelected = btn.setSelected
@@ -248,7 +246,7 @@ function Lobby:initLobbyMenu()
       hAlign = "left",
       vAlign = "top",
       height = math.max(160, #divisions * (rowHeight + 8) + 8),
-      width = 180,
+      width = 160,
       padding = 0,
       childGap = 8,
     })
@@ -256,7 +254,6 @@ function Lobby:initLobbyMenu()
     for _, div in ipairs(divisions) do
       compositionMenu:addChild(ui.TextButton({
         label = ui.Label({text = div.label, translate = false}),
-        width = 180,
         onClick = function(b)
           openGarbageMenu(b, { allMode = div.allMode, sharedMode = div.sharedMode })
         end
@@ -296,7 +293,7 @@ function Lobby:initLobbyMenu()
       hAlign = "left",
       vAlign = "top",
       height = 160,
-      width = 180,
+      width = 80,
       padding = 0,
       childGap = 8,
     })
@@ -304,7 +301,6 @@ function Lobby:initLobbyMenu()
     for _, n in ipairs({3, 4, 5}) do
       playerCountMenu:addChild(ui.TextButton({
         label = ui.Label({text = tostring(n), translate = false}),
-        width = 180,
         onClick = function(b) openCompositionForCount(b, n) end,
       }))
     end
@@ -343,7 +339,7 @@ function Lobby:initLobbyMenu()
       hAlign = "left",
       vAlign = "top",
       height = 160,
-      width = 180,
+      width = 240,
       padding = 0,
       childGap = 8,
     })
@@ -355,21 +351,18 @@ function Lobby:initLobbyMenu()
 
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "3 Players (1v1v1)", translate = false}),
-      width = 180,
       onClick = function(b)
         openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.THREE_PLAYER_FFA), closeInviteOnlyChain)
       end
     }))
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "4 Players (1v1v1v1)", translate = false}),
-      width = 180,
       onClick = function(b)
         openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_FFA), closeInviteOnlyChain)
       end
     }))
     ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "5 Players (1v1v1v1v1)", translate = false}),
-      width = 180,
       onClick = function(b)
         openLatencyMenu(ffaMenu, b, GameModes.getPreset(GameModes.IDs.FIVE_PLAYER_FFA), closeInviteOnlyChain)
       end
@@ -402,19 +395,17 @@ function Lobby:initLobbyMenu()
       hAlign = "left",
       vAlign = "top",
       height = 160,
-      width = 220,
+      width = 200,
       padding = 0,
       childGap = 8,
     })
 
     typeMenu:addChild(ui.TextButton({
       label = ui.Label({text = "Invite-only", translate = false}),
-      width = 220,
       onClick = function(b) openFfaMenu(b) end,
     }))
     typeMenu:addChild(ui.TextButton({
       label = ui.Label({text = "Open (2-5, drop-in)", translate = false}),
-      width = 220,
       onClick = function(b)
         openLatencyMenu(typeMenu, b, GameModes.getPreset(GameModes.IDs.OPEN_FFA), function()
           if self.ffaTypeMenu then self.ffaTypeMenu:yieldFocus() end
