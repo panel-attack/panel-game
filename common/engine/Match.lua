@@ -447,15 +447,25 @@ function Match:deliverOutgoingGarbage(source, target, garbageDelivery)
         garbage = garbageDelivery,
       })
       return
-    elseif target.is_local and not source.is_local then
-      -- Remote source → local target: suppress. Authoritative G arrives from
-      -- the source's own machine via the server.
+    elseif not source.is_local then
+      -- Remote source → anything (local target OR remote target). The
+      -- authoritative G from the source's own machine, relayed by the server
+      -- to every client, drives ALL visuals via applyGarbageEvent:
+      --   * recipient's own machine: G pushes onto the local stack.
+      --   * sender's machine: G pushes onto the view of the recipient.
+      --   * third-party machines (3+ player modes, spectators): G pushes onto
+      --     the view of the recipient there too.
+      -- Without suppressing here, the third-party-observer case would push
+      -- twice on each non-self view-stack: once from the remote view-of-sender
+      -- producing garbage in the local sim, and again when the server relays
+      -- the G — causing 2× visual garbage on view-of-non-self-recipient.
       return
     end
   end
 
   -- Local↔local (vsSelf, puzzle, training, AI bots) and any case where loose
-  -- sync isn't active (offline modes): direct push, no server in the loop.
+  -- sync isn't active (offline modes, replay playback): direct push, no server
+  -- in the loop.
   target:receiveGarbage(garbageDelivery)
 end
 
