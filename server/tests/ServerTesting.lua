@@ -76,7 +76,6 @@ function ServerTesting.getTestServer()
   -- messages just get injected into the MockConnection queues
   testServer.update = function(self)
     self:processMessages()
-    self:flushBufferedInputsForAllRooms()
     self:broadCastLobbyIfChanged()
     self.lastProcessTime = os.time()
   end

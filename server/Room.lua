@@ -413,44 +413,30 @@ function Room:broadcastInput(input, sender)
     end
   end
 
-  -- Buffer the input instead of broadcasting immediately
-  self.game:bufferInput(sender, input)
-end
-
----Flush all complete frames and broadcast them to players
-function Room:flushBufferedInputs()
-  if not self.game or self.game.complete then
+  local senderNum = sender.player_number
+  -- Loose-sync: skip inputs from eliminated/disconnected slots so they don't pollute the replay log.
+  if self.game.disconnectedPlayers[senderNum] or self.game.eliminatedPlayers[senderNum] then
     return
   end
-  
-  -- Keep flushing frames as long as all players have submitted inputs for them
-  while self.game:canFlushNextFrame() do
-    local frameInputs = self.game:flushNextFrame()
-    
-    logger.trace("Room " .. self.roomNumber .. " flushing frame " .. self.game.currentFrameNumber .. " with inputs: " .. json.encode(frameInputs))
-    
-    -- Broadcast frame inputs to all players
-    -- For each player, send their input with the appropriate prefix
-    for playerNum, inputData in pairs(frameInputs) do
-      local inputPrefix = NetworkProtocol.getInputPrefixForPlayer(playerNum)
-          or NetworkProtocol.getInputPrefixForPlayer(1)
-      local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, inputData)
-      
-      -- Send to all OTHER players
-      for i, player in ipairs(self.players) do
-        if i ~= playerNum then
-          player:send(inputMessage)
-        end
-      end
-      
-      -- Send to spectators (same prefix - identifies the sender)
-      for _, v in pairs(self.spectators) do
-        if v then
-          v:send(inputMessage)
-        end
-      end
+
+  -- Record for replay
+  self.game:receiveInput(sender, input)
+
+  -- Relay immediately to every other player + every spectator, tagged with the sender's slot prefix.
+  local inputPrefix = NetworkProtocol.getInputPrefixForPlayer(senderNum)
+      or NetworkProtocol.getInputPrefixForPlayer(1)
+  local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, input)
+
+  for i, player in ipairs(self.players) do
+    if i ~= senderNum then
+      player:send(inputMessage)
     end
-    
+  end
+
+  for _, v in pairs(self.spectators) do
+    if v then
+      v:send(inputMessage)
+    end
   end
 end
 
@@ -598,9 +584,7 @@ function Room:handleGameAbort(sender)
     else
       logger.info("abort was judged as illegitimate with an inputCountDifference of " .. inputCountDifference)
 
-      -- Mark the aborter as eliminated so the server stops waiting on their inputs.
-      -- Without this, canFlushNextFrame stalls until the connection watchdog fires
-      -- (~60s) because the aborter has stopped sending inputs but isn't disconnected.
+      -- Mark the aborter as eliminated so we stop relaying their (now-absent) inputs.
       -- markPlayerEliminated only sets eliminatedPlayers; it does not touch
       -- outcomeReports, so the constructed loss-outcome below still applies.
       if self.game then

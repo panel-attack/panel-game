@@ -888,7 +888,6 @@ function Server:update()
 
   self:updateConnections()
   self:processMessages()
-  self:flushBufferedInputsForAllRooms()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
@@ -1037,15 +1036,6 @@ function Server:processMessages()
         end
       end
       q:clear()
-    end
-  end
-end
-
----Flush buffered inputs for all active rooms
-function Server:flushBufferedInputsForAllRooms()
-  for _, room in pairs(self.rooms) do
-    if room and room.game then
-      room:flushBufferedInputs()
     end
   end
 end

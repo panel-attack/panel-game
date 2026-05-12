@@ -6,12 +6,6 @@ local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
 local LevelPresets    = require("common.data.LevelPresets")
 local TeamUtils = require("common.data.TeamUtils")
-local KeyDataEncoding = require("common.data.KeyDataEncoding")
-local TouchDataEncoding = require("common.data.TouchDataEncoding")
-
-local touchIdleInput = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
-local keyIdleInput = KeyDataEncoding.base64encode[1]
-
 ---@class ServerGame
 ---@field id integer?
 ---@field seed integer
@@ -26,8 +20,6 @@ local keyIdleInput = KeyDataEncoding.base64encode[1]
 ---@field package outcomeReports integer[]
 ---@field package disconnectedPlayers table<integer, boolean>
 ---@field package eliminatedPlayers table<integer, integer> player_number -> game_over_clock frame
----@field package inputBuffer table input buffer: { [frameNumber] = { [playerNumber] = inputData } }
----@field package currentFrameNumber integer current frame being accumulated
 ---@field complete boolean
 ---@field creationTime integer
 local Game = class(
@@ -44,8 +36,6 @@ function(self, players, id)
   self.outcomeReports = {}
   self.disconnectedPlayers = {}
   self.eliminatedPlayers = {}
-  self.inputBuffer = {}
-  self.currentFrameNumber = 0
   self.complete = false
   self.creationTime = os.time()
 end)
@@ -166,83 +156,6 @@ function Game:receiveInput(player, input)
   end
 end
 
----Buffer an input for a player. Does NOT broadcast yet.
----@param player ServerPlayer
----@param input string
-function Game:bufferInput(player, input)
-  local playerNum = player.player_number
-  -- Eliminated/disconnected slots are filled with idle inputs by the server; ignore late
-  -- in-flight inputs from the client so they don't pile up unread.
-  if self.disconnectedPlayers[playerNum] or self.eliminatedPlayers[playerNum] then
-    return
-  end
-  if not self.inputBuffer[playerNum] then
-    self.inputBuffer[playerNum] = {}
-  end
-  table.insert(self.inputBuffer[playerNum], input)
-end
-
----Check if there is at least one buffered input from every active player.
----Eliminated and disconnected players are skipped — server idle-fills for them.
----@return boolean
-function Game:canFlushNextFrame()
-  local hasActivePlayers = false
-  for i = 1, #self.players do
-    if not self.disconnectedPlayers[i] and not self.eliminatedPlayers[i] then
-      hasActivePlayers = true
-      if not self.inputBuffer[i] or #self.inputBuffer[i] == 0 then
-        return false
-      end
-    end
-  end
-
-  return hasActivePlayers
-end
-
----@param playerNumber integer
----@return string
-function Game:getIdleInputForPlayer(playerNumber)
-  local player = self.players[playerNumber]
-  if player and player.inputMethod == "touch" then
-    return touchIdleInput
-  else
-    return keyIdleInput
-  end
-end
-
----Get the next frame's inputs (head of each player's queue, or idle for disconnected/eliminated players).
----@return table inputs table with [playerNumber] = inputData
-function Game:getNextFrameInputs()
-  local frameInputs = {}
-  for i = 1, #self.players do
-    if self.disconnectedPlayers[i] or self.eliminatedPlayers[i] then
-      frameInputs[i] = self:getIdleInputForPlayer(i)
-    else
-      frameInputs[i] = self.inputBuffer[i] and self.inputBuffer[i][1] or nil
-    end
-  end
-  return frameInputs
-end
-
----Flush one synchronized frame: append to permanent inputs and pop from per-player buffers.
----@return table flushedInputs table with [playerNumber] = inputData
-function Game:flushNextFrame()
-  local frameInputs = self:getNextFrameInputs()
-
-  for i = 1, #self.players do
-    local input = frameInputs[i]
-    if input then
-      self.inputs[i][#self.inputs[i] + 1] = input
-      if not self.disconnectedPlayers[i] and not self.eliminatedPlayers[i] then
-        table.remove(self.inputBuffer[i], 1)
-      end
-    end
-  end
-
-  self.currentFrameNumber = self.currentFrameNumber + 1
-  return frameInputs
-end
-
 ---@param compressInputs boolean
 ---@return ReplayV3?
 function Game:getPartialReplay(compressInputs)
@@ -302,7 +215,6 @@ end
 ---@param player ServerPlayer
 function Game:markPlayerDisconnected(player)
   self.disconnectedPlayers[player.player_number] = true
-  self.inputBuffer[player.player_number] = nil
   if self.outcomeReports[player.player_number] == nil then
     self.outcomeReports[player.player_number] = false
   end
@@ -315,7 +227,6 @@ end
 function Game:markPlayerEliminated(player, frame)
   if not self.eliminatedPlayers[player.player_number] then
     self.eliminatedPlayers[player.player_number] = frame or 0
-    self.inputBuffer[player.player_number] = nil
   end
 end
 

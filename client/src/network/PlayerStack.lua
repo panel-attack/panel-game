@@ -22,9 +22,8 @@ function PlayerStack.idleInput(self)
 end
 
 -- Override of the base PlayerStack stub. Tells the server our stack reached
--- game over so it can idle-fill our inputs and keep broadcasting frames to
--- surviving stacks (without this, canFlushNextFrame stalls and the match
--- never reaches Match:hasEnded on any client).
+-- game over so it can stop relaying our (now-absent) inputs and let the
+-- surviving stacks finish the match.
 function PlayerStack:notifyServerStackEliminated()
   if not self.is_local then
     return
