@@ -435,20 +435,23 @@ function Match:pushGarbageTo(stack)
       -- Multi-target garbage is distributed separately, skip this sender
     else
       local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
-      if oldestTransitTime and st.stopWatch >= oldestTransitTime
-          and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-        -- Loose-sync: gate readiness on the SENDER's clock (sender owns its
-        -- own outgoing timeline). The receiver's view-stack can be in catch-
-        -- up mode and skip the exact transit frame; the sender's stack ticks
-        -- one frame per call so it always hits transit times exactly.
-        -- Pass oldestTransitTime to getReadyGarbageAt instead of either
-        -- stack's stopWatch — popFinishedTransitsAt requires an exact-clock
-        -- match against the timer head, and the timer head IS
-        -- oldestTransitTime by definition, so this is the value that always
-        -- matches once we've decided the garbage is ready.
-        local garbageDelivery = st:getReadyGarbageAt(oldestTransitTime)
-        if garbageDelivery then
-          self:deliverOutgoingGarbage(st, stack, garbageDelivery)
+      if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
+        -- Replays use the receiver's clock with strict exact-match (lockstep
+        -- ticking preserves the recorded delivery frame). Live loose-sync
+        -- uses oldestTransitTime as the ready clock so a receiver view-stack
+        -- running in catch-up mode and skipping the exact transit frame
+        -- doesn't strand the garbage in the sender's outgoing queue.
+        local readyClock
+        if self.fromReplay then
+          readyClock = stack.stopWatch
+        elseif st.stopWatch >= oldestTransitTime then
+          readyClock = oldestTransitTime
+        end
+        if readyClock then
+          local garbageDelivery = st:getReadyGarbageAt(readyClock)
+          if garbageDelivery then
+            self:deliverOutgoingGarbage(st, stack, garbageDelivery)
+          end
         end
       end
     end
@@ -738,11 +741,21 @@ function Match:hasEnded()
         end
       end
       self.gameOverClock = gameOverClock
-      -- make sure everyone has run to the currently known game over clock
-      -- because if they haven't they might still go gameover before that time
-      -- > instead of >= because game over clock is set to the frame it was running when it died but increments only at the end of the frame
-      -- so a stack running to gameOverClock won't have found out it's dying on the next frame
-      if tableUtils.trueForAll(self.stacks, function(stack) return stack.clock and stack.clock > gameOverClock end) then
+      -- Strict (replays / offline): every stack must have run past
+      -- gameOverClock so we know nobody else also died on the next frame.
+      -- This preserves recorded-match behavior for replay playback.
+      --
+      -- Loose-sync live (not fromReplay): a game_ended stack counts as
+      -- "done" even if its clock is pinned below gameOverClock. The dead
+      -- opponent's view-stack on the survivor's machine stops receiving
+      -- inputs once the opponent quits sending after setGameOver, so its
+      -- clock is permanently pinned. Without the bypass the match never
+      -- ends and no game-over UI fires.
+      local liveMatch = not self.fromReplay
+      if tableUtils.trueForAll(self.stacks, function(stack)
+        if liveMatch and stack:game_ended() then return true end
+        return stack.clock and stack.clock > gameOverClock
+      end) then
         self.ended = true
         return true
       end

@@ -160,12 +160,17 @@ local function test_applyDeathEvent_idempotent()
 end
 
 ----------------------------------------------------------------------
--- Test 5: deliverOutgoingGarbage local→remote emits G + visual push
+-- Test 5: deliverOutgoingGarbage local→remote emits G (no local visual push)
 ----------------------------------------------------------------------
--- Expected: when a local stack delivers garbage to a remote target while the
--- client is connected, (a) GAME.netClient:sendGarbageEvent is called once
--- with the correct recipient slot, and (b) the local view of the target also
--- gets receiveGarbage so the attacker's screen shows the visual impact.
+-- Expected: when a local stack delivers garbage to a remote target while
+-- the client is connected, GAME.netClient:sendGarbageEvent is called once
+-- with the correct recipient slot — and that's it. No local visual push.
+-- The visual on the sender's view of the recipient fires when the server
+-- relays the G back to the sender (applyGarbageEvent applies to all
+-- recipients regardless of is_local). Doing it this way means the sender
+-- never sees a hit that didn't actually land — if the server redirects
+-- because the original recipient died, the visual goes to the redirected
+-- target.
 
 local function test_deliverOutgoingGarbage_local_to_remote()
   logger.info("test_deliverOutgoingGarbage_local_to_remote")
@@ -183,7 +188,12 @@ local function test_deliverOutgoingGarbage_local_to_remote()
     assert(#sent == 1, "expected exactly 1 G event emitted, got " .. #sent)
     assert(sent[1].recipients[1] == 2, "G recipients[1] should be slot 2, got " .. tostring(sent[1].recipients[1]))
     assert(sent[1].senderFrame == 200, "G senderFrame should be source.stopWatch (200), got " .. tostring(sent[1].senderFrame))
-    assert(#match.stacks[2].receivedGarbage == 1, "local visual push to remote target's view should happen")
+    -- No local visual push: the server's relay of the G back to the sender is
+    -- what drives the visual on the sender's view of the recipient. This
+    -- avoids showing a hit that doesn't actually land (which could happen if
+    -- the server redirects the recipient when the original target died).
+    assert(#match.stacks[2].receivedGarbage == 0,
+      "no local visual push expected — visual fires from server-relayed G")
   end)
   restore()
   if not ok then error(err) end
