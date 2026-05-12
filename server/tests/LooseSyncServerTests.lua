@@ -5,6 +5,13 @@
 -- expected behavior; if the impl doesn't match, the impl is wrong.
 
 ---@diagnostic disable: undefined-field, invisible, inject-field
+-- Load ServerTesting *first* so its module-level singleton players claim the
+-- low MockConnection indices (1-6) before our makePlayer calls bump the
+-- counter. Otherwise testLogin in ServerTests.lua, which asserts that Bob's
+-- connection.index == 1, would see a much higher value depending on test
+-- ordering.
+require("server.tests.ServerTesting")
+
 local Room = require("server.Room")
 local Player = require("server.Player")
 local MockConnection = require("server.tests.MockConnection")
