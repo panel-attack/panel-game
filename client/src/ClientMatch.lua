@@ -381,9 +381,6 @@ function ClientMatch:moveStacks()
   -- so we solve the rendering requirement via a shallowcpy and assigning positions directly to the stacks rather than starting reordering shenanigans all across the code base
   local stacks = shallowcpy(self.stacks)
   table.sort(stacks, function(a, b)
-    local aFocused = self.spectatorFocus ~= nil and a.player_number == self.spectatorFocus
-    local bFocused = self.spectatorFocus ~= nil and b.player_number == self.spectatorFocus
-    if aFocused ~= bFocused then return aFocused end
     if a.is_local == b.is_local then
       return a.player_number < b.player_number
     else
@@ -424,7 +421,6 @@ function ClientMatch:cycleSpectatorFocus(direction)
     idx = ((idx - 1 + direction) % #live) + 1
     self.spectatorFocus = live[idx]
   end
-  self:moveStacks()
 end
 
 function ClientMatch:setStage(stageId)

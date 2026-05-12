@@ -611,12 +611,23 @@ function GameBase:drawSpectatorHint()
   local hintX = (consts.CANVAS_WIDTH - hintW) / 2
   local hintY = consts.CANVAS_HEIGHT - font:getHeight() - 6
 
-  -- focused player name
+  -- focused player name + highlight border around their stack
   local focusName
   if self.match.spectatorFocus then
     for _, stack in ipairs(self.match.stacks) do
       if stack.player_number == self.match.spectatorFocus and stack.player then
         focusName = stack.player.name
+        if stack.canvas then
+          local x = stack.frameOriginX * stack.gfxScale
+          local y = stack.frameOriginY * stack.gfxScale
+          local w = stack:canvasWidth()
+          local h = stack:canvasHeight()
+          local pad = 4
+          local prevLineWidth = love.graphics.getLineWidth()
+          love.graphics.setLineWidth(3)
+          GraphicsUtil.drawRectangle("line", x - pad, y - pad, w + pad * 2, h + pad * 2, 1, 1, 0.4, 1)
+          love.graphics.setLineWidth(prevLineWidth)
+        end
         break
       end
     end
