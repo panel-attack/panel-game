@@ -222,6 +222,8 @@ function Lobby:initLobbyMenu()
     },
     [4] = {
       { label = "2 vs 2", allMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL, sharedMode = GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED },
+      { label = "1 vs 3", allMode = GameModes.IDs.FOUR_PLAYER_1V3_ALL,     sharedMode = GameModes.IDs.FOUR_PLAYER_1V3_SHARED },
+      { label = "3 vs 1", allMode = GameModes.IDs.FOUR_PLAYER_3V1_ALL,     sharedMode = GameModes.IDs.FOUR_PLAYER_3V1_SHARED },
     },
     [5] = {
       { label = "1 vs 4", allMode = GameModes.IDs.FIVE_PLAYER_1V4_ALL, sharedMode = GameModes.IDs.FIVE_PLAYER_1V4_SHARED },

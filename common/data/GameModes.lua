@@ -250,6 +250,92 @@ local FourPlayerTeamVersusShared = GameMode({
 
 })
 
+-- 1v3: room creator (slot 1) on the LEFT alone vs team of 3 on the right.
+---@type GameMode
+local FourPlayer1v3All = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v3 VS (All)",
+  name = "four_player_1v3_all",
+
+  playerCount = 4,
+  teamCount = 2,
+  playersPerTeam = {1, 3},
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local FourPlayer1v3Shared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v3 VS (Shared)",
+  name = "four_player_1v3_shared",
+
+  playerCount = 4,
+  teamCount = 2,
+  playersPerTeam = {1, 3},
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+-- 3v1: room creator (slot 1) on the LEFT as part of the team of 3 vs solo on the right.
+---@type GameMode
+local FourPlayer3v1All = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "3v1 VS (All)",
+  name = "four_player_3v1_all",
+
+  playerCount = 4,
+  teamCount = 2,
+  playersPerTeam = {3, 1},
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local FourPlayer3v1Shared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "3v1 VS (Shared)",
+  name = "four_player_3v1_shared",
+
+  playerCount = 4,
+  teamCount = 2,
+  playersPerTeam = {3, 1},
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
 ---@type GameMode
 local ThreePlayerVersusAll = GameMode({
   gameScene = "GameBase",
@@ -614,6 +700,10 @@ GameModes.IDs = {
   -- Team game modes
   FOUR_PLAYER_TEAM_VS_ALL = "FOUR_PLAYER_TEAM_VS_ALL",
   FOUR_PLAYER_TEAM_VS_SHARED = "FOUR_PLAYER_TEAM_VS_SHARED",
+  FOUR_PLAYER_1V3_ALL = "FOUR_PLAYER_1V3_ALL",
+  FOUR_PLAYER_1V3_SHARED = "FOUR_PLAYER_1V3_SHARED",
+  FOUR_PLAYER_3V1_ALL = "FOUR_PLAYER_3V1_ALL",
+  FOUR_PLAYER_3V1_SHARED = "FOUR_PLAYER_3V1_SHARED",
   THREE_PLAYER_VS_ALL = "THREE_PLAYER_VS_ALL",
   THREE_PLAYER_VS_SHARED = "THREE_PLAYER_VS_SHARED",
   THREE_PLAYER_VS_ALL_2V1 = "THREE_PLAYER_VS_ALL_2V1",
@@ -646,6 +736,10 @@ privateGameModes[GameModes.IDs.TWO_PLAYER_VS] = TwoPlayerVersus
 privateGameModes[GameModes.IDs.TWO_PLAYER_TIME_ATTACK] = TwoPlayerTimeAttack
 privateGameModes[GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL] = FourPlayerTeamVersusAll
 privateGameModes[GameModes.IDs.FOUR_PLAYER_TEAM_VS_SHARED] = FourPlayerTeamVersusShared
+privateGameModes[GameModes.IDs.FOUR_PLAYER_1V3_ALL] = FourPlayer1v3All
+privateGameModes[GameModes.IDs.FOUR_PLAYER_1V3_SHARED] = FourPlayer1v3Shared
+privateGameModes[GameModes.IDs.FOUR_PLAYER_3V1_ALL] = FourPlayer3v1All
+privateGameModes[GameModes.IDs.FOUR_PLAYER_3V1_SHARED] = FourPlayer3v1Shared
 privateGameModes[GameModes.IDs.THREE_PLAYER_VS_ALL] = ThreePlayerVersusAll
 privateGameModes[GameModes.IDs.THREE_PLAYER_VS_SHARED] = ThreePlayerVersusShared
 privateGameModes[GameModes.IDs.THREE_PLAYER_VS_ALL_2V1] = ThreePlayerVersusAll_2v1
@@ -705,6 +799,10 @@ GameModes.gameModeIdToName = {
   TWO_PLAYER_TIME_ATTACK = "2p_timeattack",
   FOUR_PLAYER_TEAM_VS_ALL = "team_vs_all",
   FOUR_PLAYER_TEAM_VS_SHARED = "team_vs_shared",
+  FOUR_PLAYER_1V3_ALL = "four_player_1v3_all",
+  FOUR_PLAYER_1V3_SHARED = "four_player_1v3_shared",
+  FOUR_PLAYER_3V1_ALL = "four_player_3v1_all",
+  FOUR_PLAYER_3V1_SHARED = "four_player_3v1_shared",
   THREE_PLAYER_VS_ALL = "three_player_vs_all",
   THREE_PLAYER_VS_SHARED = "three_player_vs_shared",
   THREE_PLAYER_VS_ALL_2V1 = "three_player_vs_all_2v1",
@@ -735,6 +833,10 @@ GameModes.nameToGameModeId = {
   ["2p_timeattack"] = "TWO_PLAYER_TIME_ATTACK",
   team_vs_all = "FOUR_PLAYER_TEAM_VS_ALL",
   team_vs_shared = "FOUR_PLAYER_TEAM_VS_SHARED",
+  four_player_1v3_all = "FOUR_PLAYER_1V3_ALL",
+  four_player_1v3_shared = "FOUR_PLAYER_1V3_SHARED",
+  four_player_3v1_all = "FOUR_PLAYER_3V1_ALL",
+  four_player_3v1_shared = "FOUR_PLAYER_3V1_SHARED",
   three_player_vs_all = "THREE_PLAYER_VS_ALL",
   three_player_vs_shared = "THREE_PLAYER_VS_SHARED",
   three_player_vs_all_2v1 = "THREE_PLAYER_VS_ALL_2V1",

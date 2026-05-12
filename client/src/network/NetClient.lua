@@ -199,6 +199,8 @@ getSceneFromRoom = function(room)
   elseif room.mode.name == "team_vs_all" or room.mode.name == "team_vs_shared"
       or room.mode.name == "three_player_vs_all" or room.mode.name == "three_player_vs_shared"
       or room.mode.name == "three_player_vs_all_2v1" or room.mode.name == "three_player_vs_shared_2v1"
+      or room.mode.name == "four_player_1v3_all" or room.mode.name == "four_player_1v3_shared"
+      or room.mode.name == "four_player_3v1_all" or room.mode.name == "four_player_3v1_shared"
       or room.mode.name == "3p_ffa" or room.mode.name == "4p_ffa" or room.mode.name == "5p_ffa"
       or room.mode.name == "open_ffa"
       or room.mode.name == "five_player_1v4_all" or room.mode.name == "five_player_1v4_shared"
