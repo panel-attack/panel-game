@@ -329,9 +329,9 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
 end
 
 -- Sets up renderIndex-specific properties and assets
--- Configures stack positioning parameters for a specific render index (1-5)
+-- Configures stack positioning parameters for a specific render index (1-7)
 -- For 2-player: 1=left, 2=right
--- For 3-5 player: 1=left (full size), 2-N=stacked right (smaller)
+-- For 3-7 player: 1=left (full size), 2-N=stacked right (smaller)
 function ClientStack:setupForRenderIndex(renderIndex)
   self.renderIndex = renderIndex
 
@@ -344,8 +344,8 @@ function ClientStack:setupForRenderIndex(renderIndex)
     self.multiplication = 1
   end
 
-  if renderIndex < 1 or renderIndex > 5 then
-    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1-5.")
+  if renderIndex < 1 or renderIndex > 7 then
+    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1-7.")
   end
 
   -- Use modulo to map to one of 2 asset packs
@@ -561,6 +561,89 @@ function ClientStack:moveForRenderIndex5Player(renderIndex)
     elseif renderIndex == 5 then
       self:moveToPosition(startX + stackWidth + gapX, row2Y)
     end
+  end
+end
+
+-- Positions the stack in a 6-player layout — Player 1 full-size left, plus a
+-- 3-column × 2-row mini grid on the right with the last bottom slot empty.
+-- Layout rule (col-major top-first, like 4p horizontal):
+--   row1 = 2, 4, 6
+--   row2 = 3, 5, _
+-- Pattern: 11246 / 1135.
+function ClientStack:moveForRenderIndex6Player(renderIndex)
+  if renderIndex == 1 then
+    self:moveForRenderIndex(1)
+  else
+    self:_positionInRightGrid3x2(renderIndex)
+  end
+end
+
+-- Positions the stack in a 7-player layout — Player 1 full-size left, plus a
+-- 3-column × 2-row mini grid on the right (all 6 slots filled).
+-- Layout rule (col-major top-first, like 5p extended):
+--   row1 = 2, 4, 6
+--   row2 = 3, 5, 7
+-- Pattern: 11246 / 11357
+function ClientStack:moveForRenderIndex7Player(renderIndex)
+  if renderIndex == 1 then
+    self:moveForRenderIndex(1)
+  else
+    self:_positionInRightGrid3x2(renderIndex)
+  end
+end
+
+-- Shared 3-col × 2-row right-side mini grid placement for 6 and 7 player layouts.
+-- Caller is responsible for handling renderIndex==1 (full-size left).
+-- Maps renderIndex 2..7 col-major top-first: 2/3 in col 1, 4/5 in col 2, 6/7 in col 3.
+function ClientStack:_positionInRightGrid3x2(renderIndex)
+  self:setupForRenderIndex(renderIndex)
+
+  local canvasWidth = GAME.globalCanvas:getWidth()
+  local canvasHeight = GAME.globalCanvas:getHeight()
+  local topMargin = self.baseWidth + self.panelOriginXOffset
+  local bottomMargin = 12
+  -- gapX must fit each mini's analytics column (which sits to the LEFT of its
+  -- frame as part of the shared panel component) between adjacent stacks.
+  local gapX = 100
+  -- Vertical gap reserves the label area above the bottom row's mini stacks.
+  local gapY = ClientStack.MINI_LABEL_AREA
+  local rightMargin = 24
+
+  -- Keep the center gap around player 1 and fit a 3-column by 2-row right-side zone.
+  local minRightColumnLeftX = (canvasWidth / 2) + 100
+  local rightZoneWidth = (canvasWidth - rightMargin) - minRightColumnLeftX
+  local rightZoneHeight = canvasHeight - topMargin - bottomMargin
+
+  -- 3 columns wide → need 2 column gaps; 2 rows tall → 1 row gap.
+  local widthBoundScale = (rightZoneWidth - (gapX * 2)) / (self.baseWidth * 3)
+  local heightBoundScale = (rightZoneHeight - gapY) / (self.baseHeight * 2)
+  self.gfxScale = math.max(0.85, math.min(NORMAL_GFX_SCALE, widthBoundScale, heightBoundScale))
+
+  local stackWidth = self:canvasWidth()
+  local stackHeight = self:canvasHeight()
+  local gridWidth = (stackWidth * 3) + (gapX * 2)
+  local gridHeight = (stackHeight * 2) + gapY
+
+  local startX = minRightColumnLeftX + math.max(0, (rightZoneWidth - gridWidth) / 2)
+  local startY = topMargin + math.max(0, (rightZoneHeight - gridHeight) / 2)
+  local row2Y = startY + stackHeight + gapY
+
+  local col1X = startX
+  local col2X = startX + stackWidth + gapX
+  local col3X = startX + (stackWidth + gapX) * 2
+
+  if renderIndex == 2 then
+    self:moveToPosition(col1X, startY)
+  elseif renderIndex == 3 then
+    self:moveToPosition(col1X, row2Y)
+  elseif renderIndex == 4 then
+    self:moveToPosition(col2X, startY)
+  elseif renderIndex == 5 then
+    self:moveToPosition(col2X, row2Y)
+  elseif renderIndex == 6 then
+    self:moveToPosition(col3X, startY)
+  elseif renderIndex == 7 then
+    self:moveToPosition(col3X, row2Y)
   end
 end
 

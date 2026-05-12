@@ -236,7 +236,23 @@ function Room:onPlayerSettingsUpdate(player)
     end
     logger.info("Room " .. self.roomNumber .. " readiness after " .. tostring(player.name) .. " update: " .. table.concat(readyParts, " "))
 
-    if #self.players >= self.minPlayers and tableUtils.trueForAll(self.players, ServerPlayer.isReady) then
+    -- Check if we can start the match
+    local canStart = false
+    if self:isDynamicRoster() then
+      -- Open FFA: start when minPlayers are ready (others wait in character select)
+      local readyCount = 0
+      for _, p in ipairs(self.players) do
+        if ServerPlayer.isReady(p) then
+          readyCount = readyCount + 1
+        end
+      end
+      canStart = readyCount >= self.minPlayers
+    else
+      -- Invite games: all players must be ready
+      canStart = #self.players >= self.minPlayers and tableUtils.trueForAll(self.players, ServerPlayer.isReady)
+    end
+
+    if canStart then
       self:start_match()
     else
       local settings = player:getSettings()
@@ -261,7 +277,7 @@ function Room:start_match()
   logger.info("Starting match " .. self.matchCount .. " for " .. self.roomNumber .. " " .. self.name)
 
   -- Dynamic-roster modes resolve their final playerCount/teamCount at match start
-  -- from the actual roster (e.g. open_ffa with 3 of 5 slots filled → 3-player FFA).
+  -- from the actual roster (e.g. open_ffa with 3 of 7 slots filled → 3-player FFA).
   if self.gameMode and not self.gameMode.playerCount then
     self.gameMode.playerCount = #self.players
     self.gameMode.teamCount = self.gameMode.teamCount or #self.players
@@ -1041,39 +1057,46 @@ function Room:voidByLeave(leaver, reason)
     logger.info(self.roomNumber .. ": voiding room (" .. self.voidReason .. ")")
   end
 
-  -- Grace check: clients defer their stackEliminated message by 60 frames so a
-  -- rollback can cancel a false death. If a player times out inside that window
-  -- the server hasn't been told yet — but the leaver almost certainly died,
-  -- because clients stop sending inputs once game_ended() is true. Detect this
-  -- by looking at the gap between the leaver's confirmed input count and the
-  -- rest of the room: a meaningful gap means they stopped sending. Mark them
-  -- eliminated so we take the "continue match" branch below instead of aborting.
+  -- Mid-match disconnect → treat as "death by timeout" so the rest of the room
+  -- can play on. The leaver loses; the survivors finish the match. We synthesize
+  -- a DeathEvent at the leaver's last-confirmed input frame so every remaining
+  -- client pins game_over_clock on the leaver's stack and stops waiting for
+  -- inputs that will never come.
   if not self.game.eliminatedPlayers[leaver.player_number] then
-    local DEATH_GAP_THRESHOLD = 30  -- frames; half a second at 60fps
     local leaverInputs = #self.game.inputs[leaver.player_number]
-    local maxInputs = 0
-    for i = 1, #self.game.players do
-      if i ~= leaver.player_number
-        and not self.game.disconnectedPlayers[i]
-        and not self.game.eliminatedPlayers[i] then
-        maxInputs = math.max(maxInputs, #self.game.inputs[i])
+    local deathFrame = math.max(leaverInputs, 1)
+    self.game:markPlayerEliminated(leaver, deathFrame)
+    logger.info(self.roomNumber .. ": " .. leaver.name ..
+      " disconnected while alive — synthesizing DeathEvent at frame " .. deathFrame)
+
+    local synthBody = {
+      sender = leaver.player_number,
+      senderFrame = deathFrame,
+      serverWallClockMs = math.floor(socket.gettime() * 1000),
+      reason = "disconnect",
+    }
+    self.game:recordDeathEvent(leaver, synthBody)
+    local stamped = json.encode(synthBody)
+    local message = NetworkProtocol.markedMessageForTypeAndBody(
+      NetworkProtocol.serverMessageTypes.deathEvent.prefix, stamped)
+    for _, player in ipairs(self.players) do
+      if player ~= leaver then
+        player:send(message)
       end
     end
-    if maxInputs - leaverInputs > DEATH_GAP_THRESHOLD then
-      logger.info(self.roomNumber .. ": " .. leaver.name .. " left with " ..
-        (maxInputs - leaverInputs) .. "-frame input gap; assuming they died and continuing the match")
-      self.game:markPlayerEliminated(leaver, leaverInputs)
+    for _, spec in pairs(self.spectators) do
+      if spec then
+        spec:send(message)
+      end
     end
   end
 
-  -- Mid-match. Two cases:
-  --   1. Leaver was already eliminated (their stack died, they were just
-  --      spectating their own match). Don't interrupt the survivors — server
-  --      idle-fills the leaver's input slot, the match plays out naturally,
-  --      and we queue the leaver's removal for after the match ends so player_
-  --      number / game.disconnectedPlayers indexing stays stable mid-flight.
-  --   2. Leaver was alive. Their absence would stall input flow (they've
-  --      stopped sending). Abort the match cleanly for the survivors.
+  -- Mid-match: every leaver is marked eliminated above (either by their own
+  -- stack dying earlier or by the timeout-death synthesis just now), so we
+  -- always take the "continue match" branch. The match plays out for the
+  -- survivors; we queue the leaver's removal for after match end so
+  -- player_number / disconnectedPlayers indexing stays stable mid-flight.
+  -- The abort branch below is a defensive safety net — it should not fire.
   if self.game.eliminatedPlayers[leaver.player_number] then
     self.game:markPlayerDisconnected(leaver)
     self.pendingLeaverRemovals = self.pendingLeaverRemovals or {}

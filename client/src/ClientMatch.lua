@@ -368,6 +368,10 @@ function ClientMatch:moveStacks()
           self.stacks[stackMetadata.stackIndex]:moveForRenderIndex4PlayerHorizontal(stackMetadata.renderIndex)
         elseif #self.stacks == 5 then
           self.stacks[stackMetadata.stackIndex]:moveForRenderIndex5Player(stackMetadata.renderIndex)
+        elseif #self.stacks == 6 then
+          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex6Player(stackMetadata.renderIndex)
+        elseif #self.stacks == 7 then
+          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex7Player(stackMetadata.renderIndex)
         else
           self.stacks[stackMetadata.stackIndex]:moveForRenderIndex(stackMetadata.renderIndex)
         end
@@ -395,6 +399,10 @@ function ClientMatch:moveStacks()
       stack:moveForRenderIndex4PlayerHorizontal(i)
     elseif #self.stacks == 5 then
       stack:moveForRenderIndex5Player(i)
+    elseif #self.stacks == 6 then
+      stack:moveForRenderIndex6Player(i)
+    elseif #self.stacks == 7 then
+      stack:moveForRenderIndex7Player(i)
     else
       stack:moveForRenderIndex(i)
     end
@@ -1053,7 +1061,13 @@ function ClientMatch:applyGarbageEvent(body)
         (type(body.garbage) == "table") and #body.garbage or 0))
       -- self.stacks[i] is a ClientStack wrapper; the actual engine stack
       -- (and the receiveGarbage method) lives on stack.engine.
-      stack.engine:receiveGarbage(body.garbage)
+      -- Copy the garbage table per recipient so chain-flag mutations in
+      -- correctChainingFlag don't leak between recipients sharing one event.
+      local garbageCopy = {}
+      for j, g in ipairs(body.garbage) do
+        garbageCopy[j] = shallowcpy(g)
+      end
+      stack.engine:receiveGarbage(garbageCopy)
     end
   end
 end

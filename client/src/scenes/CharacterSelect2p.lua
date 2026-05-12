@@ -120,6 +120,9 @@ function CharacterSelect2p:setupRoster()
   -- Up to 4 players: (icon, info) pairs across columns 1-8 (col 9 = readyButton row 2).
   -- 5 players: drop the info column and space 5 icons every-other-column (1,3,5,7,9)
   -- so they fit in the 9-wide grid without overflowing the readyButton column.
+  -- TODO(7p UI): 6-7 players currently reuse the 5-slot layout — only the first 5
+  -- icons land in the grid. Will need a compact row (or wrap to row 2) when we
+  -- design the proper UI for 6/7-player rooms.
   local topSlots
   if #self.players >= 5 then
     topSlots = {

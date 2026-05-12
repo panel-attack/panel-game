@@ -551,7 +551,49 @@ local FivePlayerFFAShared = GameMode({
 })
 
 ---@type GameMode
--- Open FFA: dynamic roster, public drop-in. The room accepts 2-5 players and a
+local SevenPlayerFFA = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v1v1v1v1v1v1 FFA",
+  name = "7p_ffa",
+
+  playerCount = 7,
+  teamCount = 7,
+  playersPerTeam = 1,
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local SevenPlayerFFAShared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v1v1v1v1v1v1 FFA (Shared)",
+  name = "7p_ffa_shared",
+
+  playerCount = 7,
+  teamCount = 7,
+  playersPerTeam = 1,
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+-- Open FFA: dynamic roster, public drop-in. The room accepts 2-7 players and a
 -- match starts when at least minPlayers are present + everyone is ready. New
 -- joiners between matches drop straight into the next round; mid-match joiners
 -- spectate until the current match ends, then promote up to maxPlayers.
@@ -563,7 +605,7 @@ local OpenFFA = GameMode({
   name = "open_ffa",
 
   minPlayers = 2,
-  maxPlayers = 5,
+  maxPlayers = 7,
   playersPerTeam = 1,
   garbageMode = "all",
   stackInteraction = StackInteractions.TEAM_VERSUS,
@@ -584,7 +626,7 @@ local OpenFFAShared = GameMode({
   name = "open_ffa_shared",
 
   minPlayers = 2,
-  maxPlayers = 5,
+  maxPlayers = 7,
   playersPerTeam = 1,
   garbageMode = "shared",
   stackInteraction = StackInteractions.TEAM_VERSUS,
@@ -799,6 +841,8 @@ GameModes.IDs = {
   FOUR_PLAYER_FFA_SHARED = "FOUR_PLAYER_FFA_SHARED",
   FIVE_PLAYER_FFA = "FIVE_PLAYER_FFA",
   FIVE_PLAYER_FFA_SHARED = "FIVE_PLAYER_FFA_SHARED",
+  SEVEN_PLAYER_FFA = "SEVEN_PLAYER_FFA",
+  SEVEN_PLAYER_FFA_SHARED = "SEVEN_PLAYER_FFA_SHARED",
   OPEN_FFA = "OPEN_FFA",
   OPEN_FFA_SHARED = "OPEN_FFA_SHARED",
   -- 5-player team modes
@@ -838,6 +882,8 @@ privateGameModes[GameModes.IDs.FOUR_PLAYER_FFA] = FourPlayerFFA
 privateGameModes[GameModes.IDs.FOUR_PLAYER_FFA_SHARED] = FourPlayerFFAShared
 privateGameModes[GameModes.IDs.FIVE_PLAYER_FFA] = FivePlayerFFA
 privateGameModes[GameModes.IDs.FIVE_PLAYER_FFA_SHARED] = FivePlayerFFAShared
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_FFA] = SevenPlayerFFA
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_FFA_SHARED] = SevenPlayerFFAShared
 privateGameModes[GameModes.IDs.FIVE_PLAYER_1V4_ALL] = FivePlayerTeamVs1v4All
 privateGameModes[GameModes.IDs.FIVE_PLAYER_1V4_SHARED] = FivePlayerTeamVs1v4Shared
 privateGameModes[GameModes.IDs.FIVE_PLAYER_4V1_ALL] = FivePlayerTeamVs4v1All
@@ -905,6 +951,8 @@ GameModes.gameModeIdToName = {
   FOUR_PLAYER_FFA_SHARED = "4p_ffa_shared",
   FIVE_PLAYER_FFA = "5p_ffa",
   FIVE_PLAYER_FFA_SHARED = "5p_ffa_shared",
+  SEVEN_PLAYER_FFA = "7p_ffa",
+  SEVEN_PLAYER_FFA_SHARED = "7p_ffa_shared",
   FIVE_PLAYER_1V4_ALL = "five_player_1v4_all",
   FIVE_PLAYER_1V4_SHARED = "five_player_1v4_shared",
   FIVE_PLAYER_4V1_ALL = "five_player_4v1_all",
@@ -943,6 +991,8 @@ GameModes.nameToGameModeId = {
   ["4p_ffa_shared"] = "FOUR_PLAYER_FFA_SHARED",
   ["5p_ffa"] = "FIVE_PLAYER_FFA",
   ["5p_ffa_shared"] = "FIVE_PLAYER_FFA_SHARED",
+  ["7p_ffa"] = "SEVEN_PLAYER_FFA",
+  ["7p_ffa_shared"] = "SEVEN_PLAYER_FFA_SHARED",
   five_player_1v4_all = "FIVE_PLAYER_1V4_ALL",
   five_player_1v4_shared = "FIVE_PLAYER_1V4_SHARED",
   five_player_4v1_all = "FIVE_PLAYER_4V1_ALL",

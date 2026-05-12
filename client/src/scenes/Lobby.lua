@@ -538,6 +538,16 @@ function Lobby:initLobbyMenu()
       end
     }))
     ffaMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "7 Players (1v1v1v1v1v1v1)", translate = false}),
+      onClick = function(b)
+        openGarbageMenu(b, {
+          allMode = GameModes.IDs.SEVEN_PLAYER_FFA,
+          sharedMode = GameModes.IDs.SEVEN_PLAYER_FFA_SHARED,
+          openRoom = openRoom,
+        }, ffaMenu, closeInviteOnlyChain)
+      end
+    }))
+    ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "back"}),
       onClick = function()
         GAME.theme:playCancelSfx()
@@ -559,7 +569,7 @@ function Lobby:initLobbyMenu()
   end
 
   -- Top-level FFA picker: Invite-only (fixed roster, owner invites) vs Open
-  -- (public drop-in, 2-5 dynamic roster).
+  -- (public drop-in, 2-7 dynamic roster).
   local function openFfaTypeMenu(parentButton)
     if self.ffaTypeMenu then
       self.ffaTypeMenu:yieldFocus()

@@ -355,16 +355,17 @@ function Match:distributeGarbageToTargets()
               end
             end
           else
-            -- "All" mode: send to every living target. Dead targets are
-            -- skipped (no point queuing on a stack that's stopped running).
+            -- "All" mode: collect all living targets and send a single batched event
+            -- with all recipients (instead of multiple separate events).
+            local livingTargets = {}
             for _, target in ipairs(targets) do
               if not target:game_ended() then
-                local garbageCopy = {}
-                for j, g in ipairs(garbageDelivery) do
-                  garbageCopy[j] = shallowcpy(g)
-                end
-                self:deliverOutgoingGarbage(sender, target, garbageCopy)
+                livingTargets[#livingTargets + 1] = target
               end
+            end
+
+            if #livingTargets > 0 then
+              self:deliverOutgoingGarbageToMultiple(sender, livingTargets, garbageDelivery)
             end
           end
         end
@@ -466,6 +467,60 @@ function Match:deliverOutgoingGarbage(source, target, garbageDelivery)
   -- sync isn't active (offline modes, replay playback): direct push, no server
   -- in the loop.
   target:receiveGarbage(garbageDelivery)
+end
+
+---Deliver garbage from a sender stack to multiple target stacks via a single batched event.
+---Used by "all" mode to send one event with all recipients instead of N separate events.
+---@param source BaseStack
+---@param targets BaseStack[] array of target stacks
+---@param garbageDelivery table garbage payload (array of Garbage records)
+function Match:deliverOutgoingGarbageToMultiple(source, targets, garbageDelivery)
+  local looseSyncActive = LOOSE_SYNC_GARBAGE
+      and GAME and GAME.netClient and GAME.netClient:isConnected()
+
+  if looseSyncActive and source.is_local then
+    -- Local source → remote targets: emit a single G event to the server with
+    -- ALL recipients listed. Server's redirect logic walks the recipient list
+    -- once and handles dead-target redirects atomically per delivery.
+    local recipientIndices = {}
+    for _, target in ipairs(targets) do
+      if not target.is_local then
+        local recipientIndex = tableUtils.indexOf(self.stacks, target)
+        if recipientIndex then
+          recipientIndices[#recipientIndices + 1] = recipientIndex
+        end
+      end
+    end
+
+    if #recipientIndices > 0 then
+      local senderIndex = tableUtils.indexOf(self.stacks, source)
+      logger.info(string.format(
+        "G emit (all): stack[%d] -> [%s] frame=%d count=%d",
+        senderIndex or -1, table.concat(recipientIndices, ","),
+        source.stopWatch or -1,
+        garbageDelivery and #garbageDelivery or 0))
+      GAME.netClient:sendGarbageEvent({
+        senderFrame = source.stopWatch,
+        recipients = recipientIndices,
+        garbage = garbageDelivery,
+      })
+    end
+    return
+  elseif looseSyncActive and not source.is_local then
+    -- Remote source: suppress local-sim push for local targets — the
+    -- authoritative G from the source's machine will deliver. Same rule as
+    -- the single-recipient path in deliverOutgoingGarbage.
+    return
+  end
+
+  -- Local↔local or offline: deliver to each target directly (no server relay needed)
+  for _, target in ipairs(targets) do
+    local garbageCopy = {}
+    for j, g in ipairs(garbageDelivery) do
+      garbageCopy[j] = shallowcpy(g)
+    end
+    target:receiveGarbage(garbageCopy)
+  end
 end
 
 ---@param stack BaseStack
@@ -939,12 +994,32 @@ function Match:addTarget(source, target)
 
   local index = tableUtils.indexOf(self.stacks, source)
 
-  if not tableUtils.contains(self.garbageTargets[index], target) then
-    table.insert(self.garbageTargets[index], target)
+  -- Reference equality only. tableUtils.contains uses deep_content_equal which
+  -- recurses through every field of the stack — and stacks hold circular refs
+  -- to other stacks via garbageTarget/garbageTargets, so deep equality blows
+  -- the call stack as soon as a target list has 2+ entries (common in FFA).
+  local targets = self.garbageTargets[index]
+  local alreadyTarget = false
+  for i = 1, #targets do
+    if targets[i] == target then
+      alreadyTarget = true
+      break
+    end
+  end
+  if not alreadyTarget then
+    table.insert(targets, target)
   end
 
-  if not tableUtils.contains(self.garbageSources[target], source) then
-    table.insert(self.garbageSources[target], source)
+  local sources = self.garbageSources[target]
+  local alreadySource = false
+  for i = 1, #sources do
+    if sources[i] == source then
+      alreadySource = true
+      break
+    end
+  end
+  if not alreadySource then
+    table.insert(sources, source)
   end
 end
 

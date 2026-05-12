@@ -1490,15 +1490,16 @@ end
 function Server:handleLeaveRoom(player, reason)
   local room = self.playerToRoom[player]
   if room then
-    -- Use voidByLeave when the room is multi-player (3+ at start) OR was already
-    -- voided by a previous leave. The latter is important: once we void a room,
-    -- subsequent leaves should keep removing players one at a time so survivors
-    -- can keep viewing — not collapse the whole thing on the second leaver. Only
-    -- 2-player VS rooms and solo rooms collapse immediately on a single leave.
-    if #room.players >= 3 or room.voided then
+    -- Route every mid-match leave through voidByLeave so the survivors can
+    -- finish the game (leaver loses by timeout). voidByLeave handles pre-match
+    -- and mid-match cleanup itself. Only collapse the room when no one's left
+    -- in it after voidByLeave runs, or when there's no match in progress and
+    -- the room would be empty.
+    local hadMatch = room.game ~= nil
+    if #room.players >= 3 or room.voided or hadMatch then
       self.playerToRoom[player] = nil
       player:removeFromRoom(room, reason)  -- sends leaveRoom to leaver, sets state=lobby
-      room:voidByLeave(player, reason)     -- aborts in-progress match, removes leaver, broadcasts playerLeftRoom
+      room:voidByLeave(player, reason)     -- synthesizes death-event mid-match, removes leaver, broadcasts playerLeftRoom
       if #room.players == 0 then
         self:closeRoom(room, "all players left")
       else
@@ -1529,10 +1530,10 @@ function Server:closeConnection(connection, reason)
   connection:close()
   if player then
     self:clearProposals(player)
-    -- All disconnects (mid-match or otherwise) route through handleLeaveRoom now.
-    -- For 2P rooms it closes the whole room; for 3+ rooms it voids the room (aborts
-    -- any in-progress match, removes the leaver, broadcasts playerLeftRoom) so
-    -- remaining players can see the final state until they manually leave.
+    -- All disconnects route through handleLeaveRoom. For mid-match leaves (in
+    -- ANY room size) voidByLeave synthesizes a death event for the leaver so
+    -- the survivors finish the match — the leaver loses by timeout. Empty
+    -- rooms get closed afterward.
     self:handleLeaveRoom(player, reason)
     self.publicIdToPlayer[player.publicPlayerID] = nil
     self.playerToRoom[player] = nil
