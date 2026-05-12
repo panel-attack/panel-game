@@ -55,8 +55,10 @@ end
 
 -- end abstract functions
 
-function CharacterSelect:load()
-  -- display order is driven by locality
+-- Re-sorts self.players to match battleRoom.players, putting the local player first.
+-- Called once during load() and again whenever the roster changes (open FFA drop-in).
+function CharacterSelect:syncPlayersFromBattleRoom()
+  self.players = shallowcpy(self.battleRoom.players)
   table.sort(self.players, function(a, b)
     if a.isLocal == b.isLocal then
       return a.playerNumber < b.playerNumber
@@ -64,13 +66,17 @@ function CharacterSelect:load()
       return a.isLocal
     end
   end)
+end
+
+function CharacterSelect:load()
+  self:syncPlayersFromBattleRoom()
 
   self.ui = {}
   self.ui.cursors = {}
   self.ui.characterIcons = {}
   self.ui.playerInfos = {}
   self:customLoad()
-  
+
   self:createInputDeviceOverlay()
 
   self:setChangeInputButtonVisibility(false)
@@ -84,6 +90,28 @@ function CharacterSelect:load()
       player:connectSignal("levelDataChanged", self, self.onLevelDataChanged)
       self:onLevelDataChanged(player.settings.levelData, player)
     end
+  end
+
+  -- Open FFA / drop-in modes need to re-render when the roster changes.
+  -- Child scenes implement refreshRoster() to rebuild their per-player widgets.
+  if self.battleRoom and self.battleRoom.connectSignal then
+    self.battleRoom:connectSignal("rosterChanged", self, self.onRosterChanged)
+  end
+end
+
+function CharacterSelect:onRosterChanged()
+  self:syncPlayersFromBattleRoom()
+
+  -- Re-attach levelDataChanged on any newly added players so their styles stay in sync.
+  for _, player in ipairs(self.players) do
+    if player:isHuman() and not player._charSelectLevelHooked then
+      player:connectSignal("levelDataChanged", self, self.onLevelDataChanged)
+      player._charSelectLevelHooked = true
+    end
+  end
+
+  if self.refreshRoster then
+    self:refreshRoster()
   end
 end
 
@@ -1116,7 +1144,27 @@ function CharacterSelect:drawSelf()
   self.backgroundImg:draw()
   self:drawTeamBannerHeader()
   self:customDraw()
+  self:drawWaitingForPlayersBanner()
   self:drawVoidedRoomBanner()
+end
+
+-- Dynamic-roster modes (open FFA) need a hint that the match is gated on more
+-- players showing up — otherwise readying up just silently does nothing.
+function CharacterSelect:drawWaitingForPlayersBanner()
+  local mode = self.battleRoom and self.battleRoom.mode
+  if not (mode and mode.minPlayers) then return end
+  local current = #self.battleRoom.players
+  local minPlayers = mode.minPlayers
+  if current >= minPlayers then return end
+
+  local GraphicsUtil = require("client.src.graphics.graphics_util")
+  local consts = require("common.engine.consts")
+  local missing = minPlayers - current
+  local text = string.format("Waiting for %d more %s to start (min %d)",
+    missing, (missing == 1) and "player" or "players", minPlayers)
+  local bannerY = 80
+  GraphicsUtil.printf(text, 0, bannerY + 2, consts.CANVAS_WIDTH, "center", {0.1, 0.05, 0.15, 0.85}, nil, 24)
+  GraphicsUtil.printf(text, 0, bannerY,     consts.CANVAS_WIDTH, "center", {1, 0.9, 0.5, 1},      nil, 24)
 end
 
 -- Draws a centered "<reason>" banner over CharacterSelect when the server has told

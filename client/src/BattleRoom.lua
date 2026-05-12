@@ -69,6 +69,9 @@ function(self, mode, gameScene)
   Signal.turnIntoEmitter(self)
   self:createSignal("rankedStatusChanged")
   self:createSignal("allAssetsLoadedChanged")
+  -- Fired when self.players is mutated mid-session (open FFA drop-in/drop-out).
+  -- Scenes that render per-player UI subscribe and re-build their roster widgets.
+  self:createSignal("rosterChanged")
 end)
 
 ---@enum BattleRoomState
@@ -205,6 +208,7 @@ function BattleRoom:removePlayerByPublicId(publicId)
         remaining.playerNumber = j
       end
       logger.info("BattleRoom: removed player " .. tostring(p.name) .. " (publicId " .. tostring(publicId) .. ")")
+      self:emitSignal("rosterChanged")
       return p
     end
   end
@@ -330,6 +334,8 @@ function BattleRoom:addPlayer(player)
   if player.isLocal then
     self:connectSignal("allAssetsLoadedChanged", player, player.setLoaded)
   end
+
+  self:emitSignal("rosterChanged")
 end
 
 function BattleRoom:updateLoadingState()

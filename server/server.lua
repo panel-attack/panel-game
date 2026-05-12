@@ -350,9 +350,11 @@ function Server:lobbyStateV2()
       players = {},
       spectators = {},
       wins = {},
+      minPlayers = room.minPlayers,
       maxPlayers = room.maxPlayers,
       openSlots = room:getOpenSlots(),
       slotRequests = {},
+      pendingJoinerCount = (room.pendingJoiners and #room.pendingJoiners) or 0,
     }
 
     -- Iterate a shallow snapshot so clearProposals can safely mutate self.proposals
@@ -647,6 +649,7 @@ function Server:create_room(gameMode, ...)
   -- After every match (clean end or abort) the room emits roomShouldClose; the Server
   -- is the only thing that owns playerToRoom and self.rooms, so closing must happen here.
   newRoom:connectSignal("roomShouldClose", self, self.onRoomShouldClose)
+  newRoom:connectSignal("readyForPendingJoiners", self, self.drainPendingJoiners)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
 
@@ -654,6 +657,24 @@ function Server:create_room(gameMode, ...)
     self:clearProposals(player)
     self.playerToRoom[player] = newRoom
     player:sendJson(ServerProtocol.addToRoom(newRoom, nil))
+  end
+end
+
+---Drain a dynamic-roster room's pendingJoiners queue once character select reopens.
+---Each queued player is routed through handleJoinRoom so they pick up the normal
+---addToRoom flow exactly as if they'd joined fresh.
+---@param room Room the room asking to drain its queue
+function Server:drainPendingJoiners(room)
+  if not room or not room.pendingJoiners then return end
+  local queue = room.pendingJoiners
+  room.pendingJoiners = {}
+  for _, entry in ipairs(queue) do
+    if entry.player and not room:isFull() then
+      -- Idempotency check in handleJoinRoom would block back-to-back joins,
+      -- so reset the rate-limit entry first.
+      self.recentJoinRequests[entry.player.publicPlayerID .. "_" .. room.roomNumber] = nil
+      self:handleJoinRoom(entry.player, room.roomNumber, nil)
+    end
   end
 end
 
@@ -748,9 +769,26 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
-  -- Critical: Don't allow joins if game already started or is over
+  -- Dynamic-roster modes (open FFA): mid-match join attempts are queued. The
+  -- joiner doesn't spectate — they stay in the lobby. When the current match
+  -- ends, Room:prepare_character_select drains the queue via the normal
+  -- handleJoinRoom path so each gets a regular addToRoom flow.
   local roomState = room:state()
+  local isDynamicRoster = room.gameMode and room.gameMode.minPlayers ~= nil
   if roomState ~= "lobby" and roomState ~= "character select" then
+    if isDynamicRoster and roomState == "playing" and not room:isFull() then
+      -- Avoid duplicate queue entries.
+      for _, entry in ipairs(room.pendingJoiners) do
+        if entry.player == player then
+          logger.debug("Player " .. player.name .. " already queued for room " .. roomNumber)
+          return false
+        end
+      end
+      room.pendingJoiners[#room.pendingJoiners + 1] = { player = player }
+      logger.info("Player " .. player.name .. " queued for open room " .. roomNumber .. " (match in progress)")
+      player:sendJson(ServerProtocol.joinQueued(roomNumber))
+      return true
+    end
     logger.warn("Player " .. player.name .. " tried to join room " .. roomNumber .. " in state '" .. roomState .. "'")
     return false
   end
@@ -1064,8 +1102,13 @@ function Server:processMessage(message, connection)
       local requestedGameMode = resolveRequestedGameMode(message.gameMode)
       if requestedGameMode then
         requestedGameMode.latencyTolerance = message.latencyTolerance
-        requestedGameMode.abortInputGapThreshold = resolveAbortInputGapThreshold(message.latencyTolerance, requestedGameMode.playerCount)
-        requestedGameMode.connectionTimeoutSeconds, requestedGameMode.sendRetryLimit = resolveConnectionWatchdogSettings(message.latencyTolerance, requestedGameMode.playerCount)
+        -- For dynamic-roster modes (open_ffa) playerCount is nil at request time;
+        -- fall back to maxPlayers so we use 3+ player thresholds. The actual
+        -- abortInputGapThreshold for the match is re-resolved at match-start
+        -- in Room:start_match using #self.players.
+        local effectiveCount = requestedGameMode.playerCount or requestedGameMode.maxPlayers or 2
+        requestedGameMode.abortInputGapThreshold = resolveAbortInputGapThreshold(message.latencyTolerance, effectiveCount)
+        requestedGameMode.connectionTimeoutSeconds, requestedGameMode.sendRetryLimit = resolveConnectionWatchdogSettings(message.latencyTolerance, effectiveCount)
         self:create_room(requestedGameMode, player)
         return true
       else

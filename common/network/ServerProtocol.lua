@@ -624,4 +624,24 @@ function ServerProtocol.playerLeftRoom(roomNumber, publicId, name, voidReason)
   }
 end
 
+local joinQueuedTemplate = {
+  sender = "server",
+  type = "joinQueued",
+  content = {}
+}
+
+---Sent to a player whose join request landed in a dynamic-roster room while a
+---match was already running. They stay in the lobby; the server will deliver a
+---regular addToRoom once the current match ends and the queue is drained.
+---@param roomNumber roomNumber
+---@return {messageType: table, messageText: ServerMessage}
+function ServerProtocol.joinQueued(roomNumber)
+  local msg = joinQueuedTemplate
+  msg.content.roomNumber = roomNumber
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = msg,
+  }
+end
+
 return ServerProtocol

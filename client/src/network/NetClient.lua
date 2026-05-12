@@ -278,6 +278,15 @@ local function processSpectatorListMessage(self, message)
   end
 end
 
+---Server replies with joinQueued when a player tries to join an open-FFA room
+---while a match is running. The player stays in the lobby; when the match ends
+---the server will replay the join via the normal addToRoom flow.
+local function processJoinQueuedMessage(self, message)
+  local roomNumber = message.joinQueued and message.joinQueued.roomNumber
+  logger.info("Join queued for room " .. tostring(roomNumber) .. " (match in progress)")
+  self:emitSignal("joinQueued", roomNumber)
+end
+
 ---@param self NetClient
 local function processGameResultMessage(self, message)
   -- receiving a gameResult message means that both players have reported their game results to the server
@@ -671,6 +680,7 @@ local function createListeners(self)
   messageListeners.gameResult = createListener(self, "gameResult", processGameResultMessage)
   messageListeners.spectators = createListener(self, "spectators", processSpectatorListMessage)
   messageListeners.gameAbort = createListener(self, "gameAbort", handleGameAbort)
+  messageListeners.joinQueued = createListener(self, "joinQueued", processJoinQueuedMessage)
 
   return messageListeners
 end
@@ -708,6 +718,7 @@ local NetClient = class(function(self)
     playerJoinedRoom = messageListeners.playerJoinedRoom,
     challengeUpdate = messageListeners.challengeUpdate,
     leave_room = messageListeners.leave_room,
+    joinQueued = messageListeners.joinQueued,
   }
 
   -- all listeners running while in a room but not in a match

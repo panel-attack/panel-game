@@ -37,34 +37,14 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.leaveButton = self:createLeaveButton()
   self.ui.changeInputButton = self:createChangeInputButton()
 
-  local levelHeight
-  -- Online play has exactly one local player whose selectors are interactive; remote
-  -- players' selections come from the server. Stacking N rows into a fixed 100px
-  -- band crushes per-row height (5p → ~3px each), so for online we only show the
-  -- local row and size the carousel for one row.
-  local rowsToShow
-  if self.battleRoom.online then
-    rowsToShow = 1
-  else
-    rowsToShow = #self.battleRoom.players
-  end
-  local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / rowsToShow - self.ui.panelSelection.height
-  local stageWidth
-
   if self.battleRoom.online then
     self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
     self.ui.grid:createElementAt(5, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
     self.ui.grid:createElementAt(7, 2, 2, 1, "levelSelection", self.ui.levelSelection, nil, true)
-
-    levelHeight = 12
-    stageWidth = self.ui.grid.unitSize - self.ui.grid.unitMargin * 2
   else
     self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
     self.ui.grid:createElementAt(3, 2, 3, 1, "stageSelection", self.ui.stageSelection, nil, true)
     self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
-
-    levelHeight = 20
-    stageWidth = self.ui.grid.unitSize * 1.5 - self.ui.grid.unitMargin * 2
   end
 
   self.ui.grid:createElementAt(9, 2, 1, 1, "readyButton", self.ui.readyButton)
@@ -73,11 +53,40 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.grid:createElementAt(8, 6, 1, 1, "changeInputButton", self.ui.changeInputButton)
   self.ui.grid:createElementAt(9, 6, 1, 1, "leaveButton", self.ui.leaveButton)
 
+  self:setupRoster()
+
+  -- need to be created at the end after the character grid has been settled in
+  -- otherwise the placement will be wrong
+  self.ui.pageTurnButtons = self:createPageTurnButtons(self.ui.characterGrid)
+end
+
+-- Creates all per-player UI: panel/stage/level selectors, cursors, top-row
+-- character icons and player info cards. Roster-dependent; called from
+-- loadUserInterface and rebuilt by refreshRoster on drop-in/drop-out.
+function CharacterSelect2p:setupRoster()
+  -- Online play has exactly one local player whose selectors are interactive; remote
+  -- players' selections come from the server. Size the carousel for one row.
+  local rowsToShow
+  if self.battleRoom.online then
+    rowsToShow = 1
+  else
+    rowsToShow = math.max(1, #self.battleRoom.players)
+  end
+  local panelHeight = (self.ui.grid.unitSize - self.ui.grid.unitMargin * 2) / rowsToShow - self.ui.panelSelection.height
+  local levelHeight, stageWidth
+  if self.battleRoom.online then
+    levelHeight = 12
+    stageWidth = self.ui.grid.unitSize - self.ui.grid.unitMargin * 2
+  else
+    levelHeight = 20
+    stageWidth = self.ui.grid.unitSize * 1.5 - self.ui.grid.unitMargin * 2
+  end
+
   self.ui.characterIcons = {}
+  self.ui.playerInfos = {}
 
   for i, player in ipairs(self.players) do
-    -- Online: only add the local player's selectors so the wrapper sizes for one
-    -- row instead of cramming N rows into the same space. Stage was already
+    -- Online: only add the local player's selectors. Stage was already
     -- local-only; panels and level now match.
     local showSelectors = (not self.battleRoom.online) or player.isLocal
     if showSelectors then
@@ -137,10 +146,36 @@ function CharacterSelect2p:loadUserInterface()
       end
     end
   end
+end
 
-  -- need to be created at the end after the character grid has been settled in
-  -- otherwise the placement will be wrong
-  self.ui.pageTurnButtons = self:createPageTurnButtons(self.ui.characterGrid)
+-- Drop-in / drop-out hook for open FFA. Tears down all per-player widgets and
+-- rebuilds them from the current self.players list.
+function CharacterSelect2p:refreshRoster()
+  -- Row 1: detach all top-row icons + info cards from the grid.
+  if self.ui.grid and self.ui.grid.removeElementsIn then
+    self.ui.grid:removeElementsIn(1, 1, self.ui.grid.gridWidth, 1)
+  end
+
+  -- Clear the panel/stage/level wrappers but preserve their title labels.
+  for _, wrapper in ipairs({self.ui.panelSelection, self.ui.stageSelection, self.ui.levelSelection}) do
+    if wrapper and wrapper.children then
+      for i = #wrapper.children, 1, -1 do
+        local child = wrapper.children[i]
+        if child ~= wrapper.title then
+          child:detach()
+        end
+      end
+      wrapper.wrappedElements = {}
+    end
+  end
+
+  -- Detach existing cursors from the grid.
+  for _, cursor in pairs(self.ui.cursors or {}) do
+    if cursor and cursor.detach then cursor:detach() end
+  end
+  self.ui.cursors = {}
+
+  self:setupRoster()
 end
 
 

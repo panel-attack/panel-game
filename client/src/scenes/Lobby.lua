@@ -959,8 +959,18 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       rowTints[#rowTints + 1] = false
     end
 
-    -- Title:  "Name1, Name2's Room   [n/m]"  (or "Empty Room" if vacant)
-    local slotsText = string.format("[%d/%d]", #room.players, room.maxPlayers or 2)
+    -- Title:  "Name1, Name2's Room   [n/m]" — or "[n / min-max]" for dynamic-roster (open FFA).
+    local minPlayers = room.minPlayers
+    local maxPlayers = room.maxPlayers or 2
+    local slotsText
+    if minPlayers and minPlayers ~= maxPlayers then
+      slotsText = string.format("[%d / %d-%d]", #room.players, minPlayers, maxPlayers)
+    else
+      slotsText = string.format("[%d/%d]", #room.players, maxPlayers)
+    end
+    if room.pendingJoinerCount and room.pendingJoinerCount > 0 then
+      slotsText = slotsText .. " (+" .. room.pendingJoinerCount .. " queued)"
+    end
     local presentNames = {}
     for _, playerId in ipairs(room.players) do
       local info = personalizedLobbyData.players[playerId]
@@ -1025,20 +1035,21 @@ function Lobby:createRoomButtons(personalizedLobbyData)
 
     local roomName = table.concat(lines, "\n")
 
-    -- Click behavior depends on relationship to the room.
+    -- Click behavior depends on relationship to the room. For any non-local
+    -- room we open a submenu so the user can pick between joining a slot and
+    -- spectating; if there are no slots and no match to watch the submenu
+    -- still surfaces a "back" option rather than mystery silence.
     local onClick
     if isLocalPlayerRoom then
       onClick = function(button)
         self:openLocalRoomSubMenu(room, button)
         GAME.theme:playValidationSfx()
       end
-    elseif invitedSlot or hasOpenSlots then
+    else
       onClick = function(button)
         self:openRoomSubMenu(room, button)
         GAME.theme:playValidationSfx()
       end
-    else
-      onClick = self:requestSpectateFunction(room)
     end
 
     local label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenuWidth - 16})
@@ -1170,6 +1181,18 @@ function Lobby:openRoomSubMenu(room, button)
       subMenu:addChild(joinButton)
     end
   end
+
+  -- Spectate is always offered as an alternative to grabbing a player slot.
+  -- Server gates on whether the room actually has a live match to watch.
+  local spectateButton = ui.TextButton({
+    label = ui.Label({text = "Spectate", translate = false}),
+    width = 120,
+    onClick = function()
+      GAME.netClient:requestSpectate(room.roomNumber)
+      subMenu:yieldFocus()
+    end,
+  })
+  subMenu:addChild(spectateButton)
 
   local backButton = ui.TextButton({
     label = ui.Label({text = "back"}),
