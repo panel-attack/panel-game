@@ -497,6 +497,18 @@ function GameBase:update(dt)
         GAME.navigationStack:popToName("Lobby")
         return
       end
+      if input:isPressedWithRepeat("MenuLeft") then
+        self.match:cycleSpectatorFocus(-1)
+      elseif input:isPressedWithRepeat("MenuRight") then
+        self.match:cycleSpectatorFocus(1)
+      end
+      if input.mouse.isPressed[1] then
+        local mx, my = GAME:transform_coordinates(love.mouse.getPosition())
+        local stack = self.match:getStackAtScreenPosition(mx, my)
+        if stack then
+          self.match:setSpectatorFocus(stack.player_number)
+        end
+      end
     end
     self:runGame(dt)
   end
