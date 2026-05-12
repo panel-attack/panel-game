@@ -424,7 +424,15 @@ function GameBase:setupGameOver()
 end
 
 function GameBase:runGameOver()
-  -- wait()
+  -- gameOverStartTime is normally set by setupGameOver, which runs from the
+  -- matchEnded signal listener (wired in load()). A spectator who joins a
+  -- match that's already in its end-of-match window can land here with
+  -- match.ended already true but the signal already fired before our listener
+  -- attached — i.e. setupGameOver never ran for us. Lazy-initialize the
+  -- timing fields so the subtraction below doesn't crash.
+  if self.gameOverStartTime == nil then
+    self:setupGameOver()
+  end
   local displayTime = love.timer.getTime() - self.gameOverStartTime
 
   self.match:run()
