@@ -154,9 +154,19 @@ function Lobby:initLobbyMenu()
       return btn
     end
 
-    latMenu:addChild(latButton("Strict",  "strict",  "Strict: 30s disconnect timeout, 140-frame input gap (~2s) before abort."))
-    latMenu:addChild(latButton("Normal",  "normal",  "Normal: 60s disconnect timeout, 220-frame input gap (~3.5s) before abort."))
-    latMenu:addChild(latButton("Relaxed", "relaxed", "Relaxed: 120s disconnect timeout, 320-frame input gap (~5s) before abort."))
+    latMenu:addChild(latButton("Strict",  "strict",
+      "Strict: tight timing. 100ms simultaneous-KO window, 500ms reaction floor on incoming garbage, 20-30s before a silent connection is declared dead. Best on stable connections (LAN, same-region fiber)."))
+    latMenu:addChild(latButton("Normal",  "normal",
+      "Normal: balanced. 200ms simultaneous-KO window, 750ms reaction floor on incoming garbage, 45-60s before a silent connection is declared dead. Sensible default for most matches."))
+    latMenu:addChild(latButton("Relaxed", "relaxed",
+      "Relaxed: forgiving. 400ms simultaneous-KO window, 1s reaction floor on incoming garbage, 90-120s before a silent connection is declared dead. Best for international or unstable connections."))
+    latMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "back"}),
+      onClick = function()
+        GAME.theme:playCancelSfx()
+        latMenu:yieldFocus()
+      end,
+    }))
     latMenu:select(latMenu.children[2])
 
     self.latencyMenu = latMenu
@@ -220,6 +230,13 @@ function Lobby:initLobbyMenu()
         openLatencyMenu(garbageMenu, b, options.sharedMode, closeTeamMenuChain)
       end
     ))
+    garbageMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "back"}),
+      onClick = function()
+        GAME.theme:playCancelSfx()
+        garbageMenu:yieldFocus()
+      end,
+    }))
     garbageMenu:select(garbageMenu.children[1])
 
     self.teamGarbageMenu = garbageMenu
@@ -1164,7 +1181,10 @@ function Lobby:openRoomSubMenu(room, button)
   end
 
   if self:isLocalPlayerInRoom(lobbyDataV2) and localRoomNumber ~= room.roomNumber then
-    -- Players already in a room cannot request other room slots.
+    -- Players already in a room cannot request other room slots — show a hint
+    -- sub-menu instead of silently no-op'ing so the user understands why the
+    -- click did nothing.
+    self:openCannotJoinHintMenu(button)
     return
   end
 
@@ -1256,6 +1276,63 @@ function Lobby:openRoomSubMenu(room, button)
   if #subMenu.children > 0 then
     subMenu:select(subMenu.children[1])
   end
+  self.roomSubMenu = subMenu
+
+  local subMenuLine = ui.Line({
+    x = x + button.width + 3,
+    y = y + button.height / 2,
+    height = button.height,
+    points = {x + button.width + 3, y + button.height / 2, subMenu.x - 3, y + button.height / 2}
+  })
+  self.roomSubMenuLine = subMenuLine
+
+  self.lobbyMenu:setFocus(subMenu, function()
+    self.roomSubMenu:detach()
+    self.roomSubMenu = nil
+    self.roomSubMenuLine:detach()
+    self.roomSubMenuLine = nil
+  end)
+
+  self.uiRoot:addChild(subMenu)
+  self.uiRoot:addChild(subMenuLine)
+end
+
+---Shown when the local player clicks another room while already in one. Acts
+---as a read-only hint — just an explanatory line plus a "back" button.
+---@param button Button the room-button the user clicked
+function Lobby:openCannotJoinHintMenu(button)
+  if self.roomSubMenu then
+    self.roomSubMenu:yieldFocus()
+  end
+
+  local x, y = button:getScreenPos()
+  local subMenu = ui.ScrollMenu({
+    x = x + self.lobbyMenu.width + 3,
+    y = y,
+    hAlign = "left",
+    vAlign = "top",
+    height = 120,
+    width = 200,
+    padding = 0,
+    childGap = 8,
+  })
+
+  subMenu:addChild(ui.TextButton({
+    label = ui.Label({text = "Leave current room first", translate = false}),
+    width = 200,
+    onClick = function()
+      subMenu:yieldFocus()
+    end,
+  }))
+  subMenu:addChild(ui.TextButton({
+    label = ui.Label({text = "back"}),
+    width = 200,
+    onClick = function()
+      GAME.theme:playCancelSfx()
+      subMenu:yieldFocus()
+    end,
+  }))
+  subMenu:select(subMenu.children[1])
   self.roomSubMenu = subMenu
 
   local subMenuLine = ui.Line({

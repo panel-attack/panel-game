@@ -128,11 +128,14 @@ local function test_broadcastGarbageEvent_relay()
   assert(type(recorded.serverWallClockMs) == "number", "serverWallClockMs should be stamped")
   assert(recorded.senderFrame == 500, "senderFrame preserved")
 
-  -- Relayed to P2, not P1
+  -- Relayed to BOTH players, including the sender. The sender needs the
+  -- echo so the visual on their view of the recipient only fires after the
+  -- server has confirmed (and possibly redirected) the delivery — see
+  -- Room:broadcastGarbageEvent's "single source of truth" design.
   local p2GCount = countByPrefix(p2.connection.outgoingInputQueue, "G")
   assert(p2GCount == 1, "P2 should receive 1 G, got " .. p2GCount)
   local p1GCount = countByPrefix(p1.connection.outgoingInputQueue, "G")
-  assert(p1GCount == 0, "P1 should not receive G echo of their own, got " .. p1GCount)
+  assert(p1GCount == 1, "P1 should also receive their own G (server-confirmed visual), got " .. p1GCount)
 
   room:close()
 end

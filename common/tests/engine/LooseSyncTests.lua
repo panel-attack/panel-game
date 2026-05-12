@@ -55,14 +55,20 @@ local function withMockNetClient(opts)
 end
 
 ----------------------------------------------------------------------
--- Test 1: applyGarbageEvent applies only to local-auth stacks
+-- Test 1: applyGarbageEvent applies to every recipient (local + view)
 ----------------------------------------------------------------------
--- Expected: when a G event arrives with multiple recipient slots, only stacks
--- with is_local == true receive the garbage. Remote stacks (views of other
--- players) skip — their authoritative copy lives on the recipient's machine.
+-- Expected: when a G event arrives with multiple recipient slots, EVERY
+-- recipient stack receives the garbage — local-auth (for gameplay on the
+-- actual player's machine) or view-stack (for visual on spectators / the
+-- sender's view). The server is the single source of truth: it relays G to
+-- everyone (including the sender) and possibly redirects to a living target
+-- if the original recipient died, so the client doesn't need an is_local
+-- filter. The sender no longer does a local visual push in
+-- deliverOutgoingGarbage; the visual on every screen comes from the same
+-- server-relayed G.
 
-local function test_applyGarbageEvent_only_local_recipients()
-  logger.info("test_applyGarbageEvent_only_local_recipients")
+local function test_applyGarbageEvent_applies_to_all_recipients()
+  logger.info("test_applyGarbageEvent_applies_to_all_recipients")
   local match = makeMatchWithStacks({
     { is_local = true },
     { is_local = false },
@@ -78,10 +84,10 @@ local function test_applyGarbageEvent_only_local_recipients()
 
   assert(#match.stacks[1].receivedGarbage == 1,
     "stack[1] (local) should receive 1 garbage delivery, got " .. #match.stacks[1].receivedGarbage)
-  assert(#match.stacks[2].receivedGarbage == 0,
-    "stack[2] (remote) should NOT receive garbage")
-  assert(#match.stacks[3].receivedGarbage == 0,
-    "stack[3] (remote) should NOT receive garbage")
+  assert(#match.stacks[2].receivedGarbage == 1,
+    "stack[2] (remote view) should also receive 1 garbage for visual, got " .. #match.stacks[2].receivedGarbage)
+  assert(#match.stacks[3].receivedGarbage == 1,
+    "stack[3] (remote view) should also receive 1 garbage for visual, got " .. #match.stacks[3].receivedGarbage)
 end
 
 ----------------------------------------------------------------------
@@ -509,7 +515,7 @@ end
 -- Run all tests
 ----------------------------------------------------------------------
 
-test_applyGarbageEvent_only_local_recipients()
+test_applyGarbageEvent_applies_to_all_recipients()
 test_applyDeathEvent_marks_remote_stack()
 test_applyDeathEvent_skips_local_stack()
 test_applyDeathEvent_idempotent()

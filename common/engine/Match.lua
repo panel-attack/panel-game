@@ -435,12 +435,18 @@ function Match:pushGarbageTo(stack)
       -- Multi-target garbage is distributed separately, skip this sender
     else
       local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
-      if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-        -- Loose-sync: if the receiver's clock is past the sender's transit time,
-        -- we no longer rollback to absorb the late garbage (that abort hatch is
-        -- lockstep-era). Just deliver whatever's ready at the receiver's current
-        -- clock; the receiver's telegraph window absorbs the timing slack.
-        local garbageDelivery = st:getReadyGarbageAt(stack.stopWatch)
+      if oldestTransitTime and st.stopWatch >= oldestTransitTime
+          and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
+        -- Loose-sync: gate readiness on the SENDER's clock (sender owns its
+        -- own outgoing timeline). The receiver's view-stack can be in catch-
+        -- up mode and skip the exact transit frame; the sender's stack ticks
+        -- one frame per call so it always hits transit times exactly.
+        -- Pass oldestTransitTime to getReadyGarbageAt instead of either
+        -- stack's stopWatch — popFinishedTransitsAt requires an exact-clock
+        -- match against the timer head, and the timer head IS
+        -- oldestTransitTime by definition, so this is the value that always
+        -- matches once we've decided the garbage is ready.
+        local garbageDelivery = st:getReadyGarbageAt(oldestTransitTime)
         if garbageDelivery then
           self:deliverOutgoingGarbage(st, stack, garbageDelivery)
         end
@@ -469,23 +475,30 @@ function Match:deliverOutgoingGarbage(source, target, garbageDelivery)
 
   if looseSyncActive then
     if source.is_local and not target.is_local then
-      -- Local source → remote target: emit G, then keep local visual push so
-      -- the sender's own view of the opponent shows garbage landing.
+      -- Local source → remote target: emit G to the server. Do NOT push the
+      -- garbage onto the local view of the target — the server's relay of the
+      -- G back to us is what triggers the visual on our view of the recipient
+      -- (see ClientMatch:applyGarbageEvent), so we never show a hit the
+      -- server hasn't confirmed. The server can also redirect the recipient
+      -- if the original target died between our emit and the server's
+      -- processing (Room:broadcastGarbageEvent handles round-robin walk-
+      -- forward in that case).
       local recipientIndex = tableUtils.indexOf(self.stacks, target)
       GAME.netClient:sendGarbageEvent({
         senderFrame = source.stopWatch,
         recipients = { recipientIndex },
         garbage = garbageDelivery,
       })
-      target:receiveGarbage(garbageDelivery)
       return
     elseif target.is_local and not source.is_local then
-      -- Remote source → local target: the authoritative G will arrive separately.
-      -- Suppress to avoid double-counting.
+      -- Remote source → local target: suppress. Authoritative G arrives from
+      -- the source's own machine via the server.
       return
     end
   end
 
+  -- Local↔local (vsSelf, puzzle, training, AI bots) and any case where loose
+  -- sync isn't active (offline modes): direct push, no server in the loop.
   target:receiveGarbage(garbageDelivery)
 end
 
@@ -649,6 +662,12 @@ function Match.createFromReplay(replay)
   end
 
   local match = Match(panelSource, replay.rules)
+  -- Replays should run all stacks to their recorded death frames before
+  -- declaring the match over (the test suite + replay-watching scenes rely
+  -- on this). Live online play wants the loose-sync bypass in hasEnded so
+  -- the survivor doesn't get stuck waiting for the dead opponent's view-
+  -- stack to "catch up" — but that only applies to live matches.
+  match.fromReplay = true
 
   for i, replayStack in ipairs(replay.stacks) do
     local stack

@@ -110,6 +110,14 @@ function ScrollMenu:select(uiElement)
   return false
 end
 
+-- MenuEsc contract: pressing escape jumps the selection to the last child.
+-- If already on the last child, escape is forwarded to that child's
+-- receiveInputs — and Button.receiveInputs treats MenuEsc identically to
+-- MenuSelect (it fires onClick). The net effect: the last child IS the back
+-- action. So any menu passed to setFocus (i.e. any nested submenu) MUST end
+-- with a back button whose onClick calls `menu:yieldFocus()`. Without one,
+-- escaping on the last item fires whatever action that item has — e.g. a
+-- "Relaxed" button would start a game instead of cancelling out.
 ---@param inputs InputConfiguration
 ---@param dt number?
 function ScrollMenu:receiveInputs(inputs, dt)
@@ -121,7 +129,7 @@ function ScrollMenu:receiveInputs(inputs, dt)
     self.focused:receiveInputs(inputs, dt)
   else
     local selectedElement = self.children[self.selectedIndex]
-  
+
     if inputs.isDown["MenuEsc"] then
       if self:getLastIndex() ~= self.selectedIndex then
         self:selectLast()

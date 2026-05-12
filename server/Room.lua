@@ -477,10 +477,64 @@ function Room:broadcastInput(input, sender)
   end
 end
 
----Relay a loose-sync GarbageEvent. Body is JSON sent from the client; we stamp
----serverWallClockMs (used by receivers for adaptive telegraph timing), record
----it on the game for the replay log, then forward to non-sender players and
----all spectators with the same G prefix.
+---Walk forward through the sender's enemy team list to find a recipient that
+---hasn't been eliminated. Returns nil if every member of the sender's enemy
+---team is dead (the team is done; the garbage can be dropped on the floor).
+---@param senderSlot integer
+---@param originalRecipient integer the slot the client picked, may be dead
+---@return integer? alive recipient slot, or nil if none
+function Room:_redirectIfDead(senderSlot, originalRecipient)
+  if not self.game then return nil end
+  if not self.game.eliminatedPlayers[originalRecipient] then
+    return originalRecipient
+  end
+
+  -- Original recipient is dead; walk forward looking for any living enemy.
+  -- For FFA / no-teams, every-non-sender is an enemy. For teams, only the
+  -- sender's enemy team members.
+  local enemySlots
+  if self.teams then
+    enemySlots = TeamUtils.getEnemyPlayerIndices(self.teams, senderSlot)
+  else
+    enemySlots = {}
+    for i = 1, #self.players do
+      if i ~= senderSlot then
+        enemySlots[#enemySlots + 1] = i
+      end
+    end
+  end
+
+  if #enemySlots == 0 then return nil end
+
+  -- Find the original recipient's position in the enemy list, walk forward
+  -- (with wrap) to find the next living. Walking from the original position
+  -- (rather than from slot 1) is deterministic and matches the round-robin
+  -- semantic — "if my pick is dead, give it to the next-living after them."
+  local startIdx = 1
+  for i, slot in ipairs(enemySlots) do
+    if slot == originalRecipient then
+      startIdx = i
+      break
+    end
+  end
+
+  for offset = 1, #enemySlots do
+    local idx = ((startIdx - 1 + offset) % #enemySlots) + 1
+    local candidate = enemySlots[idx]
+    if not self.game.eliminatedPlayers[candidate] then
+      return candidate
+    end
+  end
+
+  return nil
+end
+
+---Relay a loose-sync GarbageEvent. Body is JSON sent from the client; we
+---stamp serverWallClockMs, record it on the game for the replay log,
+---redirect dead recipients to the next-living enemy (round-robin walk-
+---forward), then forward to EVERY player (including the sender, so their
+---view-of-the-target only renders the drop after the server confirms) and
+---to all spectators.
 ---@param sender ServerPlayer
 ---@param body string raw JSON body from the client
 function Room:broadcastGarbageEvent(sender, body)
@@ -497,16 +551,44 @@ function Room:broadcastGarbageEvent(sender, body)
   parsed.sender = sender.player_number
   parsed.serverWallClockMs = math.floor(socket.gettime() * 1000)
 
+  -- Authoritative dead-target redirect. Clients don't see the death
+  -- before they emit, so we fix it server-side. If nobody alive remains in
+  -- the sender's enemy pool, drop the event (the match will end shortly
+  -- via the natural game-end check).
+  if type(parsed.recipients) == "table" then
+    local redirected = {}
+    for _, originalRecipient in ipairs(parsed.recipients) do
+      local actual = self:_redirectIfDead(sender.player_number, originalRecipient)
+      if actual then
+        redirected[#redirected + 1] = actual
+        if actual ~= originalRecipient then
+          logger.info(string.format(
+            "%d: G from %s: recipient %d eliminated; redirected to %d",
+            self.roomNumber, sender.name or "?", originalRecipient, actual))
+        end
+      end
+    end
+    parsed.recipients = redirected
+    if #redirected == 0 then
+      logger.info(string.format(
+        "%d: G from %s: no living recipients, dropping",
+        self.roomNumber, sender.name or "?"))
+      return
+    end
+  end
+
   self.game:recordGarbageEvent(sender, parsed)
 
   local stamped = json.encode(parsed)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
     NetworkProtocol.serverMessageTypes.garbageEvent.prefix, stamped)
 
+  -- Send to EVERY player (including sender) and every spectator. The sender
+  -- needs the relay back to drive the visual on their view-stack of the
+  -- recipient. This is the only path that produces the visual, so nobody
+  -- sees an unconfirmed hit.
   for _, player in ipairs(self.players) do
-    if player ~= sender then
-      player:send(message)
-    end
+    player:send(message)
   end
 
   for _, spec in pairs(self.spectators) do
@@ -516,8 +598,15 @@ function Room:broadcastGarbageEvent(sender, body)
   end
 end
 
----@diagnostic disable-next-line: lowercase-global
-local ARBITRATION_WINDOW_MS = 200
+-- Default arbitration window if the gameMode didn't supply one (e.g. offline
+-- modes, older clients pre-loose-sync). The room host's latencyTolerance
+-- choice overrides this via resolveLatencySettings.
+local DEFAULT_ARBITRATION_WINDOW_MS = 200
+
+---@return integer arbitration window in milliseconds for this room
+function Room:_arbitrationWindowMs()
+  return (self.gameMode and self.gameMode.arbitrationWindowMs) or DEFAULT_ARBITRATION_WINDOW_MS
+end
 
 ---Relay a loose-sync DeathEvent. Same wire shape as GarbageEvent.
 ---Also marks the sender as eliminated server-side so we stop relaying their
@@ -544,14 +633,16 @@ function Room:broadcastDeathEvent(sender, body)
   logger.info(self.roomNumber .. ": " .. sender.name .. " died at frame " .. tostring(parsed.senderFrame))
 
   -- Start or extend the simultaneous-KO arbitration window. Each new death
-  -- pushes the close-time another ARBITRATION_WINDOW_MS into the future so a
-  -- burst of nearly-simultaneous deaths is all captured.
+  -- pushes the close-time another arbitration window into the future so a
+  -- burst of nearly-simultaneous deaths is all captured. Window size is
+  -- driven by the room's latencyTolerance (strict=100ms, normal=200ms,
+  -- relaxed=400ms) — see resolveLatencySettings.
   self.arbitrationDeaths[#self.arbitrationDeaths + 1] = {
     slot = sender.player_number,
     senderFrame = parsed.senderFrame,
     serverArrivalMs = parsed.serverWallClockMs,
   }
-  self.arbitrationWindowEndsAtMs = parsed.serverWallClockMs + ARBITRATION_WINDOW_MS
+  self.arbitrationWindowEndsAtMs = parsed.serverWallClockMs + self:_arbitrationWindowMs()
 
   local stamped = json.encode(parsed)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
@@ -638,7 +729,7 @@ function Room:tickArbitration(nowMs)
 
   logger.info(string.format(
     "%d: KO arbitration: %d death(s) within %dms window, livingTeams=%d, winnerSlot=%s, tie=%s",
-    self.roomNumber, #self.arbitrationDeaths, ARBITRATION_WINDOW_MS,
+    self.roomNumber, #self.arbitrationDeaths, self:_arbitrationWindowMs(),
     #livingTeams, tostring(arbitration.winnerSlot), tostring(arbitration.tie)))
 
   local message = ServerProtocol.koArbitration(arbitration)

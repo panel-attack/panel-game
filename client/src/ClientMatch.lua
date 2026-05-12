@@ -942,17 +942,16 @@ function ClientMatch:receiveInput(prefix, input)
 end
 
 ---Loose-sync: handle an incoming GarbageEvent from the server.
----Applies the garbage to local-authoritative recipient stacks immediately.
----Remote view-stacks are not touched here; each client's local sim already
----pushes visual garbage onto its view of the opponent in deliverOutgoingGarbage.
 ---
----Timing note: the sender already absorbed the full 150-frame
----TRANSIT + TELEGRAPH + DELAY_LAND_TIME window before emitting G (G fires
----when pushGarbageTo would have called receiveGarbage). So the receiver
----applies on arrival, preserving the original ~151-frame chain→landing
----feel. The latency telemetry on NetClient is still tracked (it'll feed an
----adaptive variant once G emission moves to chain-trigger time), but for
----now there's no receiver-side delay.
+---The server is the single source of truth: it relays G to every player
+---including the sender, so the visual on the sender's view of the recipient
+---only fires after the server confirms (and possibly redirects) the
+---delivery. This function applies the garbage to whichever stack the server
+---said is the recipient — local-authoritative for gameplay on the actual
+---player's machine, view-stack for visual on everyone else's screens. No
+---is_local filter; the server already redirected if needed and the
+---sender's machine no longer does a local visual push in
+---deliverOutgoingGarbage.
 ---@param body table parsed event payload: {sender, senderFrame, serverWallClockMs, recipients, garbage}
 function ClientMatch:applyGarbageEvent(body)
   if not body or type(body.recipients) ~= "table" or type(body.garbage) ~= "table" then
@@ -960,14 +959,13 @@ function ClientMatch:applyGarbageEvent(body)
     return
   end
 
-  local excessFrames = GAME.netClient and GAME.netClient:estimatedExcessLatencyFrames() or 0
-
   for _, recipientIndex in ipairs(body.recipients) do
     local stack = self.stacks[recipientIndex]
-    if stack and stack.is_local then
+    if stack then
       logger.debug(string.format(
-        "applyGarbageEvent: sender=%s senderFrame=%s -> stack[%d] (local) excessLatency=%dF (telemetry only)",
-        tostring(body.sender), tostring(body.senderFrame), recipientIndex, excessFrames))
+        "applyGarbageEvent: sender=%s senderFrame=%s -> stack[%d] (is_local=%s)",
+        tostring(body.sender), tostring(body.senderFrame), recipientIndex,
+        tostring(stack.is_local)))
       stack:receiveGarbage(body.garbage)
     end
   end

@@ -56,30 +56,52 @@ local function resolveRequestedGameMode(requestedGameMode)
   return nil
 end
 
-local function resolveConnectionWatchdogSettings(latencyTolerance, playerCount)
+-- Resolve all per-match latency-tolerance knobs from the host's strict/normal/
+-- relaxed selection. In the loose-sync world there are four things this dial
+-- controls, all rolled into one resolution function so server.lua + Room.lua
+-- + clients see consistent values:
+--
+--   1. connectionTimeoutSeconds — how long the TCP watchdog tolerates silence
+--      from a player before declaring the connection dead. Larger in the
+--      relaxed setting so flaky internet can recover.
+--   2. sendRetryLimit — how many times to retry a send before giving up.
+--   3. arbitrationWindowMs — the simultaneous-KO arbitration window. Larger
+--      values catch more "almost simultaneous" deaths as ties (favors fair
+--      ties); smaller values resolve faster (favors decisive outcomes).
+--   4. minReactionFrames — floor on the adaptive telegraph compression on
+--      the receiver. Larger values guarantee more telegraph window before
+--      garbage lands, at the cost of overall tempo. Smaller values let
+--      gameplay stay tight even under heavy latency.
+--
+-- Strict / normal / relaxed are knobs the room host picks in the lobby; they
+-- apply to the whole match. All clients see the same resolved values via the
+-- gameMode payload, so the experience matches the host's choice.
+---@return {connectionTimeoutSeconds:integer, sendRetryLimit:integer, arbitrationWindowMs:integer, minReactionFrames:integer}
+local function resolveLatencySettings(latencyTolerance, playerCount)
   local count = tonumber(playerCount) or 2
   local tolerance = latencyTolerance
   if tolerance ~= "strict" and tolerance ~= "normal" and tolerance ~= "relaxed" then
     tolerance = "normal"
   end
 
-  if count >= 3 then
-    if tolerance == "strict" then
-      return 30, 10
-    elseif tolerance == "relaxed" then
-      return 120, 20
-    else
-      return 60, 15
-    end
+  local settings = {}
+  if tolerance == "strict" then
+    settings.connectionTimeoutSeconds = (count >= 3) and 30 or 20
+    settings.sendRetryLimit            = (count >= 3) and 10 or 8
+    settings.arbitrationWindowMs       = 100
+    settings.minReactionFrames         = 30
+  elseif tolerance == "relaxed" then
+    settings.connectionTimeoutSeconds = (count >= 3) and 120 or 90
+    settings.sendRetryLimit            = (count >= 3) and 20 or 15
+    settings.arbitrationWindowMs       = 400
+    settings.minReactionFrames         = 60
   else
-    if tolerance == "strict" then
-      return 20, 8
-    elseif tolerance == "relaxed" then
-      return 90, 15
-    else
-      return 45, 10
-    end
+    settings.connectionTimeoutSeconds = (count >= 3) and 60 or 45
+    settings.sendRetryLimit            = (count >= 3) and 15 or 10
+    settings.arbitrationWindowMs       = 200
+    settings.minReactionFrames         = 45
   end
+  return settings
 end
 
 local pairs = pairs
@@ -1148,10 +1170,15 @@ function Server:processMessage(message, connection)
 
         requestedGameMode.latencyTolerance = message.latencyTolerance
         -- For dynamic-roster modes (open_ffa) playerCount is nil at request time;
-        -- fall back to maxPlayers. latencyTolerance still drives the connection
-        -- watchdog (timeout/retry) — only the lockstep abort gap is gone.
+        -- fall back to maxPlayers. latencyTolerance now drives four match-wide
+        -- knobs: TCP-watchdog timeout/retry, the simultaneous-KO arbitration
+        -- window, and the receiver-side adaptive-telegraph reaction floor.
         local effectiveCount = requestedGameMode.playerCount or requestedGameMode.maxPlayers or 2
-        requestedGameMode.connectionTimeoutSeconds, requestedGameMode.sendRetryLimit = resolveConnectionWatchdogSettings(message.latencyTolerance, effectiveCount)
+        local latencySettings = resolveLatencySettings(message.latencyTolerance, effectiveCount)
+        requestedGameMode.connectionTimeoutSeconds = latencySettings.connectionTimeoutSeconds
+        requestedGameMode.sendRetryLimit           = latencySettings.sendRetryLimit
+        requestedGameMode.arbitrationWindowMs      = latencySettings.arbitrationWindowMs
+        requestedGameMode.minReactionFrames        = latencySettings.minReactionFrames
         self:create_room(requestedGameMode, player)
         return true
       else
