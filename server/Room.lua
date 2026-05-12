@@ -72,6 +72,12 @@ function(self, roomNumber, players, gameMode, leaderboard)
   -- to maxPlayers. Used by open FFA (dynamic-roster) modes only.
   self.pendingJoiners = {}
 
+  -- Loose-sync KO arbitration state — populated by broadcastDeathEvent, drained
+  -- by tickArbitration when the 200ms window closes.
+  self.arbitrationDeaths = {}
+  self.arbitrationWindowEndsAtMs = nil
+  self.arbitrationEmitted = false
+
   Signal.turnIntoEmitter(self)
   self:createSignal("playerJoined")
   self:createSignal("matchStart")
@@ -238,6 +244,11 @@ function Room:start_match()
   self.stageId = self.players[stageIndex].stage
 
   self.game = ServerGame.createFromRoomState(self)
+  -- Reset KO arbitration state for the new match.
+  self.arbitrationDeaths = {}
+  self.arbitrationWindowEndsAtMs = nil
+  self.arbitrationEmitted = false
+
   local replay = self.game:getPartialReplay(false)
   -- games generated via createFromRoomState always have a replay
   ---@cast replay -nil
@@ -478,10 +489,13 @@ function Room:broadcastGarbageEvent(sender, body)
   end
 end
 
+---@diagnostic disable-next-line: lowercase-global
+local ARBITRATION_WINDOW_MS = 200
+
 ---Relay a loose-sync DeathEvent. Same wire shape as GarbageEvent.
 ---Also marks the sender as eliminated server-side so we stop relaying their
----now-absent inputs (replacing the legacy J{stackEliminated} path).
----KO arbitration is wired in Step 9a; for now we just relay.
+---now-absent inputs (replacing the legacy J{stackEliminated} path) and starts
+---(or extends) the KO arbitration window — see Room:tickArbitration.
 ---@param sender ServerPlayer
 ---@param body string raw JSON body from the client
 function Room:broadcastDeathEvent(sender, body)
@@ -502,6 +516,16 @@ function Room:broadcastDeathEvent(sender, body)
   self.game:markPlayerEliminated(sender, parsed.senderFrame)
   logger.info(self.roomNumber .. ": " .. sender.name .. " died at frame " .. tostring(parsed.senderFrame))
 
+  -- Start or extend the simultaneous-KO arbitration window. Each new death
+  -- pushes the close-time another ARBITRATION_WINDOW_MS into the future so a
+  -- burst of nearly-simultaneous deaths is all captured.
+  self.arbitrationDeaths[#self.arbitrationDeaths + 1] = {
+    slot = sender.player_number,
+    senderFrame = parsed.senderFrame,
+    serverArrivalMs = parsed.serverWallClockMs,
+  }
+  self.arbitrationWindowEndsAtMs = parsed.serverWallClockMs + ARBITRATION_WINDOW_MS
+
   local stamped = json.encode(parsed)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
     NetworkProtocol.serverMessageTypes.deathEvent.prefix, stamped)
@@ -517,6 +541,95 @@ function Room:broadcastDeathEvent(sender, body)
       spec:send(message)
     end
   end
+end
+
+---Returns the set of living team indices: teams with at least one player who
+---is neither eliminated nor disconnected. For FFA (no teams) each slot is
+---treated as its own team.
+---@return integer[] # team indices (or slot indices in FFA) that still have a living member
+---@return integer[] # representative slot for each living team (first survivor)
+function Room:_livingTeams()
+  if not self.game then
+    return {}, {}
+  end
+  local livingTeams = {}
+  local representatives = {}
+  local seen = {}
+  for slot = 1, #self.players do
+    local dead = self.game.disconnectedPlayers[slot] or self.game.eliminatedPlayers[slot]
+    if not dead then
+      local teamKey
+      if self.teams then
+        teamKey = TeamUtils.getPlayerTeamIndex(self.teams, slot)
+      else
+        teamKey = slot
+      end
+      if not seen[teamKey] then
+        seen[teamKey] = true
+        livingTeams[#livingTeams + 1] = teamKey
+        representatives[#representatives + 1] = slot
+      end
+    end
+  end
+  return livingTeams, representatives
+end
+
+---Drain the arbitration window if it has closed. Called from Server:update.
+---Emits a single K message with the authoritative outcome and resets state.
+---@param nowMs integer current wall-clock time in milliseconds
+function Room:tickArbitration(nowMs)
+  if not self.arbitrationWindowEndsAtMs or self.arbitrationEmitted then
+    return
+  end
+  if nowMs < self.arbitrationWindowEndsAtMs then
+    return
+  end
+  if not self.game or self.game.complete then
+    -- Match already concluded via another path (outcomeReports); skip K.
+    self.arbitrationDeaths = {}
+    self.arbitrationWindowEndsAtMs = nil
+    return
+  end
+
+  local livingTeams, representatives = self:_livingTeams()
+  local arbitration = {
+    deaths = self.arbitrationDeaths,
+  }
+
+  if #livingTeams == 1 then
+    arbitration.tie = false
+    arbitration.winnerSlot = representatives[1]
+  elseif #livingTeams == 0 then
+    arbitration.tie = true
+    arbitration.winnerSlot = nil
+  else
+    -- More than one team is still alive — KO arbitration is informational
+    -- only; the natural game-end logic will produce the final outcome.
+    arbitration.tie = false
+    arbitration.winnerSlot = nil
+  end
+
+  logger.info(string.format(
+    "%d: KO arbitration: %d death(s) within %dms window, livingTeams=%d, winnerSlot=%s, tie=%s",
+    self.roomNumber, #self.arbitrationDeaths, ARBITRATION_WINDOW_MS,
+    #livingTeams, tostring(arbitration.winnerSlot), tostring(arbitration.tie)))
+
+  local message = ServerProtocol.koArbitration(arbitration)
+  local encoded = NetworkProtocol.markedMessageForTypeAndBody(
+    message.messageType.prefix, json.encode(message.messageText))
+
+  for _, player in ipairs(self.players) do
+    player:send(encoded)
+  end
+  for _, spec in pairs(self.spectators) do
+    if spec then
+      spec:send(encoded)
+    end
+  end
+
+  self.arbitrationEmitted = true
+  self.arbitrationDeaths = {}
+  self.arbitrationWindowEndsAtMs = nil
 end
 
 -- broadcasts the message to everyone in the room

@@ -862,6 +862,7 @@ function Server:update()
 
   self:updateConnections()
   self:processMessages()
+  self:tickArbitrations()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
@@ -873,6 +874,16 @@ function Server:update()
 
   -- If the lobby changed tell everyone
   self:broadCastLobbyIfChanged()
+end
+
+---Drain KO arbitration windows for any rooms whose window has closed.
+function Server:tickArbitrations()
+  local nowMs = math.floor(socket.gettime() * 1000)
+  for _, room in pairs(self.rooms) do
+    if room then
+      room:tickArbitration(nowMs)
+    end
+  end
 end
 
 -- Accept any new connections to the server

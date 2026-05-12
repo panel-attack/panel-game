@@ -993,11 +993,26 @@ function ClientMatch:applyDeathEvent(body)
 end
 
 ---Loose-sync: handle a server-authored KOArbitration result.
----Step 6 stub — just logs. Step 9a wires this into end-of-match UI.
+---Stores the authoritative outcome on the match so the end-of-match UI can
+---show "Draw" or the right winner regardless of what the local sim derived.
+---Does not force-end the match — if the server's natural outcomeReport path
+---is also in flight, it will land on the same result.
 ---@param body table parsed payload: {winnerSlot, tie, deaths}
 function ClientMatch:applyKOArbitration(body)
-  logger.debug(string.format("KOArbitration received: winnerSlot=%s tie=%s",
-    tostring(body and body.winnerSlot), tostring(body and body.tie)))
+  if not body then
+    logger.warn("applyKOArbitration: nil body, dropping")
+    return
+  end
+
+  self.koArbitration = {
+    winnerSlot = body.winnerSlot,
+    tie = body.tie == true,
+    deaths = body.deaths,
+  }
+
+  logger.info(string.format("KOArbitration applied: winnerSlot=%s tie=%s deaths=%d",
+    tostring(body.winnerSlot), tostring(body.tie),
+    body.deaths and #body.deaths or 0))
 end
 
 return ClientMatch
