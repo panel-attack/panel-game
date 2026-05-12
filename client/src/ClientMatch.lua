@@ -942,13 +942,17 @@ function ClientMatch:receiveInput(prefix, input)
 end
 
 ---Loose-sync: handle an incoming GarbageEvent from the server.
----Schedules the garbage on each local-authoritative recipient at an adaptive
----landing frame: receiver.clock + max(MIN_REACTION_FRAMES, GARBAGE_DELAY_LAND_TIME - excess_latency_frames).
----Under good network conditions the receiver gets the full 60-frame landing
----window; under bad conditions it compresses to MIN_REACTION_FRAMES so the
----player always sees at least a visible telegraph before garbage lands.
+---Applies the garbage to local-authoritative recipient stacks immediately.
 ---Remote view-stacks are not touched here; each client's local sim already
 ---pushes visual garbage onto its view of the opponent in deliverOutgoingGarbage.
+---
+---Timing note: the sender already absorbed the full 150-frame
+---TRANSIT + TELEGRAPH + DELAY_LAND_TIME window before emitting G (G fires
+---when pushGarbageTo would have called receiveGarbage). So the receiver
+---applies on arrival, preserving the original ~151-frame chain→landing
+---feel. The latency telemetry on NetClient is still tracked (it'll feed an
+---adaptive variant once G emission moves to chain-trigger time), but for
+---now there's no receiver-side delay.
 ---@param body table parsed event payload: {sender, senderFrame, serverWallClockMs, recipients, garbage}
 function ClientMatch:applyGarbageEvent(body)
   if not body or type(body.recipients) ~= "table" or type(body.garbage) ~= "table" then
@@ -957,17 +961,14 @@ function ClientMatch:applyGarbageEvent(body)
   end
 
   local excessFrames = GAME.netClient and GAME.netClient:estimatedExcessLatencyFrames() or 0
-  local landingOffset = math.max(MIN_REACTION_FRAMES, GARBAGE_DELAY_LAND_TIME - excessFrames)
 
   for _, recipientIndex in ipairs(body.recipients) do
     local stack = self.stacks[recipientIndex]
     if stack and stack.is_local then
-      local landingFrame = stack.stopWatch + landingOffset
       logger.debug(string.format(
-        "applyGarbageEvent: sender=%s senderFrame=%s -> stack[%d] (local) excessLatency=%dF landingOffset=%dF land@frame=%d",
-        tostring(body.sender), tostring(body.senderFrame), recipientIndex,
-        excessFrames, landingOffset, landingFrame))
-      self:scheduleRemoteGarbage(stack, body.garbage, landingFrame)
+        "applyGarbageEvent: sender=%s senderFrame=%s -> stack[%d] (local) excessLatency=%dF (telemetry only)",
+        tostring(body.sender), tostring(body.senderFrame), recipientIndex, excessFrames))
+      stack:receiveGarbage(body.garbage)
     end
   end
 end
