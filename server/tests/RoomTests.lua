@@ -98,23 +98,13 @@ local function basicTest()
   end
 end
 
--- p1 aborts after getting significantly ahead
-local function abortTest1()
-  local room, p1, p2, gameCatcher = getRoom()
-  room:start_match()
-  for i = 1, 120 do
-    -- simulate inputs
-    room:broadcastInput("A", p1)
-  end
-  p2.connection.outgoingMessageQueue:clear()
-  room:handleGameAbort(p1)
-  assert(room.game == nil)
-
-  local game = gameCatcher.game
-  assert(game.complete ~= true)
-  local message = p2.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "gameAbort" and message.content.source == ServerTesting.players[1].name)
-end
+-- abortTest1 removed in the loose-sync rewrite.
+-- It exercised the OLD "legitimate latency abort" path (large input gap →
+-- handlePlayerDisconnect → game ends immediately) which Step 3 collapsed into
+-- the unified "mark eliminated, game continues" path. This was the explicit
+-- "more forgiving to disconnects" design goal. The replacement positive test
+-- lives in server/tests/LooseSyncServerTests.lua as
+-- test_abort_marks_eliminated_keeps_game_alive.
 
 -- p1 aborts for no reason while p2 reports a win
 local function abortTest2()
@@ -221,7 +211,7 @@ local function pauseTest()
 end
 
 basicTest()
-abortTest1()
+-- abortTest1 removed; replaced by test_abort_marks_eliminated_keeps_game_alive in LooseSyncServerTests
 abortTest2()
 abortTest3()
 pauseTest()

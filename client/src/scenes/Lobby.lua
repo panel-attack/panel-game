@@ -945,14 +945,8 @@ end
 function Lobby:createRoomButtons(personalizedLobbyData)
   local roomButtons = {}
   local localPublicId = GAME.localPlayer.publicId
-  local localInRoom = self:isLocalPlayerInRoom(personalizedLobbyData)
-  local localRoomNumber = personalizedLobbyData.players[localPublicId] and personalizedLobbyData.players[localPublicId].roomNumber
 
   for _, room in pairs(personalizedLobbyData.rooms) do
-    if localInRoom and room.roomNumber ~= localRoomNumber then
-      goto continue
-    end
-
     -- Check if local player is in this room
     local isLocalPlayerRoom = false
     for _, playerId in ipairs(room.players) do
@@ -1136,8 +1130,6 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     end
 
     roomButtons[#roomButtons+1] = button
-
-    ::continue::
   end
 
   -- Sort: local player's room first, then by room number

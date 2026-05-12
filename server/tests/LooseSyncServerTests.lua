@@ -6,7 +6,8 @@
 
 ---@diagnostic disable: undefined-field, invisible, inject-field
 local Room = require("server.Room")
-local ServerTesting = require("server.tests.ServerTesting")
+local Player = require("server.Player")
+local MockConnection = require("server.tests.MockConnection")
 local GameModes = require("common.data.GameModes")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local socket = require("common.lib.socket")
@@ -19,29 +20,23 @@ COMPRESS_REPLAYS_ENABLED = true
 -- Helpers
 ----------------------------------------------------------------------
 
-local function resetPlayers(players)
-  for _, p in ipairs(players) do
-    p.state = "lobby"
-    p.player_number = nil
-    p.wantsReady = false
-    p.ready = false
-    p.loaded = false
-    if p.connection then
-      p.connection.outgoingMessageQueue:clear()
-      p.connection.outgoingInputQueue:clear()
-      p.connection.incomingMessageQueue:clear()
-      p.connection.incomingInputQueue:clear()
-      if p.connection.incomingGarbageQueue then p.connection.incomingGarbageQueue:clear() end
-      if p.connection.incomingDeathQueue then p.connection.incomingDeathQueue:clear() end
-    end
-  end
+-- Make a fresh Player wrapping a fresh MockConnection. Each test gets its own
+-- players so module-level singletons (like ServerTesting.players) can't leak
+-- state between this file and the rest of the server test suite. In
+-- production every connection is a fresh socket, so this mirrors reality.
+local function makePlayer(userId, name, publicId)
+  local p = Player(userId, MockConnection(), name, publicId)
+  p:updateSettings({ inputMethod = "controller", level = 10 })
+  p.save_replays_publicly = "not at all"
+  p.rating = 1500
+  p.placementsDone = true
+  return p
 end
 
--- Get a 2-player VS room with a match in progress.
+-- Get a fresh 2-player VS room with a match in progress.
 local function get2pMatchInProgress()
-  local p1 = ServerTesting.players[1]
-  local p2 = ServerTesting.players[2]
-  resetPlayers({ p1, p2 })
+  local p1 = makePlayer("ls-1", "LSBob", 1001)
+  local p2 = makePlayer("ls-2", "LSAlice", 1002)
 
   local room = Room(1, { p1, p2 }, GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS))
   -- Drive players to ready state to trigger start_match
@@ -303,10 +298,10 @@ end
 
 local function test_arbitration_2v2_team_wipe()
   logger.info("test_arbitration_2v2_team_wipe")
-  -- Use players 3-6 to mirror TeamRoomTests convention
-  local p1, p2, p3, p4 = ServerTesting.players[3], ServerTesting.players[4],
-                         ServerTesting.players[5], ServerTesting.players[6]
-  resetPlayers({ p1, p2, p3, p4 })
+  local p1 = makePlayer("ls-2v2-1", "LSP1", 2001)
+  local p2 = makePlayer("ls-2v2-2", "LSP2", 2002)
+  local p3 = makePlayer("ls-2v2-3", "LSP3", 2003)
+  local p4 = makePlayer("ls-2v2-4", "LSP4", 2004)
 
   local advance, restore = withMockSocketGetTime(4000.0)
   local ok, err = pcall(function()
@@ -358,6 +353,54 @@ local function test_arbitration_2v2_team_wipe()
 end
 
 ----------------------------------------------------------------------
+-- Test 21: Abort marks eliminated but keeps the game alive
+----------------------------------------------------------------------
+-- Expected: in loose-sync, a single player aborting does NOT immediately end
+-- the match — they are marked eliminated server-side and the survivor can
+-- continue playing. The match only ends when the survivor also reports an
+-- outcome (or aborts themselves).
+--
+-- This is the explicit "more forgiving to disconnects" design goal. Replaces
+-- the deleted abortTest1 in RoomTests, which asserted the OLD strict
+-- "abort → immediately end game" semantics.
+
+local function test_abort_marks_eliminated_keeps_game_alive()
+  logger.info("test_abort_marks_eliminated_keeps_game_alive")
+  local room, p1, p2 = get2pMatchInProgress()
+
+  -- p1 sends a handful of inputs then aborts
+  for _ = 1, 30 do
+    room:broadcastInput("A", p1)
+  end
+
+  room:handleGameAbort(p1)
+
+  assert(room.game ~= nil,
+    "after a single player aborts, the room.game should stay alive (more forgiving)")
+  assert(room.game.complete == false,
+    "game should NOT be complete with only one outcome reported")
+  assert(room.game.eliminatedPlayers[1] ~= nil,
+    "p1 should be marked eliminated server-side, got " .. tostring(room.game.eliminatedPlayers[1]))
+  assert(room.game.eliminatedPlayers[2] == nil,
+    "p2 should NOT be marked eliminated — they can continue")
+
+  -- p2 should be free to continue sending inputs; the server keeps relaying them
+  -- (the input goes to p1's queue even though p1 has left — harmless, p1 is gone)
+  room:broadcastInput("A", p2)
+  assert(room.game ~= nil, "game still alive after p2 input post-abort")
+
+  -- Now p2 reports their outcome → game finally ends.
+  room:handleGameOverOutcome({outcome = 2}, p2)
+  assert(room.game == nil, "game should end once the survivor also reports")
+
+  -- Players should be back at character select for the next match.
+  assert(p1.state == "character select" or p1.state == "lobby",
+    "p1 should be reset post-match, got " .. tostring(p1.state))
+  assert(p2.state == "character select",
+    "p2 should be at character select, got " .. tostring(p2.state))
+end
+
+----------------------------------------------------------------------
 -- Test 19: Spectators CAN join partial rooms
 ----------------------------------------------------------------------
 -- Expected: in a partial (not-yet-full) team room, room:add_spectator
@@ -370,19 +413,15 @@ end
 
 local function test_partialRoom_spectators_allowed()
   logger.info("test_partialRoom_spectators_allowed")
-  -- Use players 3-4 for the partial room (matching TeamRoomTests convention)
-  -- so we don't clash with the 2-player tests above that use 1-2.
-  local p1 = ServerTesting.players[3]
-  local p2 = ServerTesting.players[4]
-  resetPlayers({ p1, p2 })
+  local p1 = makePlayer("ls-spec-1", "LSSpec1", 3001)
+  local p2 = makePlayer("ls-spec-2", "LSSpec2", 3002)
 
   -- Create a 4-player team room with only 2 players (partial)
   local room = Room(1, { p1, p2 }, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL))
   assert(not room:isFull(), "room should be partial (only 2 of 4 players)")
 
-  local spectator = ServerTesting.players[1]
+  local spectator = makePlayer("ls-spec-3", "LSSpec3", 3003)
   spectator.state = "lobby"
-  spectator.connection.outgoingMessageQueue:clear()
 
   local success = room:add_spectator(spectator)
   assert(success == true,
@@ -406,6 +445,7 @@ test_arbitration_singleDeath_emits_winner()
 test_arbitration_doubleDeath_tie()
 test_arbitration_window_extends()
 test_arbitration_2v2_team_wipe()
+test_abort_marks_eliminated_keeps_game_alive()
 test_partialRoom_spectators_allowed()
 
 logger.info("All LooseSyncServerTests passed!")
