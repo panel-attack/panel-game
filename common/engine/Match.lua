@@ -733,9 +733,26 @@ function Match:hasEnded()
     end
   end
 
-  -- Team-based end condition: match ends when only 1 team remains active
+  -- Team-based end condition: match ends when only 1 team remains active.
+  -- Compute team-aliveness inline using isDone() instead of delegating to
+  -- TeamUtils.countActiveTeams — the TeamUtils path uses stack:game_ended()
+  -- directly, which returns false in live loose-sync for a dead remote stack
+  -- whose clock is pinned below its game_over_clock (the remote stops sending
+  -- inputs after the DeathEvent). Without isDone() here, FFA/team matches
+  -- never end when a remote player dies.
   if self.rules.matchEndConditions[MatchRules.MatchEndConditions.TEAMS_ACTIVE] and self.teams then
-    local activeTeamCount = TeamUtils.countActiveTeams(self.teams, self.stacks)
+    local activeTeamCount = 0
+    for _, team in ipairs(self.teams) do
+      local teamAlive = false
+      for _, playerIndex in ipairs(team.playerIndices) do
+        local stack = self.stacks[playerIndex]
+        if stack and not isDone(stack) then
+          teamAlive = true
+          break
+        end
+      end
+      if teamAlive then activeTeamCount = activeTeamCount + 1 end
+    end
     if activeTeamCount <= self.rules.matchEndConditions[MatchRules.MatchEndConditions.TEAMS_ACTIVE] then
       local gameOverClock = math.huge
       for _, stack in ipairs(self.stacks) do
@@ -1025,7 +1042,37 @@ function Match:getWinningTeam()
   if not self.teams then
     return nil
   end
-  return TeamUtils.getWinningTeam(self.teams, self.stacks)
+  -- Use the same isDone() semantics as hasEnded: in live loose-sync, a dead
+  -- remote stack has its game_over_clock set but stack.clock is pinned below
+  -- it (the remote stopped sending inputs after the DeathEvent). Calling
+  -- TeamUtils.getWinningTeam directly uses stack:game_ended() which stays
+  -- false in that pinned state — so the dead remote team looks alive,
+  -- multiple teams count as active, and the function returns nil (no
+  -- winner). This breaks the survivor's "did my team win" report to the
+  -- server (NetClient sends localGameResult=2/loss instead of 1/win).
+  local liveMatch = not self.fromReplay
+  local activeTeams = {}
+  for _, team in ipairs(self.teams) do
+    local teamAlive = false
+    for _, playerIndex in ipairs(team.playerIndices) do
+      local stack = self.stacks[playerIndex]
+      if stack then
+        local done = (liveMatch and stack.game_over_clock and stack.game_over_clock > 0)
+          or stack:game_ended()
+        if not done then
+          teamAlive = true
+          break
+        end
+      end
+    end
+    if teamAlive then
+      activeTeams[#activeTeams + 1] = team
+    end
+  end
+  if #activeTeams == 1 then
+    return activeTeams[1]
+  end
+  return nil
 end
 
 return Match
