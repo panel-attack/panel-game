@@ -786,20 +786,19 @@ end
 
 ---@return boolean
 function Match:isIrrecoverablyDesynced()
-  -- Loose-sync: per-player clocks drift independently and that is the steady state.
-  -- Detecting "MAX_LAG between source and target" no longer means anything actionable,
-  -- so this returns false unconditionally. Left as a metric for future telemetry.
-  for target, sourceArray in pairs(self.garbageSources) do
-    for i, source in ipairs(sourceArray) do
-      if not source:game_ended() and not target:game_ended() and source.clock + MAX_LAG < target.clock then
-        logger.warn(string.format(
-          "loose-sync clock drift: source clock=%d, target clock=%d, gap=%d (MAX_LAG=%d)",
-          source.clock, target.clock, target.clock - source.clock, MAX_LAG))
-        return false
-      end
-    end
-  end
-
+  -- Loose-sync: comparing clocks across stacks is not a meaningful health
+  -- check. Each stack ticks at its own rate:
+  --   * local-authoritative stack: advances at the client's love.update rate
+  --   * view stack: advances as inputs arrive over the network
+  -- If the two clients run at different tick rates (different machines /
+  -- vsync / FPS cap), clocks diverge by hundreds of frames per minute even
+  -- on localhost. That divergence is normal, not a desync. Real connection
+  -- failures are handled by the server's connection watchdog; bursty input
+  -- arrival is absorbed by Stack:shouldRun's catch-up branches.
+  --
+  -- Returning false here unconditionally so the lockstep-era abort path
+  -- never fires in loose-sync matches. The function is kept as a callable
+  -- stub for any remaining callers and for future telemetry to slot in.
   return false
 end
 
