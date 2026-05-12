@@ -585,31 +585,6 @@ local function testJoinRoomRequestUsesSanitizedJoinMessage()
   assert(joinAck and joinAck.content and joinAck.content.roomNumber == room.roomNumber)
 end
 
-local function testRoomRequestLatencyToleranceAdjustsAbortThreshold()
-  local server = ServerTesting.getTestServer()
-  local alice = ServerTesting.login(server, ServerTesting.players[2])
-
-  ServerTesting.clearOutgoingMessages({alice})
-
-  alice.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_VS_ALL), "strict").messageText))
-  server:update()
-
-  local strictRoom = server.playerToRoom[alice]
-  assert(strictRoom, "Expected strict-tolerance room to be created")
-  assert(strictRoom.abortInputGapThreshold == 140)
-
-  server:handleLeaveRoom(alice, "test cleanup")
-  server:update()
-  ServerTesting.clearOutgoingMessages({alice})
-
-  alice.connection:receiveMessage(json.encode(ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_VS_ALL), "relaxed").messageText))
-  server:update()
-
-  local relaxedRoom = server.playerToRoom[alice]
-  assert(relaxedRoom, "Expected relaxed-tolerance room to be created")
-  assert(relaxedRoom.abortInputGapThreshold == 320)
-end
-
 testLogin()
 testRoomSetup()
 testRoomSetup2()
@@ -622,4 +597,3 @@ testJoinPartialRoomSetsCharacterSelectState()
 testTeamRoomRequestCreatesPartialRoom()
 testTeamRoomRequestAcceptsFallbackGameModeShape()
 testJoinRoomRequestUsesSanitizedJoinMessage()
-testRoomRequestLatencyToleranceAdjustsAbortThreshold()

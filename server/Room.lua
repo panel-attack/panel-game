@@ -32,7 +32,6 @@ local TeamUtils = require("common.data.TeamUtils")
 ---@field ranked boolean if the next match is anticipated to be ranked
 ---@field rankedReasons string[]
 ---@field recentGameAbort boolean tracks if the most recent game was ended by an abort
----@field abortInputGapThreshold integer threshold for treating abort as latency error
 ---@field teams Team[]? teams for team-based game modes
 ---@field voided boolean if true, the room is "dead" — no new matches can start.
 ---  Set when any player leaves/disconnects in a multi-player room. Remaining players
@@ -71,7 +70,6 @@ function(self, roomNumber, players, gameMode, leaderboard)
   -- match starts. Insertion-ordered for first-come-first-served promotion up
   -- to maxPlayers. Used by open FFA (dynamic-roster) modes only.
   self.pendingJoiners = {}
-  self.abortInputGapThreshold = (gameMode and gameMode.abortInputGapThreshold) or ((self.maxPlayers >= 3) and 220 or 100)
 
   Signal.turnIntoEmitter(self)
   self:createSignal("playerJoined")
@@ -577,35 +575,28 @@ function Room:handleGameAbort(sender)
   elseif #self.players >= 2 and isPlayerInRoom then
     logger.info(sender.name .. " aborted the game")
 
-    local inputCountDifference = self.game:getInputCountDifference()
-    if inputCountDifference > self.abortInputGapThreshold then
-      logger.info("abort was judged as legitimate with an inputCountDifference of " .. inputCountDifference)
-      self:handlePlayerDisconnect(sender, "latency_error")
-    else
-      logger.info("abort was judged as illegitimate with an inputCountDifference of " .. inputCountDifference)
-
-      -- Mark the aborter as eliminated so we stop relaying their (now-absent) inputs.
-      -- markPlayerEliminated only sets eliminatedPlayers; it does not touch
-      -- outcomeReports, so the constructed loss-outcome below still applies.
-      if self.game then
-        self.game:markPlayerEliminated(sender, sender.player_number)
-      end
-
-      -- Illegitimate aborts:
-      -- - 2p: keep legacy behavior (aborting player loses, opponent wins)
-      -- - Team game: report self-team loss (2)
-      -- - 3+p FFA: report self-loss using own player_number (no hardcoded winner)
-      local outcome
-      if #self.players == 2 then
-        outcome = (sender.player_number == 1) and 2 or 1
-      elseif self.teams then
-        outcome = 2
-      else
-        outcome = sender.player_number
-      end
-
-      self:handleGameOverOutcome({outcome = outcome}, sender)
+    -- Loose-sync: per-player input counts diverge naturally with clock drift,
+    -- so we can't distinguish a "latency timeout" from "user gave up" from the
+    -- gap alone. Treat all aborts the same: eliminate the aborter and let the
+    -- survivors finish.
+    if self.game then
+      self.game:markPlayerEliminated(sender, sender.player_number)
     end
+
+    -- Outcome attribution:
+    -- - 2p: aborting player loses, opponent wins
+    -- - Team game: report self-team loss (2)
+    -- - 3+p FFA: report self-loss using own player_number (no hardcoded winner)
+    local outcome
+    if #self.players == 2 then
+      outcome = (sender.player_number == 1) and 2 or 1
+    elseif self.teams then
+      outcome = 2
+    else
+      outcome = sender.player_number
+    end
+
+    self:handleGameOverOutcome({outcome = outcome}, sender)
   else
     logger.warn(self.roomNumber .. ": Unexpected abort from player with publicID " .. sender.publicPlayerID)
   end

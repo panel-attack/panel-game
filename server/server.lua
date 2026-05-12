@@ -56,32 +56,6 @@ local function resolveRequestedGameMode(requestedGameMode)
   return nil
 end
 
-local function resolveAbortInputGapThreshold(latencyTolerance, playerCount)
-  local count = tonumber(playerCount) or 2
-  local tolerance = latencyTolerance
-  if tolerance ~= "strict" and tolerance ~= "normal" and tolerance ~= "relaxed" then
-    tolerance = "normal"
-  end
-
-  if count >= 3 then
-    if tolerance == "strict" then
-      return 140
-    elseif tolerance == "relaxed" then
-      return 320
-    else
-      return 220
-    end
-  else
-    if tolerance == "strict" then
-      return 80
-    elseif tolerance == "relaxed" then
-      return 180
-    else
-      return 100
-    end
-  end
-end
-
 local function resolveConnectionWatchdogSettings(latencyTolerance, playerCount)
   local count = tonumber(playerCount) or 2
   local tolerance = latencyTolerance
@@ -1109,11 +1083,9 @@ function Server:processMessage(message, connection)
 
         requestedGameMode.latencyTolerance = message.latencyTolerance
         -- For dynamic-roster modes (open_ffa) playerCount is nil at request time;
-        -- fall back to maxPlayers so we use 3+ player thresholds. The actual
-        -- abortInputGapThreshold for the match is re-resolved at match-start
-        -- in Room:start_match using #self.players.
+        -- fall back to maxPlayers. latencyTolerance still drives the connection
+        -- watchdog (timeout/retry) — only the lockstep abort gap is gone.
         local effectiveCount = requestedGameMode.playerCount or requestedGameMode.maxPlayers or 2
-        requestedGameMode.abortInputGapThreshold = resolveAbortInputGapThreshold(message.latencyTolerance, effectiveCount)
         requestedGameMode.connectionTimeoutSeconds, requestedGameMode.sendRetryLimit = resolveConnectionWatchdogSettings(message.latencyTolerance, effectiveCount)
         self:create_room(requestedGameMode, player)
         return true

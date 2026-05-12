@@ -704,13 +704,16 @@ end
 
 ---@return boolean
 function Match:isIrrecoverablyDesynced()
+  -- Loose-sync: per-player clocks drift independently and that is the steady state.
+  -- Detecting "MAX_LAG between source and target" no longer means anything actionable,
+  -- so this returns false unconditionally. Left as a metric for future telemetry.
   for target, sourceArray in pairs(self.garbageSources) do
     for i, source in ipairs(sourceArray) do
-      -- Once a stack has ended, its clock can stop advancing while survivors still run.
-      -- Treating that as a desync causes false "network unstable" aborts in 3+ player games
-      -- right after an elimination.
       if not source:game_ended() and not target:game_ended() and source.clock + MAX_LAG < target.clock then
-        return true
+        logger.warn(string.format(
+          "loose-sync clock drift: source clock=%d, target clock=%d, gap=%d (MAX_LAG=%d)",
+          source.clock, target.clock, target.clock - source.clock, MAX_LAG))
+        return false
       end
     end
   end
