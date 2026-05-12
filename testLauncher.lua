@@ -82,6 +82,9 @@ local allTests = {
   "common.tests.data.TeamGameModeTests",
   "common.tests.engine.TeamMatchTests",
   "common.tests.engine.TeamGarbageTests",
+  -- Loose-sync TDD tests
+  "common.tests.engine.LooseSyncTests",
+  "server.tests.LooseSyncServerTests",
   "server.tests.LoginTests",
   "server.tests.LeaderboardTests",
   "server.tests.RoomTests",

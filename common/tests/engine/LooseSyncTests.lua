@@ -1,0 +1,460 @@
+-- LooseSyncTests.lua
+--
+-- TDD-style tests for loose-sync multiplayer behavior. Each test states the
+-- expected behavior from the design intent. The implementation either matches
+-- or gets fixed to match — never the other way around.
+
+require("client.src.globals")
+local logger = require("common.lib.logger")
+local ClientMatch = require("client.src.ClientMatch")
+local Match = require("common.engine.Match")
+local ReplayV3 = require("common.data.ReplayV3")
+
+----------------------------------------------------------------------
+-- Helpers
+----------------------------------------------------------------------
+
+-- Build a minimal match-like object for unit-testing methods that only touch
+-- self.stacks. Each stack records every receiveGarbage call so the test can
+-- assert call counts and payloads.
+local function makeMatchWithStacks(stackSpecs)
+  local match = { stacks = {} }
+  for i, spec in ipairs(stackSpecs) do
+    match.stacks[i] = {
+      which = i,
+      is_local = spec.is_local,
+      game_over_clock = spec.game_over_clock or -1,
+      stopWatch = spec.stopWatch or 0,
+      receivedGarbage = {},
+      receiveGarbage = function(self, payload)
+        self.receivedGarbage[#self.receivedGarbage + 1] = payload
+      end,
+    }
+  end
+  return match
+end
+
+-- Temporarily replace GAME.netClient with a mock that records sendGarbageEvent
+-- calls and returns a configured isConnected value. Returns a function to
+-- restore the original netClient. Always pair with the restore in pcall to
+-- avoid leaking state to other tests.
+local function withMockNetClient(opts)
+  local original = GAME.netClient
+  local sent = {}
+  GAME.netClient = {
+    _isConnected = opts.isConnected,
+    isConnected = function(self) return self._isConnected end,
+    sendGarbageEvent = function(self, body)
+      sent[#sent + 1] = body
+    end,
+    sendDeathEvent = function(self, body) end,
+    estimatedExcessLatencyFrames = function(self) return 0 end,
+  }
+  return sent, function() GAME.netClient = original end
+end
+
+----------------------------------------------------------------------
+-- Test 1: applyGarbageEvent applies only to local-auth stacks
+----------------------------------------------------------------------
+-- Expected: when a G event arrives with multiple recipient slots, only stacks
+-- with is_local == true receive the garbage. Remote stacks (views of other
+-- players) skip — their authoritative copy lives on the recipient's machine.
+
+local function test_applyGarbageEvent_only_local_recipients()
+  logger.info("test_applyGarbageEvent_only_local_recipients")
+  local match = makeMatchWithStacks({
+    { is_local = true },
+    { is_local = false },
+    { is_local = false },
+  })
+
+  ClientMatch.applyGarbageEvent(match, {
+    sender = 4,
+    senderFrame = 100,
+    recipients = { 1, 2, 3 },
+    garbage = { { width = 6, height = 1 } },
+  })
+
+  assert(#match.stacks[1].receivedGarbage == 1,
+    "stack[1] (local) should receive 1 garbage delivery, got " .. #match.stacks[1].receivedGarbage)
+  assert(#match.stacks[2].receivedGarbage == 0,
+    "stack[2] (remote) should NOT receive garbage")
+  assert(#match.stacks[3].receivedGarbage == 0,
+    "stack[3] (remote) should NOT receive garbage")
+end
+
+----------------------------------------------------------------------
+-- Test 2: applyDeathEvent sets game_over_clock on remote stack
+----------------------------------------------------------------------
+-- Expected: an authoritative D event marks the (remote) sender's stack as
+-- game-ended at the reported sender frame.
+
+local function test_applyDeathEvent_marks_remote_stack()
+  logger.info("test_applyDeathEvent_marks_remote_stack")
+  local match = makeMatchWithStacks({
+    { is_local = true,  game_over_clock = -1 },
+    { is_local = false, game_over_clock = -1 },
+  })
+
+  ClientMatch.applyDeathEvent(match, {
+    sender = 2,
+    senderFrame = 500,
+    reason = "topOut",
+  })
+
+  assert(match.stacks[2].game_over_clock == 500,
+    "remote stack[2] game_over_clock should be set to 500, got " .. tostring(match.stacks[2].game_over_clock))
+end
+
+----------------------------------------------------------------------
+-- Test 3: applyDeathEvent skips local-auth stacks
+----------------------------------------------------------------------
+-- Expected: a D event for the local player's own stack is a no-op. The local
+-- sim's setGameOver path is authoritative; overriding it from the relayed
+-- event could race or move the death frame.
+
+local function test_applyDeathEvent_skips_local_stack()
+  logger.info("test_applyDeathEvent_skips_local_stack")
+  local match = makeMatchWithStacks({
+    { is_local = true, game_over_clock = -1 },
+  })
+
+  ClientMatch.applyDeathEvent(match, {
+    sender = 1,
+    senderFrame = 500,
+    reason = "topOut",
+  })
+
+  assert(match.stacks[1].game_over_clock == -1,
+    "local stack should NOT have game_over_clock overwritten by D event")
+end
+
+----------------------------------------------------------------------
+-- Test 4: applyDeathEvent is idempotent on already-dead stack
+----------------------------------------------------------------------
+-- Expected: if the receiver already knows the stack is dead (e.g. via earlier
+-- local sim or a prior D), a late D for the same player does NOT clobber the
+-- earlier game_over_clock.
+
+local function test_applyDeathEvent_idempotent()
+  logger.info("test_applyDeathEvent_idempotent")
+  local match = makeMatchWithStacks({
+    { is_local = false, game_over_clock = 400 },
+  })
+
+  ClientMatch.applyDeathEvent(match, {
+    sender = 1,
+    senderFrame = 500,
+    reason = "topOut",
+  })
+
+  assert(match.stacks[1].game_over_clock == 400,
+    "earlier game_over_clock should not be overwritten by later D event, got " .. tostring(match.stacks[1].game_over_clock))
+end
+
+----------------------------------------------------------------------
+-- Test 5: deliverOutgoingGarbage local→remote emits G + visual push
+----------------------------------------------------------------------
+-- Expected: when a local stack delivers garbage to a remote target while the
+-- client is connected, (a) GAME.netClient:sendGarbageEvent is called once
+-- with the correct recipient slot, and (b) the local view of the target also
+-- gets receiveGarbage so the attacker's screen shows the visual impact.
+
+local function test_deliverOutgoingGarbage_local_to_remote()
+  logger.info("test_deliverOutgoingGarbage_local_to_remote")
+  local match = setmetatable({ stacks = {} }, { __index = Match })
+  match.stacks[1] = { which = 1, is_local = true,  stopWatch = 200, receivedGarbage = {},
+    receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end }
+  match.stacks[2] = { which = 2, is_local = false, stopWatch = 0,   receivedGarbage = {},
+    receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end }
+
+  local sent, restore = withMockNetClient({ isConnected = true })
+  local ok, err = pcall(function()
+    local payload = { { width = 6, height = 1 } }
+    Match.deliverOutgoingGarbage(match, match.stacks[1], match.stacks[2], payload)
+
+    assert(#sent == 1, "expected exactly 1 G event emitted, got " .. #sent)
+    assert(sent[1].recipients[1] == 2, "G recipients[1] should be slot 2, got " .. tostring(sent[1].recipients[1]))
+    assert(sent[1].senderFrame == 200, "G senderFrame should be source.stopWatch (200), got " .. tostring(sent[1].senderFrame))
+    assert(#match.stacks[2].receivedGarbage == 1, "local visual push to remote target's view should happen")
+  end)
+  restore()
+  if not ok then error(err) end
+end
+
+----------------------------------------------------------------------
+-- Test 6: deliverOutgoingGarbage remote→local suppresses local push
+----------------------------------------------------------------------
+-- Expected: when a remote source's local sim wants to push garbage onto our
+-- local-authoritative stack, suppress the push. The authoritative G event
+-- will arrive separately from the source's own machine. No G is emitted from
+-- our side (we don't emit for someone else's outgoing).
+
+local function test_deliverOutgoingGarbage_remote_to_local()
+  logger.info("test_deliverOutgoingGarbage_remote_to_local")
+  local match = setmetatable({ stacks = {} }, { __index = Match })
+  match.stacks[1] = { which = 1, is_local = false, stopWatch = 200, receivedGarbage = {},
+    receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end }
+  match.stacks[2] = { which = 2, is_local = true,  stopWatch = 0,   receivedGarbage = {},
+    receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end }
+
+  local sent, restore = withMockNetClient({ isConnected = true })
+  local ok, err = pcall(function()
+    Match.deliverOutgoingGarbage(match, match.stacks[1], match.stacks[2], { { width = 6, height = 1 } })
+
+    assert(#sent == 0, "no G should be emitted for remote source, got " .. #sent)
+    assert(#match.stacks[2].receivedGarbage == 0, "local target should NOT receive from local sim; await G")
+  end)
+  restore()
+  if not ok then error(err) end
+end
+
+----------------------------------------------------------------------
+-- Test 7: deliverOutgoingGarbage offline → direct push, no G
+----------------------------------------------------------------------
+-- Expected: in offline modes (puzzle, training, vsSelf) where the client is
+-- not connected to a server, fall through to the existing direct-push path.
+-- No G emitted; target gets receiveGarbage directly.
+
+local function test_deliverOutgoingGarbage_offline_direct()
+  logger.info("test_deliverOutgoingGarbage_offline_direct")
+  local match = setmetatable({ stacks = {} }, { __index = Match })
+  match.stacks[1] = { which = 1, is_local = true, stopWatch = 100, receivedGarbage = {},
+    receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end }
+  match.stacks[2] = { which = 2, is_local = false, stopWatch = 100, receivedGarbage = {},
+    receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end }
+
+  local sent, restore = withMockNetClient({ isConnected = false })
+  local ok, err = pcall(function()
+    Match.deliverOutgoingGarbage(match, match.stacks[1], match.stacks[2], { { width = 6, height = 1 } })
+
+    assert(#sent == 0, "offline mode should not emit G events")
+    assert(#match.stacks[2].receivedGarbage == 1, "offline mode should deliver directly to target")
+  end)
+  restore()
+  if not ok then error(err) end
+end
+
+----------------------------------------------------------------------
+-- Test 8: Round-robin counter advances by exactly 1 per delivery
+----------------------------------------------------------------------
+-- Expected: in a 1v3 shared-mode setup, after N deliveries the counter has
+-- advanced N times (mod #enemies). With all enemies alive the deliveries
+-- distribute evenly: after 6 deliveries to 3 enemies, each gets 2.
+
+local function test_roundRobin_counter_advances_by_one()
+  logger.info("test_roundRobin_counter_advances_by_one")
+  -- Build a minimal match object and call distributeGarbageToTargets manually.
+  -- We bypass the full Match constructor to isolate the round-robin logic.
+  local match = setmetatable({ stacks = {}, garbageTargets = {}, garbageMode = "shared", teams = nil }, { __index = Match })
+  -- 4 stacks: solo (1) attacks team (2,3,4). All alive in this test.
+  for i = 1, 4 do
+    match.stacks[i] = {
+      which = i, is_local = false, stopWatch = 0, game_over_clock = -1, receivedGarbage = {},
+      receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end,
+      getOldestFinishedGarbageTransitTime = function() return nil end,
+      getReadyGarbageAt = function() return nil end,
+      outgoingGarbage = { illegalStuffIsAllowed = false },
+      game_ended = function(self) return self.game_over_clock > 0 end,
+    }
+  end
+  match.garbageTargets[1] = { match.stacks[2], match.stacks[3], match.stacks[4] }
+  for i = 2, 4 do match.garbageTargets[i] = {} end
+  match.teamGarbageState = {
+    [1] = { currentTargetIndex = 1, enemyIndices = { 2, 3, 4 } }
+  }
+
+  -- Stub the sender to always have garbage ready at clock 0
+  local sender = match.stacks[1]
+  local readyCalls = 0
+  sender.getOldestFinishedGarbageTransitTime = function(self) return 0 end
+  sender.getReadyGarbageAt = function(self, clock)
+    readyCalls = readyCalls + 1
+    if readyCalls <= 6 then
+      return { { width = 6, height = 1, _id = readyCalls } }
+    end
+    return nil
+  end
+
+  local sent, restore = withMockNetClient({ isConnected = false }) -- offline so direct push
+  local ok, err = pcall(function()
+    -- 6 ticks → 6 deliveries
+    for _ = 1, 6 do
+      Match.distributeGarbageToTargets(match)
+    end
+
+    -- After 6 deliveries with 3 enemies: each should have 2.
+    local counts = { #match.stacks[2].receivedGarbage, #match.stacks[3].receivedGarbage, #match.stacks[4].receivedGarbage }
+    assert(counts[1] == 2 and counts[2] == 2 and counts[3] == 2,
+      string.format("expected [2,2,2], got [%d,%d,%d]", counts[1], counts[2], counts[3]))
+    -- Counter should have wrapped twice: back to 1.
+    assert(match.teamGarbageState[1].currentTargetIndex == 1,
+      "after 6 deliveries to 3 enemies, currentTargetIndex should be 1, got " ..
+      tostring(match.teamGarbageState[1].currentTargetIndex))
+  end)
+  restore()
+  if not ok then error(err) end
+end
+
+----------------------------------------------------------------------
+-- Test 9: Round-robin walks over dead enemies to find living
+----------------------------------------------------------------------
+-- Expected: in 1v3 shared mode with stack[3] dead, 6 deliveries result in
+-- distribution: stack[2] gets 3, stack[4] gets 3, stack[3] gets 0 (skipped).
+-- Counter still advances by 1 per delivery so all clients agree on the
+-- counter state regardless of when they see stack[3] die.
+
+local function test_roundRobin_walks_over_dead()
+  logger.info("test_roundRobin_walks_over_dead")
+  local match = setmetatable({ stacks = {}, garbageTargets = {}, garbageMode = "shared", teams = nil }, { __index = Match })
+  for i = 1, 4 do
+    match.stacks[i] = {
+      which = i, is_local = false, stopWatch = 100, game_over_clock = -1, receivedGarbage = {},
+      receiveGarbage = function(self, p) self.receivedGarbage[#self.receivedGarbage + 1] = p end,
+      getOldestFinishedGarbageTransitTime = function() return nil end,
+      getReadyGarbageAt = function() return nil end,
+      outgoingGarbage = { illegalStuffIsAllowed = false },
+      game_ended = function(self) return self.game_over_clock > 0 end,
+    }
+  end
+  match.stacks[3].game_over_clock = 50 -- stack[3] dead at frame 50, stopWatch=100 → game_ended=true
+  match.garbageTargets[1] = { match.stacks[2], match.stacks[3], match.stacks[4] }
+  for i = 2, 4 do match.garbageTargets[i] = {} end
+  match.teamGarbageState = {
+    [1] = { currentTargetIndex = 1, enemyIndices = { 2, 3, 4 } }
+  }
+
+  local sender = match.stacks[1]
+  local readyCalls = 0
+  sender.getOldestFinishedGarbageTransitTime = function(self) return 0 end
+  sender.getReadyGarbageAt = function(self, clock)
+    readyCalls = readyCalls + 1
+    if readyCalls <= 6 then
+      return { { width = 6, height = 1, _id = readyCalls } }
+    end
+    return nil
+  end
+
+  local _, restore = withMockNetClient({ isConnected = false })
+  local ok, err = pcall(function()
+    for _ = 1, 6 do
+      Match.distributeGarbageToTargets(match)
+    end
+
+    local s2 = #match.stacks[2].receivedGarbage
+    local s3 = #match.stacks[3].receivedGarbage
+    local s4 = #match.stacks[4].receivedGarbage
+    assert(s3 == 0, "dead stack[3] should receive 0 garbage, got " .. s3)
+    assert(s2 + s4 == 6, "living enemies should receive all 6 garbage between them, got " .. (s2 + s4))
+    -- Distribution should be balanced when one of three is dead: each delivery
+    -- that would have gone to stack[3] walks to the next-living (stack[4]).
+    -- Counter sequence: 1,2,3,1,2,3 → walk: 2,4,4,2,4,4 → s2=2, s4=4. Or
+    -- 2,3→4,4,2,3→4,4 → s2=2, s4=4. Either way s4 >= s2.
+    assert(s4 >= s2,
+      string.format("walk-forward should bias toward next-living after dead, got s2=%d s4=%d", s2, s4))
+  end)
+  restore()
+  if not ok then error(err) end
+end
+
+----------------------------------------------------------------------
+-- Test 10: ReplayV4 roundtrip preserves crossPlayerEvents
+----------------------------------------------------------------------
+-- Expected: a replay with garbage and death events serializes and
+-- deserializes losslessly.
+
+local function test_replayV4_roundtrip()
+  logger.info("test_replayV4_roundtrip")
+  local panelSource = {
+    sourceType = ReplayV3.panelSourceTypes.seedV2,
+    seed = 12345,
+    shockEnabled = true,
+  }
+  local rules = {
+    matchEndConditions = {},
+    matchWinRuleset = {},
+    stackOverConditions = {},
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = false,
+  }
+  local replay = ReplayV3("050", rules, panelSource)
+  replay.metadata.completed = true
+
+  replay.crossPlayerEvents.garbage[1] = {
+    sender = 1, senderFrame = 100, recipients = { 2 },
+    garbage = { { width = 6, height = 1, isChain = false } },
+    serverWallClockMs = 1700000000000,
+  }
+  replay.crossPlayerEvents.deaths[1] = {
+    sender = 2, senderFrame = 500, reason = "topOut",
+    serverWallClockMs = 1700000005000,
+  }
+
+  local serialized = json.encode(replay)
+  local decoded = json.decode(serialized)
+  local restored = ReplayV3.createFromTable(decoded, true)
+
+  assert(restored.crossPlayerEvents, "restored replay should have crossPlayerEvents")
+  assert(#restored.crossPlayerEvents.garbage == 1,
+    "garbage events should roundtrip, got " .. #restored.crossPlayerEvents.garbage)
+  assert(#restored.crossPlayerEvents.deaths == 1,
+    "death events should roundtrip, got " .. #restored.crossPlayerEvents.deaths)
+  assert(restored.crossPlayerEvents.garbage[1].sender == 1,
+    "garbage event sender preserved")
+  assert(restored.crossPlayerEvents.garbage[1].senderFrame == 100,
+    "garbage event senderFrame preserved")
+  assert(restored.crossPlayerEvents.deaths[1].reason == "topOut",
+    "death event reason preserved")
+end
+
+----------------------------------------------------------------------
+-- Test 11: V3 replay backwards-compat fills empty crossPlayerEvents
+----------------------------------------------------------------------
+-- Expected: loading an older replay (no crossPlayerEvents field) doesn't
+-- crash and produces an empty crossPlayerEvents structure ready for code
+-- that reads it.
+
+local function test_replayV3_backwards_compat()
+  logger.info("test_replayV3_backwards_compat")
+  -- Hand-craft an old V3 replay payload (no crossPlayerEvents).
+  local oldReplay = {
+    engineVersion = "046",
+    replayVersion = 3,
+    panelSource = { sourceType = 1, seed = 999 },
+    rules = {
+      matchEndConditions = {}, matchWinRuleset = {}, stackOverConditions = {},
+      stackWinConditions = {}, stackSetupModifications = {}, doCountdown = false,
+    },
+    stacks = {},
+    garbageFlows = {},
+    metadata = { stacks = {}, timestamp = 1700000000, completed = true },
+  }
+
+  local restored = ReplayV3.createFromTable(oldReplay, true)
+  assert(restored.crossPlayerEvents, "createFromTable should backfill crossPlayerEvents")
+  assert(type(restored.crossPlayerEvents.garbage) == "table",
+    "garbage array should be present")
+  assert(#restored.crossPlayerEvents.garbage == 0, "garbage array should be empty")
+  assert(type(restored.crossPlayerEvents.deaths) == "table",
+    "deaths array should be present")
+  assert(#restored.crossPlayerEvents.deaths == 0, "deaths array should be empty")
+end
+
+----------------------------------------------------------------------
+-- Run all tests
+----------------------------------------------------------------------
+
+test_applyGarbageEvent_only_local_recipients()
+test_applyDeathEvent_marks_remote_stack()
+test_applyDeathEvent_skips_local_stack()
+test_applyDeathEvent_idempotent()
+test_deliverOutgoingGarbage_local_to_remote()
+test_deliverOutgoingGarbage_remote_to_local()
+test_deliverOutgoingGarbage_offline_direct()
+test_roundRobin_counter_advances_by_one()
+test_roundRobin_walks_over_dead()
+test_replayV4_roundtrip()
+test_replayV3_backwards_compat()
+
+logger.info("All LooseSyncTests passed!")

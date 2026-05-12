@@ -30,6 +30,7 @@ if os.getenv("PA_RUN_SERVER_TESTS") == "1" then
   require("server.tests.LeaderboardTests")
   require("server.tests.RoomTests")
   require("server.tests.TeamRoomTests")
+  require("server.tests.LooseSyncServerTests")
 end
 
 local database = require("server.PADatabase")
