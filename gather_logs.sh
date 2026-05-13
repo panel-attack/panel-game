@@ -34,28 +34,83 @@ echo "    server:  ${SERVER}"
 echo "    remote:  ${INSTALL_DIR}"
 echo "    journal: since ${JOURNAL_SINCE}"
 
+# rsync exit codes we tolerate vs treat as fatal. From the rsync manpage:
+#   0   success
+#   23  partial transfer — some files couldn't be transferred. In practice
+#       this is what rsync returns when the SOURCE DIR DOESN'T EXIST on
+#       the remote (it logs "rsync: change_dir ... No such file or
+#       directory (2)" and exits 23). We accept this — crash_reports/
+#       legitimately won't exist until the crash-replay pipeline ships,
+#       and logs/ may not exist on a freshly-installed remote.
+#   other  network error, protocol error, auth failure, etc. → fatal.
+#
+# Anything fatal aborts BEFORE we do `git push` + restart, which is the
+# whole point: if we can't snapshot, we don't deploy.
+gather_with_rsync_check() {
+  local label="$1"
+  local remote_src="$2"
+  local local_dst="$3"
+  local extra_args="$4"  # may be empty; left unquoted in the rsync call
+
+  set +e
+  # shellcheck disable=SC2086 -- intentional word-split for extra_args
+  rsync -az ${extra_args} "${remote_src}" "${local_dst}"
+  local rc=$?
+  set -e
+
+  case $rc in
+    0)
+      echo "    ${label}: OK"
+      ;;
+    23)
+      echo "    ${label}: code 23 — source likely absent on remote, continuing"
+      ;;
+    *)
+      echo ""
+      echo "ERROR: rsync failed (${label}) with exit code ${rc}." >&2
+      echo "       Refusing to deploy without a clean snapshot." >&2
+      echo "       Re-run gather, or set PANEL_SKIP_GATHER=1 to override." >&2
+      exit "${rc}"
+      ;;
+  esac
+}
+
 # 1. systemd journal — the panel-attack service stdout. This is the
 # authoritative log; run_server.sh on the prod machine ultimately feeds
 # stdout, which systemd captures here.
+#
+# `set -e` covers the SSH itself — a connect failure / non-zero exit
+# aborts. But journalctl can succeed with zero output (e.g. if --since
+# is too narrow), and an empty journal is a useless snapshot, so we
+# also assert the file has content.
 echo "==> [1/3] journalctl"
 ssh "${SERVER}" "journalctl -u panel-attack --since '${JOURNAL_SINCE}' --no-pager" \
   > "${dest}/journal.log"
+if [[ ! -s "${dest}/journal.log" ]]; then
+  echo "" >&2
+  echo "ERROR: journal.log is empty after journalctl pull." >&2
+  echo "       Either the service didn't log anything within '${JOURNAL_SINCE}'" >&2
+  echo "       (widen JOURNAL_SINCE), or the SSH succeeded but the remote" >&2
+  echo "       journal is empty for this unit." >&2
+  echo "       Refusing to deploy without a usable snapshot." >&2
+  exit 1
+fi
 journal_lines=$(wc -l < "${dest}/journal.log" | tr -d ' ')
 echo "    journal.log: ${journal_lines} lines"
 
 # 2. On-disk .log files in the remote logs/ dir (server.log etc).
 # Redundant with the journal in most cases, but: (a) the journal can be
 # rotated/dropped by systemd while these stick around, (b) clients of
-# run_local.sh write here without journal involvement.
+# run_local.sh write here without journal involvement. Also, run_server.sh
+# uses `tee` without -a, so server.log gets truncated on next start —
+# this is the one file actually at risk of disappearing on restart.
 echo "==> [2/3] remote logs/"
 mkdir -p "${dest}/logs"
-if rsync -az --include='*.log' --include='*/' --exclude='*' \
-    "${SERVER}:${INSTALL_DIR}/logs/" "${dest}/logs/" 2>/dev/null; then
-  log_count=$(find "${dest}/logs" -name '*.log' | wc -l | tr -d ' ')
-  echo "    pulled ${log_count} .log file(s)"
-else
-  echo "    (no logs/ on remote — skipping)"
-fi
+gather_with_rsync_check "logs/" \
+  "${SERVER}:${INSTALL_DIR}/logs/" "${dest}/logs/" \
+  "--include=*.log --include=*/ --exclude=*"
+log_count=$(find "${dest}/logs" -name '*.log' 2>/dev/null | wc -l | tr -d ' ')
+echo "    pulled ${log_count} .log file(s)"
 
 # 3. Crash reports — lands once the crash-replay pipeline ships
 # (see docs/CRASH_REPLAY_PLAN.md). Pulls both <publicId>/ subdirs
@@ -64,13 +119,10 @@ fi
 # payload, ready to promote into a regression-test fixture.
 echo "==> [3/3] crash_reports/"
 mkdir -p "${dest}/crash_reports"
-if rsync -az \
-    "${SERVER}:${INSTALL_DIR}/crash_reports/" "${dest}/crash_reports/" 2>/dev/null; then
-  report_count=$(find "${dest}/crash_reports" -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
-  echo "    pulled ${report_count} report(s)"
-else
-  echo "    (no crash_reports/ on remote — pipeline not yet shipped, OK)"
-fi
+gather_with_rsync_check "crash_reports/" \
+  "${SERVER}:${INSTALL_DIR}/crash_reports/" "${dest}/crash_reports/" ""
+report_count=$(find "${dest}/crash_reports" -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+echo "    pulled ${report_count} report(s)"
 
 # Optional: pull the live SQLite DB. Heavy (potentially many MB) so it's
 # opt-in. Useful when debugging leaderboard / player-row issues.
