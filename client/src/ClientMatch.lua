@@ -1,6 +1,8 @@
 local Match = require("common.engine.Match")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
+local TraceWriter = require("client.src.network.TraceWriter")
+local NetworkProtocol = require("common.network.NetworkProtocol")
 local StageLoader = require("client.src.mods.StageLoader")
 local ModController = require("client.src.mods.ModController")
 local consts = require("common.engine.consts")
@@ -385,6 +387,21 @@ function ClientMatch:start()
 
   self.engine:start()
 
+  -- Trace capture: open a per-game file and emit a synthetic matchStart
+  -- so single-player traces have a bootstrap. Multiplayer flows already
+  -- captured a real matchStart via the network tap (it sits in the
+  -- pre-game ring); beginGame drains that ring into the file first, so
+  -- the network-captured matchStart wins on TraceReader's "find first"
+  -- and this synthetic emit becomes a harmless duplicate.
+  pcall(function()
+    TraceWriter.beginGame(os.time())
+    if self.replay then
+      TraceWriter.recv(
+        NetworkProtocol.serverMessageTypes.jsonMessage.prefix,
+        { type = "matchStart", content = self.replay })
+    end
+  end)
+
   -- outgoing garbage is already correctly directed by Match
   -- but the relationship is indirect between engine stacks to reduce coupling
   -- for rendering telegraph, it helps to explicitly know where garbage is being sent
@@ -444,6 +461,8 @@ end
 -- Consider recycling any memory that might leave around a lot of garbage.
 -- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.
 function ClientMatch:deinit()
+  -- Trace capture: close the per-game file (force-flushes pending lines).
+  pcall(function() TraceWriter.endGame() end)
   for i = 1, #self.stacks do
     self.stacks[i]:deinit()
   end

@@ -122,13 +122,26 @@ end
 ---Open a per-game JSONL file. Drains the pre-game ring buffer into it
 ---so the file starts with the matchStart frame + the lobby context that
 ---led to it. After this call, tap events write directly (modulo buffer).
+---
+---Auto-initializes session + match if they're missing — convenient for
+---single-player flows where there's no login or room to anchor against.
+---For multiplayer, lifecycle hooks call beginSession/beginMatch first so
+---the directory layout reflects the real flow.
 ---@param gameStartTs integer wall-clock seconds at the matchStart event
 function M.beginGame(gameStartTs)
   pcall(function()
-    if not (state.session and state.match) then return end
     if state.disabled then return end
     local fs = state.fs
     if not fs then return end
+
+    -- Auto-init session/match for local-only play. Real lifecycle calls
+    -- in NetClient/LoginRoutine override these with real values.
+    if not state.session then
+      state.session = "session_" .. tostring(state.clock())
+    end
+    if not state.match then
+      state.match = "match_local_" .. tostring(state.clock())
+    end
 
     -- Make the directory tree relative to the save dir. love.filesystem
     -- doesn't have mkdir-recursive; love.filesystem.createDirectory

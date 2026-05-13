@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local ClientMessages = require("common.network.ClientProtocol")
 local save = require("client.src.save")
+local TraceWriter = require("client.src.network.TraceWriter")
 
 -- abstraction level function
 -- returns things as a parameter list so the API in ClientProtocol can be more explicit about which parameters it expects
@@ -72,6 +73,11 @@ local function login(tcpClient, ip, port)
         elseif status == "received" then
           if value.login_successful then
             result.loggedIn = true
+            -- Trace capture: anchor the per-session directory at the
+            -- successful-login moment. beginGame later auto-creates a
+            -- "match_local_*" sub-dir if no room is joined, so we don't
+            -- need to wait for an addToRoom event before recording.
+            pcall(function() TraceWriter.beginSession(os.time()) end)
             if value.new_user_id then
               save.write_user_id_file(value.new_user_id, GAME.connected_server_ip)
               result.message = loc("lb_user_new", config.name)
