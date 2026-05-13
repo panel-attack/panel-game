@@ -305,26 +305,198 @@ at the death frame is the desync-root-cause-finder.
 **File:** `common/tests/engine/CrashReplayRegressionTests.lua` — new file,
 runs under `zsh run_tests.sh` (needs love2D for the engine).
 
-```lua
-for _, fixture in ipairs(love.filesystem.getDirectoryItems("common/tests/fixtures/crash_replays")) do
-  local payload = json.decode(love.filesystem.read("common/tests/fixtures/crash_replays/" .. fixture))
-  local match = Match.createFromReplay(payload.replay)
-  -- Run to completion (or to the recorded frame); assert no error.
-  local ok, err = pcall(function()
-    while not match:hasEnded() do
-      match:run()
-    end
-  end)
-  assert(ok, "crash fixture " .. fixture .. " still reproduces: " .. tostring(err))
-end
-```
+See the next section for the full deserialization + assertion logic.
 
 **Promoting a captured crash:**
 ```sh
-cp crash_reports/<userId>/<ts>_<hash>.json common/tests/fixtures/crash_replays/<descriptive_name>.json
+cp crash_reports/<publicId>/<ts>_<hash>.json common/tests/fixtures/crash_replays/<descriptive_name>.json
 ```
 That's it. The fixture is now a permanent regression test. CI fails the
 day someone reintroduces the bug.
+
+---
+
+## Turning a fixture into a runnable test
+
+The fixture JSON is the same shape we captured. To run it as a test you
+need three things: deserialize, drive the engine through the recorded
+inputs, assert based on what we captured.
+
+### Deserialize
+
+```lua
+local json     = require("common.lib.dkjson")
+local ReplayV3 = require("common.data.ReplayV3")
+local Match    = require("common.engine.Match")
+
+local function loadFixture(filename)
+  local raw = love.filesystem.read("common/tests/fixtures/crash_replays/" .. filename)
+  local payload = json.decode(raw)
+
+  -- ReplayV3.createFromV3Data sets the metatable + backfills any V3-era
+  -- fields the captured payload might be missing (older fixtures with
+  -- empty crossPlayerEvents, dropped startTimersWithSwapCount, etc).
+  -- It's the canonical entry point for "I have a replay table from disk,
+  -- give me a real ReplayV3."
+  payload.replay = ReplayV3.createFromV3Data(payload.replay)
+  return payload
+end
+```
+
+### Drive the engine
+
+```lua
+-- Runs the replay through the engine. Returns the match so the caller
+-- can read state vectors. `stopAtFrame` is optional — useful when we
+-- only need to reach the captured crash frame, not run the whole match.
+local function runReplay(replay, stopAtFrame)
+  local match = Match.createFromReplay(replay)
+  match:start()
+
+  -- Frame cap is a safety net — a buggy replay that never terminates
+  -- shouldn't hang the whole test suite. 30 minutes of sim is well past
+  -- any realistic match length.
+  local MAX_FRAMES = 60 * 60 * 30
+
+  local frame = 0
+  while not match:hasEnded() do
+    match:run()
+    frame = frame + 1
+    if stopAtFrame and frame >= stopAtFrame then break end
+    if frame > MAX_FRAMES then
+      error("replay didn't terminate within " .. MAX_FRAMES .. " frames")
+    end
+  end
+  return match
+end
+```
+
+### Assert (varies by `reason`)
+
+The right assertion depends on what we captured. Four shapes:
+
+**Crash fixtures (`reason = "crash"`).** We have the recorded error
+message and the frame at which it fired. Assert the same error does
+NOT fire when we replay past that frame.
+
+```lua
+local function assertCrashFixed(payload)
+  -- Pull a usable error fragment out of the captured message — strip
+  -- the leading file:line: prefix because line numbers shift across
+  -- refactors and we want the assertion to survive innocent moves.
+  local fragment = payload.error:match("[^:]+:%s*(.+)$") or payload.error
+
+  local stopFrame = payload.gameContext and payload.gameContext.frame
+  -- +60 frames past the captured frame so we cover "the error fires
+  -- shortly after the recorded frame" cases.
+  local cap = stopFrame and (stopFrame + 60) or nil
+
+  local ok, err = pcall(runReplay, payload.replay, cap)
+  if not ok then
+    assert(not tostring(err):find(fragment, 1, true),
+      "fixture still reproduces the captured crash: " .. tostring(err))
+  end
+end
+```
+
+**User-reported / disconnect / hash-mismatch (`reason ~= "crash"`).**
+No specific error to look for — just assert the replay runs to its
+natural end without exploding.
+
+```lua
+local function assertReplayRunsClean(payload)
+  local ok, err = pcall(runReplay, payload.replay)
+  assert(ok, "fixture failed during replay run: " .. tostring(err))
+end
+```
+
+**Correlated fixtures (client report + server report of the same incident).**
+When the disconnect-side auto-capture (item 4) gives us a server-side
+snapshot for the same `gameId` the client reported, we load both, run
+both, and assert their state vectors agree at the captured frame.
+
+```lua
+local function assertViewsAgree(clientPayload, serverPayload)
+  local cFrame = clientPayload.gameContext.frame
+  local clientMatch = runReplay(clientPayload.replay, cFrame)
+  local serverMatch = runReplay(serverPayload.replay, cFrame)
+
+  -- stateVector is the same compact struct the periodic-state-hash work
+  -- (E2E plan item 5) emits at runtime: incoming-garbage heights per
+  -- stack, teamGarbageState cursors per sender, game_over_clock per
+  -- stack. Equal struct ⇒ both views agree at this frame ⇒ the fix
+  -- closed the divergence.
+  local cv = StateVector.of(clientMatch)
+  local sv = StateVector.of(serverMatch)
+  assert(StateVector.eq(cv, sv),
+    "client and server views diverge at frame " .. cFrame .. ":\n"
+    .. "  client: " .. StateVector.tostring(cv) .. "\n"
+    .. "  server: " .. StateVector.tostring(sv))
+end
+```
+
+`StateVector.of` / `.eq` / `.tostring` are the same helpers the periodic
+state-hash work uses; building them once gives us both production
+detection AND replay-time correlation.
+
+**The loop:**
+
+```lua
+local function runAll()
+  local files = love.filesystem.getDirectoryItems("common/tests/fixtures/crash_replays")
+  for _, file in ipairs(files) do
+    if file:match("%.json$") then
+      logger.info("running crash fixture: " .. file)
+      local payload = loadFixture(file)
+      if payload.reason == "crash" then
+        assertCrashFixed(payload)
+      else
+        assertReplayRunsClean(payload)
+      end
+    end
+  end
+end
+```
+
+### What this catches and what it doesn't
+
+**Catches:**
+- Engine logic bugs that were reproducible from `(panelSource seed +
+  inputs + crossPlayerEvents)`. That's the bulk of B1/B8/B9/B10-class
+  bugs.
+- Cursor / state divergence at known frames (via the correlated-pair
+  variant).
+- Anything that throws an exception during sim run — even bugs the
+  original capture wasn't about, if the replay happens to exercise that
+  path.
+
+**Doesn't catch:**
+- **Client-only UI bugs.** Sim state may be fine; the crash was in
+  scene/render code. The replay is replayable but the failure mode
+  wasn't in the engine. These need a `ClientMatch` test instead — same
+  fixture, different runner.
+- **Engine-version skew.** A fixture captured on engine `049` won't
+  reproduce identically on `050` if the bump changed panel physics.
+  Mitigation: pin each fixture's `clientMeta.engineVersion`; the runner
+  skips with a warning if the live engine version differs. Or, more
+  honestly, bump fixtures when you bump engine.
+- **Real-time effects.** Anything that depends on `socket.gettime()` /
+  wall clock (most of arbitration). The captured replay only contains
+  game-frame-driven state — wall-clock dependencies need the clock
+  injection from `E2E_FIX_COVERAGE_PLAN.md` item 1.
+
+### Self-validation: capture a known-fixed bug, verify the test rejects it
+
+A useful sanity check the first time you wire this up: take a known
+bug we already fixed (say B9 — Open Team 1v2 crash), build a synthetic
+fixture by hand for it, then:
+1. Run the test → it passes (bug is fixed).
+2. Revert the B9 fix in `server/Room.lua` → run the test → it fails
+   with the captured error fragment.
+3. Re-apply the fix → it passes again.
+
+If that round-trip works for one known bug, the harness is reliable
+for unknown ones.
 
 ---
 
