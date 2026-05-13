@@ -187,6 +187,35 @@ function TestPlayer:sendInput(input)
   self:act(function() self.netClient:sendInput(input) end)
 end
 
+-- Loose-sync GarbageEvent — fire-and-forget JSON payload from the local sim.
+-- `body` is the table the production sim hands to NetClient:sendGarbageEvent
+-- (sender, senderFrame, recipients, garbage). The harness can construct
+-- minimal payloads for scenario testing without running the engine.
+function TestPlayer:sendGarbageEvent(body)
+  self:act(function() self.netClient:sendGarbageEvent(body) end)
+end
+
+-- Loose-sync DeathEvent — same shape as the production sim's death notify.
+-- Tests pass {sender, senderFrame, reason} (matches Room.lua's expectations).
+function TestPlayer:sendDeathEvent(body)
+  self:act(function() self.netClient:sendDeathEvent(body) end)
+end
+
+-- Notify the server we hit game_over_clock — equivalent of what
+-- ClientMatch fires when the local stack dies.
+function TestPlayer:sendStackEliminated(frame)
+  self:act(function() self.netClient:sendStackEliminated(frame) end)
+end
+
+-- Spectate an existing room. The server replies with a spectateGranted JSON
+-- message carrying the running match's replay (with crossPlayerEvents on V4+).
+-- The reply is delivered through the regular addToRoom / matchStart handlers,
+-- so after spectateGranted the gameStub.battleRoom + matchStarted state
+-- mirrors what a regular player would see.
+function TestPlayer:requestSpectate(roomNumber)
+  self:act(function() self.netClient:requestSpectate(roomNumber) end)
+end
+
 function TestPlayer:leaveRoom()
   self:act(function() self.netClient:leaveRoom() end)
 end
