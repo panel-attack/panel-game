@@ -185,6 +185,13 @@ local Server = class(
     self.lobbyChanged = false
     self._shuttingDown = false
 
+    -- Wall-clock source for serverWallClockMs stamping and arbitration window
+    -- ticks. Defaults to luasocket's real clock; tests override this to drive
+    -- arbitration deterministically (see server/tests/E2E/Harness.lua opts.clock).
+    -- Every call site that needs "now" goes through self.clock() — Room reads
+    -- self.clock from the Server back-reference set up in create_room.
+    self.clock = socket.gettime
+
     FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
     seed_from_mt(extract_mt())
@@ -701,7 +708,7 @@ function Server:create_room(gameMode, ...)
     end
   end
 
-  local newRoom = Room(self.roomNumberIndex, players, gameMode, leaderboard)
+  local newRoom = Room(self.roomNumberIndex, players, gameMode, leaderboard, self.clock)
   newRoom:connectSignal("matchStart", self, self.setLobbyChanged)
   newRoom:connectSignal("matchEnd", self, self.processGameEnd)
   newRoom:connectSignal("pauseToggled", self, self.setLobbyChanged)
@@ -993,7 +1000,7 @@ end
 
 ---Drain KO arbitration windows for any rooms whose window has closed.
 function Server:tickArbitrations()
-  local nowMs = math.floor(socket.gettime() * 1000)
+  local nowMs = math.floor(self.clock() * 1000)
   for _, room in pairs(self.rooms) do
     if room then
       room:tickArbitration(nowMs)

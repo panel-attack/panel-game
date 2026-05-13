@@ -40,14 +40,15 @@ local TeamUtils = require("common.data.TeamUtils")
 ---  keep the room visible until they manually leave; the Server cleans the room up
 ---  when the last player leaves.
 ---@field voidReason string? human-readable reason this room was voided (e.g. "Bev left")
----@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
+---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?, clock: (fun(): number)?): Room
 local Room = class(
 ---@param self Room
 ---@param roomNumber integer
 ---@param players ServerPlayer[]
 ---@param gameMode table -- only the data portion of the game mode
 ---@param leaderboard Leaderboard?
-function(self, roomNumber, players, gameMode, leaderboard)
+---@param clock (fun(): number)? wall-clock source in seconds; nil = real socket.gettime
+function(self, roomNumber, players, gameMode, leaderboard, clock)
   self.players = players
   self.leaderboard = leaderboard
   self.roomNumber = roomNumber
@@ -67,6 +68,12 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.recentGameAbort = false
   self.voided = false
   self.voidReason = nil
+
+  -- Wall-clock source for serverWallClockMs stamping and arbitration window
+  -- math. Defaults to the real clock when the Server didn't pass one (legacy
+  -- direct-construction call sites and unit tests that instantiate Room bare).
+  -- Tests inject a fake to drive arbitration windows deterministically.
+  self.clock = clock or socket.gettime
   -- publicId -> name for players whose slot is held while they're away. Name is
   -- stored as the value (rather than a bare boolean) so the protocol can emit a
   -- "Held — <name>" hint without doing a name lookup elsewhere. Cleared by
@@ -813,7 +820,7 @@ function Room:broadcastGarbageEvent(sender, body)
   end
 
   parsed.sender = sender.player_number
-  parsed.serverWallClockMs = math.floor(socket.gettime() * 1000)
+  parsed.serverWallClockMs = math.floor(self.clock() * 1000)
 
   -- Authoritative dead-target redirect. Clients don't see the death
   -- before they emit, so we fix it server-side. If nobody alive remains in
@@ -902,7 +909,7 @@ function Room:broadcastDeathEvent(sender, body)
   end
 
   parsed.sender = sender.player_number
-  parsed.serverWallClockMs = math.floor(socket.gettime() * 1000)
+  parsed.serverWallClockMs = math.floor(self.clock() * 1000)
 
   self.game:recordDeathEvent(sender, parsed)
   self.game:markPlayerEliminated(sender, parsed.senderFrame)
@@ -1343,7 +1350,7 @@ function Room:voidByLeave(leaver, reason)
     local synthBody = {
       sender = leaver.player_number,
       senderFrame = deathFrame,
-      serverWallClockMs = math.floor(socket.gettime() * 1000),
+      serverWallClockMs = math.floor(self.clock() * 1000),
       reason = "disconnect",
     }
     self.game:recordDeathEvent(leaver, synthBody)

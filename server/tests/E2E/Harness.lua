@@ -62,6 +62,12 @@ local Harness = class(function(self, opts)
   self.serverErrors = {}
   self.expectErrors = opts.expectErrors == true
   self._origLoggerError = nil
+
+  -- Optional wall-clock injection for arbitration-window tests. nil = use
+  -- the real socket.gettime in Server/Room. Pass a callable returning a
+  -- monotonically-increasing seconds value to drive arbitration determini-
+  -- stically (e.g. a closure over a mutable t that the test advances).
+  self.clock = opts.clock
 end)
 
 -- Build a Server with real socket/DB but stubbed persistence, bound to our test port.
@@ -84,6 +90,11 @@ function Harness:start()
   ANY_ENGINE_VERSION_ENABLED = true
 
   self.server = Server(PADatabase, MockPersistence)
+  if self.clock then
+    -- Override BEFORE start() so any room created during the run picks up
+    -- the fake clock via create_room's self.clock plumbing.
+    self.server.clock = self.clock
+  end
 
   -- MockPersistence ignores both of these, but the constructor calls
   -- through to it and expects valid paths/data shapes.

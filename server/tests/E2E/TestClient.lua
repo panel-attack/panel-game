@@ -37,6 +37,7 @@ local logger = require("common.lib.logger")
 ---@field gameStarted boolean          set when we receive startMatch
 ---@field matchEnded boolean           set when we receive a leaveRoom/game-end signal
 ---@field lastStartMatch table?        the full startMatch payload (includes replay)
+---@field lastSpectateGranted table?   most recent spectateRequestGranted content (includes replay)
 ---@field inbox table                  routed messages by kind
 local TestClient = class(function(self, name)
   self.name = name or "Bot"
@@ -51,6 +52,7 @@ local TestClient = class(function(self, name)
   self.gameStarted = false
   self.matchEnded = false
   self.lastStartMatch = nil
+  self.lastSpectateGranted = nil
 
   -- One inbox per message kind so scenarios can express assertions
   -- like "wait until c.inbox.json has a startMatch message".
@@ -206,6 +208,31 @@ function TestClient:sendStackEliminated(frame)
   self:sendJson({ stackEliminated = true, frame = frame })
 end
 
+-- Loose-sync: client-emitted garbage delivery event. Body shape mirrors
+-- Match.lua's production emission (senderFrame, recipients, garbage). The
+-- server stamps sender + serverWallClockMs in Room:broadcastGarbageEvent.
+function TestClient:sendGarbageEvent(body)
+  self:_sendFrame(NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))
+end
+
+-- Loose-sync: client-emitted death notification. Same wire shape as G; the
+-- server uses it to drive arbitration + survivor stop-waiting.
+function TestClient:sendDeathEvent(body)
+  self:_sendFrame(NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
+end
+
+-- Ask the server to spectate a room in progress. Server replies with a
+-- spectateRequestGranted JSON message carrying a partial replay — captured
+-- on self.lastSpectateGranted by the inbox router.
+function TestClient:sendSpectateRequest(roomNumber)
+  self:sendJson({
+    spectate_request = {
+      sender = self.name,
+      roomNumber = roomNumber,
+    },
+  })
+end
+
 -- ----------------------------------------------------------------------------
 -- Receive + inbox routing
 -- ----------------------------------------------------------------------------
@@ -313,6 +340,13 @@ function TestClient:_observeJson(msg)
   -- leaveRoom from the server signals "match concluded, returning you to lobby".
   if mtype == "leaveRoom" then
     self.matchEnded = true
+  end
+
+  -- spectateRequestGranted carries a partial replay (content.replay) including
+  -- crossPlayerEvents for catch-up. Store the raw content so scenarios can
+  -- assert on the wire shape without re-walking the inbox.
+  if mtype == "spectateRequestGranted" and content then
+    self.lastSpectateGranted = content
   end
 end
 
