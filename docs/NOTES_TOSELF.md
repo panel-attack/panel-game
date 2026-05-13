@@ -1,6 +1,8 @@
 ## Multiplayer Testing Notes
 
-### Working as Designed
+### Working as Designed\][
+    '
+]
 1. **Team Open Games** — When going through team → open → games, it's working as an invite game. This is not a problem for open FFA games — it works as designed.
 
 ### UI/UX Issues
