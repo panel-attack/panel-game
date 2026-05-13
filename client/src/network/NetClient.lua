@@ -194,7 +194,12 @@ end
 
 ---@param room BattleRoom
 getSceneFromRoom = function(room)
-  -- this is so hacky oh my god
+  -- Generalize: if this is an open team mode (teamCount >= 2, playersPerTeam > 1 or table), use CharacterSelect2p as the waiting room.
+  local mode = room.mode or {}
+  if mode.teamCount and mode.teamCount >= 2 and mode.playersPerTeam and ((type(mode.playersPerTeam) == "number" and mode.playersPerTeam > 1) or type(mode.playersPerTeam) == "table") then
+    return CharacterSelect2p({battleRoom = room})
+  end
+  -- Fallbacks for other modes
   if room.mode.name == "VS" or room.mode.name == "2p_timeattack" then
     return CharacterSelect2p({battleRoom = room})
   elseif room.mode.name == "endless" then
@@ -203,19 +208,6 @@ getSceneFromRoom = function(room)
     return require("client.src.scenes.TimeAttackMenu")({battleRoom = room})
   elseif room.mode.name == "vsSelf" then
     return require("client.src.scenes.CharacterSelectVsSelf")({battleRoom = room})
-  elseif room.mode.name == "team_vs_all" or room.mode.name == "team_vs_shared"
-      or room.mode.name == "three_player_vs_all" or room.mode.name == "three_player_vs_shared"
-      or room.mode.name == "three_player_vs_all_2v1" or room.mode.name == "three_player_vs_shared_2v1"
-      or room.mode.name == "four_player_1v3_all" or room.mode.name == "four_player_1v3_shared"
-      or room.mode.name == "four_player_3v1_all" or room.mode.name == "four_player_3v1_shared"
-      or room.mode.name == "3p_ffa" or room.mode.name == "4p_ffa" or room.mode.name == "5p_ffa" or room.mode.name == "7p_ffa"
-      or room.mode.name == "3p_ffa_shared" or room.mode.name == "4p_ffa_shared" or room.mode.name == "5p_ffa_shared" or room.mode.name == "7p_ffa_shared"
-      or room.mode.name == "open_ffa" or room.mode.name == "open_ffa_shared"
-      or room.mode.name == "five_player_1v4_all" or room.mode.name == "five_player_1v4_shared"
-      or room.mode.name == "five_player_4v1_all" or room.mode.name == "five_player_4v1_shared"
-      or room.mode.name == "five_player_2v3_all" or room.mode.name == "five_player_2v3_shared"
-      or room.mode.name == "five_player_3v2_all" or room.mode.name == "five_player_3v2_shared" then
-    return CharacterSelect2p({battleRoom = room})
   end
 end
 
@@ -289,11 +281,6 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   self.room = GAME.battleRoom
   self:registerPlayerUpdates(self.room)
 
-  -- Trace capture: open the match-scope file. Pre-match ambient context
-  -- (lobby chatter, the addToRoom message itself which sits in the
-  -- pre-match ring) drains into _match.jsonl so the file starts with
-  -- the lead-up to this room-join. pcall'd so a TraceWriter regression
-  -- can't break the room-join flow.
   pcall(function()
     local roomNumber = self.room and self.room.roomNumber or 0
     TraceWriter.beginMatch(roomNumber, os.time())
@@ -301,80 +288,63 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
 
-  -- See isRoomReadyForWaitingRoom for the per-mode transition rule.
-  -- Rejoin exception: if the room has held slots, the existing members are
-  -- already in character select (they didn't navigate back when a peer left).
-  -- A rejoiner needs to land in the same scene rather than getting stuck in
-  -- lobby with no one to play against.
-  local playerCount = #self.room.players
-  local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
-  local hasHeldSlots = self.room.heldSlots and #self.room.heldSlots > 0
-  if not isRoomReadyForWaitingRoom(self.room) and not hasHeldSlots then
-    -- Stay in lobby - room will show in lobby list with open slots
-    logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
-    self.state = states.ONLINE
-
-    -- Update local lobby data with the new room so UI can display it.
-    -- Players can occupy non-contiguous slots (e.g. p1 in slot 1 + p2 in
-    -- slot 3 of a 2v3 Open Team room) — derive `playerSlots` from each
-    -- player's playerNumber and compute openSlots by walking 1..maxPlayers
-    -- against the occupied set rather than assuming the first N slots are
-    -- filled. The next lobbyStateV2 broadcast from the server is authoritative
-    -- but this local writeback runs in the gap between addToRoom and the next
-    -- snapshot — wrong slot data here briefly mis-renders the lobby.
-    if self.lobbyDataV2 and self.room.roomNumber then
-      local roomNumber = self.room.roomNumber
-      local playerIds = {}
-      local playerSlots = {}
-      local occupied = {}
-      for i, player in ipairs(self.room.players) do
-        playerIds[i] = player.publicId
-        local slot = player.playerNumber or i
-        playerSlots[i] = slot
-        occupied[slot] = true
-      end
-      local openSlots = {}
-      for slot = 1, maxPlayers do
-        if not occupied[slot] then
-          openSlots[#openSlots + 1] = slot
+  local function tryEnterWaitingRoom()
+    local playerCount = #self.room.players
+    local maxPlayers = self.room.mode.playerCount or self.room.mode.maxPlayers or 2
+    local hasHeldSlots = self.room.heldSlots and #self.room.heldSlots > 0
+    if not isRoomReadyForWaitingRoom(self.room) and not hasHeldSlots then
+      -- Stay in lobby - room will show in lobby list with open slots
+      logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
+      self.state = states.ONLINE
+      if self.lobbyDataV2 and self.room.roomNumber then
+        local roomNumber = self.room.roomNumber
+        local playerIds = {}
+        local playerSlots = {}
+        local occupied = {}
+        for i, player in ipairs(self.room.players) do
+          playerIds[i] = player.publicId
+          local slot = player.playerNumber or i
+          playerSlots[i] = slot
+          occupied[slot] = true
         end
+        local openSlots = {}
+        for slot = 1, maxPlayers do
+          if not occupied[slot] then
+            openSlots[#openSlots + 1] = slot
+          end
+        end
+        self.lobbyDataV2.rooms[roomNumber] = {
+          roomNumber = roomNumber,
+          players = playerIds,
+          playerSlots = playerSlots,
+          spectators = {},
+          state = "waiting",
+          wins = {},
+          gameModeId = self.room.mode.name,
+          maxPlayers = maxPlayers,
+          openSlots = openSlots,
+          heldSlots = {},
+        }
+        local localId = GAME.localPlayer.publicId
+        if self.lobbyDataV2.players[localId] then
+          self.lobbyDataV2.players[localId].roomNumber = roomNumber
+        end
+        self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
       end
-      self.lobbyDataV2.rooms[roomNumber] = {
-        roomNumber = roomNumber,
-        players = playerIds,
-        playerSlots = playerSlots,
-        spectators = {},
-        state = "waiting",
-        wins = {},
-        gameModeId = self.room.mode.name,
-        maxPlayers = maxPlayers,
-        openSlots = openSlots,
-        -- Held slots only get populated after someone leaves a fixed-roster room;
-        -- this is the fresh-join path so there's nothing held yet. Next
-        -- lobbyStateV2 from the server is authoritative.
-        heldSlots = {},
-      }
-      -- Update local player's room assignment
-      local localId = GAME.localPlayer.publicId
-      if self.lobbyDataV2.players[localId] then
-        self.lobbyDataV2.players[localId].roomNumber = roomNumber
-      end
-      -- Emit signal to refresh lobby UI
-      self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+      return
     end
-    return
+    -- Min players reached (or fixed-roster room filled) - navigate to game scene.
+    resetLobbyData(self)
+    local roomScene = getSceneFromRoom(self.room)
+    if roomScene then
+      GAME.navigationStack:push(roomScene)
+    else
+      logger.warn("No room scene available for mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'. Staying in current scene.")
+    end
+    self.state = states.ROOM
   end
 
-  -- Min players reached (or fixed-roster room filled) - navigate to game scene.
-  -- We are leaving lobby context now, so clear stale lobby/challenge data.
-  resetLobbyData(self)
-  local roomScene = getSceneFromRoom(self.room)
-  if roomScene then
-    GAME.navigationStack:push(roomScene)
-  else
-    logger.warn("No room scene available for mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'. Staying in current scene.")
-  end
-  self.state = states.ROOM
+  tryEnterWaitingRoom()
 end
 
 local function processSpectatorListMessage(self, message)

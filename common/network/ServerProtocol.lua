@@ -204,16 +204,29 @@ function ServerProtocol.addToRoom(room, replay)
   content.stage = (replay and replay.metadata.stageId or nil)
   content.players = {}
 
-  for i, player in ipairs(room.players) do
-    -- publicId can't be the key as it would disallow developers playing against themselves for testing
-    content.players[player.player_number] = {
-      settings = player:getSettings(),
-      rating = room.ratings[i],
-      winCount = room.win_counts[i],
-      name = player.name,
-      publicId = player.publicPlayerID,
-      playerNumber = player.player_number
-    }
+  if room.eachPlayer then
+    for slot, player in room:eachPlayer() do
+      -- publicId can't be the key as it would disallow developers playing against themselves for testing
+      content.players[player.player_number] = {
+        settings = player:getSettings(),
+        rating = room.ratings[slot],
+        winCount = room.win_counts[slot],
+        name = player.name,
+        publicId = player.publicPlayerID,
+        playerNumber = player.player_number
+      }
+    end
+  else
+    for i, player in ipairs(room.players) do
+      content.players[player.player_number] = {
+        settings = player:getSettings(),
+        rating = room.ratings[i],
+        winCount = room.win_counts[i],
+        name = player.name,
+        publicId = player.publicPlayerID,
+        playerNumber = player.player_number
+      }
+    end
   end
 
   -- Always clear before conditionally re-setting because addToRoomTemplate is shared
@@ -266,15 +279,28 @@ function ServerProtocol.spectateRequestGranted(room, replay)
   content.stage = (replay and replay.metadata.stageId or nil)
   content.players = {}
 
-  for i, player in ipairs(room.players) do
-    content.players[player.player_number] = {
-      settings = player:getSettings(),
-      rating = room.ratings[i],
-      winCount = room.win_counts[i],
-      name = player.name,
-      publicId = player.publicPlayerID,
-      playerNumber = player.player_number
-    }
+  if room.eachPlayer then
+    for slot, player in room:eachPlayer() do
+      content.players[player.player_number] = {
+        settings = player:getSettings(),
+        rating = room.ratings[slot],
+        winCount = room.win_counts[slot],
+        name = player.name,
+        publicId = player.publicPlayerID,
+        playerNumber = player.player_number
+      }
+    end
+  else
+    for i, player in ipairs(room.players) do
+      content.players[player.player_number] = {
+        settings = player:getSettings(),
+        rating = room.ratings[i],
+        winCount = room.win_counts[i],
+        name = player.name,
+        publicId = player.publicPlayerID,
+        playerNumber = player.player_number
+      }
+    end
   end
 
   return {
@@ -303,15 +329,28 @@ function ServerProtocol.createRoom(room)
   content.gameMode = room.gameMode
   content.players = {}
 
-  for i, player in ipairs(room.players) do
-    content.players[player.player_number] = {
-      settings = player:getSettings(),
-      rating = room.ratings[i],
-      winCount = room.win_counts[i],
-      name = player.name,
-      publicId = player.publicPlayerID,
-      playerNumber = player.player_number
-    }
+  if room.eachPlayer then
+    for slot, player in room:eachPlayer() do
+      content.players[player.player_number] = {
+        settings = player:getSettings(),
+        rating = room.ratings[slot],
+        winCount = room.win_counts[slot],
+        name = player.name,
+        publicId = player.publicPlayerID,
+        playerNumber = player.player_number
+      }
+    end
+  else
+    for i, player in ipairs(room.players) do
+      content.players[player.player_number] = {
+        settings = player:getSettings(),
+        rating = room.ratings[i],
+        winCount = room.win_counts[i],
+        name = player.name,
+        publicId = player.publicPlayerID,
+        playerNumber = player.player_number
+      }
+    end
   end
 
   return {
