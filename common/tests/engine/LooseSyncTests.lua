@@ -9,6 +9,7 @@ local logger = require("common.lib.logger")
 local ClientMatch = require("client.src.ClientMatch")
 local Match = require("common.engine.Match")
 local Stack = require("common.engine.Stack")
+local PlayerStack = require("client.src.PlayerStack")
 local ReplayV3 = require("common.data.ReplayV3")
 
 ----------------------------------------------------------------------
@@ -265,6 +266,73 @@ local function test_hasEnded_replay_requires_clock_catchup()
   local hasEnded = Match.hasEnded(match)
   assert(hasEnded == false,
     "replay must wait for survivor.clock > game_over_clock before ending (strict)")
+end
+
+----------------------------------------------------------------------
+-- Regression: local stack top-out must notify the server even when
+-- engine.clock freezes the same tick (3p FFA Koozie/Bevy/Lala stuck-match)
+----------------------------------------------------------------------
+-- Scenario: the local stack tops out at frame N. The same tick, Match:
+-- hasEnded() flips true (FFA TEAMS_ACTIVE=1: after this death only one team
+-- remains). ClientMatch:run early-returns through runGameOver(), skipping
+-- engine:run(). engine.clock freezes at N.
+--
+-- Pre-fix: PlayerStack:onGameOver only set _pendingEliminationClock = N.
+-- The actual notifyServerStackEliminated() call was gated in runGameOver
+-- on `matchClock > deathClock + GARBAGE_DELAY_LAND_TIME (60)`. With
+-- engine.clock frozen at N, that gate was never satisfied — D was never
+-- sent — server never arbitrated — match stuck forever.
+--
+-- Post-fix: notifyServerStackEliminated fires synchronously in onGameOver.
+-- The 60-frame deferral was offline-rollback safety; for online local
+-- stacks (which don't rewind their own clock) it served no purpose.
+
+local function test_local_death_notifies_server_even_when_engine_freezes()
+  logger.info("test_local_death_notifies_server_even_when_engine_freezes")
+
+  local notifyCount = 0
+  local popQueue = { _len = 0 }
+  function popQueue:len() return self._len end
+
+  local stub = {
+    _pendingVisualDeath = nil,
+    _pendingEliminationClock = nil,
+    pop_q = popQueue,
+    canvas = nil, -- applyVisualDeath skips the canvas-panel-flip path
+    notifyServerStackEliminated = function(self) notifyCount = notifyCount + 1 end,
+    applyVisualDeath = function(self) self._pendingVisualDeath = nil end,
+    update_popfxs = function() end,
+    update_cards = function() end,
+    engine = { panels = {}, width = 6 },
+  }
+
+  -- Don't actually play SFX during the test.
+  local origPlay = SoundController.playSfx
+  SoundController.playSfx = function() end
+
+  local ok, err = pcall(function()
+    -- Local stack tops out at engine.clock = 5000.
+    PlayerStack.onGameOver(stub, { game_over_clock = 5000 })
+
+    -- Simulate the deadlock: engine.clock is frozen at deathClock because
+    -- Match:hasEnded() flipped on this tick. ClientMatch:run early-returns
+    -- through runGameOver and calls PlayerStack:runGameOver(matchClock)
+    -- every tick — but matchClock never advances past 5000.
+    for _ = 1, 200 do
+      PlayerStack.runGameOver(stub, 5000)
+    end
+
+    assert(notifyCount == 1,
+      "local elimination must reach the server even when engine.clock "
+      .. "freezes at deathClock. Got notifyCount=" .. notifyCount
+      .. " (expected 1). Pre-fix bug: 60-frame deferral via "
+      .. "_pendingEliminationClock could never be satisfied when "
+      .. "matchClock was pinned at deathClock by a TEAMS_ACTIVE=1 "
+      .. "match-end shortcut.")
+  end)
+
+  SoundController.playSfx = origPlay
+  if not ok then error(err) end
 end
 
 ----------------------------------------------------------------------
@@ -685,6 +753,7 @@ test_applyDeathEvent_idempotent()
 test_applyDeathEvent_pinned_view_stack_still_lands()
 test_hasEnded_live_1v1_remote_death_pinned_clock()
 test_hasEnded_replay_requires_clock_catchup()
+test_local_death_notifies_server_even_when_engine_freezes()
 test_deliverOutgoingGarbage_local_to_remote()
 test_deliverOutgoingGarbage_remote_to_local()
 test_deliverOutgoingGarbage_offline_direct()

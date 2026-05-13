@@ -508,6 +508,15 @@ function Room:start_match()
   -- schedule from zero. Without this, framesEmitted from a previous match
   -- carries forward and rematches would silently hit the per-slot cap.
   self.idleFillState = {}
+  -- Seed last-input timestamps at match start so the silent-death watchdog
+  -- has a baseline for slots that haven't sent any input yet. Without this,
+  -- a player who joins, loads, then ghosts is invisible to the watchdog
+  -- (lastInputMs[slot] = nil, no comparison possible).
+  self.lastInputMs = {}
+  local nowMs = math.floor(self.clock() * 1000)
+  for slot, player in pairs(self.players) do
+    if player then self.lastInputMs[slot] = nowMs end
+  end
   -- Reset diagnostic flags so dropped-input warnings can fire once per slot per match.
   self._loggedInputDropDisconnect = nil
   self._loggedInputDropEliminated = nil
@@ -751,6 +760,13 @@ function Room:broadcastInput(input, sender)
   -- Record for replay
   self.game:receiveInput(sender, input)
 
+  -- Bump per-slot recency for the silent-death watchdog. Done after the
+  -- elimination/disconnect gates above so a dropped input from an
+  -- already-out slot doesn't reset its silence counter.
+  if self.lastInputMs then
+    self.lastInputMs[senderNum] = math.floor(self.clock() * 1000)
+  end
+
   -- Relay immediately to every other player + every spectator. Unified "I"
   -- prefix with JSON body {playerNumber, input} — server stamps the
   -- authoritative sender slot so recipients route inputs correctly without
@@ -843,6 +859,81 @@ function Room:_broadcastIdleInput(slot)
   for _, spec in pairs(self.spectators) do
     if spec then spec:send(message) end
   end
+end
+
+-- How long a non-eliminated, non-disconnected slot may go without sending
+-- inputs before the server synthesizes an inferred D for it. The bug this
+-- protects against (3p FFA Koozie/Bevy/Lala stuck-match) was a client that
+-- topped out locally but never told the server. The actual fix lives in
+-- PlayerStack:onGameOver (immediate notifyServerStackEliminated); this
+-- watchdog is belt-and-suspenders for legacy clients, future regressions,
+-- and any other path that lets a slot fall silent without sending a D.
+--
+-- Threshold is generous (10s) so normal network jitter or a brief stall
+-- doesn't false-positive. The cost of a false positive is high — we'd
+-- declare a live player dead and they'd lose the match — so we err on
+-- the side of "definitely stuck."
+local SILENT_DEATH_THRESHOLD_MS = 10000
+
+---Watchdog for stuck matches: if any non-eliminated slot has been silent
+---for SILENT_DEATH_THRESHOLD_MS, synthesize an inferred death so arbitration
+---can proceed and the match can resolve. pcall-wrapped at the call site.
+---@param nowMs integer current wall-clock ms (server-injected)
+function Room:tickSilentDeathWatchdog(nowMs)
+  if not self.game or self.game.complete then return end
+  if self.voided then return end
+  if not self.lastInputMs then return end
+
+  for slot, player in pairs(self.players) do
+    if player
+       and not self.game.eliminatedPlayers[slot]
+       and not self.game.disconnectedPlayers[slot] then
+      local lastMs = self.lastInputMs[slot]
+      if lastMs and (nowMs - lastMs) > SILENT_DEATH_THRESHOLD_MS then
+        self:_synthesizeSilentDeath(player, slot, nowMs)
+      end
+    end
+  end
+end
+
+---Synthesize an inferred D for a slot that's gone silent without sending one
+---themselves. Mirrors the voidByLeave synth-death path: mark eliminated,
+---record on the replay (with inferred=true so it can be distinguished from
+---authoritative deaths), broadcast to the room, emit incidentDetected for
+---the crash-replay subsystem.
+---@param player ServerPlayer
+---@param slot integer
+---@param nowMs integer
+function Room:_synthesizeSilentDeath(player, slot, nowMs)
+  local inputs = self.game.inputs and self.game.inputs[slot] or {}
+  local deathFrame = math.max(#inputs, 1)
+  self.game:markPlayerEliminated(player, deathFrame)
+  logger.warn(string.format(
+    "%d: slot %d (%s) silent for >%dms — synthesizing inferred DeathEvent at frame %d",
+    self.roomNumber, slot, player.name or "?", SILENT_DEATH_THRESHOLD_MS, deathFrame))
+
+  local body = {
+    sender = slot,
+    senderFrame = deathFrame,
+    serverWallClockMs = nowMs,
+    reason = "silent",
+    inferred = true,
+  }
+  self.game:recordDeathEvent(player, body)
+  local message = NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.serverMessageTypes.deathEvent.prefix, json.encode(body))
+  -- pairs not ipairs: self.players may be sparse mid-match.
+  for _, p in pairs(self.players) do
+    if p ~= player then p:send(message) end
+  end
+  for _, spec in pairs(self.spectators) do
+    if spec then spec:send(message) end
+  end
+
+  -- Crash-replay capture: stuck-match rescue is by definition an
+  -- "interesting incident." Wrapped in pcall so a listener fault can't
+  -- propagate back into the watchdog and break other rooms.
+  pcall(function() self:emitSignal("incidentDetected", self, "silent_death") end)
 end
 
 ---Walk forward through the sender's enemy team list to find a recipient that

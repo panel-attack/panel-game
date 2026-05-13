@@ -127,13 +127,20 @@ end
 
 function PlayerStack:onGameOver(engine)
   SoundController:playSfx(themes[config.theme].sounds.game_over)
-  -- Defer panel flip and elimination notify — let in-flight pop animations finish first,
-  -- and let the rollback window expire so a rewind-past-death doesn't leak a false-death
-  -- to the server. The disconnect-during-death case is handled server-side: voidByLeave
-  -- treats a leaver who fell far behind in inputs as eliminated (clients stop sending
-  -- inputs after game_ended, so a large input gap is a strong death signal).
+  -- Defer panel flip — let in-flight pop animations drain before we visually
+  -- "kill" the stack. The visual flip happens in runGameOver once pop_q is empty.
   self._pendingVisualDeath = true
-  self._pendingEliminationClock = engine.game_over_clock
+  -- Notify the server immediately. Online loose-sync: the local stack's clock
+  -- never rewinds (only view-stacks do, driven by remote inputs), so there's no
+  -- rollback window to wait out.
+  --
+  -- The previous design deferred this through _pendingEliminationClock with a
+  -- 60-frame gate in runGameOver — but that gate could never be satisfied once
+  -- Match:hasEnded() flipped on the same tick (e.g. FFA dying last-but-one,
+  -- TEAMS_ACTIVE=1). ClientMatch:run then early-returns, engine.clock freezes,
+  -- and the deferred notify never fires — D never reaches the server — match
+  -- stuck forever. This was the 3p FFA Koozie/Bevy/Lala stuck-match bug.
+  self:notifyServerStackEliminated()
 end
 
 -- Flips all panels to dead state and spawns the death pop effects.
@@ -274,10 +281,12 @@ function PlayerStack:onRollback(engine)
   self.analytic:rollbackToFrame(self.clock)
   --prof.pop("rollback copy analytics")
 
-  -- If rollback restored us to a pre-death state, cancel all deferred death actions
+  -- If rollback restored us to a pre-death state, cancel the deferred visual flip.
+  -- The server-notify already fired in onGameOver; in online loose-sync the local
+  -- stack's clock never rolls back past its own death (only view-stacks do), so
+  -- the notify is authoritative once sent.
   if engine.game_over_clock <= 0 then
     self._pendingVisualDeath = nil
-    self._pendingEliminationClock = nil
   end
 end
 
@@ -326,12 +335,6 @@ function PlayerStack:runGameOver(matchClock)
   -- flip panels to dead once pre-death pop effects have drained
   if self._pendingVisualDeath and self.pop_q:len() == 0 then
     self:applyVisualDeath()
-  end
-
-  -- send elimination once the death is confirmed past the rollback window
-  if self._pendingEliminationClock and matchClock and matchClock > self._pendingEliminationClock + GARBAGE_DELAY_LAND_TIME then
-    self:notifyServerStackEliminated()
-    self._pendingEliminationClock = nil
   end
 
   self:update_popfxs()

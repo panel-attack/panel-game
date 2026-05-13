@@ -1018,6 +1018,12 @@ function Server:update()
   -- instead of freezing at the last received input. pcall-wrapped: this
   -- is auxiliary plumbing and must never disturb the main update loop.
   self:tickIdleFills()
+  -- Belt-and-suspenders watchdog for stuck matches: if a slot stops sending
+  -- inputs for >10s without sending a D, synthesize an inferred death so
+  -- arbitration can proceed. The client-side onGameOver immediate-notify
+  -- fix is the actual cure; this exists for legacy clients, future
+  -- regressions, and any other path that silences a slot without telling us.
+  self:tickSilentDeathWatchdogs()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
@@ -1046,6 +1052,18 @@ function Server:tickIdleFills()
   for _, room in pairs(self.rooms) do
     if room then
       pcall(function() room:tickIdleFill(nowMs) end)
+    end
+  end
+end
+
+---Per-room silent-death watchdog dispatch. Wrapped in pcall — a watchdog
+---fault must not propagate into the update loop. Each room's own
+---tickSilentDeathWatchdog is defensive (skips if game nil/complete/voided).
+function Server:tickSilentDeathWatchdogs()
+  local nowMs = math.floor(self.clock() * 1000)
+  for _, room in pairs(self.rooms) do
+    if room then
+      pcall(function() room:tickSilentDeathWatchdog(nowMs) end)
     end
   end
 end

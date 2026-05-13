@@ -682,6 +682,155 @@ local function test_idleFill_state_resets_on_rematch()
     .. count)
 end
 
+----------------------------------------------------------------------
+-- Silent-death watchdog: rescue stuck matches when a non-eliminated
+-- slot stops sending inputs without ever sending a D
+----------------------------------------------------------------------
+-- Belt-and-suspenders behind the client-side onGameOver immediate-notify
+-- fix. If for any reason (legacy client, future regression, network
+-- pathology) a slot goes silent without a D event reaching us, the
+-- server synthesizes an inferred death so arbitration can proceed
+-- and the match can resolve. This rescues the 3p FFA stuck-match
+-- failure mode even if the client fix is bypassed.
+
+local function test_silentDeathWatchdog_synthesizes_death_when_slot_silent()
+  logger.info("test_silentDeathWatchdog_synthesizes_death_when_slot_silent")
+  local room, p1, p2 = get2pMatchInProgress()
+
+  -- p1 went silent at T=1000ms; p2 is still active at T=11500ms.
+  room.lastInputMs[p1.player_number] = 1000
+  room.lastInputMs[p2.player_number] = 11500
+
+  -- Clear queues so we count only watchdog traffic.
+  p2.connection.outgoingInputQueue:clear()
+
+  -- T=12000ms — p1 has been silent for 11s, p2 for 500ms. Watchdog should
+  -- synthesize an inferred D for p1 only.
+  room:tickSilentDeathWatchdog(12000)
+
+  assert(room.game.eliminatedPlayers[p1.player_number],
+    "p1 should be marked eliminated after 11s of silence")
+  assert(not room.game.eliminatedPlayers[p2.player_number],
+    "p2 should NOT be marked eliminated — still within threshold")
+  assert(#room.game.deathEvents == 1,
+    "watchdog should have recorded 1 inferred D event, got " .. #room.game.deathEvents)
+  assert(room.game.deathEvents[1].inferred == true,
+    "synthesized death must be marked inferred=true so the replay can distinguish it")
+  assert(room.game.deathEvents[1].reason == "silent",
+    "synthesized death reason should be 'silent', got " .. tostring(room.game.deathEvents[1].reason))
+
+  local dCount = countByPrefix(p2.connection.outgoingInputQueue, "D")
+  assert(dCount == 1, "p2 should receive 1 D event for p1's inferred death, got " .. dCount)
+
+  room:close()
+end
+
+local function test_silentDeathWatchdog_no_op_when_input_recent()
+  logger.info("test_silentDeathWatchdog_no_op_when_input_recent")
+  local room, p1, p2 = get2pMatchInProgress()
+
+  room.lastInputMs[p1.player_number] = 1000
+  room.lastInputMs[p2.player_number] = 1000
+
+  -- Only 5s elapsed — below the 10s threshold. No synth expected.
+  room:tickSilentDeathWatchdog(6000)
+
+  assert(not room.game.eliminatedPlayers[p1.player_number],
+    "p1 should NOT be marked eliminated within the silence threshold")
+  assert(#room.game.deathEvents == 0,
+    "watchdog must not synthesize a death within the silence threshold")
+
+  room:close()
+end
+
+local function test_silentDeathWatchdog_skips_already_eliminated()
+  logger.info("test_silentDeathWatchdog_skips_already_eliminated")
+  local room, p1, p2 = get2pMatchInProgress()
+
+  -- p1 already legitimately eliminated. p2 is active (recent input).
+  room.game:markPlayerEliminated(p1, 500)
+  room.lastInputMs[p1.player_number] = 1000   -- silent but already eliminated
+  room.lastInputMs[p2.player_number] = 11500  -- active
+
+  -- Even after 11s of silence, p1 must not re-trigger synthesis.
+  room:tickSilentDeathWatchdog(12000)
+  assert(#room.game.deathEvents == 0,
+    "watchdog must not synth for already-eliminated slot, got " .. #room.game.deathEvents)
+
+  room:close()
+end
+
+local function test_silentDeathWatchdog_emits_incidentDetected()
+  logger.info("test_silentDeathWatchdog_emits_incidentDetected")
+  local room, p1, p2 = get2pMatchInProgress()
+
+  local incidents = {}
+  room:connectSignal("incidentDetected", room, function(_, _room, reason)
+    incidents[#incidents + 1] = reason
+  end)
+
+  room.lastInputMs[p1.player_number] = 1000
+  room.lastInputMs[p2.player_number] = 11500  -- p2 active, only p1 silent
+
+  room:tickSilentDeathWatchdog(12000)
+
+  assert(#incidents == 1, "incidentDetected should fire once for the synthesized death, got " .. #incidents)
+  assert(incidents[1] == "silent_death",
+    "incident reason should be 'silent_death', got " .. tostring(incidents[1]))
+
+  room:close()
+end
+
+local function test_silentDeathWatchdog_skips_when_game_complete()
+  logger.info("test_silentDeathWatchdog_skips_when_game_complete")
+  local room, p1, p2 = get2pMatchInProgress()
+  room.lastInputMs[p1.player_number] = 1000
+  room.lastInputMs[p2.player_number] = 1000
+  room.game.complete = true
+
+  room:tickSilentDeathWatchdog(12000)
+  assert(#room.game.deathEvents == 0,
+    "watchdog must not synth when game is complete, got " .. #room.game.deathEvents)
+
+  room:close()
+end
+
+local function test_silentDeathWatchdog_lastInputMs_seeded_at_start_match()
+  logger.info("test_silentDeathWatchdog_lastInputMs_seeded_at_start_match")
+  -- A player who never sends any input still must have a baseline timestamp
+  -- so the watchdog can compare against it. Without a seed, lastInputMs[slot]
+  -- is nil and the watchdog can't fire — but a never-played slot is the most
+  -- suspicious one of all (joined, loaded, then ghosted). Seed at start_match.
+  local room = get2pMatchInProgress()
+  assert(room.lastInputMs, "lastInputMs table should exist after start_match")
+  for slot in pairs(room.players) do
+    assert(room.lastInputMs[slot],
+      "lastInputMs[" .. slot .. "] should be seeded at match start, got " .. tostring(room.lastInputMs[slot]))
+  end
+end
+
+local function test_silentDeathWatchdog_updated_on_broadcastInput()
+  logger.info("test_silentDeathWatchdog_updated_on_broadcastInput")
+  local room, p1 = get2pMatchInProgress()
+
+  assert(room.lastInputMs[p1.player_number], "precondition: lastInputMs seeded")
+
+  -- Patch room.clock (captured at construction) to a fixed value, send an input,
+  -- expect lastInputMs to land at clock × 1000ms.
+  local realClock = room.clock
+  room.clock = function() return 2000.0 end
+  local ok, err = pcall(function()
+    room:broadcastInput("A", p1)
+    assert(room.lastInputMs[p1.player_number] == 2000000,
+      "lastInputMs[p1] should advance to 2_000_000ms after broadcastInput at clock=2000s, got "
+      .. tostring(room.lastInputMs[p1.player_number]))
+  end)
+  room.clock = realClock
+  if not ok then error(err) end
+
+  room:close()
+end
+
 local function test_idleFill_caps_at_max_frames()
   logger.info("test_idleFill_caps_at_max_frames")
   local room, p1, p2 = get2pMatchInProgress()
@@ -720,5 +869,12 @@ test_idleFill_emits_placeholders_for_eliminated_player()
 test_idleFill_skips_when_game_complete()
 test_idleFill_caps_at_max_frames()
 test_idleFill_state_resets_on_rematch()
+test_silentDeathWatchdog_lastInputMs_seeded_at_start_match()
+test_silentDeathWatchdog_updated_on_broadcastInput()
+test_silentDeathWatchdog_synthesizes_death_when_slot_silent()
+test_silentDeathWatchdog_no_op_when_input_recent()
+test_silentDeathWatchdog_skips_already_eliminated()
+test_silentDeathWatchdog_emits_incidentDetected()
+test_silentDeathWatchdog_skips_when_game_complete()
 
 logger.info("All LooseSyncServerTests passed!")
