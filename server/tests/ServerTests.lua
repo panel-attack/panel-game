@@ -601,6 +601,98 @@ local function testJoinRoomRequestUsesSanitizedJoinMessage()
   assert(joinAck and joinAck.content and joinAck.content.roomNumber == room.roomNumber)
 end
 
+----------------------------------------------------------------------
+-- flagGame (Phase C step 1 — client-nominated crash flagging)
+----------------------------------------------------------------------
+-- Verifies the full wire-level path: client sends flagGame JSON → server
+-- dispatches → validates participation → calls CrashReports:flagGame →
+-- replies with flagGameAck. Quiescence rule is exercised via spectator
+-- state (the only "not in a live match" state we can drop a player into
+-- while the room still exists).
+
+local function popFlagGameAck(conn)
+  while conn.outgoingMessageQueue:len() > 0 do
+    local msg = conn.outgoingMessageQueue:pop().messageText
+    if msg and msg.type == "flagGameAck" then
+      return msg
+    end
+  end
+end
+
+local function testFlagGameAcceptedFromSpectator()
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben   = ServerTesting.login(server, ServerTesting.players[3])
+  local bob   = ServerTesting.login(server, ServerTesting.players[1])
+  local room  = ServerTesting.setupRoom(server, alice, ben, true)
+  ServerTesting.startGame(server, room)
+  ServerTesting.addSpectator(server, room, bob)
+  ServerTesting.clearOutgoingMessages({alice, ben, bob})
+
+  local gameKey = {
+    roomNumber = room.roomNumber,
+    gameId     = room.game.id,
+    startTs    = room.game.creationTime,
+  }
+  bob.connection:receiveMessage(json.encode(
+    ClientProtocol.flagGame(gameKey, "client_crash", "h1", "boom").messageText))
+  server:update()
+
+  local ack = popFlagGameAck(bob.connection)
+  assert(ack, "spectator should receive a flagGameAck")
+  assert(ack.content.accepted == true,
+    "expected accepted=true, got " .. tostring(ack.content.accepted)
+    .. " reason=" .. tostring(ack.content.reason))
+  assert(type(ack.content.incidentId) == "string" and #ack.content.incidentId > 0)
+  assert(server.crashReports:incidentCount() == 1)
+end
+
+local function testFlagGameRejectedForUnknownRoom()
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  ServerTesting.clearOutgoingMessages({alice})
+
+  -- alice is in lobby; flag a room number that doesn't exist
+  alice.connection:receiveMessage(json.encode(
+    ClientProtocol.flagGame({ roomNumber = 9999, gameId = 1, startTs = 0 },
+                            "client_crash").messageText))
+  server:update()
+
+  local ack = popFlagGameAck(alice.connection)
+  assert(ack and ack.content.accepted == false)
+  assert(ack.content.reason == "unknown_game",
+    "expected reason=unknown_game, got " .. tostring(ack.content.reason))
+  assert(server.crashReports:incidentCount() == 0,
+    "rejected flag must not register")
+end
+
+local function testFlagGameRejectedForNonParticipant()
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben   = ServerTesting.login(server, ServerTesting.players[3])
+  local jerry = ServerTesting.login(server, ServerTesting.players[4])
+  local room  = ServerTesting.setupRoom(server, alice, ben, true)
+  ServerTesting.startGame(server, room)
+  ServerTesting.clearOutgoingMessages({alice, ben, jerry})
+
+  -- jerry is in lobby, never joined room. Tries to flag the alice+ben
+  -- game.
+  local gameKey = {
+    roomNumber = room.roomNumber,
+    gameId     = room.game.id,
+    startTs    = room.game.creationTime,
+  }
+  jerry.connection:receiveMessage(json.encode(
+    ClientProtocol.flagGame(gameKey, "client_crash").messageText))
+  server:update()
+
+  local ack = popFlagGameAck(jerry.connection)
+  assert(ack and ack.content.accepted == false)
+  assert(ack.content.reason == "not_participant",
+    "expected reason=not_participant, got " .. tostring(ack.content.reason))
+  assert(server.crashReports:incidentCount() == 0)
+end
+
 testLogin()
 testRoomSetup()
 testRoomSetup2()
@@ -613,3 +705,6 @@ testJoinPartialRoomSetsCharacterSelectState()
 testTeamRoomRequestCreatesPartialRoom()
 testTeamRoomRequestAcceptsFallbackGameModeShape()
 testJoinRoomRequestUsesSanitizedJoinMessage()
+testFlagGameAcceptedFromSpectator()
+testFlagGameRejectedForUnknownRoom()
+testFlagGameRejectedForNonParticipant()

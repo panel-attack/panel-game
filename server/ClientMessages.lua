@@ -40,6 +40,8 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return ClientMessages.sanitizePauseToggle(clientMessage)
   elseif clientMessage.error_report then
     return clientMessage
+  elseif clientMessage.flagGame then
+    return ClientMessages.sanitizeFlagGame(clientMessage)
   else
     local errorMsg = "Received an unexpected message"
     local messageJson = json.encode(clientMessage)
@@ -130,6 +132,54 @@ function ClientMessages.sanitizeChallengeUpdate(message)
   }
 
   return sanitized
+end
+
+-- Client-nominated crash flag. Trim everything hostile or oversized at the
+-- door so the routing/storage code can trust its inputs. See
+-- docs/CRASH_REPLAY_PLAN.md "Wire shape — flagGame" for the contract.
+local MAX_TRACE_FRAGMENT = 1024
+local MAX_TRACE_HASH     = 64
+local MAX_REASON         = 32
+
+local function _truncString(v, cap)
+  if type(v) ~= "string" then return nil end
+  if #v > cap then return v:sub(1, cap) end
+  return v
+end
+
+function ClientMessages.sanitizeFlagGame(clientMessage)
+  local raw = clientMessage.flagGame
+  if type(raw) ~= "table" then return { flagGame = nil } end
+
+  local gk
+  if type(raw.gameKey) == "table" then
+    gk = {
+      roomNumber = tonumber(raw.gameKey.roomNumber),
+      gameId     = tonumber(raw.gameKey.gameId),
+      startTs    = tonumber(raw.gameKey.startTs),
+    }
+  end
+
+  local clientMeta
+  if type(raw.clientMeta) == "table" then
+    clientMeta = {
+      engineVersion = _truncString(raw.clientMeta.engineVersion, 16),
+      os            = _truncString(raw.clientMeta.os,            32),
+      loveVersion   = _truncString(raw.clientMeta.loveVersion,   16),
+      branch        = _truncString(raw.clientMeta.branch,        64),
+    }
+  end
+
+  return {
+    flagGame = {
+      gameKey       = gk,
+      reason        = _truncString(raw.reason,        MAX_REASON),
+      traceHash     = _truncString(raw.traceHash,     MAX_TRACE_HASH),
+      traceFragment = _truncString(raw.traceFragment, MAX_TRACE_FRAGMENT),
+      clientMeta    = clientMeta,
+      schemaVer     = tonumber(raw.schemaVer) or 1,
+    },
+  }
 end
 
 function ClientMessages.sanitizeSpectateRequest(spectateRequest)

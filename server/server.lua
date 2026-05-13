@@ -1398,6 +1398,13 @@ function Server:processMessage(message, connection)
         self:setLobbyChanged()
         return true
       end
+    elseif message.flagGame and (player.state == "lobby" or player.state == "spectating") then
+      -- Quiescence rule from docs/CRASH_REPLAY_PLAN.md: only accept
+      -- crash nominations when the player isn't in a live match. Lobby
+      -- AND spectating both qualify — spectating clients can flag the
+      -- game they're currently watching if it goes sideways.
+      self:handleFlagGame(message.flagGame, player)
+      return true
     elseif message.unknown then
       self:closeConnection(connection)
       return false
@@ -1411,6 +1418,86 @@ function Server:handleErrorReport(errorReport)
   if not FileIO.write_error_report(errorReport) then
     logger.error("The error report was either too large or had an I/O failure when attempting to write the file.")
   end
+end
+
+---Client-nominated crash flag. Validates the nomination against the
+---active room state and forwards to CrashReports:flagGame if it checks
+---out. Sends a flagGameAck back regardless of outcome so the client
+---can stop retrying. See docs/CRASH_REPLAY_PLAN.md "flagGame wire shape".
+---
+---Top-level pcall belt: handleFlagGame must never throw — a buggy
+---nomination from a client should not affect the rest of processMessage.
+---@param payload table sanitized flagGame body
+---@param sender ServerPlayer
+function Server:handleFlagGame(payload, sender)
+  local ok, err = pcall(function()
+    self:_handleFlagGameImpl(payload, sender)
+  end)
+  if not ok then
+    logger.warn("[Server] handleFlagGame errored: " .. tostring(err))
+  end
+end
+
+---@param payload table
+---@param sender ServerPlayer
+function Server:_handleFlagGameImpl(payload, sender)
+  local function ack(accepted, info)
+    -- info is incidentId on accepted, rejection reason on rejected.
+    sender:sendJson(ServerProtocol.flagGameAck(payload.gameKey, accepted, info))
+  end
+
+  if type(payload) ~= "table" or type(payload.gameKey) ~= "table" then
+    ack(false, "malformed")
+    return
+  end
+  local gk = payload.gameKey
+  -- Required fields: roomNumber and startTs. gameId is reserved-but-optional:
+  -- server-side Game.id stays nil until persistence assigns one, so we can't
+  -- gate live-match nominations on it. startTs (creationTime) is set at game
+  -- start and uniquely identifies the match within a room's lifetime.
+  if type(gk.roomNumber) ~= "number" or type(gk.startTs) ~= "number" then
+    ack(false, "malformed")
+    return
+  end
+
+  -- Resolve the room. Client-nominated flags only work while the room is
+  -- still alive — once the room closes the server has no way to snapshot
+  -- a meaningful view. The server-side disconnect path already flagged
+  -- in that case; this is the additive complement for client crashes
+  -- the server didn't see.
+  local room = self.rooms[gk.roomNumber]
+  if not room or not room.game then
+    ack(false, "unknown_game")
+    return
+  end
+  -- Discriminate by creationTime so a client referring to a finished match
+  -- doesn't flag a subsequent rematch in the same room.
+  if room.game.creationTime ~= gk.startTs then
+    ack(false, "unknown_game")
+    return
+  end
+
+  -- Participant check — only people who were in this game can nominate it.
+  -- Walk room.players (sparse-safe via pairs) + spectators.
+  local senderId = sender.publicPlayerID
+  local inGame = false
+  for _, p in pairs(room.players or {}) do
+    if p and p.publicPlayerID == senderId then inGame = true; break end
+  end
+  if not inGame then
+    for _, s in pairs(room.spectators or {}) do
+      if s and s.publicPlayerID == senderId then inGame = true; break end
+    end
+  end
+  if not inGame then
+    ack(false, "not_participant")
+    return
+  end
+
+  local reason = payload.reason or "client_crash"
+  local accepted, idOrReason =
+    self.crashReports:flagGame(room, reason, payload.traceHash)
+  ack(accepted, idOrReason)
 end
 
 -- Flush the log so we can see new info periodically. The default caches for huge amounts of time.

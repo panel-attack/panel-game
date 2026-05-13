@@ -120,6 +120,35 @@ local leaveRoomTemplate =
   content = { reason = "" }
 }
 
+---Crash-replay nomination ack. Sent in response to a client's flagGame
+---message — see docs/CRASH_REPLAY_PLAN.md "flagGame wire shape". The
+---accepted flag tells the client whether to keep its local pending_crashes/
+---file (true ⇒ the server will request a slice; false ⇒ free-to-delete
+---unless reason is "bucket_full" in which case retry later).
+---@param gameKey table the gameKey the client sent; echoed back so the
+---  client can disambiguate which pending nomination this ack belongs to
+---@param accepted boolean
+---@param info string accepted ⇒ incidentId; rejected ⇒ rejection reason
+---@return {messageType: table, messageText: ServerMessage}
+function ServerProtocol.flagGameAck(gameKey, accepted, info)
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = {
+      sender = "server",
+      type   = "flagGameAck",
+      content = {
+        gameKey    = gameKey,
+        accepted   = accepted and true or false,
+        -- Two-faced field: incidentId on accepted, reason on rejected.
+        -- The client distinguishes via the accepted flag, not by parsing
+        -- this value's shape.
+        incidentId = accepted and info or nil,
+        reason     = (not accepted) and info or nil,
+      },
+    },
+  }
+end
+
 ---@param roomId integer
 ---@param reason string?
 ---@return {messageType: table, messageText: ServerMessage}

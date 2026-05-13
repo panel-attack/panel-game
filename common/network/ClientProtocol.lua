@@ -225,6 +225,32 @@ function ClientProtocol.sendDeathEvent(body)
   }
 end
 
+---Crash-replay nomination ("phase 1" of two-phase spool). Sent on next
+---quiescent moment (post-login or lobby return) per
+---docs/CRASH_REPLAY_PLAN.md. Carries the gameKey + trace metadata only —
+---the fat replay slice ships later via crashSlice in response to the
+---server's crashSliceRequest.
+---@param gameKey {roomNumber: integer, gameId: integer, startTs: integer}
+---@param reason string e.g. "client_crash", "user_reported"
+---@param traceHash string? short fingerprint used by the server to dedup
+---@param traceFragment string? short error excerpt for forensic context
+---@param clientMeta table? engineVersion / os / loveVersion / branch
+function ClientProtocol.flagGame(gameKey, reason, traceHash, traceFragment, clientMeta)
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = {
+      flagGame = {
+        gameKey       = gameKey,
+        reason        = reason,
+        traceHash     = traceHash,
+        traceFragment = traceFragment,
+        clientMeta    = clientMeta,
+        schemaVer     = 1,
+      },
+    },
+  }
+end
+
 ---@param pause boolean if the client is paused
 function ClientProtocol.sendPauseToggle(roomNumber, pause)
   local pauseToggleMessage = {
