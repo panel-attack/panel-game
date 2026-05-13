@@ -50,7 +50,8 @@ cleanup() {
     # `love` on macOS is typically a wrapper script around Love.app's binary,
     # so kill its child too in case our tracked pid is the wrapper.
     pkill -P "$p" 2>/dev/null || true
-    kill "$p" 2>/dev/null || true
+    # Use SIGKILL — macOS Cocoa apps can delay or swallow SIGTERM.
+    kill -9 "$p" 2>/dev/null || true
   done
   for f in "${pidfiles[@]}"; do
     rm -f "$f"
