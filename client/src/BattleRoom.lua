@@ -81,6 +81,29 @@ function(self, mode, gameScene)
   self:createSignal("rosterChanged")
 end)
 
+-- Server payloads can be sparse by playerNumber (e.g. slots 1 and 3 occupied).
+-- Build a deterministic, ascending-by-playerNumber list from either arrays or
+-- sparse numeric-key tables.
+---@param payload table
+---@return table[]
+local function orderedPayloadPlayers(payload)
+  local entries = {}
+  for k, v in pairs(payload or {}) do
+    if type(k) == "number" and v then
+      entries[#entries + 1] = { index = k, player = v }
+    end
+  end
+  table.sort(entries, function(a, b)
+    return a.index < b.index
+  end)
+
+  local players = {}
+  for i, entry in ipairs(entries) do
+    players[i] = entry.player
+  end
+  return players
+end
+
 ---@enum BattleRoomState
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
@@ -105,16 +128,19 @@ function BattleRoom.createFromServerMessage(message)
       battleRoom.match:start()
       battleRoom.state = BattleRoom.states.MatchInProgress
     else
-      for i = 1, #message.players do
-        local player = Player(message.players[i].name, message.players[i].publicId or -i, false)
+      local payloadPlayers = orderedPayloadPlayers(message.players)
+      for i = 1, #payloadPlayers do
+        local payloadPlayer = payloadPlayers[i]
+        local player = Player(payloadPlayer.name, payloadPlayer.publicId or -i, false)
         battleRoom:addPlayer(player)
-        player:updateSettings(message.players[i].settings)
+        player:updateSettings(payloadPlayer.settings)
       end
     end
 
+    local payloadPlayers = orderedPayloadPlayers(message.players)
     for i = 1, #battleRoom.players do
-      if message.players[i].ratingInfo then
-        local ratingInfo = message.players[i].ratingInfo
+      if payloadPlayers[i] and payloadPlayers[i].ratingInfo then
+        local ratingInfo = payloadPlayers[i].ratingInfo
         battleRoom.players[i]:setRating(ratingInfo.placement_match_progress or ratingInfo.new)
         battleRoom.players[i]:setLeague(ratingInfo.league)
       end
@@ -125,7 +151,9 @@ function BattleRoom.createFromServerMessage(message)
     battleRoom.spectating = true
   else
     local gameMode = message.gameMode
-    for i, player in ipairs(message.players) do
+    local payloadPlayers = orderedPayloadPlayers(message.players)
+    for i = 1, #payloadPlayers do
+      local player = payloadPlayers[i]
       local p
       local samePublicId = (player.publicId and GAME.localPlayer.publicId and GAME.localPlayer.publicId > 0 and player.publicId == GAME.localPlayer.publicId)
       local sameName = (player.name == GAME.localPlayer.name)
@@ -166,7 +194,8 @@ function BattleRoom.createFromServerMessage(message)
   -- Host/owner is the player who started/owns the room. Used by CharacterSelect to
   -- show a "Host" tag on the player's info panel. Falls back to players[1] for
   -- legacy payloads that predate ownerId on addToRoom.
-  battleRoom.ownerId = message.ownerId or (message.players[1] and message.players[1].publicId) or nil
+  local payloadPlayers = orderedPayloadPlayers(message.players)
+  battleRoom.ownerId = message.ownerId or (payloadPlayers[1] and payloadPlayers[1].publicId) or nil
 
   battleRoom:restoreInputConfigurations()
   GAME.netClient:registerPlayerUpdates(battleRoom)

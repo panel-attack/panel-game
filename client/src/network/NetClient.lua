@@ -614,21 +614,6 @@ local function processPlayerJoinedRoom(self, message)
         logger.warn("[playerJoin] No room scene available for mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'.")
       end
     end
-
-    -- Navigate to the waiting room (CharacterSelect) once the room is ready,
-    -- per the per-mode rule in isRoomReadyForWaitingRoom. Skip for clients
-    -- already in the room scene (avoid duplicate push).
-    local alreadyInRoom = self.state == states.ROOM or self.state == states.INGAME
-    if isRoomReadyForWaitingRoom(self.room) and not alreadyInRoom then
-      logger.info("Room " .. (self.room.roomNumber or "?") .. " ready for waiting room (" .. #self.room.players .. " player(s)). Navigating to game scene.")
-      local roomScene = getSceneFromRoom(self.room)
-      if roomScene then
-        GAME.navigationStack:push(roomScene)
-        self.state = states.ROOM
-      else
-        logger.warn("No room scene available for mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'.")
-      end
-    end
   end
 end
 
