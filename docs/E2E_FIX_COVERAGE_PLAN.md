@@ -20,8 +20,7 @@ Reference for handoff context — fixes from the May 12 session:
 | Step 2.5 | Cursor walk consolidated into `TeamUtils.findNextLiving` | `common/data/TeamUtils.lua` (+ all 3 call sites updated; 8 unit tests added) |
 
 **Still open from the original bug report:** B7 (team-assignment orientation
-for 2v1). UI labeling issue, independent of sync work — ~half a day, can
-slot in anywhere.
+for 2v1). UI labeling issue, independent of sync work — can slot in anywhere.
 
 ---
 
@@ -36,23 +35,23 @@ slot in anywhere.
 
 1. **Logger-error hook on `Harness`.** `harness.serverErrorCount` / `harness.serverErrors[]` — wrap `logger.error` in `Harness:start()`, restore in `Harness:stop()`. Once this exists, every existing scenario can `assert(h.serverErrorCount == 0)` as a free regression net.
 2. **`TestClient:sendSpectateRequest(roomNumber)`** + JSON-router convenience for `spectateRequestGranted` payload (decode the replay struct).
-3. **`TestClient:sendGarbageEvent(body)` and `:sendDeathEvent(body)`** — mirrors `:sendInput`. Wraps `_sendFrame(NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))` (and `.deathEvent.prefix`). ~6 lines each.
+3. **`TestClient:sendGarbageEvent(body)` and `:sendDeathEvent(body)`** — mirrors `:sendInput`. Wraps `_sendFrame(NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))` (and `.deathEvent.prefix`).
 4. **`LooseSyncHarness.lua`** (NEW, in `common/tests/engine/`) — love2D-side harness for engine-only scenarios. Constructs a real `Match` engine, scripted-tick driver, state-vector reader. Used by contract / matrix tests that don't need the server.
 5. **State-vector reader.** Canonical struct/hash of: per-stack `incomingGarbage` queue contents, per-sender `teamGarbageState.currentTargetIndex`, per-stack `game_over_clock`, `arbitrationDeaths` (server). Same shape readable from both the E2E `Harness` (server-side) and `LooseSyncHarness` (engine-only).
 6. **Clock injection.** `Room` arbitration uses `socket.gettime()` directly (`server/Room.lua:917-922`). Harness exposes an optional `clock` callable; arbitration tests pass a fake clock. Other tests use real wall-clock.
 
-Total harness work: ~1 dev day. **Unblocks everything else.**
+**Unblocks everything else.**
 
 ---
 
 ## Items, in order
 
-### 1. Shared harness extensions (~1 day)
+### 1. Shared harness extensions
 
 Build (1)-(6) from the section above. Validation: every existing
 `ThreePlayerFFATests.lua` scenario keeps passing.
 
-### 2. Contract test stubs (~half a day)
+### 2. Contract test stubs
 
 **New file:** `common/tests/engine/LooseSyncContractTests.lua` — invariants
 as named test functions. Some pass green against current code; some stay
@@ -68,7 +67,7 @@ Names + post-conditions:
 
 These tests **are** the contract. No separate prose doc — naming carries the spec.
 
-### 3. Regression scenarios for landed fixes (~half a day on top of #1)
+### 3. Regression scenarios for landed fixes
 
 Wire each May-12 fix to a focused regression test:
 
@@ -78,7 +77,7 @@ Wire each May-12 fix to a focused regression test:
 - **B10** — `test_mid_match_leave_keeps_high_slot_receiving`. 3-player FFA, BotB (slot 2) leaves mid-match, assert BotC (slot 3) keeps receiving inputs and G/D events from BotA.
 - **B9** — `test_open_team_1v2_starts_with_three_players`. 3 clients join an Open 1v2 room, all ready, `matchStart` fires once and no `'for' limit must be a number` in `harness.serverErrors`.
 
-### 4. Engine matrix tests (~1 day with harness done)
+### 4. Engine matrix tests
 
 In `common/tests/engine/LooseSyncMatrixTests.lua` (love2D side, uses `LooseSyncHarness`):
 
@@ -95,7 +94,7 @@ In `common/tests/engine/LooseSyncMatrixTests.lua` (love2D side, uses `LooseSyncH
 Replaces / subsumes the B1/B8-half-2/C unit-test slots from the original
 plan — those are individual rows of this matrix.
 
-### 5. Periodic state hashes (~1 day)
+### 5. Periodic state hashes
 
 Once #1–#4 land and behavior is locked in. Server-broadcast `H` event
 every N frames; clients hash their `incomingGarbage` / `teamGarbageState` /
@@ -110,7 +109,7 @@ class we've actually observed — seqnums catch dropped events, hashes
 catch dropped *and* wrongly-applied events. We've never measured a
 delivery loss, so detect first, recover later.
 
-### 6. B7 — Team-assignment orientation (~half a day, independent)
+### 6. B7 — Team-assignment orientation (independent)
 
 UI labeling issue. Investigate whether the lobby "2 vs 1" / "1 vs 2"
 labels map to `playersPerTeam={2,1}` / `={1,2}` correctly, and whether
@@ -124,7 +123,7 @@ item — slot in anywhere.
 
 **Seqnums + gap-replay.** Only build after observing real delivery loss
 in logs. State hashes (item 5) will tell us whether delivery is the
-problem — until then this is solving a problem we haven't measured.
+problem — until then it's solving a problem we haven't measured.
 
 Open questions to resolve before building, when the time comes:
 - Bounding `eventLog` memory growth (cap by frame count or LRU).
@@ -146,8 +145,3 @@ Open questions to resolve before building, when the time comes:
 - **`server/tests/E2E/ThreePlayerFFATests.lua`** — the existing scenario to copy-paste-and-modify for items 3 and 4's server-side tests.
 - **`common/tests/TeamUtilsTests.lua`** — the 8 `findNextLiving` tests at the bottom are the pattern for invariant tests that don't need a harness.
 - **CLAUDE.md** in repo root — local-dev setup (LÖVE 12, luarocks, port 49569 for dev / 49580 for e2e). `zsh run_server.sh` / `zsh run_client.sh` / `zsh run_tests.sh` / `zsh run_e2e_tests.sh`.
-
-## Total budget
-
-~4 dev days through item 5. Add ~half a day for B7. Add 1-2 days if/when
-Step 4 (seqnums) becomes necessary.

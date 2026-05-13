@@ -31,6 +31,176 @@ mid-match state deterministically (panel seed + inputs +
 
 ---
 
+## Wire shape
+
+Single JSON document. Lives on disk client-side as a `.json` file under
+`pending_crashes/` (in `love.filesystem`), travels the existing TCP
+channel as the body of a `crashReport`-tagged JSON message, lands
+server-side as a `.json` file under `crash_reports/<userId>/`.
+
+```json
+{
+  "reportId":   "1715630423_a3f7c1",
+  "reason":     "crash",
+  "schemaVer":  1,
+
+  "error":      "common/engine/Match.lua:712: bad argument #1 to 'insert' (table expected, got nil)",
+  "trace":      "stack traceback:\n  ./common/engine/Match.lua:712: in function 'createFromReplay'\n  ...",
+  "traceHash":  "a3f7c1",
+
+  "clientMeta": {
+    "os":            "macOS",
+    "engineVersion": "049",
+    "branch":        "bramp/multi-player",
+    "loveVersion":   "12.0",
+    "userId":        "auto-filled-server-side"
+  },
+
+  "gameContext": {
+    "roomNumber":   2,
+    "gameId":       17,
+    "frame":        612,
+    "gameModeName": "three_player_vs_shared",
+    "matchCount":   3
+  },
+
+  "replay":  { /* ReplayV3 JSON, including crossPlayerEvents */ },
+
+  "logTail": [
+    "05/12/26 22:11:01.515 INFO:Room 2 readiness after Lala update: ...",
+    "05/12/26 22:11:01.516 INFO:Starting match 1 for 2 Bevy vs Koozie vs Lala",
+    "05/12/26 22:11:01.516 ERROR:Error: ./common/data/TeamUtils.lua:37: ..."
+  ]
+}
+```
+
+Field rules:
+- **`reportId`** — `<unix-ts>_<traceHash6>`. Stable across retries so
+  the server can ack idempotently and the client knows which file to
+  delete. Survives a power loss + relaunch.
+- **`reason`** — one of `"crash"` (love error handler), `"user_reported"`
+  (F12 hotkey), `"server_disconnect"` (server-side auto-capture), or
+  `"state_hash_mismatch"` (future, from the state-hash work).
+- **`schemaVer`** — bump if we ever change the shape. Older fixtures
+  with `schemaVer < N` get migrated on load.
+- **`traceHash`** — 6-hex-char hash of the trace. Used for dedup so the
+  same bug doesn't pile up.
+- **`gameContext`** — `null` if the crash happened pre-match.
+- **`replay`** — the full `ReplayV3` from `getPartialReplay(true)`. Has
+  panelSource seed, per-stack inputs (compressed), and `crossPlayerEvents`.
+  This is the only field load-bearing for replay-based regression.
+- **`logTail`** — last ~200 lines of `logger.messageBuffer`. Plain
+  diagnostic info — useful for context but not load-bearing.
+
+Server-side auto-capture (the disconnect path) uses the same shape with
+`reason = "server_disconnect"` and `replay` populated from
+`room.game:getPartialReplay(true)`. Everything else identical.
+
+## Transport
+
+**Client → server.** Wraps in the existing JSON-frame protocol — the `J`
+prefix used by `sendJson`. Same channel as every other lobby/room
+message, authenticated by the already-active login session.
+
+```
+sender → server:    J<crashReportEnvelope>←J←
+server → sender:    J<crashReportAckEnvelope>←J←
+```
+
+Envelopes:
+```
+crashReportEnvelope    = { "crashReport":    <payload above> }
+crashReportAckEnvelope = { "crashReportAck": { "reportId": "..." } }
+```
+
+The `crashReport` field is detected in `Server:processMessage` (same
+spot as the existing `error_report` dispatch), routed to a new
+`handleCrashReport` method on the server, parsed via a new
+`ClientMessages.sanitizeCrashReport`.
+
+**Why JSON over the regular socket, not a side channel:**
+- We already have an auth'd connection at login time. Reusing it is free.
+- TCP gives us reliable delivery + retry-on-resend.
+- No new infra (no S3, no separate HTTP service) for this branch.
+
+**Why no compression of the envelope itself:** the replay's input
+stream already uses `InputCompression.compressInputTable` when
+`COMPRESS_REPLAYS_ENABLED` is true — the heavy part is pre-compressed.
+The wrapper JSON is small. If a single payload ever exceeds the connection
+queue size, we'll add Deflate, but skip for now.
+
+## Storage
+
+### Client-side spool — `love.filesystem`
+
+```
+<love save dir>/pending_crashes/
+    1715630423_a3f7c1.json
+    1715631002_d22e93.json
+```
+
+- `love.filesystem.write` is used inside `main.lua`'s error handler.
+- Survives process death (it's `love.filesystem.getSaveDirectory()`).
+- Per-user (one save dir per OS user).
+- Cap at 50 files. If we'd write the 51st, FIFO drop the oldest. A
+  loop-crashing client doesn't fill the user's disk.
+- Cleared on successful upload + ack.
+
+### Server-side reports — repo-relative
+
+```
+<repo>/crash_reports/
+    <publicId>/
+        1715630423_a3f7c1.json     ← from client
+        1715631002_d22e93.json
+    server_side/
+        <publicId>_1715630500_disconnect.json
+        <publicId>_1715631100_disconnect.json
+```
+
+- Directory created on first write. Added to `.gitignore` alongside `logs/`.
+- Keyed by **publicPlayerID** (stable across rejoins, server already knows it).
+- Per-user dedup: skip write if a file with the same `traceHash` already
+  exists in that user's directory.
+- Per-user rate limit: max 20 reports per UTC day. Beyond that, accept
+  the message + ack but skip the file write (don't punish the client
+  with retries that'll never succeed).
+- LRU cap per user: keep the most recent 100 reports per user; trim
+  oldest beyond that.
+- `server_side/` is independent: one snapshot per mid-match disconnect,
+  no dedup (each is a real distinct event). Same LRU cap.
+
+### Test fixtures — checked in
+
+```
+<repo>/common/tests/fixtures/crash_replays/
+    open_team_1v2_createteams_crash.json
+    spectator_join_mid_match_b8.json
+    sparse_self_players_b10.json
+```
+
+- Same JSON shape as the captured reports.
+- Filename is a human-readable bug slug (we picked, not the auto-named
+  `<ts>_<hash>` from the capture).
+- Loaded by `CrashReplayRegressionTests.lua` (item 5 below).
+- One-line promotion: `cp crash_reports/<publicId>/<file> common/tests/fixtures/crash_replays/<slug>.json`.
+
+### Correlation between client and server reports
+
+When a client report arrives, the server can find its own counterpart by:
+1. `crashReport.clientMeta.userId` (filled in server-side at receive time)
+   → match `publicId` directory.
+2. `crashReport.gameContext.gameId` (if present) and timestamp within
+   ~10s window → find the matching `server_side/<publicId>_*.json`.
+3. Diff the two replays at `gameContext.frame` — that's where reality
+   and the client's view started disagreeing.
+
+Optional: at the moment a correlated pair is detected, write a
+`crash_reports/<publicId>/<ts>_correlated.json` that points to both
+files. Saves diffing time later.
+
+---
+
 ## The pipeline (5 pieces)
 
 ### 1. Client-side spool to disk at crash time
@@ -185,23 +355,10 @@ day someone reintroduces the bug.
 
 ---
 
-## Effort budget
-
-| Piece | Estimate |
-|---|---|
-| (1) Client spool to disk | ~2 hours — extend `main.lua` error handler |
-| (2) Client drain at login | ~3 hours — `LoginRoutine` extension + ack handling |
-| (3) Server receive + dedup | ~2 hours — `processMessage` dispatch + `FileIO.write_crash_report` |
-| (4) Server auto-capture on disconnect | ~1 hour — hook in `Room:voidByLeave` |
-| (5) Test fixture loader | ~2 hours — new test file + sample fixture |
-| Optional: F12 hotkey | ~1 hour |
-
-**Total: ~half a dev day for the core pipeline (1–5).**
-
-After that, every captured crash is a one-line `cp` to make a permanent
-regression test. The B8 fix incidentally completed the last missing piece
-by making `getPartialReplay` self-contained — without it, captured mid-
-match crashes wouldn't reproduce.
+After the pipeline lands, every captured crash is a one-line `cp` to
+make a permanent regression test. The B8 fix incidentally completed the
+last missing piece by making `getPartialReplay` self-contained — without
+it, captured mid-match crashes wouldn't reproduce.
 
 ---
 
