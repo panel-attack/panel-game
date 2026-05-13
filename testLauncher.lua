@@ -102,6 +102,7 @@ local allTests = {
   "client.tests.PuzzleLibraryTests",
   "client.tests.graphics_PuzzleHierarchyDisplayTests",
   "client.tests.ServerQueueTests",
+  "client.tests.TraceWriterTests",
   "client.tests.SoundGroupTests",
   -- TcpClientTests is an integration test that needs a live server on
   -- localhost:49569 (port from consts.SERVER_LOCATION). Disabled in the
