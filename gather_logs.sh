@@ -99,9 +99,8 @@ journal_lines=$(wc -l < "${dest}/journal.log" | tr -d ' ')
 echo "    journal.log: ${journal_lines} lines"
 
 # 2. On-disk .log files in the remote logs/ dir (server.log etc).
-# Redundant with the journal in most cases, but: (a) the journal can be
-# rotated/dropped by systemd while these stick around, (b) clients of
-# run_local.sh write here without journal involvement. Also, run_server.sh
+# Redundant with the journal in most cases, but the journal can be
+# rotated/dropped by systemd while these stick around. Also, run_server.sh
 # uses `tee` without -a, so server.log gets truncated on next start —
 # this is the one file actually at risk of disappearing on restart.
 echo "==> [2/3] remote logs/"
