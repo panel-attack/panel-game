@@ -350,6 +350,100 @@ local function test_b10_sparse_self_players_relay_iteration()
 end
 
 --------------------------------------------------------------------------------
+-- B9 — Open Team 1v2 starts without crashing TeamUtils.createTeams
+--
+-- Pre-fix: an "Open Team" room (dynamic-roster team mode where the lobby
+-- sets minPlayers=maxPlayers=playerCount) tripped Room:start_match into
+-- overriding self.gameMode.teamCount based on playerCount. For a 1v2
+-- preset (playersPerTeam={1,2}, teamCount=2) the override made teamCount=3
+-- which then sent TeamUtils.createTeams looking for playersPerTeam[3] —
+-- nil — and crashed mid-start.
+--
+-- Post-fix (commit ec5dd55d): the server only overrides teamCount when
+-- the mode is FFA-shaped (playersPerTeam == 1). Non-FFA dynamic modes
+-- keep the preset's teamCount, so createTeams reads the right shape.
+--
+-- The test sends an Open-Team-shaped roomRequest (mirroring Lobby.lua's
+-- "openRoom + not isFfa" branch at Lobby.lua:222-225), waits for the
+-- match to actually start, and asserts the team structure survived
+-- with teamCount=2 and {1,2}-style playersPerTeam.
+--
+-- The harness's serverErrorCount hook handles the bigger half of the
+-- regression net: if start_match crashes inside createTeams, it logs
+-- "'for' limit must be a number" at logger.error level and Harness:stop
+-- raises.
+--------------------------------------------------------------------------------
+
+local function test_open_team_1v2_starts_with_three_players()
+  logger.info("[E2E Regression] === test_open_team_1v2_starts_with_three_players ===")
+  local h = Harness():start()
+  local ok, err = pcall(function()
+    local GameModes = require("common.data.GameModes")
+    local a = TestPlayer(uname("BotA"))
+    local b = TestPlayer(uname("BotB"))
+    local c = TestPlayer(uname("BotC"))
+    local all = { a, b, c }
+
+    for _, p in ipairs(all) do p:login(h.host, h.port) end
+    assert(waitUntil(h, all, allLoggedIn(all), 8, "login"),
+           "not all 3 players logged in")
+
+    -- Build the Open Team 1v2 mode the same way Lobby.lua:222 builds it for
+    -- the "openRoom + not isFfa" branch: start from the THREE_PLAYER_VS_ALL
+    -- preset (playersPerTeam={1,2}, teamCount=2), then peg the roster
+    -- bounds to playerCount so the server waits for the full 3 before
+    -- starting. Each TestPlayer's NetClient:requestRoom resolves a table
+    -- with :getGameModeJSONData identically to the production flow.
+    local openTeamMode = GameModes.getPreset(GameModes.IDs.THREE_PLAYER_VS_ALL)
+    openTeamMode.minPlayers = openTeamMode.playerCount
+    openTeamMode.maxPlayers = openTeamMode.playerCount
+
+    a:act(function() a.netClient:requestRoom(openTeamMode, "relaxed") end)
+    assert(waitUntil(h, all, function()
+      return h:findRoomByGameMode("three_player_vs_all") ~= nil
+    end, 5, "Open Team room created"), "host did not get room")
+    local room = h:findRoomByGameMode("three_player_vs_all")
+
+    -- Both joiners drop into the room. With minPlayers=maxPlayers=3, the
+    -- server should activate once all 3 are seated AND ready.
+    b:joinRoom(room.roomNumber)
+    c:joinRoom(room.roomNumber)
+    assert(waitUntil(h, all, function()
+      return countServerPlayers(room) == 3
+    end, 5, "3 seated"), "did not reach 3 seated: " .. countServerPlayers(room))
+
+    for _, p in ipairs(all) do p:sendReady() end
+    assert(waitUntil(h, all, function() return room.game ~= nil end,
+                     10, "matchStart"),
+           "match did not start (pre-fix would have crashed inside TeamUtils"
+           .. ".createTeams at this step)")
+
+    -- (1) Team structure preserved: 2 teams, not 3 — the pre-fix bug
+    -- silently overrode teamCount to playerCount=3 before createTeams ran.
+    assert(room.teams, "room has no teams table post-match-start")
+    assert(#room.teams == 2,
+           "expected 2 teams (Open Team 1v2), got " .. #room.teams)
+
+    -- (2) playersPerTeam shape survived as the asymmetric {1, 2} for 1v2.
+    local ppt = room.gameMode.playersPerTeam
+    assert(type(ppt) == "table",
+           "playersPerTeam should be a table for 1v2, got " .. type(ppt))
+    -- Sort so we don't depend on which team is the solo.
+    local sortedSizes = { ppt[1], ppt[2] }
+    table.sort(sortedSizes)
+    assert(sortedSizes[1] == 1 and sortedSizes[2] == 2,
+           "expected playersPerTeam to be {1,2} after start, got {"
+           .. tostring(sortedSizes[1]) .. ", " .. tostring(sortedSizes[2]) .. "}")
+
+    logger.info("[E2E Regression] PASS — B9: Open Team 1v2 started with 3 players,"
+                .. " 2 teams (sizes 1 + 2)")
+    for _, p in ipairs(all) do p:close() end
+  end)
+  h:stop()
+  if not ok then error(err, 0) end
+end
+
+--------------------------------------------------------------------------------
 -- Runner
 --------------------------------------------------------------------------------
 
@@ -357,6 +451,7 @@ local function runAll()
   test_open_ffa_compacts_after_pre_match_leave()
   test_mid_match_leave_keeps_high_slot_receiving()
   test_b10_sparse_self_players_relay_iteration()
+  test_open_team_1v2_starts_with_three_players()
 end
 
 if not package.loaded["server.tests.E2E.RegressionTests"] then
@@ -368,4 +463,5 @@ return {
   test_open_ffa_compacts_after_pre_match_leave = test_open_ffa_compacts_after_pre_match_leave,
   test_mid_match_leave_keeps_high_slot_receiving = test_mid_match_leave_keeps_high_slot_receiving,
   test_b10_sparse_self_players_relay_iteration = test_b10_sparse_self_players_relay_iteration,
+  test_open_team_1v2_starts_with_three_players = test_open_team_1v2_starts_with_three_players,
 }
