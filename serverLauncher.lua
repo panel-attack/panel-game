@@ -1,3 +1,8 @@
+-- Unbuffered stdout so log output flushes promptly even when the server
+-- enters an idle accept loop. With default block buffering, a hung-looking
+-- test run is usually just lines stuck in the buffer waiting on activity.
+io.stdout:setvbuf("no")
+
 local util = require("common.lib.util")
 util.addToCPath("./common/lib/??")
 util.addToCPath("./server/lib/??")
