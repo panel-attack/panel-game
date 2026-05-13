@@ -220,6 +220,14 @@ local Server = class(
 -- closes it. Players in the room get kicked back to lobby via leaveRoom.
 Server.ROOM_IDLE_TIMEOUT = 60 * 60
 
+-- Seconds of "no gameplay progress in this room's active game" before the
+-- stuck-match watchdog flags it via CrashReports. Live gameplay updates
+-- lastActivityTime at input/death/garbage receive points, so 30s of
+-- silence during a non-complete game is a strong "match wedged" signal.
+-- Catches the 3p FFA / Amber-Bev-Koozie class of bugs auto-magically
+-- rather than relying on a human to notice.
+Server.STUCK_MATCH_THRESHOLD = 30
+
 -- Seconds a player can sit in the lobby after being challenged without sending
 -- any lobby message before their connection is closed. "Any message" includes
 -- accepting/declining the challenge, browsing, or any client-driven traffic —
@@ -1036,6 +1044,7 @@ function Server:update()
     -- nothing can disturb the per-second sweep cadence the room/idle
     -- handling depends on.
     pcall(function() self.crashReports:sweep() end)
+    pcall(function() self:sweepStuckMatches(currentTime) end)
     self.lastProcessTime = currentTime
   end
 
@@ -1123,6 +1132,36 @@ function Server:sweepIdleRooms(currentTime)
       logger.info("Closing room " .. entry.room.roomNumber ..
         " — idle for " .. entry.idleFor .. "s (limit " .. Server.ROOM_IDLE_TIMEOUT .. "s)")
       self:closeRoom(entry.room, "room idle timeout")
+    end
+  end
+end
+
+---Stuck-match watchdog. Flags any room whose active game has been
+---silent for longer than STUCK_MATCH_THRESHOLD seconds. lastActivityTime
+---is bumped on every input/death/garbage relay (via Room:noteActivity),
+---so during gameplay it should tick forward continuously — a 30-second
+---gap means progress stopped despite the game still being marked
+---incomplete. Flagging here gets the game into CrashReports so the
+---traces involved can be pulled / assembled into a fixture rather than
+---relying on a human noticing the wedge.
+---
+---Idempotent per-game via _stuckMatchFlagged on the Game instance —
+---we don't want to re-flag the same incident every second.
+---@param currentTime integer
+function Server:sweepStuckMatches(currentTime)
+  for _, room in pairs(self.rooms) do
+    if room and room.game and not room.game.complete
+        and not room.game._stuckMatchFlagged then
+      local idleFor = currentTime - (room.lastActivityTime or currentTime)
+      if idleFor >= Server.STUCK_MATCH_THRESHOLD then
+        room.game._stuckMatchFlagged = true
+        logger.warn(string.format(
+          "[stuck-match] room %d game idle for %ds (threshold %ds) — flagging",
+          room.roomNumber, idleFor, Server.STUCK_MATCH_THRESHOLD))
+        pcall(function()
+          self.crashReports:flagGame(room, "match_hung")
+        end)
+      end
     end
   end
 end

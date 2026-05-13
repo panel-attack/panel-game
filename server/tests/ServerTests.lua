@@ -666,6 +666,75 @@ local function testFlagGameRejectedForUnknownRoom()
     "rejected flag must not register")
 end
 
+----------------------------------------------------------------------
+-- Stuck-match watchdog (Phase E)
+----------------------------------------------------------------------
+-- Per-second server check: if a room's game has been idle for >30s
+-- and isn't complete, auto-flag via CrashReports as "match_hung."
+-- Complements the silent-death watchdog (Room-level, fixes the wedge
+-- by synthesizing a death) — this fires when silent-death's fix
+-- didn't resolve and the game is still hanging.
+
+local function _setupGameWithIdleClock(server, idleSeconds, currentTime)
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben   = ServerTesting.login(server, ServerTesting.players[3])
+  local room  = ServerTesting.setupRoom(server, alice, ben, true)
+  ServerTesting.startGame(server, room)
+  -- Backdate the room's lastActivityTime so the watchdog perceives the
+  -- match as silent. Anchor on caller-provided currentTime so the test's
+  -- assert uses a known reference.
+  room.lastActivityTime = currentTime - idleSeconds
+  return room
+end
+
+local function testStuckMatchWatchdogFlagsHungGame()
+  local server = ServerTesting.getTestServer()
+  local now = os.time()
+  local room = _setupGameWithIdleClock(server, 35, now)
+  assert(server.crashReports:incidentCount() == 0,
+    "test setup: no incidents yet")
+
+  server:sweepStuckMatches(now)
+
+  assert(server.crashReports:incidentCount() == 1,
+    "watchdog should have flagged the hung game; incidentCount="
+    .. server.crashReports:incidentCount())
+  -- Sanity-check the flag carried the right reason.
+  local incidentId
+  for id in pairs(server.crashReports.incidents) do incidentId = id end
+  local entry = server.crashReports:getIncident(incidentId)
+  assert(entry.reason == "match_hung",
+    "expected reason=match_hung, got " .. tostring(entry.reason))
+  assert(room.game._stuckMatchFlagged == true,
+    "watchdog should mark the game flagged so it doesn't re-fire")
+end
+
+local function testStuckMatchWatchdogIdempotent()
+  local server = ServerTesting.getTestServer()
+  local now = os.time()
+  _setupGameWithIdleClock(server, 35, now)
+
+  server:sweepStuckMatches(now)
+  server:sweepStuckMatches(now + 1)
+  server:sweepStuckMatches(now + 2)
+
+  assert(server.crashReports:incidentCount() == 1,
+    "watchdog must not re-flag the same hung game on subsequent sweeps; got "
+    .. server.crashReports:incidentCount())
+end
+
+local function testStuckMatchWatchdogSkipsCompleteGame()
+  local server = ServerTesting.getTestServer()
+  local now = os.time()
+  local room = _setupGameWithIdleClock(server, 35, now)
+  room.game.complete = true  -- match finalized normally
+
+  server:sweepStuckMatches(now)
+
+  assert(server.crashReports:incidentCount() == 0,
+    "watchdog must skip games that already completed naturally")
+end
+
 local function testFlagGameRejectedForNonParticipant()
   local server = ServerTesting.getTestServer()
   local alice = ServerTesting.login(server, ServerTesting.players[2])
@@ -708,3 +777,6 @@ testJoinRoomRequestUsesSanitizedJoinMessage()
 testFlagGameAcceptedFromSpectator()
 testFlagGameRejectedForUnknownRoom()
 testFlagGameRejectedForNonParticipant()
+testStuckMatchWatchdogFlagsHungGame()
+testStuckMatchWatchdogIdempotent()
+testStuckMatchWatchdogSkipsCompleteGame()
