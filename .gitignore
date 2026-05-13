@@ -21,3 +21,7 @@ gathered_logs/
 crash_reports/
 # Per-test rootDir scratch space for CrashReportsTests.lua isolation
 crash_reports_test/
+
+# Always-on JSONL traces (client local + server tap)
+trace_archive/
+trace_archive_test/

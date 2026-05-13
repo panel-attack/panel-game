@@ -23,6 +23,7 @@ local tableUtils = require("common.lib.tableUtils")
 local Player = require("server.Player")
 local util = require("common.lib.util")
 local FileIO = require("server.FileIO")
+local TraceWriter = require("server.TraceWriter")
 local GameModes = require("common.data.GameModes")
 
 local function applyRequestedRoomBounds(resolvedMode, requestedGameMode)
@@ -1273,6 +1274,13 @@ function Server:processMessages()
         local room = self.playerToRoom[player]
         if room then
           for i = q.first, q.last do
+            -- Trace capture: server-side record of inbound I from this
+            -- publicId. q[i] is the raw input string the client sent.
+            pcall(function()
+              if player.publicPlayerID then
+                TraceWriter.recv(player.publicPlayerID, "I", q[i])
+              end
+            end)
             self.playerToRoom[player]:broadcastInput(q[i], player)
           end
         end
@@ -1287,6 +1295,11 @@ function Server:processMessages()
         local room = self.playerToRoom[player]
         if room then
           for i = q.first, q.last do
+            pcall(function()
+              if player.publicPlayerID then
+                TraceWriter.recv(player.publicPlayerID, "G", q[i])
+              end
+            end)
             room:broadcastGarbageEvent(player, q[i])
           end
         end
@@ -1301,6 +1314,11 @@ function Server:processMessages()
         local room = self.playerToRoom[player]
         if room then
           for i = q.first, q.last do
+            pcall(function()
+              if player.publicPlayerID then
+                TraceWriter.recv(player.publicPlayerID, "D", q[i])
+              end
+            end)
             room:broadcastDeathEvent(player, q[i])
           end
         end
@@ -1338,6 +1356,16 @@ end
 function Server:processMessage(message, connection)
   message = json.decode(message)
   message = ClientMessages.sanitizeMessage(message)
+
+  -- Trace capture: inbound JSON message recorded against the connection's
+  -- publicId (if any). Pre-login messages (login_request) won't have a
+  -- player yet — TraceWriter no-ops on nil publicId.
+  pcall(function()
+    local player = self.connectionToPlayer[connection]
+    if player and player.publicPlayerID then
+      TraceWriter.recv(player.publicPlayerID, "J", message)
+    end
+  end)
 
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
@@ -1715,6 +1743,12 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
 
     logger.warn(connection.index .. " Login from " .. name .. " with ip: " .. ipAddress .. " publicPlayerID: " .. player.publicPlayerID)
 
+    -- Trace capture: open this player's server-side trace file. pcall'd
+    -- so a TraceWriter regression can't block login.
+    pcall(function()
+      TraceWriter.beginSession(player.publicPlayerID, os.time())
+    end)
+
     return true
   end
 end
@@ -1861,6 +1895,13 @@ function Server:closeConnection(connection, reason)
     self.nameToPlayer[player.name] = nil
     self.nameToConnectionIndex[player.name] = nil
     self:setLobbyChanged()
+    -- Trace capture: flush + drop this player's writer state. pcall'd
+    -- so trace teardown can't disrupt the disconnect path.
+    pcall(function()
+      if player.publicPlayerID then
+        TraceWriter.endSession(player.publicPlayerID)
+      end
+    end)
   end
 end
 

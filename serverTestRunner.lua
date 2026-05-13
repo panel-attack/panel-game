@@ -27,6 +27,7 @@ require("server.server_globals")
 logger.info("=== running server tests (headless; MockPersistence, no port bound) ===")
 
 require("server.tests.LoginTests")
+require("server.tests.TraceWriterTests")
 require("server.tests.ServerTests")
 require("server.tests.LeaderboardTests")
 require("server.tests.RoomTests")

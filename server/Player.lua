@@ -5,6 +5,7 @@ local LevelPresets = require("common.data.LevelPresets")
 local tableUtils = require("common.lib.tableUtils")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
+local TraceWriter = require("server.TraceWriter")
 
 ---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating" | "paused")
 ---@alias PublicPlayerID integer
@@ -176,6 +177,14 @@ function Player:sendJson(message)
     return
   end
   self.connection:sendJson(message)
+  -- Trace capture: server-side record of the outbound JSON. pcall'd so
+  -- a TraceWriter regression cannot disturb the send path. message has
+  -- the shape { messageType, messageText } — body is messageText.
+  pcall(function()
+    if self.publicPlayerID then
+      TraceWriter.send(self.publicPlayerID, "J", message and message.messageText)
+    end
+  end)
 end
 
 function Player:send(message)
@@ -183,6 +192,15 @@ function Player:send(message)
     return
   end
   self.connection:send(message)
+  -- Trace capture: outbound raw byte send (I/G/D/K/E/H prefixes). The
+  -- prefix is the first byte; we don't bother decoding the body server-
+  -- side for trace purposes — the recv-side tap on the OTHER client will
+  -- have the decoded shape.
+  pcall(function()
+    if self.publicPlayerID and type(message) == "string" and #message > 0 then
+      TraceWriter.send(self.publicPlayerID, message:sub(1, 1), message)
+    end
+  end)
 end
 
 ---@return boolean
