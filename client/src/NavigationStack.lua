@@ -3,6 +3,21 @@ local logger = require("common.lib.logger")
 local UIElement = require("client.src.ui.UIElement")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
+local TraceWriter = require("client.src.network.TraceWriter")
+
+-- Forensic marker for every scene-stack mutation. Each call site
+-- already calls logger.debug with the same info; the trace marker
+-- gives the assembler/diff util one consistent spot to inspect for
+-- "did the win/lose screen actually mount" without grepping the log.
+local function traceScene(kind, fromScene, toScene)
+  pcall(function()
+    TraceWriter.localEvent("sceneTransition", {
+      kind = kind,
+      from = fromScene and fromScene.name or nil,
+      to   = toScene   and toScene.name   or nil,
+    })
+  end)
+end
 
 ---@class NavigationStack : UiElement
 ---@field scenes Scene[]
@@ -35,9 +50,11 @@ function NavigationStack:push(newScene, transition)
     -- replace the current one instead of pushing on top
     logger.debug("Replacing scene " .. newScene.name .. " on top of stack (caused by push)")
     self.scenes[#self.scenes] = newScene
+    traceScene("pushReplace", activeScene, newScene)
   else
     logger.debug("Pushing scene " .. newScene.name .. " on top of stack")
     self.scenes[#self.scenes+1] = newScene
+    traceScene("push", activeScene, newScene)
   end
 end
 
@@ -59,6 +76,7 @@ function NavigationStack:pop(transition, callback)
     self.transition = transition
     self.callback = callback
     table.remove(self.scenes)
+    traceScene("pop", activeScene, previousScene)
   end
 end
 
@@ -85,6 +103,7 @@ function NavigationStack:popToTop(transition, callback)
     for i = #self.scenes, 2, -1 do
       self.scenes[i] = nil
     end
+    traceScene("popToTop", activeScene, top)
   end
 end
 
@@ -121,6 +140,7 @@ function NavigationStack:popToName(name, transition, callback)
     for i = #self.scenes, targetIndex + 1, -1 do
       self.scenes[i] = nil
     end
+    traceScene("popToName", activeScene, targetScene)
   end
 end
 
@@ -141,6 +161,7 @@ function NavigationStack:replace(newScene, transition, callback)
     self.transition = transition
     self.callback = callback
     self.scenes[#self.scenes] = newScene
+    traceScene("replace", activeScene, newScene)
   else
     self:push(newScene, transition)
   end
