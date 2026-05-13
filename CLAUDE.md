@@ -28,7 +28,7 @@ luarocks install --local lsqlite3 --lua-version 5.1
 luarocks install --local lsqlite3complete --lua-version 5.1  # macOS fallback for lsqlite3
 ```
 
-Also needs **love 12** (not love 11) for the client. Add it to PATH in `~/.zshrc`.
+Also needs **love** (11.5 or newer) for the client. Add it to PATH in `~/.zshrc`. CI uses a panel-attack-hosted bundle tagged `love2d-12.0` (a pre-release of love's `12.x` dev branch — not an official love2d release); the code's `conf.lua` adapts to either via a `usingModernLove` wrapper.
 
 ### Scripts
 ```sh
