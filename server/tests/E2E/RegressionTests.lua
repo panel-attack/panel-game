@@ -205,6 +205,27 @@ local function attachInputProbe(player)
   return counts
 end
 
+-- Instrument a TestPlayer to capture incoming JSON messages of a given top-level
+-- `type` field before NetClient sanitizes / consumes them. The captured payload
+-- is the raw server-wire shape — useful for inspecting things production code
+-- transforms (e.g. ReplayV3.createFromTable wraps replay tables before tests
+-- can see them otherwise).
+local function attachJsonProbe(player, wantedType)
+  local json = require("common.lib.dkjson")
+  local captured = {}
+  local orig = player.netClient.tcpClient.queueMessage
+  player.netClient.tcpClient.queueMessage = function(self, type, data)
+    if type == "J" then
+      local ok, decoded = pcall(json.decode, data)
+      if ok and decoded and decoded.type == wantedType then
+        captured[#captured + 1] = decoded
+      end
+    end
+    return orig(self, type, data)
+  end
+  return captured
+end
+
 --------------------------------------------------------------------------------
 -- B10 — relays past a disconnected slot continue mid-match
 --
@@ -444,6 +465,114 @@ local function test_open_team_1v2_starts_with_three_players()
 end
 
 --------------------------------------------------------------------------------
+-- B8 — spectator catch-up replay carries crossPlayerEvents
+--
+-- Pre-fix: a mid-match spectator received a partial replay missing the
+-- authoritative log of historical garbage + death events. The spectator's
+-- local engine had no way to reconstruct what had landed before they joined,
+-- and their boards diverged permanently from the active players' views.
+--
+-- Post-fix (commit ec5dd55d): Game:getPartialReplay rolls self.garbageEvents
+-- and self.deathEvents into replay.crossPlayerEvents before returning. The
+-- spectator's replay arrives carrying enough state to reconstruct correctly.
+--
+-- The test scenario:
+--   1. 3p FFA match in progress.
+--   2. BotA emits a GarbageEvent (via real NetClient:sendGarbageEvent),
+--      targeting BotB.
+--   3. Wait for the server to record the event in room.game.garbageEvents.
+--   4. A 4th player (BotD) logs in and requests spectate.
+--   5. The wire probe captures the spectateRequestGranted server message.
+--   6. Assert content.replay.crossPlayerEvents.garbage carries the entry —
+--      with BotA's slot, the target slot, and a non-nil senderFrame.
+--
+-- If the fix regressed (e.g., the crossPlayerEvents assignment is removed
+-- from getPartialReplay), the replay table's crossPlayerEvents.garbage
+-- would be empty and the assertion fails.
+--------------------------------------------------------------------------------
+
+local function test_spectator_replay_includes_cross_player_events()
+  logger.info("[E2E Regression] === test_spectator_replay_includes_cross_player_events ===")
+  local h = Harness():start()
+  local ok, err = pcall(function()
+    local a, b, c, all, room = bringThreeToMatchStart(h)
+
+    -- (1) Send a GarbageEvent from BotA to BotB. Body shape mirrors what
+    -- Match.lua:436 emits in production: senderFrame, recipients, garbage.
+    -- The server stamps sender + serverWallClockMs on top of this payload
+    -- in Room:broadcastGarbageEvent before recording.
+    a:sendGarbageEvent({
+      senderFrame = 60,
+      recipients = { 2 }, -- target BotB's slot
+      garbage = {},       -- empty delivery payload is enough — the FIX is
+                          -- about whether the event makes it to the replay,
+                          -- not about the engine consuming it
+    })
+
+    -- (2) Wait for the server to record the event. Game:recordGarbageEvent
+    -- pushes onto room.game.garbageEvents — this is the source-of-truth
+    -- log getPartialReplay reads from.
+    assert(waitUntil(h, all, function()
+      return room.game and #room.game.garbageEvents > 0
+    end, 5, "G event recorded"),
+       "server did not record the GarbageEvent: garbageEvents="
+       .. tostring(room.game and #room.game.garbageEvents))
+
+    -- (3) Spawn BotD as a fresh client, log in. Don't add to the room yet.
+    local d = TestPlayer(uname("BotD"))
+    d:login(h.host, h.port)
+    assert(waitUntil(h, { a, b, c, d }, function() return d:isLoggedIn() end,
+                     5, "D login"), "BotD did not log in")
+
+    -- (4) Hook BotD's wire to capture the raw spectateRequestGranted JSON
+    -- BEFORE NetClient's sanitizer transforms the replay into a ReplayV3
+    -- object. We want the raw table shape so we can introspect what the
+    -- server actually shipped.
+    local grants = attachJsonProbe(d, "spectateRequestGranted")
+
+    -- (5) Request spectate. The server replies with spectateRequestGranted
+    -- carrying a partial replay built via Game:getPartialReplay.
+    d:requestSpectate(room.roomNumber)
+
+    assert(waitUntil(h, { a, b, c, d }, function()
+      return #grants > 0
+    end, 5, "spectate granted"),
+       "spectator did not receive spectateRequestGranted reply")
+
+    -- (6) Inspect the replay carried in the response.
+    local granted = grants[1]
+    assert(granted.content, "spectateRequestGranted missing content")
+    local replay = granted.content.replay
+    assert(replay, "spectateRequestGranted missing replay")
+    assert(replay.crossPlayerEvents,
+           "B8 regression: spectator's replay has no crossPlayerEvents block —"
+           .. " pre-fix Game:getPartialReplay never populated this")
+    local garbageLog = replay.crossPlayerEvents.garbage
+    assert(garbageLog and #garbageLog > 0,
+           "B8 regression: spectator's replay.crossPlayerEvents.garbage is empty"
+           .. " — pre-fix would have shipped an empty array even though the"
+           .. " server's game.garbageEvents had the entry. Length="
+           .. tostring(garbageLog and #garbageLog or "nil"))
+
+    -- Sanity-check the event contents: BotA is slot 1, the body should
+    -- include the sender slot stamped by Room:broadcastGarbageEvent.
+    local event = garbageLog[1]
+    assert(event.sender == 1,
+           "expected event.sender == 1 (BotA), got " .. tostring(event.sender))
+    assert(type(event.recipients) == "table" and #event.recipients == 1
+           and event.recipients[1] == 2,
+           "expected recipients == {2} (BotB), got "
+           .. tostring(event.recipients and event.recipients[1]))
+
+    logger.info("[E2E Regression] PASS — B8: spectator replay carried "
+                .. #garbageLog .. " GarbageEvent(s) in crossPlayerEvents")
+    for _, p in ipairs({ a, b, c, d }) do p:close() end
+  end)
+  h:stop()
+  if not ok then error(err, 0) end
+end
+
+--------------------------------------------------------------------------------
 -- Runner
 --------------------------------------------------------------------------------
 
@@ -452,6 +581,7 @@ local function runAll()
   test_mid_match_leave_keeps_high_slot_receiving()
   test_b10_sparse_self_players_relay_iteration()
   test_open_team_1v2_starts_with_three_players()
+  test_spectator_replay_includes_cross_player_events()
 end
 
 if not package.loaded["server.tests.E2E.RegressionTests"] then
@@ -464,4 +594,5 @@ return {
   test_mid_match_leave_keeps_high_slot_receiving = test_mid_match_leave_keeps_high_slot_receiving,
   test_b10_sparse_self_players_relay_iteration = test_b10_sparse_self_players_relay_iteration,
   test_open_team_1v2_starts_with_three_players = test_open_team_1v2_starts_with_three_players,
+  test_spectator_replay_includes_cross_player_events = test_spectator_replay_includes_cross_player_events,
 }

@@ -33,6 +33,11 @@ local function makeNoopNavStack()
     peek = function() return nil end,
     contains = function() return false end,
     transition = function() end,
+    -- The spectator path at NetClient.lua:749 directly indexes into
+    -- navigationStack.scenes to push a room scene without animation. We
+    -- expose a real (empty) array so the assignment is a no-op write but
+    -- doesn't crash on length-of-nil.
+    scenes = {},
   }
 end
 
