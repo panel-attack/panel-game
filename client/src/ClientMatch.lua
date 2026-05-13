@@ -290,6 +290,20 @@ function ClientMatch:run()
 
   local runs = math.max(unpack(self.engine:run()))
 
+  -- Trace capture: detect per-stack game-over transitions. Emit a marker
+  -- the first frame each stack reaches game_over_clock > 0. Lets the
+  -- trace prove when each engine actually died locally — the gap that
+  -- made the 3p FFA stuck-match investigation hard.
+  pcall(function()
+    for i, stack in ipairs(self.stacks) do
+      local goc = stack.engine and stack.engine.game_over_clock or -1
+      if not self._traceGameOverEmitted[i] and goc and goc > 0 then
+        self._traceGameOverEmitted[i] = true
+        TraceWriter.localEvent("stackGameOver", { stack = i, frame = goc })
+      end
+    end
+  end)
+
   -- Keep shared-mode telegraph targets aligned with the next living recipient
   -- selected by the engine's round-robin cursor.
   self:refreshSharedModeTelegraphTargets()
@@ -372,6 +386,13 @@ function ClientMatch:handleMatchEnd()
   self.ended = true
   -- this prepares everything about the replay except the save location
   self:finalizeReplay()
+  -- Trace capture: mark when the local match-end fired. Lets the trace
+  -- distinguish "match-end UI mounted normally" from "client wedged
+  -- without ever finalizing" — the diagnostic gap the 3p FFA stuck-
+  -- match investigation hit.
+  pcall(function()
+    TraceWriter.localEvent("matchEnded", { clock = self.engine and self.engine.clock or nil })
+  end)
   -- execute callbacks
   self:emitSignal("matchEnded", self)
 end
@@ -391,15 +412,33 @@ function ClientMatch:start()
   -- so single-player traces have a bootstrap. Multiplayer flows already
   -- captured a real matchStart via the network tap (it lands in the
   -- match-scope file or pre-match ring); the synthetic emit here is a
-  -- harmless duplicate for those cases.
+  -- harmless duplicate for those cases. Also emit a slotMap derived from
+  -- the replay metadata — the binding's already in matchStart.metadata,
+  -- but a flat slotMap line lets the diff util compare slot↔name↔
+  -- publicId↔renderIndex across clients in one glance.
   pcall(function()
     TraceWriter.beginGame(os.time())
     if self.replay then
       TraceWriter.recv(
         NetworkProtocol.serverMessageTypes.jsonMessage.prefix,
         { type = "matchStart", content = self.replay })
+      local slots = {}
+      for _, m in ipairs(self.replay.metadata.stacks or {}) do
+        slots[#slots + 1] = {
+          stackIndex  = m.stackIndex,
+          name        = m.name,
+          publicId    = m.publicId,
+          renderIndex = m.renderIndex,
+        }
+      end
+      TraceWriter.localEvent("slotMap", { slots = slots })
     end
   end)
+  -- Per-stack game-over tracking. ClientMatch:run polls this after each
+  -- engine tick to emit a `stackGameOver` trace marker the first frame
+  -- a stack's engine.game_over_clock crosses 0. Without this, the trace
+  -- can't tell "engines reached game-over locally" from "engines wedged."
+  self._traceGameOverEmitted = {}
 
   -- outgoing garbage is already correctly directed by Match
   -- but the relationship is indirect between engine stacks to reduce coupling
