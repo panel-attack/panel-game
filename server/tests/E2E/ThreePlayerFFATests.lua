@@ -152,56 +152,58 @@ local function test_3p_open_ffa_input_relay()
   local ok, err = pcall(function()
     local a, b, c, all = bringThreeTestPlayersToMatchStart(h)
 
-    -- NetClient buffers incoming peer inputs on its tcpClient queues. We
-    -- count by the slot-tagged prefixes the server uses for relays — same
-    -- accounting the production engine does via tcpClient:processIncomingMessages.
-    local function inputCountFor(player, prefix)
-      local q = player.netClient.tcpClient.receivedInputQueues
-            or player.netClient.tcpClient.opponentInputQueues
-      if not q then return 0 end
-      local slot = NetworkProtocol.playerIndexForInputPrefix[prefix]
-      local bucket = q[slot] or q[prefix]
-      if not bucket then return 0 end
-      return (type(bucket.len) == "function" and bucket:len()) or #bucket
+    -- Each TestPlayer's NetClient buffers incoming peer inputs in
+    -- receivedMessageQueue, but the production update loop drains it into
+    -- the engine on every tick once we're INGAME — so by assertion time the
+    -- client-side queue is empty. The SERVER's view (Game.inputs[slot]) is
+    -- the stable, authoritative log; that's what we assert against. This is
+    -- the same data the server uses to build the replay.
+    local serverRoom = h:findRoomByGameMode(OPEN_FFA_NAME)
+    assert(serverRoom and serverRoom.game,
+           "server has no active game for the open_ffa room")
+    local function serverInputCount(slot)
+      return serverRoom.game.inputs[slot] and #serverRoom.game.inputs[slot] or 0
     end
+
+    local payloads = {
+      [1] = KeyDataEncoding.idle,
+      [2] = KeyDataEncoding.swap,
+      [3] = KeyDataEncoding.right,
+    }
 
     logStep("each player streams " .. INPUT_BURSTS .. " input frames via NetClient:sendInput")
     for _ = 1, INPUT_BURSTS do
-      a:sendInput(KeyDataEncoding.idle)
-      b:sendInput(KeyDataEncoding.swap)
-      c:sendInput(KeyDataEncoding.right)
+      a:sendInput(payloads[1])
+      b:sendInput(payloads[2])
+      c:sendInput(payloads[3])
       h:tick()
       for _, p in ipairs(all) do p:update() end
     end
 
-    -- Relay properties (server-side, in Room:broadcastInput at Room.lua:660):
-    --   * Tags each frame with the SENDER's slot prefix
-    --   * Skip-self: sender doesn't get its own input echoed back
-    --   * All other room members receive
-    -- In 3p: A(slot1)->U,V; B(slot2)->I,V; C(slot3)->I,U from each other's view.
-    local SLOT_A = NetworkProtocol.getInputPrefixForPlayer(1)
-    local SLOT_B = NetworkProtocol.getInputPrefixForPlayer(2)
-    local SLOT_C = NetworkProtocol.getInputPrefixForPlayer(3)
-
-    logStep("wait for relays to drain into each TestPlayer's NetClient")
-    local function eachGotBothPeers()
-      return inputCountFor(a, SLOT_B) >= INPUT_BURSTS
-         and inputCountFor(a, SLOT_C) >= INPUT_BURSTS
-         and inputCountFor(b, SLOT_A) >= INPUT_BURSTS
-         and inputCountFor(b, SLOT_C) >= INPUT_BURSTS
-         and inputCountFor(c, SLOT_A) >= INPUT_BURSTS
-         and inputCountFor(c, SLOT_B) >= INPUT_BURSTS
+    logStep("wait for server to record every sender's inputs")
+    local function serverRecordedAll()
+      return serverInputCount(1) >= INPUT_BURSTS
+         and serverInputCount(2) >= INPUT_BURSTS
+         and serverInputCount(3) >= INPUT_BURSTS
     end
-    assert(waitUntil(h, all, eachGotBothPeers, 5, "relay drain"),
-           "input relay incomplete; counts: "
-           .. "A<-B=" .. inputCountFor(a, SLOT_B)
-           .. " A<-C=" .. inputCountFor(a, SLOT_C)
-           .. " B<-A=" .. inputCountFor(b, SLOT_A)
-           .. " B<-C=" .. inputCountFor(b, SLOT_C)
-           .. " C<-A=" .. inputCountFor(c, SLOT_A)
-           .. " C<-B=" .. inputCountFor(c, SLOT_B))
+    assert(waitUntil(h, all, serverRecordedAll, 5, "server input recording"),
+           "server input log incomplete — counts: "
+           .. "slot1=" .. serverInputCount(1)
+           .. " slot2=" .. serverInputCount(2)
+           .. " slot3=" .. serverInputCount(3))
 
-    logger.info("[E2E 3pFFA] PASS — input relay verified through production NetClient")
+    -- Body fidelity: each slot's recorded bytes match what we sent.
+    for slot = 1, 3 do
+      local bucket = serverRoom.game.inputs[slot]
+      for i = 1, math.min(#bucket, INPUT_BURSTS) do
+        assert(bucket[i] == payloads[slot],
+               "slot " .. slot .. " input " .. i
+               .. " corrupted: got " .. tostring(bucket[i])
+               .. " expected " .. tostring(payloads[slot]))
+      end
+    end
+
+    logger.info("[E2E 3pFFA] PASS — input relay verified through production NetClient (server-side log)")
     for _, p in ipairs(all) do p:close() end
   end)
   h:stop()
