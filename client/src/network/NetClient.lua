@@ -314,21 +314,35 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
     logger.info("Joined partial room " .. (self.room.roomNumber or "?") .. " (" .. playerCount .. "/" .. maxPlayers .. " players). Staying in lobby.")
     self.state = states.ONLINE
 
-    -- Update local lobby data with the new room so UI can display it
+    -- Update local lobby data with the new room so UI can display it.
+    -- Players can occupy non-contiguous slots (e.g. p1 in slot 1 + p2 in
+    -- slot 3 of a 2v3 Open Team room) — derive `playerSlots` from each
+    -- player's playerNumber and compute openSlots by walking 1..maxPlayers
+    -- against the occupied set rather than assuming the first N slots are
+    -- filled. The next lobbyStateV2 broadcast from the server is authoritative
+    -- but this local writeback runs in the gap between addToRoom and the next
+    -- snapshot — wrong slot data here briefly mis-renders the lobby.
     if self.lobbyDataV2 and self.room.roomNumber then
       local roomNumber = self.room.roomNumber
       local playerIds = {}
+      local playerSlots = {}
+      local occupied = {}
       for i, player in ipairs(self.room.players) do
         playerIds[i] = player.publicId
+        local slot = player.playerNumber or i
+        playerSlots[i] = slot
+        occupied[slot] = true
       end
-      -- Calculate open slots
       local openSlots = {}
-      for slot = playerCount + 1, maxPlayers do
-        openSlots[#openSlots + 1] = slot
+      for slot = 1, maxPlayers do
+        if not occupied[slot] then
+          openSlots[#openSlots + 1] = slot
+        end
       end
       self.lobbyDataV2.rooms[roomNumber] = {
         roomNumber = roomNumber,
         players = playerIds,
+        playerSlots = playerSlots,
         spectators = {},
         state = "waiting",
         wins = {},
