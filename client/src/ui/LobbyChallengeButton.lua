@@ -2,6 +2,7 @@ local import = require("common.lib.import")
 local IconTextButton = import("./IconTextButton")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class LobbyChallengeButtonOptions : IconTextButtonOptions
 ---@field proposeImage love.Texture
@@ -12,6 +13,7 @@ local GameModes = require("common.data.GameModes")
 ---@field roomNumber integer?
 ---@field slotNumber integer?
 ---@field challengeState ChallengeState?
+---@field teamTint number[]? RGBA tint for the button background; matches the team being joined
 ---@field icon nil
 
 ---@class LobbyChallengeButton : IconTextButton
@@ -22,6 +24,7 @@ local GameModes = require("common.data.GameModes")
 ---@field challengeState ChallengeState
 ---@field gameModeId GameModeID
 ---@field playerId PublicPlayerID
+---@field teamTint number[]?
 ---@overload fun(options: LobbyChallengeButtonOptions): LobbyChallengeButton
 local LobbyChallengeButton = class(
 ---@param self LobbyChallengeButton
@@ -34,9 +37,26 @@ function(self, options)
   self.gameModeId = options.gameModeId
   self.roomNumber = options.roomNumber
   self.slotNumber = options.slotNumber
+  self.teamTint = options.teamTint
   self:setState(options.challengeState or self.challengeStates.NEUTRAL)
 end,
 IconTextButton, "LobbyChallengeButton")
+
+-- When the button represents joining/inviting to a specific team, paint the
+-- background in that team's color so the choice is visually obvious. Selected
+-- state still uses the theme's selected-highlight color so keyboard focus
+-- remains visible against the team tint.
+function LobbyChallengeButton:drawBackground()
+  if self.teamTint and not (self.selected or self.currentlyPressed) then
+    local t = self.teamTint
+    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height,
+      t[1], t[2], t[3], t[4] or 0.85,
+      self.CORNER_RADIUS, self.CORNER_RADIUS)
+    GraphicsUtil.setColor(1, 1, 1, 1)
+  else
+    IconTextButton.drawBackground(self)
+  end
+end
 
 LobbyChallengeButton.TYPE = "LobbyChallengeButton"
 

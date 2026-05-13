@@ -959,6 +959,20 @@ end
 function CharacterSelect:createPlayerInfo(player)
   local stackPanel = ui.StackPanel({alignment = "top", hFill = true, vAlign = "top"})
 
+  -- Host marker: shown above all other player info so the room owner is
+  -- immediately identifiable. Stays in place across roster changes — the
+  -- ownerId is fixed for the lifetime of the room (set in addToRoom).
+  local ownerId = self.battleRoom and self.battleRoom.ownerId
+  local isHost = ownerId ~= nil and player.publicId == ownerId
+  if isHost then
+    stackPanel.hostLabel = ui.Label({
+      x = 4,
+      text = "Host",
+      translate = false
+    })
+    stackPanel:addElement(stackPanel.hostLabel)
+  end
+
   stackPanel.leagueLabel = ui.Label({
     x = 4,
     text = loc("ss_rating") .. " " .. ((player.league) or "none"),

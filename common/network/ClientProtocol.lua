@@ -166,7 +166,10 @@ end
 
 ---@param gameMode GameMode
 ---@param latencyTolerance ("strict"|"normal"|"relaxed")? optional room abort-latency tolerance
-function ClientProtocol.sendRoomRequest(gameMode, latencyTolerance)
+---@param openRoom boolean? true if the room should accept direct joiners (no invite handshake).
+---  Independent of min/max roster — an Open Team 2v2 has min==max==4 (team structure is fixed)
+---  but should still accept drop-in joiners. The lobby uses this flag to choose join vs invite buttons.
+function ClientProtocol.sendRoomRequest(gameMode, latencyTolerance, openRoom)
   local gameModeData = gameMode:getGameModeJSONData()
   local roomRequestMessage = {
     recipient = "server",
@@ -174,6 +177,7 @@ function ClientProtocol.sendRoomRequest(gameMode, latencyTolerance)
     content = {
       gameMode = gameModeData,
       latencyTolerance = latencyTolerance,
+      openRoom = openRoom and true or false,
     }
   }
   return {

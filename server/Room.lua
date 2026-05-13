@@ -59,6 +59,11 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   self.minPlayers = (gameMode and gameMode.minPlayers) or (gameMode and gameMode.playerCount) or #players
   self.maxPlayers = (gameMode and gameMode.maxPlayers) or (gameMode and gameMode.playerCount) or #players
   self.name = table.concat(tableUtils.map(self.players, function(p) return p.name end), " vs ")
+  -- Open-vs-invite is independent of the roster shape: an Open Team 2v2 room has
+  -- minPlayers==maxPlayers==4 (team structure is fixed) but should still accept
+  -- direct-join from the lobby. Pre-existing rooms (and tests that construct Room
+  -- directly without going through the request path) default to invite-only.
+  self.openRoom = (gameMode and gameMode.openRoom == true) or false
   self.spectators = {}
   self.win_counts = {}
   self.ratings = {}
@@ -1407,14 +1412,15 @@ end
 function Room:voidByLeave(leaver, reason)
   if not self.game then
     -- Pre-match: leave the room open so others (or the leaver) can fill the slot.
-    -- Fixed-roster rooms reserve the slot for the leaver's rejoin. Open FFA is
-    -- first-come-first-served — no reservation; the next lobby player to click
-    -- Join takes the freed slot.
-    if not self:isDynamicRoster() then
+    -- Open rooms (dynamic-roster open FFA OR explicitly-flagged open team rooms)
+    -- are first-come-first-served; everyone else (classic invite rooms) reserves
+    -- the slot for the original leaver's rejoin.
+    local isOpenRoom = self:isDynamicRoster() or self.openRoom == true
+    if not isOpenRoom then
       self.reservedSlots[leaver.publicPlayerID] = leaver.name
       logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (slot reserved for rejoin)")
     else
-      logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (open FFA, slot free for fcfs)")
+      logger.info(self.roomNumber .. ": " .. leaver.name .. " left pre-match (open room, slot free for fcfs)")
     end
     self:_removeFromPlayersAndAnnounce(leaver)
     return

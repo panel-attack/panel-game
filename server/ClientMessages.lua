@@ -288,11 +288,19 @@ function ClientMessages.sanitizeRoomRequest(roomRequest)
     seed = nil
   end
 
+  local openRoom = false
+  if roomRequest.content and roomRequest.content.openRoom == true then
+    openRoom = true
+  elseif roomRequest.openRoom == true then
+    openRoom = true
+  end
+
   return {
     roomRequest = true,
     gameMode = gameMode,
     latencyTolerance = latencyTolerance,
     seed = seed,
+    openRoom = openRoom,
   }
 end
 

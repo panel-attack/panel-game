@@ -1098,7 +1098,8 @@ end
 
 ---@param gameMode GameMode|GameModeID|string
 ---@param latencyTolerance ("strict"|"normal"|"relaxed")?
-function NetClient:requestRoom(gameMode, latencyTolerance)
+---@param openRoom boolean? whether this room should accept direct joiners (no invite handshake)
+function NetClient:requestRoom(gameMode, latencyTolerance, openRoom)
   if self:isConnected() then
     if type(gameMode) == "string" then
       local ok, resolvedGameMode = pcall(GameModes.getPreset, gameMode)
@@ -1115,7 +1116,7 @@ function NetClient:requestRoom(gameMode, latencyTolerance)
       return
     end
 
-    self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode, latencyTolerance))
+    self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode, latencyTolerance, openRoom))
   end
 end
 

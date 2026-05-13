@@ -365,7 +365,7 @@ function Server:setLobbyChanged()
 end
 
 ---@alias LobbyPlayerV2 { publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>, roomNumber: roomNumber? }
----@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[], teamWins: integer[]?, gameStartTime: integer? }
+---@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[], teamWins: integer[]?, gameStartTime: integer?, openRoom: boolean? }
 ---@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<roomNumber, LobbyRoomV2> }
 
 ---@return LobbyStateV2
@@ -398,6 +398,7 @@ function Server:lobbyStateV2()
       wins = {},
       minPlayers = room.minPlayers,
       maxPlayers = room.maxPlayers,
+      openRoom = room.openRoom == true,
       openSlots = room:getOpenSlots(),
       -- Slots held for specific leavers to rejoin (fixed-roster rooms only).
       -- Empty array for open-FFA rooms. UI uses this to render a "Held — <name>"
@@ -1354,6 +1355,10 @@ function Server:processMessage(message, connection)
         requestedGameMode.sendRetryLimit           = latencySettings.sendRetryLimit
         requestedGameMode.arbitrationWindowMs      = latencySettings.arbitrationWindowMs
         requestedGameMode.minReactionFrames        = latencySettings.minReactionFrames
+        -- Carry through to Room construction. Decouples join-style (direct vs
+        -- invite handshake) from roster shape (fixed vs dynamic): an Open Team
+        -- 2v2 has min==max==4 but should accept drop-in joiners.
+        requestedGameMode.openRoom                 = message.openRoom == true
         -- Optional seed override. Ride the requestedGameMode the rest of the
         -- way (deep-copied by GameModes.getPreset, so this won't bleed into
         -- other rooms). Consumed in Game.createFromRoomState. Sanitized to a

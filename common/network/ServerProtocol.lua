@@ -231,6 +231,8 @@ function ServerProtocol.addToRoom(room, replay)
   -- invite room has leavers whose slots are reserved for rejoin.
   content.heldSlots = room.getHeldSlots and room:getHeldSlots() or {}
 
+  content.ownerId = room.players[1] and room.players[1].publicPlayerID or nil
+
   return {
     messageType = msgTypes.jsonMessage,
     messageText = addToRoomMessage,

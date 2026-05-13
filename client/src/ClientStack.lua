@@ -891,6 +891,16 @@ function ClientStack:drawPlayerName()
 
   local fontDelta = 8                                          -- bump default font size
   GraphicsUtil.printf(username, chipX, chipY + 6, chipWidth, "center", nil, nil, fontDelta)
+
+  local deathClock = self.engine and self.engine.game_over_clock
+  if deathClock and deathClock > 0 then
+    local seconds = math.floor(deathClock / 60)
+    local marker = string.format("OUT %d:%02d", math.floor(seconds / 60), seconds % 60)
+    local markerHeight = 20
+    local markerY = chipY - markerHeight - 2
+    GraphicsUtil.drawRectangle("fill", chipX, markerY, chipWidth, markerHeight, 0, 0, 0, 0.7)
+    GraphicsUtil.printf(marker, chipX, markerY + 2, chipWidth, "center", {1, 0.4, 0.4, 1}, nil, 2)
+  end
 end
 
 function ClientStack:drawWinCount()

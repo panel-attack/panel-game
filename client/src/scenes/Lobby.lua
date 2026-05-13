@@ -104,8 +104,12 @@ function Lobby:initLobbyMenu()
     end
   })
 
-  -- Latency tolerance menu — final step for all 3+P games
-  local function openLatencyMenu(parentMenu, parentButton, gameModeOrId, closeAll)
+  -- Latency tolerance menu — final step for all 3+P games. `openRoom` is the
+  -- last bit of intent we still carry: it controls whether the resulting room
+  -- accepts direct joiners (open) or requires an invite handshake (invite-only).
+  -- It's independent of min/max — Open Team rooms have fixed rosters but still
+  -- accept drop-in joins.
+  local function openLatencyMenu(parentMenu, parentButton, gameModeOrId, closeAll, openRoom)
     if self.latencyMenu then
       self.latencyMenu:yieldFocus()
       return
@@ -141,8 +145,8 @@ function Lobby:initLobbyMenu()
           end
 
           if gameMode then
-            logger.warn("latButton onClick: tolerance=" .. tostring(tolerance) .. " gameModeId=" .. tostring(gameModeId) .. " gameMode=" .. tostring(gameMode.name))
-            GAME.netClient:requestRoom(gameMode, tolerance)
+            logger.warn("latButton onClick: tolerance=" .. tostring(tolerance) .. " gameModeId=" .. tostring(gameModeId) .. " gameMode=" .. tostring(gameMode.name) .. " openRoom=" .. tostring(openRoom == true))
+            GAME.netClient:requestRoom(gameMode, tolerance, openRoom == true)
           else
             logger.error("latButton failed to resolve game mode payload")
           end
@@ -268,14 +272,14 @@ function Lobby:initLobbyMenu()
       "Broadcast",
       "Your attack is cloned and sent to every enemy simultaneously. Total damage scales with enemy count — in a 2v2 your combos deal twice the total damage of a 1v1.",
       function(b)
-        openLatencyMenu(garbageMenu, b, getRoomModeWithRosterBounds(options.allMode, options.openRoom == true), closeChain)
+        openLatencyMenu(garbageMenu, b, getRoomModeWithRosterBounds(options.allMode, options.openRoom == true), closeChain, options.openRoom == true)
       end
     ))
     garbageMenu:addChild(garbageButton(
       "Round Robin",
       "Attacks rotate through enemies one at a time. Your team shares one rotation counter, so attacks fan out evenly — total output rate stays the same regardless of enemy count.",
       function(b)
-        openLatencyMenu(garbageMenu, b, getRoomModeWithRosterBounds(options.sharedMode, options.openRoom == true), closeChain)
+        openLatencyMenu(garbageMenu, b, getRoomModeWithRosterBounds(options.sharedMode, options.openRoom == true), closeChain, options.openRoom == true)
       end
     ))
     garbageMenu:addChild(ui.TextButton({
@@ -1299,7 +1303,12 @@ function Lobby:createRoomButtons(personalizedLobbyData)
       roomTitle = table.concat(presentNames, ", ") .. "'s Room"
     end
     lines[#lines + 1] = roomTitle .. "  " .. slotsText
-    rowTints[#rowTints + 1] = false
+    -- Title row is named after the host (room.players[1]); tint it with the host's
+    -- team color so the info row matches the per-player rows below it. Without
+    -- this, the host's identity line looked uncolored while every other seat
+    -- carried a tint.
+    local titleTeamIdx = (room.players and room.players[1]) and getTeamSlotInfo(room, 1) or nil
+    rowTints[#rowTints + 1] = titleTeamIdx and teamRowTint(titleTeamIdx) or false
 
     -- Garbage subtitle (only renders something in shared team modes).
     local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
@@ -1342,14 +1351,16 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     -- Held-slot rows: a player left this fixed-roster room pre-match; their
     -- seat is reserved for rejoin and not joinable by anyone else. Render
     -- below the open rows so the layout stays: present players → open seats →
-    -- held seats.
+    -- held seats. Non-local held seats use generic "waiting" copy rather than
+    -- naming the player who left — the spec says counts are more useful than
+    -- names since the room is gated on body-count, not on a specific person.
     if room.heldSlots and #room.heldSlots > 0 then
       for _, held in ipairs(room.heldSlots) do
         local label
         if held.publicId == localPublicId then
           label = "(your seat — click to rejoin)"
         else
-          label = "(held — " .. (held.name or "?") .. ")"
+          label = "(waiting for player)"
         end
         lines[#lines + 1] = label
         local tIdx = (getTeamSlotInfo(room, held.slotNumber))
@@ -1519,14 +1530,30 @@ function Lobby:openRoomSubMenu(room, button)
   -- server places the joiner at the next-available position regardless.
   local roomOwnerId = room.ownerId or (room.players and room.players[1])
   local localPublicId = GAME.localPlayer.publicId
+  -- "Direct-join" rooms accept any lobby player into open slots without an invite
+  -- handshake. Two ways to get here:
+  --   1. Explicit Open Team / Open FFA room (room.openRoom == true) — works
+  --      regardless of whether the roster is dynamic.
+  --   2. Dynamic-roster mode (min < max), where the room concept itself implies
+  --      drop-in/drop-out — covers older lobby snapshots that pre-date the
+  --      openRoom flag, so existing open_ffa rooms keep working.
+  -- Everything else still goes through the invite handshake (LobbyChallengeButton).
   local isDynamicRoster = room.minPlayers ~= nil and room.maxPlayers ~= nil and room.minPlayers < room.maxPlayers
+  local isDirectJoin = (room.openRoom == true) or isDynamicRoster
 
   for _, group in ipairs(groupOpenSlotsByTeam(room)) do
     local groupLabel
+    local groupTint
     if group.isFfa then
       groupLabel = loc("lb_join") .. " FFA"
+      -- FFA: the slot will be assigned dynamically, so tint by the next-open
+      -- slot's team index. This still surfaces the correct color in 3p/4p FFA
+      -- where each "team" is one seat.
+      local repTeamIdx = group.slots[1] and getTeamIndexForSlot(room, group.slots[1])
+      groupTint = repTeamIdx and teamRowTint(repTeamIdx) or nil
     else
       groupLabel = loc("lb_join") .. " " .. teamDisplayName(group.teamIndex)
+      groupTint = teamRowTint(group.teamIndex)
     end
 
     -- Representative slot for the invite handshake / proposal key. Defaults to
@@ -1550,7 +1577,7 @@ function Lobby:openRoomSubMenu(room, button)
     end
 
     local joinButton
-    if isDynamicRoster then
+    if isDirectJoin then
       joinButton = ui.LobbyRoomJoinButton({
         playerId = roomOwnerId,
         iconSize = 16,
@@ -1561,6 +1588,7 @@ function Lobby:openRoomSubMenu(room, button)
         acceptImage = GAME.theme:getFightImage(),
         proposeImage = GAME.theme:getFightImage(),
         withdrawImage = GAME.theme:getFightImage(),
+        teamTint = groupTint,
         width = 200,
       })
     else
@@ -1574,6 +1602,7 @@ function Lobby:openRoomSubMenu(room, button)
         acceptImage = GAME.theme:getFightImage(),
         proposeImage = GAME.theme:getCheckboxImage(false),
         withdrawImage = GAME.theme:getCheckboxImage(true),
+        teamTint = groupTint,
         width = 200,
       })
       if pendingState == "CHALLENGED" then
@@ -1600,6 +1629,7 @@ function Lobby:openRoomSubMenu(room, button)
         else
           rejoinLbl = "Rejoin " .. teamDisplayName(heldTeamIndex)
         end
+        local rejoinTint = heldTeamIndex and teamRowTint(heldTeamIndex) or nil
         local rejoinButton = ui.LobbyRoomJoinButton({
           playerId = roomOwnerId,
           iconSize = 16,
@@ -1610,6 +1640,7 @@ function Lobby:openRoomSubMenu(room, button)
           acceptImage = GAME.theme:getFightImage(),
           proposeImage = GAME.theme:getFightImage(),
           withdrawImage = GAME.theme:getFightImage(),
+          teamTint = rejoinTint,
           width = 200,
         })
         subMenu:addChild(rejoinButton)
@@ -2289,17 +2320,32 @@ function Lobby:updateRoomPanel(updateInfo)
         gameModeName = gm.name or ""
       end
 
+      local isFfaRoom = gm and (gm.playersPerTeam == 1 or gm.playersPerTeam == nil)
+
       if hasOpenSlots then
-        -- Room is waiting for players - show team slot info
+        -- Room is gated on more players showing up. Lead with a count-based
+        -- "Waiting for X more" line so the user sees at a glance what the room
+        -- needs — naming present players first would bury that fact.
         local lines = {}
 
-        -- Header with game mode
         if gameModeName ~= "" then
           lines[#lines + 1] = gameModeName
         end
 
-        -- Show players (no slot labels — team identity surfaces via colored
-        -- stripes on the lobby card).
+        local minPlayers = room.minPlayers or room.maxPlayers
+        local missing
+        if minPlayers then
+          missing = math.max(0, minPlayers - #room.players)
+        else
+          missing = #room.openSlots
+        end
+        if missing > 0 then
+          lines[#lines + 1] = string.format("Waiting for %d more %s to start",
+            missing, (missing == 1) and "player" or "players")
+        else
+          lines[#lines + 1] = "Game not started"
+        end
+
         for i, playerId in ipairs(room.players) do
           local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
           local playerName = playerInfo and playerInfo.name or "?"
@@ -2307,31 +2353,25 @@ function Lobby:updateRoomPanel(updateInfo)
           lines[#lines + 1] = playerName .. suffix
         end
 
-        -- Waiting slots without per-slot tags.
-        if #room.openSlots > 0 then
-          for _ = 1, #room.openSlots do
-            lines[#lines + 1] = "(waiting...)"
-          end
-        end
+        lines[#lines + 1] = loc("pl_spectators") .. " " .. #room.spectators
 
         text = table.concat(lines, "\n")
       elseif #room.players >= 3 then
-        -- Team room in progress (3-5 players, team or FFA).
+        -- Full N-player room (waiting-room state or actively playing). Lead with
+        -- team or per-player scoreboard so users can compare progress at a glance,
+        -- mirroring the 1v1 "Alice 0 : 1 Bob" layout below.
         local lines = {}
 
         if gameModeName ~= "" then
           lines[#lines + 1] = gameModeName
         end
 
-        -- Bucket players by team. For team modes emit one row per team labeled
-        -- by team name ("Pink Team: Alice, Bob"); for FFA (playersPerTeam == 1)
-        -- a "team header" per player would just be noise, so fall through to a
-        -- flat per-player list.
-        local isFfaRoom = gm and (gm.playersPerTeam == 1 or gm.playersPerTeam == nil)
         if isFfaRoom then
-          for _, playerId in ipairs(room.players) do
+          for i, playerId in ipairs(room.players) do
             local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
-            lines[#lines + 1] = playerInfo and playerInfo.name or "?"
+            local playerName = playerInfo and playerInfo.name or "?"
+            local w = room.wins and room.wins[i] or 0
+            lines[#lines + 1] = string.format("%s: %d", playerName, w)
           end
         else
           local teamBuckets = {}
@@ -2351,7 +2391,9 @@ function Lobby:updateRoomPanel(updateInfo)
           for i = 1, maxTeamIndex do
             local names = teamBuckets[i]
             if names and #names > 0 then
-              lines[#lines + 1] = teamDisplayName(i) .. ": " .. table.concat(names, ", ")
+              local teamScore = room.teamWins and room.teamWins[i] or 0
+              lines[#lines + 1] = string.format("%s (%d): %s",
+                teamDisplayName(i), teamScore, table.concat(names, ", "))
             end
           end
         end

@@ -163,6 +163,11 @@ function BattleRoom.createFromServerMessage(message)
 
   battleRoom.heldSlots = message.heldSlots or {}
 
+  -- Host/owner is the player who started/owns the room. Used by CharacterSelect to
+  -- show a "Host" tag on the player's info panel. Falls back to players[1] for
+  -- legacy payloads that predate ownerId on addToRoom.
+  battleRoom.ownerId = message.ownerId or (message.players[1] and message.players[1].publicId) or nil
+
   battleRoom:restoreInputConfigurations()
   GAME.netClient:registerPlayerUpdates(battleRoom)
 
