@@ -285,12 +285,78 @@ local function test_mid_match_leave_keeps_high_slot_receiving()
 end
 
 --------------------------------------------------------------------------------
+-- B10 (white-box) — broadcastInput uses pairs, not ipairs
+--
+-- The complementary test above (test_mid_match_leave_keeps_high_slot_receiving)
+-- can't trigger sparse self.players in normal mid-match flow because
+-- voidByLeave defers slot removal until match end. To genuinely catch the
+-- ipairs/pairs regression at Room.lua:732, we reach into the server's
+-- room.players table and nil out slot 2 directly, then send an input from
+-- slot 1 and verify slot 3 still receives it. With ipairs, iteration halts
+-- at slot 2's nil and slot 3 is skipped — the test would fail. With pairs,
+-- slot 3 is visited regardless.
+--
+-- Yes, this is a white-box probe. The reviewer-flagged honest fix: it's
+-- the smallest setup that actually exercises the post-fix code path.
+--------------------------------------------------------------------------------
+
+local function test_b10_sparse_self_players_relay_iteration()
+  logger.info("[E2E Regression] === test_b10_sparse_self_players_relay_iteration ===")
+  local h = Harness():start()
+  local ok, err = pcall(function()
+    local a, b, c, all, room = bringThreeToMatchStart(h)
+
+    local botcCounts = attachInputProbe(c)
+    local SLOT_A_PREFIX = NetworkProtocol.getInputPrefixForPlayer(1)
+
+    -- Force the exact sparse state B10 protects against. NOT the normal
+    -- mid-match path — production won't put room.players in this shape
+    -- via current flows. We're directly probing the loop-iteration
+    -- behavior at Room.lua:732.
+    local strandedPlayer = room.players[2]
+    room.players[2] = nil
+
+    -- Send N inputs from A. With pairs at line 732, all N reach slot 3;
+    -- with ipairs (regression), iteration halts at slot-1→slot-2-nil and
+    -- slot 3 receives nothing.
+    local burstCount = 6
+    for _ = 1, burstCount do
+      a:sendInput(KeyDataEncoding.swap)
+      h:tick()
+      for _, p in ipairs({ a, c }) do p:update() end
+    end
+    for _ = 1, 5 do
+      h:tick()
+      for _, p in ipairs({ a, c }) do p:update() end
+    end
+
+    -- Restore the slot before stop() so harness cleanup can iterate normally.
+    room.players[2] = strandedPlayer
+
+    assert(rawget(botcCounts, SLOT_A_PREFIX) >= burstCount,
+           "B10 white-box regression: BotC (slot 3) saw "
+           .. tostring(rawget(botcCounts, SLOT_A_PREFIX) or 0)
+           .. " inputs through a sparse self.players (slot 2 = nil);"
+           .. " expected >= " .. burstCount
+           .. ". The relay loop at Room.lua:732 likely halted at the nil slot.")
+
+    logger.info("[E2E Regression] PASS — B10 white-box: pairs iteration"
+                .. " survives nil slot 2 (" .. rawget(botcCounts, SLOT_A_PREFIX)
+                .. " inputs reached slot 3)")
+    for _, p in ipairs(all) do p:close() end
+  end)
+  h:stop()
+  if not ok then error(err, 0) end
+end
+
+--------------------------------------------------------------------------------
 -- Runner
 --------------------------------------------------------------------------------
 
 local function runAll()
   test_open_ffa_compacts_after_pre_match_leave()
   test_mid_match_leave_keeps_high_slot_receiving()
+  test_b10_sparse_self_players_relay_iteration()
 end
 
 if not package.loaded["server.tests.E2E.RegressionTests"] then
@@ -301,4 +367,5 @@ return {
   runAll = runAll,
   test_open_ffa_compacts_after_pre_match_leave = test_open_ffa_compacts_after_pre_match_leave,
   test_mid_match_leave_keeps_high_slot_receiving = test_mid_match_leave_keeps_high_slot_receiving,
+  test_b10_sparse_self_players_relay_iteration = test_b10_sparse_self_players_relay_iteration,
 }

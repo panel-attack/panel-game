@@ -129,9 +129,9 @@ local function test_3p_open_ffa_match_starts()
     local stacks = a.gameStub.battleRoom.match.stacks
                  or (a.gameStub.battleRoom.match.engine
                      and a.gameStub.battleRoom.match.engine.stacks)
-    if stacks then
-      assert(#stacks == 3, "expected 3 stacks, got " .. #stacks)
-    end
+    assert(stacks, "host A's BattleRoom.match has no .stacks (or .engine.stacks)"
+                .. " — assertion below would silently pass without this guard")
+    assert(#stacks == 3, "expected 3 stacks, got " .. #stacks)
 
     logger.info("[E2E 3pFFA] PASS — 3p Open FFA reached match start via production NetClient")
     for _, p in ipairs(all) do p:close() end
