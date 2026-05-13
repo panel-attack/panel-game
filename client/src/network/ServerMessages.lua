@@ -193,12 +193,12 @@ function ServerMessages.sanitizeServerMessage(message)
     }
   elseif message.type == "createRoom" then
     local players = {}
-    for i, player in ipairs(message.content.players) do
+    for index, player in pairs(message.content.players) do
       players[player.playerNumber] = {
         playerNumber = player.playerNumber,
         ratingInfo = player.rating,
         name = player.name,
-        publicId = player.publicId,
+        publicId = player.publicId or -index,
         settings = sanitizePlayerSettings1(player.settings),
       }
       players[player.playerNumber].settings.playerNumber = player.playerNumber
@@ -214,12 +214,12 @@ function ServerMessages.sanitizeServerMessage(message)
     }
   elseif message.type == "addToRoom" then
     local players = {}
-    for i, player in ipairs(message.content.players) do
+    for index, player in pairs(message.content.players) do
       players[player.playerNumber] = {
         playerNumber = player.playerNumber,
         ratingInfo = player.rating,
         name = player.name,
-        publicId = player.publicId,
+        publicId = player.publicId or -index,
         settings = sanitizePlayerSettings1(player.settings),
       }
       players[player.playerNumber].settings.playerNumber = player.playerNumber
