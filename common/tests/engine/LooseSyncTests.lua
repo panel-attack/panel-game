@@ -139,6 +139,48 @@ local function test_applyDeathEvent_idempotent()
 end
 
 ----------------------------------------------------------------------
+-- Regression: view-stack pinned below senderFrame must still receive
+-- the death event (Amber/Bev/Koozie hung-match bug)
+----------------------------------------------------------------------
+-- Scenario reproduction: a remote stack's view on this client has its
+-- engine clock/stopWatch stuck well below the senderFrame the dying
+-- player reports. This happens any time a player dies — the server
+-- stops relaying their inputs (server/Room.lua:716) so the view-stack
+-- can't advance past whatever frame had the last relayed input.
+--
+-- Pre-fix: applyDeathEvent saw the >60-frame gap and deferred to
+-- pendingHistoricalDeaths. drainPendingHistoricalEvents wouldn't apply
+-- it because stopWatch never advances (no inputs). game_over_clock
+-- stayed -1 forever. Match.isDone's loose-sync bypass (Match.lua:760)
+-- requires game_over_clock > 0 to flag the stack done. So the survivor
+-- saw the dead opponent's view-stack as "alive" indefinitely and the
+-- match never ended.
+--
+-- Post-fix: applyDeathEvent always sets game_over_clock immediately.
+-- The match-end machinery picks it up on the next hasEnded check.
+
+local function test_applyDeathEvent_pinned_view_stack_still_lands()
+  logger.info("test_applyDeathEvent_pinned_view_stack_still_lands")
+  local match = makeMatchWithStacks({
+    -- View-stack of a remote opponent. stopWatch deliberately pinned
+    -- 200 frames below the senderFrame we'll send — well past the old
+    -- 60-frame defer threshold.
+    { is_local = false, game_over_clock = -1, stopWatch = 4800 },
+  })
+
+  ClientMatch.applyDeathEvent(match, {
+    sender = 1,
+    senderFrame = 5058,
+    reason = "topOut",
+  })
+
+  assert(match.stacks[1].engine.game_over_clock == 5058,
+    "applyDeathEvent must set game_over_clock=5058 immediately even when "
+    .. "stopWatch (4800) + 60 < senderFrame (5058). Got "
+    .. tostring(match.stacks[1].engine.game_over_clock))
+end
+
+----------------------------------------------------------------------
 -- Regression: 1v1 live match must end when the remote opponent's
 -- game_over_clock is set via a DeathEvent, even though the view-stack's
 -- clock has not (and cannot) catch up.
@@ -594,6 +636,7 @@ end
 test_applyDeathEvent_marks_remote_stack()
 test_applyDeathEvent_skips_local_stack()
 test_applyDeathEvent_idempotent()
+test_applyDeathEvent_pinned_view_stack_still_lands()
 test_hasEnded_live_1v1_remote_death_pinned_clock()
 test_hasEnded_replay_requires_clock_catchup()
 test_deliverOutgoingGarbage_local_to_remote()

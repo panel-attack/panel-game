@@ -1267,18 +1267,26 @@ function ClientMatch:applyDeathEvent(body)
     return
   end
 
-  -- Defer only when significantly behind (catch-up). For in-sync clients we
-  -- want death to mark game_over_clock immediately so the sim doesn't run
-  -- the sender's view-stack past the death frame. See applyGarbageEvent
-  -- for the rationale on the 60-frame threshold.
-  local engineStack = self.engine and self.engine.stacks[body.sender]
-  local catchupDeferFrames = 60
-  if engineStack and (engineStack.stopWatch or 0) + catchupDeferFrames < body.senderFrame then
-    self.pendingHistoricalDeaths = self.pendingHistoricalDeaths or {}
-    self.pendingHistoricalDeaths[#self.pendingHistoricalDeaths + 1] = body
-    return
-  end
-
+  -- Always set game_over_clock immediately. The previous design deferred
+  -- to pendingHistoricalDeaths if the view-stack was >60 frames behind
+  -- the sender's death frame ("catch-up defer"). That created a deadlock:
+  -- once a sender dies, server/Room.lua:716 stops relaying their inputs,
+  -- so the view-stack on every other client is permanently pinned at the
+  -- last frame before the death. stopWatch never advances past senderFrame,
+  -- drainPendingHistoricalEvents never applies the death, game_over_clock
+  -- stays -1, Match.isDone's loose-sync bypass (Match.lua:760, which is
+  -- there specifically to cover this case) never fires, the match never
+  -- ends. The Amber/Bev/Koozie hung-match was this bug.
+  --
+  -- For spectator/rejoiner catch-up (the other case the defer existed
+  -- to handle), pendingHistoricalDeaths is preloaded at match-create
+  -- time from replay.crossPlayerEvents.deaths (ClientMatch:createFromReplay
+  -- around line 194-197). That path is untouched; this change only
+  -- affects D events arriving live during a running match.
+  --
+  -- _applyDeathEventNow is idempotent — it no-ops if game_over_clock is
+  -- already > 0 — so a deferred death later re-applied via the drain
+  -- doesn't double-set.
   self:_applyDeathEventNow(body, stack)
 end
 
