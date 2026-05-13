@@ -229,22 +229,28 @@ local function testGameplay()
   ben.connection:receiveMessage(json.encode(ClientProtocol.leaveRoom().messageText))
   server:update()
 
-  -- the others get informed about the room closing
+  -- Loose-sync mid-match leave: the room is voided but stays open so the
+  -- remaining player + spectators can see the void state and finish/rematch.
+  -- Ben gets a synthesized death event (D-prefix, routed to outgoingInputQueue
+  -- by MockConnection so it doesn't show up here). On outgoingMessageQueue:
+  --   - alice + bob receive playerLeftRoom carrying the voidReason
+  --   - ben receives leaveRoom back as the acknowledged-quit
   message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "leaveRoom" and message.content.reason == "Ben left")
+  assert(message.type == "playerLeftRoom" and message.content.voidReason == "Ben left",
+    "alice expected playerLeftRoom voidReason='Ben left', got type="
+    .. tostring(message.type) .. " voidReason=" .. tostring(message.content and message.content.voidReason))
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "leaveRoom" and message.content.reason == "Ben left")
-  -- this was an active quit so ben should get the leave back as well
+  assert(message.type == "playerLeftRoom" and message.content.voidReason == "Ben left",
+    "bob expected playerLeftRoom voidReason='Ben left'")
   message = ben.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "leaveRoom" and message.content.reason == "Ben left")
+  assert(message.type == "leaveRoom",
+    "ben expected leaveRoom, got " .. tostring(message.type))
 
-  -- everyone is back to lobby
-  message = alice.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.players and tableUtils.length(message.players) == 3 and tableUtils.length(message.rooms) == 0)
-  message = bob.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.players and tableUtils.length(message.players) == 3 and tableUtils.length(message.rooms) == 0)
+  -- Only ben transitions back to lobby (alice + bob stay in the voided room).
+  -- Ben's next message is the lobby snapshot.
   message = ben.connection.outgoingMessageQueue:pop().messageText.content
-  assert(message.players and tableUtils.length(message.players) == 3 and tableUtils.length(message.rooms) == 0)
+  assert(message.players and tableUtils.length(message.players) == 3,
+    "ben should see 3 players in the lobby snapshot")
 end
 
 local function testDisconnect()
@@ -258,23 +264,24 @@ local function testDisconnect()
 
   server:closeConnection(ben.connection, "Ben's connection failed")
 
+  -- Loose-sync hard-DC mid-match: voidByLeave synthesizes a death event for
+  -- ben so survivors can finish, marks the room voided, and broadcasts
+  -- playerLeftRoom to alice (player) and bob (spectator). The voidReason
+  -- wraps the disconnect reason in parens after the leaver's "<name> left"
+  -- preamble.
+  local expectedVoidReason = "Ben left (Ben's connection failed)"
   local message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "leaveRoom" and message.content.reason == "Ben's connection failed")
+  assert(message.type == "playerLeftRoom" and message.content.voidReason == expectedVoidReason,
+    "alice expected playerLeftRoom voidReason='" .. expectedVoidReason .. "', got type="
+    .. tostring(message.type) .. " voidReason=" .. tostring(message.content and message.content.voidReason))
   message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "leaveRoom" and message.content.reason == "Ben's connection failed")
-  -- we closed the connection server side which under normal circumstances only happens in case of a disconnect
-  -- so the server should no longer try to send them a message
+  assert(message.type == "playerLeftRoom" and message.content.voidReason == expectedVoidReason,
+    "bob expected playerLeftRoom voidReason='" .. expectedVoidReason .. "'")
+  -- we closed the connection server side, so the server should no longer try
+  -- to send them a message
   assert(ben.connection.outgoingMessageQueue:len() == 0)
   assert(ben.connection.loggedIn == false)
   assert(server.connectionToPlayer[ben.connection] == nil)
-
-  server:update()
-
-  -- the people that got kicked out get the new lobby state
-  message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[5].name == "Alice" and message.content.players[5].state == "lobby")
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message and message.type == "lobbyStateV2" and message.content.players and message.content.players[4].name == "Bob" and message.content.players[4].state == "lobby")
 end
 
 

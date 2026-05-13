@@ -225,11 +225,13 @@ function Game:receiveOutcomeReport(player, outcome)
   -- is the authoritative match-end for any case the server already knows
   -- (livingTeams <= 1); this filter is a belt-and-suspenders for the vote
   -- path so a stale "I think it's a tie" can't slip in and poison things.
-  if self.eliminatedPlayers[idx] or self.disconnectedPlayers[idx] then
-    return
+  -- Do NOT early-return — we still need to run the all-reported-in check
+  -- below. When every player aborts in sequence, each report is discarded
+  -- but the last-reporter's call is the only thing that ever triggers the
+  -- resolution; early-returning here would leave the game in a zombie state.
+  if not (self.eliminatedPlayers[idx] or self.disconnectedPlayers[idx]) then
+    self.outcomeReports[idx] = outcome
   end
-
-  self.outcomeReports[idx] = outcome
 
   -- cannot compare #self.outcomeReports == #self.players because # is undefined regarding gaps near 0
   -- so if we have the report for player 2 but not player 1, #self.outcomeReports may return 2 instead of 0
@@ -305,7 +307,11 @@ function Game.getOutcome(outcomeReports, teams, disconnectedPlayers, eliminatedP
     -- (a single 0 is NOT a tie veto — a real tie only happens when no team reports outcome == 1)
     local teamOutcomes = {}
 
-    for playerIndex, outcome in ipairs(outcomeReports) do
+    -- pairs, not ipairs: receiveOutcomeReport drops the entries for
+    -- eliminated/disconnected players, leaving outcomeReports sparse. ipairs
+    -- would terminate at the first gap and silently skip later players'
+    -- reports, breaking 3+p where one player died early.
+    for playerIndex, outcome in pairs(outcomeReports) do
       if not isOut(playerIndex) then
         local teamIndex = TeamUtils.getPlayerTeamIndex(teams, playerIndex)
         if teamIndex then
@@ -341,10 +347,12 @@ function Game.getOutcome(outcomeReports, teams, disconnectedPlayers, eliminatedP
 
     return 0, nil  -- No team claimed victory → tie
   else
-    -- Non-team game: all players must agree on the same winner
-    for i, outcomeA in ipairs(outcomeReports) do
+    -- Non-team game: all players must agree on the same winner.
+    -- pairs, not ipairs: outcomeReports is sparse when an eliminated player's
+    -- report was discarded — see comment in the team branch above.
+    for i, outcomeA in pairs(outcomeReports) do
       if not isOut(i) then
-        for j, outcomeB in ipairs(outcomeReports) do
+        for j, outcomeB in pairs(outcomeReports) do
           if i ~= j and not isOut(j) then
             if outcomeA ~= outcomeB then
               return nil, nil
@@ -355,7 +363,7 @@ function Game.getOutcome(outcomeReports, teams, disconnectedPlayers, eliminatedP
     end
 
     -- everyone agrees on the outcome — take the first non-excluded report
-    for i, outcome in ipairs(outcomeReports) do
+    for i, outcome in pairs(outcomeReports) do
       if not isOut(i) then
         return outcome, nil
       end

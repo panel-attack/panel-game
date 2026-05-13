@@ -1355,7 +1355,13 @@ function Server:processMessage(message, connection)
     elseif (player.state == "playing" or player.state == "paused") and message.matchAbort then
       self.playerToRoom[player]:handleGameAbort(player)
     elseif (player.state == "playing" or player.state == "character select" or player.state == "paused") and message.leave_room then
-      self:handleLeaveRoom(player, player.name .. " left")
+      -- voidByLeave already prefixes the leaver's name with " left" — passing
+      -- "<name> left" as the inner reason here would nest it in parens, giving
+      -- voidReason="Ben left (Ben left)" on the broadcast leaveRoom payload.
+      -- Pass nil for a graceful leave; the disconnect path at closeConnection
+      -- still supplies a real reason ("connection lost", etc.) which voidByLeave
+      -- correctly wraps as "Ben left (connection lost)".
+      self:handleLeaveRoom(player, nil)
       return true
     elseif (player.state == "playing" or player.state == "paused") and message.type == "pauseToggle" then
       self.rooms[message.roomNumber]:togglePause(player, message.paused)
