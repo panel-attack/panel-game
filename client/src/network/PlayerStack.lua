@@ -2,6 +2,7 @@ local TouchDataEncoding = require("common.data.TouchDataEncoding")
 ---@class PlayerStack
 local PlayerStack = require("client.src.PlayerStack")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local TraceWriter = require("client.src.network.TraceWriter")
 
 function PlayerStack.handle_input_taunt(self)
   if self.inputMethod ~= "touch" then
@@ -67,4 +68,13 @@ function PlayerStack:send_controls()
   self:handle_input_taunt()
 
   self.engine:receiveConfirmedInput(to_send)
+
+  -- Trace capture: one JSONL line per local input frame. For single-
+  -- player play this is the ONLY input record (no network traffic to
+  -- tap); for multiplayer it complements the outbound I-frame tap.
+  -- self.engine.which is the stack's 1-based index so the assembler /
+  -- TraceReader knows which slot the input feeds.
+  pcall(function()
+    TraceWriter.input(to_send, self.engine.clock, self.engine.which)
+  end)
 end

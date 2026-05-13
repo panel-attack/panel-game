@@ -152,9 +152,118 @@ local function test_trace_roundtrip_reproduces_live_state()
 end
 
 ----------------------------------------------------------------------
+-- Stronger gate: per-frame input tap round-trip.
+-- Drives the live match by feeding inputs *after* matchStart, taps each
+-- input through TraceWriter.input (mirroring what PlayerStack does in
+-- production), then recreates and asserts state equality at frame N.
+-- If the recreated match drifts from live, the per-frame input capture
+-- isn't sufficient — fix the writer / reader, not the test.
+----------------------------------------------------------------------
+
+local function buildEmptyLiveMatch(seed)
+  -- Same as buildLiveMatch but WITHOUT pre-feeding all 500 inputs. We'll
+  -- feed inputs one-frame-at-a-time below so the TraceWriter.input tap
+  -- has something real to record.
+  local matchRules = {
+    matchEndConditions      = { TEAMS_ACTIVE = 1 },
+    matchWinRuleset         = { { GAME_OVER_CLOCK = "HIGHEST" } },
+    stackOverConditions     = { HEALTH = 0 },
+    stackWinConditions      = {},
+    stackSetupModifications = {},
+    doCountdown             = false,
+  }
+  local match = Match(GeneratorSource(seed, true), matchRules)
+  local levelData = LevelPresets.getModern(10)
+  for i = 1, 2 do
+    local stack = match:createStackWithSettings(levelData, false, "controller")
+    stack:setMaxRunsPerFrame(1)
+  end
+  match:start()
+  return match, matchRules
+end
+
+-- Minimal matchStart shape for the empty (no pre-fed inputs) variant.
+local function emptyMatchStartContent(match, seed, matchRules)
+  local replay = ReplayV3("000", matchRules, {
+    sourceType = ReplayV3.panelSourceTypes.seedV2,
+    seed = seed,
+    shockEnabled = true,
+  })
+  for i, stack in ipairs(match.stacks) do
+    replay.stacks[i] = {
+      stackType = ReplayV3.stackTypes.Stack,
+      levelData = stack.levelData,
+      stackBehaviours = stack.behaviours or { delaySimulationUntil = nil },
+      inputMethod = "controller",
+      inputs = "",
+    }
+    replay.metadata.stacks[i] = { stackIndex = i, name = "P" .. i }
+  end
+  replay.metadata.gameModeName = "VS"
+  return replay
+end
+
+local function test_trace_roundtrip_with_perframe_input_tap()
+  logger.info("test_trace_roundtrip_with_perframe_input_tap")
+
+  local seed = 24680
+  local live, matchRules = buildEmptyLiveMatch(seed)
+  local startContent = emptyMatchStartContent(live, seed, matchRules)
+
+  local fsStore, fsStub = makeFs()
+  TraceWriter.configure({
+    fs = fsStub,
+    clock = function() return 2000 end,
+    flushEvents = 1,
+  })
+  TraceWriter.beginSession(2000)
+  TraceWriter.beginMatch(1, 2000)
+  TraceWriter.beginGame(2000)
+
+  TraceWriter.recv(
+    NetworkProtocol.serverMessageTypes.jsonMessage.prefix,
+    { type = "matchStart", content = startContent })
+
+  -- Drive 20 frames. Each frame: feed every stack an "A" (no-op) input,
+  -- AS the wire/local tap would. The tap call here mirrors what
+  -- PlayerStack:send_controls does in production for a local stack.
+  for _ = 1, 20 do
+    for _, stack in ipairs(live.stacks) do
+      stack:receiveConfirmedInput("A")
+      TraceWriter.input("A", stack.clock, stack.which)
+    end
+    live:run()
+  end
+
+  TraceWriter.endGame()
+
+  local path, blob = next(fsStore.files)
+  assert(path and blob, "TraceWriter should have written a file")
+
+  -- Recreate. The empty matchStart bootstraps both stacks with 0 inputs;
+  -- the trace's input events should append back to "A" x 20 per stack.
+  local recreated, err = TraceReader.recreateFromBlob(blob)
+  assert(recreated, "TraceReader failed: " .. tostring(err))
+  while recreated.stacks[1].clock < 20 do
+    recreated:run()
+  end
+
+  local liveVec = StateVector.fromMatch(live)
+  local recVec  = StateVector.fromMatch(recreated)
+  assert(StateVector.equal(liveVec, recVec),
+    "live and recreated state diverge with per-frame input tap:\n"
+    .. "  live: " .. StateVector.hash(liveVec) .. "\n"
+    .. "  recr: " .. StateVector.hash(recVec))
+
+  logger.info("per-frame input tap recreation OK at frame 20: "
+              .. StateVector.hash(liveVec))
+end
+
+----------------------------------------------------------------------
 -- Run
 ----------------------------------------------------------------------
 
 test_trace_roundtrip_reproduces_live_state()
+test_trace_roundtrip_with_perframe_input_tap()
 
 logger.info("All TraceRecreationTests passed!")

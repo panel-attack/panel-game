@@ -269,12 +269,14 @@ function M.send(prefix, body)
   end)
 end
 
----Local input event — the engine input char produced by a love key/touch.
----Captured before wire compression so it reflects user intent independent
----of network state.
+---Local input event — the engine input char that was just fed to a
+---local stack. Captures the per-frame input chars that are otherwise
+---only visible in compressed/batched form on the wire (and not visible
+---at all for single-player play).
 ---@param raw string single-char engine input
----@param frame integer? engine frame counter when known
-function M.input(raw, frame)
+---@param frame integer? engine clock when the input landed
+---@param stack integer? 1-based stack index this input feeds
+function M.input(raw, frame, stack)
   if state.disabled then return end
   pcall(function()
     local line = encodeLine({
@@ -282,6 +284,7 @@ function M.input(raw, frame)
       dir   = "input",
       raw   = raw,
       frame = frame,
+      stack = stack,
     })
     if line then emit(line) end
   end)

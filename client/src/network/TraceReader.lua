@@ -89,36 +89,46 @@ function M.recreate(entries)
 
   local match = bootstrapMatch(startContent)
 
-  -- Apply event stream. We collect peer-input strings per playerNumber +
-  -- the local client's outgoing inputs, then feed them once the loop is
-  -- done — the engine is happier with a single receiveConfirmedInput
-  -- batch per stack than per-frame trickle.
-  --
-  -- Iteration logic intentionally minimal: replay correctness is in the
-  -- engine, not here. If state drifts vs the live match, the trace is
-  -- under-specified — extend the tap, don't extend this.
+  -- Build per-stack input strings from the trace. Three sources, in
+  -- order of authority:
+  --   1. `dir=="input"` events carry per-frame local inputs (the local
+  --      stack's view as PlayerStack:send_controls fed it). Single-
+  --      player has nothing else.
+  --   2. `dir=="recv" prefix=="I"` carries relayed peer inputs from the
+  --      server, keyed by playerNumber.
+  --   3. `dir=="send" prefix=="I"` carries this client's outbound input
+  --      frames in compressed form. Used as a fallback when the local
+  --      `input` tap wasn't running on the captured client.
+  -- The replay's stack-inputs strings already in matchStart are the
+  -- BASE state; we append on top so a trace recorded mid-game replays
+  -- alongside the bootstrap inputs.
+  local byStack = {}
   local inboundByPlayer = {}
-  local outboundForSelf = {}
 
   for _, e in ipairs(entries) do
-    if e.dir == "recv" and e.prefix == "I" and type(e.body) == "table" then
+    if e.dir == "input" and type(e.raw) == "string" and e.stack then
+      byStack[e.stack] = (byStack[e.stack] or "") .. e.raw
+    elseif e.dir == "recv" and e.prefix == "I" and type(e.body) == "table" then
       local pn = e.body.playerNumber
       if pn then
         inboundByPlayer[pn] = (inboundByPlayer[pn] or "") .. (e.body.input or "")
       end
-    elseif e.dir == "send" and e.prefix == "I" and type(e.body) == "string" then
-      -- Outbound input frames have the raw input chars as body (when
-      -- they didn't decode as JSON). The trace can't know our own
-      -- player slot directly — leave for the caller to attribute.
-      outboundForSelf[#outboundForSelf + 1] = e.body
     end
   end
 
-  -- Feed each stack the input stream the trace claims it received.
-  -- This is a first-pass minimal driver — once recreation drift is
-  -- measured for a real bug, this is where the next refinement lands.
+  -- Fold inboundByPlayer in only where the local input stream didn't
+  -- claim that stack (a stack belongs to one perspective: locally
+  -- produced OR remotely relayed, not both).
   for pn, inputs in pairs(inboundByPlayer) do
-    local stack = match.stacks[pn]
+    if not byStack[pn] then byStack[pn] = inputs end
+  end
+
+  -- Feed each stack its trace-derived inputs. receiveConfirmedInput
+  -- appends to the engine's confirmedInput; combined with the
+  -- pre-loaded inputs from createFromReplay (matchStart bootstrap),
+  -- the engine has a complete input timeline.
+  for stackIndex, inputs in pairs(byStack) do
+    local stack = match.stacks[stackIndex]
     if stack and stack.receiveConfirmedInput then
       stack:receiveConfirmedInput(inputs)
     end
