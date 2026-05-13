@@ -823,14 +823,18 @@ function Server:handleSpectateRequest(message, player)
   local requestedRoom = self.rooms[message.spectate_request.roomNumber]
 
   if requestedRoom then
-    local roomState = requestedRoom:state()
-    if (roomState == "character select" or roomState == "playing" or roomState == "paused") then
-      logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
-      self.spectatorToRoom[player] = requestedRoom
-      requestedRoom:add_spectator(player)
-      self:setLobbyChanged()
+    if player.room and player.room == requestedRoom then
+      logger.debug("player " .. player.name .. " tried to join room " .. requestedRoom.roomNumber .. " as a spectator but they're already inside")
     else
-      logger.warn("tried to join room in invalid state " .. roomState)
+      local roomState = requestedRoom:state()
+      if (roomState == "character select" or roomState == "playing" or roomState == "paused") then
+        logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
+        self.spectatorToRoom[player] = requestedRoom
+        requestedRoom:add_spectator(player)
+        self:setLobbyChanged()
+      else
+        logger.warn("tried to join room in invalid state " .. roomState)
+      end
     end
   else
     -- TODO: tell the client the join request failed, couldn't find the room.
