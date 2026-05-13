@@ -941,7 +941,8 @@ function NetClient:reportLocalGameResult(winners)
         if winningTeam then
           for i, player in ipairs(match.players) do
             if player.isLocal then
-              local localTeamIndex = TeamUtils.getPlayerTeamIndex(match.engine.teams, i)
+              local slot = (player and player.playerNumber) or i
+              local localTeamIndex = TeamUtils.getPlayerTeamIndex(match.engine.teams, slot)
               if localTeamIndex == winningTeam.id then
                 localTeamWon = true
               end

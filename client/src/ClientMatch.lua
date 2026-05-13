@@ -1072,7 +1072,8 @@ function ClientMatch:drawTeamScoreboard()
 
   local teamData = {}
   for i, player in ipairs(self.players) do
-    local teamIndex = getTeamIndexForPlayerPosition(self.gameMode, i) or i
+    local slot = (player and player.playerNumber) or i
+    local teamIndex = getTeamIndexForPlayerPosition(self.gameMode, slot) or slot
     if not teamData[teamIndex] then
       teamData[teamIndex] = {names = {}, wins = 0}
     end

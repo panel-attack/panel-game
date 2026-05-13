@@ -985,9 +985,9 @@ function Room:_redirectIfDead(senderSlot, originalRecipient)
     enemySlots = TeamUtils.getEnemyPlayerIndices(self.teams, senderSlot)
   else
     enemySlots = {}
-    for i = 1, #self.players do
-      if i ~= senderSlot then
-        enemySlots[#enemySlots + 1] = i
+    for slot, _ in self:eachPlayer() do
+      if slot ~= senderSlot then
+        enemySlots[#enemySlots + 1] = slot
       end
     end
   end
@@ -1182,7 +1182,7 @@ function Room:_livingTeams()
   local livingTeams = {}
   local representatives = {}
   local seen = {}
-  for slot = 1, #self.players do
+  for slot, _ in self:eachPlayer() do
     local dead = self.game.disconnectedPlayers[slot] or self.game.eliminatedPlayers[slot]
     if not dead then
       local teamKey
@@ -1314,7 +1314,7 @@ function Room:rating_adjustment_approved()
     return false, {"Room has no leaderboard"}
   end
 
-  for _, player in ipairs(self.players) do
+  for _, player in self:eachPlayer() do
     if not player.wants_ranked_match then
       return false, {player.name .. " doesn't want ranked"}
     end
@@ -1328,7 +1328,7 @@ function Room:toString()
   local info = self.name
   info = info .. "\nRoom number:" .. self.roomNumber
   info = info .. "\nWin Counts" .. table_to_string(self.win_counts)
-  for _, player in ipairs(self.players) do
+  for _, player in self:eachPlayer() do
     info = info .. "\n" .. player.name .. " settings:"
     info = info .. "\n" .. table_to_string(player:getSettings())
   end
@@ -1360,8 +1360,10 @@ function Room:_finalizeMatch()
 
   if self.game.ranked and self.game.winnerId then
     local ratingUpdates = self.leaderboard:processGameResult(self.game)
-    for i, _ in ipairs(self.players) do
-      ratingUpdates[i].userId = nil
+    for slot, _ in self:eachPlayer() do
+      if ratingUpdates[slot] then
+        ratingUpdates[slot].userId = nil
+      end
     end
     self.ratings = ratingUpdates
   end
@@ -1447,11 +1449,13 @@ end
 ---@param sender ServerPlayer
 function Room:handleGameAbort(sender)
   local isPlayerInRoom = tableUtils.trueForAny(self.players, function(p) return p.publicPlayerID == sender.publicPlayerID end)
+  local playerCount = self:countPlayers()
+  local _, solePlayer = self:eachPlayer()()
 
-  if #self.players == 1 and self.players[1] == sender then
+  if playerCount == 1 and solePlayer == sender then
     logger.debug(sender.name .. " aborted the game")
     self:abortGame(sender)
-  elseif #self.players >= 2 and isPlayerInRoom then
+  elseif playerCount >= 2 and isPlayerInRoom then
     logger.info(sender.name .. " aborted the game")
 
     -- Loose-sync: per-player input counts diverge naturally with clock drift,
@@ -1467,7 +1471,7 @@ function Room:handleGameAbort(sender)
     -- - Team game: report self-team loss (2)
     -- - 3+p FFA: report self-loss using own player_number (no hardcoded winner)
     local outcome
-    if #self.players == 2 then
+    if playerCount == 2 then
       outcome = (sender.player_number == 1) and 2 or 1
     elseif self.teams then
       outcome = 2
@@ -1508,8 +1512,8 @@ function Room:handlePlayerDisconnect(sender, reason)
   -- Force-close in that case so server state cannot drift.
   if self.game then
     local allDisconnected = true
-    for i = 1, #self.players do
-      if not self.game.disconnectedPlayers[i] then
+    for slot, _ in self:eachPlayer() do
+      if not self.game.disconnectedPlayers[slot] then
         allDisconnected = false
         break
       end
@@ -1629,8 +1633,8 @@ function Room:voidByLeave(leaver, reason)
     -- outcome report and handleGameOverOutcome won't fire to clean the room.
     -- Close it now so it doesn't sit as a ghost in the lobby.
     local allDisconnected = true
-    for i = 1, #self.players do
-      if not self.game.disconnectedPlayers[i] then
+    for slot, _ in self:eachPlayer() do
+      if not self.game.disconnectedPlayers[slot] then
         allDisconnected = false
         break
       end
@@ -1700,11 +1704,13 @@ function Room:abortGame(sender, reason)
 end
 
 function Room:togglePause(sender, paused)
-  if #self.players == 1 and self.players[1] == sender and paused ~= (self:state() == "paused") then
+  local playerCount = self:countPlayers()
+  local _, solePlayer = self:eachPlayer()()
+  if playerCount == 1 and solePlayer == sender and paused ~= (self:state() == "paused") then
     self:broadcastJson(ServerProtocol.sendPauseNotification(self.roomNumber, sender, paused), sender)
     self:emitSignal("pauseToggled")
 
-    for i, player in ipairs(self.players) do
+    for _, player in self:eachPlayer() do
       if paused then
         player:setState("paused")
       else

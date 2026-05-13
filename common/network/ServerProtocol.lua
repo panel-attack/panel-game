@@ -192,6 +192,19 @@ local addToRoomTemplate = {
   },
 }
 
+---@param players table
+---@return integer[]
+local function sortedNumericKeys(players)
+  local keys = {}
+  for k, _ in pairs(players or {}) do
+    if type(k) == "number" then
+      keys[#keys + 1] = k
+    end
+  end
+  table.sort(keys)
+  return keys
+end
+
 ---@param room Room
 ---@param replay ReplayV3?
 function ServerProtocol.addToRoom(room, replay)
@@ -217,7 +230,8 @@ function ServerProtocol.addToRoom(room, replay)
       }
     end
   else
-    for i, player in ipairs(room.players) do
+    for _, i in ipairs(sortedNumericKeys(room.players)) do
+      local player = room.players[i]
       content.players[player.player_number] = {
         settings = player:getSettings(),
         rating = room.ratings[i],
@@ -296,7 +310,8 @@ function ServerProtocol.spectateRequestGranted(room, replay)
       }
     end
   else
-    for i, player in ipairs(room.players) do
+    for _, i in ipairs(sortedNumericKeys(room.players)) do
+      local player = room.players[i]
       content.players[player.player_number] = {
         settings = player:getSettings(),
         rating = room.ratings[i],
@@ -346,7 +361,8 @@ function ServerProtocol.createRoom(room)
       }
     end
   else
-    for i, player in ipairs(room.players) do
+    for _, i in ipairs(sortedNumericKeys(room.players)) do
+      local player = room.players[i]
       content.players[player.player_number] = {
         settings = player:getSettings(),
         rating = room.ratings[i],

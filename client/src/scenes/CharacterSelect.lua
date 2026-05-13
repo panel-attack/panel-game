@@ -1255,10 +1255,12 @@ function CharacterSelect:teamBorderColorForPlayer(player)
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
   if not TeamBannerHeader.isSharedTeamMode(self.battleRoom.mode) then return nil end
 
-  -- Use battleRoom.players (server's canonical join order) so this matches the
-  -- top banner. self.players is a UI-sorted copy (local-first) and would
-  -- assign teams differently from the server.
-  local idx = tableUtils.indexOf(self.battleRoom.players, player)
+  -- Use canonical server slot (playerNumber) for team mapping. Dense list
+  -- position can diverge from slot order (local-first UI, sparse joins).
+  local idx = player and player.playerNumber
+  if not idx then
+    idx = tableUtils.indexOf(self.battleRoom.players, player)
+  end
   if not idx then return nil end
 
   local p = self.battleRoom.mode.playersPerTeam
