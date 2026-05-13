@@ -16,6 +16,7 @@ local Connection = require("server.Connection")
 local Leaderboard = require("server.Leaderboard")
 local Playerbase = require("server.PlayerBase")
 local Room = require("server.Room")
+local CrashReports = require("server.CrashReports")
 local ClientMessages = require("server.ClientMessages")
 local utf8 = require("common.lib.utf8Additions")
 local tableUtils = require("common.lib.tableUtils")
@@ -191,6 +192,12 @@ local Server = class(
     -- Every call site that needs "now" goes through self.clock() — Room reads
     -- self.clock from the Server back-reference set up in create_room.
     self.clock = socket.gettime
+
+    -- Crash-replay capture subsystem (docs/CRASH_REPLAY_PLAN.md). Holds the
+    -- in-memory incident registry. Purely additive: a Server that never sees
+    -- a Room emit incidentDetected behaves identically to one without this.
+    -- Internal failures self-contain via pcall in CrashReports.flagGame.
+    self.crashReports = CrashReports()
 
     FileIO.read_csprng_seed_file()
     initialize_mt_generator(csprng_seed)
@@ -716,6 +723,13 @@ function Server:create_room(gameMode, ...)
   -- is the only thing that owns playerToRoom and self.rooms, so closing must happen here.
   newRoom:connectSignal("roomShouldClose", self, self.onRoomShouldClose)
   newRoom:connectSignal("readyForPendingJoiners", self, self.drainPendingJoiners)
+  -- Crash-replay capture. Listener forwards into the in-memory registry.
+  -- CrashReports.flagGame is itself pcall-wrapped, but we also wrap the
+  -- connect-handler so a re-raise (e.g. a Signal library bug) can't
+  -- propagate into Room:voidByLeave. Total isolation: no path here can
+  -- mutate Room/Game state.
+  newRoom:connectSignal("incidentDetected", self,
+    function(srv, room, reason) srv:_onIncidentDetected(room, reason) end)
   self.roomNumberIndex = self.roomNumberIndex + 1
   self.rooms[newRoom.roomNumber] = newRoom
 
@@ -776,6 +790,16 @@ function Server:onRoomShouldClose(room, reason)
   if room and self.rooms[room.roomNumber] == room then
     self:closeRoom(room, reason)
   end
+end
+
+---Forwards a Room:incidentDetected signal into CrashReports. Belt-and-
+---suspenders pcall: flagGame is already pcall-internal, but wrapping
+---again here ensures absolutely zero error path can ride this signal
+---back into voidByLeave's match-survivor cleanup.
+---@param room Room
+---@param reason string
+function Server:_onIncidentDetected(room, reason)
+  pcall(function() self.crashReports:flagGame(room, reason) end)
 end
 
 ---@param room Room

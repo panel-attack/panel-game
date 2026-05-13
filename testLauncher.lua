@@ -86,6 +86,7 @@ local allTests = {
   "common.tests.engine.LooseSyncTests",
   "common.tests.engine.LooseSyncContractTests",
   "common.tests.engine.CrashReplayRegressionTests",
+  "server.tests.CrashReportsTests",
   "server.tests.LooseSyncServerTests",
   "server.tests.LoginTests",
   "server.tests.LeaderboardTests",

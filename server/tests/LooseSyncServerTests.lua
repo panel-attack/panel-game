@@ -445,6 +445,73 @@ local function test_partialRoom_spectators_allowed()
 end
 
 ----------------------------------------------------------------------
+-- Test: mid-match voidByLeave emits incidentDetected → CrashReports flagged
+----------------------------------------------------------------------
+-- Verifies the wire-up from Room (signal emit in voidByLeave's synth-death
+-- branch) through to CrashReports.flagGame. In production this signal is
+-- subscribed by the Server in create_room; here we connect a fresh
+-- CrashReports directly so the assertion is local.
+
+local CrashReports = require("server.CrashReports")
+
+local function test_voidByLeave_flags_crash_incident()
+  logger.info("test_voidByLeave_flags_crash_incident")
+  local room, p1, p2 = get2pMatchInProgress()
+  local cr = CrashReports()
+
+  room:connectSignal("incidentDetected", cr,
+    function(crsub, r, reason) crsub:flagGame(r, reason) end)
+
+  assert(cr:incidentCount() == 0, "no incidents before disconnect")
+
+  room:voidByLeave(p1, "test_disconnect")
+
+  assert(cr:incidentCount() == 1,
+    "expected 1 incident after mid-match voidByLeave, got " .. cr:incidentCount())
+
+  -- Inspect the registered incident.
+  local incidentId
+  for id in pairs(cr.incidents) do incidentId = id end
+  local entry = cr:getIncident(incidentId)
+  assert(entry.reason == "server_disconnect",
+    "expected reason=server_disconnect, got " .. tostring(entry.reason))
+  assert(entry.gameKey and entry.gameKey.roomNumber == room.roomNumber,
+    "gameKey should carry the room number")
+  -- Both players should be in expectedReporters (publicId 1001 + 1002).
+  local seen = {}
+  for _, pid in ipairs(entry.expectedReporters) do seen[pid] = true end
+  assert(seen[1001] and seen[1002],
+    "both player publicIds should be in expectedReporters")
+end
+
+----------------------------------------------------------------------
+-- Test: signal listener failure cannot break voidByLeave
+----------------------------------------------------------------------
+-- The crash-collection path is auxiliary. If a listener throws, the rest
+-- of voidByLeave (synth-death, playerLeftRoom broadcast, etc) must still
+-- execute fully. This guards against a future buggy listener taking down
+-- live matches.
+
+local function test_voidByLeave_survives_listener_failure()
+  logger.info("test_voidByLeave_survives_listener_failure")
+  local room, p1, p2 = get2pMatchInProgress()
+
+  -- Attach a listener that throws on every emit.
+  room:connectSignal("incidentDetected", {},
+    function() error("bad listener") end)
+
+  -- voidByLeave must complete without re-raising.
+  local ok, err = pcall(room.voidByLeave, room, p1, "test")
+  assert(ok, "voidByLeave should NOT propagate listener errors: " .. tostring(err))
+
+  -- Survivor cleanup still happened: room is voided + game.eliminatedPlayers
+  -- got the synth-death for p1.
+  assert(room.voided, "room should be voided after disconnect")
+  assert(room.game and room.game.eliminatedPlayers[p1.player_number],
+    "synth-death must still mark p1 eliminated even when listener throws")
+end
+
+----------------------------------------------------------------------
 -- Run all tests
 ----------------------------------------------------------------------
 
@@ -457,5 +524,7 @@ test_arbitration_window_extends()
 test_arbitration_2v2_team_wipe()
 test_abort_marks_eliminated_keeps_game_alive()
 test_partialRoom_spectators_allowed()
+test_voidByLeave_flags_crash_incident()
+test_voidByLeave_survives_listener_failure()
 
 logger.info("All LooseSyncServerTests passed!")

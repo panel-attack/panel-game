@@ -111,6 +111,11 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   -- Emitted when prepare_character_select runs with queued mid-match joiners.
   -- Server listens and drains the queue via handleJoinRoom.
   self:createSignal("readyForPendingJoiners")
+  -- Emitted when something interesting/wrong happens (mid-match disconnect,
+  -- future state-hash mismatch, server-side exception). Server's CrashReports
+  -- subsystem listens for forensic capture. No listeners = no-op; this signal
+  -- is auxiliary and must never alter Room behavior.
+  self:createSignal("incidentDetected")
 
   -- self.players is keyed by slot number (== player.player_number). For team
   -- modes the slot determines team membership (TeamUtils.createTeams returns
@@ -1375,6 +1380,12 @@ function Room:voidByLeave(leaver, reason)
         spec:send(message)
       end
     end
+
+    -- Crash-replay capture: mid-match leave is an "interesting incident."
+    -- Emit so the server's CrashReports subsystem can register the game.
+    -- Wrapped in pcall so a listener bug can't propagate into the
+    -- leave-handling path that's load-bearing for the surviving match.
+    pcall(function() self:emitSignal("incidentDetected", self, "server_disconnect") end)
   end
 
   -- Mid-match: every leaver is marked eliminated above (either by their own
