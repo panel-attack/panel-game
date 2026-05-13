@@ -158,7 +158,7 @@ end
 -- match never ended.
 --
 -- Post-fix: applyDeathEvent always sets game_over_clock immediately.
--- The match-end machinery picks it up on the next hasEnded check.
+-- The match-end machinery picks it up on the next isLocallyEnded check.
 
 local function test_applyDeathEvent_pinned_view_stack_still_lands()
   logger.info("test_applyDeathEvent_pinned_view_stack_still_lands")
@@ -192,11 +192,11 @@ end
 -- so naive use of game_ended() leaves the survivor's match running forever
 -- — no game-over UI, opponent stays "alive."
 --
--- The fix: in live (non-replay) mode, Match:hasEnded treats any stack
+-- The fix: in live (non-replay) mode, Match:isLocallyEnded treats any stack
 -- with game_over_clock > 0 as "done."
 
-local function test_hasEnded_live_1v1_remote_death_pinned_clock()
-  logger.info("test_hasEnded_live_1v1_remote_death_pinned_clock")
+local function test_isLocallyEnded_live_1v1_remote_death_pinned_clock()
+  logger.info("test_isLocallyEnded_live_1v1_remote_death_pinned_clock")
 
   local MatchRules = require("common.data.MatchRules")
   local function makeStub(spec)
@@ -233,8 +233,8 @@ local function test_hasEnded_live_1v1_remote_death_pinned_clock()
 end
 
 -- Mirror: in replay mode the strict path still applies (clock must catch up).
-local function test_hasEnded_replay_requires_clock_catchup()
-  logger.info("test_hasEnded_replay_requires_clock_catchup")
+local function test_isLocallyEnded_replay_requires_clock_catchup()
+  logger.info("test_isLocallyEnded_replay_requires_clock_catchup")
 
   local MatchRules = require("common.data.MatchRules")
   local function makeStub(spec)
@@ -273,7 +273,7 @@ end
 -- engine.clock freezes the same tick (3p FFA Koozie/Bevy/Lala stuck-match)
 ----------------------------------------------------------------------
 -- Scenario: the local stack tops out at frame N. The same tick, Match:
--- hasEnded() flips true (FFA TEAMS_ACTIVE=1: after this death only one team
+-- isLocallyEnded() flips true (FFA TEAMS_ACTIVE=1: after this death only one team
 -- remains). ClientMatch:run early-returns through runGameOver(), skipping
 -- engine:run(). engine.clock freezes at N.
 --
@@ -315,7 +315,7 @@ local function test_local_death_notifies_server_even_when_engine_freezes()
     PlayerStack.onGameOver(stub, { game_over_clock = 5000 })
 
     -- Simulate the deadlock: engine.clock is frozen at deathClock because
-    -- Match:hasEnded() flipped on this tick. ClientMatch:run early-returns
+    -- Match:isLocallyEnded() flipped on this tick. ClientMatch:run early-returns
     -- through runGameOver and calls PlayerStack:runGameOver(matchClock)
     -- every tick — but matchClock never advances past 5000.
     for _ = 1, 200 do
@@ -338,16 +338,16 @@ end
 ----------------------------------------------------------------------
 -- Architecture: shouldFinalize is server-authoritative for live online
 ----------------------------------------------------------------------
--- The hasEnded → display-only refactor: live online matches finalize only
--- when the server confirms (gameResult) or an abort fires. Local hasEnded
+-- The isLocallyEnded → display-only refactor: live online matches finalize only
+-- when the server confirms (gameResult) or an abort fires. Local isLocallyEnded
 -- still drives display, but no longer stops the engine or triggers
 -- handleMatchEnd. This decouples the deadlock pattern at the root: every
--- code path that used to assume "engine freezes the same tick as hasEnded"
+-- code path that used to assume "engine freezes the same tick as isLocallyEnded"
 -- now keeps ticking until the server speaks.
 
 local function test_shouldFinalize_live_online_waits_for_server()
   logger.info("test_shouldFinalize_live_online_waits_for_server")
-  -- Live-online fixture: engine.hasEnded() returns true (local view says
+  -- Live-online fixture: engine.isLocallyEnded() returns true (local view says
   -- match over) but the server has not confirmed yet. shouldFinalize must
   -- be false — we must keep ticking until the server speaks.
   local match = {
@@ -364,7 +364,7 @@ local function test_shouldFinalize_live_online_waits_for_server()
   GAME.battleRoom = { online = true }
   local ok, err = pcall(function()
     assert(match:shouldFinalize() == false,
-      "live online: must NOT finalize on local hasEnded — wait for server gameResult")
+      "live online: must NOT finalize on local isLocallyEnded — wait for server gameResult")
 
     -- Server confirms: NOW it finalizes.
     match._serverConfirmedEnd = true
@@ -375,10 +375,10 @@ local function test_shouldFinalize_live_online_waits_for_server()
   if not ok then error(err) end
 end
 
-local function test_shouldFinalize_offline_uses_local_hasEnded()
-  logger.info("test_shouldFinalize_offline_uses_local_hasEnded")
+local function test_shouldFinalize_offline_uses_local_isLocallyEnded()
+  logger.info("test_shouldFinalize_offline_uses_local_isLocallyEnded")
   -- Offline (puzzle, training, single-player): no server to wait for.
-  -- Local hasEnded IS authoritative.
+  -- Local isLocallyEnded IS authoritative.
   local match = {
     fromReplay = false,
     _serverConfirmedEnd = false,
@@ -392,14 +392,14 @@ local function test_shouldFinalize_offline_uses_local_hasEnded()
   GAME.battleRoom = nil  -- offline: no battle room
   local ok, err = pcall(function()
     assert(match:shouldFinalize() == true,
-      "offline: shouldFinalize must follow local hasEnded")
+      "offline: shouldFinalize must follow local isLocallyEnded")
   end)
   GAME.battleRoom = origBR
   if not ok then error(err) end
 end
 
-local function test_shouldFinalize_replay_uses_local_hasEnded()
-  logger.info("test_shouldFinalize_replay_uses_local_hasEnded")
+local function test_shouldFinalize_replay_uses_local_isLocallyEnded()
+  logger.info("test_shouldFinalize_replay_uses_local_isLocallyEnded")
   local match = {
     fromReplay = true,
     _serverConfirmedEnd = false,
@@ -415,7 +415,7 @@ local function test_shouldFinalize_replay_uses_local_hasEnded()
   GAME.battleRoom = { online = true }
   local ok, err = pcall(function()
     assert(match:shouldFinalize() == true,
-      "replay: fromReplay overrides; local hasEnded drives finalize")
+      "replay: fromReplay overrides; local isLocallyEnded drives finalize")
   end)
   GAME.battleRoom = origBR
   if not ok then error(err) end
@@ -861,12 +861,12 @@ test_applyDeathEvent_marks_remote_stack()
 test_applyDeathEvent_skips_local_stack()
 test_applyDeathEvent_idempotent()
 test_applyDeathEvent_pinned_view_stack_still_lands()
-test_hasEnded_live_1v1_remote_death_pinned_clock()
-test_hasEnded_replay_requires_clock_catchup()
+test_isLocallyEnded_live_1v1_remote_death_pinned_clock()
+test_isLocallyEnded_replay_requires_clock_catchup()
 test_local_death_notifies_server_even_when_engine_freezes()
 test_shouldFinalize_live_online_waits_for_server()
-test_shouldFinalize_offline_uses_local_hasEnded()
-test_shouldFinalize_replay_uses_local_hasEnded()
+test_shouldFinalize_offline_uses_local_isLocallyEnded()
+test_shouldFinalize_replay_uses_local_isLocallyEnded()
 test_shouldFinalize_abort_short_circuits()
 test_deliverOutgoingGarbage_local_to_remote()
 test_deliverOutgoingGarbage_remote_to_local()

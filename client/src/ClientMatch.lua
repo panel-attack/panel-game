@@ -509,8 +509,8 @@ function ClientMatch:start()
         slots[#slots + 1] = {
           stackIndex  = m.stackIndex,
           name        = m.name,
-          publicId    = m.publicId,
-          layoutSlot = m.layoutSlot,
+          publicId    = m.publicId,    -- cross-client player identity
+          layoutSlot  = m.layoutSlot, -- display position only
         }
       end
       TraceWriter.localEvent("slotMap", {
