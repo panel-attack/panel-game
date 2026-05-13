@@ -564,6 +564,45 @@ local function test_idleFill_skips_when_game_complete()
     "no idle-fill should emit when game.complete is true, got " .. count)
 end
 
+local function test_idleFill_state_resets_on_rematch()
+  logger.info("test_idleFill_state_resets_on_rematch")
+  -- Set up a match-in-progress, eliminate p2, run idle-fill to the cap.
+  -- Then start a fresh match in the same room. The new match should see
+  -- a clean idleFillState — stale framesEmitted from match 1 must not
+  -- carry forward and silently block emits in match 2.
+  local room, p1, p2 = get2pMatchInProgress()
+  room.game:markPlayerEliminated(p2, 500)
+  room:tickIdleFill(1000)
+  room:tickIdleFill(11000) -- saturate the cap
+  assert(room.idleFillState[p2.player_number]
+         and room.idleFillState[p2.player_number].framesEmitted >= 290,
+    "precondition: idleFillState should be saturated for p2 after 10s")
+
+  -- Drive a rematch via the canonical start_match path. Clear room.game
+  -- first to mimic post-match-end state, then call start_match directly
+  -- (avoids the menu-state-update dance, which depends on prior ready
+  -- flags surviving the previous match's cleanup).
+  room.game = nil
+  room:start_match()
+  assert(room.game, "rematch should have a fresh game after start_match")
+
+  -- The fix: idleFillState reset at start_match.
+  assert(next(room.idleFillState) == nil,
+    "idleFillState must reset at start_match — found stale slot(s) in rematch: "
+    .. tostring(next(room.idleFillState)))
+
+  -- A fresh elimination in match 2 emits from zero, not blocked by stale cap.
+  room.game:markPlayerEliminated(p2, 800)
+  p1.connection.outgoingInputQueue:clear()
+  room:tickIdleFill(1000)
+  room:tickIdleFill(1100)
+  local count = countByPrefix(p1.connection.outgoingInputQueue,
+                              NetworkProtocol.serverMessageTypes.input.prefix)
+  assert(count >= 5 and count <= 7,
+    "rematch idle-fill should start fresh and emit ~6 frames over 100ms, got "
+    .. count)
+end
+
 local function test_idleFill_caps_at_max_frames()
   logger.info("test_idleFill_caps_at_max_frames")
   local room, p1, p2 = get2pMatchInProgress()
@@ -600,5 +639,6 @@ test_voidByLeave_survives_listener_failure()
 test_idleFill_emits_placeholders_for_eliminated_player()
 test_idleFill_skips_when_game_complete()
 test_idleFill_caps_at_max_frames()
+test_idleFill_state_resets_on_rematch()
 
 logger.info("All LooseSyncServerTests passed!")
