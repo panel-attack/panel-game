@@ -10,6 +10,7 @@ local class = require("common.lib.class")
 local Request = require("client.src.network.Request")
 local ServerMessages = require("client.src.network.ServerMessages")
 local Queue = require("common.lib.Queue")
+local TraceWriter = require("client.src.network.TraceWriter")
 
 ---@class TcpSocket
 
@@ -182,6 +183,22 @@ function TcpClient:send(stringData)
   if not self.socket then
     return false
   end
+  -- Trace tap: one JSONL line per outbound frame. pcall'd at the call
+  -- site (TraceWriter's tap is pcall'd internally too, but doubling here
+  -- guarantees the network hot path is fully insulated from any future
+  -- TraceWriter regression).
+  pcall(function()
+    local prefix, body = NetworkProtocol.getMessageFromString(stringData, false)
+    if prefix then
+      -- Try to decode J-style JSON bodies for nicer trace lines; fall
+      -- back to raw bytes for I (input chars), H (version check), etc.
+      local decoded
+      if body and #body > 0 and body:sub(1, 1) == "{" then
+        decoded = json.decode(body)
+      end
+      TraceWriter.send(prefix, decoded or body)
+    end
+  end)
   if self.delayedProcessing then
     local lagSeconds = (math.random() * (sendMaxLag - sendMinLag)) + sendMinLag
     self.sendNetworkQueue:push(stringData, lagSeconds)
@@ -209,6 +226,12 @@ end
 
 -- Adds the message to the network queue or processes it immediately in a couple cases
 function TcpClient:queueMessage(type, data)
+  -- Trace tap: one JSONL line per inbound frame. The decoded body
+  -- shapes diverge by prefix, so we tap with whatever each branch
+  -- already decoded — wrapped in pcall so a TraceWriter bug can't
+  -- block the network hot path.
+  local traced = function(body) pcall(function() TraceWriter.recv(type, body) end) end
+
   if type == NetworkProtocol.serverMessageTypes.input.prefix then
     -- Unified input message: JSON body {playerNumber, input}. Decode here so
     -- downstream consumers (NetClient.processInputMessages) get the parsed
@@ -221,14 +244,20 @@ function TcpClient:queueMessage(type, data)
     local dataMessage = {}
     dataMessage[type] = {playerNumber = playerNumber, input = input}
     logger.trace("Queuing: " .. type .. " for player " .. playerNumber)
+    traced(dataMessage[type])
     self.receivedMessageQueue:push(dataMessage)
   elseif type == NetworkProtocol.serverMessageTypes.versionCorrect.prefix then
+    traced(true)
     -- make responses to client H messages processable by treating them like a json response
     self.receivedMessageQueue:push({versionCompatible = true})
   elseif type == NetworkProtocol.serverMessageTypes.versionWrong.prefix then
+    traced(false)
     -- make responses to client H messages processable by treating them like a json response
     self.receivedMessageQueue:push({versionCompatible = false})
   elseif type == NetworkProtocol.serverMessageTypes.ping.prefix then
+    -- Ping is high-frequency; intentionally NOT traced to avoid filling
+    -- the JSONL with thousands of empty pings. The send-side ack still
+    -- traces (one line per ack).
     self:send(NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix)
     self.connectionUptime = self.connectionUptime + 1
   elseif type == NetworkProtocol.serverMessageTypes.garbageEvent.prefix
@@ -243,6 +272,7 @@ function TcpClient:queueMessage(type, data)
     end
     local dataMessage = {}
     dataMessage[type] = body
+    traced(body)
     self.receivedMessageQueue:push(dataMessage)
   elseif type == NetworkProtocol.serverMessageTypes.jsonMessage.prefix then
     logger.trace("Queuing JSON: " .. dump(data))
@@ -250,7 +280,9 @@ function TcpClient:queueMessage(type, data)
     if not current_message then
       error(loc("nt_msg_err", (data or "nil")))
     end
-    self.receivedMessageQueue:push(ServerMessages.sanitizeMessage(current_message))
+    local sanitized = ServerMessages.sanitizeMessage(current_message)
+    traced(sanitized)
+    self.receivedMessageQueue:push(sanitized)
   end
 end
 
