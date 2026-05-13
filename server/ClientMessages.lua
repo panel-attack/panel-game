@@ -42,8 +42,6 @@ function ClientMessages.sanitizeMessage(clientMessage)
     return clientMessage
   elseif clientMessage.flagGame then
     return ClientMessages.sanitizeFlagGame(clientMessage)
-  elseif clientMessage.crashSlice then
-    return ClientMessages.sanitizeCrashSlice(clientMessage)
   else
     local errorMsg = "Received an unexpected message"
     local messageJson = json.encode(clientMessage)
@@ -179,64 +177,6 @@ function ClientMessages.sanitizeFlagGame(clientMessage)
       traceHash     = _truncString(raw.traceHash,     MAX_TRACE_HASH),
       traceFragment = _truncString(raw.traceFragment, MAX_TRACE_FRAGMENT),
       clientMeta    = clientMeta,
-      schemaVer     = tonumber(raw.schemaVer) or 1,
-    },
-  }
-end
-
--- Phase 2 of the two-phase spool: client returns its slice (full replay
--- payload) in response to the server's earlier crashSliceRequest. The
--- 2 MB byte cap is enforced downstream in CrashReports:recordSlice
--- (which encodes once and bounds the result); this sanitize just
--- type-checks the wrapping fields. The `replay` blob is passed through
--- as-is — replays are big and validating each replay-internal field
--- here would duplicate the work Match.createFromReplay already does
--- when the fixture is loaded for testing.
-function ClientMessages.sanitizeCrashSlice(clientMessage)
-  local raw = clientMessage.crashSlice
-  if type(raw) ~= "table" then return { crashSlice = nil } end
-
-  local gameContext
-  if type(raw.gameContext) == "table" then
-    gameContext = {
-      roomNumber   = tonumber(raw.gameContext.roomNumber),
-      gameId       = tonumber(raw.gameContext.gameId),
-      frame        = tonumber(raw.gameContext.frame),
-      gameModeName = _truncString(raw.gameContext.gameModeName, 64),
-      matchCount   = tonumber(raw.gameContext.matchCount),
-    }
-  end
-
-  local clientMeta
-  if type(raw.clientMeta) == "table" then
-    clientMeta = {
-      engineVersion = _truncString(raw.clientMeta.engineVersion, 16),
-      os            = _truncString(raw.clientMeta.os,            32),
-      loveVersion   = _truncString(raw.clientMeta.loveVersion,   16),
-      branch        = _truncString(raw.clientMeta.branch,        64),
-    }
-  end
-
-  -- logTail is an array of strings; cap each line and the array length
-  -- so a hostile client can't slip megabytes of "log" past the wire.
-  local logTail
-  if type(raw.logTail) == "table" then
-    logTail = {}
-    for i = 1, math.min(#raw.logTail, 200) do
-      logTail[i] = _truncString(raw.logTail[i], 1024)
-    end
-  end
-
-  return {
-    crashSlice = {
-      incidentId    = _truncString(raw.incidentId, 64),
-      error         = _truncString(raw.error,      MAX_TRACE_FRAGMENT),
-      trace         = _truncString(raw.trace,      MAX_TRACE_FRAGMENT * 4),
-      traceHash     = _truncString(raw.traceHash,  MAX_TRACE_HASH),
-      clientMeta    = clientMeta,
-      gameContext   = gameContext,
-      replay        = type(raw.replay) == "table" and raw.replay or nil,
-      logTail       = logTail,
       schemaVer     = tonumber(raw.schemaVer) or 1,
     },
   }

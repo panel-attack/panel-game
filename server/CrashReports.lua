@@ -1,9 +1,9 @@
 -- CrashReports.lua — server-side incident registry.
 --
 -- Implements the trigger + registry side of docs/CRASH_REPLAY_PLAN.md.
--- Disk writes and the wire shape (crashSlice / flagGame messages) live
--- elsewhere; this module is the in-memory truth for "what incidents are
--- collecting right now."
+-- This module is the in-memory truth for "what incidents are
+-- interesting right now." Actual per-perspective data lives in
+-- trace_archive/ alongside; the registry just keys + ages incidents.
 --
 -- Failure model: collection is auxiliary. Every public entry point is
 -- wrapped in pcall so a bug in this module CAN'T propagate into game
@@ -18,7 +18,6 @@
 local class  = require("common.lib.class")
 local logger = require("common.lib.logger")
 local FileIO = require("server.FileIO")
-local json   = require("common.lib.dkjson")
 
 local DEFAULT_BUCKET_CAP     = 100
 local FAILURE_THRESHOLD      = 5
@@ -26,7 +25,6 @@ local FAILURE_WINDOW_SECONDS = 60
 local DEFAULT_ROOT_DIR       = "crash_reports"
 local SCHEMA_VER             = 1
 local SWEEP_AGE_SECONDS      = 7 * 24 * 60 * 60  -- 7 days per the plan
-local MAX_SLICE_BYTES        = 2 * 1024 * 1024   -- 2 MB per the plan
 
 ---@class CrashReports
 ---@field bucketCap integer
@@ -305,111 +303,6 @@ function CrashReports:flagGame(room, reason, traceHash)
   local ok, a, b = pcall(flagGameImpl, self, room, reason, traceHash)
   if not ok then
     logger.warn("[CrashReports] flagGame errored: " .. tostring(a))
-    recordFailure(self)
-    return false, "internal_error"
-  end
-  return a, b
-end
-
----@param array integer[]
----@param value integer
----@return boolean
-local function arrayContains(array, value)
-  for _, v in ipairs(array or {}) do
-    if v == value then return true end
-  end
-  return false
-end
-
-local function recordSliceImpl(self, incidentId, publicId, slice)
-  if self.disabled then return false, "disabled" end
-  if type(incidentId) ~= "string" or type(publicId) ~= "number"
-      or type(slice) ~= "table" then
-    return false, "malformed"
-  end
-
-  local entry = self.incidents[incidentId]
-  if not entry then return false, "unknown_incident" end
-  if not arrayContains(entry.expectedReporters, publicId) then
-    return false, "not_expected"
-  end
-  if arrayContains(entry.collectedReporters, publicId) then
-    -- Idempotent ack — already collected, no rewrite.
-    return true, "already_collected"
-  end
-
-  -- Bound the slice's encoded size. A pathological client could otherwise
-  -- ship a megabyte-rich replay and fill the disk one slice at a time.
-  -- Encode once here; we reuse the bytes for the disk write below.
-  local encoded
-  do
-    local ok, enc = pcall(json.encode, slice)
-    if not ok then
-      return false, "encode_failed"
-    end
-    encoded = enc
-  end
-  if #encoded > MAX_SLICE_BYTES then
-    logger.warn(string.format(
-      "[CrashReports] slice for incident %s reporter %d rejected: %d bytes > %d",
-      incidentId, publicId, #encoded, MAX_SLICE_BYTES))
-    return false, "too_large"
-  end
-
-  local writeOk, writeErr = pcall(function()
-    local dir = self.rootDir .. "/" .. incidentId
-    FileIO.makeDirectoryRecursive(dir)
-    local path = dir .. "/" .. publicId .. ".json"
-    local f = assert(io.open(path, "w"))
-    f:write(encoded)
-    f:close()
-  end)
-  if not writeOk then
-    logger.warn("[CrashReports] failed to write slice for "
-      .. incidentId .. "/" .. publicId .. ": " .. tostring(writeErr))
-    return false, "disk_error"
-  end
-
-  entry.collectedReporters[#entry.collectedReporters + 1] = publicId
-
-  -- Status transition: when every expected reporter has shipped, flip
-  -- the registry entry to "complete" and move its file from
-  -- pending_incidents/ to complete_incidents/. Same physical-move
-  -- semantics as the sweeper.
-  if #entry.collectedReporters >= #entry.expectedReporters then
-    entry.status = "complete"
-    pcall(function()
-      local fromPath = self.rootDir .. "/pending_incidents/" .. incidentId .. ".json"
-      local toDir    = self.rootDir .. "/complete_incidents"
-      FileIO.makeDirectoryRecursive(toDir)
-      local toPath   = toDir .. "/" .. incidentId .. ".json"
-      FileIO.writeAsJson(entry, toPath)
-      os.remove(fromPath)
-    end)
-  else
-    -- Still collecting — refresh the on-disk registry entry so
-    -- gather_logs sees the latest collectedReporters list without
-    -- waiting for the next status transition.
-    pcall(function()
-      local path = self.rootDir .. "/pending_incidents/" .. incidentId .. ".json"
-      FileIO.writeAsJson(entry, path)
-    end)
-  end
-
-  return true, "recorded"
-end
-
----Record a per-reporter slice for an incident. Idempotent: a second
----call with the same (incidentId, publicId) returns ok without rewriting.
----Returns (false, reason) on validation/disk failure. Never throws.
----@param incidentId string
----@param publicId integer the reporter's publicPlayerID
----@param slice table arbitrary JSON-encodable payload (typically a slice)
----@return boolean, string
-function CrashReports:recordSlice(incidentId, publicId, slice)
-  local ok, a, b = pcall(recordSliceImpl, self, incidentId, publicId, slice)
-  if not ok then
-    logger.warn("[CrashReports] recordSlice errored: " .. tostring(a))
     recordFailure(self)
     return false, "internal_error"
   end

@@ -225,25 +225,11 @@ function ClientProtocol.sendDeathEvent(body)
   }
 end
 
----Crash-replay slice ("phase 2" of two-phase spool). Sent in response to
----the server's crashSliceRequest. Carries the full ReplayV3 payload
----(this client's perspective) plus error/trace metadata if this client
----was the crasher. The fat replay travels here; the gateway nomination
----in phase 1 (flagGame) only carries identifiers.
----@param payload table { incidentId, error?, trace?, traceHash?, clientMeta,
----  gameContext, replay, logTail, schemaVer }
-function ClientProtocol.sendCrashSlice(payload)
-  return {
-    messageType = msgTypes.jsonMessage,
-    messageText = { crashSlice = payload },
-  }
-end
-
----Crash-replay nomination ("phase 1" of two-phase spool). Sent on next
----quiescent moment (post-login or lobby return) per
----docs/CRASH_REPLAY_PLAN.md. Carries the gameKey + trace metadata only —
----the fat replay slice ships later via crashSlice in response to the
----server's crashSliceRequest.
+---Crash-replay nomination. Sent on next quiescent moment (post-login
+---or lobby return) per docs/CRASH_REPLAY_PLAN.md. Carries the gameKey
+---+ trace metadata only — the actual JSONL trace file ships separately
+---via the (forthcoming) traceFile message in response to the server's
+---requestTrace.
 ---@param gameKey {roomNumber: integer, gameId: integer, startTs: integer}
 ---@param reason string e.g. "client_crash", "user_reported"
 ---@param traceHash string? short fingerprint used by the server to dedup
