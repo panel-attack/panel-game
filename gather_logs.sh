@@ -1,20 +1,24 @@
 #!/bin/zsh
-# Pull journal, on-disk logs, and crash reports from the prod server into
-# a local timestamped directory. Designed to run before deploy.sh so every
-# deploy has a snapshot of pre-deploy state — if something regresses after
-# the deploy, we have the exact "before" view to compare against.
+# Pull journal, on-disk logs, crash reports, and trace_archive from the
+# prod server into a local timestamped directory. Designed to run before
+# deploy.sh so every deploy has a snapshot of pre-deploy state — if
+# something regresses after the deploy, we have the exact "before" view
+# to compare against.
 #
 # Output: gathered_logs/<UTC-timestamp>_<local-commit>/
 #   - journal.log         systemd journal for panel-attack (last 7 days by default)
 #   - logs/*.log          server-local .log files written via run_server.sh tee
 #   - crash_reports/      client + server-side crash dumps (once the pipeline lands)
+#   - trace_archive/      per-publicId JSONL session traces (server-side tap)
 #   - META.txt            timestamp / branch / commit / source server
 #
 # Env overrides:
-#   PANEL_SERVER       full SSH target, default "root@104.156.250.136"
-#   INSTALL_DIR        remote repo dir, default "/opt/panel-attack"
-#   JOURNAL_SINCE      journalctl --since arg, default "7 days ago"
-#   PANEL_GATHER_DB    set to "1" to also scp PADatabase.sqlite3
+#   PANEL_SERVER         full SSH target, default "root@104.156.250.136"
+#   INSTALL_DIR          remote repo dir, default "/opt/panel-attack"
+#   JOURNAL_SINCE        journalctl --since arg, default "7 days ago"
+#   PANEL_GATHER_DB      set to "1" to also scp PADatabase.sqlite3
+#   PANEL_SKIP_TRACES    set to "1" to skip trace_archive pull (it can be
+#                        large — every player session leaves one JSONL file)
 
 set -euo pipefail
 
@@ -83,7 +87,7 @@ gather_with_rsync_check() {
 # aborts. But journalctl can succeed with zero output (e.g. if --since
 # is too narrow), and an empty journal is a useless snapshot, so we
 # also assert the file has content.
-echo "==> [1/3] journalctl"
+echo "==> [1/4] journalctl"
 ssh "${SERVER}" "journalctl -u panel-attack --since '${JOURNAL_SINCE}' --no-pager" \
   > "${dest}/journal.log"
 if [[ ! -s "${dest}/journal.log" ]]; then
@@ -103,7 +107,7 @@ echo "    journal.log: ${journal_lines} lines"
 # rotated/dropped by systemd while these stick around. Also, run_server.sh
 # uses `tee` without -a, so server.log gets truncated on next start —
 # this is the one file actually at risk of disappearing on restart.
-echo "==> [2/3] remote logs/"
+echo "==> [2/4] remote logs/"
 mkdir -p "${dest}/logs"
 gather_with_rsync_check "logs/" \
   "${SERVER}:${INSTALL_DIR}/logs/" "${dest}/logs/" \
@@ -116,12 +120,29 @@ echo "    pulled ${log_count} .log file(s)"
 # (client-uploaded reports) and server_side/ (auto-captured disconnect
 # snapshots). Each report is a self-contained JSON with the replay
 # payload, ready to promote into a regression-test fixture.
-echo "==> [3/3] crash_reports/"
+echo "==> [3/4] crash_reports/"
 mkdir -p "${dest}/crash_reports"
 gather_with_rsync_check "crash_reports/" \
   "${SERVER}:${INSTALL_DIR}/crash_reports/" "${dest}/crash_reports/" ""
 report_count=$(find "${dest}/crash_reports" -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
 echo "    pulled ${report_count} report(s)"
+
+# 4. Trace archive — per-publicId JSONL session traces written by the
+# server-side TraceWriter tap. Each session_<ts>.jsonl is a record of
+# every message the server saw from / sent to that player. Cross-
+# referenced with client-side trace_archive bundles for the cross-
+# perspective diff util (see docs/CRASH_REPLAY_PLAN.md Phase F'). Can be
+# skipped via PANEL_SKIP_TRACES=1 since this grows unbounded over time.
+echo "==> [4/4] trace_archive/"
+if [[ "${PANEL_SKIP_TRACES:-0}" == "1" ]]; then
+  echo "    skipped (PANEL_SKIP_TRACES=1)"
+else
+  mkdir -p "${dest}/trace_archive"
+  gather_with_rsync_check "trace_archive/" \
+    "${SERVER}:${INSTALL_DIR}/trace_archive/" "${dest}/trace_archive/" ""
+  trace_count=$(find "${dest}/trace_archive" -name '*.jsonl' 2>/dev/null | wc -l | tr -d ' ')
+  echo "    pulled ${trace_count} trace file(s)"
+fi
 
 # Optional: pull the live SQLite DB. Heavy (potentially many MB) so it's
 # opt-in. Useful when debugging leaderboard / player-row issues.
