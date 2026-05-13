@@ -383,4 +383,60 @@ function TestClient:countInputsFromPrefix(prefix)
   return n
 end
 
+-- ----------------------------------------------------------------------------
+-- Trace replay
+-- ----------------------------------------------------------------------------
+
+---Apply one captured `send` event back to the wire. The dispatcher is
+---deliberately narrow: every prefix maps to one of the existing
+---sendX methods so replay rides the same code path a real client would
+---have used at capture time. Returns true if the event was handled,
+---false if it was intentionally skipped (e.g. H/E, which are harness-
+---managed).
+---@param prefix string single-char wire prefix
+---@param body any decoded JSON table (J/G/D) or raw input string (I)
+---@return boolean handled
+function TestClient:_replaySendEvent(prefix, body)
+  if prefix == "J" then
+    -- Every J-prefixed outbound is a JSON envelope. The body table is
+    -- whatever the client originally sent (login_request, roomRequest,
+    -- menu_state, leave_room, etc.) — sendJson takes it as-is.
+    self:sendJson(body)
+    return true
+  elseif prefix == "I" and type(body) == "string" then
+    self:sendInput(body)
+    return true
+  elseif prefix == "G" and type(body) == "table" then
+    self:sendGarbageEvent(body)
+    return true
+  elseif prefix == "D" and type(body) == "table" then
+    self:sendDeathEvent(body)
+    return true
+  end
+  -- H (version check) and E (ping ack) are managed by the harness
+  -- setup; replaying them would conflict with the connect handshake.
+  return false
+end
+
+---Walk a JSONL blob and replay every `send` event through the wire.
+---Ignores recv / input / local lines — those record what HAPPENED at
+---capture time, not actions to drive. The harness's server is the
+---thing that produces the equivalent recv stream during replay.
+---@param blob string raw JSONL contents of one trace file
+---@return integer replayed how many send events were dispatched
+function TestClient:replayTrace(blob)
+  local replayed = 0
+  for line in blob:gmatch("[^\n]+") do
+    if line:match("%S") then
+      local ok, entry = pcall(json.decode, line)
+      if ok and type(entry) == "table" and entry.dir == "send" then
+        if self:_replaySendEvent(entry.prefix, entry.body) then
+          replayed = replayed + 1
+        end
+      end
+    end
+  end
+  return replayed
+end
+
 return TestClient

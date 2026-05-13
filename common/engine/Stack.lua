@@ -13,6 +13,15 @@ local LevelData = require("common.data.LevelData")
 table.clear = require("table.clear")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 local WigglePay = require("common.engine.WigglePay")
+local Smoothing = require("common.lib.smoothing")
+
+-- View-stack pacing constants. SMOOTH_TIME is how long it takes the
+-- per-stack catch-up rate to "mostly" reach a new target after the
+-- buffer changes — 200ms feels natural for visible-but-not-laggy
+-- transitions. TICK_DT is fixed at the engine's nominal 60Hz; the
+-- smoothing is per-Match:run-cycle, not wall-clock.
+local VIEW_SMOOTH_TIME_S = 0.2
+local VIEW_TICK_DT_S     = 1 / 60
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local InputCompression= require("common.data.InputCompression")
 local MatchRules = require("common.data.MatchRules")
@@ -733,23 +742,61 @@ function Stack:shouldRun(runsSoFar)
   -- If we are local we always want to catch up and run the new input which is already appended
   if self.is_local then
     return buffer_len > 0
-  else
-    -- If we are not local, we want to run faster to catch up.
-    if buffer_len >= 15 - runsSoFar then
-      -- way behind, run at max speed.
-      return runsSoFar < self.max_runs_per_frame
-    elseif buffer_len >= 10 - runsSoFar then
-      -- When we're closer, run fewer times per frame, so things are less choppy.
-      -- This might have a side effect of taking a little longer to catch up
-      -- since we don't always run at top speed.
-      local maxRuns = math.min(2, self.max_runs_per_frame)
-      return runsSoFar < maxRuns
-    elseif buffer_len >= 1 then
-      return runsSoFar == 0
-    end
   end
 
-  return false
+  -- View-stack pacing: smoothed catch-up.
+  --
+  -- The old design was a bucket function: buffer 1-9 → 1×, 10-14 → 2×,
+  -- 15+ → max. That works correctness-wise but it can look jarring —
+  -- a single-frame change in buffer flips the rate sharply, the stack
+  -- visibly lurches into faster motion. The user is watching this
+  -- view-stack render and wants it to look smooth.
+  --
+  -- New design (visual-smoothness focused, not catch-up-speed focused):
+  -- 1. smootherstep maps buffer → target rate (no threshold flip-flop)
+  -- 2. SmoothDamp eases current rate toward target (no abrupt rate jumps)
+  -- 3. Accumulator quantizes the fractional rate into integer per-cycle runs
+  -- 4. End-game bypass: if game_over_clock is set but not yet reached,
+  --    snap to max — player wants the match resolved fast, not paced
+  --
+  -- The plan is recomputed once per Match:run cycle (runsSoFar=0 is the
+  -- start of a cycle); subsequent shouldRun calls within the same cycle
+  -- just check the precomputed plan. Per-stack state, scales linearly
+  -- in player count.
+  if runsSoFar == 0 then
+    local target = Smoothing.targetRate(buffer_len, self.max_runs_per_frame)
+
+    local pendingDeath = (self.game_over_clock or 0) > 0
+    if pendingDeath then
+      -- Race to game_over_clock. Skip smoothing.
+      self._smoothedRate = self.max_runs_per_frame
+      self._smoothedRateVelocity = 0
+    elseif self._smoothedRate == nil then
+      -- First time we're planning for this stack: snap to target rather
+      -- than ramp from zero (which would make a steady-state stack run
+      -- 0 ticks for the first ~smoothTime seconds while SmoothDamp
+      -- ramps up).
+      self._smoothedRate = target
+      self._smoothedRateVelocity = 0
+    else
+      self._smoothedRate, self._smoothedRateVelocity = Smoothing.smoothDamp(
+        self._smoothedRate, target, self._smoothedRateVelocity,
+        VIEW_SMOOTH_TIME_S, VIEW_TICK_DT_S)
+    end
+
+    self._smoothedRateAccum = (self._smoothedRateAccum or 0) + self._smoothedRate
+    local planned = math.floor(self._smoothedRateAccum)
+    self._smoothedRateAccum = self._smoothedRateAccum - planned
+
+    -- Hard caps: never exceed max_runs_per_frame in one cycle, never
+    -- claim to run more frames than we have input for.
+    if planned > self.max_runs_per_frame then planned = self.max_runs_per_frame end
+    if planned > buffer_len then planned = buffer_len end
+    if planned < 0 then planned = 0 end
+    self._smoothedPlannedRuns = planned
+  end
+
+  return runsSoFar < (self._smoothedPlannedRuns or 0)
 end
 
 -- Runs one step of the stack.

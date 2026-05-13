@@ -178,6 +178,7 @@ CharacterLoader.initCharacters()
 local scenarios = {
   require("server.tests.E2E.ThreePlayerFFATests"),
   require("server.tests.E2E.RegressionTests"),
+  require("server.tests.E2E.TraceReplayTests"),
 }
 
 local function main()

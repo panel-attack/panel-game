@@ -578,55 +578,101 @@ end
 -- rollback-on-late-garbage trigger. Loose-sync handles input lag entirely
 -- through catch-up rather than rollback.
 
-local function test_shouldRun_catches_up_when_behind()
-  logger.info("test_shouldRun_catches_up_when_behind")
-  -- Mock stack: 20 frames of input queued, clock at 0 → buffer_len=20 (>=15).
-  local stack = {
+local function makeViewStack(opts)
+  local s = {
     is_local = false,
     confirmedInput = {},
     clock = 0,
-    max_runs_per_frame = 4,
+    max_runs_per_frame = opts.max or 4,
+    game_over_clock = opts.game_over_clock,
     game_ended = function(self) return false end,
     behindRollback = function(self) return false end,
   }
-  for i = 1, 20 do stack.confirmedInput[i] = "A" end
+  for i = 1, (opts.buffer or 0) do s.confirmedInput[i] = "A" end
+  return s
+end
 
+local function runsThisCycle(stack)
   local runs = 0
   while Stack.shouldRun(stack, runs) do
     runs = runs + 1
     if runs > 100 then error("infinite loop in shouldRun") end
   end
-  assert(runs == stack.max_runs_per_frame,
-    "shouldRun should return true exactly max_runs_per_frame times when buffer_len >= 15, got " .. runs)
+  return runs
+end
 
-  -- Sanity: a stack that's only 1 frame behind runs once.
-  local stack2 = {
-    is_local = false,
-    confirmedInput = { "A" },
-    clock = 0,
-    max_runs_per_frame = 4,
-    game_ended = function(self) return false end,
-    behindRollback = function(self) return false end,
-  }
-  runs = 0
-  while Stack.shouldRun(stack2, runs) do
-    runs = runs + 1
-    if runs > 100 then error("infinite loop in shouldRun") end
+local function test_shouldRun_steady_state_runs_once()
+  logger.info("test_shouldRun_steady_state_runs_once")
+  -- View-stack 1 frame behind: target rate ≈ 1.0 → exactly 1 run per cycle.
+  local stack = makeViewStack({ buffer = 1, max = 4 })
+  assert(runsThisCycle(stack) == 1, "buffer=1 should run exactly once")
+end
+
+local function test_shouldRun_no_buffer_no_runs()
+  logger.info("test_shouldRun_no_buffer_no_runs")
+  local stack = makeViewStack({ buffer = 0, max = 4 })
+  assert(runsThisCycle(stack) == 0, "buffer=0 should not run")
+end
+
+local function test_shouldRun_high_buffer_eventually_saturates_at_max()
+  logger.info("test_shouldRun_high_buffer_eventually_saturates_at_max")
+  -- View-stack 30+ frames behind: target rate is at smootherstep saturation
+  -- = max_runs_per_frame. After SmoothDamp's ramp-up settles, runs should
+  -- equal max. (First cycle's "snap to target" already lands at max-1
+  -- give-or-take accumulator rounding; later cycles converge.)
+  local stack = makeViewStack({ buffer = 60, max = 4 })
+  local peak = 0
+  for _ = 1, 30 do
+    -- Refill buffer each cycle so it doesn't deplete while ramping.
+    stack.confirmedInput = {}
+    for i = 1, 60 do stack.confirmedInput[i] = "A" end
+    stack.clock = 0
+    peak = math.max(peak, runsThisCycle(stack))
   end
-  assert(runs == 1,
-    "shouldRun should fire once when buffer_len == 1, got " .. runs)
+  assert(peak == 4, "sustained high buffer should saturate at max=4; peak observed " .. peak)
+end
 
-  -- And a fully-caught-up stack doesn't run at all.
-  local stack3 = {
-    is_local = false,
-    confirmedInput = { "A" },
-    clock = 1,
-    max_runs_per_frame = 4,
-    game_ended = function(self) return false end,
-    behindRollback = function(self) return false end,
-  }
-  assert(not Stack.shouldRun(stack3, 0),
-    "shouldRun should be false when buffer_len == 0")
+local function test_shouldRun_smoothly_ramps_not_buckets()
+  logger.info("test_shouldRun_smoothly_ramps_not_buckets")
+  -- Old bucket function: buffer=9 → 1 run, buffer=10 → 2 runs (sharp step).
+  -- New smoothed function: buffer 9 vs 10 produces nearly-identical rates;
+  -- no single-frame "lurch" across the old threshold. Test by checking the
+  -- target rate from smoothing module directly (deterministic vs runs which
+  -- depend on SmoothDamp + accumulator state).
+  local Smoothing = require("common.lib.smoothing")
+  local r9  = Smoothing.targetRate(9,  4)
+  local r10 = Smoothing.targetRate(10, 4)
+  assert(math.abs(r10 - r9) < 0.2,
+    "rate at buffer=9 vs 10 should be smooth, not stepped; got "
+    .. r9 .. " vs " .. r10)
+end
+
+local function test_shouldRun_endgame_bypass_snaps_to_max()
+  logger.info("test_shouldRun_endgame_bypass_snaps_to_max")
+  -- When game_over_clock is set but not yet reached, the view-stack should
+  -- race to that frame at max rate without waiting for SmoothDamp to ramp.
+  -- Player wants the match-end resolved fast, not paced.
+  local stack = makeViewStack({ buffer = 5, max = 4, game_over_clock = 100 })
+  -- Buffer only 5 → normal target ~1.2, but bypass should force max=4.
+  -- Cap at buffer (5) since you can't run more frames than you have input.
+  local r = runsThisCycle(stack)
+  assert(r == 4, "pending-death bypass should snap to max=4, got " .. r)
+end
+
+local function test_shouldRun_independent_per_stack()
+  logger.info("test_shouldRun_independent_per_stack")
+  -- Smoothing state must live on the stack, not in any module-level
+  -- variable; otherwise multiple view-stacks would couple. Verify by
+  -- driving two stacks with different buffers and asserting their runs
+  -- differ as the curve says they should.
+  local sLow  = makeViewStack({ buffer = 2,  max = 4 })
+  local sHigh = makeViewStack({ buffer = 60, max = 4 })
+  local rLow  = runsThisCycle(sLow)
+  local rHigh = runsThisCycle(sHigh)
+  assert(rLow == 1,
+    "low-buffer stack should run 1 (independent of any other stack), got " .. rLow)
+  assert(rHigh >= 2,
+    "high-buffer stack should run multiple times (independent of any other stack), got " .. rHigh)
 end
 
 ----------------------------------------------------------------------
@@ -646,6 +692,11 @@ test_roundRobin_counter_advances_by_one()
 test_roundRobin_walks_over_dead()
 test_replayV4_roundtrip()
 test_replayV3_backwards_compat()
-test_shouldRun_catches_up_when_behind()
+test_shouldRun_steady_state_runs_once()
+test_shouldRun_no_buffer_no_runs()
+test_shouldRun_high_buffer_eventually_saturates_at_max()
+test_shouldRun_smoothly_ramps_not_buckets()
+test_shouldRun_endgame_bypass_snaps_to_max()
+test_shouldRun_independent_per_stack()
 
 logger.info("All LooseSyncTests passed!")
