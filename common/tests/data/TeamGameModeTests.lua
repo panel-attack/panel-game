@@ -215,6 +215,77 @@ local function testGameModeIdMapping_1v2Shared()
 end
 
 --------------------------------------------------
+-- Structural audit: every registered team mode must have a consistent
+-- (playerCount, teamCount, playersPerTeam) triple. A drifted preset
+-- crashes server-side at start_match time inside TeamUtils.createTeams —
+-- silently, because xpcall catches it, and the client just sees
+-- "everyone clicked ready, nothing happened." This test asserts the
+-- invariants up front so the next drift fails CI instead of a play test.
+--------------------------------------------------
+
+local function testEveryTeamMode_invariants()
+  logger.info("testEveryTeamMode_invariants")
+
+  local teamModes = {
+    "THREE_PLAYER_VS_ALL", "THREE_PLAYER_VS_SHARED",
+    "THREE_PLAYER_VS_ALL_2V1", "THREE_PLAYER_VS_SHARED_2V1",
+    "FOUR_PLAYER_TEAM_VS_ALL", "FOUR_PLAYER_TEAM_VS_SHARED",
+    "FOUR_PLAYER_1V3_ALL", "FOUR_PLAYER_1V3_SHARED",
+    "FOUR_PLAYER_3V1_ALL", "FOUR_PLAYER_3V1_SHARED",
+    "FIVE_PLAYER_1V4_ALL", "FIVE_PLAYER_1V4_SHARED",
+    "FIVE_PLAYER_4V1_ALL", "FIVE_PLAYER_4V1_SHARED",
+    "FIVE_PLAYER_2V3_ALL", "FIVE_PLAYER_2V3_SHARED",
+    "FIVE_PLAYER_3V2_ALL", "FIVE_PLAYER_3V2_SHARED",
+  }
+
+  for _, modeId in ipairs(teamModes) do
+    assert(GameModes.IDs[modeId] ~= nil, "ID missing: " .. modeId)
+    local mode = GameModes.getPreset(GameModes.IDs[modeId])
+    assert(mode, "preset missing for " .. modeId)
+    assert(mode.name, modeId .. " has no name")
+    assert(GameModes.nameToGameModeId[mode.name] == modeId,
+      modeId .. " name<->id roundtrip broken (name=" .. tostring(mode.name) .. ")")
+    assert(mode.garbageMode == "all" or mode.garbageMode == "shared",
+      modeId .. " has invalid garbageMode: " .. tostring(mode.garbageMode))
+    assert(mode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS,
+      modeId .. " is not TEAM_VERSUS")
+    assert(type(mode.playerCount) == "number" and mode.playerCount > 0,
+      modeId .. " has bad playerCount")
+    assert(type(mode.teamCount) == "number" and mode.teamCount > 0,
+      modeId .. " has bad teamCount")
+    assert(mode.playersPerTeam ~= nil, modeId .. " has no playersPerTeam")
+
+    -- The invariant: roster size derivable from playersPerTeam must equal playerCount.
+    -- This is what start_match relies on when it walks createTeams + builds garbageFlows
+    -- + assigns stacks. Drift here is the source of B9 (Open Team 1v2 crash).
+    local expectedTotal
+    if type(mode.playersPerTeam) == "table" then
+      assert(#mode.playersPerTeam == mode.teamCount,
+        modeId .. ": asymmetric playersPerTeam length (" ..
+        #mode.playersPerTeam .. ") doesn't equal teamCount (" .. mode.teamCount .. ")")
+      expectedTotal = 0
+      for _, n in ipairs(mode.playersPerTeam) do
+        expectedTotal = expectedTotal + n
+      end
+    else
+      expectedTotal = mode.teamCount * mode.playersPerTeam
+    end
+    assert(expectedTotal == mode.playerCount,
+      modeId .. ": playersPerTeam totals " .. expectedTotal ..
+      " but playerCount is " .. mode.playerCount)
+
+    -- createTeams must actually succeed at this (playerCount, teamCount, playersPerTeam).
+    local TeamUtils = require("common.data.TeamUtils")
+    local teams = TeamUtils.createTeams(mode.playerCount, mode.teamCount, mode.playersPerTeam)
+    assert(#teams == mode.teamCount, modeId .. ": createTeams produced wrong team count")
+    local actualTotal = 0
+    for _, team in ipairs(teams) do actualTotal = actualTotal + #team.playerIndices end
+    assert(actualTotal == mode.playerCount,
+      modeId .. ": createTeams allocated " .. actualTotal .. " player slots, expected " .. mode.playerCount)
+  end
+end
+
+--------------------------------------------------
 -- Run all tests
 --------------------------------------------------
 
@@ -253,5 +324,8 @@ testGameModeIdMapping_2v2All()
 testGameModeIdMapping_2v2Shared()
 testGameModeIdMapping_1v2All()
 testGameModeIdMapping_1v2Shared()
+
+-- Structural audit across every registered team mode (catches B9-class drift).
+testEveryTeamMode_invariants()
 
 logger.info("All TeamGameModeTests passed!")

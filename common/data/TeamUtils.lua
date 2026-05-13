@@ -238,4 +238,72 @@ function TeamUtils.getActiveEnemyStacks(teams, playerIndex, stacks)
   return activeEnemies
 end
 
+---Round-robin walk: starting at `startIndex` in `enemyIndices`, find the
+---first slot for which `aliveFn(slot)` returns truthy, then keep walking
+---to find the next-living slot after the picked one. Returns three values:
+---  * pickedIndex — position in enemyIndices of the first living at/after
+---    startIndex (nil if none living anywhere in the list).
+---  * pickedSlot — enemyIndices[pickedIndex] (nil if none).
+---  * nextLivingIndex — position in enemyIndices of the first living
+---    strictly after pickedIndex, wrapping. Nil if no other living exists
+---    (only one survivor — caller should leave its cursor as-is).
+---
+---Centralized so Match.lua's distributeGarbageToTargets cursor advance,
+---server/Room.lua's _redirectIfDead walk-forward, and the client's
+---cursor self-heal on G receipt all use the same predicate. Drift between
+---those three sites was the root cause of bug C (telegraph divergence at
+---death boundaries).
+---@param enemyIndices integer[] enemy slot indices (per-sender, from setupTeamGarbageTargets)
+---@param startIndex integer 1-based position in enemyIndices to start from (wraps)
+---@param aliveFn fun(slot: integer): boolean predicate — true if the slot is still alive/eligible
+---@return integer? pickedIndex
+---@return integer? pickedSlot
+---@return integer? nextLivingIndex
+function TeamUtils.findNextLiving(enemyIndices, startIndex, aliveFn)
+  local n = #enemyIndices
+  if n == 0 then return nil, nil, nil end
+
+  -- Clamp startIndex into [1, n] in case the caller's cursor walked
+  -- out-of-bounds via past advancement.
+  if startIndex < 1 or startIndex > n then
+    startIndex = ((startIndex - 1) % n) + 1
+    if startIndex < 1 then startIndex = startIndex + n end
+  end
+
+  local pickedIndex, pickedSlot
+  local i = startIndex
+  for _ = 1, n do
+    local slot = enemyIndices[i]
+    if slot and aliveFn(slot) then
+      pickedIndex = i
+      pickedSlot = slot
+      break
+    end
+    i = (i % n) + 1
+  end
+
+  if not pickedIndex then
+    return nil, nil, nil
+  end
+
+  -- Walk one full lap to find the next living after pickedIndex.
+  local nextLivingIndex
+  local j = pickedIndex
+  for _ = 1, n do
+    j = (j % n) + 1
+    if j == pickedIndex then
+      -- Walked the whole list and only pickedIndex is alive — leave nil so
+      -- callers can choose to keep the cursor where it was.
+      break
+    end
+    local slot = enemyIndices[j]
+    if slot and aliveFn(slot) then
+      nextLivingIndex = j
+      break
+    end
+  end
+
+  return pickedIndex, pickedSlot, nextLivingIndex
+end
+
 return TeamUtils

@@ -226,10 +226,23 @@ function ClientMessages.sanitizeRoomRequest(roomRequest)
     latencyTolerance = roomRequest.latencyTolerance
   end
 
+  -- Optional client-supplied PRNG seed for the panel sequence. Honored only
+  -- if it's an integer in the same range Game.lua picks from when generating
+  -- a random one — keeps reproducible-scenario tests from drifting between
+  -- runs without disturbing normal multiplayer (production clients never
+  -- set this).
+  local seed
+  if roomRequest.content then seed = roomRequest.content.seed end
+  if seed == nil then seed = roomRequest.seed end
+  if type(seed) ~= "number" or seed ~= math.floor(seed) or seed < 1 or seed > 9999999 then
+    seed = nil
+  end
+
   return {
     roomRequest = true,
     gameMode = gameMode,
     latencyTolerance = latencyTolerance,
+    seed = seed,
   }
 end
 

@@ -218,6 +218,7 @@ function Server:start()
 
   -- Retrying helps when a previous local server instance just exited and the port
   -- is not yet immediately reusable on all platforms.
+  -- (socket.bind already sets SO_REUSEADDR internally — see luasocket source.)
   local attempts = 50
   local s
   for i = 1, attempts do
@@ -918,7 +919,7 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     -- Send addToRoom message to the joining player
     player:sendJson(ServerProtocol.addToRoom(room, nil))
 
-    logger.info("Player " .. player.name .. " joined room " .. roomNumber .. " as player " .. actualSlot)
+    logger.info("Player " .. player.name .. " joined room " .. roomNumber .. " as player " .. player.player_number)
   end
 
   return success
@@ -1300,6 +1301,13 @@ function Server:processMessage(message, connection)
         requestedGameMode.sendRetryLimit           = latencySettings.sendRetryLimit
         requestedGameMode.arbitrationWindowMs      = latencySettings.arbitrationWindowMs
         requestedGameMode.minReactionFrames        = latencySettings.minReactionFrames
+        -- Optional seed override. Ride the requestedGameMode the rest of the
+        -- way (deep-copied by GameModes.getPreset, so this won't bleed into
+        -- other rooms). Consumed in Game.createFromRoomState. Sanitized to a
+        -- valid integer or nil upstream in ClientMessages.sanitizeRoomRequest.
+        if message.seed then
+          requestedGameMode.seedOverride = message.seed
+        end
         self:create_room(requestedGameMode, player)
         return true
       else

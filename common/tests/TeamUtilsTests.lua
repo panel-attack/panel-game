@@ -295,6 +295,89 @@ local function testGetWinningTeam_draw()
 end
 
 --------------------------------------------------
+-- findNextLiving — round-robin walk shared across Match, Room, ClientMatch
+--------------------------------------------------
+
+-- Builds an aliveFn over a fixed dead-set (slot numbers, not positions).
+local function aliveExcept(deadSet)
+  local dead = {}
+  for _, s in ipairs(deadSet) do dead[s] = true end
+  return function(slot) return not dead[slot] end
+end
+
+local function testFindNextLiving_allAlive_picksStart_advancesByOne()
+  logger.info("testFindNextLiving_allAlive_picksStart_advancesByOne")
+  local enemies = { 2, 3, 4 }
+  local picked, slot, nextLiving = TeamUtils.findNextLiving(enemies, 1, aliveExcept({}))
+  assert(picked == 1 and slot == 2 and nextLiving == 2,
+    string.format("startIndex=1: expected (1,2,2), got (%s,%s,%s)",
+      tostring(picked), tostring(slot), tostring(nextLiving)))
+end
+
+local function testFindNextLiving_skipsDeadFromStart()
+  logger.info("testFindNextLiving_skipsDeadFromStart")
+  local enemies = { 2, 3, 4 }
+  -- Slot 2 (position 1) dead; cursor starts at position 1, should walk to 2.
+  local picked, slot, nextLiving = TeamUtils.findNextLiving(enemies, 1, aliveExcept({ 2 }))
+  assert(picked == 2 and slot == 3, "should skip dead start and pick slot 3")
+  assert(nextLiving == 3, "next-living after slot 3 should be slot 4 at position 3")
+end
+
+local function testFindNextLiving_wrapsForwardOverDead()
+  logger.info("testFindNextLiving_wrapsForwardOverDead")
+  local enemies = { 2, 3, 4 }
+  -- Cursor at position 3 (slot 4), slot 4 dead, slot 2 dead. Should wrap to slot 3.
+  local picked, slot, nextLiving = TeamUtils.findNextLiving(enemies, 3, aliveExcept({ 4, 2 }))
+  assert(picked == 2 and slot == 3, "should wrap forward over both dead and pick slot 3")
+  -- Only slot 3 is alive — nextLiving should be nil.
+  assert(nextLiving == nil, "nextLiving should be nil when only one survivor exists")
+end
+
+local function testFindNextLiving_allDeadReturnsNil()
+  logger.info("testFindNextLiving_allDeadReturnsNil")
+  local enemies = { 2, 3, 4 }
+  local picked, slot, nextLiving = TeamUtils.findNextLiving(enemies, 1, aliveExcept({ 2, 3, 4 }))
+  assert(picked == nil and slot == nil and nextLiving == nil,
+    "all dead should return three nils")
+end
+
+local function testFindNextLiving_emptyListReturnsNil()
+  logger.info("testFindNextLiving_emptyListReturnsNil")
+  local picked, slot, nextLiving = TeamUtils.findNextLiving({}, 1, function() return true end)
+  assert(picked == nil and slot == nil and nextLiving == nil,
+    "empty list should return three nils")
+end
+
+local function testFindNextLiving_startIndexOutOfRangeWraps()
+  logger.info("testFindNextLiving_startIndexOutOfRangeWraps")
+  local enemies = { 2, 3, 4 }
+  -- startIndex=5 should wrap to position 2 (5 → (5-1) % 3 + 1 = 2).
+  local picked, slot = TeamUtils.findNextLiving(enemies, 5, aliveExcept({}))
+  assert(picked == 2 and slot == 3, "out-of-range startIndex should wrap into [1,n]")
+end
+
+local function testFindNextLiving_advanceAlternatesBetweenTwo()
+  logger.info("testFindNextLiving_advanceAlternatesBetweenTwo")
+  -- 2 living enemies: cursor walks 1 → 2 → 1 → 2.
+  local enemies = { 2, 3 }
+  local picked, _, nextLiving = TeamUtils.findNextLiving(enemies, 1, aliveExcept({}))
+  assert(picked == 1 and nextLiving == 2, "first pick at 1, next is 2")
+  picked, _, nextLiving = TeamUtils.findNextLiving(enemies, nextLiving, aliveExcept({}))
+  assert(picked == 2 and nextLiving == 1, "second pick at 2, next wraps to 1")
+end
+
+local function testFindNextLiving_2v1_soloIsOnlySurvivor()
+  logger.info("testFindNextLiving_2v1_soloIsOnlySurvivor")
+  -- Team-of-1's enemies are slots {1, 2}; both team-of-2 members alive.
+  -- Cursor walks 1 → 2 → 1 → 2. After slot 1 dies, cursor lands on slot 2
+  -- and stays there (no other living target).
+  local enemies = { 1, 2 }
+  local picked, slot, nextLiving = TeamUtils.findNextLiving(enemies, 2, aliveExcept({ 1 }))
+  assert(picked == 2 and slot == 2, "with slot 1 dead, should pick slot 2")
+  assert(nextLiving == nil, "no other living => nextLiving nil; caller keeps cursor where it is")
+end
+
+--------------------------------------------------
 -- Run all tests
 --------------------------------------------------
 
@@ -322,5 +405,14 @@ testGetWinningTeam_team1Wins()
 testGetWinningTeam_team2Wins()
 testGetWinningTeam_noWinnerYet()
 testGetWinningTeam_draw()
+
+testFindNextLiving_allAlive_picksStart_advancesByOne()
+testFindNextLiving_skipsDeadFromStart()
+testFindNextLiving_wrapsForwardOverDead()
+testFindNextLiving_allDeadReturnsNil()
+testFindNextLiving_emptyListReturnsNil()
+testFindNextLiving_startIndexOutOfRangeWraps()
+testFindNextLiving_advanceAlternatesBetweenTwo()
+testFindNextLiving_2v1_soloIsOnlySurvivor()
 
 logger.info("All TeamUtilsTests passed!")

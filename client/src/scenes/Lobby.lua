@@ -208,7 +208,15 @@ function Lobby:initLobbyMenu()
     local count = tonumber(mode.playerCount) or tonumber(mode.maxPlayers) or tonumber(mode.minPlayers) or 2
     count = math.max(2, math.floor(count))
 
-    if openRoom then
+    -- "Open" only relaxes the start threshold for FFA-like modes where each
+    -- player is their own team. Team modes (1v2, 2v1, 2v2 etc.) have a fixed
+    -- roster shape — playersPerTeam fixes the headcount — so an Open Team
+    -- room is still "anyone can drop in," but the match can't start until
+    -- the full roster is in. Setting minPlayers below the required total
+    -- here would let the server hit start_match with an under-roster and
+    -- crash inside TeamUtils.createTeams when playersPerTeam[teamId] is nil.
+    local isFfa = (mode.playersPerTeam == 1)
+    if openRoom and isFfa then
       mode.minPlayers = 2
       mode.maxPlayers = count
     else

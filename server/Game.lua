@@ -48,6 +48,12 @@ end)
 ---@return ServerGame game
 function Game.createFromRoomState(room)
   local game = Game(room.players)
+  -- Honor a roomRequest-supplied seed for reproducible scenarios (e2e tests,
+  -- "play the same opening every run" debugging). Falls back to the random
+  -- seed Game's constructor already picked when no override was supplied.
+  if room.gameMode and room.gameMode.seedOverride then
+    game.seed = room.gameMode.seedOverride
+  end
 
   local roomIsRanked, reasons = room:rating_adjustment_approved()
   game.ranked = roomIsRanked
@@ -195,6 +201,17 @@ function Game:getPartialReplay(compressInputs)
         end
       end
     end
+    -- Include the loose-sync authoritative event log so a spectator or rejoiner
+    -- can reconstruct historical garbage + death deliveries during catch-up.
+    -- Without this, the only state they have is each stack's input stream;
+    -- applyGarbageEvent / applyDeathEvent never fire for pre-join events,
+    -- recipients end up with less garbage than they should, and dead senders
+    -- run past their game_over_clock instead of stopping when the sim reaches
+    -- the historical death frame.
+    if self.replay.crossPlayerEvents then
+      self.replay.crossPlayerEvents.garbage = self.garbageEvents
+      self.replay.crossPlayerEvents.deaths = self.deathEvents
+    end
     return self.replay
   end
 end
@@ -230,8 +247,11 @@ function Game:receiveOutcomeReport(player, outcome)
     --if clients disagree, the server needs to decide the outcome, perhaps by watching a replay it had created during the game.
     --for now though...
     local reportSummary = {}
-    for i, p in ipairs(self.players) do
-      reportSummary[i] = string.format("%s=%s", tostring(p.name), tostring(self.outcomeReports[i]))
+    -- pairs not ipairs: by the time clients disagree on outcome, a mid-match
+    -- leaver may have nil'd their slot in self.players, and ipairs would halt
+    -- there — making the diagnostic log lie about which players were involved.
+    for slot, p in pairs(self.players) do
+      reportSummary[#reportSummary + 1] = string.format("slot%d:%s=%s", slot, tostring(p.name), tostring(self.outcomeReports[slot]))
     end
     logger.warn("clients disagree on game outcome (" .. table.concat(reportSummary, ", ") .. "). Server declares a tie.")
     result = 0
@@ -367,14 +387,17 @@ function Game:finalizeReplay(result)
     self.replay.crossPlayerEvents.deaths = self.deathEvents
   end
 
-  for i, player in ipairs(self.players) do
+  -- pairs not ipairs: a mid-match leaver's slot is nil'd in self.players,
+  -- and ipairs halting at the hole would skip anonymizing surviving players
+  -- past it — leaking their names into the saved replay despite their setting.
+  for slot, player in pairs(self.players) do
     if player.save_replays_publicly == "anonymously" then
-      local playerMetadata = self.replay.metadata.stacks[i]
+      local playerMetadata = self.replay.metadata.stacks[slot]
       ---@cast playerMetadata StackMetadata
       playerMetadata.name = "anonymous"
-      playerMetadata.publicId = - i
+      playerMetadata.publicId = - slot
       if playerMetadata.publicId == self.replay.metadata.winnerId then
-        self.replay.metadata.winnerId = - i
+        self.replay.metadata.winnerId = - slot
       end
     end
   end

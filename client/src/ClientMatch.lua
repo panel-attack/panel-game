@@ -177,6 +177,26 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
     clientMatch.stacks[i] = clientStack
   end
 
+  -- Loose-sync catch-up: when a spectator / mid-match joiner receives a
+  -- partial replay, the inputs cover the historical sim but garbage and
+  -- death deliveries were driven by G/D events at runtime — not derivable
+  -- from inputs alone. Queue them up here so ClientMatch:run can replay
+  -- them at the right sender frames as catch-up progresses.
+  --
+  -- Skip for completed replays: those play back offline (looseSyncActive
+  -- false), so deliverOutgoingGarbage / pushGarbageTo direct-push from the
+  -- sim. Applying events on top would double-deliver.
+  if not replay.metadata.completed and replay.crossPlayerEvents then
+    clientMatch.pendingHistoricalGarbage = {}
+    for i, ev in ipairs(replay.crossPlayerEvents.garbage or {}) do
+      clientMatch.pendingHistoricalGarbage[i] = ev
+    end
+    clientMatch.pendingHistoricalDeaths = {}
+    for i, ev in ipairs(replay.crossPlayerEvents.deaths or {}) do
+      clientMatch.pendingHistoricalDeaths[i] = ev
+    end
+  end
+
   clientMatch:sharedSetup()
 
   return clientMatch
@@ -250,6 +270,12 @@ function ClientMatch:run()
     return
   end
 
+  -- Drain any queued historical G/D events that the sim has now caught up
+  -- to. Deaths run first so the sender's stack stops at game_over_clock
+  -- before this tick advances it further; garbage second so it lands while
+  -- the recipient's stack is still healthy enough to receive it.
+  self:drainPendingHistoricalEvents()
+
   for _, stack in ipairs(self.stacks) do
     -- if stack.cpu then
     --   stack.cpu:run(stack)
@@ -289,6 +315,54 @@ function ClientMatch:run()
   if self.engine:hasEnded() then
     self.engine:handleMatchEnd()
     self:handleMatchEnd()
+  end
+end
+
+---Drain historical G/D events whose senderFrame has been reached by the
+---corresponding sender stack. Called once per ClientMatch:run tick so events
+---land at approximately the same point in the sim as they did live.
+---No-op when there is no queue (most matches).
+---
+---An event is "ready" when the sender stack's stopWatch has reached the
+---event's senderFrame, OR the sender's stack is already game-over (any
+---remaining events for that sender can't sensibly wait any longer).
+function ClientMatch:drainPendingHistoricalEvents()
+  local function isReady(ev)
+    local senderStack = self.engine and self.engine.stacks[ev.sender]
+    if not senderStack then return true end -- nowhere to defer to; just apply
+    local frame = ev.senderFrame or 0
+    if (senderStack.stopWatch or 0) >= frame then return true end
+    if senderStack.game_over_clock and senderStack.game_over_clock > 0 then return true end
+    return false
+  end
+
+  local deaths = self.pendingHistoricalDeaths
+  if deaths and #deaths > 0 then
+    local kept = {}
+    for _, ev in ipairs(deaths) do
+      if isReady(ev) then
+        local stack = self.stacks[ev.sender]
+        if stack and stack.engine and not stack.is_local then
+          self:_applyDeathEventNow(ev, stack)
+        end
+      else
+        kept[#kept + 1] = ev
+      end
+    end
+    self.pendingHistoricalDeaths = kept
+  end
+
+  local garbage = self.pendingHistoricalGarbage
+  if garbage and #garbage > 0 then
+    local kept = {}
+    for _, ev in ipairs(garbage) do
+      if isReady(ev) then
+        self:_applyGarbageEventNow(ev)
+      else
+        kept[#kept + 1] = ev
+      end
+    end
+    self.pendingHistoricalGarbage = kept
   end
 end
 
@@ -1087,6 +1161,29 @@ function ClientMatch:applyGarbageEvent(body)
     return
   end
 
+  -- Defer only when the sender's sim is FAR behind senderFrame (catch-up
+  -- for spectators / rejoiners). For an in-sync client the sender's view-
+  -- stack lags by network latency only — a handful of frames at most — and
+  -- we keep the existing "apply immediately" path so garbage drops feel
+  -- responsive. The 60-frame threshold (~1s at 60fps) easily covers normal
+  -- network jitter while catching the catch-up case where we're seconds or
+  -- minutes behind. See drainPendingHistoricalEvents.
+  local senderStack = body.sender and self.engine and self.engine.stacks[body.sender]
+  local catchupDeferFrames = 60
+  if senderStack and body.senderFrame
+      and (senderStack.stopWatch or 0) + catchupDeferFrames < body.senderFrame then
+    self.pendingHistoricalGarbage = self.pendingHistoricalGarbage or {}
+    self.pendingHistoricalGarbage[#self.pendingHistoricalGarbage + 1] = body
+    return
+  end
+
+  self:_applyGarbageEventNow(body)
+end
+
+---Internal: apply a GarbageEvent without the catch-up defer check.
+---Called by applyGarbageEvent (in-sync path) and by drainPendingHistoricalEvents.
+---@param body table parsed event payload
+function ClientMatch:_applyGarbageEventNow(body)
   for _, recipientIndex in ipairs(body.recipients) do
     local stack = self.stacks[recipientIndex]
     if stack and stack.engine then
@@ -1104,6 +1201,47 @@ function ClientMatch:applyGarbageEvent(body)
         garbageCopy[j] = shallowcpy(g)
       end
       stack.engine:receiveGarbage(garbageCopy)
+    end
+  end
+
+  -- Self-heal the round-robin cursor: G is the canonical "who got hit"
+  -- per delivery (the server even redirects when the original recipient is
+  -- dead). distributeGarbageToTargets advances each client's cursor based
+  -- on local liveness view, which can briefly diverge at death boundaries
+  -- — fine for the bookkeeping, but refreshSharedModeTelegraphTargets uses
+  -- the cursor to draw next-target arrows, so the divergence is player-
+  -- visible. Re-anchor the cursor to the just-hit recipient's position +
+  -- next-living, so every client's telegraph points the same place.
+  -- Shared mode only: G in "all" mode carries every recipient at once.
+  if body.sender and type(body.recipients) == "table" and #body.recipients == 1 then
+    local engine = self.engine
+    local teamState = engine and engine.teamGarbageState and engine.teamGarbageState[body.sender]
+    if teamState and teamState.enemyIndices then
+      local hitRecipient = body.recipients[1]
+      local stacks = engine.stacks
+      -- Find the hit recipient's position in the enemy list, then advance
+      -- the cursor to the next-living after that position. Same predicate
+      -- as Match.lua's engine cursor and Room.lua's _redirectIfDead — one
+      -- rule, three call sites via TeamUtils.findNextLiving.
+      local hitIndex
+      for i, slot in ipairs(teamState.enemyIndices) do
+        if slot == hitRecipient then
+          hitIndex = i
+          break
+        end
+      end
+      if hitIndex then
+        local _, _, nextLivingIndex = TeamUtils.findNextLiving(
+          teamState.enemyIndices, hitIndex,
+          function(slot)
+            local s = stacks[slot]
+            return s and not s:game_ended()
+          end
+        )
+        if nextLivingIndex then
+          teamState.currentTargetIndex = nextLivingIndex
+        end
+      end
     end
   end
 end
@@ -1130,6 +1268,25 @@ function ClientMatch:applyDeathEvent(body)
     return
   end
 
+  -- Defer only when significantly behind (catch-up). For in-sync clients we
+  -- want death to mark game_over_clock immediately so the sim doesn't run
+  -- the sender's view-stack past the death frame. See applyGarbageEvent
+  -- for the rationale on the 60-frame threshold.
+  local engineStack = self.engine and self.engine.stacks[body.sender]
+  local catchupDeferFrames = 60
+  if engineStack and (engineStack.stopWatch or 0) + catchupDeferFrames < body.senderFrame then
+    self.pendingHistoricalDeaths = self.pendingHistoricalDeaths or {}
+    self.pendingHistoricalDeaths[#self.pendingHistoricalDeaths + 1] = body
+    return
+  end
+
+  self:_applyDeathEventNow(body, stack)
+end
+
+---Internal: apply a DeathEvent without the catch-up defer check.
+---@param body table parsed event payload
+---@param stack ClientStack the recipient client stack (must be non-nil, non-local)
+function ClientMatch:_applyDeathEventNow(body, stack)
   -- ClientStack wraps the engine stack; game_over_clock lives on engine.
   local engine = stack.engine
   if engine.game_over_clock <= 0 then

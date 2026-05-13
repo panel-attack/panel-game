@@ -381,13 +381,49 @@ function Room:start_match()
   -- createTeams with a too-large teamCount and assign team slots to non-existent
   -- player indices, which then crashes the client when it tries to wire up
   -- garbage targets for those phantom recipients.
+  --
+  -- Only override teamCount when this is an FFA-like mode (each player is their
+  -- own team — playersPerTeam == 1). For Open Team modes (1v2 / 2v1 / 2v2 etc.)
+  -- the team structure is fixed by playersPerTeam; overriding teamCount to
+  -- playerCount produced createTeams(3, 3, {1,2}) which crashed on
+  -- playersPerTeam[3] = nil.
   if self.gameMode and self:isDynamicRoster() then
     self.gameMode.playerCount = playerCount
-    self.gameMode.teamCount = playerCount
+    if self.gameMode.playersPerTeam == 1 then
+      self.gameMode.teamCount = playerCount
+    end
   elseif self.gameMode and not self.gameMode.playerCount then
     self.gameMode.playerCount = playerCount
     self.gameMode.teamCount = self.gameMode.teamCount or playerCount
   end
+
+  -- Refuse to start when the roster doesn't match the team structure. For
+  -- asymmetric modes (1v2, 2v1) playersPerTeam is a table whose sum is the
+  -- exact required headcount; for symmetric (2v2) it's a number and the total
+  -- is teamCount * playersPerTeam. Without this guard, createTeams happily
+  -- builds a team with playerIndices pointing past the end of self.players,
+  -- and every downstream call (addTarget, broadcastGarbageEvent, replay
+  -- construction) crashes on a nil stack.
+  if self.gameMode and self.gameMode.playersPerTeam then
+    local expectedTotal
+    if type(self.gameMode.playersPerTeam) == "table" then
+      expectedTotal = 0
+      for _, n in ipairs(self.gameMode.playersPerTeam) do
+        expectedTotal = expectedTotal + (tonumber(n) or 0)
+      end
+    elseif type(self.gameMode.playersPerTeam) == "number"
+        and self.gameMode.playersPerTeam > 1
+        and self.gameMode.teamCount then
+      expectedTotal = self.gameMode.teamCount * self.gameMode.playersPerTeam
+    end
+    if expectedTotal and playerCount ~= expectedTotal then
+      logger.warn(string.format(
+        "%d: cannot start match — team configuration needs exactly %d players, room has %d",
+        self.roomNumber, expectedTotal, playerCount))
+      return false
+    end
+  end
+
   -- Recompute teams every match so drop-ins / drop-outs are reflected.
   if self.gameMode and self.gameMode.teamCount and self.gameMode.playersPerTeam then
     self.teams = TeamUtils.createTeams(playerCount, self.gameMode.teamCount, self.gameMode.playersPerTeam)
@@ -404,6 +440,27 @@ function Room:start_match()
   local activePlayers = {}
   for _, p in self:eachPlayer() do
     activePlayers[#activePlayers + 1] = p
+  end
+
+  -- Dynamic-roster compaction. Open FFA after a pre-match leave can leave
+  -- self.players sparse (e.g. {[1]=A,[3]=B,[4]=C} when slot 2 left). Game,
+  -- broadcastInput, replay-stack indexing, and getInputPrefixForPlayer all
+  -- assume dense 1..N: ipairs halts at the first nil so the replay would
+  -- ship one stack instead of three, and an input prefix for slot 3 would
+  -- decode on the client to a non-existent stack and be silently dropped.
+  -- Renumber here for dynamic-roster only — fixed-roster rooms keep slot
+  -- semantics for team-color assignment and can't reach this point sparse
+  -- anyway (minPlayers == maxPlayers blocks starting until all slots fill).
+  if self:isDynamicRoster() then
+    local compactedPlayers = {}
+    local compactedWins = {}
+    for denseIndex, player in ipairs(activePlayers) do
+      compactedPlayers[denseIndex] = player
+      compactedWins[denseIndex] = self.win_counts[player.player_number] or 0
+      player.player_number = denseIndex
+    end
+    self.players = compactedPlayers
+    self.win_counts = compactedWins
   end
 
   for _, player in ipairs(activePlayers) do
@@ -443,7 +500,12 @@ end
 function Room:prepare_character_select()
   logger.debug("Called Server.lua Room.character_select")
   self:noteActivity()
-  for _, player in ipairs(self.players) do
+  -- pairs not ipairs: post-match, the player who was queued for removal
+  -- (mid-match leave, pendingLeaverRemovals) may have already nil'd their
+  -- slot. Surviving players past that hole would otherwise stay stuck on
+  -- "playing" state because their state reset got skipped — every next
+  -- match-start handshake then needs them to manually re-ready.
+  for _, player in pairs(self.players) do
     player.state = "character select"
     player.cursor = "__Ready"
     player.ready = false
@@ -661,8 +723,14 @@ function Room:broadcastInput(input, sender)
       or NetworkProtocol.getInputPrefixForPlayer(1)
   local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, input)
 
-  for i, player in ipairs(self.players) do
-    if i ~= senderNum then
+  -- pairs not ipairs: self.players goes sparse mid-match when someone leaves
+  -- (_removeFromPlayersAndAnnounce nils out the slot to preserve team
+  -- assignments). ipairs halts at the first nil, so any player past the hole
+  -- silently stops receiving relayed inputs — their view-stack of every other
+  -- player freezes and no garbage flows. Use pairs so every surviving player
+  -- gets the broadcast regardless of slot gaps.
+  for slot, player in pairs(self.players) do
+    if slot ~= senderNum then
       player:send(inputMessage)
     end
   end
@@ -703,27 +771,26 @@ function Room:_redirectIfDead(senderSlot, originalRecipient)
 
   if #enemySlots == 0 then return nil end
 
-  -- Find the original recipient's position in the enemy list, walk forward
-  -- (with wrap) to find the next living. Walking from the original position
-  -- (rather than from slot 1) is deterministic and matches the round-robin
-  -- semantic — "if my pick is dead, give it to the next-living after them."
+  -- Find the original recipient's position in the enemy list, then walk
+  -- forward to the next living. We start at the position AFTER original
+  -- (since we already know original is dead). TeamUtils.findNextLiving
+  -- walks with wrap so we don't need explicit offset bookkeeping; using
+  -- it here keeps the round-robin semantics aligned with the engine's
+  -- cursor logic in Match.lua and the client's cursor self-heal — three
+  -- sites, one rule.
   local startIdx = 1
   for i, slot in ipairs(enemySlots) do
     if slot == originalRecipient then
-      startIdx = i
+      startIdx = (i % #enemySlots) + 1
       break
     end
   end
 
-  for offset = 1, #enemySlots do
-    local idx = ((startIdx - 1 + offset) % #enemySlots) + 1
-    local candidate = enemySlots[idx]
-    if not self.game.eliminatedPlayers[candidate] then
-      return candidate
-    end
-  end
-
-  return nil
+  local eliminatedPlayers = self.game.eliminatedPlayers
+  local _, pickedSlot = TeamUtils.findNextLiving(enemySlots, startIdx, function(slot)
+    return not eliminatedPlayers[slot]
+  end)
+  return pickedSlot
 end
 
 ---Relay a loose-sync GarbageEvent. Body is JSON sent from the client; we
@@ -794,7 +861,9 @@ function Room:broadcastGarbageEvent(sender, body)
   -- needs the relay back to drive the visual on their view-stack of the
   -- recipient. This is the only path that produces the visual, so nobody
   -- sees an unconfirmed hit.
-  for _, player in ipairs(self.players) do
+  -- pairs not ipairs: self.players goes sparse on mid-match leave; see
+  -- broadcastInput for the rationale.
+  for _, player in pairs(self.players) do
     player:send(message)
   end
 
@@ -855,7 +924,8 @@ function Room:broadcastDeathEvent(sender, body)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
     NetworkProtocol.serverMessageTypes.deathEvent.prefix, stamped)
 
-  for _, player in ipairs(self.players) do
+  -- pairs not ipairs: see broadcastInput for sparse-self.players rationale.
+  for _, player in pairs(self.players) do
     if player ~= sender then
       player:send(message)
     end
@@ -943,7 +1013,8 @@ function Room:tickArbitration(nowMs)
   local encoded = NetworkProtocol.markedMessageForTypeAndBody(
     message.messageType.prefix, json.encode(message.messageText))
 
-  for _, player in ipairs(self.players) do
+  -- pairs not ipairs: see broadcastInput for sparse-self.players rationale.
+  for _, player in pairs(self.players) do
     player:send(encoded)
   end
   for _, spec in pairs(self.spectators) do
@@ -985,7 +1056,13 @@ end
 -- broadcasts the message to everyone in the room
 -- if an optional sender is specified, they are excluded from the broadcast
 function Room:broadcastJson(message, sender)
-  for _, player in ipairs(self.players) do
+  -- pairs not ipairs: self.players goes sparse on mid-match leave. This is
+  -- the load-bearing fan-out for settings updates, playerLeftRoom, ranked
+  -- status, taunts, pause notifications, and many more — every JSON message
+  -- the room sends out goes through here. A silent halt at a hole means a
+  -- surviving player past the hole stops getting room-level state updates
+  -- entirely; their UI freezes on whatever state it last knew.
+  for _, player in pairs(self.players) do
     if player ~= sender then
       player:sendJson(message)
     end
@@ -1273,7 +1350,12 @@ function Room:voidByLeave(leaver, reason)
     local stamped = json.encode(synthBody)
     local message = NetworkProtocol.markedMessageForTypeAndBody(
       NetworkProtocol.serverMessageTypes.deathEvent.prefix, stamped)
-    for _, player in ipairs(self.players) do
+    -- pairs not ipairs: self.players is already sparse here in many cases
+    -- (the leaver's slot may have been nil'd by a previous _removeFromPlayers
+    -- call in the same chain) and any halt before reaching surviving players
+    -- past the gap would leave them waiting forever for a death event that
+    -- never arrives — exactly the "view-stack freezes mid-match" symptom.
+    for _, player in pairs(self.players) do
       if player ~= leaver then
         player:send(message)
       end

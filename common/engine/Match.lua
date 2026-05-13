@@ -319,34 +319,26 @@ function Match:distributeGarbageToTargets()
             local teamState = self.teamGarbageState and self.teamGarbageState[senderIndex]
 
             if teamState and #teamState.enemyIndices > 0 then
-              local startIndex = teamState.currentTargetIndex
-              -- Pick the next living target from the current cursor.
-              local targetStack = nil
-              local pickedIndex = nil
-              local i = startIndex
-              for _ = 1, #teamState.enemyIndices do
-                local candidate = self.stacks[teamState.enemyIndices[i]]
-                if candidate and not candidate:game_ended() then
-                  targetStack = candidate
-                  pickedIndex = i
-                  break
+              local stacks = self.stacks
+              local _, pickedSlot, nextLivingIndex = TeamUtils.findNextLiving(
+                teamState.enemyIndices,
+                teamState.currentTargetIndex,
+                function(slot)
+                  local s = stacks[slot]
+                  return s and not s:game_ended()
                 end
-                i = (i % #teamState.enemyIndices) + 1
-              end
+              )
 
-              if targetStack then
-                -- Advance to the NEXT living target after the one we just
-                -- picked, so rotation stays over living players only.
-                local nextIndex = pickedIndex
-                for _ = 1, #teamState.enemyIndices do
-                  nextIndex = (nextIndex % #teamState.enemyIndices) + 1
-                  local nextCandidate = self.stacks[teamState.enemyIndices[nextIndex]]
-                  if nextCandidate and not nextCandidate:game_ended() then
-                    teamState.currentTargetIndex = nextIndex
-                    break
-                  end
+              if pickedSlot then
+                -- Advance the cursor to the next-living-after-picked so
+                -- rotation stays over living players only. If only the
+                -- picked target is alive, leave the cursor where it is —
+                -- next delivery will hit the same lone survivor.
+                if nextLivingIndex then
+                  teamState.currentTargetIndex = nextLivingIndex
                 end
 
+                local targetStack = stacks[pickedSlot]
                 local garbageCopy = {}
                 for j, g in ipairs(garbageDelivery) do
                   garbageCopy[j] = shallowcpy(g)
@@ -707,12 +699,30 @@ function Match.createFromReplay(replay)
 
   for _, garbageFlow in ipairs(replay.garbageFlows) do
     local senderStack = match.stacks[garbageFlow.source]
-    for _, recipientIndex in ipairs(garbageFlow.recipients) do
-      local recipientStack = match.stacks[recipientIndex]
-      table.insert(match.garbageTargets[garbageFlow.source], recipientStack)
-      table.insert(match.garbageSources[recipientStack], match.stacks[garbageFlow.source])
-      recipientStack.incomingGarbage.illegalStuffIsAllowed = senderStack.outgoingGarbage.illegalStuffIsAllowed
-      recipientStack.incomingGarbage.treatMetalAsCombo = senderStack.outgoingGarbage.treatMetalAsCombo
+    local sourceTargets = match.garbageTargets[garbageFlow.source]
+    -- Skip flows whose source has no stack (replay shape disagrees with stack
+    -- count, e.g. a server bug yielded a flow pointing at a missing player).
+    -- Hard-crashing the client just because one flow is malformed strands the
+    -- match — log loudly and continue so the rest of the replay still loads.
+    if senderStack and sourceTargets then
+      for _, recipientIndex in ipairs(garbageFlow.recipients) do
+        local recipientStack = match.stacks[recipientIndex]
+        local recipientSources = recipientStack and match.garbageSources[recipientStack]
+        if recipientStack and recipientSources then
+          table.insert(sourceTargets, recipientStack)
+          table.insert(recipientSources, senderStack)
+          recipientStack.incomingGarbage.illegalStuffIsAllowed = senderStack.outgoingGarbage.illegalStuffIsAllowed
+          recipientStack.incomingGarbage.treatMetalAsCombo = senderStack.outgoingGarbage.treatMetalAsCombo
+        else
+          logger.warn(string.format(
+            "Match.createFromReplay: skipping garbage flow %d->%d (recipient stack missing in replay with %d stacks)",
+            garbageFlow.source, recipientIndex, #match.stacks))
+        end
+      end
+    else
+      logger.warn(string.format(
+        "Match.createFromReplay: skipping garbage flow from source %d (source stack missing in replay with %d stacks)",
+        garbageFlow.source, #match.stacks))
     end
   end
 
