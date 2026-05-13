@@ -363,6 +363,85 @@ local function test_arbitration_2v2_team_wipe()
 end
 
 ----------------------------------------------------------------------
+-- Test: KO arbitration fires for sequential deaths in separate windows
+----------------------------------------------------------------------
+-- Regression for the sticky-flag bug from the Amber/Bev/Koozie hung match
+-- (and bug #10 generally). Pre-fix: arbitrationEmitted set on the first
+-- death's window and never reset, so any subsequent death's window opened
+-- but tickArbitration silently returned early at the "already emitted"
+-- guard. The match never got its server-authoritative end signal even
+-- though every other team was eliminated.
+
+local function test_arbitration_sequentialDeaths_each_window_fires()
+  logger.info("test_arbitration_sequentialDeaths_each_window_fires")
+  local p1 = makePlayer("ls-seq-1", "LSseq1", 2101)
+  local p2 = makePlayer("ls-seq-2", "LSseq2", 2102)
+  local p3 = makePlayer("ls-seq-3", "LSseq3", 2103)
+  local p4 = makePlayer("ls-seq-4", "LSseq4", 2104)
+
+  local advance, restore = withMockSocketGetTime(5000.0)
+  local ok, err = pcall(function()
+    local room = Room(1, { p1, p2, p3, p4 }, GameModes.getPreset(GameModes.IDs.FOUR_PLAYER_TEAM_VS_ALL))
+    for _, p in ipairs({ p1, p2, p3, p4 }) do
+      p:updateSettings({ wants_ready = true, loaded = true, ready = true })
+    end
+    assert(room.game, "team match should have started")
+
+    for _, p in ipairs({ p1, p2, p3, p4 }) do
+      p.connection.outgoingMessageQueue:clear()
+      p.connection.outgoingInputQueue:clear()
+    end
+
+    -- First death: p1 (team 1) at T=5000.0s. Arbitration window 200ms.
+    room:broadcastDeathEvent(p1, json.encode({ senderFrame = 500, reason = "topOut" }))
+    advance(0.25) -- past the 200ms window
+    room:tickArbitration(math.floor(socket.gettime() * 1000))
+    assert(room.arbitrationEmitted, "first arbitration should fire (team 1 has p2 alive)")
+
+    -- One K should be in each player's queue.
+    local p3KCountFirst = countByPrefix(p3.connection.outgoingInputQueue, "K")
+    assert(p3KCountFirst == 1, "p3 should have 1 K after first death, got " .. p3KCountFirst)
+
+    -- Second death: p2 (also team 1) at T=5005s — 5 seconds later, well past
+    -- the first arbitration's window. With team 1 wiped, team 2 should win.
+    advance(5.0)
+    room:broadcastDeathEvent(p2, json.encode({ senderFrame = 1500, reason = "topOut" }))
+    advance(0.25)
+    room:tickArbitration(math.floor(socket.gettime() * 1000))
+
+    -- POST-FIX expectation: second arbitration fires too.
+    -- Pre-fix: arbitrationEmitted sticky → tickArbitration returns early →
+    -- p3 still has only 1 K and the match is unresolved.
+    local p3KCountSecond = countByPrefix(p3.connection.outgoingInputQueue, "K")
+    assert(p3KCountSecond == 2,
+      "second arbitration should fire after a separate-window death; "
+      .. "p3 should have 2 K total, got " .. p3KCountSecond
+      .. " (sticky-flag bug)")
+
+    -- The 2nd K should declare team 2 (p3 or p4) as winnerSlot.
+    local q = p3.connection.outgoingInputQueue
+    local lastK
+    for i = q.first, q.last do
+      local m = q[i]
+      if type(m) == "string" and m:sub(1, 1) == "K" then
+        local body = m:sub(2)
+        local endMarker = body:find("←J←")
+        if endMarker then body = body:sub(1, endMarker - 1) end
+        lastK = json.decode(body)
+      end
+    end
+    assert(lastK, "p3 must have received the 2nd K")
+    assert(lastK.winnerSlot == 3 or lastK.winnerSlot == 4,
+      "2nd K should declare team 2 (p3 or p4) as winner, got winnerSlot="
+      .. tostring(lastK.winnerSlot))
+
+    room:close()
+  end)
+  restore()
+  if not ok then error(err) end
+end
+
+----------------------------------------------------------------------
 -- Test 21: Abort marks eliminated but keeps the game alive
 ----------------------------------------------------------------------
 -- Expected: in loose-sync, a single player aborting does NOT immediately end
@@ -632,6 +711,7 @@ test_arbitration_singleDeath_emits_winner()
 test_arbitration_doubleDeath_tie()
 test_arbitration_window_extends()
 test_arbitration_2v2_team_wipe()
+test_arbitration_sequentialDeaths_each_window_fires()
 test_abort_marks_eliminated_keeps_game_alive()
 test_partialRoom_spectators_allowed()
 test_voidByLeave_flags_crash_incident()

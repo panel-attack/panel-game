@@ -1017,6 +1017,15 @@ function Room:broadcastDeathEvent(sender, body)
     serverArrivalMs = parsed.serverWallClockMs,
   }
   self.arbitrationWindowEndsAtMs = parsed.serverWallClockMs + self:_arbitrationWindowMs()
+  -- Reset the "already emitted" sentinel so this new death's window actually
+  -- gets to fire. Without this, tickArbitration's early-return guard at the
+  -- arbitrationEmitted check would silently drop every arbitration window
+  -- after the first one in a match — exactly the symptom seen in the
+  -- Amber/Bev/Koozie hung-match (Bevy died → arbitration fired, Koozie died
+  -- 5 seconds later → arbitration window opened but tickArbitration kept
+  -- returning early because arbitrationEmitted stayed true from Bevy's
+  -- earlier fire).
+  self.arbitrationEmitted = false
 
   local stamped = json.encode(parsed)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
