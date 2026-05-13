@@ -440,12 +440,14 @@ local function processLeaveRoomMessage(self, message)
     -- the room-leave path.
     pcall(function() TraceWriter.endMatch() end)
 
-    -- Immediately clear stale local lobby room assignment so room-invite UI cannot linger
-    -- while waiting for the next lobbyStateV2 broadcast.
+    -- Immediately clear the local player's room assignment so room-invite UI
+    -- cannot linger while waiting for the next lobbyStateV2 broadcast. Do NOT
+    -- delete the room itself from lobbyDataV2 — open rooms can outlive a single
+    -- leaver, and removing them here makes the lobby visually drop a room that
+    -- still has players in it (server's next broadcast is authoritative on
+    -- room presence). leavingRoomNumber is kept as a local-only hint and is
+    -- intentionally unused now.
     if self.lobbyDataV2 then
-      if leavingRoomNumber then
-        self.lobbyDataV2.rooms[leavingRoomNumber] = nil
-      end
       local localId = GAME.localPlayer and GAME.localPlayer.publicId
       if localId and self.lobbyDataV2.players[localId] then
         self.lobbyDataV2.players[localId].roomNumber = nil

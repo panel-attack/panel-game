@@ -1304,10 +1304,10 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     end
     lines[#lines + 1] = roomTitle .. "  " .. slotsText
     -- Title row is named after the host (room.players[1]); tint it with the host's
-    -- team color so the info row matches the per-player rows below it. Without
-    -- this, the host's identity line looked uncolored while every other seat
-    -- carried a tint.
-    local titleTeamIdx = (room.players and room.players[1]) and getTeamSlotInfo(room, 1) or nil
+    -- team color so the info row matches the per-player rows below it. The host's
+    -- real slot is playerSlots[1] (falls back to 1 for pre-flag protocol or 1v1).
+    local hostSlot = (room.playerSlots and room.playerSlots[1]) or 1
+    local titleTeamIdx = (room.players and room.players[1]) and getTeamSlotInfo(room, hostSlot) or nil
     rowTints[#rowTints + 1] = titleTeamIdx and teamRowTint(titleTeamIdx) or false
 
     -- Garbage subtitle (only renders something in shared team modes).
@@ -1321,12 +1321,15 @@ function Lobby:createRoomButtons(personalizedLobbyData)
 
     -- Player rows. Slot numbers are intentionally hidden from the UI; the
     -- per-row color stripe (via rowTints + getTeamSlotInfo) carries the team
-    -- identity instead.
+    -- identity instead. `playerSlots[i]` is the actual server slot for the
+    -- dense-array index i (sparse rooms — e.g. slots {1,3} in a 2v3 — must
+    -- map index→slot to color the row by the right team).
     for i, playerId in ipairs(room.players) do
       local name = (personalizedLobbyData.players[playerId] and personalizedLobbyData.players[playerId].name) or "?"
       local suffix = (playerId == localPublicId) and " (You)" or ""
       lines[#lines + 1] = name .. suffix
-      local tIdx = (getTeamSlotInfo(room, i))
+      local slot = (room.playerSlots and room.playerSlots[i]) or i
+      local tIdx = (getTeamSlotInfo(room, slot))
       rowTints[#rowTints + 1] = tIdx and teamRowTint(tIdx) or false
     end
 
@@ -2379,7 +2382,8 @@ function Lobby:updateRoomPanel(updateInfo)
           for i, playerId in ipairs(room.players) do
             local playerInfo = GAME.netClient.lobbyDataV2.players[playerId]
             local playerName = playerInfo and playerInfo.name or "?"
-            local teamIndex = getTeamIndexForSlot(room, i)
+            local slot = (room.playerSlots and room.playerSlots[i]) or i
+            local teamIndex = getTeamIndexForSlot(room, slot)
             if teamIndex then
               teamBuckets[teamIndex] = teamBuckets[teamIndex] or {}
               teamBuckets[teamIndex][#teamBuckets[teamIndex] + 1] = playerName

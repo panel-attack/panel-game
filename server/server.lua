@@ -365,7 +365,7 @@ function Server:setLobbyChanged()
 end
 
 ---@alias LobbyPlayerV2 { publicId: PublicPlayerID, name: string, state: string, ratings: table<GameModeID, number?>, roomNumber: roomNumber? }
----@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], spectators: PublicPlayerID[], wins: integer[], teamWins: integer[]?, gameStartTime: integer?, openRoom: boolean? }
+---@alias LobbyRoomV2 { roomNumber: roomNumber, state: string, gameModeId: GameModeID, players: PublicPlayerID[], playerSlots: integer[], spectators: PublicPlayerID[], wins: integer[], teamWins: integer[]?, gameStartTime: integer?, openRoom: boolean? }
 ---@alias LobbyStateV2 { players: table<PublicPlayerID, LobbyPlayerV2>, rooms: table<roomNumber, LobbyRoomV2> }
 
 ---@return LobbyStateV2
@@ -435,18 +435,23 @@ function Server:lobbyStateV2()
       lobbyRoom.gameStartTime = os.date("*t", to_UTC(room.game.creationTime))
     end
 
-    -- Iterate by slot (sparse-safe): a partially-filled 2v2 room may have
-    -- {[1]=A, [3]=B} after B clicks "join purple", and ipairs would silently
-    -- stop at slot 2. eachPlayer skips holes and walks 1..maxPlayers, so the
-    -- lobby snapshot correctly shows slot 3 as occupied even though slot 2 is
-    -- still open.
-    for i, player in room:eachPlayer() do
+    -- Emit players as a COMPACT array (1..N), with a parallel `playerSlots`
+    -- carrying the actual server slot for each entry. Slot numbers are sparse
+    -- on the server (a partially-filled 2v3 may have {[1]=A, [3]=B} after B
+    -- clicks "join Team B") but the lobby wire format must be dense, otherwise
+    -- the client's ipairs/# stop at the first hole and non-contiguous joiners
+    -- silently disappear from the lobby UI. Team identity and per-row tinting
+    -- still need the actual slot, so they're carried alongside in playerSlots.
+    lobbyRoom.playerSlots = {}
+    for slot, player in room:eachPlayer() do
       if players[player.publicPlayerID] then
         players[player.publicPlayerID].roomNumber = room.roomNumber
         players[player.publicPlayerID].state = roomState
       end
-      lobbyRoom.players[i] = player.publicPlayerID
-      lobbyRoom.wins[i] = room.win_counts[i]
+      local denseIndex = #lobbyRoom.players + 1
+      lobbyRoom.players[denseIndex] = player.publicPlayerID
+      lobbyRoom.playerSlots[denseIndex] = slot
+      lobbyRoom.wins[denseIndex] = room.win_counts[slot]
     end
 
     if room.team_win_counts then
