@@ -24,6 +24,7 @@ local FAILURE_THRESHOLD      = 5
 local FAILURE_WINDOW_SECONDS = 60
 local DEFAULT_ROOT_DIR       = "crash_reports"
 local SCHEMA_VER             = 1
+local SWEEP_AGE_SECONDS      = 7 * 24 * 60 * 60  -- 7 days per the plan
 
 ---@class CrashReports
 ---@field bucketCap integer
@@ -180,6 +181,60 @@ local function writeServerSlice(self, room, incidentId)
     logger.warn("[CrashReports] failed to write server.json for "
       .. incidentId .. ": " .. tostring(err))
   end
+end
+
+-- ---------------------------------------------------------------------
+-- Sweeper. Moves "collecting" incidents older than SWEEP_AGE_SECONDS into
+-- "timed_out" + relocates their JSON file from pending_incidents/ to
+-- complete_incidents/. Wrapped in pcall at the public entry so a corrupt
+-- file or filesystem hiccup never propagates into the server's update
+-- loop.
+-- ---------------------------------------------------------------------
+
+local function sweepImpl(self)
+  if self.disabled then return 0 end
+
+  local now   = self.clock()
+  local moved = 0
+
+  -- Snapshot the ids first; we mutate self.incidents inside the loop
+  -- only by reassigning entry.status, but it's safer to iterate a
+  -- frozen view in case future changes start adding/removing entries.
+  local ids = {}
+  for id in pairs(self.incidents) do ids[#ids + 1] = id end
+
+  for _, id in ipairs(ids) do
+    local entry = self.incidents[id]
+    if entry and entry.status == "collecting"
+       and (now - (entry.createdAt or 0)) >= SWEEP_AGE_SECONDS then
+      entry.status = "timed_out"
+      pcall(function()
+        local fromPath = self.rootDir .. "/pending_incidents/" .. id .. ".json"
+        local toDir    = self.rootDir .. "/complete_incidents"
+        FileIO.makeDirectoryRecursive(toDir)
+        local toPath   = toDir .. "/" .. id .. ".json"
+        FileIO.writeAsJson(entry, toPath)
+        os.remove(fromPath)
+      end)
+      moved = moved + 1
+    end
+  end
+
+  return moved
+end
+
+---Public entry: move aged-out incidents from pending → complete. Returns
+---the count moved, or 0 if disabled / on internal error. Safe to call
+---repeatedly; idempotent against already-timed_out entries.
+---@return integer movedCount
+function CrashReports:sweep()
+  local ok, result = pcall(sweepImpl, self)
+  if not ok then
+    logger.warn("[CrashReports] sweep errored: " .. tostring(result))
+    recordFailure(self)
+    return 0
+  end
+  return result
 end
 
 -- ---------------------------------------------------------------------

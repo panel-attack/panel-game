@@ -356,6 +356,72 @@ local function test_flagGame_disk_failure_does_not_throw()
 end
 
 ----------------------------------------------------------------------
+-- Sweeper tests
+----------------------------------------------------------------------
+
+local function test_sweep_moves_aged_collecting_incident()
+  logger.info("test_sweep_moves_aged_collecting_incident")
+  local now = 1000000
+  local cr  = newCR({ clock = function() return now end })
+  local _, id = cr:flagGame(makeRoom(), "server_disconnect")
+
+  -- Advance the wall clock by 8 days (sweeper threshold is 7).
+  now = now + 8 * 24 * 60 * 60
+  local moved = cr:sweep()
+
+  assert(moved == 1, "expected 1 incident moved, got " .. moved)
+  assert(cr:getIncident(id).status == "timed_out",
+    "status should flip to timed_out, got " .. tostring(cr:getIncident(id).status))
+
+  local pendingPath  = cr.rootDir .. "/pending_incidents/" .. id .. ".json"
+  local completePath = cr.rootDir .. "/complete_incidents/" .. id .. ".json"
+  assert(not FileIO.fileExists(pendingPath),
+    "pending file should be gone after sweep")
+  assert(FileIO.fileExists(completePath),
+    "complete file should exist at " .. completePath)
+end
+
+local function test_sweep_leaves_fresh_incidents_alone()
+  logger.info("test_sweep_leaves_fresh_incidents_alone")
+  local now = 1000000
+  local cr  = newCR({ clock = function() return now end })
+  local _, id = cr:flagGame(makeRoom(), "server_disconnect")
+
+  -- Only 1 day old — well below the 7-day threshold.
+  now = now + 1 * 24 * 60 * 60
+  local moved = cr:sweep()
+
+  assert(moved == 0, "expected 0 incidents moved, got " .. moved)
+  assert(cr:getIncident(id).status == "collecting",
+    "fresh incident should stay collecting, got " .. tostring(cr:getIncident(id).status))
+  local pendingPath  = cr.rootDir .. "/pending_incidents/" .. id .. ".json"
+  local completePath = cr.rootDir .. "/complete_incidents/" .. id .. ".json"
+  assert(FileIO.fileExists(pendingPath))
+  assert(not FileIO.fileExists(completePath))
+end
+
+local function test_sweep_idempotent()
+  logger.info("test_sweep_idempotent")
+  local now = 1000000
+  local cr  = newCR({ clock = function() return now end })
+  cr:flagGame(makeRoom(), "test")
+  now = now + 8 * 24 * 60 * 60
+
+  local first  = cr:sweep()
+  local second = cr:sweep()
+  assert(first == 1)
+  assert(second == 0, "second sweep should not re-move; already timed_out")
+end
+
+local function test_sweep_no_throw_when_disabled()
+  logger.info("test_sweep_no_throw_when_disabled")
+  local cr = newCR()
+  cr.disabled = true
+  local moved = cr:sweep()
+  assert(moved == 0)
+end
+
+----------------------------------------------------------------------
 -- Run
 ----------------------------------------------------------------------
 
@@ -374,5 +440,9 @@ test_flagGame_writes_registry_entry()
 test_flagGame_writes_server_slice_when_replay_present()
 test_flagGame_skips_server_slice_when_no_replay()
 test_flagGame_disk_failure_does_not_throw()
+test_sweep_moves_aged_collecting_incident()
+test_sweep_leaves_fresh_incidents_alone()
+test_sweep_idempotent()
+test_sweep_no_throw_when_disabled()
 
 logger.info("All CrashReportsTests passed!")

@@ -1015,6 +1015,10 @@ function Server:update()
     self:flushLogs(currentTime)
     self:sweepIdleRooms(currentTime)
     self:sweepChallengedPlayers(currentTime)
+    -- CrashReports:sweep is pcall-internal AND we wrap again here so
+    -- nothing can disturb the per-second sweep cadence the room/idle
+    -- handling depends on.
+    pcall(function() self.crashReports:sweep() end)
     self.lastProcessTime = currentTime
   end
 
