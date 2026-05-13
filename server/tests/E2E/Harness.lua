@@ -53,6 +53,15 @@ local Harness = class(function(self, opts)
   -- avoid collisions on the sqlite Player table across back-to-back runs.
   self._uniqueSuffix = opts.uniqueSuffix
                        or string.format("%06x", math.random(0, 0xffffff))
+
+  -- Server-side error capture (set up in start(), drained in stop()).
+  -- `serverErrorCount` and `serverErrors[]` are public — scenarios can
+  -- inspect them mid-test for fine-grained assertions; stop() asserts on
+  -- them implicitly unless opts.expectErrors == true.
+  self.serverErrorCount = 0
+  self.serverErrors = {}
+  self.expectErrors = opts.expectErrors == true
+  self._origLoggerError = nil
 end)
 
 -- Build a Server with real socket/DB but stubbed persistence, bound to our test port.
@@ -83,11 +92,26 @@ function Harness:start()
 
   self.server:start()
   logger.info("[E2E Harness] Server listening on " .. self.host .. ":" .. self.port)
+
+  -- Hook logger.error so every server-side error produced during the test
+  -- gets captured on the harness. The original handler is still called so
+  -- the error continues to flow to logs/e2e.log; we just also record it.
+  -- Without this every test would have to manually grep logs for errors.
+  self._origLoggerError = logger.error
+  local capture = self
+  logger.error = function(msg, ...)
+    capture.serverErrorCount = capture.serverErrorCount + 1
+    table.insert(capture.serverErrors, tostring(msg))
+    return capture._origLoggerError(msg, ...)
+  end
+
   return self
 end
 
--- Stop the server and close every client socket. Idempotent; safe in cleanup paths
--- even when start() failed partway.
+-- Stop the server and close every client socket. Idempotent; safe in cleanup
+-- paths even when start() failed partway. Restores logger.error to whatever
+-- it was before start(). Asserts no server-side errors were captured during
+-- the test unless the scenario opted into errors via Harness({expectErrors=true}).
 function Harness:stop()
   for _, c in ipairs(self.clients) do
     pcall(function() c:close() end)
@@ -96,6 +120,16 @@ function Harness:stop()
   if self.server then
     pcall(function() self.server:stop() end)
     self.server = nil
+  end
+  if self._origLoggerError then
+    logger.error = self._origLoggerError
+    self._origLoggerError = nil
+  end
+  if not self.expectErrors and self.serverErrorCount > 0 then
+    local sample = self.serverErrors[1] or "(unknown)"
+    error("[E2E Harness] " .. self.serverErrorCount
+          .. " server-side error(s) logged during scenario; first: "
+          .. sample, 0)
   end
 end
 
