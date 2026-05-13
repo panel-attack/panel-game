@@ -383,6 +383,14 @@ function ClientMatch:drainPendingHistoricalEvents()
         local stack = self.stacks[ev.sender]
         if stack and stack.engine and not stack.is_local then
           self:_applyDeathEventNow(ev, stack)
+          pcall(function()
+            TraceWriter.localEvent("applyDrained", {
+              event       = "D",
+              sender      = ev.sender,
+              senderFrame = ev.senderFrame,
+              clock       = self.engine and self.engine.clock or nil,
+            })
+          end)
         end
       else
         kept[#kept + 1] = ev
@@ -397,6 +405,14 @@ function ClientMatch:drainPendingHistoricalEvents()
     for _, ev in ipairs(garbage) do
       if isReady(ev) then
         self:_applyGarbageEventNow(ev)
+        pcall(function()
+          TraceWriter.localEvent("applyDrained", {
+            event       = "G",
+            sender      = ev.sender,
+            senderFrame = ev.senderFrame,
+            clock       = self.engine and self.engine.clock or nil,
+          })
+        end)
       else
         kept[#kept + 1] = ev
       end
@@ -1265,6 +1281,17 @@ function ClientMatch:applyGarbageEvent(body)
       and (senderStack.stopWatch or 0) + catchupDeferFrames < body.senderFrame then
     self.pendingHistoricalGarbage = self.pendingHistoricalGarbage or {}
     self.pendingHistoricalGarbage[#self.pendingHistoricalGarbage + 1] = body
+    -- Trace capture: this G was deferred to pendingHistoricalGarbage.
+    -- Drain marker fires from drainPendingHistoricalEvents below.
+    pcall(function()
+      TraceWriter.localEvent("applyDeferred", {
+        event       = "G",
+        sender      = body.sender,
+        senderFrame = body.senderFrame,
+        senderStopWatch = senderStack.stopWatch or 0,
+        clock = self.engine and self.engine.clock or nil,
+      })
+    end)
     return
   end
 
