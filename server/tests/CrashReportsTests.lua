@@ -7,24 +7,59 @@
 
 ---@diagnostic disable: undefined-field, invisible
 local CrashReports = require("server.CrashReports")
+local FileIO       = require("server.FileIO")
 local logger       = require("common.lib.logger")
+local json         = require("common.lib.dkjson")
+local lfs          = require("lfs")
 
 ----------------------------------------------------------------------
 -- Helpers
 ----------------------------------------------------------------------
 
+-- Unique per-test directory so disk writes from one test never leak
+-- into another. Lives under crash_reports_test/ (gitignored).
+local _testDirCounter = 0
+local function freshTestDir()
+  _testDirCounter = _testDirCounter + 1
+  return "crash_reports_test/run_" .. os.time() .. "_" .. _testDirCounter
+end
+
 -- Minimal Room-shaped table for the tests. CrashReports only reads —
 -- it never writes to anything passed in here, so a plain table is enough.
+-- Default ships a tiny ReplayV3-shaped stub so the disk-write path
+-- succeeds silently. Tests that specifically want "no replay" pass
+-- opts.withReplay = false to defeat the default.
+local function defaultStubReplay()
+  return {
+    engineVersion  = "049",
+    replayVersion  = 4,
+    panelSource    = { sourceType = 3, seed = 1234 },
+    rules          = {},
+    stacks         = {},
+    garbageFlows   = {},
+    crossPlayerEvents = { garbage = {}, deaths = {} },
+    metadata       = { stacks = {}, timestamp = 1000 },
+  }
+end
+
 local function makeRoom(opts)
   opts = opts or {}
   local roomNumber = opts.roomNumber or 1
   local gameId     = opts.gameId or 100
   local startTs    = opts.startTs or 1000
+  local replay
+  if opts.withReplay == false then
+    replay = nil
+  else
+    replay = opts.withReplay or defaultStubReplay()
+  end
   return {
     roomNumber = roomNumber,
+    gameMode = { name = "VS" },
     game = {
       id           = gameId,
       creationTime = startTs,
+      getPartialReplay = function(_, _compressInputs) return replay end,
     },
     players    = opts.players    or { [1] = { publicPlayerID = 7001 } },
     spectators = opts.spectators or {},
@@ -65,6 +100,7 @@ local function newCR(opts)
   local cr = CrashReports({
     bucketCap = opts.bucketCap or 100,
     clock     = opts.clock     or function() return 1000 end,
+    rootDir   = opts.rootDir   or freshTestDir(),
   })
   logger.warn = origWarn
   return cr
@@ -223,6 +259,103 @@ local function test_game_state_not_mutated()
 end
 
 ----------------------------------------------------------------------
+-- Disk-write tests
+----------------------------------------------------------------------
+
+-- Compact ReplayV3-shaped stub. The disk-writer doesn't validate the
+-- replay's contents, just JSON-encodes whatever getPartialReplay
+-- returns. Realistic enough that a downstream loadFixture would find
+-- the load-bearing fields (seed, inputs, crossPlayerEvents).
+local function stubReplay()
+  return {
+    engineVersion  = "049",
+    replayVersion  = 4,
+    panelSource    = { sourceType = 3, seed = 1234 },
+    rules          = { matchEndConditions = { TEAMS_ACTIVE = 1 } },
+    stacks         = { { stackType = 1, inputs = "AAAA" } },
+    garbageFlows   = {},
+    crossPlayerEvents = { garbage = {}, deaths = {} },
+    metadata       = { stacks = {}, timestamp = 1000, gameModeName = "VS" },
+  }
+end
+
+local function test_flagGame_writes_registry_entry()
+  logger.info("test_flagGame_writes_registry_entry")
+  local cr = newCR()
+  local _, id = cr:flagGame(makeRoom(), "server_disconnect")
+  local path = cr.rootDir .. "/pending_incidents/" .. id .. ".json"
+  assert(FileIO.fileExists(path), "registry entry should be written at " .. path)
+
+  local decoded = FileIO.readJson(path)
+  assert(decoded.incidentId == id)
+  assert(decoded.reason == "server_disconnect")
+  assert(decoded.status == "collecting")
+  assert(type(decoded.expectedReporters) == "table")
+end
+
+local function test_flagGame_writes_server_slice_when_replay_present()
+  logger.info("test_flagGame_writes_server_slice_when_replay_present")
+  local cr = newCR()
+  local room = makeRoom({ withReplay = stubReplay() })
+  local _, id = cr:flagGame(room, "server_disconnect")
+
+  local path = cr.rootDir .. "/" .. id .. "/server.json"
+  assert(FileIO.fileExists(path), "server slice should be written at " .. path)
+
+  local decoded = FileIO.readJson(path)
+  assert(decoded.incidentId == id)
+  assert(decoded.publicId == "server")
+  assert(decoded.replay,                       "slice should carry the replay")
+  assert(decoded.replay.panelSource.seed == 1234, "replay seed preserved through JSON")
+  assert(decoded.gameContext.roomNumber == room.roomNumber)
+  assert(decoded.gameContext.gameModeName == "VS")
+end
+
+local function test_flagGame_skips_server_slice_when_no_replay()
+  logger.info("test_flagGame_skips_server_slice_when_no_replay")
+  local cr = newCR()
+  -- withReplay=false defeats makeRoom's default stub so getPartialReplay
+  -- returns nil. Silence the warn it triggers; we're testing skip
+  -- behavior, not the log message.
+  local origWarn = logger.warn
+  logger.warn = function() end
+  local _, id = cr:flagGame(makeRoom({ withReplay = false }), "test")
+  logger.warn = origWarn
+
+  -- Registry entry still written; server.json should NOT be there.
+  local regPath   = cr.rootDir .. "/pending_incidents/" .. id .. ".json"
+  local slicePath = cr.rootDir .. "/" .. id .. "/server.json"
+  assert(FileIO.fileExists(regPath),
+    "registry should be written even without replay")
+  assert(not FileIO.fileExists(slicePath),
+    "no replay ⇒ no slice file (server gracefully skips)")
+end
+
+local function test_flagGame_disk_failure_does_not_throw()
+  logger.info("test_flagGame_disk_failure_does_not_throw")
+  -- Point rootDir at an invalid path so directory creation / write
+  -- fails. Module should soft-fail: incident stays in the in-memory
+  -- registry, no exception propagates.
+  local cr = CrashReports({
+    rootDir = "/dev/null/cannot_mkdir_here",
+    clock   = function() return 1000 end,
+  })
+
+  -- Silence BOTH levels: FileIO logs the actual mkdir/write failure as
+  -- ERROR, and CrashReports logs its own WARN summary. Both are expected
+  -- here; we're verifying the no-throw contract, not the log messages.
+  local origWarn, origError = logger.warn, logger.error
+  logger.warn, logger.error = function() end, function() end
+  local ok, id = cr:flagGame(makeRoom({ withReplay = stubReplay() }), "test")
+  logger.warn, logger.error = origWarn, origError
+
+  assert(ok, "flagGame must return ok=true even on disk failure")
+  assert(type(id) == "string", "incidentId should still be minted")
+  assert(cr:incidentCount() == 1,
+    "in-memory registry stays authoritative on disk failure")
+end
+
+----------------------------------------------------------------------
 -- Run
 ----------------------------------------------------------------------
 
@@ -237,5 +370,9 @@ test_flagGame_no_throw_on_bad_input()
 test_self_disable_after_threshold()
 test_disabled_stays_disabled_within_window()
 test_game_state_not_mutated()
+test_flagGame_writes_registry_entry()
+test_flagGame_writes_server_slice_when_replay_present()
+test_flagGame_skips_server_slice_when_no_replay()
+test_flagGame_disk_failure_does_not_throw()
 
 logger.info("All CrashReportsTests passed!")

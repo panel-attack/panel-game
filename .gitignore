@@ -19,3 +19,5 @@ gathered_logs/
 
 # Crash reports — captured server-side, see docs/CRASH_REPLAY_PLAN.md
 crash_reports/
+# Per-test rootDir scratch space for CrashReportsTests.lua isolation
+crash_reports_test/
