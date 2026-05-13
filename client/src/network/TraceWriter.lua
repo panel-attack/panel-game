@@ -247,18 +247,25 @@ end
 ---Close the open game file. Force-flush any pending lines. Match scope
 ---stays open — subsequent emits go back to _match.jsonl. Drops a
 ---"gameEnded" marker in the match file as the connection bread-crumb.
-function M.endGame()
+---@param extras table? optional fields to attach to the gameEnded marker
+---  (e.g. engine clock, outcome). TraceWriter doesn't know engine state
+---  — the caller (typically ClientMatch:deinit) does.
+function M.endGame(extras)
   pcall(function()
     if not state.gameOpen then return end
     M.flush()
     state.gameOpen = false
     state.gamePath = nil
     if state.matchOpen then
-      local endMarker = encodeLine({
+      local marker = {
         ts   = state.clock(),
         dir  = "local",
         kind = "gameEnded",
-      })
+      }
+      if type(extras) == "table" then
+        for k, v in pairs(extras) do marker[k] = v end
+      end
+      local endMarker = encodeLine(marker)
       if endMarker then
         emit(endMarker)
         M.flush()

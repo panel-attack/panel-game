@@ -431,7 +431,10 @@ function ClientMatch:start()
           renderIndex = m.renderIndex,
         }
       end
-      TraceWriter.localEvent("slotMap", { slots = slots })
+      TraceWriter.localEvent("slotMap", {
+        slots = slots,
+        clock = self.engine and self.engine.clock or 0,
+      })
     end
   end)
   -- Per-stack game-over tracking. ClientMatch:run polls this after each
@@ -500,7 +503,11 @@ end
 -- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.
 function ClientMatch:deinit()
   -- Trace capture: close the per-game file (force-flushes pending lines).
-  pcall(function() TraceWriter.endGame() end)
+  -- Pass engine.clock so the gameEnded marker carries both wall ts (auto)
+  -- AND the engine frame at which the match wrapped up.
+  pcall(function()
+    TraceWriter.endGame({ clock = self.engine and self.engine.clock or nil })
+  end)
   for i = 1, #self.stacks do
     self.stacks[i]:deinit()
   end
