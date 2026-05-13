@@ -805,6 +805,56 @@ local function testCrashSliceCompletesAfterAllReporters()
     "after all 3 reporters: expected status=complete, got " .. tostring(entry.status))
 end
 
+local function popCrashSliceRequest(conn)
+  while conn.outgoingMessageQueue:len() > 0 do
+    local msg = conn.outgoingMessageQueue:pop().messageText
+    if msg and msg.type == "crashSliceRequest" then
+      return msg
+    end
+  end
+end
+
+local function testLoginPushesPendingSliceRequests()
+  local server = ServerTesting.getTestServer()
+  -- Set up an incident the player will be expected for. We mint it
+  -- against a synthetic room (alice+ben mid-match, ben is expected).
+  -- Then ben "logs out" (closeConnection) and logs back in — the second
+  -- login should fire crashSliceRequest for the incident.
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+  local ben   = ServerTesting.login(server, ServerTesting.players[3])
+  local room  = ServerTesting.setupRoom(server, alice, ben, true)
+  ServerTesting.startGame(server, room)
+  local _, incidentId = server.crashReports:flagGame(room, "test")
+  assert(incidentId, "test setup: flagGame should succeed")
+
+  -- Disconnect ben + reset his connection state for a fresh login.
+  server:closeConnection(ben.connection, "test_disconnect")
+  ben.connection:restore()
+  ben.connection.loggedIn = false
+  ben.connection.outgoingMessageQueue:clear()
+
+  -- Fresh login.
+  ServerTesting.login(server, ServerTesting.players[3])
+  server:update()
+
+  local request = popCrashSliceRequest(ServerTesting.players[3].connection)
+  assert(request, "expected crashSliceRequest after login")
+  assert(request.content.incidentId == incidentId,
+    "expected incidentId=" .. incidentId .. ", got " .. tostring(request.content.incidentId))
+  assert(request.content.gameKey,
+    "request should carry gameKey for the client to match against local data")
+end
+
+local function testLoginPushesNothingWhenNoPendingIncidents()
+  local server = ServerTesting.getTestServer()
+  -- bob has no incidents pending against him. Login should produce no
+  -- crashSliceRequest.
+  local bob = ServerTesting.login(server, ServerTesting.players[1])
+  local request = popCrashSliceRequest(bob.connection)
+  assert(request == nil,
+    "login should not push crashSliceRequest when no incidents pending")
+end
+
 local function testFlagGameRejectedForNonParticipant()
   local server = ServerTesting.getTestServer()
   local alice = ServerTesting.login(server, ServerTesting.players[2])
@@ -850,3 +900,5 @@ testFlagGameRejectedForNonParticipant()
 testCrashSliceRecordedForFlaggedIncident()
 testCrashSliceRejectedForUnknownIncident()
 testCrashSliceCompletesAfterAllReporters()
+testLoginPushesPendingSliceRequests()
+testLoginPushesNothingWhenNoPendingIncidents()

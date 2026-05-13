@@ -1505,6 +1505,57 @@ function Server:_handleFlagGameImpl(payload, sender)
   ack(accepted, idOrReason)
 end
 
+-- Cap on slice requests pushed per quiescence cycle. The plan caps at 3
+-- to avoid blocking lobby UX when a player has a deep crash pile.
+local CRASH_REQUESTS_PER_PUSH = 3
+
+---Returns the list of incident IDs where publicId is in expectedReporters
+---but not yet in collectedReporters. Read-only.
+---@param publicId integer
+---@return string[]
+function Server:pendingIncidentsFor(publicId)
+  local out = {}
+  if not self.crashReports or type(publicId) ~= "number" then return out end
+  for incidentId, entry in pairs(self.crashReports.incidents) do
+    if entry.status == "collecting" then
+      local expected, collected = false, false
+      for _, pid in ipairs(entry.expectedReporters or {}) do
+        if pid == publicId then expected = true; break end
+      end
+      if expected then
+        for _, pid in ipairs(entry.collectedReporters or {}) do
+          if pid == publicId then collected = true; break end
+        end
+      end
+      if expected and not collected then
+        out[#out + 1] = incidentId
+      end
+    end
+  end
+  return out
+end
+
+---Push crashSliceRequest(s) to a player who just entered a quiescent
+---state. Best-effort: pcall-wrapped end-to-end so any error in the
+---registry walk can't disturb the login flow that called this.
+---@param player ServerPlayer
+function Server:_pushPendingSliceRequests(player)
+  pcall(function()
+    if not player or type(player.publicPlayerID) ~= "number" then return end
+    local ids = self:pendingIncidentsFor(player.publicPlayerID)
+    -- Cap per cycle so a deep crash pile doesn't pile up requests on
+    -- the client all at once.
+    for i = 1, math.min(#ids, CRASH_REQUESTS_PER_PUSH) do
+      local incidentId = ids[i]
+      local entry = self.crashReports:getIncident(incidentId)
+      if entry then
+        player:sendJson(ServerProtocol.crashSliceRequest(
+          incidentId, entry.gameKey, entry.reason))
+      end
+    end
+  end)
+end
+
 ---Phase-2 receive. Client ships a slice in response to a (yet-to-be-added)
 ---crashSliceRequest. Top-level pcall belt: no path here can disturb the
 ---rest of processMessage.
@@ -1672,6 +1723,12 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     connection:sendJson(ServerProtocol.approveLogin(player.publicPlayerID, message.server_notice, message.new_user_id, message.new_name, message.old_name))
 
     logger.warn(connection.index .. " Login from " .. name .. " with ip: " .. ipAddress .. " publicPlayerID: " .. player.publicPlayerID)
+
+    -- Quiescent transition into lobby: push any pending crash-slice
+    -- requests this player owes us. pcall'd at the entry so a bug in
+    -- the registry walk can't take down a successful login.
+    self:_pushPendingSliceRequests(player)
+
     return true
   end
 end
