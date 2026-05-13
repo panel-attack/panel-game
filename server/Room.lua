@@ -92,6 +92,18 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   self.arbitrationWindowEndsAtMs = nil
   self.arbitrationEmitted = false
 
+  -- Loose-sync idle-fill state. After a player is marked eliminated, the
+  -- server stops relaying their real inputs (broadcastInput at the
+  -- eliminatedPlayers gate). Without something replacing them, every
+  -- other client's view-stack of that player runs out of inputs and
+  -- freezes at the last received frame — visually "halfway up, not
+  -- moving" while the rest of the match plays on. tickIdleFill emits
+  -- placeholder no-op inputs ("A") at 60Hz for eliminated slots so the
+  -- view-stacks have something to consume and can advance to (and past)
+  -- the death frame, where they hit game_over_clock and render top-out
+  -- normally. Map: slot -> { nextEmitMs, framesEmitted }.
+  self.idleFillState = {}
+
   -- Wall-clock timestamp of the last player-driven activity in this room
   -- (input, death, settings/ready change, match start, character select reset).
   -- The server's update loop closes rooms that have been idle for too long so
@@ -487,6 +499,10 @@ function Room:start_match()
   self.arbitrationDeaths = {}
   self.arbitrationWindowEndsAtMs = nil
   self.arbitrationEmitted = false
+  -- Reset idle-fill state so rematches in the same room start the placeholder
+  -- schedule from zero. Without this, framesEmitted from a previous match
+  -- carries forward and rematches would silently hit the per-slot cap.
+  self.idleFillState = {}
   -- Reset diagnostic flags so dropped-input warnings can fire once per slot per match.
   self._loggedInputDropDisconnect = nil
   self._loggedInputDropEliminated = nil
@@ -754,6 +770,73 @@ function Room:broadcastInput(input, sender)
     if v then
       v:send(inputMessage)
     end
+  end
+end
+
+-- Tick rate target for idle-fill. 60Hz matches client frame rate; emitting at
+-- this cadence keeps each receiver's view-stack of an eliminated player
+-- advancing at real time so it can reach (and pass) the death frame.
+local IDLE_FILL_PERIOD_MS    = 17   -- ~60Hz
+-- Cap how many frames we'll idle-fill per slot. ~5 seconds is comfortably
+-- past any reasonable view-stack catch-up window — after this point the
+-- view-stack has either hit its game_over_clock or the match has ended,
+-- and further fills are pointless. Hard cap also caps disk/network impact
+-- in pathological cases (e.g. nobody ever finishes a hung match).
+local IDLE_FILL_MAX_FRAMES   = 300  -- 5s at 60Hz
+local IDLE_FILL_PLACEHOLDER  = "A"  -- no-op input char
+
+---Emit placeholder inputs for every eliminated slot at ~60Hz. Called from
+---Server:update each tick. pcall-wrapped at the call site so a failure
+---here cannot disturb the server's update loop.
+---@param nowMs integer current wall-clock ms (server-injected)
+function Room:tickIdleFill(nowMs)
+  if not self.game or self.game.complete then return end
+
+  -- Iterate eliminatedPlayers via pairs (sparse-safe). For each slot,
+  -- catch up the per-slot emit schedule based on how many 60Hz ticks
+  -- have elapsed since we last emitted. Bursty server updates (gap +
+  -- catch-up) end up emitting the same total count as steady ticks.
+  for slot, _deathFrame in pairs(self.game.eliminatedPlayers) do
+    local state = self.idleFillState[slot]
+    if not state then
+      state = { nextEmitMs = nowMs, framesEmitted = 0 }
+      self.idleFillState[slot] = state
+    end
+
+    if state.framesEmitted < IDLE_FILL_MAX_FRAMES then
+      while nowMs >= state.nextEmitMs
+            and state.framesEmitted < IDLE_FILL_MAX_FRAMES do
+        self:_broadcastIdleInput(slot)
+        state.framesEmitted = state.framesEmitted + 1
+        state.nextEmitMs = state.nextEmitMs + IDLE_FILL_PERIOD_MS
+      end
+    end
+  end
+end
+
+---Broadcast one no-op input for a given slot, bypassing the eliminated-player
+---gate in broadcastInput. Receivers consume this like any other relayed
+---input: their view-stack of the slot advances by one frame, which is
+---enough to eventually cross the game_over_clock pinned by the D event and
+---trigger a proper top-out visual.
+---
+---NOT recorded in game.inputs: the dying player's local stack already
+---topped out at deathFrame, so the replay only needs inputs up to that
+---frame. The post-death idle-fills are purely for live visual continuity
+---and don't belong in the replay's per-stack input log.
+---@param slot integer the eliminated player's player_number
+function Room:_broadcastIdleInput(slot)
+  local body = NetworkProtocol.encodeInput(slot, IDLE_FILL_PLACEHOLDER)
+  local message = NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.serverMessageTypes.input.prefix, body)
+  -- pairs not ipairs: self.players is sparse after a mid-match leave;
+  -- ipairs would silently skip high-slot survivors and they'd never
+  -- get the idle-fill, defeating the point.
+  for _, player in pairs(self.players) do
+    player:send(message)
+  end
+  for _, spec in pairs(self.spectators) do
+    if spec then spec:send(message) end
   end
 end
 

@@ -1007,6 +1007,11 @@ function Server:update()
   self:updateConnections()
   self:processMessages()
   self:tickArbitrations()
+  -- Per-tick idle-fill for eliminated players so view-stacks on every other
+  -- client can advance past the death frame and render top-out visuals
+  -- instead of freezing at the last received input. pcall-wrapped: this
+  -- is auxiliary plumbing and must never disturb the main update loop.
+  self:tickIdleFills()
 
   -- Only check once a second to avoid over checking
   -- (we are relying on time() returning a number rounded to the second)
@@ -1024,6 +1029,19 @@ function Server:update()
 
   -- If the lobby changed tell everyone
   self:broadCastLobbyIfChanged()
+end
+
+---Emit placeholder inputs for every eliminated player in every active room.
+---Wrapped in pcall — collection-style aux work that must never break the
+---server's update loop. Each room's tickIdleFill is itself defensive (skips
+---if game is nil/complete), so we just iterate and dispatch.
+function Server:tickIdleFills()
+  local nowMs = math.floor(self.clock() * 1000)
+  for _, room in pairs(self.rooms) do
+    if room then
+      pcall(function() room:tickIdleFill(nowMs) end)
+    end
+  end
 end
 
 ---Drain KO arbitration windows for any rooms whose window has closed.
