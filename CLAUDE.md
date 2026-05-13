@@ -32,19 +32,21 @@ Also needs **love 12** (not love 11) for the client. Add it to PATH in `~/.zshrc
 
 ### Scripts
 ```sh
-zsh run_server.sh   # start local server (localhost:49569) — also runs ALL server tests on startup
-zsh run_client.sh   # start game client
-zsh run_tests.sh    # run full test suite including client tests (requires love, not luajit)
+zsh run_server.sh        # start local server (localhost:49569)
+zsh run_client.sh        # start game client
+zsh run_server_tests.sh  # run server-side test suite, headless and isolated
+zsh run_tests.sh         # run client/common test suite (requires love)
 ```
 
 Run server first, then client. Client connects to localhost automatically on this branch.
 
 ### How tests work
 
-**Server tests** (`LoginTests`, `LeaderboardTests`, `RoomTests`, `TeamRoomTests`, `ServerTests`):
-- Run via `zsh run_server.sh` — `serverLauncher.lua` runs all server tests automatically on startup before entering the main loop
+**Server tests** (`LoginTests`, `LeaderboardTests`, `RoomTests`, `TeamRoomTests`, `ServerTests`, `LooseSyncServerTests`):
+- Run via `zsh run_server_tests.sh` — invokes `serverTestRunner.lua` in its own luajit process
+- Fully isolated: uses `MockPersistence` + `MockConnection`, does NOT bind a port, does NOT touch the real sqlite DB, does NOT kill your running dev server. Safe to run while `zsh run_server.sh` is live.
 - Do NOT run these through love — `lfs` and `lsqlite3` are not available in the love environment
-- Do NOT run individual test files directly with `luajit server/tests/Foo.lua` — they depend on globals set up by `serverLauncher.lua`
+- Do NOT run individual test files directly with `luajit server/tests/Foo.lua` — they depend on globals set up by `server.server_globals`
 
 **Client/common tests** (`PuzzleTests`, `NetworkProtocolTests`, etc.):
 - Run via `zsh run_tests.sh` — uses love to run `testLauncher.lua`
