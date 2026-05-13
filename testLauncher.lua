@@ -85,6 +85,7 @@ local allTests = {
   -- Loose-sync TDD tests
   "common.tests.engine.LooseSyncTests",
   "common.tests.engine.LooseSyncContractTests",
+  "common.tests.engine.CrashReplayRegressionTests",
   "server.tests.LooseSyncServerTests",
   "server.tests.LoginTests",
   "server.tests.LeaderboardTests",
