@@ -1,10 +1,8 @@
 # Multiplayer Test Coverage Plan (handoff)
 
-Merged plan covering both the regression coverage for the May 12 bug fixes
-*and* the forward-looking loose-sync invariants. The original
-`LOOSE_SYNC_HARDENING_PLAN.md` carries the design rationale and the
-post-3-reviewer feedback — keep that for context, this doc is what's
-actually left to build.
+Forward-looking work to lock down the multiplayer test surface and harden
+the loose-sync layer. The May 12 bug fixes are landed (see commit
+`ec5dd55d` for the per-bug breakdown); this doc is what's still to build.
 
 ## What's already landed
 
@@ -107,7 +105,10 @@ Catches *content* divergence (the actual bug class we've seen — B8, C)
 that the contract tests catch only at test-time. This is the production
 detection equivalent.
 
-See `LOOSE_SYNC_HARDENING_PLAN.md` Step 3 for design notes.
+Design note: state hashes are strictly stronger than seqnums for the bug
+class we've actually observed — seqnums catch dropped events, hashes
+catch dropped *and* wrongly-applied events. We've never measured a
+delivery loss, so detect first, recover later.
 
 ### 6. B7 — Team-assignment orientation (~half a day, independent)
 
@@ -121,20 +122,29 @@ item — slot in anywhere.
 
 ## Deferred
 
-**Seqnums + gap-replay** (`LOOSE_SYNC_HARDENING_PLAN.md` Step 4). Only
-build after observing real delivery loss in logs. State hashes (item 5)
-will tell us whether delivery is the problem — until then this is solving
-a problem we haven't measured. When/if you build it, see the design
-notes + open questions in the loose-sync plan.
+**Seqnums + gap-replay.** Only build after observing real delivery loss
+in logs. State hashes (item 5) will tell us whether delivery is the
+problem — until then this is solving a problem we haven't measured.
+
+Open questions to resolve before building, when the time comes:
+- Bounding `eventLog` memory growth (cap by frame count or LRU).
+- `requestEventReplay` reliability (timeout / retry / idempotency — if
+  the replay-of-the-replay itself drops, you've just renamed the
+  silent-desync state).
+- What `seq` means across the burst of K events from one arbitration
+  decision (share one seq, or one each).
+- Replay-file forward compat (does `crossPlayerEvents` get `seq` on
+  disk, and how do older clients load it).
+- Observability: log every replay request so we know if the path is
+  firing in production at all.
 
 ---
 
 ## Pointers for the next person
 
-- **`docs/LOOSE_SYNC_HARDENING_PLAN.md`** — full design rationale + the 3-reviewer feedback that shaped item ordering. Read first if any choice above seems strange.
-- **`docs/MULTIPLAYER_BUGS_20260512.md`** — the original bug report + every fix landed this session with file/line refs. Useful when writing regression tests for items 3 and 4.
+- **commit `ec5dd55d`** — full per-bug breakdown of the May 12 fixes with file/line refs. Useful background when writing regression tests for items 3 and 4.
 - **`server/tests/E2E/ThreePlayerFFATests.lua`** — the existing scenario to copy-paste-and-modify for items 3 and 4's server-side tests.
-- **`common/tests/TeamUtilsTests.lua`** — the 8 `findNextLiving` tests at the bottom are the pattern to follow for invariant tests that don't need a harness.
+- **`common/tests/TeamUtilsTests.lua`** — the 8 `findNextLiving` tests at the bottom are the pattern for invariant tests that don't need a harness.
 - **CLAUDE.md** in repo root — local-dev setup (LÖVE 12, luarocks, port 49569 for dev / 49580 for e2e). `zsh run_server.sh` / `zsh run_client.sh` / `zsh run_tests.sh` / `zsh run_e2e_tests.sh`.
 
 ## Total budget
