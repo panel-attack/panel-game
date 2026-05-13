@@ -115,7 +115,39 @@ function TestClient:_sendFrame(prefix, body)
   self:_sendRaw(NetworkProtocol.markedMessageForTypeAndBody(prefix, body))
 end
 
+-- Append a structured record of an outbound message to sendTrace, if
+-- recording is enabled. Mirrors what the server-side TraceWriter writes
+-- when it taps recv: J carries a decoded table, I/G/D carry the raw or
+-- decoded body the caller handed us. The diff util pairs these with the
+-- server's recv entries to spot drops / reorders / shape mismatches.
+function TestClient:_recordSend(prefix, body)
+  if not self._sendTraceEnabled then return end
+  self.sendTrace[#self.sendTrace + 1] = {
+    ts     = socket.gettime(),
+    dir    = "send",
+    prefix = prefix,
+    body   = body,
+  }
+end
+
+---Start recording outbound sends. Use before driving any scenario whose
+---trace you want to diff against (the harness or a captured bundle).
+function TestClient:enableSendTrace()
+  self._sendTraceEnabled = true
+  self.sendTrace = self.sendTrace or {}
+  return self
+end
+
+---Snapshot the recorded sends. Each entry has the same {ts, dir, prefix,
+---body} shape as the server's TraceWriter, so the diff util can pair the
+---two streams without per-source case logic.
+---@return {ts: number, dir: string, prefix: string, body: any}[]
+function TestClient:getSendTrace()
+  return self.sendTrace or {}
+end
+
 function TestClient:sendJson(payload)
+  self:_recordSend("J", payload)
   local body = json.encode(payload)
   self:_sendFrame(NetworkProtocol.clientMessageTypes.jsonMessage.prefix, body)
 end
@@ -201,6 +233,7 @@ end
 -- Send one frame of input encoded as a single character (controller mode).
 -- Multiple chars per call = multiple frames; server forwards the buffer verbatim.
 function TestClient:sendInput(inputChars)
+  self:_recordSend("I", inputChars)
   self:_sendFrame(NetworkProtocol.clientMessageTypes.playerInput.prefix, inputChars)
 end
 
@@ -212,12 +245,14 @@ end
 -- Match.lua's production emission (senderFrame, recipients, garbage). The
 -- server stamps sender + serverWallClockMs in Room:broadcastGarbageEvent.
 function TestClient:sendGarbageEvent(body)
+  self:_recordSend("G", body)
   self:_sendFrame(NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))
 end
 
 -- Loose-sync: client-emitted death notification. Same wire shape as G; the
 -- server uses it to drive arbitration + survivor stop-waiting.
 function TestClient:sendDeathEvent(body)
+  self:_recordSend("D", body)
   self:_sendFrame(NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
 end
 
