@@ -403,11 +403,17 @@ function Server:lobbyStateV2()
 
   for _, room in pairs(self.rooms) do
     local roomState = room:state()
+    local owner = room.players[1]
+    if not owner then
+      local _, firstPlayer = room:eachPlayer()()
+      owner = firstPlayer
+    end
+
     local lobbyRoom = {
       roomNumber = room.roomNumber,
       state = roomState,
       gameModeId = room.gameModeId or (room.gameMode and GameModes.nameToGameModeId[room.gameMode.name]) or nil,
-      ownerId = room.players[1] and room.players[1].publicPlayerID or nil,
+      ownerId = owner and owner.publicPlayerID or nil,
       players = {},
       spectators = {},
       wins = {},
