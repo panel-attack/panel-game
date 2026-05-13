@@ -101,12 +101,19 @@ local function test_open_ffa_compacts_after_pre_match_leave()
     end, 5, "4 players seated"), "did not reach 4 players in room: only "
        .. countServerPlayers(room))
 
-    -- Pre-match leave: B drops without ever being ready.
-    b:leaveRoom()
-    assert(waitUntil(h, all, function()
+    -- Pre-match leave: B drops without ever being ready. Production-side,
+    -- NetClient:leaveRoom is a no-op until the room is "ready" (room.players
+    -- == minPlayers and self.room is set). For partial Open FFA where the
+    -- host stays in lobby state, self.room is still nil — so a graceful
+    -- :leaveRoom does nothing. We simulate the much more common case: the
+    -- player's TCP connection drops (browser closed, crash, network loss).
+    -- The server handles this via Connection's disconnect path and
+    -- handleLeaveRoom — same end-state as a graceful leave.
+    b:close()
+    assert(waitUntil(h, { a, c, d }, function()
       return countServerPlayers(room) == 3
-    end, 5, "B departed"), "B's leave didn't take effect; players=" ..
-       countServerPlayers(room))
+    end, 5, "B departed"), "B's disconnect didn't take effect; players="
+       .. countServerPlayers(room))
 
     -- After B leaves, room.players is sparse — slot 2 is gone. Slots 1/3/4
     -- still point at A/C/D respectively until start_match's compaction runs.
