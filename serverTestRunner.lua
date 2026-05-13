@@ -1,11 +1,9 @@
 -- Headless server test runner.
 --
--- Runs every server-side unit/integration test (the same set that
--- serverLauncher.lua used to run when PA_RUN_SERVER_TESTS=1) in its own
--- luajit process. Does not bind a port, does not touch the real sqlite
--- database (tests use MockPersistence + MockConnection), and does not
--- kill any running dev server. Safe to run while `zsh run_server.sh` is
--- live on port 49569.
+-- Runs the server-side unit/integration suite in its own luajit process.
+-- Does not bind a port, does not touch the real sqlite database (tests
+-- use MockPersistence + MockConnection), and does not kill any running
+-- dev server. Safe to run while `zsh run_server.sh` is live on port 49569.
 --
 -- Invoked via `zsh run_server_tests.sh`.
 
