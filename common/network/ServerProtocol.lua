@@ -120,6 +120,31 @@ local leaveRoomTemplate =
   content = { reason = "" }
 }
 
+---Crash-replay slice receive ack. Sent in response to a client's
+---crashSlice message — see docs/CRASH_REPLAY_PLAN.md "Wire shape".
+---accepted=true ⇒ slice persisted, client can delete its pending_slices/
+---file. accepted=false ⇒ rejection reason; client decides whether to
+---retry (e.g. transient disk_error) or give up (unknown_incident).
+---@param incidentId string
+---@param accepted boolean
+---@param info string status code ("recorded", "already_collected", or a
+---  rejection reason)
+---@return {messageType: table, messageText: ServerMessage}
+function ServerProtocol.crashSliceAck(incidentId, accepted, info)
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = {
+      sender = "server",
+      type   = "crashSliceAck",
+      content = {
+        incidentId = incidentId,
+        accepted   = accepted and true or false,
+        status     = info,
+      },
+    },
+  }
+end
+
 ---Crash-replay nomination ack. Sent in response to a client's flagGame
 ---message — see docs/CRASH_REPLAY_PLAN.md "flagGame wire shape". The
 ---accepted flag tells the client whether to keep its local pending_crashes/

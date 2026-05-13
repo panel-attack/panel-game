@@ -1405,6 +1405,11 @@ function Server:processMessage(message, connection)
       -- game they're currently watching if it goes sideways.
       self:handleFlagGame(message.flagGame, player)
       return true
+    elseif message.crashSlice and (player.state == "lobby" or player.state == "spectating") then
+      -- Phase 2 of two-phase spool. Same quiescence gate as flagGame —
+      -- never disturb a player who's actively in a match.
+      self:handleCrashSlice(message.crashSlice, player)
+      return true
     elseif message.unknown then
       self:closeConnection(connection)
       return false
@@ -1498,6 +1503,44 @@ function Server:_handleFlagGameImpl(payload, sender)
   local accepted, idOrReason =
     self.crashReports:flagGame(room, reason, payload.traceHash)
   ack(accepted, idOrReason)
+end
+
+---Phase-2 receive. Client ships a slice in response to a (yet-to-be-added)
+---crashSliceRequest. Top-level pcall belt: no path here can disturb the
+---rest of processMessage.
+---@param payload table sanitized crashSlice body
+---@param sender ServerPlayer
+function Server:handleCrashSlice(payload, sender)
+  local ok, err = pcall(function()
+    self:_handleCrashSliceImpl(payload, sender)
+  end)
+  if not ok then
+    logger.warn("[Server] handleCrashSlice errored: " .. tostring(err))
+  end
+end
+
+---@param payload table
+---@param sender ServerPlayer
+function Server:_handleCrashSliceImpl(payload, sender)
+  local function ack(accepted, status)
+    sender:sendJson(ServerProtocol.crashSliceAck(
+      payload and payload.incidentId, accepted, status))
+  end
+
+  if type(payload) ~= "table" or type(payload.incidentId) ~= "string" then
+    ack(false, "malformed")
+    return
+  end
+
+  local senderId = sender.publicPlayerID
+  if type(senderId) ~= "number" then
+    ack(false, "no_public_id")
+    return
+  end
+
+  local accepted, status =
+    self.crashReports:recordSlice(payload.incidentId, senderId, payload)
+  ack(accepted, status)
 end
 
 -- Flush the log so we can see new info periodically. The default caches for huge amounts of time.
