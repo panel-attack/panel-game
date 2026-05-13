@@ -52,7 +52,7 @@ end
 local function killStack(stack)
   stack.health = 0
   -- Trigger the game_ended state
-  stack:setGameOver()
+  stack:recordDeath()
 end
 
 -- Helper to run match for N frames

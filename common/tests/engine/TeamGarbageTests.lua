@@ -68,7 +68,7 @@ end
 -- Helper to kill a stack
 local function killStack(stack)
   stack.health = 0
-  stack:setGameOver()
+  stack:recordDeath()
 end
 
 --------------------------------------------------

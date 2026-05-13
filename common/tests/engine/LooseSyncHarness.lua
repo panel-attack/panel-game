@@ -125,7 +125,7 @@ end
 function LooseSyncHarness:killStack(slot)
   local stack = self.match.stacks[slot]
   if not stack then return end
-  -- BaseStack: setGameOver pins game_over_clock to self.clock. game_ended()
+  -- BaseStack: recordDeath pins game_over_clock to self.clock. game_ended()
   -- then gates on `game_over_clock > 0`, so dying at frame 0 doesn't register
   -- as dead. Tick one frame first to push the clock to 1 if needed; tests
   -- usually advance the engine before killing, but harness callers don't
@@ -134,7 +134,7 @@ function LooseSyncHarness:killStack(slot)
     self:step(1)
   end
   if stack.health ~= nil then stack.health = 0 end
-  if stack.setGameOver then stack:setGameOver() end
+  if stack.recordDeath then stack:recordDeath() end
 end
 
 ---Read a canonical state-vector for this engine.

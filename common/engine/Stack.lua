@@ -992,8 +992,8 @@ function Stack:runPhysics()
   -- Stack automatic rising
   if self.behaviours.passiveRaise then
     if self:advancePassiveRaise() then
-      if self:checkGameOver() then
-        self:setGameOver()
+      if self:checkDeath() then
+        self:recordDeath()
       end
     end
   end
@@ -1040,8 +1040,8 @@ function Stack:runPhysics()
   self:removeExtraRows()
 
   if not self:checkGameWin() then
-    if self:checkGameOver() then
-      self:setGameOver()
+    if self:checkDeath() then
+      self:recordDeath()
     end
   end
 end
@@ -1072,9 +1072,9 @@ function Stack:handleManualRaise()
         -- why is this game over check needed?
         -- manual raise halts passive raise and only passive raise leads to health reduction
         -- replacing this with health reduction could be a viable alternative
-        -- see also: https://github.com/panel-attack/panel-game/issues/437 and comments within checkGameOver itself
-        if self:checkGameOver() then
-          self:setGameOver()
+        -- see also: https://github.com/panel-attack/panel-game/issues/437 and comments within checkDeath itself
+        if self:checkDeath() then
+          self:recordDeath()
         end
       else
         self.has_risen = true
@@ -1243,19 +1243,22 @@ function Stack:game_ended()
   end
 end
 
--- Sets the current stack as "lost"
--- Also begins drawing game over effects
-function Stack:setGameOver()
+-- Records the death of this stack at the given clock frame (defaults to self.clock).
+-- Emits the "gameOver" signal once; subsequent calls with the same frame are no-ops.
+-- An explicit clock can be passed by external callers (e.g. loose-sync DeathEvent handler)
+-- that know the authoritative death frame before the sim has caught up to it.
+function Stack:recordDeath(clock)
+  clock = clock or self.clock
 
   if self.game_over_clock > 0 then
-    -- it is possible that game over is set twice on the same frame
+    -- it is possible that death is recorded twice on the same frame
     -- this happens if someone died to passive raise while holding manual raise
-    -- we shouldn't try to set game over again under any other circumstances however
-    assert(self.clock == self.game_over_clock, "game over was already set to a different clock time")
+    -- we shouldn't try to record death again under any other circumstances however
+    assert(self.game_over_clock == clock, "game over was already set to a different clock time")
     return
   end
 
-  self.game_over_clock = self.clock
+  self.game_over_clock = clock
 
   self:emitSignal("gameOver", self)
 end
@@ -1683,7 +1686,7 @@ local function isCompletedChain(garbage)
   return garbage.isChain and garbage.finalized
 end
 
-function Stack:checkGameOver()
+function Stack:checkDeath()
   if self.game_over_clock <= 0 then
     for stackOverCondition, value in pairs(self.stackOverConditions) do
       if stackOverCondition == MatchRules.StackOverConditions.HEALTH then
@@ -1718,9 +1721,14 @@ function Stack:checkGameOver()
         end
       end
     end
-  else
-    return true
   end
+  -- If game_over_clock is already set (> 0), return false: recordDeath has
+  -- already run and callers should not call it again at a different clock.
+  -- (Previously this fell through to `else return true`, which caused a crash
+  -- when _applyDeathEventNow wrote game_over_clock externally at frame N while
+  -- the local sim was still catching up at frame M < N — checkDeath returned
+  -- true, recordDeath fired at clock M ≠ N, and the assert tripped.)
+  return false
 end
 
 function Stack:checkGameWin()

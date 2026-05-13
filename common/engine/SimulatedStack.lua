@@ -79,13 +79,16 @@ function SimulatedStack:runPhysics()
   end
 
   if self.health <= 0 then
-    self:setGameOver()
+    self:recordDeath()
   end
 
   self.stopWatch = self.stopWatch + 1
 end
 
-function SimulatedStack:setGameOver()
+function SimulatedStack:recordDeath()
+  if self.game_over_clock > 0 then
+    return
+  end
   self.game_over_clock = self.clock
 
   self:emitSignal("gameOver")

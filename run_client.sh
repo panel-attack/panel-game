@@ -15,47 +15,29 @@ if [[ $# -eq 0 ]]; then
   set -- "Player1"
 fi
 
-pidfiles=()
-love_pids=()
-
-for player_name in "$@"; do
-  identity_arg="$player_name"
-  pidfile="/tmp/panel-attack-client-${identity_arg}.pid"
-
-  # Kill only the previous love instance launched with THIS identity, so multiple
-  # clients (one per player name) can still run side-by-side for local testing.
-  if [[ -f "$pidfile" ]]; then
-    prev_pid=$(cat "$pidfile" 2>/dev/null)
-    if [[ -n "$prev_pid" ]] && kill -0 "$prev_pid" 2>/dev/null; then
-      kill "$prev_pid" 2>/dev/null || true
-      sleep 0.2
-    fi
-    rm -f "$pidfile"
-  fi
-
-  LOVE_IDENTITY="Panel Attack $identity_arg" PLAYER_NAME="$player_name" PA_SHOW_LOCAL="$PA_SHOW_LOCAL" love "$project_dir" &
-  love_pid=$!
-  echo "$love_pid" > "$pidfile"
-  pidfiles+=("$pidfile")
-  love_pids+=("$love_pid")
-done
+kill_project_clients() {
+  # Kill any love process running this exact project directory.
+  pkill -f "/Applications/love.app/Contents/MacOS/love $project_dir" 2>/dev/null || true
+  pkill -f " love $project_dir" 2>/dev/null || true
+}
 
 cleanup() {
-  trap - EXIT INT TERM HUP
-  # Only fires when the script itself is terminating (Ctrl+C, SIGTERM, or after
-  # `wait` returns because every client has already exited). Tear down only the
-  # love instances we tracked — closing one window naturally won't reach here,
-  # because `wait pid1 pid2 ...` keeps blocking until ALL listed pids exit.
-  for p in "${love_pids[@]}"; do
-    # `love` on macOS is typically a wrapper script around Love.app's binary,
-    # so kill its child too in case our tracked pid is the wrapper.
-    pkill -P "$p" 2>/dev/null || true
-    # Use SIGKILL — macOS Cocoa apps can delay or swallow SIGTERM.
-    kill -9 "$p" 2>/dev/null || true
-  done
-  for f in "${pidfiles[@]}"; do
-    rm -f "$f"
-  done
+  trap - INT TERM HUP
+  kill_project_clients
 }
-trap cleanup EXIT INT TERM HUP
+trap cleanup INT TERM HUP
+
+# 1) Kill currently running instances for this project.
+kill_project_clients
+sleep 0.2
+
+# 2) Start requested instances.
+love_pids=()
+for player_name in "$@"; do
+  identity_arg="$player_name"
+  LOVE_IDENTITY="Panel Attack $identity_arg" PLAYER_NAME="$player_name" PA_SHOW_LOCAL="$PA_SHOW_LOCAL" love "$project_dir" &
+  love_pids+=("$!")
+done
+
+# Keep script alive while clients are alive.
 wait "${love_pids[@]}"

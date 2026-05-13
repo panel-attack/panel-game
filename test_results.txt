@@ -1,0 +1,715 @@
+]2;eval "$(luarocks path --local --lua-version 5.1)"]1;]2;set -o pipefail]1;]2;cd "$(dirname "$0")"]1;]2;luajit serverTestRunner.lua "$@"]1;05/13/26 18:06:54.984  INFO:=== running server tests (headless; MockPersistence, no port bound) ===
+05/13/26 18:06:55.001  INFO:0 players loaded
+05/13/26 18:06:55.002  WARN:Login failure: Player tried to create a new user with an already taken name: Jerry
+05/13/26 18:06:55.002  WARN:Login failure: Bob specified an invalid user ID
+05/13/26 18:06:55.002  WARN:Login failure: Player (2) tried to use already taken name: Jerry
+05/13/26 18:06:55.002  INFO:test_beginSession_opens_file_path
+05/13/26 18:06:55.002  INFO:test_endSession_drops_state
+05/13/26 18:06:55.003  INFO:test_recv_send_localEvent_round_trip_to_disk
+05/13/26 18:06:55.003  INFO:test_per_publicId_isolation
+05/13/26 18:06:55.004  INFO:test_recv_with_no_active_session_is_noop
+05/13/26 18:06:55.004  INFO:test_nil_publicId_is_noop
+05/13/26 18:06:55.004  INFO:test_beginSession_idempotent
+05/13/26 18:06:55.005  INFO:test_no_throw_on_unencodable_body
+05/13/26 18:06:55.005  WARN:[ServerTrace] encode failed: reference cycle
+05/13/26 18:06:55.006  INFO:test_flush_no_throw_when_no_session
+05/13/26 18:06:55.006  INFO:All TraceWriterTests passed!
+05/13/26 18:06:55.006  INFO:test_identical_streams_report_clean
+05/13/26 18:06:55.007  INFO:test_recv_entries_ignored_by_default
+05/13/26 18:06:55.007  INFO:test_body_value_diff_recorded
+05/13/26 18:06:55.007  INFO:test_body_type_diff_recorded
+05/13/26 18:06:55.007  INFO:test_left_has_extra_event
+05/13/26 18:06:55.007  INFO:test_right_has_extra_event
+05/13/26 18:06:55.007  INFO:test_buckets_isolate_publicIds
+05/13/26 18:06:55.007  INFO:test_buckets_isolate_prefixes
+05/13/26 18:06:55.007  INFO:test_intra_bucket_order_by_ts
+05/13/26 18:06:55.007  INFO:test_dirFilter_override_to_recv
+05/13/26 18:06:55.007  INFO:All TraceDiffTests passed!
+05/13/26 18:06:55.011  INFO:6 players loaded
+05/13/26 18:06:55.012  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.014  INFO:6 players loaded
+05/13/26 18:06:55.014  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.014  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.015  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.016  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.016  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.020  INFO:6 players loaded
+05/13/26 18:06:55.020  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.021  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.021  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.022  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.022  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.024  INFO:6 players loaded
+05/13/26 18:06:55.025  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.025  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.025  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.026  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.026  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.028  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=nil ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.028  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.028  INFO:Starting match 1 for 1 Ben vs Alice
+05/13/26 18:06:55.031  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.033  INFO:1 Ben vs Alice match 1 ended with winner 2
+05/13/26 18:06:55.034  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=true ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.035  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.035  INFO:Starting match 2 for 1 Ben vs Alice
+05/13/26 18:06:55.037  INFO:1: voiding room (Ben left)
+05/13/26 18:06:55.038  INFO:1: Ben disconnected while alive — synthesizing DeathEvent at frame 1
+05/13/26 18:06:55.039  INFO:Clearing room 1 for player Ben
+05/13/26 18:06:55.041  INFO:6 players loaded
+05/13/26 18:06:55.041  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.041  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.041  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.042  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.042  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.043  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.044  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=nil ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.044  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.044  INFO:Starting match 1 for 1 Ben vs Alice
+05/13/26 18:06:55.045  INFO:Closing connection 3 to Ben
+05/13/26 18:06:55.046  INFO:1: voiding room (Ben left (Ben's connection failed))
+05/13/26 18:06:55.046  INFO:1: Ben disconnected while alive — synthesizing DeathEvent at frame 1
+05/13/26 18:06:55.047  INFO:Clearing room 1 for player Ben
+05/13/26 18:06:55.049  INFO:6 players loaded
+05/13/26 18:06:55.049  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.050  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.050  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.051  WARN:4 Login from Jerry with ip: 170.46.23.4 publicPlayerID: 24
+05/13/26 18:06:55.053  INFO:Setting room to 1 for player Jerry
+05/13/26 18:06:55.053  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.054  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.055  WARN:5 Login from Berta with ip: 170.46.23.4 publicPlayerID: 38
+05/13/26 18:06:55.057  INFO:6 players loaded
+05/13/26 18:06:55.057  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.057  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.058  WARN:roomRequest received from Bob state=lobby mode=vsSelf latency=nil
+05/13/26 18:06:55.058  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.058  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.059  INFO:Room 1 readiness after Bob update: slot1:Bob[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.059  INFO:Starting match 1 for 1 Bob
+05/13/26 18:06:55.060  INFO:Clearing room 1 for player Alice
+05/13/26 18:06:55.061  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.064  INFO:6 players loaded
+05/13/26 18:06:55.064  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.065  WARN:roomRequest received from Bob state=lobby mode=vsSelf latency=nil
+05/13/26 18:06:55.065  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.066  WARN:Player Bob tried to spectate while being in room 1
+05/13/26 18:06:55.067  INFO:6 players loaded
+05/13/26 18:06:55.068  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.068  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.068  WARN:roomRequest received from Alice state=lobby mode=three_player_vs_all latency=nil
+05/13/26 18:06:55.068  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.070  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.070  INFO:Player Ben joined room 1 as player 2
+05/13/26 18:06:55.070  INFO:Player Ben joined room 1 as player 2
+05/13/26 18:06:55.072  INFO:6 players loaded
+05/13/26 18:06:55.072  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.072  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.073  WARN:roomRequest received from Alice state=lobby mode=three_player_vs_all latency=nil
+05/13/26 18:06:55.073  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.076  INFO:6 players loaded
+05/13/26 18:06:55.076  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.076  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.076  WARN:roomRequest received from Alice state=lobby mode=nil latency=nil
+05/13/26 18:06:55.076  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.079  INFO:6 players loaded
+05/13/26 18:06:55.079  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.079  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.079  WARN:roomRequest received from Alice state=lobby mode=three_player_vs_all latency=nil
+05/13/26 18:06:55.079  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.080  INFO:Received joinRoomRequest from Bob for room 1 slot 2
+05/13/26 18:06:55.080  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.080  INFO:Player Bob joined room 1 as player 2
+05/13/26 18:06:55.081  INFO:Player Bob joined room 1 as player 2
+05/13/26 18:06:55.082  INFO:6 players loaded
+05/13/26 18:06:55.082  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.083  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.083  WARN:1 Login from Bob with ip: 170.46.23.4 publicPlayerID: 4
+05/13/26 18:06:55.084  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.084  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.085  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=nil ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.086  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.086  INFO:Starting match 1 for 1 Ben vs Alice
+05/13/26 18:06:55.087  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.091  INFO:6 players loaded
+05/13/26 18:06:55.091  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.093  INFO:6 players loaded
+05/13/26 18:06:55.093  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.093  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.093  WARN:4 Login from Jerry with ip: 170.46.23.4 publicPlayerID: 24
+05/13/26 18:06:55.094  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.094  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.095  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=nil ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.095  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.095  INFO:Starting match 1 for 1 Ben vs Alice
+05/13/26 18:06:55.100  INFO:6 players loaded
+05/13/26 18:06:55.100  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.100  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.102  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.102  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.103  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=nil ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.103  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.103  INFO:Starting match 1 for 1 Ben vs Alice
+05/13/26 18:06:55.104  WARN:[stuck-match] room 1 game idle for 35s (threshold 30s) — flagging
+05/13/26 18:06:55.107  INFO:6 players loaded
+05/13/26 18:06:55.107  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.107  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.107  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.107  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.108  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=nil ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.109  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.109  INFO:Starting match 1 for 1 Ben vs Alice
+05/13/26 18:06:55.110  WARN:[stuck-match] room 1 game idle for 35s (threshold 30s) — flagging
+05/13/26 18:06:55.114  INFO:6 players loaded
+05/13/26 18:06:55.114  WARN:2 Login from Alice with ip: 170.46.23.4 publicPlayerID: 5
+05/13/26 18:06:55.114  WARN:3 Login from Ben with ip: 170.46.23.4 publicPlayerID: 8
+05/13/26 18:06:55.114  INFO:Setting room to 1 for player Ben
+05/13/26 18:06:55.114  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.115  INFO:Room 1 readiness after Alice update: slot1:Ben[wantsReady=false loaded=nil ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.116  INFO:Room 1 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.116  INFO:Starting match 1 for 1 Ben vs Alice
+05/13/26 18:06:55.118  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.118  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.119  INFO:Room 1 readiness after Bob update: slot1:Bob[wantsReady=true loaded=false ready=false isReady=false] slot2:Alice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.119  INFO:Room 1 readiness after Alice update: slot1:Bob[wantsReady=true loaded=false ready=false isReady=false] slot2:Alice[wantsReady=false loaded=true ready=false isReady=false]
+05/13/26 18:06:55.119  INFO:Room 1 readiness after Bob update: slot1:Bob[wantsReady=true loaded=true ready=false isReady=false] slot2:Alice[wantsReady=false loaded=true ready=false isReady=false]
+05/13/26 18:06:55.119  INFO:Room 1 readiness after Alice update: slot1:Bob[wantsReady=true loaded=true ready=false isReady=false] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.120  INFO:Room 1 readiness after Bob update: slot1:Bob[wantsReady=true loaded=true ready=true isReady=true] slot2:Alice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.120  INFO:Starting match 1 for 1 Bob vs Alice
+05/13/26 18:06:55.321  INFO:1 Bob vs Alice match 1 ended with winner 1
+05/13/26 18:06:55.321  INFO:Closing room 1 Bob vs Alice
+05/13/26 18:06:55.321  INFO:Clearing room 1 for player Bob
+05/13/26 18:06:55.321  INFO:Clearing room 1 for player Alice
+05/13/26 18:06:55.321  INFO:Setting room to 1 for player Bob
+05/13/26 18:06:55.321  INFO:Setting room to 1 for player Alice
+05/13/26 18:06:55.322  INFO:Starting match 1 for 1 Bob vs Alice
+05/13/26 18:06:55.347  INFO:Bob aborted the game
+05/13/26 18:06:55.347  INFO:1 Bob vs Alice match 1 ended with winner 2
+05/13/26 18:06:55.347  INFO:Room 1 readiness after Bob update: slot1:Bob[wantsReady=false loaded=true ready=false isReady=false] slot2:Alice[wantsReady=false loaded=true ready=false isReady=false]
+05/13/26 18:06:55.348  INFO:Room 1 readiness after Alice update: slot1:Bob[wantsReady=false loaded=true ready=false isReady=false] slot2:Alice[wantsReady=false loaded=true ready=false isReady=false]
+05/13/26 18:06:55.348  INFO:Switching player Bob from room 1 to room 1
+05/13/26 18:06:55.348  INFO:Switching player Alice from room 1 to room 1
+05/13/26 18:06:55.348  INFO:Starting match 1 for 1 Bob vs Alice
+05/13/26 18:06:55.374  INFO:Bob aborted the game
+05/13/26 18:06:55.374  INFO:Alice aborted the game
+05/13/26 18:06:55.374  INFO:1 Bob vs Alice match 1 ended with winner 
+05/13/26 18:06:55.374  INFO:Room 1 readiness after Bob update: slot1:Bob[wantsReady=false loaded=true ready=false isReady=false] slot2:Alice[wantsReady=false loaded=true ready=false isReady=false]
+05/13/26 18:06:55.374  INFO:Room 1 readiness after Bob update: slot1:Bob[wantsReady=false loaded=true ready=false isReady=false] slot2:Alice[wantsReady=false loaded=true ready=false isReady=false]
+05/13/26 18:06:55.375  INFO:Switching player Bob from room 1 to room 1
+05/13/26 18:06:55.375  INFO:Switching player Alice from room 1 to room 1
+05/13/26 18:06:55.375  INFO:Starting match 1 for 1 Bob
+05/13/26 18:06:55.390  INFO:test2v2Room_creates
+05/13/26 18:06:55.390  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.391  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.391  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.391  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.391  INFO:test2v2Room_assignsTeams
+05/13/26 18:06:55.391  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.391  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.391  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.391  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.391  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.391  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.391  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.391  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.391  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.392  INFO:test1v2Room_assignsAsymmetricTeams
+05/13/26 18:06:55.392  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.392  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.392  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.392  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.392  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.392  INFO:Setting room to 98 for player Ben
+05/13/26 18:06:55.393  INFO:Setting room to 98 for player Jerry
+05/13/26 18:06:55.393  INFO:Setting room to 98 for player Berta
+05/13/26 18:06:55.393  INFO:test2v2Room_matchStarts
+05/13/26 18:06:55.393  INFO:Closing room 98 Ben vs Jerry vs Berta
+05/13/26 18:06:55.393  INFO:Clearing room 98 for player Ben
+05/13/26 18:06:55.393  INFO:Clearing room 98 for player Jerry
+05/13/26 18:06:55.393  INFO:Clearing room 98 for player Berta
+05/13/26 18:06:55.393  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.394  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.394  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.394  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.394  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.395  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.395  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.396  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.396  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.397  INFO:test2v2Room_allPlayersReceiveMatchStart
+05/13/26 18:06:55.397  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.397  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.398  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.398  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.398  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.398  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.398  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.398  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.398  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.398  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.399  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.399  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.399  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.399  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.402  INFO:test2v2Room_inputBroadcastToAll
+05/13/26 18:06:55.402  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.402  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.402  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.402  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.402  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.402  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.402  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.402  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.402  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.403  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.403  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.403  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.404  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.404  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.406  INFO:test2v2Room_inputPrefixes
+05/13/26 18:06:55.406  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.406  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.406  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.406  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.406  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.406  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.406  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.406  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.406  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.406  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.407  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.407  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.408  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.408  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.410  INFO:test2v2Room_teamAWins
+05/13/26 18:06:55.410  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.410  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.410  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.410  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.411  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.411  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.411  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.411  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.411  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.411  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.411  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.412  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.412  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.412  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.499  INFO:99 Ben vs Jerry vs Berta vs Raccoon match 1 ended with winner 1
+05/13/26 18:06:55.500  INFO:test2v2Room_teamBWins
+05/13/26 18:06:55.500  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.500  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.500  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.500  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.500  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.500  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.500  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.500  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.500  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.501  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.501  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.501  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.502  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.502  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.590  INFO:99 Ben vs Jerry vs Berta vs Raccoon match 1 ended with winner 3
+05/13/26 18:06:55.591  INFO:test1v2Room_soloWins
+05/13/26 18:06:55.591  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.591  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.591  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.591  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.591  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.591  INFO:Setting room to 98 for player Ben
+05/13/26 18:06:55.591  INFO:Setting room to 98 for player Jerry
+05/13/26 18:06:55.591  INFO:Setting room to 98 for player Berta
+05/13/26 18:06:55.591  INFO:Room 98 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.591  INFO:Room 98 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.592  INFO:Room 98 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.592  INFO:Starting match 1 for 98 Ben vs Jerry vs Berta
+05/13/26 18:06:55.654  INFO:98 Ben vs Jerry vs Berta match 1 ended with winner 1
+05/13/26 18:06:55.655  INFO:test1v2Room_teamWins
+05/13/26 18:06:55.655  INFO:Closing room 98 Ben vs Jerry vs Berta
+05/13/26 18:06:55.655  INFO:Clearing room 98 for player Ben
+05/13/26 18:06:55.655  INFO:Clearing room 98 for player Jerry
+05/13/26 18:06:55.655  INFO:Clearing room 98 for player Berta
+05/13/26 18:06:55.655  INFO:Setting room to 98 for player Ben
+05/13/26 18:06:55.655  INFO:Setting room to 98 for player Jerry
+05/13/26 18:06:55.655  INFO:Setting room to 98 for player Berta
+05/13/26 18:06:55.655  INFO:Room 98 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.656  INFO:Room 98 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.656  INFO:Room 98 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.656  INFO:Starting match 1 for 98 Ben vs Jerry vs Berta
+05/13/26 18:06:55.718  INFO:98 Ben vs Jerry vs Berta match 1 ended with winner 2
+05/13/26 18:06:55.718  INFO:test2v2Room_winCountsUpdate
+05/13/26 18:06:55.718  INFO:Closing room 98 Ben vs Jerry vs Berta
+05/13/26 18:06:55.718  INFO:Clearing room 98 for player Ben
+05/13/26 18:06:55.719  INFO:Clearing room 98 for player Jerry
+05/13/26 18:06:55.719  INFO:Clearing room 98 for player Berta
+05/13/26 18:06:55.719  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.719  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.719  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.719  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.719  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.720  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.720  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.720  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.720  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.808  INFO:99 Ben vs Jerry vs Berta vs Raccoon match 1 ended with winner 1
+05/13/26 18:06:55.808  INFO:test2v2Room_gameResultSentToAll
+05/13/26 18:06:55.808  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.808  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.809  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.809  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.809  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.809  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.809  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.809  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.809  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.809  INFO:Room 99 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=false loaded=false ready=false isReady=false] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.809  INFO:Room 99 readiness after Jerry update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=false loaded=false ready=false isReady=false] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.810  INFO:Room 99 readiness after Berta update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=false loaded=false ready=false isReady=false]
+05/13/26 18:06:55.810  INFO:Room 99 readiness after Raccoon update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true] slot2:Jerry[wantsReady=true loaded=true ready=true isReady=true] slot3:Berta[wantsReady=true loaded=true ready=true isReady=true] slot4:Raccoon[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.810  INFO:Starting match 1 for 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.903  INFO:99 Ben vs Jerry vs Berta vs Raccoon match 1 ended with winner 1
+05/13/26 18:06:55.904  INFO:test2v2Room_close
+05/13/26 18:06:55.904  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.904  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.904  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.904  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.904  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.905  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.905  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.905  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.905  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.905  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.905  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.905  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.905  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.905  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.905  INFO:test2v2Room_notRanked
+05/13/26 18:06:55.905  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.905  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.906  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.906  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.906  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.906  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.906  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.906  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.906  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.906  INFO:testPartialRoom_notFull
+05/13/26 18:06:55.906  INFO:Setting room to 97 for player Ben
+05/13/26 18:06:55.906  INFO:Closing room 97 Ben
+05/13/26 18:06:55.906  INFO:Clearing room 97 for player Ben
+05/13/26 18:06:55.906  INFO:testPartialRoom_noTeamsUntilFull
+05/13/26 18:06:55.906  INFO:Setting room to 97 for player Ben
+05/13/26 18:06:55.906  INFO:Closing room 97 Ben
+05/13/26 18:06:55.907  INFO:Clearing room 97 for player Ben
+05/13/26 18:06:55.907  INFO:testPartialRoom_addPlayer
+05/13/26 18:06:55.907  INFO:Setting room to 97 for player Ben
+05/13/26 18:06:55.907  INFO:Setting room to 97 for player Jerry
+05/13/26 18:06:55.907  INFO:Player Jerry joined room 97 as player 2
+05/13/26 18:06:55.907  INFO:Setting room to 97 for player Berta
+05/13/26 18:06:55.908  INFO:Player Berta joined room 97 as player 3
+05/13/26 18:06:55.908  INFO:Setting room to 97 for player Raccoon
+05/13/26 18:06:55.908  INFO:Player Raccoon joined room 97 as player 4
+05/13/26 18:06:55.909  INFO:Closing room 97 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.909  INFO:Clearing room 97 for player Ben
+05/13/26 18:06:55.909  INFO:Clearing room 97 for player Jerry
+05/13/26 18:06:55.909  INFO:Clearing room 97 for player Berta
+05/13/26 18:06:55.909  INFO:Clearing room 97 for player Raccoon
+05/13/26 18:06:55.909  INFO:testPartialRoom_addPlayerFull
+05/13/26 18:06:55.909  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.909  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.909  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.909  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.909  WARN:Cannot add player Bob to full room 99
+05/13/26 18:06:55.909  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.909  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.910  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.910  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.910  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.910  INFO:testPartialRoom_spectatorsAllowedWhenFull
+05/13/26 18:06:55.910  INFO:Setting room to 99 for player Ben
+05/13/26 18:06:55.910  INFO:Setting room to 99 for player Jerry
+05/13/26 18:06:55.910  INFO:Setting room to 99 for player Berta
+05/13/26 18:06:55.910  INFO:Setting room to 99 for player Raccoon
+05/13/26 18:06:55.910  INFO:Setting room to 99 for player Bob
+05/13/26 18:06:55.912  INFO:Closing room 99 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.912  INFO:Clearing room 99 for player Ben
+05/13/26 18:06:55.912  INFO:Clearing room 99 for player Jerry
+05/13/26 18:06:55.912  INFO:Clearing room 99 for player Berta
+05/13/26 18:06:55.912  INFO:Clearing room 99 for player Raccoon
+05/13/26 18:06:55.912  INFO:Clearing room 99 for player Bob
+05/13/26 18:06:55.912  INFO:testPartialRoom_noMatchStart
+05/13/26 18:06:55.912  INFO:Setting room to 97 for player Ben
+05/13/26 18:06:55.912  INFO:Room 97 readiness after Ben update: slot1:Ben[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.912  INFO:Closing room 97 Ben
+05/13/26 18:06:55.912  INFO:Clearing room 97 for player Ben
+05/13/26 18:06:55.912  INFO:testPartialRoom_playerJoinedMessage
+05/13/26 18:06:55.913  INFO:Setting room to 97 for player Ben
+05/13/26 18:06:55.913  INFO:Setting room to 97 for player Jerry
+05/13/26 18:06:55.913  INFO:Player Jerry joined room 97 as player 2
+05/13/26 18:06:55.913  INFO:Closing room 97 Ben vs Jerry
+05/13/26 18:06:55.913  INFO:Clearing room 97 for player Ben
+05/13/26 18:06:55.913  INFO:Clearing room 97 for player Jerry
+05/13/26 18:06:55.913  INFO:testPartialRoom_roomNameUpdates
+05/13/26 18:06:55.914  INFO:Setting room to 97 for player Ben
+05/13/26 18:06:55.914  INFO:Setting room to 97 for player Jerry
+05/13/26 18:06:55.914  INFO:Player Jerry joined room 97 as player 2
+05/13/26 18:06:55.914  INFO:Setting room to 97 for player Berta
+05/13/26 18:06:55.915  INFO:Player Berta joined room 97 as player 3
+05/13/26 18:06:55.915  INFO:Setting room to 97 for player Raccoon
+05/13/26 18:06:55.916  INFO:Player Raccoon joined room 97 as player 4
+05/13/26 18:06:55.916  INFO:Closing room 97 Ben vs Jerry vs Berta vs Raccoon
+05/13/26 18:06:55.916  INFO:Clearing room 97 for player Ben
+05/13/26 18:06:55.916  INFO:Clearing room 97 for player Jerry
+05/13/26 18:06:55.916  INFO:Clearing room 97 for player Berta
+05/13/26 18:06:55.916  INFO:Clearing room 97 for player Raccoon
+05/13/26 18:06:55.916  INFO:All TeamRoomTests passed!
+05/13/26 18:06:55.917  INFO:test_broadcastInput_relays_immediately
+05/13/26 18:06:55.917  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.917  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.917  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.917  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.917  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.918  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.918  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.918  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.918  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.918  INFO:test_broadcastGarbageEvent_relay
+05/13/26 18:06:55.918  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.918  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.918  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.918  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.918  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.918  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.918  INFO:1: G relay: sender=1 recipients=[2] garbageCount=1
+05/13/26 18:06:55.919  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.919  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.919  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.919  INFO:test_broadcastDeathEvent_eliminate_and_arbitrate
+05/13/26 18:06:55.919  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.919  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.919  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.919  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.919  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.919  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.919  INFO:1: LSBob died at frame 1000
+05/13/26 18:06:55.919  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.919  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.919  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.919  INFO:test_arbitration_singleDeath_emits_winner
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.000  INFO:1: LSBob died at frame 500
+05/13/26 18:06:55.250  INFO:1: KO arbitration: 1 death(s) within 200ms window, livingTeams=1, winnerSlot=2, tie=false
+05/13/26 18:06:55.250  INFO:1 LSBob vs LSAlice match 1 ended with winner 2
+05/13/26 18:06:55.350  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.350  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.350  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.920  INFO:test_arbitration_doubleDeath_tie
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.000  INFO:1: LSBob died at frame 500
+05/13/26 18:06:55.049  INFO:1: LSAlice died at frame 510
+05/13/26 18:06:55.349  INFO:1: KO arbitration: 2 death(s) within 200ms window, livingTeams=0, winnerSlot=nil, tie=true
+05/13/26 18:06:55.349  INFO:1 LSBob vs LSAlice match 1 ended with winner 
+05/13/26 18:06:55.349  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.349  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.349  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.922  INFO:test_arbitration_window_extends
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.000  INFO:1: LSBob died at frame 500
+05/13/26 18:06:55.150  INFO:1: LSAlice died at frame 510
+05/13/26 18:06:55.400  INFO:1: KO arbitration: 2 death(s) within 200ms window, livingTeams=0, winnerSlot=nil, tie=true
+05/13/26 18:06:55.400  INFO:1 LSBob vs LSAlice match 1 ended with winner 
+05/13/26 18:06:55.400  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.400  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.400  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.923  INFO:test_arbitration_2v2_team_wipe
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSP1
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSP2
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSP3
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSP4
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSP1 update: slot1:LSP1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSP2[wantsReady=false loaded=nil ready=false isReady=false] slot3:LSP3[wantsReady=false loaded=nil ready=false isReady=false] slot4:LSP4[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSP2 update: slot1:LSP1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSP2[wantsReady=true loaded=true ready=true isReady=true] slot3:LSP3[wantsReady=false loaded=nil ready=false isReady=false] slot4:LSP4[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSP3 update: slot1:LSP1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSP2[wantsReady=true loaded=true ready=true isReady=true] slot3:LSP3[wantsReady=true loaded=true ready=true isReady=true] slot4:LSP4[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSP4 update: slot1:LSP1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSP2[wantsReady=true loaded=true ready=true isReady=true] slot3:LSP3[wantsReady=true loaded=true ready=true isReady=true] slot4:LSP4[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Starting match 1 for 1 LSP1 vs LSP2 vs LSP3 vs LSP4
+05/13/26 18:06:55.000  INFO:1: LSP1 died at frame 500
+05/13/26 18:06:55.050  INFO:1: LSP2 died at frame 510
+05/13/26 18:06:55.350  INFO:1: KO arbitration: 2 death(s) within 200ms window, livingTeams=1, winnerSlot=3, tie=false
+05/13/26 18:06:55.350  INFO:1 LSP1 vs LSP2 vs LSP3 vs LSP4 match 1 ended with winner 3
+05/13/26 18:06:55.350  INFO:Closing room 1 LSP1 vs LSP2 vs LSP3 vs LSP4
+05/13/26 18:06:55.350  INFO:Clearing room 1 for player LSP1
+05/13/26 18:06:55.350  INFO:Clearing room 1 for player LSP2
+05/13/26 18:06:55.350  INFO:Clearing room 1 for player LSP3
+05/13/26 18:06:55.350  INFO:Clearing room 1 for player LSP4
+05/13/26 18:06:55.924  INFO:test_arbitration_sequentialDeaths_each_window_fires
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSseq1
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSseq2
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSseq3
+05/13/26 18:06:55.000  INFO:Setting room to 1 for player LSseq4
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSseq1 update: slot1:LSseq1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSseq2[wantsReady=false loaded=nil ready=false isReady=false] slot3:LSseq3[wantsReady=false loaded=nil ready=false isReady=false] slot4:LSseq4[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSseq2 update: slot1:LSseq1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSseq2[wantsReady=true loaded=true ready=true isReady=true] slot3:LSseq3[wantsReady=false loaded=nil ready=false isReady=false] slot4:LSseq4[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSseq3 update: slot1:LSseq1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSseq2[wantsReady=true loaded=true ready=true isReady=true] slot3:LSseq3[wantsReady=true loaded=true ready=true isReady=true] slot4:LSseq4[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.000  INFO:Room 1 readiness after LSseq4 update: slot1:LSseq1[wantsReady=true loaded=true ready=true isReady=true] slot2:LSseq2[wantsReady=true loaded=true ready=true isReady=true] slot3:LSseq3[wantsReady=true loaded=true ready=true isReady=true] slot4:LSseq4[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.000  INFO:Starting match 1 for 1 LSseq1 vs LSseq2 vs LSseq3 vs LSseq4
+05/13/26 18:06:55.000  INFO:1: LSseq1 died at frame 500
+05/13/26 18:06:55.250  INFO:1: KO arbitration: 1 death(s) within 200ms window, livingTeams=2, winnerSlot=nil, tie=false
+05/13/26 18:06:55.250  INFO:1: LSseq2 died at frame 1500
+05/13/26 18:06:55.500  INFO:1: KO arbitration: 1 death(s) within 200ms window, livingTeams=1, winnerSlot=3, tie=false
+05/13/26 18:06:55.500  INFO:1 LSseq1 vs LSseq2 vs LSseq3 vs LSseq4 match 1 ended with winner 3
+05/13/26 18:06:55.500  INFO:Closing room 1 LSseq1 vs LSseq2 vs LSseq3 vs LSseq4
+05/13/26 18:06:55.500  INFO:Clearing room 1 for player LSseq1
+05/13/26 18:06:55.500  INFO:Clearing room 1 for player LSseq2
+05/13/26 18:06:55.500  INFO:Clearing room 1 for player LSseq3
+05/13/26 18:06:55.500  INFO:Clearing room 1 for player LSseq4
+05/13/26 18:06:55.926  INFO:test_abort_marks_eliminated_keeps_game_alive
+05/13/26 18:06:55.926  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.926  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.926  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.926  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.926  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.926  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.927  INFO:LSBob aborted the game
+05/13/26 18:06:55.927  INFO:1 LSBob vs LSAlice match 1 ended with winner 2
+05/13/26 18:06:55.927  INFO:test_partialRoom_spectators_allowed
+05/13/26 18:06:55.927  INFO:Setting room to 1 for player LSSpec1
+05/13/26 18:06:55.927  INFO:Setting room to 1 for player LSSpec2
+05/13/26 18:06:55.927  INFO:Setting room to 1 for player LSSpec3
+05/13/26 18:06:55.927  INFO:Closing room 1 LSSpec1 vs LSSpec2
+05/13/26 18:06:55.927  INFO:Clearing room 1 for player LSSpec1
+05/13/26 18:06:55.927  INFO:Clearing room 1 for player LSSpec2
+05/13/26 18:06:55.927  INFO:Clearing room 1 for player LSSpec3
+05/13/26 18:06:55.927  INFO:test_voidByLeave_flags_crash_incident
+05/13/26 18:06:55.927  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.927  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.927  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.928  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.928  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.928  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.928  INFO:1: voiding room (LSBob left (test_disconnect))
+05/13/26 18:06:55.928  INFO:1: LSBob disconnected while alive — synthesizing DeathEvent at frame 1
+05/13/26 18:06:55.929  INFO:test_voidByLeave_survives_listener_failure
+05/13/26 18:06:55.929  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.929  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.929  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.929  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.929  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.929  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.929  INFO:1: voiding room (LSBob left (test))
+05/13/26 18:06:55.929  INFO:1: LSBob disconnected while alive — synthesizing DeathEvent at frame 1
+05/13/26 18:06:55.929  INFO:test_idleFill_emits_placeholders_for_eliminated_player
+05/13/26 18:06:55.929  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.929  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.929  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.929  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.929  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.929  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.930  INFO:test_idleFill_skips_when_game_complete
+05/13/26 18:06:55.930  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.930  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.930  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.930  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.930  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.930  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.930  INFO:test_idleFill_caps_at_max_frames
+05/13/26 18:06:55.930  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.930  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.930  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.930  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.930  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.930  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.934  INFO:test_idleFill_state_resets_on_rematch
+05/13/26 18:06:55.935  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.935  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.935  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.935  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.935  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.935  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.937  INFO:Starting match 2 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.937  INFO:test_silentDeathWatchdog_lastInputMs_seeded_at_start_match
+05/13/26 18:06:55.937  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.937  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.937  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.937  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.937  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.937  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.938  INFO:test_silentDeathWatchdog_updated_on_broadcastInput
+05/13/26 18:06:55.938  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.938  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.938  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.938  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.938  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.938  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.938  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.938  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.938  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.938  INFO:test_silentDeathWatchdog_synthesizes_death_when_slot_silent
+05/13/26 18:06:55.938  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.938  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.938  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.938  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.938  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.938  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.938  WARN:1: slot 1 (LSBob) silent for >10000ms — synthesizing inferred DeathEvent at frame 1
+05/13/26 18:06:55.938  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.938  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.938  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.938  INFO:test_silentDeathWatchdog_no_op_when_input_recent
+05/13/26 18:06:55.939  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.939  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.939  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.939  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.939  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.939  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.939  INFO:test_silentDeathWatchdog_skips_already_eliminated
+05/13/26 18:06:55.939  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.939  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.939  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.939  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.939  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.939  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.939  INFO:test_silentDeathWatchdog_emits_incidentDetected
+05/13/26 18:06:55.939  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.939  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.939  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.939  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.939  WARN:1: slot 1 (LSBob) silent for >10000ms — synthesizing inferred DeathEvent at frame 1
+05/13/26 18:06:55.940  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.940  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.940  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.940  INFO:test_silentDeathWatchdog_skips_when_game_complete
+05/13/26 18:06:55.940  INFO:Setting room to 1 for player LSBob
+05/13/26 18:06:55.940  INFO:Setting room to 1 for player LSAlice
+05/13/26 18:06:55.940  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=false loaded=nil ready=false isReady=false]
+05/13/26 18:06:55.940  INFO:Room 1 readiness after LSAlice update: slot1:LSBob[wantsReady=true loaded=true ready=false isReady=false] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.940  INFO:Room 1 readiness after LSBob update: slot1:LSBob[wantsReady=true loaded=true ready=true isReady=true] slot2:LSAlice[wantsReady=true loaded=true ready=true isReady=true]
+05/13/26 18:06:55.940  INFO:Starting match 1 for 1 LSBob vs LSAlice
+05/13/26 18:06:55.940  INFO:Closing room 1 LSBob vs LSAlice
+05/13/26 18:06:55.940  INFO:Clearing room 1 for player LSBob
+05/13/26 18:06:55.940  INFO:Clearing room 1 for player LSAlice
+05/13/26 18:06:55.940  INFO:All LooseSyncServerTests passed!
+05/13/26 18:06:55.940  INFO:=== all server tests passed ===

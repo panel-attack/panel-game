@@ -363,9 +363,14 @@ function ClientMatch:run()
   self:playCountdownSfx()
   self:playTimeLimitDepletingSfx()
 
-  -- drain visuals and confirm elimination for stacks that died mid-match
+  -- drain visuals and confirm elimination for stacks that died mid-match.
+  -- Use game_over_clock > 0 (death has been recorded) rather than game_ended()
+  -- (sim clock caught up past death) so remote stacks in loose-sync — whose
+  -- clock is permanently pinned below game_over_clock once input stops — still
+  -- get their death animation played.
   for _, stack in ipairs(self.stacks) do
-    if stack:game_ended() then
+    local deathRecorded = stack.engine and stack.engine.game_over_clock > 0
+    if stack:game_ended() or deathRecorded then
       stack:runGameOver(self.engine.clock)
     end
   end
@@ -1456,10 +1461,13 @@ end
 ---@param body table parsed event payload
 ---@param stack ClientStack the recipient client stack (must be non-nil, non-local)
 function ClientMatch:_applyDeathEventNow(body, stack)
-  -- ClientStack wraps the engine stack; game_over_clock lives on engine.
+  -- Call recordDeath (not a direct write) so the engine emits its "gameOver"
+  -- signal — that triggers onGameOver → _pendingVisualDeath → applyVisualDeath.
+  -- Previously this wrote game_over_clock directly, bypassing the signal and
+  -- leaving remote stacks with no death animation.
   local engine = stack.engine
   if engine.game_over_clock <= 0 then
-    engine.game_over_clock = body.senderFrame
+    engine:recordDeath(body.senderFrame)
     logger.info(string.format("DeathEvent applied: stack[%d] game_over_clock=%d (reason=%s)",
       body.sender, body.senderFrame, tostring(body and body.reason)))
   end
