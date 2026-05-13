@@ -12,6 +12,8 @@
 ---@diagnostic disable: invisible, undefined-field
 local Harness = require("server.tests.E2E.Harness")
 local TestPlayer = require("server.tests.E2E.TestPlayer")
+local NetworkProtocol = require("common.network.NetworkProtocol")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local logger = require("common.lib.logger")
 local socket = require("common.lib.socket")
 local tableUtils = require("common.lib.tableUtils")
@@ -162,12 +164,133 @@ local function test_open_ffa_compacts_after_pre_match_leave()
   if not ok then error(err, 0) end
 end
 
+-- Helper: bring 3 fresh TestPlayers up through matchStart in an Open FFA
+-- room. Mirrors the helper in ThreePlayerFFATests.lua but lives here so the
+-- regression file can stand on its own.
+local function bringThreeToMatchStart(h)
+  local a = TestPlayer(uname("BotA"))
+  local b = TestPlayer(uname("BotB"))
+  local c = TestPlayer(uname("BotC"))
+  local all = { a, b, c }
+  for _, p in ipairs(all) do p:login(h.host, h.port) end
+  assert(waitUntil(h, all, allLoggedIn(all), 8, "login"),
+         "not all 3 logged in")
+  a:requestRoom(OPEN_FFA_MODE_ID, "relaxed")
+  assert(waitUntil(h, all, function()
+    return h:findRoomByGameMode(OPEN_FFA_NAME) ~= nil
+  end, 5, "room"), "room not created")
+  local room = h:findRoomByGameMode(OPEN_FFA_NAME)
+  b:joinRoom(room.roomNumber)
+  c:joinRoom(room.roomNumber)
+  assert(waitUntil(h, all, function() return countServerPlayers(room) == 3 end,
+                   5, "3 seated"), "did not reach 3 seated")
+  for _, p in ipairs(all) do p:sendReady() end
+  assert(waitUntil(h, all, function() return room.game ~= nil end,
+                   10, "matchStart"), "match did not start")
+  return a, b, c, all, room
+end
+
+-- Instrument a TestPlayer so every server→client message of one of the input
+-- prefixes (I, U, V, ...) increments a counter keyed by prefix. Hooks the
+-- player's tcpClient:queueMessage and forwards to the original.
+local function attachInputProbe(player)
+  local counts = setmetatable({}, { __index = function() return 0 end })
+  local orig = player.netClient.tcpClient.queueMessage
+  player.netClient.tcpClient.queueMessage = function(self, type, data)
+    if NetworkProtocol.isInputPrefix(type) then
+      counts[type] = (rawget(counts, type) or 0) + 1
+    end
+    return orig(self, type, data)
+  end
+  return counts
+end
+
+--------------------------------------------------------------------------------
+-- B10 — relays past a disconnected slot continue mid-match
+--
+-- 3-player FFA, BotB (slot 2) disconnects mid-match. The B10 fix
+-- (commit ec5dd55d) converted ipairs→pairs across the server's broadcast
+-- paths so iteration doesn't halt at the first nil in self.players.
+--
+-- IMPORTANT NUANCE: voidByLeave defers actual slot removal (via
+-- pendingLeaverRemovals) until match end — so during an active match
+-- self.players isn't strictly sparse from a single disconnect; the
+-- leaver's ServerPlayer object stays in the slot but is marked
+-- disconnected+eliminated. The pairs/ipairs distinction matters most
+-- for the explicit death-event broadcast at Room.lua:1358 (where the
+-- comment lives) and for paths that DO see sparse state.
+--
+-- This test exercises the integration-level behavior B10 protects:
+-- after one player drops mid-match, the survivors keep exchanging
+-- input frames. If broadcastInput regressed to ipairs AND a future
+-- code change started nil-ing slot-2 immediately, slot 3 would freeze.
+-- We instrument BotC's wire layer to count BotA's relayed inputs and
+-- assert the count keeps growing post-disconnect.
+--------------------------------------------------------------------------------
+
+local function test_mid_match_leave_keeps_high_slot_receiving()
+  logger.info("[E2E Regression] === test_mid_match_leave_keeps_high_slot_receiving ===")
+  local h = Harness({ expectErrors = true }):start()
+  -- expectErrors=true: a mid-match disconnect produces logger.error("Connection
+  -- closed: ...") from one of the per-tick connection paths. The disconnect
+  -- IS the test condition, not a regression. We assert on actually-observable
+  -- relay behavior instead.
+  local ok, err = pcall(function()
+    local a, b, c, all, room = bringThreeToMatchStart(h)
+
+    -- Count BotA's relayed inputs as they arrive at BotC's socket. Hooking the
+    -- wire layer (tcpClient.queueMessage) means we measure what reached BotC's
+    -- socket independent of whether NetClient subsequently drains the queue.
+    local botcCounts = attachInputProbe(c)
+    local SLOT_A_PREFIX = NetworkProtocol.getInputPrefixForPlayer(1)
+
+    -- BotB disconnects mid-match. The server detects the dropped socket and
+    -- marks BotB disconnected + synthesizes a death event. Slot 2 stays in
+    -- self.players (deferred to pendingLeaverRemovals) but is flagged.
+    b:close()
+    assert(waitUntil(h, { a, c }, function()
+      return room.game and room.game.disconnectedPlayers[2]
+    end, 5, "B's disconnect tracked"),
+       "server did not register B as disconnected")
+
+    -- BotA sends inputs after the gap exists. If B10 regressed, the server's
+    -- broadcastInput ipairs would stop after slot 1 and BotC would receive
+    -- nothing. We send several frames so a single dropped one doesn't
+    -- statistically look like success.
+    local burstCount = 8
+    for _ = 1, burstCount do
+      a:sendInput(KeyDataEncoding.swap)
+      h:tick()
+      for _, p in ipairs({ a, c }) do p:update() end
+    end
+
+    -- Drain a few more ticks so any straggler relays arrive.
+    for _ = 1, 5 do
+      h:tick()
+      for _, p in ipairs({ a, c }) do p:update() end
+    end
+
+    assert(rawget(botcCounts, SLOT_A_PREFIX) >= burstCount,
+           "B10 regression: BotC (slot 3) only saw "
+           .. tostring(rawget(botcCounts, SLOT_A_PREFIX) or 0)
+           .. " relayed inputs from BotA, expected >= " .. burstCount
+           .. ". Server may have stopped at the slot-2 nil gap.")
+
+    logger.info("[E2E Regression] PASS — B10: slot-3 relay survived slot-2 disconnect ("
+                .. rawget(botcCounts, SLOT_A_PREFIX) .. " frames received)")
+    for _, p in ipairs(all) do p:close() end
+  end)
+  h:stop()
+  if not ok then error(err, 0) end
+end
+
 --------------------------------------------------------------------------------
 -- Runner
 --------------------------------------------------------------------------------
 
 local function runAll()
   test_open_ffa_compacts_after_pre_match_leave()
+  test_mid_match_leave_keeps_high_slot_receiving()
 end
 
 if not package.loaded["server.tests.E2E.RegressionTests"] then
@@ -177,4 +300,5 @@ end
 return {
   runAll = runAll,
   test_open_ffa_compacts_after_pre_match_leave = test_open_ffa_compacts_after_pre_match_leave,
+  test_mid_match_leave_keeps_high_slot_receiving = test_mid_match_leave_keeps_high_slot_receiving,
 }
