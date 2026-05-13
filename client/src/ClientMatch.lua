@@ -278,13 +278,36 @@ function ClientMatch:run()
   -- the recipient's stack is still healthy enough to receive it.
   self:drainPendingHistoricalEvents()
 
-  for _, stack in ipairs(self.stacks) do
+  for i, stack in ipairs(self.stacks) do
     -- if stack.cpu then
     --   stack.cpu:run(stack)
     -- end
-    if stack.is_local and stack.send_controls and not stack:game_ended() --[[and not stack.cpu]] then
+    local willPoll = stack.is_local and stack.send_controls and not stack:game_ended() --[[and not stack.cpu]]
+    if willPoll then
       ---@cast stack PlayerStack
       stack:send_controls()
+    end
+
+    -- Trace capture: per-stack poll-state transitions. Emit only when
+    -- the polling decision flips for a stack — the 3p FFA bug had all
+    -- three clients fall silent at the same moment, and a marker here
+    -- tells us whether polling STOPPED FIRING (caller stopped calling)
+    -- versus polling still firing but short-circuiting internally.
+    if self._tracePollState[i] ~= willPoll then
+      self._tracePollState[i] = willPoll
+      pcall(function()
+        TraceWriter.localEvent("sendControlsPoll", {
+          stack   = i,
+          polling = willPoll,
+          reason  = (not willPoll) and (
+            (not stack.is_local      and "not_local") or
+            (not stack.send_controls and "no_send_controls") or
+            (stack:game_ended()      and "game_ended") or
+            "other"
+          ) or nil,
+          clock = self.engine and self.engine.clock or nil,
+        })
+      end)
     end
   end
 
@@ -442,6 +465,11 @@ function ClientMatch:start()
   -- a stack's engine.game_over_clock crosses 0. Without this, the trace
   -- can't tell "engines reached game-over locally" from "engines wedged."
   self._traceGameOverEmitted = {}
+  -- Per-stack send_controls poll-state tracking. Marker fires only on
+  -- transitions (start polling / stop polling) so we don't drown the
+  -- trace in 60Hz heartbeats. Tells us if/when the caller stopped
+  -- calling send_controls for each stack.
+  self._tracePollState = {}
 
   -- outgoing garbage is already correctly directed by Match
   -- but the relationship is indirect between engine stacks to reduce coupling
