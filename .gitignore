@@ -13,3 +13,9 @@ placement_matches/
 Thumbs.db
 *.swp
 logs/
+
+# Pre-deploy snapshots from gather_logs.sh — keep local for post-mortems
+gathered_logs/
+
+# Crash reports — captured server-side, see docs/CRASH_REPLAY_PLAN.md
+crash_reports/
