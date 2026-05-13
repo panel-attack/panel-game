@@ -1273,7 +1273,7 @@ end
 
 function ClientMatch:getWinners()
   if not self.winners and self.engine:isLocallyEnded() then
-    local winningStacks = self.engine:getWinners()
+    local winningStacks = self.engine:getWinners() or {}
     local winners = {}
     for _, stack in ipairs(winningStacks) do
       for _, player in ipairs(self.players) do
@@ -1284,10 +1284,9 @@ function ClientMatch:getWinners()
       end
     end
     self.winners = winners
-    return self.winners
-  else
-    return self.winners
   end
+
+  return self.winners or {}
 end
 
 ---@param playerNumber integer 1-based slot number of the sender

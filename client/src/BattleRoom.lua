@@ -654,10 +654,12 @@ function BattleRoom:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1
 
   if not match.engine.aborted then
-    local winners = match:getWinners()
+    local winners = match:getWinners() or {}
     -- apply wins and possibly statistical data up for collection
     if #winners == 1 then
-      winners[1].stack.character:playWinSfx()
+      if winners[1].stack and winners[1].stack.character then
+        winners[1].stack.character:playWinSfx()
+      end
       if not self.online then
         -- increment win count on winning player if there is only one
         winners[1]:incrementWinCount()

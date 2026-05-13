@@ -916,6 +916,7 @@ function NetClient:leaveRoom()
 end
 
 function NetClient:reportLocalGameResult(winners)
+  winners = winners or {}
   if #winners == 0 then
     return  -- aborted match, handled separately via sendMatchAbort
   end
