@@ -66,33 +66,39 @@ local function test_disabled_until_beginGame()
   -- No session/match/game yet. recv() should be a silent no-op as far
   -- as files go — but it does land in the pre-game ring.
   TraceWriter.recv("J", { type = "lobbyStateV2" })
-  assert(TraceWriter.preGameCount() == 1, "pre-game ring should hold one event")
+  assert(TraceWriter.preMatchCount() == 1, "pre-game ring should hold one event")
   assert(not TraceWriter.isWriting(), "no file open yet")
   assert(next(fs._store.files) == nil, "no files written yet")
 end
 
-local function test_beginGame_drains_pregame_ring()
-  logger.info("test_beginGame_drains_pregame_ring")
+local function test_beginGame_routes_to_game_file()
+  logger.info("test_beginGame_routes_to_game_file")
   local clock, _bump = clockMaker(1000)
   local fs = makeFs()
   TraceWriter.configure({ fs = fs, clock = clock })
   TraceWriter.beginSession(1000)
   TraceWriter.beginMatch(7, 1001)
-  -- Pre-game events that should land in the file when game starts.
+  -- Match-scope events: land in _match.jsonl now that match is open.
   TraceWriter.recv("J", { type = "lobbyStateV2" })
   TraceWriter.recv("J", { type = "matchStart", content = { seed = 42 } })
 
   TraceWriter.beginGame(1002)
 
-  local path = "trace_archive/session_1000/match_7_1001/game_1002.jsonl"
-  assert(TraceWriter.currentPath() == path,
-    "currentPath = " .. tostring(TraceWriter.currentPath()) .. " expected " .. path)
-  local blob = fs._store.files[path]
-  assert(blob, "expected pre-game flush to write " .. path)
-  -- Both lines drained. Pre-game ring is now empty.
-  assert(blob:find('"lobbyStateV2"'),  "lobbyState line should be in file")
-  assert(blob:find('"matchStart"'),    "matchStart line should be in file")
-  assert(TraceWriter.preGameCount() == 0, "ring should be drained")
+  local gamePath  = "trace_archive/session_1000/match_7_1001/game_1002.jsonl"
+  local matchPath = "trace_archive/session_1000/match_7_1001/_match.jsonl"
+  assert(TraceWriter.gamePath() == gamePath,
+    "gamePath = " .. tostring(TraceWriter.gamePath()) .. " expected " .. gamePath)
+
+  -- The match-scope events landed in the match file (NOT the game file).
+  local matchBlob = fs._store.files[matchPath]
+  assert(matchBlob, "match file should exist after beginMatch")
+  assert(matchBlob:find('"lobbyStateV2"'),
+    "lobbyState should be in _match.jsonl")
+  assert(matchBlob:find('"matchStart"'),
+    "matchStart should be in _match.jsonl (pre-beginGame match-scope)")
+  -- beginGame's gameBegin marker should also be in the match file.
+  assert(matchBlob:find('"gameBegin"'),
+    "gameBegin connection marker should be in _match.jsonl")
 end
 
 local function test_taps_write_after_beginGame()
@@ -176,7 +182,10 @@ local function test_endGame_force_flushes()
   assert(TraceWriter.pendingCount() == 2)
 
   TraceWriter.endGame()
-  assert(not TraceWriter.isWriting(), "endGame closes the file")
+  -- endGame closes the game file but leaves match scope open — the
+  -- writer is still writing (to _match.jsonl).
+  assert(not TraceWriter.gameOpen(), "endGame should close the game file")
+  assert(TraceWriter.matchOpen(),     "endGame leaves match scope open")
   -- Buffered lines should be on disk now.
   local writtenSomething = false
   for _ in pairs(fs._store.files) do writtenSomething = true; break end
@@ -213,8 +222,89 @@ local function test_pregame_ring_caps_at_limit()
   for i = 1, 150 do
     TraceWriter.send("I", tostring(i))
   end
-  assert(TraceWriter.preGameCount() == 100,
-    "ring should cap at 100, got " .. TraceWriter.preGameCount())
+  assert(TraceWriter.preMatchCount() == 100,
+    "ring should cap at 100, got " .. TraceWriter.preMatchCount())
+end
+
+----------------------------------------------------------------------
+-- Match-scope routing tests
+----------------------------------------------------------------------
+
+local function test_beginMatch_opens_match_jsonl()
+  logger.info("test_beginMatch_opens_match_jsonl")
+  local fs = makeFs()
+  TraceWriter.configure({ fs = fs, flushEvents = 1 })
+  TraceWriter.beginSession(1000)
+  TraceWriter.beginMatch(7, 1001)
+  TraceWriter.recv("J", { type = "addToRoom" })
+
+  local expectedPath = "trace_archive/session_1000/match_7_1001/_match.jsonl"
+  assert(TraceWriter.matchPath() == expectedPath,
+    "matchPath should be " .. expectedPath ..
+    "; got " .. tostring(TraceWriter.matchPath()))
+  local blob = fs._store.files[expectedPath]
+  assert(blob and blob:find('"addToRoom"'),
+    "addToRoom event should have landed in _match.jsonl")
+  assert(not TraceWriter.gameOpen(), "no game open yet")
+  assert(TraceWriter.matchOpen(), "match should be open")
+end
+
+local function test_premMatch_ring_drains_into_match_file()
+  logger.info("test_premMatch_ring_drains_into_match_file")
+  local fs = makeFs()
+  TraceWriter.configure({ fs = fs, flushEvents = 1 })
+  TraceWriter.beginSession(2000)
+  -- Pre-match ambient context (lobby chatter before joining a room).
+  TraceWriter.recv("J", { type = "lobbyStateV2" })
+  assert(TraceWriter.preMatchCount() == 1, "ring should hold the lobby state")
+  -- Now join a room.
+  TraceWriter.beginMatch(3, 2001)
+  -- Ring should be drained into the match file.
+  assert(TraceWriter.preMatchCount() == 0)
+  local matchPath = TraceWriter.matchPath()
+  local blob = fs._store.files[matchPath]
+  assert(blob and blob:find('"lobbyStateV2"'),
+    "lobby state should now be in the match file")
+end
+
+local function test_events_route_to_game_then_back_to_match()
+  logger.info("test_events_route_to_game_then_back_to_match")
+  local fs = makeFs()
+  TraceWriter.configure({ fs = fs, flushEvents = 1 })
+  TraceWriter.beginSession(3000)
+  TraceWriter.beginMatch(5, 3001)
+  local matchPath = TraceWriter.matchPath()
+
+  -- Match-scope event: lands in match file.
+  TraceWriter.recv("J", { type = "settingsUpdate" })
+
+  TraceWriter.beginGame(3002)
+  local gamePath = TraceWriter.gamePath()
+
+  -- Game-scope events: land in game file.
+  TraceWriter.recv("J", { type = "matchStart" })
+  TraceWriter.send("I", "A")
+
+  TraceWriter.endGame()
+
+  -- Back to match-scope: lands in match file again.
+  TraceWriter.recv("J", { type = "playerLeftRoom" })
+
+  TraceWriter.endMatch()
+
+  local matchBlob = fs._store.files[matchPath]
+  local gameBlob  = fs._store.files[gamePath]
+
+  assert(matchBlob:find('"settingsUpdate"'),
+    "settingsUpdate should be in _match.jsonl")
+  assert(matchBlob:find('"playerLeftRoom"'),
+    "playerLeftRoom should be in _match.jsonl (post-game match scope)")
+  assert(gameBlob:find('"matchStart"'),
+    "matchStart should be in the game file")
+  assert(not matchBlob:find('"matchStart"'),
+    "matchStart should NOT have leaked into _match.jsonl")
+  assert(not gameBlob:find('"settingsUpdate"'),
+    "settingsUpdate should NOT have leaked into the game file")
 end
 
 ----------------------------------------------------------------------
@@ -222,12 +312,15 @@ end
 ----------------------------------------------------------------------
 
 test_disabled_until_beginGame()
-test_beginGame_drains_pregame_ring()
+test_beginGame_routes_to_game_file()
 test_taps_write_after_beginGame()
 test_flush_threshold_eventcount()
 test_flush_threshold_time()
 test_endGame_force_flushes()
 test_disk_failure_disables_writer()
 test_pregame_ring_caps_at_limit()
+test_beginMatch_opens_match_jsonl()
+test_premMatch_ring_drains_into_match_file()
+test_events_route_to_game_then_back_to_match()
 
 logger.info("All TraceWriterTests passed!")

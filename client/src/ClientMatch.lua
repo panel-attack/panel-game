@@ -389,10 +389,9 @@ function ClientMatch:start()
 
   -- Trace capture: open a per-game file and emit a synthetic matchStart
   -- so single-player traces have a bootstrap. Multiplayer flows already
-  -- captured a real matchStart via the network tap (it sits in the
-  -- pre-game ring); beginGame drains that ring into the file first, so
-  -- the network-captured matchStart wins on TraceReader's "find first"
-  -- and this synthetic emit becomes a harmless duplicate.
+  -- captured a real matchStart via the network tap (it lands in the
+  -- match-scope file or pre-match ring); the synthetic emit here is a
+  -- harmless duplicate for those cases.
   pcall(function()
     TraceWriter.beginGame(os.time())
     if self.replay then

@@ -73,7 +73,7 @@ function PlayerStack:send_controls()
   -- player play this is the ONLY input record (no network traffic to
   -- tap); for multiplayer it complements the outbound I-frame tap.
   -- self.engine.which is the stack's 1-based index so the assembler /
-  -- TraceReader knows which slot the input feeds.
+  -- replay loader knows which slot the input feeds.
   pcall(function()
     TraceWriter.input(to_send, self.engine.clock, self.engine.which)
   end)

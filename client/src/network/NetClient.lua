@@ -12,6 +12,7 @@ local SoundController = require("client.src.music.SoundController")
 local GameCatchUp = require("client.src.scenes.GameCatchUp")
 local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
+local TraceWriter = require("client.src.network.TraceWriter")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelData = require("common.data.LevelData")
 local GameModes = require("common.data.GameModes")
@@ -287,6 +288,16 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
   self.room = GAME.battleRoom
   self:registerPlayerUpdates(self.room)
+
+  -- Trace capture: open the match-scope file. Pre-match ambient context
+  -- (lobby chatter, the addToRoom message itself which sits in the
+  -- pre-match ring) drains into _match.jsonl so the file starts with
+  -- the lead-up to this room-join. pcall'd so a TraceWriter regression
+  -- can't break the room-join flow.
+  pcall(function()
+    local roomNumber = self.room and self.room.roomNumber or 0
+    TraceWriter.beginMatch(roomNumber, os.time())
+  end)
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
 
@@ -423,6 +434,11 @@ local function processLeaveRoomMessage(self, message)
     self.room:shutdown()
     self.room = nil
     GAME.battleRoom = nil
+
+    -- Trace capture: close match-scope file. Force-flushes any pending
+    -- lines. pcall'd at the call site so a TraceWriter bug can't disturb
+    -- the room-leave path.
+    pcall(function() TraceWriter.endMatch() end)
 
     -- Immediately clear stale local lobby room assignment so room-invite UI cannot linger
     -- while waiting for the next lobbyStateV2 broadcast.
