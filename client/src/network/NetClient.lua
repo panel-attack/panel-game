@@ -648,23 +648,17 @@ local function processMenuStateMessage(player, message)
 end
 
 local function processInputMessages(self)
-  -- Pop input messages for all 8 player slots. Stopping at 4 silently dropped
-  -- inputs for slots 5-8 — each non-slot-5 client would wait indefinitely on
-  -- the 5th stack until the connection watchdog finally fired.
-  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
-    NetworkProtocol.serverMessageTypes.opponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.thirdOpponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.fourthOpponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.fifthOpponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.sixthOpponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.seventhOpponentInput.prefix,
-    NetworkProtocol.serverMessageTypes.eighthOpponentInput.prefix
-  )
+  -- Unified input message: every player's relayed input comes through the
+  -- same "I" prefix; the sender is identified by playerNumber inside the
+  -- JSON body. TcpClient.queueMessage already decoded the body to
+  -- {playerNumber, input} when it pushed onto the queue.
+  local inputPrefix = NetworkProtocol.serverMessageTypes.input.prefix
+  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(inputPrefix)
   if self.room and self.room.match then
     for _, msg in ipairs(messages) do
-      for type, data in pairs(msg) do
-        self.room.match:receiveInput(type, data)
+      local body = msg[inputPrefix]
+      if body then
+        self.room.match:receiveInput(body.playerNumber, body.input)
       end
     end
   end

@@ -451,10 +451,10 @@ function Room:start_match()
 
   -- Dynamic-roster compaction. Open FFA after a pre-match leave can leave
   -- self.players sparse (e.g. {[1]=A,[3]=B,[4]=C} when slot 2 left). Game,
-  -- broadcastInput, replay-stack indexing, and getInputPrefixForPlayer all
-  -- assume dense 1..N: ipairs halts at the first nil so the replay would
-  -- ship one stack instead of three, and an input prefix for slot 3 would
-  -- decode on the client to a non-existent stack and be silently dropped.
+  -- broadcastInput, and replay-stack indexing assume dense 1..N: ipairs
+  -- halts at the first nil so the replay would ship one stack instead of
+  -- three, and an input tagged with playerNumber=3 would route on the
+  -- client to a non-existent stack and be silently dropped.
   -- Renumber here for dynamic-roster only — fixed-roster rooms keep slot
   -- semantics for team-color assignment and can't reach this point sparse
   -- anyway (minPlayers == maxPlayers blocks starting until all slots fill).
@@ -725,10 +725,13 @@ function Room:broadcastInput(input, sender)
   -- Record for replay
   self.game:receiveInput(sender, input)
 
-  -- Relay immediately to every other player + every spectator, tagged with the sender's slot prefix.
-  local inputPrefix = NetworkProtocol.getInputPrefixForPlayer(senderNum)
-      or NetworkProtocol.getInputPrefixForPlayer(1)
-  local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(inputPrefix, input)
+  -- Relay immediately to every other player + every spectator. Unified "I"
+  -- prefix with JSON body {playerNumber, input} — server stamps the
+  -- authoritative sender slot so recipients route inputs correctly without
+  -- a per-slot prefix table (no 8-player wire cap).
+  local body = NetworkProtocol.encodeInput(senderNum, input)
+  local inputMessage = NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.serverMessageTypes.input.prefix, body)
 
   -- pairs not ipairs: self.players goes sparse mid-match when someone leaves
   -- (_removeFromPlayersAndAnnounce nils out the slot to preserve team

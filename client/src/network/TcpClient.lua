@@ -209,10 +209,18 @@ end
 
 -- Adds the message to the network queue or processes it immediately in a couple cases
 function TcpClient:queueMessage(type, data)
-  if NetworkProtocol.isInputPrefix(type) then
+  if type == NetworkProtocol.serverMessageTypes.input.prefix then
+    -- Unified input message: JSON body {playerNumber, input}. Decode here so
+    -- downstream consumers (NetClient.processInputMessages) get the parsed
+    -- shape and can route by playerNumber without re-parsing.
+    local playerNumber, input = NetworkProtocol.decodeInput(data)
+    if not playerNumber then
+      logger.warn("Failed to decode input body: " .. (data or "nil"))
+      return
+    end
     local dataMessage = {}
-    dataMessage[type] = data
-    logger.trace("Queuing: " .. type .. " with data:" .. data)
+    dataMessage[type] = {playerNumber = playerNumber, input = input}
+    logger.trace("Queuing: " .. type .. " for player " .. playerNumber)
     self.receivedMessageQueue:push(dataMessage)
   elseif type == NetworkProtocol.serverMessageTypes.versionCorrect.prefix then
     -- make responses to client H messages processable by treating them like a json response
@@ -247,20 +255,13 @@ function TcpClient:queueMessage(type, data)
 end
 
 function TcpClient:dropOldInputMessages()
+  local inputPrefix = NetworkProtocol.serverMessageTypes.input.prefix
   while true do
     local message = self.receivedMessageQueue:top()
     if not message then
       break
     end
-
-    local isInputMessage = false
-    for key in pairs(message) do
-      if NetworkProtocol.isInputPrefix(key) then
-        isInputMessage = true
-        break
-      end
-    end
-    if not isInputMessage then
+    if message[inputPrefix] == nil then
       break -- Found a non user input message. Stop. Future data is for next game
     else
       self.receivedMessageQueue:pop() -- old data, drop it

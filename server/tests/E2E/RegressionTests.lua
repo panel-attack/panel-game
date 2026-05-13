@@ -190,15 +190,20 @@ local function bringThreeToMatchStart(h)
   return a, b, c, all, room
 end
 
--- Instrument a TestPlayer so every server→client message of one of the input
--- prefixes (I, U, V, ...) increments a counter keyed by prefix. Hooks the
--- player's tcpClient:queueMessage and forwards to the original.
+-- Instrument a TestPlayer so every server→client unified input message
+-- increments a counter keyed by the sender's playerNumber (decoded from the
+-- JSON body). Hooks the player's tcpClient:queueMessage and forwards to the
+-- original.
 local function attachInputProbe(player)
   local counts = setmetatable({}, { __index = function() return 0 end })
   local orig = player.netClient.tcpClient.queueMessage
+  local inputPrefix = NetworkProtocol.serverMessageTypes.input.prefix
   player.netClient.tcpClient.queueMessage = function(self, type, data)
-    if NetworkProtocol.isInputPrefix(type) then
-      counts[type] = (rawget(counts, type) or 0) + 1
+    if type == inputPrefix then
+      local playerNumber = NetworkProtocol.decodeInput(data)
+      if playerNumber then
+        counts[playerNumber] = (rawget(counts, playerNumber) or 0) + 1
+      end
     end
     return orig(self, type, data)
   end
@@ -263,7 +268,7 @@ local function test_mid_match_leave_keeps_high_slot_receiving()
     -- wire layer (tcpClient.queueMessage) means we measure what reached BotC's
     -- socket independent of whether NetClient subsequently drains the queue.
     local botcCounts = attachInputProbe(c)
-    local SLOT_A_PREFIX = NetworkProtocol.getInputPrefixForPlayer(1)
+    local SLOT_A = 1
 
     -- BotB disconnects mid-match. The server detects the dropped socket and
     -- marks BotB disconnected + synthesizes a death event. Slot 2 stays in
@@ -291,14 +296,14 @@ local function test_mid_match_leave_keeps_high_slot_receiving()
       for _, p in ipairs({ a, c }) do p:update() end
     end
 
-    assert(rawget(botcCounts, SLOT_A_PREFIX) >= burstCount,
+    assert(rawget(botcCounts, SLOT_A) >= burstCount,
            "B10 regression: BotC (slot 3) only saw "
-           .. tostring(rawget(botcCounts, SLOT_A_PREFIX) or 0)
+           .. tostring(rawget(botcCounts, SLOT_A) or 0)
            .. " relayed inputs from BotA, expected >= " .. burstCount
            .. ". Server may have stopped at the slot-2 nil gap.")
 
     logger.info("[E2E Regression] PASS — B10: slot-3 relay survived slot-2 disconnect ("
-                .. rawget(botcCounts, SLOT_A_PREFIX) .. " frames received)")
+                .. rawget(botcCounts, SLOT_A) .. " frames received)")
     for _, p in ipairs(all) do p:close() end
   end)
   h:stop()
@@ -328,7 +333,7 @@ local function test_b10_sparse_self_players_relay_iteration()
     local a, b, c, all, room = bringThreeToMatchStart(h)
 
     local botcCounts = attachInputProbe(c)
-    local SLOT_A_PREFIX = NetworkProtocol.getInputPrefixForPlayer(1)
+    local SLOT_A = 1
 
     -- Force the exact sparse state B10 protects against. NOT the normal
     -- mid-match path — production won't put room.players in this shape
@@ -354,9 +359,9 @@ local function test_b10_sparse_self_players_relay_iteration()
     -- Restore the slot before stop() so harness cleanup can iterate normally.
     room.players[2] = strandedPlayer
 
-    assert(rawget(botcCounts, SLOT_A_PREFIX) >= burstCount,
+    assert(rawget(botcCounts, SLOT_A) >= burstCount,
            "B10 white-box regression: BotC (slot 3) saw "
-           .. tostring(rawget(botcCounts, SLOT_A_PREFIX) or 0)
+           .. tostring(rawget(botcCounts, SLOT_A) or 0)
            .. " inputs through a sparse self.players (slot 2 = nil);"
            .. " expected >= " .. burstCount
            .. ". The relay loop at Room.lua:732 likely halted at the nil slot.")

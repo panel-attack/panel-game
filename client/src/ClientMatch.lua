@@ -1133,13 +1133,12 @@ function ClientMatch:getWinners()
   end
 end
 
----@param prefix string input prefix indicating sender
----@param input string
-function ClientMatch:receiveInput(prefix, input)
-  local senderIndex = NetworkProtocol.playerIndexForInputPrefix[prefix]
-  if senderIndex and self.stacks[senderIndex] then
+---@param playerNumber integer 1-based slot number of the sender
+---@param input string encoded input string
+function ClientMatch:receiveInput(playerNumber, input)
+  if playerNumber and self.stacks[playerNumber] then
     ---@diagnostic disable-next-line: param-type-mismatch
-    self.stacks[senderIndex]:receiveConfirmedInput(input)
+    self.stacks[playerNumber]:receiveConfirmedInput(input)
   end
 end
 

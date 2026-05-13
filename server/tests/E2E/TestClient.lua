@@ -285,8 +285,11 @@ function TestClient:_dispatch(prefix, body)
     -- Keepalive — auto-acknowledge so the connection-watchdog doesn't kick us.
     self.inbox.pings = self.inbox.pings + 1
     self:_sendRaw(NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix)
-  elseif NetworkProtocol.isInputPrefix(prefix) then
-    table.insert(self.inbox.input, { prefix = prefix, body = body })
+  elseif prefix == s.input.prefix then
+    -- Unified input message: JSON body {playerNumber, input}. Decode so test
+    -- scenarios can inspect playerNumber without re-parsing.
+    local playerNumber, inputBody = NetworkProtocol.decodeInput(body)
+    table.insert(self.inbox.input, { playerNumber = playerNumber, input = inputBody, body = body })
   elseif prefix == s.garbageEvent.prefix then
     local msg = json.decode(body)
     table.insert(self.inbox.garbage, msg)
