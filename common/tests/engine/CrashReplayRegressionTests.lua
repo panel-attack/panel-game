@@ -86,7 +86,7 @@ local function runPerspective(slice, stopAtFrameOverride)
               or MAX_FRAMES
 
   local frame = 0
-  while not match:hasEnded() do
+  while not match:isLocallyEnded() do
     match:run()
     frame = frame + 1
     if frame >= stopAt then break end

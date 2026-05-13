@@ -212,16 +212,18 @@ function Lobby:initLobbyMenu()
     local count = tonumber(mode.playerCount) or tonumber(mode.maxPlayers) or tonumber(mode.minPlayers) or 2
     count = math.max(2, math.floor(count))
 
-    -- "Open" only relaxes the start threshold for FFA-like modes where each
-    -- player is their own team. Team modes (1v2, 2v1, 2v2 etc.) have a fixed
-    -- roster shape — playersPerTeam fixes the headcount — so an Open Team
-    -- room is still "anyone can drop in," but the match can't start until
-    -- the full roster is in. Setting minPlayers below the required total
-    -- here would let the server hit start_match with an under-roster and
-    -- crash inside TeamUtils.createTeams when playersPerTeam[teamId] is nil.
+    -- "Open" relaxes the start threshold so a partial roster can begin:
+    --   * FFA: 2 minimum, up to count.
+    --   * Team: teamCount minimum (one body per team). Server now uses
+    --     TeamUtils.createTeamsFromFilledSlots for partial rosters, so an
+    --     Open 2v2 can run as 1v1 with the other two seats open for drop-in.
+    -- Invite-only is always fixed-roster (min == max).
     local isFfa = (mode.playersPerTeam == 1)
     if openRoom and isFfa then
       mode.minPlayers = 2
+      mode.maxPlayers = count
+    elseif openRoom then
+      mode.minPlayers = tonumber(mode.teamCount) or 2
       mode.maxPlayers = count
     else
       mode.minPlayers = count
@@ -668,6 +670,15 @@ function Lobby:initLobbyMenu()
     self.uiRoot:addChild(typeMenu)
   end
 
+  -- New create flow pushes a single-screen scene (RoomCreateTeamMenu /
+  -- RoomCreateFfaMenu) where every option is on one page with prior picks
+  -- pre-selected from config.lobbyTeamPrefs / config.lobbyFfaPrefs. The
+  -- legacy cascade (openTeamTypeMenu / openFfaTypeMenu and friends) is
+  -- still in this file unreferenced so it can be wired back if the new
+  -- UX needs to be reverted.
+  local RoomCreateTeamMenu = require("client.src.scenes.RoomCreateTeamMenu")
+  local RoomCreateFfaMenu = require("client.src.scenes.RoomCreateFfaMenu")
+
   self.teamCreateButtonLabel = ui.Label({text = "Create Team Game", translate = false})
   self.teamCreateButton = ui.TextButton({
     label = self.teamCreateButtonLabel,
@@ -677,19 +688,8 @@ function Lobby:initLobbyMenu()
         GAME.netClient:leaveRoom()
         return
       end
-      if self.teamCompositionMenu then
-        self.teamCompositionMenu:yieldFocus()
-        return
-      end
-      if self.teamPlayerCountMenu then
-        self.teamPlayerCountMenu:yieldFocus()
-        return
-      end
-      if self.teamTypeMenu then
-        self.teamTypeMenu:yieldFocus()
-        return
-      end
-      openTeamTypeMenu(button)
+      GAME.theme:playValidationSfx()
+      GAME.navigationStack:push(RoomCreateTeamMenu({}))
     end
   })
 
@@ -701,11 +701,8 @@ function Lobby:initLobbyMenu()
         GAME.netClient:leaveRoom()
         return
       end
-      if self.ffaTypeMenu then
-        self.ffaTypeMenu:yieldFocus()
-        return
-      end
-      openFfaTypeMenu(button)
+      GAME.theme:playValidationSfx()
+      GAME.navigationStack:push(RoomCreateFfaMenu({}))
     end
   })
   self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})

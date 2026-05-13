@@ -731,7 +731,7 @@ function PuzzleMenu:getDisplayStack(puzzle)
   local engineStack = Stack(args)
 
   local playerStack = GAME.localPlayer:createClientStack(engineStack)
-  playerStack:moveForRenderIndex(1)
+  playerStack:moveForLayoutSlot(1)
   engineStack:starting_state()
 
   return playerStack

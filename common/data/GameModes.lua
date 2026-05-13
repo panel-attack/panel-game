@@ -810,6 +810,75 @@ local FivePlayerTeamVs3v2Shared = GameMode({
   },
 })
 
+-- 6-player team modes. The engine (TeamUtils.createTeams, Room, Match) is
+-- size-agnostic, so adding these only needs the GameMode definitions and
+-- their IDs/name wirings below — no other code changes required.
+local function sixPlayerTeamMode(name, richLabel, playersPerTeam, garbageMode)
+  return GameMode({
+    gameScene = "GameBase",
+    richPresenceLabel = richLabel,
+    name = name,
+    playerCount = 6,
+    teamCount = 2,
+    playersPerTeam = playersPerTeam,
+    garbageMode = garbageMode,
+    stackInteraction = StackInteractions.TEAM_VERSUS,
+    matchRules = {
+      matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+      matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+      stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+      stackWinConditions = {},
+      stackSetupModifications = {},
+      doCountdown = true,
+    },
+  })
+end
+local SixPlayerTeamVs3v3All     = sixPlayerTeamMode("six_player_3v3_all",     "3v3 VS (All)",     {3, 3}, "all")
+local SixPlayerTeamVs3v3Shared  = sixPlayerTeamMode("six_player_3v3_shared",  "3v3 VS (Shared)",  {3, 3}, "shared")
+local SixPlayerTeamVs2v4All     = sixPlayerTeamMode("six_player_2v4_all",     "2v4 VS (All)",     {2, 4}, "all")
+local SixPlayerTeamVs2v4Shared  = sixPlayerTeamMode("six_player_2v4_shared",  "2v4 VS (Shared)",  {2, 4}, "shared")
+local SixPlayerTeamVs4v2All     = sixPlayerTeamMode("six_player_4v2_all",     "4v2 VS (All)",     {4, 2}, "all")
+local SixPlayerTeamVs4v2Shared  = sixPlayerTeamMode("six_player_4v2_shared",  "4v2 VS (Shared)",  {4, 2}, "shared")
+local SixPlayerTeamVs1v5All     = sixPlayerTeamMode("six_player_1v5_all",     "1v5 VS (All)",     {1, 5}, "all")
+local SixPlayerTeamVs1v5Shared  = sixPlayerTeamMode("six_player_1v5_shared",  "1v5 VS (Shared)",  {1, 5}, "shared")
+local SixPlayerTeamVs5v1All     = sixPlayerTeamMode("six_player_5v1_all",     "5v1 VS (All)",     {5, 1}, "all")
+local SixPlayerTeamVs5v1Shared  = sixPlayerTeamMode("six_player_5v1_shared",  "5v1 VS (Shared)",  {5, 1}, "shared")
+
+-- 7-player team modes. Same factory pattern as 6p — bumping playerCount and
+-- swapping playersPerTeam is enough; engine handles arbitrary sizes.
+local function sevenPlayerTeamMode(name, richLabel, playersPerTeam, garbageMode)
+  return GameMode({
+    gameScene = "GameBase",
+    richPresenceLabel = richLabel,
+    name = name,
+    playerCount = 7,
+    teamCount = 2,
+    playersPerTeam = playersPerTeam,
+    garbageMode = garbageMode,
+    stackInteraction = StackInteractions.TEAM_VERSUS,
+    matchRules = {
+      matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+      matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+      stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+      stackWinConditions = {},
+      stackSetupModifications = {},
+      doCountdown = true,
+    },
+  })
+end
+local SevenPlayerTeamVs3v4All     = sevenPlayerTeamMode("seven_player_3v4_all",     "3v4 VS (All)",     {3, 4}, "all")
+local SevenPlayerTeamVs3v4Shared  = sevenPlayerTeamMode("seven_player_3v4_shared",  "3v4 VS (Shared)",  {3, 4}, "shared")
+local SevenPlayerTeamVs4v3All     = sevenPlayerTeamMode("seven_player_4v3_all",     "4v3 VS (All)",     {4, 3}, "all")
+local SevenPlayerTeamVs4v3Shared  = sevenPlayerTeamMode("seven_player_4v3_shared",  "4v3 VS (Shared)",  {4, 3}, "shared")
+local SevenPlayerTeamVs2v5All     = sevenPlayerTeamMode("seven_player_2v5_all",     "2v5 VS (All)",     {2, 5}, "all")
+local SevenPlayerTeamVs2v5Shared  = sevenPlayerTeamMode("seven_player_2v5_shared",  "2v5 VS (Shared)",  {2, 5}, "shared")
+local SevenPlayerTeamVs5v2All     = sevenPlayerTeamMode("seven_player_5v2_all",     "5v2 VS (All)",     {5, 2}, "all")
+local SevenPlayerTeamVs5v2Shared  = sevenPlayerTeamMode("seven_player_5v2_shared",  "5v2 VS (Shared)",  {5, 2}, "shared")
+local SevenPlayerTeamVs1v6All     = sevenPlayerTeamMode("seven_player_1v6_all",     "1v6 VS (All)",     {1, 6}, "all")
+local SevenPlayerTeamVs1v6Shared  = sevenPlayerTeamMode("seven_player_1v6_shared",  "1v6 VS (Shared)",  {1, 6}, "shared")
+local SevenPlayerTeamVs6v1All     = sevenPlayerTeamMode("seven_player_6v1_all",     "6v1 VS (All)",     {6, 1}, "all")
+local SevenPlayerTeamVs6v1Shared  = sevenPlayerTeamMode("seven_player_6v1_shared",  "6v1 VS (Shared)",  {6, 1}, "shared")
+
 GameModes.Styles = Styles
 GameModes.StackInteractions = StackInteractions
 
@@ -854,6 +923,30 @@ GameModes.IDs = {
   FIVE_PLAYER_2V3_SHARED = "FIVE_PLAYER_2V3_SHARED",
   FIVE_PLAYER_3V2_ALL = "FIVE_PLAYER_3V2_ALL",
   FIVE_PLAYER_3V2_SHARED = "FIVE_PLAYER_3V2_SHARED",
+  -- 6-player team modes
+  SIX_PLAYER_3V3_ALL = "SIX_PLAYER_3V3_ALL",
+  SIX_PLAYER_3V3_SHARED = "SIX_PLAYER_3V3_SHARED",
+  SIX_PLAYER_2V4_ALL = "SIX_PLAYER_2V4_ALL",
+  SIX_PLAYER_2V4_SHARED = "SIX_PLAYER_2V4_SHARED",
+  SIX_PLAYER_4V2_ALL = "SIX_PLAYER_4V2_ALL",
+  SIX_PLAYER_4V2_SHARED = "SIX_PLAYER_4V2_SHARED",
+  SIX_PLAYER_1V5_ALL = "SIX_PLAYER_1V5_ALL",
+  SIX_PLAYER_1V5_SHARED = "SIX_PLAYER_1V5_SHARED",
+  SIX_PLAYER_5V1_ALL = "SIX_PLAYER_5V1_ALL",
+  SIX_PLAYER_5V1_SHARED = "SIX_PLAYER_5V1_SHARED",
+  -- 7-player team modes
+  SEVEN_PLAYER_3V4_ALL = "SEVEN_PLAYER_3V4_ALL",
+  SEVEN_PLAYER_3V4_SHARED = "SEVEN_PLAYER_3V4_SHARED",
+  SEVEN_PLAYER_4V3_ALL = "SEVEN_PLAYER_4V3_ALL",
+  SEVEN_PLAYER_4V3_SHARED = "SEVEN_PLAYER_4V3_SHARED",
+  SEVEN_PLAYER_2V5_ALL = "SEVEN_PLAYER_2V5_ALL",
+  SEVEN_PLAYER_2V5_SHARED = "SEVEN_PLAYER_2V5_SHARED",
+  SEVEN_PLAYER_5V2_ALL = "SEVEN_PLAYER_5V2_ALL",
+  SEVEN_PLAYER_5V2_SHARED = "SEVEN_PLAYER_5V2_SHARED",
+  SEVEN_PLAYER_1V6_ALL = "SEVEN_PLAYER_1V6_ALL",
+  SEVEN_PLAYER_1V6_SHARED = "SEVEN_PLAYER_1V6_SHARED",
+  SEVEN_PLAYER_6V1_ALL = "SEVEN_PLAYER_6V1_ALL",
+  SEVEN_PLAYER_6V1_SHARED = "SEVEN_PLAYER_6V1_SHARED",
 }
 
 ---@type table<GameModeID, GameMode>
@@ -892,6 +985,28 @@ privateGameModes[GameModes.IDs.FIVE_PLAYER_2V3_ALL] = FivePlayerTeamVs2v3All
 privateGameModes[GameModes.IDs.FIVE_PLAYER_2V3_SHARED] = FivePlayerTeamVs2v3Shared
 privateGameModes[GameModes.IDs.FIVE_PLAYER_3V2_ALL] = FivePlayerTeamVs3v2All
 privateGameModes[GameModes.IDs.FIVE_PLAYER_3V2_SHARED] = FivePlayerTeamVs3v2Shared
+privateGameModes[GameModes.IDs.SIX_PLAYER_3V3_ALL] = SixPlayerTeamVs3v3All
+privateGameModes[GameModes.IDs.SIX_PLAYER_3V3_SHARED] = SixPlayerTeamVs3v3Shared
+privateGameModes[GameModes.IDs.SIX_PLAYER_2V4_ALL] = SixPlayerTeamVs2v4All
+privateGameModes[GameModes.IDs.SIX_PLAYER_2V4_SHARED] = SixPlayerTeamVs2v4Shared
+privateGameModes[GameModes.IDs.SIX_PLAYER_4V2_ALL] = SixPlayerTeamVs4v2All
+privateGameModes[GameModes.IDs.SIX_PLAYER_4V2_SHARED] = SixPlayerTeamVs4v2Shared
+privateGameModes[GameModes.IDs.SIX_PLAYER_1V5_ALL] = SixPlayerTeamVs1v5All
+privateGameModes[GameModes.IDs.SIX_PLAYER_1V5_SHARED] = SixPlayerTeamVs1v5Shared
+privateGameModes[GameModes.IDs.SIX_PLAYER_5V1_ALL] = SixPlayerTeamVs5v1All
+privateGameModes[GameModes.IDs.SIX_PLAYER_5V1_SHARED] = SixPlayerTeamVs5v1Shared
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_3V4_ALL] = SevenPlayerTeamVs3v4All
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_3V4_SHARED] = SevenPlayerTeamVs3v4Shared
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_4V3_ALL] = SevenPlayerTeamVs4v3All
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_4V3_SHARED] = SevenPlayerTeamVs4v3Shared
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_2V5_ALL] = SevenPlayerTeamVs2v5All
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_2V5_SHARED] = SevenPlayerTeamVs2v5Shared
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_5V2_ALL] = SevenPlayerTeamVs5v2All
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_5V2_SHARED] = SevenPlayerTeamVs5v2Shared
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_1V6_ALL] = SevenPlayerTeamVs1v6All
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_1V6_SHARED] = SevenPlayerTeamVs1v6Shared
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_6V1_ALL] = SevenPlayerTeamVs6v1All
+privateGameModes[GameModes.IDs.SEVEN_PLAYER_6V1_SHARED] = SevenPlayerTeamVs6v1Shared
 privateGameModes[GameModes.IDs.OPEN_FFA] = OpenFFA
 privateGameModes[GameModes.IDs.OPEN_FFA_SHARED] = OpenFFAShared
 
@@ -961,6 +1076,28 @@ GameModes.gameModeIdToName = {
   FIVE_PLAYER_2V3_SHARED = "five_player_2v3_shared",
   FIVE_PLAYER_3V2_ALL = "five_player_3v2_all",
   FIVE_PLAYER_3V2_SHARED = "five_player_3v2_shared",
+  SIX_PLAYER_3V3_ALL = "six_player_3v3_all",
+  SIX_PLAYER_3V3_SHARED = "six_player_3v3_shared",
+  SIX_PLAYER_2V4_ALL = "six_player_2v4_all",
+  SIX_PLAYER_2V4_SHARED = "six_player_2v4_shared",
+  SIX_PLAYER_4V2_ALL = "six_player_4v2_all",
+  SIX_PLAYER_4V2_SHARED = "six_player_4v2_shared",
+  SIX_PLAYER_1V5_ALL = "six_player_1v5_all",
+  SIX_PLAYER_1V5_SHARED = "six_player_1v5_shared",
+  SIX_PLAYER_5V1_ALL = "six_player_5v1_all",
+  SIX_PLAYER_5V1_SHARED = "six_player_5v1_shared",
+  SEVEN_PLAYER_3V4_ALL = "seven_player_3v4_all",
+  SEVEN_PLAYER_3V4_SHARED = "seven_player_3v4_shared",
+  SEVEN_PLAYER_4V3_ALL = "seven_player_4v3_all",
+  SEVEN_PLAYER_4V3_SHARED = "seven_player_4v3_shared",
+  SEVEN_PLAYER_2V5_ALL = "seven_player_2v5_all",
+  SEVEN_PLAYER_2V5_SHARED = "seven_player_2v5_shared",
+  SEVEN_PLAYER_5V2_ALL = "seven_player_5v2_all",
+  SEVEN_PLAYER_5V2_SHARED = "seven_player_5v2_shared",
+  SEVEN_PLAYER_1V6_ALL = "seven_player_1v6_all",
+  SEVEN_PLAYER_1V6_SHARED = "seven_player_1v6_shared",
+  SEVEN_PLAYER_6V1_ALL = "seven_player_6v1_all",
+  SEVEN_PLAYER_6V1_SHARED = "seven_player_6v1_shared",
   OPEN_FFA = "open_ffa",
   OPEN_FFA_SHARED = "open_ffa_shared",
 }
@@ -1001,6 +1138,28 @@ GameModes.nameToGameModeId = {
   five_player_2v3_shared = "FIVE_PLAYER_2V3_SHARED",
   five_player_3v2_all = "FIVE_PLAYER_3V2_ALL",
   five_player_3v2_shared = "FIVE_PLAYER_3V2_SHARED",
+  six_player_3v3_all = "SIX_PLAYER_3V3_ALL",
+  six_player_3v3_shared = "SIX_PLAYER_3V3_SHARED",
+  six_player_2v4_all = "SIX_PLAYER_2V4_ALL",
+  six_player_2v4_shared = "SIX_PLAYER_2V4_SHARED",
+  six_player_4v2_all = "SIX_PLAYER_4V2_ALL",
+  six_player_4v2_shared = "SIX_PLAYER_4V2_SHARED",
+  six_player_1v5_all = "SIX_PLAYER_1V5_ALL",
+  six_player_1v5_shared = "SIX_PLAYER_1V5_SHARED",
+  six_player_5v1_all = "SIX_PLAYER_5V1_ALL",
+  six_player_5v1_shared = "SIX_PLAYER_5V1_SHARED",
+  seven_player_3v4_all = "SEVEN_PLAYER_3V4_ALL",
+  seven_player_3v4_shared = "SEVEN_PLAYER_3V4_SHARED",
+  seven_player_4v3_all = "SEVEN_PLAYER_4V3_ALL",
+  seven_player_4v3_shared = "SEVEN_PLAYER_4V3_SHARED",
+  seven_player_2v5_all = "SEVEN_PLAYER_2V5_ALL",
+  seven_player_2v5_shared = "SEVEN_PLAYER_2V5_SHARED",
+  seven_player_5v2_all = "SEVEN_PLAYER_5V2_ALL",
+  seven_player_5v2_shared = "SEVEN_PLAYER_5V2_SHARED",
+  seven_player_1v6_all = "SEVEN_PLAYER_1V6_ALL",
+  seven_player_1v6_shared = "SEVEN_PLAYER_1V6_SHARED",
+  seven_player_6v1_all = "SEVEN_PLAYER_6V1_ALL",
+  seven_player_6v1_shared = "SEVEN_PLAYER_6V1_SHARED",
   open_ffa = "OPEN_FFA",
   open_ffa_shared = "OPEN_FFA_SHARED",
 }

@@ -56,7 +56,7 @@ function singleVerification.verifyReplay(replay)
 
   -- the extra clock safeguards against getting stuck if for some reason the match fails to advance to the end
   local clock = 0
-  while not match:hasEnded() and clock < expectedDuration * 2 do
+  while not match:isLocallyEnded() and clock < expectedDuration * 2 do
     clock = clock + 1
     match:run()
   end

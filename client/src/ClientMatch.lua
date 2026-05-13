@@ -267,7 +267,26 @@ function ClientMatch:sharedSetup()
 end
 
 function ClientMatch:run()
-  if self.isPaused or self.engine:hasEnded() then
+  -- Architectural rule: engine ticks until WE have finalized (self.ended set
+  -- by handleMatchEnd), not until Match:hasEnded thinks the match is over.
+  -- The old code early-returned on engine:hasEnded(), which is a LOCAL
+  -- inference from this client's view-stacks — that froze engine.clock the
+  -- same tick a local stack died and stranded anything waiting on clock
+  -- progress (this is what caused the 3p FFA stuck-match bug).
+  --
+  -- In live online play we now keep ticking until the SERVER confirms match
+  -- end (gameResult arrives). For offline/replay (no server authority) the
+  -- local hasEnded is authoritative and triggers handleMatchEnd directly.
+  -- See ClientMatch:shouldFinalize for the decision.
+  --
+  -- Pause is intentionally NOT a stop condition here. The engine just runs
+  -- when called. Scene-level callers (GameBase, PuzzleGame, ReplayGame,
+  -- PortraitGame) check their own pause state before calling :run() —
+  -- making pause an engine concept too would re-introduce the same
+  -- "freeze engine on a UX condition" foot-gun we removed for hasEnded.
+  -- isPaused remains the announce-side coordination point (pauseChanged
+  -- signal → NetClient sends pauseToggle); the engine just doesn't read it.
+  if self.ended then
     self:runGameOver()
     return
   end
@@ -351,10 +370,33 @@ function ClientMatch:run()
     end
   end
 
-  if self.engine:hasEnded() then
+  if self:shouldFinalize() then
     self.engine:handleMatchEnd()
     self:handleMatchEnd()
   end
+end
+
+---Decide whether the match is authoritatively over and should finalize.
+---Live online: only the server's gameResult (or an abort) is authoritative.
+---Offline / replay: the local engine:hasEnded() is authoritative — there's
+---no server to wait for.
+---@return boolean
+function ClientMatch:shouldFinalize()
+  if self.engine.aborted then return true end
+  if self._serverConfirmedEnd then return true end
+  if self.fromReplay then return self.engine:isLocallyEnded() end
+  if not (GAME.battleRoom and GAME.battleRoom.online) then
+    return self.engine:isLocallyEnded()
+  end
+  -- Live online: wait for server. _serverConfirmedEnd is set when
+  -- NetClient processes gameResult (or an abort, which also sets aborted).
+  return false
+end
+
+---Called by NetClient when a gameResult message arrives. The server has
+---spoken; the match is over no matter what the local view thinks.
+function ClientMatch:serverConfirmedEnd()
+  self._serverConfirmedEnd = true
 end
 
 ---Drain historical G/D events whose senderFrame has been reached by the
@@ -422,6 +464,7 @@ function ClientMatch:drainPendingHistoricalEvents()
 end
 
 function ClientMatch:handleMatchEnd()
+  if self.ended then return end -- idempotent: shouldFinalize can flip true multiple ways
   self.ended = true
   -- this prepares everything about the replay except the save location
   self:finalizeReplay()
@@ -454,7 +497,7 @@ function ClientMatch:start()
   -- harmless duplicate for those cases. Also emit a slotMap derived from
   -- the replay metadata — the binding's already in matchStart.metadata,
   -- but a flat slotMap line lets the diff util compare slot↔name↔
-  -- publicId↔renderIndex across clients in one glance.
+  -- publicId↔layoutSlot across clients in one glance.
   pcall(function()
     TraceWriter.beginGame(os.time())
     if self.replay then
@@ -467,7 +510,7 @@ function ClientMatch:start()
           stackIndex  = m.stackIndex,
           name        = m.name,
           publicId    = m.publicId,
-          renderIndex = m.renderIndex,
+          layoutSlot = m.layoutSlot,
         }
       end
       TraceWriter.localEvent("slotMap", {
@@ -559,20 +602,20 @@ end
 
 function ClientMatch:moveStacks()
   if self.replay and self.replay.metadata.completed then
-    if tableUtils.trueForAll(self.replay.metadata.stacks, function(s) return s.renderIndex end) then
+    if tableUtils.trueForAll(self.replay.metadata.stacks, function(s) return s.layoutSlot end) then
       for _, stackMetadata in ipairs(self.replay.metadata.stacks) do
         if #self.stacks == 3 then
-          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex3Player(stackMetadata.renderIndex)
+          self.stacks[stackMetadata.stackIndex]:moveForLayoutSlot3Player(stackMetadata.layoutSlot)
         elseif #self.stacks == 4 then
-          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex4PlayerHorizontal(stackMetadata.renderIndex)
+          self.stacks[stackMetadata.stackIndex]:moveForLayoutSlot4PlayerHorizontal(stackMetadata.layoutSlot)
         elseif #self.stacks == 5 then
-          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex5Player(stackMetadata.renderIndex)
+          self.stacks[stackMetadata.stackIndex]:moveForLayoutSlot5Player(stackMetadata.layoutSlot)
         elseif #self.stacks == 6 then
-          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex6Player(stackMetadata.renderIndex)
+          self.stacks[stackMetadata.stackIndex]:moveForLayoutSlot6Player(stackMetadata.layoutSlot)
         elseif #self.stacks == 7 then
-          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex7Player(stackMetadata.renderIndex)
+          self.stacks[stackMetadata.stackIndex]:moveForLayoutSlot7Player(stackMetadata.layoutSlot)
         else
-          self.stacks[stackMetadata.stackIndex]:moveForRenderIndex(stackMetadata.renderIndex)
+          self.stacks[stackMetadata.stackIndex]:moveForLayoutSlot(stackMetadata.layoutSlot)
         end
       end
       return
@@ -607,17 +650,17 @@ function ClientMatch:moveStacks()
 
   for i, stack in ipairs(stacks) do
     if #self.stacks == 3 then
-      stack:moveForRenderIndex3Player(i)
+      stack:moveForLayoutSlot3Player(i)
     elseif #self.stacks == 4 then
-      stack:moveForRenderIndex4PlayerHorizontal(i)
+      stack:moveForLayoutSlot4PlayerHorizontal(i)
     elseif #self.stacks == 5 then
-      stack:moveForRenderIndex5Player(i)
+      stack:moveForLayoutSlot5Player(i)
     elseif #self.stacks == 6 then
-      stack:moveForRenderIndex6Player(i)
+      stack:moveForLayoutSlot6Player(i)
     elseif #self.stacks == 7 then
-      stack:moveForRenderIndex7Player(i)
+      stack:moveForLayoutSlot7Player(i)
     else
-      stack:moveForRenderIndex(i)
+      stack:moveForLayoutSlot(i)
     end
   end
 end
@@ -644,7 +687,7 @@ function ClientMatch:cycleSpectatorFocus(direction)
     idx = ((idx - 1 + direction) % #live) + 1
     self.spectatorFocus = live[idx]
   end
-  -- Restamp positions so the newly focused stack lands in renderIndex 1
+  -- Restamp positions so the newly focused stack lands in layoutSlot 1
   -- (big-left); other stacks shift into the small containers around it.
   self:moveStacks()
 end
@@ -713,7 +756,7 @@ function ClientMatch:finalizeReplay()
       ---@type BaseStackMetadata
       local metadata = {
         stackIndex = stackIndex,
-        renderIndex = stack.renderIndex,
+        layoutSlot = stack.layoutSlot,
         characterId = stack.character.id,
         panelId = stack.panels_dir,
       }
@@ -1060,15 +1103,15 @@ function ClientMatch:drawStackSeparators()
     return
   end
 
-  local byRenderIndex = {}
+  local byLayoutSlot = {}
   for _, stack in ipairs(self.stacks) do
-    byRenderIndex[stack.renderIndex] = stack
+    byLayoutSlot[stack.layoutSlot] = stack
   end
 
-  local s1 = byRenderIndex[1]
-  local s2 = byRenderIndex[2]
-  local s3 = byRenderIndex[3]
-  local s4 = byRenderIndex[4]
+  local s1 = byLayoutSlot[1]
+  local s2 = byLayoutSlot[2]
+  local s3 = byLayoutSlot[3]
+  local s4 = byLayoutSlot[4]
   if not (s1 and s2 and s3 and s4) then
     return
   end
@@ -1114,7 +1157,7 @@ function ClientMatch:render()
     local drawY = 23
     for i = 1, #self.stacks do
       local stack = self.stacks[i]
-      GraphicsUtil.print("P" .. stack.renderIndex .." Average Latency: " .. stack.engine.framesBehind, 1, drawY)
+      GraphicsUtil.print("P" .. stack.layoutSlot .." Average Latency: " .. stack.engine.framesBehind, 1, drawY)
       drawY = drawY + 11
     end
 
@@ -1223,7 +1266,7 @@ function ClientMatch:draw_pause()
 end
 
 function ClientMatch:getWinners()
-  if not self.winners and self.engine:hasEnded() then
+  if not self.winners and self.engine:isLocallyEnded() then
     local winningStacks = self.engine:getWinners()
     local winners = {}
     for _, stack in ipairs(winningStacks) do

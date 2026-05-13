@@ -227,9 +227,9 @@ local function test_hasEnded_live_1v1_remote_death_pinned_clock()
     isIrrecoverablyDesynced = function(self) return false end,
   }
 
-  local hasEnded = Match.hasEnded(match)
-  assert(hasEnded == true,
-    "live 1v1 with one remote death (clock pinned below game_over_clock) should report hasEnded=true")
+  local result = Match.evaluateEndConditions(match)
+  assert(result.ended == true,
+    "live 1v1 with one remote death (clock pinned below game_over_clock) should evaluate ended=true")
 end
 
 -- Mirror: in replay mode the strict path still applies (clock must catch up).
@@ -263,8 +263,8 @@ local function test_hasEnded_replay_requires_clock_catchup()
     isIrrecoverablyDesynced = function(self) return false end,
   }
 
-  local hasEnded = Match.hasEnded(match)
-  assert(hasEnded == false,
+  local result = Match.evaluateEndConditions(match)
+  assert(result.ended == false,
     "replay must wait for survivor.clock > game_over_clock before ending (strict)")
 end
 
@@ -332,6 +332,116 @@ local function test_local_death_notifies_server_even_when_engine_freezes()
   end)
 
   SoundController.playSfx = origPlay
+  if not ok then error(err) end
+end
+
+----------------------------------------------------------------------
+-- Architecture: shouldFinalize is server-authoritative for live online
+----------------------------------------------------------------------
+-- The hasEnded → display-only refactor: live online matches finalize only
+-- when the server confirms (gameResult) or an abort fires. Local hasEnded
+-- still drives display, but no longer stops the engine or triggers
+-- handleMatchEnd. This decouples the deadlock pattern at the root: every
+-- code path that used to assume "engine freezes the same tick as hasEnded"
+-- now keeps ticking until the server speaks.
+
+local function test_shouldFinalize_live_online_waits_for_server()
+  logger.info("test_shouldFinalize_live_online_waits_for_server")
+  -- Live-online fixture: engine.hasEnded() returns true (local view says
+  -- match over) but the server has not confirmed yet. shouldFinalize must
+  -- be false — we must keep ticking until the server speaks.
+  local match = {
+    fromReplay = false,
+    _serverConfirmedEnd = false,
+    engine = {
+      aborted = false,
+      isLocallyEnded = function() return true end,
+    },
+    shouldFinalize = ClientMatch.shouldFinalize,
+  }
+  -- Stub GAME.battleRoom.online = true
+  local origBR = GAME.battleRoom
+  GAME.battleRoom = { online = true }
+  local ok, err = pcall(function()
+    assert(match:shouldFinalize() == false,
+      "live online: must NOT finalize on local hasEnded — wait for server gameResult")
+
+    -- Server confirms: NOW it finalizes.
+    match._serverConfirmedEnd = true
+    assert(match:shouldFinalize() == true,
+      "live online: shouldFinalize true after serverConfirmedEnd")
+  end)
+  GAME.battleRoom = origBR
+  if not ok then error(err) end
+end
+
+local function test_shouldFinalize_offline_uses_local_hasEnded()
+  logger.info("test_shouldFinalize_offline_uses_local_hasEnded")
+  -- Offline (puzzle, training, single-player): no server to wait for.
+  -- Local hasEnded IS authoritative.
+  local match = {
+    fromReplay = false,
+    _serverConfirmedEnd = false,
+    engine = {
+      aborted = false,
+      isLocallyEnded = function() return true end,
+    },
+    shouldFinalize = ClientMatch.shouldFinalize,
+  }
+  local origBR = GAME.battleRoom
+  GAME.battleRoom = nil  -- offline: no battle room
+  local ok, err = pcall(function()
+    assert(match:shouldFinalize() == true,
+      "offline: shouldFinalize must follow local hasEnded")
+  end)
+  GAME.battleRoom = origBR
+  if not ok then error(err) end
+end
+
+local function test_shouldFinalize_replay_uses_local_hasEnded()
+  logger.info("test_shouldFinalize_replay_uses_local_hasEnded")
+  local match = {
+    fromReplay = true,
+    _serverConfirmedEnd = false,
+    engine = {
+      aborted = false,
+      isLocallyEnded = function() return true end,
+    },
+    shouldFinalize = ClientMatch.shouldFinalize,
+  }
+  -- Replays may run with a battleRoom set (e.g. resuming after a match)
+  -- but fromReplay overrides: local engine drives match-end.
+  local origBR = GAME.battleRoom
+  GAME.battleRoom = { online = true }
+  local ok, err = pcall(function()
+    assert(match:shouldFinalize() == true,
+      "replay: fromReplay overrides; local hasEnded drives finalize")
+  end)
+  GAME.battleRoom = origBR
+  if not ok then error(err) end
+end
+
+local function test_shouldFinalize_abort_short_circuits()
+  logger.info("test_shouldFinalize_abort_short_circuits")
+  -- engine.aborted (set by Match:abort) must always finalize, regardless
+  -- of online/offline or server confirmation. Leave-room, errors, and
+  -- forced shutdowns route through abort.
+  local match = {
+    fromReplay = false,
+    _serverConfirmedEnd = false,
+    engine = {
+      aborted = true,
+      isLocallyEnded = function() return false end,
+    },
+    shouldFinalize = ClientMatch.shouldFinalize,
+  }
+  local origBR = GAME.battleRoom
+  GAME.battleRoom = { online = true }
+  local ok, err = pcall(function()
+    assert(match:shouldFinalize() == true,
+      "abort must finalize immediately, regardless of online/server state")
+  end)
+  GAME.battleRoom = origBR
   if not ok then error(err) end
 end
 
@@ -754,6 +864,10 @@ test_applyDeathEvent_pinned_view_stack_still_lands()
 test_hasEnded_live_1v1_remote_death_pinned_clock()
 test_hasEnded_replay_requires_clock_catchup()
 test_local_death_notifies_server_even_when_engine_freezes()
+test_shouldFinalize_live_online_waits_for_server()
+test_shouldFinalize_offline_uses_local_hasEnded()
+test_shouldFinalize_replay_uses_local_hasEnded()
+test_shouldFinalize_abort_short_circuits()
 test_deliverOutgoingGarbage_local_to_remote()
 test_deliverOutgoingGarbage_remote_to_local()
 test_deliverOutgoingGarbage_offline_direct()

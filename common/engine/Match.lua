@@ -244,6 +244,14 @@ end
 function Match:run()
   local startTime = love.timer.getTime()
 
+  -- Refresh the cached gameOverClock so Match:shouldRun (per-stack-per-tick
+  -- below) has a current value. Previously this was a side effect of
+  -- Match:hasEnded() being called every tick from ClientMatch:run; now
+  -- it's explicit. evaluateEndConditions is pure, so calling it here
+  -- mutates nothing other than the self.gameOverClock cache that
+  -- updateMatchEndState writes when result.gameOverClock is defined.
+  self:updateMatchEndState()
+
   self:padRewindDataIfNeeded()
 
   local runs = {}
@@ -738,15 +746,24 @@ function Match:abort()
   self:handleMatchEnd()
 end
 
----@return boolean
-function Match:hasEnded()
+---Pure evaluation of match-end conditions. NO mutations — safe to call
+---repeatedly. Returns the gameOverClock so callers (Match:shouldRun,
+---winners computation) can cache it explicitly instead of relying on
+---hidden side effects.
+---
+---Does NOT include desync detection — that's a separate, explicit call
+---via Match:checkDesync() since it both detects and recovers (sets
+---aborted/desyncError).
+---@return {ended: boolean, gameOverClock: integer?, reason: string?}
+function Match:evaluateEndConditions()
+  -- Already finalized (handleMatchEnd ran) — short-circuit so callers
+  -- that route through here after finalize don't re-compute every tick.
   if self.ended then
-    return true
+    return { ended = true, reason = "finalized" }
   end
 
   if self.aborted then
-    self.ended = true
-    return true
+    return { ended = true, reason = "aborted" }
   end
 
   -- Loose-sync: in a live match, a remote stack with game_over_clock set
@@ -774,15 +791,19 @@ function Match:hasEnded()
     end
   end
 
+  local function minGameOverClock()
+    local goc = math.huge
+    for _, stack in ipairs(self.stacks) do
+      if stack.game_over_clock and stack.game_over_clock > 0 then
+        goc = math.min(stack.game_over_clock, goc)
+      end
+    end
+    return goc
+  end
+
   if self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
     if aliveCount <= self.rules.matchEndConditions[MatchRules.MatchEndConditions.STACKS_ACTIVE] then
-      local gameOverClock = math.huge
-      for _, stack in ipairs(self.stacks) do
-        if stack.game_over_clock > 0 then
-          gameOverClock = math.min(stack.game_over_clock, gameOverClock)
-        end
-      end
-      self.gameOverClock = gameOverClock
+      local gameOverClock = minGameOverClock()
       -- Strict (replays / offline): every stack must have run past
       -- gameOverClock so we know nobody else also died on the next frame.
       -- Live: isDone() accepts stacks with game_over_clock set without
@@ -791,8 +812,7 @@ function Match:hasEnded()
         if isDone(stack) then return true end
         return stack.clock and stack.clock > gameOverClock
       end) then
-        self.ended = true
-        return true
+        return { ended = true, gameOverClock = gameOverClock, reason = "stacks_active" }
       end
     end
   end
@@ -818,46 +838,67 @@ function Match:hasEnded()
       if teamAlive then activeTeamCount = activeTeamCount + 1 end
     end
     if activeTeamCount <= self.rules.matchEndConditions[MatchRules.MatchEndConditions.TEAMS_ACTIVE] then
-      local gameOverClock = math.huge
-      for _, stack in ipairs(self.stacks) do
-        if stack.game_over_clock > 0 then
-          gameOverClock = math.min(stack.game_over_clock, gameOverClock)
-        end
-      end
-      self.gameOverClock = gameOverClock
+      local gameOverClock = minGameOverClock()
       -- make sure everyone has run to the currently known game over clock
       -- dead stacks are considered "past" their game over clock (they won't run anymore)
       if tableUtils.trueForAll(self.stacks, function(stack)
         return isDone(stack) or (stack.clock and stack.clock > gameOverClock)
       end) then
-        self.ended = true
-        return true
+        return { ended = true, gameOverClock = gameOverClock, reason = "teams_active" }
       end
     end
   end
 
   if deadCount == #self.stacks then
-    -- everyone died, match is over!
-    self.ended = true
-    return true
+    return { ended = true, reason = "all_dead" }
   end
 
   if self.timeLimit then
     if tableUtils.trueForAll(self.stacks, function(stack) return stack.stopWatch and stack.stopWatch >= self.timeLimit end) then
-      self.ended = true
-      return true
+      return { ended = true, reason = "time_limit" }
     end
   end
 
+  return { ended = false }
+end
+
+---Display-only: has this match locally appeared to end? Read-only —
+---safe to call from any code path that just wants to know "should I show
+---the result UI?" Does NOT drive engine state.
+---
+---Authoritative finalize gating lives in ClientMatch:shouldFinalize.
+---@return boolean
+function Match:isLocallyEnded()
+  return self.ended or self:evaluateEndConditions().ended
+end
+
+---Explicit desync check. If a desync is detected this call MUTATES
+---self.aborted and self.desyncError. Used to live inside hasEnded as a
+---hidden side effect of "is the match over?" — now it's an opt-in check
+---that callers run when they want recovery, not on every read.
+---@return boolean true if desync was newly detected this call
+function Match:checkDesync()
+  if self.aborted then return false end
   if self:isIrrecoverablyDesynced() then
     logger.info("Match irrecoverably desynced")
-    self.ended = true
     self.aborted = true
     self.desyncError = true
     return true
   end
-
   return false
+end
+
+---Side-effectful wrapper around evaluateEndConditions: caches gameOverClock
+---on self so Match:shouldRun (per-stack-per-tick) can use it without
+---recomputing. Callers that need both the result AND the cache use this;
+---callers that just want a read use evaluateEndConditions directly.
+---@return {ended: boolean, gameOverClock: integer?, reason: string?}
+function Match:updateMatchEndState()
+  local result = self:evaluateEndConditions()
+  if result.gameOverClock then
+    self.gameOverClock = result.gameOverClock
+  end
+  return result
 end
 
 function Match:handleMatchEnd()

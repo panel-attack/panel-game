@@ -2,6 +2,7 @@
 -- and the server requires the socket from common/lib
 ---@diagnostic disable-next-line: different-requires
 local socket = require("common.lib.socket")
+local Clock = require("common.lib.Clock")
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local ServerProtocol = require("common.network.ServerProtocol")
@@ -187,12 +188,17 @@ local Server = class(
     self.lobbyChanged = false
     self._shuttingDown = false
 
-    -- Wall-clock source for serverWallClockMs stamping and arbitration window
-    -- ticks. Defaults to luasocket's real clock; tests override this to drive
-    -- arbitration deterministically (see server/tests/E2E/Harness.lua opts.clock).
-    -- Every call site that needs "now" goes through self.clock() — Room reads
-    -- self.clock from the Server back-reference set up in create_room.
-    self.clock = socket.gettime
+    -- Single Clock instance for the server. Two surfaces:
+    --   * clockInstance:monotonicSeconds() / monotonicMs() — for arbitration
+    --     windows, watchdog deadlines, anything comparing elapsed time.
+    --   * clockInstance:wallSeconds() — for stamping events that need to
+    --     round-trip through replays / disk / human display.
+    -- self.clock is kept as the legacy field referenced by Room and elsewhere:
+    -- a callable returning monotonic seconds (backward-compatible with the
+    -- previous `socket.gettime` reference). Tests override by swapping
+    -- self.clockInstance with a Clock.mock() — propagates to everything.
+    self.clockInstance = Clock.new()
+    self.clock = function() return self.clockInstance:monotonicSeconds() end
 
     -- Crash-replay capture subsystem (docs/CRASH_REPLAY_PLAN.md). Holds the
     -- in-memory incident registry. Purely additive: a Server that never sees

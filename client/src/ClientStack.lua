@@ -40,7 +40,7 @@ end
 ---@field garbageTarget GarbageTarget? Convenience alias for garbageTargets[1] (legacy 1v1 paths)
 ---@field garbageTargets GarbageTarget[]? All targets this stack visually attacks (Telegraph render loops over these)
 ---@field assets IngameAssetPack
----@field renderIndex integer determines the position of the stack and how some elements are rendered
+---@field layoutSlot integer determines the position of the stack and how some elements are rendered
 ---@field player_number integer used for display ordering
 
 ---@class ClientStack
@@ -138,7 +138,7 @@ function ClientStack:withPanelTransform(fn)
     origin_x = self.origin_x,
     mirror_x = self.mirror_x,
     multiplication = self.multiplication,
-    renderIndex = self.renderIndex,
+    layoutSlot = self.layoutSlot,
   }
 
   -- Pretend to be Player 1.
@@ -149,7 +149,7 @@ function ClientStack:withPanelTransform(fn)
   self.panelOriginY = self.frameOriginY + self.panelOriginYOffset
   self.mirror_x = 1
   self.multiplication = 0
-  self.renderIndex = 1
+  self.layoutSlot = 1
   self.origin_x = self.panelOriginXOffset + self.frameOriginX
 
   love.graphics.push("transform")
@@ -171,7 +171,7 @@ function ClientStack:elementOriginX(cameFromLegacyScoreOffset, legacyOffsetIsAlr
   assert(cameFromLegacyScoreOffset ~= nil)
   assert(legacyOffsetIsAlreadyScaled ~= nil)
   local x = 546
-  if self.renderIndex == 2 or self.renderIndex == 4 then
+  if self.layoutSlot == 2 or self.layoutSlot == 4 then
     x = 642
   end
   if cameFromLegacyScoreOffset == false or themes[config.theme]:offsetsAreFixed() then
@@ -312,7 +312,7 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   local limit = consts.CANVAS_WIDTH - x
   local alignment = "left"
   if themes[config.theme]:offsetsAreFixed() then
-    if self.renderIndex == 1 then
+    if self.layoutSlot == 1 then
       limit = x
       x = 0
       alignment = "right"
@@ -328,15 +328,15 @@ function ClientStack:drawString(string, themePositionOffset, cameFromLegacyScore
   GraphicsUtil.printf(string, x, y, limit, alignment, nil, nil, fontDelta)
 end
 
--- Sets up renderIndex-specific properties and assets
+-- Sets up layoutSlot-specific properties and assets
 -- Configures stack positioning parameters for a specific render index (1-7)
 -- For 2-player: 1=left, 2=right
 -- For 3-7 player: 1=left (full size), 2-N=stacked right (smaller)
-function ClientStack:setupForRenderIndex(renderIndex)
-  self.renderIndex = renderIndex
+function ClientStack:setupForLayoutSlot(layoutSlot)
+  self.layoutSlot = layoutSlot
 
-  -- odd renderIndex = left-oriented (mirror_x=1), even = right-oriented (mirror_x=-1)
-  if renderIndex % 2 == 1 then
+  -- odd layoutSlot = left-oriented (mirror_x=1), even = right-oriented (mirror_x=-1)
+  if layoutSlot % 2 == 1 then
     self.mirror_x = 1
     self.multiplication = 0
   else
@@ -344,12 +344,12 @@ function ClientStack:setupForRenderIndex(renderIndex)
     self.multiplication = 1
   end
 
-  if renderIndex < 1 or renderIndex > 7 then
-    error("Invalid renderIndex: " .. tostring(renderIndex) .. ". Expected 1-7.")
+  if layoutSlot < 1 or layoutSlot > 7 then
+    error("Invalid layoutSlot: " .. tostring(layoutSlot) .. ". Expected 1-7.")
   end
 
   -- Use modulo to map to one of 2 asset packs
-  local assetIndex = ((renderIndex - 1) % 2) + 1
+  local assetIndex = ((layoutSlot - 1) % 2) + 1
   self:assignAssets(GAME.theme:getIngameAssetPack(assetIndex))
 end
 
@@ -362,20 +362,20 @@ function ClientStack:calculateHorizontallyCenteredPosition(centerCoordinate)
   local innerStackXMovement = 100
   local outerStackXMovement = stackWidth + innerStackXMovement
 
-  -- Calculate normal renderIndex 1 position (no offset)
-  local normalRenderIndex1X = centerX - outerStackXMovement
+  -- Calculate normal layoutSlot 1 position (no offset)
+  local normalLayoutSlot1X = centerX - outerStackXMovement
   
   -- Desired centered position
   local stackWidthUnscaled = self.baseWidth + self.panelOriginXOffset
   local desiredCenterX = (consts.CANVAS_WIDTH - stackWidthUnscaled * self.gfxScale) / 2
   
   -- Calculate and use centering offset instead of provided xOffset
-  return centerX - (outerStackXMovement) + (desiredCenterX - normalRenderIndex1X)
+  return centerX - (outerStackXMovement) + (desiredCenterX - normalLayoutSlot1X)
 end
 
 -- Positions the stack draw position for the given player
-function ClientStack:moveForRenderIndex(renderIndex)
-  self:setupForRenderIndex(renderIndex)
+function ClientStack:moveForLayoutSlot(layoutSlot)
+  self:setupForLayoutSlot(layoutSlot)
   
   local centerX = (GAME.globalCanvas:getWidth() / 2)
   local stackWidth = self:canvasWidth()
@@ -430,19 +430,19 @@ function ClientStack:calculateResponsiveScaleForRightColumn(numStacksOnRight, to
 end
 
 -- Positions the stack in a 3-player layout with responsive scaling
--- renderIndex: 1=left (full size), 2=top-right (smaller), 3=bottom-right (smaller)
+-- layoutSlot: 1=left (full size), 2=top-right (smaller), 3=bottom-right (smaller)
 -- Uses responsive scaling based on canvas height to ensure both right stacks fit
-function ClientStack:moveForRenderIndex3Player(renderIndex)
-  if renderIndex == 1 then
+function ClientStack:moveForLayoutSlot3Player(layoutSlot)
+  if layoutSlot == 1 then
     -- Player 1 uses EXACTLY the same positioning as 2-player PvP.
     -- Reset gfxScale to its full size — a stack moving back into the big-left
     -- container (e.g. spectator focus rotated to this player) would otherwise
     -- keep the smaller scale assigned during its previous right-column stint.
     self.gfxScale = NORMAL_GFX_SCALE
-    self:moveForRenderIndex(1)
+    self:moveForLayoutSlot(1)
   else
     -- Players 2 & 3 on the right with responsive scaling
-    self:setupForRenderIndex(renderIndex)
+    self:setupForLayoutSlot(layoutSlot)
 
     local canvasWidth = GAME.globalCanvas:getWidth()
     local topMargin = self.baseWidth + self.panelOriginXOffset
@@ -457,10 +457,10 @@ function ClientStack:moveForRenderIndex3Player(renderIndex)
     local stackHeight = self:canvasHeight()
     local rightX = canvasWidth - stackWidth - rightMargin  -- Right side with margin
     
-    if renderIndex == 2 then
+    if layoutSlot == 2 then
       -- Top-right
       self:moveToPosition(rightX, topMargin)
-    elseif renderIndex == 3 then
+    elseif layoutSlot == 3 then
       -- Bottom-right
       local bottomY = topMargin + stackHeight + gap
       self:moveToPosition(rightX, bottomY)
@@ -470,17 +470,17 @@ end
 
 -- Positions the stack in a 4-player layout with fixed local anchor and right-side matrix.
 -- Layout rule: row1 = 2,4 ; row2 = 3 (centered)
--- renderIndex: 1=left (unchanged), 2=top-left-right-zone, 4=top-right-right-zone, 3=bottom-center-right-zone
-function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
-  if renderIndex == 1 then
+-- layoutSlot: 1=left (unchanged), 2=top-left-right-zone, 4=top-right-right-zone, 3=bottom-center-right-zone
+function ClientStack:moveForLayoutSlot4PlayerHorizontal(layoutSlot)
+  if layoutSlot == 1 then
     -- Player 1 uses EXACTLY the same positioning as 2-player PvP.
     -- Reset gfxScale: a stack returning to the big-left container from a
     -- right-column slot would otherwise stay at the reduced scale.
     self.gfxScale = NORMAL_GFX_SCALE
-    self:moveForRenderIndex(1)
+    self:moveForLayoutSlot(1)
   else
     -- Players 2, 3, 4 in a 2x2-capable zone on the right
-    self:setupForRenderIndex(renderIndex)
+    self:setupForLayoutSlot(layoutSlot)
 
     local canvasWidth = GAME.globalCanvas:getWidth()
     local canvasHeight = GAME.globalCanvas:getHeight()
@@ -511,12 +511,12 @@ function ClientStack:moveForRenderIndex4PlayerHorizontal(renderIndex)
     local startY = topMargin + math.max(0, (rightZoneHeight - gridHeight) / 2)
     local row2Y = startY + stackHeight + gapY
 
-    if renderIndex == 2 then
+    if layoutSlot == 2 then
       self:moveToPosition(startX, startY)
-    elseif renderIndex == 3 then
+    elseif layoutSlot == 3 then
       -- Bottom row has only one stack in 4p rule, left-aligned under the first slot.
       self:moveToPosition(startX, row2Y)
-    elseif renderIndex == 4 then
+    elseif layoutSlot == 4 then
       self:moveToPosition(startX + stackWidth + gapX, startY)
     end
   end
@@ -524,14 +524,14 @@ end
 
 -- Positions the stack in a 5-player layout with fixed local anchor and right-side matrix.
 -- Layout rule: row1 = 2,4 ; row2 = 3,5
--- renderIndex: 1=left (unchanged), 2/4 top row, 3/5 bottom row
-function ClientStack:moveForRenderIndex5Player(renderIndex)
-  if renderIndex == 1 then
+-- layoutSlot: 1=left (unchanged), 2/4 top row, 3/5 bottom row
+function ClientStack:moveForLayoutSlot5Player(layoutSlot)
+  if layoutSlot == 1 then
     -- Reset gfxScale for stacks returning from a right-column slot.
     self.gfxScale = NORMAL_GFX_SCALE
-    self:moveForRenderIndex(1)
+    self:moveForLayoutSlot(1)
   else
-    self:setupForRenderIndex(renderIndex)
+    self:setupForLayoutSlot(layoutSlot)
 
     local canvasWidth = GAME.globalCanvas:getWidth()
     local canvasHeight = GAME.globalCanvas:getHeight()
@@ -561,13 +561,13 @@ function ClientStack:moveForRenderIndex5Player(renderIndex)
     local startY = topMargin + math.max(0, (rightZoneHeight - gridHeight) / 2)
     local row2Y = startY + stackHeight + gapY
 
-    if renderIndex == 2 then
+    if layoutSlot == 2 then
       self:moveToPosition(startX, startY)
-    elseif renderIndex == 4 then
+    elseif layoutSlot == 4 then
       self:moveToPosition(startX + stackWidth + gapX, startY)
-    elseif renderIndex == 3 then
+    elseif layoutSlot == 3 then
       self:moveToPosition(startX, row2Y)
-    elseif renderIndex == 5 then
+    elseif layoutSlot == 5 then
       self:moveToPosition(startX + stackWidth + gapX, row2Y)
     end
   end
@@ -579,13 +579,13 @@ end
 --   row1 = 2, 4, 6
 --   row2 = 3, 5, _
 -- Pattern: 11246 / 1135.
-function ClientStack:moveForRenderIndex6Player(renderIndex)
-  if renderIndex == 1 then
+function ClientStack:moveForLayoutSlot6Player(layoutSlot)
+  if layoutSlot == 1 then
     -- Reset gfxScale for stacks returning from a right-column slot.
     self.gfxScale = NORMAL_GFX_SCALE
-    self:moveForRenderIndex(1)
+    self:moveForLayoutSlot(1)
   else
-    self:_positionInRightGrid3x2(renderIndex)
+    self:_positionInRightGrid3x2(layoutSlot)
   end
 end
 
@@ -595,21 +595,21 @@ end
 --   row1 = 2, 4, 6
 --   row2 = 3, 5, 7
 -- Pattern: 11246 / 11357
-function ClientStack:moveForRenderIndex7Player(renderIndex)
-  if renderIndex == 1 then
+function ClientStack:moveForLayoutSlot7Player(layoutSlot)
+  if layoutSlot == 1 then
     -- Reset gfxScale for stacks returning from a right-column slot.
     self.gfxScale = NORMAL_GFX_SCALE
-    self:moveForRenderIndex(1)
+    self:moveForLayoutSlot(1)
   else
-    self:_positionInRightGrid3x2(renderIndex)
+    self:_positionInRightGrid3x2(layoutSlot)
   end
 end
 
 -- Shared 3-col × 2-row right-side mini grid placement for 6 and 7 player layouts.
--- Caller is responsible for handling renderIndex==1 (full-size left).
--- Maps renderIndex 2..7 col-major top-first: 2/3 in col 1, 4/5 in col 2, 6/7 in col 3.
-function ClientStack:_positionInRightGrid3x2(renderIndex)
-  self:setupForRenderIndex(renderIndex)
+-- Caller is responsible for handling layoutSlot==1 (full-size left).
+-- Maps layoutSlot 2..7 col-major top-first: 2/3 in col 1, 4/5 in col 2, 6/7 in col 3.
+function ClientStack:_positionInRightGrid3x2(layoutSlot)
+  self:setupForLayoutSlot(layoutSlot)
 
   local canvasWidth = GAME.globalCanvas:getWidth()
   local canvasHeight = GAME.globalCanvas:getHeight()
@@ -645,25 +645,25 @@ function ClientStack:_positionInRightGrid3x2(renderIndex)
   local col2X = startX + stackWidth + gapX
   local col3X = startX + (stackWidth + gapX) * 2
 
-  if renderIndex == 2 then
+  if layoutSlot == 2 then
     self:moveToPosition(col1X, startY)
-  elseif renderIndex == 3 then
+  elseif layoutSlot == 3 then
     self:moveToPosition(col1X, row2Y)
-  elseif renderIndex == 4 then
+  elseif layoutSlot == 4 then
     self:moveToPosition(col2X, startY)
-  elseif renderIndex == 5 then
+  elseif layoutSlot == 5 then
     self:moveToPosition(col2X, row2Y)
-  elseif renderIndex == 6 then
+  elseif layoutSlot == 6 then
     self:moveToPosition(col3X, startY)
-  elseif renderIndex == 7 then
+  elseif layoutSlot == 7 then
     self:moveToPosition(col3X, row2Y)
   end
 end
 
 -- Positions the stack in a 4-player 2x2 grid layout (alternative layout)
--- renderIndex: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
-function ClientStack:moveForRenderIndex4Player(renderIndex)
-  self:setupForRenderIndex(renderIndex)
+-- layoutSlot: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
+function ClientStack:moveForLayoutSlot4Player(layoutSlot)
+  self:setupForLayoutSlot(layoutSlot)
 
   local canvasWidth = GAME.globalCanvas:getWidth()
   local canvasHeight = GAME.globalCanvas:getHeight()
@@ -696,7 +696,7 @@ function ClientStack:moveForRenderIndex4Player(renderIndex)
     {x = startX + stackWidth + gapX, y = startY + stackHeight + gapY},
   }
 
-  local pos = positions[renderIndex]
+  local pos = positions[layoutSlot]
   if pos then
     self:moveToPosition(pos.x, pos.y)
   end
@@ -762,7 +762,7 @@ function ClientStack:drawCharacter()
     self.portraitFade = config.portrait_darkness / 100 -- Set to desired fade if there's no countdown
   end
 
-  self.character:drawPortrait(self.renderIndex, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
+  self.character:drawPortrait(self.layoutSlot, self.panelOriginXOffset, self.panelOriginYOffset, self.portraitFade, self.gfxScale)
 end
 
 function ClientStack:drawFrame()

@@ -213,7 +213,7 @@ function ChallengeModePlayerStack:drawDebug()
     GraphicsUtil.printf("Clock " .. self.engine.clock, drawX, drawY)
 
     drawY = drawY + padding
-    GraphicsUtil.printf("P" .. self.renderIndex .. " Ended?: " .. tostring(self.engine:game_ended()), drawX, drawY)
+    GraphicsUtil.printf("P" .. self.layoutSlot .. " Ended?: " .. tostring(self.engine:game_ended()), drawX, drawY)
   end
 end
 

@@ -52,6 +52,8 @@ require("client.src.globals")
 ---@field windowX number?
 ---@field windowY number?
 ---@field discordCommunityShown boolean
+---@field lobbyTeamPrefs { type: string, playerCount: integer, composition: string, garbage: string, latency: string }
+---@field lobbyFfaPrefs  { type: string, playerCount: integer, garbage: string, latency: string }
 config = {
     -- The last used engine version
     version                       = consts.ENGINE_VERSION,
@@ -118,6 +120,24 @@ config = {
     -- Tracks if the default panels have been copied over yet
     defaultPanelsCopied           = false,
 
+    -- Lobby create-room form prefs, kept separate per flavor so picking
+    -- a team composition once doesn't perturb the FFA defaults (and vice
+    -- versa). Each field is independently validated on read; an unknown
+    -- value falls back to the default rather than rejecting the whole blob.
+    lobbyTeamPrefs                = {
+      type        = "open",    -- "invite" | "open"
+      playerCount = 6,         -- 3 | 4 | 5 | 6 | 7
+      composition = "3 vs 3",  -- label from Lobby.TEAM_DIVISIONS[playerCount]
+      garbage     = "shared",  -- "all" (broadcast) | "shared" (round robin)
+      latency     = "normal",  -- "strict" | "normal" | "relaxed"
+    },
+    lobbyFfaPrefs                 = {
+      type        = "open",
+      playerCount = 7,         -- 3 | 4 | 5 | 7
+      garbage     = "all",
+      latency     = "normal",
+    },
+
     -- True if we immediately want to maximize the screen on startup
     maximizeOnStartup             = true,
     gameScaleType                 = "auto",
@@ -147,6 +167,33 @@ config = {
 
   local use_music_from_values = {stage = true, often_stage = true, either = true, often_characters = true, characters = true}
   local save_replays_values = {["with my name"] = true, anonymously = true, ["not at all"] = true}
+  local lobby_type_values = { invite = true, open = true }
+  local lobby_garbage_values = { all = true, shared = true }
+  local lobby_latency_values = { strict = true, normal = true, relaxed = true }
+  local lobby_team_player_count_values = { [3] = true, [4] = true, [5] = true, [6] = true, [7] = true }
+  local lobby_ffa_player_count_values = { [3] = true, [4] = true, [5] = true, [7] = true }
+
+  local function loadLobbyPrefs(defaults, raw, playerCountAllowed)
+    if type(raw) ~= "table" then return defaults end
+    local out = {}
+    for k, v in pairs(defaults) do out[k] = v end
+    if type(raw.type) == "string" and lobby_type_values[raw.type] then
+      out.type = raw.type
+    end
+    if type(raw.playerCount) == "number" and playerCountAllowed[raw.playerCount] then
+      out.playerCount = raw.playerCount
+    end
+    if type(raw.composition) == "string" then
+      out.composition = raw.composition  -- validated lazily against TEAM_DIVISIONS at use site
+    end
+    if type(raw.garbage) == "string" and lobby_garbage_values[raw.garbage] then
+      out.garbage = raw.garbage
+    end
+    if type(raw.latency) == "string" and lobby_latency_values[raw.latency] then
+      out.latency = raw.latency
+    end
+    return out
+  end
 
   -- reads the "conf.json" file and overwrites the values into the passed in table
   function readConfigFile(configTable)
@@ -258,6 +305,11 @@ config = {
           if type(read_data.defaultPanelsCopied) == "boolean" then
             configTable.defaultPanelsCopied = read_data.defaultPanelsCopied
           end
+
+          configTable.lobbyTeamPrefs = loadLobbyPrefs(
+            configTable.lobbyTeamPrefs, read_data.lobbyTeamPrefs, lobby_team_player_count_values)
+          configTable.lobbyFfaPrefs = loadLobbyPrefs(
+            configTable.lobbyFfaPrefs, read_data.lobbyFfaPrefs, lobby_ffa_player_count_values)
 
           if type(read_data.maximizeOnStartup) == "boolean" then
             configTable.maximizeOnStartup = read_data.maximizeOnStartup

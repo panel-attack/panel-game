@@ -75,7 +75,7 @@ local function testMatchEnds_whenOneTeamEliminated_2v2()
   runFrames(match, 1)
 
   -- Verify match hasn't ended yet
-  assert(match:hasEnded() == false, "Match should not have ended yet")
+  assert(match:isLocallyEnded() == false, "Match should not have ended yet")
 
   -- Kill both players on Team B (players 3 and 4)
   killStack(match.stacks[3])
@@ -84,7 +84,7 @@ local function testMatchEnds_whenOneTeamEliminated_2v2()
   runFrames(match, 1)
 
   -- Match should end
-  assert(match:hasEnded() == true, "Match should end when one team is eliminated")
+  assert(match:isLocallyEnded() == true, "Match should end when one team is eliminated")
 
   -- Team A should win
   local winningTeam = match:getWinningTeam()
@@ -105,7 +105,7 @@ local function testMatchContinues_whenOnePlayerDies_2v2()
   runFrames(match, 1)
 
   -- Match should continue
-  assert(match:hasEnded() == false, "Match should continue - Team A still has player 2")
+  assert(match:isLocallyEnded() == false, "Match should continue - Team A still has player 2")
 end
 
 local function testMatchEnds_whenLastTeamMemberDies_2v2()
@@ -119,14 +119,14 @@ local function testMatchEnds_whenLastTeamMemberDies_2v2()
   -- Kill player 1
   killStack(match.stacks[1])
   runFrames(match, 1)
-  assert(match:hasEnded() == false, "Match should continue after P1 dies")
+  assert(match:isLocallyEnded() == false, "Match should continue after P1 dies")
 
   -- Kill player 2 (last member of Team A)
   killStack(match.stacks[2])
   runFrames(match, 1)
 
   -- Now match should end - Team A is eliminated
-  assert(match:hasEnded() == true, "Match should end when Team A is eliminated")
+  assert(match:isLocallyEnded() == true, "Match should end when Team A is eliminated")
 
   -- Team B should win
   local winningTeam = match:getWinningTeam()
@@ -148,7 +148,7 @@ local function testMatchEnds_whenSoloEliminated_1v2()
   runFrames(match, 1)
 
   -- Match should end
-  assert(match:hasEnded() == true, "Match should end when solo is eliminated")
+  assert(match:isLocallyEnded() == true, "Match should end when solo is eliminated")
 
   -- Team (players 2 and 3) should win
   local winningTeam = match:getWinningTeam()
@@ -167,7 +167,7 @@ local function testMatchEnds_whenTeamEliminated_1v2()
   runFrames(match, 1)
 
   -- Match should end
-  assert(match:hasEnded() == true, "Match should end when team is eliminated")
+  assert(match:isLocallyEnded() == true, "Match should end when team is eliminated")
 
   -- Solo should win
   local winningTeam = match:getWinningTeam()
@@ -185,7 +185,7 @@ local function testMatchContinues_whenOneTeamMemberDies_1v2()
   runFrames(match, 1)
 
   -- Match should continue - player 3 still alive on team
-  assert(match:hasEnded() == false, "Match should continue - team still has player 3")
+  assert(match:isLocallyEnded() == false, "Match should continue - team still has player 3")
 end
 
 --------------------------------------------------
@@ -204,7 +204,7 @@ local function testMatchEnds_3v3()
   killStack(match.stacks[6])
   runFrames(match, 1)
 
-  assert(match:hasEnded() == true, "Match should end when Team B is eliminated")
+  assert(match:isLocallyEnded() == true, "Match should end when Team B is eliminated")
   assert(match:getWinningTeam() == teams[1], "Team A should win")
 end
 
@@ -220,7 +220,7 @@ local function testMatchContinues_3v3_partialDeath()
   runFrames(match, 1)
 
   -- Match should continue - player 3 still alive
-  assert(match:hasEnded() == false, "Match should continue with 1 player alive on Team A")
+  assert(match:isLocallyEnded() == false, "Match should continue with 1 player alive on Team A")
 end
 
 --------------------------------------------------
@@ -241,7 +241,7 @@ local function testMatchEnds_draw()
   runFrames(match, 1)
 
   -- Match should end
-  assert(match:hasEnded() == true, "Match should end when all players die")
+  assert(match:isLocallyEnded() == true, "Match should end when all players die")
 
   -- No winner (draw)
   local winningTeam = match:getWinningTeam()

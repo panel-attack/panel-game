@@ -47,7 +47,7 @@ local Room = class(
 ---@param players ServerPlayer[]
 ---@param gameMode table -- only the data portion of the game mode
 ---@param leaderboard Leaderboard?
----@param clock (fun(): number)? wall-clock source in seconds; nil = real socket.gettime
+---@param clock (fun(): number)? monotonic seconds source; nil = real socket.gettime. In production this is wired to Server.clockInstance:monotonicSeconds via a closure so all rooms share one Clock instance; tests can override per-room directly.
 function(self, roomNumber, players, gameMode, leaderboard, clock)
   self.players = players
   self.leaderboard = leaderboard
@@ -74,10 +74,12 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   self.voided = false
   self.voidReason = nil
 
-  -- Wall-clock source for serverWallClockMs stamping and arbitration window
-  -- math. Defaults to the real clock when the Server didn't pass one (legacy
-  -- direct-construction call sites and unit tests that instantiate Room bare).
-  -- Tests inject a fake to drive arbitration windows deterministically.
+  -- Monotonic seconds source for arbitration windows, watchdog deadlines,
+  -- and serverWallClockMs stamping. In production this is a closure over
+  -- Server.clockInstance:monotonicSeconds so every room shares one Clock
+  -- (see server/server.lua). Tests instantiate Room directly without a
+  -- Server and either accept the socket.gettime default or override
+  -- self.clock per-test. See common/lib/Clock.lua for the abstraction.
   self.clock = clock or socket.gettime
   -- publicId -> name for players whose slot is held while they're away. Name is
   -- stored as the value (rather than a bare boolean) so the protocol can emit a
@@ -426,14 +428,21 @@ function Room:start_match()
     self.gameMode.teamCount = self.gameMode.teamCount or playerCount
   end
 
-  -- Refuse to start when the roster doesn't match the team structure. For
-  -- asymmetric modes (1v2, 2v1) playersPerTeam is a table whose sum is the
-  -- exact required headcount; for symmetric (2v2) it's a number and the total
-  -- is teamCount * playersPerTeam. Without this guard, createTeams happily
-  -- builds a team with playerIndices pointing past the end of self.players,
-  -- and every downstream call (addTarget, broadcastGarbageEvent, replay
-  -- construction) crashes on a nil stack.
-  if self.gameMode and self.gameMode.playersPerTeam then
+  -- Two gating rules for team rooms:
+  --   * Fixed-roster (classic invite 2v2, 1v3, etc.): exactly the full
+  --     expectedTotal must be seated, else createTeams would point at
+  --     non-existent players.
+  --   * Dynamic-roster open team (min < max): each team needs at least one
+  --     body, but partial rosters are OK — a 2v2 can run 1v1 while the other
+  --     two seats stay open for drop-in. The sparse-aware
+  --     createTeamsFromFilledSlots assigns ACTUAL slot numbers to teams, so
+  --     downstream code never indexes into nil.
+  local isTeamMode = self.gameMode and self.gameMode.playersPerTeam
+    and (type(self.gameMode.playersPerTeam) == "table"
+         or (type(self.gameMode.playersPerTeam) == "number" and self.gameMode.playersPerTeam > 1))
+  local openTeamPartial = isTeamMode and self:isDynamicRoster()
+
+  if isTeamMode and not openTeamPartial then
     local expectedTotal
     if type(self.gameMode.playersPerTeam) == "table" then
       expectedTotal = 0
@@ -455,7 +464,27 @@ function Room:start_match()
 
   -- Recompute teams every match so drop-ins / drop-outs are reflected.
   if self.gameMode and self.gameMode.teamCount and self.gameMode.playersPerTeam then
-    self.teams = TeamUtils.createTeams(playerCount, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+    if openTeamPartial then
+      -- Build from real filled slots (e.g. {1, 3} in a 2v2 open room).
+      local filledSlots = {}
+      for slot, p in self:eachPlayer() do
+        if p then filledSlots[#filledSlots + 1] = slot end
+      end
+      self.teams = TeamUtils.createTeamsFromFilledSlots(
+        filledSlots, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+      -- Gate: every declared team must have at least one body. Without this an
+      -- open 2v2 could start as 2v0 (both players on the same team), which is
+      -- not a match.
+      local teamsWithMembers = TeamUtils.countTeamsWithMembers(self.teams)
+      if teamsWithMembers < self.gameMode.teamCount then
+        logger.warn(string.format(
+          "%d: cannot start open-team match — %d of %d teams have at least one player",
+          self.roomNumber, teamsWithMembers, self.gameMode.teamCount))
+        return false
+      end
+    else
+      self.teams = TeamUtils.createTeams(playerCount, self.gameMode.teamCount, self.gameMode.playersPerTeam)
+    end
     self.team_win_counts = self.team_win_counts or {}
     for teamIndex = 1, #self.teams do
       self.team_win_counts[teamIndex] = self.team_win_counts[teamIndex] or 0

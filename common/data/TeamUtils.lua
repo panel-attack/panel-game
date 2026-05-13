@@ -45,6 +45,68 @@ function TeamUtils.createTeams(playerCount, teamCount, playersPerTeam)
   return teams
 end
 
+-- Build teams from a sparse list of actually-filled slot numbers. Each slot is
+-- mapped to its team using the same boundaries createTeams would for a full
+-- roster (slots 1..N → team 1, slots N+1..2N → team 2, etc. for symmetric
+-- modes; or asymmetric ranges from a playersPerTeam table). Empty slots
+-- simply don't contribute to any team.
+--
+-- Lets Open Team rooms start with a partial roster (e.g. 2v2 with one player
+-- per team, where players sit at slots {1, 3} and slots {2, 4} are still
+-- open). The default createTeams would assign indices [1,2] and [3,4]
+-- regardless of fill, producing teams that point to non-existent players.
+---@param filledSlots integer[] slot numbers that have a player (in any order)
+---@param teamCount integer expected number of teams from the gameMode
+---@param playersPerTeam integer|integer[] from the gameMode
+---@return Team[] teams (some may have empty playerIndices)
+function TeamUtils.createTeamsFromFilledSlots(filledSlots, teamCount, playersPerTeam)
+  local teams = {}
+  for teamId = 1, teamCount do
+    teams[teamId] = { playerIndices = {}, id = teamId, teamIndex = teamId }
+  end
+
+  local function teamForSlot(slot)
+    if type(playersPerTeam) == "number" and playersPerTeam > 0 then
+      return math.floor((slot - 1) / playersPerTeam) + 1
+    elseif type(playersPerTeam) == "table" then
+      local acc = 0
+      for idx, count in ipairs(playersPerTeam) do
+        acc = acc + (tonumber(count) or 0)
+        if slot <= acc then return idx end
+      end
+    end
+    return nil
+  end
+
+  -- Sort so the resulting playerIndices are slot-ordered — keeps replay and
+  -- downstream "first-on-team" lookups deterministic across runs.
+  local sorted = {}
+  for _, s in ipairs(filledSlots) do sorted[#sorted + 1] = s end
+  table.sort(sorted)
+
+  for _, slot in ipairs(sorted) do
+    local teamId = teamForSlot(slot)
+    if teamId and teams[teamId] then
+      table.insert(teams[teamId].playerIndices, slot)
+    end
+  end
+  return teams
+end
+
+-- Count teams that have at least one filled slot. Used to gate match start in
+-- Open Team rooms — we won't start until every team has a body.
+---@param teams Team[]
+---@return integer
+function TeamUtils.countTeamsWithMembers(teams)
+  local count = 0
+  for _, team in ipairs(teams) do
+    if team.playerIndices and #team.playerIndices > 0 then
+      count = count + 1
+    end
+  end
+  return count
+end
+
 -- Returns the team that a player belongs to
 ---@param playerIndex integer The player's index (1-based)
 ---@param teams Team[] Array of teams

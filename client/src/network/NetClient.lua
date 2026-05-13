@@ -404,6 +404,13 @@ local function processGameResultMessage(self, message)
     return
   end
 
+  -- Tell the match the server has authoritatively confirmed end. With the
+  -- hasEnded-display-only architecture the engine keeps ticking on local
+  -- match-end conditions until this signal arrives (or an abort fires).
+  if self.room.match and self.room.match.serverConfirmedEnd then
+    self.room.match:serverConfirmedEnd()
+  end
+
   for _, roomPlayer in ipairs(self.room.players) do
     local messagePlayer = message.gameResult[roomPlayer.playerNumber]
     if messagePlayer then

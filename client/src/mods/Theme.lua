@@ -1301,7 +1301,7 @@ function Theme:reload()
     ---@type ClientMatch
     local match = activeScene.match
     for i, stack in ipairs(match.stacks) do
-      stack:assignAssets(self:getIngameAssetPack(stack.renderIndex))
+      stack:assignAssets(self:getIngameAssetPack(stack.layoutSlot))
     end
   end
 end
