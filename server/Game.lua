@@ -425,24 +425,69 @@ function Game:setId(id)
   return self.id
 end
 
+---Ordinal placement (1 = winner, higher = died earlier). Uses each player's
+---reported senderFrame as the rank key — client clock, not server arrival time.
+---Ties on same frame share placement (competition ranking: 1, 2, 2, 4).
 ---@param player ServerPlayer
 ---@param slot integer? slot override for callers where player.player_number may be nil (leavers)
 ---@return integer
 function Game:getPlacement(player, slot)
   slot = slot or player.player_number
-  if self.disconnectedPlayers and self.disconnectedPlayers[slot] then
-    return 2
+  if not slot then return 0 end
+
+  -- Team mode: rank by team's last-survivor fall frame.
+  if self.teams and self.teams[1] then
+    local myTeam = TeamUtils.getPlayerTeamIndex(self.teams, slot)
+    if not myTeam then return 0 end
+
+    local function teamFallFrame(t)
+      if t == self.winnerTeamIndex then return math.huge end
+      local team = self.teams[t]
+      if not team or not team.playerIndices then return 0 end
+      local maxFrame = 0
+      for _, memberSlot in ipairs(team.playerIndices) do
+        local f = (self.eliminatedPlayers and self.eliminatedPlayers[memberSlot])
+               or (self.disconnectedPlayers and self.disconnectedPlayers[memberSlot] and 0)
+               or 0
+        if f > maxFrame then maxFrame = f end
+      end
+      return maxFrame
+    end
+
+    local myFrame = teamFallFrame(myTeam)
+    local higher = 0
+    for otherTeam = 1, #self.teams do
+      if otherTeam ~= myTeam and teamFallFrame(otherTeam) > myFrame then
+        higher = higher + 1
+      end
+    end
+    return 1 + higher
   end
 
-  if not self.winnerId then
-    return 0
-  else
-    if self.winnerIndex == slot then
-      return 1
-    else
-      return 2
+  -- FFA / individual mode: winner has math.huge rank; everyone else uses fall frame.
+  local function slotFallFrame(s)
+    if self.winnerIndex and s == self.winnerIndex then return math.huge end
+    return (self.eliminatedPlayers and self.eliminatedPlayers[s])
+        or (self.disconnectedPlayers and self.disconnectedPlayers[s] and 0)
+        or nil
+  end
+
+  local myFrame = slotFallFrame(slot)
+  if not myFrame then return 0 end
+
+  local rankable = {}
+  if self.winnerIndex then rankable[self.winnerIndex] = true end
+  for s in pairs(self.eliminatedPlayers or {}) do rankable[s] = true end
+  for s in pairs(self.disconnectedPlayers or {}) do rankable[s] = true end
+
+  local higher = 0
+  for s in pairs(rankable) do
+    if s ~= slot then
+      local f = slotFallFrame(s)
+      if f and f > myFrame then higher = higher + 1 end
     end
   end
+  return 1 + higher
 end
 
 return Game
