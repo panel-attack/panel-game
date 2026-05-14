@@ -1367,17 +1367,23 @@ end
 ---@return boolean? # if messages from this connection should continue to get processed
 function Server:processMessage(message, connection)
   message = json.decode(message)
-  message = ClientMessages.sanitizeMessage(message)
 
   -- Trace capture: inbound JSON message recorded against the connection's
   -- publicId (if any). Pre-login messages (login_request) won't have a
   -- player yet — TraceWriter no-ops on nil publicId.
+  --
+  -- IMPORTANT: tap BEFORE ClientMessages.parseMessage. Recording must
+  -- capture the wire shape so the trace-replay assembler in
+  -- tools/server_trace_to_bundle.lua can re-emit messages that route
+  -- correctly through the server's dispatcher on replay.
   pcall(function()
     local player = self.connectionToPlayer[connection]
     if player and player.publicPlayerID then
       TraceWriter.recv(player.publicPlayerID, "J", message)
     end
   end)
+
+  message = ClientMessages.parseMessage(message)
 
   if message.error_report then -- Error report is checked for first so that a full login is not required
     self:handleErrorReport(message.error_report)
@@ -1464,7 +1470,7 @@ function Server:processMessage(message, connection)
         -- Optional seed override. Ride the requestedGameMode the rest of the
         -- way (deep-copied by GameModes.getPreset, so this won't bleed into
         -- other rooms). Consumed in Game.createFromRoomState. Sanitized to a
-        -- valid integer or nil upstream in ClientMessages.sanitizeRoomRequest.
+        -- valid integer or nil upstream in ClientMessages.parseRoomRequest.
         if message.seed then
           requestedGameMode.seedOverride = message.seed
         end
@@ -1485,9 +1491,9 @@ function Server:processMessage(message, connection)
     elseif message.spectate_request then
       self:handleSpectateRequest(message, player)
       return true
-    elseif message.playerSettings then
+    elseif message.menu_state then
       -- Note this also starts the game if everything is ready from both players character select settings
-      player:updateSettings(message.playerSettings)
+      player:updateSettings(message.menu_state)
       return true
     elseif player.state == "playing" and message.taunt then
       self.playerToRoom[player]:handleTaunt(message, player)
@@ -1517,7 +1523,7 @@ function Server:processMessage(message, connection)
       self:handleLeaveRoom(player, nil)
       return true
     elseif (player.state == "playing" or player.state == "paused") and message.type == "pauseToggle" then
-      self.rooms[message.roomNumber]:togglePause(player, message.paused)
+      self.rooms[message.recipientId]:togglePause(player, message.content)
     elseif (player.state == "spectating") and message.leave_room then
       if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
         self:setLobbyChanged()
@@ -1724,7 +1730,7 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     player.save_replays_publicly = loginMessage.save_replays_publicly
     player:setState("lobby")
     assert(player.publicPlayerID ~= nil)
-    player:updateSettings(loginMessage.playerSettings)
+    player:updateSettings(loginMessage)
     self.nameToConnectionIndex[name] = connection.index
     self.connectionToPlayer[connection] = player
     self.publicIdToPlayer[player.publicPlayerID] = player

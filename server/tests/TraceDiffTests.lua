@@ -183,6 +183,45 @@ local function test_dirFilter_override_to_recv()
 end
 
 ----------------------------------------------------------------------
+-- Phase 3 Step 3.3 — Server-side recv and client-side send for the
+-- same wire J event must diff clean. Pre-fix, the server tap ran AFTER
+-- ClientMessages.sanitize* so the bodies didn't match. Locks in the
+-- post-fix invariant: both sides record the same wire shape.
+----------------------------------------------------------------------
+
+local function test_client_send_and_server_recv_match_at_wire_layer()
+  logger.info("test_client_send_and_server_recv_match_at_wire_layer")
+  -- Exact wire body for a real ClientProtocol message — what the client
+  -- TraceWriter would log on `send` and what the server TraceWriter
+  -- logs on `recv` (post-fix, captured pre-parseMessage).
+  local wireRoomRequest = {
+    recipient = "server",
+    type      = "roomRequest",
+    content   = {
+      gameMode = { name = "two_player_vs" },
+      latencyTolerance = "normal",
+      openRoom = false,
+    },
+  }
+  local wireMenuState = { menu_state = { ready = true, level = 5 } }
+
+  local clientSends = {
+    entry({ ts = 1, dir = "send", prefix = "J", body = wireRoomRequest, publicId = 7 }),
+    entry({ ts = 2, dir = "send", prefix = "J", body = wireMenuState,   publicId = 7 }),
+  }
+  local serverRecvs = {
+    entry({ ts = 1, dir = "send", prefix = "J", body = wireRoomRequest, publicId = 7 }),
+    entry({ ts = 2, dir = "send", prefix = "J", body = wireMenuState,   publicId = 7 }),
+  }
+
+  local r = TraceDiff.diff(clientSends, serverRecvs)
+  assert(TraceDiff.isClean(r),
+    "client send vs server recv should diff cleanly at the wire layer; "
+    .. "got " .. r.summary.body_diffs .. " body diffs")
+  assert(r.summary.matched == 2)
+end
+
+----------------------------------------------------------------------
 -- Run
 ----------------------------------------------------------------------
 

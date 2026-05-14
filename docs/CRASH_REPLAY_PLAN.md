@@ -326,68 +326,169 @@ noisily, never destructively.
 
 ## Recreation: from trace to runnable test
 
-The assembler script lives at `scripts/assemble_crash_fixture.lua`.
-Reads one or more JSONL trace files for the same `gameKey`, emits a
-fixture JSON checked into `common/tests/fixtures/crash_replays/`.
-Fixture shape is itself trivial:
+The assembler is `tools/server_trace_to_fixture.lua`. It reads N
+server-side JSONL traces (one per player) from `trace_archive/`,
+extracts the matchStart payload, fills in per-stack inputs from each
+player's `recv I` lines, aggregates `recv D` and `recv G` events into
+`crossPlayerEvents`, and emits a fixture JSON to
+`common/tests/fixtures/crash_replays/<name>.json` in the envelope the
+existing `CrashReplayRegressionTests.lua` already understands.
+
+**Engine-only.** The recreator does NOT replay through TCP / a real
+Server / `TestClient`. We tried — `tools/server_trace_to_bundle.lua` +
+the E2E `TraceReplayTests` sweep — and bounced off a wall: the server's
+recv tap stores already-decoded J bodies whose shape diverges from what
+`TestClient:_replaySendEvent` reproduces on the wire (specifically the
+`{type, content}` envelope vs the legacy `{roomRequest=true, ...}`
+shape). Reproducing the client-side sanitizer in test code would
+double the surface area without buying anything for engine-level bugs.
+`Match.createFromReplay` already knows the inputs + crossPlayerEvents
+shape; that's all most bugs need.
+
+### One-shot recipe
+
+```sh
+# 1. Identify the traces for the bad game. Each player has one
+#    session_<loginTs>.jsonl per login lifetime; all participants in
+#    the same game share an mtime cluster (server taps flush on the
+#    same tick). Most-recent-first:
+ls -t trace_archive/*/session_*.jsonl | head -8
+
+# 2. Confirm the cluster you're picking belongs to the SAME game —
+#    grep for matching matchStart roomNumbers and stack metadata.
+#    Quick check:
+for f in trace_archive/{5,7,8,11}/session_<ts>.jsonl; do
+  echo "=== $f ==="
+  grep -m1 '"matchStart"' "$f" | grep -oE '"name":"[^"]+","publicId":[0-9]+' | head -4
+done
+
+# 3. Build the fixture. The fixture name becomes its filename.
+#    Order doesn't matter; the script reads metadata.stacks for the
+#    publicId→slot mapping.
+luajit tools/server_trace_to_fixture.lua wrong_draw_2026_05_13 \
+  trace_archive/5/session_1778717170.jsonl  \
+  trace_archive/7/session_1778717165.jsonl  \
+  trace_archive/8/session_1778717186.jsonl  \
+  trace_archive/11/session_1778717182.jsonl
+# → common/tests/fixtures/crash_replays/wrong_draw_2026_05_13.json
+# → stderr prints per-player: input bytes, D count, G count
+
+# 4. Run the generic sweep first — confirms the engine can ingest
+#    your fixture without crashing.
+zsh run_tests.sh CrashReplayRegression
+
+# 5. Write or extend a per-incident test (one .lua per incident) under
+#    common/tests/engine/. Pattern: copy WrongDrawRegressionTest.lua,
+#    swap the FIXTURE_PATH constant + the assertion to whatever the
+#    bug specifically asserts. Wire it into testLauncher.lua next to
+#    the existing CrashReplayRegressionTests entry.
+
+# 6. Run just the new test until red→green, then run the whole suite.
+zsh run_tests.sh WrongDrawRegression       # focused
+zsh run_tests.sh                           # full suite, before commit
+```
+
+The fixture is checked in to the repo (~170 KB for a 2-minute 4-player
+game; the bulk is the input chars). A future regression re-fires the
+test the same way.
+
+**Regenerating an existing fixture.** The script refuses to overwrite,
+so delete first:
+
+```sh
+rm common/tests/fixtures/crash_replays/<name>.json
+luajit tools/server_trace_to_fixture.lua <name> trace_archive/...
+```
+
+**Pulling traces from prod.** When the bug came from a player on the
+production server, `gather_logs.sh` pulls the server's `trace_archive/`
+to your local repo before you assemble:
+
+```sh
+zsh gather_logs.sh
+luajit tools/server_trace_to_fixture.lua <name> trace_archive/<pid>/session_<ts>.jsonl ...
+```
+
+### Fixture envelope
 
 ```json
 {
-  "gameKey":     { "roomNumber": 6, "startTs": 1715630423 },
-  "reason":      "match_hung",
-  "schemaVer":   1,
-  "traces": {
-    "server":  "<JSONL bytes from server's view>",
-    "8":       "<JSONL bytes from publicId 8's view>",
-    "5":       "<JSONL bytes from publicId 5's view>",
-    "11":      "<JSONL bytes from publicId 11's view>"
+  "incidentId":   "wrong_draw_2026_05_13",
+  "schemaVer":    1,
+  "reason":       "from_server_trace",
+  "suspectFrame": 8131,
+  "perspectives": {
+    "5":  { "publicId": 5,  "replay": { ...ReplayV3... }, "gameContext": {...}, "error": "" },
+    "7":  { "publicId": 7,  "replay": { ...same... }, ... },
+    "8":  { "publicId": 8,  "replay": { ...same... }, ... },
+    "11": { "publicId": 11, "replay": { ...same... }, ... }
   }
 }
 ```
 
-The test runner (`common/tests/engine/CrashReplayRegressionTests.lua`,
-already in place) iterates each trace and replays per-perspective:
+Each perspective shares the canonical replay (we already merged the
+cross-player events server-side; there's no per-perspective divergence
+to preserve here). The replay carries:
 
-```lua
-local function recreate(jsonl)
-  local lines = parseLines(jsonl)
-  local matchStart = findFirst(lines, function(l)
-    return l.dir == "recv" and l.body.type == "matchStart"
-  end)
-  assert(matchStart, "trace must begin with a matchStart recv")
+- `panelSource`, `rules`, `garbageFlows`, `engineVersion`, `metadata`
+  — verbatim from the matchStart the server broadcast.
+- `stacks[i].inputs` — concatenated `recv I` body bytes from
+  publicId→stackIndex's trace.
+- `crossPlayerEvents.deaths` — every `recv D`, sender stamped from
+  the trace's publicId.
+- `crossPlayerEvents.garbage` — every `recv G`, sender stamped.
 
-  local replay = ReplayV3.createFromV3Data(matchStart.body.content)
-  local match  = Match.createFromReplay(replay)
-  match:start()
+### Two assertion shapes
 
-  for _, line in ipairs(lines) do
-    if line.dir == "recv" and line.prefix == "I" then
-      -- inject relayed input
-    elseif line.dir == "recv" and line.prefix == "G" then
-      match:applyGarbageEvent(line.body)
-    elseif line.dir == "recv" and line.prefix == "D" then
-      match:applyDeathEvent(line.body)
-    elseif line.dir == "send" and line.prefix == "I" then
-      -- this client's input — feed local stack
-    -- ... etc ...
-    end
-  end
-  return match
-end
-```
+**Sanity sweep** (`CrashReplayRegressionTests.assertFixtureClean`):
+runs every perspective's replay through `Match.createFromReplay` +
+`match:run()` until `isLocallyEnded()` or the suspect frame, asserts
+the engine doesn't crash. Catches "the engine itself broke" but not
+outcome bugs.
 
-The assertion shape depends on `reason`:
+**Focused per-incident test** — the bug-specific assertion. For the
+wrong-draw case, that's `common/tests/engine/WrongDrawRegressionTest.lua`:
+it loads the fixture, restores the team setup (`Match.createFromReplay`
+doesn't carry teams), applies the recorded deaths to the stacks via
+`Stack:recordDeath(senderFrame)`, and asserts `Match:getWinners()`
+returns the surviving team — not all four stacks (a "draw").
 
-- **`client_crash`** — the trace has the captured error; assert
-  recreation doesn't re-fire the same error fragment.
-- **`match_hung`** — assert the match reaches a terminal state within
-  the recorded frame range. The Amber case fails this: recreation
-  also hangs, until the arbitration bug is fixed.
-- **`user_reported`** — no automatic assertion; the human author
-  inspects the trace and writes a targeted assertion.
+Pattern for new incidents: copy that file, swap the fixture path and
+the assertion. The fixture stays generic; the bug-specific knowledge
+lives in the test.
 
-Promotion to checked-in fixture is `cp` from the gather'd directory to
-`common/tests/fixtures/crash_replays/<human-readable-slug>.json`.
+### Caveats found in practice
+
+- **Touch-input traces under-report inputs.** The 2026-05-13 fixture
+  shows Koozie sent ~1064 input chars but her engine clock at death
+  was 3414. Probably a `send_controls` early-return when the engine
+  is buffer-ahead, but it means a stack may run out of inputs before
+  reaching its recorded death frame. For getWinners-style tests we
+  bypass the engine and stamp `game_over_clock` directly from
+  `crossPlayerEvents.deaths`; for tests that need the engine to walk
+  forward, we'd need to either pad inputs or set
+  `match.fromReplay = false` so the loose-sync bypass treats
+  `game_over_clock > 0` as "done" without requiring clock catch-up.
+- **`Match.createFromReplay` does NOT consume `crossPlayerEvents`.**
+  Only `ClientMatch.createFromReplay` preloads
+  `pendingHistoricalDeaths`/`Garbage`. Tests that want engine-driven
+  catch-up must either go through ClientMatch or apply the events
+  manually.
+- **`Match.createFromReplay` does NOT set up teams.** Without
+  `match:setTeams(...)` the TEAMS_ACTIVE end-condition never fires
+  for team modes. Test setup must call `TeamUtils.createTeams(...)`
+  + `match:setTeams(...)`.
+- **The trace alone may not reproduce a UI bug.** The 2026-05-13
+  wrong-draw incident reproduced through the trace at the engine
+  level (`Match:getWinners()` returned the right team), but the live
+  UI still showed "DRAW". The bug was in
+  `GameBase.buildTeamResultText`'s comparison between Player objects
+  and engine Stack objects — only triggered by certain runtime
+  shapes that the engine-only fixture doesn't surface. We added
+  `[wrong-draw-trace]` `logger.info` lines in `setupGameOver` to
+  capture the actual `winners` shape on the next live occurrence; if
+  a similar UI-level bug shows up, do the same — instrument the call
+  site, ask the user to repro, then read `logs/client.log`.
 
 ---
 
@@ -496,17 +597,17 @@ stay relevant in this model.
 
 | Phase | Status | What it does |
 |---|---|---|
-| A — Bootstrap harness | ✓ | `CrashReplayRegressionTests.lua` runner. Self-tests with programmatic in-memory fixture; sweeps `common/tests/fixtures/crash_replays/`. Stays — fixture loader will need a small update for the trace-bundle shape (mechanical). |
+| A — Bootstrap harness | ✓ | `CrashReplayRegressionTests.lua` runner. Self-tests with programmatic in-memory fixture; sweeps `common/tests/fixtures/crash_replays/`. The inline-ReplayV3 envelope it already accepted is what `tools/server_trace_to_fixture.lua` emits — no loader update needed. |
 | B step 1 — Module + Server/Room wire | ✓ | `server/CrashReports.lua` + `Room:incidentDetected` signal. Unchanged — still the trigger funnel. |
 | B step 2 — Server-side replay snapshot | ✓ (becomes derived) | `getPartialReplay(true)` writes `<incidentId>/server.json`. Stays as a *comparison view* against the server's own trace; not load-bearing for recreation. |
 | B step 3 — 7-day sweeper | ✓ | Ages incidents pending→complete. Unchanged. |
 | C step 1 — flagGame wire | ✓ | Client-nominated trigger. Unchanged. |
-| **D — Client trace tap** | **⏸ START HERE** | Socket recv/send + input hook → JSONL writer to `trace_archive/`. Includes the recreate-from-trace validator. Until this is green, everything else is theoretical. |
-| D' — Server-side trace tap | ⏸ | Mirror Phase D on the server side: tap Server's send/recv, write per-room JSONL into `<rootDir>/trace_archive/<publicId>/...`. Same writer logic — share a module. |
+| D — Client trace tap | ✓ | `client/src/network/TraceWriter.lua` taps recv/send/input + lifecycle markers. Writes to `love.filesystem` save dir. Live in production. |
+| D' — Server-side trace tap | ✓ | `server/TraceWriter.lua` taps the server's recv/send. Writes per-publicId session files to `trace_archive/<publicId>/session_<loginTs>.jsonl`. The fixtures we build today come from these files. |
 | E — Anomaly detectors | ⏸ | Stuck-match watchdog (catches the Amber/Bev/Koozie case) + redirect-storm detector. Small. |
 | C step 2 — Trace pull wire | ⏸ | `requestTrace` / `traceFile` / `traceFileAck`. Replaces the partial `crashSliceRequest`/`crashSlice` work. The wire shape is straightforward once the files exist. |
-| F — Assembler script | ⏸ | `scripts/assemble_crash_fixture.lua`. Reads per-client trace files for one gameKey, emits one fixture JSON. Small. |
-| F' — Runner update | ⏸ | `CrashReplayRegressionTests.lua` learns the trace-bundle fixture shape (currently expects ReplayV3 inline). Mechanical. |
+| F — Assembler script | ✓ | `tools/server_trace_to_fixture.lua`. Reads N server-side traces, emits one fixture JSON in the existing inline-ReplayV3 envelope. Engine-only — does NOT replay through TCP/Server (we tried; bundle approach abandoned, see "Recreation" section above). |
+| F' — Runner update | ✓ (no change needed) | The existing inline-ReplayV3 envelope works as-is; the assembler emits into it. Per-incident assertions live in dedicated test files (e.g. `WrongDrawRegressionTest.lua`) — the generic sweep stays narrow ("did the engine survive"). |
 
 ### Suggested order
 

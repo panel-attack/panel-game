@@ -115,8 +115,8 @@ function Player:updateSettings(settings)
     self.stage_is_random = settings.stage_is_random
   end
 
-  if settings.wants_ranked_match ~= nil then
-    self.wants_ranked_match = settings.wants_ranked_match
+  if settings.ranked ~= nil then
+    self.wants_ranked_match = settings.ranked
   end
 
   if settings.wants_ready ~= nil then
@@ -180,6 +180,10 @@ function Player:sendJson(message)
   -- Trace capture: server-side record of the outbound JSON. pcall'd so
   -- a TraceWriter regression cannot disturb the send path. message has
   -- the shape { messageType, messageText } — body is messageText.
+  -- Wire-shape symmetry: messageText is the wire-shape table from
+  -- ClientProtocol.*/ServerMessages.*. The recv-side tap in
+  -- Server:processMessage records BEFORE ClientMessages.parseMessage
+  -- for the same reason — both sides record at the wire layer.
   pcall(function()
     if self.publicPlayerID then
       TraceWriter.send(self.publicPlayerID, "J", message and message.messageText)

@@ -1,47 +1,62 @@
--- provide an abstraction layer to convert messages as defined in common/network/ClientProtocol
--- into the format used by the server's internals
--- so that changes in the ClientProtocol only affect this abstraction layer and not server code
--- and changes in server code likewise only affect this abstraction layer instead of the ClientProtocol
+-- Server-side wire-message parsers.
+--
+-- Contract (load-bearing — see docs/TRACE_REPLAY_SHAPE_FIX_PLAN.md Phase 3):
+--   parse*(wireMessage) returns a table whose top-level keys are a subset
+--   (or copy) of wireMessage's top-level keys. Renaming keys is FORBIDDEN.
+--   Adding internal dispatch flags (e.g. `roomRequest = true`, `matchAbort
+--   = true`) is allowed. Pulling nested fields out of `content` is allowed
+--   for legacy `recipient=room` envelopes (roomRequest/matchAbort/
+--   pauseToggle) where the dispatcher routes by `type`. Wrapping/nesting
+--   top-level keys is FORBIDDEN.
+--
+-- Why: server-side trace capture records the wire bytes BEFORE this layer
+-- runs (see server.lua Server:processMessage). Re-emitting the trace must
+-- route through the same dispatcher, so the parsed shape must be
+-- structurally compatible with — not a rename of — the wire shape.
+--
+-- The pre-2026-05 history of this file used "sanitize*" naming and freely
+-- reshaped its inputs; the rename to "parse*" is intentional — the new
+-- name does not license arbitrary reshaping.
+
 local logger = require("common.lib.logger")
 local LevelData = require("common.data.LevelData")
 local GameModes = require("common.data.GameModes")
 
 local ClientMessages = {}
 
--- central sanitization function that picks a sanitization function based on the presence of key fields
-function ClientMessages.sanitizeMessage(clientMessage)
+function ClientMessages.parseMessage(clientMessage)
   if clientMessage.login_request then
-    return ClientMessages.sanitizeLoginRequest(clientMessage)
+    return ClientMessages.parseLoginRequest(clientMessage)
   elseif clientMessage.challengeUpdate then
-    return ClientMessages.sanitizeChallengeUpdate(clientMessage)
+    return ClientMessages.parseChallengeUpdate(clientMessage)
   elseif clientMessage.menu_state then
-    return ClientMessages.sanitizeMenuState(clientMessage.menu_state)
+    return ClientMessages.parseMenuState(clientMessage)
   elseif clientMessage.spectate_request then
-    return ClientMessages.sanitizeSpectateRequest(clientMessage)
+    return ClientMessages.parseSpectateRequest(clientMessage)
   elseif clientMessage.leaderboard_request then
-    return ClientMessages.sanitizeLeaderboardRequest(clientMessage)
+    return ClientMessages.parseLeaderboardRequest(clientMessage)
   elseif clientMessage.leave_room then
-    return ClientMessages.sanitizeLeaveRoom(clientMessage)
+    return ClientMessages.parseLeaveRoom(clientMessage)
   elseif clientMessage.taunt then
-    return ClientMessages.sanitizeTaunt(clientMessage)
+    return ClientMessages.parseTaunt(clientMessage)
   elseif clientMessage.game_over then
-    return ClientMessages.sanitizeGameResult(clientMessage)
+    return ClientMessages.parseGameResult(clientMessage)
   elseif clientMessage.stackEliminated then
-    return ClientMessages.sanitizeStackEliminated(clientMessage)
+    return ClientMessages.parseStackEliminated(clientMessage)
   elseif clientMessage.joinRoomRequest then
-    return ClientMessages.sanitizeJoinRoomRequest(clientMessage)
+    return ClientMessages.parseJoinRoomRequest(clientMessage)
   elseif clientMessage.logout then
     return clientMessage
   elseif clientMessage.type and clientMessage.type == "roomRequest" then
-    return ClientMessages.sanitizeRoomRequest(clientMessage)
+    return ClientMessages.parseRoomRequest(clientMessage)
   elseif clientMessage.type and clientMessage.type == "matchAbort" then
-    return ClientMessages.sanitizeMatchAbort(clientMessage)
+    return ClientMessages.parseMatchAbort(clientMessage)
   elseif clientMessage.type and clientMessage.type == "pauseToggle" then
-    return ClientMessages.sanitizePauseToggle(clientMessage)
+    return ClientMessages.parsePauseToggle(clientMessage)
   elseif clientMessage.error_report then
     return clientMessage
   elseif clientMessage.flagGame then
-    return ClientMessages.sanitizeFlagGame(clientMessage)
+    return ClientMessages.parseFlagGame(clientMessage)
   else
     local errorMsg = "Received an unexpected message"
     local messageJson = json.encode(clientMessage)
@@ -70,34 +85,34 @@ end
 ---@field loaded boolean?
 ---@field publicId integer?
 ---@field levelData LevelData?
----@field wants_ranked_match boolean?
 
----@return {playerSettings: ServerIncomingPlayerSettings}
-function ClientMessages.sanitizeMenuState(playerSettings)
-  local sanitized = {}
-
-  sanitized.character = playerSettings.character
-  sanitized.character_is_random = playerSettings.character_is_random
-  sanitized.cursor = playerSettings.cursor -- nil when from login
-  sanitized.inputMethod = (playerSettings.inputMethod or "controller") --one day we will require message to include input method, but it is not this day.
-  sanitized.level = playerSettings.level
-  sanitized.panels_dir = playerSettings.panels_dir
-  sanitized.ready = playerSettings.ready -- nil when from login
-  sanitized.stage = playerSettings.stage
-  sanitized.stage_is_random = playerSettings.stage_is_random
-  sanitized.wants_ranked_match = playerSettings.ranked
-  sanitized.loaded = playerSettings.loaded
-  sanitized.wants_ready = playerSettings.wants_ready
-  if playerSettings.levelData and LevelData.validate(playerSettings.levelData) then
-    sanitized.levelData = playerSettings.levelData
-    setmetatable(sanitized.levelData, LevelData)
+local function parsePlayerSettingsFields(settings)
+  local out = {}
+  out.character = settings.character
+  out.character_is_random = settings.character_is_random
+  out.cursor = settings.cursor
+  out.inputMethod = (settings.inputMethod or "controller")
+  out.level = settings.level
+  out.panels_dir = settings.panels_dir
+  out.ready = settings.ready
+  out.stage = settings.stage
+  out.stage_is_random = settings.stage_is_random
+  out.ranked = settings.ranked
+  out.loaded = settings.loaded
+  out.wants_ready = settings.wants_ready
+  if settings.levelData and LevelData.validate(settings.levelData) then
+    out.levelData = settings.levelData
+    setmetatable(out.levelData, LevelData)
   end
-
-  return {playerSettings = sanitized}
+  return out
 end
 
----@class ServerIncomingLoginMessage
----@field playerSettings ServerIncomingPlayerSettings
+---@return {menu_state: ServerIncomingPlayerSettings}
+function ClientMessages.parseMenuState(clientMessage)
+  return { menu_state = parsePlayerSettingsFields(clientMessage.menu_state) }
+end
+
+---@class ServerIncomingLoginMessage : ServerIncomingPlayerSettings
 ---@field login_request boolean
 ---@field user_id privateUserId
 ---@field engine_version string
@@ -105,9 +120,8 @@ end
 ---@field save_replays_publicly ("not at all" | "anonymously" | "with my name")
 
 ---@return ServerIncomingLoginMessage
-function ClientMessages.sanitizeLoginRequest(loginRequest)
-  ---@type ServerIncomingLoginMessage
-  local sanitized = ClientMessages.sanitizeMenuState(loginRequest)
+function ClientMessages.parseLoginRequest(loginRequest)
+  local sanitized = parsePlayerSettingsFields(loginRequest)
   sanitized.login_request = true
   sanitized.user_id = loginRequest.user_id
   sanitized.engine_version = loginRequest.engine_version
@@ -117,7 +131,7 @@ function ClientMessages.sanitizeLoginRequest(loginRequest)
   return sanitized
 end
 
-function ClientMessages.sanitizeChallengeUpdate(message)
+function ClientMessages.parseChallengeUpdate(message)
   local sanitized =
   {
     challengeUpdate =
@@ -147,7 +161,7 @@ local function _truncString(v, cap)
   return v
 end
 
-function ClientMessages.sanitizeFlagGame(clientMessage)
+function ClientMessages.parseFlagGame(clientMessage)
   local raw = clientMessage.flagGame
   if type(raw) ~= "table" then return { flagGame = nil } end
 
@@ -182,7 +196,7 @@ function ClientMessages.sanitizeFlagGame(clientMessage)
   }
 end
 
-function ClientMessages.sanitizeSpectateRequest(spectateRequest)
+function ClientMessages.parseSpectateRequest(spectateRequest)
   local sanitized =
   {
     spectate_request =
@@ -195,18 +209,17 @@ function ClientMessages.sanitizeSpectateRequest(spectateRequest)
   return sanitized
 end
 
-function ClientMessages.sanitizeLeaderboardRequest(leaderboardRequest)
+function ClientMessages.parseLeaderboardRequest(leaderboardRequest)
   local sanitized =
   {
     leaderboard_request = leaderboardRequest.leaderboard_request,
-    -- default value only for slow adaption, remove and sanity check later
-    gameModeId = leaderboardRequest.leaderboardType or GameModes.IDs.TWO_PLAYER_VS,
+    leaderboardType = leaderboardRequest.leaderboardType or GameModes.IDs.TWO_PLAYER_VS,
   }
 
   return sanitized
 end
 
-function ClientMessages.sanitizeLeaveRoom(leaveRoom)
+function ClientMessages.parseLeaveRoom(leaveRoom)
   local sanitized =
   {
     leave_room = leaveRoom.leave_room
@@ -215,7 +228,7 @@ function ClientMessages.sanitizeLeaveRoom(leaveRoom)
   return sanitized
 end
 
-function ClientMessages.sanitizeGameResult(gameResult)
+function ClientMessages.parseGameResult(gameResult)
   local sanitized =
   {
     game_over = gameResult.game_over,
@@ -225,14 +238,14 @@ function ClientMessages.sanitizeGameResult(gameResult)
   return sanitized
 end
 
-function ClientMessages.sanitizeStackEliminated(message)
+function ClientMessages.parseStackEliminated(message)
   return {
     stackEliminated = message.stackEliminated,
     frame = tonumber(message.frame),
   }
 end
 
-function ClientMessages.sanitizeTaunt(taunt)
+function ClientMessages.parseTaunt(taunt)
   local sanitized =
   {
     taunt = taunt.taunt,
@@ -243,11 +256,10 @@ function ClientMessages.sanitizeTaunt(taunt)
   return sanitized
 end
 
-function ClientMessages.sanitizeRoomRequest(roomRequest)
+function ClientMessages.parseRoomRequest(roomRequest)
   local gameMode = nil
   local latencyTolerance = nil
 
-  -- Preferred format from ClientProtocol.sendRoomRequest
   if roomRequest.content then
     gameMode = roomRequest.content.gameMode
       or roomRequest.content.gameModeId
@@ -255,25 +267,8 @@ function ClientMessages.sanitizeRoomRequest(roomRequest)
       or roomRequest.content.mode
   end
 
-  -- Legacy/fallback formats
-  if not gameMode then
-    gameMode = roomRequest.gameMode
-      or roomRequest.gameModeId
-      or roomRequest.gameModeName
-      or roomRequest.mode
-  end
-
-  -- Some older callers may place the serialized game mode directly in content.
-  if not gameMode and roomRequest.content and roomRequest.content.name then
-    gameMode = roomRequest.content
-  end
-
   if roomRequest.content then
     latencyTolerance = roomRequest.content.latencyTolerance
-  end
-
-  if not latencyTolerance then
-    latencyTolerance = roomRequest.latencyTolerance
   end
 
   -- Optional client-supplied PRNG seed for the panel sequence. Honored only
@@ -283,15 +278,12 @@ function ClientMessages.sanitizeRoomRequest(roomRequest)
   -- set this).
   local seed
   if roomRequest.content then seed = roomRequest.content.seed end
-  if seed == nil then seed = roomRequest.seed end
   if type(seed) ~= "number" or seed ~= math.floor(seed) or seed < 1 or seed > 9999999 then
     seed = nil
   end
 
   local openRoom = false
   if roomRequest.content and roomRequest.content.openRoom == true then
-    openRoom = true
-  elseif roomRequest.openRoom == true then
     openRoom = true
   end
 
@@ -304,7 +296,7 @@ function ClientMessages.sanitizeRoomRequest(roomRequest)
   }
 end
 
-function ClientMessages.sanitizeJoinRoomRequest(joinRoomRequest)
+function ClientMessages.parseJoinRoomRequest(joinRoomRequest)
   local request = joinRoomRequest.joinRoomRequest or {}
   return {
     joinRoomRequest = {
@@ -314,25 +306,20 @@ function ClientMessages.sanitizeJoinRoomRequest(joinRoomRequest)
   }
 end
 
-function ClientMessages.sanitizeMatchAbort(matchAbort)
-  local sanitized =
-  {
-    roomNumber = matchAbort.recipientId,
-    matchAbort = true
+function ClientMessages.parseMatchAbort(matchAbort)
+  return {
+    type = "matchAbort",
+    recipientId = matchAbort.recipientId,
+    matchAbort = true,
   }
-
-  return sanitized
 end
 
-function ClientMessages.sanitizePauseToggle(pauseToggle)
-  local sanitized =
-  {
-    roomNumber = pauseToggle.recipientId,
-    paused = pauseToggle.content,
+function ClientMessages.parsePauseToggle(pauseToggle)
+  return {
     type = "pauseToggle",
+    recipientId = pauseToggle.recipientId,
+    content = pauseToggle.content,
   }
-
-  return sanitized
 end
 
 return ClientMessages

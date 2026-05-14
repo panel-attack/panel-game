@@ -1284,7 +1284,15 @@ end
 -- Match has its own separately-cached self.winners (BaseStack[]) — different
 -- objects, different types, no actual collision.
 function ClientMatch:getWinners()
-  if not self.winners and self.engine:isLocallyEnded() then
+  -- Cache hit (non-empty): we've already resolved a real verdict, return it.
+  -- Empty cache or nil cache: try to resolve from the engine's cached
+  -- verdict. Engine.winners is set EXACTLY ONCE by Match:handleMatchEnd
+  -- and is the authoritative "the match is finalized, here's the verdict"
+  -- signal. Gating on engine.winners ~= nil instead of the recomputed
+  -- isLocallyEnded() predicate closes a race where a too-early call
+  -- (before evaluateEndConditions had stabilized) used to latch an
+  -- empty result and surface as "DRAW" in the team-result UI.
+  if (not self.winners or #self.winners == 0) and self.engine.winners ~= nil then
     local winningStacks = self.engine:getWinners() or {}
     local winners = {}
     for _, stack in ipairs(winningStacks) do

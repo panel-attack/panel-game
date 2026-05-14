@@ -178,7 +178,7 @@ function TestClient:sendLogin(opts)
 end
 
 -- Request the server create a room for this gameMode. Matches the wire shape
--- produced by ClientProtocol.sendRoomRequest -> ClientMessages.sanitizeRoomRequest.
+-- produced by ClientProtocol.sendRoomRequest -> ClientMessages.parseRoomRequest.
 -- gameModeIdOrName can be either an ID ("OPEN_FFA") or a name ("open_ffa"); the
 -- server resolves both.
 --

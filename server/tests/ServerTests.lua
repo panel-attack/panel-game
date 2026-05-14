@@ -530,43 +530,6 @@ local function testTeamRoomRequestCreatesPartialRoom()
   assert(lobbyRoom.openSlots[1] == 2 and lobbyRoom.openSlots[2] == 3)
 end
 
-local function testTeamRoomRequestAcceptsFallbackGameModeShape()
-  local server = ServerTesting.getTestServer()
-  local alice = ServerTesting.login(server, ServerTesting.players[2])
-  local bob = ServerTesting.login(server, ServerTesting.players[1])
-
-  ServerTesting.clearOutgoingMessages({alice, bob})
-
-  alice.connection:receiveMessage(json.encode({
-    recipient = "server",
-    type = "roomRequest",
-    gameMode = GameModes.IDs.THREE_PLAYER_VS_ALL,
-  }))
-  server:update()
-
-  local room = server.playerToRoom[alice]
-  assert(room, "Expected a room to be created from fallback roomRequest shape")
-  assert(room.gameModeId == GameModes.IDs.THREE_PLAYER_VS_ALL)
-  assert(room.maxPlayers == 3)
-  assert(alice.state == "character select")
-
-  local lobbyStateMessage = nil
-  while bob.connection.outgoingMessageQueue:len() > 0 do
-    local msg = bob.connection.outgoingMessageQueue:pop().messageText
-    if msg and msg.type == "lobbyStateV2" then
-      lobbyStateMessage = msg
-      break
-    end
-  end
-
-  assert(lobbyStateMessage and lobbyStateMessage.content and lobbyStateMessage.content.rooms)
-  assert(tableUtils.length(lobbyStateMessage.content.rooms) == 1)
-  local _, lobbyRoom = next(lobbyStateMessage.content.rooms)
-  assert(lobbyRoom.gameModeId == GameModes.IDs.THREE_PLAYER_VS_ALL)
-  assert(lobbyRoom.maxPlayers == 3)
-  assert(lobbyRoom.openSlots[1] == 2 and lobbyRoom.openSlots[2] == 3)
-end
-
 local function testJoinRoomRequestUsesSanitizedJoinMessage()
   local server = ServerTesting.getTestServer()
   local alice = ServerTesting.login(server, ServerTesting.players[2])
@@ -599,6 +562,115 @@ local function testJoinRoomRequestUsesSanitizedJoinMessage()
   end
 
   assert(joinAck and joinAck.content and joinAck.content.roomNumber == room.roomNumber)
+end
+
+----------------------------------------------------------------------
+-- J-recv trace tap invariant — captured body must be wire-shape, not
+-- the parsed internal shape. If anyone moves TraceWriter.recv below
+-- ClientMessages.parseMessage, this test fails fast.
+----------------------------------------------------------------------
+
+local TraceWriter = require("server.TraceWriter")
+local lfs = require("lfs")
+
+local function readJsonLines(path)
+  local f = io.open(path, "r")
+  if not f then return {} end
+  local body = f:read("*a")
+  f:close()
+  local out = {}
+  for line in body:gmatch("[^\n]+") do
+    local ok, obj = pcall(json.decode, line)
+    if ok then out[#out + 1] = obj end
+  end
+  return out
+end
+
+local function testJRecvTrace_capturesWireShape()
+  local traceDir = "trace_archive_test/jrecv_invariant_" .. os.time()
+  TraceWriter.configure({ rootDir = traceDir, flushEvents = 1, flushSeconds = 0 })
+
+  local server = ServerTesting.getTestServer()
+  local alice = ServerTesting.login(server, ServerTesting.players[2])
+
+  alice.connection:receiveMessage(json.encode(
+    ClientProtocol.sendRoomRequest(GameModes.getPreset(GameModes.IDs.THREE_PLAYER_VS_ALL)).messageText))
+  server:update()
+
+  TraceWriter.flush(alice.publicPlayerID)
+  local path = TraceWriter.currentPath(alice.publicPlayerID)
+  assert(path, "expected trace path for alice")
+
+  local lines = readJsonLines(path)
+  local roomRequestLine
+  for _, line in ipairs(lines) do
+    if line.dir == "recv" and line.prefix == "J" and line.body and line.body.type == "roomRequest" then
+      roomRequestLine = line
+      break
+    end
+  end
+  assert(roomRequestLine, "expected wire-shape roomRequest in trace; got " .. tostring(#lines) .. " lines")
+  assert(roomRequestLine.body.content, "captured body missing .content (wire shape)")
+  assert(roomRequestLine.body.content.gameMode, "captured body missing .content.gameMode")
+  assert(roomRequestLine.body.roomRequest == nil, "captured body has sanitized roomRequest=true flag")
+end
+
+----------------------------------------------------------------------
+-- Phase 3 property test: every ClientProtocol producer feeds through
+-- ClientMessages.parseMessage without introducing renamed top-level keys.
+-- Internal dispatch flags and fields pulled out of a `content` envelope
+-- are explicitly allowed; everything else must be a top-level wire key.
+----------------------------------------------------------------------
+
+local ClientMessages = require("server.ClientMessages")
+
+local function testParseMessage_doesNotRenameTopLevelKeys()
+  local gm = GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS)
+  local producers = {
+    ClientProtocol.requestLogin("uid", "Bob", 5, "controller", "panels", nil, "char", nil, "stage", true, "with my name"),
+    ClientProtocol.logout(),
+    ClientProtocol.updateChallengeStatus(1, 2, GameModes.IDs.TWO_PLAYER_VS, true, nil, nil),
+    ClientProtocol.requestJoinRoom(1, 2),
+    ClientProtocol.requestSpectate("Spec", 1),
+    ClientProtocol.requestLeaderboard(GameModes.IDs.TWO_PLAYER_VS),
+    ClientProtocol.leaveRoom(),
+    ClientProtocol.reportLocalGameResult(0),
+    ClientProtocol.sendPlayerSettings({ ready = true, level = 5, ranked = true, character = "x", stage = "y" }),
+    ClientProtocol.sendTaunt("up", 1),
+    ClientProtocol.sendRoomRequest(gm, "normal", true),
+    ClientProtocol.sendMatchAbort(1),
+    ClientProtocol.flagGame({ roomNumber = 1, gameId = 1, startTs = 1 }, "client_crash", "hash", "frag", { os = "darwin" }),
+    ClientProtocol.sendPauseToggle(1, true),
+    ClientProtocol.sendErrorReport({ x = 1 }),
+  }
+
+  -- Flags the dispatcher adds; not present on the wire but the only allowed
+  -- additions to parsed output (per the contract in ClientMessages.lua).
+  local allowedInternalFlag = {
+    roomRequest = true,
+    matchAbort  = true,
+    unknown     = true,
+  }
+  -- For roomRequest/matchAbort/pauseToggle the parser pulls fields out of
+  -- the wire's `content` envelope to the top level (allowed by contract).
+  local allowedContentPullup = {
+    roomRequest  = { gameMode = true, latencyTolerance = true, seed = true, openRoom = true },
+    matchAbort   = {},
+    pauseToggle  = {},
+  }
+
+  for _, produced in ipairs(producers) do
+    local wire = produced.messageText
+    local parsed = ClientMessages.parseMessage(wire)
+    local kind = wire.type
+    for k in pairs(parsed) do
+      local ok = wire[k] ~= nil
+        or allowedInternalFlag[k]
+        or (kind and allowedContentPullup[kind] and allowedContentPullup[kind][k])
+      assert(ok, "parseMessage introduced new top-level key '" .. tostring(k) ..
+        "' for wire shape with type=" .. tostring(kind))
+    end
+  end
 end
 
 ----------------------------------------------------------------------
@@ -772,8 +844,9 @@ testSinglePlayer()
 testCannotSpectateWhileInRoom()
 testJoinPartialRoomSetsCharacterSelectState()
 testTeamRoomRequestCreatesPartialRoom()
-testTeamRoomRequestAcceptsFallbackGameModeShape()
 testJoinRoomRequestUsesSanitizedJoinMessage()
+testJRecvTrace_capturesWireShape()
+testParseMessage_doesNotRenameTopLevelKeys()
 testFlagGameAcceptedFromSpectator()
 testFlagGameRejectedForUnknownRoom()
 testFlagGameRejectedForNonParticipant()
