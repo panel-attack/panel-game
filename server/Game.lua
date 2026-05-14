@@ -233,10 +233,8 @@ function Game:receiveOutcomeReport(player, outcome)
     self.outcomeReports[idx] = outcome
   end
 
-  -- cannot compare #self.outcomeReports == #self.players because # is undefined regarding gaps near 0
-  -- so if we have the report for player 2 but not player 1, #self.outcomeReports may return 2 instead of 0
-  -- see https://www.lua.org/manual/5.1/manual.html#2.5.5
-  for i = 1, #self.players do
+  -- pairs not ipairs: self.players is sparse after mid-match leave.
+  for i in pairs(self.players) do
     if not self.disconnectedPlayers[i]
         and not self.eliminatedPlayers[i]
         and self.outcomeReports[i] == nil then
