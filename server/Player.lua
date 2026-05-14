@@ -218,10 +218,52 @@ function Player:attachConnection(connection)
   self.connection = self.gameplayConnection or self.lobbyConnection or self.spectateConnection
 end
 
--- Pick the destination connection for an outbound JSON message: lobby if
--- present, otherwise fall back to gameplay so old single-socket clients
--- still receive JSON during rollout. Returns nil if neither is usable.
-local function _jsonConnection(self)
+-- JSON message types whose loss would strand the client in a wrong state
+-- (no match start, no match end, no room transition). These ALWAYS ride
+-- on the gameplay socket — the channel whose loss means full disconnect.
+-- Lobby socket is allowed to silently drop without notice; routing these
+-- there means an in-flight loss strands the player invisibly.
+--
+-- Everything not in this set goes on lobby: lobbyStateV2 broadcasts,
+-- challengeUpdate, taunts, leaderboard requests, etc.
+-- Names match the literal `type` strings in common/network/ServerProtocol.lua.
+-- These are gameplay-state transitions whose loss would strand the client
+-- in a wrong state and require either a manual retry or disconnect.
+local CRITICAL_STATE_MESSAGE_TYPES = {
+  loginResponse          = true,  -- login completion
+  createRoom             = true,  -- room/match starting
+  addToRoom              = true,  -- joining an existing room
+  playerJoinedRoom       = true,  -- room roster change
+  playerLeftRoom         = true,  -- room roster change
+  leaveRoom              = true,  -- player exited a room
+  matchStart             = true,  -- match begins
+  matchEnd               = true,  -- in case present
+  gameResult             = true,  -- match ended, here's the verdict
+  gameAbort              = true,  -- match aborted mid-flight
+  pauseNotification      = true,  -- pause state changed mid-match
+  spectateRequestGranted = true,  -- spectator joining mid-match
+  flagGameAck            = true,  -- crash-report ack
+}
+
+local function _isCriticalState(message)
+  local msgType = message and message.messageText and message.messageText.type
+  return msgType and CRITICAL_STATE_MESSAGE_TYPES[msgType] == true
+end
+
+-- Pick the destination connection for an outbound JSON message.
+-- Critical state messages → gameplay (the can-never-silently-drop channel).
+-- Everything else → lobby (with gameplay fallback if lobby isn't up).
+-- Returns nil if no usable connection at all.
+local function _jsonConnection(self, message)
+  if _isCriticalState(message) then
+    local gc = self.gameplayConnection
+    if gc and gc.socket then return gc end
+    -- Critical message but no gameplay socket — try lobby as last resort
+    -- (shouldn't happen; gameplay loss should have already disconnected).
+    local lc = self.lobbyConnection
+    if lc and lc.socket then return lc end
+    return nil
+  end
   local lc = self.lobbyConnection
   if lc and lc.socket then return lc end
   local gc = self.gameplayConnection
@@ -237,7 +279,12 @@ end
 local function _rawConnection(self, message)
   local prefix = type(message) == "string" and #message > 0 and message:sub(1, 1)
   if prefix == "J" then
-    return _jsonConnection(self)
+    -- Raw "J<body>" form is rare on the server side (most JSON goes through
+    -- sendJson which has access to the message-type metadata). Without that
+    -- metadata we can't tell critical from chatter, so default to lobby.
+    -- Anything time-sensitive should be using sendJson(message) with the
+    -- {messageType, messageText} shape so the critical-state routing fires.
+    return _jsonConnection(self, nil)
   end
   local gc = self.gameplayConnection
   if gc and gc.socket then return gc end
@@ -263,7 +310,7 @@ local function _spectateConnection(self)
 end
 
 function Player:sendJson(message)
-  local conn = _jsonConnection(self)
+  local conn = _jsonConnection(self, message)
   if not conn then
     return
   end

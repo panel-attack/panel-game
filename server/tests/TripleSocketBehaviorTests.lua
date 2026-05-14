@@ -165,10 +165,79 @@ local function test_side_channel_close_does_not_tear_down_player()
   assert(gc.outgoingInputQueue:len() == 2, "spectate falls back to gameplay after drop")
 end
 
+local function test_critical_state_json_routes_to_gameplay_socket()
+  -- Architectural property: gameplay-state transitions (gameResult,
+  -- matchStart, leaveRoom, etc.) MUST land on the gameplay socket so they
+  -- can't be silently lost if lobby drops. Lobby is best-effort; gameplay
+  -- failure = full disconnect. Critical state belongs where it can't
+  -- silently vanish.
+  logger.info("test_critical_state_json_routes_to_gameplay_socket")
+  local gameplayConn = MockConnection("gameplay")
+  local player = Player("uid-c1", gameplayConn, "Critic", 300)
+  local lobbyConn = MockConnection("lobby")
+  player:attachConnection(lobbyConn)
+
+  -- gameResult: critical → must go on gameplay
+  player:sendJson({messageType = {prefix = "J"}, messageText = {type = "gameResult", content = {}}})
+  assert(gameplayConn.outgoingMessageQueue:len() == 1,
+    "gameResult must route to gameplay, got " .. gameplayConn.outgoingMessageQueue:len() .. " on gameplay")
+  assert(lobbyConn.outgoingMessageQueue:len() == 0,
+    "gameResult must NOT route to lobby (silent-drop channel)")
+
+  -- matchStart: critical
+  player:sendJson({messageType = {prefix = "J"}, messageText = {type = "matchStart", content = {}}})
+  assert(gameplayConn.outgoingMessageQueue:len() == 2, "matchStart should land on gameplay")
+
+  -- addToRoom: critical (room joining)
+  player:sendJson({messageType = {prefix = "J"}, messageText = {type = "addToRoom", content = {}}})
+  assert(gameplayConn.outgoingMessageQueue:len() == 3, "addToRoom should land on gameplay")
+
+  -- lobbyStateV2: NOT critical (room roster chatter) → lobby
+  player:sendJson({messageType = {prefix = "J"}, messageText = {type = "lobbyStateV2", content = {}}})
+  assert(lobbyConn.outgoingMessageQueue:len() == 1,
+    "lobbyStateV2 should land on lobby, got " .. lobbyConn.outgoingMessageQueue:len())
+  assert(gameplayConn.outgoingMessageQueue:len() == 3, "lobbyStateV2 should NOT land on gameplay")
+end
+
+local function test_critical_state_survives_lobby_drop()
+  -- The whole point of this routing change: if the lobby socket goes down
+  -- mid-match, the client must STILL receive match-end / state transitions
+  -- because those ride on gameplay (which is alive — if it weren't, the
+  -- player would be fully disconnected, not just lobby-dropped).
+  logger.info("test_critical_state_survives_lobby_drop")
+  local gameplayConn = MockConnection("gameplay")
+  local player = Player("uid-c2", gameplayConn, "Survivor", 301)
+  local lobbyConn = MockConnection("lobby")
+  player:attachConnection(lobbyConn)
+
+  -- Simulate the lobby socket dying.
+  lobbyConn:close()
+
+  -- Now an emergency gameResult goes out. Must reach the player.
+  player:sendJson({messageType = {prefix = "J"}, messageText = {type = "gameResult", content = {winner = 1}}})
+  assert(gameplayConn.outgoingMessageQueue:len() == 1,
+    "gameResult must reach the player on gameplay socket even after lobby drop")
+end
+
+local function test_non_critical_falls_back_to_gameplay_only_if_lobby_dead()
+  logger.info("test_non_critical_falls_back_to_gameplay_only_if_lobby_dead")
+  local gameplayConn = MockConnection("gameplay")
+  local player = Player("uid-c3", gameplayConn, "Fallback", 302)
+  -- No lobby attached.
+
+  -- Non-critical message: should fall back to gameplay since lobby is nil.
+  player:sendJson({messageType = {prefix = "J"}, messageText = {type = "lobbyStateV2", content = {}}})
+  assert(gameplayConn.outgoingMessageQueue:len() == 1,
+    "non-critical J should fall back to gameplay when lobby is missing")
+end
+
 test_three_channels_all_bind_to_same_player()
 test_attach_rejects_if_slot_filled()
 test_input_from_p1_goes_to_p2_spectate_queue_not_gameplay()
 test_garbage_targeting_recipient_uses_gameplay_channel()
 test_death_broadcast_routes_via_spectate_for_observers()
 test_side_channel_close_does_not_tear_down_player()
+test_critical_state_json_routes_to_gameplay_socket()
+test_critical_state_survives_lobby_drop()
+test_non_critical_falls_back_to_gameplay_only_if_lobby_dead()
 logger.info("All TripleSocketBehaviorTests passed!")
