@@ -905,12 +905,13 @@ function Room:_synthesizeSilentDeath(player, slot, nowMs)
   self.game:recordDeathEvent(player, body)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
     NetworkProtocol.serverMessageTypes.deathEvent.prefix, json.encode(body))
+  -- Opponent's death is "watching them" data for everyone else → spectate.
   -- pairs not ipairs: self.players may be sparse mid-match.
   for _, p in pairs(self.players) do
-    if p ~= player then p:send(message) end
+    if p ~= player then p:sendSpectate(message) end
   end
   for _, spec in pairs(self.spectators) do
-    if spec then spec:send(message) end
+    if spec then spec:sendSpectate(message) end
   end
 
   -- Crash-replay capture: stuck-match rescue is by definition an
