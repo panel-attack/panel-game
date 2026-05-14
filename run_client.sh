@@ -35,7 +35,11 @@ sleep 0.2
 love_pids=()
 for player_name in "$@"; do
   identity_arg="$player_name"
-  LOVE_IDENTITY="Panel Attack $identity_arg" PLAYER_NAME="$player_name" PA_SHOW_LOCAL="$PA_SHOW_LOCAL" love "$project_dir" &
+  LOVE_IDENTITY="Panel Attack $identity_arg" PLAYER_NAME="$player_name" PA_SHOW_LOCAL="$PA_SHOW_LOCAL" \
+    PA_NETWORK_LAG_MS="${PA_NETWORK_LAG_MS:-}" \
+    PA_NETWORK_LAG_MIN_MS="${PA_NETWORK_LAG_MIN_MS:-}" \
+    PA_NETWORK_LAG_MAX_MS="${PA_NETWORK_LAG_MAX_MS:-}" \
+    love "$project_dir" &
   love_pids+=("$!")
 done
 

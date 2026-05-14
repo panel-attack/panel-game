@@ -848,6 +848,19 @@ local NetClient = class(function(self)
   self.spectateClient = SpectateTcpClient()
   self.lobbyClient = LobbyTcpClient()
   self.leaderboard = nil
+
+  local lagMs = tonumber(os.getenv("PA_NETWORK_LAG_MS"))
+  local lagMinMs = tonumber(os.getenv("PA_NETWORK_LAG_MIN_MS")) or lagMs
+  local lagMaxMs = tonumber(os.getenv("PA_NETWORK_LAG_MAX_MS")) or lagMs
+  if lagMinMs and lagMinMs > 0 then
+    local sMin = lagMinMs / 1000
+    local sMax = (lagMaxMs or lagMinMs) / 1000
+    for _, client in ipairs({self.gameplayClient, self.lobbyClient, self.spectateClient}) do
+      client:activateDelayedProcessing()
+      client:setNetworkLag(sMin, sMax, sMin, sMax)
+    end
+    logger.info(string.format("Simulating network lag: %d-%d ms each direction on all 3 sockets", lagMinMs, lagMaxMs or lagMinMs))
+  end
   self.pendingResponses = {}
   self.state = states.OFFLINE
   self.serverTimeDelta = 0

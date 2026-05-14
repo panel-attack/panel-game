@@ -41,11 +41,22 @@ local SpectateTcpClient = class(function(tcpClient)
   tcpClient.sendRetryCount = 0
   tcpClient.sendRetryLimit = 5
   tcpClient.delayedProcessing = false
+  tcpClient.sendMinLag = 0
+  tcpClient.sendMaxLag = 0
+  tcpClient.receiveMinLag = 0
+  tcpClient.receiveMaxLag = 0
   math.randomseed(os.time())
   for i = 1, 4 do
     math.random()
   end
 end)
+
+function SpectateTcpClient:setNetworkLag(sendMin, sendMax, recvMin, recvMax)
+  self.sendMinLag = sendMin or 0
+  self.sendMaxLag = sendMax or self.sendMinLag
+  self.receiveMinLag = recvMin or 0
+  self.receiveMaxLag = recvMax or self.receiveMinLag
+end
 
 ---@param ip string
 ---@param port integer
@@ -163,11 +174,6 @@ function SpectateTcpClient:updateNetwork(dt)
   end
 end
 
-local sendMinLag = 0
-local sendMaxLag = 0
-local receiveMinLag = 3
-local receiveMaxLag = receiveMinLag
-
 function SpectateTcpClient:send(stringData)
   if not self.socket then
     return false
@@ -183,7 +189,7 @@ function SpectateTcpClient:send(stringData)
     end
   end)
   if self.delayedProcessing then
-    local lagSeconds = (math.random() * (sendMaxLag - sendMinLag)) + sendMinLag
+    local lagSeconds = (math.random() * (self.sendMaxLag - self.sendMinLag)) + self.sendMinLag
     self.sendNetworkQueue:push(stringData, lagSeconds)
     return true
   else
@@ -279,7 +285,7 @@ function SpectateTcpClient:processIncomingMessages()
       ---@cast message -nil
       ---@cast remaining -nil
       if self.delayedProcessing then
-        local lagSeconds = (math.random() * (receiveMaxLag - receiveMinLag)) + receiveMinLag
+        local lagSeconds = (math.random() * (self.receiveMaxLag - self.receiveMinLag)) + self.receiveMinLag
         self.receiveNetworkQueue:push({type, message}, lagSeconds)
       else
         self:queueMessage(type, message)
