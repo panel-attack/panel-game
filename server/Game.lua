@@ -426,9 +426,7 @@ function Game:setId(id)
 end
 
 ---@param player ServerPlayer
----@param slot integer? optional slot override; falls back to player.player_number.
----  Pass the slot when the player may have already left the room (removeFromRoom
----  nils player_number on graceful leaves), e.g. from inside gameResult.
+---@param slot integer? slot override for callers where player.player_number may be nil (leavers)
 ---@return integer
 function Game:getPlacement(player, slot)
   slot = slot or player.player_number
