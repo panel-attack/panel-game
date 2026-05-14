@@ -26,6 +26,7 @@ RoomCreateRows.FFA_MODES = {
   [3] = { allModeId = "THREE_PLAYER_FFA", sharedModeId = "THREE_PLAYER_FFA_SHARED" },
   [4] = { allModeId = "FOUR_PLAYER_FFA",  sharedModeId = "FOUR_PLAYER_FFA_SHARED" },
   [5] = { allModeId = "FIVE_PLAYER_FFA",  sharedModeId = "FIVE_PLAYER_FFA_SHARED" },
+  [6] = { allModeId = "SIX_PLAYER_FFA",   sharedModeId = "SIX_PLAYER_FFA_SHARED" },
   [7] = { allModeId = "SEVEN_PLAYER_FFA", sharedModeId = "SEVEN_PLAYER_FFA_SHARED" },
 }
 

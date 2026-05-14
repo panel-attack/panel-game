@@ -48,6 +48,11 @@ function RoomCreateTeamMenu:setTooltip(text)
 end
 
 function RoomCreateTeamMenu:rebuildMenu()
+  -- Remember the previously focused row so a rebuild driven by changing the
+  -- player count keeps the cursor on the Players row (the rebuild is triggered
+  -- *from* that row, so jumping focus elsewhere is jarring). On first build
+  -- self.menu is nil and we fall through to focusing Create below.
+  local prevIndex = self.menu and self.menu.selectedIndex or nil
   if self.menu then
     self.menu:detach()
   end
@@ -85,7 +90,9 @@ function RoomCreateTeamMenu:rebuildMenu()
   self.menu = ui.Menu.createCenteredMenu(items)
   clampMenuWidth(self.menu, MENU_FIXED_WIDTH)
   self.uiRoot:addChild(self.menu)
-  self.menu:setSelectedIndex(createIndex)
+  local targetIndex = prevIndex or createIndex
+  if targetIndex < 1 or targetIndex > #items then targetIndex = createIndex end
+  self.menu:setSelectedIndex(targetIndex)
 end
 
 function RoomCreateTeamMenu:submit()
@@ -136,6 +143,17 @@ function RoomCreateTeamMenu:updateSelf(dt)
     self.backgroundImage:update(dt)
   end
   if self.menu then
+    -- Pressing MenuSelect (Enter / gamepad Start) on a settings row submits
+    -- the form. Rows are: 1..N=ButtonGroups, N+1=Create, N+2=Cancel — for
+    -- index < createIndex we shortcut to submit so the user doesn't have to
+    -- scroll to Create just to confirm. Create and Cancel keep their own
+    -- onClick handling (Cancel must still cancel, not submit).
+    local items = self.menu.menuItems
+    local createIndex = #items - 1
+    if inputManager.isDown["MenuSelect"] and self.menu.selectedIndex < createIndex then
+      self:submit()
+      return
+    end
     self.menu:receiveInputs(inputManager)
   end
 end

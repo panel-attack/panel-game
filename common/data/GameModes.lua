@@ -551,6 +551,48 @@ local FivePlayerFFAShared = GameMode({
 })
 
 ---@type GameMode
+local SixPlayerFFA = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v1v1v1v1v1 FFA",
+  name = "6p_ffa",
+
+  playerCount = 6,
+  teamCount = 6,
+  playersPerTeam = 1,
+  garbageMode = "all",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
+local SixPlayerFFAShared = GameMode({
+  gameScene = "GameBase",
+  richPresenceLabel = "1v1v1v1v1v1 FFA (Shared)",
+  name = "6p_ffa_shared",
+
+  playerCount = 6,
+  teamCount = 6,
+  playersPerTeam = 1,
+  garbageMode = "shared",
+  stackInteraction = StackInteractions.TEAM_VERSUS,
+  matchRules = {
+    matchEndConditions = { [MatchRules.MatchEndConditions.TEAMS_ACTIVE] = 1 },
+    matchWinRuleset = { { [MatchRules.MatchWinCriterias.GAME_OVER_CLOCK] = MatchRules.orders.HIGHEST } },
+    stackOverConditions = { [MatchRules.StackOverConditions.HEALTH] = 0 },
+    stackWinConditions = {},
+    stackSetupModifications = {},
+    doCountdown = true,
+  },
+})
+
+---@type GameMode
 local SevenPlayerFFA = GameMode({
   gameScene = "GameBase",
   richPresenceLabel = "1v1v1v1v1v1v1 FFA",
@@ -910,6 +952,8 @@ GameModes.IDs = {
   FOUR_PLAYER_FFA_SHARED = "FOUR_PLAYER_FFA_SHARED",
   FIVE_PLAYER_FFA = "FIVE_PLAYER_FFA",
   FIVE_PLAYER_FFA_SHARED = "FIVE_PLAYER_FFA_SHARED",
+  SIX_PLAYER_FFA = "SIX_PLAYER_FFA",
+  SIX_PLAYER_FFA_SHARED = "SIX_PLAYER_FFA_SHARED",
   SEVEN_PLAYER_FFA = "SEVEN_PLAYER_FFA",
   SEVEN_PLAYER_FFA_SHARED = "SEVEN_PLAYER_FFA_SHARED",
   OPEN_FFA = "OPEN_FFA",
@@ -975,6 +1019,8 @@ privateGameModes[GameModes.IDs.FOUR_PLAYER_FFA] = FourPlayerFFA
 privateGameModes[GameModes.IDs.FOUR_PLAYER_FFA_SHARED] = FourPlayerFFAShared
 privateGameModes[GameModes.IDs.FIVE_PLAYER_FFA] = FivePlayerFFA
 privateGameModes[GameModes.IDs.FIVE_PLAYER_FFA_SHARED] = FivePlayerFFAShared
+privateGameModes[GameModes.IDs.SIX_PLAYER_FFA] = SixPlayerFFA
+privateGameModes[GameModes.IDs.SIX_PLAYER_FFA_SHARED] = SixPlayerFFAShared
 privateGameModes[GameModes.IDs.SEVEN_PLAYER_FFA] = SevenPlayerFFA
 privateGameModes[GameModes.IDs.SEVEN_PLAYER_FFA_SHARED] = SevenPlayerFFAShared
 privateGameModes[GameModes.IDs.FIVE_PLAYER_1V4_ALL] = FivePlayerTeamVs1v4All
@@ -1066,6 +1112,8 @@ GameModes.gameModeIdToName = {
   FOUR_PLAYER_FFA_SHARED = "4p_ffa_shared",
   FIVE_PLAYER_FFA = "5p_ffa",
   FIVE_PLAYER_FFA_SHARED = "5p_ffa_shared",
+  SIX_PLAYER_FFA = "6p_ffa",
+  SIX_PLAYER_FFA_SHARED = "6p_ffa_shared",
   SEVEN_PLAYER_FFA = "7p_ffa",
   SEVEN_PLAYER_FFA_SHARED = "7p_ffa_shared",
   FIVE_PLAYER_1V4_ALL = "five_player_1v4_all",
@@ -1128,6 +1176,8 @@ GameModes.nameToGameModeId = {
   ["4p_ffa_shared"] = "FOUR_PLAYER_FFA_SHARED",
   ["5p_ffa"] = "FIVE_PLAYER_FFA",
   ["5p_ffa_shared"] = "FIVE_PLAYER_FFA_SHARED",
+  ["6p_ffa"] = "SIX_PLAYER_FFA",
+  ["6p_ffa_shared"] = "SIX_PLAYER_FFA_SHARED",
   ["7p_ffa"] = "SEVEN_PLAYER_FFA",
   ["7p_ffa_shared"] = "SEVEN_PLAYER_FFA_SHARED",
   five_player_1v4_all = "FIVE_PLAYER_1V4_ALL",

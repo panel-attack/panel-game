@@ -572,6 +572,16 @@ function Lobby:initLobbyMenu()
       end
     }))
     ffaMenu:addChild(ui.TextButton({
+      label = ui.Label({text = "6 Players (1v1v1v1v1v1)", translate = false}),
+      onClick = function(b)
+        openGarbageMenu(b, {
+          allMode = GameModes.IDs.SIX_PLAYER_FFA,
+          sharedMode = GameModes.IDs.SIX_PLAYER_FFA_SHARED,
+          openRoom = openRoom,
+        }, ffaMenu, closeInviteOnlyChain)
+      end
+    }))
+    ffaMenu:addChild(ui.TextButton({
       label = ui.Label({text = "7 Players (1v1v1v1v1v1v1)", translate = false}),
       onClick = function(b)
         openGarbageMenu(b, {

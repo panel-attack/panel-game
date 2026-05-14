@@ -115,6 +115,14 @@ function RoomCreateFfaMenu:updateSelf(dt)
     self.backgroundImage:update(dt)
   end
   if self.menu then
+    -- Pressing MenuSelect on any settings row submits the form. Create and
+    -- Cancel (last two rows) keep their own onClick handling.
+    local items = self.menu.menuItems
+    local createIndex = #items - 1
+    if inputManager.isDown["MenuSelect"] and self.menu.selectedIndex < createIndex then
+      self:submit()
+      return
+    end
     self.menu:receiveInputs(inputManager)
   end
 end
