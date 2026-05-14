@@ -241,12 +241,9 @@ Server.STUCK_MATCH_THRESHOLD = 30
 -- pings are at the connection layer and don't count.
 Server.CHALLENGE_IDLE_TIMEOUT = 30 * 60
 
-function Server:start()
-  local port = SERVER_PORT or 49569
-  logger.info("Starting up server with port: " .. port)
-
-  -- 300 × 0.25s = 75s, covers Linux TIME_WAIT (~60s) so systemd auto-restart
-  -- doesn't fail-loop after a crash. SO_REUSEADDR alone wasn't enough in prod.
+-- Bind one listener with TIME_WAIT retry. Used for both gameplay and lobby
+-- ports (separated to eliminate TCP head-of-line blocking between channels).
+local function bindWithRetry(port, label)
   local attempts = 300
   local s
   for i = 1, attempts do
@@ -255,25 +252,36 @@ function Server:start()
       break
     end
     if i < attempts then
-      logger.warn("Port " .. port .. " not available yet (attempt " .. i .. "/" .. attempts .. "), retrying...")
+      logger.warn(label .. " port " .. port .. " not available yet (attempt " .. i .. "/" .. attempts .. "), retrying...")
       socket.sleep(0.25)
     end
   end
-
-  if s then
-    self.socket = s
-  else
-    error("Failed to create server socket on port " .. port .. ". Check for another running server instance.")
+  if not s then
+    error("Failed to create " .. label .. " server socket on port " .. port .. ". Check for another running server instance.")
   end
-  self.socket:settimeout(0)
+  s:settimeout(0)
+  return s
+end
 
+function Server:start()
+  local gameplayPort = SERVER_PORT or 49569
+  local lobbyPort = LOBBY_PORT or 49570
+  logger.info("Starting server: gameplay port " .. gameplayPort .. ", lobby port " .. lobbyPort)
+  self.socket = bindWithRetry(gameplayPort, "gameplay")
+  self.lobbyListenSocket = bindWithRetry(lobbyPort, "lobby")
   logger.debug(os.time())
 end
 
 function Server:stop()
   self._shuttingDown = true
-  self.socket:close()
-  self.socket = nil
+  if self.socket then
+    self.socket:close()
+    self.socket = nil
+  end
+  if self.lobbyListenSocket then
+    self.lobbyListenSocket:close()
+    self.lobbyListenSocket = nil
+  end
 end
 
 ---@param filePath string
@@ -1160,13 +1168,23 @@ function Server:sweepStuckMatches(currentTime)
   end
 end
 
--- Accept any new connections to the server
+-- Accept any new connections to the server. Each listener tags its accepted
+-- connections with the channel they came in on so downstream routing knows
+-- whether to treat the connection as gameplay (I/G/D/K/E/H) or lobby (J).
 function Server:acceptNewConnections()
-  local newConnectionSocket = self.socket:accept()
+  self:_acceptOnListener(self.socket, "gameplay")
+  if self.lobbyListenSocket then
+    self:_acceptOnListener(self.lobbyListenSocket, "lobby")
+  end
+end
+
+function Server:_acceptOnListener(listenSocket, channel)
+  local newConnectionSocket = listenSocket:accept()
   if newConnectionSocket then
     newConnectionSocket:settimeout(0)
-    logger.debug("Accepted connection " .. self.connectionNumberIndex)
+    logger.debug("Accepted " .. channel .. " connection " .. self.connectionNumberIndex)
     local connection = Connection(newConnectionSocket, self.connectionNumberIndex)
+    connection.channel = channel
     self.socketToConnectionIndex[newConnectionSocket] = self.connectionNumberIndex
     self:addConnection(connection)
   end
@@ -1179,8 +1197,12 @@ end
 
 -- Process any data on all active connections
 function Server:updateConnections()
-  -- Make a list of all the sockets to listen to
+  -- Make a list of all the sockets to listen to (both listener sockets plus
+  -- every active connection's socket).
   local socketsToRead = {self.socket}
+  if self.lobbyListenSocket then
+    socketsToRead[#socketsToRead+1] = self.lobbyListenSocket
+  end
   -- Make a list of all the sockets we want to send messages to
   -- the server socket cannot "send" in the traditional sense, only accept incoming connections (which is in the read domain) so it is not added here
   local socketsToSend = {}

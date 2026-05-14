@@ -13,6 +13,7 @@ local DEFAULT_SEND_RETRY_LIMIT = 5
 ---@class Connection
 ---@field index integer the unique identifier of the connection
 ---@field socket TcpSocket the luasocket object
+---@field channel string "gameplay" or "lobby"; which listener accepted this connection
 ---@field leftovers string remaining data from the socket that hasn't been processed yet
 ---@field loggedIn boolean if there exists a player owning this connection somewhere
 ---@field lastCommunicationTime integer timestamp when the last message was received; for dropping the connection if heartbeats aren't returned
@@ -34,6 +35,7 @@ local Connection = class(
   function(self, socket, index)
     self.index = index
     self.socket = socket
+    self.channel = "gameplay" -- default; Server:_acceptOnListener overrides for lobby
     self.leftovers = ""
     self.loggedIn = false
     self.lastCommunicationTime = time()
