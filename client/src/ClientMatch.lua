@@ -1487,6 +1487,19 @@ function ClientMatch:_applyDeathEventNow(body, stack)
     engine:recordDeath(body.senderFrame)
     logger.info(string.format("DeathEvent applied: stack[%d] game_over_clock=%d (reason=%s)",
       body.sender, body.senderFrame, tostring(body and body.reason)))
+
+    -- Top up the input buffer so the view-stack can race to game_over_clock at
+    -- its own max_runs_per_frame pace. Server idle-fill arrives at 60Hz (real-
+    -- time), which equals consumption, so the view-stack would otherwise be
+    -- stranded at whatever frame it had reached when D arrived. Local "A"
+    -- placeholders are equivalent to what the server emits as idle-fill —
+    -- engine.confirmedInput just sees more no-op inputs and consumes them at
+    -- its smoothed catch-up rate. Any excess past game_over_clock is harmless
+    -- (game_ended() halts the stack once clock crosses game_over_clock).
+    local needed = body.senderFrame - #engine.confirmedInput
+    if needed > 0 then
+      engine:receiveConfirmedInput(string.rep("A", needed))
+    end
   end
 end
 
