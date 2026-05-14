@@ -1829,6 +1829,16 @@ function Server:handleSpectateRequest(message, player)
       return
     end
     local roomState = requestedRoom:state()
+    -- Block spectating a room that hasn't reached its waiting-room threshold yet.
+    -- An open FFA created with 1/7 players is in "character select" but has no
+    -- real game to watch; letting a spectator in would only confuse the host's
+    -- "ready for waiting room" gate (which is keyed off #room.players and would
+    -- otherwise be safe — see NetClient.isRoomReadyForWaitingRoom).
+    if requestedRoom:countPlayers() < (requestedRoom.minPlayers or 2) then
+      logger.warn("rejected spectate from " .. player.name .. " for room " .. requestedRoom.roomNumber
+        .. ": only " .. requestedRoom:countPlayers() .. "/" .. (requestedRoom.minPlayers or 2) .. " players (waiting-room threshold not met)")
+      return
+    end
     if (roomState == "character select" or roomState == "playing" or roomState == "paused") then
       logger.debug("adding " .. player.name .. " to room nr " .. message.spectate_request.roomNumber)
       local currentSpectatorRoom = self.spectatorToRoom[player]
