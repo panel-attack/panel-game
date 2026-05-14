@@ -390,6 +390,7 @@ local function processGameResultMessage(self, message)
     local messagePlayer = message.gameResult[roomPlayer.playerNumber]
     if messagePlayer then
       roomPlayer:setWinCount(messagePlayer.winCount)
+      roomPlayer:setPlacement(messagePlayer.placement)
 
       if messagePlayer.ratingInfo then
         local ratingInfo = messagePlayer.ratingInfo

@@ -85,6 +85,12 @@ function MatchParticipant:incrementWinCount()
   self:setWinCount(self.wins + 1)
 end
 
+-- Last match's ordinal placement (1 = winner, 2 = runner-up, etc.) from the
+-- server's gameResult payload. Nil until first match completes.
+function MatchParticipant:setPlacement(placement)
+  self.lastPlacement = placement
+end
+
 function MatchParticipant:setWinrate(winrate)
   self.winrate = winrate
   self:emitSignal("winrateChanged", winrate)

@@ -440,8 +440,30 @@ function GameBase:setupGameOver()
       self.text = loc("ss_draw")
     end
   end
-  
+
   self:customGameOverSetup()
+end
+
+-- Build the per-frame placement list. Computed fresh each draw so it picks
+-- up gameResult populated AFTER setupGameOver runs (the locally-detected
+-- match-end fires the game-over screen before the server's payload arrives).
+function GameBase:_buildPlacementLines()
+  if not self.match or not self.match.players or #self.match.players < 3 then
+    return nil
+  end
+  local rows = {}
+  for _, p in ipairs(self.match.players) do
+    if p.lastPlacement and p.name then
+      rows[#rows + 1] = { placement = p.lastPlacement, name = p.name }
+    end
+  end
+  if #rows == 0 then return nil end
+  table.sort(rows, function(a, b) return a.placement < b.placement end)
+  local lines = {}
+  for _, r in ipairs(rows) do
+    lines[#lines + 1] = r.placement .. ". " .. r.name
+  end
+  return lines
 end
 
 function GameBase:runGameOver()
@@ -837,23 +859,38 @@ end
 function GameBase:drawEndGameText()
   if self.match.ended then
 
-    local message = self.text
-    if message == nil then
-      message = ""
-    end
+    local message = self.text or ""
+    local continueText = loc("continue_button")
 
     local gameOverPosition = themes[config.theme].gameover_text_Pos
     local font = GraphicsUtil.getGlobalFont()
     local padding = 4
-    local maxWidth = math.max(font:getWidth(message), font:getWidth(loc("continue_button")))
-    local height = font:getHeight() * 2 + 3*padding
+    local lineHeight = font:getHeight()
+
+    local placementLines = self:_buildPlacementLines() or {}
+
+    -- Width is max across every drawn line.
+    local maxWidth = math.max(font:getWidth(message), font:getWidth(continueText))
+    for _, line in ipairs(placementLines) do
+      local w = font:getWidth(line)
+      if w > maxWidth then maxWidth = w end
+    end
+
+    -- Height: message + N placement lines + continue prompt + padding between each.
+    local totalLines = 2 + #placementLines
+    local height = lineHeight * totalLines + (totalLines + 1) * padding
     local drawY = gameOverPosition[2]
 
-    -- Background
     GraphicsUtil.drawRectangle("fill", gameOverPosition[1] - maxWidth/2 - padding, drawY, maxWidth + 2*padding, height, 0, 0, 0, 0.8)
 
-    GraphicsUtil.print(message, gameOverPosition[1] - font:getWidth(message)/2, drawY + padding)
-    GraphicsUtil.print(loc("continue_button"), gameOverPosition[1] - font:getWidth(loc("continue_button"))/2, drawY + padding + font:getHeight() + padding )
+    local cursorY = drawY + padding
+    GraphicsUtil.print(message, gameOverPosition[1] - font:getWidth(message)/2, cursorY)
+    cursorY = cursorY + lineHeight + padding
+    for _, line in ipairs(placementLines) do
+      GraphicsUtil.print(line, gameOverPosition[1] - font:getWidth(line)/2, cursorY)
+      cursorY = cursorY + lineHeight + padding
+    end
+    GraphicsUtil.print(continueText, gameOverPosition[1] - font:getWidth(continueText)/2, cursorY)
   end
 end
 
