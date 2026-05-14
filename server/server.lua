@@ -1917,6 +1917,15 @@ function Server:handleSpectateRequest(message, player)
   end
 end
 
+-- Minimum players for the room to remain viable. Open rooms (OpenFFA etc.)
+-- declare it via gameMode.minPlayers; fixed-size modes need exactly
+-- gameMode.playerCount. Fallback to 1 (just close on empty) when neither set.
+local function roomMinPlayers(room)
+  local gm = room and room.gameMode
+  if not gm then return 1 end
+  return gm.minPlayers or gm.playerCount or 1
+end
+
 function Server:handleLeaveRoom(player, reason)
   local room = self.playerToRoom[player]
   if room then
@@ -1929,13 +1938,11 @@ function Server:handleLeaveRoom(player, reason)
     end
     player:removeFromRoom(room, reason)
 
-    -- Close the room only when it's actually empty. Old logic auto-closed
-    -- any 2-player room on leave, which kicked surviving players to lobby
-    -- after a 3p match where one player had left mid-match (room → 2p
-    -- after first leave, then anyone leaving collapsed it). Now the room
-    -- stays alive until nobody's in it.
-    if room:countPlayers() == 0 then
-      self:closeRoom(room, reason or "all players left")
+    -- Close the room when player count drops below the mode's minimum.
+    -- For OpenFFA: minPlayers (2). For fixed-size modes (2v2, 3p FFA,
+    -- etc.): playerCount, since dropping below leaves the room unplayable.
+    if room:countPlayers() < roomMinPlayers(room) then
+      self:closeRoom(room, reason or "below minimum players")
     else
       self:setLobbyChanged()
     end
