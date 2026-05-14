@@ -2,9 +2,10 @@ local Queue = require("common.lib.Queue")
 local class = require("common.lib.class")
 
 local index = 0
-local MockConnection = class(function(self)
+local MockConnection = class(function(self, channel)
   index = index + 1
   self.index = index
+  self.channel = channel or "gameplay"
   self.socket = {close = function() end, getpeername = function() return "170.46.23.4", math.random(40000,60000) end}
   self.outgoingMessageQueue = Queue()
   self.outgoingInputQueue = Queue()

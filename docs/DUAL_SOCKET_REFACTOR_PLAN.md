@@ -179,7 +179,28 @@ Deprecated / to delete:
 - [x] Commit 2 — server binds 2nd listener, accepts on both, channel-tagged
 - [x] Commit 3 — Player gameplay/lobby connections + outbound routing by prefix
 - [x] Commit 4+5 — NetClient + LoginRoutine + MessageListener + Response wired dual-socket
-- [ ] Commit 6 — update tests / smoke verify end-to-end
+- [x] Commit 6 — MockConnection takes channel param; DualSocketTests covering JSON routing, gameplay routing, fallback, lobby drop. All pass.
+
+## End-of-refactor verification
+
+- DualSocketTests: 3/3 passing (JSON → lobby, raw → gameplay, fallback paths)
+- RoomTests.abortTest3 still fails — pre-existing, unrelated, predates this refactor
+  (confirmed by checking out 21f522a7^ and seeing the same failure)
+- All touched client files syntax-check clean under luajit -bl
+- No new test failures introduced by any of commits 1-6
+
+The refactor is functionally complete. Remaining (out of scope for this
+sequence, captured for future work):
+
+- Old `client/src/network/TcpClient.lua` still exists but only as a type-
+  annotation reference target (`---@field tcpClient TcpClient` in NetClient).
+  Can be deleted once all callers move to `gameplayClient`/`lobbyClient`
+  explicitly. Low priority — the backward-compat alias `self.tcpClient =
+  self.gameplayClient` covers existing readers.
+- Pre-existing RoomTests.abortTest3 failure should be triaged separately.
+- A real end-to-end smoke (run server, connect a client, verify dual
+  sockets both authenticate and route correctly) was not run in this
+  session — the user is running tests in parallel and will validate.
 
 I update this file as I complete each commit. If I deviate, the deviation
 gets recorded here first.
