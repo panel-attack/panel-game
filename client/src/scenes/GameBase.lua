@@ -486,6 +486,39 @@ function GameBase:exitToWaitingRoom()
   GAME.navigationStack:pop()
 end
 
+-- Fail-loud recovery: when the engine throws, asserts trip, or the freeze
+-- watchdog fires, snapshot diagnostics and drop back to the lobby instead of
+-- leaving the player staring at a frozen scene. Everything is pcall-wrapped so
+-- partial state can't block the navigation pop.
+function GameBase:bailOnFrozenMatch(reason)
+  logger.error("[freeze-recovery] aborting match: " .. tostring(reason))
+  pcall(function()
+    if self.match and self.match.stacks then
+      for i, stack in ipairs(self.match.stacks) do
+        local engine = stack and stack.engine
+        local clk = engine and engine.clock or "?"
+        local goc = engine and engine.game_over_clock or "?"
+        local buf = engine and engine.confirmedInput and #engine.confirmedInput or "?"
+        logger.error(string.format(
+          "[freeze-recovery] stack %d: clock=%s game_over_clock=%s confirmedInput=%s",
+          i, tostring(clk), tostring(goc), tostring(buf)))
+      end
+    end
+  end)
+  pcall(function()
+    if self.match then self.match:abort() end
+  end)
+  -- Online vs offline teardown. Offline scenes (PuzzleGame, ReplayGame, etc)
+  -- don't have a "Lobby" in their nav stack, so popToName would unwind too far.
+  local isOnline = GAME.netClient and GAME.netClient:isConnected() and GAME.battleRoom
+  if isOnline then
+    pcall(function() GAME.battleRoom:shutdown() end)
+    pcall(function() GAME.navigationStack:popToName("Lobby") end)
+  else
+    pcall(function() GAME.navigationStack:pop() end)
+  end
+end
+
 function GameBase:runGame(dt)
   self:handlePause()
 
@@ -548,10 +581,23 @@ function GameBase:changeMusic(useDangerMusic)
   end
 end
 
+-- 10 seconds of zero engine.clock progress while the match should be running.
+-- Real network stalls are absorbed by stack:shouldRun's catch-up well before this.
+-- Conservative on purpose to avoid false-positives from any path I haven't audited.
+local FREEZE_THRESHOLD_SECONDS = 10
+
 function GameBase:update(dt)
   if self.match.ended then
-    self:runGameOver()
-  else
+    local ok, err = xpcall(function() self:runGameOver() end, debug.traceback)
+    if not ok then
+      self:bailOnFrozenMatch("runGameOver error: " .. tostring(err))
+    end
+    self.uiRoot:handleFocusedInput(input, dt)
+    self.uiRoot:update(dt)
+    return
+  end
+
+  do
     local isPureSpectator = not self.match:hasLocalPlayer()
     local isDeadLocal = self.match:isLocalPlayerEliminated()
 
@@ -612,9 +658,35 @@ function GameBase:update(dt)
         self.match:cycleSpectatorFocus(1)
       end
     end
-    self:runGame(dt)
+
+    -- Freeze watchdog: bail to lobby if engine.clock stops advancing for too
+    -- long. Pause is excluded — we reset the baseline while paused so unpause
+    -- starts fresh, otherwise an idle pause would trip the watchdog.
+    local nowSeconds = love.timer.getTime()
+    if self.match.isPaused then
+      self._lastClockProgressTime = nowSeconds
+      self._lastObservedClock = self.match.engine and self.match.engine.clock or 0
+    else
+      local engineClock = self.match.engine and self.match.engine.clock or 0
+      if engineClock ~= self._lastObservedClock then
+        self._lastObservedClock = engineClock
+        self._lastClockProgressTime = nowSeconds
+      elseif self._lastClockProgressTime
+          and (nowSeconds - self._lastClockProgressTime) > FREEZE_THRESHOLD_SECONDS then
+        self:bailOnFrozenMatch(string.format(
+          "engine clock stalled %.1fs at %s", nowSeconds - self._lastClockProgressTime,
+          tostring(engineClock)))
+        return
+      end
+    end
+
+    local ok, err = xpcall(function() self:runGame(dt) end, debug.traceback)
+    if not ok then
+      self:bailOnFrozenMatch("runGame error: " .. tostring(err))
+      return
+    end
   end
-  
+
   self.uiRoot:handleFocusedInput(input, dt)
   self.uiRoot:update(dt)
 end
