@@ -1,5 +1,4 @@
 local class = require("common.lib.class")
-local TcpClient = require("client.src.network.TcpClient")
 local GameplayTcpClient = require("client.src.network.GameplayTcpClient")
 local LobbyTcpClient = require("client.src.network.LobbyTcpClient")
 local MessageListener = require("client.src.network.MessageListener")
@@ -811,7 +810,8 @@ local function createListeners(self)
 end
 
 ---@class NetClient : Signal
----@field tcpClient TcpClient
+---@field gameplayClient GameplayTcpClient
+---@field lobbyClient LobbyTcpClient
 ---@field leaderboard table
 ---@field pendingResponses table
 ---@field state NetClientStates
@@ -827,11 +827,9 @@ local NetClient = class(function(self)
   -- Dual-socket: gameplayClient carries I/G/D/K/E/H (latency-critical);
   -- lobbyClient carries J (lobby/room/chat/replays/settings). Independent
   -- sockets, independent failure: gameplay drop = full disconnect; lobby
-  -- drop = silent. tcpClient is kept as a backward-compat alias pointing at
-  -- the gameplay client for any caller that hasn't been migrated yet.
+  -- drop = silent.
   self.gameplayClient = GameplayTcpClient()
   self.lobbyClient = LobbyTcpClient()
-  self.tcpClient = self.gameplayClient
   self.leaderboard = nil
   self.pendingResponses = {}
   self.state = states.OFFLINE

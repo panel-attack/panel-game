@@ -1,4 +1,6 @@
-local TcpClient = require("client.src.network.TcpClient")
+-- Tests the underlying TCP client class (now GameplayTcpClient after the
+-- dual-socket split; LobbyTcpClient is identical so one test covers both).
+local TcpClient = require("client.src.network.GameplayTcpClient")
 local consts = require("common.engine.consts")
 local ClientMessages = require("common.network.ClientProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")

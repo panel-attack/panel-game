@@ -229,8 +229,19 @@ function GameplayTcpClient:queueMessage(type, data)
     traced(body)
     self.receivedMessageQueue:push(dataMessage)
   elseif type == NetworkProtocol.serverMessageTypes.jsonMessage.prefix then
-    -- A J message arrived on the gameplay socket. Routing error; log and drop.
-    logger.warn("GameplayTcpClient received unexpected J (JSON) message; dropping. Body: " .. tostring(data))
+    -- Shared-auth: both sockets log in independently with the same credentials,
+    -- so each socket sees its OWN login response as a J message. After login,
+    -- in steady state, server-pushed J traffic goes to lobbyConnection (via
+    -- Player:sendJson). So J on gameplay is a normal login-window message
+    -- and the occasional cross-channel fallback. Queue it; MessageListener
+    -- drains both clients' queues.
+    local current_message = json.decode(data)
+    if not current_message then
+      error(loc("nt_msg_err", (data or "nil")))
+    end
+    local sanitized = ServerMessages.sanitizeMessage(current_message)
+    traced(sanitized)
+    self.receivedMessageQueue:push(sanitized)
   end
 end
 
