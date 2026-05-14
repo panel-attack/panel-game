@@ -41,8 +41,6 @@ function ClientMessages.parseMessage(clientMessage)
     return ClientMessages.parseTaunt(clientMessage)
   elseif clientMessage.game_over then
     return ClientMessages.parseGameResult(clientMessage)
-  elseif clientMessage.stackEliminated then
-    return ClientMessages.parseStackEliminated(clientMessage)
   elseif clientMessage.joinRoomRequest then
     return ClientMessages.parseJoinRoomRequest(clientMessage)
   elseif clientMessage.logout then
@@ -236,13 +234,6 @@ function ClientMessages.parseGameResult(gameResult)
   }
 
   return sanitized
-end
-
-function ClientMessages.parseStackEliminated(message)
-  return {
-    stackEliminated = message.stackEliminated,
-    frame = tonumber(message.frame),
-  }
 end
 
 function ClientMessages.parseTaunt(taunt)

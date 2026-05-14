@@ -305,10 +305,24 @@ function Room:addPlayer(player, slotNumber)
     end
   end
 
+  -- Player/spectator roles are mutually exclusive. If this player was in
+  -- spectators (e.g. a stale entry survived a path that should have removed
+  -- them), evict the spectator entry so they don't appear in both lists.
+  local removedFromSpectators = false
+  for i = #self.spectators, 1, -1 do
+    if self.spectators[i] == player then
+      table.remove(self.spectators, i)
+      removedFromSpectators = true
+    end
+  end
+
   self.players[playerIndex] = player
   player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   player:addToRoom(self)
   player.state = "character select"
+  if removedFromSpectators then
+    self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, self:spectator_names()))
+  end
   -- Restore prior wins for returning players in open rooms (publicId-keyed).
   self.win_counts[playerIndex] = self.win_counts_by_publicId[player.publicPlayerID] or 0
   player.cursor = "__Ready"
@@ -628,6 +642,21 @@ function Room:add_spectator(newSpectator, pendingPromote)
   if pendingPromote and not hasLiveMatch then
     logger.warn("Cannot queue " .. newSpectator.name .. " as pending player in room " .. self.roomNumber .. " - no live match")
     return false
+  end
+
+  -- Player/spectator roles are mutually exclusive. Refuse if the caller is
+  -- already seated as a player or already in the spectator list.
+  for _, p in pairs(self.players) do
+    if p == newSpectator then
+      logger.warn(newSpectator.name .. " is already a player in room " .. self.roomNumber .. "; refusing add_spectator")
+      return false
+    end
+  end
+  for _, s in ipairs(self.spectators) do
+    if s == newSpectator then
+      logger.warn(newSpectator.name .. " is already a spectator in room " .. self.roomNumber .. "; refusing add_spectator")
+      return false
+    end
   end
 
   newSpectator.state = "spectating"
@@ -1040,6 +1069,18 @@ function Room:broadcastGarbageEvent(sender, body)
 
   parsed.sender = sender.player_number
   parsed.serverWallClockMs = math.floor(self.clock() * 1000)
+
+  -- Drop garbage events emitted at-or-after the sender's recorded death frame.
+  -- The dying player's earlier in-flight garbage is fine (and important); but
+  -- a G with senderFrame >= eliminatedPlayers[slot] indicates either a buggy
+  -- client or a race we shouldn't honor.
+  local deathFrame = self.game.eliminatedPlayers and self.game.eliminatedPlayers[sender.player_number]
+  if deathFrame and type(parsed.senderFrame) == "number" and parsed.senderFrame >= deathFrame then
+    logger.info(string.format(
+      "%d: dropping G from %s at frame %d (>= death frame %d)",
+      self.roomNumber, sender.name or "?", parsed.senderFrame, deathFrame))
+    return
+  end
 
   -- Authoritative dead-target redirect. Clients don't see the death
   -- before they emit, so we fix it server-side. If nobody alive remains in
@@ -1492,15 +1533,6 @@ function Room:handleGameAbort(sender)
     self:handleGameOverOutcome({outcome = outcome}, sender)
   else
     logger.warn(self.roomNumber .. ": Unexpected abort from player with publicID " .. sender.publicPlayerID)
-  end
-end
-
----@param sender ServerPlayer
----@param frame integer? frame when sender's stack died
-function Room:handleStackEliminated(sender, frame)
-  if self.game then
-    self.game:markPlayerEliminated(sender, frame)
-    logger.info(self.roomNumber .. ": " .. sender.name .. " eliminated at frame " .. tostring(frame))
   end
 end
 

@@ -199,16 +199,6 @@ function ClientProtocol.sendMatchAbort(roomNumber)
   }
 end
 
----Notify the server that the local stack has reached game over so the server can
----idle-fill inputs for this player and keep broadcasting frames to surviving stacks.
----@param frame integer the game_over_clock frame at which the stack died
-function ClientProtocol.sendStackEliminated(frame)
-  return {
-    messageType = msgTypes.jsonMessage,
-    messageText = { stackEliminated = true, frame = frame }
-  }
-end
-
 ---Loose-sync: send a GarbageEvent — sender's local sim has resolved garbage
 ---for one or more remote targets. Body is wrapped as a marked G-prefix message,
 ---not a JSON envelope.
