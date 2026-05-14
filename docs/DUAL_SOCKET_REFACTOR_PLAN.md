@@ -178,9 +178,8 @@ Deprecated / to delete:
 - [x] Commit 1 — foundation files (GameplayTcpClient, LobbyTcpClient, LOBBY_PORT)
 - [x] Commit 2 — server binds 2nd listener, accepts on both, channel-tagged
 - [x] Commit 3 — Player gameplay/lobby connections + outbound routing by prefix
-- [ ] Commit 4 — NetClient dual instantiate + LoginRoutine connects both
-- [ ] Commit 5 — actual message routing wire-up (J → lobby, others → gameplay)
-- [ ] Commit 6 — update tests
+- [x] Commit 4+5 — NetClient + LoginRoutine + MessageListener + Response wired dual-socket
+- [ ] Commit 6 — update tests / smoke verify end-to-end
 
 I update this file as I complete each commit. If I deviate, the deviation
 gets recorded here first.

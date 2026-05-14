@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local ClientMessages = require("common.network.ClientProtocol")
 local save = require("client.src.save")
 local TraceWriter = require("client.src.network.TraceWriter")
+local logger = require("common.lib.logger")
 
 -- abstraction level function
 -- returns things as a parameter list so the API in ClientProtocol can be more explicit about which parameters it expects
@@ -22,104 +23,145 @@ local function toLoginData(configuration, localPlayer)
     c.save_replays_publicly
 end
 
--- returns true/false as the first return value to indicate success or failure of the login
--- returns a string with a message to display for the user
--- not meant to be called directly as it may block update for a good while, hence local, use the LoginRoutine instead!
-local function login(tcpClient, ip, port)
+-- Run version-check + login for a single tcp client. Returns a table:
+--   { loggedIn = bool, message = string, new_user_id = ?, publicId = ?, serverTime = ?,
+--     name_changed = bool, old_name = ?, new_name = ?, server_notice = ? }
+-- Used twice by the dual-socket flow: once for gameplay, once for lobby.
+local function loginOnClient(client, ip, port, userId)
   local result = {loggedIn = false, message = ""}
 
-  if not tcpClient:connectToServer(ip, port) then
+  if not client:connectToServer(ip, port) then
     result.loggedIn = false
     result.message = loc("ss_could_not_connect")
     return result
-  else
-    -- this should also probably be elsewhere
-    GAME.connected_server_ip = ip
-    GAME.connected_server_port = port
-
-    local response = tcpClient:sendRequest(ClientMessages.requestVersionCompatibilityCheck())
-    local status, value = response:tryGetValue()
-    while status == "waiting" do
-      coroutine.yield("Checking version compatibility with the server")
-      status, value = response:tryGetValue()
-    end
-
-    if status == "timeout" then
-      result.loggedIn = false
-      result.message = loc("nt_conn_timeout")
-      return result
-    elseif status == "received" then
-      if not value.versionCompatible then
-        result.loggedIn = false
-        result.message = loc("nt_ver_err")
-        return result
-      else
-        local userId = save.read_user_id_file(ip)
-        if not userId then
-          userId = "need a new user id"
-        end
-
-        response = tcpClient:sendRequest(ClientMessages.requestLogin(userId, toLoginData(config, GAME.localPlayer)))
-        status, value = response:tryGetValue()
-        while status == "waiting" do
-          coroutine.yield("Logging in")
-          status, value = response:tryGetValue()
-        end
-
-        if status == "timeout" then
-          result.loggedIn = false
-          result.message = loc("nt_conn_timeout")
-          return result
-        elseif status == "received" then
-          if value.login_successful then
-            result.loggedIn = true
-            -- Trace capture: anchor the per-session directory at the
-            -- successful-login moment. beginGame later auto-creates a
-            -- "match_local_*" sub-dir if no room is joined, so we don't
-            -- need to wait for an addToRoom event before recording.
-            pcall(function() TraceWriter.beginSession(os.time()) end)
-            if value.new_user_id then
-              save.write_user_id_file(value.new_user_id, GAME.connected_server_ip)
-              result.message = loc("lb_user_new", config.name)
-            elseif value.name_changed then
-              result.message = loc("lb_user_update", value.old_name, value.new_name)
-            else
-              result.message = loc("lb_welcome_back", config.name)
-            end
-            if value.server_notice then
-              result.message = result.message .. "\n" value.server_notice:gsub("\\n", "\n")
-            end
-            if value.publicId then
-              GAME.localPlayer.publicId = value.publicId
-            end
-            result.serverTime = value.serverTime
-
-            return result
-          else --if result.login_denied then
-            result.loggedIn = false
-            result.message = loc("lb_error_msg") .. "\n" .. value.reason
-            if value.ban_duration then
-              result.message = result.message .. "\n" .. value.ban_duration
-            end
-            return result
-          end
-        else
-          error("Unexpected status " .. status .. " trying to login with user id on the server " .. ip)
-        end
-      end
-    else
-      error("Unexpected status " .. status .. " trying to verify version compatibility with the server " .. ip)
-    end
   end
+
+  local response = client:sendRequest(ClientMessages.requestVersionCompatibilityCheck())
+  local status, value = response:tryGetValue()
+  while status == "waiting" do
+    coroutine.yield("Checking version compatibility with the server")
+    status, value = response:tryGetValue()
+  end
+
+  if status == "timeout" then
+    result.loggedIn = false
+    result.message = loc("nt_conn_timeout")
+    return result
+  elseif status ~= "received" then
+    error("Unexpected status " .. tostring(status) .. " on version check to " .. ip)
+  end
+
+  if not value.versionCompatible then
+    result.loggedIn = false
+    result.message = loc("nt_ver_err")
+    return result
+  end
+
+  response = client:sendRequest(ClientMessages.requestLogin(userId, toLoginData(config, GAME.localPlayer)))
+  status, value = response:tryGetValue()
+  while status == "waiting" do
+    coroutine.yield("Logging in")
+    status, value = response:tryGetValue()
+  end
+
+  if status == "timeout" then
+    result.loggedIn = false
+    result.message = loc("nt_conn_timeout")
+    return result
+  elseif status ~= "received" then
+    error("Unexpected status " .. tostring(status) .. " on login to " .. ip)
+  end
+
+  if not value.login_successful then
+    result.loggedIn = false
+    result.message = loc("lb_error_msg") .. "\n" .. (value.reason or "")
+    if value.ban_duration then
+      result.message = result.message .. "\n" .. value.ban_duration
+    end
+    return result
+  end
+
+  result.loggedIn = true
+  result.new_user_id = value.new_user_id
+  result.publicId = value.publicId
+  result.serverTime = value.serverTime
+  result.name_changed = value.name_changed
+  result.old_name = value.old_name
+  result.new_name = value.new_name
+  result.server_notice = value.server_notice
+  return result
+end
+
+-- Dual-socket login: gameplay socket first (because it's the latency-critical
+-- one and the server creates the Player object on its successful login), then
+-- lobby socket using the same user_id so the server attaches it to the same
+-- Player. Either failure aborts the whole login.
+local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort)
+  GAME.connected_server_ip = ip
+  GAME.connected_server_port = gameplayPort
+
+  local storedUserId = save.read_user_id_file(ip) or "need a new user id"
+
+  local gameplayResult = loginOnClient(gameplayClient, ip, gameplayPort, storedUserId)
+  if not gameplayResult.loggedIn then
+    return gameplayResult
+  end
+
+  -- After the first successful login, the server may have issued a new user
+  -- id. Persist it and use it for the lobby login so the server can match
+  -- both sockets to the same Player via privateUserId.
+  local effectiveUserId = storedUserId
+  if gameplayResult.new_user_id then
+    save.write_user_id_file(gameplayResult.new_user_id, ip)
+    effectiveUserId = gameplayResult.new_user_id
+  end
+
+  local lobbyResult = loginOnClient(lobbyClient, ip, lobbyPort, effectiveUserId)
+  if not lobbyResult.loggedIn then
+    logger.warn("Lobby socket login failed (" .. tostring(lobbyResult.message)
+      .. "). Continuing with gameplay-only — JSON will fall back to gameplay socket.")
+    -- We don't fail the whole login; the server-side Player:sendJson has a
+    -- gameplay-channel fallback so the player can still play. Lobby HoL
+    -- protection is just unavailable for this session.
+    lobbyClient:resetNetwork()
+  end
+
+  -- Assemble the user-facing message from the gameplay result (the lobby
+  -- login is server-side bookkeeping that doesn't have new messages to convey).
+  local message
+  if gameplayResult.new_user_id then
+    message = loc("lb_user_new", config.name)
+  elseif gameplayResult.name_changed then
+    message = loc("lb_user_update", gameplayResult.old_name, gameplayResult.new_name)
+  else
+    message = loc("lb_welcome_back", config.name)
+  end
+  if gameplayResult.server_notice then
+    message = message .. "\n" .. gameplayResult.server_notice:gsub("\\n", "\n")
+  end
+
+  if gameplayResult.publicId then
+    GAME.localPlayer.publicId = gameplayResult.publicId
+  end
+
+  pcall(function() TraceWriter.beginSession(os.time()) end)
+
+  return {
+    loggedIn = true,
+    message = message,
+    serverTime = gameplayResult.serverTime,
+  }
 end
 
 -- A wrapper class around the login process
 -- Allows to advance the login process bit by bit via calling progress
-local LoginRoutine = class(function(self, tcpClient, ip, port)
-  self.tcpClient = tcpClient
+local LoginRoutine = class(function(self, gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort)
+  self.gameplayClient = gameplayClient
+  self.lobbyClient = lobbyClient
   self.routine = coroutine.create(login)
   self.ip = ip
-  self.port = port
+  self.gameplayPort = gameplayPort
+  self.lobbyPort = lobbyPort or ((gameplayPort or 49569) + 1)
 end)
 
 -- returns false and the current progress of the login process as a string message while in progress
@@ -128,12 +170,16 @@ function LoginRoutine:progress()
   if coroutine.status(self.routine) == "dead" then
     return true, self.result
   else
-    local success, status = coroutine.resume(self.routine, self.tcpClient, self.ip, self.port)
+    local success, status = coroutine.resume(
+      self.routine,
+      self.gameplayClient, self.ip, self.gameplayPort,
+      self.lobbyClient, self.lobbyPort)
     if success then
       if type(status) == "table" then
         self.result = status
         if self.result.loggedIn == false then
-          self.tcpClient:resetNetwork()
+          self.gameplayClient:resetNetwork()
+          if self.lobbyClient then self.lobbyClient:resetNetwork() end
         end
         return true, status
       else

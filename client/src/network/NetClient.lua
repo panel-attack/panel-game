@@ -1,5 +1,7 @@
 local class = require("common.lib.class")
 local TcpClient = require("client.src.network.TcpClient")
+local GameplayTcpClient = require("client.src.network.GameplayTcpClient")
+local LobbyTcpClient = require("client.src.network.LobbyTcpClient")
 local MessageListener = require("client.src.network.MessageListener")
 local ServerMessages = require("client.src.network.ServerMessages")
 local ClientMessages = require("common.network.ClientProtocol")
@@ -373,7 +375,7 @@ local function processGameResultMessage(self, message)
   -- that means from here on it is expected to receive no further input messages from either player
   -- if we went game over first, the opponent will notice later and keep sending inputs until we went game over on their end too
   -- these extra messages will remain unprocessed in the queue and need to be cleared up so they don't get applied the next match
-  self.tcpClient:dropOldInputMessages()
+  self.gameplayClient:dropOldInputMessages()
 
   if not self.room then
     return
@@ -542,7 +544,7 @@ local function processMatchStartMessage(self, message)
     -- although the most important thing is replacing the on-going transition but startMatch already does that as a default
   end
 
-  self.tcpClient:dropOldInputMessages()
+  self.gameplayClient:dropOldInputMessages()
   local match = self.room:startMatch(message.replay)
   self:setState(states.INGAME)
   if match.supportsPause and match:hasLocalPlayer() then
@@ -667,7 +669,7 @@ local function processInputMessages(self)
   -- JSON body. TcpClient.queueMessage already decoded the body to
   -- {playerNumber, input} when it pushed onto the queue.
   local inputPrefix = NetworkProtocol.serverMessageTypes.input.prefix
-  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(inputPrefix)
+  local messages = self.gameplayClient.receivedMessageQueue:pop_all_with(inputPrefix)
   if self.room and self.room.match then
     for _, msg in ipairs(messages) do
       local body = msg[inputPrefix]
@@ -680,7 +682,7 @@ end
 
 ---@param self NetClient
 local function processGarbageEvents(self)
-  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
+  local messages = self.gameplayClient.receivedMessageQueue:pop_all_with(
     NetworkProtocol.serverMessageTypes.garbageEvent.prefix)
   for _, msg in ipairs(messages) do
     local body = msg[NetworkProtocol.serverMessageTypes.garbageEvent.prefix]
@@ -692,7 +694,7 @@ end
 
 ---@param self NetClient
 local function processDeathEvents(self)
-  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
+  local messages = self.gameplayClient.receivedMessageQueue:pop_all_with(
     NetworkProtocol.serverMessageTypes.deathEvent.prefix)
   for _, msg in ipairs(messages) do
     local body = msg[NetworkProtocol.serverMessageTypes.deathEvent.prefix]
@@ -760,7 +762,7 @@ end
 ---@param self NetClient
 local function handleGameAbort(self, gameAbortMessage)
   if self.room and self.room.match and self.state == states.INGAME then
-    self.tcpClient:dropOldInputMessages()
+    self.gameplayClient:dropOldInputMessages()
     -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
     self.room.match:disconnectSignal("matchEnded", self.room)
     -- instead we actively abort the match ourselves
@@ -822,7 +824,14 @@ end
 ---@field serverTimeDelta integer in seconds
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
-  self.tcpClient = TcpClient()
+  -- Dual-socket: gameplayClient carries I/G/D/K/E/H (latency-critical);
+  -- lobbyClient carries J (lobby/room/chat/replays/settings). Independent
+  -- sockets, independent failure: gameplay drop = full disconnect; lobby
+  -- drop = silent. tcpClient is kept as a backward-compat alias pointing at
+  -- the gameplay client for any caller that hasn't been migrated yet.
+  self.gameplayClient = GameplayTcpClient()
+  self.lobbyClient = LobbyTcpClient()
+  self.tcpClient = self.gameplayClient
   self.leaderboard = nil
   self.pendingResponses = {}
   self.state = states.OFFLINE
@@ -884,8 +893,8 @@ NetClient.STATES = states
 
 function NetClient:leaveRoom()
   if self:isConnected() and self.room then
-    self.tcpClient:dropOldInputMessages()
-    self.tcpClient:sendRequest(ClientMessages.leaveRoom())
+    self.gameplayClient:dropOldInputMessages()
+    self.lobbyClient:sendRequest(ClientMessages.leaveRoom())
 
     -- the server sends us back the confirmation that we left the room
     -- so we reenter ONLINE state via processLeaveRoomMessage, not here
@@ -922,7 +931,7 @@ function NetClient:reportLocalGameResult(winners)
     local totalPlayers = gameMode.playerCount or #self.room.players
     if #winners >= totalPlayers then
       -- all players tied (everyone died simultaneously)
-      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(0))
+      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(0))
     else
       -- "Did MY TEAM win" — not "is my own stack in the winners list". A teammate
       -- who died is still on the winning team if their teammate finished off the
@@ -946,34 +955,34 @@ function NetClient:reportLocalGameResult(winners)
           end
         end
       end
-      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(localTeamWon and 1 or 2))
+      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(localTeamWon and 1 or 2))
     end
   else
     -- non-team: report winner's player number, or 0 for any tie
     if #winners >= 2 then
-      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(0))
+      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(0))
     else
-      self.tcpClient:sendRequest(ClientMessages.reportLocalGameResult(winners[1].playerNumber))
+      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(winners[1].playerNumber))
     end
   end
 end
 
 function NetClient:sendTauntUp(index)
   if self:isConnected() then
-    self.tcpClient:sendRequest(ClientMessages.sendTaunt("up", index))
+    self.lobbyClient:sendRequest(ClientMessages.sendTaunt("up", index))
   end
 end
 
 function NetClient:sendTauntDown(index)
   if self:isConnected() then
-    self.tcpClient:sendRequest(ClientMessages.sendTaunt("down", index))
+    self.lobbyClient:sendRequest(ClientMessages.sendTaunt("down", index))
   end
 end
 
 function NetClient:sendInput(input)
   if self:isConnected() then
     local message = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.clientMessageTypes.playerInput.prefix, input)
-    self.tcpClient:send(message)
+    self.gameplayClient:send(message)
   end
 end
 
@@ -984,7 +993,7 @@ function NetClient:sendGarbageEvent(body)
   if self:isConnected() then
     local message = NetworkProtocol.markedMessageForTypeAndBody(
       NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))
-    self.tcpClient:send(message)
+    self.gameplayClient:send(message)
   end
 end
 
@@ -994,14 +1003,14 @@ function NetClient:sendDeathEvent(body)
   if self:isConnected() then
     local message = NetworkProtocol.markedMessageForTypeAndBody(
       NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
-    self.tcpClient:send(message)
+    self.gameplayClient:send(message)
   end
 end
 
 ---@param clientMatch ClientMatch
 function NetClient:sendPauseToggle(clientMatch)
   if self:isConnected() and self.room and self.room.roomNumber then
-    self.tcpClient:sendRequest(ClientMessages.sendPauseToggle(self.room.roomNumber, clientMatch.isPaused))
+    self.lobbyClient:sendRequest(ClientMessages.sendPauseToggle(self.room.roomNumber, clientMatch.isPaused))
   end
 end
 
@@ -1009,7 +1018,7 @@ end
 function NetClient:requestLeaderboard(gameModeId)
   if not self.pendingResponses.leaderboardUpdate then
     gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
-    self.pendingResponses.leaderboardUpdate = self.tcpClient:sendRequest(ClientMessages.requestLeaderboard(gameModeId))
+    self.pendingResponses.leaderboardUpdate = self.lobbyClient:sendRequest(ClientMessages.requestLeaderboard(gameModeId))
   end
 end
 
@@ -1017,7 +1026,7 @@ end
 ---@param gameModeId GameModeID
 function NetClient:challengePlayerById(opponentId, gameModeId)
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
-  self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
+  self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
   self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
@@ -1041,7 +1050,7 @@ function NetClient:invitePlayerToRoom(opponentId, roomNumber, slotNumber, gameMo
   local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
   logger.info(string.format("Sending invite to player %s for room %d slot %d (key=%s)", tostring(opponentId), roomNumber, slotNumber, inviteKey))
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
-  self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true, roomNumber, slotNumber))
+  self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true, roomNumber, slotNumber))
   self.lobbyDataV2.outgoingChallenges[opponentId][inviteKey] = true
   logger.info(string.format("outgoingChallenges after invite: %s", json.encode(self.lobbyDataV2.outgoingChallenges)))
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
@@ -1055,14 +1064,14 @@ function NetClient:withdrawRoomInvite(opponentId, roomNumber, slotNumber, gameMo
   gameModeId = gameModeId or getRoomGameModeId(roomNumber) or GameModes.IDs.TWO_PLAYER_VS
   local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
-  self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false, roomNumber, slotNumber))
+  self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false, roomNumber, slotNumber))
   self.lobbyDataV2.outgoingChallenges[opponentId][inviteKey] = false
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 
 function NetClient:withdrawChallengeForId(opponentId, gameModeId)
   if self.lobbyDataV2.outgoingChallenges[opponentId] then
-    self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false))
+    self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false))
     self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
     self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = false
     self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
@@ -1071,7 +1080,7 @@ end
 
 function NetClient:requestSpectate(roomNumber)
   if not self.pendingResponses.spectateResponse then
-    self.pendingResponses.spectateResponse = self.tcpClient:sendRequest(ClientMessages.requestSpectate(config.name, roomNumber))
+    self.pendingResponses.spectateResponse = self.lobbyClient:sendRequest(ClientMessages.requestSpectate(config.name, roomNumber))
   end
 end
 
@@ -1080,7 +1089,7 @@ end
 function NetClient:requestJoinRoom(roomNumber, slotNumber)
   if self:isConnected() then
     logger.info("Sending joinRoomRequest for room " .. tostring(roomNumber) .. " slot " .. tostring(slotNumber))
-    self.tcpClient:sendRequest(ClientMessages.requestJoinRoom(roomNumber, slotNumber))
+    self.lobbyClient:sendRequest(ClientMessages.requestJoinRoom(roomNumber, slotNumber))
   end
 end
 
@@ -1104,23 +1113,23 @@ function NetClient:requestRoom(gameMode, latencyTolerance, openRoom)
       return
     end
 
-    self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode, latencyTolerance, openRoom))
+    self.lobbyClient:sendRequest(ClientMessages.sendRoomRequest(gameMode, latencyTolerance, openRoom))
   end
 end
 
 function NetClient:sendMatchAbort()
   if self:isConnected() then
-    self.tcpClient:sendRequest(ClientMessages.sendMatchAbort())
+    self.lobbyClient:sendRequest(ClientMessages.sendMatchAbort())
     self:setState(states.ROOM)
   end
 end
 
 function sendPlayerSettings(player)
-  GAME.netClient.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
+  GAME.netClient.lobbyClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
 function NetClient:sendPlayerSettings(player)
-  self.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
+  self.lobbyClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
 function NetClient:registerPlayerUpdates(room)
@@ -1160,18 +1169,24 @@ function NetClient:sendErrorReport(errorData, server, port)
 end
 
 function NetClient:isConnected()
-  return self.tcpClient:isConnected()
+  -- Gameplay socket is the critical one. Lobby socket independently up/down
+  -- doesn't change "are we logged in and playing?"
+  return self.gameplayClient:isConnected()
 end
 
 function NetClient:login(ip, port)
   if not self:isConnected() then
-    self.loginRoutine = LoginRoutine(self.tcpClient, ip, port)
+    local gameplayPort = port
+    -- Lobby port follows the gameplay port by convention (+1). Server binds
+    -- both via SERVER_PORT and LOBBY_PORT in server_globals.
+    local lobbyPort = (port or 49569) + 1
+    self.loginRoutine = LoginRoutine(self.gameplayClient, ip, gameplayPort, self.lobbyClient, lobbyPort)
     self:setState(states.LOGIN)
   end
 end
 
 function NetClient:logout()
-  self.tcpClient:sendRequest(ClientMessages.logout())
+  self.lobbyClient:sendRequest(ClientMessages.logout())
   -- we want to give the message a chance to actually be sent to the network before we free the socket
   -- otherwise the socket might get cleared before that and the server will only disconnect the player after a delay (which means they still get shown in lobby for ~10s)
   -- it would be more reliable to only actually reset the socket after a server confirmation so there is no delay (however small)
@@ -1183,7 +1198,9 @@ end
 ---@param voluntary boolean if the disconnect happened through player intent or not
 function NetClient:disconnect(voluntary)
   self.room = nil
-  self.tcpClient:resetNetwork()
+  -- Reset both sockets — full session teardown.
+  self.gameplayClient:resetNetwork()
+  self.lobbyClient:resetNetwork()
   self:setState(states.OFFLINE)
   resetLobbyData(self)
   GAME.localPlayer:disconnectSubscriber(GAME.netClient)
@@ -1226,16 +1243,24 @@ function NetClient:update()
     end
   end
 
-  if not self.tcpClient:processIncomingMessages() then
+  -- Process incoming on both sockets. Gameplay drop = full disconnect.
+  -- Lobby drop = silent: log it and reset the lobby socket only so JSON
+  -- sends fall back to gameplay (Player:_jsonConnection handles this)
+  -- and gameplay continues uninterrupted.
+  if not self.gameplayClient:processIncomingMessages() then
     self:disconnect(false)
     return
+  end
+  if self.lobbyClient:isConnected() and not self.lobbyClient:processIncomingMessages() then
+    logger.warn("Lobby socket dropped; resetting lobby channel. Gameplay socket unaffected.")
+    self.lobbyClient:resetNetwork()
   end
 
   if self.state == states.ONLINE then
     for _, listener in pairs(self.lobbyListeners) do
       listener:listen()
     end
-    self.tcpClient:dropOldInputMessages()
+    self.gameplayClient:dropOldInputMessages()
     if self.pendingResponses.leaderboardUpdate then
       local status, value = self.pendingResponses.leaderboardUpdate:tryGetValue()
       if status == "timeout" then

@@ -37,8 +37,10 @@ function Request:send()
   self.tcpClient:send(message)
 
   -- in network, all responses from the server get mapped into "json" responses
+  -- Pass the sending client so Response drains from THAT client's queue —
+  -- otherwise dual-socket responses arrive on the wrong queue and never resolve.
   if self.responseTypes and #self.responseTypes > 0 then
-    return Response(self.responseTypes)
+    return Response(self.responseTypes, self.tcpClient)
   else
     return nil
   end

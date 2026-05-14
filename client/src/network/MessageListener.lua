@@ -12,7 +12,13 @@ end)
 -- listens for messages with the specified header
 -- passes any messages caught to the registered events
 function MessageListener:listen()
-  messages = GAME.netClient.tcpClient.receivedMessageQueue:pop_all_with(self.messageHeader)
+  -- JSON messages are sanitized into the lobbyClient queue after the
+  -- dual-socket split; the gameplayClient queue is reserved for I/G/D/K
+  -- prefixes which have their own dedicated drainers in NetClient.
+  local nc = GAME.netClient
+  local queue = (nc.lobbyClient and nc.lobbyClient.receivedMessageQueue)
+                or nc.tcpClient.receivedMessageQueue
+  messages = queue:pop_all_with(self.messageHeader)
   for i = 1, #messages do
     local message = messages[i]
     for subscriber, callback in pairs(self.subscriptionList) do

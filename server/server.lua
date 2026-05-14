@@ -1697,6 +1697,25 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
 
   local loginApproved, denyReason = self:canLogin(userId, name, ipAddress, engineVersion)
 
+  -- Dual-socket: if a Player already exists for this userId/name, this is
+  -- the second-channel login (the other socket already authenticated). Attach
+  -- the new connection to the existing Player and we're done — no duplicate
+  -- canLogin checks, no duplicate "new user" creation. The channel field on
+  -- the connection (set by Server:_acceptOnListener) decides which slot.
+  if userId and userId ~= "need a new user id" and self.playerbase
+      and self.playerbase.players[userId] then
+    local existingPlayer = self.nameToPlayer[self.playerbase.players[userId]]
+    if existingPlayer
+        and ((connection.channel == "lobby" and not existingPlayer.lobbyConnection)
+          or (connection.channel == "gameplay" and not existingPlayer.gameplayConnection)) then
+      existingPlayer:attachConnection(connection)
+      self.connectionToPlayer[connection] = existingPlayer
+      logger.info("Attached " .. (connection.channel or "?") .. " socket to existing player " .. existingPlayer.name)
+      connection:sendJson(ServerProtocol.approveLogin(existingPlayer.publicPlayerID, nil, nil, nil, nil))
+      return true
+    end
+  end
+
   if not loginApproved then
     connection:sendJson(ServerProtocol.denyLogin(denyReason))
     return false
