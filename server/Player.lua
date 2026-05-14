@@ -151,16 +151,20 @@ function Player:addToRoom(room)
 end
 
 function Player:removeFromRoom(room, reason)
-  if self.room then
-    logger.info("Clearing room " .. room.roomNumber .. " for player " .. self.name)
-    -- if there is no socket the room got closed because the player hard DCd so shouldn't update state in that case
-    if self.connection.socket then
-      self.state = "lobby"
-      self.player_number = nil
-      self:sendJson(ServerProtocol.leaveRoom(room.roomNumber, reason))
-    end
-  else
-    logger.error("Trying to remove player " .. self.name .. " from room " .. room.roomNumber .. " even though they have no room assigned")
+  -- Idempotent: cascading disconnects (mid-match all-leave) call this twice for
+  -- the same player — once via handleLeaveRoom, once via Room:close iterating
+  -- slots. The second call has nothing to clean up; logging it as an error
+  -- caused the E2E harness to flag healthy teardowns as failures.
+  if not self.room then
+    return
+  end
+
+  logger.info("Clearing room " .. room.roomNumber .. " for player " .. self.name)
+  -- if there is no socket the room got closed because the player hard DCd so shouldn't update state in that case
+  if self.connection.socket then
+    self.state = "lobby"
+    self.player_number = nil
+    self:sendJson(ServerProtocol.leaveRoom(room.roomNumber, reason))
   end
 
   self.room = nil

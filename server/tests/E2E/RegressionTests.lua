@@ -367,7 +367,7 @@ local function test_b10_sparse_self_players_relay_iteration()
            .. ". The relay loop at Room.lua:732 likely halted at the nil slot.")
 
     logger.info("[E2E Regression] PASS — B10 white-box: pairs iteration"
-                .. " survives nil slot 2 (" .. rawget(botcCounts, SLOT_A_PREFIX)
+                .. " survives nil slot 2 (" .. rawget(botcCounts, SLOT_A)
                 .. " inputs reached slot 3)")
     for _, p in ipairs(all) do p:close() end
   end)
