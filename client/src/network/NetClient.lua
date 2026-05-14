@@ -194,8 +194,13 @@ end
 
 ---@param room BattleRoom
 getSceneFromRoom = function(room)
-  -- Generalize: if this is an open team mode (teamCount >= 2, playersPerTeam > 1 or table), use CharacterSelect2p as the waiting room.
   local mode = room.mode or {}
+  -- FFA (playersPerTeam == 1): every player is their own team, route straight
+  -- to the multi-slot character select without a teamCount gate.
+  if mode.playersPerTeam == 1 then
+    return CharacterSelect2p({battleRoom = room})
+  end
+  -- Open team modes: teamCount >= 2 with playersPerTeam > 1 (or asymmetric table).
   if mode.teamCount and mode.teamCount >= 2 and mode.playersPerTeam and ((type(mode.playersPerTeam) == "number" and mode.playersPerTeam > 1) or type(mode.playersPerTeam) == "table") then
     return CharacterSelect2p({battleRoom = room})
   end
