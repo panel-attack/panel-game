@@ -18,6 +18,7 @@ local MatchRules = require("common.data.MatchRules")
 local GameModes = require("common.data.GameModes")
 local DebugSettings = require("client.src.debug.DebugSettings")
 local TeamUtils = require("common.data.TeamUtils")
+local socket = require("common.lib.socket")
 
 -- Grace period after a local player dies before the spectator controls
 -- (cycle hint, focused-stack border, "Viewing: <name>" label, arrow-key
@@ -545,7 +546,22 @@ function GameBase:runGame(dt)
   self:handlePause()
 
   if self.frameInfo.startTime == nil then
-    self.frameInfo.startTime = love.timer.getTime()
+    -- Server-scheduled start: hold engine ticks until the target wall-clock,
+    -- then anchor frameInfo.startTime to the scheduled moment so catch-up math
+    -- advances the engine to where it should be. Falls back to start-on-arrival
+    -- if no schedule was received (first match before offset is estimated, or
+    -- offline modes).
+    local schedMs = self.match and self.match.scheduledStartLocalMs
+    if schedMs then
+      local nowMs = math.floor(socket.gettime() * 1000)
+      if nowMs < schedMs then
+        return  -- hold; engine starts on the next tick that crosses the target
+      end
+      local latenessSec = (nowMs - schedMs) / 1000
+      self.frameInfo.startTime = love.timer.getTime() - latenessSec
+    else
+      self.frameInfo.startTime = love.timer.getTime()
+    end
   end
 
   local framesRun = 0

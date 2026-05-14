@@ -209,6 +209,15 @@ function LobbyTcpClient:queueMessage(type, data)
     if not current_message then
       error(loc("nt_msg_err", (data or "nil")))
     end
+    -- Update server-time-offset estimate. Use the MAX of (serverTimeMs - localReceiveMs)
+    -- samples — the lowest-latency receive is the most accurate estimate.
+    if type(current_message.serverTimeMs) == "number" then
+      local localReceiveMs = math.floor(socket.gettime() * 1000)
+      local sample = current_message.serverTimeMs - localReceiveMs
+      if not self.serverOffsetMs or sample > self.serverOffsetMs then
+        self.serverOffsetMs = sample
+      end
+    end
     local sanitized = ServerMessages.sanitizeMessage(current_message)
     traced(sanitized)
     self.receivedMessageQueue:push(sanitized)

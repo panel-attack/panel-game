@@ -6,6 +6,7 @@ local tableUtils = require("common.lib.tableUtils")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
 local TraceWriter = require("server.TraceWriter")
+local socket = require("common.lib.socket")
 
 ---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating" | "paused")
 ---@alias PublicPlayerID integer
@@ -313,6 +314,10 @@ function Player:sendJson(message)
   local conn = _jsonConnection(self, message)
   if not conn then
     return
+  end
+  -- Stamp wall-clock for client-side server-time-offset estimation.
+  if message and type(message.messageText) == "table" then
+    message.messageText.serverTimeMs = math.floor(socket.gettime() * 1000)
   end
   conn:sendJson(message)
   pcall(function()

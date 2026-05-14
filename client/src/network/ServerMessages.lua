@@ -99,6 +99,7 @@ function ServerMessages.sanitizeRoomMessage(message)
     {
       replay = replay,
       match_start = true,
+      startAtMs = message.startAtMs,
     }
   elseif message.type == "spectatorUpdate" then
     return { spectators = message.content }

@@ -556,6 +556,10 @@ function Room:start_match()
   -- games generated via createFromRoomState always have a replay
   ---@cast replay -nil
   local message = ServerProtocol.startMatch(self.roomNumber, replay)
+  -- Scheduled start time. Clients with a serverOffsetMs estimate translate this
+  -- to their local clock; clients without one fall back to "start on receive".
+  -- 500ms grace window absorbs typical network jitter across all clients.
+  message.messageText.startAtMs = math.floor(self.clock() * 1000) + 500
   self:broadcastJson(message)
 
   for _, player in self:eachPlayer() do

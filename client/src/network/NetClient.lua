@@ -550,6 +550,11 @@ local function processMatchStartMessage(self, message)
   if match.supportsPause and match:hasLocalPlayer() then
     match:connectSignal("pauseChanged", self, self.sendPauseToggle)
   end
+  -- Translate the server's scheduled start moment to our local clock if we have
+  -- a server-time-offset estimate. GameBase:runGame holds engine ticks until then.
+  if message.startAtMs and self.lobbyClient and self.lobbyClient.serverOffsetMs then
+    match.scheduledStartLocalMs = message.startAtMs - self.lobbyClient.serverOffsetMs
+  end
 end
 
 ---@param self NetClient
