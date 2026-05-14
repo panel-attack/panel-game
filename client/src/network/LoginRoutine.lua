@@ -92,11 +92,11 @@ local function loginOnClient(client, ip, port, userId)
   return result
 end
 
--- Dual-socket login: gameplay socket first (because it's the latency-critical
--- one and the server creates the Player object on its successful login), then
--- lobby socket using the same user_id so the server attaches it to the same
--- Player. Either failure aborts the whole login.
-local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort)
+-- Triple-socket login: gameplay first (creates the Player server-side),
+-- then lobby and spectate use the same user_id so the server attaches both
+-- to the same Player via privateUserId. Lobby and spectate failures are
+-- non-fatal — fallbacks in Player keep the session playable.
+local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, spectateClient, spectatePort)
   GAME.connected_server_ip = ip
   GAME.connected_server_port = gameplayPort
 
@@ -108,8 +108,8 @@ local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort)
   end
 
   -- After the first successful login, the server may have issued a new user
-  -- id. Persist it and use it for the lobby login so the server can match
-  -- both sockets to the same Player via privateUserId.
+  -- id. Persist it and use it for the lobby/spectate logins so the server
+  -- can match all sockets to the same Player.
   local effectiveUserId = storedUserId
   if gameplayResult.new_user_id then
     save.write_user_id_file(gameplayResult.new_user_id, ip)
@@ -119,11 +119,17 @@ local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort)
   local lobbyResult = loginOnClient(lobbyClient, ip, lobbyPort, effectiveUserId)
   if not lobbyResult.loggedIn then
     logger.warn("Lobby socket login failed (" .. tostring(lobbyResult.message)
-      .. "). Continuing with gameplay-only — JSON will fall back to gameplay socket.")
-    -- We don't fail the whole login; the server-side Player:sendJson has a
-    -- gameplay-channel fallback so the player can still play. Lobby HoL
-    -- protection is just unavailable for this session.
+      .. "). Continuing without lobby HoL protection — JSON falls back to gameplay.")
     lobbyClient:resetNetwork()
+  end
+
+  if spectateClient then
+    local spectateResult = loginOnClient(spectateClient, ip, spectatePort, effectiveUserId)
+    if not spectateResult.loggedIn then
+      logger.warn("Spectate socket login failed (" .. tostring(spectateResult.message)
+        .. "). Continuing without spectate isolation — opponent traffic falls back to gameplay.")
+      spectateClient:resetNetwork()
+    end
   end
 
   -- Assemble the user-facing message from the gameplay result (the lobby
@@ -155,13 +161,15 @@ end
 
 -- A wrapper class around the login process
 -- Allows to advance the login process bit by bit via calling progress
-local LoginRoutine = class(function(self, gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort)
+local LoginRoutine = class(function(self, gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, spectateClient, spectatePort)
   self.gameplayClient = gameplayClient
   self.lobbyClient = lobbyClient
+  self.spectateClient = spectateClient
   self.routine = coroutine.create(login)
   self.ip = ip
   self.gameplayPort = gameplayPort
   self.lobbyPort = lobbyPort or ((gameplayPort or 49569) + 1)
+  self.spectatePort = spectatePort or ((gameplayPort or 49569) + 2)
 end)
 
 -- returns false and the current progress of the login process as a string message while in progress
@@ -173,13 +181,15 @@ function LoginRoutine:progress()
     local success, status = coroutine.resume(
       self.routine,
       self.gameplayClient, self.ip, self.gameplayPort,
-      self.lobbyClient, self.lobbyPort)
+      self.lobbyClient, self.lobbyPort,
+      self.spectateClient, self.spectatePort)
     if success then
       if type(status) == "table" then
         self.result = status
         if self.result.loggedIn == false then
           self.gameplayClient:resetNetwork()
           if self.lobbyClient then self.lobbyClient:resetNetwork() end
+          if self.spectateClient then self.spectateClient:resetNetwork() end
         end
         return true, status
       else

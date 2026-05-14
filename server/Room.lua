@@ -827,15 +827,19 @@ function Room:broadcastInput(input, sender)
   -- silently stops receiving relayed inputs — their view-stack of every other
   -- player freezes and no garbage flows. Use pairs so every surviving player
   -- gets the broadcast regardless of slot gaps.
+  -- Relayed opponent inputs go on the SPECTATE channel for recipients —
+  -- this is the "watching another player's board" data, deliberately
+  -- isolated from the recipient's gameplay socket so their own I/G/K
+  -- stays unhindered even when 6 opponents are spamming inputs at 60Hz.
   for slot, player in pairs(self.players) do
     if slot ~= senderNum then
-      player:send(inputMessage)
+      player:sendSpectate(inputMessage)
     end
   end
 
   for _, v in pairs(self.spectators) do
     if v then
-      v:send(inputMessage)
+      v:sendSpectate(inputMessage)
     end
   end
 end
@@ -1042,19 +1046,31 @@ function Room:broadcastGarbageEvent(sender, body)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
     NetworkProtocol.serverMessageTypes.garbageEvent.prefix, stamped)
 
-  -- Send to EVERY player (including sender) and every spectator. The sender
-  -- needs the relay back to drive the visual on their view-stack of the
-  -- recipient. This is the only path that produces the visual, so nobody
-  -- sees an unconfirmed hit.
-  -- pairs not ipairs: self.players goes sparse on mid-match leave; see
-  -- broadcastInput for the rationale.
-  for _, player in pairs(self.players) do
-    player:send(message)
+  -- Routing by recipient context:
+  --   * If the player is in parsed.recipients, the garbage is HITTING them —
+  --     it's their own gameplay-critical data → GAMEPLAY channel.
+  --   * Otherwise the player is seeing the garbage as a telegraph visual on
+  --     another stack → SPECTATE channel (keeps gameplay socket lean).
+  -- The recipients table is a list of player slot numbers per the routing
+  -- in _redirectIfDead / distributeGarbageToTargets.
+  local isRecipient = {}
+  if type(parsed.recipients) == "table" then
+    for _, slot in ipairs(parsed.recipients) do
+      isRecipient[slot] = true
+    end
+  end
+  for slot, player in pairs(self.players) do
+    if isRecipient[slot] then
+      player:send(message)
+    else
+      player:sendSpectate(message)
+    end
   end
 
+  -- Pure spectators always see G as visual data → spectate channel.
   for _, spec in pairs(self.spectators) do
     if spec then
-      spec:send(message)
+      spec:sendSpectate(message)
     end
   end
 end
@@ -1118,16 +1134,17 @@ function Room:broadcastDeathEvent(sender, body)
   local message = NetworkProtocol.markedMessageForTypeAndBody(
     NetworkProtocol.serverMessageTypes.deathEvent.prefix, stamped)
 
+  -- An opponent's death is "watching them" data for everyone else → spectate.
   -- pairs not ipairs: see broadcastInput for sparse-self.players rationale.
   for _, player in pairs(self.players) do
     if player ~= sender then
-      player:send(message)
+      player:sendSpectate(message)
     end
   end
 
   for _, spec in pairs(self.spectators) do
     if spec then
-      spec:send(message)
+      spec:sendSpectate(message)
     end
   end
 end
@@ -1540,12 +1557,12 @@ function Room:voidByLeave(leaver, reason)
     -- never arrives — exactly the "view-stack freezes mid-match" symptom.
     for _, player in pairs(self.players) do
       if player ~= leaver then
-        player:send(message)
+        player:sendSpectate(message)
       end
     end
     for _, spec in pairs(self.spectators) do
       if spec then
-        spec:send(message)
+        spec:sendSpectate(message)
       end
     end
 

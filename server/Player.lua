@@ -12,8 +12,9 @@ local TraceWriter = require("server.TraceWriter")
 
 ---@class ServerPlayer : Signal
 ---@field package connection Connection backward-compat alias for gameplayConnection (legacy callers / tests)
----@field package gameplayConnection Connection? socket carrying I/G/D/K/E/H — required; loss = full disconnect
----@field package lobbyConnection Connection? socket carrying J — optional during rollout; loss = silent reconnect
+---@field package gameplayConnection Connection? socket carrying YOUR I (outgoing), G targeting you, your D, K. Lean for low latency.
+---@field package lobbyConnection Connection? socket carrying J — lobby/room/chat/replays/settings
+---@field package spectateConnection Connection? socket carrying opponents' I/G/D — bulky, isolated from gameplay so it can't HoL-block
 ---@field userId privateUserId
 ---@field publicPlayerID PublicPlayerID
 ---@field character string id of the specific character that was picked
@@ -44,17 +45,19 @@ function(self, privatePlayerID, connection, name, publicId)
   connection.loggedIn = true
   self.userId = privatePlayerID
   -- Bind the incoming connection to the appropriate channel slot. The
-  -- second socket (other channel) attaches later via Player:attachConnection.
+  -- other channel sockets attach later via Player:attachConnection.
   local channel = connection.channel or "gameplay"
   if channel == "lobby" then
     self.lobbyConnection = connection
+  elseif channel == "spectate" then
+    self.spectateConnection = connection
   else
     self.gameplayConnection = connection
   end
   -- Backward-compat alias: legacy code (server.lua TCP_NODELAY tweaks,
   -- tests reading outgoingMessageQueue) reaches in via player.connection.
-  -- Point it at gameplayConnection when available; otherwise lobby.
-  self.connection = self.gameplayConnection or self.lobbyConnection
+  -- Point it at gameplayConnection when available, then lobby, then spectate.
+  self.connection = self.gameplayConnection or self.lobbyConnection or self.spectateConnection
   self.name = name or "noname"
   self.publicPlayerID = publicId
 
@@ -207,10 +210,12 @@ function Player:attachConnection(connection)
   local channel = connection.channel or "gameplay"
   if channel == "lobby" then
     self.lobbyConnection = connection
+  elseif channel == "spectate" then
+    self.spectateConnection = connection
   else
     self.gameplayConnection = connection
   end
-  self.connection = self.gameplayConnection or self.lobbyConnection
+  self.connection = self.gameplayConnection or self.lobbyConnection or self.spectateConnection
 end
 
 -- Pick the destination connection for an outbound JSON message: lobby if
@@ -226,6 +231,9 @@ end
 
 -- Pick the destination connection for a raw prefixed message. J → lobby,
 -- everything else → gameplay, with cross-channel fallback during rollout.
+-- NOTE: this default routing is appropriate for YOUR critical data
+-- (outgoing inputs, KO arbitration). For OPPONENT-relayed I/G/D, callers
+-- should use Player:sendSpectate explicitly to keep the gameplay socket lean.
 local function _rawConnection(self, message)
   local prefix = type(message) == "string" and #message > 0 and message:sub(1, 1)
   if prefix == "J" then
@@ -236,8 +244,21 @@ local function _rawConnection(self, message)
   -- Last-resort fallback so gameplay messages don't silently disappear
   -- if the gameplay channel hasn't connected (shouldn't happen in steady
   -- state, but possible during the brief window before both sockets are up).
+  local sc = self.spectateConnection
+  if sc and sc.socket then return sc end
   local lc = self.lobbyConnection
   if lc and lc.socket then return lc end
+  return nil
+end
+
+-- Pick the destination for a SPECTATE-channel message (opponent's I/G/D
+-- you're rendering, not data targeting you). Falls back to gameplay if the
+-- spectate socket isn't connected so the data is still delivered.
+local function _spectateConnection(self)
+  local sc = self.spectateConnection
+  if sc and sc.socket then return sc end
+  local gc = self.gameplayConnection
+  if gc and gc.socket then return gc end
   return nil
 end
 
@@ -256,6 +277,21 @@ end
 
 function Player:send(message)
   local conn = _rawConnection(self, message)
+  if not conn then
+    return
+  end
+  conn:send(message)
+  pcall(function()
+    if self.publicPlayerID and type(message) == "string" and #message > 0 then
+      TraceWriter.send(self.publicPlayerID, message:sub(1, 1), message)
+    end
+  end)
+end
+
+-- Send opponent-relayed data (I from another player, telegraph G, opponent D)
+-- via the spectate channel so the gameplay socket stays lean.
+function Player:sendSpectate(message)
+  local conn = _spectateConnection(self)
   if not conn then
     return
   end

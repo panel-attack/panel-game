@@ -12,21 +12,17 @@ end)
 -- listens for messages with the specified header
 -- passes any messages caught to the registered events
 function MessageListener:listen()
-  -- Drain JSON messages from BOTH sockets. Each socket runs its own login
-  -- (shared-auth) so login responses land on whichever socket initiated
-  -- them. In steady state J traffic goes to lobby (Player:sendJson routes
-  -- to lobbyConnection), but the gameplay queue can still receive J
-  -- during login or via the cross-channel fallback. Drain both to be safe.
+  -- Drain JSON messages from ALL three sockets. Shared-auth means each
+  -- socket's login response lands in its own queue. In steady state J only
+  -- arrives on lobby (Player:sendJson routes to lobbyConnection), but
+  -- gameplay/spectate may carry J during the login window.
   local nc = GAME.netClient
   local messagesOut = {}
-  if nc.lobbyClient then
-    for _, m in ipairs(nc.lobbyClient.receivedMessageQueue:pop_all_with(self.messageHeader)) do
-      messagesOut[#messagesOut+1] = m
-    end
-  end
-  if nc.gameplayClient then
-    for _, m in ipairs(nc.gameplayClient.receivedMessageQueue:pop_all_with(self.messageHeader)) do
-      messagesOut[#messagesOut+1] = m
+  for _, client in ipairs({nc.lobbyClient, nc.gameplayClient, nc.spectateClient}) do
+    if client then
+      for _, m in ipairs(client.receivedMessageQueue:pop_all_with(self.messageHeader)) do
+        messagesOut[#messagesOut+1] = m
+      end
     end
   end
   for i = 1, #messagesOut do

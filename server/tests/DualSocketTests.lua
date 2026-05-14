@@ -77,7 +77,75 @@ local function test_lobby_drop_does_not_break_gameplay()
     "JSON should fall back to gameplay after lobby drop, got " .. gameplayConn.outgoingMessageQueue:len())
 end
 
+local function test_player_routes_spectate_traffic_to_spectate_socket()
+  logger.info("test_player_routes_spectate_traffic_to_spectate_socket")
+
+  local gameplayConn = MockConnection("gameplay")
+  local player = Player("test-tri-1", gameplayConn, "TriPlayer", 200)
+  local lobbyConn = MockConnection("lobby")
+  player:attachConnection(lobbyConn)
+  local spectateConn = MockConnection("spectate")
+  player:attachConnection(spectateConn)
+  assert(player.gameplayConnection == gameplayConn)
+  assert(player.lobbyConnection == lobbyConn)
+  assert(player.spectateConnection == spectateConn)
+
+  -- Opponent's input relayed to this player goes via sendSpectate
+  player:sendSpectate("Iopp-input")
+  assert(spectateConn.outgoingInputQueue:len() == 1, "opponent input should land on spectate")
+  assert(gameplayConn.outgoingInputQueue:len() == 0, "opponent input should NOT land on gameplay")
+
+  -- Opponent's death event
+  player:sendSpectate("Dopp-death")
+  assert(spectateConn.outgoingInputQueue:len() == 2, "opponent death should land on spectate")
+
+  -- Garbage NOT targeting this player (telegraph visual on someone else's stack)
+  player:sendSpectate("Gtelegraph")
+  assert(spectateConn.outgoingInputQueue:len() == 3, "telegraph G should land on spectate")
+
+  -- Garbage actually targeting this player → uses regular send → gameplay
+  player:send("Ghit-me")
+  assert(gameplayConn.outgoingInputQueue:len() == 1, "G targeting you should land on gameplay")
+  assert(spectateConn.outgoingInputQueue:len() == 3, "G targeting you should NOT also land on spectate")
+end
+
+local function test_spectate_falls_back_to_gameplay_when_missing()
+  logger.info("test_spectate_falls_back_to_gameplay_when_missing")
+
+  local gameplayConn = MockConnection("gameplay")
+  local player = Player("test-tri-2", gameplayConn, "FallbackPlayer", 201)
+
+  -- No spectate attached. Opponent traffic should still flow over gameplay
+  -- so the player keeps seeing opponents' boards (degraded but functional).
+  player:sendSpectate("Iopp-input")
+  assert(gameplayConn.outgoingInputQueue:len() == 1,
+    "spectate should fall back to gameplay when spectateConnection is nil")
+end
+
+local function test_spectate_drop_does_not_break_gameplay()
+  logger.info("test_spectate_drop_does_not_break_gameplay")
+
+  local gameplayConn = MockConnection("gameplay")
+  local player = Player("test-tri-3", gameplayConn, "DropPlayer", 202)
+  local spectateConn = MockConnection("spectate")
+  player:attachConnection(spectateConn)
+
+  spectateConn:close()
+
+  -- Gameplay traffic continues
+  player:send("Iyour-input")
+  assert(gameplayConn.outgoingInputQueue:len() == 1, "gameplay unaffected by spectate drop")
+
+  -- Spectate-routed traffic falls back to gameplay (degraded but delivered)
+  player:sendSpectate("Iopp-input")
+  assert(gameplayConn.outgoingInputQueue:len() == 2,
+    "spectate traffic falls back to gameplay after spectate drop")
+end
+
 test_player_routes_json_to_lobby_and_raw_to_gameplay()
 test_json_falls_back_to_gameplay_when_lobby_missing()
 test_lobby_drop_does_not_break_gameplay()
+test_player_routes_spectate_traffic_to_spectate_socket()
+test_spectate_falls_back_to_gameplay_when_missing()
+test_spectate_drop_does_not_break_gameplay()
 logger.info("All DualSocketTests passed!")

@@ -1,11 +1,16 @@
-# Dual-Socket Refactor — Working Plan
+# Triple-Socket Refactor — Working Plan
 
-Split the single TCP socket into two independent TCP sockets:
+Split the single TCP socket into THREE independent TCP sockets:
 
-- **GameplayTcpClient / port 49569** → carries latency-sensitive traffic:
-  `I` (input), `G` (garbage event), `D` (death event), `K` (KO arbitration),
-  `E` (ping), `H` (version handshake).
-- **LobbyTcpClient / port 49570** → carries chatty/stateful traffic:
+- **GameplayTcpClient / port 49569** → YOUR critical gameplay traffic ONLY:
+  outgoing `I` (your input), incoming `G` targeting you, your `D`, `K`
+  (KO arbitration), `E` (ping), `H` (version). Kept lean so your game
+  stays fast.
+- **SpectateTcpClient / port 49571** → opponents' traffic you render but
+  isn't game-critical to you: opponents' `I` (for visual board updates),
+  `G` not targeting you (telegraph visuals), opponents' `D`, `E`, `H`.
+  Bulky in 7p FFA; isolated so it can't HoL-block gameplay.
+- **LobbyTcpClient / port 49570** → chatty/stateful traffic:
   `J` (all JSON: lobby, room, chat, replays, settings, etc.) + its own `H` + `E`.
 
 Each socket is fully independent. Each does its own version handshake and
@@ -180,6 +185,7 @@ Deprecated / to delete:
 - [x] Commit 3 — Player gameplay/lobby connections + outbound routing by prefix
 - [x] Commit 4+5 — NetClient + LoginRoutine + MessageListener + Response wired dual-socket
 - [x] Commit 6 — MockConnection takes channel param; DualSocketTests covering JSON routing, gameplay routing, fallback, lobby drop. All pass.
+- [x] Commit 7 — Spectate socket added (third channel). SpectateTcpClient (copy-paste of GameplayTcpClient, K handler removed), SPECTATE_PORT in globals, third listener bound on server, Player.spectateConnection + sendSpectate() method, Room broadcasters route opponent traffic via spectate, NetClient instantiates all three + drains I/G/D from both gameplay+spectate queues, LoginRoutine logs in on all three sockets. 6/6 DualSocketTests pass (added 3 spectate-coverage tests).
 
 ## End-of-refactor verification
 

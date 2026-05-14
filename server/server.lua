@@ -266,9 +266,11 @@ end
 function Server:start()
   local gameplayPort = SERVER_PORT or 49569
   local lobbyPort = LOBBY_PORT or 49570
-  logger.info("Starting server: gameplay port " .. gameplayPort .. ", lobby port " .. lobbyPort)
+  local spectatePort = SPECTATE_PORT or 49571
+  logger.info("Starting server: gameplay " .. gameplayPort .. ", lobby " .. lobbyPort .. ", spectate " .. spectatePort)
   self.socket = bindWithRetry(gameplayPort, "gameplay")
   self.lobbyListenSocket = bindWithRetry(lobbyPort, "lobby")
+  self.spectateListenSocket = bindWithRetry(spectatePort, "spectate")
   logger.debug(os.time())
 end
 
@@ -281,6 +283,10 @@ function Server:stop()
   if self.lobbyListenSocket then
     self.lobbyListenSocket:close()
     self.lobbyListenSocket = nil
+  end
+  if self.spectateListenSocket then
+    self.spectateListenSocket:close()
+    self.spectateListenSocket = nil
   end
 end
 
@@ -1182,6 +1188,9 @@ function Server:acceptNewConnections()
   if self.lobbyListenSocket then
     self:_acceptOnListener(self.lobbyListenSocket, "lobby")
   end
+  if self.spectateListenSocket then
+    self:_acceptOnListener(self.spectateListenSocket, "spectate")
+  end
 end
 
 function Server:_acceptOnListener(listenSocket, channel)
@@ -1208,6 +1217,9 @@ function Server:updateConnections()
   local socketsToRead = {self.socket}
   if self.lobbyListenSocket then
     socketsToRead[#socketsToRead+1] = self.lobbyListenSocket
+  end
+  if self.spectateListenSocket then
+    socketsToRead[#socketsToRead+1] = self.spectateListenSocket
   end
   -- Make a list of all the sockets we want to send messages to
   -- the server socket cannot "send" in the traditional sense, only accept incoming connections (which is in the read domain) so it is not added here
