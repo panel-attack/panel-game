@@ -1712,6 +1712,20 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
     return false
   end
 
+  -- Auto-recover from a stale user_id (e.g. after a server data wipe). If
+  -- the client sends an unknown user_id but the name they want is available,
+  -- treat it as a fresh registration instead of denying + banning. This
+  -- keeps the "I had to delete user_id.txt" UX hostage out of the loop.
+  -- We only do this when the name is free — taken names still deny so
+  -- nobody can hijack identities by guessing user_ids.
+  if userId and userId ~= "need a new user id" and self.playerbase
+      and not self.playerbase.players[userId]
+      and not self.playerbase:nameTaken("", name) then
+    logger.info("Unknown user_id from " .. ipAddress .. " for available name '"
+      .. name .. "' — treating as fresh registration.")
+    userId = "need a new user id"
+  end
+
   local loginApproved, denyReason = self:canLogin(userId, name, ipAddress, engineVersion)
 
   -- Triple-socket: if a Player already exists for this userId/name, this is
