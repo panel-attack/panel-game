@@ -19,6 +19,13 @@ local GameModes = require("common.data.GameModes")
 local DebugSettings = require("client.src.debug.DebugSettings")
 local TeamUtils = require("common.data.TeamUtils")
 
+-- Grace period after a local player dies before the spectator controls
+-- (cycle hint, focused-stack border, "Viewing: <name>" label, arrow-key
+-- focus cycling) become available. Without this, the UI floods in at the
+-- exact moment of death, which players read as "the game broke" rather
+-- than "I died and can now watch teammates".
+local DEAD_LOCAL_GRACE_SECONDS = 3
+
 -- Player chip background colors keyed by team index. Mirrors the palette used by
 -- ClientMatch:drawTeamScoreboard so the chip above each stack matches the
 -- scoreboard tint at the top of the screen.
@@ -570,14 +577,27 @@ function GameBase:update(dt)
       end
     end
 
-    -- Spectator focus cycling: available to pure spectators AND to dead local
-    -- players who chose to keep watching from the game scene.
-    if isPureSpectator or isDeadLocal then
+    -- Real-time grace timer after local death. Accumulates in wall-clock dt
+    -- (not engine frames) so a paused or laggy game still progresses through
+    -- the window. Reset whenever we aren't a dead local — covers respawn
+    -- between rounds and the pure-spectator path.
+    if isDeadLocal then
+      self.deathGraceTimer = (self.deathGraceTimer or 0) + dt
+    else
+      self.deathGraceTimer = nil
+    end
+
+    -- Spectator focus cycling: available to pure spectators immediately, and
+    -- to dead local players only after a short grace period (so the cycle
+    -- hint / focused-stack snap doesn't pop in at the exact instant of death).
+    local spectatorControlsReady = isPureSpectator
+      or (isDeadLocal and (self.deathGraceTimer or 0) >= DEAD_LOCAL_GRACE_SECONDS)
+    if spectatorControlsReady then
       if isDeadLocal and not self.match.spectatorFocus then
-        -- First moment after death: snap focus to your own stack so the
-        -- "Viewing: <yourname>" label appears immediately. Arrow keys cycle
-        -- to live teammates from there, which swaps the focused stack into
-        -- the big-left container via ClientMatch:cycleSpectatorFocus.
+        -- First grace-period expiry after death: snap focus to your own stack
+        -- so the "Viewing: <yourname>" label appears. Arrow keys cycle to live
+        -- teammates from there, which swaps the focused stack into the
+        -- big-left container via ClientMatch:cycleSpectatorFocus.
         for _, stack in ipairs(self.match.stacks) do
           if stack.is_local then
             self.match.spectatorFocus = stack.player_number
@@ -694,8 +714,13 @@ end
 function GameBase:drawSpectatorHint()
   -- Pure spectators and dead-but-still-watching local players both get the
   -- "<  >  Switch Player" hint and the focused-player highlight. Live local
-  -- players don't (they're playing, not spectating).
-  if self.match:hasLocalPlayer() and not self.match:isLocalPlayerEliminated() then return end
+  -- players don't (they're playing, not spectating). Dead locals are gated by
+  -- a brief grace period so the UI doesn't flood in at the moment of death
+  -- (deathGraceTimer accumulates in GameBase:update while isDeadLocal).
+  if self.match:hasLocalPlayer() then
+    if not self.match:isLocalPlayerEliminated() then return end
+    if (self.deathGraceTimer or 0) < DEAD_LOCAL_GRACE_SECONDS then return end
+  end
   local consts = require("common.engine.consts")
   local font = GraphicsUtil.getGlobalFont()
   local hint = "<  >  Switch Player"

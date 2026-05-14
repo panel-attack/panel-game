@@ -66,6 +66,8 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   self.openRoom = (gameMode and gameMode.openRoom == true) or false
   self.spectators = {}
   self.win_counts = {}
+  -- publicPlayerID → wins, room-lifetime. Restored on rejoin (open rooms).
+  self.win_counts_by_publicId = {}
   self.ratings = {}
   self.matchCount = 0
   self.ranked = false
@@ -307,7 +309,8 @@ function Room:addPlayer(player, slotNumber)
   player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   player:addToRoom(self)
   player.state = "character select"
-  self.win_counts[playerIndex] = 0
+  -- Restore prior wins for returning players in open rooms (publicId-keyed).
+  self.win_counts[playerIndex] = self.win_counts_by_publicId[player.publicPlayerID] or 0
   player.cursor = "__Ready"
   player.player_number = playerIndex
 
@@ -1438,6 +1441,13 @@ function Room:updateWinCounts(game)
         logger.trace("Player " .. slot .. " scored")
         self.win_counts[slot] = self.win_counts[slot] + 1
       end
+    end
+  end
+
+  -- Mirror slot-keyed wins into the publicId-keyed map so rejoiners can restore them.
+  for slot, player in self:eachPlayer() do
+    if player.publicPlayerID then
+      self.win_counts_by_publicId[player.publicPlayerID] = self.win_counts[slot] or 0
     end
   end
 
