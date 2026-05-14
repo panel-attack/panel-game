@@ -609,10 +609,10 @@ local function processPlayerJoinedRoom(self, message)
       local roomScene = getSceneFromRoom(self.room)
       if roomScene then
         GAME.navigationStack:push(roomScene)
-        self.state = states.ROOM
       else
         logger.warn("[playerJoin] No room scene available for mode '" .. tostring(self.room.mode and self.room.mode.name) .. "'.")
       end
+      self.state = states.ROOM
     end
   end
 end
