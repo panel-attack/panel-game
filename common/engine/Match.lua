@@ -756,8 +756,12 @@ end
 ---aborted/desyncError).
 ---@return {ended: boolean, gameOverClock: integer?, reason: string?}
 function Match:evaluateEndConditions()
-  -- Already finalized (handleMatchEnd ran) — short-circuit so callers
-  -- that route through here after finalize don't re-compute every tick.
+  -- self.ended is only set true by Match:abort(); the natural-finalize path
+  -- in ClientMatch:run does NOT flip the engine's self.ended (only
+  -- ClientMatch.ended), so this branch effectively covers aborted matches
+  -- and the inline aborted block below is redundant but harmless. Kept as
+  -- the short-circuit for any future caller that wants to set self.ended
+  -- on the engine to indicate finalized state.
   if self.ended then
     return { ended = true, reason = "finalized" }
   end

@@ -657,7 +657,10 @@ function BattleRoom:onMatchEnded(match)
     local winners = match:getWinners() or {}
     -- apply wins and possibly statistical data up for collection
     if #winners == 1 then
-      if winners[1].stack and winners[1].stack.character then
+      -- character can legitimately be nil if its mod isn't loaded (see
+      -- ClientStack.lua:60 — characters[args.characterId] is a lookup).
+      -- The winner's stack itself is guaranteed by ClientMatch:getWinners.
+      if winners[1].stack.character then
         winners[1].stack.character:playWinSfx()
       end
       if not self.online then

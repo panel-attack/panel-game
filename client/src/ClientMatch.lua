@@ -111,7 +111,16 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
   for _, stackMetadata in ipairs(replay.metadata.stacks) do
     local stackData = replay.stacks[stackMetadata.stackIndex]
 
-    if not players[stackMetadata.stackIndex] then
+    -- Replay metadata can list more stack slots than replay.stacks actually
+    -- carries (server bug, crash-repro harness, hand-edited replay). Skip the
+    -- orphan metadata entry rather than nil-crashing on stackData.stackType —
+    -- the rest of the replay still loads. Mirrors the garbage-flow warn at
+    -- Match.createFromReplay's flow loop.
+    if not stackData then
+      logger.warn(string.format(
+        "ClientMatch.createFromReplay: skipping metadata stackIndex %d (no stackData in replay with %d stacks)",
+        stackMetadata.stackIndex, #replay.stacks))
+    elseif not players[stackMetadata.stackIndex] then
       if stackData.stackType == 1 then
         ---@cast stackMetadata StackMetadata
         players[stackMetadata.stackIndex] = Player.createFromReplayMetadata(stackMetadata)
@@ -1271,13 +1280,19 @@ function ClientMatch:draw_pause()
   GraphicsUtil.printf(loc("pl_pause_help"), 0, y + 30, consts.CANVAS_WIDTH, "center", nil, 1)
 end
 
+-- Self.winners here is the ClientMatch cache (MatchParticipant[]). The engine
+-- Match has its own separately-cached self.winners (BaseStack[]) — different
+-- objects, different types, no actual collision.
 function ClientMatch:getWinners()
   if not self.winners and self.engine:isLocallyEnded() then
     local winningStacks = self.engine:getWinners() or {}
     local winners = {}
     for _, stack in ipairs(winningStacks) do
       for _, player in ipairs(self.players) do
-        if player.stack.engine == stack then
+        -- A player with a nil stack is a half-constructed participant (e.g.
+        -- replay loader skipped a slot because its metadata had no stackData);
+        -- they can't be the holder of an engine winner, so just skip.
+        if player.stack and player.stack.engine == stack then
           winners[#winners+1] = player
           break
         end

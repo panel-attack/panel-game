@@ -159,7 +159,12 @@ function ReplayGame:genericOnMatchEnded(match)
   if not match.engine.aborted then
     local winners = match:getWinners()
     if #winners == 1 then
-      winners[1].stack.character:playWinSfx()
+      -- character can legitimately be nil if its mod isn't loaded (see
+      -- ClientStack.lua:60 — characters[args.characterId] is a lookup).
+      -- The winner's stack itself is guaranteed by ClientMatch:getWinners.
+      if winners[1].stack.character then
+        winners[1].stack.character:playWinSfx()
+      end
       -- increment win count on winning player if there is only one
       winners[1]:incrementWinCount()
     end
