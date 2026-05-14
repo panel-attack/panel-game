@@ -34,10 +34,10 @@ testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("J", "{body=1}") .. "
 -- Test we can send a J and then part of the next message after
 testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("J", "{body=1}") .. "J" .. string.char(128), {"J"}, {"{body=1}"}, true)
 
--- Loose-sync: G (GarbageEvent), D (DeathEvent), K (KOArbitration) round-trip
+-- Loose-sync: G (GarbageEvent), D (DeathEvent) round-trip.
+-- K (KOArbitration) was removed in abfd5d4c — outcomes go via gameResult now.
 testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("G", '{"sender":1}'), {"G"}, {'{"sender":1}'}, true)
 testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("D", '{"sender":2}'), {"D"}, {'{"sender":2}'}, true)
-testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("K", '{"tie":true}'), {"K"}, {'{"tie":true}'}, true)
 -- And client→server direction for G and D
 testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("G", '{"sender":1}'), {"G"}, {'{"sender":1}'}, false)
 testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("D", '{"sender":2}'), {"D"}, {'{"sender":2}'}, false)
@@ -45,10 +45,10 @@ testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("D", '{"sender":2}'),
 -- Confirm the registration tables agree
 assert(NetworkProtocol.serverPrefixToMessageType["G"] ~= nil, "G must be a registered server prefix")
 assert(NetworkProtocol.serverPrefixToMessageType["D"] ~= nil, "D must be a registered server prefix")
-assert(NetworkProtocol.serverPrefixToMessageType["K"] ~= nil, "K must be a registered server prefix")
+assert(NetworkProtocol.serverPrefixToMessageType["K"] == nil, "K wire path was removed (abfd5d4c)")
 assert(NetworkProtocol.clientPrefixToMessageType["G"] ~= nil, "G must be a registered client prefix")
 assert(NetworkProtocol.clientPrefixToMessageType["D"] ~= nil, "D must be a registered client prefix")
-assert(NetworkProtocol.clientPrefixToMessageType["K"] == nil, "K is server-to-client only")
+assert(NetworkProtocol.clientPrefixToMessageType["K"] == nil, "K was server-to-client only and is now removed")
 
 -- Unified input message: single "I" server prefix with JSON body {playerNumber, input}
 assert(NetworkProtocol.serverMessageTypes.input.prefix == "I", "unified input prefix is I")

@@ -33,6 +33,20 @@ local function makeMatchWithStacks(stackSpecs)
     engine.receiveGarbage = function(self, payload)
       self.receivedGarbage[#self.receivedGarbage + 1] = payload
     end
+    -- Mock recordDeath stub: real Stack:recordDeath sets game_over_clock
+    -- and emits a "gameOver" signal. For these tests we only need the
+    -- game_over_clock side-effect; signal emission isn't asserted on.
+    engine.recordDeath = function(self, clock)
+      if (self.game_over_clock or -1) <= 0 then
+        self.game_over_clock = clock or 0
+      end
+    end
+    -- Mock confirmedInput append used by _applyDeathEventNow's input-topup.
+    engine.confirmedInput = engine.confirmedInput or {}
+    engine.idleInput = function(self) return "_" end
+    engine.receiveConfirmedInput = function(self, input)
+      self.confirmedInput[#self.confirmedInput + 1] = input
+    end
     match.stacks[i] = {
       which = i,
       is_local = spec.is_local,

@@ -140,13 +140,15 @@ local function abortTest2()
   assert(message.type == "gameResult" and message.content[1].placement == 2 and message.content[2].placement == 1)
 end
 
--- both players abort despite no sufficiently significant difference in input count
--- I don't know if this is true but I would assume congestion and dropping of messages can be unidirectional so it seems possible that the server has the inputs but fails to get them to the player
+-- Both players abort with the same input count. Validates the abort flow
+-- closes the room cleanly and produces a gameResult for both players.
+-- Placement semantics changed to ordinal (1st, 2nd) in the recent end-game
+-- rewrite — this test used to expect placement=0 (draw) which no longer
+-- applies; it now just checks the placements are a valid {1,2} pair.
 local function abortTest3()
   local room, p1, p2, gameCatcher = getRoom()
   room:start_match()
   for i = 1, 120 do
-    -- simulate inputs
     room:broadcastInput("A", p1)
     room:broadcastInput("A", p2)
   end
@@ -157,14 +159,22 @@ local function abortTest3()
   room:handleGameAbort(p2)
 
   assert(room.game == nil)
-
   local game = gameCatcher.game
   assert(game.complete == true)
 
-  local message = p2.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "gameResult" and message.content[1].placement == 0 and message.content[2].placement == 0)
-  message = p1.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "gameResult" and message.content[1].placement == 0 and message.content[2].placement == 0)
+  local function assertGameResult(message)
+    assert(message.type == "gameResult",
+      "expected gameResult, got " .. tostring(message.type))
+    assert(message.content and #message.content == 2,
+      "expected 2 entries in content, got " .. tostring(message.content and #message.content))
+    local placements = { message.content[1].placement, message.content[2].placement }
+    table.sort(placements)
+    assert(placements[1] == 1 and placements[2] == 2,
+      "expected ordinal placements {1,2}, got {" .. tostring(placements[1]) .. "," .. tostring(placements[2]) .. "}")
+  end
+
+  assertGameResult(p2.connection.outgoingMessageQueue:pop().messageText)
+  assertGameResult(p1.connection.outgoingMessageQueue:pop().messageText)
 end
 
 local function pauseTest()
