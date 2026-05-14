@@ -44,8 +44,7 @@ function PlayerStack:notifyServerStackEliminated()
 end
 
 function PlayerStack:send_controls()
-  local buffer_len = #self.engine.confirmedInput - self.engine.clock
-  if buffer_len > 0 then
+  if self.engine.game_over_clock and self.engine.game_over_clock > 0 then
     return
   end
 

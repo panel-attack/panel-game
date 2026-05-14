@@ -165,22 +165,16 @@ local function joinPlayerNames(players)
   return table.concat(names, ", ")
 end
 
--- Resolve a winner (any of: Player object, PlayerStack wrapper, or
--- engine Stack) to the matching Player in `players`. The
--- *getWinners-shape ambiguity* is real: `Match:getWinners()` returns
--- `self.stacks` items, which on a ClientMatch are PlayerStack
--- wrappers, on a raw engine Match are engine Stacks; `ClientMatch:getWinners()`
--- maps those to Player objects. Different call paths land here with
--- different types, and identity comparison only works for the path
--- that already happens to match. Match by structural identity instead.
+-- Match a winner (Player / PlayerStack wrapper / engine Stack — different
+-- call paths produce different shapes) to the corresponding Player.
 local function winnerToPlayer(winner, players)
   for _, p in ipairs(players) do
-    if winner == p then return p end                                                    -- already a Player
-    if winner.player and winner.player == p then return p end                           -- PlayerStack wrapper carrying the Player
-    if winner.engine and p.stack and p.stack.engine == winner.engine then return p end  -- wrapper holding the same engine Stack
-    if p.stack and p.stack == winner then return p end                                  -- raw engine Stack matching player.stack
-    if p.stack and p.stack.engine == winner then return p end                           -- raw engine Stack matching player.stack.engine
-    if winner.which and p.playerNumber and winner.which == p.playerNumber then return p end -- last-resort slot-number match
+    if winner == p then return p end
+    if winner.player and winner.player == p then return p end
+    if winner.engine and p.stack and p.stack.engine == winner.engine then return p end
+    if p.stack and p.stack == winner then return p end
+    if p.stack and p.stack.engine == winner then return p end
+    if winner.which and p.playerNumber and winner.which == p.playerNumber then return p end
   end
   return nil
 end
@@ -432,26 +426,7 @@ function GameBase:setupGameOver()
         self.text = loc("ss_draw")
       end
     elseif self.match.gameMode and self.match.gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS then
-      -- Diagnostic: capture the actual winners/players shape so a
-      -- "DRAW" surprise (the 2026-05-13 wrong-draw incident) shows
-      -- exactly what GameBase.buildTeamResultText was given. Logged at
-      -- INFO so it lands in logs/client.log without DEBUG enabled.
-      local winnerKinds = {}
-      for i, w in ipairs(winners) do
-        winnerKinds[i] = string.format("[%d] type=%s name=%s which=%s playerNumber=%s engine=%s player=%s",
-          i, type(w),
-          tostring(w and (w.name or (w.player and w.player.name))),
-          tostring(w and w.which),
-          tostring(w and w.playerNumber),
-          tostring(w and w.engine and "yes" or "no"),
-          tostring(w and w.player and "yes" or "no"))
-      end
-      logger.info("[wrong-draw-trace] buildTeamResultText: "
-        .. #winners .. " winners, "
-        .. #self.match.players .. " players; winners=["
-        .. table.concat(winnerKinds, " | ") .. "]")
       self.text = GameBase.buildTeamResultText(self.match, winners)
-      logger.info("[wrong-draw-trace] buildTeamResultText returned: " .. tostring(self.text))
     elseif #winners == 1 then
       self.text = loc("ss_p_wins", winners[1].name)
     else
