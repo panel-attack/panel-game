@@ -1113,13 +1113,18 @@ function Server:sweepChallengedPlayers(currentTime)
       logger.info("Kicking " .. entry.player.name ..
         " — idle " .. entry.idleFor .. "s after being challenged (limit " .. Server.CHALLENGE_IDLE_TIMEOUT .. "s)")
       entry.player.challengedAt = nil
-      -- Close BOTH sockets for a kicked player; idle-kick means we want
-      -- them fully disconnected regardless of which channel was idle.
-      if entry.player.gameplayConnection then
-        self:closeConnection(entry.player.gameplayConnection, "idle after challenge")
+      -- Idle-kick fully disconnects the player. Close gameplay LAST since
+      -- closing the gameplay socket triggers the full teardown via
+      -- closeConnection; the side channels need to go first so they aren't
+      -- left dangling pointing at a torn-down player.
+      if entry.player.spectateConnection then
+        self:closeConnection(entry.player.spectateConnection, "idle after challenge")
       end
       if entry.player.lobbyConnection then
         self:closeConnection(entry.player.lobbyConnection, "idle after challenge")
+      end
+      if entry.player.gameplayConnection then
+        self:closeConnection(entry.player.gameplayConnection, "idle after challenge")
       end
     end
   end
@@ -1709,22 +1714,26 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
 
   local loginApproved, denyReason = self:canLogin(userId, name, ipAddress, engineVersion)
 
-  -- Dual-socket: if a Player already exists for this userId/name, this is
-  -- the second-channel login (the other socket already authenticated). Attach
-  -- the new connection to the existing Player and we're done — no duplicate
-  -- canLogin checks, no duplicate "new user" creation. The channel field on
-  -- the connection (set by Server:_acceptOnListener) decides which slot.
+  -- Triple-socket: if a Player already exists for this userId/name, this is
+  -- a follow-on channel login (one of the other sockets already authenticated).
+  -- Attach the new connection to the existing Player and we're done — no
+  -- duplicate canLogin checks, no duplicate "new user" creation. The channel
+  -- field on the connection (set by Server:_acceptOnListener) decides slot.
   if userId and userId ~= "need a new user id" and self.playerbase
       and self.playerbase.players[userId] then
     local existingPlayer = self.nameToPlayer[self.playerbase.players[userId]]
-    if existingPlayer
-        and ((connection.channel == "lobby" and not existingPlayer.lobbyConnection)
-          or (connection.channel == "gameplay" and not existingPlayer.gameplayConnection)) then
-      existingPlayer:attachConnection(connection)
-      self.connectionToPlayer[connection] = existingPlayer
-      logger.info("Attached " .. (connection.channel or "?") .. " socket to existing player " .. existingPlayer.name)
-      connection:sendJson(ServerProtocol.approveLogin(existingPlayer.publicPlayerID, nil, nil, nil, nil))
-      return true
+    if existingPlayer then
+      local slotEmpty =
+        (connection.channel == "lobby" and not existingPlayer.lobbyConnection)
+        or (connection.channel == "gameplay" and not existingPlayer.gameplayConnection)
+        or (connection.channel == "spectate" and not existingPlayer.spectateConnection)
+      if slotEmpty then
+        existingPlayer:attachConnection(connection)
+        self.connectionToPlayer[connection] = existingPlayer
+        logger.info("Attached " .. (connection.channel or "?") .. " socket to existing player " .. existingPlayer.name)
+        connection:sendJson(ServerProtocol.approveLogin(existingPlayer.publicPlayerID, nil, nil, nil, nil))
+        return true
+      end
     end
   end
 
@@ -1935,34 +1944,63 @@ end
 ---@param reason string? why the player is getting disconnected
 function Server:closeConnection(connection, reason)
   local player = self.connectionToPlayer[connection]
-  logger.info("Closing connection " .. connection.index .. " to " .. (player and player.name or "noname"))
+  local channel = connection.channel or "gameplay"
+  logger.info("Closing " .. channel .. " connection " .. connection.index .. " to " .. (player and player.name or "noname"))
 
   self.socketToConnectionIndex[connection.socket] = nil
   self.connections[connection.index] = nil
   self.connectionToPlayer[connection] = nil
   connection.loggedIn = false
   connection:close()
-  if player then
-    self:clearProposals(player)
-    -- All disconnects route through handleLeaveRoom. For mid-match leaves (in
-    -- ANY room size) voidByLeave synthesizes a death event for the leaver so
-    -- the survivors finish the match — the leaver loses by timeout. Empty
-    -- rooms get closed afterward.
-    self:handleLeaveRoom(player, reason)
-    self.publicIdToPlayer[player.publicPlayerID] = nil
-    self.playerToRoom[player] = nil
-    self.spectatorToRoom[player] = nil
-    self.nameToPlayer[player.name] = nil
-    self.nameToConnectionIndex[player.name] = nil
-    self:setLobbyChanged()
-    -- Trace capture: flush + drop this player's writer state. pcall'd
-    -- so trace teardown can't disrupt the disconnect path.
-    pcall(function()
-      if player.publicPlayerID then
-        TraceWriter.endSession(player.publicPlayerID)
-      end
-    end)
+
+  if not player then
+    return
   end
+
+  -- Triple-socket semantics: a side-channel (lobby/spectate) drop is silent.
+  -- Just nil the slot on the Player. Player keeps playing on gameplay; client
+  -- can attempt to reconnect that side channel independently.
+  if channel == "lobby" and player.lobbyConnection == connection then
+    player.lobbyConnection = nil
+    logger.info("Side-channel lobby drop for " .. player.name .. "; player still active on gameplay.")
+    return
+  end
+  if channel == "spectate" and player.spectateConnection == connection then
+    player.spectateConnection = nil
+    logger.info("Side-channel spectate drop for " .. player.name .. "; player still active on gameplay.")
+    return
+  end
+
+  -- Gameplay-channel drop = full player teardown. Also tears down any side
+  -- channels still attached.
+  self:clearProposals(player)
+  self:handleLeaveRoom(player, reason)
+  self.publicIdToPlayer[player.publicPlayerID] = nil
+  self.playerToRoom[player] = nil
+  self.spectatorToRoom[player] = nil
+  self.nameToPlayer[player.name] = nil
+  self.nameToConnectionIndex[player.name] = nil
+
+  -- Close any remaining side-channel sockets so we don't leak them.
+  for _, sideConn in ipairs({player.lobbyConnection, player.spectateConnection}) do
+    if sideConn and sideConn ~= connection then
+      self.socketToConnectionIndex[sideConn.socket] = nil
+      self.connections[sideConn.index] = nil
+      self.connectionToPlayer[sideConn] = nil
+      sideConn.loggedIn = false
+      sideConn:close()
+    end
+  end
+  player.lobbyConnection = nil
+  player.spectateConnection = nil
+  player.gameplayConnection = nil
+
+  self:setLobbyChanged()
+  pcall(function()
+    if player.publicPlayerID then
+      TraceWriter.endSession(player.publicPlayerID)
+    end
+  end)
 end
 
 ---@param game ServerGame
