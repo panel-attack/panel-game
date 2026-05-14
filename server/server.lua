@@ -1920,30 +1920,24 @@ end
 function Server:handleLeaveRoom(player, reason)
   local room = self.playerToRoom[player]
   if room then
-    -- Route every mid-match leave through voidByLeave so the survivors can
-    -- finish the game (leaver loses by timeout). voidByLeave handles pre-match
-    -- and mid-match cleanup itself. Only collapse the room when no one's left
-    -- in it after voidByLeave runs, or when there's no match in progress and
-    -- the room would be empty.
     local hadMatch = room.game ~= nil
-    -- countPlayers() instead of #room.players because room.players is sparse:
-    -- a partial team room with {[1]=A, [3]=B} would give an undefined length.
-    if room:countPlayers() >= 3 or room.voided or hadMatch then
-      self.playerToRoom[player] = nil
-      -- Order matters: voidByLeave reads leaver.player_number (to look up
-      -- eliminatedPlayers and to seed the synthesized DeathEvent), but
-      -- removeFromRoom clears player_number on graceful leaves with a live
-      -- socket. Run voidByLeave first so it sees the intact slot index;
-      -- removeFromRoom then sends the leaver their own leaveRoom message.
-      room:voidByLeave(player, reason)     -- synthesizes death-event mid-match, removes leaver from room state, broadcasts playerLeftRoom
-      player:removeFromRoom(room, reason)  -- sends leaveRoom to leaver, sets state=lobby
-      if room:countPlayers() == 0 then
-        self:closeRoom(room, "all players left")
-      else
-        self:setLobbyChanged()
-      end
+    self.playerToRoom[player] = nil
+
+    if hadMatch then
+      -- Mid-match leave: synthesize death so the survivors can finish.
+      room:voidByLeave(player, reason)
+    end
+    player:removeFromRoom(room, reason)
+
+    -- Close the room only when it's actually empty. Old logic auto-closed
+    -- any 2-player room on leave, which kicked surviving players to lobby
+    -- after a 3p match where one player had left mid-match (room → 2p
+    -- after first leave, then anyone leaving collapsed it). Now the room
+    -- stays alive until nobody's in it.
+    if room:countPlayers() == 0 then
+      self:closeRoom(room, reason or "all players left")
     else
-      self:closeRoom(room, reason)
+      self:setLobbyChanged()
     end
   else
     room = self.spectatorToRoom[player]
