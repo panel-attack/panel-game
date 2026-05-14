@@ -11,7 +11,9 @@ local TraceWriter = require("server.TraceWriter")
 ---@alias PublicPlayerID integer
 
 ---@class ServerPlayer : Signal
----@field package connection Connection ONLY FOR SENDING; accessing this in tests is fine, otherwise not, all message processing has to go through server
+---@field package connection Connection backward-compat alias for gameplayConnection (legacy callers / tests)
+---@field package gameplayConnection Connection? socket carrying I/G/D/K/E/H — required; loss = full disconnect
+---@field package lobbyConnection Connection? socket carrying J — optional during rollout; loss = silent reconnect
 ---@field userId privateUserId
 ---@field publicPlayerID PublicPlayerID
 ---@field character string id of the specific character that was picked
@@ -41,7 +43,18 @@ local Player = class(
 function(self, privatePlayerID, connection, name, publicId)
   connection.loggedIn = true
   self.userId = privatePlayerID
-  self.connection = connection
+  -- Bind the incoming connection to the appropriate channel slot. The
+  -- second socket (other channel) attaches later via Player:attachConnection.
+  local channel = connection.channel or "gameplay"
+  if channel == "lobby" then
+    self.lobbyConnection = connection
+  else
+    self.gameplayConnection = connection
+  end
+  -- Backward-compat alias: legacy code (server.lua TCP_NODELAY tweaks,
+  -- tests reading outgoingMessageQueue) reaches in via player.connection.
+  -- Point it at gameplayConnection when available; otherwise lobby.
+  self.connection = self.gameplayConnection or self.lobbyConnection
   self.name = name or "noname"
   self.publicPlayerID = publicId
 
@@ -144,9 +157,14 @@ function Player:addToRoom(room)
   self.room = room
   self.wantsReady = false
   self.ready = false
-  if self.connection then
-    self.connection.timeoutSeconds = room.gameMode and room.gameMode.connectionTimeoutSeconds or self.connection.timeoutSeconds
-    self.connection.sendRetryLimit = room.gameMode and room.gameMode.sendRetryLimit or self.connection.sendRetryLimit
+  -- Apply game-mode timeouts to both sockets so neither prematurely closes.
+  local timeoutSeconds = room.gameMode and room.gameMode.connectionTimeoutSeconds
+  local sendRetryLimit = room.gameMode and room.gameMode.sendRetryLimit
+  for _, conn in ipairs({self.gameplayConnection, self.lobbyConnection}) do
+    if conn then
+      if timeoutSeconds then conn.timeoutSeconds = timeoutSeconds end
+      if sendRetryLimit then conn.sendRetryLimit = sendRetryLimit end
+    end
   end
 end
 
@@ -160,8 +178,10 @@ function Player:removeFromRoom(room, reason)
   end
 
   logger.info("Clearing room " .. room.roomNumber .. " for player " .. self.name)
-  -- if there is no socket the room got closed because the player hard DCd so shouldn't update state in that case
-  if self.connection.socket then
+  -- Liveness is checked via the gameplay socket — that's the one whose loss
+  -- triggers full disconnect. Lobby loss alone shouldn't reset room state.
+  local gameplayLive = self.gameplayConnection and self.gameplayConnection.socket
+  if gameplayLive then
     self.state = "lobby"
     self.player_number = nil
     self:sendJson(ServerProtocol.leaveRoom(room.roomNumber, reason))
@@ -170,24 +190,63 @@ function Player:removeFromRoom(room, reason)
   self.room = nil
   self.wantsReady = false
   self.ready = false
-  if self.connection then
-    self.connection.timeoutSeconds = nil
-    self.connection.sendRetryLimit = 5
+  -- Restore default per-connection timeouts on both sockets.
+  for _, conn in ipairs({self.gameplayConnection, self.lobbyConnection}) do
+    if conn then
+      conn.timeoutSeconds = nil
+      conn.sendRetryLimit = 5
+    end
   end
 end
 
+-- Attach the second-channel connection after the first one logged in.
+-- Called by the login flow when the OTHER socket authenticates as the same
+-- player (matched by privateUserId).
+function Player:attachConnection(connection)
+  connection.loggedIn = true
+  local channel = connection.channel or "gameplay"
+  if channel == "lobby" then
+    self.lobbyConnection = connection
+  else
+    self.gameplayConnection = connection
+  end
+  self.connection = self.gameplayConnection or self.lobbyConnection
+end
+
+-- Pick the destination connection for an outbound JSON message: lobby if
+-- present, otherwise fall back to gameplay so old single-socket clients
+-- still receive JSON during rollout. Returns nil if neither is usable.
+local function _jsonConnection(self)
+  local lc = self.lobbyConnection
+  if lc and lc.socket then return lc end
+  local gc = self.gameplayConnection
+  if gc and gc.socket then return gc end
+  return nil
+end
+
+-- Pick the destination connection for a raw prefixed message. J → lobby,
+-- everything else → gameplay, with cross-channel fallback during rollout.
+local function _rawConnection(self, message)
+  local prefix = type(message) == "string" and #message > 0 and message:sub(1, 1)
+  if prefix == "J" then
+    return _jsonConnection(self)
+  end
+  local gc = self.gameplayConnection
+  if gc and gc.socket then return gc end
+  -- Last-resort fallback so gameplay messages don't silently disappear
+  -- if the gameplay channel hasn't connected (shouldn't happen in steady
+  -- state, but possible during the brief window before both sockets are up).
+  local lc = self.lobbyConnection
+  if lc and lc.socket then return lc end
+  return nil
+end
+
 function Player:sendJson(message)
-  if not self.connection.socket then
+  local conn = _jsonConnection(self)
+  if not conn then
     return
   end
-  self.connection:sendJson(message)
-  -- Trace capture: server-side record of the outbound JSON. pcall'd so
-  -- a TraceWriter regression cannot disturb the send path. message has
-  -- the shape { messageType, messageText } — body is messageText.
-  -- Wire-shape symmetry: messageText is the wire-shape table from
-  -- ClientProtocol.*/ServerMessages.*. The recv-side tap in
-  -- Server:processMessage records BEFORE ClientMessages.parseMessage
-  -- for the same reason — both sides record at the wire layer.
+  conn:sendJson(message)
   pcall(function()
     if self.publicPlayerID then
       TraceWriter.send(self.publicPlayerID, "J", message and message.messageText)
@@ -196,14 +255,11 @@ function Player:sendJson(message)
 end
 
 function Player:send(message)
-  if not self.connection.socket then
+  local conn = _rawConnection(self, message)
+  if not conn then
     return
   end
-  self.connection:send(message)
-  -- Trace capture: outbound raw byte send (I/G/D/K/E/H prefixes). The
-  -- prefix is the first byte; we don't bother decoding the body server-
-  -- side for trace purposes — the recv-side tap on the OTHER client will
-  -- have the decoded shape.
+  conn:send(message)
   pcall(function()
     if self.publicPlayerID and type(message) == "string" and #message > 0 then
       TraceWriter.send(self.publicPlayerID, message:sub(1, 1), message)

@@ -743,9 +743,10 @@ function Server:create_room(gameMode, ...)
 
   if #players > 1 then
     -- no delay is enabled only to reduce the chances of hitting rollback and rollback only exists in multiplayer
+    -- Apply to the gameplay socket specifically — that's the latency-critical channel.
     for _, player in ipairs(players) do
 ---@diagnostic disable-next-line: invisible
-      player.connection:enableNoDelay(true)
+      if player.gameplayConnection then player.gameplayConnection:enableNoDelay(true) end
     end
   end
 
@@ -844,7 +845,7 @@ function Server:closeRoom(room, reason)
   for _, player in room:eachPlayer() do
     self.playerToRoom[player] = nil
     ---@diagnostic disable-next-line: invisible
-    player.connection:enableNoDelay(false)
+    if player.gameplayConnection then player.gameplayConnection:enableNoDelay(false) end
   end
 
   for _, player in ipairs(room.spectators) do
@@ -958,9 +959,9 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     logger.debug(string.format("Player %s requested slot %d", player.name, slotNumber))
   end
 
-  -- Enable no delay for multiplayer
+  -- Enable no delay for multiplayer on the gameplay channel (latency-critical).
   ---@diagnostic disable-next-line: invisible
-  player.connection:enableNoDelay(true)
+  if player.gameplayConnection then player.gameplayConnection:enableNoDelay(true) end
 
   -- Re-check room lifecycle before mutating it; the room may have closed between validation and join.
   if not self.rooms[roomNumber] or self.rooms[roomNumber] ~= room then
@@ -1106,8 +1107,13 @@ function Server:sweepChallengedPlayers(currentTime)
       logger.info("Kicking " .. entry.player.name ..
         " — idle " .. entry.idleFor .. "s after being challenged (limit " .. Server.CHALLENGE_IDLE_TIMEOUT .. "s)")
       entry.player.challengedAt = nil
-      if entry.player.connection then
-        self:closeConnection(entry.player.connection, "idle after challenge")
+      -- Close BOTH sockets for a kicked player; idle-kick means we want
+      -- them fully disconnected regardless of which channel was idle.
+      if entry.player.gameplayConnection then
+        self:closeConnection(entry.player.gameplayConnection, "idle after challenge")
+      end
+      if entry.player.lobbyConnection then
+        self:closeConnection(entry.player.lobbyConnection, "idle after challenge")
       end
     end
   end

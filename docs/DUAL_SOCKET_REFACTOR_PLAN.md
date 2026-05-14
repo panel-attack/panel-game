@@ -175,14 +175,12 @@ Deprecated / to delete:
 ## Current status
 
 - [x] Plan written (this file)
-- [x] Commit 1.1 — `GameplayTcpClient.lua` created
-- [ ] Commit 1.2 — `LobbyTcpClient.lua` create
-- [ ] Commit 1.3 — `LOBBY_PORT` in server_globals
-- [ ] Commit 2 — server bind + accept
-- [ ] Commit 3 — Player.connections split
-- [ ] Commit 4 — NetClient dual instantiate + LoginRoutine
-- [ ] Commit 5 — message routing wire-up
-- [ ] Commit 6 — tests
+- [x] Commit 1 — foundation files (GameplayTcpClient, LobbyTcpClient, LOBBY_PORT)
+- [x] Commit 2 — server binds 2nd listener, accepts on both, channel-tagged
+- [x] Commit 3 — Player gameplay/lobby connections + outbound routing by prefix
+- [ ] Commit 4 — NetClient dual instantiate + LoginRoutine connects both
+- [ ] Commit 5 — actual message routing wire-up (J → lobby, others → gameplay)
+- [ ] Commit 6 — update tests
 
 I update this file as I complete each commit. If I deviate, the deviation
 gets recorded here first.
