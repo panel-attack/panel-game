@@ -34,9 +34,11 @@ function PlayerStack:notifyServerStackEliminated()
     return
   end
   if not GAME.netClient or not GAME.netClient:isConnected() then
+    logger.warn("Local stack topped out but netClient not connected; D event NOT sent")
     return
   end
   self._stackEliminationSent = true
+  logger.info(string.format("Local stack topped out at frame %d; sending D event", self.engine.game_over_clock))
   GAME.netClient:sendDeathEvent({
     senderFrame = self.engine.game_over_clock,
     reason = "topOut",
