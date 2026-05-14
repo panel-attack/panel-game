@@ -1285,20 +1285,6 @@ function Room:tickArbitration(nowMs)
     self.roomNumber, #self.arbitrationDeaths, self:_arbitrationWindowMs(),
     #livingTeams, tostring(arbitration.winnerSlot), tostring(arbitration.tie)))
 
-  local message = ServerProtocol.koArbitration(arbitration)
-  local encoded = NetworkProtocol.markedMessageForTypeAndBody(
-    message.messageType.prefix, json.encode(message.messageText))
-
-  -- pairs not ipairs: see broadcastInput for sparse-self.players rationale.
-  for _, player in pairs(self.players) do
-    player:send(encoded)
-  end
-  for _, spec in pairs(self.spectators) do
-    if spec then
-      spec:send(encoded)
-    end
-  end
-
   self.arbitrationEmitted = true
   self.arbitrationDeaths = {}
   self.arbitrationWindowEndsAtMs = nil

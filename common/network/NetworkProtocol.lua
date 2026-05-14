@@ -35,7 +35,6 @@ NetworkProtocol.serverMessageTypes = {
   input = {prefix="I", size=nil, verbose = true}, -- Relayed player input: JSON body {playerNumber, input}. Single prefix for all slots (no 8-player cap).
   garbageEvent = {prefix="G", size=nil, verbose = true}, -- Loose-sync: relayed sender-emitted garbage delivery event
   deathEvent = {prefix="D", size=nil}, -- Loose-sync: relayed sender-emitted death notification
-  koArbitration = {prefix="K", size=nil}, -- Loose-sync: server-authored simultaneous-KO arbitration result
   versionCorrect = {prefix="H", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is allowed
   versionWrong = {prefix="N", size=1}, -- Sent to the client if the NETWORK_VERSION they sent is not allowed
   ping = {prefix="E", size=1, verbose = true} -- Sent to the client to confirm they are still connected

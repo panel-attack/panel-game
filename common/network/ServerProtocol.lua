@@ -744,15 +744,4 @@ function ServerProtocol.joinQueued(roomNumber)
   }
 end
 
----Loose-sync: KO arbitration result. Emitted by the server after the simultaneous-
----KO window closes. Honored authoritatively by clients for the end-of-match UI.
----@param arbitration {winnerSlot:integer?, tie:boolean, deaths:table[]} arbitration outcome
----@return {messageType: table, messageText: table}
-function ServerProtocol.koArbitration(arbitration)
-  return {
-    messageType = msgTypes.koArbitration,
-    messageText = arbitration,
-  }
-end
-
 return ServerProtocol

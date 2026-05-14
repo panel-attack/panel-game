@@ -703,18 +703,6 @@ local function processDeathEvents(self)
 end
 
 ---@param self NetClient
-local function processKOArbitrations(self)
-  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(
-    NetworkProtocol.serverMessageTypes.koArbitration.prefix)
-  if self.room and self.room.match then
-    for _, msg in ipairs(messages) do
-      local body = msg[NetworkProtocol.serverMessageTypes.koArbitration.prefix]
-      self.room.match:applyKOArbitration(body)
-    end
-  end
-end
-
----@param self NetClient
 local function processChallengeUpdate(self, challengeUpdateMessage)
   if challengeUpdateMessage.challengeUpdate then
     local challengeUpdate = challengeUpdateMessage.challengeUpdate
@@ -1277,7 +1265,6 @@ function NetClient:update()
     processInputMessages(self)
     processGarbageEvents(self)
     processDeathEvents(self)
-    processKOArbitrations(self)
 
     for _, listener in pairs(self.matchListeners) do
       listener:listen()
