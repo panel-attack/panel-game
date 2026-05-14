@@ -571,7 +571,6 @@ end
 ----------------------------------------------------------------------
 
 local TraceWriter = require("server.TraceWriter")
-local lfs = require("lfs")
 
 local function readJsonLines(path)
   local f = io.open(path, "r")

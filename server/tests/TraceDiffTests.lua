@@ -235,5 +235,6 @@ test_buckets_isolate_publicIds()
 test_buckets_isolate_prefixes()
 test_intra_bucket_order_by_ts()
 test_dirFilter_override_to_recv()
+test_client_send_and_server_recv_match_at_wire_layer()
 
 logger.info("All TraceDiffTests passed!")
