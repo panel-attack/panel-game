@@ -454,7 +454,7 @@ local function processLeaveRoomMessage(self, message)
       self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
     end
 
-    self.state = states.ONLINE
+    self:setState(states.ONLINE)
     GAME.navigationStack:popToName("Lobby", transition)
   end
 end
