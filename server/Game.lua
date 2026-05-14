@@ -426,16 +426,20 @@ function Game:setId(id)
 end
 
 ---@param player ServerPlayer
+---@param slot integer? optional slot override; falls back to player.player_number.
+---  Pass the slot when the player may have already left the room (removeFromRoom
+---  nils player_number on graceful leaves), e.g. from inside gameResult.
 ---@return integer
-function Game:getPlacement(player)
-  if self.disconnectedPlayers and self.disconnectedPlayers[player.player_number] then
+function Game:getPlacement(player, slot)
+  slot = slot or player.player_number
+  if self.disconnectedPlayers and self.disconnectedPlayers[slot] then
     return 2
   end
 
   if not self.winnerId then
     return 0
   else
-    if self.winnerIndex == player.player_number then
+    if self.winnerIndex == slot then
       return 1
     else
       return 2

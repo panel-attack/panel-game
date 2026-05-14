@@ -485,12 +485,18 @@ local gameResultTemplate = {
 function ServerProtocol.gameResult(game, room)
   local gameResultMessage = gameResultTemplate
   local content = {}
-  for _, player in ipairs(game.players) do
+  -- pairs not ipairs: game.players can be sparse mid-match (a leaver's
+  -- _removeFromPlayersAndAnnounce will be flushed AFTER this broadcast,
+  -- but other paths might've already left holes). And use the table key
+  -- as the slot — player.player_number is nil on graceful leavers because
+  -- Player:removeFromRoom clears it on the player object while the slot
+  -- in game.players still holds the reference.
+  for slot, player in pairs(game.players) do
     -- publicId can't be the key as it would disallow developers playing against themselves for testing
-    content[player.player_number] = {
-      rating = room.ratings[player.player_number],
-      winCount = room.win_counts[player.player_number],
-      placement = game:getPlacement(player),
+    content[slot] = {
+      rating = room.ratings[slot],
+      winCount = room.win_counts[slot],
+      placement = game:getPlacement(player, slot),
       publicId = player.publicPlayerID
     }
   end

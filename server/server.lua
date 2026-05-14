@@ -245,10 +245,15 @@ function Server:start()
   local port = SERVER_PORT or 49569
   logger.info("Starting up server with port: " .. port)
 
-  -- Retrying helps when a previous local server instance just exited and the port
-  -- is not yet immediately reusable on all platforms.
-  -- (socket.bind already sets SO_REUSEADDR internally — see luasocket source.)
-  local attempts = 50
+  -- Retrying helps when a previous server instance just exited and the kernel
+  -- still has the listen socket in TIME_WAIT. socket.bind already sets
+  -- SO_REUSEADDR (see luasocket source), but in practice the prior crash on
+  -- 2026-05-14 03:42 had the port held >12s, longer than the old 50 × 0.25s
+  -- = 12.5s budget — leading to a 3x systemd-restart loop that turned a 1s
+  -- crash recovery into a 60s outage. Budget here covers the worst-case
+  -- TIME_WAIT (~60s on Linux) so systemd's restart-on-failure can succeed
+  -- on the first attempt.
+  local attempts = 300
   local s
   for i = 1, attempts do
     s = socket.bind("*", port)
