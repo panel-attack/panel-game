@@ -540,98 +540,6 @@ local function test_voidByLeave_survives_listener_failure()
 end
 
 ----------------------------------------------------------------------
--- Test: server idle-fills inputs for eliminated players
-----------------------------------------------------------------------
--- After a player is marked eliminated, server/Room.lua:broadcastInput
--- stops relaying their inputs. Without something replacing them, every
--- other client's view-stack of that player runs out of buffered inputs
--- and freezes at the last received frame ("halfway up, not moving" —
--- the Amber/Bev/Koozie symptom). tickIdleFill emits placeholder no-op
--- inputs at 60Hz for eliminated slots so view-stacks have something to
--- consume and can advance past the death frame.
-
-local function test_idleFill_emits_placeholders_for_eliminated_player()
-  logger.info("test_idleFill_emits_placeholders_for_eliminated_player")
-  local room, p1, p2 = get2pMatchInProgress()
-
-  -- Mark p2 eliminated at some frame. Bypasses the full broadcastDeathEvent
-  -- path so the test stays focused on idle-fill behavior.
-  room.game:markPlayerEliminated(p2, 500)
-
-  -- Drain anything in outgoing queues so we only count idle-fill traffic.
-  p1.connection.outgoingInputQueue:clear()
-  p2.connection.outgoingInputQueue:clear()
-
-  -- Simulate the server clock advancing 100ms. At 60Hz cadence that should
-  -- yield approximately 6 idle-fill frames per eliminated slot.
-  -- room.idleFillState is empty, so first tick at nowMs=1000 starts the
-  -- schedule. Second tick at nowMs=1100 catches up the 100ms gap.
-  room:tickIdleFill(1000) -- starts the schedule at nowMs=1000
-  room:tickIdleFill(1100) -- 100ms later — should emit ~6 frames
-
-  local count = countByPrefix(p1.connection.outgoingInputQueue,
-                              NetworkProtocol.serverMessageTypes.input.prefix)
-  assert(count >= 5 and count <= 7,
-    "expected ~6 idle-fill inputs in p1's outgoingInputQueue after 100ms, got "
-    .. count)
-end
-
-local function test_idleFill_skips_when_game_complete()
-  logger.info("test_idleFill_skips_when_game_complete")
-  local room, p1, p2 = get2pMatchInProgress()
-  room.game:markPlayerEliminated(p2, 500)
-  room.game.complete = true
-
-  p1.connection.outgoingInputQueue:clear()
-  room:tickIdleFill(1000)
-  room:tickIdleFill(2000)
-
-  local count = countByPrefix(p1.connection.outgoingInputQueue,
-                              NetworkProtocol.serverMessageTypes.input.prefix)
-  assert(count == 0,
-    "no idle-fill should emit when game.complete is true, got " .. count)
-end
-
-local function test_idleFill_state_resets_on_rematch()
-  logger.info("test_idleFill_state_resets_on_rematch")
-  -- Set up a match-in-progress, eliminate p2, run idle-fill to the cap.
-  -- Then start a fresh match in the same room. The new match should see
-  -- a clean idleFillState — stale framesEmitted from match 1 must not
-  -- carry forward and silently block emits in match 2.
-  local room, p1, p2 = get2pMatchInProgress()
-  room.game:markPlayerEliminated(p2, 500)
-  room:tickIdleFill(1000)
-  room:tickIdleFill(11000) -- saturate the cap
-  assert(room.idleFillState[p2.player_number]
-         and room.idleFillState[p2.player_number].framesEmitted >= 290,
-    "precondition: idleFillState should be saturated for p2 after 10s")
-
-  -- Drive a rematch via the canonical start_match path. Clear room.game
-  -- first to mimic post-match-end state, then call start_match directly
-  -- (avoids the menu-state-update dance, which depends on prior ready
-  -- flags surviving the previous match's cleanup).
-  room.game = nil
-  room:start_match()
-  assert(room.game, "rematch should have a fresh game after start_match")
-
-  -- The fix: idleFillState reset at start_match.
-  assert(next(room.idleFillState) == nil,
-    "idleFillState must reset at start_match — found stale slot(s) in rematch: "
-    .. tostring(next(room.idleFillState)))
-
-  -- A fresh elimination in match 2 emits from zero, not blocked by stale cap.
-  room.game:markPlayerEliminated(p2, 800)
-  p1.connection.outgoingInputQueue:clear()
-  room:tickIdleFill(1000)
-  room:tickIdleFill(1100)
-  local count = countByPrefix(p1.connection.outgoingInputQueue,
-                              NetworkProtocol.serverMessageTypes.input.prefix)
-  assert(count >= 5 and count <= 7,
-    "rematch idle-fill should start fresh and emit ~6 frames over 100ms, got "
-    .. count)
-end
-
-----------------------------------------------------------------------
 -- Silent-death watchdog: rescue stuck matches when a non-eliminated
 -- slot stops sending inputs without ever sending a D
 ----------------------------------------------------------------------
@@ -780,24 +688,6 @@ local function test_silentDeathWatchdog_updated_on_broadcastInput()
   room:close()
 end
 
-local function test_idleFill_caps_at_max_frames()
-  logger.info("test_idleFill_caps_at_max_frames")
-  local room, p1, p2 = get2pMatchInProgress()
-  room.game:markPlayerEliminated(p2, 500)
-  p1.connection.outgoingInputQueue:clear()
-
-  -- Advance 10 seconds of wall-clock. At 60Hz that's 600 frames, but the
-  -- per-slot cap is 300 — verify the cap holds.
-  room:tickIdleFill(1000)
-  room:tickIdleFill(11000) -- +10s
-  local count = countByPrefix(p1.connection.outgoingInputQueue,
-                              NetworkProtocol.serverMessageTypes.input.prefix)
-  assert(count <= 301,
-    "idle-fill should cap at ~300 frames per slot, got " .. count)
-  assert(count >= 290,
-    "idle-fill should have approached the cap with 10s elapsed, got " .. count)
-end
-
 ----------------------------------------------------------------------
 -- Run all tests
 ----------------------------------------------------------------------
@@ -814,14 +704,6 @@ test_abort_marks_eliminated_keeps_game_alive()
 test_partialRoom_spectators_allowed()
 test_voidByLeave_flags_crash_incident()
 test_voidByLeave_survives_listener_failure()
--- idleFill tests removed: tickIdleFill was deleted in commit bcb66305
--- ("remove server idle-fill — client self-fills on D event"). The test
--- bodies still reference it but no production code does. Skip them rather
--- than asserting against a deleted API.
--- test_idleFill_emits_placeholders_for_eliminated_player()
--- test_idleFill_skips_when_game_complete()
--- test_idleFill_caps_at_max_frames()
--- test_idleFill_state_resets_on_rematch()
 test_silentDeathWatchdog_lastInputMs_seeded_at_start_match()
 test_silentDeathWatchdog_updated_on_broadcastInput()
 test_silentDeathWatchdog_synthesizes_death_when_slot_silent()
