@@ -12,7 +12,7 @@ local TraceWriter = require("server.TraceWriter")
 
 ---@class ServerPlayer : Signal
 ---@field package connection Connection backward-compat alias for gameplayConnection (legacy callers / tests)
----@field package gameplayConnection Connection? socket carrying YOUR I (outgoing), G targeting you, your D, K. Lean for low latency.
+---@field package gameplayConnection Connection? socket carrying YOUR I (outgoing), G targeting you, your D. Lean for low latency.
 ---@field package lobbyConnection Connection? socket carrying J — lobby/room/chat/replays/settings
 ---@field package spectateConnection Connection? socket carrying opponents' I/G/D — bulky, isolated from gameplay so it can't HoL-block
 ---@field userId privateUserId
