@@ -1544,7 +1544,9 @@ function Server:processMessage(message, connection)
       self:handleLeaveRoom(player, nil)
       return true
     elseif (player.state == "playing" or player.state == "paused") and message.type == "pauseToggle" then
-      self.rooms[message.recipientId]:togglePause(player, message.content)
+      if player.room then
+        player.room:togglePause(player, message.content)
+      end
     elseif (player.state == "spectating") and message.leave_room then
       if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
         self:setLobbyChanged()
