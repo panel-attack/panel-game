@@ -366,12 +366,19 @@ function love.errorhandler(msg)
   love.graphics.setColor(1, 1, 1)
   love.graphics.origin()
 
+  local canvasScale = 1
   if GAME then
-    local success, canvasScale = pcall(GAME.newCanvasSnappedScale, GAME)
+    local success, scale = pcall(GAME.newCanvasSnappedScale, GAME)
     if success then
+      canvasScale = scale
       love.graphics.scale(canvasScale)
     end
   end
+
+  -- Restart button (graphics-space rect; mouse hit-test divides by canvasScale).
+  local restartBtn = { w = 140, h = 40, margin = 16 }
+  restartBtn.x = (love.graphics.getWidth() / canvasScale) - restartBtn.w - restartBtn.margin
+  restartBtn.y = restartBtn.margin
 
   local function draw()
     if not love.graphics.isActive() then
@@ -383,7 +390,19 @@ function love.errorhandler(msg)
     local positionY = positionX
     love.graphics.printf(messageToDraw, positionX, positionY, love.graphics.getWidth() - positionX)
 
+    love.graphics.setColor(0.25, 0.45, 0.85, 1)
+    love.graphics.rectangle("fill", restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h, 6, 6)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.rectangle("line", restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h, 6, 6)
+    love.graphics.printf("Restart", restartBtn.x, restartBtn.y + restartBtn.h / 2 - 8, restartBtn.w, "center")
+
     love.graphics.present()
+  end
+
+  local function restartHit(mx, my)
+    local x, y = mx / canvasScale, my / canvasScale
+    return x >= restartBtn.x and x <= restartBtn.x + restartBtn.w
+       and y >= restartBtn.y and y <= restartBtn.y + restartBtn.h
   end
 
   local fullErrorText = messageToDraw
@@ -409,7 +428,12 @@ function love.errorhandler(msg)
         return 1
       elseif e == "keypressed" and a == "c" and love.keyboard.isDown("lctrl", "rctrl") then
         copyToClipboard()
+      elseif e == "mousepressed" and restartHit(a, b) then
+        return "restart"
       elseif e == "touchpressed" then
+        if restartHit(b, c) then
+          return "restart"
+        end
         local name = love.window.getTitle()
         if #name == 0 or name == "Untitled" then
           name = "Game"
