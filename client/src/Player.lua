@@ -285,7 +285,9 @@ end
 ---@return Player
 function Player.createFromReplayMetadata(stackMetadata)
   local player = Player(stackMetadata.name, stackMetadata.publicId, false)
-  player.playerNumber = stackMetadata.stackIndex
+  -- playerNumber == seatId throughout the client (banner, panel, openSlots).
+  -- Fall back to stackIndex only for legacy replays that predate seatId.
+  player.playerNumber = stackMetadata.seatId or stackMetadata.stackIndex
   player:setWinCount(stackMetadata.wins)
   player:setPanels(stackMetadata.panelId)
   player:setCharacter(stackMetadata.characterId)

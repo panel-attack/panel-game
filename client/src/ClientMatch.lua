@@ -143,6 +143,15 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
         ---@cast stackMetadata SimulatedStackMetadata
         players[stackMetadata.stackIndex] = ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
       end
+    else
+      -- Carry-over from a prior match: refresh playerNumber from THIS match's
+      -- metadata so a player who rejoined into a different seat picks up the
+      -- new team identity. Without this, team color + garbage routing stay on
+      -- the stale playerNumber from when the player object was first created.
+      local p = players[stackMetadata.stackIndex]
+      if p and stackMetadata.seatId then
+        p.playerNumber = stackMetadata.seatId
+      end
     end
   end
 
