@@ -63,6 +63,8 @@ local REPLAY_VERSION = 4
 ---@field gameId integer? The identifier for the game on the server it was played on
 ---@field duration integer? How long the game took in frames
 ---@field gameModeName ("timeattack" | "endless" | "vsSelf" | "training" | "challenge" | "VS" | "puzzle")?
+---@field playersPerTeam (integer|integer[])? Per-match team shape after server compaction (e.g. open 3v4 played 2v2 ships {2,2}). Absent on replays from before this field shipped — consumers fall back to the gameMode preset.
+---@field teamCount integer? Per-match team count after compaction. Same backfill rule as playersPerTeam.
 
 ---@class CrossPlayerGarbageEvent
 ---@field sender integer slot of the sender (the player who attacked)
