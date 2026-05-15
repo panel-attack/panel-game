@@ -739,8 +739,8 @@ function BattleRoom:setSpectatorList(spectatorList)
 end
 
 function BattleRoom:onDisconnect()
-  self:shutdown()
-  GAME.navigationStack:popToName("Lobby")
+  -- Stay in scene; exit only on explicit user leave or server leaveRoom/gameResult.
+  logger.info("BattleRoom:onDisconnect — staying in scene; local engine continues.")
 end
 
 function BattleRoom:hasLocalPlayer()

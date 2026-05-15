@@ -193,15 +193,13 @@ function Connection:update(t, canRead, canSend)
   end
 
   if t ~= self.lastCommunicationTime then
-    local timeoutSeconds = self.timeoutSeconds or DEFAULT_TIMEOUT_SECONDS
     local timeSinceLastComm = t - self.lastCommunicationTime
-    if timeSinceLastComm > timeoutSeconds then
-      logger.info("[DISCONNECT-PATH-4] Closing connection " .. self.index .. ". Inactivity timeout (" .. timeSinceLastComm .. ">" .. timeoutSeconds .. " sec)")
-      return false
-    elseif t > self.lastPingTime and timeSinceLastComm > 1 then
-      -- Request a ping to make sure the connection is still active
+    -- No idle-disconnect: a player with a room slot must not get booted just
+    -- because their socket went quiet. Room-destruction rules handle cleanup.
+    -- Pings still fire to elicit acks; an actually-dead socket gets detected
+    -- via socket:receive returning "closed" (DISCONNECT-PATH-1).
+    if t > self.lastPingTime and timeSinceLastComm > 1 then
       self:send(NetworkProtocol.serverMessageTypes.ping.prefix)
-      -- we don't want to ping for every run we're waiting for an answer
       self.lastPingTime = t
     end
   end

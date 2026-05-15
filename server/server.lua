@@ -1547,6 +1547,16 @@ function Server:processMessage(message, connection)
         self:setLobbyChanged()
         return true
       end
+    elseif message.leave_room then
+      -- Idempotent fallback: client believes it's in a room (lobbyDataV2 still
+      -- shows roomNumber), but server already has the player back in "lobby"
+      -- (e.g., room was voided by another leaver, or a gameplay-socket drop
+      -- cleaned us out while the lobby socket stayed alive). Without this the
+      -- message vanishes silently and the client's "Leave game" button stays
+      -- armed forever. Just echo a leaveRoom so the client clears its state.
+      logger.info("Idempotent leave_room from " .. player.name .. " (state=" .. tostring(player.state) .. ")")
+      player:sendJson(ServerProtocol.leaveRoom(0, nil))
+      return true
     elseif message.flagGame and (player.state == "lobby" or player.state == "spectating") then
       -- Quiescence rule from docs/CRASH_REPLAY_PLAN.md: only accept
       -- crash nominations when the player isn't in a live match. Lobby
