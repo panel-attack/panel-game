@@ -387,7 +387,7 @@ function Game:update(dt)
     self.battleRoom:update(dt)
   end
   prof.pop("battleRoom update")
-  self.netClient:update()
+  self.netClient:update(dt)
 
   handleShortcuts()
 

@@ -1316,10 +1316,20 @@ function NetClient:disconnect(voluntary)
   self:emitSignal("clientDisconnected", voluntary)
 end
 
-function NetClient:update()
+function NetClient:update(dt)
   if self.state == states.OFFLINE then
     return
   end
+
+  -- Drain the simulated-lag queues (PA_NETWORK_LAG_MS). When delayedProcessing
+  -- is on, send() pushes to sendNetworkQueue and processIncomingMessages
+  -- pushes to receiveNetworkQueue with a delay; updateNetwork is what actually
+  -- flushes them once their delay has elapsed. Without this call, sends never
+  -- reach the socket and the 5s Response timeout fires on the first H message.
+  dt = dt or 0
+  self.gameplayClient:updateNetwork(dt)
+  self.lobbyClient:updateNetwork(dt)
+  self.spectateClient:updateNetwork(dt)
 
   if self.state == states.LOGIN then
     local done, result = self.loginRoutine:progress()
