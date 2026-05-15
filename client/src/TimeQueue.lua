@@ -51,3 +51,18 @@ end
 function TimeQueue:clear()
   self:update(self.latestPush - self.now + 1)
 end
+
+-- Stall: hold release of any already-queued items + push every subsequent item
+-- back to at least `now + durationSec`. Mimics a network blip / WiFi handoff.
+function TimeQueue:hold(durationSec)
+  local target = self.now + durationSec
+  if target > self.latestPush then
+    self.latestPush = target
+  end
+  for i = self.queue.first, self.queue.last do
+    local entry = self.queue[i]
+    if entry and entry[2] < target then
+      entry[2] = target
+    end
+  end
+end

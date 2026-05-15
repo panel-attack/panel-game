@@ -287,11 +287,7 @@ function GameBase:load()
       -- Clear focus when pause menu is hidden
       self.uiRoot:setFocus(nil)
       self:_resumeFromScrub()
-      if self.match.supportsPause then
-        self.match:togglePause()
-      else
-        self.match.isPaused = false
-      end
+      self.match:togglePause()
       if self.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.stageTrack)
       end
@@ -351,7 +347,13 @@ function GameBase:handlePause()
     end
   else
     self:_handleScrubInput()
-    if (self.pauseMenu.hasFocus == nil or self.pauseMenu.hasFocus == false) and playerPressingStart(self.match) == false then
+    -- Only the player who can act on the menu (resume / quit) should focus
+    -- it. Specs receive isPaused=true via pauseNotification but have no
+    -- agency over pause — focusing the invisible menu let them activate
+    -- the resume callback on a non-pausable match, which crashed.
+    if self.match.supportsPause
+        and (self.pauseMenu.hasFocus == nil or self.pauseMenu.hasFocus == false)
+        and playerPressingStart(self.match) == false then
       self.uiRoot:setFocus(self.pauseMenu)
     end
   end
@@ -407,7 +409,6 @@ function GameBase:drawScrubIndicator()
   local minCursor = self:_scrubMinCursor()
   local atStart = self.scrubCursor <= minCursor
   local atEnd = self.scrubCursor >= self.scrubPauseFrame
-  local secondsRewound = (self.scrubPauseFrame - self.scrubCursor) / 60
   local y = 500
   local w = consts.CANVAS_WIDTH
 

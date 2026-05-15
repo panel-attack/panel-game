@@ -1065,17 +1065,42 @@ local NetClient = class(function(self)
   self.clients = { self.gameplayClient, self.lobbyClient, self.spectateClient }
   self.leaderboard = nil
 
+  -- All `PA_NETWORK_*` knobs are dev/testing only. Production never sets these,
+  -- so delayedProcessing stays off and every helper in TcpClient short-circuits.
   local lagMs = tonumber(os.getenv("PA_NETWORK_LAG_MS"))
   local lagMinMs = tonumber(os.getenv("PA_NETWORK_LAG_MIN_MS")) or lagMs
   local lagMaxMs = tonumber(os.getenv("PA_NETWORK_LAG_MAX_MS")) or lagMs
+  local lossPct = tonumber(os.getenv("PA_NETWORK_LOSS_PCT"))
+  local rtoMs = tonumber(os.getenv("PA_NETWORK_RTO_MS")) or 250
+  local stallHz = tonumber(os.getenv("PA_NETWORK_STALL_HZ"))
+  local stallMs = tonumber(os.getenv("PA_NETWORK_STALL_MS")) or 300
+  local burstMs = tonumber(os.getenv("PA_NETWORK_BURST_MS")) or 500
+  local bandwidthKbps = tonumber(os.getenv("PA_NETWORK_BANDWIDTH_KBPS"))
+
   if lagMinMs and lagMinMs > 0 then
     local sMin = lagMinMs / 1000
     local sMax = (lagMaxMs or lagMinMs) / 1000
     for _, client in ipairs(self.clients) do
       client:activateDelayedProcessing()
       client:setNetworkLag(sMin, sMax, sMin, sMax)
+      if lossPct and lossPct > 0 then
+        client:setLossParams(lossPct, rtoMs / 1000)
+      end
+      if stallHz and stallHz > 0 then
+        client:setStallParams(stallHz, stallMs / 1000)
+      end
+      if burstMs and burstMs > 0 then
+        client:setBurstSeconds(burstMs / 1000)
+      end
+      if bandwidthKbps and bandwidthKbps > 0 then
+        client:setBandwidthBytesPerSec(bandwidthKbps * 1024 / 8)
+      end
     end
-    logger.info(string.format("Simulating network lag: %d-%d ms each direction on all 3 sockets", lagMinMs, lagMaxMs or lagMinMs))
+    logger.info(string.format(
+      "Simulating network: lag=%d-%dms loss=%s%% stall=%s@%sms burst=%sms bw=%sKbps",
+      lagMinMs, lagMaxMs or lagMinMs,
+      tostring(lossPct or 0), tostring(stallHz or 0), tostring(stallMs),
+      tostring(burstMs), tostring(bandwidthKbps or 0)))
   end
   self.pendingResponses = {}
   self.state = states.OFFLINE

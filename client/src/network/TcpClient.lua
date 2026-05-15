@@ -142,6 +142,24 @@ local TcpClient = class(function(self, opts)
   self.sendMaxLag = 0
   self.receiveMinLag = 0
   self.receiveMaxLag = 0
+  -- Loss-as-RTO: with `lossPct` probability a packet eats +rtoSec on top of
+  -- its normal lag (TCP retransmit timeout proxy). HOL in TimeQueue drags
+  -- subsequent packets too, so one "lost" packet stalls the stream.
+  self.lossPct = 0
+  self.rtoSec = 0.250
+  -- Stall: every ~1/stallHz seconds, hold both queues for stallSec.
+  self.stallHz = 0
+  self.stallSec = 0
+  self.nextStallAt = math.huge
+  -- Burst: when one packet draws a spike (top of the lag range), bias
+  -- subsequent packets up for `burstSec` so spikes cluster (real WiFi /
+  -- microwave / handoff pattern) instead of being statistically independent.
+  self.burstSec = 0
+  self.burstActiveUntil = 0
+  -- Bandwidth cap in bytes/sec applied to BOTH directions. 0 = unlimited.
+  self.bandwidthBytesPerSec = 0
+  -- Sim clock for stall/burst tracking; advances with updateNetwork(dt).
+  self.simNow = 0
   math.randomseed(os.time())
   for i = 1, 4 do math.random() end
 end)
@@ -153,14 +171,51 @@ function TcpClient:setNetworkLag(sendMin, sendMax, recvMin, recvMax)
   self.receiveMaxLag = recvMax or self.receiveMinLag
 end
 
+function TcpClient:setLossParams(lossPct, rtoSec)
+  self.lossPct = math.max(0, math.min(100, lossPct or 0)) / 100
+  self.rtoSec = rtoSec or self.rtoSec
+end
+
+function TcpClient:setStallParams(stallHz, stallSec)
+  self.stallHz = stallHz or 0
+  self.stallSec = stallSec or 0
+  if self.stallHz > 0 and self.stallSec > 0 then
+    self.nextStallAt = self.simNow + (1 / self.stallHz) * (0.5 + math.random())
+  else
+    self.nextStallAt = math.huge
+  end
+end
+
+function TcpClient:setBurstSeconds(burstSec)
+  self.burstSec = burstSec or 0
+end
+
+function TcpClient:setBandwidthBytesPerSec(bps)
+  self.bandwidthBytesPerSec = bps or 0
+end
+
 -- Exponential-skewed delay in [minLag, maxLag]: most samples land near minLag
--- with occasional large spikes toward maxLag, matching real network jitter.
--- Uses an exponential variate (rate=5) mapped onto the range and clamped.
+-- with occasional large spikes toward maxLag. Burst mode biases the
+-- distribution up for a window after a spike fires; loss-as-RTO can stack an
+-- extra retransmit delay on top.
 function TcpClient:_skewedLag(minLag, maxLag)
   local range = maxLag - minLag
-  if range <= 0 then return minLag end
-  local variate = -math.log(1 - math.random() * 0.9933) / 5  -- ≈ exp(5), P(>1)≈0.7%
-  return minLag + math.min(variate, 1) * range
+  local lag
+  if range <= 0 then
+    lag = minLag
+  else
+    local bias = (self.burstSec > 0 and self.simNow < self.burstActiveUntil) and 0.3 or 0
+    local variate = -math.log(1 - math.random() * 0.9933) / 5  -- ≈ exp(5), P(>1)≈0.7%
+    variate = math.min(variate + bias, 1)
+    lag = minLag + variate * range
+    if variate > 0.7 and self.burstSec > 0 then
+      self.burstActiveUntil = self.simNow + self.burstSec
+    end
+  end
+  if self.lossPct > 0 and math.random() < self.lossPct then
+    lag = lag + self.rtoSec
+  end
+  return lag
 end
 
 ---@param ip string
@@ -263,15 +318,29 @@ end
 
 function TcpClient:updateNetwork(dt)
   if self.delayedProcessing then
+    self.simNow = self.simNow + dt
     self.sendNetworkQueue:update(dt)
-    local data = self.sendNetworkQueue:popIfReady()
-    while data do
-      self:sendMessage(data)
-      data = self.sendNetworkQueue:popIfReady()
+    self.receiveNetworkQueue:update(dt)
+
+    -- Stall trigger: hold both queues for stallSec, schedule next stall.
+    if self.simNow >= self.nextStallAt then
+      self.sendNetworkQueue:hold(self.stallSec)
+      self.receiveNetworkQueue:hold(self.stallSec)
+      self.nextStallAt = self.simNow + (1 / self.stallHz) * (0.5 + math.random())
     end
 
-    self.receiveNetworkQueue:update(dt)
-    data = self.receiveNetworkQueue:popIfReady()
+    -- Drain send queue, optionally bandwidth-capped (over-budget single
+    -- packet still flushes; nothing else after).
+    local budget = self.bandwidthBytesPerSec > 0
+      and (self.bandwidthBytesPerSec * dt) or math.huge
+    while budget > 0 do
+      local data = self.sendNetworkQueue:popIfReady()
+      if not data then break end
+      self:sendMessage(data)
+      budget = budget - #data
+    end
+
+    local data = self.receiveNetworkQueue:popIfReady()
     while data do
       self:queueMessage(data[1], data[2])
       data = self.receiveNetworkQueue:popIfReady()
