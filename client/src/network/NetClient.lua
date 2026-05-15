@@ -1270,6 +1270,7 @@ function NetClient:registerPlayerUpdates(room)
         player:connectSignal("levelDataChanged", player, sendPlayerSettings)
         player:connectSignal("inputMethodChanged", player, sendPlayerSettings)
         player:connectSignal("hasLoadedChanged", player, sendPlayerSettings)
+        player:connectSignal("endlessNoRaiseChanged", player, sendPlayerSettings)
         player._netClientSettingsHooked = true
       end
     else

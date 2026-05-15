@@ -45,6 +45,13 @@ local p4 = ServerTesting.players[4]
 local p5 = ServerTesting.players[5]
 local p6 = ServerTesting.players[6]
 
+-- Fixtures skip the Room flow that assigns player_number; assign in array
+-- order here so ServerGame's slot==index invariant assert is satisfied.
+local function makeGame(players)
+  for i, p in ipairs(players) do p.player_number = i end
+  return ServerGame(players)
+end
+
 assert(leaderboard.players[p2.userId].rating == 1732)
 assert(leaderboard.players[p2.userId].placement_done)
 assert(leaderboard.players[p4.userId].rating == 1500)
@@ -86,7 +93,7 @@ local function testRankedApproved()
 end
 
 local function testSimpleGameProcessing()
-  local game = ServerGame({p2, p3})
+  local game = makeGame({p2, p3})
   game.winnerId = p2.publicPlayerID
 
   local ratingChanges = leaderboard:processGameResult(game)
@@ -102,14 +109,14 @@ local function testSimpleGameProcessing()
 end
 
 local function testImpossibleGameProcessing()
-  local game = ServerGame({p1, p4})
+  local game = makeGame({p1, p4})
   game.winnerId = p1.publicPlayerID
 
   local ratingChanges = leaderboard:processGameResult(game)
 
   assert(#ratingChanges == 0)
 
-  game = ServerGame({p1})
+  game = makeGame({p1})
   game.winnerId = p1.publicPlayerID
 
   -- A single-player game can't be processed by a 2-player leaderboard;
@@ -124,7 +131,7 @@ local function testImpossibleGameProcessing()
 end
 
 local function testPlacementGameProcessing()
-  local game = ServerGame({p4, p5})
+  local game = makeGame({p4, p5})
   game.winnerId = p5.publicPlayerID
 
   local ratingChanges = leaderboard:processGameResult(game)

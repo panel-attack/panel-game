@@ -148,6 +148,10 @@ function Player:updateSettings(settings)
     self.levelData = settings.levelData
   end
 
+  if settings.endless_no_raise ~= nil then
+    self.endlessNoRaise = settings.endless_no_raise == true
+  end
+
   self:emitSignal("settingsUpdated", self)
 end
 

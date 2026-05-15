@@ -90,6 +90,7 @@ function(self, name, publicId, isLocal)
   self:createSignal("ratingChanged")
   self:createSignal("leagueChanged")
   self:createSignal("wantsRankedChanged")
+  self:createSignal("endlessNoRaiseChanged")
 end,
 MatchParticipant)
 
@@ -189,6 +190,14 @@ function Player:setStyle(style)
   if style ~= self.settings.style then
     self.settings.style = style
     self:emitSignal("styleChanged", style)
+  end
+end
+
+function Player:setEndlessNoRaise(value)
+  value = value == true
+  if self.settings.endlessNoRaise ~= value then
+    self.settings.endlessNoRaise = value
+    self:emitSignal("endlessNoRaiseChanged", value)
   end
 end
 
@@ -358,6 +367,10 @@ function Player:updateSettings(settings)
 
   if settings.ready ~= nil then
     self:setReady(settings.ready)
+  end
+
+  if settings.endlessNoRaise ~= nil then
+    self:setEndlessNoRaise(settings.endlessNoRaise)
   end
 end
 

@@ -293,6 +293,11 @@ function GameBase:load()
     end),
     ui.MenuItem.createButtonMenuItem("back", nil, true, function()
       GAME.theme:playCancelSfx()
+      if self.match.endScrub then
+        self.match:endScrub(nil)
+      end
+      self.scrubCursor = nil
+      self.scrubPauseFrame = nil
       self.match:abort()
       self:startNextScene()
     end),
@@ -349,8 +354,12 @@ end
 local SCRUB_STEP_FRAMES = 30
 
 function GameBase:_canScrub()
-  return self.name == "EndlessGame"
-    and GAME.battleRoom and GAME.battleRoom.online
+  local ok = self.name == "EndlessGame"
+  logger.info(string.format("Scrub gate check: name=%s online=%s -> %s",
+    tostring(self.name),
+    tostring(GAME.battleRoom and GAME.battleRoom.online),
+    tostring(ok)))
+  return ok
 end
 
 function GameBase:_initScrubState()
@@ -358,10 +367,11 @@ function GameBase:_initScrubState()
   local clock = self.match.engine and self.match.engine.clock or 0
   self.scrubPauseFrame = clock
   self.scrubCursor = clock
+  logger.info("Scrub init at clock " .. tostring(clock))
 end
 
 function GameBase:_scrubMinCursor()
-  return math.max(0, (self.scrubPauseFrame or 0) - MAX_LAG)
+  return 0
 end
 
 function GameBase:_handleScrubInput()
@@ -370,19 +380,22 @@ function GameBase:_handleScrubInput()
   local maxCursor = self.scrubPauseFrame
   if input:isPressedWithRepeat("MenuLeft") and self.scrubCursor > minCursor then
     self.scrubCursor = math.max(minCursor, self.scrubCursor - SCRUB_STEP_FRAMES)
-    self.match:rewindToFrame(self.scrubCursor)
+    logger.info("Scrub LEFT -> frame " .. self.scrubCursor)
+    self.match:scrubToFrame(self.scrubCursor)
     GAME.theme:playValidationSfx()
   elseif input:isPressedWithRepeat("MenuRight") and self.scrubCursor < maxCursor then
     self.scrubCursor = math.min(maxCursor, self.scrubCursor + SCRUB_STEP_FRAMES)
-    self.match:rewindToFrame(self.scrubCursor)
+    logger.info("Scrub RIGHT -> frame " .. self.scrubCursor)
+    self.match:scrubToFrame(self.scrubCursor)
     GAME.theme:playValidationSfx()
   end
 end
 
 function GameBase:_resumeFromScrub()
   if not self.scrubCursor then return end
-  if self.scrubCursor < self.scrubPauseFrame then
-    self.match:truncateInputsAt(self.scrubCursor)
+  if self.match.endScrub then
+    local commitFrame = (self.scrubCursor < self.scrubPauseFrame) and self.scrubCursor or nil
+    self.match:endScrub(commitFrame)
   end
   self.scrubCursor = nil
   self.scrubPauseFrame = nil
@@ -394,11 +407,19 @@ function GameBase:drawScrubIndicator()
   local atStart = self.scrubCursor <= minCursor
   local atEnd = self.scrubCursor >= self.scrubPauseFrame
   local secondsRewound = (self.scrubPauseFrame - self.scrubCursor) / 60
-  local y = 300
+  local y = 500
   local w = consts.CANVAS_WIDTH
 
-  local leftAlpha = atStart and 0.35 or 1
-  GraphicsUtil.setColor(1, 1, 1, leftAlpha)
+  -- Disabled side renders gray+translucent (not just dim white) so it reads
+  -- as blocked at the boundary instead of merely subtle.
+  local activeR, activeG, activeB = 1, 1, 1
+  local disabledR, disabledG, disabledB, disabledA = 0.4, 0.4, 0.4, 0.5
+
+  if atStart then
+    GraphicsUtil.setColor(disabledR, disabledG, disabledB, disabledA)
+  else
+    GraphicsUtil.setColor(activeR, activeG, activeB, 1)
+  end
   GraphicsUtil.printf("< Rewind", 0, y, w * 0.45, "right")
 
   GraphicsUtil.setColor(1, 1, 1, 1)
@@ -407,8 +428,11 @@ function GameBase:drawScrubIndicator()
     or "live"
   GraphicsUtil.printf(label, 0, y, w, "center")
 
-  local rightAlpha = atEnd and 0.35 or 1
-  GraphicsUtil.setColor(1, 1, 1, rightAlpha)
+  if atEnd then
+    GraphicsUtil.setColor(disabledR, disabledG, disabledB, disabledA)
+  else
+    GraphicsUtil.setColor(activeR, activeG, activeB, 1)
+  end
   GraphicsUtil.printf("Forward >", w * 0.55, y, w * 0.45, "left")
 
   GraphicsUtil.setColor(1, 1, 1, 1)

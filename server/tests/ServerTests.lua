@@ -261,30 +261,31 @@ local function testDisconnect()
   local bob = ServerTesting.login(server, ServerTesting.players[1])
   local alice = ServerTesting.login(server, ServerTesting.players[2])
   local ben = ServerTesting.login(server, ServerTesting.players[3])
-  ServerTesting.setupRoom(server, alice, ben, true)
-  ServerTesting.addSpectator(server, server.playerToRoom[alice], bob)
-  ServerTesting.startGame(server, server.playerToRoom[alice])
+  local room = ServerTesting.setupRoom(server, alice, ben, true)
+  ServerTesting.addSpectator(server, room, bob)
+  ServerTesting.startGame(server, room)
 
-  server:closeConnection(ben.connection, "Ben's connection failed")
+  local benConn = ben.connection
+  server:closeConnection(benConn, "Ben's connection failed")
 
-  -- Loose-sync hard-DC mid-match: voidByLeave synthesizes a death event for
-  -- ben so survivors can finish, marks the room voided, and broadcasts
-  -- playerLeftRoom to alice (player) and bob (spectator). The voidReason
-  -- wraps the disconnect reason in parens after the leaver's "<name> left"
-  -- preamble.
-  local expectedVoidReason = "Ben left (Ben's connection failed)"
-  local message = alice.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "playerLeftRoom" and message.content.voidReason == expectedVoidReason,
-    "alice expected playerLeftRoom voidReason='" .. expectedVoidReason .. "', got type="
-    .. tostring(message.type) .. " voidReason=" .. tostring(message.content and message.content.voidReason))
-  message = bob.connection.outgoingMessageQueue:pop().messageText
-  assert(message.type == "playerLeftRoom" and message.content.voidReason == expectedVoidReason,
-    "bob expected playerLeftRoom voidReason='" .. expectedVoidReason .. "'")
-  -- we closed the connection server side, so the server should no longer try
-  -- to send them a message
-  assert(ben.connection.outgoingMessageQueue:len() == 0)
-  assert(ben.connection.loggedIn == false)
-  assert(server.connectionToPlayer[ben.connection] == nil)
+  -- Mid-match gameplay drop preserves the room slot for reconnect. No
+  -- playerLeftRoom is broadcast; the silent-death watchdog handles synthesis
+  -- if Ben stays quiet long enough. Survivors keep their queues clean.
+  assert(alice.connection.outgoingMessageQueue:len() == 0,
+    "alice expected no messages on Ben's gameplay drop, got "
+    .. alice.connection.outgoingMessageQueue:len())
+  assert(bob.connection.outgoingMessageQueue:len() == 0,
+    "bob expected no messages on Ben's gameplay drop, got "
+    .. bob.connection.outgoingMessageQueue:len())
+
+  -- The closed connection itself is torn down, but the Player record stays
+  -- attached to the room so the reconnect path can find it.
+  assert(benConn.outgoingMessageQueue:len() == 0)
+  assert(benConn.loggedIn == false)
+  assert(server.connectionToPlayer[benConn] == nil)
+  assert(ben.gameplayConnection == nil)
+  assert(server.playerToRoom[ben] == room,
+    "Ben should still be in his room awaiting reconnect")
 end
 
 

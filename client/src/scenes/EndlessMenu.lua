@@ -51,28 +51,28 @@ function EndlessMenu:loadUserInterface()
   self.ui.panelSelection:addElement(panelCarousel, player)
   self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
 
-  local stageCarousel = self:createStageCarousel(player, self.ui.grid.unitSize * 2 - self.ui.grid.unitMargin * 2)
+  local stageCarousel = self:createStageCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2)
   self.ui.stageSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.stageSelection:setTitle("stage")
   self.ui.stageSelection:addElement(stageCarousel, player)
-  self.ui.grid:createElementAt(3, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
+  self.ui.grid:createElementAt(3, 2, 1, 1, "stageSelection", self.ui.stageSelection, nil, true)
 
   self.ui.styleSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.styleSelection:setTitle("endless_modern")
   local styleContainer, styleSelector = self:createStyleSelection(player, unitSize)
   self.ui.styleSelection:addElement(styleContainer, player)
 
-  self.ui.grid:createElementAt(5, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
+  self.ui.grid:createElementAt(4, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
 
   self.ui.noRaiseSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.noRaiseSelection:setTitle("endless_no_raise")
   local noRaiseContainer, noRaiseSelector = self:createNoRaiseSelection(player, unitSize)
   self.ui.noRaiseSelection:addElement(noRaiseContainer, player)
-  self.ui.grid:createElementAt(6, 2, 1, 1, "noRaiseSelection", self.ui.noRaiseSelection, nil, true)
+  self.ui.grid:createElementAt(5, 2, 1, 1, "noRaiseSelection", self.ui.noRaiseSelection, nil, true)
 
   noRaiseSelector.onValueChange = function(boolSelector, value)
     GAME.theme:playValidationSfx()
-    player.settings.endlessNoRaise = value
+    player:setEndlessNoRaise(value)
   end
 
   self.ui.speedSelection = ui.MultiPlayerSelectionWrapper({
@@ -145,12 +145,12 @@ end
 
 function EndlessMenu:onStyleChanged(style, player)
   if style == GameModes.Styles.MODERN then
-    self.ui.grid:removeElementsIn(7, 2, 2, 1)
-    self.ui.grid:createElementAt(7, 2, 2, 1, "levelSelection", self.ui.levelSelection, nil, true)
+    self.ui.grid:removeElementsIn(6, 2, 3, 1)
+    self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
     self.ui.recordBox:setVisibility(false)
   else
-    self.ui.grid:removeElementsIn(7, 2, 2, 1)
-    self.ui.grid:createElementAt(7, 2, 1, 1, "speedSelection", self.ui.speedSelection, nil, true)
+    self.ui.grid:removeElementsIn(6, 2, 3, 1)
+    self.ui.grid:createElementAt(6, 2, 2, 1, "speedSelection", self.ui.speedSelection, nil, true)
     self.ui.grid:createElementAt(8, 2, 1, 1, "difficultySelection", self.ui.difficultySelection, nil, true)
     self.ui.recordBox:setVisibility(true)
   end

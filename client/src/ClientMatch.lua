@@ -91,19 +91,17 @@ function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked, 
   clientMatch.matchRules = gameMode.matchRules
 
   if gameMode.gameScene == "EndlessGame" and players[1] and players[1].settings.endlessNoRaise then
-    local priorMods = clientMatch.matchRules.stackSetupModifications or {}
-    local priorBehaviours = priorMods.behaviours or {}
-    local behaviours = {}
-    for k, v in pairs(priorBehaviours) do behaviours[k] = v end
-    behaviours.passiveRaise = false
-    local mods = {}
-    for k, v in pairs(priorMods) do mods[k] = v end
-    mods.behaviours = behaviours
+    clientMatch.noRaiseMode = true
     local rules = {}
     for k, v in pairs(clientMatch.matchRules) do rules[k] = v end
+    local mods = {}
+    for k, v in pairs(rules.stackSetupModifications or {}) do mods[k] = v end
+    local behaviours = {}
+    for k, v in pairs(mods.behaviours or {}) do behaviours[k] = v end
+    behaviours.passiveRaise = false
+    mods.behaviours = behaviours
     rules.stackSetupModifications = mods
     clientMatch.matchRules = rules
-    clientMatch.noRaiseMode = true
   end
 
   clientMatch.panelSource = panelSource
@@ -154,6 +152,11 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
   clientMatch.replay = replay
   clientMatch.engine = engine
   clientMatch.supportsPause = #players == 1 and players[1].isLocal
+  if replay.rules and replay.rules.stackSetupModifications
+      and replay.rules.stackSetupModifications.behaviours
+      and replay.rules.stackSetupModifications.behaviours.passiveRaise == false then
+    clientMatch.noRaiseMode = true
+  end
   clientMatch.stacks = {}
   clientMatch.spectators = {}
   clientMatch.spectatorString = ""
@@ -781,6 +784,171 @@ end
 
 function ClientMatch:rewindToFrame(frame)
   self.engine:rewindToFrame(frame)
+end
+
+-- Scrub UI uses a preview engine (built from the replay) to display the
+-- rewound state while paused. The live engine stays frozen at pauseFrame —
+-- all PlayerStack signal listeners stay attached to it. Only the client
+-- stacks' .engine pointer is flipped to preview for the render.
+--
+-- Inputs are SHARED: preview.confirmedInput points at live.confirmedInput.
+-- No copy, no compression round-trip. During pause nothing writes inputs,
+-- so the shared array is read-only.
+function ClientMatch:scrubToFrame(targetFrame)
+  if not self.replay then
+    logger.warn("scrubToFrame: no replay on match")
+    return false
+  end
+  if targetFrame < 0 then
+    logger.warn("scrubToFrame: negative target " .. targetFrame)
+    return false
+  end
+
+  if not self._scrubLiveEngine then
+    self._scrubLiveEngine = self.engine
+    self._scrubLiveEngineStacks = {}
+    for i, cs in ipairs(self.stacks) do
+      self._scrubLiveEngineStacks[i] = cs.engine
+    end
+  end
+
+  local live = self._scrubLiveEngine
+  local preview = self._scrubPreview
+  local needsRebuild = (not preview) or preview.clock > targetFrame
+
+  if needsRebuild then
+    logger.info("scrubToFrame: building preview, target=" .. targetFrame)
+    preview = Match.createFromReplay(self.replay)
+    preview.fromReplay = false
+    -- Force per-frame rollback saves so _transplantPreviewState can extract a
+    -- snapshot at targetFrame. Match:shouldSaveRollback otherwise returns
+    -- false in endless (no garbage senders), and the buffer stays empty.
+    preview:setAlwaysSaveRollbacks(true)
+    for i, prevStack in ipairs(preview.stacks) do
+      local livStack = live.stacks[i]
+      if livStack and livStack.confirmedInput then
+        -- Share live's input buffer so preview reads the actual played history.
+        prevStack.confirmedInput = livStack.confirmedInput
+      end
+      -- Keep is_local=false (default from createFromReplay): the local-stack
+      -- shouldRun short-circuit consumes the entire input buffer in one call,
+      -- overshooting our target. Non-local view-stack pacing respects
+      -- max_runs_per_frame=1 so preview:run() advances exactly one frame.
+      prevStack.is_local = false
+      prevStack.max_runs_per_frame = 1
+    end
+    preview:start()
+    self._scrubPreview = preview
+  end
+
+  local startClock = preview.clock
+  while preview.clock < targetFrame do
+    preview:run()
+  end
+  logger.info(string.format("scrubToFrame: advanced %d -> %d (target %d)",
+    startClock, preview.clock, targetFrame))
+
+  self.engine = preview
+  for i, cs in ipairs(self.stacks) do
+    if preview.stacks[i] then
+      cs.engine = preview.stacks[i]
+    end
+  end
+
+  return true
+end
+
+-- Called on unpause. If commitFrame is provided AND earlier than the live
+-- engine's clock, transplant preview state at that frame into the live
+-- engine's rollback buffers and let live's own rewindToFrame apply it.
+-- Either way, restore client stack pointers to live and drop preview.
+-- The live engine object is never replaced — every signal listener stays.
+function ClientMatch:endScrub(commitFrame)
+  if not self._scrubLiveEngine then return end
+  local live = self._scrubLiveEngine
+  local preview = self._scrubPreview
+
+  if commitFrame and preview and commitFrame < live.clock then
+    if self:_transplantPreviewState(commitFrame) then
+      self:truncateInputsAt(commitFrame)
+    end
+  end
+
+  self.engine = live
+  for i, cs in ipairs(self.stacks) do
+    if self._scrubLiveEngineStacks[i] then
+      cs.engine = self._scrubLiveEngineStacks[i]
+    end
+  end
+
+  self._scrubLiveEngine = nil
+  self._scrubLiveEngineStacks = nil
+  self._scrubPreview = nil
+end
+
+-- Move preview's rollback snapshots at targetFrame into the corresponding
+-- live buffers, then ride the live stack's existing rewindToFrame to apply
+-- them — same code path as online rollback. Per-stack components only:
+-- panelSource is cloned per stack (Stack ctor line 190), so per-stack
+-- injection is correct.
+function ClientMatch:_transplantPreviewState(targetFrame)
+  local live = self._scrubLiveEngine
+  local preview = self._scrubPreview
+  if not live or not preview then return false end
+
+  for i, livStack in ipairs(live.stacks) do
+    local prevStack = preview.stacks[i]
+    if not prevStack then
+      logger.warn("Scrub transplant: preview missing stack " .. i)
+      return false
+    end
+
+    local snap = prevStack.rollbackBuffer:rollbackToFrame(targetFrame)
+    if not snap then
+      logger.warn("Scrub transplant: no main snapshot at frame " .. targetFrame)
+      return false
+    end
+    livStack.rollbackBuffer:saveCopy(targetFrame, snap)
+
+    local sw = snap.stopWatch
+    if prevStack.incomingGarbage and prevStack.incomingGarbage.rollbackBuffer
+        and livStack.incomingGarbage and livStack.incomingGarbage.rollbackBuffer then
+      local g = prevStack.incomingGarbage.rollbackBuffer:rollbackToFrame(sw)
+      if g then
+        livStack.incomingGarbage.rollbackBuffer:saveCopy(sw, g)
+      end
+    end
+    if prevStack.outgoingGarbage and prevStack.outgoingGarbage.rollbackBuffer
+        and livStack.outgoingGarbage and livStack.outgoingGarbage.rollbackBuffer then
+      local g = prevStack.outgoingGarbage.rollbackBuffer:rollbackToFrame(sw)
+      if g then
+        livStack.outgoingGarbage.rollbackBuffer:saveCopy(sw, g)
+      end
+    end
+    if prevStack.panelSource and prevStack.panelSource.rollbackBuffer
+        and livStack.panelSource and livStack.panelSource.rollbackBuffer then
+      local p = prevStack.panelSource.rollbackBuffer:rollbackToFrame(targetFrame)
+      if p then
+        livStack.panelSource.rollbackBuffer:saveCopy(targetFrame, p)
+      end
+    end
+
+    -- PlayerStack:onRollback restores analytics from its own rollbackBuffer
+    -- (only the last ~MAX_LAG frames). For deep scrub rewinds the buffer
+    -- has no copy at targetFrame, which raises. Snapshot current analytics
+    -- at targetFrame so onRollback finds something — analytics stay at
+    -- their current value (acceptable: pause already disqualifies the run).
+    local clientStack = self.stacks[i]
+    if clientStack and clientStack.analytic and clientStack.analytic.saveForRollback then
+      clientStack.analytic:saveForRollback(targetFrame)
+    end
+
+    livStack:rewindToFrame(targetFrame)
+  end
+
+  live.clock = targetFrame
+  live.ended = false
+  return true
 end
 
 -- After a pause-mode rewind, drop input history past the cursor so resuming

@@ -42,6 +42,7 @@ function ServerMessages.toServerMenuState(player)
   menuState.inputMethod = player.settings.inputMethod
   menuState.cursor = "__Ready" -- play pretend
   menuState.levelData = player.settings.levelData
+  menuState.endless_no_raise = player.settings.endlessNoRaise == true
 
   return menuState
 end
@@ -63,7 +64,8 @@ local function sanitizePlayerSettings1(settings, publicId)
     hasLoaded = settings.loaded,
     ready = settings.ready,
     publicId = publicId,
-    playerNumber = settings.playerNumber
+    playerNumber = settings.playerNumber,
+    endlessNoRaise = settings.endless_no_raise == true
   }
 end
 

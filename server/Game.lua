@@ -74,7 +74,27 @@ function Game.createFromRoomState(room)
     shockEnabled = room.gameMode.stackInteraction ~= GameModes.StackInteractions.NONE,
   }
 
-  local replay = ReplayV3(ENGINE_VERSION, room.gameMode.matchRules, replayPanelSource)
+  local matchRules = room.gameMode.matchRules
+  if room.gameMode.name == "endless" then
+    local anyNoRaise = false
+    for _, p in ipairs(room.players) do
+      if p.endlessNoRaise then anyNoRaise = true; break end
+    end
+    if anyNoRaise then
+      local cloned = {}
+      for k, v in pairs(matchRules) do cloned[k] = v end
+      local mods = {}
+      for k, v in pairs(cloned.stackSetupModifications or {}) do mods[k] = v end
+      local behaviours = {}
+      for k, v in pairs(mods.behaviours or {}) do behaviours[k] = v end
+      behaviours.passiveRaise = false
+      mods.behaviours = behaviours
+      cloned.stackSetupModifications = mods
+      matchRules = cloned
+    end
+  end
+
+  local replay = ReplayV3(ENGINE_VERSION, matchRules, replayPanelSource)
   replay:setStage(room.stageId)
   replay:setRanked(game.ranked)
   replay.metadata.gameModeName = room.gameMode.name
