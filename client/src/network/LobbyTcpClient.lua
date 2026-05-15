@@ -200,10 +200,10 @@ function LobbyTcpClient:deactivateDelayedProcessing()
   self.delayedProcessing = false
 end
 
-function LobbyTcpClient:queueMessage(type, data)
-  local traced = function(body) pcall(function() TraceWriter.recv(type, body) end) end
+function LobbyTcpClient:queueMessage(prefix, data)
+  local traced = function(body) pcall(function() TraceWriter.recv(prefix, body) end) end
 
-  if type == NetworkProtocol.serverMessageTypes.jsonMessage.prefix then
+  if prefix == NetworkProtocol.serverMessageTypes.jsonMessage.prefix then
     logger.trace("Queuing JSON: " .. dump(data))
     local current_message = json.decode(data)
     if not current_message then
@@ -221,21 +221,21 @@ function LobbyTcpClient:queueMessage(type, data)
     local sanitized = ServerMessages.sanitizeMessage(current_message)
     traced(sanitized)
     self.receivedMessageQueue:push(sanitized)
-  elseif type == NetworkProtocol.serverMessageTypes.versionCorrect.prefix then
+  elseif prefix == NetworkProtocol.serverMessageTypes.versionCorrect.prefix then
     traced(true)
     self.receivedMessageQueue:push({versionCompatible = true})
-  elseif type == NetworkProtocol.serverMessageTypes.versionWrong.prefix then
+  elseif prefix == NetworkProtocol.serverMessageTypes.versionWrong.prefix then
     traced(false)
     self.receivedMessageQueue:push({versionCompatible = false})
-  elseif type == NetworkProtocol.serverMessageTypes.ping.prefix then
+  elseif prefix == NetworkProtocol.serverMessageTypes.ping.prefix then
     self:send(NetworkProtocol.clientMessageTypes.acknowledgedPing.prefix)
     self.connectionUptime = self.connectionUptime + 1
-  elseif type == NetworkProtocol.serverMessageTypes.input.prefix
-      or type == NetworkProtocol.serverMessageTypes.garbageEvent.prefix
-      or type == NetworkProtocol.serverMessageTypes.deathEvent.prefix
-      or type == NetworkProtocol.serverMessageTypes.koArbitration.prefix then
+  elseif prefix == NetworkProtocol.serverMessageTypes.input.prefix
+      or prefix == NetworkProtocol.serverMessageTypes.garbageEvent.prefix
+      or prefix == NetworkProtocol.serverMessageTypes.deathEvent.prefix
+      or prefix == NetworkProtocol.serverMessageTypes.koArbitration.prefix then
     -- Gameplay-channel message arrived on the lobby socket. Routing error; log and drop.
-    logger.warn("LobbyTcpClient received unexpected gameplay message of type '" .. type .. "'; dropping.")
+    logger.warn("LobbyTcpClient received unexpected gameplay message of type '" .. prefix .. "'; dropping.")
   end
 end
 
