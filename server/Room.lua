@@ -737,6 +737,18 @@ function Room:close(reason)
     self.spectators[i] = nil
   end
 
+  -- Mid-match queued joiners have no server-side map pointing back here, but
+  -- their client is still rendering joinQueued and waiting for promotion. Tell
+  -- them the room is gone so they can return to the lobby instead of hanging.
+  if self.pendingJoiners then
+    for _, entry in ipairs(self.pendingJoiners) do
+      if entry.player then
+        entry.player:sendJson(ServerProtocol.leaveRoom(self.roomNumber, reason))
+      end
+    end
+    self.pendingJoiners = {}
+  end
+
   self.signalSubscriptions = nil
 end
 
