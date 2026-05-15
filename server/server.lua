@@ -1828,6 +1828,16 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
           end
         end
 
+        -- Push the current lobby snapshot directly to a fresh gameplay
+        -- connection. broadCastLobbyIfChanged only fires when something
+        -- changed, so a reconnect that happens after the lobby is stable
+        -- (e.g. earlier players already cleared their rooms) would otherwise
+        -- leave this client sitting at a blank lobby until the next event.
+        if connection.channel == "gameplay" and existingPlayer.state == "lobby" then
+          local lobbyStateV2 = self:lobbyStateV2()
+          connection:sendJson(ServerProtocol.lobbyStateV2(lobbyStateV2.players, lobbyStateV2.rooms))
+        end
+
         return true
       end
     end
