@@ -13,6 +13,7 @@ local SoundController = require("client.src.music.SoundController")
 local GameCatchUp = require("client.src.scenes.GameCatchUp")
 local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
+local save = require("client.src.save")
 local TraceWriter = require("client.src.network.TraceWriter")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelData = require("common.data.LevelData")
@@ -24,6 +25,8 @@ local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 local getSceneFromRoom
 local spectate2pVsOnlineMatch
 local isRoomReadyForWaitingRoom
+local _scheduleLobbyReconnect
+local _driveLobbyReconnect
 
 -- Most functions of NetClient are private as they only should get triggered via incoming server messages
 --  that get automatically processed via NetClient:update
@@ -62,12 +65,96 @@ end
 -- Process incoming on a non-critical side socket (lobby or spectate). If it
 -- drops, log + reset + emit channelDegraded so the UI can surface it. Side
 -- channels are isolation/perf wins, never required for play to continue.
+-- For the lobby socket we also schedule an auto-reconnect; spectate is
+-- harmless when degraded (opponent visuals freeze, gameplay continues).
 local function _processSideSocket(self, client, channelName)
   if client:isConnected() and not client:processIncomingMessages() then
     logger.warn(channelName .. " socket dropped; resetting. Other channels unaffected.")
     client:resetNetwork()
     self:emitSignal("channelDegraded", channelName)
+    if channelName == "Lobby" and self.state ~= states.OFFLINE then
+      _scheduleLobbyReconnect(self)
+    end
   end
+end
+
+-- Schedule a fresh lobby-reconnect cycle. Idempotent — if one is already
+-- queued or running, this is a no-op. Backoff doubles per failure up to
+-- LOBBY_RECONNECT_MAX_BACKOFF; success clears the state entirely.
+local LOBBY_RECONNECT_BASE_BACKOFF = 1.0
+local LOBBY_RECONNECT_MAX_BACKOFF = 30.0
+
+_scheduleLobbyReconnect = function(self)
+  if self._lobbyReconnect and (self._lobbyReconnect.routine or self._lobbyReconnect.pending) then
+    return
+  end
+  self._lobbyReconnect = self._lobbyReconnect or { backoff = LOBBY_RECONNECT_BASE_BACKOFF }
+  self._lobbyReconnect.pending = true
+  self._lobbyReconnect.nextAttemptAt = love.timer.getTime() + self._lobbyReconnect.backoff
+  logger.info(string.format("Lobby auto-reconnect scheduled in %.1fs (attempt #%d)",
+    self._lobbyReconnect.backoff, (self._lobbyReconnect.attempts or 0) + 1))
+end
+
+-- Drive the in-flight reconnect coroutine, or start a new one once the
+-- scheduled backoff has elapsed. Called every update() tick after the
+-- side-socket processing — cheap when nothing is pending.
+_driveLobbyReconnect = function(self)
+  local state = self._lobbyReconnect
+  if not state then return end
+  if not self.gameplayClient:isConnected() then
+    -- Gameplay is gone too; the full disconnect path will clear this.
+    self._lobbyReconnect = nil
+    return
+  end
+
+  if state.routine then
+    if coroutine.status(state.routine) == "dead" then
+      state.routine = nil
+      if state.result and state.result.loggedIn then
+        logger.info("Lobby auto-reconnect succeeded")
+        self._lobbyReconnect = nil
+        self:emitSignal("lobbyReconnected")
+      else
+        state.attempts = (state.attempts or 0) + 1
+        state.backoff = math.min(LOBBY_RECONNECT_MAX_BACKOFF, (state.backoff or LOBBY_RECONNECT_BASE_BACKOFF) * 2)
+        logger.warn(string.format("Lobby auto-reconnect failed (%s); retry in %.1fs",
+          tostring(state.result and state.result.message or "no result"), state.backoff))
+        state.pending = true
+        state.nextAttemptAt = love.timer.getTime() + state.backoff
+      end
+    else
+      local ok, ret = coroutine.resume(state.routine)
+      if not ok then
+        logger.warn("Lobby auto-reconnect coroutine errored: " .. tostring(ret))
+        state.routine = nil
+        state.result = { loggedIn = false, message = tostring(ret) }
+      elseif coroutine.status(state.routine) == "dead" and type(ret) == "table" then
+        state.result = ret
+      end
+    end
+    return
+  end
+
+  if not state.pending then return end
+  if love.timer.getTime() < (state.nextAttemptAt or 0) then return end
+
+  local ip = GAME.connected_server_ip
+  local port = (GAME.connected_server_port or 49569) + 1
+  if not ip then
+    self._lobbyReconnect = nil
+    return
+  end
+  local userId = save.read_user_id_file(ip)
+  if not userId then
+    logger.warn("Lobby auto-reconnect: no stored user_id for " .. tostring(ip) .. "; giving up")
+    self._lobbyReconnect = nil
+    return
+  end
+
+  state.pending = false
+  state.routine = coroutine.create(function()
+    return LoginRoutine.claimSession(self.lobbyClient, ip, port, userId, config.name)
+  end)
 end
 
 local function resetLobbyData(self)
@@ -1014,6 +1101,8 @@ local NetClient = class(function(self)
   self:createSignal("loginFinished")
   -- emitted with (channelName) when a side socket (lobby/spectate) drops
   self:createSignal("channelDegraded")
+  -- emitted when the lobby socket reconnects after a drop
+  self:createSignal("lobbyReconnected")
   -- emitted with (roomNumber) when server queues a mid-match join
   self:createSignal("joinQueued")
 end)
@@ -1322,6 +1411,7 @@ end
 ---@param voluntary boolean if the disconnect happened through player intent or not
 function NetClient:disconnect(voluntary)
   self.room = nil
+  self._lobbyReconnect = nil
   -- Reset all three sockets — full session teardown.
   for _, client in ipairs(self.clients) do client:resetNetwork() end
   self:setState(states.OFFLINE)
@@ -1390,6 +1480,7 @@ function NetClient:update(dt)
   end
   _processSideSocket(self, self.spectateClient, "Spectate")
   _processSideSocket(self, self.lobbyClient, "Lobby")
+  _driveLobbyReconnect(self)
 
   if self.state == states.ONLINE then
     for _, listener in pairs(self.lobbyListeners) do

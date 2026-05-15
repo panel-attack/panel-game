@@ -68,6 +68,7 @@ function Lobby:load(sceneParams)
   GAME.netClient:connectSignal("leaderboardUpdate", self.leaderboard, self.leaderboard.updateData)
   GAME.netClient:connectSignal("loginFinished", self, self.onLoginFinish)
   GAME.netClient:connectSignal("channelDegraded", self, self.onChannelDegraded)
+  GAME.netClient:connectSignal("lobbyReconnected", self, self.onLobbyReconnected)
   self.degradedChannels = self.degradedChannels or {}
 
   self:initLobbyMenu()
@@ -2503,11 +2504,17 @@ function Lobby:onLoginFinish(result)
 end
 
 -- A side socket (Lobby/Spectate) dropped. Gameplay continues; mark it so the
--- player can see why HoL isolation is no longer in effect. No auto-reconnect:
--- the side channel stays degraded until next full login.
+-- player can see why HoL isolation is no longer in effect. Lobby auto-reconnects
+-- via NetClient; spectate stays degraded until next full login.
 function Lobby:onChannelDegraded(channelName)
   self.degradedChannels = self.degradedChannels or {}
   self.degradedChannels[channelName] = true
+end
+
+function Lobby:onLobbyReconnected()
+  if self.degradedChannels then
+    self.degradedChannels["Lobby"] = nil
+  end
 end
 
 return Lobby

@@ -254,4 +254,8 @@ function LoginRoutine:progress()
   return false, status
 end
 
+-- Public re-export so NetClient's reconnect path can re-claim a side socket
+-- without re-running the full version-check + login_request handshake.
+LoginRoutine.claimSession = claimSession
+
 return LoginRoutine
