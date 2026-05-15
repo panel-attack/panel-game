@@ -372,7 +372,20 @@ function BattleRoom:addPlayer(player)
   if not player.playerNumber then
     player.playerNumber = #self.players + 1
   end
-  self.players[#self.players + 1] = player
+  -- Insert sorted by playerNumber (== server seatId for online). The server's
+  -- replay.stacks come in ascending-seatId order; ClientMatch pairs
+  -- battleRoom.players[i] with engine.stacks[i] positionally. Appending in
+  -- join order would mis-pair when a player joins a low-seat after a
+  -- high-seat is already filled (e.g. Bev at seat 3 joined before Amber at
+  -- seat 2) — producing wrong team membership and wrong garbage routing.
+  local pos = #self.players + 1
+  for i = 1, #self.players do
+    if self.players[i].playerNumber > player.playerNumber then
+      pos = i
+      break
+    end
+  end
+  table.insert(self.players, pos, player)
 
   if player.isLocal then
     self:connectSignal("allAssetsLoadedChanged", player, player.setLoaded)
