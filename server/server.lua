@@ -1933,9 +1933,10 @@ function Server:handleLeaveRoom(player, reason)
     self.playerToRoom[player] = nil
 
     if matchInProgress then
-      -- Mid-match: synth-death so survivors can finish. Do NOT enforce
-      -- minPlayers here — a dead player leaving cannot tear down the match
-      -- for survivors. Close only on empty.
+      -- Mid-match: synth-death so survivors can finish. voidByLeave handles
+      -- the room-side cleanup (via _removeFromPlayersAndAnnounce for already-
+      -- eliminated leavers, or via pendingLeaverRemovals later). Close only
+      -- on empty.
       room:voidByLeave(player, reason)
       player:removeFromRoom(room, reason)
       if room:countPlayers() == 0 then
@@ -1944,8 +1945,12 @@ function Server:handleLeaveRoom(player, reason)
         self:setLobbyChanged()
       end
     else
-      -- Between matches (or no match yet): enforce mode minimum so the
-      -- room isn't left in an unplayable state for the next match.
+      -- Between matches (or no match yet): clean up BOTH sides. removeFromRoom
+      -- only updates Player state (room=nil, state="lobby"); _removeFromPlayersAndAnnounce
+      -- clears the slot in room.players and broadcasts playerLeftRoom. Without
+      -- both, room.players keeps a stale entry — countPlayers() lies, minPlayers
+      -- check passes, room stays "alive" with phantom occupants.
+      room:_removeFromPlayersAndAnnounce(player)
       player:removeFromRoom(room, reason)
       if room:countPlayers() < roomMinPlayers(room) then
         self:closeRoom(room, reason or "below minimum players")
