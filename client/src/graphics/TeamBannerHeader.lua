@@ -54,18 +54,7 @@ local function buildTeamData(gameMode, players, teamWins)
 
   for i, player in ipairs(players) do
     local slot = (player and player.playerNumber) or i
-    local teamIndex = TeamUtils and gameMode.playersPerTeam and (function()
-      local p = gameMode.playersPerTeam
-      if type(p) == "number" then return math.floor((slot - 1) / p) + 1 end
-      if type(p) == "table" then
-        local cum = 0
-        for idx, n in ipairs(p) do
-          if slot <= cum + n then return idx end
-          cum = cum + n
-        end
-      end
-      return slot
-    end)() or i
+    local teamIndex = TeamUtils.getTeamIndexForPlayerPosition(gameMode, slot)
 
     local entry = data[teamIndex] or {names = {}, wins = 0}
     data[teamIndex] = entry

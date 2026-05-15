@@ -8,6 +8,7 @@ local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Character = require("client.src.mods.Character")
+local TeamUtils = require("common.data.TeamUtils")
 local LevelPresets = require("common.data.LevelPresets")
 local InputDeviceOverlay = require("client.src.scenes.components.InputDeviceOverlay")
 
@@ -1263,17 +1264,7 @@ function CharacterSelect:teamBorderColorForPlayer(player)
   end
   if not idx then return nil end
 
-  local p = self.battleRoom.mode.playersPerTeam
-  local teamIndex
-  if type(p) == "number" then
-    teamIndex = math.floor((idx - 1) / p) + 1
-  elseif type(p) == "table" then
-    local cum = 0
-    for i, n in ipairs(p) do
-      if idx <= cum + n then teamIndex = i; break end
-      cum = cum + n
-    end
-  end
+  local teamIndex = TeamUtils.getTeamIndexForPlayerPosition(self.battleRoom.mode, idx)
   return teamIndex and TeamBannerHeader.colors[teamIndex] or nil
 end
 

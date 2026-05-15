@@ -130,6 +130,28 @@ function TeamUtils.getPlayerTeam(teams, playerIndex)
   return TeamUtils.getTeamForPlayer(playerIndex, teams)
 end
 
+-- Pure-derivation team lookup from gameMode shape + position. Use this
+-- when room.teams is not handy (waiting room, end-of-match screens,
+-- ready-state gating). Returns position itself in FFA so callers can
+-- treat "team index" as "player index" uniformly.
+---@param gameMode table? must carry playersPerTeam (number for symmetric, table for asymmetric)
+---@param playerPosition integer slot or dense stack index, depending on context
+---@return integer teamIndex
+function TeamUtils.getTeamIndexForPlayerPosition(gameMode, playerPosition)
+  local ppt = gameMode and gameMode.playersPerTeam
+  if not ppt then return playerPosition end
+  if type(ppt) == "number" then
+    if ppt <= 0 then return playerPosition end
+    return math.floor((playerPosition - 1) / ppt) + 1
+  end
+  local cum = 0
+  for idx, count in ipairs(ppt) do
+    cum = cum + (tonumber(count) or 0)
+    if playerPosition <= cum then return idx end
+  end
+  return playerPosition
+end
+
 -- Returns the team index that a player belongs to
 ---@param teams Team[] Array of teams
 ---@param playerIndex integer The player's index (1-based)

@@ -294,21 +294,8 @@ isRoomReadyForWaitingRoom = function(room)
     local seen = {}
     local covered = 0
     for _, p in ipairs(room.players) do
-      local pos = p.playerNumber
-      if pos then
-        local teamIdx
-        if type(playersPerTeam) == "number" then
-          teamIdx = math.floor((pos - 1) / playersPerTeam) + 1
-        else
-          local acc = 0
-          for idx, count in ipairs(playersPerTeam) do
-            acc = acc + count
-            if pos <= acc then
-              teamIdx = idx
-              break
-            end
-          end
-        end
+      if p.playerNumber then
+        local teamIdx = TeamUtils.getTeamIndexForPlayerPosition(mode, p.playerNumber)
         if teamIdx and not seen[teamIdx] then
           seen[teamIdx] = true
           covered = covered + 1

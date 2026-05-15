@@ -1009,24 +1009,8 @@ function ClientMatch:drawTimer()
 end
 
 local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
-  if not gameMode or not gameMode.playersPerTeam then
-    return nil
-  end
-
-  local playersPerTeam = gameMode.playersPerTeam
-  if type(playersPerTeam) == "number" then
-    return math.floor((playerPosition - 1) / playersPerTeam) + 1
-  elseif type(playersPerTeam) == "table" then
-    local cumulative = 0
-    for idx, count in ipairs(playersPerTeam) do
-      if playerPosition <= cumulative + count then
-        return idx
-      end
-      cumulative = cumulative + count
-    end
-  end
-
-  return nil
+  if not gameMode or not gameMode.playersPerTeam then return nil end
+  return TeamUtils.getTeamIndexForPlayerPosition(gameMode, playerPosition)
 end
 
 local teamColors = {
