@@ -16,37 +16,24 @@ function CharacterSelect2p:customLoad(sceneParams)
 end
 
 function CharacterSelect2p:loadUserInterface()
-  -- Roster-driven layout. Each player is one (icon, info) pair = 2 cols wide.
-  --   ≤4: all pairs in row 1, left-aligned.
-  --   5+: split across rows 1 & 2, top-heavy (ceil(N/2) on row 1,
-  --       floor(N/2) on row 2). Each row centered horizontally.
+  -- ≤4 players: 9-col grid. 5+ players: 16-col grid so all (icon, info) pairs
+  -- fit on one centered row. unitSize stays 100; everything else (selectors,
+  -- char grid, buttons) keeps its existing 9-col placements.
   local playerCount = #self.players
-  local row1Count, row2Count
-  if playerCount <= 4 then
-    row1Count = playerCount
-    row2Count = 0
-  else
-    row1Count = math.ceil(playerCount / 2)
-    row2Count = playerCount - row1Count
-  end
-  local topRowCount = (row2Count > 0) and 2 or 1
-  local selectorsRow = topRowCount + 1
-  local charGridStartRow = selectorsRow + 1
-  local charGridHeight = (topRowCount == 2) and 2 or 3
-  local bottomRow = charGridStartRow + charGridHeight
+  local gridWidth = (playerCount >= 5) and 16 or 9
+  local selectorsRow, charGridStartRow, charGridHeight, bottomRow = 2, 3, 3, 6
   self._layout = {
-    row1Count = row1Count,
-    row2Count = row2Count,
-    topRowCount = topRowCount,
+    gridWidth = gridWidth,
     selectorsRow = selectorsRow,
     charGridStartRow = charGridStartRow,
     charGridHeight = charGridHeight,
     bottomRow = bottomRow,
+    topRowCount = 1,
   }
 
   -- Shift down to clear the team banner + garbage-mode/latency labels drawn
-  -- by TeamBannerHeader at y=4..~80.
-  self.ui.grid = ui.Grid({unitSize = 100, gridWidth = 9, gridHeight = math.max(6, bottomRow), unitMargin = 8, hAlign = "center", vAlign = "center", y = 40})
+  -- by TeamBannerHeader at y=4..~80. y=35 leaves ~5px less gap than y=40.
+  self.ui.grid = ui.Grid({unitSize = 100, gridWidth = gridWidth, gridHeight = bottomRow, unitMargin = 8, hAlign = "center", vAlign = "center", y = 35})
   self.uiRoot:addChild(self.ui.grid)
 
   self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
@@ -59,7 +46,9 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.readyButton = self:createReadyButton()
 
   local characterButtons = self:getCharacterButtons()
-  local characterGridWidth, characterGridHeight = self.ui.grid.gridWidth, self._layout.charGridHeight
+  -- Char grid keeps its original 9-col footprint even when the parent grid is
+  -- 16 wide. The extra cols are only used by the top-row icon/info pairs.
+  local characterGridWidth, characterGridHeight = 9, self._layout.charGridHeight
   self.ui.characterGrid = self:createCharacterGrid(characterButtons, self.ui.grid, characterGridWidth, characterGridHeight)
 
   self.ui.pageIndicator = self:createPageIndicator(self.ui.characterGrid)
@@ -71,6 +60,9 @@ function CharacterSelect2p:loadUserInterface()
   local charGridStartRow = self._layout.charGridStartRow
   local bottomRow = self._layout.bottomRow
 
+  -- Selectors / char grid / bottom buttons keep their original 9-col cell
+  -- placements regardless of total gridWidth — the extra cols on a 16-wide
+  -- grid are only used to lay out the (icon, info) pairs in row 1.
   if self.battleRoom.online then
     self.ui.grid:createElementAt(1, selectorsRow, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
     self.ui.grid:createElementAt(5, selectorsRow, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
@@ -151,22 +143,14 @@ function CharacterSelect2p:setupRoster()
     self.ui.playerInfos[i] = self:createPlayerInfo(player)
   end
 
-  -- Each pair is 2 cols wide. Center the row of N pairs in the 9-wide grid:
-  -- start col = floor((9 - 2N) / 2) + 1.
-  local function startColForPairs(n)
-    return math.floor((self.ui.grid.gridWidth - n * 2) / 2) + 1
-  end
+  -- All pairs in a single centered row. Each pair = 2 cols wide.
+  local n = #self.players
+  local startCol = math.floor((self.ui.grid.gridWidth - n * 2) / 2) + 1
   for i, player in ipairs(self.players) do
-    local row, indexInRow, totalInRow
-    if i <= self._layout.row1Count then
-      row, indexInRow, totalInRow = 1, i - 1, self._layout.row1Count
-    else
-      row, indexInRow, totalInRow = 2, i - self._layout.row1Count - 1, self._layout.row2Count
-    end
-    local iconX = startColForPairs(totalInRow) + indexInRow * 2
+    local iconX = startCol + (i - 1) * 2
     local infoX = iconX + 1
-    self.ui.grid:createElementAt(iconX, row, 1, 1, "p" .. i .. " icon", self.ui.characterIcons[i])
-    self.ui.grid:createElementAt(infoX, row, 1, 1, "player " .. i .. " info", self.ui.playerInfos[i])
+    self.ui.grid:createElementAt(iconX, 1, 1, 1, "p" .. i .. " icon", self.ui.characterIcons[i])
+    self.ui.grid:createElementAt(infoX, 1, 1, 1, "player " .. i .. " info", self.ui.playerInfos[i])
   end
 end
 

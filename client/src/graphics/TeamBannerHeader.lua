@@ -128,13 +128,12 @@ function TeamBannerHeader.drawGarbageModeBelowBanner(gameMode, canvasWidth, cont
 
   if not gLabel and not latLabel then return end
 
-  -- Shared-team modes have the pink/purple banner at y=4-46, so labels sit
-  -- below it at y=52. FFA waiting room has no banner above and no top-of-screen
-  -- content to clear, so it can sit at the very top. In-game FFA needs a bit of
-  -- breathing room above the playfield, so it drops slightly.
+  -- Shared-team modes: just under the pink/purple banner (banner is y=4-44,
+  -- so y=48 = 4px gap, matching FFA's 4px-from-top placement of its own
+  -- banner area). FFA waiting room: y=4 (top of canvas). In-game FFA: 80.
   local y
   if isSharedTeamMode(gameMode) then
-    y = 52
+    y = 48
   elseif context == "match" then
     y = 80
   else
