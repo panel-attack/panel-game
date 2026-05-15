@@ -177,6 +177,23 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
 end
 )
 
+-- Clear per-match transient room state. Owns the full set so adding a new
+-- per-match field doesn't require finding all the reset sites.
+function Room:resetForNewMatch()
+  self.arbitrationDeaths = {}
+  self.arbitrationWindowEndsAtMs = nil
+  self.arbitrationEmitted = false
+  -- Seed last-input timestamps so the silent-death watchdog has a baseline
+  -- for slots that haven't sent any input yet.
+  self.lastInputMs = {}
+  local nowMs = math.floor(self.clock() * 1000)
+  for slot, player in pairs(self.players) do
+    if player then self.lastInputMs[slot] = nowMs end
+  end
+  self._loggedInputDropDisconnect = nil
+  self._loggedInputDropEliminated = nil
+end
+
 ---Count non-nil entries in self.players. Use this instead of `#self.players`
 ---because self.players is keyed by slot (1..maxPlayers) and may be sparse — a
 ---partially-filled team room can have {[1]=A, [3]=B} with slots 2 and 4 nil,
@@ -560,22 +577,7 @@ function Room:start_match()
   self.stageId = activePlayers[stageIndex].stage
 
   self.game = ServerGame.createFromRoomState(self)
-  -- Reset KO arbitration state for the new match.
-  self.arbitrationDeaths = {}
-  self.arbitrationWindowEndsAtMs = nil
-  self.arbitrationEmitted = false
-  -- Seed last-input timestamps at match start so the silent-death watchdog
-  -- has a baseline for slots that haven't sent any input yet. Without this,
-  -- a player who joins, loads, then ghosts is invisible to the watchdog
-  -- (lastInputMs[slot] = nil, no comparison possible).
-  self.lastInputMs = {}
-  local nowMs = math.floor(self.clock() * 1000)
-  for slot, player in pairs(self.players) do
-    if player then self.lastInputMs[slot] = nowMs end
-  end
-  -- Reset diagnostic flags so dropped-input warnings can fire once per slot per match.
-  self._loggedInputDropDisconnect = nil
-  self._loggedInputDropEliminated = nil
+  self:resetForNewMatch()
 
   local replay = self.game:getPartialReplay(false)
   -- games generated via createFromRoomState always have a replay

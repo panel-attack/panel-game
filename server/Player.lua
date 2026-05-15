@@ -374,6 +374,15 @@ function Player:usesModifiedLevelData()
   end
 end
 
+-- Clear per-match transient fields between matches. Owns the full set so
+-- callers don't have to remember each one (mirrors client MatchParticipant
+-- :resetMatchTransientState).
+function Player:resetMatchTransientState()
+  self.cursor = "__Ready"
+  self.ready = false
+  self.wantsReady = false
+end
+
 -- player.state is derived from (self.room, room.game, room.paused, self.spectatedRoom).
 local function _derivedState(player)
   local room = player.room
