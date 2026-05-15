@@ -722,29 +722,42 @@ function ClientMatch:moveStacks()
   --   N=6: focus, +1, +5, +2, +4, +3
   --   N=7: focus, +1, +6, +2, +5, +3, +4
   -- Closed-form: rank(off) = 2*off-1 if 2*off <= N, else 2*(N-off).
+  -- Rotation pivots on SEAT (player.playerNumber == seatId), not on the
+  -- engine's dense stack index. Slot is what stays stable when somebody
+  -- leaves and rejoins into a different position; stack index renumbers
+  -- under compaction and would break the viewer's positional muscle memory.
   local stacks = shallowcpy(self.stacks)
-  local n = #stacks
+  local function slotOf(stack)
+    return (stack.player and stack.player.playerNumber) or stack.player_number
+  end
+
+  local maxSlot = 0
+  for _, s in ipairs(stacks) do
+    local slot = slotOf(s)
+    if slot and slot > maxSlot then maxSlot = slot end
+  end
+
   local focus = self.spectatorFocus
   if not focus then
     for _, s in ipairs(stacks) do
-      if s.is_local then focus = s.player_number; break end
+      if s.is_local then focus = slotOf(s); break end
     end
   end
 
-  local function viewerRelativeRank(pn)
-    if pn == focus then return 0 end
-    local off = ((pn - focus) % n)
-    if off == 0 then off = n end
-    if off * 2 <= n then return 2 * off - 1 end
-    return 2 * (n - off)
+  local function viewerRelativeRank(slot)
+    if slot == focus then return 0 end
+    local off = ((slot - focus) % maxSlot)
+    if off == 0 then off = maxSlot end
+    if off * 2 <= maxSlot then return 2 * off - 1 end
+    return 2 * (maxSlot - off)
   end
 
   table.sort(stacks, function(a, b)
     if focus then
-      return viewerRelativeRank(a.player_number) < viewerRelativeRank(b.player_number)
+      return viewerRelativeRank(slotOf(a)) < viewerRelativeRank(slotOf(b))
     end
     if a.is_local == b.is_local then
-      return a.player_number < b.player_number
+      return slotOf(a) < slotOf(b)
     else
       return a.is_local
     end
