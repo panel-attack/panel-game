@@ -536,14 +536,10 @@ end
 function BattleRoom:startLoadingNewAssets()
   if ModLoader.loading_mod == nil then
     for _, player in ipairs(self.players) do
-      if not stages[player.settings.stageId].fullyLoaded then
-        logger.debug("Loading stage " .. player.settings.stageId .. " as part of BattleRoom:startLoadingNewAssets")
-        ModController:loadModFor(stages[player.settings.stageId], player)
-      end
-      if not characters[player.settings.characterId].fullyLoaded then
-        logger.debug("Loading stage " .. player.settings.characterId .. " as part of BattleRoom:startLoadingNewAssets")
-        ModController:loadModFor(characters[player.settings.characterId], player)
-      end
+      logger.debug("Loading stage " .. tostring(player.settings.stageId) .. " for player " .. tostring(player.name))
+      ModController:loadStageIdFor(player, player.settings.stageId)
+      logger.debug("Loading character " .. tostring(player.settings.characterId) .. " for player " .. tostring(player.name))
+      ModController:loadCharacterIdFor(player, player.settings.characterId)
     end
   end
 end
@@ -639,6 +635,10 @@ function BattleRoom:shutdown()
   for _, player in ipairs(self.players) do
     player:disconnectSubscriber(self)
     player:reset()
+    -- Drop this player's claim on their character/stage so unused mods can
+    -- be freed by the next unloadUnusedMods pass. Without this, textures
+    -- accumulate across rooms.
+    ModController:releaseModsFor(player)
   end
   if self.match then
     self.match:deinit()

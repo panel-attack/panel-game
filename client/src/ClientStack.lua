@@ -57,8 +57,9 @@ function(self, args)
   -- player number according to the multiplayer server, for game outcome reporting 
   self.player_number = args.player_number or args.engine.which
   self.is_local = args.player and args.player.isLocal or args.engine.is_local
-  self.character = characters[args.characterId]
-  ModController:loadModFor(self.character, self)
+  -- ModController returns a valid Character even when args.characterId is
+  -- nil or missing-on-disk (peer picked a mod we don't have).
+  self.character = ModController:loadCharacterIdFor(self, args.characterId)
   self.theme = args.theme or themes[config.theme]
 
   self.panels_dir = args.panels_dir

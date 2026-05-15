@@ -1,5 +1,7 @@
 local tableUtils = require("common.lib.tableUtils")
 local ModLoader = require("client.src.mods.ModLoader")
+local CharacterLoader = require("client.src.mods.CharacterLoader")
+local StageLoader = require("client.src.mods.StageLoader")
 local utils = require("common.lib.util")
 local logger = require("common.lib.logger")
 
@@ -69,6 +71,18 @@ local function clearModForUser(modController, user, type)
     local previousMod = modController.users[user][type]
     if previousMod then
       previousMod:unregister(user)
+      -- If the previous mod hadn't finished loading and now has no users,
+      -- drop the in-flight load and remove the toUnload entry so we don't
+      -- waste a coroutine pulse loading a mod nobody wants anymore.
+      if not previousMod.fullyLoaded and tableUtils.length(previousMod.users) == 0 then
+        ModLoader.cancelLoad(previousMod)
+        for i = #modController.toUnload, 1, -1 do
+          if modController.toUnload[i] == previousMod then
+            table.remove(modController.toUnload, i)
+            break
+          end
+        end
+      end
     end
   end
 end
@@ -104,6 +118,24 @@ function ModController:loadModFor(mod, user, instantly)
       ModLoader.wait()
     end
   end
+end
+
+-- Resolves a character id (handling nil, missing-from-disk, and bundles) and
+-- loads the resulting mod for the user. Returns the resolved Character so
+-- callers can store it locally. Single entry point so missing peer mods
+-- can't nil-crash anywhere downstream.
+function ModController:loadCharacterIdFor(user, characterId, instantly)
+  local resolved = CharacterLoader.fullyResolveCharacterSelection(characterId)
+  local character = characters[resolved]
+  self:loadModFor(character, user, instantly)
+  return character
+end
+
+function ModController:loadStageIdFor(user, stageId, instantly)
+  local resolved = StageLoader.fullyResolveStageSelection(stageId)
+  local stage = stages[resolved]
+  self:loadModFor(stage, user, instantly)
+  return stage
 end
 
 function ModController:update()

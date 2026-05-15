@@ -259,7 +259,7 @@ function Game:setupRoutine()
   self:writeReleaseStreamDefinition()
 
   self:initializeLocalPlayer()
-  ModController:loadModFor(characters[GAME.localPlayer.settings.characterId], GAME.localPlayer, true)
+  ModController:loadCharacterIdFor(GAME.localPlayer, GAME.localPlayer.settings.characterId, true)
 
   self:initializeDebugOverlay()
 end
