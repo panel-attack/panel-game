@@ -1419,6 +1419,17 @@ end
 ---@param state NetClientStates
 function NetClient:setState(state)
   logger.debug("Setting netclient state to " .. state)
+  -- Whenever we leave INGAME (cleanly, abort, disconnect, anything), drop the
+  -- budgeted defer queues. Slot indices are per-match; messages held over from
+  -- a previous match would apply to stacks they weren't meant for — including
+  -- potentially the local stack if slot mappings overlap. Belt-and-suspenders
+  -- against every transition path; the per-handler clears stay as defense-in-
+  -- depth at the explicit match-end / spectate sites.
+  if self.state == states.INGAME and state ~= states.INGAME then
+    self._deferredInputMsgs = nil
+    self._deferredGarbageMsgs = nil
+    self._deferredDeathMsgs = nil
+  end
   self.state = state
 end
 
