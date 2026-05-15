@@ -31,7 +31,13 @@ local DEAD_LOCAL_GRACE_SECONDS = 3
 local CHIP_ALPHA = 0.85
 
 local function teamColorForStack(match, stack, stackIndex)
-  local idx = TeamUtils.teamIndexFor(match, stackIndex)
+  -- Match the lobby's lookup shape: feed playerNumber (== seatId) so this
+  -- gives the same answer as CharacterSelect / TeamBannerHeader for the same
+  -- player, regardless of compaction. teamIndexFor falls back to preset
+  -- derivation when engine.teams misses on a seatId.
+  local player = match.players and match.players[stackIndex]
+  local pos = (player and player.playerNumber) or stackIndex
+  local idx = TeamUtils.teamIndexFor(match, pos)
   local c = TeamUtils.TEAM_COLORS[idx] or TeamUtils.TEAM_COLORS[1]
   return { c[1], c[2], c[3], CHIP_ALPHA }
 end

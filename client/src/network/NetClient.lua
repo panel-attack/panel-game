@@ -493,6 +493,13 @@ local function processSpectatorListMessage(self, message)
   end
 end
 
+local function processPauseNotification(self, message)
+  if not (self.room and self.room.match) then return end
+  local body = message.pauseNotification
+  if type(body) ~= "table" then return end
+  self.room.match.isPaused = body.paused and true or false
+end
+
 ---Open-FFA mid-match join: server queued us for promotion at the next match
 ---end, and sent the in-progress match data so we can watch while we wait.
 ---Renders the spectator view; transitions to player view when addToRoom lands.
@@ -1017,6 +1024,7 @@ local function createListeners(self)
   messageListeners.taunt = createListener(self, "taunt", processTauntMessage)
   messageListeners.gameResult = createListener(self, "gameResult", processGameResultMessage)
   messageListeners.spectators = createListener(self, "spectators", processSpectatorListMessage)
+  messageListeners.pauseNotification = createListener(self, "pauseNotification", processPauseNotification)
   messageListeners.gameAbort = createListener(self, "gameAbort", handleGameAbort)
   messageListeners.joinQueued = createListener(self, "joinQueued", processJoinQueuedMessage)
   -- Handles both explicit Spectate and the server's join->pending-promote conversion.
@@ -1115,6 +1123,7 @@ local NetClient = class(function(self)
     -- for spectators catching up to an ongoing match, a match_start acts as a cancel
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
+    pauseNotification = messageListeners.pauseNotification,
     gameResult = messageListeners.gameResult,
     gameAbort = messageListeners.gameAbort,
     playerLeftRoom = messageListeners.playerLeftRoom,
@@ -1207,8 +1216,8 @@ function NetClient:reportLocalGameResult(winners)
         if winningTeam then
           for i, player in ipairs(match.players) do
             if player.isLocal then
-              local slot = TeamUtils.slotOf(player, i)
-              local localTeamIndex = TeamUtils.getPlayerTeamIndex(match.engine.teams, slot)
+              -- Same shape as lobby / banner — playerNumber is seatId.
+              local localTeamIndex = TeamUtils.teamIndexFor(match, TeamUtils.slotOf(player, i))
               if localTeamIndex == winningTeam.id then
                 localTeamWon = true
               end

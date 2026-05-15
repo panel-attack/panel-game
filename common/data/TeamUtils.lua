@@ -219,9 +219,12 @@ function TeamUtils.teamIndexFor(context, position)
   if not context then return position end
   local teams = context.engine and context.engine.teams
   if teams then
-    return TeamUtils.getPlayerTeamIndex(teams, position) or position
+    local idx = TeamUtils.getPlayerTeamIndex(teams, position)
+    if idx then return idx end
+    -- engine.teams is stackIndex-keyed; if callers pass seatId (the canonical
+    -- client-side position) it misses for sparse rooms — fall through to the
+    -- gameMode preset derivation rather than returning position as-is.
   end
-  -- BattleRoom uses .mode, ClientMatch uses .gameMode, raw gameMode is itself
   local gameMode = context.gameMode or context.mode or context
   return TeamUtils.getTeamIndexForPlayerPosition(gameMode, position)
 end
