@@ -90,10 +90,6 @@ function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked, 
   clientMatch.stackInteraction = gameMode.stackInteraction
   clientMatch.matchRules = gameMode.matchRules
 
-  logger.info(string.format("ClientMatch.createFromGameMode: gameScene=%s endlessNoRaise=%s",
-    tostring(gameMode.gameScene),
-    tostring(players[1] and players[1].settings and players[1].settings.endlessNoRaise)))
-
   if gameMode.gameScene == "EndlessGame" and players[1] and players[1].settings.endlessNoRaise then
     local priorMods = clientMatch.matchRules.stackSetupModifications or {}
     local priorBehaviours = priorMods.behaviours or {}

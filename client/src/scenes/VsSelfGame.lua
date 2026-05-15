@@ -11,6 +11,7 @@ local VsSelfGame = class(
 VsSelfGame.name = "VsSelfGame"
 
 function VsSelfGame:customLoad()
+  self.match.renderDuringPause = true
   self.match:connectSignal("matchEnded", self, self.onMatchEnded)
 end
 

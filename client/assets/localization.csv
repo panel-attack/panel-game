@@ -37,6 +37,7 @@ go_,,Go!,Commencer,Vai!,GO!,¡Adelante!,Los!,Via!,ไป !
 endless_type,Name of the menu in endless / time attack that lets you pick between the old difficulty style and the new one,Type,Type,Tipo,タイプ,Tipo,Typ,Tipo,ประเภท
 endless_classic,old difficulty style in endless / time attack,Classic,Classique,Clássico,クラシック,Clásico,Klassisch,Classico,คลาสสิค
 endless_modern,new difficulty style in endless / time attack,Modern,Moderne,Moderno,モダン,Moderno,Modern,Moderno,ทันสมัย
+endless_no_raise,disables passive rise and disables score saving in endless,No Raise,Sans montée,Sem subir,自動上昇なし,Sin subida,Kein Aufstieg,Senza salita,ไม่มีการดัน
 anonymous,,Anonymous,Anonyme,Anônimo,匿名,Anónimo,Anonym,Anonimo,ไม่ระบุตัวตน
 stages,,stages,terrains,Cenários,ステージ,Escenarios,Arenen,Scenario,ด่าน
 characters,,characters,personnages,Personagens,キャラクター,Personajes,Charaktere,Personaggi,ตัวละคร

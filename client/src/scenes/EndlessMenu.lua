@@ -35,6 +35,16 @@ function EndlessMenu:loadUserInterface()
   self:refresh()
   self.ui.grid:createElementAt(2, 1, 2, 1, "recordBox", self.ui.recordBox, nil, true)
 
+  if self.battleRoom and self.battleRoom.online then
+    self.ui.pauseWarning = ui.Label({
+      text = "Pausing mid-game forfeits your score.\nWhile paused, use ← / → to rewind or advance.",
+      translate = false,
+      hAlign = "center",
+      vAlign = "center"
+    })
+    self.ui.grid:createElementAt(4, 1, 6, 1, "pauseWarning", self.ui.pauseWarning)
+  end
+
   self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
   self.ui.panelSelection:setTitle("panels")
   local panelCarousel = self:createPanelCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.panelSelection.height)
@@ -53,6 +63,17 @@ function EndlessMenu:loadUserInterface()
   self.ui.styleSelection:addElement(styleContainer, player)
 
   self.ui.grid:createElementAt(5, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
+
+  self.ui.noRaiseSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
+  self.ui.noRaiseSelection:setTitle("endless_no_raise")
+  local noRaiseContainer, noRaiseSelector = self:createNoRaiseSelection(player, unitSize)
+  self.ui.noRaiseSelection:addElement(noRaiseContainer, player)
+  self.ui.grid:createElementAt(6, 2, 1, 1, "noRaiseSelection", self.ui.noRaiseSelection, nil, true)
+
+  noRaiseSelector.onValueChange = function(boolSelector, value)
+    GAME.theme:playValidationSfx()
+    player.settings.endlessNoRaise = value
+  end
 
   self.ui.speedSelection = ui.MultiPlayerSelectionWrapper({
     hFill = true,
@@ -124,12 +145,12 @@ end
 
 function EndlessMenu:onStyleChanged(style, player)
   if style == GameModes.Styles.MODERN then
-    self.ui.grid:removeElementsIn(6, 2, 3, 1)
-    self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
+    self.ui.grid:removeElementsIn(7, 2, 2, 1)
+    self.ui.grid:createElementAt(7, 2, 2, 1, "levelSelection", self.ui.levelSelection, nil, true)
     self.ui.recordBox:setVisibility(false)
   else
-    self.ui.grid:removeElementsIn(6, 2, 3, 1)
-    self.ui.grid:createElementAt(6, 2, 2, 1, "speedSelection", self.ui.speedSelection, nil, true)
+    self.ui.grid:removeElementsIn(7, 2, 2, 1)
+    self.ui.grid:createElementAt(7, 2, 1, 1, "speedSelection", self.ui.speedSelection, nil, true)
     self.ui.grid:createElementAt(8, 2, 1, 1, "difficultySelection", self.ui.difficultySelection, nil, true)
     self.ui.recordBox:setVisibility(true)
   end

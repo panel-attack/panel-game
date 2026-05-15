@@ -62,6 +62,7 @@ function(self, name, publicId, isLocal)
   settings.wantsRanked = true
   settings.inputMethod = "controller"
   settings.attackEngineSettings = nil
+  settings.endlessNoRaise = false
 
   -- planned for the future, players don't have public ids yet
   self.publicId = publicId or -1
