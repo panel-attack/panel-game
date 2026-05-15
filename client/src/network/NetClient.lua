@@ -377,8 +377,6 @@ local function processGameResultMessage(self, message)
   -- if we went game over first, the opponent will notice later and keep sending inputs until we went game over on their end too
   -- these extra messages will remain unprocessed in the queue and need to be cleared up so they don't get applied the next match
   self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
-  -- Same logic for our budgeted defer queues: stale messages from this match's
-  -- slot numbering must not leak into the next match.
   self._deferredInputMsgs = nil
   self._deferredGarbageMsgs = nil
   self._deferredDeathMsgs = nil
@@ -551,7 +549,6 @@ local function processMatchStartMessage(self, message)
   end
 
   self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
-  -- Clear budgeted defer queues from any prior match — stale slot indices.
   self._deferredInputMsgs = nil
   self._deferredGarbageMsgs = nil
   self._deferredDeathMsgs = nil
@@ -693,10 +690,8 @@ local function _drainBoth(self, prefix)
   return out
 end
 
--- Time budget per render tick for visual-only message processing. Local-
--- gameplay-affecting messages (garbage targeting you) bypass this cap and
--- are always processed in full. The budget protects render-frame smoothness
--- when a burst of opponent visual updates arrives in one tick.
+-- Per-tick wall-clock budget for visual-only message work. Local-gameplay
+-- messages (garbage targeting you) bypass this and always apply.
 local VISUAL_MESSAGE_BUDGET_MS = 4
 
 local function _localSlot(self)
@@ -707,10 +702,7 @@ local function _localSlot(self)
   return nil
 end
 
--- Drain fresh messages with a wall-clock budget. Deferred queue from prior
--- ticks is drained FIRST (FIFO across ticks); leftover goes back to the
--- defer queue for next tick. Always applies at least one to make progress
--- under sustained heavy load.
+-- Drains deferred FIFO then fresh under the budget; always applies at least one.
 local function _drainBudgeted(self, deferKey, fresh, applyFn)
   self[deferKey] = self[deferKey] or {}
   local deferred = self[deferKey]
@@ -737,7 +729,7 @@ local function processInputMessages(self)
   local inputPrefix = NetworkProtocol.serverMessageTypes.input.prefix
   local messages = _drainBoth(self, inputPrefix)
   if not (self.room and self.room.match) then return end
-  -- I events are 100% visual-only: server never echoes your own inputs.
+  -- All I are visual: server never echoes your own inputs.
   _drainBudgeted(self, "_deferredInputMsgs", messages, function(msg)
     local body = msg[inputPrefix]
     if body then self.room.match:receiveInput(body.playerNumber, body.input) end
@@ -749,10 +741,7 @@ local function processGarbageEvents(self)
   local prefix = NetworkProtocol.serverMessageTypes.garbageEvent.prefix
   local messages = _drainBoth(self, prefix)
   if not (self.room and self.room.match) then return end
-
-  -- Split: garbage targeting the LOCAL player affects the local sim and
-  -- must apply immediately (no cap). Everything else is opponent visual,
-  -- subject to the budget.
+  -- G targeting local stack bypasses budget; rest is visual.
   local localSlot = _localSlot(self)
   local visual = {}
   for _, msg in ipairs(messages) do
@@ -777,9 +766,7 @@ local function processDeathEvents(self)
   local prefix = NetworkProtocol.serverMessageTypes.deathEvent.prefix
   local messages = _drainBoth(self, prefix)
   if not (self.room and self.room.match) then return end
-  -- D events are 100% visual: server doesn't echo your own death back to you
-  -- (applyDeathEvent already early-returns for is_local), so all D arrivals
-  -- drive opponent visuals only.
+  -- All D are visual: applyDeathEvent early-returns for is_local.
   _drainBudgeted(self, "_deferredDeathMsgs", messages, function(msg)
     local body = msg[prefix]
     if body then self.room.match:applyDeathEvent(body) end

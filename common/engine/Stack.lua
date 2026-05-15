@@ -232,9 +232,7 @@ local Stack = class(
       end
     end
 
-    -- Local stack: up to 3 catch-up frames per render tick (handles brief render hitches).
-    -- View stacks: capped at 1 so opponent catch-up bursts can't steal CPU budget from
-    -- local play. View stacks fall behind under heavy load; local stays smooth.
+    -- Local=3 for brief render hitches; view=1 so opponent catch-up can't starve local play.
     s.max_runs_per_frame = args.is_local and 3 or 1
 
     s.displacement = 16
