@@ -78,6 +78,11 @@ function Game.createFromRoomState(room)
   replay:setStage(room.stageId)
   replay:setRanked(game.ranked)
   replay.metadata.gameModeName = room.gameMode.name
+  -- Compacted team shape for THIS match. Server rebuilds playersPerTeam at
+  -- start_match to reflect the actual roster split; clients use this rather
+  -- than the original preset so engine.teams matches server-side teams.
+  replay.metadata.playersPerTeam = room.gameMode.playersPerTeam
+  replay.metadata.teamCount = room.gameMode.teamCount
 
   for i, player in ipairs(room.players) do
     ---@type ReplayStack

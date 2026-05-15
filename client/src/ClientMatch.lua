@@ -161,15 +161,25 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
   -- are already populated above from replay.garbageFlows; we just need teams +
   -- garbageMode for hasEnded and shared-mode distribution to work.
   if gameMode then
-    clientMatch.gameMode = gameMode
-    clientMatch.stackInteraction = gameMode.stackInteraction
-    clientMatch.matchRules = gameMode.matchRules
-    if gameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS
-        and gameMode.teamCount and gameMode.playersPerTeam then
-      local teams = TeamUtils.createTeams(#players, gameMode.teamCount, gameMode.playersPerTeam)
+    -- Per-match team shape lives in replay.metadata. Server rebuilds
+    -- playersPerTeam/teamCount at start_match to reflect the actual roster
+    -- split (open 3v4 played 2v2 ships {2,2}, not the preset {3,4}). Wrap
+    -- the preset so reads of clientMatch.gameMode.playersPerTeam see the
+    -- per-match value everywhere — engine setup, banner, end-screen — no
+    -- call-site changes needed.
+    local matchGameMode = setmetatable({
+      playersPerTeam = replay.metadata.playersPerTeam or gameMode.playersPerTeam,
+      teamCount = replay.metadata.teamCount or gameMode.teamCount,
+    }, {__index = gameMode})
+    clientMatch.gameMode = matchGameMode
+    clientMatch.stackInteraction = matchGameMode.stackInteraction
+    clientMatch.matchRules = matchGameMode.matchRules
+    if matchGameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS
+        and matchGameMode.teamCount and matchGameMode.playersPerTeam then
+      local teams = TeamUtils.createTeams(#players, matchGameMode.teamCount, matchGameMode.playersPerTeam)
       clientMatch.engine:setTeams(teams)
-      if gameMode.garbageMode then
-        clientMatch.engine:setGarbageMode(gameMode.garbageMode)
+      if matchGameMode.garbageMode then
+        clientMatch.engine:setGarbageMode(matchGameMode.garbageMode)
       end
       clientMatch.engine:setupTeamGarbageTargets()
     end
@@ -1056,7 +1066,7 @@ function ClientMatch:drawTeamScoreboard()
 
   -- Shared 2-team banner header (pink/purple). Returns silently for FFA / non-team modes.
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
-  TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth)
+  TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth, self.engine and self.engine.teams)
   TeamBannerHeader.drawGarbageModeBelowBanner(self.gameMode, canvasWidth, "match")
 
   -- For >2 teams, fall through to the legacy section-row layout below.
