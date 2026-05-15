@@ -92,10 +92,38 @@ local function loginOnClient(client, ip, port, userId)
   return result
 end
 
+-- Run lobby + spectate logins concurrently after gameplay returns. Each ran
+-- sequentially before — ~700-900ms per socket on localhost — so a fresh
+-- session took 2-3 seconds end-to-end. Driving both child coroutines from
+-- one resume cuts that roughly in half: they share the per-frame yield gaps
+-- instead of stacking them.
+local function runInParallel(routines)
+  while true do
+    local anyAlive = false
+    for _, entry in pairs(routines) do
+      if coroutine.status(entry.co) ~= "dead" then
+        anyAlive = true
+        local ok, ret = coroutine.resume(entry.co)
+        if not ok then
+          error(ret)
+        end
+        if coroutine.status(entry.co) == "dead" then
+          entry.result = ret
+        end
+      end
+    end
+    if not anyAlive then
+      return
+    end
+    coroutine.yield("Logging in")
+  end
+end
+
 -- Triple-socket login: gameplay first (creates the Player server-side),
--- then lobby and spectate use the same user_id so the server attaches both
--- to the same Player via privateUserId. Lobby and spectate failures are
--- non-fatal — fallbacks in Player keep the session playable.
+-- then lobby and spectate run concurrently using the same user_id so the
+-- server attaches both to the same Player via privateUserId. Lobby and
+-- spectate failures are non-fatal — fallbacks in Player keep the session
+-- playable.
 local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, spectateClient, spectatePort)
   GAME.connected_server_ip = ip
   GAME.connected_server_port = gameplayPort
@@ -116,17 +144,33 @@ local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, s
     effectiveUserId = gameplayResult.new_user_id
   end
 
-  local lobbyResult = loginOnClient(lobbyClient, ip, lobbyPort, effectiveUserId)
-  if not lobbyResult.loggedIn then
-    logger.warn("Lobby socket login failed (" .. tostring(lobbyResult.message)
+  local parallelRoutines = {
+    lobby = {
+      co = coroutine.create(function()
+        return loginOnClient(lobbyClient, ip, lobbyPort, effectiveUserId)
+      end),
+    },
+  }
+  if spectateClient then
+    parallelRoutines.spectate = {
+      co = coroutine.create(function()
+        return loginOnClient(spectateClient, ip, spectatePort, effectiveUserId)
+      end),
+    }
+  end
+  runInParallel(parallelRoutines)
+
+  local lobbyResult = parallelRoutines.lobby.result
+  if not lobbyResult or not lobbyResult.loggedIn then
+    logger.warn("Lobby socket login failed (" .. tostring(lobbyResult and lobbyResult.message or "no result")
       .. "). Continuing without lobby HoL protection — JSON falls back to gameplay.")
     lobbyClient:resetNetwork()
   end
 
   if spectateClient then
-    local spectateResult = loginOnClient(spectateClient, ip, spectatePort, effectiveUserId)
-    if not spectateResult.loggedIn then
-      logger.warn("Spectate socket login failed (" .. tostring(spectateResult.message)
+    local spectateResult = parallelRoutines.spectate.result
+    if not spectateResult or not spectateResult.loggedIn then
+      logger.warn("Spectate socket login failed (" .. tostring(spectateResult and spectateResult.message or "no result")
         .. "). Continuing without spectate isolation — opponent traffic falls back to gameplay.")
       spectateClient:resetNetwork()
     end
