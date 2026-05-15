@@ -119,36 +119,39 @@ end
 function ClientMatch.createFromReplay(replay, players, gameMode)
   local engine = Match.createFromReplay(replay)
 
-  -- we only need to reconstruct the players from the metadata
-  -- unless we already got them passed in
-  players = players or {}
+  -- Build a publicId-keyed index of any passed-in players so we can preserve
+  -- player object identity across matches by STABLE identifier (publicId),
+  -- not by stack position. Stack index is just a per-match slot — the same
+  -- index can hold a different person from one match to the next if anyone
+  -- rejoined into a different seat. Matching by publicId means a returning
+  -- player keeps the same Lua object (so subscribers like rosterChanged stay
+  -- wired up) and gets their seat refreshed to whatever THIS match says.
+  local priorByPublicId = {}
+  for _, p in pairs(players or {}) do
+    if p and p.publicId then priorByPublicId[p.publicId] = p end
+  end
+  players = {}
 
   for _, stackMetadata in ipairs(replay.metadata.stacks) do
     local stackData = replay.stacks[stackMetadata.stackIndex]
 
-    -- Replay metadata can list more stack slots than replay.stacks actually
-    -- carries (server bug, crash-repro harness, hand-edited replay). Skip the
-    -- orphan metadata entry rather than nil-crashing on stackData.stackType —
-    -- the rest of the replay still loads. Mirrors the garbage-flow warn at
-    -- Match.createFromReplay's flow loop.
     if not stackData then
       logger.warn(string.format(
         "ClientMatch.createFromReplay: skipping metadata stackIndex %d (no stackData in replay with %d stacks)",
         stackMetadata.stackIndex, #replay.stacks))
-    elseif not players[stackMetadata.stackIndex] then
-      if stackData.stackType == 1 then
+    else
+      local prior = stackMetadata.publicId and priorByPublicId[stackMetadata.publicId]
+      if prior then
+        -- Same person, possibly new seat — refresh seat identity in place.
+        TeamUtils.assignSeatIdentity(prior, stackMetadata.seatId)
+        players[stackMetadata.stackIndex] = prior
+      elseif stackData.stackType == 1 then
         ---@cast stackMetadata StackMetadata
         players[stackMetadata.stackIndex] = Player.createFromReplayMetadata(stackMetadata)
       elseif stackData.stackType == 2 then
         ---@cast stackMetadata SimulatedStackMetadata
         players[stackMetadata.stackIndex] = ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
       end
-    else
-      -- Carry-over from a prior match: refresh seat identity from THIS
-      -- match's metadata so a player who rejoined into a different seat
-      -- picks up the new team. Without this, team color + garbage routing
-      -- stay on the stale playerNumber from when the object was first made.
-      TeamUtils.assignSeatIdentity(players[stackMetadata.stackIndex], stackMetadata.seatId)
     end
   end
 
