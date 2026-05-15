@@ -506,18 +506,50 @@ function Room:start_match()
     activePlayers[#activePlayers + 1] = p
   end
 
-  -- Compaction is safe only for FFA. Team modes derive team-membership from
-  -- slot via playersPerTeam boundaries; renumbering flips banner color.
-  if self:isDynamicRoster() and self.gameMode.playersPerTeam == 1 then
+  -- Compact slots to dense 1..N for dynamic-roster rooms. For team modes,
+  -- ALSO rebuild playersPerTeam to reflect the actual roster split, so
+  -- post-compaction the team math (slot→team via playersPerTeam) still
+  -- assigns the same players to the same teams it did before. Engine
+  -- assumes dense stack indices; this keeps that invariant while preserving
+  -- team membership end-to-end.
+  if self:isDynamicRoster() then
+    local pptOrig = self.gameMode.playersPerTeam
+    local isTeamMode = type(pptOrig) == "table"
+      or (type(pptOrig) == "number" and pptOrig > 1)
+
+    local function teamForOriginalSlot(slot)
+      if type(pptOrig) == "number" and pptOrig > 0 then
+        return math.floor((slot - 1) / pptOrig) + 1
+      elseif type(pptOrig) == "table" then
+        local acc = 0
+        for idx, count in ipairs(pptOrig) do
+          acc = acc + (tonumber(count) or 0)
+          if slot <= acc then return idx end
+        end
+      end
+      return 1
+    end
+
+    local teamSizes = {}
     local compactedPlayers = {}
     local compactedWins = {}
     for denseIndex, player in ipairs(activePlayers) do
+      local originalTeam = isTeamMode and teamForOriginalSlot(player.player_number) or denseIndex
+      teamSizes[originalTeam] = (teamSizes[originalTeam] or 0) + 1
       compactedPlayers[denseIndex] = player
       compactedWins[denseIndex] = self.win_counts[player.player_number] or 0
       player.player_number = denseIndex
     end
     self.players = compactedPlayers
     self.win_counts = compactedWins
+
+    if isTeamMode then
+      local newPpt = {}
+      for i = 1, (self.gameMode.teamCount or #teamSizes) do
+        newPpt[i] = teamSizes[i] or 0
+      end
+      self.gameMode.playersPerTeam = newPpt
+    end
   end
 
   for _, player in ipairs(activePlayers) do
