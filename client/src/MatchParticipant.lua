@@ -202,13 +202,22 @@ function MatchParticipant:setAttackEngineSettings(attackEngineSettings)
   end
 end
 
+-- Single place to clear per-match transient state. Server resends authoritative
+-- values via menu_state at character-select, but resetting locally first avoids
+-- a stale-display window between match-end and the server snapshot arriving.
+function MatchParticipant:resetMatchTransientState()
+  if self.human then
+    self:setWantsReady(false)
+  end
+  self:setReady(false)
+  self.cursor = "__Ready"
+  self.hasLoaded = false
+end
+
 -- a callback that runs whenever a match ended
 ---@param match ClientMatch
 function MatchParticipant:onMatchEnded(match)
-   -- to prevent the game from instantly restarting, unready all players
-   if self.human then
-    self:setWantsReady(false)
-   end
+  self:resetMatchTransientState()
   -- Skip refresh if character and stage are locked (e.g., in puzzle mode)
   if not self.settings.lockCharacterAndStage then
     self:refreshCharacter()
