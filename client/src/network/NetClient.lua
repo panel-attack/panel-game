@@ -890,6 +890,11 @@ local function createListeners(self)
   messageListeners.spectators = createListener(self, "spectators", processSpectatorListMessage)
   messageListeners.gameAbort = createListener(self, "gameAbort", handleGameAbort)
   messageListeners.joinQueued = createListener(self, "joinQueued", processJoinQueuedMessage)
+  -- Handles both explicit Spectate and the server's join->pending-promote conversion.
+  messageListeners.spectate_request_granted = createListener(self, "spectate_request_granted", function(self, msg)
+    self.pendingResponses.spectateResponse = nil
+    spectate2pVsOnlineMatch(self, msg)
+  end)
 
   return messageListeners
 end
@@ -955,6 +960,7 @@ local NetClient = class(function(self)
     challengeUpdate = messageListeners.challengeUpdate,
     leave_room = messageListeners.leave_room,
     joinQueued = messageListeners.joinQueued,
+    spectate_request_granted = messageListeners.spectate_request_granted,
   }
 
   -- all listeners running while in a room but not in a match

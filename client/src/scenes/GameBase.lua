@@ -533,8 +533,11 @@ function GameBase:bailOnFrozenMatch(reason)
   end)
   -- Online vs offline teardown. Offline scenes (PuzzleGame, ReplayGame, etc)
   -- don't have a "Lobby" in their nav stack, so popToName would unwind too far.
+  -- Freeze-recovery explicitly bails out of the room — announce the leave to
+  -- the server before tearing down local state.
   local isOnline = GAME.netClient and GAME.netClient:isConnected() and GAME.battleRoom
   if isOnline then
+    pcall(function() GAME.netClient:leaveRoom() end)
     pcall(function() GAME.battleRoom:shutdown() end)
     pcall(function() GAME.navigationStack:popToName("Lobby") end)
   else
@@ -644,6 +647,7 @@ function GameBase:update(dt)
         GAME.theme:playCancelSfx()
         self.match:abort()
         if GAME.netClient:isConnected() then
+          GAME.netClient:leaveRoom()
           GAME.battleRoom:shutdown()
         end
         GAME.navigationStack:popToName("Lobby")

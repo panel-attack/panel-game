@@ -1278,6 +1278,12 @@ function CharacterSelect:teamBorderColorForPlayer(player)
 end
 
 function CharacterSelect:leave()
+  -- Explicit user-initiated leave: announce to the server first so the room
+  -- knows we're gone, then tear down local match state on scene unmount.
+  -- BattleRoom:shutdown is local-only; it doesn't talk to the server.
+  if GAME.netClient and GAME.netClient:isConnected() then
+    GAME.netClient:leaveRoom()
+  end
   GAME.navigationStack:pop(nil,
     function()
       if self.battleRoom then
