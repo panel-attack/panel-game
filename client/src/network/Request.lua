@@ -11,16 +11,12 @@ local Request = class(function(self, tcpClient, messageType, messageText, respon
 end)
 
 function Request.toJsonMessage(messageText)
-  local jsonResult = nil
-  local status, errorString = pcall(
-    function()
-      jsonResult = json.encode(messageText)
-    end
-  )
-  if status == false and error and type(errorString) == "string" then
-      error("Crash encoding JSON: " .. table_to_string(messageText) .. " with error: " .. errorString)
+  local ok, jsonOrErr = pcall(json.encode, messageText)
+  if not ok then
+    error("Crash encoding JSON: " .. table_to_string(messageText) .. " with error: " .. tostring(jsonOrErr))
   end
-  return NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.clientMessageTypes.jsonMessage.prefix, jsonResult)
+  return NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.clientMessageTypes.jsonMessage.prefix, jsonOrErr)
 end
 
 -- sends the request, updates awaitingResponse status field
@@ -29,7 +25,9 @@ function Request:send()
   if self.messageType.prefix == "J" then
     message = Request.toJsonMessage(self.messageText)
   elseif self.messageType.prefix == "H" then
-    message = NetworkProtocol.clientMessageTypes.versionCheck.prefix .. NetworkProtocol.NETWORK_VERSION
+    message = NetworkProtocol.markedMessageForTypeAndBody(
+      NetworkProtocol.clientMessageTypes.versionCheck.prefix,
+      NetworkProtocol.NETWORK_VERSION)
   else
     error("Trying to send a message with message type " .. table_to_string(self.messageType) .. " that has no interaction defined")
   end

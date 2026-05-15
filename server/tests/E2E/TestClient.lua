@@ -157,9 +157,10 @@ end
 -- ----------------------------------------------------------------------------
 
 function TestClient:sendVersionCheck()
-  -- Wire frame: "H" + 3-char NETWORK_VERSION, fixed 4-byte size.
-  self:_sendRaw(NetworkProtocol.clientMessageTypes.versionCheck.prefix
-                .. NetworkProtocol.NETWORK_VERSION)
+  -- Wire frame v009: [4-byte BE length][prefix "H"][3-char NETWORK_VERSION].
+  self:_sendRaw(NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.clientMessageTypes.versionCheck.prefix,
+    NetworkProtocol.NETWORK_VERSION))
 end
 
 function TestClient:sendLogin(opts)

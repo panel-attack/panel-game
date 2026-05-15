@@ -33,6 +33,24 @@ function ClientProtocol.requestLogin(userId, name, level, inputMethod, panels, b
   }
 end
 
+-- Minimal login for follow-on sockets (lobby, spectate). The server's login
+-- fast-path attaches the new connection to the already-existing Player when
+-- user_id is known; no settings/level/etc. are needed for that path.
+-- Skips the version-check round-trip too — gameplay already verified.
+function ClientProtocol.requestSessionClaim(userId, name)
+  local message = {
+    login_request = true,
+    user_id = userId,
+    engine_version = consts.ENGINE_VERSION,
+    name = name,
+  }
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = message,
+    responseTypes = {"login_successful", "login_denied"}
+  }
+end
+
 function ClientProtocol.logout()
   local logoutMessage = {logout = true}
 

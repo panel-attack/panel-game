@@ -806,8 +806,7 @@ function Server:drainPendingJoiners(room)
           end
         end
         self.spectatorToRoom[player] = nil
-        player.state = "lobby"
-        player.room = nil
+        player.spectatedRoom = nil
         spectatorListChanged = true
       end
       -- Idempotency check in handleJoinRoom would block back-to-back joins,
@@ -856,6 +855,7 @@ function Server:closeRoom(room, reason)
 
   for _, player in ipairs(room.spectators) do
     self.spectatorToRoom[player] = nil
+    player.spectatedRoom = nil
   end
 
   if self.rooms[room.roomNumber] then
@@ -1392,7 +1392,15 @@ end
 ---@param connection Connection
 ---@return boolean? # if messages from this connection should continue to get processed
 function Server:processMessage(message, connection)
-  message = json.decode(message)
+  -- Match the G/D handler pattern (Room.lua:991, 1104): wrap decode in pcall
+  -- so a malformed J frame doesn't take the outer xpcall path. Drop the
+  -- message and return — the connection stays up.
+  local ok, decoded = pcall(json.decode, message)
+  if not ok or type(decoded) ~= "table" then
+    logger.warn("Connection " .. connection.index .. " sent unparseable J body; dropping. Body: " .. tostring(message))
+    return true
+  end
+  message = decoded
 
   -- Trace capture: inbound JSON message recorded against the connection's
   -- publicId (if any). Pre-login messages (login_request) won't have a
@@ -1793,7 +1801,6 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
 
     local player = Player(userId, connection, name, self.playerbase.privateIdToPublicId[userId])
     player.save_replays_publicly = loginMessage.save_replays_publicly
-    player:setState("lobby")
     assert(player.publicPlayerID ~= nil)
     player:updateSettings(loginMessage)
     self.nameToConnectionIndex[name] = connection.index
@@ -2008,17 +2015,33 @@ function Server:closeConnection(connection, reason)
     return
   end
 
-  -- Gameplay-channel drop = full player teardown. Also tears down any side
-  -- channels still attached.
+  -- Gameplay-channel drop with the player still in a room (or spectating one):
+  -- ALWAYS preserve the slot, even mid-match. The Player record stays so they
+  -- can re-attach via privateUserId on reconnect. Mid-match: loose-sync's
+  -- silent-death watchdog will synth a death event at the right frame if they
+  -- stay quiet long enough — survivors continue playing without the match
+  -- being voided. Sweep-idle-rooms is the long-term safety net for truly
+  -- abandoned slots.
+  if self.playerToRoom[player] or self.spectatorToRoom[player] then
+    player.gameplayConnection = nil
+    if player.connection == connection then
+      player.connection = player.lobbyConnection or player.spectateConnection
+    end
+    logger.info("Gameplay socket dropped for " .. player.name
+      .. " but room slot preserved; awaiting reconnect.")
+    return
+  end
+
+  -- No room slot: full teardown. Tears down any side channels still attached.
   self:clearProposals(player)
   self:handleLeaveRoom(player, reason)
   self.publicIdToPlayer[player.publicPlayerID] = nil
   self.playerToRoom[player] = nil
   self.spectatorToRoom[player] = nil
+  player.spectatedRoom = nil
   self.nameToPlayer[player.name] = nil
   self.nameToConnectionIndex[player.name] = nil
 
-  -- Close any remaining side-channel sockets so we don't leak them.
   for _, sideConn in ipairs({player.lobbyConnection, player.spectateConnection}) do
     if sideConn and sideConn ~= connection then
       self.socketToConnectionIndex[sideConn.socket] = nil

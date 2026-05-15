@@ -75,6 +75,8 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   self.recentGameAbort = false
   self.voided = false
   self.voidReason = nil
+  self.game = nil
+  self.paused = false
 
   -- Monotonic seconds source for arbitration windows, watchdog deadlines,
   -- and serverWallClockMs stamping. In production this is a closure over
@@ -143,7 +145,6 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
     player:addToRoom(self)
-    player.state = "character select"
     self.win_counts[i] = 0
     player.cursor = "__Ready"
     player.player_number = i
@@ -308,7 +309,6 @@ function Room:addPlayer(player, slotNumber)
   self.players[playerIndex] = player
   player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
   player:addToRoom(self)
-  player.state = "character select"
   if removedFromSpectators then
     self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, self:spectator_names()))
   end
@@ -577,13 +577,9 @@ end
 function Room:prepare_character_select()
   logger.debug("Called Server.lua Room.character_select")
   self:noteActivity()
-  -- pairs not ipairs: post-match, the player who was queued for removal
-  -- (mid-match leave, pendingLeaverRemovals) may have already nil'd their
-  -- slot. Surviving players past that hole would otherwise stay stuck on
-  -- "playing" state because their state reset got skipped — every next
-  -- match-start handshake then needs them to manually re-ready.
+  self.game = nil
+  self.paused = false
   for _, player in pairs(self.players) do
-    player.state = "character select"
     player.cursor = "__Ready"
     player.ready = false
   end
@@ -606,18 +602,10 @@ end
 
 ---@return PlayerState | "closed"
 function Room:state()
-  -- Sparse self.players: don't assume slot 1 exists (the owner may have left
-  -- a partial room and B is at slot 3 alone). Pull the first occupied slot.
-  local _, anyPlayer = self:eachPlayer()()
-  if not anyPlayer then
-    return "closed"
-  elseif anyPlayer.state == "character select" then
-    return "character select"
-  elseif anyPlayer.state == "playing" then
-    return "playing"
-  else
-    return anyPlayer.state
-  end
+  if not self:eachPlayer()() then return "closed" end
+  if self.paused then return "paused" end
+  if self.game then return "playing" end
+  return "character select"
 end
 
 ---@param newSpectator ServerPlayer
@@ -648,8 +636,7 @@ function Room:add_spectator(newSpectator, pendingPromote)
     end
   end
 
-  newSpectator.state = "spectating"
-  newSpectator:addToRoom(self)
+  newSpectator.spectatedRoom = self
   self.spectators[#self.spectators + 1] = newSpectator
   logger.debug(newSpectator.name .. " joined " .. self.name .. " as a spectator")
 
@@ -698,10 +685,10 @@ function Room:remove_spectator(spectator)
   local lobbyChanged = false
   for i, v in ipairs(self.spectators) do
     if v.name == spectator.name then
-      self.spectators[i].state = "lobby"
       logger.debug(spectator.name .. " left " .. self.name .. " as a spectator")
       table.remove(self.spectators, i)
-      spectator:removeFromRoom(self)
+      spectator.spectatedRoom = nil
+      spectator:sendJson(ServerProtocol.leaveRoom(self.roomNumber, nil))
       lobbyChanged = true
       break
     end
@@ -744,11 +731,11 @@ function Room:close(reason)
 
   for i = #self.spectators, 1, -1 do
     local spectator = self.spectators[i]
-    if spectator.room then
-      spectator.state = "lobby"
-      spectator:removeFromRoom(self, reason)
-      self.spectators[i] = nil
+    if spectator.spectatedRoom == self then
+      spectator.spectatedRoom = nil
+      spectator:sendJson(ServerProtocol.leaveRoom(self.roomNumber, reason))
     end
+    self.spectators[i] = nil
   end
 
   self.signalSubscriptions = nil
@@ -1344,14 +1331,9 @@ function Room:_finalizeMatch()
   end
   logger.debug("*******************************\n")
 
+  local finishedGame = self.game
   self:prepare_character_select()
-  self:broadcastJson(
-    ServerProtocol.gameResult(
-      self.game,
-      self
-    )
-  )
-  self.game = nil
+  self:broadcastJson(ServerProtocol.gameResult(finishedGame, self))
 
   -- Process leavers who left mid-match while their stack was already eliminated.
   -- We deferred their removal until now so player_number / disconnectedPlayers
@@ -1616,7 +1598,6 @@ function Room:voidByLeave(leaver, reason)
     self:broadcastJson(ServerProtocol.sendGameAbort(leaver, reason or "player left"), leaver)
     self:emitSignal("matchEnd", self.game)
     self:prepare_character_select()
-    self.game = nil
     self.recentGameAbort = true
     -- Abort just collapsed the match. Any earlier dead-leavers we were waiting
     -- to remove at match-end won't get that signal, so flush them now.
@@ -1667,24 +1648,16 @@ function Room:abortGame(sender, reason)
   self:broadcastJson(ServerProtocol.sendGameAbort(sender, reason), sender)
   self:emitSignal("matchEnd", self.game)
   self:prepare_character_select()
-  self.game = nil
   self.recentGameAbort = true
 end
 
 function Room:togglePause(sender, paused)
   local playerCount = self:countPlayers()
   local _, solePlayer = self:eachPlayer()()
-  if playerCount == 1 and solePlayer == sender and paused ~= (self:state() == "paused") then
+  if playerCount == 1 and solePlayer == sender and paused ~= self.paused then
+    self.paused = paused and true or false
     self:broadcastJson(ServerProtocol.sendPauseNotification(self.roomNumber, sender, paused), sender)
     self:emitSignal("pauseToggled")
-
-    for _, player in self:eachPlayer() do
-      if paused then
-        player:setState("paused")
-      else
-        player:setState("playing")
-      end
-    end
   end
 end
 

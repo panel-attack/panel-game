@@ -1,6 +1,6 @@
--- Tests the underlying TCP client class (now GameplayTcpClient after the
--- dual-socket split; LobbyTcpClient is identical so one test covers both).
-local TcpClient = require("client.src.network.GameplayTcpClient")
+-- Tests the underlying TCP client class. NetClient instantiates it three
+-- times (gameplay/lobby/spectate); one instance suffices for these tests.
+local TcpClient = require("client.src.network.TcpClient")
 local consts = require("common.engine.consts")
 local ClientMessages = require("common.network.ClientProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
@@ -26,7 +26,9 @@ local function testSendData()
   local success = tcpClient:connectToServer(testServerIp, testServerPort)
   assert(success)
   assert(tcpClient:isConnected())
-  local message = NetworkProtocol.clientMessageTypes.versionCheck.prefix .. NetworkProtocol.NETWORK_VERSION
+  local message = NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.clientMessageTypes.versionCheck.prefix,
+    NetworkProtocol.NETWORK_VERSION)
   assert(tcpClient:send(message))
   tcpClient:sendRequest(ClientMessages.logout())
   assert(tcpClient:isConnected())

@@ -17,18 +17,11 @@ function MessageListener:listen()
   -- arrives on lobby (Player:sendJson routes to lobbyConnection), but
   -- gameplay/spectate may carry J during the login window.
   local nc = GAME.netClient
-  local messagesOut = {}
-  for _, client in ipairs({nc.lobbyClient, nc.gameplayClient, nc.spectateClient}) do
-    if client then
-      for _, m in ipairs(client.receivedMessageQueue:pop_all_with(self.messageHeader)) do
-        messagesOut[#messagesOut+1] = m
+  for _, client in ipairs(nc.clients) do
+    for _, message in ipairs(client.receivedMessageQueue:pop_all_with(self.messageHeader)) do
+      for subscriber, callback in pairs(self.subscriptionList) do
+        callback(subscriber, message)
       end
-    end
-  end
-  for i = 1, #messagesOut do
-    local message = messagesOut[i]
-    for subscriber, callback in pairs(self.subscriptionList) do
-      callback(subscriber, message)
     end
   end
 end

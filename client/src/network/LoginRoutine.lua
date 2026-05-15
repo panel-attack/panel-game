@@ -4,9 +4,7 @@ local save = require("client.src.save")
 local TraceWriter = require("client.src.network.TraceWriter")
 local logger = require("common.lib.logger")
 
--- abstraction level function
--- returns things as a parameter list so the API in ClientProtocol can be more explicit about which parameters it expects
---  (which it cannot if things are passed as tables)
+-- Pull the chunk of player settings that ride along on a fresh login.
 local function toLoginData(configuration, localPlayer)
   local ps = localPlayer.settings
   local c = configuration
@@ -23,28 +21,32 @@ local function toLoginData(configuration, localPlayer)
     c.save_replays_publicly
 end
 
--- Run version-check + login for a single tcp client. Returns a table:
---   { loggedIn = bool, message = string, new_user_id = ?, publicId = ?, serverTime = ?,
---     name_changed = bool, old_name = ?, new_name = ?, server_notice = ? }
--- Used twice by the dual-socket flow: once for gameplay, once for lobby.
-local function loginOnClient(client, ip, port, userId)
+-- Wait for a coroutine-driven sendRequest to resolve. Yields the status
+-- string while waiting so the caller can drive progress to the UI.
+local function awaitResponse(response, waitingMessage)
+  local status, value = response:tryGetValue()
+  while status == "waiting" do
+    coroutine.yield(waitingMessage)
+    status, value = response:tryGetValue()
+  end
+  return status, value
+end
+
+-- Full login: version check + full login_request with all player settings.
+-- Used once, on the gameplay socket. Returns the full result table.
+local function fullLogin(client, ip, port, userId)
   local result = {loggedIn = false, message = ""}
 
   if not client:connectToServer(ip, port) then
-    result.loggedIn = false
     result.message = loc("ss_could_not_connect")
     return result
   end
 
-  local response = client:sendRequest(ClientMessages.requestVersionCompatibilityCheck())
-  local status, value = response:tryGetValue()
-  while status == "waiting" do
-    coroutine.yield("Checking version compatibility with the server")
-    status, value = response:tryGetValue()
-  end
+  local status, value = awaitResponse(
+    client:sendRequest(ClientMessages.requestVersionCompatibilityCheck()),
+    "Checking version compatibility with the server")
 
   if status == "timeout" then
-    result.loggedIn = false
     result.message = loc("nt_conn_timeout")
     return result
   elseif status ~= "received" then
@@ -52,20 +54,15 @@ local function loginOnClient(client, ip, port, userId)
   end
 
   if not value.versionCompatible then
-    result.loggedIn = false
     result.message = loc("nt_ver_err")
     return result
   end
 
-  response = client:sendRequest(ClientMessages.requestLogin(userId, toLoginData(config, GAME.localPlayer)))
-  status, value = response:tryGetValue()
-  while status == "waiting" do
-    coroutine.yield("Logging in")
-    status, value = response:tryGetValue()
-  end
+  status, value = awaitResponse(
+    client:sendRequest(ClientMessages.requestLogin(userId, toLoginData(config, GAME.localPlayer))),
+    "Logging in")
 
   if status == "timeout" then
-    result.loggedIn = false
     result.message = loc("nt_conn_timeout")
     return result
   elseif status ~= "received" then
@@ -73,7 +70,6 @@ local function loginOnClient(client, ip, port, userId)
   end
 
   if not value.login_successful then
-    result.loggedIn = false
     result.message = loc("lb_error_msg") .. "\n" .. (value.reason or "")
     if value.ban_duration then
       result.message = result.message .. "\n" .. value.ban_duration
@@ -92,11 +88,39 @@ local function loginOnClient(client, ip, port, userId)
   return result
 end
 
--- Run lobby + spectate logins concurrently after gameplay returns. Each ran
--- sequentially before — ~700-900ms per socket on localhost — so a fresh
--- session took 2-3 seconds end-to-end. Driving both child coroutines from
--- one resume cuts that roughly in half: they share the per-frame yield gaps
--- instead of stacking them.
+-- Session claim: skip version check, send minimal login_request. The server
+-- recognizes the user_id as already logged in via the gameplay socket and
+-- attaches this connection to the existing Player.
+local function claimSession(client, ip, port, userId, name)
+  local result = {loggedIn = false, message = ""}
+
+  if not client:connectToServer(ip, port) then
+    result.message = loc("ss_could_not_connect")
+    return result
+  end
+
+  local status, value = awaitResponse(
+    client:sendRequest(ClientMessages.requestSessionClaim(userId, name)),
+    "Attaching side-channel socket")
+
+  if status == "timeout" then
+    result.message = loc("nt_conn_timeout")
+    return result
+  elseif status ~= "received" then
+    error("Unexpected status " .. tostring(status) .. " on session claim to " .. ip)
+  end
+
+  if not value.login_successful then
+    result.message = (value.reason or "session claim denied")
+    return result
+  end
+
+  result.loggedIn = true
+  return result
+end
+
+-- Drive multiple coroutines per tick until they all finish. Each routine's
+-- terminal return value lands in entry.result.
 local function runInParallel(routines)
   while true do
     local anyAlive = false
@@ -112,72 +136,60 @@ local function runInParallel(routines)
         end
       end
     end
-    if not anyAlive then
-      return
-    end
-    coroutine.yield("Logging in")
+    if not anyAlive then return end
+    coroutine.yield("Attaching side channels")
   end
 end
 
--- Triple-socket login: gameplay first (creates the Player server-side),
--- then lobby and spectate run concurrently using the same user_id so the
--- server attaches both to the same Player via privateUserId. Lobby and
--- spectate failures are non-fatal — fallbacks in Player keep the session
--- playable.
+-- Full login on gameplay (one real handshake). Then lobby and spectate
+-- attach in parallel via the lightweight session-claim path.
 local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, spectateClient, spectatePort)
   GAME.connected_server_ip = ip
   GAME.connected_server_port = gameplayPort
 
   local storedUserId = save.read_user_id_file(ip) or "need a new user id"
-
-  local gameplayResult = loginOnClient(gameplayClient, ip, gameplayPort, storedUserId)
+  local gameplayResult = fullLogin(gameplayClient, ip, gameplayPort, storedUserId)
   if not gameplayResult.loggedIn then
     return gameplayResult
   end
 
-  -- After the first successful login, the server may have issued a new user
-  -- id. Persist it and use it for the lobby/spectate logins so the server
-  -- can match all sockets to the same Player.
+  -- If the server issued a new user_id, persist it and use it for the
+  -- session-claim handshakes so they match the right Player.
   local effectiveUserId = storedUserId
   if gameplayResult.new_user_id then
     save.write_user_id_file(gameplayResult.new_user_id, ip)
     effectiveUserId = gameplayResult.new_user_id
   end
 
-  local parallelRoutines = {
-    lobby = {
-      co = coroutine.create(function()
-        return loginOnClient(lobbyClient, ip, lobbyPort, effectiveUserId)
-      end),
-    },
+  local routines = {
+    lobby = { co = coroutine.create(function()
+      return claimSession(lobbyClient, ip, lobbyPort, effectiveUserId, config.name)
+    end)},
   }
   if spectateClient then
-    parallelRoutines.spectate = {
-      co = coroutine.create(function()
-        return loginOnClient(spectateClient, ip, spectatePort, effectiveUserId)
-      end),
-    }
+    routines.spectate = { co = coroutine.create(function()
+      return claimSession(spectateClient, ip, spectatePort, effectiveUserId, config.name)
+    end)}
   end
-  runInParallel(parallelRoutines)
+  runInParallel(routines)
 
-  local lobbyResult = parallelRoutines.lobby.result
-  if not lobbyResult or not lobbyResult.loggedIn then
-    logger.warn("Lobby socket login failed (" .. tostring(lobbyResult and lobbyResult.message or "no result")
+  if not routines.lobby.result or not routines.lobby.result.loggedIn then
+    logger.warn("Lobby socket session-claim failed ("
+      .. tostring(routines.lobby.result and routines.lobby.result.message or "no result")
       .. "). Continuing without lobby HoL protection — JSON falls back to gameplay.")
     lobbyClient:resetNetwork()
   end
-
   if spectateClient then
-    local spectateResult = parallelRoutines.spectate.result
-    if not spectateResult or not spectateResult.loggedIn then
-      logger.warn("Spectate socket login failed (" .. tostring(spectateResult and spectateResult.message or "no result")
+    if not routines.spectate.result or not routines.spectate.result.loggedIn then
+      logger.warn("Spectate socket session-claim failed ("
+        .. tostring(routines.spectate.result and routines.spectate.result.message or "no result")
         .. "). Continuing without spectate isolation — opponent traffic falls back to gameplay.")
       spectateClient:resetNetwork()
     end
   end
 
-  -- Assemble the user-facing message from the gameplay result (the lobby
-  -- login is server-side bookkeeping that doesn't have new messages to convey).
+  -- Assemble the user-facing message from the gameplay login (the side
+  -- sockets are bookkeeping and have nothing new to say).
   local message
   if gameplayResult.new_user_id then
     message = loc("lb_user_new", config.name)
@@ -194,7 +206,7 @@ local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, s
     GAME.localPlayer.publicId = gameplayResult.publicId
   end
 
-  pcall(function() TraceWriter.beginSession(os.time()) end)
+  TraceWriter.beginSession(os.time())
 
   return {
     loggedIn = true,
@@ -203,8 +215,7 @@ local function login(gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, s
   }
 end
 
--- A wrapper class around the login process
--- Allows to advance the login process bit by bit via calling progress
+-- Coroutine wrapper. Advance via progress() each frame.
 local LoginRoutine = class(function(self, gameplayClient, ip, gameplayPort, lobbyClient, lobbyPort, spectateClient, spectatePort)
   self.gameplayClient = gameplayClient
   self.lobbyClient = lobbyClient
@@ -216,36 +227,31 @@ local LoginRoutine = class(function(self, gameplayClient, ip, gameplayPort, lobb
   self.spectatePort = spectatePort or ((gameplayPort or 49569) + 2)
 end)
 
--- returns false and the current progress of the login process as a string message while in progress
--- returns true and a result table {loggedIn = val, message = "msg"} when finishing and on further queries
+-- false + progress string while in flight, true + result table when done.
 function LoginRoutine:progress()
   if coroutine.status(self.routine) == "dead" then
     return true, self.result
-  else
-    local success, status = coroutine.resume(
-      self.routine,
-      self.gameplayClient, self.ip, self.gameplayPort,
-      self.lobbyClient, self.lobbyPort,
-      self.spectateClient, self.spectatePort)
-    if success then
-      if type(status) == "table" then
-        self.result = status
-        if self.result.loggedIn == false then
-          self.gameplayClient:resetNetwork()
-          if self.lobbyClient then self.lobbyClient:resetNetwork() end
-          if self.spectateClient then self.spectateClient:resetNetwork() end
-        end
-        return true, status
-      else
-        self.status = status
-        return false, status
-      end
-    else
-      GAME.crashTrace = debug.traceback(self.routine)
-      error(status)
-    end
   end
+  local success, status = coroutine.resume(
+    self.routine,
+    self.gameplayClient, self.ip, self.gameplayPort,
+    self.lobbyClient, self.lobbyPort,
+    self.spectateClient, self.spectatePort)
+  if not success then
+    GAME.crashTrace = debug.traceback(self.routine)
+    error(status)
+  end
+  if type(status) == "table" then
+    self.result = status
+    if self.result.loggedIn == false then
+      self.gameplayClient:resetNetwork()
+      if self.lobbyClient then self.lobbyClient:resetNetwork() end
+      if self.spectateClient then self.spectateClient:resetNetwork() end
+    end
+    return true, status
+  end
+  self.status = status
+  return false, status
 end
-
 
 return LoginRoutine

@@ -173,23 +173,13 @@ function Player:addToRoom(room)
 end
 
 function Player:removeFromRoom(room, reason)
-  -- Idempotent: cascading disconnects (mid-match all-leave) call this twice for
-  -- the same player — once via handleLeaveRoom, once via Room:close iterating
-  -- slots. The second call has nothing to clean up; logging it as an error
-  -- caused the E2E harness to flag healthy teardowns as failures.
   if not self.room then
     return
   end
 
   logger.info("Clearing room " .. room.roomNumber .. " for player " .. self.name)
-  -- Liveness is checked via the gameplay socket — that's the one whose loss
-  -- triggers full disconnect. Lobby loss alone shouldn't reset room state.
-  local gameplayLive = self.gameplayConnection and self.gameplayConnection.socket
-  if gameplayLive then
-    self.state = "lobby"
-    self.player_number = nil
-    self:sendJson(ServerProtocol.leaveRoom(room.roomNumber, reason))
-  end
+  self.player_number = nil
+  self:sendJson(ServerProtocol.leaveRoom(room.roomNumber, reason))
 
   self.room = nil
   self.wantsReady = false
@@ -277,8 +267,20 @@ end
 -- NOTE: this default routing is appropriate for YOUR critical data
 -- (outgoing inputs, KO arbitration). For OPPONENT-relayed I/G/D, callers
 -- should use Player:sendSpectate explicitly to keep the gameplay socket lean.
+-- Helper: extract the prefix byte from a wire message. v009 framing is
+-- [4-byte BE length][prefix][body], so the prefix sits at byte 5. Tests
+-- (and a couple of legacy call sites) sometimes pass raw "Iabc" strings
+-- without the length prefix; fall back to byte 1 in that case so the
+-- routing keeps working.
+local function _prefixOf(message)
+  if type(message) ~= "string" then return nil end
+  if #message >= 5 then return message:sub(5, 5) end
+  if #message > 0 then return message:sub(1, 1) end
+  return nil
+end
+
 local function _rawConnection(self, message)
-  local prefix = type(message) == "string" and #message > 0 and message:sub(1, 1)
+  local prefix = _prefixOf(message)
   if prefix == "J" then
     -- Raw "J<body>" form is rare on the server side (most JSON goes through
     -- sendJson which has access to the message-type metadata). Without that
@@ -335,7 +337,7 @@ function Player:send(message)
   conn:send(message)
   pcall(function()
     if self.publicPlayerID and type(message) == "string" and #message > 0 then
-      TraceWriter.send(self.publicPlayerID, message:sub(1, 1), message)
+      TraceWriter.send(self.publicPlayerID, _prefixOf(message), message)
     end
   end)
 end
@@ -350,7 +352,7 @@ function Player:sendSpectate(message)
   conn:send(message)
   pcall(function()
     if self.publicPlayerID and type(message) == "string" and #message > 0 then
-      TraceWriter.send(self.publicPlayerID, message:sub(1, 1), message)
+      TraceWriter.send(self.publicPlayerID, _prefixOf(message), message)
     end
   end)
 end
@@ -361,9 +363,6 @@ function Player:isReady()
 end
 
 function Player:setup_game()
-  if self.state ~= "spectating" then
-    self.state = "playing"
-  end
 end
 
 ---@return boolean
@@ -375,9 +374,29 @@ function Player:usesModifiedLevelData()
   end
 end
 
----@param state PlayerState
-function Player:setState(state)
-  self.state = state
+-- player.state is derived from (self.room, room.game, room.paused, self.spectatedRoom).
+local function _derivedState(player)
+  local room = player.room
+  if room then
+    if room.paused then return "paused" end
+    if room.game then return "playing" end
+    return "character select"
+  end
+  if player.spectatedRoom then return "spectating" end
+  return "lobby"
+end
+
+Player.__index = function(t, key)
+  if key == "state" then return _derivedState(t) end
+  return rawget(Player, key)
+end
+
+Player.__newindex = function(t, key, value)
+  if key == "state" then
+    logger.warn("Ignored player.state write for " .. tostring(t.name) .. " (state is derived)")
+    return
+  end
+  rawset(t, key, value)
 end
 
 return Player

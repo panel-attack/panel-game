@@ -13,10 +13,7 @@
 json = require("common.lib.dkjson")
 local Connection = require("server.Connection")
 require("client.src.server_queue")
--- Partial-send recovery is identical across GameplayTcpClient and
--- LobbyTcpClient (same body, just different class names). Test against
--- one; if the implementation ever diverges, copy the test for the other.
-local TcpClient = require("client.src.network.GameplayTcpClient")
+local TcpClient = require("client.src.network.TcpClient")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local socket = require("socket")
 local logger = require("common.lib.logger")

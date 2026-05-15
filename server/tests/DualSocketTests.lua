@@ -6,6 +6,14 @@
 local logger = require("common.lib.logger")
 local Player = require("server.Player")
 local MockConnection = require("server.tests.MockConnection")
+local NetworkProtocol = require("common.network.NetworkProtocol")
+
+-- v009 framing: tests need real wire frames so Player:send's prefix lookup
+-- finds the prefix at byte 5 (rather than byte-1 fallback we keep for
+-- defensive un-framed inputs).
+local function frame(prefix, body)
+  return NetworkProtocol.markedMessageForTypeAndBody(prefix, body or "")
+end
 
 local function newPlayer(channel)
   -- Player constructor binds to the channel of the connection it gets;
@@ -32,14 +40,14 @@ local function test_player_routes_json_to_lobby_and_raw_to_gameplay()
   assert(lobbyConn.outgoingMessageQueue:len() == 1, "JSON should land on lobby queue, got " .. lobbyConn.outgoingMessageQueue:len())
   assert(gameplayConn.outgoingMessageQueue:len() == 0, "JSON should NOT land on gameplay queue")
 
-  player:send("Iabc")
+  player:send(frame("I", "abc"))
   assert(gameplayConn.outgoingInputQueue:len() == 1, "I (input) should land on gameplay queue")
   assert(lobbyConn.outgoingInputQueue:len() == 0, "I (input) should NOT land on lobby queue")
 
-  player:send("Gxyz")
+  player:send(frame("G", "xyz"))
   assert(gameplayConn.outgoingInputQueue:len() == 2, "G (garbage event) should also land on gameplay queue")
 
-  player:send("Jraw-json")
+  player:send(frame("J", "raw-json"))
   assert(lobbyConn.outgoingInputQueue:len() == 1, "raw J message should land on lobby queue via prefix routing")
 end
 
@@ -91,20 +99,20 @@ local function test_player_routes_spectate_traffic_to_spectate_socket()
   assert(player.spectateConnection == spectateConn)
 
   -- Opponent's input relayed to this player goes via sendSpectate
-  player:sendSpectate("Iopp-input")
+  player:sendSpectate(frame("I", "opp-input"))
   assert(spectateConn.outgoingInputQueue:len() == 1, "opponent input should land on spectate")
   assert(gameplayConn.outgoingInputQueue:len() == 0, "opponent input should NOT land on gameplay")
 
   -- Opponent's death event
-  player:sendSpectate("Dopp-death")
+  player:sendSpectate(frame("D", "opp-death"))
   assert(spectateConn.outgoingInputQueue:len() == 2, "opponent death should land on spectate")
 
   -- Garbage NOT targeting this player (telegraph visual on someone else's stack)
-  player:sendSpectate("Gtelegraph")
+  player:sendSpectate(frame("G", "telegraph"))
   assert(spectateConn.outgoingInputQueue:len() == 3, "telegraph G should land on spectate")
 
   -- Garbage actually targeting this player → uses regular send → gameplay
-  player:send("Ghit-me")
+  player:send(frame("G", "hit-me"))
   assert(gameplayConn.outgoingInputQueue:len() == 1, "G targeting you should land on gameplay")
   assert(spectateConn.outgoingInputQueue:len() == 3, "G targeting you should NOT also land on spectate")
 end
@@ -117,7 +125,7 @@ local function test_spectate_falls_back_to_gameplay_when_missing()
 
   -- No spectate attached. Opponent traffic should still flow over gameplay
   -- so the player keeps seeing opponents' boards (degraded but functional).
-  player:sendSpectate("Iopp-input")
+  player:sendSpectate(frame("I", "opp-input"))
   assert(gameplayConn.outgoingInputQueue:len() == 1,
     "spectate should fall back to gameplay when spectateConnection is nil")
 end
@@ -133,11 +141,11 @@ local function test_spectate_drop_does_not_break_gameplay()
   spectateConn:close()
 
   -- Gameplay traffic continues
-  player:send("Iyour-input")
+  player:send(frame("I", "your-input"))
   assert(gameplayConn.outgoingInputQueue:len() == 1, "gameplay unaffected by spectate drop")
 
   -- Spectate-routed traffic falls back to gameplay (degraded but delivered)
-  player:sendSpectate("Iopp-input")
+  player:sendSpectate(frame("I", "opp-input"))
   assert(gameplayConn.outgoingInputQueue:len() == 2,
     "spectate traffic falls back to gameplay after spectate drop")
 end

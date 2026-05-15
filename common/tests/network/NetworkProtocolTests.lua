@@ -24,15 +24,31 @@ local function testGetMessage(messageBuffer, expectedTypes, expectedMessages, is
   end
 end
 
--- Test we can send I unicode messages with part of the next message after
-testGetMessage("H048" .. NetworkProtocol.markedMessageForTypeAndBody("I", "Ā") .. "I", {"H", "I"}, {"048", "Ā"}, false)
-testGetMessage("H" .. NetworkProtocol.markedMessageForTypeAndBody("I", "Ā") .. "I", {"H", "I"}, {"", "Ā"}, true)
+-- Two complete frames back-to-back, with a trailing partial (1 byte < 4-byte
+-- length prefix → ignored, no error).
+testGetMessage(
+  NetworkProtocol.markedMessageForTypeAndBody("H", "048") ..
+  NetworkProtocol.markedMessageForTypeAndBody("I", "Ā") .. "I",
+  {"H", "I"}, {"048", "Ā"}, false)
 
--- Test we can send a J and then H message
-testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("J", "{body=1}") .. "H", {"J", "H"}, {"{body=1}", ""}, true)
+-- Server-side H (versionCorrect) has an empty body in v009.
+testGetMessage(
+  NetworkProtocol.markedMessageForTypeAndBody("H", "") ..
+  NetworkProtocol.markedMessageForTypeAndBody("I", "Ā") .. "I",
+  {"H", "I"}, {"", "Ā"}, true)
 
--- Test we can send a J and then part of the next message after
-testGetMessage(NetworkProtocol.markedMessageForTypeAndBody("J", "{body=1}") .. "J" .. string.char(128), {"J"}, {"{body=1}"}, true)
+-- J followed by an empty H (versionCorrect-style) in v009 framing.
+testGetMessage(
+  NetworkProtocol.markedMessageForTypeAndBody("J", "{body=1}") ..
+  NetworkProtocol.markedMessageForTypeAndBody("H", ""),
+  {"J", "H"}, {"{body=1}", ""}, true)
+
+-- J followed by a partial frame head (2 bytes, less than the 4-byte length
+-- prefix). Parser returns only J; trailing bytes are kept for next read.
+testGetMessage(
+  NetworkProtocol.markedMessageForTypeAndBody("J", "{body=1}") ..
+  "J" .. string.char(128),
+  {"J"}, {"{body=1}"}, true)
 
 -- Loose-sync: G (GarbageEvent), D (DeathEvent) round-trip.
 -- K (KOArbitration) was removed in abfd5d4c — outcomes go via gameResult now.

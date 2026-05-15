@@ -6,6 +6,11 @@ local Queue = require("common.lib.Queue")
 
 local DEFAULT_TIMEOUT_SECONDS = 10
 local DEFAULT_SEND_RETRY_LIMIT = 5
+-- Cap on un-parsed inbound leftovers. With length-prefixed v009 framing a
+-- peer could announce a huge frame length and never deliver the body; this
+-- bounds that. Real frames are well under this — the largest JSON we send
+-- (replays, lobby snapshots) is comfortably under 1 MB.
+local MAX_LEFTOVERS_BYTES = 4 * 1024 * 1024
 
 ---@alias InputProcessor { processInput: function }
 
@@ -90,12 +95,15 @@ end
 -- Handle NetworkProtocol.clientMessageTypes.versionCheck
 local function H(connection, version)
   if version ~= NetworkProtocol.NETWORK_VERSION then
-    connection:send(NetworkProtocol.serverMessageTypes.versionWrong.prefix)
+    connection:send(NetworkProtocol.markedMessageForTypeAndBody(
+      NetworkProtocol.serverMessageTypes.versionWrong.prefix, ""))
   else
-    connection:send(NetworkProtocol.serverMessageTypes.versionCorrect.prefix)
+    connection:send(NetworkProtocol.markedMessageForTypeAndBody(
+      NetworkProtocol.serverMessageTypes.versionCorrect.prefix, ""))
   end
 end
 
+---@return boolean # false if the connection should be torn down (buffer cap exceeded)
 local function data_received(connection, data)
   connection.lastCommunicationTime = time()
   connection.leftovers = connection.leftovers .. data
@@ -103,7 +111,6 @@ local function data_received(connection, data)
   while true do
     local type, message, remaining = NetworkProtocol.getMessageFromString(connection.leftovers, false)
     if type then
-      -- when type is not nil, the others are most certainly not nil too
       ---@cast remaining string
       ---@cast message string
       connection:processMessage(type, message)
@@ -112,6 +119,12 @@ local function data_received(connection, data)
       break
     end
   end
+  if #connection.leftovers > MAX_LEFTOVERS_BYTES then
+    logger.warn("Connection " .. connection.index .. ": leftover unparsed buffer exceeded "
+      .. MAX_LEFTOVERS_BYTES .. " bytes (likely malformed frame). Closing.")
+    return false
+  end
+  return true
 end
 
 ---@return boolean
@@ -122,7 +135,9 @@ local function read(connection)
     data = partialData
   end
   if data and data:len() > 0 then
-    data_received(connection, data)
+    if not data_received(connection, data) then
+      return false
+    end
   end
   if error == "closed" then
     return false
@@ -199,7 +214,8 @@ function Connection:update(t, canRead, canSend)
     -- Pings still fire to elicit acks; an actually-dead socket gets detected
     -- via socket:receive returning "closed" (DISCONNECT-PATH-1).
     if t > self.lastPingTime and timeSinceLastComm > 1 then
-      self:send(NetworkProtocol.serverMessageTypes.ping.prefix)
+      self:send(NetworkProtocol.markedMessageForTypeAndBody(
+        NetworkProtocol.serverMessageTypes.ping.prefix, ""))
       self.lastPingTime = t
     end
   end

@@ -60,12 +60,13 @@ local function get2pMatchInProgress()
   return room, p1, p2
 end
 
--- Count messages in a queue by prefix
+-- Count messages in a queue by prefix.
+-- v009 framing: [4-byte BE length][prefix][body] → prefix byte is at position 5.
 local function countByPrefix(queue, prefix)
   local count = 0
   for i = queue.first, queue.last do
     local msg = queue[i]
-    if type(msg) == "string" and msg:sub(1, 1) == prefix then
+    if type(msg) == "string" and #msg >= 5 and msg:sub(5, 5) == prefix then
       count = count + 1
     end
   end

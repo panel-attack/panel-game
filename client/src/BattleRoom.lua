@@ -630,6 +630,11 @@ function BattleRoom:update(dt)
   end
 end
 
+-- Tear down local match state (signals, match object, GAME.battleRoom). Does
+-- NOT send leave_room to the server — that's an explicit user action and goes
+-- through NetClient:leaveRoom directly (Lobby buttons, CharacterSelect's leave
+-- option, etc.). Crashes, match-end aborts, scene transitions all use this
+-- path and must NOT boot the player from the room.
 function BattleRoom:shutdown()
   for _, player in ipairs(self.players) do
     player:disconnectSubscriber(self)
@@ -638,9 +643,6 @@ function BattleRoom:shutdown()
   if self.match then
     self.match:deinit()
     self.match = nil
-  end
-  if self.online then
-    GAME.netClient:leaveRoom()
   end
   self.hasShutdown = true
   GAME.battleRoom = nil

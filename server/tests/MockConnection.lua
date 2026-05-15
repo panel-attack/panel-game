@@ -20,11 +20,13 @@ end)
 function MockConnection:update(t) end
 
 function MockConnection:send(message)
-  local prefix = message:sub(1, 1)
-  -- I, U, V, W are input prefixes for players 1-4. G/D/K are loose-sync
-  -- event prefixes (GarbageEvent, DeathEvent, KOArbitration).
-  if prefix == "I" or prefix == "U" or prefix == "V" or prefix == "W"
-      or prefix == "J" or prefix == "G" or prefix == "D" or prefix == "K" then
+  -- v009 framing: [4-byte BE length][prefix][body]. Prefix sits at byte 5.
+  -- Tests sometimes pass un-framed strings like "Iabc"; fall back to byte 1
+  -- so routing-level tests work without rebuilding wire frames.
+  local prefix = #message >= 5 and message:sub(5, 5) or message:sub(1, 1)
+  -- I = unified input prefix (v008+); G/D = loose-sync event prefixes
+  -- (GarbageEvent, DeathEvent). J = JSON message.
+  if prefix == "I" or prefix == "J" or prefix == "G" or prefix == "D" then
     self.outgoingInputQueue:push(message)
   end
 end

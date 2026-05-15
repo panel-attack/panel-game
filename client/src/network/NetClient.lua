@@ -1,7 +1,5 @@
 local class = require("common.lib.class")
-local GameplayTcpClient = require("client.src.network.GameplayTcpClient")
-local LobbyTcpClient = require("client.src.network.LobbyTcpClient")
-local SpectateTcpClient = require("client.src.network.SpectateTcpClient")
+local TcpClient = require("client.src.network.TcpClient")
 local MessageListener = require("client.src.network.MessageListener")
 local ServerMessages = require("client.src.network.ServerMessages")
 local ClientMessages = require("common.network.ClientProtocol")
@@ -27,6 +25,41 @@ local getSceneFromRoom
 
 -- Most functions of NetClient are private as they only should get triggered via incoming server messages
 --  that get automatically processed via NetClient:update
+
+-- Cross-cutting helpers. Defined early so every later local function can
+-- reference them — Lua resolves local-name references against the lexical
+-- scope at parse time, so forward references silently resolve to a global
+-- (nil) instead of the local declared later in the file.
+
+-- One place to clear all per-match input/visual state. Used at every match
+-- boundary (start, end, abort, leave, state-transition out of INGAME) to
+-- make sure stale input echoes / garbage / death events from a prior match
+-- don't bleed into the next one. Safe to call when defers are already nil.
+local function _clearMatchInputState(self)
+  self.gameplayClient:dropOldInputMessages()
+  self.spectateClient:dropOldInputMessages()
+  self._deferredInputMsgs = nil
+  self._deferredGarbageMsgs = nil
+  self._deferredDeathMsgs = nil
+end
+
+-- One place to send a gameplay-channel fire-and-forget message (inputs / G / D).
+-- These bypass the JSON Request/Response handshake — they're unacked frames.
+local function _sendGameplay(self, prefix, body)
+  if not self:isConnected() then return end
+  self.gameplayClient:send(NetworkProtocol.markedMessageForTypeAndBody(prefix, body))
+end
+
+-- Process incoming on a non-critical side socket (lobby or spectate). If it
+-- drops, log + reset + emit channelDegraded so the UI can surface it. Side
+-- channels are isolation/perf wins, never required for play to continue.
+local function _processSideSocket(self, client, channelName)
+  if client:isConnected() and not client:processIncomingMessages() then
+    logger.warn(channelName .. " socket dropped; resetting. Other channels unaffected.")
+    client:resetNetwork()
+    self:emitSignal("channelDegraded", channelName)
+  end
+end
 
 local function resetLobbyData(self)
   ---@class PersonalizedLobbyDataV2
@@ -289,10 +322,7 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
   self.room = GAME.battleRoom
   self:registerPlayerUpdates(self.room)
 
-  pcall(function()
-    local roomNumber = self.room and self.room.roomNumber or 0
-    TraceWriter.beginMatch(roomNumber, os.time())
-  end)
+  TraceWriter.beginMatch(self.room and self.room.roomNumber or 0, os.time())
   love.window.requestAttention()
   SoundController:playSfx(themes[config.theme].sounds.notification)
 
@@ -376,10 +406,7 @@ local function processGameResultMessage(self, message)
   -- that means from here on it is expected to receive no further input messages from either player
   -- if we went game over first, the opponent will notice later and keep sending inputs until we went game over on their end too
   -- these extra messages will remain unprocessed in the queue and need to be cleared up so they don't get applied the next match
-  self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
-  self._deferredInputMsgs = nil
-  self._deferredGarbageMsgs = nil
-  self._deferredDeathMsgs = nil
+  _clearMatchInputState(self)
 
   if not self.room then
     return
@@ -429,7 +456,7 @@ local function processLeaveRoomMessage(self, message)
     self.room:shutdown()
     self.room = nil
     GAME.battleRoom = nil
-    pcall(function() TraceWriter.endMatch() end)
+    TraceWriter.endMatch()
   end
 
   -- Always clear stale lobbyData entry + transition out of room state, even if
@@ -535,10 +562,7 @@ local function processMatchStartMessage(self, message)
     -- although the most important thing is replacing the on-going transition but startMatch already does that as a default
   end
 
-  self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
-  self._deferredInputMsgs = nil
-  self._deferredGarbageMsgs = nil
-  self._deferredDeathMsgs = nil
+  _clearMatchInputState(self)
   local match = self.room:startMatch(message.replay)
   self:setState(states.INGAME)
   if match.supportsPause and match:hasLocalPlayer() then
@@ -796,9 +820,7 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
     -- Clear any defer queues left over from a previous match (e.g., your own
     -- match where TCP dropped without a clean gameResult/gameAbort). Slot
     -- indices are per-match; stale events would apply to wrong stacks.
-    self._deferredInputMsgs = nil
-    self._deferredGarbageMsgs = nil
-    self._deferredDeathMsgs = nil
+    _clearMatchInputState(self)
     self.state = states.INGAME
     local vsScene = GameBase({match = GAME.battleRoom.match})
     vsScene:load()
@@ -824,11 +846,7 @@ end
 ---@param self NetClient
 local function handleGameAbort(self, gameAbortMessage)
   if self.room and self.room.match and self.state == states.INGAME then
-    self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
-    -- Clear budgeted defer queues; this match's slots won't apply to the next.
-    self._deferredInputMsgs = nil
-    self._deferredGarbageMsgs = nil
-    self._deferredDeathMsgs = nil
+    _clearMatchInputState(self)
     -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
     self.room.match:disconnectSignal("matchEnded", self.room)
     -- instead we actively abort the match ourselves
@@ -877,9 +895,9 @@ local function createListeners(self)
 end
 
 ---@class NetClient : Signal
----@field gameplayClient GameplayTcpClient
----@field lobbyClient LobbyTcpClient
----@field spectateClient SpectateTcpClient
+---@field gameplayClient TcpClient
+---@field lobbyClient TcpClient
+---@field spectateClient TcpClient
 ---@field leaderboard table
 ---@field pendingResponses table
 ---@field state NetClientStates
@@ -892,16 +910,19 @@ end
 ---@field serverTimeDelta integer in seconds
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
-  -- Triple-socket split:
+  -- Triple-socket split (three independent TCP connections via one shared class):
   --   gameplayClient → YOUR critical traffic (outgoing I, incoming G targeting you, K)
   --   spectateClient → opponents' I/G/D (rendering their boards) — bulky, isolated
   --   lobbyClient    → J (lobby/room/chat/replays/settings)
   -- Independent sockets, independent failure. Gameplay drop = full disconnect.
   -- Spectate drop = opponents' boards freeze for that player but their own
   -- game continues. Lobby drop = silent reconnect.
-  self.gameplayClient = GameplayTcpClient()
-  self.spectateClient = SpectateTcpClient()
-  self.lobbyClient = LobbyTcpClient()
+  self.gameplayClient = TcpClient({name = "gameplay", defaultPort = 49569})
+  self.lobbyClient    = TcpClient({name = "lobby",    defaultPort = 49570})
+  self.spectateClient = TcpClient({name = "spectate", defaultPort = 49571})
+  -- For ops that need every client (reset/updateNetwork/lag config).
+  -- Named fields stay for ops that target a specific channel.
+  self.clients = { self.gameplayClient, self.lobbyClient, self.spectateClient }
   self.leaderboard = nil
 
   local lagMs = tonumber(os.getenv("PA_NETWORK_LAG_MS"))
@@ -910,7 +931,7 @@ local NetClient = class(function(self)
   if lagMinMs and lagMinMs > 0 then
     local sMin = lagMinMs / 1000
     local sMax = (lagMaxMs or lagMinMs) / 1000
-    for _, client in ipairs({self.gameplayClient, self.lobbyClient, self.spectateClient}) do
+    for _, client in ipairs(self.clients) do
       client:activateDelayedProcessing()
       client:setNetworkLag(sMin, sMax, sMin, sMax)
     end
@@ -970,6 +991,8 @@ local NetClient = class(function(self)
   -- only fires for unintended disconnects
   self:createSignal("clientDisconnected")
   self:createSignal("loginFinished")
+  -- emitted with (channelName) when a side socket (lobby/spectate) drops
+  self:createSignal("channelDegraded")
 end)
 
 NetClient.STATES = states
@@ -984,7 +1007,7 @@ function NetClient:leaveRoom()
       and localId and self.lobbyDataV2.players[localId]
       and self.lobbyDataV2.players[localId].roomNumber ~= nil
   if self:isConnected() and (self.room or lobbySaysInRoom) then
-    self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
+    _clearMatchInputState(self)
     self.lobbyClient:sendRequest(ClientMessages.leaveRoom())
     -- the server sends us back the confirmation that we left the room
     -- so we reenter ONLINE state via processLeaveRoomMessage, not here
@@ -1070,31 +1093,20 @@ function NetClient:sendTauntDown(index)
 end
 
 function NetClient:sendInput(input)
-  if self:isConnected() then
-    local message = NetworkProtocol.markedMessageForTypeAndBody(NetworkProtocol.clientMessageTypes.playerInput.prefix, input)
-    self.gameplayClient:send(message)
-  end
+  _sendGameplay(self, NetworkProtocol.clientMessageTypes.playerInput.prefix, input)
 end
 
 ---Loose-sync: send a GarbageEvent from the local sim. body is JSON-encoded inline
 ---(no Request wrapper — these are fire-and-forget like inputs).
 ---@param body table parsed event payload
 function NetClient:sendGarbageEvent(body)
-  if self:isConnected() then
-    local message = NetworkProtocol.markedMessageForTypeAndBody(
-      NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))
-    self.gameplayClient:send(message)
-  end
+  _sendGameplay(self, NetworkProtocol.clientMessageTypes.garbageEvent.prefix, json.encode(body))
 end
 
 ---Loose-sync: send a DeathEvent from the local sim.
 ---@param body table parsed event payload
 function NetClient:sendDeathEvent(body)
-  if self:isConnected() then
-    local message = NetworkProtocol.markedMessageForTypeAndBody(
-      NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
-    self.gameplayClient:send(message)
-  end
+  _sendGameplay(self, NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
 end
 
 ---@param clientMatch ClientMatch
@@ -1293,9 +1305,7 @@ end
 function NetClient:disconnect(voluntary)
   self.room = nil
   -- Reset all three sockets — full session teardown.
-  self.gameplayClient:resetNetwork()
-  self.spectateClient:resetNetwork()
-  self.lobbyClient:resetNetwork()
+  for _, client in ipairs(self.clients) do client:resetNetwork() end
   self:setState(states.OFFLINE)
   resetLobbyData(self)
   GAME.localPlayer:disconnectSubscriber(GAME.netClient)
@@ -1321,9 +1331,7 @@ function NetClient:update(dt)
   -- flushes them once their delay has elapsed. Without this call, sends never
   -- reach the socket and the 5s Response timeout fires on the first H message.
   dt = dt or 0
-  self.gameplayClient:updateNetwork(dt)
-  self.lobbyClient:updateNetwork(dt)
-  self.spectateClient:updateNetwork(dt)
+  for _, client in ipairs(self.clients) do client:updateNetwork(dt) end
 
   if self.state == states.LOGIN then
     local done, result = self.loginRoutine:progress()
@@ -1357,20 +1365,14 @@ function NetClient:update(dt)
     self:disconnect(false)
     return
   end
-  if self.spectateClient:isConnected() and not self.spectateClient:processIncomingMessages() then
-    logger.warn("Spectate socket dropped; resetting. Gameplay/lobby unaffected.")
-    self.spectateClient:resetNetwork()
-  end
-  if self.lobbyClient:isConnected() and not self.lobbyClient:processIncomingMessages() then
-    logger.warn("Lobby socket dropped; resetting. Gameplay/spectate unaffected.")
-    self.lobbyClient:resetNetwork()
-  end
+  _processSideSocket(self, self.spectateClient, "Spectate")
+  _processSideSocket(self, self.lobbyClient, "Lobby")
 
   if self.state == states.ONLINE then
     for _, listener in pairs(self.lobbyListeners) do
       listener:listen()
     end
-    self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
+    _clearMatchInputState(self)
     if self.pendingResponses.leaderboardUpdate then
       local status, value = self.pendingResponses.leaderboardUpdate:tryGetValue()
       if status == "timeout" then
@@ -1417,9 +1419,7 @@ function NetClient:setState(state)
   -- against every transition path; the per-handler clears stay as defense-in-
   -- depth at the explicit match-end / spectate sites.
   if self.state == states.INGAME and state ~= states.INGAME then
-    self._deferredInputMsgs = nil
-    self._deferredGarbageMsgs = nil
-    self._deferredDeathMsgs = nil
+    _clearMatchInputState(self)
   end
   self.state = state
 end

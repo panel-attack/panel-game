@@ -67,6 +67,8 @@ function Lobby:load(sceneParams)
   GAME.netClient:connectSignal("clientDisconnected", self, self.onDisconnect)
   GAME.netClient:connectSignal("leaderboardUpdate", self.leaderboard, self.leaderboard.updateData)
   GAME.netClient:connectSignal("loginFinished", self, self.onLoginFinish)
+  GAME.netClient:connectSignal("channelDegraded", self, self.onChannelDegraded)
+  self.degradedChannels = self.degradedChannels or {}
 
   self:initLobbyMenu()
   self.uiRoot:addChild(self.leaderboard)
@@ -2471,6 +2473,15 @@ function Lobby:draw()
     love.graphics.setColor(1, 1, 1, 1)
     GraphicsUtil.printf(self.garbageTooltip, 0, by + pad, consts.CANVAS_WIDTH, "center")
   end
+  if self.degradedChannels and next(self.degradedChannels) then
+    local labels = {}
+    for name, _ in pairs(self.degradedChannels) do labels[#labels + 1] = name end
+    table.sort(labels)
+    local text = "Side channel degraded: " .. table.concat(labels, ", ")
+    love.graphics.setColor(1, 0.55, 0.2, 0.95)
+    GraphicsUtil.printf(text, -8, 8, consts.CANVAS_WIDTH, "right")
+    love.graphics.setColor(1, 1, 1, 1)
+  end
 end
 
 function Lobby:onDisconnect(voluntary)
@@ -2483,10 +2494,20 @@ end
 function Lobby:onLoginFinish(result)
   if result.loggedIn then
     self.lobbyMessage:setText(result.message, nil, false)
+    -- Fresh login replaces any previous session's side-channel state.
+    self.degradedChannels = {}
   else
     local messageTransition = MessageTransition(love.timer.getTime(), 5, result.message)
     GAME.navigationStack:pop(messageTransition)
   end
+end
+
+-- A side socket (Lobby/Spectate) dropped. Gameplay continues; mark it so the
+-- player can see why HoL isolation is no longer in effect. No auto-reconnect:
+-- the side channel stays degraded until next full login.
+function Lobby:onChannelDegraded(channelName)
+  self.degradedChannels = self.degradedChannels or {}
+  self.degradedChannels[channelName] = true
 end
 
 return Lobby

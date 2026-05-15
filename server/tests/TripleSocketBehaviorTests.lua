@@ -22,6 +22,12 @@ local GameModes = require("common.data.GameModes")
 local MockConnection = require("server.tests.MockConnection")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 
+-- v009 framing helper: tests need length-prefixed frames so prefix routing
+-- finds the prefix at byte 5.
+local function frame(prefix, body)
+  return NetworkProtocol.markedMessageForTypeAndBody(prefix, body or "")
+end
+
 -- Build a Player with all three channels attached (simulates a full login).
 local function tripleSocketPlayer(name, publicId)
   local gameplayConn = MockConnection("gameplay")
@@ -99,13 +105,14 @@ local function test_garbage_targeting_recipient_uses_gameplay_channel()
   local spectateConn = MockConnection("spectate"); p:attachConnection(spectateConn)
 
   -- Simulate routing from broadcastGarbageEvent: recipient → send, observer → sendSpectate
-  p:send("Ghit-you")
-  p:sendSpectate("Gtelegraph")
+  p:send(frame("G", "hit-you"))
+  p:sendSpectate(frame("G", "telegraph"))
 
   assert(gameplayConn.outgoingInputQueue:len() == 1, "G targeting you on gameplay")
   assert(spectateConn.outgoingInputQueue:len() == 1, "telegraph G on spectate")
-  assert(gameplayConn.outgoingInputQueue[gameplayConn.outgoingInputQueue.first]:sub(1,1) == "G")
-  assert(spectateConn.outgoingInputQueue[spectateConn.outgoingInputQueue.first]:sub(1,1) == "G")
+  -- v009 framing: prefix byte sits at position 5.
+  assert(gameplayConn.outgoingInputQueue[gameplayConn.outgoingInputQueue.first]:sub(5,5) == "G")
+  assert(spectateConn.outgoingInputQueue[spectateConn.outgoingInputQueue.first]:sub(5,5) == "G")
 end
 
 local function test_death_broadcast_routes_via_spectate_for_observers()
@@ -155,13 +162,13 @@ local function test_side_channel_close_does_not_tear_down_player()
   assert(player.gameplayConnection == gc, "gameplay survives spectate drop")
   assert(player.lobbyConnection == lc, "lobby survives spectate drop")
   -- Gameplay continues to work
-  player:send("Itest")
+  player:send(frame("I", "test"))
   assert(gc.outgoingInputQueue:len() == 1, "gameplay socket still functions")
   -- Lobby continues to work
   player:sendJson({messageType = {prefix = "J"}, messageText = {type = "test"}})
   assert(lc.outgoingMessageQueue:len() == 1, "lobby socket still functions")
   -- Opponent traffic now falls back to gameplay (degraded, see _spectateConnection)
-  player:sendSpectate("Iopp")
+  player:sendSpectate(frame("I", "opp"))
   assert(gc.outgoingInputQueue:len() == 2, "spectate falls back to gameplay after drop")
 end
 
