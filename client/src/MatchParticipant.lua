@@ -212,7 +212,10 @@ function MatchParticipant:resetMatchTransientState()
     self:setWantsReady(false)
   end
   self:setReady(false)
-  self.cursor = "__Ready"
+  -- Do not touch self.cursor. The client-side cursor is a GridCursor widget
+  -- installed by ui/GridCursor.lua's constructor; clobbering it with the
+  -- legacy "__Ready" string (a server-only ready-position hint) leaves the
+  -- next click in CharacterSelect calling :updatePosition on a string.
 end
 
 -- a callback that runs whenever a match ended
