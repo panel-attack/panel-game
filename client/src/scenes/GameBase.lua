@@ -106,10 +106,7 @@ function GameBase:customGameOverSetup() end
 
 -- end abstract functions
 
-local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
-  if not gameMode or not gameMode.playersPerTeam then return nil end
-  return TeamUtils.teamIndexFor(gameMode, playerPosition)
-end
+local getTeamIndexForPlayerPosition = TeamUtils.teamIndexForOrNil
 
 local teamLetter = TeamUtils.teamLetter
 

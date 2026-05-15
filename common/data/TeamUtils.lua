@@ -226,6 +226,16 @@ function TeamUtils.teamIndexFor(context, position)
   return TeamUtils.getTeamIndexForPlayerPosition(gameMode, position)
 end
 
+-- Same as teamIndexFor but returns nil when the context isn't a team game.
+-- Callers that build team-keyed tables ("if teamIndex then ...") need to skip
+-- non-team contexts rather than treating each player as their own team.
+function TeamUtils.teamIndexForOrNil(context, position)
+  if not context then return nil end
+  local gameMode = (context.engine and context.gameMode) or context.gameMode or context.mode or context
+  if not (gameMode and gameMode.playersPerTeam) then return nil end
+  return TeamUtils.teamIndexFor(context, position)
+end
+
 -- Returns the team index that a player belongs to
 ---@param teams Team[] Array of teams
 ---@param playerIndex integer The player's index (1-based)
