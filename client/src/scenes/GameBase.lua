@@ -425,8 +425,15 @@ function GameBase:drawScrubIndicator()
   GraphicsUtil.printf("< Rewind", 0, y, w * 0.45, "right")
 
   GraphicsUtil.setColor(1, 1, 1, 1)
+  -- Match the in-game timer (ClientMatch:drawTimer) which reads stack.stopWatch.
+  -- engine.clock includes COUNTDOWN_START + COUNTDOWN_LENGTH; stopWatch starts
+  -- at gameplay-start. Strip the countdown frames at display time only — the
+  -- cursor itself stays in clock-frame space because that's what the engine rewinds against.
+  local countdownOffset = (self.match.engine and self.match.engine.doCountdown)
+      and (consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH)
+      or 0
   local function fmt(frame)
-    local s = math.max(0, math.floor(frame / 60))
+    local s = math.max(0, math.floor((frame - countdownOffset) / 60))
     return string.format("%d:%02d", math.floor(s / 60), s % 60)
   end
   local label = string.format("%s -> %s",

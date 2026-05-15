@@ -1413,18 +1413,22 @@ function ClientMatch:drawTeamScoreboard()
 
   do
     local sectionWidth = canvasWidth / teamCount
+    local blockHeight = 22
+    local blockPadX = 6
     for t = 1, teamCount do
       local data = teamData[t]
       if data then
-        GraphicsUtil.setColor(unpack(teamColors[t] or teamColors[1]))
+        local color = teamColors[t] or teamColors[1]
         local label = table.concat(data.names, "+") .. "  " .. data.wins
-        label = clampTextToWidth(label, sectionWidth - 8, font)
-        GraphicsUtil.printf(label, (t - 1) * sectionWidth, topY, sectionWidth, "center")
+        label = clampTextToWidth(label, sectionWidth - (blockPadX * 2) - 8, font)
+        local blockX = (t - 1) * sectionWidth + blockPadX
+        local blockW = sectionWidth - (blockPadX * 2)
+        GraphicsUtil.drawRectangle("fill", blockX, topY, blockW, blockHeight,
+          color[1], color[2], color[3], 0.85)
+        GraphicsUtil.printf(label, blockX, topY + 4, blockW, "center", {1, 1, 1, 1})
       end
     end
   end
-
-  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 function ClientMatch:drawStackSeparators()

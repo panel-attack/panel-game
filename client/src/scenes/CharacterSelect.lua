@@ -216,33 +216,15 @@ function CharacterSelect:createPlayerIcon(player)
   })
   playerIcon:addChild(playerNumberIcon)
 
-  -- player name
+  -- player name above icon; wins shown via the adjacent info card (every
+  -- player gets one in CharacterSelect2p, regardless of player count).
   local playerName = ui.Label({
     text = player.name,
     translate = false,
     hAlign = "center",
-    vAlign = "top"
+    vAlign = "top",
   })
   playerIcon:addChild(playerName)
-
-  -- wins counter on the icon itself — shown for 5+ player rooms because the
-  -- full info card (which carries the standard wins display) gets dropped to
-  -- make room for more icons. For ≤4 players the info card already shows it.
-  if #self.players >= 5 then
-    local winsLabel = ui.Label({
-      text = loc("ss_wins") .. " " .. player:getWinCountForDisplay(),
-      translate = false,
-      hAlign = "right",
-      vAlign = "top",
-      x = -4,
-      y = 2,
-    })
-    winsLabel.updateLabel = function(self, winCount)
-      self:setText(loc("ss_wins") .. " " .. winCount, nil, false)
-    end
-    player:connectSignal("winsChanged", winsLabel, winsLabel.updateLabel)
-    playerIcon:addChild(winsLabel)
-  end
 
   -- load icon
   local loadIcon = ui.ImageContainer({

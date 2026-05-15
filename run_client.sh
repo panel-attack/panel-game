@@ -5,34 +5,89 @@
 #   zsh run_client.sh Alice              # launch one client as "Alice"
 #   zsh run_client.sh Alice Bob          # launch two clients in parallel
 #
-# Simulated network lag (per direction — RTT is 2x). All three TCP sockets
-# (gameplay, spectate, lobby) are affected. Lag only one side for realism by
-# running two terminals and only setting the vars in one.
+# Simulated network conditions (DEV ONLY — prod never sets these env vars).
+# All three TCP sockets (gameplay, spectate, lobby) share the params. Lag is
+# per direction so RTT ~= 2x. Lag only one side for realism by running two
+# terminals and only setting the vars in one.
+#
+# Quick path: pick a named profile.
+#   PA_NETWORK_PROFILE=mobile_train zsh run_client.sh Alice
+#
+# Available profiles:
+#   none              No simulated lag (default)
+#   sluggish_wifi     120–180ms, mild jitter
+#   mobile_train      80–400ms, wide jitter + bursty spikes
+#   subway            80–300ms with periodic 500ms stalls (tunnels)
+#   transcontinental  200–280ms, modest jitter (US↔Asia feel)
+#   satellite         400–700ms with 2% loss
+#   bad_wifi          40–200ms with bursty spikes (microwave/AP contention)
+#   lossy_dsl         60–150ms, 2% loss, 512Kbps uplink cap
+#   pathological      Everything at once — worst-case race finder
+#
+# Manual knobs (override or compose on top of a profile):
 #   PA_NETWORK_LAG_MS=N                  # fixed N ms each direction
-#   PA_NETWORK_LAG_MIN_MS=A MAX_MS=B     # uniform random in [A, B] ms
+#   PA_NETWORK_LAG_MIN_MS=A MAX_MS=B     # exp-skewed range, P(spike)≈0.7%
+#   PA_NETWORK_LOSS_PCT=2                # 2% packets eat +RTO (TCP retransmit)
+#   PA_NETWORK_RTO_MS=250                # the +RTO added on loss (default 250)
+#   PA_NETWORK_STALL_HZ=0.125            # one stall every ~8s
+#   PA_NETWORK_STALL_MS=500              # stall duration
+#   PA_NETWORK_BURST_MS=800              # cluster spikes for this many ms
+#   PA_NETWORK_BANDWIDTH_KBPS=512        # cap upload bandwidth (0 = off)
 #
-# Scenarios:
-#   1) Sluggish wifi      MIN=120 MAX=180   ~240–360ms RTT, mild jitter
-#   2) Mobile on a train  MIN=80  MAX=400   wide jitter, exposes ordering bugs
-#   3) Transcontinental   MIN=200 MAX=280   ~400–560ms RTT, US↔Asia feel
-#   4) Satellite / bad    MIN=400 MAX=700   for verifying timeouts/disconnects
-#   5) Pathological       MIN=20  MAX=600   max variance, worst-case race finder
-#
-# Example:
-#   PA_NETWORK_LAG_MIN_MS=80 PA_NETWORK_LAG_MAX_MS=400 zsh run_client.sh Alice
-#   zsh run_client.sh Bob   # second terminal, no lag — the "good" connection
-#
-#   PA_NETWORK_LAG_MIN_MS=120 PA_NETWORK_LAG_MAX_MS=180 zsh run_client.sh Lala
-#   PA_NETWORK_LAG_MIN_MS=80 PA_NETWORK_LAG_MAX_MS=400 zsh run_client.sh Bevy
-#   PA_NETWORK_LAG_MIN_MS=200 PA_NETWORK_LAG_MAX_MS=280 zsh run_client.sh Koozie
-#   PA_NETWORK_LAG_MIN_MS=400 PA_NETWORK_LAG_MAX_MS=700 zsh run_client.sh Hayley
-#   PA_NETWORK_LAG_MIN_MS=20 PA_NETWORK_LAG_MAX_MS=600 zsh run_client.sh Amber
+# Examples:
+#   PA_NETWORK_PROFILE=subway zsh run_client.sh Alice
+#   PA_NETWORK_PROFILE=mobile_train PA_NETWORK_LOSS_PCT=5 zsh run_client.sh Bob
+#   zsh run_client.sh Carl       # second terminal, no lag — the "good" peer
 
 
 source ~/.zshrc 2>/dev/null
 cd "$(dirname "$0")"
 project_dir=$(pwd)
 pid_dir="$project_dir/logs/client_pids"
+
+# Resolve a named profile into env vars. Explicit per-knob env vars set by
+# the caller win (`: ${VAR:=...}` only fills unset values).
+case "${PA_NETWORK_PROFILE:-}" in
+  ""|none)
+    ;;
+  sluggish_wifi)
+    : ${PA_NETWORK_LAG_MIN_MS:=120}; : ${PA_NETWORK_LAG_MAX_MS:=180}
+    ;;
+  mobile_train)
+    : ${PA_NETWORK_LAG_MIN_MS:=80};  : ${PA_NETWORK_LAG_MAX_MS:=400}
+    : ${PA_NETWORK_BURST_MS:=600}
+    ;;
+  subway)
+    : ${PA_NETWORK_LAG_MIN_MS:=80};  : ${PA_NETWORK_LAG_MAX_MS:=300}
+    : ${PA_NETWORK_STALL_HZ:=0.125}; : ${PA_NETWORK_STALL_MS:=500}
+    ;;
+  transcontinental)
+    : ${PA_NETWORK_LAG_MIN_MS:=200}; : ${PA_NETWORK_LAG_MAX_MS:=280}
+    ;;
+  satellite)
+    : ${PA_NETWORK_LAG_MIN_MS:=400}; : ${PA_NETWORK_LAG_MAX_MS:=700}
+    : ${PA_NETWORK_LOSS_PCT:=2}
+    ;;
+  bad_wifi)
+    : ${PA_NETWORK_LAG_MIN_MS:=40};  : ${PA_NETWORK_LAG_MAX_MS:=200}
+    : ${PA_NETWORK_BURST_MS:=800}
+    ;;
+  lossy_dsl)
+    : ${PA_NETWORK_LAG_MIN_MS:=60};  : ${PA_NETWORK_LAG_MAX_MS:=150}
+    : ${PA_NETWORK_LOSS_PCT:=2};     : ${PA_NETWORK_BANDWIDTH_KBPS:=512}
+    ;;
+  pathological)
+    : ${PA_NETWORK_LAG_MIN_MS:=20};  : ${PA_NETWORK_LAG_MAX_MS:=600}
+    : ${PA_NETWORK_BURST_MS:=1000}
+    : ${PA_NETWORK_STALL_HZ:=0.05};  : ${PA_NETWORK_STALL_MS:=800}
+    : ${PA_NETWORK_LOSS_PCT:=3}
+    ;;
+  *)
+    echo "Unknown PA_NETWORK_PROFILE: $PA_NETWORK_PROFILE" >&2
+    echo "Valid: none sluggish_wifi mobile_train subway transcontinental satellite bad_wifi lossy_dsl pathological" >&2
+    exit 1
+    ;;
+esac
 
 # Running this script implies local development, so surface the Localhost server
 # (and other debug servers) in the main menu automatically. Override by exporting
@@ -132,6 +187,12 @@ for player_name in "$@"; do
     PA_NETWORK_LAG_MS="${PA_NETWORK_LAG_MS:-}" \
     PA_NETWORK_LAG_MIN_MS="${PA_NETWORK_LAG_MIN_MS:-}" \
     PA_NETWORK_LAG_MAX_MS="${PA_NETWORK_LAG_MAX_MS:-}" \
+    PA_NETWORK_LOSS_PCT="${PA_NETWORK_LOSS_PCT:-}" \
+    PA_NETWORK_RTO_MS="${PA_NETWORK_RTO_MS:-}" \
+    PA_NETWORK_STALL_HZ="${PA_NETWORK_STALL_HZ:-}" \
+    PA_NETWORK_STALL_MS="${PA_NETWORK_STALL_MS:-}" \
+    PA_NETWORK_BURST_MS="${PA_NETWORK_BURST_MS:-}" \
+    PA_NETWORK_BANDWIDTH_KBPS="${PA_NETWORK_BANDWIDTH_KBPS:-}" \
     love "$project_dir" &
   pid="$!"
   love_pids+=("$pid")
