@@ -377,6 +377,11 @@ local function processGameResultMessage(self, message)
   -- if we went game over first, the opponent will notice later and keep sending inputs until we went game over on their end too
   -- these extra messages will remain unprocessed in the queue and need to be cleared up so they don't get applied the next match
   self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
+  -- Same logic for our budgeted defer queues: stale messages from this match's
+  -- slot numbering must not leak into the next match.
+  self._deferredInputMsgs = nil
+  self._deferredGarbageMsgs = nil
+  self._deferredDeathMsgs = nil
 
   if not self.room then
     return
@@ -546,6 +551,10 @@ local function processMatchStartMessage(self, message)
   end
 
   self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
+  -- Clear budgeted defer queues from any prior match — stale slot indices.
+  self._deferredInputMsgs = nil
+  self._deferredGarbageMsgs = nil
+  self._deferredDeathMsgs = nil
   local match = self.room:startMatch(message.replay)
   self:setState(states.INGAME)
   if match.supportsPause and match:hasLocalPlayer() then
@@ -836,6 +845,10 @@ end
 local function handleGameAbort(self, gameAbortMessage)
   if self.room and self.room.match and self.state == states.INGAME then
     self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
+    -- Clear budgeted defer queues; this match's slots won't apply to the next.
+    self._deferredInputMsgs = nil
+    self._deferredGarbageMsgs = nil
+    self._deferredDeathMsgs = nil
     -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
     self.room.match:disconnectSignal("matchEnded", self.room)
     -- instead we actively abort the match ourselves
