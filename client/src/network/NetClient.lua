@@ -6,6 +6,7 @@ local MessageListener = require("client.src.network.MessageListener")
 local ServerMessages = require("client.src.network.ServerMessages")
 local ClientMessages = require("common.network.ClientProtocol")
 local tableUtils = require("common.lib.tableUtils")
+local socket = require("common.lib.socket")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local logger = require("common.lib.logger")
 local Signal = require("common.lib.signal")
@@ -683,41 +684,97 @@ local function _drainBoth(self, prefix)
   return out
 end
 
+-- Time budget per render tick for visual-only message processing. Local-
+-- gameplay-affecting messages (garbage targeting you) bypass this cap and
+-- are always processed in full. The budget protects render-frame smoothness
+-- when a burst of opponent visual updates arrives in one tick.
+local VISUAL_MESSAGE_BUDGET_MS = 4
+
+local function _localSlot(self)
+  if not self.room or not self.room.match or not self.room.match.stacks then return nil end
+  for i, stack in ipairs(self.room.match.stacks) do
+    if stack and stack.is_local then return i end
+  end
+  return nil
+end
+
+-- Drain fresh messages with a wall-clock budget. Deferred queue from prior
+-- ticks is drained FIRST (FIFO across ticks); leftover goes back to the
+-- defer queue for next tick. Always applies at least one to make progress
+-- under sustained heavy load.
+local function _drainBudgeted(self, deferKey, fresh, applyFn)
+  self[deferKey] = self[deferKey] or {}
+  local deferred = self[deferKey]
+  local startMs = socket.gettime() * 1000
+  local applied = 0
+
+  while #deferred > 0 do
+    if applied > 0 and (socket.gettime() * 1000 - startMs) > VISUAL_MESSAGE_BUDGET_MS then break end
+    applyFn(table.remove(deferred, 1))
+    applied = applied + 1
+  end
+
+  for _, msg in ipairs(fresh) do
+    if applied > 0 and (socket.gettime() * 1000 - startMs) > VISUAL_MESSAGE_BUDGET_MS then
+      deferred[#deferred + 1] = msg
+    else
+      applyFn(msg)
+      applied = applied + 1
+    end
+  end
+end
+
 local function processInputMessages(self)
   local inputPrefix = NetworkProtocol.serverMessageTypes.input.prefix
   local messages = _drainBoth(self, inputPrefix)
-  if self.room and self.room.match then
-    for _, msg in ipairs(messages) do
-      local body = msg[inputPrefix]
-      if body then
-        self.room.match:receiveInput(body.playerNumber, body.input)
-      end
-    end
-  end
+  if not (self.room and self.room.match) then return end
+  -- I events are 100% visual-only: server never echoes your own inputs.
+  _drainBudgeted(self, "_deferredInputMsgs", messages, function(msg)
+    local body = msg[inputPrefix]
+    if body then self.room.match:receiveInput(body.playerNumber, body.input) end
+  end)
 end
 
 ---@param self NetClient
 local function processGarbageEvents(self)
   local prefix = NetworkProtocol.serverMessageTypes.garbageEvent.prefix
   local messages = _drainBoth(self, prefix)
+  if not (self.room and self.room.match) then return end
+
+  -- Split: garbage targeting the LOCAL player affects the local sim and
+  -- must apply immediately (no cap). Everything else is opponent visual,
+  -- subject to the budget.
+  local localSlot = _localSlot(self)
+  local visual = {}
   for _, msg in ipairs(messages) do
     local body = msg[prefix]
-    if self.room and self.room.match then
+    if not body then
+      -- skip malformed
+    elseif localSlot and body.recipients and tableUtils.contains(body.recipients, localSlot) then
       self.room.match:applyGarbageEvent(body)
+    else
+      visual[#visual + 1] = msg
     end
   end
+
+  _drainBudgeted(self, "_deferredGarbageMsgs", visual, function(msg)
+    local body = msg[prefix]
+    if body then self.room.match:applyGarbageEvent(body) end
+  end)
 end
 
 ---@param self NetClient
 local function processDeathEvents(self)
   local prefix = NetworkProtocol.serverMessageTypes.deathEvent.prefix
   local messages = _drainBoth(self, prefix)
-  for _, msg in ipairs(messages) do
+  if not (self.room and self.room.match) then return end
+  -- D events are 100% visual: server doesn't echo your own death back to you
+  -- (applyDeathEvent already early-returns for is_local), so all D arrivals
+  -- drive opponent visuals only.
+  _drainBudgeted(self, "_deferredDeathMsgs", messages, function(msg)
     local body = msg[prefix]
-    if self.room and self.room.match then
-      self.room.match:applyDeathEvent(body)
-    end
-  end
+    if body then self.room.match:applyDeathEvent(body) end
+  end)
 end
 
 ---@param self NetClient
