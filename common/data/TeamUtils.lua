@@ -267,6 +267,19 @@ function TeamUtils.teamColorForPlayer(context, player, fallbackIndex, alpha)
   return { c[1], c[2], c[3], alpha or c[4] or 1 }
 end
 
+-- Canonical "this player sits at this seat" setter. The only place that
+-- writes player.seatId and player.playerNumber on the client. Every code
+-- path that learns a player's seat (addToRoom, playerJoinedRoom, replay
+-- metadata, rejoin-into-new-seat) should funnel through here so the two
+-- fields cannot drift apart.
+---@param player table?
+---@param seatId integer?
+function TeamUtils.assignSeatIdentity(player, seatId)
+  if not player or not seatId then return end
+  player.seatId = seatId
+  player.playerNumber = seatId
+end
+
 -- Build a teamIndex -> {players} map from a roster. Replaces ad-hoc loops in
 -- TeamBannerHeader / PortraitGame / GameBase / ClientMatch that each iterated
 -- players and called the team-index helper themselves — every divergence in

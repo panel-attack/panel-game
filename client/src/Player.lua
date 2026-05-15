@@ -9,6 +9,7 @@ local PlayerStack = require("client.src.PlayerStack")
 require("client.src.network.PlayerStack")
 local logger = require("common.lib.logger")
 local StackBehaviours = require("common.data.StackBehaviours")
+local TeamUtils = require("common.data.TeamUtils")
 ---@module "common.data.LevelData"
 
 
@@ -285,9 +286,15 @@ end
 ---@return Player
 function Player.createFromReplayMetadata(stackMetadata)
   local player = Player(stackMetadata.name, stackMetadata.publicId, false)
-  -- playerNumber == seatId throughout the client (banner, panel, openSlots).
-  -- Fall back to stackIndex only for legacy replays that predate seatId.
-  player.playerNumber = stackMetadata.seatId or stackMetadata.stackIndex
+  -- seatId is canonical. If a legacy replay lacks it, the caller's loop
+  -- index (passed as fallbackIndex to teamIndexForPlayer) covers the gap;
+  -- do NOT silently substitute stackIndex here — they have different
+  -- semantics and conflating them yields the wrong team in sparse rooms.
+  if stackMetadata.seatId then
+    TeamUtils.assignSeatIdentity(player, stackMetadata.seatId)
+  else
+    logger.warn("Player.createFromReplayMetadata: stackMetadata.seatId missing (legacy replay?)")
+  end
   player:setWinCount(stackMetadata.wins)
   player:setPanels(stackMetadata.panelId)
   player:setCharacter(stackMetadata.characterId)
