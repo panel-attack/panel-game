@@ -1301,12 +1301,18 @@ function ClientMatch:drawTeamScoreboard()
   end
 
   local canvasWidth = GAME.globalCanvas:getWidth()
-  local teamWins = GAME.battleRoom and GAME.battleRoom.teamWins
+  local battleRoom = GAME.battleRoom
+  local teamWins = battleRoom and battleRoom.teamWins
 
-  -- Shared 2-team banner header (pink/purple). Returns silently for FFA / non-team modes.
+  -- Shared 2-team banner header (pink/purple). Use battleRoom players/mode (same
+  -- path as the waiting room) so sparse-slot rooms (e.g. P1+P3 after P2 left) map
+  -- playerNumbers to team colours correctly via gameMode derivation instead of the
+  -- dense-indexed engine.teams table.
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
-  TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth, self)
-  TeamBannerHeader.drawGarbageModeBelowBanner(self.gameMode, canvasWidth, "match")
+  local bannerPlayers = (battleRoom and battleRoom.players) or self.players
+  local bannerMode   = (battleRoom and battleRoom.mode)    or self.gameMode
+  TeamBannerHeader.draw(bannerMode, bannerPlayers, teamWins, canvasWidth)
+  TeamBannerHeader.drawGarbageModeBelowBanner(bannerMode, canvasWidth, "match")
 
   -- For >2 teams, fall through to the legacy section-row layout below.
   local teamCount = self.gameMode.teamCount or 2
