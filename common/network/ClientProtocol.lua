@@ -237,6 +237,16 @@ function ClientProtocol.sendDeathEvent(body)
   }
 end
 
+---Pause-mode rewind committed locally; the server should truncate its input
+---record + clear elimination/outcome state for the sender at `senderFrame`.
+---@param body table {senderFrame: integer}
+function ClientProtocol.sendRewindEvent(body)
+  return {
+    messageType = msgTypes.rewindEvent,
+    messageText = body,
+  }
+end
+
 ---Crash-replay nomination. Sent on next quiescent moment (post-login
 ---or lobby return) per docs/CRASH_REPLAY_PLAN.md. Carries the gameKey
 ---+ trace metadata only — the actual JSONL trace file ships separately

@@ -590,8 +590,11 @@ local function processTauntMessage(self, message)
     return
   end
 
+  -- player.playerNumber is the lobby seatId; wire's player_number is stackIndex
+  -- during a match. Prefer the seatId field which the server stamps explicitly.
+  local senderKey = message.seatId or message.player_number
   local characterId = tableUtils.first(self.room.players, function(player)
-    return player.playerNumber == message.player_number
+    return player.playerNumber == senderKey
   end).settings.characterId
   characters[characterId]:playTaunt(message.type, message.index)
 end
@@ -603,9 +606,14 @@ local function processMatchStartMessage(self, message)
     return
   end
 
+  -- player.playerNumber is the lobby seatId; the replay is stackIndex-keyed.
+  -- Match via metadata.seatId (preferred) or stackIndex (legacy replays).
   for j, player in ipairs(self.room.players) do
+    local matchedStackIdx = nil
     for i, metadata in ipairs(message.replay.metadata.stacks) do
-      if player.playerNumber == metadata.stackIndex then
+      local key = metadata.seatId or metadata.stackIndex
+      if player.playerNumber == key then
+        matchedStackIdx = i
         if player.human then
           ---@cast metadata StackMetadata
           if metadata.level and metadata.level ~= player.settings.level then
@@ -616,7 +624,7 @@ local function processMatchStartMessage(self, message)
     end
 
     for i, stackSettings in ipairs(message.replay.stacks) do
-      if player.playerNumber == i then
+      if matchedStackIdx == i then
         if player.human then
           ---@cast stackSettings ReplayStack
           if LevelData.validate(stackSettings.levelData) and not LevelData.__eq(stackSettings.levelData, player.settings.levelData) then
@@ -890,6 +898,19 @@ local function processDeathEvents(self)
     local body = msg[prefix]
     if body then self.room.match:applyDeathEvent(body) end
   end)
+end
+
+---@param self NetClient
+local function processRewindEvents(self)
+  local prefix = NetworkProtocol.serverMessageTypes.rewindEvent.prefix
+  local messages = _drainBoth(self, prefix)
+  if not (self.room and self.room.match) then return end
+  for _, msg in ipairs(messages) do
+    local body = msg[prefix]
+    if body and type(body.senderFrame) == "number" then
+      self.room.match:applyRewindEvent(body)
+    end
+  end
 end
 
 ---@param self NetClient
@@ -1233,6 +1254,12 @@ function NetClient:sendDeathEvent(body)
   _sendGameplay(self, NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
 end
 
+---Pause-mode rewind committed; tell the server to truncate its input record.
+---@param body table {senderFrame: integer}
+function NetClient:sendRewindEvent(body)
+  _sendGameplay(self, NetworkProtocol.clientMessageTypes.rewindEvent.prefix, json.encode(body))
+end
+
 ---@param clientMatch ClientMatch
 function NetClient:sendPauseToggle(clientMatch)
   if self.room and self.room.roomNumber then
@@ -1532,6 +1559,7 @@ function NetClient:update(dt)
     processInputMessages(self)
     processGarbageEvents(self)
     processDeathEvents(self)
+    processRewindEvents(self)
 
     for _, listener in pairs(self.matchListeners) do
       listener:listen()

@@ -895,7 +895,7 @@ end
 -- engine's rollback buffers and let live's own rewindToFrame apply it.
 -- Either way, restore client stack pointers to live and drop preview.
 -- The live engine object is never replaced — every signal listener stays.
-function ClientMatch:endScrub(commitFrame)
+function ClientMatch:endScrub(commitFrame, fromNetwork)
   if not self._scrubLiveEngine then return end
   local live = self._scrubLiveEngine
   local preview = self._scrubPreview
@@ -919,6 +919,9 @@ function ClientMatch:endScrub(commitFrame)
 
   if needsTruncate then
     self:truncateInputsAt(commitFrame)
+    if not fromNetwork and GAME.battleRoom and GAME.battleRoom.online and GAME.netClient then
+      GAME.netClient:sendRewindEvent({ senderFrame = commitFrame })
+    end
   end
 
   self._scrubLiveEngine = nil
@@ -1012,6 +1015,23 @@ function ClientMatch:truncateInputsAt(frame)
     end
   end
   self.scrubbed = true
+end
+
+---Server-relayed RewindEvent from a peer (the player who paused + rewound).
+---Spectators / non-rewinding clients use this to keep their view-stack in
+---sync. Reuses the scrub flow when our live engine is past the rewind frame;
+---otherwise just truncates so we don't consume soon-to-be-replaced inputs.
+---@param body table {sender, senderFrame, ...}
+function ClientMatch:applyRewindEvent(body)
+  local targetFrame = body and body.senderFrame
+  if type(targetFrame) ~= "number" or targetFrame < 0 then return end
+
+  if self.engine and self.engine.clock > targetFrame then
+    self:scrubToFrame(targetFrame)
+    self:endScrub(targetFrame, true)
+  else
+    self:truncateInputsAt(targetFrame)
+  end
 end
 
 ---@return ReplayV3?

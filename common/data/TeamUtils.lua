@@ -474,4 +474,134 @@ function TeamUtils.findNextLiving(enemyIndices, startIndex, aliveFn)
   return pickedIndex, pickedSlot, nextLivingIndex
 end
 
+-- Seat / stack mapping helpers.
+--
+-- Two slot concepts, split deliberately:
+--   seatId      preset team-coordinate slot (1..maxPlayers). Stable across
+--               the player's lifetime in the room. Lobby UI, openSeats, team
+--               assignment, held-slot reservation all speak seatId.
+--   stackIndex  dense engine label (1..N where N = filled seats). Per-match
+--               only. Engine, replay stacks, input relay, eliminatedPlayers
+--               and friends speak stackIndex.
+--
+-- Player shape:
+--   player.seatId     stable, set on join
+--   player.stackIndex per-match, set by assignStackIndices
+
+-- Enumerate seat-coordinate space; stable across compaction.
+---@param players table<integer, table>  seatId-keyed (may be sparse)
+---@param maxPlayers integer
+---@param heldSeatIds integer[]? seatIds reserved for rejoiners
+---@return integer[]
+function TeamUtils.openSeats(players, maxPlayers, heldSeatIds)
+  local held = {}
+  if heldSeatIds then
+    for _, s in ipairs(heldSeatIds) do held[s] = true end
+  end
+  local slots = {}
+  for i = 1, maxPlayers do
+    if not players[i] and not held[i] then
+      slots[#slots + 1] = i
+    end
+  end
+  return slots
+end
+
+-- Assign stack indices to occupied seats. Walks seats in ascending order;
+-- mutates each player's stackIndex and player_number (legacy callsites read
+-- player_number; during a match it is the stackIndex). Does not renumber the
+-- players table's keys.
+---@param players table<integer, table>  seatId-keyed
+---@return table<integer, integer> seatToStack  seatId -> stackIndex
+---@return integer[] stackToSeat                 stackIndex -> seatId
+---@return table[] densePlayers                  players in stackIndex order
+function TeamUtils.assignStackIndices(players)
+  local seats = {}
+  for seatId, p in pairs(players) do
+    if p then seats[#seats + 1] = seatId end
+  end
+  table.sort(seats)
+
+  local seatToStack = {}
+  local stackToSeat = {}
+  local densePlayers = {}
+  for stackIdx, seatId in ipairs(seats) do
+    local player = players[seatId]
+    seatToStack[seatId] = stackIdx
+    stackToSeat[stackIdx] = seatId
+    densePlayers[stackIdx] = player
+    player.stackIndex = stackIdx
+    player.player_number = stackIdx
+  end
+  return seatToStack, stackToSeat, densePlayers
+end
+
+-- Inverse of assignStackIndices. Restores player_number to seatId.
+---@param players table<integer, table>  seatId-keyed
+function TeamUtils.clearStackIndices(players)
+  for seatId, p in pairs(players) do
+    if p then
+      p.stackIndex = nil
+      p.player_number = p.seatId or seatId
+    end
+  end
+end
+
+-- Translate seatId-based teams[] into stackIndex-based teams[] for engine.
+---@param teams Team[]
+---@param seatToStack table<integer, integer>
+---@return Team[]
+function TeamUtils.remapTeamsBySeatToStack(teams, seatToStack)
+  local remapped = {}
+  for _, team in ipairs(teams) do
+    local stackIndices = {}
+    for _, seatId in ipairs(team.playerIndices) do
+      local stackIdx = seatToStack[seatId]
+      if stackIdx then stackIndices[#stackIndices + 1] = stackIdx end
+    end
+    remapped[team.id] = {
+      id = team.id,
+      teamIndex = team.teamIndex,
+      playerIndices = stackIndices,
+    }
+  end
+  return remapped
+end
+
+-- Which teams still have a living member. FFA (teams == nil) treats each
+-- seat as its own team; team key in that case is the seatId.
+---@param players table<integer, table>  seatId-keyed
+---@param teams Team[]?  stackIndex-based (engine view)
+---@param isAlive fun(seatId: integer, player: table): boolean
+---@return integer[] teamKeys
+---@return integer[] representatives  one seatId per living team
+function TeamUtils.livingTeams(players, teams, isAlive)
+  local teamKeys = {}
+  local reps = {}
+  local seen = {}
+  local seats = {}
+  for seatId, p in pairs(players) do
+    if p then seats[#seats + 1] = seatId end
+  end
+  table.sort(seats)
+  for _, seatId in ipairs(seats) do
+    local player = players[seatId]
+    if isAlive(seatId, player) then
+      local key
+      if teams then
+        local stackIdx = player.stackIndex or seatId
+        key = TeamUtils.getPlayerTeamIndex(teams, stackIdx)
+      else
+        key = seatId
+      end
+      if key and not seen[key] then
+        seen[key] = true
+        teamKeys[#teamKeys + 1] = key
+        reps[#reps + 1] = seatId
+      end
+    end
+  end
+  return teamKeys, reps
+end
+
 return TeamUtils

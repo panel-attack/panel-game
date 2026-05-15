@@ -22,6 +22,7 @@ NetworkProtocol.clientMessageTypes = {
   playerInput = {prefix="I"},      -- Player input (raw encoded input string).
   garbageEvent = {prefix="G"},     -- Loose-sync GarbageEvent (JSON body)
   deathEvent = {prefix="D"},       -- Loose-sync DeathEvent (JSON body)
+  rewindEvent = {prefix="R"},      -- Pause-mode rewind commit (JSON body)
   acknowledgedPing = {prefix="E"}, -- Ping ack (empty body)
   versionCheck = {prefix="H"},     -- Initial handshake; body is NETWORK_VERSION
 }
@@ -35,6 +36,7 @@ NetworkProtocol.serverMessageTypes = {
   input = {prefix="I", verbose=true},                -- Relayed player input
   garbageEvent = {prefix="G", verbose=true},         -- Relayed GarbageEvent
   deathEvent = {prefix="D"},                         -- Relayed DeathEvent
+  rewindEvent = {prefix="R"},                        -- Relayed RewindEvent
   versionCorrect = {prefix="H"},                     -- Sent if client's NETWORK_VERSION matches
   versionWrong = {prefix="N"},                       -- Sent if client's NETWORK_VERSION mismatches
   ping = {prefix="E", verbose=true},                 -- Ping (empty body); client replies with E

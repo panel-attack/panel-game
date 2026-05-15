@@ -129,24 +129,22 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
   -- is auxiliary and must never alter Room behavior.
   self:createSignal("incidentDetected")
 
-  -- self.players is keyed by slot number (== player.player_number). For team
-  -- modes the slot determines team membership (TeamUtils.createTeams returns
-  -- playerIndices that ARE slot numbers), so a player who requested slot 3
-  -- must land at self.players[3] — not the next-available index. That means
-  -- self.players is SPARSE while the room is filling: a partial 2v2 room may
-  -- have {[1]=A, [3]=B} with slots 2 and 4 empty. Use self:countPlayers() and
-  -- self:eachPlayer() instead of `#self.players` / `ipairs(self.players)`,
-  -- since Lua's length operator and ipairs both stop at the first nil.
+  -- self.players is keyed by seatId (== player.seatId). Stable across the
+  -- player's lifetime; never renumbered. Sparse mid-fill: a partial 2v2 may
+  -- have {[1]=A, [3]=B}. Use self:countPlayers() and self:eachPlayer() —
+  -- `#` and ipairs halt at the first nil. self.win_counts mirrors this
+  -- keying. self.teams and engine-side state (eliminatedPlayers etc.) are
+  -- stackIndex-keyed during a match — see TeamUtils.assignStackIndices.
 
-  -- Initialize all initially passed players the same way addPlayer does. The
-  -- varargs received by create_room have no per-player slot intent, so we
-  -- assign them slots 1..N in order; this matches the previous behavior for
-  -- 1v1 rooms (which is how every code path constructs a Room today).
+  -- Initial-roster construction: assign seats 1..N in order. seatId is stable
+  -- for the player's lifetime in the room; player_number mirrors seatId in
+  -- the lobby and switches to stackIndex during a match.
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
     player:addToRoom(self)
     self.win_counts[i] = 0
     player.cursor = "__Ready"
+    player.seatId = i
     player.player_number = i
   end
 
@@ -183,12 +181,15 @@ function Room:resetForNewMatch()
   self.arbitrationDeaths = {}
   self.arbitrationWindowEndsAtMs = nil
   self.arbitrationEmitted = false
-  -- Seed last-input timestamps so the silent-death watchdog has a baseline
-  -- for slots that haven't sent any input yet.
+  -- lastInputMs keyed by stackIndex (engine view); broadcastInput stamps
+  -- via sender.player_number == stackIndex during a match.
   self.lastInputMs = {}
   local nowMs = math.floor(self.clock() * 1000)
-  for slot, player in pairs(self.players) do
-    if player then self.lastInputMs[slot] = nowMs end
+  for _, player in pairs(self.players) do
+    if player then
+      local stackIdx = player.stackIndex or player.player_number
+      if stackIdx then self.lastInputMs[stackIdx] = nowMs end
+    end
   end
   self._loggedInputDropDisconnect = nil
   self._loggedInputDropEliminated = nil
@@ -276,24 +277,13 @@ end
 --- players first, then open rows, then held rows.
 ---@return integer[] list of open slot indices
 function Room:getOpenSlots()
-  -- A slot is "open" when it has no player and no reservation. Held slots
-  -- (reservedSlots keyed by publicId, but holding a specific slot index — see
-  -- below) are excluded. We walk every slot 1..maxPlayers because players is
-  -- sparse now: slot 3 may be filled while slot 2 is empty (B clicked purple).
-  local reservedIndexes = {}
-  -- reservedSlots is keyed by publicId; the slot index for each reservation
-  -- lives in the "held slot" list returned by getHeldSlots. Rebuild the
-  -- inverse here so we can ask "is slot N held?" cheaply.
+  -- Seat-coordinate space, stable across compaction (the empty-slot purple-
+  -- team bug). self.players is seatId-keyed and never renumbered.
+  local heldSeats = {}
   for _, entry in ipairs(self:getHeldSlots()) do
-    reservedIndexes[entry.slotNumber] = true
+    heldSeats[#heldSeats + 1] = entry.slotNumber
   end
-  local slots = {}
-  for i = 1, self.maxPlayers do
-    if not self.players[i] and not reservedIndexes[i] then
-      slots[#slots + 1] = i
-    end
-  end
-  return slots
+  return TeamUtils.openSeats(self.players, self.maxPlayers, heldSeats)
 end
 
 ---Held slots — empty positions reserved for a specific leaver to rejoin.
@@ -368,6 +358,7 @@ function Room:addPlayer(player, slotNumber)
   -- Restore prior wins for returning players in open rooms (publicId-keyed).
   self.win_counts[playerIndex] = self.win_counts_by_publicId[player.publicPlayerID] or 0
   player.cursor = "__Ready"
+  player.seatId = playerIndex
   player.player_number = playerIndex
 
   -- Update room name (slot order, skipping any gaps).
@@ -521,95 +512,54 @@ function Room:start_match()
     end
   end
 
-  -- Recompute teams every match so drop-ins / drop-outs are reflected.
-  if self.gameMode and self.gameMode.teamCount and self.gameMode.playersPerTeam then
-    if openTeamPartial then
-      -- Build from real filled slots (e.g. {1, 3} in a 2v2 open room).
-      local filledSlots = {}
-      for slot, p in self:eachPlayer() do
-        if p then filledSlots[#filledSlots + 1] = slot end
-      end
-      self.teams = TeamUtils.createTeamsFromFilledSlots(
-        filledSlots, self.gameMode.teamCount, self.gameMode.playersPerTeam)
-      -- Gate: every declared team must have at least one body. Without this an
-      -- open 2v2 could start as 2v0 (both players on the same team), which is
-      -- not a match.
-      local teamsWithMembers = TeamUtils.countTeamsWithMembers(self.teams)
-      if teamsWithMembers < self.gameMode.teamCount then
-        logger.warn(string.format(
-          "%d: cannot start open-team match — %d of %d teams have at least one player",
-          self.roomNumber, teamsWithMembers, self.gameMode.teamCount))
-        return false
-      end
-    else
-      self.teams = TeamUtils.createTeams(playerCount, self.gameMode.teamCount, self.gameMode.playersPerTeam)
-    end
-    self.team_win_counts = self.team_win_counts or {}
-    for teamIndex = 1, #self.teams do
-      self.team_win_counts[teamIndex] = self.team_win_counts[teamIndex] or 0
-    end
-  end
-
-  -- Snapshot the slot-ordered player list once; we use it both for clearing
-  -- wantsReady and for the random-stage pick below. self.players is sparse
-  -- after pre-match leaves on open-FFA, so a plain ipairs would miss slots
-  -- past the first hole.
+  -- Slot-ordered snapshot of occupied seats. eachPlayer handles sparse.
   local activePlayers = {}
   for _, p in self:eachPlayer() do
     activePlayers[#activePlayers + 1] = p
   end
 
-  -- Compact slots to dense 1..N for dynamic-roster rooms. For team modes,
-  -- ALSO rebuild playersPerTeam to reflect the actual roster split, so
-  -- post-compaction the team math (slot→team via playersPerTeam) still
-  -- assigns the same players to the same teams it did before. Engine
-  -- assumes dense stack indices; this keeps that invariant while preserving
-  -- team membership end-to-end.
-  if self:isDynamicRoster() then
-    local pptOrig = self.gameMode.playersPerTeam
-    local isTeamMode = type(pptOrig) == "table"
-      or (type(pptOrig) == "number" and pptOrig > 1)
+  -- Assign stack indices (1..N dense) for the engine. seatId stays stable;
+  -- player.player_number switches to stackIndex for the match's lifetime.
+  local seatToStack, _, densePlayers = TeamUtils.assignStackIndices(self.players)
+  self._seatToStack = seatToStack
 
-    local function teamForOriginalSlot(slot)
-      if type(pptOrig) == "number" and pptOrig > 0 then
-        return math.floor((slot - 1) / pptOrig) + 1
-      elseif type(pptOrig) == "table" then
-        local acc = 0
-        for idx, count in ipairs(pptOrig) do
-          acc = acc + (tonumber(count) or 0)
-          if slot <= acc then return idx end
-        end
+  -- Teams against the dense stack space (engine's coordinate system). For
+  -- open-team partial rosters, derive per-match playersPerTeam from the
+  -- filled seats; never mutate gameMode.playersPerTeam (preset stays intact).
+  if self.gameMode and self.gameMode.teamCount and self.gameMode.playersPerTeam then
+    if openTeamPartial then
+      local pptOrig = self.gameMode.playersPerTeam
+      local teamSizes = {}
+      for _, player in ipairs(densePlayers) do
+        local teamIdx = TeamUtils.getTeamIndexForPlayerPosition({playersPerTeam = pptOrig}, player.seatId)
+        if teamIdx then teamSizes[teamIdx] = (teamSizes[teamIdx] or 0) + 1 end
       end
-      return 1
-    end
-
-    local teamSizes = {}
-    local compactedPlayers = {}
-    local compactedWins = {}
-    for denseIndex, player in ipairs(activePlayers) do
-      local originalTeam = isTeamMode and teamForOriginalSlot(player.player_number) or denseIndex
-      teamSizes[originalTeam] = (teamSizes[originalTeam] or 0) + 1
-      compactedPlayers[denseIndex] = player
-      compactedWins[denseIndex] = self.win_counts[player.player_number] or 0
-      player.player_number = denseIndex
-    end
-    self.players = compactedPlayers
-    self.win_counts = compactedWins
-
-    if isTeamMode then
+      local teamsWithMembers = 0
+      for i = 1, self.gameMode.teamCount do
+        if (teamSizes[i] or 0) > 0 then teamsWithMembers = teamsWithMembers + 1 end
+      end
+      if teamsWithMembers < self.gameMode.teamCount then
+        logger.warn(string.format(
+          "%d: cannot start open-team match — %d of %d teams have at least one player",
+          self.roomNumber, teamsWithMembers, self.gameMode.teamCount))
+        TeamUtils.clearStackIndices(self.players)
+        self._seatToStack = nil
+        return false
+      end
       local newPpt = {}
-      for i = 1, (self.gameMode.teamCount or #teamSizes) do
-        newPpt[i] = teamSizes[i] or 0
-      end
-      -- Store per-match compacted shape separately; do NOT overwrite
-      -- self.gameMode.playersPerTeam (the preset). Mutating the room's
-      -- gameMode would break isSharedTeamMode on the client (e.g. {1,2} →
-      -- {1,1} after a 2-player start of a 1v2 room) and corrupt team
-      -- assignment for subsequent full-roster rematches.
+      for i = 1, self.gameMode.teamCount do newPpt[i] = teamSizes[i] or 0 end
       self._compactedPlayersPerTeam = newPpt
+      self.teams = TeamUtils.createTeams(#densePlayers, self.gameMode.teamCount, newPpt)
     else
       self._compactedPlayersPerTeam = nil
+      self.teams = TeamUtils.createTeams(#densePlayers, self.gameMode.teamCount, self.gameMode.playersPerTeam)
     end
+    self.team_win_counts = self.team_win_counts or {}
+    for teamIndex = 1, #self.teams do
+      self.team_win_counts[teamIndex] = self.team_win_counts[teamIndex] or 0
+    end
+  else
+    self._compactedPlayersPerTeam = nil
   end
 
   for _, player in ipairs(activePlayers) do
@@ -619,7 +569,7 @@ function Room:start_match()
   local stageIndex = math.random(1, #activePlayers)
   self.stageId = activePlayers[stageIndex].stage
 
-  self.game = ServerGame.createFromRoomState(self)
+  self.game = ServerGame.createFromRoomState(self, densePlayers)
   self:resetForNewMatch()
 
   local replay = self.game:getPartialReplay(false)
@@ -649,6 +599,9 @@ function Room:prepare_character_select()
   self:noteActivity()
   self.game = nil
   self.paused = false
+  -- Match over: restore player_number = seatId for lobby-facing code.
+  TeamUtils.clearStackIndices(self.players)
+  self._seatToStack = nil
   for _, player in pairs(self.players) do
     player:resetMatchTransientState()
   end
@@ -916,13 +869,15 @@ function Room:tickSilentDeathWatchdog(nowMs)
   if self.voided then return end
   if not self.lastInputMs then return end
 
-  for slot, player in pairs(self.players) do
-    if player
-       and not self.game.eliminatedPlayers[slot]
-       and not self.game.disconnectedPlayers[slot] then
-      local lastMs = self.lastInputMs[slot]
+  -- self.players is seatId-keyed; game-state maps are stackIndex-keyed.
+  for _, player in pairs(self.players) do
+    local stackIdx = player and (player.stackIndex or player.player_number)
+    if stackIdx
+       and not self.game.eliminatedPlayers[stackIdx]
+       and not self.game.disconnectedPlayers[stackIdx] then
+      local lastMs = self.lastInputMs[stackIdx]
       if lastMs and (nowMs - lastMs) > SILENT_DEATH_THRESHOLD_MS then
-        self:_synthesizeSilentDeath(player, slot, nowMs)
+        self:_synthesizeSilentDeath(player, stackIdx, nowMs)
       end
     end
   end
@@ -1209,6 +1164,45 @@ function Room:broadcastDeathEvent(sender, body)
   end
 end
 
+---Relay a pause-mode RewindEvent. Truncates the server's input record +
+---clears outcome state for the sender at `senderFrame`, then forwards the
+---message to other room participants so their view-stacks rewind too.
+---@param sender ServerPlayer
+---@param body string raw JSON body from the client
+function Room:broadcastRewindEvent(sender, body)
+  if not self.game then return end
+
+  local ok, parsed = pcall(json.decode, body)
+  if not ok or type(parsed) ~= "table" or type(parsed.senderFrame) ~= "number" then
+    logger.warn(self.roomNumber .. ": malformed RewindEvent from " .. (sender.name or sender.userId or "?"))
+    return
+  end
+
+  parsed.sender = sender.player_number
+  parsed.serverWallClockMs = math.floor(self.clock() * 1000)
+
+  self.game:applyRewind(sender, parsed.senderFrame)
+  logger.info(self.roomNumber .. ": " .. sender.name .. " rewound to frame " .. tostring(parsed.senderFrame))
+
+  local stamped = json.encode(parsed)
+  local message = NetworkProtocol.markedMessageForTypeAndBody(
+    NetworkProtocol.serverMessageTypes.rewindEvent.prefix, stamped)
+
+  for _, player in pairs(self.players) do
+    if player ~= sender then
+      player:sendSpectate(message)
+    end
+  end
+  for _, spec in pairs(self.spectators) do
+    if spec then
+      spec:sendSpectate(message)
+    end
+  end
+  for _, entry in ipairs(self.pendingJoiners) do
+    if entry.player then entry.player:sendSpectate(message) end
+  end
+end
+
 ---Returns the set of living team indices: teams with at least one player who
 ---is neither eliminated nor disconnected. For FFA (no teams) each slot is
 ---treated as its own team.
@@ -1218,26 +1212,13 @@ function Room:_livingTeams()
   if not self.game then
     return {}, {}
   end
-  local livingTeams = {}
-  local representatives = {}
-  local seen = {}
-  for slot, _ in self:eachPlayer() do
-    local dead = self.game.disconnectedPlayers[slot] or self.game.eliminatedPlayers[slot]
-    if not dead then
-      local teamKey
-      if self.teams then
-        teamKey = TeamUtils.getPlayerTeamIndex(self.teams, slot)
-      else
-        teamKey = slot
-      end
-      if not seen[teamKey] then
-        seen[teamKey] = true
-        livingTeams[#livingTeams + 1] = teamKey
-        representatives[#representatives + 1] = slot
-      end
-    end
-  end
-  return livingTeams, representatives
+  local game = self.game
+  -- game.eliminatedPlayers / disconnectedPlayers are stackIndex-keyed (engine
+  -- view), so we ask via player.stackIndex. self.players stays seatId-keyed.
+  return TeamUtils.livingTeams(self.players, self.teams, function(_, player)
+    local stackIdx = player.stackIndex or player.player_number
+    return not (game.disconnectedPlayers[stackIdx] or game.eliminatedPlayers[stackIdx])
+  end)
 end
 
 ---Drain the arbitration window if it has closed. Called from Server:update.
@@ -1262,9 +1243,15 @@ function Room:tickArbitration(nowMs)
     deaths = self.arbitrationDeaths,
   }
 
+  -- representatives[] are seatIds; engine/replay want stackIndex.
+  local function toStackIndex(seatId)
+    local p = self.players[seatId]
+    return (p and (p.stackIndex or p.player_number)) or seatId
+  end
+
   if #livingTeams == 1 then
     arbitration.tie = false
-    arbitration.winnerSlot = representatives[1]
+    arbitration.winnerSlot = toStackIndex(representatives[1])
   elseif #livingTeams == 0 then
     arbitration.tie = true
     arbitration.winnerSlot = nil
@@ -1292,15 +1279,16 @@ function Room:tickArbitration(nowMs)
   -- a vote from a player whose stack already lost can otherwise overrule
   -- the actual survivor (the "DRAW with 2 players still alive" bug).
   if #livingTeams == 1 then
-    local winnerSlot = representatives[1]
-    self.game.winnerIndex = winnerSlot
-    self.game.winnerId = self.players[winnerSlot].publicPlayerID
+    local winnerSeatId = representatives[1]
+    local winnerStack = toStackIndex(winnerSeatId)
+    self.game.winnerIndex = winnerStack
+    self.game.winnerId = self.players[winnerSeatId].publicPlayerID
     if self.teams then
       self.game.winnerTeamIndex = livingTeams[1]
     end
     self.game.aborted = false
     self.game.complete = true
-    self.game:finalizeReplay(winnerSlot)
+    self.game:finalizeReplay(winnerStack)
     self:_finalizeMatch()
   elseif #livingTeams == 0 then
     self.game.aborted = false
@@ -1385,9 +1373,11 @@ function Room:_finalizeMatch()
 
   if self.game.ranked and self.game.winnerId then
     local ratingUpdates = self.leaderboard:processGameResult(self.game)
-    for slot, _ in self:eachPlayer() do
-      if ratingUpdates[slot] then
-        ratingUpdates[slot].userId = nil
+    -- ratingUpdates keyed by stackIndex (engine view, like game.players).
+    for _, player in self:eachPlayer() do
+      local stackIdx = player.stackIndex or player.player_number
+      if stackIdx and ratingUpdates[stackIdx] then
+        ratingUpdates[stackIdx].userId = nil
       end
     end
     self.ratings = ratingUpdates

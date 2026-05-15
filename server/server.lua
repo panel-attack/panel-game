@@ -1373,6 +1373,25 @@ function Server:processMessages()
       q:shallowClear()
     end
 
+    if connection.incomingRewindQueue.last ~= -1 then
+      local q = connection.incomingRewindQueue
+      local player = self.connectionToPlayer[connection]
+      if player then
+        local room = self.playerToRoom[player]
+        if room then
+          for i = q.first, q.last do
+            pcall(function()
+              if player.publicPlayerID then
+                TraceWriter.recv(player.publicPlayerID, "R", q[i])
+              end
+            end)
+            room:broadcastRewindEvent(player, q[i])
+          end
+        end
+      end
+      q:shallowClear()
+    end
+
     if connection.incomingMessageQueue.last ~= -1 then
       local q = connection.incomingMessageQueue
       local player = self.connectionToPlayer[connection]

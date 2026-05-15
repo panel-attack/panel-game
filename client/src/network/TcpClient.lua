@@ -65,6 +65,14 @@ local handlers = {
     self.receivedMessageQueue:push({[prefix] = body})
   end,
 
+  [NP.serverMessageTypes.rewindEvent.prefix] = function(self, data)
+    local prefix = NP.serverMessageTypes.rewindEvent.prefix
+    local body = decodeJson(data, self.name, prefix)
+    if not body then return end
+    TraceWriter.recv(prefix, body)
+    self.receivedMessageQueue:push({[prefix] = body})
+  end,
+
   [NP.serverMessageTypes.jsonMessage.prefix] = function(self, data)
     local prefix = NP.serverMessageTypes.jsonMessage.prefix
     local msg = decodeJson(data, self.name, prefix)

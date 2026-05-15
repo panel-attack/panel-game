@@ -54,9 +54,11 @@ function(self, players, id)
 end)
 
 ---@param room Room
+---@param densePlayers ServerPlayer[]? dense (1..N stackIndex) view of seated players. Required by callers that don't compact room.players in-place. When omitted, falls back to room.players for backward compatibility with tests that pre-compact.
 ---@return ServerGame game
-function Game.createFromRoomState(room)
-  local game = Game(room.players)
+function Game.createFromRoomState(room, densePlayers)
+  densePlayers = densePlayers or room.players
+  local game = Game(densePlayers)
   -- Honor a roomRequest-supplied seed for reproducible scenarios (e2e tests,
   -- "play the same opening every run" debugging). Falls back to the random
   -- seed Game's constructor already picked when no override was supplied.
@@ -77,7 +79,7 @@ function Game.createFromRoomState(room)
   local matchRules = room.gameMode.matchRules
   if room.gameMode.name == "endless" then
     local anyNoRaise = false
-    for _, p in ipairs(room.players) do
+    for _, p in ipairs(densePlayers) do
       if p.endlessNoRaise then anyNoRaise = true; break end
     end
     if anyNoRaise then
@@ -107,7 +109,7 @@ function Game.createFromRoomState(room)
   replay.metadata.playersPerTeam = room._compactedPlayersPerTeam or room.gameMode.playersPerTeam
   replay.metadata.teamCount = room.gameMode.teamCount
 
-  for i, player in ipairs(room.players) do
+  for i, player in ipairs(densePlayers) do
     ---@type ReplayStack
     local stack = {
       inputMethod = player.inputMethod,
@@ -122,11 +124,12 @@ function Game.createFromRoomState(room)
     ---@type StackMetadata
     local metadata = {
       stackIndex = i,
+      seatId = player.seatId,
       characterId = player.character,
       panelId = player.panels_dir,
       name = player.name,
       publicId = player.publicPlayerID,
-      wins = room.win_counts[i],
+      wins = room.win_counts[player.seatId or i],
     }
 
     if stack.levelData.frameConstants.GARBAGE_HOVER then
@@ -219,6 +222,41 @@ end
 function Game:recordDeathEvent(player, body)
   if not self.complete then
     self.deathEvents[#self.deathEvents + 1] = body
+  end
+end
+
+---Pause-mode rewind from `player` to `targetFrame`. Truncates that player's
+---recorded inputs, drops their death/garbage events past the cursor, and
+---clears any elimination/outcome state if it was recorded past the cursor.
+---Resets self.complete if the cleared state was what completed the game.
+---@param player ServerPlayer
+---@param targetFrame integer
+function Game:applyRewind(player, targetFrame)
+  local idx = player.player_number
+  local inputs = self.inputs[idx]
+  if inputs and #inputs > targetFrame then
+    for i = #inputs, targetFrame + 1, -1 do
+      inputs[i] = nil
+    end
+  end
+
+  local function truncateEvents(list)
+    local kept = {}
+    for _, ev in ipairs(list or {}) do
+      if ev.sender ~= idx or (ev.senderFrame and ev.senderFrame <= targetFrame) then
+        kept[#kept + 1] = ev
+      end
+    end
+    return kept
+  end
+  self.deathEvents = truncateEvents(self.deathEvents)
+  self.garbageEvents = truncateEvents(self.garbageEvents)
+
+  local elimFrame = self.eliminatedPlayers[idx]
+  if elimFrame and elimFrame > targetFrame then
+    self.eliminatedPlayers[idx] = nil
+    self.outcomeReports[idx] = nil
+    self.complete = false
   end
 end
 

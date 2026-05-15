@@ -364,15 +364,7 @@ local SCRUB_STEP_FRAMES = 30
 GameBase.supportsScrub = false
 
 function GameBase:_canScrub()
-  if self.supportsScrub ~= true then return false end
-  -- Rewind doesn't propagate over the wire, so a spectator's view-stack
-  -- diverges into noise after the player rewinds. Until there's a
-  -- server-side "boot specs on rewind", treat spectator presence as a hard
-  -- veto. Specs see the original timeline; the player can't rewind.
-  if self.match and self.match.spectators and #self.match.spectators > 0 then
-    return false
-  end
-  return true
+  return self.supportsScrub == true
 end
 
 function GameBase:_initScrubState()

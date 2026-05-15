@@ -484,13 +484,16 @@ local gameResultTemplate = {
 ---@param room Room
 function ServerProtocol.gameResult(game, room)
   local gameResultMessage = gameResultTemplate
+  -- Wire keyed by seatId (matches client's roomPlayer.playerNumber after
+  -- match end). game.players is the dense view; win_counts is seatId-keyed;
+  -- ratings + getPlacement are stackIndex-keyed.
   local content = {}
-  -- Key on slot from pairs(): player.player_number is nil for mid-match leavers.
-  for slot, player in pairs(game.players) do
-    content[slot] = {
-      rating = room.ratings[slot],
-      winCount = room.win_counts[slot],
-      placement = game:getPlacement(player, slot),
+  for stackIdx, player in pairs(game.players) do
+    local seatId = player.seatId or stackIdx
+    content[seatId] = {
+      rating = room.ratings[stackIdx],
+      winCount = room.win_counts[seatId],
+      placement = game:getPlacement(player, stackIdx),
       publicId = player.publicPlayerID
     }
   end
@@ -580,8 +583,10 @@ function ServerProtocol.taunt(player, type, index)
   tauntMessage.senderId = player.publicPlayerID
   tauntMessage.content.type = type
   tauntMessage.content.index = index
-  -- to support the transition
+  -- playerNumber is stackIndex during a match; seatId is the lobby-stable
+  -- identifier the client uses to find the sender in room.players.
   tauntMessage.content.playerNumber = player.player_number
+  tauntMessage.content.seatId = player.seatId
 
   return {
     messageType = msgTypes.jsonMessage,

@@ -257,6 +257,11 @@ function TestClient:sendDeathEvent(body)
   self:_sendFrame(NetworkProtocol.clientMessageTypes.deathEvent.prefix, json.encode(body))
 end
 
+function TestClient:sendRewindEvent(body)
+  self:_recordSend("R", body)
+  self:_sendFrame(NetworkProtocol.clientMessageTypes.rewindEvent.prefix, json.encode(body))
+end
+
 -- Ask the server to spectate a room in progress. Server replies with a
 -- spectateRequestGranted JSON message carrying a partial replay — captured
 -- on self.lastSpectateGranted by the inbox router.
@@ -447,6 +452,9 @@ function TestClient:_replaySendEvent(prefix, body)
     return true
   elseif prefix == "D" and type(body) == "table" then
     self:sendDeathEvent(body)
+    return true
+  elseif prefix == "R" and type(body) == "table" then
+    self:sendRewindEvent(body)
     return true
   end
   -- H (version check) and E (ping ack) are managed by the harness

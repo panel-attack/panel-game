@@ -15,6 +15,7 @@ local MockConnection = class(function(self, channel)
   -- Server:processMessages doesn't crash dereferencing them.
   self.incomingGarbageQueue = Queue()
   self.incomingDeathQueue = Queue()
+  self.incomingRewindQueue = Queue()
 end)
 
 function MockConnection:update(t) end
@@ -26,7 +27,7 @@ function MockConnection:send(message)
   local prefix = #message >= 5 and message:sub(5, 5) or message:sub(1, 1)
   -- I = unified input prefix (v008+); G/D = loose-sync event prefixes
   -- (GarbageEvent, DeathEvent). J = JSON message.
-  if prefix == "I" or prefix == "J" or prefix == "G" or prefix == "D" then
+  if prefix == "I" or prefix == "J" or prefix == "G" or prefix == "D" or prefix == "R" then
     self.outgoingInputQueue:push(message)
   end
 end
