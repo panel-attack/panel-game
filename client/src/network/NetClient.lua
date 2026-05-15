@@ -23,6 +23,7 @@ local TeamUtils = require("common.data.TeamUtils")
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 local getSceneFromRoom
 local spectate2pVsOnlineMatch
+local isRoomReadyForWaitingRoom
 
 -- Most functions of NetClient are private as they only should get triggered via incoming server messages
 --  that get automatically processed via NetClient:update
@@ -270,7 +271,7 @@ end
 --    (1v3) it can fire as early as the second join.
 ---@param room BattleRoom
 ---@return boolean
-local function isRoomReadyForWaitingRoom(room)
+isRoomReadyForWaitingRoom = function(room)
   local mode = room and room.mode
   if not mode then return false end
   local playerCount = #room.players
