@@ -14,7 +14,7 @@ local PortraitGame = class(function(self, sceneParams)
 
 local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
   if not gameMode or not gameMode.playersPerTeam then return nil end
-  return TeamUtils.getTeamIndexForPlayerPosition(gameMode, playerPosition)
+  return TeamUtils.teamIndexFor(gameMode, playerPosition)
 end
 
 local function teamLetter(teamIndex)

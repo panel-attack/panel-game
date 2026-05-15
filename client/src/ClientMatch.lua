@@ -89,6 +89,23 @@ function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked, 
   clientMatch.gameMode = gameMode
   clientMatch.stackInteraction = gameMode.stackInteraction
   clientMatch.matchRules = gameMode.matchRules
+
+  if gameMode.gameScene == "EndlessGame" and players[1] and players[1].settings.endlessNoRaise then
+    local priorMods = clientMatch.matchRules.stackSetupModifications or {}
+    local priorBehaviours = priorMods.behaviours or {}
+    local behaviours = {}
+    for k, v in pairs(priorBehaviours) do behaviours[k] = v end
+    behaviours.passiveRaise = false
+    local mods = {}
+    for k, v in pairs(priorMods) do mods[k] = v end
+    mods.behaviours = behaviours
+    local rules = {}
+    for k, v in pairs(clientMatch.matchRules) do rules[k] = v end
+    rules.stackSetupModifications = mods
+    clientMatch.matchRules = rules
+    clientMatch.noRaiseMode = true
+  end
+
   clientMatch.panelSource = panelSource
   clientMatch.supportsPause = #players == 1 and players[1].isLocal
 
@@ -751,6 +768,9 @@ function ClientMatch:togglePause()
     error("Tried to pause a non-pausable match")
   end
   self.isPaused = not self.isPaused
+  if self.isPaused then
+    self.everPaused = true
+  end
   self:emitSignal("pauseChanged", self)
 end
 
@@ -1020,7 +1040,7 @@ end
 
 local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
   if not gameMode or not gameMode.playersPerTeam then return nil end
-  return TeamUtils.getTeamIndexForPlayerPosition(gameMode, playerPosition)
+  return TeamUtils.teamIndexFor(gameMode, playerPosition)
 end
 
 local teamColors = {
@@ -1066,7 +1086,7 @@ function ClientMatch:drawTeamScoreboard()
 
   -- Shared 2-team banner header (pink/purple). Returns silently for FFA / non-team modes.
   local TeamBannerHeader = require("client.src.graphics.TeamBannerHeader")
-  TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth, self.engine and self.engine.teams)
+  TeamBannerHeader.draw(self.gameMode, self.players, teamWins, canvasWidth, self)
   TeamBannerHeader.drawGarbageModeBelowBanner(self.gameMode, canvasWidth, "match")
 
   -- For >2 teams, fall through to the legacy section-row layout below.

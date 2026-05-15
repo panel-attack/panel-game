@@ -42,8 +42,7 @@ local TEAM_COLORS = {
 }
 
 local function teamColorForStack(match, stack, stackIndex)
-  local teams = match.engine and match.engine.teams
-  local idx = teams and TeamUtils.getPlayerTeamIndex(teams, stackIndex) or stackIndex
+  local idx = TeamUtils.teamIndexFor(match, stackIndex)
   return TEAM_COLORS[idx] or TEAM_COLORS[1]
 end
 
@@ -142,7 +141,7 @@ function GameBase:customGameOverSetup() end
 
 local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
   if not gameMode or not gameMode.playersPerTeam then return nil end
-  return TeamUtils.getTeamIndexForPlayerPosition(gameMode, playerPosition)
+  return TeamUtils.teamIndexFor(gameMode, playerPosition)
 end
 
 local function teamLetter(teamIndex)
@@ -531,6 +530,13 @@ end
 
 function GameBase:runGame(dt)
   self:handlePause()
+
+  if self.match.isPaused then
+    if self.frameInfo.startTime then
+      self.frameInfo.startTime = self.frameInfo.startTime + dt
+    end
+    return
+  end
 
   if self.frameInfo.startTime == nil then
     -- Server-scheduled start: hold engine ticks until the target wall-clock,

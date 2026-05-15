@@ -921,6 +921,41 @@ function CharacterSelect:createStyleSelection(player, width)
   return container, styleSelector
 end
 
+---@param player Player
+---@param width number
+---@return StackPanel noRaiseSelectionContainer
+---@return BoolSelector noRaiseSelector
+function CharacterSelect:createNoRaiseSelection(player, width)
+  local playerIndex = tableUtils.indexOf(self.players, player)
+  local playerNumberIcon = ui.ImageContainer({
+    image = getPlayerNumberIcon(playerIndex),
+    scale = 2,
+    vAlign = "center"
+  })
+
+  local noRaiseSelector = ui.BoolSelector({
+    startValue = player.settings.endlessNoRaise == true,
+    isEnabled = player.isLocal
+  })
+
+  ui.Focusable(noRaiseSelector)
+
+  local container = ui.StackPanel({
+    alignment = "left",
+    height = noRaiseSelector.height,
+    hAlign = "center",
+    vAlign = "center",
+  })
+  container.playerNumberIcon = playerNumberIcon
+  container.noRaiseSelector = noRaiseSelector
+  container:addElement(playerNumberIcon)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
+  container:addElement(noRaiseSelector)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
+
+  return container, noRaiseSelector
+end
+
 function CharacterSelect:createRecordsBox(lastText)
   local stackPanel = ui.StackPanel({alignment = "top", hFill = true, vAlign = "center"})
 
@@ -1264,7 +1299,7 @@ function CharacterSelect:teamBorderColorForPlayer(player)
   end
   if not idx then return nil end
 
-  local teamIndex = TeamUtils.getTeamIndexForPlayerPosition(self.battleRoom.mode, idx)
+  local teamIndex = TeamUtils.teamIndexFor(self.battleRoom, idx)
   return teamIndex and TeamBannerHeader.colors[teamIndex] or nil
 end
 

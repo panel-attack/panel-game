@@ -152,6 +152,24 @@ function TeamUtils.getTeamIndexForPlayerPosition(gameMode, playerPosition)
   return playerPosition
 end
 
+-- Canonical client-side team lookup. THE one place to fix if team rendering
+-- breaks. Accepts whatever you have on hand: a Match, a BattleRoom, a raw
+-- gameMode, or nil. Internally prefers engine.teams (per-match authoritative
+-- shape) and falls back to gameMode-derived from playersPerTeam.
+---@param context table? Match, BattleRoom, or gameMode; nil treated as FFA
+---@param position integer slot or stack index
+---@return integer teamIndex
+function TeamUtils.teamIndexFor(context, position)
+  if not context then return position end
+  local teams = context.engine and context.engine.teams
+  if teams then
+    return TeamUtils.getPlayerTeamIndex(teams, position) or position
+  end
+  -- BattleRoom uses .mode, ClientMatch uses .gameMode, raw gameMode is itself
+  local gameMode = context.gameMode or context.mode or context
+  return TeamUtils.getTeamIndexForPlayerPosition(gameMode, position)
+end
+
 -- Returns the team index that a player belongs to
 ---@param teams Team[] Array of teams
 ---@param playerIndex integer The player's index (1-based)

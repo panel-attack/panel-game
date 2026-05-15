@@ -46,20 +46,18 @@ local function isSharedTeamMode(gameMode)
   return false
 end
 
--- Build [teamIndex] -> { names = {...}, wins = N } from a player list + gameMode + optional teamWins.
--- Prefer the engine teams table when provided (in-game) — it reflects the
--- per-match compacted shape. Fall back to gameMode-derived for waiting-room
--- callers that don't have an engine yet.
-local function buildTeamData(gameMode, players, teamWins, engineTeams)
-  local teamCount = (engineTeams and #engineTeams) or gameMode.teamCount or 2
+-- Build [teamIndex] -> { names = {...}, wins = N } from a player list + context + optional teamWins.
+-- context can be a Match (with engine.teams), BattleRoom, or a raw gameMode.
+local function buildTeamData(context, players, teamWins)
+  local gameMode = (context and (context.gameMode or context.mode)) or context
+  local teamCount = (context and context.engine and context.engine.teams and #context.engine.teams)
+    or (gameMode and gameMode.teamCount) or 2
   local data = {}
   for i = 1, teamCount do data[i] = {names = {}, wins = 0} end
 
   for i, player in ipairs(players) do
     local slot = (player and player.playerNumber) or i
-    local teamIndex = engineTeams
-      and TeamUtils.getPlayerTeamIndex(engineTeams, slot)
-      or TeamUtils.getTeamIndexForPlayerPosition(gameMode, slot)
+    local teamIndex = TeamUtils.teamIndexFor(context, slot)
 
     local entry = data[teamIndex] or {names = {}, wins = 0}
     data[teamIndex] = entry
@@ -86,11 +84,11 @@ end
 ---@param players table[] list of player objects (each has .name and .wins / :getWinCountForDisplay())
 ---@param teamWins integer[]? optional per-team win count (preferred over per-player wins when present)
 ---@param canvasWidth number screen width
----@param engineTeams Team[]? in-match teams table (Match.engine.teams) — preferred over gameMode-derived
-function TeamBannerHeader.draw(gameMode, players, teamWins, canvasWidth, engineTeams)
+---@param context table? Match / BattleRoom / gameMode — first hit with engine.teams wins
+function TeamBannerHeader.draw(gameMode, players, teamWins, canvasWidth, context)
   if not isSharedTeamMode(gameMode) then return end
 
-  local data, teamCount = buildTeamData(gameMode, players, teamWins, engineTeams)
+  local data, teamCount = buildTeamData(context or gameMode, players, teamWins)
   if teamCount ~= 2 then return end  -- shared-team layout currently 2-team only
 
   local centerX = canvasWidth / 2
