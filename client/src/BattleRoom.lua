@@ -644,6 +644,12 @@ function BattleRoom:shutdown()
     self.match:deinit()
     self.match = nil
   end
+  -- Drop our subscription to NetClient.clientDisconnected. NetClient is
+  -- immortal; if shutdown didn't clean this up, the stale callback would
+  -- linger and fire on the next disconnect even after the room is gone.
+  if GAME.netClient and GAME.netClient.disconnectSubscriber then
+    GAME.netClient:disconnectSubscriber(self)
+  end
   self.hasShutdown = true
   GAME.battleRoom = nil
   self = nil
