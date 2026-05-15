@@ -1292,14 +1292,8 @@ function CharacterSelect:teamBorderColorForPlayer(player)
   if not TeamBannerHeader.isSharedTeamMode(self.battleRoom.mode) then return nil end
 
   -- Use canonical server slot (playerNumber) for team mapping. Dense list
-  -- position can diverge from slot order (local-first UI, sparse joins).
-  local idx = player and player.playerNumber
-  if not idx then
-    idx = tableUtils.indexOf(self.battleRoom.players, player)
-  end
-  if not idx then return nil end
-
-  local teamIndex = TeamUtils.teamIndexFor(self.battleRoom, idx)
+  local fallback = not (player and player.playerNumber) and tableUtils.indexOf(self.battleRoom.players, player) or nil
+  local teamIndex = TeamUtils.teamIndexForPlayer(self.battleRoom, player, fallback)
   return teamIndex and TeamBannerHeader.colors[teamIndex] or nil
 end
 

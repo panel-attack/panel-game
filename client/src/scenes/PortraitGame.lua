@@ -12,8 +12,6 @@ local TeamUtils = require("common.data.TeamUtils")
 
 local PortraitGame = class(function(self, sceneParams)
 
-local getTeamIndexForPlayerPosition = TeamUtils.teamIndexForOrNil
-
 local teamLetter = TeamUtils.teamLetter
 local isFFA = TeamUtils.isFFA
 
@@ -23,8 +21,7 @@ local function buildTeamResultText(match, winners)
   local maxTeamIndex = 0
 
   for index, player in ipairs(match.players) do
-    local slot = TeamUtils.slotOf(player, index)
-    local teamIndex = getTeamIndexForPlayerPosition(match.gameMode, slot)
+    local teamIndex = TeamUtils.teamIndexForPlayer(match, player, index)
     if teamIndex then
       teams[teamIndex] = teams[teamIndex] or {}
       teams[teamIndex][#teams[teamIndex] + 1] = player.name
@@ -35,8 +32,7 @@ local function buildTeamResultText(match, winners)
   for _, winner in ipairs(winners) do
     for index, player in ipairs(match.players) do
       if player == winner then
-        local slot = TeamUtils.slotOf(player, index)
-        local teamIndex = getTeamIndexForPlayerPosition(match.gameMode, slot)
+        local teamIndex = TeamUtils.teamIndexForPlayer(match, player, index)
         if teamIndex then
           winnerTeams[teamIndex] = true
         end

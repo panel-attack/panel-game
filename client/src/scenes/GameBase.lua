@@ -31,15 +31,8 @@ local DEAD_LOCAL_GRACE_SECONDS = 3
 local CHIP_ALPHA = 0.85
 
 local function teamColorForStack(match, stack, stackIndex)
-  -- Match the lobby's lookup shape: feed playerNumber (== seatId) so this
-  -- gives the same answer as CharacterSelect / TeamBannerHeader for the same
-  -- player, regardless of compaction. teamIndexFor falls back to preset
-  -- derivation when engine.teams misses on a seatId.
   local player = match.players and match.players[stackIndex]
-  local pos = (player and player.playerNumber) or stackIndex
-  local idx = TeamUtils.teamIndexFor(match, pos)
-  local c = TeamUtils.TEAM_COLORS[idx] or TeamUtils.TEAM_COLORS[1]
-  return { c[1], c[2], c[3], CHIP_ALPHA }
+  return TeamUtils.teamColorForPlayer(match, player, stackIndex, CHIP_ALPHA)
 end
 
 local isSharedTeamMode = TeamUtils.isSharedTeamMode
@@ -112,8 +105,6 @@ function GameBase:customGameOverSetup() end
 
 -- end abstract functions
 
-local getTeamIndexForPlayerPosition = TeamUtils.teamIndexForOrNil
-
 local teamLetter = TeamUtils.teamLetter
 
 local function joinPlayerNames(players)
@@ -147,8 +138,7 @@ function GameBase.buildTeamResultText(match, winners)
   local localTeam = nil
   for index, player in ipairs(match.players) do
     if player.isLocal then
-      local slot = TeamUtils.slotOf(player, index)
-      localTeam = getTeamIndexForPlayerPosition(gameMode, slot)
+      localTeam = TeamUtils.teamIndexForPlayer(match, player, index)
       break
     end
   end
@@ -168,8 +158,7 @@ function GameBase.buildTeamResultText(match, winners)
     for _, winner in ipairs(winners) do
       local matched = winnerToPlayer(winner, match.players)
       if matched then
-        local slot = matched.playerNumber
-        local teamIndex = getTeamIndexForPlayerPosition(gameMode, slot)
+        local teamIndex = TeamUtils.teamIndexForPlayer(match, matched)
         if teamIndex then
           winnerTeams[teamIndex] = true
         end

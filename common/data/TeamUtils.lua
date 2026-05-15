@@ -239,6 +239,53 @@ function TeamUtils.teamIndexForOrNil(context, position)
   return TeamUtils.teamIndexFor(context, position)
 end
 
+-- Canonical "what team is this player on?" for UI rendering.
+--
+-- THE single client-side entry point — banner header, per-stack color, team
+-- scoreboard, end-of-match labels, and lobby tile color should all call this.
+-- Takes a player object so callers don't have to remember whether the right
+-- positional arg is seatId or stackIndex; this helper reads playerNumber off
+-- the player (which is seatId on the client after BattleRoom's sort) and lets
+-- teamIndexFor try engine.teams then fall back to gameMode preset.
+---@param context Match|BattleRoom|table|nil  Match, BattleRoom, or raw gameMode
+---@param player table?                       must have .playerNumber set
+---@param fallbackIndex integer?              array position, used if player or playerNumber is missing
+---@return integer? teamIndex                 nil only if context isn't a team game
+function TeamUtils.teamIndexForPlayer(context, player, fallbackIndex)
+  local pos = (player and player.playerNumber) or fallbackIndex
+  if not pos then return nil end
+  return TeamUtils.teamIndexForOrNil(context, pos)
+end
+
+-- Convenience: team color for a player, with optional alpha. Single source of
+-- truth for "this player's team color" — every drawTeam* / panel-border /
+-- chip-background consumer should funnel through here.
+---@return number[] {r,g,b,a}
+function TeamUtils.teamColorForPlayer(context, player, fallbackIndex, alpha)
+  local idx = TeamUtils.teamIndexForPlayer(context, player, fallbackIndex) or 1
+  local c = TeamUtils.TEAM_COLORS[idx] or TeamUtils.TEAM_COLORS[1]
+  return { c[1], c[2], c[3], alpha or c[4] or 1 }
+end
+
+-- Build a teamIndex -> {players} map from a roster. Replaces ad-hoc loops in
+-- TeamBannerHeader / PortraitGame / GameBase / ClientMatch that each iterated
+-- players and called the team-index helper themselves — every divergence in
+-- those copies is a chance for a new drift bug. Use this instead.
+---@param context Match|BattleRoom|table|nil
+---@param players table[]  ipairs-iterable list of player objects
+---@return table<integer, table[]> rosters teamIndex -> array of players
+function TeamUtils.buildTeamRosters(context, players)
+  local rosters = {}
+  for i, p in ipairs(players) do
+    local idx = TeamUtils.teamIndexForPlayer(context, p, i)
+    if idx then
+      rosters[idx] = rosters[idx] or {}
+      rosters[idx][#rosters[idx] + 1] = p
+    end
+  end
+  return rosters
+end
+
 -- Returns the team index that a player belongs to
 ---@param teams Team[] Array of teams
 ---@param playerIndex integer The player's index (1-based)

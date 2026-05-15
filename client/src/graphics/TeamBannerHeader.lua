@@ -32,8 +32,7 @@ local function buildTeamData(context, players, teamWins)
   for i = 1, teamCount do data[i] = {names = {}, wins = 0} end
 
   for i, player in ipairs(players) do
-    local slot = TeamUtils.slotOf(player, i)
-    local teamIndex = TeamUtils.teamIndexFor(context, slot)
+    local teamIndex = TeamUtils.teamIndexForPlayer(context, player, i)
 
     local entry = data[teamIndex] or {names = {}, wins = 0}
     data[teamIndex] = entry

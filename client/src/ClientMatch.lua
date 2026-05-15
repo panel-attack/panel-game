@@ -1032,6 +1032,19 @@ function ClientMatch:applyRewindEvent(body)
   else
     self:truncateInputsAt(targetFrame)
   end
+
+  -- Any stack whose game_over_clock is past the rewind frame is alive again.
+  -- Transplant restores this for stacks rolled back; we also need it for the
+  -- "not yet caught up" path (live.clock <= targetFrame) where state copy is
+  -- skipped — otherwise the spec keeps rendering OUT for the player whose
+  -- recordDeath set game_over_clock pre-rewind.
+  if self.engine and self.engine.stacks then
+    for _, stack in ipairs(self.engine.stacks) do
+      if stack.game_over_clock and stack.game_over_clock > targetFrame then
+        stack.game_over_clock = 0
+      end
+    end
+  end
 end
 
 ---@return ReplayV3?
@@ -1289,8 +1302,6 @@ function ClientMatch:drawTimer()
   self:drawMatchTime(timeString, themes[config.theme].time_Pos, themes[config.theme].time_Scale)
 end
 
-local getTeamIndexForPlayerPosition = TeamUtils.teamIndexForOrNil
-
 local teamColors = TeamUtils.TEAM_COLORS
 
 ---@param text string
@@ -1340,8 +1351,7 @@ function ClientMatch:drawTeamScoreboard()
 
   local teamData = {}
   for i, player in ipairs(self.players) do
-    local slot = TeamUtils.slotOf(player, i)
-    local teamIndex = getTeamIndexForPlayerPosition(self.gameMode, slot) or slot
+    local teamIndex = TeamUtils.teamIndexForPlayer(self, player, i) or i
     if not teamData[teamIndex] then
       teamData[teamIndex] = {names = {}, wins = 0}
     end
@@ -1523,6 +1533,14 @@ end
 
   -- Draw the pause menu
 function ClientMatch:draw_pause()
+  -- Spectators have no pause menu to interact with; dim the playfield so
+  -- "the match is paused" reads at a glance. Players keep the existing
+  -- look so the pause menu sits on top of their normal render.
+  if not self:hasLocalPlayer() then
+    GraphicsUtil.drawRectangle("fill",
+      0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, 0, 0, 0, 0.55)
+  end
+
   if not self.renderDuringPause then
     local image = themes[config.theme].images.pause
     local scale = consts.CANVAS_WIDTH / math.max(image:getWidth(), image:getHeight()) -- keep image ratio
