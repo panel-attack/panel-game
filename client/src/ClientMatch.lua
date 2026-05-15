@@ -642,6 +642,8 @@ function ClientMatch:deinit()
   for i = 1, #self.stacks do
     self.stacks[i]:deinit()
   end
+  self.pendingHistoricalDeaths = nil
+  self.pendingHistoricalGarbage = nil
 end
 
 function ClientMatch:moveStacks()

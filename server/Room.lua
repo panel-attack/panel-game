@@ -607,8 +607,7 @@ function Room:prepare_character_select()
   self.game = nil
   self.paused = false
   for _, player in pairs(self.players) do
-    player.cursor = "__Ready"
-    player.ready = false
+    player:resetMatchTransientState()
   end
 
   -- Open FFA: mid-match joiners who queued up while a match was running get
