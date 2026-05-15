@@ -727,17 +727,45 @@ end
 local joinQueuedTemplate = {
   sender = "server",
   type = "joinQueued",
-  content = {}
+  content = {
+    roomNumber = 0,
+    ranked = nil,
+    replay = nil,
+    stage = nil,
+    players = nil,
+  },
 }
 
----Sent to a player whose join request landed in a dynamic-roster room while a
----match was already running. They stay in the lobby; the server will deliver a
----regular addToRoom once the current match ends and the queue is drained.
----@param roomNumber roomNumber
+-- Mid-match dynamic-roster join: player is queued for promotion at the next
+-- character-select. Payload mirrors spectateRequestGranted so the client can
+-- render the in-progress match while waiting. The pendingPromotion flag tells
+-- the client to expect an addToRoom transition at match end.
+---@param room Room
+---@param replay ReplayV3?
 ---@return {messageType: table, messageText: ServerMessage}
-function ServerProtocol.joinQueued(roomNumber)
+function ServerProtocol.joinQueued(room, replay)
   local msg = joinQueuedTemplate
-  msg.content.roomNumber = roomNumber
+  local content = msg.content
+  content.roomNumber = room.roomNumber
+  content.gameMode = room.gameMode
+  content.ranked = (replay and replay.metadata.ranked or room.ranked)
+  content.replay = replay
+  content.stage = (replay and replay.metadata.stageId or nil)
+  content.players = {}
+
+  if room.eachPlayer then
+    for slot, player in room:eachPlayer() do
+      content.players[player.player_number] = {
+        settings = player:getSettings(),
+        rating = room.ratings[slot],
+        winCount = room.win_counts[slot],
+        name = player.name,
+        publicId = player.publicPlayerID,
+        playerNumber = player.player_number,
+      }
+    end
+  end
+
   return {
     messageType = msgTypes.jsonMessage,
     messageText = msg,

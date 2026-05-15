@@ -22,6 +22,7 @@ local TeamUtils = require("common.data.TeamUtils")
 ---@enum NetClientStates
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 local getSceneFromRoom
+local spectate2pVsOnlineMatch
 
 -- Most functions of NetClient are private as they only should get triggered via incoming server messages
 --  that get automatically processed via NetClient:update
@@ -318,6 +319,21 @@ end
 
 -- starts a 2p vs online match (or joins a team room)
 local function start2pVsOnlineMatch(self, createRoomMessage)
+  -- Pending-promotion transition: we were watching the match as a queued
+  -- joiner; addToRoom means the previous match ended and we've been promoted.
+  -- Tear down the spectator-side state + pop the catch-up scene before
+  -- building the player-side BattleRoom and pushing CharacterSelect.
+  if self.room and self.room.pendingPromotion then
+    _clearMatchInputState(self)
+    if self.room.match then
+      self.room.match:disconnectSignal("matchEnded", self.room)
+      self.room.match:abort()
+      self.room.match:deinit()
+    end
+    if self.room.shutdown then self.room:shutdown() end
+    GAME.navigationStack:popToName("Lobby")
+  end
+
   GAME.battleRoom = BattleRoom.createFromServerMessage(createRoomMessage)
   self.room = GAME.battleRoom
   self:registerPlayerUpdates(self.room)
@@ -391,13 +407,13 @@ local function processSpectatorListMessage(self, message)
   end
 end
 
----Server replies with joinQueued when a player tries to join an open-FFA room
----while a match is running. The player stays in the lobby; when the match ends
----the server will replay the join via the normal addToRoom flow.
+---Open-FFA mid-match join: server queued us for promotion at the next match
+---end, and sent the in-progress match data so we can watch while we wait.
+---Renders the spectator view; transitions to player view when addToRoom lands.
 local function processJoinQueuedMessage(self, message)
-  local roomNumber = message.joinQueued and message.joinQueued.roomNumber
-  logger.info("Join queued for room " .. tostring(roomNumber) .. " (match in progress)")
-  self:emitSignal("joinQueued", roomNumber)
+  logger.info("Join queued for room " .. tostring(message.roomNumber) .. " (match in progress); watching while queued")
+  spectate2pVsOnlineMatch(self, message)
+  self:emitSignal("joinQueued", message.roomNumber)
 end
 
 ---@param self NetClient
@@ -810,7 +826,7 @@ local function processChallengeUpdate(self, challengeUpdateMessage)
 end
 
 -- starts to spectate a 2p vs online match
-local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
+spectate2pVsOnlineMatch = function(self, spectateRequestGrantedMessage)
   resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(spectateRequestGrantedMessage)
   self.room = GAME.battleRoom

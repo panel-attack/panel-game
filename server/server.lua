@@ -782,41 +782,33 @@ function Server:create_room(gameMode, ...)
 end
 
 ---Drain a dynamic-roster room's pendingJoiners queue once character select reopens.
----Each queued player is routed through handleJoinRoom so they pick up the normal
----addToRoom flow exactly as if they'd joined fresh.
+---Each queued player is routed through handleJoinRoom — same path a fresh joiner
+---would take. They were never in room.spectators, so no spectator cleanup needed.
 ---@param room Room the room asking to drain its queue
+---Locate the room (if any) where `player` is currently queued as a pending joiner.
+---@param player ServerPlayer
+---@return Room?
+function Server:findPendingJoinerRoom(player)
+  for _, room in pairs(self.rooms) do
+    if room.pendingJoiners then
+      for _, entry in ipairs(room.pendingJoiners) do
+        if entry.player == player then return room end
+      end
+    end
+  end
+  return nil
+end
+
 function Server:drainPendingJoiners(room)
   if not room or not room.pendingJoiners then return end
   local queue = room.pendingJoiners
   room.pendingJoiners = {}
-  local spectatorListChanged = false
   for _, entry in ipairs(queue) do
     local player = entry.player
     if player and not room:isFull() then
-      -- They were spectating while queued. Demote out of spectator state
-      -- in-place so handleJoinRoom accepts them as a lobby joiner. We bypass
-      -- Room:remove_spectator here so the client doesn't see a leaveRoom; the
-      -- subsequent addPlayer/addToRoom transitions them straight into the
-      -- player seat.
-      if self.spectatorToRoom[player] == room then
-        for i, s in ipairs(room.spectators) do
-          if s == player then
-            table.remove(room.spectators, i)
-            break
-          end
-        end
-        self.spectatorToRoom[player] = nil
-        player.spectatedRoom = nil
-        spectatorListChanged = true
-      end
-      -- Idempotency check in handleJoinRoom would block back-to-back joins,
-      -- so reset the rate-limit entry first.
       self.recentJoinRequests[player.publicPlayerID .. "_" .. room.roomNumber] = nil
       self:handleJoinRoom(player, room.roomNumber, nil)
     end
-  end
-  if spectatorListChanged then
-    room:broadcastJson(ServerProtocol.updateSpectators(room.roomNumber, room:spectator_names()))
   end
 end
 
@@ -925,26 +917,24 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
     return false
   end
 
-  -- Dynamic-roster modes (open FFA): mid-match join attempts are routed into
-  -- the spectator seat and also queued for player promotion. add_spectator(_, true)
-  -- handles both — pushes onto pendingJoiners and adds to spectators so the joiner
-  -- watches the live match. drainPendingJoiners (called from prepare_character_select)
-  -- promotes them to a player slot when character select reopens.
+  -- Dynamic-roster modes (open FFA): mid-match join goes to pendingJoiners
+  -- only. The joiner gets a joinQueued payload that includes the partial
+  -- replay so the client can render the in-progress match (same view as a
+  -- spectator) while waiting for promotion. They are NOT added to
+  -- room.spectators — that bag is reserved for pure-spectate callers.
   local roomState = room:state()
   if roomState ~= "lobby" and roomState ~= "character select" then
     if room:isDynamicRoster() and roomState == "playing" and not room:isFull() then
-      -- Avoid duplicate queue entries.
       for _, entry in ipairs(room.pendingJoiners) do
         if entry.player == player then
           logger.debug("Player " .. player.name .. " already queued for room " .. roomNumber)
           return false
         end
       end
-      if not room:add_spectator(player, true) then
-        return false
-      end
-      self.spectatorToRoom[player] = room
-      logger.info("Player " .. player.name .. " spectating + queued for open room " .. roomNumber .. " (match in progress)")
+      room.pendingJoiners[#room.pendingJoiners + 1] = { player = player }
+      local replay = room.game and room.game:getPartialReplay(COMPRESS_REPLAYS_ENABLED)
+      player:sendJson(ServerProtocol.joinQueued(room, replay))
+      logger.info("Player " .. player.name .. " queued for open room " .. roomNumber .. " (match in progress)")
       self:setLobbyChanged()
       return true
     end
@@ -1944,6 +1934,18 @@ local function roomMinPlayers(room)
 end
 
 function Server:handleLeaveRoom(player, reason)
+  -- Queued mid-match joiner explicitly leaving: drop the queue entry.
+  local pendingRoom = self:findPendingJoinerRoom(player)
+  if pendingRoom then
+    for i = #pendingRoom.pendingJoiners, 1, -1 do
+      if pendingRoom.pendingJoiners[i].player == player then
+        table.remove(pendingRoom.pendingJoiners, i)
+      end
+    end
+    player:sendJson(ServerProtocol.leaveRoom(pendingRoom.roomNumber, reason))
+    self:setLobbyChanged()
+    return
+  end
   local room = self.playerToRoom[player]
   if room then
     local matchInProgress = room.game ~= nil and not room.game.complete
@@ -2022,7 +2024,7 @@ function Server:closeConnection(connection, reason)
   -- stay quiet long enough — survivors continue playing without the match
   -- being voided. Sweep-idle-rooms is the long-term safety net for truly
   -- abandoned slots.
-  if self.playerToRoom[player] or self.spectatorToRoom[player] then
+  if self.playerToRoom[player] or self.spectatorToRoom[player] or self:findPendingJoinerRoom(player) then
     player.gameplayConnection = nil
     if player.connection == connection then
       player.connection = player.lobbyConnection or player.spectateConnection

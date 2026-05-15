@@ -164,7 +164,7 @@ function ServerMessages.sanitizeServerMessage(message)
     return { lobbyStateV2 = true, content = content }
   elseif message.type == "leaderboardReport" then
     return { leaderboard_report = message.content }
-  elseif message.type == "spectateRequestGranted" then
+  elseif message.type == "spectateRequestGranted" or message.type == "joinQueued" then
     local winCounts = {}
     local players = {}
     for index, player in pairs(message.content.players) do
@@ -182,16 +182,21 @@ function ServerMessages.sanitizeServerMessage(message)
       message.content.replay = ReplayV3.createFromTable(message.content.replay, false)
     end
 
-    return
-    {
-      spectate_request_granted = true,
+    local result = {
       stageId = message.content.stage,
       ranked = message.content.ranked,
       winCounts = winCounts,
       players = players,
       gameMode = message.content.gameMode,
-      replay = message.content.replay
+      replay = message.content.replay,
+      roomNumber = message.content.roomNumber,
     }
+    result.spectate_request_granted = true
+    if message.type == "joinQueued" then
+      result.joinQueued = true
+      result.pendingPromotion = true
+    end
+    return result
   elseif message.type == "createRoom" then
     local players = {}
     for index, player in pairs(message.content.players) do

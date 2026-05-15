@@ -113,7 +113,8 @@ function BattleRoom.createFromServerMessage(message)
   battleRoom.roomNumber = message.roomNumber
 
   if message.spectate_request_granted then
-    logger.debug("Joining a match as spectator")
+    battleRoom.pendingPromotion = message.pendingPromotion or false
+    logger.debug(message.pendingPromotion and "Joining a match while queued for promotion" or "Joining a match as spectator")
     if message.replay then
       local replay = message.replay
       -- Spectator path: pass gameMode so team-based hasEnded works for the spectator

@@ -609,20 +609,9 @@ function Room:state()
 end
 
 ---@param newSpectator ServerPlayer
----@param pendingPromote boolean? if true, queue this spectator for promotion to
----  player at the next match end (open FFA mid-match join flow).
 ---@return boolean success
-function Room:add_spectator(newSpectator, pendingPromote)
-  -- Pending-promote (drop-in to become a player) requires a live match.
-  -- Pure spectators can join any room that exists (character select or playing).
-  local hasLiveMatch = self.game ~= nil
-  if pendingPromote and not hasLiveMatch then
-    logger.warn("Cannot queue " .. newSpectator.name .. " as pending player in room " .. self.roomNumber .. " - no live match")
-    return false
-  end
-
-  -- Player/spectator roles are mutually exclusive. Refuse if the caller is
-  -- already seated as a player or already in the spectator list.
+function Room:add_spectator(newSpectator)
+  -- Player/spectator roles are mutually exclusive.
   for _, p in pairs(self.players) do
     if p == newSpectator then
       logger.warn(newSpectator.name .. " is already a player in room " .. self.roomNumber .. "; refusing add_spectator")
@@ -640,22 +629,13 @@ function Room:add_spectator(newSpectator, pendingPromote)
   self.spectators[#self.spectators + 1] = newSpectator
   logger.debug(newSpectator.name .. " joined " .. self.name .. " as a spectator")
 
-  if pendingPromote then
-    self.pendingJoiners[#self.pendingJoiners + 1] = { player = newSpectator }
-    logger.info(newSpectator.name .. " queued as pending player for room " .. self.roomNumber)
-  end
-
   local replay
   if self.game then
     replay = self.game:getPartialReplay(COMPRESS_REPLAYS_ENABLED)
   end
 
-  local message = ServerProtocol.spectateRequestGranted(self, replay)
-
-  newSpectator:sendJson(message)
-  local spectatorList = self:spectator_names()
-  logger.debug("sending spectator list: " .. json.encode(spectatorList))
-  self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, spectatorList))
+  newSpectator:sendJson(ServerProtocol.spectateRequestGranted(self, replay))
+  self:broadcastJson(ServerProtocol.updateSpectators(self.roomNumber, self:spectator_names()))
   return true
 end
 
@@ -691,13 +671,6 @@ function Room:remove_spectator(spectator)
       spectator:sendJson(ServerProtocol.leaveRoom(self.roomNumber, nil))
       lobbyChanged = true
       break
-    end
-  end
-
-  -- Drop them from the pending-promote queue too, if they were waiting.
-  for i = #self.pendingJoiners, 1, -1 do
-    if self.pendingJoiners[i].player == spectator then
-      table.remove(self.pendingJoiners, i)
     end
   end
 
@@ -833,6 +806,10 @@ function Room:broadcastInput(input, sender)
       v:sendSpectate(inputMessage)
     end
   end
+
+  for _, entry in ipairs(self.pendingJoiners) do
+    if entry.player then entry.player:sendSpectate(inputMessage) end
+  end
 end
 
 -- How long a non-eliminated, non-disconnected slot may go without sending
@@ -903,6 +880,9 @@ function Room:_synthesizeSilentDeath(player, slot, nowMs)
   end
   for _, spec in pairs(self.spectators) do
     if spec then spec:sendSpectate(message) end
+  end
+  for _, entry in ipairs(self.pendingJoiners) do
+    if entry.player then entry.player:sendSpectate(message) end
   end
 
   -- Crash-replay capture: stuck-match rescue is by definition an
@@ -1065,6 +1045,9 @@ function Room:broadcastGarbageEvent(sender, body)
       spec:sendSpectate(message)
     end
   end
+  for _, entry in ipairs(self.pendingJoiners) do
+    if entry.player then entry.player:sendSpectate(message) end
+  end
 end
 
 -- Default arbitration window if the gameMode didn't supply one (e.g. offline
@@ -1138,6 +1121,10 @@ function Room:broadcastDeathEvent(sender, body)
     if spec then
       spec:sendSpectate(message)
     end
+  end
+
+  for _, entry in ipairs(self.pendingJoiners) do
+    if entry.player then entry.player:sendSpectate(message) end
   end
 end
 
