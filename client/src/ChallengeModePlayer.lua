@@ -1,6 +1,7 @@
 local MatchParticipant = require("client.src.MatchParticipant")
 local class = require("common.lib.class")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
+local TeamUtils = require("common.data.TeamUtils")
 
 ---@class ChallengeModePlayerSettings : ParticipantSettings
 ---@field attackEngineSettings table
@@ -14,7 +15,7 @@ local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 local ChallengeModePlayer = class(
 function(self, playerNumber)
   self.name = "Challenger"
-  self.playerNumber = playerNumber
+  TeamUtils.assignSeatIdentity(self, playerNumber)
   self.isLocal = true
   self.settings.attackEngineSettings = nil
   self.settings.healthSettings = nil
@@ -82,7 +83,10 @@ end
 ---@param stackMetadata SimulatedStackMetadata
 ---@return ChallengeModePlayer
 function ChallengeModePlayer.createFromReplayMetadata(stackMetadata)
-  local player = ChallengeModePlayer(stackMetadata.stackIndex)
+  -- seatId preferred for consistency with Player.createFromReplayMetadata;
+  -- challenge mode is single-player so stackIndex always equals seatId in
+  -- practice, but the canonical name belongs on the canonical helper.
+  local player = ChallengeModePlayer(stackMetadata.seatId or stackMetadata.stackIndex)
   player:setCharacter(stackMetadata.characterId)
   player:setPanels(stackMetadata.panelId)
   player.settings.difficulty = stackMetadata.challengeModeDifficulty
