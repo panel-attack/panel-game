@@ -565,7 +565,14 @@ function Room:start_match()
       for i = 1, (self.gameMode.teamCount or #teamSizes) do
         newPpt[i] = teamSizes[i] or 0
       end
-      self.gameMode.playersPerTeam = newPpt
+      -- Store per-match compacted shape separately; do NOT overwrite
+      -- self.gameMode.playersPerTeam (the preset). Mutating the room's
+      -- gameMode would break isSharedTeamMode on the client (e.g. {1,2} →
+      -- {1,1} after a 2-player start of a 1v2 room) and corrupt team
+      -- assignment for subsequent full-roster rematches.
+      self._compactedPlayersPerTeam = newPpt
+    else
+      self._compactedPlayersPerTeam = nil
     end
   end
 
@@ -614,7 +621,7 @@ function Room:prepare_character_select()
   -- joined now that character select reopens. The server is the only thing
   -- that owns handleJoinRoom semantics, so emit and let it drain the queue.
   if self.pendingJoiners and #self.pendingJoiners > 0 then
-    self:emitSignal("readyForPendingJoiners")
+    self:emitSignal("readyForPendingJoiners", self)
   end
 
   -- Voided rooms (someone alive left mid-match) can't host another match. Now
