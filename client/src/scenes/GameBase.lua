@@ -801,8 +801,14 @@ function GameBase:update(dt)
     -- Freeze watchdog: bail to lobby if engine.clock stops advancing for too
     -- long. Pause is excluded — we reset the baseline while paused so unpause
     -- starts fresh, otherwise an idle pause would trip the watchdog.
+    -- Pure spectators / pending joiners are excluded: their engine is
+    -- input-driven and will stall naturally when the real match ends (inputs
+    -- stop arriving). A stalled clock is expected, not a bug, for them.
     local nowSeconds = love.timer.getTime()
-    if self.match.isPaused then
+    if isPureSpectator then
+      self._lastClockProgressTime = nowSeconds
+      self._lastObservedClock = self.match.engine and self.match.engine.clock or 0
+    elseif self.match.isPaused then
       self._lastClockProgressTime = nowSeconds
       self._lastObservedClock = self.match.engine and self.match.engine.clock or 0
     else
