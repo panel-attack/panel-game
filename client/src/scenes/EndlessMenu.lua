@@ -165,14 +165,14 @@ function EndlessMenu:initializeFromLocalPlayerSettings(player)
 end
 
 function EndlessMenu:refresh()
-  if self.battleRoom then
-    local difficulty = self.battleRoom.players[1].settings.difficulty
-    self.lastScore = GAME.scores:lastEndlessForLevel(difficulty)
-    self.record = GAME.scores:recordEndlessForLevel(difficulty)
-    if self.ui.recordBox then
-      self.ui.recordBox:setLastResult(self.lastScore)
-      self.ui.recordBox:setRecord(self.record)
-    end
+  local player = self.battleRoom and self.battleRoom.players and self.battleRoom.players[1]
+  if not (player and player.settings) then return end
+  local difficulty = player.settings.difficulty
+  self.lastScore = GAME.scores:lastEndlessForLevel(difficulty)
+  self.record = GAME.scores:recordEndlessForLevel(difficulty)
+  if self.ui.recordBox then
+    self.ui.recordBox:setLastResult(self.lastScore)
+    self.ui.recordBox:setRecord(self.record)
   end
 end
 

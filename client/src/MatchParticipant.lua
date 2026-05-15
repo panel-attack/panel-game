@@ -77,12 +77,12 @@ function MatchParticipant:getWinCountForDisplay()
 end
 
 function MatchParticipant:setWinCount(count)
-  self.wins = count
+  self.wins = tonumber(count) or 0
   self:emitSignal("winsChanged", self:getWinCountForDisplay())
 end
 
 function MatchParticipant:incrementWinCount()
-  self:setWinCount(self.wins + 1)
+  self:setWinCount((self.wins or 0) + 1)
 end
 
 -- Last match's ordinal placement (1 = winner, 2 = runner-up, etc.) from the

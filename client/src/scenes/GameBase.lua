@@ -287,7 +287,11 @@ function GameBase:load()
       -- Clear focus when pause menu is hidden
       self.uiRoot:setFocus(nil)
       self:_resumeFromScrub()
-      self.match:togglePause()
+      if self.match.supportsPause then
+        self.match:togglePause()
+      else
+        self.match.isPaused = false
+      end
       if self.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.stageTrack)
       end
@@ -420,9 +424,12 @@ function GameBase:drawScrubIndicator()
   GraphicsUtil.printf("< Rewind", 0, y, w * 0.45, "right")
 
   GraphicsUtil.setColor(1, 1, 1, 1)
-  local label = (secondsRewound > 0)
-    and string.format("-%.1fs", secondsRewound)
-    or "live"
+  local function fmt(frame)
+    local s = math.max(0, math.floor(frame / 60))
+    return string.format("%d:%02d", math.floor(s / 60), s % 60)
+  end
+  local label = string.format("%s -> %s",
+    fmt(self.scrubCursor), fmt(self.scrubPauseFrame))
   GraphicsUtil.printf(label, 0, y, w, "center")
 
   if atEnd then

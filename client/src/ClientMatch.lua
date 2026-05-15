@@ -1533,10 +1533,14 @@ end
 
   -- Draw the pause menu
 function ClientMatch:draw_pause()
-  -- Spectators have no pause menu to interact with; dim the playfield so
-  -- "the match is paused" reads at a glance. Players keep the existing
-  -- look so the pause menu sits on top of their normal render.
-  if not self:hasLocalPlayer() then
+  -- Spec view of a scrub-eligible match (endless / vs-self) only: the
+  -- player may be rewinding, so dim the playfield instead of layering a
+  -- menu — specs have no menu. Other spec views and the player keep their
+  -- existing look.
+  if not self:hasLocalPlayer()
+      and self.gameMode
+      and (self.gameMode.gameScene == "EndlessGame"
+        or self.gameMode.gameScene == "VsSelfGame") then
     GraphicsUtil.drawRectangle("fill",
       0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, 0, 0, 0, 0.55)
   end

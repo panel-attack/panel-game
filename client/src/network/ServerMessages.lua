@@ -111,6 +111,8 @@ function ServerMessages.sanitizeRoomMessage(message)
     }
   elseif message.type == "spectatorUpdate" then
     return { spectators = message.content }
+  elseif message.type == "pauseNotification" then
+    return { pauseNotification = message.content }
   elseif message.type == "rankedUpdate" then
     return {
       ranked_match_approved = message.content.ranked,
