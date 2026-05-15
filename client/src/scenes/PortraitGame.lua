@@ -17,24 +17,8 @@ local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
   return TeamUtils.teamIndexFor(gameMode, playerPosition)
 end
 
-local function teamLetter(teamIndex)
-  return string.char(string.byte("A") + (teamIndex - 1))
-end
-
-local function isFFA(gameMode)
-  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
-    return false
-  end
-  local p = gameMode.playersPerTeam
-  if type(p) == "number" then return p <= 1 end
-  if type(p) == "table" then
-    for _, n in ipairs(p) do
-      if n > 1 then return false end
-    end
-    return true
-  end
-  return false
-end
+local teamLetter = TeamUtils.teamLetter
+local isFFA = TeamUtils.isFFA
 
 local function buildTeamResultText(match, winners)
   local teams = {}

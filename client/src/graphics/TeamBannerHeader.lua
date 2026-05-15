@@ -8,17 +8,7 @@ local tableUtils = require("common.lib.tableUtils")
 
 local TeamBannerHeader = {}
 
--- Pink + purple palette, mirrored from ClientMatch / GameBase.
-local TEAM_COLORS = {
-  {1,    0.55, 0.75, 1}, -- pink
-  {0.65, 0.4,  0.95, 1}, -- purple
-  {0.45, 1,    0.45, 1}, -- green
-  {1,    1,    0.45, 1}, -- yellow
-  {1,    0.6,  0.2,  1}, -- orange
-  {0.45, 0.7,  1,    1}, -- blue
-  {0.45, 1,    1,    1}, -- cyan
-  {1,    0.45, 0.45, 1}, -- red
-}
+local TEAM_COLORS = TeamUtils.TEAM_COLORS
 
 local function clampTextToWidth(text, maxWidth, font)
   if font:getWidth(text) <= maxWidth then return text end
@@ -30,21 +20,7 @@ local function clampTextToWidth(text, maxWidth, font)
   return (result == "") and ellipsis or (result .. ellipsis)
 end
 
--- True only for "shared team" modes (multiple players per team). FFA is
--- TEAM_VERSUS but every team has size 1 → treated as non-team for this header.
-local function isSharedTeamMode(gameMode)
-  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
-    return false
-  end
-  local p = gameMode.playersPerTeam
-  if type(p) == "number" then return p > 1 end
-  if type(p) == "table" then
-    for _, n in ipairs(p) do
-      if n > 1 then return true end
-    end
-  end
-  return false
-end
+local isSharedTeamMode = TeamUtils.isSharedTeamMode
 
 -- Build [teamIndex] -> { names = {...}, wins = N } from a player list + context + optional teamWins.
 -- context can be a Match (with engine.teams), BattleRoom, or a raw gameMode.

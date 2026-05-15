@@ -783,6 +783,23 @@ function ClientMatch:rewindToFrame(frame)
   self.engine:rewindToFrame(frame)
 end
 
+-- After a pause-mode rewind, drop input history past the cursor so resuming
+-- starts a fresh timeline from `frame`. Local stacks immediately overwrite
+-- confirmedInput[frame+1..] on the next send_controls; nil entries fall back
+-- to idle if read before the local player keys anything in.
+function ClientMatch:truncateInputsAt(frame)
+  for _, stack in ipairs(self.stacks) do
+    local engineStack = stack.engine
+    if engineStack and engineStack.confirmedInput then
+      local ci = engineStack.confirmedInput
+      for i = frame + 1, #ci do
+        ci[i] = nil
+      end
+    end
+  end
+  self.scrubbed = true
+end
+
 ---@return ReplayV3?
 function ClientMatch:finalizeReplay()
   local replay
@@ -1043,16 +1060,7 @@ local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
   return TeamUtils.teamIndexFor(gameMode, playerPosition)
 end
 
-local teamColors = {
-  {1,    0.55, 0.75, 1},  -- pink   (team 1)
-  {0.65, 0.4,  0.95, 1},  -- purple (team 2)
-  {0.45, 1,    0.45, 1},  -- green
-  {1,    1,    0.45, 1},  -- yellow
-  {1,    0.6,  0.2,  1},  -- orange
-  {0.45, 0.7,  1,    1},  -- blue
-  {0.45, 1,    1,    1},  -- cyan
-  {1,    0.45, 0.45, 1},  -- red
-}
+local teamColors = TeamUtils.TEAM_COLORS
 
 ---@param text string
 ---@param maxWidth number

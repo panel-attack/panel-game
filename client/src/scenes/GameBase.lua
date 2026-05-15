@@ -27,50 +27,17 @@ local socket = require("common.lib.socket")
 -- than "I died and can now watch teammates".
 local DEAD_LOCAL_GRACE_SECONDS = 3
 
--- Player chip background colors keyed by team index. Mirrors the palette used by
--- ClientMatch:drawTeamScoreboard so the chip above each stack matches the
--- scoreboard tint at the top of the screen.
-local TEAM_COLORS = {
-  {1,    0.55, 0.75, 0.85}, -- pink   (team 1)
-  {0.65, 0.4,  0.95, 0.85}, -- purple (team 2)
-  {0.45, 1,    0.45, 0.85}, -- green
-  {1,    1,    0.45, 0.85}, -- yellow
-  {1,    0.6,  0.2,  0.85}, -- orange
-  {0.45, 0.7,  1,    0.85}, -- blue
-  {0.45, 1,    1,    0.85}, -- cyan
-  {1,    0.45, 0.45, 0.85}, -- red
-}
+-- Chip-background uses the canonical palette with translucency (alpha 0.85).
+local CHIP_ALPHA = 0.85
 
 local function teamColorForStack(match, stack, stackIndex)
   local idx = TeamUtils.teamIndexFor(match, stackIndex)
-  return TEAM_COLORS[idx] or TEAM_COLORS[1]
+  local c = TeamUtils.TEAM_COLORS[idx] or TeamUtils.TEAM_COLORS[1]
+  return { c[1], c[2], c[3], CHIP_ALPHA }
 end
 
--- "Shared team mode" = TEAM_VERSUS with at least one team containing multiple
--- players. FFA (3p/4p) is technically TEAM_VERSUS in the data model but every
--- team is size 1, so wins are per-individual — we treat it like a non-team mode
--- for HUD purposes (LSS shows WINS, no top team scoreboard).
-local function isSharedTeamMode(gameMode)
-  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
-    return false
-  end
-  local p = gameMode.playersPerTeam
-  if type(p) == "number" then return p > 1 end
-  if type(p) == "table" then
-    for _, n in ipairs(p) do
-      if n > 1 then return true end
-    end
-    return false
-  end
-  return false
-end
-
-local function isFFA(gameMode)
-  if not gameMode or gameMode.stackInteraction ~= GameModes.StackInteractions.TEAM_VERSUS then
-    return false
-  end
-  return not isSharedTeamMode(gameMode)
-end
+local isSharedTeamMode = TeamUtils.isSharedTeamMode
+local isFFA = TeamUtils.isFFA
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
@@ -144,9 +111,7 @@ local function getTeamIndexForPlayerPosition(gameMode, playerPosition)
   return TeamUtils.teamIndexFor(gameMode, playerPosition)
 end
 
-local function teamLetter(teamIndex)
-  return string.char(string.byte("A") + (teamIndex - 1))
-end
+local teamLetter = TeamUtils.teamLetter
 
 local function joinPlayerNames(players)
   local names = {}
@@ -322,6 +287,7 @@ function GameBase:load()
       self.pauseMenu:setVisibility(false)
       -- Clear focus when pause menu is hidden
       self.uiRoot:setFocus(nil)
+      self:_resumeFromScrub()
       self.match:togglePause()
       if self.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.stageTrack)
@@ -367,6 +333,7 @@ function GameBase:handlePause()
     if self.match.supportsPause and (playerPressingStart(self.match) or input.allKeys.isDown["escape"] or (not GAME.focused and not self.match.isPaused)) then
       self.match:togglePause()
       self.pauseMenu:setVisibility(true)
+      self:_initScrubState()
 
       if self.stageTrack then
         self.pauseState.musicWasPlaying = self.stageTrack:isPlaying()
@@ -375,10 +342,79 @@ function GameBase:handlePause()
       GAME.theme:playValidationSfx()
     end
   else
+    self:_handleScrubInput()
     if (self.pauseMenu.hasFocus == nil or self.pauseMenu.hasFocus == false) and playerPressingStart(self.match) == false then
       self.uiRoot:setFocus(self.pauseMenu)
     end
   end
+end
+
+local SCRUB_STEP_FRAMES = 30
+
+function GameBase:_canScrub()
+  return self.name == "EndlessGame"
+    and GAME.battleRoom and GAME.battleRoom.online
+end
+
+function GameBase:_initScrubState()
+  if not self:_canScrub() then return end
+  local clock = self.match.engine and self.match.engine.clock or 0
+  self.scrubPauseFrame = clock
+  self.scrubCursor = clock
+end
+
+function GameBase:_scrubMinCursor()
+  return math.max(0, (self.scrubPauseFrame or 0) - MAX_LAG)
+end
+
+function GameBase:_handleScrubInput()
+  if not self.scrubCursor then return end
+  local minCursor = self:_scrubMinCursor()
+  local maxCursor = self.scrubPauseFrame
+  if input:isPressedWithRepeat("MenuLeft") and self.scrubCursor > minCursor then
+    self.scrubCursor = math.max(minCursor, self.scrubCursor - SCRUB_STEP_FRAMES)
+    self.match:rewindToFrame(self.scrubCursor)
+    GAME.theme:playValidationSfx()
+  elseif input:isPressedWithRepeat("MenuRight") and self.scrubCursor < maxCursor then
+    self.scrubCursor = math.min(maxCursor, self.scrubCursor + SCRUB_STEP_FRAMES)
+    self.match:rewindToFrame(self.scrubCursor)
+    GAME.theme:playValidationSfx()
+  end
+end
+
+function GameBase:_resumeFromScrub()
+  if not self.scrubCursor then return end
+  if self.scrubCursor < self.scrubPauseFrame then
+    self.match:truncateInputsAt(self.scrubCursor)
+  end
+  self.scrubCursor = nil
+  self.scrubPauseFrame = nil
+end
+
+function GameBase:drawScrubIndicator()
+  if not self.match.isPaused or not self.scrubCursor then return end
+  local minCursor = self:_scrubMinCursor()
+  local atStart = self.scrubCursor <= minCursor
+  local atEnd = self.scrubCursor >= self.scrubPauseFrame
+  local secondsRewound = (self.scrubPauseFrame - self.scrubCursor) / 60
+  local y = 300
+  local w = consts.CANVAS_WIDTH
+
+  local leftAlpha = atStart and 0.35 or 1
+  GraphicsUtil.setColor(1, 1, 1, leftAlpha)
+  GraphicsUtil.printf("< Rewind", 0, y, w * 0.45, "right")
+
+  GraphicsUtil.setColor(1, 1, 1, 1)
+  local label = (secondsRewound > 0)
+    and string.format("-%.1fs", secondsRewound)
+    or "live"
+  GraphicsUtil.printf(label, 0, y, w, "center")
+
+  local rightAlpha = atEnd and 0.35 or 1
+  GraphicsUtil.setColor(1, 1, 1, rightAlpha)
+  GraphicsUtil.printf("Forward >", w * 0.55, y, w * 0.45, "left")
+
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 function GameBase:setupGameOver()
@@ -744,8 +780,9 @@ function GameBase:draw()
 
   if self.match.isPaused then
     self.match:draw_pause()
+    self:drawScrubIndicator()
   end
-  
+
   self.uiRoot:draw()
 
   if config.show_fps then

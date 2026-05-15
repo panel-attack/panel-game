@@ -3,6 +3,56 @@
 
 local TeamUtils = {}
 
+-- Canonical team-color palette. Single source of truth — every banner / chip /
+-- border consumer references this. Alpha is 1; consumers that want
+-- translucency build {r,g,b,alpha} themselves at draw time.
+TeamUtils.TEAM_COLORS = {
+  {1,    0.55, 0.75, 1}, -- pink   (team 1)
+  {0.65, 0.4,  0.95, 1}, -- purple (team 2)
+  {0.45, 1,    0.45, 1}, -- green
+  {1,    1,    0.45, 1}, -- yellow
+  {1,    0.6,  0.2,  1}, -- orange
+  {0.45, 0.7,  1,    1}, -- blue
+  {0.45, 1,    1,    1}, -- cyan
+  {1,    0.45, 0.45, 1}, -- red
+}
+
+local GameModes_StackInteractions
+local function getStackInteractions()
+  if not GameModes_StackInteractions then
+    GameModes_StackInteractions = require("common.data.GameModes").StackInteractions
+  end
+  return GameModes_StackInteractions
+end
+
+-- "Shared team mode" = TEAM_VERSUS with at least one team containing multiple
+-- players. FFA is technically TEAM_VERSUS but every team is size 1.
+function TeamUtils.isSharedTeamMode(gameMode)
+  if not gameMode or gameMode.stackInteraction ~= getStackInteractions().TEAM_VERSUS then
+    return false
+  end
+  local p = gameMode.playersPerTeam
+  if type(p) == "number" then return p > 1 end
+  if type(p) == "table" then
+    for _, n in ipairs(p) do
+      if n > 1 then return true end
+    end
+  end
+  return false
+end
+
+function TeamUtils.isFFA(gameMode)
+  if not gameMode or gameMode.stackInteraction ~= getStackInteractions().TEAM_VERSUS then
+    return false
+  end
+  return not TeamUtils.isSharedTeamMode(gameMode)
+end
+
+-- Letter label for a team (1 -> "A", 2 -> "B", ...).
+function TeamUtils.teamLetter(teamIndex)
+  return string.char(string.byte("A") + (teamIndex - 1))
+end
+
 ---@class Team
 ---@field playerIndices integer[] Array of player indices (1-based) belonging to this team
 ---@field id integer The team's id (1-based)
