@@ -10,6 +10,7 @@ local EndlessGame = class(
 )
 
 EndlessGame.name = "EndlessGame"
+EndlessGame.supportsScrub = true
 
 function EndlessGame:customLoad()
   self.match.renderDuringPause = true

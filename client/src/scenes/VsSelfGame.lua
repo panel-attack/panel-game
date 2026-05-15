@@ -9,6 +9,7 @@ local VsSelfGame = class(
 )
 
 VsSelfGame.name = "VsSelfGame"
+VsSelfGame.supportsScrub = true
 
 function VsSelfGame:customLoad()
   self.match.renderDuringPause = true

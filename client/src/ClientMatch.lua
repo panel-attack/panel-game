@@ -819,12 +819,11 @@ function ClientMatch:scrubToFrame(targetFrame)
   local needsRebuild = (not preview) or preview.clock > targetFrame
 
   if needsRebuild then
-    logger.info("scrubToFrame: building preview, target=" .. targetFrame)
     preview = Match.createFromReplay(self.replay)
     preview.fromReplay = false
     -- Force per-frame rollback saves so _transplantPreviewState can extract a
     -- snapshot at targetFrame. Match:shouldSaveRollback otherwise returns
-    -- false in endless (no garbage senders), and the buffer stays empty.
+    -- false in single-player modes (no garbage senders), buffer stays empty.
     preview:setAlwaysSaveRollbacks(true)
     for i, prevStack in ipairs(preview.stacks) do
       local livStack = live.stacks[i]
@@ -843,12 +842,9 @@ function ClientMatch:scrubToFrame(targetFrame)
     self._scrubPreview = preview
   end
 
-  local startClock = preview.clock
   while preview.clock < targetFrame do
     preview:run()
   end
-  logger.info(string.format("scrubToFrame: advanced %d -> %d (target %d)",
-    startClock, preview.clock, targetFrame))
 
   self.engine = preview
   for i, cs in ipairs(self.stacks) do

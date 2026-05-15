@@ -353,13 +353,11 @@ end
 
 local SCRUB_STEP_FRAMES = 30
 
+-- Subclasses opt in by setting `supportsScrub = true` on the class.
+GameBase.supportsScrub = false
+
 function GameBase:_canScrub()
-  local ok = self.name == "EndlessGame"
-  logger.info(string.format("Scrub gate check: name=%s online=%s -> %s",
-    tostring(self.name),
-    tostring(GAME.battleRoom and GAME.battleRoom.online),
-    tostring(ok)))
-  return ok
+  return self.supportsScrub == true
 end
 
 function GameBase:_initScrubState()
@@ -367,7 +365,6 @@ function GameBase:_initScrubState()
   local clock = self.match.engine and self.match.engine.clock or 0
   self.scrubPauseFrame = clock
   self.scrubCursor = clock
-  logger.info("Scrub init at clock " .. tostring(clock))
 end
 
 function GameBase:_scrubMinCursor()
@@ -380,12 +377,10 @@ function GameBase:_handleScrubInput()
   local maxCursor = self.scrubPauseFrame
   if input:isPressedWithRepeat("MenuLeft") and self.scrubCursor > minCursor then
     self.scrubCursor = math.max(minCursor, self.scrubCursor - SCRUB_STEP_FRAMES)
-    logger.info("Scrub LEFT -> frame " .. self.scrubCursor)
     self.match:scrubToFrame(self.scrubCursor)
     GAME.theme:playValidationSfx()
   elseif input:isPressedWithRepeat("MenuRight") and self.scrubCursor < maxCursor then
     self.scrubCursor = math.min(maxCursor, self.scrubCursor + SCRUB_STEP_FRAMES)
-    logger.info("Scrub RIGHT -> frame " .. self.scrubCursor)
     self.match:scrubToFrame(self.scrubCursor)
     GAME.theme:playValidationSfx()
   end
