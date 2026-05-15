@@ -233,6 +233,42 @@ function Room:isFull()
   return self:countPlayers() >= self.maxPlayers
 end
 
+---Check whether the room still has a viable match composition.
+---For all modes: requires countPlayers >= minPlayers (or playerCount).
+---For dynamic-roster open team modes: additionally requires every team to
+---have at least one seated player. This mirrors the client-side
+---isRoomReadyForWaitingRoom check — e.g. a 1v2 room where p3 (the solo
+---player) leaves is NOT viable even though 2 players remain, because both
+---survivors are on the same team and there is no opponent.
+---@return boolean
+function Room:isViable()
+  local count = self:countPlayers()
+  local gm = self.gameMode
+  local minP = (gm and (gm.minPlayers or gm.playerCount)) or 1
+  if count < minP then return false end
+
+  -- For dynamic-roster open team modes, require every team to have at least
+  -- one player (same gate as isRoomReadyForWaitingRoom on the client).
+  if self:isDynamicRoster() and gm.teamCount and gm.playersPerTeam then
+    local ppt = gm.playersPerTeam
+    local isTeamMode = (type(ppt) == "number" and ppt > 1) or type(ppt) == "table"
+    if isTeamMode then
+      local seen = {}
+      local covered = 0
+      for slot, _ in self:eachPlayer() do
+        local teamIdx = TeamUtils.getTeamIndexForPlayerPosition(gm, slot)
+        if teamIdx and not seen[teamIdx] then
+          seen[teamIdx] = true
+          covered = covered + 1
+        end
+      end
+      if covered < gm.teamCount then return false end
+    end
+  end
+
+  return true
+end
+
 ---Open slots are positions any lobby player can claim. Held slots (reserved for
 ---a specific leaver to rejoin) are NOT open and are reported separately by
 ---getHeldSlots. We deliberately number open slots from the low end and held

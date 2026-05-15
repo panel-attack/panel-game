@@ -1979,15 +1979,6 @@ function Server:handleSpectateRequest(message, player)
   end
 end
 
--- Minimum players for the room to remain viable. Open rooms (OpenFFA etc.)
--- declare it via gameMode.minPlayers; fixed-size modes need exactly
--- gameMode.playerCount. Fallback to 1 (just close on empty) when neither set.
-local function roomMinPlayers(room)
-  local gm = room and room.gameMode
-  if not gm then return 1 end
-  return gm.minPlayers or gm.playerCount or 1
-end
-
 function Server:handleLeaveRoom(player, reason)
   -- Queued mid-match joiner explicitly leaving: drop the queue entry.
   local pendingRoom = self:findPendingJoinerRoom(player)
@@ -2026,8 +2017,8 @@ function Server:handleLeaveRoom(player, reason)
       -- check passes, room stays "alive" with phantom occupants.
       room:_removeFromPlayersAndAnnounce(player)
       player:removeFromRoom(room, reason)
-      if room:countPlayers() < roomMinPlayers(room) then
-        self:closeRoom(room, reason or "below minimum players")
+      if not room:isViable() then
+        self:closeRoom(room, reason or "no longer viable")
       else
         self:setLobbyChanged()
       end

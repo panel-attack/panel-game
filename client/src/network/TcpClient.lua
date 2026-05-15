@@ -145,6 +145,16 @@ function TcpClient:setNetworkLag(sendMin, sendMax, recvMin, recvMax)
   self.receiveMaxLag = recvMax or self.receiveMinLag
 end
 
+-- Exponential-skewed delay in [minLag, maxLag]: most samples land near minLag
+-- with occasional large spikes toward maxLag, matching real network jitter.
+-- Uses an exponential variate (rate=5) mapped onto the range and clamped.
+function TcpClient:_skewedLag(minLag, maxLag)
+  local range = maxLag - minLag
+  if range <= 0 then return minLag end
+  local variate = -math.log(1 - math.random() * 0.9933) / 5  -- ≈ exp(5), P(>1)≈0.7%
+  return minLag + math.min(variate, 1) * range
+end
+
 ---@param ip string
 ---@param port integer
 ---@return boolean success
@@ -280,7 +290,7 @@ function TcpClient:send(stringData)
     end
   end)
   if self.delayedProcessing then
-    local lagSeconds = (math.random() * (self.sendMaxLag - self.sendMinLag)) + self.sendMinLag
+    local lagSeconds = self:_skewedLag(self.sendMinLag, self.sendMaxLag)
     self.sendNetworkQueue:push(stringData, lagSeconds)
     return true
   else
@@ -338,7 +348,7 @@ function TcpClient:processIncomingMessages()
       ---@cast message -nil
       ---@cast remaining -nil
       if self.delayedProcessing then
-        local lagSeconds = (math.random() * (self.receiveMaxLag - self.receiveMinLag)) + self.receiveMinLag
+        local lagSeconds = self:_skewedLag(self.receiveMinLag, self.receiveMaxLag)
         self.receiveNetworkQueue:push({type, message}, lagSeconds)
       else
         self:queueMessage(type, message)
