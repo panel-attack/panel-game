@@ -506,16 +506,9 @@ function Room:start_match()
     activePlayers[#activePlayers + 1] = p
   end
 
-  -- Dynamic-roster compaction. Open FFA after a pre-match leave can leave
-  -- self.players sparse (e.g. {[1]=A,[3]=B,[4]=C} when slot 2 left). Game,
-  -- broadcastInput, and replay-stack indexing assume dense 1..N: ipairs
-  -- halts at the first nil so the replay would ship one stack instead of
-  -- three, and an input tagged with playerNumber=3 would route on the
-  -- client to a non-existent stack and be silently dropped.
-  -- Renumber here for dynamic-roster only — fixed-roster rooms keep slot
-  -- semantics for team-color assignment and can't reach this point sparse
-  -- anyway (minPlayers == maxPlayers blocks starting until all slots fill).
-  if self:isDynamicRoster() then
+  -- Compaction is safe only for FFA. Team modes derive team-membership from
+  -- slot via playersPerTeam boundaries; renumbering flips banner color.
+  if self:isDynamicRoster() and self.gameMode.playersPerTeam == 1 then
     local compactedPlayers = {}
     local compactedWins = {}
     for denseIndex, player in ipairs(activePlayers) do
