@@ -15,7 +15,11 @@ local MatchRules = require("common.data.MatchRules")
 local TeamUtils = require("common.data.TeamUtils")
 
 ---@class Match
----@field stacks (Stack | SimulatedStack)[] The stacks to run as part of the match
+---@field stacks (Stack | SimulatedStack)[] The stacks to run as part of the match.
+---  INVARIANT: dense 1..N array. Server compacts player_number at match start
+---  (`Room:start_match`) so client and server agree on `stacks[i].player_number == i`.
+---  Many simulation/replay/rollback sites use ipairs and `runs[i]` lookups that
+---  depend on this. If you ever skip compaction, expect silent breakage.
 ---@field garbageTargets table<integer, table<integer, Stack>> assignments by index where each stack's garbage is directed
 ---@field garbageSources table<Stack, table<integer, Stack>> assignments by index where each stack's incoming garbage comes from
 ---@field teams Team[]? Array of teams for team-based game modes

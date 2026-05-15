@@ -115,6 +115,10 @@ function SoundController:updateFadeOut()
       self.fadeOutStartVolume = nil
       self.activeTrack:stop()
       self.activeTrack:setVolume(config.music_volume / 100)
+      -- Drop our reference so the next playMusic doesn't see a "still active"
+      -- (but stopped) track. The Music object itself is cached on the
+      -- character/stage; we just stop holding it here.
+      self.activeTrack = nil
     else
       self.activeTrack:setVolume(self.fadeOutStartVolume * (1 - percentage))
     end
@@ -156,6 +160,7 @@ function SoundController:stopMusic()
   if self.activeTrack then
     self:cancelFadeOut()
     self.activeTrack:stop()
+    self.activeTrack = nil
   end
 end
 

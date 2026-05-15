@@ -28,7 +28,7 @@ local TeamUtils = require("common.data.TeamUtils")
 
 ---@class ClientMatch
 ---@field players (Player|ChallengeModePlayer)[]
----@field stacks (PlayerStack|ChallengeModePlayerStack)[]
+---@field stacks (PlayerStack|ChallengeModePlayerStack)[] Dense 1..N array; mirrors engine.stacks (see common/engine/Match.lua dense-array invariant).
 ---@field engine Match
 ---@field matchRules MatchRules
 ---@field replay ReplayV3
@@ -870,17 +870,25 @@ function ClientMatch:endScrub(commitFrame)
   local live = self._scrubLiveEngine
   local preview = self._scrubPreview
 
+  local needsTruncate = false
   if commitFrame and preview and commitFrame < live.clock then
-    if self:_transplantPreviewState(commitFrame) then
-      self:truncateInputsAt(commitFrame)
-    end
+    needsTruncate = self:_transplantPreviewState(commitFrame)
   end
 
+  -- Restore client-stack pointers to live BEFORE truncating. truncateInputsAt
+  -- walks self.stacks[i].engine.confirmedInput — if pointers still reference
+  -- preview, we'd replace preview's array reference (preview gets dropped
+  -- anyway) and leave live's untruncated. The result was new inputs landing
+  -- past live's old #ci and the original flow replaying after resume.
   self.engine = live
   for i, cs in ipairs(self.stacks) do
     if self._scrubLiveEngineStacks[i] then
       cs.engine = self._scrubLiveEngineStacks[i]
     end
+  end
+
+  if needsTruncate then
+    self:truncateInputsAt(commitFrame)
   end
 
   self._scrubLiveEngine = nil
@@ -954,17 +962,23 @@ function ClientMatch:_transplantPreviewState(targetFrame)
 end
 
 -- After a pause-mode rewind, drop input history past the cursor so resuming
--- starts a fresh timeline from `frame`. Local stacks immediately overwrite
--- confirmedInput[frame+1..] on the next send_controls; nil entries fall back
--- to idle if read before the local player keys anything in.
+-- starts a fresh timeline from `frame`. REPLACE the table rather than nil
+-- out trailing entries: `#t` on a table with explicit nils in the array part
+-- is undefined in Lua, so send_controls's `confirmedInput[#ci+1] = input`
+-- can write past the truncate point and the engine reads idle in between.
+-- That manifested as "second rewind shows the original flow" — new inputs
+-- ended up appended at the old end, not at `frame+1`.
 function ClientMatch:truncateInputsAt(frame)
   for _, stack in ipairs(self.stacks) do
     local engineStack = stack.engine
     if engineStack and engineStack.confirmedInput then
-      local ci = engineStack.confirmedInput
-      for i = frame + 1, #ci do
-        ci[i] = nil
+      local oldCi = engineStack.confirmedInput
+      local newCi = table.new(43200, 0)
+      local copyUntil = math.min(frame, #oldCi)
+      for i = 1, copyUntil do
+        newCi[i] = oldCi[i]
       end
+      engineStack.confirmedInput = newCi
     end
   end
   self.scrubbed = true
