@@ -1795,44 +1795,13 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
         logger.info("Attached " .. (connection.channel or "?") .. " socket to existing player " .. existingPlayer.name)
         connection:sendJson(ServerProtocol.approveLogin(existingPlayer.publicPlayerID, nil, nil, nil, nil))
 
-        -- Reconnect recovery: a client crash can't be guaranteed to send `logout`,
-        -- so a fresh login from a player we still believe is in a room means the
-        -- old session is gone. Tear down the preserved room slot and push a lobby
-        -- snapshot so the client doesn't sit at an empty Lobby waiting for state
-        -- it'll never receive (broadCastLobbyIfChanged gates on player.state ==
-        -- "lobby", which stays "playing"/"character select" until the room is
-        -- released).
-        if connection.channel == "gameplay"
-            and (self.playerToRoom[existingPlayer]
-                 or self.spectatorToRoom[existingPlayer]
-                 or self:findPendingJoinerRoom(existingPlayer)) then
-          logger.info("Reconnect for " .. existingPlayer.name
-            .. " — releasing preserved room slot so they re-enter the lobby cleanly.")
-          -- pcall: a fault inside voidByLeave / removeFromRoom mustn't leave
-          -- the player half-released. We've already sent approveLogin; an error
-          -- here would otherwise leave player.state derived from a stale room
-          -- and the next lobbyStateV2 wouldn't fire.
-          local ok, err = pcall(function()
-            self:clearProposals(existingPlayer)
-            self:handleLeaveRoom(existingPlayer, "reconnect")
-            self:setLobbyChanged()
-          end)
-          if not ok then
-            logger.error("Reconnect slot-release failed for " .. existingPlayer.name
-              .. ": " .. tostring(err) .. " — forcing player.room = nil")
-            existingPlayer.room = nil
-            existingPlayer.spectatedRoom = nil
-            self.playerToRoom[existingPlayer] = nil
-            self.spectatorToRoom[existingPlayer] = nil
-            self:setLobbyChanged()
-          end
-        end
-
-        -- Push the current lobby snapshot directly to a fresh gameplay
-        -- connection. broadCastLobbyIfChanged only fires when something
-        -- changed, so a reconnect that happens after the lobby is stable
-        -- (e.g. earlier players already cleared their rooms) would otherwise
-        -- leave this client sitting at a blank lobby until the next event.
+        -- A gameplay-socket reconnect for a player who's still in a room
+        -- KEEPS the slot. Lag is a gameplay condition, not an authority one:
+        -- a transient TCP blip must never tear the room down. If the client
+        -- is genuinely in a fresh state (process crashed and user is back at
+        -- MainMenu), it will send `leave_room` itself when it transitions
+        -- through Lobby — no inference required server-side. Mid-match, the
+        -- silent-death watchdog handles a truly gone player.
         if connection.channel == "gameplay" and existingPlayer.state == "lobby" then
           local lobbyStateV2 = self:lobbyStateV2()
           connection:sendJson(ServerProtocol.lobbyStateV2(lobbyStateV2.players, lobbyStateV2.rooms))
