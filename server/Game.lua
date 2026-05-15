@@ -28,6 +28,15 @@ local Game = class(
 function(self, players, id)
   self.seed = math.random(1, 9999999)
   self.players = players
+  -- Invariant: by the time Game is constructed, room.players has been
+  -- compacted dense (see Room:start_match). Indices 1..N here line up with
+  -- player.player_number. Mid-match leavers nil-out their slot but never
+  -- shift surviving slots, so this mapping holds for the entire match.
+  for i, p in ipairs(players) do
+    assert(p.player_number == i,
+      "Game: players[" .. i .. "].player_number = " .. tostring(p.player_number)
+      .. " — expected " .. i .. ". Compaction skipped or mis-sequenced.")
+  end
   self.inputs = {}
   for i = 1, #players do
     self.inputs[i] = {}
