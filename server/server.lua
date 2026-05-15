@@ -241,26 +241,29 @@ Server.STUCK_MATCH_THRESHOLD = 30
 -- pings are at the connection layer and don't count.
 Server.CHALLENGE_IDLE_TIMEOUT = 30 * 60
 
--- Bind one listener with TIME_WAIT retry. Used for both gameplay and lobby
+-- Bind one listener with TIME_WAIT retry. Used for each of the three listener
 -- ports (separated to eliminate TCP head-of-line blocking between channels).
+-- tcp4() not socket.bind(): the wrapper sets reuseaddr on a lazy-fd master socket
+-- where setsockopt silently fails, leaving SO_REUSEADDR off and forcing every
+-- restart to wait out TIME_WAIT (~60s on macOS).
 local function bindWithRetry(port, label)
   local attempts = 300
-  local s
   for i = 1, attempts do
-    s = socket.bind("*", port)
-    if s then
-      break
+    local s = socket.tcp4()
+    s:setoption("reuseaddr", true)
+    pcall(s.setoption, s, "reuseport", true)
+    local ok, err = s:bind("0.0.0.0", port)
+    if ok and s:listen() then
+      s:settimeout(0)
+      return s
     end
+    s:close()
     if i < attempts then
-      logger.warn(label .. " port " .. port .. " not available yet (attempt " .. i .. "/" .. attempts .. "), retrying...")
+      logger.warn(label .. " port " .. port .. " not available yet (attempt " .. i .. "/" .. attempts .. "): " .. tostring(err) .. ", retrying...")
       socket.sleep(0.25)
     end
   end
-  if not s then
-    error("Failed to create " .. label .. " server socket on port " .. port .. ". Check for another running server instance.")
-  end
-  s:settimeout(0)
-  return s
+  error("Failed to create " .. label .. " server socket on port " .. port .. ". Check for another running server instance.")
 end
 
 function Server:start()
@@ -1770,9 +1773,24 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
                  or self:findPendingJoinerRoom(existingPlayer)) then
           logger.info("Reconnect for " .. existingPlayer.name
             .. " — releasing preserved room slot so they re-enter the lobby cleanly.")
-          self:clearProposals(existingPlayer)
-          self:handleLeaveRoom(existingPlayer, "reconnect")
-          self:setLobbyChanged()
+          -- pcall: a fault inside voidByLeave / removeFromRoom mustn't leave
+          -- the player half-released. We've already sent approveLogin; an error
+          -- here would otherwise leave player.state derived from a stale room
+          -- and the next lobbyStateV2 wouldn't fire.
+          local ok, err = pcall(function()
+            self:clearProposals(existingPlayer)
+            self:handleLeaveRoom(existingPlayer, "reconnect")
+            self:setLobbyChanged()
+          end)
+          if not ok then
+            logger.error("Reconnect slot-release failed for " .. existingPlayer.name
+              .. ": " .. tostring(err) .. " — forcing player.room = nil")
+            existingPlayer.room = nil
+            existingPlayer.spectatedRoom = nil
+            self.playerToRoom[existingPlayer] = nil
+            self.spectatorToRoom[existingPlayer] = nil
+            self:setLobbyChanged()
+          end
         end
 
         return true
