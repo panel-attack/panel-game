@@ -146,7 +146,7 @@ function GameBase.buildTeamResultText(match, winners)
   local localTeam = nil
 
   for index, player in ipairs(match.players) do
-    local slot = (player and player.playerNumber) or index
+    local slot = TeamUtils.slotOf(player, index)
     local teamIndex = getTeamIndexForPlayerPosition(gameMode, slot)
     if teamIndex then
       teams[teamIndex] = teams[teamIndex] or {}

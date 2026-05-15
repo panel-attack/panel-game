@@ -349,7 +349,7 @@ local function start2pVsOnlineMatch(self, createRoomMessage)
         local occupied = {}
         for i, player in ipairs(self.room.players) do
           playerIds[i] = player.publicId
-          local slot = player.playerNumber or i
+          local slot = TeamUtils.slotOf(player, i)
           playerSlots[i] = slot
           occupied[slot] = true
         end
@@ -1074,7 +1074,7 @@ function NetClient:reportLocalGameResult(winners)
         if winningTeam then
           for i, player in ipairs(match.players) do
             if player.isLocal then
-              local slot = (player and player.playerNumber) or i
+              local slot = TeamUtils.slotOf(player, i)
               local localTeamIndex = TeamUtils.getPlayerTeamIndex(match.engine.teams, slot)
               if localTeamIndex == winningTeam.id then
                 localTeamWon = true

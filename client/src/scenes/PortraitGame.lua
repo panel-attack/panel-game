@@ -26,7 +26,7 @@ local function buildTeamResultText(match, winners)
   local maxTeamIndex = 0
 
   for index, player in ipairs(match.players) do
-    local slot = (player and player.playerNumber) or index
+    local slot = TeamUtils.slotOf(player, index)
     local teamIndex = getTeamIndexForPlayerPosition(match.gameMode, slot)
     if teamIndex then
       teams[teamIndex] = teams[teamIndex] or {}
@@ -38,7 +38,7 @@ local function buildTeamResultText(match, winners)
   for _, winner in ipairs(winners) do
     for index, player in ipairs(match.players) do
       if player == winner then
-        local slot = (player and player.playerNumber) or index
+        local slot = TeamUtils.slotOf(player, index)
         local teamIndex = getTeamIndexForPlayerPosition(match.gameMode, slot)
         if teamIndex then
           winnerTeams[teamIndex] = true

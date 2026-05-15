@@ -53,6 +53,12 @@ function TeamUtils.teamLetter(teamIndex)
   return string.char(string.byte("A") + (teamIndex - 1))
 end
 
+-- Slot (player_number) for a player, falling back to the dense-array index when
+-- the player is mid-construction or otherwise missing the slot field.
+function TeamUtils.slotOf(player, fallbackIndex)
+  return (player and player.playerNumber) or fallbackIndex
+end
+
 ---@class Team
 ---@field playerIndices integer[] Array of player indices (1-based) belonging to this team
 ---@field id integer The team's id (1-based)
