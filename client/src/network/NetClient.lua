@@ -988,10 +988,17 @@ end)
 NetClient.STATES = states
 
 function NetClient:leaveRoom()
-  if self:isConnected() and self.room then
+  -- Trust the lobby's view too: if lobbyDataV2 says we're in a room but
+  -- self.room is nil (state-divergence from a half-completed prior leave or
+  -- a partial-join + disconnect), the "Leave game" button on Lobby still
+  -- needs to send the request so the server can clean its side.
+  local localId = GAME.localPlayer and GAME.localPlayer.publicId
+  local lobbySaysInRoom = self.lobbyDataV2 and self.lobbyDataV2.players
+      and localId and self.lobbyDataV2.players[localId]
+      and self.lobbyDataV2.players[localId].roomNumber ~= nil
+  if self:isConnected() and (self.room or lobbySaysInRoom) then
     self.gameplayClient:dropOldInputMessages(); self.spectateClient:dropOldInputMessages()
     self.lobbyClient:sendRequest(ClientMessages.leaveRoom())
-
     -- the server sends us back the confirmation that we left the room
     -- so we reenter ONLINE state via processLeaveRoomMessage, not here
   elseif self.room then
