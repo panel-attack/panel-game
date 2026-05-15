@@ -1,4 +1,27 @@
 #!/bin/zsh
+#
+# Usage:
+#   zsh run_client.sh                    # launch one client as "Player1"
+#   zsh run_client.sh Alice              # launch one client as "Alice"
+#   zsh run_client.sh Alice Bob          # launch two clients in parallel
+#
+# Simulated network lag (per direction — RTT is 2x). All three TCP sockets
+# (gameplay, spectate, lobby) are affected. Lag only one side for realism by
+# running two terminals and only setting the vars in one.
+#   PA_NETWORK_LAG_MS=N                  # fixed N ms each direction
+#   PA_NETWORK_LAG_MIN_MS=A MAX_MS=B     # uniform random in [A, B] ms
+#
+# Scenarios:
+#   1) Sluggish wifi      MIN=120 MAX=180   ~240–360ms RTT, mild jitter
+#   2) Mobile on a train  MIN=80  MAX=400   wide jitter, exposes ordering bugs
+#   3) Transcontinental   MIN=200 MAX=280   ~400–560ms RTT, US↔Asia feel
+#   4) Satellite / bad    MIN=400 MAX=700   for verifying timeouts/disconnects
+#   5) Pathological       MIN=20  MAX=600   max variance, worst-case race finder
+#
+# Example:
+#   PA_NETWORK_LAG_MIN_MS=80 PA_NETWORK_LAG_MAX_MS=400 zsh run_client.sh Alice
+#   zsh run_client.sh Bob   # second terminal, no lag — the "good" connection
+
 source ~/.zshrc 2>/dev/null
 cd "$(dirname "$0")"
 project_dir=$(pwd)
