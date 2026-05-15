@@ -951,8 +951,14 @@ function Match:shouldRun(stack, runsSoFar)
         return false
       end
     else
-      -- gameOverClock is set in Match:hasEnded when there is only 1 alive in LAST_ALIVE modes
-      if self.gameOverClock and self.gameOverClock < stack.clock then
+      -- Only cut off surviving stacks AFTER the match has authoritatively ended
+      -- (self.ended set by handleMatchEnd → server's gameResult or aborted).
+      -- Without the self.ended gate, the LOCAL evaluateEndConditions caches a
+      -- gameOverClock the moment the local engine sees teams_active=1, which
+      -- freezes the survivor BEFORE the server confirms — a 3p FFA stuck-match
+      -- bug where the last-alive player's stack stopped ticking and the
+      -- server idle-timed them out.
+      if self.ended and self.gameOverClock and self.gameOverClock < stack.clock then
         return false
       end
     end
