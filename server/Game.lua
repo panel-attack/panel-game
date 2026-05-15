@@ -98,10 +98,13 @@ function Game.createFromRoomState(room)
   replay:setStage(room.stageId)
   replay:setRanked(game.ranked)
   replay.metadata.gameModeName = room.gameMode.name
-  -- Compacted team shape for THIS match. Server rebuilds playersPerTeam at
-  -- start_match to reflect the actual roster split; clients use this rather
-  -- than the original preset so engine.teams matches server-side teams.
-  replay.metadata.playersPerTeam = room.gameMode.playersPerTeam
+  -- Compacted team shape for THIS match. start_match computes the actual
+  -- per-team sizes from the filled slots (e.g. {1,1} when a 1v2 room starts
+  -- with one player per team) and stores it in _compactedPlayersPerTeam
+  -- WITHOUT mutating room.gameMode. Clients use the compacted shape for
+  -- engine.teams; the preset shape (room.gameMode.playersPerTeam) is kept
+  -- intact so isSharedTeamMode and subsequent rematches still work.
+  replay.metadata.playersPerTeam = room._compactedPlayersPerTeam or room.gameMode.playersPerTeam
   replay.metadata.teamCount = room.gameMode.teamCount
 
   for i, player in ipairs(room.players) do

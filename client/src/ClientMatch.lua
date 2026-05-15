@@ -181,22 +181,23 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
   -- are already populated above from replay.garbageFlows; we just need teams +
   -- garbageMode for hasEnded and shared-mode distribution to work.
   if gameMode then
-    -- Per-match team shape lives in replay.metadata. Server rebuilds
-    -- playersPerTeam/teamCount at start_match to reflect the actual roster
-    -- split (open 3v4 played 2v2 ships {2,2}, not the preset {3,4}). Wrap
-    -- the preset so reads of clientMatch.gameMode.playersPerTeam see the
-    -- per-match value everywhere — engine setup, banner, end-screen — no
-    -- call-site changes needed.
+    -- replay.metadata.playersPerTeam carries the *compacted* per-match shape
+    -- (e.g. {1,1} when a 1v2 room starts with one player per team). Use it
+    -- for engine team setup so slot→team math is correct after compaction.
+    -- Do NOT put it on matchGameMode: isSharedTeamMode needs the preset's
+    -- shape (e.g. {1,2}) to return true, and subsequent reads of
+    -- clientMatch.gameMode.playersPerTeam should reflect the mode definition,
+    -- not the reduced roster of a single match.
+    local compactedPpt = replay.metadata.playersPerTeam
     local matchGameMode = setmetatable({
-      playersPerTeam = replay.metadata.playersPerTeam or gameMode.playersPerTeam,
       teamCount = replay.metadata.teamCount or gameMode.teamCount,
     }, {__index = gameMode})
     clientMatch.gameMode = matchGameMode
     clientMatch.stackInteraction = matchGameMode.stackInteraction
     clientMatch.matchRules = matchGameMode.matchRules
     if matchGameMode.stackInteraction == GameModes.StackInteractions.TEAM_VERSUS
-        and matchGameMode.teamCount and matchGameMode.playersPerTeam then
-      local teams = TeamUtils.createTeams(#players, matchGameMode.teamCount, matchGameMode.playersPerTeam)
+        and matchGameMode.teamCount and (compactedPpt or matchGameMode.playersPerTeam) then
+      local teams = TeamUtils.createTeams(#players, matchGameMode.teamCount, compactedPpt or matchGameMode.playersPerTeam)
       clientMatch.engine:setTeams(teams)
       if matchGameMode.garbageMode then
         clientMatch.engine:setGarbageMode(matchGameMode.garbageMode)
