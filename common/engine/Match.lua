@@ -1126,6 +1126,16 @@ function Match:setupTeamGarbageTargets()
     self.garbageSources[self.stacks[i]] = {}
   end
 
+  -- Catch the "no garbage in team match" bug at the door: if garbageMode isn't
+  -- "all" or "shared", neither populate-branch below fires and garbageTargets
+  -- stays empty for every stack. distributeGarbageToTargets then silently
+  -- skips every sender. Loud warn so it's obvious in logs.
+  if self.garbageMode ~= "all" and self.garbageMode ~= "shared" then
+    logger.warn(string.format(
+      "Match:setupTeamGarbageTargets: unrecognized garbageMode '%s' — no garbage will flow this match (expected 'all' or 'shared')",
+      tostring(self.garbageMode)))
+  end
+
   if self.garbageMode == "all" then
     -- "All" mode: each player sends garbage to ALL enemies
     for i, stack in ipairs(self.stacks) do
