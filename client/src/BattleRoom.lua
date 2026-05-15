@@ -247,10 +247,9 @@ function BattleRoom:removePlayerByPublicId(publicId)
     if self.players[i].publicId == publicId then
       local p = self.players[i]
       table.remove(self.players, i)
-      -- Renumber remaining players to match server (server does the same compaction)
-      for j, remaining in ipairs(self.players) do
-        remaining.playerNumber = j
-      end
+      -- Preserve remaining players' playerNumber. Server keeps sparse slots
+      -- after a leave (server.lua:_removeFromPlayersAndAnnounce nils the
+      -- slot, doesn't compact) so team-membership stays stable.
       logger.info("BattleRoom: removed player " .. tostring(p.name) .. " (publicId " .. tostring(publicId) .. ")")
       self:emitSignal("rosterChanged")
       return p

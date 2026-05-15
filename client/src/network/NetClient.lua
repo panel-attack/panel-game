@@ -218,7 +218,11 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
     (localLobbyRoom.maxPlayers and localLobbyRoom.players and #localLobbyRoom.players >= localLobbyRoom.maxPlayers)
     or (localLobbyRoom.openSlots and #localLobbyRoom.openSlots == 0 and heldCount == 0)
   )
-  if self.room and roomIsFull and self.state == states.ONLINE then
+  -- Fallback: anyone in a room that meets the waiting-room threshold should
+  -- be in the room scene, not the lobby. Catches missed playerJoinedRoom /
+  -- playerLeftRoom events and out-of-order delivery.
+  local readyForWaiting = self.room and isRoomReadyForWaitingRoom(self.room)
+  if self.room and (roomIsFull or readyForWaiting) and self.state == states.ONLINE then
     local roomScene = getSceneFromRoom(self.room)
     if roomScene then
       GAME.navigationStack:push(roomScene)
@@ -1015,6 +1019,8 @@ local NetClient = class(function(self)
   self:createSignal("loginFinished")
   -- emitted with (channelName) when a side socket (lobby/spectate) drops
   self:createSignal("channelDegraded")
+  -- emitted with (roomNumber) when server queues a mid-match join
+  self:createSignal("joinQueued")
 end)
 
 NetClient.STATES = states
