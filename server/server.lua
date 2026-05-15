@@ -807,7 +807,7 @@ function Server:drainPendingJoiners(room)
     local player = entry.player
     if player and not room:isFull() then
       self.recentJoinRequests[player.publicPlayerID .. "_" .. room.roomNumber] = nil
-      self:handleJoinRoom(player, room.roomNumber, nil)
+      self:handleJoinRoom(player, room.roomNumber, entry.slotNumber)
     end
   end
 end
@@ -924,17 +924,19 @@ function Server:handleJoinRoom(player, roomNumber, slotNumber)
   -- room.spectators — that bag is reserved for pure-spectate callers.
   local roomState = room:state()
   if roomState ~= "lobby" and roomState ~= "character select" then
-    if room:isDynamicRoster() and roomState == "playing" and not room:isFull() then
+    local isOpen = room:isDynamicRoster() or room.openRoom == true
+    if isOpen and roomState == "playing" and not room:isFull() then
       for _, entry in ipairs(room.pendingJoiners) do
         if entry.player == player then
           logger.debug("Player " .. player.name .. " already queued for room " .. roomNumber)
           return false
         end
       end
-      room.pendingJoiners[#room.pendingJoiners + 1] = { player = player }
+      room.pendingJoiners[#room.pendingJoiners + 1] = { player = player, slotNumber = slotNumber }
       local replay = room.game and room.game:getPartialReplay(COMPRESS_REPLAYS_ENABLED)
       player:sendJson(ServerProtocol.joinQueued(room, replay))
-      logger.info("Player " .. player.name .. " queued for open room " .. roomNumber .. " (match in progress)")
+      logger.info("Player " .. player.name .. " queued for open room " .. roomNumber
+        .. (slotNumber and (" slot " .. slotNumber) or "") .. " (match in progress)")
       self:setLobbyChanged()
       return true
     end
