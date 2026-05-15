@@ -744,12 +744,17 @@ function ClientMatch:moveStacks()
     end
   end
 
+  -- Simple sequential offset: +1, +2, +3, ..., +N-1. The existing
+  -- moveForLayoutSlotN layout functions fill the small-stack zone
+  -- column-major (col 2 top, col 2 bottom, col 3 top, col 3 bottom, ...),
+  -- so sequential rank produces "top row = odd offsets, bottom row = even
+  -- offsets" naturally for any N. Viewer sees +1 top-left, +2 bottom-left,
+  -- +3 top-of-next-col, etc.
   local function viewerRelativeRank(slot)
     if slot == focus then return 0 end
-    local off = ((slot - focus) % maxSlot)
+    local off = (slot - focus) % maxSlot
     if off == 0 then off = maxSlot end
-    if off * 2 <= maxSlot then return 2 * off - 1 end
-    return 2 * (maxSlot - off)
+    return off
   end
 
   table.sort(stacks, function(a, b)
