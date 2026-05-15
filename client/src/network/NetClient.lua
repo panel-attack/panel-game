@@ -387,8 +387,8 @@ isRoomReadyForWaitingRoom = function(room)
     local teamCount = mode.teamCount or 2
     local seen = {}
     local covered = 0
-    for i, p in ipairs(room.players) do
-      local teamIdx = TeamUtils.teamIndexForPlayer(mode, p, i)
+    for _, p in ipairs(room.players) do
+      local teamIdx = TeamUtils.teamIndexForPlayer(mode, p)
       if teamIdx and not seen[teamIdx] then
         seen[teamIdx] = true
         covered = covered + 1
@@ -1237,9 +1237,9 @@ function NetClient:reportLocalGameResult(winners)
       if match and match.engine and match.engine.teams then
         local winningTeam = match.engine:getWinningTeam()
         if winningTeam then
-          for i, player in ipairs(match.players) do
+          for _, player in ipairs(match.players) do
             if player.isLocal then
-              local localTeamIndex = TeamUtils.teamIndexForPlayer(match, player, i)
+              local localTeamIndex = TeamUtils.teamIndexForPlayer(match, player)
               if localTeamIndex == winningTeam.id then
                 localTeamWon = true
               end

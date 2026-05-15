@@ -32,7 +32,7 @@ local CHIP_ALPHA = 0.85
 
 local function teamColorForStack(match, stack, stackIndex)
   local player = match.players and match.players[stackIndex]
-  return TeamUtils.teamColorForPlayer(match, player, stackIndex, CHIP_ALPHA)
+  return TeamUtils.teamColorForPlayer(match, player, CHIP_ALPHA)
 end
 
 local isSharedTeamMode = TeamUtils.isSharedTeamMode
@@ -136,9 +136,9 @@ function GameBase.buildTeamResultText(match, winners)
   end
 
   local localTeam = nil
-  for index, player in ipairs(match.players) do
+  for _, player in ipairs(match.players) do
     if player.isLocal then
-      localTeam = TeamUtils.teamIndexForPlayer(match, player, index)
+      localTeam = TeamUtils.teamIndexForPlayer(match, player)
       break
     end
   end

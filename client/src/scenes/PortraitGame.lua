@@ -20,8 +20,8 @@ local function buildTeamResultText(match, winners)
   local winnerTeams = {}
   local maxTeamIndex = 0
 
-  for index, player in ipairs(match.players) do
-    local teamIndex = TeamUtils.teamIndexForPlayer(match, player, index)
+  for _, player in ipairs(match.players) do
+    local teamIndex = TeamUtils.teamIndexForPlayer(match, player)
     if teamIndex then
       teams[teamIndex] = teams[teamIndex] or {}
       teams[teamIndex][#teams[teamIndex] + 1] = player.name
@@ -30,9 +30,9 @@ local function buildTeamResultText(match, winners)
   end
 
   for _, winner in ipairs(winners) do
-    for index, player in ipairs(match.players) do
+    for _, player in ipairs(match.players) do
       if player == winner then
-        local teamIndex = TeamUtils.teamIndexForPlayer(match, player, index)
+        local teamIndex = TeamUtils.teamIndexForPlayer(match, player)
         if teamIndex then
           winnerTeams[teamIndex] = true
         end

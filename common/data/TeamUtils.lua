@@ -242,27 +242,32 @@ end
 -- Canonical "what team is this player on?" for UI rendering.
 --
 -- THE single client-side entry point — banner header, per-stack color, team
--- scoreboard, end-of-match labels, and lobby tile color should all call this.
--- Takes a player object so callers don't have to remember whether the right
--- positional arg is seatId or stackIndex; this helper reads playerNumber off
--- the player (which is seatId on the client after BattleRoom's sort) and lets
--- teamIndexFor try engine.teams then fall back to gameMode preset.
+-- scoreboard, end-of-match labels, and lobby tile color all call this.
+-- Returns nil ONLY for non-team modes (FFA, vs-self, etc.). In a team mode
+-- a missing player.playerNumber is a caller bug and errors immediately —
+-- no silent positional fallback. A fallback would produce the wrong team in
+-- sparse-seat rooms, which is exactly the bug the refactor exists to fix.
+-- Funnel seat writes through TeamUtils.assignSeatIdentity to satisfy this.
 ---@param context Match|BattleRoom|table|nil  Match, BattleRoom, or raw gameMode
----@param player table?                       must have .playerNumber set
----@param fallbackIndex integer?              array position, used if player or playerNumber is missing
----@return integer? teamIndex                 nil only if context isn't a team game
-function TeamUtils.teamIndexForPlayer(context, player, fallbackIndex)
-  local pos = (player and player.playerNumber) or fallbackIndex
-  if not pos then return nil end
-  return TeamUtils.teamIndexForOrNil(context, pos)
+---@param player table?                       must have .playerNumber set in team modes
+---@return integer? teamIndex                 nil only when context isn't a team mode
+function TeamUtils.teamIndexForPlayer(context, player)
+  if not (context and player) then return nil end
+  local gameMode = (context.engine and context.gameMode) or context.gameMode or context.mode or context
+  if not (gameMode and gameMode.playersPerTeam) then return nil end
+  if not player.playerNumber then
+    error("TeamUtils.teamIndexForPlayer: player.playerNumber missing in a team mode — caller did not assignSeatIdentity")
+  end
+  return TeamUtils.teamIndexFor(context, player.playerNumber)
 end
 
--- Convenience: team color for a player, with optional alpha. Single source of
--- truth for "this player's team color" — every drawTeam* / panel-border /
--- chip-background consumer should funnel through here.
----@return number[] {r,g,b,a}
-function TeamUtils.teamColorForPlayer(context, player, fallbackIndex, alpha)
-  local idx = TeamUtils.teamIndexForPlayer(context, player, fallbackIndex) or 1
+-- Convenience: team color for a player, with optional alpha. Returns nil
+-- when the team can't be resolved (non-team mode); callers fall back to
+-- their own neutral color (e.g. ClientStack.DEFAULT_TEAM_COLOR).
+---@return number[]? {r,g,b,a}
+function TeamUtils.teamColorForPlayer(context, player, alpha)
+  local idx = TeamUtils.teamIndexForPlayer(context, player)
+  if not idx then return nil end
   local c = TeamUtils.TEAM_COLORS[idx] or TeamUtils.TEAM_COLORS[1]
   return { c[1], c[2], c[3], alpha or c[4] or 1 }
 end
@@ -292,8 +297,8 @@ end
 ---@return table<integer, table[]> rosters teamIndex -> array of players
 function TeamUtils.buildTeamRosters(context, players)
   local rosters = {}
-  for i, p in ipairs(players) do
-    local idx = TeamUtils.teamIndexForPlayer(context, p, i)
+  for _, p in ipairs(players) do
+    local idx = TeamUtils.teamIndexForPlayer(context, p)
     if idx then
       rosters[idx] = rosters[idx] or {}
       rosters[idx][#rosters[idx] + 1] = p

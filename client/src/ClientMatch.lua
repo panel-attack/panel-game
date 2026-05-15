@@ -1357,7 +1357,8 @@ function ClientMatch:drawTeamScoreboard()
 
   local teamData = {}
   for i, player in ipairs(self.players) do
-    local teamIndex = TeamUtils.teamIndexForPlayer(self, player, i) or i
+    local teamIndex = TeamUtils.teamIndexForPlayer(self, player)
+    if not teamIndex then break end
     if not teamData[teamIndex] then
       teamData[teamIndex] = {names = {}, wins = 0}
     end

@@ -286,10 +286,8 @@ end
 ---@return Player
 function Player.createFromReplayMetadata(stackMetadata)
   local player = Player(stackMetadata.name, stackMetadata.publicId, false)
-  -- seatId is canonical. If a legacy replay lacks it, the caller's loop
-  -- index (passed as fallbackIndex to teamIndexForPlayer) covers the gap;
-  -- do NOT silently substitute stackIndex here — they have different
-  -- semantics and conflating them yields the wrong team in sparse rooms.
+  -- seatId is canonical. A missing seatId in a team-mode replay will cause
+  -- teamIndexForPlayer to error loudly at render time — by design.
   if stackMetadata.seatId then
     TeamUtils.assignSeatIdentity(player, stackMetadata.seatId)
   else
