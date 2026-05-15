@@ -332,30 +332,23 @@ function Match:distributeGarbageToTargets()
 
             if teamState and #teamState.enemyIndices > 0 then
               local stacks = self.stacks
-              local _, pickedSlot, nextLivingIndex = TeamUtils.findNextLiving(
-                teamState.enemyIndices,
-                teamState.currentTargetIndex,
-                function(slot)
-                  local s = stacks[slot]
-                  return s and not s:game_ended()
-                end
-              )
-
-              if pickedSlot then
-                -- Advance the cursor to the next-living-after-picked so
-                -- rotation stays over living players only. If only the
-                -- picked target is alive, leave the cursor where it is —
-                -- next delivery will hit the same lone survivor.
+              local alive = function(slot)
+                local s = stacks[slot]
+                return s and not s:game_ended()
+              end
+              -- Per-piece rotation: a chain/combo that lands multiple pieces
+              -- at the same transit time would otherwise dump the entire
+              -- batch on a single enemy with one cursor advance, leaving the
+              -- other enemy untouched until the first dies. Rotating per
+              -- piece spreads the batch across living enemies in order.
+              for _, g in ipairs(garbageDelivery) do
+                local _, pickedSlot, nextLivingIndex = TeamUtils.findNextLiving(
+                  teamState.enemyIndices, teamState.currentTargetIndex, alive)
+                if not pickedSlot then break end
                 if nextLivingIndex then
                   teamState.currentTargetIndex = nextLivingIndex
                 end
-
-                local targetStack = stacks[pickedSlot]
-                local garbageCopy = {}
-                for j, g in ipairs(garbageDelivery) do
-                  garbageCopy[j] = shallowcpy(g)
-                end
-                self:deliverOutgoingGarbage(sender, targetStack, garbageCopy)
+                self:deliverOutgoingGarbage(sender, stacks[pickedSlot], { shallowcpy(g) })
               end
             end
           else
