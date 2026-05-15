@@ -1080,6 +1080,11 @@ local NetClient = class(function(self)
     gameResult = messageListeners.gameResult,
     playerJoinedRoom = messageListeners.playerJoinedRoom,
     playerLeftRoom = messageListeners.playerLeftRoom,
+    -- A pending joiner's watched match may end locally before the server's
+    -- addToRoom promotion arrives, leaving the client in ROOM state on the
+    -- spectator CharacterSelect. addToRoom must fire here too so the client
+    -- tears down the spectator room and enters the real player room.
+    addToRoom = messageListeners.addToRoom,
   }
 
   -- all listeners running while in a match
@@ -1092,6 +1097,11 @@ local NetClient = class(function(self)
     gameResult = messageListeners.gameResult,
     gameAbort = messageListeners.gameAbort,
     playerLeftRoom = messageListeners.playerLeftRoom,
+    -- A pending joiner is in INGAME state while watching the match they queued
+    -- for. When the match ends the server sends addToRoom to promote them.
+    -- Without this entry the message is silently dropped, leaving the client
+    -- in the spectator room instead of transitioning to the real player room.
+    addToRoom = messageListeners.addToRoom,
   }
 
   self.messageListeners = messageListeners
