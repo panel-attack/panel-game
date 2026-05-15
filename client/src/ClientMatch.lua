@@ -142,7 +142,10 @@ function ClientMatch.createFromReplay(replay, players, gameMode)
     else
       local prior = stackMetadata.publicId and priorByPublicId[stackMetadata.publicId]
       if prior then
-        -- Same person, possibly new seat — refresh seat identity in place.
+        -- Same person, possibly new seat. Wipe per-match state first so stale
+        -- pointers (stack ref from last match, lastPlacement) can't leak into
+        -- the new match — see MatchParticipant's field-lifecycle docs.
+        prior:clearPerMatchState()
         TeamUtils.assignSeatIdentity(prior, stackMetadata.seatId)
         players[stackMetadata.stackIndex] = prior
       elseif stackData.stackType == 1 then
@@ -707,24 +710,38 @@ function ClientMatch:moveStacks()
     end
   end
 
-  -- we want to render the stacks in a particular order so that the local player ends up as P1 (left side)
-  -- BUT: we want to keep player indexing consistent over boundaries (client <-> replay <- server) to not mess with replay saving
-  -- so we solve the rendering requirement via a shallowcpy and assigning positions directly to the stacks rather than starting reordering shenanigans all across the code base
+  -- Viewer-relative rotation. The focused stack lands in slot 1 (big-left).
+  -- Every other stack gets a slot based on its OFFSET from the focus, not its
+  -- absolute player_number — so the layout stays positionally consistent for
+  -- the viewer regardless of who's on which team. P+1 always lands in the same
+  -- small slot, P+2 in the same, etc.
   --
-  -- Spectator-focus override: when the viewer is spectating (pure spectator or a
-  -- dead local player using the spectator UI), pressing left/right shouldn't
-  -- just outline a different stack — it should rotate the focused stack into
-  -- the big-left container so we're actually watching that player. The small
-  -- containers stay in place; only which-player-renders-where changes.
+  -- Rank order: outward-alternating from +1 → -1 → +2 → -2 → ...
+  --   N=4: focus, +1, +3, +2                       (+3 == -1, +2 == opposite)
+  --   N=5: focus, +1, +4, +2, +3
+  --   N=6: focus, +1, +5, +2, +4, +3
+  --   N=7: focus, +1, +6, +2, +5, +3, +4
+  -- Closed-form: rank(off) = 2*off-1 if 2*off <= N, else 2*(N-off).
   local stacks = shallowcpy(self.stacks)
+  local n = #stacks
   local focus = self.spectatorFocus
+  if not focus then
+    for _, s in ipairs(stacks) do
+      if s.is_local then focus = s.player_number; break end
+    end
+  end
+
+  local function viewerRelativeRank(pn)
+    if pn == focus then return 0 end
+    local off = ((pn - focus) % n)
+    if off == 0 then off = n end
+    if off * 2 <= n then return 2 * off - 1 end
+    return 2 * (n - off)
+  end
+
   table.sort(stacks, function(a, b)
     if focus then
-      local aFocused = a.player_number == focus
-      local bFocused = b.player_number == focus
-      if aFocused ~= bFocused then
-        return aFocused
-      end
+      return viewerRelativeRank(a.player_number) < viewerRelativeRank(b.player_number)
     end
     if a.is_local == b.is_local then
       return a.player_number < b.player_number

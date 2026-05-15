@@ -31,6 +31,46 @@ local ModController = require("client.src.mods.ModController")
 ---@field playerNumber integer the (external) id for the player within the room; used to assign server messages to the correct player when spectating
 ---@field stack ClientStack?
 
+-- ============================================================================
+-- Field lifecycle classification
+-- ============================================================================
+-- These categories are load-bearing — most "stale state contaminating a new
+-- match" bugs trace back to mutating a per-match field on an object whose
+-- lifecycle is account-level.
+--
+-- IDENTITY (account-level, never cleared after construction):
+--   name, publicId, isLocal, human
+--
+-- PER-ROOM (cleared when leaving a room, persists across matches in same room):
+--   seatId, playerNumber, player_number       — seat in the lobby (refreshed
+--                                                via TeamUtils.assignSeatIdentity
+--                                                on join / rejoin)
+--   wins, modifiedWins, winrate, expectedWinrate
+--   settings.*                                  — character / stage / level /
+--                                                 panels / wantsRanked picks
+--   ready, wantsReady, hasLoaded                — per-character-select cycle,
+--                                                 reset between matches by
+--                                                 resetMatchTransientState
+--   rating, league, ratingHistory               — per-room view of ladder data
+--
+-- PER-MATCH (must NOT leak from one match to the next — cleared by
+-- clearPerMatchState before the new match's state is written):
+--   stack            — ClientStack ref (built fresh each match)
+--   stackIndex       — dense engine position; only meaningful during a match
+--   lastPlacement    — outcome of the just-ended match
+--
+-- SCENE-BOUND (owned by the scene that installs them, cleared by scene
+-- lifecycle, must NEVER be touched by match flow):
+--   cursor           — GridCursor widget installed by CharacterSelect
+--   inputConfiguration — input device claim
+--
+-- Adding a new field? Decide which category it belongs to and document here.
+-- "Per-match" fields belong in clearPerMatchState. "Per-room" fields belong in
+-- the relevant reset path (MatchParticipant:reset, leaveRoom, etc.). Mutating
+-- a "scene-bound" field from match-flow code is how the GridCursor crash
+-- happened.
+-- ============================================================================
+
 -- a match participant represents the minimum spec for a what constitutes a "player" in a battleRoom / match
 ---@class MatchParticipant : Signal
 ---@overload fun(): MatchParticipant
@@ -196,9 +236,9 @@ function MatchParticipant:setAttackEngineSettings(attackEngineSettings)
   end
 end
 
--- Single place to clear per-match transient state. Server resends authoritative
--- values via menu_state at character-select, but resetting locally first avoids
--- a stale-display window between match-end and the server snapshot arriving.
+-- Per-character-select-cycle reset. Server resends authoritative values via
+-- menu_state at character-select, but resetting locally first avoids a stale-
+-- display window between match-end and the server snapshot arriving.
 --
 -- NOTE: deliberately does NOT touch hasLoaded. The local player's hasLoaded is
 -- owned by BattleRoom.allAssetsLoaded (signal-driven), and remote players'
@@ -212,10 +252,20 @@ function MatchParticipant:resetMatchTransientState()
     self:setWantsReady(false)
   end
   self:setReady(false)
-  -- Do not touch self.cursor. The client-side cursor is a GridCursor widget
-  -- installed by ui/GridCursor.lua's constructor; clobbering it with the
-  -- legacy "__Ready" string (a server-only ready-position hint) leaves the
-  -- next click in CharacterSelect calling :updatePosition on a string.
+  -- self.cursor is scene-bound (CharacterSelect's GridCursor widget). Match-
+  -- flow code must not touch it.
+end
+
+-- Clear PER-MATCH state. Called at match start (in ClientMatch.createFromReplay)
+-- before the new match's seat / stack identity gets written to a carried-over
+-- player object. Without this, a player who rejoined into a different seat (or
+-- whose stack index changed because of roster compaction) keeps stale pointers
+-- to the previous match's ClientStack and placement. See the field-lifecycle
+-- comment block above.
+function MatchParticipant:clearPerMatchState()
+  self.stack = nil
+  self.stackIndex = nil
+  self.lastPlacement = nil
 end
 
 -- a callback that runs whenever a match ended
