@@ -809,8 +809,22 @@ function Server:drainPendingJoiners(room)
   for _, entry in ipairs(queue) do
     local player = entry.player
     if player and not room:isFull() then
-      self.recentJoinRequests[player.publicPlayerID .. "_" .. room.roomNumber] = nil
-      self:handleJoinRoom(player, room.roomNumber, entry.slotNumber)
+      -- Direct promotion: the player already passed all fresh-join guards
+      -- when they originally queued. Skip handleJoinRoom (dedup window,
+      -- reservedSlots, player.state checks) and promote immediately.
+      if player.gameplayConnection then player.gameplayConnection:enableNoDelay(true) end
+      local success = room:addPlayer(player, entry.slotNumber)
+      if success then
+        self:clearProposals(player)
+        self.playerToRoom[player] = room
+        self:setLobbyChanged()
+        room.reservedSlots[player.publicPlayerID] = nil
+        player:sendJson(ServerProtocol.addToRoom(room, nil))
+        logger.info("Player " .. player.name .. " promoted from queue to room " .. room.roomNumber
+          .. " as player " .. player.player_number)
+      else
+        logger.warn("Player " .. player.name .. " queue promotion failed (addPlayer returned false)")
+      end
     end
   end
 end
