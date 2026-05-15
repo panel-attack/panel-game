@@ -52,6 +52,13 @@ local function _sendGameplay(self, prefix, body)
   self.gameplayClient:send(NetworkProtocol.markedMessageForTypeAndBody(prefix, body))
 end
 
+-- One place to send a JSON request over the lobby socket. Returns the Response
+-- (nil if not connected) so callers can wire it up to pendingResponses.
+local function _sendLobby(self, request)
+  if not self:isConnected() then return nil end
+  return self.lobbyClient:sendRequest(request)
+end
+
 -- Process incoming on a non-critical side socket (lobby or spectate). If it
 -- drops, log + reset + emit channelDegraded so the UI can surface it. Side
 -- channels are isolation/perf wins, never required for play to continue.
@@ -1024,7 +1031,7 @@ function NetClient:leaveRoom()
       and self.lobbyDataV2.players[localId].roomNumber ~= nil
   if self:isConnected() and (self.room or lobbySaysInRoom) then
     _clearMatchInputState(self)
-    self.lobbyClient:sendRequest(ClientMessages.leaveRoom())
+    _sendLobby(self, ClientMessages.leaveRoom())
     -- the server sends us back the confirmation that we left the room
     -- so we reenter ONLINE state via processLeaveRoomMessage, not here
   elseif self.room then
@@ -1060,7 +1067,7 @@ function NetClient:reportLocalGameResult(winners)
     local totalPlayers = gameMode.playerCount or #self.room.players
     if #winners >= totalPlayers then
       -- all players tied (everyone died simultaneously)
-      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(0))
+      _sendLobby(self, ClientMessages.reportLocalGameResult(0))
     else
       -- "Did MY TEAM win" — not "is my own stack in the winners list". A teammate
       -- who died is still on the winning team if their teammate finished off the
@@ -1084,28 +1091,24 @@ function NetClient:reportLocalGameResult(winners)
           end
         end
       end
-      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(localTeamWon and 1 or 2))
+      _sendLobby(self, ClientMessages.reportLocalGameResult(localTeamWon and 1 or 2))
     end
   else
     -- non-team: report winner's player number, or 0 for any tie
     if #winners >= 2 then
-      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(0))
+      _sendLobby(self, ClientMessages.reportLocalGameResult(0))
     else
-      self.lobbyClient:sendRequest(ClientMessages.reportLocalGameResult(winners[1].playerNumber))
+      _sendLobby(self, ClientMessages.reportLocalGameResult(winners[1].playerNumber))
     end
   end
 end
 
 function NetClient:sendTauntUp(index)
-  if self:isConnected() then
-    self.lobbyClient:sendRequest(ClientMessages.sendTaunt("up", index))
-  end
+  _sendLobby(self, ClientMessages.sendTaunt("up", index))
 end
 
 function NetClient:sendTauntDown(index)
-  if self:isConnected() then
-    self.lobbyClient:sendRequest(ClientMessages.sendTaunt("down", index))
-  end
+  _sendLobby(self, ClientMessages.sendTaunt("down", index))
 end
 
 function NetClient:sendInput(input)
@@ -1127,8 +1130,8 @@ end
 
 ---@param clientMatch ClientMatch
 function NetClient:sendPauseToggle(clientMatch)
-  if self:isConnected() and self.room and self.room.roomNumber then
-    self.lobbyClient:sendRequest(ClientMessages.sendPauseToggle(self.room.roomNumber, clientMatch.isPaused))
+  if self.room and self.room.roomNumber then
+    _sendLobby(self, ClientMessages.sendPauseToggle(self.room.roomNumber, clientMatch.isPaused))
   end
 end
 
@@ -1136,7 +1139,7 @@ end
 function NetClient:requestLeaderboard(gameModeId)
   if not self.pendingResponses.leaderboardUpdate then
     gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
-    self.pendingResponses.leaderboardUpdate = self.lobbyClient:sendRequest(ClientMessages.requestLeaderboard(gameModeId))
+    self.pendingResponses.leaderboardUpdate = _sendLobby(self, ClientMessages.requestLeaderboard(gameModeId))
   end
 end
 
@@ -1144,7 +1147,7 @@ end
 ---@param gameModeId GameModeID
 function NetClient:challengePlayerById(opponentId, gameModeId)
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
-  self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
+  _sendLobby(self, ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
   self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
@@ -1168,7 +1171,7 @@ function NetClient:invitePlayerToRoom(opponentId, roomNumber, slotNumber, gameMo
   local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
   logger.info(string.format("Sending invite to player %s for room %d slot %d (key=%s)", tostring(opponentId), roomNumber, slotNumber, inviteKey))
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
-  self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true, roomNumber, slotNumber))
+  _sendLobby(self, ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true, roomNumber, slotNumber))
   self.lobbyDataV2.outgoingChallenges[opponentId][inviteKey] = true
   logger.info(string.format("outgoingChallenges after invite: %s", json.encode(self.lobbyDataV2.outgoingChallenges)))
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
@@ -1182,14 +1185,14 @@ function NetClient:withdrawRoomInvite(opponentId, roomNumber, slotNumber, gameMo
   gameModeId = gameModeId or getRoomGameModeId(roomNumber) or GameModes.IDs.TWO_PLAYER_VS
   local inviteKey = "room_" .. roomNumber .. "_" .. slotNumber
   self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
-  self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false, roomNumber, slotNumber))
+  _sendLobby(self, ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false, roomNumber, slotNumber))
   self.lobbyDataV2.outgoingChallenges[opponentId][inviteKey] = false
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 
 function NetClient:withdrawChallengeForId(opponentId, gameModeId)
   if self.lobbyDataV2.outgoingChallenges[opponentId] then
-    self.lobbyClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false))
+    _sendLobby(self, ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false))
     self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
     self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = false
     self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
@@ -1198,17 +1201,15 @@ end
 
 function NetClient:requestSpectate(roomNumber)
   if not self.pendingResponses.spectateResponse then
-    self.pendingResponses.spectateResponse = self.lobbyClient:sendRequest(ClientMessages.requestSpectate(config.name, roomNumber))
+    self.pendingResponses.spectateResponse = _sendLobby(self, ClientMessages.requestSpectate(config.name, roomNumber))
   end
 end
 
 ---@param roomNumber integer
 ---@param slotNumber integer
 function NetClient:requestJoinRoom(roomNumber, slotNumber)
-  if self:isConnected() then
-    logger.info("Sending joinRoomRequest for room " .. tostring(roomNumber) .. " slot " .. tostring(slotNumber))
-    self.lobbyClient:sendRequest(ClientMessages.requestJoinRoom(roomNumber, slotNumber))
-  end
+  logger.info("Sending joinRoomRequest for room " .. tostring(roomNumber) .. " slot " .. tostring(slotNumber))
+  _sendLobby(self, ClientMessages.requestJoinRoom(roomNumber, slotNumber))
 end
 
 ---@param gameMode GameMode|GameModeID|string
@@ -1231,23 +1232,23 @@ function NetClient:requestRoom(gameMode, latencyTolerance, openRoom)
       return
     end
 
-    self.lobbyClient:sendRequest(ClientMessages.sendRoomRequest(gameMode, latencyTolerance, openRoom))
+    _sendLobby(self, ClientMessages.sendRoomRequest(gameMode, latencyTolerance, openRoom))
   end
 end
 
 function NetClient:sendMatchAbort()
   if self:isConnected() then
-    self.lobbyClient:sendRequest(ClientMessages.sendMatchAbort())
+    _sendLobby(self, ClientMessages.sendMatchAbort())
     self:setState(states.ROOM)
   end
 end
 
 function sendPlayerSettings(player)
-  GAME.netClient.lobbyClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
+  _sendLobby(GAME.netClient, ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
 function NetClient:sendPlayerSettings(player)
-  self.lobbyClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
+  _sendLobby(self, ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
 function NetClient:registerPlayerUpdates(room)
@@ -1308,7 +1309,7 @@ function NetClient:login(ip, port)
 end
 
 function NetClient:logout()
-  self.lobbyClient:sendRequest(ClientMessages.logout())
+  _sendLobby(self, ClientMessages.logout())
   -- we want to give the message a chance to actually be sent to the network before we free the socket
   -- otherwise the socket might get cleared before that and the server will only disconnect the player after a delay (which means they still get shown in lobby for ~10s)
   -- it would be more reliable to only actually reset the socket after a server confirmation so there is no delay (however small)
