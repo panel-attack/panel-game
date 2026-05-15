@@ -1756,6 +1756,25 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
         self.connectionToPlayer[connection] = existingPlayer
         logger.info("Attached " .. (connection.channel or "?") .. " socket to existing player " .. existingPlayer.name)
         connection:sendJson(ServerProtocol.approveLogin(existingPlayer.publicPlayerID, nil, nil, nil, nil))
+
+        -- Reconnect recovery: a client crash can't be guaranteed to send `logout`,
+        -- so a fresh login from a player we still believe is in a room means the
+        -- old session is gone. Tear down the preserved room slot and push a lobby
+        -- snapshot so the client doesn't sit at an empty Lobby waiting for state
+        -- it'll never receive (broadCastLobbyIfChanged gates on player.state ==
+        -- "lobby", which stays "playing"/"character select" until the room is
+        -- released).
+        if connection.channel == "gameplay"
+            and (self.playerToRoom[existingPlayer]
+                 or self.spectatorToRoom[existingPlayer]
+                 or self:findPendingJoinerRoom(existingPlayer)) then
+          logger.info("Reconnect for " .. existingPlayer.name
+            .. " — releasing preserved room slot so they re-enter the lobby cleanly.")
+          self:clearProposals(existingPlayer)
+          self:handleLeaveRoom(existingPlayer, "reconnect")
+          self:setLobbyChanged()
+        end
+
         return true
       end
     end
