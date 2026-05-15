@@ -819,6 +819,12 @@ local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
   self:registerPlayerUpdates(self.room)
   local roomScene = getSceneFromRoom(self.room)
   if GAME.battleRoom.match then
+    -- Clear any defer queues left over from a previous match (e.g., your own
+    -- match where TCP dropped without a clean gameResult/gameAbort). Slot
+    -- indices are per-match; stale events would apply to wrong stacks.
+    self._deferredInputMsgs = nil
+    self._deferredGarbageMsgs = nil
+    self._deferredDeathMsgs = nil
     self.state = states.INGAME
     local vsScene = GameBase({match = GAME.battleRoom.match})
     vsScene:load()
