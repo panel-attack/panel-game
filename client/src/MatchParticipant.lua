@@ -199,13 +199,20 @@ end
 -- Single place to clear per-match transient state. Server resends authoritative
 -- values via menu_state at character-select, but resetting locally first avoids
 -- a stale-display window between match-end and the server snapshot arriving.
+--
+-- NOTE: deliberately does NOT touch hasLoaded. The local player's hasLoaded is
+-- owned by BattleRoom.allAssetsLoaded (signal-driven), and remote players'
+-- hasLoaded is owned by server menu_state. Slamming it false here would leave
+-- it stuck false between matches: assets are still loaded so the BattleRoom
+-- signal doesn't re-fire, and the ready button stays gated. Mod changes still
+-- correctly set loaded=false via refreshCharacter / refreshStage when the new
+-- mod isn't fullyLoaded.
 function MatchParticipant:resetMatchTransientState()
   if self.human then
     self:setWantsReady(false)
   end
   self:setReady(false)
   self.cursor = "__Ready"
-  self.hasLoaded = false
 end
 
 -- a callback that runs whenever a match ended
