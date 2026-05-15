@@ -1929,22 +1929,29 @@ end
 function Server:handleLeaveRoom(player, reason)
   local room = self.playerToRoom[player]
   if room then
-    local hadMatch = room.game ~= nil
+    local matchInProgress = room.game ~= nil and not room.game.complete
     self.playerToRoom[player] = nil
 
-    if hadMatch then
-      -- Mid-match leave: synthesize death so the survivors can finish.
+    if matchInProgress then
+      -- Mid-match: synth-death so survivors can finish. Do NOT enforce
+      -- minPlayers here — a dead player leaving cannot tear down the match
+      -- for survivors. Close only on empty.
       room:voidByLeave(player, reason)
-    end
-    player:removeFromRoom(room, reason)
-
-    -- Close the room when player count drops below the mode's minimum.
-    -- For OpenFFA: minPlayers (2). For fixed-size modes (2v2, 3p FFA,
-    -- etc.): playerCount, since dropping below leaves the room unplayable.
-    if room:countPlayers() < roomMinPlayers(room) then
-      self:closeRoom(room, reason or "below minimum players")
+      player:removeFromRoom(room, reason)
+      if room:countPlayers() == 0 then
+        self:closeRoom(room, "all players left")
+      else
+        self:setLobbyChanged()
+      end
     else
-      self:setLobbyChanged()
+      -- Between matches (or no match yet): enforce mode minimum so the
+      -- room isn't left in an unplayable state for the next match.
+      player:removeFromRoom(room, reason)
+      if room:countPlayers() < roomMinPlayers(room) then
+        self:closeRoom(room, reason or "below minimum players")
+      else
+        self:setLobbyChanged()
+      end
     end
   else
     room = self.spectatorToRoom[player]
