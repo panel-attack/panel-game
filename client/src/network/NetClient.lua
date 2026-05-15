@@ -732,7 +732,7 @@ local function processPlayerJoinedRoom(self, message)
     else
       local Player = require("client.src.Player")
       local player = Player(playerData.name, playerData.publicId, false)
-      player.playerNumber = playerData.playerNumber
+      TeamUtils.assignSeatIdentity(player, playerData.playerNumber)
       if playerData.settings then
         player:updateSettings(playerData.settings)
       end

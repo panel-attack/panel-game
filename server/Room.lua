@@ -144,8 +144,7 @@ function(self, roomNumber, players, gameMode, leaderboard, clock)
     player:addToRoom(self)
     self.win_counts[i] = 0
     player.cursor = "__Ready"
-    player.seatId = i
-    player.player_number = i
+    TeamUtils.assignSeatIdentity(player, i)
   end
 
   -- Only create teams once room is full; partial rooms should not have teams yet.
@@ -358,8 +357,7 @@ function Room:addPlayer(player, slotNumber)
   -- Restore prior wins for returning players in open rooms (publicId-keyed).
   self.win_counts[playerIndex] = self.win_counts_by_publicId[player.publicPlayerID] or 0
   player.cursor = "__Ready"
-  player.seatId = playerIndex
-  player.player_number = playerIndex
+  TeamUtils.assignSeatIdentity(player, playerIndex)
 
   -- Update room name (slot order, skipping any gaps).
   local names = {}

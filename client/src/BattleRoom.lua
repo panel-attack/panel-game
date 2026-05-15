@@ -2,6 +2,7 @@ local logger = require("common.lib.logger")
 local Player = require("client.src.Player")
 local tableUtils = require("common.lib.tableUtils")
 local GameModes = require("common.data.GameModes")
+local TeamUtils = require("common.data.TeamUtils")
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
@@ -179,7 +180,7 @@ function BattleRoom.createFromServerMessage(message)
         p:setLeague(player.ratingInfo.league)
       end
 
-      p.playerNumber = player.playerNumber
+      TeamUtils.assignSeatIdentity(p, player.playerNumber)
       battleRoom:addPlayer(p)
     end
   end
@@ -370,7 +371,9 @@ end
 -- adds an existing Player to the BattleRoom
 function BattleRoom:addPlayer(player)
   if not player.playerNumber then
-    player.playerNumber = #self.players + 1
+    -- Offline-only fallback: sequential seat assignment for local players
+    -- created without a server-assigned seat.
+    TeamUtils.assignSeatIdentity(player, #self.players + 1)
   end
   -- Insert sorted by playerNumber (== server seatId for online). The server's
   -- replay.stacks come in ascending-seatId order; ClientMatch pairs

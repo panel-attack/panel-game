@@ -268,16 +268,19 @@ function TeamUtils.teamColorForPlayer(context, player, fallbackIndex, alpha)
 end
 
 -- Canonical "this player sits at this seat" setter. The only place that
--- writes player.seatId and player.playerNumber on the client. Every code
--- path that learns a player's seat (addToRoom, playerJoinedRoom, replay
--- metadata, rejoin-into-new-seat) should funnel through here so the two
--- fields cannot drift apart.
+-- writes player.seatId / playerNumber / player_number. Server uses snake_case,
+-- client uses camelCase; this helper writes both so the legacy aliases stay
+-- in sync with the canonical seatId field, regardless of which side calls it.
+-- Every code path that learns a player's seat (addToRoom, playerJoinedRoom,
+-- replay metadata, rejoin-into-new-seat, server constructor / addPlayer)
+-- should funnel through here so the fields cannot drift apart.
 ---@param player table?
 ---@param seatId integer?
 function TeamUtils.assignSeatIdentity(player, seatId)
   if not player or not seatId then return end
   player.seatId = seatId
   player.playerNumber = seatId
+  player.player_number = seatId
 end
 
 -- Build a teamIndex -> {players} map from a roster. Replaces ad-hoc loops in
