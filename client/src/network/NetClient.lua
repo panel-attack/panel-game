@@ -519,6 +519,12 @@ local function processGameResultMessage(self, message)
   -- match-end conditions until this signal arrives (or an abort fires).
   if self.room.match and self.room.match.serverConfirmedEnd then
     self.room.match:serverConfirmedEnd()
+    if self.room.match.setServerOutcome then
+      self.room.match:setServerOutcome({
+        winnerTeamIndex = message.winnerTeamIndex,
+        winnerIndex = message.winnerIndex,
+      })
+    end
   end
 
   for _, roomPlayer in ipairs(self.room.players) do

@@ -443,6 +443,35 @@ function ClientMatch:serverConfirmedEnd()
   self._serverConfirmedEnd = true
 end
 
+---Records the server-authoritative outcome (winner team / winner slot,
+---both nil for a tie). Online consumers should prefer these over the
+---engine's local `getWinners` heuristic, which only sees game_over_clock
+---and can't distinguish "died last on the same arbitration tick" from
+---"team won the round."
+---@param outcome { winnerTeamIndex: integer?, winnerIndex: integer? }
+function ClientMatch:setServerOutcome(outcome)
+  self._hasServerOutcome = true
+  self._serverWinnerTeamIndex = outcome.winnerTeamIndex
+  self._serverWinnerIndex = outcome.winnerIndex
+end
+
+---True once a gameResult has been received from the server. Callers can
+---use this to decide whether to trust `getServerWinnerTeamIndex` / `Index`
+---over local engine heuristics.
+function ClientMatch:hasServerOutcome()
+  return self._hasServerOutcome == true
+end
+
+---@return integer? nil means tie, non-team mode, or no server outcome yet
+function ClientMatch:getServerWinnerTeamIndex()
+  return self._serverWinnerTeamIndex
+end
+
+---@return integer? nil means tie, team mode, or no server outcome yet
+function ClientMatch:getServerWinnerIndex()
+  return self._serverWinnerIndex
+end
+
 ---Drain historical G/D events whose senderFrame has been reached by the
 ---corresponding sender stack. Called once per ClientMatch:run tick so events
 ---land at approximately the same point in the sim as they did live.
@@ -820,7 +849,11 @@ function ClientMatch:scrubToFrame(targetFrame)
 
   if needsRebuild then
     preview = Match.createFromReplay(self.replay)
-    preview.fromReplay = false
+    -- Keep fromReplay=true (set by createFromReplay): it makes garbage
+    -- delivery use strict stopWatch timing instead of the live oldest-
+    -- transit-time path. Without this, vs-self preview can deliver/skip
+    -- garbage on a different frame than the original timeline did, and
+    -- garbage blocks appear to vanish on rewind.
     -- Force per-frame rollback saves so _transplantPreviewState can extract a
     -- snapshot at targetFrame. Match:shouldSaveRollback otherwise returns
     -- false in single-player modes (no garbage senders), buffer stays empty.

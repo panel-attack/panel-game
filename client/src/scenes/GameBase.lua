@@ -138,41 +138,48 @@ function GameBase.buildTeamResultText(match, winners)
     return nil
   end
 
-  local teams = {}
-  local winnerTeams = {}
   local localTeam = nil
-
   for index, player in ipairs(match.players) do
-    local slot = TeamUtils.slotOf(player, index)
-    local teamIndex = getTeamIndexForPlayerPosition(gameMode, slot)
-    if teamIndex then
-      teams[teamIndex] = teams[teamIndex] or {}
-      teams[teamIndex][#teams[teamIndex] + 1] = player
-      if player.isLocal then
-        localTeam = teamIndex
-      end
-    end
-  end
-
-  for _, winner in ipairs(winners) do
-    local matched = winnerToPlayer(winner, match.players)
-    if matched then
-      local slot = matched.playerNumber
-      local teamIndex = getTeamIndexForPlayerPosition(gameMode, slot)
-      if teamIndex then
-        winnerTeams[teamIndex] = true
-      end
+    if player.isLocal then
+      local slot = TeamUtils.slotOf(player, index)
+      localTeam = getTeamIndexForPlayerPosition(gameMode, slot)
+      break
     end
   end
 
   local winnerTeamIndex = nil
-  local winnerTeamCount = 0
-  for teamIndex, _ in pairs(winnerTeams) do
-    winnerTeamIndex = teamIndex
-    winnerTeamCount = winnerTeamCount + 1
+
+  -- Server is authoritative for online matches. Its arbitration considers
+  -- a simultaneous-KO across all teams (everyone dead in the same window)
+  -- as a draw — something the engine's local getWinners heuristic ("highest
+  -- game_over_clock") can't see, so it would otherwise crown the team that
+  -- died last. Trust the server's verdict; fall back to engine winners only
+  -- when there is no server (offline / replay).
+  if match.hasServerOutcome and match:hasServerOutcome() then
+    winnerTeamIndex = match:getServerWinnerTeamIndex()
+  else
+    local winnerTeams = {}
+    for _, winner in ipairs(winners) do
+      local matched = winnerToPlayer(winner, match.players)
+      if matched then
+        local slot = matched.playerNumber
+        local teamIndex = getTeamIndexForPlayerPosition(gameMode, slot)
+        if teamIndex then
+          winnerTeams[teamIndex] = true
+        end
+      end
+    end
+    local count = 0
+    for teamIndex, _ in pairs(winnerTeams) do
+      winnerTeamIndex = teamIndex
+      count = count + 1
+    end
+    if count ~= 1 then
+      winnerTeamIndex = nil
+    end
   end
 
-  if winnerTeamCount == 1 and winnerTeamIndex then
+  if winnerTeamIndex then
     if localTeam then
       return (localTeam == winnerTeamIndex) and "YOUR TEAM WINS" or "YOUR TEAM LOSES"
     end
@@ -357,7 +364,15 @@ local SCRUB_STEP_FRAMES = 30
 GameBase.supportsScrub = false
 
 function GameBase:_canScrub()
-  return self.supportsScrub == true
+  if self.supportsScrub ~= true then return false end
+  -- Rewind doesn't propagate over the wire, so a spectator's view-stack
+  -- diverges into noise after the player rewinds. Until there's a
+  -- server-side "boot specs on rewind", treat spectator presence as a hard
+  -- veto. Specs see the original timeline; the player can't rewind.
+  if self.match and self.match.spectators and #self.match.spectators > 0 then
+    return false
+  end
+  return true
 end
 
 function GameBase:_initScrubState()
@@ -516,15 +531,55 @@ function GameBase:runGameOver()
 
   self.match:run()
 
-  -- if conditions are met, leave the game over screen
+  local minDisplayMet = displayTime >= self.minDisplayTime
+  local maxDisplayMet = self.maxDisplayTime ~= -1 and displayTime >= self.maxDisplayTime
+
+  -- Post-death rewind: escape opens the pause/rewind menu in scenes that
+  -- opt into scrub. Any other key continues to the next scene. Check both
+  -- the raw key (love's love.keypressed) AND the menu-level binding —
+  -- different code paths can populate one without the other.
+  local escapePressed = input.allKeys.isDown["escape"] or input.isDown["MenuEsc"]
   local keyPressed = self:readyToProceedToNextScene()
 
-  if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
+  if minDisplayMet and escapePressed and self:_canScrub() then
+    logger.info("Post-death escape: entering pause/rewind")
+    self:_enterPostDeathPause()
+    return
+  end
+
+  if minDisplayMet and escapePressed and not self:_canScrub() then
+    logger.info(string.format(
+      "Post-death escape: scrub disabled (supportsScrub=%s, specs=%d)",
+      tostring(self.supportsScrub),
+      self.match and self.match.spectators and #self.match.spectators or -1))
+  end
+
+  if maxDisplayMet or (minDisplayMet and keyPressed) then
     GAME.theme:playValidationSfx()
     collectgarbage("collect")
     collectgarbage("collect")
     self:startNextScene()
   end
+end
+
+function GameBase:_enterPostDeathPause()
+  if not self.match.supportsPause then return end
+  -- Resurrect the match so update() flows to runGame (→ handlePause) instead
+  -- of runGameOver. If the user resumes without actually rewinding, the
+  -- engine's stack is still game-over so shouldFinalize re-fires
+  -- handleMatchEnd next tick and we land back in the game-over screen.
+  self.match.ended = false
+  self.gameOverStartTime = nil
+
+  self.match:togglePause()
+  self.pauseMenu:setVisibility(true)
+  self:_initScrubState()
+
+  if self.stageTrack then
+    self.pauseState.musicWasPlaying = self.stageTrack:isPlaying()
+    SoundController:pauseMusic()
+  end
+  GAME.theme:playValidationSfx()
 end
 
 function GameBase:readyToProceedToNextScene()

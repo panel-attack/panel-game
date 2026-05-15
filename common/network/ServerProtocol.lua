@@ -511,6 +511,12 @@ function ServerProtocol.gameResult(game, room)
     gameResultMessage.teamWins = teamWins
   end
 
+  -- Server's authoritative winner. nil = tie (or non-team mode handled
+  -- by content[slot].placement on the client). Sibling of `content` for
+  -- the same JSON-encoding reason as `teamWins`.
+  gameResultMessage.winnerTeamIndex = game.winnerTeamIndex
+  gameResultMessage.winnerIndex = game.winnerIndex
+
   return {
     messageType = msgTypes.jsonMessage,
     messageText = gameResultMessage,

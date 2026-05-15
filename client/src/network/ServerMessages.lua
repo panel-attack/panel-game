@@ -91,9 +91,15 @@ function ServerMessages.sanitizeRoomMessage(message)
       player.ratingInfo = player.rating
       player.rating = nil
     end
-    -- teamWins lives at the outer message level (sibling of content) to keep `content`
-    -- a JSON array — see ServerProtocol.gameResult for why.
-    return { gameResult = message.content, teamWins = message.teamWins }
+    -- teamWins / winnerTeamIndex / winnerIndex live at the outer message level
+    -- (sibling of content) to keep `content` a JSON array — see
+    -- ServerProtocol.gameResult for why.
+    return {
+      gameResult = message.content,
+      teamWins = message.teamWins,
+      winnerTeamIndex = message.winnerTeamIndex,
+      winnerIndex = message.winnerIndex,
+    }
   elseif message.type == "matchStart" then
     local replay = ReplayV3.createFromTable(message.content, false)
 
