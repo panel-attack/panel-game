@@ -316,14 +316,16 @@ function TcpClient:queueMessage(prefix, data)
   end
 end
 
+-- Drop all gameplay-channel messages (I, G, D) from the receive queue.
+-- Used at match boundaries so events from a previous match don't get
+-- applied to the next match's stacks. Without dropping G and D, a death
+-- event for slot 3 from match N could fire on slot 3's fresh stack in
+-- match N+1 — the "started out dead" bug.
 function TcpClient:dropOldInputMessages()
-  local inputPrefix = NP.serverMessageTypes.input.prefix
-  while true do
-    local message = self.receivedMessageQueue:top()
-    if not message then break end
-    if message[inputPrefix] == nil then break end
-    self.receivedMessageQueue:pop()
-  end
+  self.receivedMessageQueue:pop_all_with(
+    NP.serverMessageTypes.input.prefix,
+    NP.serverMessageTypes.garbageEvent.prefix,
+    NP.serverMessageTypes.deathEvent.prefix)
 end
 
 function TcpClient:processIncomingMessages()
