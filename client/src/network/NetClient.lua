@@ -1325,6 +1325,11 @@ function NetClient:disconnect(voluntary)
   for _, client in ipairs(self.clients) do client:resetNetwork() end
   self:setState(states.OFFLINE)
   resetLobbyData(self)
+  -- Drop any Response objects still awaiting a server reply. Without this,
+  -- orphaned entries (e.g. spectateResponse from a pre-disconnect request)
+  -- linger until next login overwrites the slot.
+  self.pendingResponses = {}
+  _clearMatchInputState(self)
   GAME.localPlayer:disconnectSubscriber(GAME.netClient)
   -- this is because the online updates are currently subscribed to the player itself
   -- that should probably get changed because while mildly convenient it is unexpected for the interaction
