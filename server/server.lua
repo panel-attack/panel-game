@@ -1796,15 +1796,22 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
         connection:sendJson(ServerProtocol.approveLogin(existingPlayer.publicPlayerID, nil, nil, nil, nil))
 
         -- A gameplay-socket reconnect for a player who's still in a room
-        -- KEEPS the slot. Lag is a gameplay condition, not an authority one:
-        -- a transient TCP blip must never tear the room down. If the client
-        -- is genuinely in a fresh state (process crashed and user is back at
-        -- MainMenu), it will send `leave_room` itself when it transitions
-        -- through Lobby — no inference required server-side. Mid-match, the
-        -- silent-death watchdog handles a truly gone player.
-        if connection.channel == "gameplay" and existingPlayer.state == "lobby" then
+        -- KEEPS the slot (lag is a gameplay condition, not an authority one).
+        -- Push current state so the reconnecting client can resume.
+        -- lobbyStateV2 always — partial/waiting rooms render in the lobby UI
+        -- with the room overlaid, so the client needs both. Add addToRoom on
+        -- top if the player still holds a room slot, carrying the in-progress
+        -- replay when a match is live so the client can catch up mid-match
+        -- (same partial-replay payload used by spectate / mid-match queue).
+        if connection.channel == "gameplay" then
           local lobbyStateV2 = self:lobbyStateV2()
           connection:sendJson(ServerProtocol.lobbyStateV2(lobbyStateV2.players, lobbyStateV2.rooms))
+          if existingPlayer.room then
+            local partialReplay = existingPlayer.room.game
+              and existingPlayer.room.game:getPartialReplay(COMPRESS_REPLAYS_ENABLED)
+              or nil
+            connection:sendJson(ServerProtocol.addToRoom(existingPlayer.room, partialReplay))
+          end
         end
 
         return true

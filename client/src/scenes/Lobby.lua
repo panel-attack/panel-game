@@ -73,6 +73,11 @@ function Lobby:load(sceneParams)
 
   self:initLobbyMenu()
   self.uiRoot:addChild(self.leaderboard)
+
+  -- Entering the Lobby with a room slot already held + room ready (e.g. after
+  -- a reconnect that lands us back at the lobby while the server-side slot
+  -- preserved us in a now-valid waiting room): jump straight into the scene.
+  GAME.netClient:maybeEnterRoomFromLobby()
 end
 
 function Lobby:initLobbyMenu()
@@ -2042,6 +2047,14 @@ end
 -- rebuilds the UI based on the new lobby information
 ---@param lobbyDataV2 PersonalizedLobbyDataV2
 function Lobby:onLobbyStateUpdate(lobbyDataV2)
+  -- If the local player holds a slot in a room that's ready for the waiting
+  -- room, push the room scene before rebuilding lobby UI. Safety net for the
+  -- reconnect/out-of-order case where the player should be in CharacterSelect
+  -- but landed back at the lobby with the room visible in the snapshot.
+  if GAME.netClient:maybeEnterRoomFromLobby() then
+    return
+  end
+
   local copy = shallowcpy(self.lobbyMenu.children)
   local previousIndex = self.lobbyMenu.selectedIndex
 

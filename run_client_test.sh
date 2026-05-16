@@ -12,6 +12,8 @@ PA_KILL_EXISTING=false PA_NETWORK_PROFILE=mobile_train     zsh run_client.sh Bev
 PA_KILL_EXISTING=false PA_NETWORK_PROFILE=transcontinental zsh run_client.sh Koozie &
 PA_KILL_EXISTING=false PA_NETWORK_PROFILE=satellite        zsh run_client.sh Hayley &
 PA_KILL_EXISTING=false PA_NETWORK_PROFILE=pathological     zsh run_client.sh Amber &
+PA_KILL_EXISTING=false PA_NETWORK_PROFILE=pathological     zsh run_client.sh Brian &
+PA_KILL_EXISTING=false PA_NETWORK_PROFILE=pathological     zsh run_client.sh Gromit &
 
 # If interrupted, stop active background jobs started by this script.
 trap 'kill $(jobs -pr) 2>/dev/null || true' INT TERM

@@ -16,25 +16,10 @@ function CharacterSelect2p:customLoad(sceneParams)
 end
 
 function CharacterSelect2p:loadUserInterface()
-  -- ≤4 players: 9-col grid. 5+ players: 16-col grid so all (icon, info) pairs
-  -- fit on one centered row. unitSize stays 100; everything else (selectors,
-  -- char grid, buttons) keeps its existing 9-col placements.
-  local playerCount = #self.players
-  local gridWidth = (playerCount >= 5) and 16 or 9
-  local selectorsRow, charGridStartRow, charGridHeight, bottomRow = 2, 3, 3, 6
-  self._layout = {
-    gridWidth = gridWidth,
-    selectorsRow = selectorsRow,
-    charGridStartRow = charGridStartRow,
-    charGridHeight = charGridHeight,
-    bottomRow = bottomRow,
-    topRowCount = 1,
-  }
-
-  -- Shift down to clear the team banner + garbage-mode/latency labels drawn
-  -- by TeamBannerHeader at y=4..~80. y=35 leaves ~5px less gap than y=40.
-  self.ui.grid = ui.Grid({unitSize = 100, gridWidth = gridWidth, gridHeight = bottomRow, unitMargin = 8, hAlign = "center", vAlign = "center", y = 35})
+  self.ui.grid = ui.Grid({unitSize = 100, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
   self.uiRoot:addChild(self.ui.grid)
+
+  self:createIconRow()
 
   self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
   self.ui.panelSelection:setTitle("panels")
@@ -46,9 +31,7 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.readyButton = self:createReadyButton()
 
   local characterButtons = self:getCharacterButtons()
-  -- Char grid keeps its original 9-col footprint even when the parent grid is
-  -- 16 wide. The extra cols are only used by the top-row icon/info pairs.
-  local characterGridWidth, characterGridHeight = 9, self._layout.charGridHeight
+  local characterGridWidth, characterGridHeight = self.ui.grid.gridWidth, 3
   self.ui.characterGrid = self:createCharacterGrid(characterButtons, self.ui.grid, characterGridWidth, characterGridHeight)
 
   self.ui.pageIndicator = self:createPageIndicator(self.ui.characterGrid)
@@ -56,28 +39,21 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.leaveButton = self:createLeaveButton()
   self.ui.changeInputButton = self:createChangeInputButton()
 
-  local selectorsRow = self._layout.selectorsRow
-  local charGridStartRow = self._layout.charGridStartRow
-  local bottomRow = self._layout.bottomRow
-
-  -- Selectors / char grid / bottom buttons keep their original 9-col cell
-  -- placements regardless of total gridWidth — the extra cols on a 16-wide
-  -- grid are only used to lay out the (icon, info) pairs in row 1.
   if self.battleRoom.online then
-    self.ui.grid:createElementAt(1, selectorsRow, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
-    self.ui.grid:createElementAt(5, selectorsRow, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
-    self.ui.grid:createElementAt(7, selectorsRow, 2, 1, "levelSelection", self.ui.levelSelection, nil, true)
+    self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
+    self.ui.grid:createElementAt(5, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
+    self.ui.grid:createElementAt(7, 2, 2, 1, "levelSelection", self.ui.levelSelection, nil, true)
   else
-    self.ui.grid:createElementAt(1, selectorsRow, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
-    self.ui.grid:createElementAt(3, selectorsRow, 3, 1, "stageSelection", self.ui.stageSelection, nil, true)
-    self.ui.grid:createElementAt(6, selectorsRow, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
+    self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
+    self.ui.grid:createElementAt(3, 2, 3, 1, "stageSelection", self.ui.stageSelection, nil, true)
+    self.ui.grid:createElementAt(6, 2, 3, 1, "levelSelection", self.ui.levelSelection, nil, true)
   end
 
-  self.ui.grid:createElementAt(9, selectorsRow, 1, 1, "readyButton", self.ui.readyButton)
-  self.ui.grid:createElementAt(1, charGridStartRow, characterGridWidth, characterGridHeight, "characterSelection", self.ui.characterGrid, true)
-  self.ui.grid:createElementAt(5, bottomRow, 1, 1, "pageIndicator", self.ui.pageIndicator)
-  self.ui.grid:createElementAt(8, bottomRow, 1, 1, "changeInputButton", self.ui.changeInputButton)
-  self.ui.grid:createElementAt(9, bottomRow, 1, 1, "leaveButton", self.ui.leaveButton)
+  self.ui.grid:createElementAt(9, 2, 1, 1, "readyButton", self.ui.readyButton)
+  self.ui.grid:createElementAt(1, 3, characterGridWidth, characterGridHeight, "characterSelection", self.ui.characterGrid, true)
+  self.ui.grid:createElementAt(5, 6, 1, 1, "pageIndicator", self.ui.pageIndicator)
+  self.ui.grid:createElementAt(8, 6, 1, 1, "changeInputButton", self.ui.changeInputButton)
+  self.ui.grid:createElementAt(9, 6, 1, 1, "leaveButton", self.ui.leaveButton)
 
   self:setupRoster()
 
@@ -140,29 +116,36 @@ function CharacterSelect2p:setupRoster()
     self.ui.cursors[i] = cursor
 
     self.ui.characterIcons[i] = self:createPlayerIcon(player)
-    self.ui.playerInfos[i] = self:createPlayerInfo(player)
+    self.ui.playerInfos[i] = self:createPlayerInfo(player, self:_labelXForIconRow())
   end
 
-  -- All pairs in a single centered row. Each pair = 2 cols wide.
-  local n = #self.players
-  local startCol = math.floor((self.ui.grid.gridWidth - n * 2) / 2) + 1
   for i, player in ipairs(self.players) do
-    local iconX = startCol + (i - 1) * 2
+    local iconX = (i - 1) * 2 + 1
     local infoX = iconX + 1
-    self.ui.grid:createElementAt(iconX, 1, 1, 1, "p" .. i .. " icon", self.ui.characterIcons[i])
-    self.ui.grid:createElementAt(infoX, 1, 1, 1, "player " .. i .. " info", self.ui.playerInfos[i])
+    self.ui.iconRow:createElementAt(iconX, 1, 1, 1, "p" .. i .. " icon", self.ui.characterIcons[i])
+    self.ui.iconRow:createElementAt(infoX, 1, 1, 1, "player " .. i .. " info", self.ui.playerInfos[i])
   end
+end
+
+function CharacterSelect2p:_labelXForIconRow()
+  local unitSize = (self.ui.iconRow and self.ui.iconRow.unitSize) or 100
+  return math.floor(4 - (100 - unitSize) / 2)
+end
+
+function CharacterSelect2p:createIconRow()
+  if self.ui.iconRow then
+    self.ui.iconRow:detach()
+  end
+  local cols = math.max(2, #self.players * 2)
+  local unitSize = math.min(100, math.floor(1200 / cols))
+  self.ui.iconRow = ui.Grid({unitSize = unitSize, gridWidth = cols, gridHeight = 1, unitMargin = 8, hAlign = "center", vAlign = "center", y = -250})
+  self.uiRoot:addChild(self.ui.iconRow)
 end
 
 -- Drop-in / drop-out hook for open FFA. Tears down all per-player widgets and
 -- rebuilds them from the current self.players list.
 function CharacterSelect2p:refreshRoster()
-  -- Detach every top-row (icons + info pairs) — the layout may have wrapped
-  -- across multiple rows depending on the prior player count.
-  if self.ui.grid and self.ui.grid.removeElementsIn then
-    local topRowCount = (self._layout and self._layout.topRowCount) or 1
-    self.ui.grid:removeElementsIn(1, 1, self.ui.grid.gridWidth, topRowCount)
-  end
+  self:createIconRow()
 
   -- Clear the panel/stage/level wrappers and reset their stacking state. Using
   -- bare child:detach() leaves StackPanel.pixelsTaken/height stale (see the

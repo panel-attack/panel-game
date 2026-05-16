@@ -974,7 +974,8 @@ function CharacterSelect:createRecordsBox(lastText)
   return stackPanel
 end
 
-function CharacterSelect:createPlayerInfo(player)
+function CharacterSelect:createPlayerInfo(player, labelX)
+  labelX = labelX or 4
   local stackPanel = ui.StackPanel({alignment = "top", hFill = true, vAlign = "top"})
 
   -- Host marker: shown above all other player info so the room owner is
@@ -984,7 +985,7 @@ function CharacterSelect:createPlayerInfo(player)
   local isHost = ownerId ~= nil and player.publicId == ownerId
   if isHost then
     stackPanel.hostLabel = ui.Label({
-      x = 4,
+      x = labelX,
       text = "Host",
       translate = false
     })
@@ -992,7 +993,7 @@ function CharacterSelect:createPlayerInfo(player)
   end
 
   stackPanel.leagueLabel = ui.Label({
-    x = 4,
+    x = labelX,
     text = loc("ss_rating") .. " " .. ((player.league) or "none"),
     translate = false
   })
@@ -1001,7 +1002,7 @@ function CharacterSelect:createPlayerInfo(player)
   end
 
   stackPanel.ratingLabel = ui.Label({
-    x = 4,
+    x = labelX,
     text = player.rating or "",
     translate = false
   })
@@ -1016,7 +1017,7 @@ function CharacterSelect:createPlayerInfo(player)
   end
 
   stackPanel.winsLabel = ui.Label({
-    x = 4,
+    x = labelX,
     text = loc("ss_wins") .. " " .. player:getWinCountForDisplay(),
     translate = false
   })
@@ -1025,12 +1026,12 @@ function CharacterSelect:createPlayerInfo(player)
   end
 
   stackPanel.winrateLabel = ui.Label({
-    x = 4,
+    x = labelX,
     text = "ss_winrate"
   })
 
   stackPanel.winrateValueLabel = ui.Label({
-    x = 4,
+    x = labelX,
     text = "  " .. loc("ss_current_rating") .. " " .. tostring(player.winrate) .. "%",
     translate = false
   })
@@ -1039,7 +1040,7 @@ function CharacterSelect:createPlayerInfo(player)
   end
 
   stackPanel.winrateExpectedLabel = ui.Label({
-    x = 4,
+    x = labelX,
     text = ""
   })
   if self.battleRoom.ranked then

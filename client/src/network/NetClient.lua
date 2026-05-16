@@ -1178,6 +1178,23 @@ end)
 
 NetClient.STATES = states
 
+-- Lobby-side check: if the local player holds a slot in a room and that room
+-- is ready for the waiting room, push the room scene. Reuses the existing
+-- isRoomReadyForWaitingRoom / getSceneFromRoom helpers.
+function NetClient:maybeEnterRoomFromLobby()
+  if self.state ~= states.ONLINE then return false end
+  if not self.room then return false end
+  if not isRoomReadyForWaitingRoom(self.room) then return false end
+
+  local roomScene = getSceneFromRoom(self.room)
+  if not roomScene then return false end
+
+  logger.info("[Lobby] room ready for waiting room; pushing scene.")
+  GAME.navigationStack:push(roomScene)
+  self.state = states.ROOM
+  return true
+end
+
 function NetClient:leaveRoom()
   -- Trust the lobby's view too: if lobbyDataV2 says we're in a room but
   -- self.room is nil (state-divergence from a half-completed prior leave or

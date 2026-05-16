@@ -128,12 +128,9 @@ function TeamBannerHeader.drawGarbageModeBelowBanner(gameMode, canvasWidth, cont
 
   if not gLabel and not latLabel then return end
 
-  -- Shared-team modes: just under the pink/purple banner (banner is y=4-44,
-  -- so y=48 = 4px gap, matching FFA's 4px-from-top placement of its own
-  -- banner area). FFA waiting room: y=4 (top of canvas). In-game FFA: 80.
   local y
   if isSharedTeamMode(gameMode) then
-    y = 48
+    y = 8
   elseif context == "match" then
     y = 80
   else
