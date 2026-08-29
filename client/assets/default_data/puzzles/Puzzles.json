@@ -673,7 +673,7 @@
                   "StartTiming": "firstSwap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000300009992994494991192113329",
-                  "Solution": "A29E7A12E7A5B6A2Q1A5E1F3B5A4Q1A9E5A5E6Q1A6C5A9I4Q1A7C4A4C4A4Q1A5B4R1B1A7E3G2C4A5Q1A251"
+                  "Solution": "A75B7A12E6A4E7A8Q1A9B7A10E4A5Q1A9E5A7Q1A6E6A5Q1A256"
                 },
                 {
                   "Puzzle Type": "chain",
@@ -1428,7 +1428,7 @@
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A74E6A13E5A22B7A19E5A120Q1A3Q1A61"
+                  "Solution": "C6A17B7A46Q1A8Q1A64"
                 },
                 {
                   "Puzzle Type": "chain",
