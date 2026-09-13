@@ -61,6 +61,7 @@ local allTests = {
   "common.tests.engine.HealthTests",
   "common.tests.engine.RollbackBufferTests",
   "common.tests.engine.StackTests",
+  "common.tests.engine.ComboGarbageLinesTests",
   "common.tests.engine.ReplayTests",
   "common.tests.engine.StackReplayTests",
   "common.tests.engine.GarbageQueueTests",

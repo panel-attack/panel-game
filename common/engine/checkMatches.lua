@@ -36,6 +36,22 @@ for i=1,72 do
   COMBO_GARBAGE[i] = COMBO_GARBAGE[i] or COMBO_GARBAGE[i-1]
 end
 
+local ESTIMATED_GARBAGE_LINES_PER_COMBO = {}
+for comboSize, pieces in ipairs(COMBO_GARBAGE) do
+  local lines = 0
+  for _, width in ipairs(pieces) do
+    lines = lines + (width == 3 and 0.5 or 1)
+  end
+  ESTIMATED_GARBAGE_LINES_PER_COMBO[comboSize] = lines
+end
+
+---Returns the garbage lines a combo sends, counting a width-3 piece as half a line and wider pieces as a full line
+---@param comboSize integer
+---@return number
+function Stack.getEstimatedGarbageLinesForCombo(comboSize)
+  return ESTIMATED_GARBAGE_LINES_PER_COMBO[comboSize]
+end
+
 local function sortByPopOrder(panelList, isGarbage)
   table.sort(panelList, function(a, b)
     if a.row == b.row then
