@@ -1,6 +1,8 @@
 local fileUtils = require("client.src.FileUtils")
 local class = require("common.lib.class")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
+local Stack = require("common.engine.Stack")
+require("common.engine.checkMatches")
 local analytics = {}
 
 local ANALYTICS_VERSION = 3
@@ -117,11 +119,6 @@ local function analytic_clear(data)
   data.shockGarbageCount = 0
 end
 
-local amount_of_garbages_lines_per_combo = {0, 0, 0, 0.5, 1, 1, 1, 1.5, 2, 2, 2, 2, 3, 4, [20] = 6, [27] = 8}
-for i = 1, 72 do
-  amount_of_garbages_lines_per_combo[i] = amount_of_garbages_lines_per_combo[i] or amount_of_garbages_lines_per_combo[i - 1]
-end
-
 ---@param data AnalyticsData
 ---@param chainLimit integer
 ---@return integer # How many chains in the data went above the specified chain limit
@@ -142,7 +139,7 @@ local function recalculateSentGarbageLinesForAnalyticsV1(data)
   local sent_garbage_lines_count = 0
   for k, v in pairs(data.used_combos) do
     if k then
-      sent_garbage_lines_count = sent_garbage_lines_count + amount_of_garbages_lines_per_combo[k] * v
+      sent_garbage_lines_count = sent_garbage_lines_count + Stack.getEstimatedGarbageLinesForCombo(k) * v
     end
   end
   for i = 2, 13 do
@@ -312,7 +309,7 @@ function AnalyticsInstance:register_destroyed_panels(amount)
       else
         analytic.used_combos[amount] = analytic.used_combos[amount] + 1
       end
-      analytic.sent_garbage_lines = analytic.sent_garbage_lines + amount_of_garbages_lines_per_combo[amount]
+      analytic.sent_garbage_lines = analytic.sent_garbage_lines + Stack.getEstimatedGarbageLinesForCombo(amount)
     end
   end
 end
