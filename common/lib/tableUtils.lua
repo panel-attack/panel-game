@@ -1,4 +1,5 @@
 -- A collection of table utilility functions 
+require("table.clear")
 local tableUtils = {} 
  
 -- returns a new table where the value of each pair is replaced by the return value of running it through the supplied function 
@@ -85,6 +86,14 @@ function tableUtils.trueForAll(tab, condition)
       end
     end
     return true
+  end
+end
+
+-- Clears destination and shallow copies every key of source into it, keeping destination's metatable
+function tableUtils.replaceContents(destination, source)
+  table.clear(destination)
+  for k, v in pairs(source) do
+    destination[k] = v
   end
 end
 

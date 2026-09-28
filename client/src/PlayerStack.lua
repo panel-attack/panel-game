@@ -248,14 +248,16 @@ function PlayerStack:onNewRow(engine)
   end
 end
 
-function PlayerStack:onRollback(engine)
+---@param engine Stack
+---@param isRewind boolean whether the engine stays on the restored frame instead of running back up
+function PlayerStack:onRollback(engine, isRewind)
   -- other.danger_timer = source.danger_timer
 
   -- to fool Match without having to wrap everything into getters
   self.clock = engine.clock
 
   --prof.push("rollback copy analytics")
-  self.analytic:rollbackToFrame(self.clock)
+  self.analytic:rollbackRewindToFrame(self.clock, isRewind)
   --prof.pop("rollback copy analytics")
 end
 
@@ -295,7 +297,7 @@ end
 ------------------------------------------------------------------------
 
 function PlayerStack:rewindToFrame(frame)
-  self.engine:rewindToFrame(frame)
+  self.engine:rollbackRewindToFrame(frame, true)
 end
 
 function PlayerStack:runGameOver()

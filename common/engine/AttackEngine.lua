@@ -22,7 +22,7 @@ AttackPattern =
 )
 
 -- An attack engine sends attacks based on a set of rules.
----@class AttackEngine : canRollback
+---@class AttackEngine : CanRollbackComponent
 ---@field delayBeforeStart integer How many frame the AttackEngine waits before running. \n
 --- Note if this is changed after attack patterns are added their times won't be updated.
 ---@field delayBeforeRepeat integer How many frames the AttackEngine waits after a full run before starting over
@@ -151,18 +151,31 @@ function AttackEngine.run(self)
   self.stopWatch = self.stopWatch + 1
 end
 
-function AttackEngine:saveForRollback(stopWatch)
-  self.outgoingGarbage:saveForRollback(stopWatch)
+-- Transfers the attack engine state variables from source to destination (bidirectional)
+---@param destination AttackEngine|table
+---@param source AttackEngine|table
+function AttackEngine.transferStateVariables(destination, source)
+  destination.stopWatch = source.stopWatch
 end
 
-function AttackEngine:rollbackToFrame(stopWatch)
-  self.outgoingGarbage:rollbackToFrame(stopWatch)
-  self.stopWatch = stopWatch
+-- Writes the attack engine state and its outgoing garbage queue into copy
+---@param copy table
+function AttackEngine:saveIntoRollbackCopy(copy)
+  if copy.outgoingGarbageData == nil then
+    copy.outgoingGarbageData = {}
+  end
+
+  AttackEngine.transferStateVariables(copy, self)
+  self.outgoingGarbage:saveIntoRollbackCopy(copy.outgoingGarbageData)
 end
 
-function AttackEngine:rewindToFrame(stopWatch)
-  self.outgoingGarbage:rewindToFrame(stopWatch)
-  self.stopWatch = stopWatch
+-- Restores the attack engine state and its outgoing garbage queue from copy
+---@param copy table
+---@param clock integer
+---@param isRewind boolean
+function AttackEngine:restoreFromRollbackCopy(copy, clock, isRewind)
+  AttackEngine.transferStateVariables(self, copy)
+  self.outgoingGarbage:restoreFromRollbackCopy(copy.outgoingGarbageData, clock, isRewind)
 end
 
 return AttackEngine

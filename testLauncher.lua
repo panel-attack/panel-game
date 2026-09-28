@@ -59,6 +59,7 @@ local allTests = {
   "common.tests.lib.JsonPrecisionTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
+  "common.tests.engine.GarbageQueueRollbackTests",
   "common.tests.engine.RollbackBufferTests",
   "common.tests.engine.StackTests",
   "common.tests.engine.ComboGarbageLinesTests",
@@ -68,6 +69,7 @@ local allTests = {
   "common.tests.engine.PuzzleTests",
   "common.tests.PuzzleHintHelperTests",
   "common.tests.engine.StackTouchReplayTests",
+  "common.tests.engine.SimulatedStackRollbackTests",
   "common.tests.engine.StackRollbackReplayTests",
   -- disabled for testLauncher because it needs the client love callbacks
   --"common.tests.lib.InputTests",
@@ -86,6 +88,7 @@ local allTests = {
   "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",
+  "client.tests.PlayerStackRollbackTests",
   "client.tests.PuzzleSetTests",
   "client.tests.PuzzleSetIteratorTests",
   "client.tests.PuzzleLibraryTests",

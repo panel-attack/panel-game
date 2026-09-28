@@ -122,96 +122,69 @@ function SimulatedStack:game_ended()
   end
 end
 
-function SimulatedStack:saveForRollback()
-  local copy
+-- transfers the simulated stack state variables from source to destination (bidirectional)
+---@param destination SimulatedStack|table
+---@param source SimulatedStack|table
+function SimulatedStack.transferStateVariables(destination, source)
+  destination.clock = source.clock
+  destination.health = source.health
+  destination.stopWatch = source.stopWatch
+  destination.game_over_clock = source.game_over_clock
+  destination.countdown_timer = source.countdown_timer
+  destination.do_countdown = source.do_countdown
+  destination.stopWatchIsRunning = source.stopWatchIsRunning
+end
 
-  if self.rollbackCopyPool:len() > 0 then
-    copy = self.rollbackCopyPool:pop()
-  else
-    copy = {}
+-- writes the stack's state, and that of its garbage queue, health engine and attack engine, into copy
+---@param copy table
+function SimulatedStack:saveIntoRollbackCopy(copy)
+  if copy.stackData == nil then
+    copy.stackData = {}
+    copy.incomingGarbageData = {}
+    copy.healthEngineData = {}
+    copy.attackEngineData = {}
   end
 
-  self.incomingGarbage:saveForRollback(self.stopWatch)
+  self.incomingGarbage:saveIntoRollbackCopy(copy.incomingGarbageData)
 
   if self.healthEngine then
-    self.healthEngine:saveRollbackCopy()
+    self.healthEngine:saveIntoRollbackCopy(copy.healthEngineData)
   end
 
   if self.attackEngine then
-    self.attackEngine:saveForRollback(self.stopWatch)
+    self.attackEngine:saveIntoRollbackCopy(copy.attackEngineData)
   end
 
-  copy.health = self.health
-  copy.stopWatch = self.stopWatch
-  copy.game_over_clock = self.game_over_clock
-
-  self.rollbackCopies[self.clock] = copy
-
-  local deleteFrame = self.clock - MAX_LAG - 1
-  if self.rollbackCopies[deleteFrame] then
-    self.rollbackCopyPool:push(self.rollbackCopies[deleteFrame])
-    self.rollbackCopies[deleteFrame] = nil
-  end
+  SimulatedStack.transferStateVariables(copy.stackData, self)
 end
 
-local function internalRollbackToFrame(stack, clock)
-  local copy = stack.rollbackCopies[clock]
+-- restores all engine state from the copy at the given frame
+---@param copy table
+---@param clock integer
+---@param isRewind boolean
+function SimulatedStack:restoreFromRollbackCopy(copy, clock, isRewind)
+  local currentFrame = self.clock
 
-  if copy and clock < stack.clock then
-    for f = clock, stack.clock do
-      if stack.rollbackCopies[f] then
-        stack.rollbackCopyPool:push(stack.rollbackCopies[f])
-        stack.rollbackCopies[f] = nil
-      end
-    end
+  SimulatedStack.transferStateVariables(self, copy.stackData)
 
-    if stack.healthEngine then
-      stack.healthEngine:rollbackToFrame(clock)
-      stack.health = stack.healthEngine.framesToppedOutToLose
-    else
-      stack.health = copy.health
-    end
-
-    stack.stopWatch = copy.stopWatch
-    stack.game_over_clock = copy.game_over_clock
-
-    return true
+  if self.healthEngine then
+    self.healthEngine:restoreFromRollbackCopy(copy.healthEngineData, clock, isRewind)
+    self.health = self.healthEngine.framesToppedOutToLose
   end
 
-  return false
-end
+  -- Note that garbage queue is based on game stopWatch, so we need to pass in those values which have been restored above
+  self.incomingGarbage:restoreFromRollbackCopy(copy.incomingGarbageData, self.stopWatch, isRewind)
 
-function SimulatedStack:rollbackToFrame(clock)
-  if internalRollbackToFrame(self, clock) then
-    self.incomingGarbage:rollbackToFrame(self.stopWatch)
-
-    if self.attackEngine then
-      self.attackEngine:rollbackToFrame(self.stopWatch)
-    end
-
-    self.lastRollbackFrame = self.clock
-    self.clock = clock
-    return true
+  if self.attackEngine then
+    self.attackEngine:restoreFromRollbackCopy(copy.attackEngineData, self.stopWatch, isRewind)
   end
 
-  return false
-end
-
-function SimulatedStack:rewindToFrame(clock)
-  if internalRollbackToFrame(self, clock) then
-    self.incomingGarbage:rewindToFrame(self.stopWatch)
-
-    if self.attackEngine then
-      self.attackEngine:rewindToFrame(self.stopWatch)
-    end
-
+  if isRewind then
     -- we did roll back but we want to stay here
     self.lastRollbackFrame = clock
-    self.clock = clock
-    return true
+  else
+    self.lastRollbackFrame = currentFrame
   end
-
-  return false
 end
 
 function SimulatedStack:starting_state()

@@ -3,14 +3,12 @@ local tableUtils = require("common.lib.tableUtils")
 local PanelGenerator = require("common.engine.PanelGenerator")
 require("common.lib.util")
 table.new = require("table.new")
-local RollbackBuffer = require("common.engine.RollbackBuffer")
 
 ---@class GeneratorSource : PanelSource
 ---@field seed integer
 ---@field shockEnabled boolean
 ---@field panelGenerator PanelGenerator
 ---@field garbagePanelGenerator PanelGenerator
----@field rollbackBuffer RollbackBuffer
 ---@overload fun(seed: integer, shockEnabled: boolean): GeneratorSource
 local GeneratorSource = class(
 ---@param self GeneratorSource
@@ -21,7 +19,6 @@ function(self, seed, shockEnabled)
   self.shockEnabled = shockEnabled
   self.panelBuffer = ""
   self.garbagePanelBuffer = ""
-  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
 GeneratorSource.TYPE = "GeneratorSource"
@@ -222,40 +219,34 @@ function GeneratorSource:clone(stack)
   return source
 end
 
-function GeneratorSource:saveForRollback(clock)
-  local copy = self.rollbackBuffer:getOldest()
-
-  if not copy then
-    copy = table.new(0, 6)
-  end
-
-  copy.panelBuffer = self.panelBuffer
-  copy.garbagePanelBuffer = self.garbagePanelBuffer
+-- writes the panel buffers and the state of both panel generators into copy
+---@param copy table
+function GeneratorSource:saveIntoRollbackCopy(copy)
+  GeneratorSource.transferStateVariables(copy, self)
   copy.panelGenState = self.panelGenerator:getState()
   copy.garbagePanelGenState = self.garbagePanelGenerator:getState()
   copy.adjacentAccepted = self.panelGenerator.adjacentAccepted
   copy.adjacentDenied = self.panelGenerator.adjacentDenied
-
-  self.rollbackBuffer:saveCopy(clock, copy)
 end
 
-function GeneratorSource:rollbackToFrame(clock)
-  local copy = self.rollbackBuffer:rollbackToFrame(clock)
-
-  if not copy then
-    error("Could not rollback GeneratorSource")
-  end
-
-  self.panelBuffer = copy.panelBuffer
-  self.garbagePanelBuffer = copy.garbagePanelBuffer
+-- restores the panel buffers and the state of both panel generators from copy
+---@param copy table
+---@param clock integer
+---@param isRewind boolean
+function GeneratorSource:restoreFromRollbackCopy(copy, clock, isRewind)
+  GeneratorSource.transferStateVariables(self, copy)
   self.panelGenerator:setState(copy.panelGenState)
   self.garbagePanelGenerator:setState(copy.garbagePanelGenState)
   self.panelGenerator.adjacentAccepted = copy.adjacentAccepted
   self.panelGenerator.adjacentDenied = copy.adjacentDenied
 end
 
-function GeneratorSource:rewindToFrame(clock)
-  self:rollbackToFrame(clock)
+-- transfers the panel buffers from source to destination (bidirectional)
+---@param destination GeneratorSource|table
+---@param source GeneratorSource|table
+function GeneratorSource.transferStateVariables(destination, source)
+  destination.panelBuffer = source.panelBuffer
+  destination.garbagePanelBuffer = source.garbagePanelBuffer
 end
 
 return GeneratorSource

@@ -2,14 +2,12 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local LegacyPanelGenerator = require("common.compatibility.LegacyPanelGenerator")
 require("common.lib.util")
-local RollbackBuffer       = require("common.engine.RollbackBuffer")
 
 ---@class LegacyPanelSource : PanelSource
 ---@field seed integer
 ---@field allowAdjacentColors boolean
 ---@field allowAdjacentColorsOnStartingBoard boolean
 ---@field shockEnabled boolean
----@field rollbackBuffer RollbackBuffer
 ---@field panelGenCount integer How many times the panelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@field garbageGenCount integer How many times the garbagePanelBuffer was extended; relevant to keep PRNG deterministic for replays
 ---@overload fun(seed: integer, shockEnabled: boolean): LegacyPanelSource
@@ -26,7 +24,6 @@ function(self, seed, shockEnabled)
   self.allowAdjacentColors = false
   self.allowAdjacentColorsOnStartingBoard = false
   self.shockEnabled = shockEnabled
-  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
 LegacyPanelSource.TYPE = "LegacyPanelSource"
@@ -197,36 +194,28 @@ function LegacyPanelSource:clone(stack)
   return source
 end
 
-function LegacyPanelSource:saveForRollback(clock)
-  local copy = self.rollbackBuffer:getOldest()
-
-  if not copy then
-    copy = table.new(0, 4)
-  end
-
-  copy.panelBuffer = self.panelBuffer
-  copy.garbagePanelBuffer = self.garbagePanelBuffer
-  copy.panelGenCount = self.panelGenCount
-  copy.garbageGenCount = self.garbageGenCount
-
-  self.rollbackBuffer:saveCopy(clock, copy)
+---Transfers LegacyPanelSource state variables between source and copy (bidirectional)
+---@param destination table Destination to write to
+---@param source table Source to read from
+function LegacyPanelSource.transferStateVariables(destination, source)
+  destination.panelBuffer = source.panelBuffer
+  destination.garbagePanelBuffer = source.garbagePanelBuffer
+  destination.panelGenCount = source.panelGenCount
+  destination.garbageGenCount = source.garbageGenCount
 end
 
-function LegacyPanelSource:rollbackToFrame(clock)
-  local copy = self.rollbackBuffer:rollbackToFrame(clock)
-
-  if not copy then
-    error("Could not rollback LegacyPanelSource")
-  end
-
-  self.panelBuffer = copy.panelBuffer
-  self.garbagePanelBuffer = copy.garbagePanelBuffer
-  self.panelGenCount = copy.panelGenCount
-  self.garbageGenCount = copy.garbageGenCount
+---Writes the panel buffers and generation counts into copy
+---@param copy table
+function LegacyPanelSource:saveIntoRollbackCopy(copy)
+  LegacyPanelSource.transferStateVariables(copy, self)
 end
 
-function LegacyPanelSource:rewindToFrame(clock)
-  self:rollbackToFrame(clock)
+---Restores the panel buffers and generation counts from copy
+---@param copy table
+---@param clock integer
+---@param isRewind boolean
+function LegacyPanelSource:restoreFromRollbackCopy(copy, clock, isRewind)
+  LegacyPanelSource.transferStateVariables(self, copy)
 end
 
 return LegacyPanelSource
