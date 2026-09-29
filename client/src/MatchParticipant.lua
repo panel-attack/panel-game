@@ -147,6 +147,22 @@ function MatchParticipant:refreshCharacter()
   end
 end
 
+-- Mods can be disabled while a participant still references them, either as the selection itself
+-- or as the concrete mod a random/bundle selection resolved to; re-resolve so no disabled mod stays in use
+function MatchParticipant:refreshDisabledSelections()
+  if not characters[self.settings.selectedCharacterId] then
+    self:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
+  elseif not characters[self.settings.characterId] then
+    self:refreshCharacter()
+  end
+
+  if not stages[self.settings.selectedStageId] then
+    self:setStage(consts.RANDOM_STAGE_SPECIAL_VALUE)
+  elseif not stages[self.settings.stageId] then
+    self:refreshStage()
+  end
+end
+
 function MatchParticipant:setPanels(panelId)
   if panelId ~= self.settings.panelId then
     if panels[panelId] then
