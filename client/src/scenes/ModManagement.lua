@@ -177,9 +177,7 @@ function ModManagement:loadStageGrid()
           boolSelector:setValue(not boolSelector.value)
           stage:enable(boolSelector.value)
         end
-        if not boolSelector.value and stage.id == config.stage and #visibleStages > 0 then
-          GAME.localPlayer:setStage(stages[consts.RANDOM_STAGE_SPECIAL_VALUE])
-        end
+        GAME.localPlayer:refreshDisabledSelections()
       end
       local visibilitySelector = ui.BoolSelector({startValue = stage.isVisible, hAlign = "center", vAlign = "center"})
       visibilitySelector.onValueChange = function(boolSelector, value)
@@ -251,9 +249,7 @@ function ModManagement:loadCharacterGrid()
           boolSelector:setValue(not boolSelector.value)
           character:enable(boolSelector.value)
         end
-        if not boolSelector.value and character.id == config.character and #visibleCharacters > 0 then
-          GAME.localPlayer:setCharacter(characters[consts.RANDOM_CHARACTER_SPECIAL_VALUE])
-        end
+        GAME.localPlayer:refreshDisabledSelections()
       end
       local visibilitySelector = ui.BoolSelector({startValue = character.isVisible, hAlign = "center", vAlign = "center"})
       visibilitySelector.onValueChange = function(boolSelector, value)
