@@ -35,6 +35,8 @@ PuzzleSet.ROOT_PROPERTY = {
   PUZZLE_SETS = "Puzzle Sets"
 }
 
+PuzzleSet.CURRENT_VERSION = 3
+
 local validPuzzleSetProperties = {}
 for _, property in pairs(PuzzleSet.PUZZLE_SET_PROPERTY) do
   validPuzzleSetProperties[property] = true
@@ -124,7 +126,7 @@ function PuzzleSet.loadFromFile(filePath)
   local puzzleSets = {}
 
   if data then
-    if data[PuzzleSet.ROOT_PROPERTY.VERSION] == 3 then
+    if data[PuzzleSet.ROOT_PROPERTY.VERSION] == PuzzleSet.CURRENT_VERSION then
       for _, puzzleSetData in pairs(data[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS]) do
         local loadedSet = PuzzleSet.loadV3(puzzleSetData)
         if loadedSet then
@@ -195,20 +197,64 @@ end
 function PuzzleSet.loadV2(puzzleSetData)
   local puzzleSetName = puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.NAME]
   local puzzles = {}
-  for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES]) do
+  for fileIndex, puzzleData in ipairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES]) do
     local args = {
       puzzleType = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE],
       startTiming = puzzleData["Do Countdown"] and Puzzle.START_TIMINGS.countdown or Puzzle.START_TIMINGS.immediately,
       moves = puzzleData[Puzzle.PUZZLE_PROPERTY.MOVES],
       stack = puzzleData[Puzzle.PUZZLE_PROPERTY.STACK],
       stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],
-      shakeTime = puzzleData[Puzzle.PUZZLE_PROPERTY.SHAKE],
+      shakeTime = puzzleData[Puzzle.PUZZLE_PROPERTY.SHAKE]
     }
     local puzzle = Puzzle(args)
-    puzzles[#puzzles + 1] = puzzle
+    puzzle.fileIndex = fileIndex
+    if PuzzleSet.validatePuzzleForSet(puzzle, puzzleSetName, fileIndex) then
+      puzzles[#puzzles + 1] = puzzle
+    end
   end
 
   return PuzzleSet(puzzleSetName, nil, puzzles)
+end
+
+-- Says why a puzzle in a file is not being loaded, naming the entry to go and fix
+---@param puzzleSetName string
+---@param fileIndex integer where the puzzle sits in the file
+---@param reason string
+local function warnPuzzleHidden(puzzleSetName, fileIndex, reason)
+  logger.warn("Hiding puzzle " .. fileIndex .. " of set " .. tostring(puzzleSetName) .. " because " .. reason)
+end
+
+-- the properties a puzzle cannot be built without; the loader works on their text right away, so an
+-- entry missing one has to be hidden before it is read rather than after
+local requiredPuzzleProperties = {Puzzle.PUZZLE_PROPERTY.TYPE, Puzzle.PUZZLE_PROPERTY.STACK}
+
+-- Checks that an entry says enough to build a puzzle from, warning about and hiding one that does not
+---@param puzzleData table
+---@param puzzleSetName string
+---@param fileIndex integer where the puzzle sits in the file
+---@return boolean readable
+local function puzzleEntryIsReadable(puzzleData, puzzleSetName, fileIndex)
+  for _, property in ipairs(requiredPuzzleProperties) do
+    if type(puzzleData[property]) ~= "string" then
+      warnPuzzleHidden(puzzleSetName, fileIndex, "it has no " .. property)
+      return false
+    end
+  end
+
+  return true
+end
+
+-- Validates a puzzle read from a file, warning about and hiding one that fails so the rest of the set still loads
+---@param puzzle Puzzle
+---@param puzzleSetName string
+---@param fileIndex integer where the puzzle sits in the file, so the warning names the entry to go and fix
+---@return boolean valid
+function PuzzleSet.validatePuzzleForSet(puzzle, puzzleSetName, fileIndex)
+  local valid, problems = puzzle:validate()
+  if not valid then
+    warnPuzzleHidden(puzzleSetName, fileIndex, "it is invalid:" .. problems)
+  end
+  return valid
 end
 
 ---@param puzzleSetData table
@@ -252,6 +298,55 @@ function PuzzleSet.validateV3Properties(puzzleSetData)
   return true
 end
 
+-- Reads one puzzle entry of a version 3 file, warning about and skipping one the game cannot load so
+-- that the rest of the set still comes in
+---@param puzzleData table
+---@param puzzleSetName string
+---@param fileIndex integer which entry of the set in the file this is, so a warning names the one to go and fix
+---@return Puzzle? puzzle nil for an entry that was hidden
+function PuzzleSet.readV3Puzzle(puzzleData, puzzleSetName, fileIndex)
+  if not puzzleEntryIsReadable(puzzleData, puzzleSetName, fileIndex) then
+    return nil
+  end
+
+  ---@type string
+  local puzzleTypeValue = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE]
+  local args = {
+    puzzleType = string.lower(puzzleTypeValue),
+    moves = puzzleData[Puzzle.PUZZLE_PROPERTY.MOVES],
+    stack = puzzleData[Puzzle.PUZZLE_PROPERTY.STACK],
+    stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],
+    shakeTime = puzzleData[Puzzle.PUZZLE_PROPERTY.SHAKE],
+    panelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER],
+    garbagePanelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER],
+    solution = puzzleData[Puzzle.PUZZLE_PROPERTY.SOLUTION],
+    helpDescription = puzzleData[Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION]
+  }
+  if puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] then
+    args.cursorStartLeft = {row = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Row, column = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Column}
+  end
+
+  -- an absent timing is nil, which leaves the puzzle to its default; one that is there but unreadable is
+  -- the file asking for something the game does not have, and defaulting it would play the wrong puzzle
+  local fileStartTiming = puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING]
+  args.startTiming = Puzzle.startTimingFromFile(fileStartTiming)
+  if fileStartTiming ~= nil and args.startTiming == nil then
+    warnPuzzleHidden(puzzleSetName, fileIndex,
+      "StartTiming '" .. tostring(fileStartTiming) .. "' is not one of " .. Puzzle.startTimingSpellings())
+    return nil
+  end
+
+  local puzzle = Puzzle(args)
+  puzzle.fileIndex = fileIndex
+  if not PuzzleSet.validatePuzzleForSet(puzzle, puzzleSetName, fileIndex) then
+    return nil
+  end
+
+  return puzzle
+end
+
+-- Reads a version 3 set
+---@param puzzleSetData table
 ---@return PuzzleSet?
 function PuzzleSet.loadV3(puzzleSetData)
   if not PuzzleSet.validateV3Properties(puzzleSetData) then
@@ -262,37 +357,11 @@ function PuzzleSet.loadV3(puzzleSetData)
   local puzzleSetDescription = puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.DESCRIPTION] or nil
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
-  for _, puzzleData in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
-    ---@type string
-    local puzzleTypeValue = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE]
-    local args = {
-      puzzleType = string.lower(puzzleTypeValue),
-      moves = puzzleData[Puzzle.PUZZLE_PROPERTY.MOVES],
-      stack = puzzleData[Puzzle.PUZZLE_PROPERTY.STACK],
-      stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],
-      shakeTime = puzzleData[Puzzle.PUZZLE_PROPERTY.SHAKE],
-      panelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER],
-      garbagePanelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER],
-      solution = puzzleData[Puzzle.PUZZLE_PROPERTY.SOLUTION],
-      helpDescription = puzzleData[Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION]
-    }
-    if puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] then
-      args.cursorStartLeft = {row = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Row, column = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Column}
+  for fileIndex, puzzleData in ipairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
+    local puzzle = PuzzleSet.readV3Puzzle(puzzleData, puzzleSetName, fileIndex)
+    if puzzle then
+      puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
     end
-    if puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] then
-      if puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "First Swap" then
-        args.startTiming = Puzzle.START_TIMINGS.firstSwap
-      elseif puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "First Input" then
-        args.startTiming = Puzzle.START_TIMINGS.firstInput
-      elseif puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "Countdown" then
-        args.startTiming = Puzzle.START_TIMINGS.countdown
-      elseif puzzleData[Puzzle.PUZZLE_PROPERTY.START_TIMING] == "Immediately" then
-        args.startTiming = Puzzle.START_TIMINGS.immediately
-      end
-    end
-
-    local puzzle = Puzzle(args)
-    puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
   end
   for _, currentPuzzleSet in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
     local loadedSet = PuzzleSet.loadV3(currentPuzzleSet)
@@ -457,7 +526,7 @@ function PuzzleSet:generateSaveData()
   end
   
   local data = {
-    [PuzzleSet.ROOT_PROPERTY.VERSION] = 3,
+    [PuzzleSet.ROOT_PROPERTY.VERSION] = PuzzleSet.CURRENT_VERSION,
     [PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS] = {
       puzzleSetToSaveData(self)
     }
@@ -496,7 +565,7 @@ function PuzzleSet:saveTargetPuzzleToFile(targetPuzzleSet, puzzleIndex, updatedP
     logger.warn("Cannot save solution to old puzzle format, please upgrade your puzzles to the latest file format")
     return -- Early return, this is likely an old puzzle format.
   end
-  
+
   -- Extract directory and filename from fileSource path
   local directory, filename = self.fileSource:match("^(.+)/([^/]+)$")
   if not directory or not filename then
@@ -504,7 +573,7 @@ function PuzzleSet:saveTargetPuzzleToFile(targetPuzzleSet, puzzleIndex, updatedP
     directory = ""
     filename = self.fileSource
   end
-  
+
   -- Write the modified data back to file
   local encodeArgs = {
     indent = true,
@@ -528,9 +597,13 @@ function PuzzleSet:updatePuzzleInFileData(fileData, targetPuzzleSet, puzzleIndex
   
   -- Convert target puzzle to save data format
   local puzzleData = updatedPuzzle:getSaveData()
-  
+
+  -- a puzzle the loader hid is still in the file, so the entry to write is the one the puzzle was
+  -- read from rather than its position in the set
+  local fileIndex = updatedPuzzle.fileIndex or puzzleIndex
+
   -- Recursively search and update in the file data
-  return self:updatePuzzleInDataArray(fileData[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS], targetPuzzleSet, puzzleIndex, puzzleData)
+  return self:updatePuzzleInDataArray(fileData[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS], targetPuzzleSet, fileIndex, puzzleData)
 end
 
 -- Helper to recursively search for a puzzle set and update a specific puzzle within it

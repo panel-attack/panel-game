@@ -28,6 +28,13 @@ MatchRules.orders = { LOWEST = "LOWEST", HIGHEST = "HIGHEST" }
 MatchRules.StackOverConditions = { HEALTH = "HEALTH", SWAPS = "SWAPS", CHAIN = "CHAIN" }
 
 ---@enum StackWinCondition
-MatchRules.StackWinConditions = { MATCHABLE_PANELS = "MATCHABLE_PANELS", MATCHABLE_GARBAGE_PANELS = "MATCHABLE_GARBAGE_PANELS", SCORE = "SCORE" }
+-- a stack wins once every condition it has holds: MATCHABLE_GARBAGE_PANELS once every block on the board is hit,
+-- GARBAGE_BUFFER_EMPTY once the panel source has handed out its whole garbage buffer
+MatchRules.StackWinConditions = {
+  MATCHABLE_PANELS = "MATCHABLE_PANELS",
+  MATCHABLE_GARBAGE_PANELS = "MATCHABLE_GARBAGE_PANELS",
+  GARBAGE_BUFFER_EMPTY = "GARBAGE_BUFFER_EMPTY",
+  SCORE = "SCORE"
+}
 
 return MatchRules

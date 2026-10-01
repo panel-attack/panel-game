@@ -14,7 +14,7 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "000000000000000000000000000000000000000000000000000000000000000000010110",
               "Help Description": "Make the swap to clear all the panels",
@@ -22,63 +22,63 @@
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3000033030",
               "Solution": "A24E3A6E7A4E6A7E6A8E6A8Q1A19"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "2100001200001200",
               "Solution": "A22E7A5E6A6E6A7E5A12Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "6400006400004600006400006400",
               "Solution": "A22E6A5E7A6E6A6E6A6Q1A113"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "2000223303",
               "Solution": "A13E4A6E6A7E4A7E5A7E6A5E6A9B4A10B5A10Q1A131"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "115155",
               "Solution": "A23E6A5E6A6E5A5E7A8E6A6E6A8Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "1000001000003000001000001000003300",
               "Solution": "A33E7A6E6A7E6A11C4A10Q1A78"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "40000040055450",
               "Solution": "A32E4A7E4A8E4A7E4A7E5A15E5A8B5A7Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3000002300002230",
               "Solution": "A24E4A8E4A9E4A8E5A5E6A10C3A9Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4100001400004100001400004100",
               "Solution": "A37E5A6E6A16Q1A6E6A6E6A6E6A5E6A4Q1A12I6A6I5A3Q1A113"
@@ -92,70 +92,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "4000001000001000004000001440",
               "Solution": "A125E5A7E4A6E6A8E6A12E5A7C6A4Q1A147"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "60000026000062200",
               "Solution": "A67E19A9C3A9C5A7Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3300055350",
               "Solution": "A37E6A6E4A7E5A7E4A7E14A5B5Q1A131"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1200001212",
               "Solution": "A16E5A8E5A8E4A9E4A7E8A7E7A9B5Q1A12C6A8C4A4Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "363636",
               "Solution": "A31E18A8C6A1Q1A6B5A7B5A12B7A15C4S1A10C4A5Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3000332000224000441000115000556000663000332000224000441600116600",
               "Solution": "A71E7A8E4A7E4A7E6A7E6A4B7Q1A327"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "600002600062200",
               "Solution": "A23E4A9E3A10E4A11E6A13E9A4Q1A6B4A2Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "5000005000001000001500005100",
               "Solution": "A104E6A9E5A15E5A13E9A250E7A2Q1A22I5A9Q1A78"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "2200004400004200",
               "Solution": "A59E4A9E4A7E5A7E6A6E6A7E6A7C6A3Q1A10B5A7B5A3Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "13000031000013110",
               "Solution": "A21E6A10E7A8E5A81E8A11C3A7Q1A9E6A8E6A4Q1A99"
@@ -169,70 +169,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "4000001000001000044000041040",
               "Solution": "A7E7A7E6A7E5A11E4A9E5A9C4A8C6A7Q1A9B6A10B4A12Q1A154"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "3000002000002000003220003230",
               "Solution": "A81E7A8E7A7E6A7E6A10E4A7E7A5Q1A10C7A11I6A5Q1A161"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "3400004300303404",
               "Solution": "A5E7A7E7A8E7A7E4A8E6A7E6A7C7A3Q1A8B8A7B5A13I7A21I7A7Q1A153"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1000006000004000004600006100014100",
               "Solution": "A19E2A10E4A10E6A10E5A11E5A10B7A1Q1A14C7A7C7A13I6A9I5A9I7A10Q1A216"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "400000650005560054465",
               "Solution": "A65E9A11E8A10E5A9E5A8E8A7E7A8B7A2Q1A15I6A11Q1A152Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "400000100000544000411000655000366000233000422000144004411",
               "Solution": "A211Q1A31E6A9E7A7E7A9E6A9E6A11C5A8Q1A285"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "100000500000100000100000500005100005155",
               "Solution": "A33Q1A20E6A10E6A11E4A13E6A7Q1A170"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "21000012120",
               "Solution": "A11E4A13E5A8E4A10E4A10E9A7E7A4Q1A11C5A10I6A3Q1A10C6A10Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "300000300006500003300005600065600",
               "Solution": "A15E6A16E5A9E6A8E6A11E6A9B7Q1A14C6A19I7A18Q1A168"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "500002500022600066500",
               "Solution": "A33E7A12E4A13E7A11E7A3Q1A15B4A10E7A10E6A6Q1A160"
@@ -246,70 +246,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1000004000001000061100044600016100",
               "Solution": "A28E4A13E6A11E6A13E6A10C5A9Q1A11B5A10E6A10Q1A175"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "4400006500004600065500",
               "Solution": "A31E5A11E5A9E4A10E6A8E6A10C9A5Q1A15B6A10B4A11I8A9Q1A160"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4000006000006000002000002240006440",
               "Solution": "A191E7A7E6A10E6A11E6A8E6A10B6A6Q1A8C6A1Q1A10C4A7Q1A214"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1100002330002123",
               "Solution": "A50E8A15E4A15E3A23E5A17E6A20E7A7Q1A13C6A33Q1A205"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "300003500002500003200005200332500",
               "Solution": "A22E4A11E8A10E5A6E8A8Q1A11B5A6Q1A9E4A14C6A17Q1A183"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "263000514000445000513000522160616620332120335150226620",
               "Solution": "A308Q1A731"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "2000004000004000443000242233",
               "Solution": "A124E5A10E9A8E6A10E6A17E9A21E7A10C7A6Q1A10B7A7I6A4Q1A228"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4000004600001140006160",
               "Solution": "A378E8A15E6A14E6A12E6A11E8A18B5A13E8A1Q1A10C6A15I7A7I7A2Q1A9C5A26Q1A160"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "1000004100001400003300004200032200",
               "Solution": "A2E7A6E5A6E6A7E6A20C4A16E7A4Q1A21I5A17Q1A9B5A5B9A11E6A4Q1A180"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "40000040000010000140001230022440034430",
               "Solution": "A27E7A7E7A7E7A7E9A8B6A6B7A3Q1A7E9A8E8A8C4A8C4A6C8A10Q1A10B5A3Q1A248"
@@ -323,70 +323,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "500000200000200000100000100000200000100000200055255",
               "Solution": "A17E5A22E5A20E7A69E7A7E10A17B6A19Q1A14C8A26I3A42Q1A237"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "550001250001610066220",
               "Solution": "A410E2A15E4A9E5A13E5A15B6A152Q1A10C5A14Q1A5B7A11B6A89Q1A227"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "5000004500006400006300003600005344",
               "Solution": "A217E5A8E6A10C8A5Q1A11E6A8E4A9E3A8E6A3Q1A9B7I7A16Q1A228"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "1130001450004550005330004550",
               "Solution": "A52E7A10E7A10B7A33Q1A26E8A141C9Q1A32E4A9E6A18Q1A290"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 5,
               "Stack": "663366521425512245313343562265",
               "Solution": "A75E8A17E9A10E7A11E9A28E6A211C7A11Q1A59B8A19B8A83I8A325I6A9I7A2Q1A17E4A8Q1A331C7A11C6A101E6A81E5A9E6A7Q1A13I5A7I4A2Q1A290"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "606060401040501050402040502020461640",
               "Solution": "A944E5A6E7A7E7A10C7A5C8A5Q1A7B4A6B6A7B6A8Q1A5E8A6C7A4E8A1Q1A323"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "600000200010600021200012620",
               "Solution": "A22E4A10E4A8E5A7E4A8E4A8E5A9C5A11C6A4Q1A11B7A8B6A10B3A18I6A10I6A95C6A3Q1A7B6A9E5A8E5A4Q1A212"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "400002200001600001400046200026100",
               "Solution": "A413E9A13E6A11E4A11E8A8E9A8E12A4Q1A16B6A6I8A36Q1A87C3A4Q1A276"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "6000005000053000044000036500043600",
               "Solution": "A28E5A11E5A9E5A9E4A8E6A9E6A8B7A2Q1A8C6A13I6A6Q1A30C5A9Q1A221"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4340334334455453",
               "Solution": "A13E4A4E8A5E7A7E7A1Q1A9E4A9E5A3Q1A11C5A17Q1A194"
@@ -400,70 +400,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "32000036000061000023110026220",
               "Solution": "A131g8A23E6A6E5A7E6A6E6A7C7A2Q1A8E7A5E8A6C11A2Q1A10B4J2I7A14Q1A235"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "25000165000636000565000623200611500553500",
               "Solution": "A11g7A95E4A110C8A12I7A4Q1A12E7A7E5A8E3A7E5A9B7A3B5A7E5A9E7A7Q1A8C7A9C5A10I4A7I6A8I4A5I6A3Q1A440"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "60000610004610002160042610024640",
               "Solution": "A28E4A7E6A7E4A10E4A8E5A10E4A33C6A8C5A20Q1A10B6A12I5A7I8A9I7A19B7A17Q1A10E6A8E6A7C7A5Q1A16B4A12B7A17I6A22Q1A302"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "50000044000015000014000033000011400035440",
               "Solution": "A48E5A9E5A8E5A12E7A11E8A45E8A33Q1A12C5A4Q1A13C4A10Q1A9B6A8I6A19Q1A296"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "35000012000011000022000035000013350",
               "Solution": "A28E7A6E7A5E9A6C10A5C12A4E4A6E7A4Q1A6B11I8A3I7A13Q1A6E4A8E5A3Q1A9C4Q1A236"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "30000060060040030640034530055360036640",
               "Solution": "A26E9A4E9A5E9A1B8A1Q1A8B7A7I5A1Q1A10E5A8E7A11Q1A417"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "40000054000011000044500015110",
               "Solution": "A26C8A8C8A8E4A7E4A9E2A9E5A6E9A7Q1A12B5A6B7A6Q1A9C6A25I6A108E5U1A14E7A5Q1A175"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "100022600011200031600013361",
               "Solution": "A21E5A7E6A7E6A6E8A10E6A1Q1A8B7A1I3A7I6A6Q1A9E4A7E6A13C5A46E3A14B6A10I6A4Q1A9C6A7C25A9E6A1Q1A339"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "2000005000003000056000046400065200045200053500053500",
               "Solution": "A22E6A7E6A5E8A8E6A2E8A9E8A8B6A3Q1A9C7A8I6A9I5A6I7A13Q1A40E6A7E7A9B5A5Q1A9C7A7C8A10I5A6I7A4Q1A325"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "600006400002340001430001310033160021230",
               "Solution": "A49E6A6E6A11E6A88g7A224E5A8C7A8I6A9Q1A8E6A6B7A6E6A7E9A3Q1A9B5I4A6I7A8C6A4I6Q1A10E6A6B7A8Q1A372"
@@ -497,42 +497,42 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000994999994999999499994999",
                   "Solution": "A23E6A4E7A4E7A4E6A15E7A3Q1A71"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "20922029999999999999999999",
                   "Solution": "A18E8A6E5A10B6A6Q1A78"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "992199991299999129999999999999",
                   "Solution": "A29E8A5E6A5E6A1E6A4Q1A11B7A1Q1A6C4A8I3A4I4A2Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000002000002000993200992390392990999999999999",
                   "Solution": "A30E4A9E3A8E3A9E2A16C5A11C4A9Q1A15B7A6Q1A11B5A7Q1A15C4A10Q1A12B6A13I3A10I5A12Q1A99"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999999995939999395999359999999",
                   "Solution": "A17E6A7E3A7E6A18Q1A7B7A5E2F3B3A3Q1A4C6A6I3Y1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "299999492999294999499999999999",
                   "Solution": "A24E7A6C7A6E5A8E6A2Q1A6E6Q1A6E4G2C5A2Q1A7I6A5I4Y1A85"
@@ -546,28 +546,28 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999229911912",
                   "Solution": "A15E9A7E5A4E7A4E6A6E13A5Q1A11C7A3Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "100004999009499114999",
                   "Solution": "A17E4A6E6A6E6A7Q1A5E4A4E6U1A17C7A109"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "3000599009959005999339593",
                   "Solution": "A7E6A6E7A13B4A7B7A8Q1A5C5Q1A7E5A7E4U1A9E5C4A16Q1A3E3C4A7Q1A6C7A3Q1A5B17A5Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000005000501500113303",
                   "Solution": "A46E7A7E5A7E4A6E6A6E5A16E5A9B1A6B6A7Q1A7C2A10C2A9C4A6C6A10I4A8Q1A129"
@@ -592,56 +592,56 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993299992939929993993299999999",
                   "Solution": "A21E6A8E7A5E5A9B6A3Q1A5E2F4B3A6B5A3Q1A6C4S1C1A4C5A7C5A2Q1A6B4A4Q1A20I4Q1A99"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000493999993499949399993499999999",
                   "Solution": "A39E7A6E2C4A15C6A7Q1A7B6Q1A7B4R1B1A8C4S1A10E5A5E4A2Q1A6B5R1A99"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999949499999949494999949999999",
                   "Solution": "A18E4A9E4A6E5A6C4A10C7A5Q1A9B5Q1A8B4Q1A8B4A6Q1A14E5C4A6C5A6Q1A6B6A6B5A5B4R1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "900000400000300000430000439090",
                   "Solution": "A44E8A4C8A4E9A9E6A5C7A5Q1A11E6Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "499944994999999949",
                   "Solution": "A19E7A7E5A22E7A5E5A10C7A3C6A6Q1A9B5A1Q1A10B5A6E3U1E1A7E2F1B4A4Q1A3C6A7I4A5I5A1Q1A78"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "199999919399939199939999",
                   "Solution": "A53C5A6E7A7E6A6E7A5C8A15Q1A7B3R1B3A8E2F2B5A6E5U1E1A8I3Y1I1A7C6Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "599199519999959199959999",
                   "Solution": "A66E4A8E6A8E6A6E7A7E6A10E5A2C5A6C7A4Q1A5B1J1I5A4B8A3Q1A5C4A1Q1A4C4A2Q1A5B5I4A5B4J1I3A5Q1A4C5A1Q1A6E4A7E4Q1A7C6S1A92"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999479949799997499999749",
                   "Help Description": "",
@@ -656,28 +656,28 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000100004995004959499449991599991999",
                   "Solution": "A31E5A19Q1A6E5A6E9A6C7A5E6G2C4A5C6A5Q1A6B6A2Q1A7B6A1I5A4B6A3Q1A2B9I4A3Q1A6C3A9Q1A76"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000001000209999992993933993121399",
                   "Solution": "A28E6A6E6A16E3A16C5A6C4A15Q1A8B4A5Q1A4B7A10E2A1B2A7B4A9Q1A3C6A3Q1A8E2F1B7A3Q1A6C5A3Q1A2C3A16E6A2C5A9Q1A170"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000300009992994494991192113329",
-                  "Solution": "A29E7A12E7A5B6A2Q1A5E1F3B5A4Q1A9E5A5E6Q1A6C5A9I4Q1A7C4A4C4A4Q1A5B4R1B1A7E3G2C4A5Q1A251"
+                  "Solution": "A75B7A12E6A4E7A8Q1A9B7A10E4A5Q1A9E5A7Q1A6E6A5Q1A256"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "929999999919999194442129",
                   "Solution": "A88E6A9E6A8E6G1C6A11Q1A7B3R1B3A6E3F2B4Q1A9E3F2B6A1Q1A10C6A40C1S1C1S1C2A27B5A1Q1A2C6S1A73"
@@ -691,7 +691,7 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000300000100994100994910933149999999",
                   "Help Description": "If you have three vertical panels of a color, sometimes it is better to drop one down to make a horizontal chain",
@@ -699,21 +699,21 @@
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "200000931000931000312299",
                   "Solution": "A16E8A6E7C7A7E5A6C6A3Q1A7B2R1B1A9E6A6E5A6E4Q1A10I5A6I5A52Q1A121"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "990039993099994344",
                   "Solution": "A29E8A5E6A15E7A6E6A5E7A5E6A4Q1A5B3J2I2A5I5A2Q1A6E6Q1A7C3S1C1A81"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "30990099993099994344",
                   "Solution": "A8E8A5E6A6E4A14B6A11Q1A5E5A7E4Q1A6C4S1A4E4U1E2A129"
@@ -727,63 +727,63 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993999399399994494",
                   "Solution": "A43E7A5E5A6E6A6E5A5E7A16Q1A6C2A1Q1A16E2F4B2A6B5A5B6A6Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993939999993994494",
                   "Solution": "A14E5A7E5A6E5A7E2A24Q1A4E5F1B3A12E2F3B4A17Q1A6C7A118"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "40000019999099119044999",
                   "Solution": "A18E7A7E6A1C7A6E2G3C3A12Q1A8E3F3B3R1A122"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "104991909919909994404",
                   "Solution": "A55E7A7E4A7E5A7B7A2B6A3Q1A8C6A4E7U1A121"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000001000911999992292",
                   "Solution": "A32E3A8E5A6E6A6E6A6E5A7E4A11B5A6B6A11Q1A4I4A7C5A5C5A5C5A4C5A1Q1A4B4R1B2A69"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000999339999399991911",
                   "Solution": "A40E6A6E6A6E5A8E5A7E5A14E4A9Q1A9I6A3Q1A112"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000999499999449991911",
                   "Solution": "A20E7A5E5A8E2A16E4A9E4A9E6A9Q1A5I5A5Q1A3C5A4Q1A3B5A6B3A2Q1A3C6Q1A72"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000999944999994919119",
                   "Solution": "A30E4A7E6A7E3A8E2A9E1A7E4A9C4A13Q1A4B5J1I4A10B6A6I5A3Q1A2B5R1B1A77"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000009000099000929000292303399999999",
                   "Solution": "A8E6A7E5A7E3A8E2A22E5A17C5A5C6A9Q1A6B4A5B6A4B5A10I6A1Q1A4I5Q1A73"
@@ -797,63 +797,63 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993999399399999999994494",
                   "Solution": "A41E9A3E7A6E5A4E6A6Q1A1C7A2Q1A10E5F1B2A5B6A6E6A3B4A7B5A1Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993939999993999999994494",
                   "Solution": "A14E8A6E6A6E7A32Q1A5E3F2B5A6B7A6E9A4E7A2Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "40000019999099119099999044999",
                   "Solution": "A16E5A6E5C6A7C12A7Q1A7E3F2B5Q1A123"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "104991909919909999909994404",
                   "Solution": "A24E9A8B8A9E1F2B5A15Q1A6E5G2C4A4Q1A126"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "1000911900999999992292",
                   "Solution": "A14E7A5E7A4E7A5E7A3E5A11C6A4C6K1I6A7Q1A9B9Q1A10E4F3B3A6E3F1B3A5B7A3Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999339999399999999991911",
                   "Solution": "A30E6A5E6A4E6A5E5A5E6A5E7A4Q1A9I3A6I5Y1A107"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999499999449999999991911",
                   "Solution": "E2A6E5A6E5A5E5A2Q1A5C5Q1A10B6A5B4A3Q1A3C6Q1A5E5A5E5U1E1A130"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999944999994999999919119",
                   "Solution": "A14E7A4E5A5E4A6E7A3E5G3C4A8E9A3Q1A4I8A3B4J2I3A4I7A3B6R1B1A4B3R1B3A74"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "9000099000929000292999999393399999999",
                   "Solution": "A17E4A8E5A6E4A1C5A3E6C9A10E6A4Q1A4B2I7A3B3J1I1K4I2A2B6A2Q1A6I4Y1I2A80"
@@ -867,21 +867,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000005000005000004400003500003400022300112100",
                   "Solution": "A12E7A4E8A4E5A7E4A8E3A6E6A11Q1A7I4A6I4A8Q1A4B5A1Q1A13E4A2C1A6C6A15Q1A13B6A9B6A21Q1A7C6A48Q1A125"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000004406003101003401022306112106",
                   "Solution": "A23E6A8E3A6E4A9E4A8E4A9E1A12Q1A5B2J1I6A4B6A3Q1A6I5A10I4A8Q1A6E5C5A5E6A7Q1A16C3A31Q1A8B5A4B5A37Q1A9C5A51Q1A7C7A2Q1A108"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000001000001000006000006000005100005600004400003500003400022300112100",
                   "Solution": "A22E5A9E2A8E4A10E3A15E6A6E6A13Q1A12I6A6I5A8Q1A5B5A1Q1A12E4A13C6A5C6A3Q1A10B6A8B5A17Q1A5C5A35C4A8B4A3Q1A7C5A5Q1A21B4J1I4A15Q1A8E2F4B3A17Q1A9C8A20Q1A117"
@@ -895,7 +895,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -908,7 +908,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -921,7 +921,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -934,7 +934,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 74,
                   "Shake": 0,
@@ -943,7 +943,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -952,7 +952,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 90,
                   "Shake": 0,
@@ -965,7 +965,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 63,
                   "Shake": 42,
@@ -978,7 +978,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -990,18 +990,19 @@
                   "Solution": "A69Q1A5B4R1A10C6A3Q1A17C5A15I5Y1A6B7A8E6A51Q1A5"
                 },
                 {
-                  "Puzzle Type": "moves",
-                  "StartTiming": "firstInput",
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
-                  "Stack": "000000000000000000000000[======================]000400099490995499999999",
-                  "GarbagePanelBuffer": "999595",
+                  "Stack": "[============================][======================]000400099940995499999999",
+                  "GarbagePanelBuffer": "999595999999999999",
                   "CursorStartLeft": {
-                    "Column": 2,
-                    "Row": 4
+                    "Column": 4,
+                    "Row": 3
                   },
-                  "Solution": "A11E7A32B8A10B7A13Q1A8C7A2Q1A25E6A3Q1A6B10A7B10J2I5A76Q1A4C5S1A64"
+                  "Solution": "A9Q1A29C9A43Q1A9E7A2Q1A7B10A13I8A2Q1A8B6A268Q1A5C4S1C1A4",
+                  "Help Description": "When clearing chain garbage, sometimes you need to leave a panel under one of two of a pair of colors to make a clear possible."
                 }
               ]
             },
@@ -1012,7 +1013,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 5,
@@ -1025,7 +1026,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "000000000000[=][=][=][=][==========][=]000240000331500146306231404365243",
@@ -1037,7 +1038,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 35,
                   "Stack": "000000000000000000000000000[=][==========]000006210503160306534315651246",
@@ -1049,7 +1050,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
@@ -1062,7 +1063,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "000000000000000000000000[====][====][=]000[====]040090334010599190411564",
@@ -1074,7 +1075,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
@@ -1087,7 +1088,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 58,
                   "Shake": 0,
@@ -1100,12 +1101,45 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 98,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000006000001000014000021000034000033030061450112199936",
                   "Solution": "A31B1J3I5A4B4J3I3A6Q1A3E4A6E7A1Q1A5"
+                }
+              ]
+            },
+            {
+              "Set Name": "puzzle_set_name_novice_garbage_chains",
+              "Description": "puzzle_set_description_novice_garbage_chains",
+              "Puzzles":
+              [
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][======================================================================]232265641366433421",
+                  "GarbagePanelBuffer": "414631242323536161641526316431563614245352453213326145162421356212",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 3
+                  },
+                  "Solution": "A37Q1A120B7A6B6A24B6A6Q1A7E1U1E4A17C18A31Q1A13B4A29I7A154Q1A13B6A18B4A13B7A17I4A37Q1A9Q1C19A3Q1A8B6A8B7A5B6A6B5A3Q1A9C2S1C3A11B8A6Q1A4E8Q1A7E6C6A3E3G2C5A4Q1A2B7Q1A4B4R1A10C7A3C9A7I8A6I6A42I5A13C8A12Q1A30C6A11B5A8B7A18B7A3B6A1Q1A6C4A1Q1A4C4S1A5C5Q1A3C6A9E6Q1A5B4J1I2A6B6A5E6U1A5B3R1B1A4B4R1B2A6I5A1Q1A8E7A10C6A14I6A35C5A2Q1A4B5Q1A7C14A73I6A1Q1A5B16A2Q1A5E5U1E1A8C5A5C5A96C4A39C6A2Q1A24B4A17B7A7B5A1Q1A35I7A15C5A4C7Q1A7E3U1E2A8B4J2I4A7Q1A2B5A7B5A19Q1A16E6A2C6A4Q1A4B7A7E6U1A8I2Y1I3A10C6A59C6A7C6A9C2A10B3J2I5A35C7A1Q1A4B3A3Q1A4C5A6E5A1Q1A7B6A46B5A12B6A6B7J3I3Y1I1A12C6A49I4A9C7A3Q1A11C6A2Q1A9B3A9B6A21Q1A7C5S1A5C5A3Q1A7E5G1C5A3Q1A3B6Q1A13B4A37C6A7C6A30B2J1I6A11B4A41B5A36Q1A5C4S1A7B5A6Q1A11B3A11C3Q1A3B6Q1A7E2G1C4A3C5A5C5A2Q1A3B5Q1A5B5R1A3B5A2Q1A13C16A8I3Y1I1A6B3R1B1A6B3R1B2A16C6A12C5A38E7A1Q1A6B1J2I4A6B7A7B6A8B9A27I6A1Q1A5C4S1C1A8E4G1C7A68"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][======================================================================]354233641642641414",
+                  "GarbagePanelBuffer": "213424154341243423416161562515324146246464621616356525461236636523",
+                  "CursorStartLeft": {
+                    "Column": 2,
+                    "Row": 3
+                  },
+                  "Solution": "A19Q1A155B5A8B5A6Q1A11E8A1B7A3Q1A9C20A11I9A7Q1A9B9A8Q1A6B5A23Q1A8C7A6E6A3Q1A14B6A33B8A73I7A9C8A2I8A3Q1A38E8U1E1A19B13A24E8A7Q1A31I8A3Q1A11E9A13Q1A16C11A7C12A9C11I7A2Q1A21B7A128I5A8B10A12C8A6Q1A12E4A9Q1A21B10A8B8A12I7A21E6G1C6A11Q1A6B9A16I8Y1A11E7A5Q1A16C15A16C8A7I7A23I9A7Q1A7E9A14Q1A8E5A6E9A5Q1A7I8A3Q1A10B6A7B7A14I8A19B5A5Q1A13C8A33I8A30Q1A13B9A2Q1A55B7A3Q1A9E7G2C5A5Q1A12C9A6C6A9Q1A7B6A14C8A9E7A13Q1A6C8A4Q1A14B9A6I7A4B7A36Q1A8C8Q1A17C11A2I6Q1A11B9A14Q1A8B17A12I10A15Q1A9E5G3C5A7C8A5E7A2Q1A7B9A1Q1A9B10A1Q1A10C8A7C9A5C8A13I6A5B7A27B7A4Q1A9C6A3Q1A53I5A2Q1A11E7A9Q1A5C19I6Y1A13E5A6Q1A6B7A6B6A3Q1A17E8A13I7A7I8A9Q1A50I5A6Q1A9B6R1B2A17B8A23Q1A9E9A4Q1A6C10A12E8A30C8A106B6A18I6A40C8A15Q1A10C10E6A1C7A10Q1A6B8A4Q1A8C9A13I6A8B6A23C7"
                 }
               ]
             }
@@ -1127,14 +1161,14 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000941299999319999193995319449299129155",
                   "Solution": "A18E8B6A10B4A9E8A6E8A4Q1A7E4G1C3A11C5A6E6A7E6A6C5A9Q1A1B8A2Q1A10C5A5C6A9Q1A5B5A3I2A17Q1A5C7A3Q1A9B2I7A5B4J1I6A6B5A3Q1A7C7A23I5A13I7A39Q1A7E4G2C5A9I5A1Q1A6B3A17E8A5E6A5E3A1Q1A14I4A30Q1A13E3A101"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000000000919149241224",
                   "Solution": "A10E7A9E5A8E5A9E6A6E6A9E6A7C8A6Q1A9B5A3Q1A10B5Q1A15C5A8C5A6C5A6Q1A7B6A1I7A3B6A2Q1A17B7A21Q1A3C7Q1A8E3F1B6A3Q1A5B7Q1A73"
@@ -1148,21 +1182,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000610000939996139992292691939999939",
                   "Solution": "A27E4A9E6A8E5A8E5A12B7A7B8A5Q1A36C3A21E5A75Q1A1Q1A12I5A6Q1A9E4C16A10Q1A72"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000050000619000939996139952292651939999939",
                   "Solution": "A61B7A14B5A13E5A7E5A10E5A8E5A7Q1A30C8A15E6A81Q1A2Q1A12I6A4Q1A6C5A5C5Q1A32B6A1Q1A117"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000250000619020939996139952292651932999939",
                   "Solution": "A24E6A7E5A8E6A8E4A10B8A5B7A4Q1A15E6G1C5A111Q1A3Q1A11I7A6Q1A4C6A4C5S1A22B6A13Q1A3C5A8I5A5I5A1Q1A8B8A5E1F2B6A6B4A7E6A3E6A1Q1A84"
@@ -1176,21 +1210,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000004400002200044540043520022350112130",
                   "Solution": "A38E6A7E4A8E3A6E5A16E6A9E5A6Q1A51I6A29I6A9Q1A5C5A5Q1A8E6A15B4A18C6A34Q1A8B7A10I6A2Q1A11E7A14B6A5Q1A13C7A32Q1A6B6A3Q1A109"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000001000001000006100004400062260044540043520022350112130",
                   "Solution": "A10E7A6E5A5E6A7E3A8E5A16E5A5Q1A46I7A30I5A7Q1A8C7A13E5A16Q1A67Q1A5B6A49Q1A7B6A5Q1A12C6A32Q1A6B7A1Q1A14I3A2Q1A10E4G3C5A15Q1A5B6A4Q1A42Q1A123"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "005000004600003500061460051240026120034430062260044540043520022350112130",
                   "Solution": "A50E4A6E5A7E4A6E3A7E5A9E5A5Q1A33I7A50I6A2Q1A8C5A1Q1A9E5A81Q1A6B5A3I6A4Q1A7E2F2B5A23Q1A5C6A8I4Y1A9B3A2Q1A9E7A15I4A6Q1A5C4A14E5A25Q1A5B5A3Q1A9I6Q1A12I5A2Q1A8E6A30I2J3B3A20E6A16I5A1Q1A8E3G2C5A5E5G1C3A7C6A9Q1A5B5R1A9C4A3Q1A5B7A13B3A8Q1A5B6A3Q1A9C4A8C3A25Q1A9C5A3Q1A51Q1A6B7Q1A105"
@@ -1204,14 +1238,14 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000200021100293300155200324405241101",
                   "Solution": "A86E6A10E2A8E6A7E7A6E5A12B4A5B6A12E6A3Q1A6C6A4C5A9I5A5I5A2Q1A13E4A9B7A5E1F2B4A5Q1A6C5A5C6A4C6A12I6A2Q1A11C4A14E4A8B8J2I1A5B6A3Q1A5C6A5C6A1Q1A4B6A8B5A12Q1A4C6A5I4Q1A5B5R1A7B3A2Q1A7C16A4E7Q1A7B5R1B1A94"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000600060200021100293300155206324405241101",
                   "Solution": "A5E6A3E8A4E7A5E7A6E6A10B8A6E2F2B3A13Q1A5C5A4C6A10I6A5I5A3Q1A7E4F1B4A6E7A6B7A3Q1A7C4A6C4A6C6A8I7A3Q1A14B3A16B8A2I6Q1A8E6C4A17Q1A6C6A5C5Q1A5B7A12Q1A8C3A6B3J2I5A6C4Q1A5B5R1B2A6E7A18C6Q1A5B5A30Q1A3B5A6E1F2B3A6B5A3Q1A86"
@@ -1225,7 +1259,7 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "994999993999949399993449994999",
                   "Solution": "A35E6A7E5A8E2A6E7A5Q1A8C6A55Q1A3Q1A81"
@@ -1239,28 +1273,28 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000900040991940992910499194929991912194991999919999",
                   "Solution": "A24E6A9E7A6E7A5E6A7B5A5B8A4Q1A10I6A2Q1A8C1A8C4A9C10A11C8A5I7A3Q1A12B6A2Q1A5B6A5B6A2Q1A7C7Q1A9I4Q1A7I4A1Q1A8E4A7E4A8E5A5C4A3Q1A3B6R1A7E6Q1A7E5A8Q1A7E5A6C5A2Q1A6B7A2Q1A16I5A98"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000900000900009900009910999494411999919999199999999",
                   "Solution": "A16E6A8E7A9C6A5Q1A6B3A4Q1A8E4A7E6A4B6Q1A8C5A6C19A11I6Q1A145"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000900000900009900029919999494411999912992129999299",
                   "Solution": "A8E6A8E5A8E6A8C3A7C6A4Q1A5B7I6A3Q1A2B6A1Q1A3B6A7E4A6E5Q1A5I5A5I5A7I4Q1A9E4A6E4A6E7B6R1A2C7Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "99000939099939999949999349939493999999999999999999",
                   "Solution": "A77E4A10E6A10E6A5C5A4Q1A5B4A6B5A6B6A1Q1A5C7Q1A40I6A22Q1A85"
@@ -1274,21 +1308,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "991999992199912999929999",
                   "Solution": "A40E7A8E5A8E3A7E5A9E6A7E6A8C4A1Q1A9B7A3I6A41Q1A2Q1A68"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "1000003000019300093100093900",
                   "Solution": "A12E4A7E6A7E5A9E6A6Q1A17C4A3E6A46Q1A1Q1A69"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993999992399932939929999",
                   "Solution": "A13E6A7E5A6E6A7E8A8E22A10C6A4Q1A8B6J1I7A44Q1A2Q1A75"
@@ -1302,21 +1336,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "4000993999943499999399999999",
                   "Solution": "A19E6A7E6U1A9E5A3Q1A9E6A3Q1A37B4A20Q1A7Q1A71"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "200999949992492999499999999",
                   "Solution": "A32E7A7E4A8E7A8E9A1Q1A6B7Q1A7I7Q1A7E9C4S1C2A62Q1A4Q1A66"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "100999399913919999399999999",
                   "Solution": "A17E4A8E6A10E5A8E6A7B4A3Q1A7C3A2Q1A7B6A51Q1A2Q1A68"
@@ -1330,63 +1364,63 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000900000950000940099941299524919945219949999",
                   "Solution": "A23E8C5A7E6A6E3A7E6Q1A16C6A13E7A40Q1A3Q1A3B7J1I2A5B3J1I3A6Q1A4C5S1A6E2F1B5A4B5A3Q1A5C5A5I4Q1A112"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "40990520490429540954294929999999999999999999999",
                   "Solution": "A47E6A8E6A5Q1A7C4Q1A9B6A3Q1A7C5A8C6A30Q1A4Q1A9I5A6Q1A4B5A6B3R1B1A9I5Q1A8E7A4B5R1B1A7B6A7E3U1E2A92"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999999999999999999999999994929993429993949939299",
                   "Solution": "A22E5A13E5A7E6A9E4A7E6A7E7A3C6A3Q1A7B7A2I5A42Q1A4Q1A10B7A7E7A3Q1A98"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999499999199999199999929999929992999999144999199",
                   "Solution": "A43E6A11E6A7B6Q1A10E6A1Q1A8E7A6C4S1A27E6A110Q1A3Q1A67"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000991999931999994499991299944239994119341929",
                   "Solution": "A39E5A7E6A7E7A9E6A8E7A10E7A6C6A1Q1A19I7A41Q1A4Q1A7B8A5B7A9E6A18Q1A16I6A51Q1A2Q1A8C8A4C8A11E7A3Q1A7C6A1Q1A7B5A5I5A8I4A6I6Q1A92"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999999999999993499993149949199931999999999999999",
                   "Solution": "A50E8A8E4A10E6A7E6A1Q1A6C6A7I6A1Q1A4B5A6B7A18Q1A2Q1A6C7A14C8A7E8Q1A84"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "95990991290993190915399193294553944992999",
                   "Solution": "A25E6A2Q1A10E4A6E6A1Q1A15E7A51Q1A5Q1A15E5A47Q1A5Q1A6B10A3I10B8A2Q1A5C4Q1A7C3A9C3A13Q1A6C10A5E6U1E1A98"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "991999992999993999992999996999936391691999929999",
                   "Solution": "A20E7A8E4A7E6A7E6A8E4A8C4A7C6A7Q1A6B7Q1A9E6A1Q1A10B9A11B6J3I7A5B10A3I6Y1I1A13C7A34Q1A8C7A6E7A30Q1A3Q1A67"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "913000925000929000542000121449925339",
                   "Solution": "A12E7A6E8A9C8A3E7A6E7Q1A74Q1A5Q1A15C6A9Q1A5B6Q1A18E4A47B4A36Q1A4B6A4Q1A107"
@@ -1400,14 +1434,14 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "199000999035129953991599329999299",
                   "Solution": "A8E7A9Q1A8E8A7E3A7E4A6E6A1Q1A6C4A7C7A2Q1A9B7A1I5A4I7A3Q1A3B8A2B9A5B7A4E5Q1A5C4A7C4A14Q1A10Q1A20B6A6E7A6E5A3Q1A84"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "3000394000934000999400",
                   "Solution": "A8E7A7E6A10E5A8E7A8E7A6E4A5Q1A9C1A9C4A7I1Y1I2A7I6Q1A2B7A6E3U1E3Q1A67"
@@ -1421,7 +1455,7 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "countdown",
+                  "StartTiming": "Countdown",
                   "Moves": 0,
                   "Stack": "100999199993339999949999149999949999999",
                   "CursorStartLeft": {
@@ -1432,7 +1466,7 @@
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "200999299999199999419999149999949999299",
                   "CursorStartLeft": {
@@ -1450,21 +1484,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "300001290106399303199506592303299536393",
                   "Solution": "A22Q1A7E9A6C9A6E6A7E6A87Q1A11I3A5Q1A11E8A4C6A4E8A2Q1A17E7A6B19A3I6A6C5A5C3A4Q1A4B17Q1C7A3Q1A2C7Q1A6I7A3Q1A8E7A3C6S1A10C5A5I3Y1I2A4B7F3E4A4B8A4B4Q1A5C6S1A4E5A9C18A8Q1A8B1R1B17A3E5U1E2A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "200420400199105499402599241959425299",
                   "Solution": "A23E5A7B5A6Q1A8C4S1C2A17B6Q1A7C6A2Q1A7E7A7E4A8E5Q1A9E6A4B7A2Q1A7C5A3Q1A6C9A9C10A17I6A20I4Y1I1A7B8A5B7A1I4Y1I2A9E10A5C18A5I7Q1A7B8A6E7A5E6A5B9E6A5Q1A8C19A24Q1A3B9A1Q1A8C6Q1A90"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "100040530099590095290099590931929424139",
                   "Solution": "A23E7A8E6A15E4A7E6A9E6A3Q1A7E8A5C18Q1A6B9A1I9Q1A7B8J1I4A6I7Q1A9C7A7I6A6I7A4Q1A6B6A7B7A13C4S1A5B7A12Q1A5C6A3E6A7E6A10Q1A4E5A8C7A5E5A6E10C7A3Q1A3B7A6I7A2B7A1Q1A3B6A2Q1A77"
@@ -1478,7 +1512,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================][====]320000310000520000360000355445",
@@ -1486,7 +1520,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1495,7 +1529,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
@@ -1504,7 +1538,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 74,
                   "Shake": 0,
@@ -1513,7 +1547,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1522,7 +1556,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
@@ -1531,7 +1565,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 80,
                   "Shake": 0,
@@ -1540,7 +1574,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 41,
                   "Shake": 0,
@@ -1560,7 +1594,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 80,
                   "Stack": "[======================]000[=][==========][====][==========][====]400250500250400434401421356112",
@@ -1572,7 +1606,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 80,
                   "Stack": "[======================][======================][======================][====]000632003141454545136453658532565165",
@@ -1584,7 +1618,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 81,
                   "Stack": "[======================][==========]00[==]0[==]0060000020001125005543404215102552406524162234243451256",
@@ -1593,6 +1627,78 @@
                     "Row": 5
                   },
                   "Solution": "A17Q1A6C4Q1A5E8A2B5A9E4U1E1A10Y1I3A9C4A3I7A7I6A8Q1A6B19A21Q1A12Q1A6C4A6C8A8C6A2Q1A8B4E7A6B7A8Q1A7C6Q1A5"
+                }
+              ]
+            },
+            {
+              "Set Name": "puzzle_set_name_intermediate_garbage_chains",
+              "Description": "puzzle_set_description_intermediate_garbage_chains",
+              "Puzzles":
+              [
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]112122345634563456",
+                  "GarbagePanelBuffer": "163625451214636135424264342531",
+                  "CursorStartLeft": {
+                    "Column": 3,
+                    "Row": 3
+                  },
+                  "Solution": "A18Q1A159E7A10Q1A5C6S1A21C5A18Q1A4B6R1B1A5B4R1A9C5A5C4A4Q1A6B7A7B4A12B6A39C5A3Q1A3B6Q1A5B5Q1A7C6A3C7Q1A5B5A1Q1A4C4S1C1A7B8A35I6A99C7A33C6A3C5A4Q1A5B7A11Q1A9E3F3B4A20I5A1Q1A8C5A6Q1A7C7A27B7A1Q1A8B7A9B6A25I8A6C6Q1A4B5R1A4E3G3C4A3Q1A5B5R1A9C6A31I7A12"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]215415126651554121",
+                  "GarbagePanelBuffer": "214126561453242165323612532323",
+                  "CursorStartLeft": {
+                    "Column": 5,
+                    "Row": 3
+                  },
+                  "Solution": "A72Q1A134C19A9E8Q1A11B10Q1A12B6A48I6A3Q1A9B7A23I6A150B7A24Q1A6E6A1C8A20I7A18C5A9E3G3C6A5Q1A3B6R1A7C8A7I6Q1A11B6A7E1F3B4A2Q1A43B7A5Q1A12C7A47C7A17B5J2I5A14Q1A9E2F4B5A3Q1A13C5A7C6A17E6A2Q1A5B5R1B1A10C11"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]226215354364351154",
+                  "GarbagePanelBuffer": "654324321251632562264313656452",
+                  "CursorStartLeft": {
+                    "Column": 3,
+                    "Row": 3
+                  },
+                  "Solution": "A38Q1A187Q1A3C5Q1A6C4S1A8E2F3B4A4B5A5B4A2Q1A6C3S1C2A4C2S1C2A5C5S1A11B7A14B6A54I5A89Q1A5B6Q1A90B4J4I2A27C5A42B6A13Q1A9C6A33B5R1B1A11E7A7Q1A6I6A5I5A5Q1A4E4G1C5A21Q1A5B7A18Q1A116C5A6C4A4C5A6Q1A3B6R1A9E1U1E3A73"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]124453245364364221",
+                  "GarbagePanelBuffer": "156361421523142161234212162656",
+                  "CursorStartLeft": {
+                    "Column": 2,
+                    "Row": 2
+                  },
+                  "Solution": "A103Q1A103B8A26I5A7B6A3B13A2Q1A7C3S1C2A8C5A5C6A9Q1A10E1G1C7A53I5A32Q1A6B6Q1A8B17A1Q1A4C5S1A4C4S1C2A10E6A96B6A9B6A14I7A40C7A26C9A9B4A8Q1A4B6A1Q1A8C2S1C2A10E4G2C4A2Q1A6C3S1C2A5C5S1A8B7I5A12B6A28C7A3C6A10B5J3I2A24C6A2Q1A5B4A2Q1A7C4A4E6A1Q1A7B6R1B1A16Q1A6C4S1C1A6E4U1E1A7B5"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]546325521166156242",
+                  "GarbagePanelBuffer": "242545453423514251156542621636",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 1
+                  },
+                  "Solution": "A6Q1A35B6A2I7A5B8A1I7A5Q1A11B7A47E6A10C6A11B5I6A9Q1A4C6S1C1A5E4G1C4Q1A6B9A19B8A118C6A50I9A43C4A17Q1A18Q1A9B8I4A21B5A8Q1A6E6G2C5A4E6U1A8I7A5I5A1Q1A6B6A19E7A5B6A1Q1A6C6A5C3Q1A9E6A29B5A12C3S1C2A5B6A9E8U1A6C3S1C3A5B2J2I4A5B3J1I5A4I6A4I5Q1A9C7A4C5A7Q1A4B5Q1A15E6A2Q1A4E6A9Q1A6I5Y1I2A3"
                 }
               ]
             }
@@ -1614,70 +1720,70 @@
               [
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 1,
                   "Stack": "{====}929999[====]040000224999949999",
                   "Solution": "A22E4A10E6A8E6A9E5A10E6A9C5A7Q1A173"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "[====][====]929999999999[====]922300999930999399",
                   "Solution": "A27E6A17C5A9Q1A15B4A4Q1A15E7A7E6A7E5A8E4A10B7A2Q1A173"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 4,
                   "Stack": "000100[====]001300019300999930999999",
                   "Solution": "A79E6A9E4A7E6A8E5A9E8A10B6A1Q1A10B5A6Q1A10C7A8C5A8I7A3Q1A8E7B7R1B1A78"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "30000[====]000992000929303992909999909999999999999999999999",
                   "Solution": "A33B5A8B9A7Q1A7C6A7C4A2Q1A7C6A2Q1A131"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 4,
                   "Stack": "{====}929999[====]224000949999949999",
                   "Solution": "A47E4A27E6A11C7A10Q1A6E6A7E6A9E7A7Q1A19E6Q1A34B9A17I6A10Q1A95"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 2,
                   "Stack": "000100[====]001300019300999930999399",
                   "Solution": "A35E6A10E5A8E5A9E7A7E7A7B9A1Q1A40C6A41Q1A5B7A6Q1A73"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "{====}626999[====]040000224999946999",
                   "Solution": "A35E5A33E6A6C9A7E4A6E7A5E8Q1A4C8A10I6A7I6A7I8A70Q1A6E9Q1A9B8A2E5U1E1A71"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 4,
                   "Stack": "[====]999699926999[====]040000224999946999",
                   "Solution": "A18E5A10E5A9E5A8E8A13C10A7E8A2Q1A5B7A1I8A4I7A7I5A6I5A4Q1A5C7Q1A7E6A9E4A7E4A19Q1A110"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "[====]969999696999[====]040000994999949999",
                   "Solution": "A22E5A10E6A7E6A10E6A8E8A12C9A5Q1A57Q1A17Q1A7B6Q1A82"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "[====]919199199999[====]090002999992999929",
                   "Solution": "A151E7A3Q1A10E10A6C7A5E6A8E7A14C8A2Q1A9B6A5B9A7B4A7B6A7E5A7E7A7Q1A171"
@@ -1691,7 +1797,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
@@ -1704,7 +1810,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
@@ -1717,7 +1823,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
@@ -1730,7 +1836,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
@@ -1739,7 +1845,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
@@ -1752,7 +1858,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 62,
                   "Stack": "000000000000000000000000000000000000[====]969699444444909091969991969991",
@@ -1771,7 +1877,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1784,7 +1890,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 40,
                   "Shake": 0,
@@ -1797,7 +1903,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1817,7 +1923,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Shake": 0,
@@ -1830,7 +1936,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1843,7 +1949,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1856,7 +1962,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================]100501530226640551130553531663",
@@ -1868,7 +1974,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1881,7 +1987,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Shake": 0,
@@ -1894,7 +2000,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 34,
                   "Shake": 0,
@@ -1907,7 +2013,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1927,7 +2033,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 33,
                   "Stack": "[======================][============================]430000510500621600461662252262426521516563",
@@ -1939,7 +2045,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 58,
                   "Shake": 0,
@@ -1952,7 +2058,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1965,7 +2071,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================][====]060004320513420264510561425622254335",
@@ -1977,7 +2083,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -1990,7 +2096,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Stack": "[======================][============================]600200304106254633265261633622241253256162",
@@ -2002,7 +2108,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 82,
                   "Stack": "[======================][======================][==========][==========]100000600000520000330000436001212005214001365132",
@@ -2014,7 +2120,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 78,
                   "Stack": "[======================][======================][==========][==========]500000300000400200500503200152160551610435",
@@ -2033,7 +2139,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 22,
                   "Shake": 70,
@@ -2046,7 +2152,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -2059,7 +2165,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 48,
                   "Stack": "[======================][======================][====]005632516364[====]200000602000616400132200483610541282244223",
@@ -2071,7 +2177,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 98,
                   "Stack": "[======================][======================][======================]200000300000600000502000406000301025401156434412",
@@ -2083,7 +2189,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -2096,7 +2202,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 73,
                   "Shake": 0,
@@ -2109,7 +2215,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 34,
                   "Shake": 0,
@@ -2122,7 +2228,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -2142,7 +2248,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 56,
                   "Shake": 0,
@@ -2155,7 +2261,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 22,
                   "Shake": 0,
@@ -2168,7 +2274,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 58,
                   "Shake": 0,
@@ -2181,7 +2287,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 75,
                   "Shake": 30,
@@ -2194,7 +2300,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 14,
                   "Shake": 75,
@@ -2207,7 +2313,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 43,
                   "Shake": 42,
@@ -2220,7 +2326,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 52,
                   "Shake": 0,
@@ -2229,7 +2335,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 90,
                   "Shake": 0,
@@ -2242,7 +2348,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 53,
                   "Stack": "[======================][============================]463000[====]320000614000235042521024252561534361",
@@ -2254,7 +2360,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 84,
                   "Stack": "[==========][==========][==========][==========][==========][==========]060062044361135314232625614532",
@@ -2273,7 +2379,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 86,
                   "Stack": "[======================][========================================]000360000255000336600125450225221164",
@@ -2285,7 +2391,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 14,
                   "Shake": 0,
@@ -2298,7 +2404,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -2311,12 +2417,12 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][==========][==========]000000000000[================]404005402043439999996999999999999999",
-                  "GarbagePanelBuffer": "999499",
+                  "GarbagePanelBuffer": "999499999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 6
@@ -2325,7 +2431,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Stack": "[======================][======================][==========]000352056163253252[====]000106000453460145122121",
@@ -2337,7 +2443,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 56,
                   "Stack": "[======================][=]000[====][================]000[=][====]000040200311330224151452542322",
@@ -2356,12 +2462,12 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "995999",
+                  "GarbagePanelBuffer": "995999999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
@@ -2370,12 +2476,12 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "993939",
+                  "GarbagePanelBuffer": "993939999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
@@ -2384,12 +2490,12 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "994949",
+                  "GarbagePanelBuffer": "994949999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
@@ -2398,17 +2504,89 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "999449",
+                  "GarbagePanelBuffer": "999449999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
                   "Solution": "A86C7Q1A76B9A9E5A2B5A1Q1A17I7A21Q1A5"
+                }
+              ]
+            },
+            {
+              "Set Name": "puzzle_set_name_advanced_garbage_chains",
+              "Description": "puzzle_set_description_advanced_garbage_chains",
+              "Puzzles":
+              [
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]155266543642365621999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "213414126532435263",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A49B6A2Q1A3C8A2I4Q1A10B6A8B5A29I6A7C6Q1A14R1B7A6E1F2B3A6B5A1Q1A7C7A7I7A56Q1A6B4R1B1A16C17A7I4Y1I1A6B7A5B6A5B7A1Q1A7C5S1C1A9E7A12C5A5E2G3C4A1Q1A6"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]321315516462261345999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "162151424345152531",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A76B4J3I3A3Q1A12B6A6B7A30I3A18C7A8E8U1A10B3J1I3A6B8A4B2R1B3A8E7G1C21S1A5B5R1B1A5B3R1A5B4R1B2A12C12A6B3J2I5A3I6A3Q1A7C7Q1A5B8A11Q1A9B6R1B11A12Q1A1E8C19A6B7A7B8A2I8A3B4J3I3Q1A7E5U1E2A5E4U1E2A3"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]656464435243546325999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "216561641236456142",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A166I5A3I4A3Q1A4E1F5B3Q1A6C3S1C3A7B6A19B6A10B9A8B8A1Q1A22I4A18C6A16C6A3E3G1C4A5C7A2Q1A4B7A3Q1A23B6A15B7A17I7A10B7J1I5A14Q1A5E5U1E1A8C6A5C5A6I5"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]424154141631435324999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "464654143525451646",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A54I3Y1I2A8B6A7B5A13B7A2I6A14Q1A7C6A4C7Q1A4C7A5E5A1Q1A5B5R1B1A4B8Q1A5B6R1A4B7A3E6U1A6I5Y1I2A10C8A13I7A13I6A3Q1A9C4A12B6A1Q1A5C2S1C2A5B8A9Q1A9E6A8C2"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]236456361313654124999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "546451235323351565",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A92Q1A4I8A4I5A7B4R1B2A12E2F3B4A13B7A2B8A1Q1A7C16A14I6Y1A8E8A5Q1A4B7A14E4F3B4A2Q1A6C4K2I3Y1A17B8A13C8A13I6A24B7A6B7A5B11I8A4Q1A4C5S1C1A6E6G1C4A5Q1A4B7R1A7C5S1A5C4S1C1A4C6S1A6B19A6Q1A5C5S1C1A74C7A20E6A2Q1A5C7A4I6Q1A3B5R1B3A2"
                 }
               ]
             }

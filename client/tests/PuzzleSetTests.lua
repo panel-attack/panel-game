@@ -40,14 +40,14 @@ function PuzzleSetTests.generateSaveDataValid()
   
   local puzzleData1 = puzzleSetData["Puzzles"][1]
   assert(puzzleData1["Puzzle Type"] == "moves")
-  assert(puzzleData1["StartTiming"] == "immediately")
+  assert(puzzleData1["StartTiming"] == "Immediately")
   assert(puzzleData1["Moves"] == 5)
   assert(puzzleData1["Stack"] == "1254216999999952")
   assert(puzzleData1["CursorStartLeft"] == nil)
   
   local puzzleData2 = puzzleSetData["Puzzles"][2]
   assert(puzzleData2["Puzzle Type"] == "chain")
-  assert(puzzleData2["StartTiming"] == "countdown")
+  assert(puzzleData2["StartTiming"] == "Countdown")
   assert(puzzleData2["Moves"] == 3)
   assert(puzzleData2["Stack"] == "2134567890123456")
   assert(puzzleData2["CursorStartLeft"] ~= nil)
@@ -187,7 +187,7 @@ function PuzzleSetTests.testExactJSONFormatting()
       [
         {
           "Puzzle Type": "moves",
-          "StartTiming": "immediately",
+          "StartTiming": "Immediately",
           "Moves": 1,
           "Stack": "000000000000000000000000000000000000000000000000000000000000000000060660"
         }
@@ -219,6 +219,172 @@ function PuzzleSetTests.testLoadV3WithoutStartTiming()
   assert(#result.puzzles == 1, "Should have one puzzle")
 end
 
+-- a hidden puzzle is still in the file, so the puzzles after it sit further down there than they do
+-- in the set; saving by the set position would write over a puzzle the player never opened
+function PuzzleSetTests.testSavingAPuzzleAfterAHiddenOneWritesTheEntryItCameFrom()
+  local fileData = {
+    [PuzzleSet.ROOT_PROPERTY.VERSION] = PuzzleSet.CURRENT_VERSION,
+    [PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS] = {
+      {
+        ["Set Name"] = "Test Set",
+        ["Puzzles"] = {
+          {["Puzzle Type"] = "moves", ["Moves"] = 5, ["Stack"] = "12542169f9999952"},
+          {["Puzzle Type"] = "moves", ["Moves"] = 5, ["Stack"] = "1254216999999952"}
+        }
+      }
+    }
+  }
+  local set = PuzzleSet.loadV3(fileData[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS][1])
+  assert(set and #set.puzzles == 1, "the invalid first puzzle is hidden")
+
+  local edited = Puzzle.newPuzzleWithPuzzleString("1254216999999953", set.puzzles[1])
+  local root = PuzzleSet("root", nil, {}, {set})
+  assert(root:updatePuzzleInFileData(fileData, set, 1, edited), "the puzzle should be found in the file")
+
+  local writtenPuzzles = fileData[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS][1]["Puzzles"]
+  assert(writtenPuzzles[1]["Stack"] == "12542169f9999952", "the hidden puzzle is left alone, got " .. writtenPuzzles[1]["Stack"])
+  assert(writtenPuzzles[2]["Stack"] == "1254216999999953", "the edit lands on the entry it came from, got " .. writtenPuzzles[2]["Stack"])
+end
+
+function PuzzleSetTests.testLoadV3HidesInvalidPuzzles()
+  local puzzleSetData = {
+    ["Set Name"] = "Test Set",
+    ["Puzzles"] = {
+      -- the second is the first with one character swapped for an illegal one, so an f is all that
+      -- separates a puzzle that loads from one that does not; the third is invalid a second way
+      {["Puzzle Type"] = "moves", ["Moves"] = 5, ["Stack"] = "1254216999999952"},
+      {["Puzzle Type"] = "moves", ["Moves"] = 5, ["Stack"] = "12542169f9999952"},
+      {["Puzzle Type"] = "garbageGoal", ["Moves"] = 5, ["Stack"] = "1254216999999953"}
+    }
+  }
+
+  local result = PuzzleSet.loadV3(puzzleSetData)
+  assert(result ~= nil, "Should have loaded puzzle set")
+  assert(#result.puzzles == 1, "invalid puzzles are hidden, expected 1 but got " .. #result.puzzles)
+  -- every entry has its own stack, so this says which one survived rather than only how many did
+  assert(result.puzzles[1].stack == "1254216999999952", "the valid puzzle is the one kept, got " .. result.puzzles[1].stack)
+end
+
+-- A puzzle with nothing to play is as much a mistake in the file as an invalid one, so it is hidden
+-- rather than read, because reading it means handing the constructor a nil to build a puzzle out of
+function PuzzleSetTests.testLoadV3HidesAPuzzleWithoutAPuzzleType()
+  local set = PuzzleSet.loadV3({["Set Name"] = "Test Set", ["Puzzles"] = {
+    {["Moves"] = 5, ["Stack"] = "1254216999999952"},
+    {["Puzzle Type"] = "moves", ["Moves"] = 5, ["Stack"] = "1254216999999953"}
+  }})
+  assert(set and #set.puzzles == 1, "the puzzle without a type is hidden and the other still loads")
+  assert(set.puzzles[1].stack == "1254216999999953", "the puzzle that survived is the one with a type")
+end
+
+function PuzzleSetTests.testLoadV3HidesAPuzzleWithoutAStack()
+  local set = PuzzleSet.loadV3({["Set Name"] = "Test Set", ["Puzzles"] = {
+    {["Puzzle Type"] = "moves", ["Moves"] = 5},
+    {["Puzzle Type"] = "moves", ["Moves"] = 5, ["Stack"] = "1254216999999953"}
+  }})
+  assert(set and #set.puzzles == 1, "the puzzle without a stack is hidden and the other still loads")
+  assert(set.puzzles[1].stack == "1254216999999953", "the puzzle that survived is the one with a stack")
+end
+
+-- counts the puzzles in the raw file data so a puzzle the loader hid for failing validation is noticed
+local function countPuzzlesInData(puzzleSetData)
+  local count = #(puzzleSetData["Puzzles"] or {})
+  for _, child in ipairs(puzzleSetData["Puzzle Sets"] or {}) do
+    count = count + countPuzzlesInData(child)
+  end
+  return count
+end
+
+local function countPuzzlesInSet(puzzleSet)
+  local count = #puzzleSet.puzzles
+  for _, child in ipairs(puzzleSet.puzzleSets) do
+    count = count + countPuzzlesInSet(child)
+  end
+  return count
+end
+
+function PuzzleSetTests.testEveryBundledPuzzleValidates()
+  local path = "client/assets/default_data/puzzles/Puzzles.json"
+  local data = FileUtils.readJsonFile(path)
+  assert(data, "bundled puzzle file should load")
+  local expected = countPuzzlesInData(data)
+  local loaded = 0
+  for _, puzzleSet in ipairs(PuzzleSet.loadFromFile(path)) do
+    loaded = loaded + countPuzzlesInSet(puzzleSet)
+  end
+  assert(expected > 200, "expected the bundled puzzles, found " .. expected)
+  assert(loaded == expected, "every bundled puzzle should validate, " .. expected - loaded .. " of " .. expected .. " were hidden")
+end
+
+local function clearPuzzleWithStartTiming(startTiming)
+  return {["Set Name"] = "Test Set", ["Puzzles"] = {
+    {
+      ["Puzzle Type"] = "clear",
+      ["Stack"] = "[====]112122",
+      ["GarbagePanelBuffer"] = "999999",
+      ["StartTiming"] = startTiming,
+      ["CursorStartLeft"] = {["Row"] = 1, ["Column"] = 3}
+    }
+  }}
+end
+
+-- files were saved as firstSwap and so on, while the loader since 292f5fda looked for First Swap, so both are read
+function PuzzleSetTests.testBothStartTimingSpellingsAreRead()
+  local function load(startTiming)
+    return PuzzleSet.loadV3(clearPuzzleWithStartTiming(startTiming)).puzzles[1].startTiming
+  end
+
+  assert(load("firstSwap") == Puzzle.START_TIMINGS.firstSwap, "firstSwap is read")
+  assert(load("countdown") == Puzzle.START_TIMINGS.countdown, "countdown is read")
+  assert(load("immediately") == Puzzle.START_TIMINGS.immediately, "immediately is read")
+  assert(load("First Swap") == Puzzle.START_TIMINGS.firstSwap, "First Swap is read")
+  assert(load("First Input") == Puzzle.START_TIMINGS.firstInput, "First Input is read")
+  assert(load("Countdown") == Puzzle.START_TIMINGS.countdown, "Countdown is read")
+  assert(load("Immediately") == Puzzle.START_TIMINGS.immediately, "Immediately is read")
+  assert(load(nil) == Puzzle.START_TIMINGS.firstInput, "a clear puzzle with a cursor defaults to firstInput")
+end
+
+-- a value that is not a start timing is a mistake in the file, not a puzzle that should quietly play by its default
+function PuzzleSetTests.testAPuzzleWithAnUnknownStartTimingIsHidden()
+  local set = PuzzleSet.loadV3(clearPuzzleWithStartTiming("Unknown"))
+  assert(set and #set.puzzles == 0, "a puzzle with an unknown StartTiming should not load")
+end
+
+-- The buffer is what a clear puzzle asks for: give it one and it has to be revealed, leave it out
+-- and the puzzle is about the board instead. Nothing about that comes from the file's version.
+local function clearPuzzleData(stack, buffer)
+  return {["Set Name"] = "Test Set", ["Puzzles"] = {
+    {["Puzzle Type"] = "clear", ["Stack"] = stack, ["GarbagePanelBuffer"] = buffer}
+  }}
+end
+
+function PuzzleSetTests.testAClearPuzzleWithoutABufferIsWonByHittingEveryBlock()
+  local twoRowsOfGarbage = "[==========]112122"
+  local set = PuzzleSet.loadV3(clearPuzzleData(twoRowsOfGarbage, nil))
+  assert(set and #set.puzzles == 1, "a clear puzzle without a buffer loads")
+  local rules = set.puzzles[1]:toGameMode().matchRules
+  assert(rules.stackWinConditions["MATCHABLE_GARBAGE_PANELS"] ~= nil, "it is won once every block is hit")
+  assert(rules.stackWinConditions["GARBAGE_BUFFER_EMPTY"] == nil, "there is no buffer to wait for")
+end
+
+function PuzzleSetTests.testAClearPuzzleWithABufferIsWonByRevealingIt()
+  local twoRowsOfGarbage = "[==========]112122"
+  local short = PuzzleSet.loadV3(clearPuzzleData(twoRowsOfGarbage, "1234"))
+  assert(short.puzzles[1].garbageBuffer == "1234", "the buffer is kept")
+  local rules = short.puzzles[1]:toGameMode().matchRules
+  assert(rules.stackWinConditions["GARBAGE_BUFFER_EMPTY"] == 0, "a buffer is what the puzzle asks for")
+  assert(rules.stackWinConditions["MATCHABLE_GARBAGE_PANELS"] == nil, "the board itself is not the goal")
+end
+
+-- Version 2 had no garbage buffer at all, so its clear puzzles are scored the way version 3's are
+function PuzzleSetTests.testLoadV2ClearPuzzlesAreWonByHittingEveryBlock()
+  local set = PuzzleSet.loadV2({["Set Name"] = "Test Set", ["Puzzles"] = {
+    {["Puzzle Type"] = "clear", ["Stack"] = "[==========]112122", ["Moves"] = 0}
+  }})
+  assert(#set.puzzles == 1, "a version 2 clear puzzle still loads")
+  local rules = set.puzzles[1]:toGameMode().matchRules
+  assert(rules.stackWinConditions["MATCHABLE_GARBAGE_PANELS"] ~= nil, "version 2 wins once every block is hit")
+end
+
 -- Run the tests
 PuzzleSetTests.updatePuzzleValid()
 PuzzleSetTests.generateSaveDataValid()
@@ -228,5 +394,15 @@ PuzzleSetTests.testJSONValidityRequirement1()
 PuzzleSetTests.testUnchangedPuzzlePreservationRequirement3()
 PuzzleSetTests.testExactJSONFormatting()
 PuzzleSetTests.testLoadV3WithoutStartTiming()
+PuzzleSetTests.testLoadV3HidesInvalidPuzzles()
+PuzzleSetTests.testLoadV3HidesAPuzzleWithoutAPuzzleType()
+PuzzleSetTests.testLoadV3HidesAPuzzleWithoutAStack()
+PuzzleSetTests.testSavingAPuzzleAfterAHiddenOneWritesTheEntryItCameFrom()
+PuzzleSetTests.testEveryBundledPuzzleValidates()
+PuzzleSetTests.testBothStartTimingSpellingsAreRead()
+PuzzleSetTests.testAPuzzleWithAnUnknownStartTimingIsHidden()
+PuzzleSetTests.testAClearPuzzleWithoutABufferIsWonByHittingEveryBlock()
+PuzzleSetTests.testAClearPuzzleWithABufferIsWonByRevealingIt()
+PuzzleSetTests.testLoadV2ClearPuzzlesAreWonByHittingEveryBlock()
 
 return PuzzleSetTests

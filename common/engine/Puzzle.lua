@@ -40,6 +40,7 @@ local system = require("client.src.system")
 ---@field UUID string
 ---@field solution string? compressed input string for puzzle solution
 ---@field helpDescription string? optional help text explaining the puzzle pattern
+---@field fileIndex integer? which entry of its set in the file the puzzle was read from, set by the loader; a puzzle the loader hid leaves a gap, so this is not its position in the set
 ---@field puzzleEverBeaten boolean? dynamically added field indicating if this puzzle was ever completed
 ---@field trainingDate number? dynamically added field for spaced repetition training scheduling
 ---@overload fun(puzzleArgs: GarbagePuzzleArgs): Puzzle
@@ -66,7 +67,8 @@ Puzzle = class(
     self.moves = puzzleArgs.moves or 0
 
     self.panelBuffer = puzzleArgs.panelBuffer
-    self.garbageBuffer = puzzleArgs.garbagePanelBuffer
+    -- an empty buffer is stored as none at all so it does not write a junk key or change the puzzle's UUID
+    self.garbageBuffer = puzzleArgs.garbagePanelBuffer ~= "" and puzzleArgs.garbagePanelBuffer or nil
     self.stopTime = puzzleArgs.stopTime
     self.shakeTime = puzzleArgs.shakeTime
     self.solution = puzzleArgs.solution
@@ -123,8 +125,51 @@ end
 ---@alias PuzzleStartTiming "countdown" | "immediately" | "firstInput" | "firstSwap"
 
 Puzzle.START_TIMINGS = { countdown = "countdown", immediately = "immediately", firstInput = "firstInput", firstSwap = "firstSwap" }
+-- how a puzzle file spells each start timing; files written before the saver was fixed used the START_TIMINGS spelling
+Puzzle.START_TIMING_IN_FILE = { countdown = "Countdown", immediately = "Immediately", firstInput = "First Input", firstSwap = "First Swap" }
+
+-- Both spellings are read so that a file written before the saver was fixed still says what it means.
+---@param value any the StartTiming read from a puzzle file
+---@return PuzzleStartTiming? startTiming nil for a value that is not a start timing
+function Puzzle.startTimingFromFile(value)
+  for startTiming, fileValue in pairs(Puzzle.START_TIMING_IN_FILE) do
+    if value == fileValue or value == startTiming then
+      return startTiming
+    end
+  end
+end
+
+-- Joins the values of a keyed table for a message, sorted, because pairs order is not stable and a
+-- warning that reshuffles between runs is a nuisance to compare
+---@param values table<any, string>
+---@return string
+local function sortedValueList(values)
+  local list = {}
+  for _, value in pairs(values) do
+    list[#list + 1] = value
+  end
+  table.sort(list)
+
+  return table.concat(list, ", ")
+end
+
+-- The StartTiming spellings a file may use, as a readable list, so a warning about a bad one can say
+-- what would have been accepted
+---@return string
+function Puzzle.startTimingSpellings()
+  return sortedValueList(Puzzle.START_TIMING_IN_FILE)
+end
+
 ---@enum PuzzleType
 Puzzle.PUZZLE_TYPES = { moves = "moves", chain = "chain", clear = "clear" }
+
+-- The puzzle types a file may ask for, as a readable list, so a warning about a bad one can say what
+-- would have been accepted
+---@return string
+function Puzzle.puzzleTypeNames()
+  return sortedValueList(Puzzle.PUZZLE_TYPES)
+end
+
 Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
 
 Puzzle.PUZZLE_PROPERTY = {
@@ -301,9 +346,15 @@ function Puzzle:validate()
     errMessage = errMessage .. "\nPuzzlestring contains invalid characters: " .. table.concat(illegalCharacters, ", ")
   end
 
+  -- a revealed garbage row has to be panels; an empty cell there would leave a hole in the stack
+  if self.garbageBuffer and self.garbageBuffer:find("[^1-9]") then
+    errMessage = errMessage ..
+    "\nGarbagePanelBuffer may only contain the colors 1-9, got " .. self.garbageBuffer
+  end
+
   if not Puzzle.PUZZLE_TYPES[self.puzzleType] then
     errMessage = errMessage ..
-    "\nInvalid puzzle type detected, available puzzle types are: " .. table.concat(Puzzle.PUZZLE_TYPES, ", ")
+    "\nInvalid puzzle type detected, available puzzle types are: " .. Puzzle.puzzleTypeNames()
   end
 
   if self.puzzleType == Puzzle.PUZZLE_TYPES.moves and (not tonumber(self.moves) or tonumber(self.moves) < 1 ) then
@@ -327,7 +378,7 @@ function Puzzle:getSaveData()
   ---@type table<string, any>
   local puzzleData = {
     [Puzzle.PUZZLE_PROPERTY.TYPE] = self.puzzleType,
-    [Puzzle.PUZZLE_PROPERTY.START_TIMING] = self.startTiming,
+    [Puzzle.PUZZLE_PROPERTY.START_TIMING] = Puzzle.START_TIMING_IN_FILE[self.startTiming],
     [Puzzle.PUZZLE_PROPERTY.MOVES] = self.moves,
     [Puzzle.PUZZLE_PROPERTY.STOP] = self.stopTime,
     [Puzzle.PUZZLE_PROPERTY.SHAKE] = self.shakeTime,
@@ -410,7 +461,13 @@ function Puzzle:toGameMode()
 
   if self.puzzleType == Puzzle.PUZZLE_TYPES.clear then
     mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
-    mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
+    if self.garbageBuffer then
+      -- the buffer says which panels the garbage reveals, so the puzzle is won once it has handed out all of them
+      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.GARBAGE_BUFFER_EMPTY] = 0
+    else
+      -- with nothing asked of the garbage, the puzzle is about the board: no block may be left unmatched
+      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
+    end
     mode.matchRules.stackSetupModifications.stopTime = self.stopTime
     mode.matchRules.stackSetupModifications.shakeTime = self.shakeTime
   else
@@ -462,7 +519,7 @@ end
 ---@param originalPuzzle Puzzle
 ---@return Puzzle
 function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
-  return Puzzle({
+  local puzzle = Puzzle({
     puzzleType = originalPuzzle.puzzleType,
     stack = puzzleString,
     moves = originalPuzzle.moves,
@@ -475,6 +532,10 @@ function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
     solution = originalPuzzle.solution,
     helpDescription = originalPuzzle.helpDescription
   })
+  -- the derived puzzle stands in for the original, so it is saved back to the entry that one came from
+  puzzle.fileIndex = originalPuzzle.fileIndex
+
+  return puzzle
 end
 
 return Puzzle

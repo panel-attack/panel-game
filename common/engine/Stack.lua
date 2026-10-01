@@ -288,7 +288,12 @@ local Stack = class(
 
 Stack.TYPE = "Stack"
 Stack.supportedStackOverConditions = { MatchRules.StackOverConditions.HEALTH, MatchRules.StackOverConditions.SWAPS, MatchRules.StackOverConditions.CHAIN }
-Stack.supportedStackWinConditions = { MatchRules.StackWinConditions.MATCHABLE_PANELS, MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS, MatchRules.StackWinConditions.SCORE }
+Stack.supportedStackWinConditions = {
+  MatchRules.StackWinConditions.MATCHABLE_PANELS,
+  MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS,
+  MatchRules.StackWinConditions.GARBAGE_BUFFER_EMPTY,
+  MatchRules.StackWinConditions.SCORE
+}
 
 ---@return (Panel | fun(row: integer, column: integer, id: integer?): Panel)
 function Stack:createPanelTemplate()
@@ -1611,30 +1616,48 @@ function Stack:checkGameOver()
   end
 end
 
+-- the stack has won once every one of its win conditions holds
 function Stack:checkGameWin()
+  local conditionCount = 0
   for stackWinCondition, value in pairs(self.stackWinConditions) do
-    if stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_PANELS then
-      local panels = self.panels
-      local matchablePanelCount = 0
-      for row = 1, self.height do
-        for col = 1, self.width do
-          local color = panels[row][col].color
-          if color ~= 0 and color ~= 9 then
-            matchablePanelCount = matchablePanelCount + 1
-          end
-        end
-      end
-      if matchablePanelCount <= value then
-        return true
-      end
-    elseif stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS then
-      if not self:hasMatchableGarbage() then
-        return true
+    conditionCount = conditionCount + 1
+    if not self:meetsWinCondition(stackWinCondition, value) then
+      return false
+    end
+  end
+
+  return conditionCount > 0
+end
+
+---@param stackWinCondition StackWinCondition
+---@param value integer
+---@return boolean
+function Stack:meetsWinCondition(stackWinCondition, value)
+  if stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_PANELS then
+    return self:matchablePanelCount() <= value
+  elseif stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS then
+    return not self:hasMatchableGarbage()
+  elseif stackWinCondition == MatchRules.StackWinConditions.GARBAGE_BUFFER_EMPTY then
+    return self.panelSource.garbagePanelBuffer:len() <= value
+  end
+
+  error("Stack does not know how to check stack win condition " .. tostring(stackWinCondition))
+end
+
+-- counts the panels on screen that could take part in a match
+---@return integer
+function Stack:matchablePanelCount()
+  local count = 0
+  for row = 1, self.height do
+    for col = 1, self.width do
+      local color = self.panels[row][col].color
+      if color ~= 0 and color ~= 9 then
+        count = count + 1
       end
     end
   end
 
-  return false
+  return count
 end
 
 -- returns the amount of shake frames for a piece of garbage with the given dimensions

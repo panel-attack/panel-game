@@ -27,7 +27,9 @@ end
 puzzleTest()
 
 local function clearPuzzleTest()
-  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[============================][====]246260[====]600016514213466313451511124242", stopTime = 60})
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear,
+                         stack = "[============================][====]246260[====]600016514213466313451511124242",
+                         stopTime = 60, garbagePanelBuffer = "999999"})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource())
   local stack = match.stacks[1]
   ---@cast stack Stack
@@ -141,7 +143,9 @@ testShakeFrames()
 
 
 local function swapStalling1Test1()
-  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[======================][====]246260[====]600016514213461336451511124242"})
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear,
+                         stack = "[======================][====]246260[====]600016514213461336451511124242",
+                         garbagePanelBuffer = "999999999999999999"})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
   ---@cast stack Stack
@@ -197,3 +201,96 @@ local function swapStalling1Test1()
 end
 
 swapStalling1Test1()
+
+-- counts every garbage panel on the board, whatever state it is in, including rows above the visible height
+local function countGarbagePanels(stack)
+  local count = 0
+  for row = 1, #stack.panels do
+    for column = 1, stack.width do
+      if stack.panels[row][column].isGarbage then
+        count = count + 1
+      end
+    end
+  end
+  return count
+end
+
+-- a clear puzzle with a garbage buffer is won once every row of the buffer has been revealed, however much garbage is left
+local function clearPuzzleWinsWhenTheGarbageBufferIsUsedUpTest()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[================]112122", garbagePanelBuffer = "334344556566",
+                         stopTime = 2000, startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
+                                                                LevelPresets.getModern(10))
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+
+  local secondSwapFrame = 400
+  stack:receiveConfirmedInput("AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, secondSwapFrame - 4)
+                              .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 600))
+  StackReplayTestingUtils:simulateMatchUntil(match, 10)
+  assert(stack.panels[2][1].state == "matched", "the block should be hit by the swap")
+  assert(not stack:checkGameWin(), "one row revealed of two is not a win")
+  StackReplayTestingUtils:simulateMatchUntil(match, secondSwapFrame - 1)
+  assert(stack.panels[1][3].color == 4 and stack.panels[1][4].color == 3, "the revealed row has landed as 334344")
+  assert(not stack:checkGameWin(), "the second buffer row is still to be revealed")
+  while not match:hasEnded() and stack.clock < secondSwapFrame + 20 do
+    match:run()
+  end
+  assert(stack:checkGameWin(), "the second hit reveals the last buffer row, which wins")
+  assert(stack.game_over_clock <= 0, "the stack should not have lost")
+  assert(countGarbagePanels(stack) > 0,"garbage is still on the board when the buffer is used up")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+clearPuzzleWinsWhenTheGarbageBufferIsUsedUpTest()
+
+-- revealing every panel of the buffer is the whole goal, a block left unhit does not matter
+local function clearPuzzleWinsOnTheBufferWithABlockLeftUnhitTest()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[================]112199999[=]",
+                         garbagePanelBuffer = "121333556566", stopTime = 3000, startTiming = Puzzle.START_TIMINGS.immediately,
+                         cursorStartLeft = {row = 2, column = 3}})
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
+                                                                LevelPresets.getModern(10))
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+
+  stack:receiveConfirmedInput("AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 1200))
+  -- the first hit reveals 121333, whose 333 lands under the block and hits it again on its own
+  while not match:hasEnded() and stack.clock < 900 do
+    match:run()
+  end
+  assert(stack.panelSource.garbagePanelBuffer == "", "both buffer rows should be revealed")
+  assert(stack.panels[1][4].isGarbage and stack.panels[1][4].state == "normal", "the small block at the bottom was never hit")
+  assert(stack:checkGameWin(), "the buffer is revealed, so the puzzle is won")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+clearPuzzleWinsOnTheBufferWithABlockLeftUnhitTest()
+
+-- A buffer longer than the board can ever reveal is a puzzle that cannot be won. The engine has no
+-- way to know that, so this records what the author gets rather than a rule: the same board that is
+-- won at two rows of buffer is never won at three, which is what the buffer audit exists to catch.
+local function clearPuzzleWithABufferTheBoardCannotRevealIsNeverWonTest()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[================]112122",
+                         garbagePanelBuffer = "334344556566998899", stopTime = 2000,
+                         startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
+                                                                LevelPresets.getModern(10))
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+
+  local secondSwapFrame = 400
+  stack:receiveConfirmedInput("AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, secondSwapFrame - 4)
+                              .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 600))
+  while not match:hasEnded() and stack.clock < secondSwapFrame + 20 do
+    match:run()
+  end
+
+  -- the same board wins at two rows of buffer, so the third is the one it can never spend
+  assert(stack.panelSource.garbagePanelBuffer == "998899", "the board can only spend two of the three rows, got '"
+         .. stack.panelSource.garbagePanelBuffer .. "'")
+  assert(not stack:checkGameWin(), "a buffer the board cannot finish is never revealed, so the puzzle is never won")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+clearPuzzleWithABufferTheBoardCannotRevealIsNeverWonTest()
