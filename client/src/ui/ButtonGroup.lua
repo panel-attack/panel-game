@@ -85,7 +85,8 @@ function ButtonGroup:buttonClicked(button)
   self.selectedIndex = i
 end
 
-function ButtonGroup:receiveInputs(input)
+function ButtonGroup:receiveInputsSelf(inputSource, dt)
+  local input = inputSource:getInputs()
   if input:isPressedWithRepeat("Left") then
     self:setActiveButton(self.selectedIndex - 1)
   elseif input:isPressedWithRepeat("Right") then

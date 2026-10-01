@@ -1,6 +1,5 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
-local Focusable = require(PATH .. ".Focusable")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
@@ -13,7 +12,7 @@ end
 -- A carousel with arrow touch buttons that allows to spin a selection of elements around in both directions
 -- This is an "abstract" class, classes should inherit this and overwrite createPassenger and drawPassenger
 local Carousel = class(function(carousel, options)
-  Focusable(carousel)
+  carousel:setFocusable(true)
 
   if options.passengers == nil then
     carousel.passengers = {}
@@ -114,7 +113,8 @@ function Carousel:onBack()
 end
 
 -- the parent makes sure this is only called while focused
-function Carousel:receiveInputs(inputs)
+function Carousel:receiveInputsSelf(inputSource, dt)
+  local inputs = inputSource:getInputs()
   if inputs:isPressedWithRepeat("Left", 0.25, 0.15) then
     self:moveToNextPassenger(-1)
   elseif inputs:isPressedWithRepeat("Right", 0.25, 0.15) then
@@ -122,11 +122,11 @@ function Carousel:receiveInputs(inputs)
   elseif inputs.isDown["Swap1"] or inputs.isDown["Start"] then
     GAME.theme:playValidationSfx()
     self:onSelect()
-    self:yieldFocus()
+    self:yieldFocus(inputSource)
   elseif inputs.isDown["Swap2"] or inputs.isDown["Escape"] then
     GAME.theme:playCancelSfx()
     self:onBack()
-    self:yieldFocus()
+    self:yieldFocus(inputSource)
   end
 end
 

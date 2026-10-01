@@ -31,7 +31,7 @@ local InputField = class(
     self.width = math.max(textWidth + 6, self.width)
     self.height = math.max(textHeight + 6, self.height)
 
-    self.hasFocus = false
+    self.isEditing = false
     self.offset = 0
     self.textCursorPos = nil
 
@@ -42,18 +42,18 @@ local InputField = class(
 )
 
 function InputField:onTouch(x, y)
-  self:setFocus()
+  self:startEditing()
 end
 
 function InputField:onDrag(x, y)
   if self:inBounds(x, y) then
-    self:setFocus()
+    self:startEditing()
   end
 end
 
 function InputField:onRelease(x, y)
   if self:inBounds(x, y) then
-    self:setFocus()
+    self:startEditing()
   end
 end
 
@@ -80,16 +80,18 @@ function InputField:getCursorPos()
   return self.x + textOffset + GraphicsUtil.newText(font, text):getWidth()
 end
 
-function InputField:unfocus()
+---Stops typed text going into this field
+function InputField:stopEditing()
   inputFieldManager.selectedInputField = nil
   love.keyboard.setTextInput(false)
-  self.hasFocus = false
+  self.isEditing = false
 end
 
-function InputField:setFocus()
+---Sends typed text into this field, with the text cursor at the end of its value
+function InputField:startEditing()
   inputFieldManager.selectedInputField = self
   love.keyboard.setTextInput(true)
-  self.hasFocus = true
+  self.isEditing = true
   self.offset = utf8.len(self.value)
 end
 
@@ -152,7 +154,7 @@ function InputField:drawSelf()
   GraphicsUtil.setColor(textColor)
   GraphicsUtil.draw(text, self.x + textOffset, self.y + (self.height - textHeight) / 2, 0, 1, 1)
 
-  if self.hasFocus then
+  if self.isEditing then
     local cursorFlashPeriod = .5
     if (math.floor(love.timer.getTime() / cursorFlashPeriod)) % 2 == 0 then
       GraphicsUtil.setColor(1, 1, 1, 1)

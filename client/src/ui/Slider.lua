@@ -34,8 +34,6 @@ local sliderBarThickness = 6
 ---@field minText love.TextBatch
 ---@field maxText love.TextBatch
 ---@field valueText love.TextBatch
----@field isFocusable boolean? only present if the individual object has been marked as focusable
----@field yieldFocus fun()? only present if the individual object has been marked as focusable, yields focus back to the parent element
 ---@overload fun(options: SliderOptions): Slider
 local Slider = class(
 ---@param self Slider
@@ -77,13 +75,14 @@ function Slider:onRelease(x, y)
   self:setValueFromPos(x, true)
 end
 
-function Slider:receiveInputs(input)
+function Slider:receiveInputsSelf(inputSource, dt)
+  local input = inputSource:getInputs()
   if input:isPressedWithRepeat("Left") then
     self:setValue(self.value - self.tickAmount, true)
   elseif input:isPressedWithRepeat("Right") then
     self:setValue(self.value + self.tickAmount, true)
   elseif self.isFocusable and (input.isDown["Swap2"] or input.isDown["Swap1"]) then
-    self:yieldFocus()
+    self:yieldFocus(inputSource)
   end
 end
 

@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local LevelPresets = require("common.data.LevelPresets")
 local input = require("client.src.inputManager")
+local InputSource = require("client.src.input.InputSource")
 local MatchParticipant = require("client.src.MatchParticipant")
 local consts = require("common.engine.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
@@ -35,6 +36,7 @@ local StackBehaviours = require("common.data.StackBehaviours")
 ---@field playerNumber integer?
 ---@field inputConfiguration InputConfiguration?
 ---@field lastUsedInputConfiguration InputConfiguration?
+---@field inputSource InputSource the source this player navigates the UI with, stable across device changes
 ---@overload fun(name: string, publicId: integer, isLocal: boolean?): Player
 local Player = class(
 ---@param self Player
@@ -73,6 +75,7 @@ function(self, name, publicId, isLocal)
   self.isLocal = isLocal or false
   -- a player may have only one configuration at a time
   self.inputConfiguration = nil
+  self.inputSource = InputSource(self)
   self.human = true
 
   -- the player emits signals when its properties change that other components may be interested in

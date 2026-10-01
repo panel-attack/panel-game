@@ -111,12 +111,12 @@ function OverlayContainer:onRelease()
 end
 
 -- Input handler - closes overlay on ESC key
-function OverlayContainer:receiveInputs(inputs, dt)
+function OverlayContainer:receiveInputsSelf(inputSource, dt)
   if not self.active then
     return
   end
 
-  if inputs.isDown["MenuEsc"] then
+  if inputSource:getInputs().isDown["MenuEsc"] then
     self:close()
   end
 end

@@ -3,6 +3,7 @@ local ui = require("client.src.ui")
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local InputSource = require("client.src.input.InputSource")
 
 -- Scene for the sound test
 local SoundTest = class(
@@ -215,7 +216,7 @@ function SoundTest:load()
 end
 
 function SoundTest:update(dt)
-  self.soundTestMenu:receiveInputs()
+  self.soundTestMenu:receiveInputs(InputSource.anyPlayer, dt)
   self.backgroundImg:update(dt)
 end
 

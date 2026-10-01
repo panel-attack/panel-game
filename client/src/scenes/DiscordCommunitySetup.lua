@@ -6,6 +6,7 @@ local consts = require("common.engine.consts")
 local save = require("client.src.save")
 local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
 local logger = require("common.lib.logger")
+local InputSource = require("client.src.input.InputSource")
 
 local DiscordCommunitySetup = class(function(self, sceneParams)
   self.music = "main"
@@ -113,7 +114,7 @@ DiscordCommunitySetup.name = "DiscordCommunitySetup"
 
 function DiscordCommunitySetup:update(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
 end
 
 function DiscordCommunitySetup:draw()

@@ -16,6 +16,7 @@ local FileUtils = require("client.src.FileUtils")
 local ClientStack = require("client.src.ClientStack")
 local MatchRules = require("common.data.MatchRules")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local InputSource = require("client.src.input.InputSource")
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
@@ -183,8 +184,7 @@ function GameBase:load()
     ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
-      -- Clear focus when pause menu is hidden
-      self.uiRoot:setFocus(nil)
+      self.uiRoot:unfocusChild(InputSource.anyPlayer)
       self.match:togglePause()
       if self.stageTrack and self.pauseState.musicWasPlaying then
         SoundController:playMusic(self.stageTrack)
@@ -238,8 +238,8 @@ function GameBase:handlePause()
       GAME.theme:playValidationSfx()
     end
   else
-    if (self.pauseMenu.hasFocus == nil or self.pauseMenu.hasFocus == false) and playerPressingStart(self.match) == false then
-      self.uiRoot:setFocus(self.pauseMenu)
+    if not self.pauseMenu:hasFocus(InputSource.anyPlayer) and playerPressingStart(self.match) == false then
+      self.uiRoot:focusChild(self.pauseMenu, InputSource.anyPlayer)
     end
   end
 end
@@ -374,7 +374,7 @@ function GameBase:update(dt)
     self:runGame(dt)
   end
   
-  self.uiRoot:handleFocusedInput(input, dt)
+  self.uiRoot:receiveInputs(InputSource.anyPlayer, dt)
   self.uiRoot:update(dt)
 end
 

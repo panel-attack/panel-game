@@ -24,6 +24,7 @@ local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local EndlessGame = require("client.src.scenes.EndlessGame")
 local VsSelfGame = require("client.src.scenes.VsSelfGame")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
+local InputSource = require("client.src.input.InputSource")
 
 -- Scene for the main menu
 local MainMenu = class(function(self, sceneParams)
@@ -158,7 +159,7 @@ end
 
 function MainMenu:updateSelf(dt)
   GAME.theme.images.bg_main:update(dt)
-  self.menu:receiveInputs(GAME.input, dt)
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
 
   self:checkForUpdates()
 end

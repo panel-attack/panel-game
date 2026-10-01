@@ -21,6 +21,11 @@ local logger = require("common.lib.logger")
 ---@field onDrag function? touch callback for when the mouse touching the element is dragged across the screen
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
+---@field isFocusable boolean true if selecting this element focuses it, so it receives the selecting input source's inputs until it yields focus; false if selecting it only runs its onSelect
+---@field focusedChild table<InputSource, UiElement> per input source, the element this one has handed its inputs to
+---@field focusCallbacks table<InputSource, function?> per input source, what to run when the focused child gives its focus back
+---@field focusedBy table<InputSource, true> the input sources that currently have this element focused
+---@field yielded table<InputSource, true> the input sources this element has given focus back for, until the focusing parent takes it
 ---@field [any] any
 
 ---@class UiElementOptions
@@ -72,6 +77,12 @@ local UIElement = class(
     self.parent = options.parent
     -- list of children elements
     self.children = options.children or {}
+
+    self.isFocusable = false
+    self.focusedChild = {}
+    self.focusCallbacks = {}
+    self.focusedBy = {}
+    self.yielded = {}
 
     self.id = uniqueId
     uniqueId = uniqueId + 1
@@ -251,28 +262,123 @@ function UIElement:getTouchedElement(x, y)
   end
 end
 
--- Traverses the UI tree and calls receiveInputs on any focused elements
-function UIElement:handleFocusedInput(inputs, dt)
-  -- If this element has focus and can receive inputs, handle it
-  if self.hasFocus and self.receiveInputs then
-    self:receiveInputs(inputs, dt)
-    return true -- Input was handled, don't continue traversing
+---Passes one input source's presses for this frame to the element it focused, or else handles them itself
+---@param inputSource InputSource
+---@param dt number
+function UIElement:receiveInputs(inputSource, dt)
+  if self.focusedChild[inputSource] then
+    self:receiveInputsChild(inputSource, dt)
+  else
+    self:receiveInputsSelf(inputSource, dt)
   end
-  
-  -- If this element is a focus director with a focused child, handle that
-  if self.focused and self.focused.receiveInputs then
-    self.focused:receiveInputs(inputs, dt)
-    return true -- Input was handled
+end
+
+-- UiElements can override this method to interpret inputs while no child is focused
+-- implementation is optional
+---@param inputSource InputSource
+---@param dt number
+function UIElement:receiveInputsSelf(inputSource, dt)
+end
+
+---Forwards the inputs to the element focused for this input source and takes back focus if it yielded
+---@param inputSource InputSource
+---@param dt number
+function UIElement:receiveInputsChild(inputSource, dt)
+  local child = self.focusedChild[inputSource]
+  child:receiveInputs(inputSource, dt)
+  if child.yielded[inputSource] then
+    self:unfocusChild(inputSource)
   end
-  
-  -- Otherwise, traverse children to find focused elements
-  for _, child in ipairs(self.children) do
-    if child:handleFocusedInput(inputs, dt) then
-      return true -- Input was handled by a child
+end
+
+---Sets whether selecting this element focuses it, so it receives the selecting input source's inputs until it yields focus, rather than only running its onSelect
+---@param isFocusable boolean
+function UIElement:setFocusable(isFocusable)
+  self.isFocusable = isFocusable
+end
+
+---@return boolean # if this element interprets inputs itself rather than ignoring them
+function UIElement:handlesInputs()
+  return self.receiveInputsSelf ~= UIElement.receiveInputsSelf
+end
+
+---Hands this input source's inputs to child until it yields
+---@param child UiElement
+---@param inputSource InputSource
+---@param onYield function? called once the child gives its focus back
+function UIElement:focusChild(child, inputSource, onYield)
+  local previous = self.focusedChild[inputSource]
+  if previous then
+    previous.focusedBy[inputSource] = nil
+    previous:onUnfocus(inputSource)
+  end
+  self.focusedChild[inputSource] = child
+  self.focusCallbacks[inputSource] = onYield
+  child.focusedBy[inputSource] = true
+  child.yielded[inputSource] = nil
+  child:onFocus(inputSource)
+end
+
+---Hands this input source's inputs to child, and gives this element's own focus back once the child yields
+---@param child UiElement
+---@param inputSource InputSource
+---@param onYield function? called once the child gives its focus back, before this element gives its own back
+function UIElement:forwardFocus(child, inputSource, onYield)
+  self:focusChild(child, inputSource, function()
+    -- a release from outside has already taken this element's focus, so there is nothing to give back
+    if self:hasFocus(inputSource) then
+      if onYield then
+        onYield()
+      end
+      self:yieldFocus(inputSource)
     end
+  end)
+end
+
+-- UiElements can override this method to react to gaining focus for an input source, such as passing it on with forwardFocus
+---@param inputSource InputSource
+function UIElement:onFocus(inputSource)
+end
+
+---Called when this element loses focus for an input source; releases whatever this element focused in turn
+---@param inputSource InputSource
+function UIElement:onUnfocus(inputSource)
+  self:unfocusChild(inputSource)
+end
+
+---Takes focus back from the child focused for this input source, running its yield callback
+---@param inputSource InputSource
+function UIElement:unfocusChild(inputSource)
+  local child = self.focusedChild[inputSource]
+  if not child then
+    return
   end
-  
-  return false -- No focused element found
+  child.focusedBy[inputSource] = nil
+  child.yielded[inputSource] = nil
+  local onYield = self.focusCallbacks[inputSource]
+  self.focusedChild[inputSource] = nil
+  self.focusCallbacks[inputSource] = nil
+  child:onUnfocus(inputSource)
+  if onYield then
+    onYield()
+  end
+end
+
+---Gives focus back to whichever element focused this one for the input source, which takes it once this input pass returns to it.
+---Only call this while receiving inputs; to release focus from outside an input pass, call unfocusChild on the parent.
+---@param inputSource InputSource
+function UIElement:yieldFocus(inputSource)
+  self.focusedBy[inputSource] = nil
+  self.yielded[inputSource] = true
+end
+
+---@param inputSource InputSource? checks for any input source if omitted
+---@return boolean
+function UIElement:hasFocus(inputSource)
+  if inputSource then
+    return self.focusedBy[inputSource] == true
+  end
+  return next(self.focusedBy) ~= nil
 end
 
 ---Returns a formatted tree of this element and all children with class name, TYPE, and root position

@@ -4,7 +4,6 @@ local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
-local directsFocus = require("client.src.ui.FocusDirector")
 local DebugSettings = require("client.src.debug.DebugSettings")
 
 ---@alias sceneMusic ("none" | "main" | "title_screen" | "select_screen")
@@ -23,7 +22,6 @@ local Scene = class(
   function (self, sceneParams)
     sceneParams = sceneParams or {}
     self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
-    directsFocus(self.uiRoot)
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main
