@@ -6,7 +6,6 @@ Before requesting review check you have done the following.
 - Any required prerequisite is its own PR, opened first and targeted by this PR
 - Tests pass and I've tested in the areas changed.
 - New tests added where it makes sense
-- No new Lua Language Server diagnostics
 - New assets carry license metadata and a COPYING-ASSETS entry
 
 -->
