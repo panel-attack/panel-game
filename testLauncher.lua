@@ -101,6 +101,8 @@ local allTests = {
   "client.tests.InputConfigurationTests",
   "client.tests.DiscreteImageSliderTests",
   "client.tests.PlayerSettingsTests",
+  "client.tests.InputSourceTests",
+  "client.tests.UIElementFocusTests",
 }
 
 -- Check for specific test name argument

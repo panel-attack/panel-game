@@ -51,7 +51,7 @@ function SetUserIdMenu:load(sceneParams)
     fontSize = 20,
   })
 
-  self.idInputField:setFocus(0, 0)
+  self.idInputField:startEditing()
   self.idInputField.offset = utf8.len(self.idInputField.value)
   self.uiRoot:addChild(self.idInputField)
   self.uiRoot:addChild(self.confirmationButton)

@@ -4,7 +4,7 @@ local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
-local FocusDirector = import("./FocusDirector")
+local InputSource = require("client.src.input.InputSource")
 
 ---@class ScrollMenu : ScrollContainer
 local ScrollMenu = class(
@@ -20,11 +20,10 @@ ScrollContainer)
 
 ScrollMenu.TYPE = "ScrollMenu"
 
-FocusDirector(ScrollMenu)
-
 function ScrollMenu:onRelease(x, y, duration)
-  if self.touchedChild and self.focused and self.focused ~= self.touchedChild then
-    self.focused:yieldFocus()
+  local focused = self.focusedChild[InputSource.anyPlayer]
+  if self.touchedChild and focused and focused ~= self.touchedChild then
+    self:unfocusChild(InputSource.anyPlayer)
   end
   if not self.scrolling then
     self:select(self.touchedChild)
@@ -41,7 +40,7 @@ function ScrollMenu:selectPrevious()
   for i = self.selectedIndex - 1, self.selectedIndex - #self.children, -1 do
     local index = wrap(1, i, #self.children)
     child = self.children[index]
-    if child.receiveInputs and child.isEnabled and child.isVisible then
+    if child:handlesInputs() and child.isEnabled and child.isVisible then
       self.selectedIndex = index
       break
     end
@@ -59,7 +58,7 @@ function ScrollMenu:selectNext()
   for i = self.selectedIndex + 1, self.selectedIndex + #self.children do
     local index = wrap(1, i, #self.children)
     child = self.children[index]
-    if child.receiveInputs and child.isEnabled and child.isVisible then
+    if child:handlesInputs() and child.isEnabled and child.isVisible then
       self.selectedIndex = index
       break
     end
@@ -77,7 +76,7 @@ end
 function ScrollMenu:getLastIndex()
   for i = #self.children, 1, -1 do
     local child = self.children[i]
-    if child.receiveInputs and child.isEnabled and child.isVisible then
+    if child:handlesInputs() and child.isEnabled and child.isVisible then
       return i
     end
   end
@@ -87,7 +86,7 @@ end
 ---@return boolean # if the selection was successful
 function ScrollMenu:select(uiElement)
   for i, child in ipairs(self.children) do
-    if child == uiElement and child.receiveInputs and child.isEnabled and child.isVisible then
+    if child == uiElement and child:handlesInputs() and child.isEnabled and child.isVisible then
       self.selectedIndex = i
       self:keepVisible(-child.y, child.height)
       return true
@@ -96,35 +95,37 @@ function ScrollMenu:select(uiElement)
   return false
 end
 
----@param inputs InputConfiguration
+---@param inputSource InputSource
 ---@param dt number?
-function ScrollMenu:receiveInputs(inputs, dt)
+function ScrollMenu:receiveInputs(inputSource, dt)
   if not self.isEnabled or not self.selectedIndex then
     return
   end
+  ScrollContainer.receiveInputs(self, inputSource, dt)
+end
 
-  if self.focused then
-    self.focused:receiveInputs(inputs, dt)
-  else
-    local selectedElement = self.children[self.selectedIndex]
-  
-    if inputs.isDown["MenuEsc"] then
-      if self:getLastIndex() ~= self.selectedIndex then
-        self:selectLast()
-        GAME.theme:playCancelSfx()
-      else
-        selectedElement:receiveInputs(inputs, dt)
-      end
-    elseif inputs:isPressedWithRepeat("MenuUp") then
-      self:selectPrevious()
-    elseif inputs:isPressedWithRepeat("MenuDown") then
-      self:selectNext()
+---@param inputSource InputSource
+---@param dt number?
+function ScrollMenu:receiveInputsSelf(inputSource, dt)
+  local inputs = inputSource:getInputs()
+  local selectedElement = self.children[self.selectedIndex]
+
+  if inputs.isDown["MenuEsc"] then
+    if self:getLastIndex() ~= self.selectedIndex then
+      self:selectLast()
+      GAME.theme:playCancelSfx()
     else
-      if inputs.isDown["MenuSelect"] and selectedElement.isFocusable then
-        self:setFocus(selectedElement)
-      else
-        selectedElement:receiveInputs(inputs, dt)
-      end
+      selectedElement:receiveInputs(inputSource, dt)
+    end
+  elseif inputs:isPressedWithRepeat("MenuUp") then
+    self:selectPrevious()
+  elseif inputs:isPressedWithRepeat("MenuDown") then
+    self:selectNext()
+  else
+    if inputs.isDown["MenuSelect"] and selectedElement.isFocusable then
+      self:focusChild(selectedElement, inputSource)
+    else
+      selectedElement:receiveInputs(inputSource, dt)
     end
   end
 end

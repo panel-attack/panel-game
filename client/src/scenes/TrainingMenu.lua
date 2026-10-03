@@ -6,6 +6,7 @@ local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
 local GameModes = require("common.data.GameModes")
 local GameBase = require("client.src.scenes.GameBase")
 local save = require("client.src.save")
+local InputSource = require("client.src.input.InputSource")
 
 local TrainingMenu = class(
   function (self, sceneParams)
@@ -112,7 +113,7 @@ end
 
 function TrainingMenu:update(dt)
   self.backgroundImg:update(dt)
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
 end
 
 function TrainingMenu:draw()

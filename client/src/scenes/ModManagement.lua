@@ -7,6 +7,7 @@ local consts = require("common.engine.consts")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local SoundController = require("client.src.music.SoundController")
 local system = require("client.src.system")
+local InputSource = require("client.src.input.InputSource")
 
 local ModManagement = class(function(self, options)
   self.keepMusic = true
@@ -285,9 +286,9 @@ end
 function ModManagement:update(dt)
   themes[config.theme].images.bg_main:update(dt)
   if self.receiveMode == "Menu" then
-    self.menu:receiveInputs(inputs, dt)
+    self.menu:receiveInputs(InputSource.anyPlayer, dt)
   else
-    self.cursor:receiveInputs(inputs, dt)
+    self.cursor:receiveInputs(InputSource.anyPlayer, dt)
   end
 end
 

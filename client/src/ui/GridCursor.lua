@@ -1,7 +1,6 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local class = require("common.lib.class")
-local directsFocus = require(PATH .. ".FocusDirector")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
@@ -11,8 +10,6 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 -- activeArea: specify an area on the grid for movement, the cursor cannot move outside
 -- selectedGridPos: the starting position for the cursor on the grid
 local GridCursor = class(function(self, options)
-  directsFocus(self)
-
   self.target = options.grid
   self.hAlign = "top"
   self.vAlign = "left"
@@ -179,11 +176,12 @@ function GridCursor:drawSelf()
   end
 end
 
-function GridCursor:receiveInputs(inputs, dt)
+---@param inputSource InputSource
+---@param dt number
+function GridCursor:receiveInputsSelf(inputSource, dt)
+  local inputs = inputSource:getInputs()
   if self.target then
-    if self.focused then
-      self.focused:receiveInputs(inputs, dt, self.player)
-    elseif inputs.isDown.Swap2 then
+    if inputs.isDown.Swap2 then
       self:escapeCallback()
     elseif inputs:isPressedWithRepeat("Left", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
       self:move(GridCursor.directions.left)
@@ -196,7 +194,7 @@ function GridCursor:receiveInputs(inputs, dt)
     elseif inputs.isDown.Swap1 or inputs.isDown.Start then
       local element = self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x)
       if element.onSelect then
-        self:getElementAt(self.selectedGridPos.y, self.selectedGridPos.x):onSelect(self)
+        element:onSelect(self, inputSource)
       else
         GAME.theme:playCancelSfx()
       end

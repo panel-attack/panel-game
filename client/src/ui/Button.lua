@@ -46,7 +46,8 @@ function Button:onRelease(x, y, timeHeld)
   self.currentlyPressed = false
 end
 
-function Button:receiveInputs(input)
+function Button:receiveInputsSelf(inputSource, dt)
+  local input = inputSource:getInputs()
   if input.isDown["MenuSelect"] then
     self:onClick(input)
     -- this is a really stupid way to make sure you can activate back buttons with escape

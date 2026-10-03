@@ -1,7 +1,6 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local Label = require(PATH .. ".Label")
-local Focusable = require(PATH .. ".Focusable")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 
@@ -19,7 +18,7 @@ local Leaderboard = class(function(self, options)
   self.firstVisibleIndex = nil
   self.lastVisibleIndex = nil
 
-  Focusable(self)
+  self:setFocusable(true)
 end,
 UiElement)
 
@@ -66,7 +65,8 @@ function Leaderboard:refreshView()
   self.label:setText(self.string)
 end
 
-function Leaderboard:receiveInputs(inputs)
+function Leaderboard:receiveInputsSelf(inputSource, dt)
+  local inputs = inputSource:getInputs()
   if self.data then
     if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
       GAME.theme:playMoveSfx()
@@ -92,8 +92,8 @@ function Leaderboard:receiveInputs(inputs)
   end
 
   if inputs.isDown["MenuEsc"] or inputs.isDown["MenuSelect"] then
-    if self.hasFocus then
-      self:yieldFocus()
+    if self:hasFocus(inputSource) then
+      self:yieldFocus(inputSource)
     end
   end
 end

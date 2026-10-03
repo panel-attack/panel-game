@@ -235,11 +235,12 @@ function MenuItem:drawSelf()
 end
 
 ---Passes inputs to child elements that can receive them
----@param inputs table input state table
-function MenuItem:receiveInputs(inputs)
+---@param inputSource InputSource
+---@param dt number
+function MenuItem:receiveInputsSelf(inputSource, dt)
   for _, child in ipairs(self.children) do
-    if child.receiveInputs then
-      child:receiveInputs(inputs)
+    if child:handlesInputs() then
+      child:receiveInputs(inputSource, dt)
       return
     end
   end

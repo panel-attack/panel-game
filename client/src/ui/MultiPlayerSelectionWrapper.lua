@@ -2,14 +2,13 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local Label = require(PATH .. ".Label")
 local StackPanel = require(PATH .. ".StackPanel")
 local class = require("common.lib.class")
-local Focusable = require(PATH .. ".Focusable")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 -- forms a layer of abstraction between a player specific selector (e.g. GridCursor) and UiElements that exist per player
 -- the MultiPlayerSelectionWrapper displays the UiElements of all players but upon selection only redirects inputs to the 
 -- player that owns the input method
 local MultiPlayerSelectionWrapper = class(function(wrapper, options)
-  Focusable(wrapper)
+  wrapper:setFocusable(true)
   wrapper.activeElement = nil
   wrapper.wrappedElements = {}
 
@@ -18,11 +17,7 @@ end,
 StackPanel)
 
 function MultiPlayerSelectionWrapper:addElement(uiElement, player)
-  assert(uiElement.receiveInputs)
   self.wrappedElements[player] = uiElement
-  uiElement.yieldFocus = function()
-    self.yieldFocus()
-  end
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)
   self:resize()
@@ -33,9 +28,10 @@ function MultiPlayerSelectionWrapper:insertElementAtIndex(uiElement, index, play
   self:shiftTo(index)
 end
 
--- the parent makes sure this is only called while focused
-function MultiPlayerSelectionWrapper:receiveInputs(inputs, dt, player)
-  self.wrappedElements[player]:receiveInputs(inputs, dt)
+---Passes focus on to the element of the player the input source belongs to
+---@param inputSource InputSource
+function MultiPlayerSelectionWrapper:onFocus(inputSource)
+  self:forwardFocus(self.wrappedElements[inputSource.player], inputSource)
 end
 
 local COLORS = {
@@ -43,7 +39,7 @@ local COLORS = {
   white = {1, 1, 1, 1}
 }
 function MultiPlayerSelectionWrapper:drawSelf()
-  if self.hasFocus then
+  if self:hasFocus() then
     love.graphics.setLineWidth(6)
     GraphicsUtil.setColor(COLORS.border)
     love.graphics.rectangle("line", self.x, self.y, self.width, self.height)

@@ -3,9 +3,7 @@ local table = table
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UIElement = require(PATH .. ".UIElement")
 local Label = require(PATH .. ".Label")
-local directsFocus = require(PATH .. ".FocusDirector")
 local class = require("common.lib.class")
-local input = require("client.src.inputManager")
 
 local NAVIGATION_BUTTON_WIDTH = 30
 
@@ -42,7 +40,6 @@ local Menu = class(
     self.firstActiveIndex = 1
     self.lastActiveIndex = 1
     self:setMenuItems(options.menuItems)
-    directsFocus(self)
   end,
   UIElement
 )
@@ -251,27 +248,28 @@ function Menu:scrollDown()
   GAME.theme:playMoveSfx()
 end
 
-function Menu:receiveInputs(inputs, dt)
+---@param inputSource InputSource
+---@param dt number?
+function Menu:receiveInputs(inputSource, dt)
   if not self.isEnabled then
     return
   end
+  UIElement.receiveInputs(self, inputSource, dt)
+end
 
-  if not inputs then
-    -- if we don't get inputs passed, use the global input table
-    inputs = input
-  end
-
+---@param inputSource InputSource
+---@param dt number?
+function Menu:receiveInputsSelf(inputSource, dt)
+  local inputs = inputSource:getInputs()
   local selectedElement = self.menuItems[self.selectedIndex]
 
-  if self.focused then
-    self.focused:receiveInputs(inputs, dt)
-  elseif inputs.isDown["MenuEsc"] then
+  if inputs.isDown["MenuEsc"] then
     if self.supportsBackButton then
       if self.selectedIndex ~= #self.menuItems then
         self:setSelectedIndex(#self.menuItems)
         GAME.theme:playCancelSfx()
       else
-        selectedElement:receiveInputs(inputs, dt)
+        selectedElement:receiveInputs(inputSource, dt)
       end
     end
   elseif inputs:isPressedWithRepeat("MenuUp") then
@@ -280,9 +278,9 @@ function Menu:receiveInputs(inputs, dt)
     self:scrollDown()
   else
     if inputs.isDown["MenuSelect"] and selectedElement.isFocusable then
-      self:setFocus(selectedElement)
+      self:focusChild(selectedElement, inputSource)
     else
-      selectedElement:receiveInputs(inputs, dt)
+      selectedElement:receiveInputs(inputSource, dt)
     end
   end
 end
