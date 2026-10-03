@@ -261,6 +261,9 @@ function PuzzleGame:readyToProceedToNextScene()
   return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
 end
 
+-- Adds a "Skip for now" pause menu item that moves the current puzzle to the end of the session's queue
+-- Only offered while other puzzles remain, as there is nothing to skip ahead to otherwise
+---@return MenuItem[]
 function PuzzleGame:customPauseMenuItems()
   if not (self.puzzleSetIterator and self.puzzleSetIterator:hasPuzzlesAfterCurrent()) then
     return {}
@@ -465,6 +468,8 @@ function PuzzleGame:skipPuzzle()
   self:restartAtCurrentPuzzle()
 end
 
+-- Aborts the running match and starts a fresh one on the iterator's current puzzle without showing the game over text
+-- Callers are responsible for recording a result and for moving the iterator beforehand if needed
 function PuzzleGame:restartAtCurrentPuzzle()
   -- Mark that we're resetting to avoid showing "you lose" text
   self.isResetting = true
