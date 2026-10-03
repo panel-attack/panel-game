@@ -40,6 +40,7 @@ local joystickHatToDirs = {
   rd = {"right", "down"}
 }
 
+---@param joystick love.Joystick
 function joystickManager:getJoystickButtonName(joystick, button)
   return string.format("%s:%s:%s", joystick:getGUID(), joystickManager.guidsToJoysticks[joystick:getGUID()][joystick:getID()], button)
 end
@@ -90,20 +91,32 @@ end
 -- end
 
 -- maps dpad dir to buttons
+---@param joystick love.Joystick
 function joystickManager:getDPadState(joystick, hatIndex)
   local dir = joystick:getHat(hatIndex)
   local activeButtons = joystickHatToDirs[dir]
-  return {
-    [joystickManager:getJoystickButtonName(joystick, "up"..hatIndex)] = tableUtils.contains(activeButtons, "up"),
-    [joystickManager:getJoystickButtonName(joystick, "down"..hatIndex)] = tableUtils.contains(activeButtons, "down"),
-    [joystickManager:getJoystickButtonName(joystick, "left"..hatIndex)] = tableUtils.contains(activeButtons, "left"),
-    [joystickManager:getJoystickButtonName(joystick, "right"..hatIndex)] = tableUtils.contains(activeButtons, "right")
-  }
+  if activeButtons then
+    return {
+      [joystickManager:getJoystickButtonName(joystick, "up"..hatIndex)] = tableUtils.contains(activeButtons, "up"),
+      [joystickManager:getJoystickButtonName(joystick, "down"..hatIndex)] = tableUtils.contains(activeButtons, "down"),
+      [joystickManager:getJoystickButtonName(joystick, "left"..hatIndex)] = tableUtils.contains(activeButtons, "left"),
+      [joystickManager:getJoystickButtonName(joystick, "right"..hatIndex)] = tableUtils.contains(activeButtons, "right")
+    }
+  else
+    local joystickType = joystick:isGamepad() and "gamepad" or "joystick"
+    error("joystick:getHat returned invalid direction for " .. joystickType .. " " .. joystick:getName() .. " " .. joystick:getGUID() .. " upon querying hatIndex " .. hatIndex
+        .. "\nGot " .. dir .. ", expected love.JoystickHat constant (c, d, l, ld, lu, r, rd, ru or d)")
+  end
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
-function love.joystickadded(joystick)
+---@param joystick love.Joystick
+function joystickManager:isRegistered(joystick)
+  -- converting the joystick into a bool
+  return not not joystickManager.devices[joystick:getID()]
+end
+
+---@param joystick love.Joystick
+function joystickManager:registerJoystick(joystick)
   -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions
   local guid = joystick:getGUID()
@@ -167,23 +180,24 @@ function love.joystickadded(joystick)
   joystickManager.devices[id] = device
 end
 
--- Intentional override
----@diagnostic disable-next-line: duplicate-set-field
-function love.joystickremoved(joystick)
-  -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
+---@param joystick love.Joystick
+function joystickManager:unregisterJoystick(joystick)
+-- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
   -- the GUID is consistent across sessions
   local guid = joystick:getGUID()
   -- ID is a per-session identifier for each controller regardless of type
   local id = joystick:getID()
 
-  local vendorID, productID, productVersion = joystick:getDeviceInfo( )
+  local vendorID, productID, productVersion = joystick:getDeviceInfo()
 
   logger.info("Disconnecting device " .. vendorID .. ";" .. productID .. ";" .. productVersion .. ";" .. joystick:getName() .. ";" .. guid .. ";" .. id)
 
-  joystickManager.guidsToJoysticks[guid][id] = nil
+  if joystickManager.guidsToJoysticks[guid] then
+    joystickManager.guidsToJoysticks[guid][id] = nil
 
-  if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
-    joystickManager.guidsToJoysticks[guid] = nil
+    if tableUtils.length(joystickManager.guidsToJoysticks[guid]) == 0 then
+      joystickManager.guidsToJoysticks[guid] = nil
+    end
   end
 
   joystickManager.devices[id] = nil

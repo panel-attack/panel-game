@@ -1,15 +1,15 @@
-local GameBase = require("client.src.scenes.GameBase")
-local TouchInputDetector = require("client.src.TouchInputDetector")
 local Panel = require("common.engine.Panel")
 local Puzzle = require("common.engine.Puzzle")
-local PuzzleEditorStackOverlay = require("client.src.ui.PuzzleEditorStackOverlay")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local consts = require("common.engine.consts")
 local ui = require("client.src.ui")
+local TouchInputDetector = require("client.src.TouchInputDetector")
+local GameBase = require("client.src.scenes.GameBase")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
 local focusable = require("client.src.ui.Focusable")
 local directsFocus = require("client.src.ui.FocusDirector")
-
+local PuzzleEditorStackOverlay = require("client.src.ui.PuzzleEditorStackOverlay")
 
 ---@class PuzzleEditorScene : GameBase
 ---@field puzzleSet PuzzleSet
@@ -393,40 +393,40 @@ end
 function PuzzleEditorScene:createShockGarbageButton(size)
   local stack = self.match.stacks[1]
   local panelsData = panels[stack.panels_dir]
+  local shockImages = panelsData.images.metals
 
-  -- Create a canvas to draw the shock garbage with end caps like it appears in game
-  local canvas = love.graphics.newCanvas(size, size)
-  local prevCanvas = love.graphics.getCanvas()
+  local dpiscale = shockImages.mid:getDPIScale()
+  local filterMin, filterMag = shockImages.mid:getFilter()
 
-  canvas:renderTo(function()
-    local shockImages = panelsData.images.metals
-    local leftImage = shockImages.left
-    local midImage = shockImages.mid
-    local rightImage = shockImages.right
+  local garbageImage = GraphicsUtil.renderToTexture(
+    size,
+    size,
+    function()
+      local leftImage = shockImages.left
+      local midImage = shockImages.mid
+      local rightImage = shockImages.right
 
-    -- Calculate scaling to fit the button size
-    local targetWidth = size * 0.8  -- Leave some padding
-    local targetHeight = size * 0.6
+      local targetWidth = size * 0.8
+      local targetHeight = size * 0.6
 
-    -- Draw left cap
-    local leftWidth = targetWidth * 0.25
-    love.graphics.draw(leftImage, size * 0.1, size * 0.2, 0, leftWidth / leftImage:getWidth(), targetHeight / leftImage:getHeight())
+      local leftWidth = targetWidth * 0.25
+      love.graphics.draw(leftImage, size * 0.1, size * 0.2, 0, leftWidth / leftImage:getWidth(), targetHeight / leftImage:getHeight())
 
-    -- Draw middle section
-    local midWidth = targetWidth * 0.5
-    local midX = size * 0.1 + leftWidth
-    love.graphics.draw(midImage, midX, size * 0.2, 0, midWidth / midImage:getWidth(), targetHeight / midImage:getHeight())
+      local midWidth = targetWidth * 0.5
+      local midX = size * 0.1 + leftWidth
+      love.graphics.draw(midImage, midX, size * 0.2, 0, midWidth / midImage:getWidth(), targetHeight / midImage:getHeight())
 
-    -- Draw right cap
-    local rightWidth = targetWidth * 0.25
-    local rightX = midX + midWidth
-    love.graphics.draw(rightImage, rightX, size * 0.2, 0, rightWidth / rightImage:getWidth(), targetHeight / rightImage:getHeight())
-  end)
-
-  love.graphics.setCanvas(prevCanvas)
+      local rightWidth = targetWidth * 0.25
+      local rightX = midX + midWidth
+      love.graphics.draw(rightImage, rightX, size * 0.2, 0, rightWidth / rightImage:getWidth(), targetHeight / rightImage:getHeight())
+    end,
+    dpiscale,
+    filterMin,
+    filterMag
+  )
 
   return ui.ImageButton({
-    image = canvas,
+    image = garbageImage,
     width = size,
     height = size,
     onClick = function()

@@ -1,5 +1,6 @@
 local ReplayV3 = require("common.data.ReplayV3")
 local GameModes = require("common.data.GameModes")
+local tableUtils = require("common.lib.tableUtils")
 -- this file forms an abstraction layer to translate the messages sent by the server to a format understood by the client
 -- the client should expect the formats specified in common/network/ServerProtocol which may extend to other standardised interop formats in common/data
 -- e.g. Replay or LevelData
@@ -122,6 +123,7 @@ function ServerMessages.sanitizeServerMessage(message)
         new_name = message.content.newName,
         old_name = message.content.oldName,
         name_changed = message.content.nameChanged,
+        serverTime = message.content.serverTime
       }
     else
       return
@@ -131,8 +133,13 @@ function ServerMessages.sanitizeServerMessage(message)
         ban_duration = message.content.banDuration,
       }
     end
-  elseif message.type == "lobbyState" then
-    return message.content
+  elseif message.type == "lobbyStateV2" then
+    ---@type LobbyStateV2
+    local content = message.content
+    content.players = tableUtils.reassignIntegerKeysAfterJsonification(content.players)
+    content.rooms = tableUtils.reassignIntegerKeysAfterJsonification(content.rooms)
+    
+    return { lobbyStateV2 = true, content = content }
   elseif message.type == "leaderboardReport" then
     return { leaderboard_report = message.content }
   elseif message.type == "spectateRequestGranted" then
@@ -180,6 +187,7 @@ function ServerMessages.sanitizeServerMessage(message)
       create_room = true,
       ranked = message.content.ranked,
       players = players,
+      roomNumber = message.content.roomNumber,
       gameMode = message.content.gameMode
     }
   else
@@ -202,13 +210,15 @@ function ServerMessages.sanitizePlayerMessage(message)
       index = content.index,
       player_number = content.playerNumber,
     }
-  elseif message.type == "challenge" then
+  elseif message.type == "challengeUpdate" then
     return
     {
-      game_request =
+      challengeUpdate =
       {
-        sender = content.sender,
-        receiver = content.receiver,
+        senderId = content.senderId,
+        receiverId = content.receiverId,
+        gameModeId = content.gameModeId,
+        challengeActive = content.challengeActive,
       }
     }
   end

@@ -36,6 +36,22 @@ for i=1,72 do
   COMBO_GARBAGE[i] = COMBO_GARBAGE[i] or COMBO_GARBAGE[i-1]
 end
 
+local ESTIMATED_GARBAGE_LINES_PER_COMBO = {}
+for comboSize, pieces in ipairs(COMBO_GARBAGE) do
+  local lines = 0
+  for _, width in ipairs(pieces) do
+    lines = lines + (width == 3 and 0.5 or 1)
+  end
+  ESTIMATED_GARBAGE_LINES_PER_COMBO[comboSize] = lines
+end
+
+---Returns the garbage lines a combo sends, counting a width-3 piece as half a line and wider pieces as a full line
+---@param comboSize integer
+---@return number
+function Stack.getEstimatedGarbageLinesForCombo(comboSize)
+  return ESTIMATED_GARBAGE_LINES_PER_COMBO[comboSize]
+end
+
 local function sortByPopOrder(panelList, isGarbage)
   table.sort(panelList, function(a, b)
     if a.row == b.row then
@@ -109,10 +125,6 @@ local function canMatch(panel)
 end
 
 function Stack:checkMatches()
-  if self.do_countdown then
-    return
-  end
-
   prof.push("Stack:checkMatches")
   --local reference = self:getMatchingPanels2()
   local matchingPanels = self:getMatchingPanels()
@@ -468,7 +480,7 @@ function Stack:getConnectedGarbagePanels2(matchingPanels)
 
   for row = 1, #self.panels do
     for col = 1, self.width do
-      panel = self.panels[row][col]
+      local panel = self.panels[row][col]
       if panel.isGarbage and panel.state == "normal" and not idGarbage[panel.garbageId]
       -- we only want to match garbage that is either fully or partially on-screen OR has been on-screen before
       -- example: chain garbage several rows high lands in row 12; by visuals/shake it is clear that it is more than 1 row high
@@ -758,14 +770,14 @@ function Stack:convertGarbagePanels(isChain)
 end
 
 function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
-  logger.debug("P" .. self.which .. "@" .. self.game_stopwatch .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
+  logger.debug("P" .. self.which .. "@" .. self.stopWatch .. ": Pushing garbage for " .. (isChain and "chain" or "combo") .. " with " .. comboSize .. " panels")
   for i = 3, metalCount do
     self.outgoingGarbage:push({
       width = 6,
       height = 1,
       isMetal = true,
       isChain = false,
-      frameEarned = self.game_stopwatch,
+      frameEarned = self.stopWatch,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -779,7 +791,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       height = 1,
       isMetal = false,
       isChain = false,
-      frameEarned = self.game_stopwatch,
+      frameEarned = self.stopWatch,
       rowEarned = coordinate.row,
       colEarned = coordinate.column
     })
@@ -791,7 +803,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       -- If we did a combo also, we need to enqueue the attack graphic one row higher cause thats where the chain card will be.
       rowOffset = 1
     end
-    self.outgoingGarbage:addChainLink(self.game_stopwatch, coordinate.column, coordinate.row +  rowOffset)
+    self.outgoingGarbage:addChainLink(self.stopWatch, coordinate.column, coordinate.row +  rowOffset)
   end
 end
 

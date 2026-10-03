@@ -28,6 +28,7 @@ local ModController = require("client.src.mods.ModController")
 ---@field ready boolean if the participant is ready to start the game (wants to and actually is)
 ---@field human boolean if the participant is a human
 ---@field isLocal boolean if the participant is controlled by a local player
+---@field playerNumber integer the (external) id for the player within the room; used to assign server messages to the correct player when spectating
 ---@field stack ClientStack?
 
 -- a match participant represents the minimum spec for a what constitutes a "player" in a battleRoom / match
@@ -146,6 +147,22 @@ function MatchParticipant:refreshCharacter()
   end
 end
 
+-- Mods can be disabled while a participant still references them, either as the selection itself
+-- or as the concrete mod a random/bundle selection resolved to; re-resolve so no disabled mod stays in use
+function MatchParticipant:refreshDisabledSelections()
+  if not characters[self.settings.selectedCharacterId] then
+    self:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
+  elseif not characters[self.settings.characterId] then
+    self:refreshCharacter()
+  end
+
+  if not stages[self.settings.selectedStageId] then
+    self:setStage(consts.RANDOM_STAGE_SPECIAL_VALUE)
+  elseif not stages[self.settings.stageId] then
+    self:refreshStage()
+  end
+end
+
 function MatchParticipant:setPanels(panelId)
   if panelId ~= self.settings.panelId then
     if panels[panelId] then
@@ -192,7 +209,8 @@ function MatchParticipant:setAttackEngineSettings(attackEngineSettings)
 end
 
 -- a callback that runs whenever a match ended
-function MatchParticipant:onMatchEnded()
+---@param match ClientMatch
+function MatchParticipant:onMatchEnded(match)
    -- to prevent the game from instantly restarting, unready all players
    if self.human then
     self:setWantsReady(false)

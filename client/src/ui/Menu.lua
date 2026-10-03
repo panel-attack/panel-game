@@ -24,6 +24,11 @@ local Menu = class(
     self.totalHeight = 0
     self.menuItemYOffsets = {}
     self.allContentShowing = true
+    self.sizeToFit = options.height == 0
+    self.supportsBackButton = true
+    if options.supportsBackButton ~= nil and options.supportsBackButton == false then
+      self.supportsBackButton = false
+    end
 
     self.upIndicator = Label({text = "^", translate = false, isVisible = false, vAlign = "top", hAlign = "center", y = -14})
     self.downIndicator = Label({text = "v", translate = false, isVisible = false, vAlign = "bottom", hAlign = "center"})
@@ -31,7 +36,7 @@ local Menu = class(
     self:addChild(self.downIndicator)
 
     -- bogus this should be passed in?
-    self.centerVertically = themes[config.theme].centerMenusVertically
+    self.centerVertically = themes[config.theme].centerMenusVertically and not self.sizeToFit
 
     self.yOffset = 0
     self.firstActiveIndex = 1
@@ -46,16 +51,14 @@ Menu.NAVIGATION_BUTTON_WIDTH = NAVIGATION_BUTTON_WIDTH
 Menu.BUTTON_HORIZONTAL_PADDING = 0
 Menu.BUTTON_VERTICAL_PADDING = 8
 
-function Menu.createCenteredMenu(items)
-  local menu = Menu({
-    x = 0,
-    y = 0,
-    hAlign = "center",
-    vAlign = "center",
-    menuItems = items,
-    height = themes[config.theme].main_menu_max_height
-  })
+function Menu.createCenteredMenu(items, height, options)
+  options = options or {}
+  options.hAlign = "center"
+  options.vAlign = "center"
+  options.menuItems = items
+  options.height = height or themes[config.theme].main_menu_max_height
 
+  local menu = Menu(options)
   return menu
 end
 
@@ -93,6 +96,17 @@ function Menu:layout()
     return
   end
 
+  -- If sizeToFit is enabled, recalculate height from content
+  if self.sizeToFit then
+    self.height = 0
+    for i, menuItem in ipairs(self.menuItems) do
+      self.height = self.height + menuItem.height
+      if i < #self.menuItems then
+        self.height = self.height + Menu.BUTTON_VERTICAL_PADDING
+      end
+    end
+  end
+
   local currentY = 0
   local totalMenuHeight = 0
   local menuFull = false
@@ -104,7 +118,7 @@ function Menu:layout()
       self.upIndicator:setVisibility(true)
     end
     if menuFull == false and realY >= 0 then
-      if realY + menuItem.height < self.height then
+      if realY + menuItem.height <= self.height then
         if self.firstActiveIndex == nil then
           self.firstActiveIndex = i
         end
@@ -117,25 +131,31 @@ function Menu:layout()
         menuFull = true
       end
     end
-    currentY = currentY + menuItem.height + Menu.BUTTON_VERTICAL_PADDING
+    currentY = currentY + menuItem.height
+    if i < #self.menuItems then
+      currentY = currentY + Menu.BUTTON_VERTICAL_PADDING
+    end
     if menuFull == false then
       self.lastActiveIndex = i
       totalMenuHeight = realY + menuItem.height
     end
     self.width = math.max(self.width, menuItem.width)
-    self.totalHeight = self.totalHeight + menuItem.height + Menu.BUTTON_VERTICAL_PADDING
+    self.totalHeight = self.totalHeight + menuItem.height
+    if i < #self.menuItems then
+      self.totalHeight = self.totalHeight + Menu.BUTTON_VERTICAL_PADDING
+    end
   end
 
   if self.centerVertically then
     self.y = self.yMin + (self.height / 2) - (totalMenuHeight / 2)
-  else
+  elseif not self.sizeToFit then
     self.y = self.yMin
   end
 end
 
 function Menu:addMenuItem(index, menuItem)
   local needsIncreasedIndex = false
-  if index <= self.selectedIndex then
+  if index <= self.selectedIndex and #self.menuItems > 0 then
     needsIncreasedIndex = true
   end
   table.insert(self.menuItems, index, menuItem)
@@ -198,7 +218,10 @@ function Menu:setSelectedIndex(index)
   if #self.menuItems >= self.selectedIndex then
     self.menuItems[self.selectedIndex]:setSelected(false)
   end
-  if self.firstActiveIndex > index then
+  if self.firstActiveIndex == nil then
+    -- first element that was added on an empty menu
+    self.yOffset = self.menuItemYOffsets[index]
+  elseif self.firstActiveIndex > index then
     self.yOffset = self.menuItemYOffsets[index]
   elseif self.lastActiveIndex < index then
     local currentIndex = 1
@@ -243,11 +266,13 @@ function Menu:receiveInputs(inputs, dt)
   if self.focused then
     self.focused:receiveInputs(inputs, dt)
   elseif inputs.isDown["MenuEsc"] then
-    if self.selectedIndex ~= #self.menuItems then
-      self:setSelectedIndex(#self.menuItems)
-      GAME.theme:playCancelSfx()
-    else
-      selectedElement:receiveInputs(inputs, dt)
+    if self.supportsBackButton then
+      if self.selectedIndex ~= #self.menuItems then
+        self:setSelectedIndex(#self.menuItems)
+        GAME.theme:playCancelSfx()
+      else
+        selectedElement:receiveInputs(inputs, dt)
+      end
     end
   elseif inputs:isPressedWithRepeat("MenuUp") then
     self:scrollUp()

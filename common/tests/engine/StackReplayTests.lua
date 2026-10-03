@@ -139,7 +139,7 @@ local function basicTimeAttackTest()
   assert(match.engineVersion == consts.ENGINE_VERSIONS.TELEGRAPH_COMPATIBLE)
   assert(match.timeLimit ~= nil)
   assert(match.panelSource.seed == 3490465)
-  assert(match.stacks[1].game_stopwatch == 7200)
+  assert(match.stacks[1].stopWatch == 7200)
   assert(match.stacks[1].levelData.maxHealth == 1)
   assert(match.stacks[1].score == 10353)
   assert(tableUtils.count(match.stacks[1].outgoingGarbage.history, function(g) return g.isChain end) == 8)
@@ -373,7 +373,7 @@ local function fallingWhileHoverBeginsDoesNotChain()
 end
 
 local function platformTest(waitFrames, useMatchSide)
-  local puzzle = Puzzle({puzzleType = "chain", stack = "3000994339949999994999999999999999999999999999999999", stopTime = 60})
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.chain, stack = "3000994339949999994999999999999999999999999999999999", stopTime = 60})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller", LevelPresets.getModern(10))
   local stack = match.stacks[1]
   ---@cast stack Stack

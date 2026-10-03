@@ -48,6 +48,11 @@
 
     "hint.semicolon": "Disable",
 
+    "runtime.plugin": "common/lib/luaLsPlugin.lua",
+
+    // to support mixin union types where a table is both types rather than just one
+    "type.weakUnionCheck": true,
+
     "workspace.checkThirdParty": false,
     "workspace.ignoreDir": [
         "client/lib/rich_presence/",
@@ -61,7 +66,9 @@
         "common/lib/socket.lua",
         "common/lib/dkjson.lua",
         "common/lib/csprng.lua",
-        "common/lib/jprof/MessagePack.lua"
+        "common/lib/jprof/MessagePack.lua",
+        "common/lib/import.lua",
+        "common/lib/luaLsPlugin.lua"
     ],
     "workspace.library": [
         ".vscode/love2d-12/library"

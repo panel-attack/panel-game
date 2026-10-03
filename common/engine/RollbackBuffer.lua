@@ -57,10 +57,10 @@ function RollbackBuffer:rollbackToFrame(frame)
       -- but we keep the data because it is still allocated memory we wish to reuse
     elseif self.frames[self.currentIndex] == frame then
       local value = self.buffer[self.currentIndex]
-      -- we need to remove the reference because it is to be expected the entity using the buffer will literally keep most references
-      -- so if it was kept in the buffer, the live copy would get overwritten later on
-      self.buffer[self.currentIndex] = nil
-      self.frames[self.currentIndex] = -1
+      -- Keep the reference in the buffer so it can be rolled back to again
+      -- The caller must copy data from this table, not store references to it
+      -- Move currentIndex forward by one so next save goes to the right slot
+      self.currentIndex = wrap(1, self.currentIndex + 1, self.size)
       return value
     elseif self.frames[self.currentIndex] < frame then
       -- we did not hit an early exit because we have copies older than the one requested
@@ -72,9 +72,26 @@ function RollbackBuffer:rollbackToFrame(frame)
   end
 end
 
-function RollbackBuffer:peekPrevious()
-  local previousIndex = wrap(1, self.currentIndex - 1, self.size)
-  return self.buffer[previousIndex]
+-- the copy stored for one specific frame, or nil if the buffer does not hold that frame
+--
+-- Looked up by frame rather than by position because rollbackToFrame moves currentIndex, so which
+-- slot sits "before" the current one depends on whether a rollback just happened. A caller that
+-- wants the frame before the one it is restoring to has to say so.
+---@param frame integer
+---@return table? copy
+function RollbackBuffer:getCopyForFrame(frame)
+  -- stale slots carry -1 in frames, so a negative lookup must never scan
+  if frame < 0 then
+    return nil
+  end
+
+  for i = 1, self.size do
+    if self.frames[i] == frame then
+      return self.buffer[i]
+    end
+  end
+
+  return nil
 end
 
 ---@return integer # how many usable rollback copies are stored in the buffer

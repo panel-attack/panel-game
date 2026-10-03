@@ -1,6 +1,7 @@
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local FileUtils = require("client.src.FileUtils")
+local system = require("client.src.system")
 
 -- Utility methods for drawing
 local GraphicsUtil = {
@@ -11,6 +12,11 @@ local GraphicsUtil = {
   ---@type love.Quad[]
   quadPool = {}
 }
+
+-- a local table to quickly crosscheck whether a quad is in the quadpool or not by using the quad as the index
+-- the calling code can always try to release the same quad twice and by keeping a reference we can make sure that doesn't happen
+---@type table<love.Quad, true?>
+local quadReference = {}
 
 ---@class PixelFontMap
 ---@field charWidth number
@@ -60,7 +66,7 @@ function GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extensi
 
   local fileName = pathAndName .. scaleSuffixString .. extension
 
-  if love.filesystem.getInfo(fileName) then
+  if FileUtils.exists(fileName) then
     local result = GraphicsUtil.privateLoadImage(fileName)
     if result then
       assert(result:getDPIScale() == scale, "The image " .. pathAndName .. " didn't wasn't created with the scale: " .. scale .. " did you make sure the width and height are divisible by the scale?")
@@ -173,6 +179,7 @@ function GraphicsUtil:newRecycledQuad(x, y, width, height, sw, sh)
     result = love.graphics.newQuad(x, y, width, height, sw, sh)
   else
     result = self.quadPool[#self.quadPool]
+    quadReference[result] = nil
     self.quadPool[#self.quadPool] = nil
     result:setViewport(x, y, width, height, sw, sh)
   end
@@ -184,9 +191,12 @@ end
 ---@param quad love.Quad?
 function GraphicsUtil:releaseQuad(quad)
   if quad then
-    if #self.quadPool >= maxQuadPool then
+    if quadReference[quad] then
+      logger.warn("Tried to release quad that is already in quad pool")
+    elseif #self.quadPool >= maxQuadPool then
       quad:release()
     else
+      quadReference[quad] = true
       self.quadPool[#self.quadPool+1] = quad
     end
   end
@@ -379,9 +389,50 @@ function GraphicsUtil.resetAlignment()
   love.graphics.pop()
 end
 
-local loveMajor = love.getVersion()
+--- A wrapper function to create a love.Texture that persists in memory for drawing
+---@param width number Canvas width
+---@param height number Canvas height
+---@param drawFunc function Function to call inside renderTo
+---@param dpiscale number DPI scale for the canvas
+---@param filterMin string filter mode
+---@param filterMag string filter mode
+---@return love.graphics.Texture
+function GraphicsUtil.renderToTexture(width, height, drawFunc, dpiscale, filterMin, filterMag)
+  love.graphics.push("all")
+  love.graphics.reset()
 
-if loveMajor >= 12 then
+  local canvas = love.graphics.newCanvas(width, height, {dpiscale = dpiscale})
+
+  canvas:setFilter(filterMin, filterMag)
+
+  canvas:renderTo(drawFunc)
+
+  -- Restore graphics state
+  love.graphics.pop()
+
+  if not system.meetsLoveVersionRequirement(12, 0) then
+    -- in love 11.5 Image and Canvas are distinct types inheriting from the Texture type that behave differently in a number of things
+    -- a main difference is that love.window.updateMode and love.window.setMode cause all Canvas objects to be cleared so that they need to be redrawn
+    -- to avoid this, immediately use the canvas's ImageData to create an Image type object that does not get cleared by window updates
+    local imageData
+    imageData = canvas:newImageData()
+
+    local image = love.graphics.newImage(imageData, {dpiscale = dpiscale})
+
+    -- Preserve filter settings on the image
+    if filterMin and filterMag then
+      image:setFilter(filterMin, filterMag)
+    end
+
+    return image
+  else
+    -- in love 12.0 the Canvas type does no longer exist, everything declared with newCanvas is a Texture and window updates don't clear these
+    -- that means we can use the canvas directly
+    return canvas
+  end
+end
+
+if system.meetsLoveVersionRequirement(12, 0) then
   GraphicsUtil.newText = love.graphics.newTextBatch
 else
   GraphicsUtil.newText = love.graphics.newText

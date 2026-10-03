@@ -5,6 +5,7 @@ local util = require("common.lib.util")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.zoneProfiler")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 local ReplayGame = class(
   function (self, sceneParams)
@@ -141,7 +142,7 @@ function ReplayGame:drawHUD()
     end
 
     stack:drawLevel()
-    if stack.analytic and not DEBUG_ENABLED then
+    if stack.analytic and not DebugSettings.showStackDebugInfo() then
       prof.push("Stack:drawAnalyticData")
       stack:drawAnalyticData()
       prof.pop("Stack:drawAnalyticData")
@@ -149,12 +150,13 @@ function ReplayGame:drawHUD()
   end
 end
 
+---@param match ClientMatch
 function ReplayGame:genericOnMatchEnded(match)
   -- Call parent implementation first
   GameBase.genericOnMatchEnded(self, match)
   
   -- Add win count increment logic like BattleRoom does
-  if not match.aborted then
+  if not match.engine.aborted then
     local winners = match:getWinners()
     if #winners == 1 then
       winners[1].stack.character:playWinSfx()

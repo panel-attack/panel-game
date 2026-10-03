@@ -2,6 +2,7 @@ local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
 local inputManager = require("client.src.inputManager")
 local save = require("client.src.save")
+local DebugMenu = require("client.src.debug.DebugMenu")
 local consts = require("common.engine.consts")
 local fileUtils = require("client.src.FileUtils")
 local analytics = require("client.src.analytics")
@@ -15,7 +16,6 @@ local ModManagement = require("client.src.scenes.ModManagement")
 local system = require("client.src.system")
 local JsonSafePrecision = require("common.data.JsonSafePrecision")
 local logger = require("common.lib.logger")
-local prof = require("common.lib.zoneProfiler")
 
 -- Scene for the options menu
 local OptionsMenu = class(function(self, sceneParams)
@@ -149,29 +149,23 @@ function OptionsMenu:loadInfoScreen(text)
 end
 
 function OptionsMenu:loadBaseMenu()
-  local languageNumber
-  local languageName = {}
-  for k, v in ipairs(Localization:get_list_codes()) do
-    languageName[#languageName + 1] = {v, Localization.data[v]["LANG"]}
-    if Localization:get_language() == v then
-      languageNumber = k
-    end
-  end
-  local languageLabels = {}
-  for k, v in ipairs(languageName) do
-    local lang = config.language_code
-    GAME:setLanguage(v[1])
-    languageLabels[#languageLabels + 1] = ui.Label({text = v[2], translate = false})
-    GAME:setLanguage(lang)
+  local languageData, languageLabels = Localization:getLanguageLabelsWithFonts()
+  local currentLanguageCode = Localization:getCurrentLanguageCode()
+  local languageIndex = Localization:getLanguageIndex(currentLanguageCode)
+
+  local languageCodes = {}
+  for i, language in ipairs(languageData) do
+    languageCodes[#languageCodes + 1] = language.code
   end
 
   local languageStepper = ui.Stepper({
     labels = languageLabels,
-    values = languageName,
-    selectedIndex = languageNumber,
+    values = languageCodes,
+    selectedIndex = languageIndex,
     onChange = function(value)
       GAME.theme:playMoveSfx()
-      GAME:setLanguage(value[1])
+      config.language_code = value
+      GAME:setLanguage(value)
       self:updateMenuLanguage()
     end
   })
@@ -310,6 +304,11 @@ function OptionsMenu:loadGeneralMenu()
     self:switchToScreen("baseMenu")
     if GAME.updater and GAME.updater.releaseStreams then
       if releaseStreamSelection.value ~= GAME.updater.activeReleaseStream.name then
+        -- in fullscreen the messagebox would pop behind the window leading to confusion
+        -- so make sure to un-fullscreen before popping this one
+        if love.window.getFullscreen() and love.system.getOS() == "Windows" then
+          GAME:toggleFullscreen()
+        end
         love.window.showMessageBox("Changing Release Stream", "Please restart the game to launch the selected release stream")
       end
     end
@@ -486,30 +485,14 @@ function OptionsMenu:loadSoundMenu()
 end
 
 function OptionsMenu:loadDebugMenu()
-  local debugMenuOptions = {
-    ui.MenuItem.createToggleButtonGroupMenuItem("op_debug_mode", nil, nil, createToggleButtonGroup("debug_mode")),
-    ui.MenuItem.createSliderMenuItem("VS Frames Behind", nil, false, createConfigSlider("debug_vsFramesBehind", 0, 200)),
-    ui.MenuItem.createToggleButtonGroupMenuItem("Show Debug Servers", nil, false, createToggleButtonGroup("debugShowServers")),
-    ui.MenuItem.createToggleButtonGroupMenuItem("Show Design Helper", nil, false, createToggleButtonGroup("debugShowDesignHelper")),
-    ui.MenuItem.createButtonMenuItem("Window Size Tester", nil, false, function()
-      GAME.navigationStack:push(require("client.src.scenes.WindowSizeTester")())
-    end),
-    ui.MenuItem.createToggleButtonGroupMenuItem("Profile frame times", nil, false, createToggleButtonGroup("debugProfile",
-      function()
-        prof.enable(config.debugProfile)
-        prof.setDurationFilter(config.debugProfileThreshold / 1000)
-      end)),
-    ui.MenuItem.createSliderMenuItem("Discard frames below duration (ms)", nil, false, createConfigSlider("debugProfileThreshold", 0, 100,
-      function()
-        prof.setDurationFilter(config.debugProfileThreshold / 1000)
-      end)),
-    ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-          GAME.theme:playCancelSfx()
-          self:switchToScreen("baseMenu")
-        end),
-  }
-
-  return ui.Menu.createCenteredMenu(debugMenuOptions)
+  local debugMenu = DebugMenu.makeDebugMenu({
+    showBackButton = true,
+    onBack = function()
+      self:switchToScreen("baseMenu")
+    end,
+    height = themes[config.theme].main_menu_max_height
+  })
+  return debugMenu
 end
 
 function OptionsMenu:loadAboutMenu()
@@ -529,6 +512,10 @@ function OptionsMenu:loadAboutMenu()
     ui.MenuItem.createButtonMenuItem("op_about_panels", nil, nil, function()
           GAME.theme:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/panels.md")
+        end),
+    ui.MenuItem.createButtonMenuItem("op_about_puzzles", nil, nil, function()
+          GAME.theme:playValidationSfx()
+          love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/puzzles.md")
         end),
     ui.MenuItem.createButtonMenuItem("op_about_attack_files", nil, nil, function()
           GAME.theme:playValidationSfx()
@@ -556,7 +543,7 @@ function OptionsMenu:loadModifyUserIdMenu()
   local modifyUserIdOptions = {}
   local userIDDirectories = fileUtils.getFilteredDirectoryItems("servers")
   for i = 1, #userIDDirectories do
-    if love.filesystem.getInfo("servers/" .. userIDDirectories[i] .. "/user_id.txt", "file") then
+    if fileUtils.exists("servers/" .. userIDDirectories[i] .. "/user_id.txt") then
       modifyUserIdOptions[#modifyUserIdOptions + 1] = ui.MenuItem.createButtonMenuItem(userIDDirectories[i], nil, false, function()
           GAME.navigationStack:push(SetUserIdMenu({serverIp = userIDDirectories[i]}))
         end)

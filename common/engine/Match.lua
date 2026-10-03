@@ -30,6 +30,12 @@ local MatchRules = require("common.data.MatchRules")
 ---@field clock integer
 ---@field ended boolean
 ---@field gameOverClock integer?
+---@field aborted boolean the game stopped in the middle because of crash, desync, game leave, online player left, etc.
+---@field desyncError boolean? the match stopped because the other stack became too out of sync
+---@field debug MatchDebugConfig internal debug configuration that defaults to non-debug values
+
+---@class MatchDebugConfig
+---@field vsFramesBehind integer
 
 -- A match is a particular instance of the game, for example 1 time attack round, or 1 vs match
 ---@class Match
@@ -61,6 +67,12 @@ function(self, panelSource, matchRules)
   self.startTimestamp = os.time(os.date("*t"))
   self.clock = 0
   self.ended = false
+  self.aborted = false
+
+  -- Initialize internal debug configuration with non-debug defaults
+  self.debug = {
+    vsFramesBehind = 0
+  }
 end
 )
 
@@ -177,58 +189,48 @@ function Match:debugRollbackAndCaptureState(clockGoal)
     return
   end
 
-  self.savedStackP1 = P1.rollbackCopies[P1.clock]
-  if P2 then
-    self.savedStackP2 = P2.rollbackCopies[P2.clock]
-  end
+  -- Capture current state before rollback for divergence detection
+  self.savedStackP1 = {}
+  P1:saveIntoRollbackCopy(self.savedStackP1)
+  assert(P1:rollbackRewindToFrame(clockGoal, false))
 
-  local rollbackResult = P1:rollbackToFrame(clockGoal)
-  assert(rollbackResult)
   if P2 and P2.clock > clockGoal then
-    rollbackResult = P2:rollbackToFrame(clockGoal)
-    assert(rollbackResult)
+    self.savedStackP2 = {}
+    P2:saveIntoRollbackCopy(self.savedStackP2)
+    assert(P2:rollbackRewindToFrame(clockGoal, false))
+  else
+    self.savedStackP2 = nil
   end
 end
 
-function Match:debugAssertDivergence(stack, savedStack)
-
-  for k,v in pairs(savedStack) do
-    if type(v) ~= "table" then
-      local v2 = stack[k]
-      if v ~= v2 then
-        error("Stacks have diverged")
-      end
+-- errors if the stack caught back up to the clock of its saved copy but ended up with a different state
+---@param stack BaseStack
+---@param savedCopy table? the copy captured before the debug rollback
+---@param label string
+---@return table? savedCopy nil once the stack has been checked
+local function checkDivergence(stack, savedCopy, label)
+  if savedCopy and savedCopy.stackData.clock == stack.clock then
+    local currentStackCopy = {}
+    stack:saveIntoRollbackCopy(currentStackCopy)
+    if not tableUtils.deep_content_equal(currentStackCopy, savedCopy) then
+      error("Stack " .. label .. " has diverged after rollback")
     end
+    return nil
   end
 
-  local savedStackString = Stack.divergenceString(savedStack)
-  local localStackString = Stack.divergenceString(stack)
-
-  if savedStackString ~= localStackString then
-    error("Stacks have diverged")
-  end
+  return savedCopy
 end
 
 function Match:debugCheckDivergence()
-  if not self.savedStackP1 or self.savedStackP1.clock ~= self.stacks[1].clock then
-    return
+  self.savedStackP1 = checkDivergence(self.stacks[1], self.savedStackP1, "P1")
+  if self.stacks[2] then
+    self.savedStackP2 = checkDivergence(self.stacks[2], self.savedStackP2, "P2")
   end
-  self:debugAssertDivergence(self.stacks[1], self.savedStackP1)
-  self.savedStackP1 = nil
-
-  if not self.savedStackP2 or self.savedStackP2.clock ~= self.stacks[2].clock then
-    return
-  end
-
-  self:debugAssertDivergence(self.stacks[2], self.savedStackP2)
-  self.savedStackP2 = nil
 end
 
 ---@return integer[] runsPerStack
 function Match:run()
   local startTime = love.timer.getTime()
-
-  self:padRewindDataIfNeeded()
 
   local runs = {}
 
@@ -285,18 +287,18 @@ function Match:pushGarbageTo(stack)
   for _, st in ipairs(self.garbageSources[stack]) do
     local oldestTransitTime = st:getOldestFinishedGarbageTransitTime()
     if oldestTransitTime and ((not st.outgoingGarbage.illegalStuffIsAllowed) or (#stack.incomingGarbage.stagedGarbage < 72)) then
-      if stack.game_stopwatch > oldestTransitTime then
+      if stack.stopWatch > oldestTransitTime then
         -- recipient went past the frame it was supposed to receive the garbage -> rollback to that frame
         -- hypothetically, IF the receiving stack's garbage target was different than the sender forcing the rollback here
         --  it may be necessary to perform extra steps to ensure the recipient of the stack getting rolled back is getting correct garbage
         --  which may even include another rollback
-        if not self:rollbackToFrame(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
+        if not self:rollbackToStopWatch(stack, oldestTransitTime) and not stack.incomingGarbage.illegalStuffIsAllowed then
           -- if we can't rollback, it's a desync
           self.desyncError = true
           self:abort()
         end
       end
-      local garbageDelivery = st:getReadyGarbageAt(stack.game_stopwatch)
+      local garbageDelivery = st:getReadyGarbageAt(stack.stopWatch)
       if garbageDelivery then
         --logger.debug("Pushing garbage delivery to incoming garbage queue: " .. table_to_string(garbageDelivery))
         stack:receiveGarbage(garbageDelivery)
@@ -315,7 +317,7 @@ function Match:shouldSaveRollback(stack)
     for senderIndex, targetList in ipairs(self.garbageTargets) do
       for _, target in ipairs(targetList) do
         if target == stack then
-          if self.stacks[senderIndex].game_stopwatch + GARBAGE_DELAY_LAND_TIME <= stack.game_stopwatch then
+          if self.stacks[senderIndex].stopWatch + GARBAGE_DELAY_LAND_TIME <= stack.stopWatch then
             return true
           end
         end
@@ -326,12 +328,20 @@ function Match:shouldSaveRollback(stack)
   end
 end
 
+-- attempt to rollback the specified stack to the specified stopWatch
+---@param stack BaseStack
+---@param stopWatch integer
+---@return boolean success
+function Match:rollbackToStopWatch(stack, stopWatch)
+  return self:rollbackToFrame(stack, stopWatch + (stack.clock - stack.stopWatch))
+end
+
 -- attempt to rollback the specified stack to the specified frame
 ---@param stack BaseStack
----@param frame integer
+---@param clock integer
 ---@return boolean success
-function Match:rollbackToFrame(stack, frame)
-  if stack:rollbackToFrame(frame) then
+function Match:rollbackToFrame(stack, clock)
+  if stack:rollbackRewindToFrame(clock, false) then
     return true
   end
 
@@ -340,22 +350,21 @@ end
 
 -- rewind is ONLY to be used for replay playback as it relies on all stacks being at the same clock time
 -- and also uses slightly different data required only in a both-sides rollback scenario that would never occur for online rollback
----@param frame integer
-function Match:rewindToFrame(frame)
+---@param clock integer
+function Match:rewindToFrame(clock)
   -- Bounds check: don't allow rewinding to negative frames
-  if frame < 0 then
+  if clock < 0 then
     return
   end
-
   local failed = false
   for i, stack in ipairs(self.stacks) do
-    if not stack:rewindToFrame(frame) then
+    if not stack:rollbackRewindToFrame(clock, true) then
       failed = true
       break
     end
   end
   if not failed then
-    self.clock = frame
+    self.clock = clock
     self.ended = false
   end
 end
@@ -546,7 +555,7 @@ function Match:hasEnded()
   end
 
   if self.timeLimit then
-    if tableUtils.trueForAll(self.stacks, function(stack) return stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit end) then
+    if tableUtils.trueForAll(self.stacks, function(stack) return stack.stopWatch and stack.stopWatch >= self.timeLimit end) then
       self.ended = true
       return true
     end
@@ -599,7 +608,7 @@ function Match:shouldRun(stack, runsSoFar)
   if not stack:game_ended() then
     if self.timeLimit then
       -- timeLimit will malfunction with SimulatedStack
-      if stack.game_stopwatch and stack.game_stopwatch >= self.timeLimit then
+      if stack.stopWatch and stack.stopWatch >= self.timeLimit then
         -- the stack should only run 1 frame beyond the time limit (excluding countdown)
         return false
       end
@@ -612,10 +621,10 @@ function Match:shouldRun(stack, runsSoFar)
   end
 
   -- In debug mode allow non-local player 2 to fall a certain number of frames behind
-  if config and config.debug_mode and not stack.is_local and config.debug_vsFramesBehind and config.debug_vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
+  if not stack.is_local and self.debug.vsFramesBehind > 0 and tableUtils.indexOf(self.stacks, stack) == 2 then
     -- Only stay behind if the game isn't over for the local player (=garbageTarget) yet
-    if self.garbageTargets[2][1] and self.garbageTargets[2][1].game_ended and self.garbageTargets[2][1]:game_ended() == false then
-      if stack.clock + config.debug_vsFramesBehind >= self.garbageTargets[2][1].clock then
+    if self.garbageTargets[2][1] and self.garbageTargets[2][1]:game_ended() == false then
+      if stack.clock + self.debug.vsFramesBehind >= self.garbageTargets[2][1].clock then
         return false
       end
     end
@@ -708,21 +717,6 @@ function Match:addTarget(source, target)
 
   if not tableUtils.contains(self.garbageSources[target], source) then
     table.insert(self.garbageSources[target], source)
-  end
-end
-
---- this function exists to allow repeated playback and rewind
---- by default taking data out of the rollback buffer removes it because users of that data might take it verbatim and change it later
---- that means when rewinding and then running forward again, there is a gap in rollback data at the frame where the rewind stopped
---- keeping all rewind data would be very inefficient as we'd be copying a ton of panel data every frame, often when it is not necessary
---- so instead only detect when we start running forward again
-function Match:padRewindDataIfNeeded()
-  if self.alwaysSaveRollbacks then
-    for i, stack in ipairs(self.stacks) do
-      if stack.clock == stack.lastRollbackFrame then
-        stack:saveForRollback()
-      end
-    end
   end
 end
 

@@ -15,6 +15,7 @@ local logger = require("common.lib.logger")
 require("client.src.analytics")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local MatchRules      = require("common.data.MatchRules")
+local DebugSettings = require("client.src.debug.DebugSettings")
 ---@module "common.data.LevelData"
 
 local floor, min, max = math.floor, math.min, math.max
@@ -247,15 +248,16 @@ function PlayerStack:onNewRow(engine)
   end
 end
 
-function PlayerStack:onRollback(engine)
+---@param engine Stack
+---@param isRewind boolean whether the engine stays on the restored frame instead of running back up
+function PlayerStack:onRollback(engine, isRewind)
   -- other.danger_timer = source.danger_timer
 
   -- to fool Match without having to wrap everything into getters
   self.clock = engine.clock
-  self.game_stopwatch = engine.game_stopwatch
 
   --prof.push("rollback copy analytics")
-  self.analytic:rollbackToFrame(self.clock)
+  self.analytic:rollbackRewindToFrame(self.clock, isRewind)
   --prof.pop("rollback copy analytics")
 end
 
@@ -295,7 +297,7 @@ end
 ------------------------------------------------------------------------
 
 function PlayerStack:rewindToFrame(frame)
-  self.engine:rewindToFrame(frame)
+  self.engine:rollbackRewindToFrame(frame, true)
 end
 
 function PlayerStack:runGameOver()
@@ -767,7 +769,7 @@ function PlayerStack:drawPopBurstParticle(atlas, quad, frameIndex, atlasDimensio
 end
 
 function PlayerStack:drawDebug()
-  if config.debug_mode then
+  if DebugSettings.showStackDebugInfo() then
     local engine = self.engine
 
     local x = self.origin_x + 480
@@ -863,7 +865,7 @@ function PlayerStack:drawDebug()
 end
 
 function PlayerStack:drawDebugPanels(shakeOffset)
-  if not config.debug_mode then
+  if not DebugSettings.showStackDebugInfo() then
     return
   end
 
@@ -952,7 +954,7 @@ function PlayerStack:drawRating()
   local rating
   if self.player.rating and tonumber(self.player.rating) then
     rating = self.player.rating
-  elseif config.debug_mode then
+  elseif DebugSettings.showStackDebugInfo() then
     rating = 1544 + self.player.playerNumber
   end
 

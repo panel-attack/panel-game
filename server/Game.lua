@@ -17,6 +17,7 @@ local LevelPresets    = require("common.data.LevelPresets")
 ---@field package inputs string[][]
 ---@field package outcomeReports integer[]
 ---@field complete boolean
+---@field creationTime integer
 local Game = class(
 ---@param players ServerPlayer[]
 ---@param id integer?
@@ -30,6 +31,7 @@ function(self, players, id)
   self.id = id
   self.outcomeReports = {}
   self.complete = false
+  self.creationTime = os.time()
 end)
 
 ---@param room Room
@@ -77,6 +79,8 @@ function Game.createFromRoomState(room)
       metadata.level = player.level
     else
       -- TODO: https://github.com/panel-attack/panel-game/issues/602
+      -- Use this pattern when we are in this area again and testing server
+      -- local presetInfo = LevelPresets.getStyleAndPreset(levelData)
       metadata.difficulty = player.level
     end
 

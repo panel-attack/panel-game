@@ -20,14 +20,14 @@ LocalGameModeSelectionScene.name = "LocalGameModeSelectionScene"
 function LocalGameModeSelectionScene:load(sceneParams)
   local menuItems = {
     ui.MenuItem.createButtonMenuItem("rp_browser_info_time_trial", nil, nil, function ()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_TIME_ATTACK), TimeAttackGame)
       if GAME.battleRoom then
         GAME.theme:playValidationSfx()
         GAME.navigationStack:push(CharacterSelect2p({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("vs", nil, nil, function ()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("TWO_PLAYER_VS"), GameBase)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS), GameBase)
       if GAME.battleRoom then
         GAME.theme:playValidationSfx()
         GAME.navigationStack:push(CharacterSelect2p({battleRoom = GAME.battleRoom}))

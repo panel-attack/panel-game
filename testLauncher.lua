@@ -29,14 +29,15 @@ local logger = require("common.lib.logger")
 
 -- Set log level based on debug argument
 if arg[2] == "debug" then
-  logger.setLogLevel(logger.DEBUG)
+  logger.setLogLevel(logger.levels.DEBUG)
 else
-  logger.setLogLevel(logger.INFO)
+  logger.setLogLevel(logger.levels.INFO)
 end
 
 require("client.src.globals")
 local system = require("client.src.system")
 local Game = require("client.src.Game")
+local fileUtils = require("client.src.FileUtils")
 
 function love.load()
   -- this is necessary setup of globals while non-client tests still depend on client components
@@ -59,14 +60,17 @@ local allTests = {
   "client.tests.AnimationLoaderTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
+  "common.tests.engine.GarbageQueueRollbackTests",
   "common.tests.engine.RollbackBufferTests",
   "common.tests.engine.StackTests",
+  "common.tests.engine.ComboGarbageLinesTests",
   "common.tests.engine.ReplayTests",
   "common.tests.engine.StackReplayTests",
   "common.tests.engine.GarbageQueueTests",
   "common.tests.engine.PuzzleTests",
   "common.tests.PuzzleHintHelperTests",
   "common.tests.engine.StackTouchReplayTests",
+  "common.tests.engine.SimulatedStackRollbackTests",
   "common.tests.engine.StackRollbackReplayTests",
   -- disabled for testLauncher because it needs the client love callbacks
   --"common.tests.lib.InputTests",
@@ -77,13 +81,15 @@ local allTests = {
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
   "common.tests.data.InputCompressionTests",
-  "server.tests.ServerTests",
+  "server.tests.LoginTests",
   "server.tests.LeaderboardTests",
   "server.tests.RoomTests",
-  "server.tests.LoginTests",
+  "server.tests.ServerTests",
+  "server.tests.RealSocketPartialSendTest",
   "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",
+  "client.tests.PlayerStackRollbackTests",
   "client.tests.PuzzleSetTests",
   "client.tests.PuzzleSetIteratorTests",
   "client.tests.PuzzleLibraryTests",
@@ -93,6 +99,9 @@ local allTests = {
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
   "client.tests.StackGraphicsTests",
+  "client.tests.InputConfigurationTests",
+  "client.tests.DiscreteImageSliderTests",
+  "client.tests.PlayerSettingsTests",
 }
 
 -- Check for specific test name argument
@@ -180,7 +189,7 @@ function love.errorhandler(msg)
   if lldebugger then
     error(msg, 2)
   else
-    local crashInfo = love.filesystem.getInfo("test-crash.log")
+    local crashInfo = fileUtils.exists("test-crash.log")
     if crashInfo and system.supportsFileBrowserOpen() then
       local sep = package.config:sub(1, 1)
       love.system.openURL("file://"..love.filesystem.getRealDirectory("test-crash.log") .. sep .. "test-crash.log")

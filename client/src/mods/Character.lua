@@ -335,7 +335,7 @@ function Character.graphics_init(self, full, yields)
       coroutine.yield()
     end
   end
-  if full then
+  if full and not self:isBundle() then
     self.garbagePrerenders = {}
 
     for width = 1, 6 do
@@ -392,26 +392,35 @@ end
 
 -- bundles without stage icon display up to 4 icons of their substages
 function Character:createBundleIcon()
-  local canvas = love.graphics.newCanvas(2 * 168, 2 * 168)
-  canvas:renderTo(function()
-    for i, subCharacterId in ipairs(self.subIds) do
-      -- only draw up to 4 and only draw sub mods that are actually there unless there are none
-      if i <= 4 and (characters[subCharacterId] or (allCharacters[subCharacterId] and #self:getSubMods() == 0)) then
-        local character = allCharacters[subCharacterId]
-        local x = 0
-        local y = 0
-        if i % 2 == 0 then
-          x = 168
+  local firstCharacter = allCharacters[self.subIds[1]]
+  assert(firstCharacter ~= nil, "Expected a valid character in sub IDs")
+  local filterMin, filterMag = firstCharacter.images.icon:getFilter()
+  local image = GraphicsUtil.renderToTexture(
+    2 * 168,
+    2 * 168,
+    function()
+      for i, subCharacterId in ipairs(self.subIds) do
+        -- only draw up to 4 and only draw sub mods that are actually there unless there are none
+        if i <= 4 and (characters[subCharacterId] or (allCharacters[subCharacterId] and #self:getSubMods() == 0)) then
+          local character = allCharacters[subCharacterId]
+          local x = 0
+          local y = 0
+          if i % 2 == 0 then
+            x = 168
+          end
+          if i > 2 then
+            y = 168
+          end
+          local width, height = character.images.icon:getDimensions()
+          love.graphics.draw(character.images.icon, x, y, 0, 168 / width, 168 / height)
         end
-        if i > 2 then
-          y = 168
-        end
-        local width, height = character.images.icon:getDimensions()
-        love.graphics.draw(character.images.icon, x, y, 0, 168 / width, 168 / height)
       end
-    end
-  end)
-  return canvas
+    end,
+    GAME:newCanvasSnappedScale(),
+    filterMin,
+    filterMag
+  )
+  return image
 end
 
 function Character.graphics_uninit(self)
@@ -531,6 +540,26 @@ function Character:validate()
     return valid, err
   end
 
+  if self.combo_style == comboStyle.classic then
+    local files = fileUtils.getFilteredDirectoryItems(self.path, "file")
+    local comboFiles = fileUtils.getMatchingFiles(files, "combo", fileUtils.SUPPORTED_SOUND_FORMATS)
+    local indices = {}
+    for _, comboFile in ipairs(comboFiles) do
+      local index = tonumber(string.match(fileUtils.getFileNameWithoutExtension(comboFile), "%d+", 6))
+      -- first one is typically unnumbered
+      indices[#indices+1] = index or 1
+    end
+
+    table.sort(indices)
+    local lastValue = 0
+    for _, index in ipairs(indices) do
+      if index - 1 > lastValue then
+        return false, "Characters with combo_style \"classic\" need to have their combo SFX sequentially numbered with no gaps. Missing combo" .. tostring(lastValue + 1)
+      end
+      lastValue = index
+    end
+  end
+
   return true
 end
 
@@ -577,21 +606,27 @@ end
 ---@param height integer height in panels
 ---@return love.Texture
 function Character:createGarbageTexture(width, height)
-  -- pop and flash are verifiably "panel sized", technically filler and face should work too
-  local relativeScale = self.images.pop:getWidth() / 16
+  -- filler and face are the "panel sized" counterparts in the garbage so they are valid sprites to determine relative size
+  local relativeScale = self.images.face:getWidth() / 16
   -- create all canvases as if we were working with the 360x240 resolution but use the canvas dpi scale to use the real resolution
   -- that makes it easy to scale later as everything can be treated the same while love handles the dpi scale resolution for us
-  local canvas = love.graphics.newCanvas(width * 16, height * 16, {dpiscale = self.images.pop:getDPIScale() * relativeScale})
+  local dpiscale = self.images.face:getDPIScale() * relativeScale
 
   -- Use the same filter as the garbage images so that upscaling looks right for pixel art
-  local min, mag = self.images.pop:getFilter()
-  canvas:setFilter(min, mag)
+  local filterMin, filterMag = self.images.face:getFilter()
 
-  canvas:renderTo(function()
-    self:__drawGarbage(width, height)
-  end)
+  local image = GraphicsUtil.renderToTexture(
+    width * 16,
+    height * 16,
+    function()
+      self:__drawGarbage(width, height)
+    end,
+    dpiscale,
+    filterMin,
+    filterMag
+  )
 
-  return canvas
+  return image
 end
 
 --- returns an existing prerender or if there is none, creates one and caches it for reuse
@@ -604,21 +639,7 @@ function Character:getGarbageTexture(width, height)
   end
 
   if not self.garbagePrerenders[width][height] then
-    -- canvases are affected by scissors and transformations so we need to make sure to suspend them
-    local sx, sy, w, h = love.graphics.getScissor()
-    if sx then
-      love.graphics.setScissor()
-    end
-    love.graphics.push("transform")
-    love.graphics.origin()
-
     self.garbagePrerenders[width][height] = self:createGarbageTexture(width, height)
-
-    -- and then reapply them
-    love.graphics.pop()
-    if sx then
-      love.graphics.setScissor(sx, sy, w, h)
-    end
   end
 
   return self.garbagePrerenders[width][height]

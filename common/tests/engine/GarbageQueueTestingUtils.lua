@@ -13,9 +13,9 @@ local GarbageQueueTestingUtils = {}
 function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   local mode
   if attackFile then
-    mode = GameModes.getPreset("ONE_PLAYER_TRAINING")
+    mode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TRAINING)
   else
-    mode = GameModes.getPreset("ONE_PLAYER_VS_SELF")
+    mode = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF)
   end
 
   local levelData = LevelPresets.getModern(1)
@@ -51,6 +51,7 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   return match
 end
 
+---@param match Match
 function GarbageQueueTestingUtils.runToFrame(match, frame)
   local stack = match.stacks[1]
   while stack.clock < frame do
@@ -63,6 +64,7 @@ function GarbageQueueTestingUtils.runToFrame(match, frame)
 end
 
 -- clears panels until only "count" rows are left
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.reduceRowsTo(stack, count)
   for row = #stack.panels, count + 1 do
     for col = 1, stack.width do
@@ -72,12 +74,14 @@ function GarbageQueueTestingUtils.reduceRowsTo(stack, count)
 end
 
 -- fill up panels with non-matching panels until "count" rows are filled
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.fillRowsTo(stack, count)
+  ---@cast stack Stack
   for row = 1, count do
     if not stack.panels[row] then
       stack.panels[row] = {}
       for col = 1, stack.width do
-        stack.createPanelAt(row, col)
+        stack:createPanelAt(row, col)
       end
     end
     for col = 1, stack.width do
@@ -86,17 +90,22 @@ function GarbageQueueTestingUtils.fillRowsTo(stack, count)
   end
 end
 
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.simulateActivity(stack)
+  ---@diagnostic disable-next-line: duplicate-set-field
   stack.hasActivePanels = function() return true end
 end
 
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.simulateInactivity(stack)
+  ---@diagnostic disable-next-line: duplicate-set-field
   stack.hasActivePanels = function() return false end
 end
 
+---@param stack Stack|SimulatedStack
 function GarbageQueueTestingUtils.sendGarbage(stack, width, height, chain, metal, time)
   -- -1 cause this will get called after the frame ended instead of during the frame
-  local frameEarned = time or stack.game_stopwatch
+  local frameEarned = time or stack.stopWatch
   local isChain = chain or false
   local isMetal = metal or false
 

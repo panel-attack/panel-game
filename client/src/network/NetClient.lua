@@ -14,6 +14,7 @@ local GameBase = require("client.src.scenes.GameBase")
 local LoginRoutine = require("client.src.network.LoginRoutine")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local LevelData = require("common.data.LevelData")
+local GameModes = require("common.data.GameModes")
 
 ---@enum NetClientStates
 local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
@@ -22,45 +23,54 @@ local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 --  that get automatically processed via NetClient:update
 
 local function resetLobbyData(self)
-  self.lobbyData = {
+  ---@class PersonalizedLobbyDataV2
+  self.lobbyDataV2 = {
+    ---@type table<PublicPlayerID, LobbyPlayerV2>
     players = {},
-    unpairedPlayers = {},
-    willingPlayers = {},
-    spectatableRooms = {},
-    sentRequests = {}
+    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
+    outgoingChallenges = {},
+    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
+    incomingChallenges = {},
+    ---@type table<roomNumber, LobbyRoomV2>
+    rooms = {}
   }
 end
 
-local function updateLobbyState(self, lobbyState)
-  if lobbyState.players then
-    self.lobbyData.players = lobbyState.players
+---@param self NetClient
+---@param lobbyStateV2Message { content: LobbyStateV2 }
+local function updateLobbyStateV2(self, lobbyStateV2Message)
+  local lobbyStateV2 = lobbyStateV2Message.content
+  if lobbyStateV2.players then
+    self.lobbyDataV2.players = lobbyStateV2.players
   end
 
-  if lobbyState.unpaired then
-    self.lobbyData.unpairedPlayers = lobbyState.unpaired
-    -- players who leave the unpaired list no longer have standing invitations to us.\
-    -- we also no longer have a standing invitation to them, so we'll remove them from sentRequests
-    local newWillingPlayers = {}
-    local newSentRequests = {}
-    for _, player in ipairs(self.lobbyData.unpairedPlayers) do
-      newWillingPlayers[player] = self.lobbyData.willingPlayers[player]
-      newSentRequests[player] = self.lobbyData.sentRequests[player]
+  -- if a player we challenged is not in lobby data or is in a room, they cannot accept our challenge anymore
+  for publicId, player in pairs(self.lobbyDataV2.outgoingChallenges) do
+    if not self.lobbyDataV2.players[publicId] then
+      self.lobbyDataV2.outgoingChallenges[publicId] = nil
+    elseif self.lobbyDataV2.players[publicId].roomNumber then
+      self.lobbyDataV2.outgoingChallenges[publicId] = nil
     end
-    self.lobbyData.willingPlayers = newWillingPlayers
-    self.lobbyData.sentRequests = newSentRequests
   end
 
-  if lobbyState.spectatable then
-    self.lobbyData.spectatableRooms = lobbyState.spectatable
+  -- if a player that challenged us is not in lobby data or is in a room, we cannot accept their challenge anymore
+  for publicId, player in pairs(self.lobbyDataV2.incomingChallenges) do
+    if not self.lobbyDataV2.players[publicId] then
+      self.lobbyDataV2.incomingChallenges[publicId] = nil
+    elseif self.lobbyDataV2.players[publicId].roomNumber then
+      self.lobbyDataV2.incomingChallenges[publicId] = nil
+    end
   end
 
-  self:emitSignal("lobbyStateUpdate", self.lobbyData)
+  self.lobbyDataV2.rooms = lobbyStateV2.rooms
+
+  self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 
 ---@param room BattleRoom
 local function getSceneFromRoom(room)
   -- this is so hacky oh my god
-  if room.mode.name == "VS" then
+  if room.mode.name == "VS" or room.mode.name == "2p_timeattack" then
     return CharacterSelect2p({battleRoom = room})
   elseif room.mode.name == "endless" then
     return require("client.src.scenes.EndlessMenu")({battleRoom = room})
@@ -125,7 +135,12 @@ local function processLeaveRoomMessage(self, message)
       -- instead we actively abort the match ourselves
       self.room.match:abort()
       self.room.match:deinit()
-      transition = MessageTransition(love.timer.getTime(), 5, message.reason or "", false)
+
+      if message.reason then
+        -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
+        -- the other player and spectators should be informed why the room is being closed
+        transition = MessageTransition(love.timer.getTime(), 5, message.reason, false)
+      end
     end
 
     -- and then shutdown the room
@@ -188,18 +203,20 @@ local function processMatchStartMessage(self, message)
 
           if player.isLocal then
             if not player.inputConfiguration then
+              -- fallback in case the player lost their input config while the server sent the message
               if player.settings.inputMethod == "touch" then
-                player:restrictInputs(GAME.input.mouse)
-              else
-                if player.lastUsedInputConfiguration and player.lastUsedInputConfiguration.x then
+                player:restrictInputs(GAME.input.getTouchInputConfiguration())
+              elseif player.lastUsedInputConfiguration then
+                if player.lastUsedInputConfiguration.deviceType == "touch" then
                   -- there is no configuration and the last one is a touch configuration
-                  -- there is no way to know which input configuration the player wanted to use in this scenario so throw an error
+                  -- while we could assume that the player wanted to use touch after all, if the server reports the setting as controller, we can no longer change
+                  -- because the other client already has us clocked as controller and the inputs have to match
+                  -- there is no way to know which input configuration the player would want to use in this scenario so throw an error
                   error("Player's input configuration does not match input method " .. player.settings.inputMethod .. " sent by server.")
                 else
                   player:restrictInputs(player.lastUsedInputConfiguration)
                 end
               end
-              -- fallback in case the player lost their input config while the server sent the message
             end
           end
           -- generally I don't think it's a good idea to try and rematch the other diverging settings here
@@ -221,8 +238,11 @@ local function processMatchStartMessage(self, message)
   end
 
   self.tcpClient:dropOldInputMessages()
-  self.room:startMatch(message.replay)
+  local match = self.room:startMatch(message.replay)
   self:setState(states.INGAME)
+  if match.supportsPause and match:hasLocalPlayer() then
+    match:connectSignal("pauseChanged", self, self.sendPauseToggle)
+  end
 end
 
 ---@param self NetClient
@@ -267,13 +287,18 @@ local function processInputMessages(self)
   end
 end
 
-local function processGameRequest(self, gameRequestMessage)
-  if gameRequestMessage.game_request then
-    self.lobbyData.willingPlayers[gameRequestMessage.game_request.sender] = true
-    love.window.requestAttention()
-    SoundController:playSfx(themes[config.theme].sounds.notification)
-    -- this might be moot if the server sends a lobby update to everyone after receiving the challenge
-    self:emitSignal("lobbyStateUpdate", self.lobbyData)
+---@param self NetClient
+local function processChallengeUpdate(self, challengeUpdateMessage)
+  if challengeUpdateMessage.challengeUpdate then
+    local challengeUpdate = challengeUpdateMessage.challengeUpdate
+    local challenges = self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] or {}
+    challenges[challengeUpdate.gameModeId] = challengeUpdate.challengeActive
+    self.lobbyDataV2.incomingChallenges[challengeUpdate.senderId] = challenges
+    if challengeUpdate.challengeActive then
+      love.window.requestAttention()
+      SoundController:playSfx(themes[config.theme].sounds.notification)
+    end
+    self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
   end
 end
 
@@ -307,8 +332,16 @@ local function handleGameAbort(self, gameAbortMessage)
     self.room.match:abort()
     self.room.match:deinit()
     self.state = states.ROOM
-    transition = MessageTransition(love.timer.getTime(), 5, "Game aborted by " .. (gameAbortMessage.source or "unknown"), false)
-    GAME.navigationStack:pop(transition)
+    if not gameAbortMessage.source or gameAbortMessage.source ~= GAME.localPlayer.name then
+      -- only pop if the local player is not the source of the abort
+      -- otherwise this might obscure the network error
+      local infoMessage = loc("game_abort", gameAbortMessage.source or loc("unknown_player"))
+      if gameAbortMessage.reason and gameAbortMessage.reason == "latency_error" then
+        infoMessage = infoMessage .. ": " .. loc("ss_latency_error")
+      end
+      transition = MessageTransition(love.timer.getTime(), 5, infoMessage, false)
+      GAME.navigationStack:pop(transition)
+    end
   end
 end
 
@@ -322,8 +355,8 @@ local function createListeners(self)
   -- messageListener holds *all* available listeners
   local messageListeners = {}
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
-  messageListeners.players = createListener(self, "unpaired", updateLobbyState)
-  messageListeners.game_request = createListener(self, "game_request", processGameRequest)
+  messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
+  messageListeners.challengeUpdate = createListener(self, "challengeUpdate", processChallengeUpdate)
   messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)
   messageListeners.leave_room = createListener(self, "leave_room", processLeaveRoomMessage)
@@ -346,13 +379,15 @@ end
 ---@field matchListeners table
 ---@field messageListeners table
 ---@field room BattleRoom?
----@field lobbyData table
+---@field lobbyDataV2 PersonalizedLobbyDataV2
+---@field serverTimeDelta integer in seconds
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
   self.leaderboard = nil
   self.pendingResponses = {}
   self.state = states.OFFLINE
+  self.serverTimeDelta = 0
 
   resetLobbyData(self)
 
@@ -361,8 +396,9 @@ local NetClient = class(function(self)
   -- all listeners running while online but not in a room/match
   self.lobbyListeners = {
     players = messageListeners.players,
+    lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
-    game_request = messageListeners.game_request,
+    challengeUpdate = messageListeners.challengeUpdate,
   }
 
   -- all listeners running while in a room but not in a match
@@ -391,6 +427,7 @@ local NetClient = class(function(self)
 
   Signal.turnIntoEmitter(self)
   self:createSignal("lobbyStateUpdate")
+  self:createSignal("lobbyStateV2Update")
   self:createSignal("leaderboardUpdate")
   -- only fires for unintended disconnects
   self:createSignal("clientDisconnected")
@@ -438,17 +475,36 @@ function NetClient:sendInput(input)
   end
 end
 
-function NetClient:requestLeaderboard()
-  if not self.pendingResponses.leaderboardUpdate then
-    self.pendingResponses.leaderboardUpdate = self.tcpClient:sendRequest(ClientMessages.requestLeaderboard())
+---@param clientMatch ClientMatch
+function NetClient:sendPauseToggle(clientMatch)
+  if self:isConnected() and self.room and self.room.roomNumber then
+    self.tcpClient:sendRequest(ClientMessages.sendPauseToggle(self.room.roomNumber, clientMatch.isPaused))
   end
 end
 
-function NetClient:challengePlayer(name)
-  if not self.lobbyData.sentRequests[name] then
-    self.tcpClient:sendRequest(ClientMessages.challengePlayer(config.name, name))
-    self.lobbyData.sentRequests[name] = true
-    self:emitSignal("lobbyStateUpdate", self.lobbyData)
+---@param gameModeId GameModeID?
+function NetClient:requestLeaderboard(gameModeId)
+  if not self.pendingResponses.leaderboardUpdate then
+    gameModeId = gameModeId or GameModes.IDs.TWO_PLAYER_VS
+    self.pendingResponses.leaderboardUpdate = self.tcpClient:sendRequest(ClientMessages.requestLeaderboard(gameModeId))
+  end
+end
+
+---@param opponentId PublicPlayerID
+---@param gameModeId GameModeID
+function NetClient:challengePlayerById(opponentId, gameModeId)
+  self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
+  self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, true))
+  self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = true
+  self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+end
+
+function NetClient:withdrawChallengeForId(opponentId, gameModeId)
+  if self.lobbyDataV2.outgoingChallenges[opponentId] then
+    self.tcpClient:sendRequest(ClientMessages.updateChallengeStatus(GAME.localPlayer.publicId, opponentId, gameModeId, false))
+    self.lobbyDataV2.outgoingChallenges[opponentId] = self.lobbyDataV2.outgoingChallenges[opponentId] or {}
+    self.lobbyDataV2.outgoingChallenges[opponentId][gameModeId] = false
+    self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
   end
 end
 
@@ -458,6 +514,7 @@ function NetClient:requestSpectate(roomNumber)
   end
 end
 
+---@param gameMode GameMode
 function NetClient:requestRoom(gameMode)
   if self:isConnected() then
     self.tcpClient:sendRequest(ClientMessages.sendRoomRequest(gameMode))
@@ -565,6 +622,12 @@ function NetClient:update()
         self:setState(states.ONLINE)
         self.loginState = result.message
         self.loginTime = love.timer.getTime()
+        local t = os.time()
+        self.serverTimeDelta = os.difftime(t, result.serverTime)
+        local date = os.date("*t")
+        if date.isdst then
+          self.serverTimeDelta = self.serverTimeDelta - 3600
+        end
       else
         self.loginState = result.message
         self:setState(states.OFFLINE)

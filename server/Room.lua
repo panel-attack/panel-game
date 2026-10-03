@@ -8,28 +8,32 @@ local ServerPlayer = require("server.Player")
 local Signal = require("common.lib.signal")
 local ServerGame = require("server.Game")
 
+---@alias roomNumber integer
+
 -- Object that represents a current session of play between two connections
 -- Players alternate between the character select state and playing, and spectators can join and leave
 ---@class Room : Signal
 ---@field players ServerPlayer[]
 ---@field leaderboard Leaderboard?
 ---@field name string
----@field roomNumber integer
+---@field roomNumber roomNumber
 ---@field stage string? stage for the game, randomly picked from both players
 ---@field spectators ServerPlayer[] array of spectator connection objects
 ---@field win_counts integer[] win counts by player number
 ---@field ratings table[] ratings by player number
 ---@field matchCount integer
 ---@field game ServerGame?
----@field gameMode GameMode
+---@field gameMode table -- only the data portion of the game mode
+---@field gameModeId GameModeID
 ---@field ranked boolean if the next match is anticipated to be ranked 
 ---@field rankedReasons string[]
+---@field recentGameAbort boolean tracks if the most recent game was ended by an abort
 ---@overload fun(roomNumber: integer, players: ServerPlayer[], gameMode: GameMode, leaderboard: Leaderboard?): Room
 local Room = class(
 ---@param self Room
 ---@param roomNumber integer
 ---@param players ServerPlayer[]
----@param gameMode GameMode
+---@param gameMode table -- only the data portion of the game mode
 ---@param leaderboard Leaderboard?
 function(self, roomNumber, players, gameMode, leaderboard)
   self.players = players
@@ -41,6 +45,7 @@ function(self, roomNumber, players, gameMode, leaderboard)
   self.ratings = {}
   self.matchCount = 0
   self.gameMode = gameMode
+  self.recentGameAbort = false
 
   for i, player in ipairs(self.players) do
     player:connectSignal("settingsUpdated", self, self.onPlayerSettingsUpdate)
@@ -80,6 +85,7 @@ function(self, roomNumber, players, gameMode, leaderboard)
   Signal.turnIntoEmitter(self)
   self:createSignal("matchStart")
   self:createSignal("matchEnd")
+  self:createSignal("pauseToggled")
 end
 )
 
@@ -131,6 +137,7 @@ function Room:start_match()
   end
 
   self:emitSignal("matchStart")
+  self.recentGameAbort = false
 end
 
 function Room:prepare_character_select()
@@ -142,7 +149,7 @@ function Room:prepare_character_select()
   end
 end
 
----@return "character select"|"lobby"|"not_logged_in"|"playing"|"spectating"|"closed"
+---@return PlayerState | "closed"
 function Room:state()
   if #self.players == 0 then
     return "closed"
@@ -192,7 +199,7 @@ function Room:remove_spectator(spectator)
       self.spectators[i].state = "lobby"
       logger.debug(spectator.name .. " left " .. self.name .. " as a spectator")
       table.remove(self.spectators, i)
-      spectator:removeFromRoom(self, spectator.name .. " left")
+      spectator:removeFromRoom(self)
       lobbyChanged = true
       break
     end
@@ -239,11 +246,16 @@ end
 ---@param sender ServerPlayer
 function Room:broadcastInput(input, sender)
   if not self.game then
-    pcall(function()
-      logger.warn(self.roomNumber .. ": Unexpected input received from " .. sender.userId .. " " .. sender.name .. " in state " .. sender.state)
-      logger.warn("Room Info: " .. self:toString())
-    end)
-    return
+    if self.recentGameAbort then
+      -- there is latency for one player to receive the abort so they'll keep sending their inputs for a bit, just ignore them
+      return
+    else
+      pcall(function()
+        logger.warn(self.roomNumber .. ": Unexpected input received from " .. sender.userId .. " " .. sender.name .. " in state " .. sender.state)
+        logger.warn("Room Info: " .. self:toString())
+      end)
+      return
+    end
   end
 
   self.game:receiveInput(sender, input)
@@ -379,7 +391,7 @@ function Room:handleGameAbort(sender)
     local inputCountDifference = self.game:getInputCountDifference()
     if inputCountDifference > 100 then
       logger.info("abort was judged as legitimate with an inputCountDifference of " .. inputCountDifference)
-      self:abortGame(sender)
+      self:abortGame(sender, "latency_error")
     else
       logger.info("abort was judged as illegitimate with an inputCountDifference of " .. inputCountDifference)
       -- if that is not the case, we're in a bit of a pickle as the sender already stopped the match client side
@@ -411,11 +423,29 @@ function Room:handleGameAbort(sender)
   end
 end
 
-function Room:abortGame(sender)
-  self:broadcastJson(ServerProtocol.sendGameAbort(sender), sender)
+---@param sender ServerPlayer
+---@param reason string?
+function Room:abortGame(sender, reason)
+  self:broadcastJson(ServerProtocol.sendGameAbort(sender, reason), sender)
   self:emitSignal("matchEnd", self.game)
   self:prepare_character_select()
   self.game = nil
+  self.recentGameAbort = true
+end
+
+function Room:togglePause(sender, paused)
+  if #self.players == 1 and self.players[1] == sender and paused ~= (self:state() == "paused") then
+    self:broadcastJson(ServerProtocol.sendPauseNotification(self.roomNumber, sender, paused), sender)
+    self:emitSignal("pauseToggled")
+
+    for i, player in ipairs(self.players) do
+      if paused then
+        player:setState("paused")
+      else
+        player:setState("playing")
+      end
+    end
+  end
 end
 
 return Room

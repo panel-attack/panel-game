@@ -1,41 +1,9 @@
-local inputManager = require("client.src.inputManager")
 local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
 
 -- the save.lua file contains the read/write functions
 
 local save = {}
-
--- writes to the "keys.txt" file
-function save.write_key_file()
-  FileUtils.writeJson("", "keysV3.json", inputManager:getSaveKeyMap())
-end
-
--- reads the "keys.txt" file
-function save.read_key_file()
-  local filename
-  local migrateInputs = false
-
-  if love.filesystem.getInfo("keysV3.json", "file") then
-    filename = "keysV3.json"
-  else
-    filename = "keysV2.txt"
-    migrateInputs = true
-  end
-
-  if not love.filesystem.getInfo(filename, "file") then
-    return inputManager.inputConfigurations
-  else
-    local inputConfigs = FileUtils.readJsonFile(filename)
-
-    if migrateInputs then
-      -- migrate old input configs
-      inputConfigs = inputManager:migrateInputConfigs(inputConfigs)
-    end
-
-    return inputConfigs
-  end
-end
 
 -- reads the .txt file of the given path and filename
 function save.read_txt_file(path_and_filename)
@@ -73,7 +41,7 @@ end
 local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
 
 function save.readAttackFile(path)
-  if love.filesystem.getInfo(path, "file") then
+  if FileUtils.exists(path) then
     local jsonData = love.filesystem.read(path)
     local trainingConf, position, errorMsg = json.decode(jsonData)
     if trainingConf then
@@ -101,7 +69,7 @@ function save.readAttackFiles(path)
         save.readAttackFiles(current_path)
       else
         local training_conf = save.readAttackFile(current_path)
-        if training_conf ~= nil then
+        if training_conf ~= nil and training_conf.attackPatterns and #training_conf.attackPatterns > 0 then
           results[#results+1] = training_conf
         end
       end

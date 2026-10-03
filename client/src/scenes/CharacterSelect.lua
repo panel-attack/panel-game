@@ -9,6 +9,7 @@ local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Character = require("client.src.mods.Character")
 local LevelPresets = require("common.data.LevelPresets")
+local InputDeviceOverlay = require("client.src.scenes.components.InputDeviceOverlay")
 
 -- The character select screen scene
 ---@class CharacterSelect : Scene
@@ -58,6 +59,50 @@ function CharacterSelect:load()
   self.ui.characterIcons = {}
   self.ui.playerInfos = {}
   self:customLoad()
+  
+  self:createInputDeviceOverlay()
+
+  self:setChangeInputButtonVisibility(false)
+  self:setChangeInputButtonVisibleIfNeeded()
+
+  for _, player in ipairs(self.players) do
+    if player:isHuman() then
+      if player.isLocal then
+        self:initializeFromLocalPlayerSettings(player)
+      end
+      player:connectSignal("levelDataChanged", self, self.onLevelDataChanged)
+      self:onLevelDataChanged(player.settings.levelData, player)
+    end
+  end
+end
+
+function CharacterSelect:onLevelDataChanged(levelData, player)
+  local presetInfo = LevelPresets.getStyleAndPreset(levelData)
+
+  if not presetInfo then
+    -- Custom levelData, default to current settings
+    return
+  end
+
+  if presetInfo.style == GameModes.Styles.MODERN then
+    player:setStyle(GameModes.Styles.MODERN)
+    if presetInfo.level then
+      player:setLevel(presetInfo.level)
+    end
+  else
+    player:setStyle(GameModes.Styles.CLASSIC)
+    if presetInfo.difficulty then
+      player:setDifficulty(presetInfo.difficulty)
+    end
+  end
+
+  self:refresh()
+end
+
+function CharacterSelect:initializeFromLocalPlayerSettings(player)
+  player:setStyle(GameModes.Styles.MODERN)
+  player:setLevel(player.settings.level)
+  player:setLevelData(LevelPresets.getModern(player.settings.level))
 end
 
 ---@param player Player
@@ -247,6 +292,49 @@ function CharacterSelect:createStageCarousel(player, width)
   return stageCarousel
 end
 
+function CharacterSelect:createInputDeviceOverlay()
+
+  self.inputDeviceOverlay = InputDeviceOverlay({
+    players = self.battleRoom.players,
+    onClose = function()
+      self:onInputDeviceOverlayClosed()
+    end,
+    onCancel = function()
+      self:leave()
+    end
+  })
+  self.uiRoot:addChild(self.inputDeviceOverlay)
+end
+
+function CharacterSelect:onInputDeviceOverlayClosed()
+  self:setChangeInputButtonVisibleIfNeeded()
+end
+
+function CharacterSelect:setChangeInputButtonVisibleIfNeeded()
+  if self.ui and self.ui.changeInputButton then
+    if #self.battleRoom:getLocalHumanPlayers() > 0 then
+      self.ui.changeInputButton:setVisibility(true)
+    end
+  end
+end
+
+function CharacterSelect:setChangeInputButtonVisibility(isVisible)
+  if self.ui and self.ui.changeInputButton then
+    self.ui.changeInputButton:setVisibility(isVisible)
+  end
+end
+
+function CharacterSelect:createChangeInputButton()
+  return ui.ChangeInputButton({
+    hFill = true,
+    vFill = true,
+    players = self.battleRoom.players,
+    openInputDeviceOverlay = function ()
+      self.inputDeviceOverlay:open()
+    end
+  })
+end
+
 local super_select_pixelcode = [[
       uniform float percent;
       vec4 effect( vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords )
@@ -298,15 +386,22 @@ function CharacterSelect:getCharacterButtons()
     end
 
     if character.panels and panels[character.panels] then
-      -- draw the color 1 normal panel in the left corner
-      -- it's only available on the sheet so we got to render it to its own canvas first
       local panels = panels[character.panels]
-      local canvas = love.graphics.newCanvas(panels.size, panels.size)
-      canvas:renderTo(function()
-        panels:drawPanelFrame(1, "normal", 0, 0, panels.size)
-      end)
+      local dpiscale = panels.sheets[1]:getDPIScale()
+      local filterMin, filterMag = panels.sheets[1]:getFilter()
 
-      characterButton.panelIcon = ui.ImageContainer({image = canvas, vAlign = "bottom", hAlign = "left", x = 2, y = -2, width = 16, height = 16})
+      local panelImage = GraphicsUtil.renderToTexture(
+        panels.size,
+        panels.size,
+        function()
+          panels:drawPanelFrame(1, "normal", 0, 0, panels.size)
+        end,
+        dpiscale,
+        filterMin,
+        filterMag
+      )
+
+      characterButton.panelIcon = ui.ImageContainer({image = panelImage, vAlign = "bottom", hAlign = "left", x = 2, y = -2, width = 16, height = 16})
       characterButton:addChild(characterButton.panelIcon)
     end
 
@@ -636,9 +731,18 @@ end
 
 ---@param player Player
 ---@param width number
----@return BoolSelector rankedSelector
+---@return StackPanel rankedSelectionContainer
 function CharacterSelect:createRankedSelection(player, width)
-  local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, isEnabled = player.isLocal, vFill = true, width = width, vAlign = "center", hAlign = "center"})
+
+  -- player number icon
+  local playerIndex = tableUtils.indexOf(self.players, player)
+  local playerNumberIcon = ui.ImageContainer({
+    image = themes[config.theme].images.IMG_players[playerIndex],
+    scale = 2,
+    vAlign = "center"
+  })
+
+  local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, isEnabled = player.isLocal, vAlign = "center"})
   rankedSelector.onValueChange = function(boolSelector, value)
     GAME.theme:playValidationSfx()
     player:setWantsRanked(value)
@@ -648,31 +752,40 @@ function CharacterSelect:createRankedSelection(player, width)
 
   player:connectSignal("wantsRankedChanged", rankedSelector, rankedSelector.setValue)
 
-  -- player number icon
-  local playerIndex = tableUtils.indexOf(self.players, player)
-  local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
-    hAlign = "left",
-    vAlign = "center",
-    x = 2,
-    scale = 2,
-  })
-  rankedSelector.playerNumberIcon = playerNumberIcon
-  rankedSelector:addChild(rankedSelector.playerNumberIcon)
+  local container = ui.StackPanel(
+    {
+      alignment = "left",
+      height = rankedSelector.height,
+      hAlign = "center",
+      vAlign = "center",
+    }
+  )
+  container.playerNumberIcon = playerNumberIcon
+  container.rankedSelector = rankedSelector
+  container:addElement(playerNumberIcon)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
+  container:addElement(rankedSelector)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
 
-  return rankedSelector
+  return container
 end
 
 ---@param player Player
 ---@param width number
+---@return StackPanel styleSelectionContainer
 ---@return BoolSelector styleSelector
 function CharacterSelect:createStyleSelection(player, width)
+  -- player number icon
+  local playerIndex = tableUtils.indexOf(self.players, player)
+  local playerNumberIcon = ui.ImageContainer({
+    image = themes[config.theme].images.IMG_players[playerIndex],
+    scale = 2,
+    vAlign = "center"
+  })
+
   local styleSelector = ui.BoolSelector({
     startValue = (player.settings.style == GameModes.Styles.MODERN),
-    vFill = true,
-    width = width,
-    vAlign = "center",
-    hAlign = "center",
+    isEnabled = player.isLocal
   })
 
   -- onValueChange should get implemented by the caller
@@ -689,19 +802,20 @@ function CharacterSelect:createStyleSelection(player, width)
     end
   )
 
-  -- player number icon
-  local playerIndex = tableUtils.indexOf(self.players, player)
-  local playerNumberIcon = ui.ImageContainer({
-    image = themes[config.theme].images.IMG_players[playerIndex],
-    hAlign = "left",
+  local container = ui.StackPanel({
+    alignment = "left",
+    height = styleSelector.height,
+    hAlign = "center",
     vAlign = "center",
-    x = 8,
-    scale = 2,
   })
-  styleSelector.playerNumberIcon = playerNumberIcon
-  styleSelector:addChild(styleSelector.playerNumberIcon)
+  container.playerNumberIcon = playerNumberIcon
+  container.styleSelector = styleSelector
+  container:addElement(playerNumberIcon)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
+  container:addElement(styleSelector)
+  container:addElement(ui.UiElement({width = 8, height = 8}))
 
-  return styleSelector
+  return container, styleSelector
 end
 
 function CharacterSelect:createRecordsBox(lastText)
@@ -893,7 +1007,7 @@ function CharacterSelect:createSpeedSlider(player, height, min)
   return uiElement
 end
 
-function CharacterSelect:createDifficultyCarousel(player, height)
+function CharacterSelect:createDifficultyCarousel(player, height, getPresetFunc)
   local passengers = {
     { id = 1, uiElement = ui.Label({text = "easy", vAlign = "center", hAlign = "center"})},
     { id = 2, uiElement = ui.Label({text = "normal", vAlign = "center", hAlign = "center"})},
@@ -918,30 +1032,27 @@ function CharacterSelect:createDifficultyCarousel(player, height)
     -- Just update on every passenger change
   end
 
-  local updateDifficultyData = function(difficultyID)
-    local levelData = LevelPresets.getClassic(difficultyID)
-    player:setDifficulty(difficultyID)
-    if self.battleRoom.mode.name == "endless" and difficultyID == 1 then
-      -- Endless easy uses 5 colors instead of 6
-      levelData:setColorCount(5)
-      -- and by extension also allows adjacent panels of the same colors
-      levelData:setAdjacentDenialFrequency(0)
-    end
-    player:setLevelData(levelData)
-  end
   difficultyCarousel.onPassengerUpdateCallback = function(carousel, selectedPassenger)
-    updateDifficultyData(selectedPassenger.id)
+    player:setDifficulty(selectedPassenger.id)
+    if getPresetFunc then
+      player:setLevelData(getPresetFunc(selectedPassenger.id))
+    end
     GAME.theme:playMoveSfx()
-    self:refresh()
   end
-  -- Note that this updates the player level data which could be wrong before because of the weird endless case
-  -- its probably fine for now, but ideally the model should be right when the battle room is created
-  updateDifficultyData(difficultyCarousel.selectedId)
+
+  -- to update the UI if code gets changed from the backend (e.g. network messages)
+  player:connectSignal("difficultyChanged", difficultyCarousel, difficultyCarousel.setPassengerById)
 
   return difficultyCarousel
 end
 
 function CharacterSelect:updateSelf(dt)
+  self.inputDeviceOverlay:openInputDeviceOverlayIfNeeded()
+
+  if self.inputDeviceOverlay:isActive() then
+    return
+  end
+
   for _, cursor in ipairs(self.ui.cursors) do
     if cursor.player.isLocal and cursor.player.human then
       if not cursor.player.inputConfiguration then

@@ -12,10 +12,11 @@ local BlackFadeTransition = require("client.src.scenes.Transitions.BlackFadeTran
 local Easings = require("client.src.Easings")
 local system = require("client.src.system")
 local GeneratorSource = require("common.engine.GeneratorSource")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 -- A Battle Room is a session of matches, keeping track of the room number, player settings, wins / losses etc
 ---@class BattleRoom : Signal
----@field mode GameMode
+---@field mode GameMode The game mode configuration defining rules, player count, and match settings for this battle room
 ---@field players Player[]
 ---@field spectators string[]
 ---@field spectating boolean
@@ -27,6 +28,7 @@ local GeneratorSource = require("common.engine.GeneratorSource")
 ---@field gameScene table
 ---@field match ClientMatch
 ---@field panelSource table?
+---@field roomNumber integer?
 ---@field sceneParameters table?
 ---@field preferredStageId string? if set, this stage will be used for all matches in the session
 ---@overload fun(mode: GameMode, gameScene: table?): BattleRoom
@@ -42,6 +44,7 @@ function(self, mode, gameScene)
   self.state = 1
   self.matchesPlayed = 0
   self.panelSource = nil
+  self.roomNumber = nil
   self.gameScene = gameScene or require("client.src.scenes." .. mode.gameScene)
   self.sceneParameters = nil
   -- this is a bit naive but effective for now
@@ -59,7 +62,9 @@ end)
 BattleRoom.states = { Setup = 1, MatchInProgress = 2 }
 
 function BattleRoom.createFromServerMessage(message)
-  local battleRoom = BattleRoom(message.gameMode)
+  local gameMode = GameModes.createFromServerData(message.gameMode)
+  local battleRoom = BattleRoom(gameMode)
+  battleRoom.roomNumber = message.roomNumber
 
   if message.spectate_request_granted then
     logger.debug("Joining a match as spectator")
@@ -108,19 +113,8 @@ function BattleRoom.createFromServerMessage(message)
         p = Player(player.name, player.publicId or -i, false)
       end
 
-      -- order is important here as setting style will indirectly also override levelData so it needs to be before updateSettings
-      if gameMode.style ~= GameModes.Styles.CHOOSE then
-        p:setStyle(gameMode.style)
-      else
-        if player.settings.levelData then
-          if player.settings.levelData.frameConstants.GARBAGE_HOVER then
-            p:setStyle(GameModes.Styles.MODERN)
-          else
-            p:setStyle(GameModes.Styles.CLASSIC)
-          end
-        end
-      end
-
+      -- updateSettings will set levelData which triggers levelDataChanged signal
+      -- which will automatically update style based on the levelData
       p:updateSettings(player.settings)
 
       if player.ratingInfo then
@@ -135,37 +129,40 @@ function BattleRoom.createFromServerMessage(message)
 
   battleRoom:updateRankedStatus(message.ranked)
 
-  battleRoom:assignInputConfigurations()
+  battleRoom:restoreInputConfigurations()
   GAME.netClient:registerPlayerUpdates(battleRoom)
 
   return battleRoom
 end
 
-function BattleRoom.createLocalFromGameMode(gameMode, gameScene)
+-- Creates a local (offline) BattleRoom from a GameMode configuration.
+-- For single-player modes, uses the game's main local player. For multi-player modes,
+-- creates temporary local players that don't persist settings changes.
+---@param gameMode GameMode The game mode configuration defining rules and player count
+---@param gameScene table? Optional scene class to use for matches (defaults to mode's gameScene)
+---@param settingChangesUpdateConfig boolean? If true, setting changes update config (default: true). Only applies to single-player modes.
+---@return BattleRoom? battleRoom The created battle room, or nil if input configuration assignment fails
+function BattleRoom.createLocalFromGameMode(gameMode, gameScene, settingChangesUpdateConfig)
+  if settingChangesUpdateConfig == nil then
+    settingChangesUpdateConfig = true
+  end
+
   local battleRoom = BattleRoom(gameMode, gameScene)
 
-  if gameMode.playerCount == 1 then
+  if settingChangesUpdateConfig and gameMode.playerCount == 1 then
     -- always use the game client's local player
     battleRoom:addPlayer(GAME.localPlayer)
   else
     -- with more than 1 local player we can't be sure which player is the "real" regular user
     -- so make them both local players that don't update config settings
     for i = 1, gameMode.playerCount do
-      local player = Player.getLocalPlayer()
+      local player = Player.createLocalPlayerFromConfig()
       player.name = loc("player_n", i)
       battleRoom:addPlayer(player)
     end
   end
 
-  if gameMode.style ~= GameModes.Styles.CHOOSE then
-    for i, player in ipairs(battleRoom.players) do
-      if player.human then
-        battleRoom.players[i]:setStyle(gameMode.style)
-      end
-    end
-  end
-
-  if battleRoom:assignInputConfigurations() then
+  if battleRoom:restoreInputConfigurations() then
     return battleRoom
   else
     return nil
@@ -343,6 +340,7 @@ end
 
 -- creates a match based on the room and player settings, starts it up and switches to the Game scene
 ---@param replay ReplayV3?
+---@return ClientMatch match
 function BattleRoom:startMatch(replay)
   local match
   if replay then
@@ -377,6 +375,8 @@ function BattleRoom:startMatch(replay)
   local scene = self:createScene(match)
   scene:load()
   GAME.navigationStack:push(scene, transition)
+
+  return match
 end
 
 function BattleRoom:createScene(match)
@@ -390,7 +390,7 @@ function BattleRoom:createScene(match)
   end
   
   -- for touch android players load a different scene
-  if (system.isMobileOS() or DEBUG_ENABLED) and self.gameScene.name ~= "PuzzleGame" and
+  if (system.isMobileOS() or DebugSettings.simulateMobileOS()) and self.gameScene.name ~= "PuzzleGame" and
   --but only if they are the only local player cause for 2p vs local using portrait mode would be bad
       tableUtils.count(self.players, function(p) return p.isLocal and p.human end) == 1 then
     for _, player in ipairs(self.players) do
@@ -402,28 +402,6 @@ function BattleRoom:createScene(match)
   if self.gameScene then
     return self.gameScene(sceneParams)
   end
-end
-
--- sets the style of "level" presets the players select from
--- 1 = classic
--- 2 = modern
--- longterm we want to abandon the concept of "style" on the player / battleRoom level
--- just setting difficulty or level should set the levelData and done with it, style is a menu-only concept
--- there is no technical reason why someone on level 10 shouldn't be able to play against someone on Hard
--- for now it's a battleRoom wide setting and players have to match
-function BattleRoom:setStyle(styleChoice)
-  -- style could be configurable per play instead but let's not for now
-  if self.mode.style == GameModes.Styles.CHOOSE then
-    self.style = styleChoice
-    self.onStyleChanged(styleChoice)
-  else
-    error("Trying to set difficulty style in a game mode that doesn't support style selection")
-  end
-end
-
--- not player specific, so this gets a separate callback that can only be overwritten once
--- so the UI can update and load up the different controls for it
-function BattleRoom.onStyleChanged(style, player)
 end
 
 function BattleRoom:startLoadingNewAssets()
@@ -441,87 +419,69 @@ function BattleRoom:startLoadingNewAssets()
   end
 end
 
--- updates a player's input configuration
--- if lock is true it tries to claim the first unclaim inputConfiguration for which a key is down (may not claim any)
--- if lock is false it unclaims the player's current inputConfiguration
-function BattleRoom.updateInputConfigurationForPlayer(player, lock)
-  if lock then
-    for i, inputConfiguration in ipairs(GAME.input.inputConfigurations) do
-      if not inputConfiguration.claimed and tableUtils.length(inputConfiguration.isDown) > 0 then
-        -- assign the first unclaimed input configuration that is used
-        player:setInputMethod("controller")
-        logger.debug("Claiming input configuration " .. i .. " for player " .. player.playerNumber)
-        player:restrictInputs(inputConfiguration)
-        break
-      end
-    end
-    if not player.inputConfiguration and not GAME.input.mouse.claimed then
-      if tableUtils.length(GAME.input.mouse.isDown) > 0 or tableUtils.length(GAME.input.mouse.isPressed) > 0 then
-        player:setInputMethod("touch")
-        logger.debug("Claiming touch configuration for player " .. player.playerNumber)
-        player:restrictInputs(GAME.input.mouse)
-      end
-    end
-  else
-    -- player can always go from controller to touch but not the other way around
-    player:setInputMethod("controller")
-    player:unrestrictInputs()
-  end
-end
+-- Validates that there are enough input configurations for local players and attempts to restore previous assignments
+function BattleRoom:restoreInputConfigurations()
+  local localPlayers = self:getLocalHumanPlayers()
 
--- sets up the process to get an input configuration assigned for every local player
--- returns false if there are more players than input configurations
-function BattleRoom:assignInputConfigurations()
-  local localPlayers = {}
-  for i = 1, #self.players do
-    if self.players[i].isLocal and self.players[i].human then
-      localPlayers[#localPlayers + 1] = self.players[i]
-    end
-  end
-
-  -- assert that there are enough valid input configurations actually configured
-  -- 1 is the baseline because you can always use touch without configuration
-  local validInputConfigurationCount = 1
-  for _, inputConfiguration in ipairs(GAME.input.inputConfigurations) do
-    if inputConfiguration["Swap1"] then
-      validInputConfigurationCount = validInputConfigurationCount + 1
-    end
-  end
-
-  if validInputConfigurationCount < #localPlayers then
-    local messageText = "There are more local players than input configurations configured." ..
-    "\nPlease configure enough input configurations and try again"
-    local transition = MessageTransition(GAME.timer, 5, messageText)
+  if #GAME.input:getAssignableDevices() < #localPlayers then
+    local transition = MessageTransition(GAME.timer, 5, "more_players_than_configs")
     GAME.navigationStack:popToTop(transition, function() self:shutdown() end)
     return false
-  else
-    if #localPlayers == 1 then
-      -- lock the inputConfiguration whenever the player readies up (and release it when they unready)
-      -- the ready up press guarantees that at least 1 input config has a key down
-      localPlayers[1]:connectSignal("wantsReadyChanged", localPlayers[1], self.updateInputConfigurationForPlayer)
-    elseif #localPlayers > 1 then
-      -- with multiple local players we need to lock immediately so they can configure
-      -- set a flag so this is continuously attempted in update
-      self.tryLockInputs = true
+  end
+
+  -- Try to restore previous device assignments
+  for _, player in ipairs(localPlayers) do
+    if player.lastUsedInputConfiguration then
+      -- Check if the device is available (not already claimed by another player)
+      local deviceAvailable = true
+      for _, otherPlayer in ipairs(localPlayers) do
+        if otherPlayer ~= player and otherPlayer.inputConfiguration == player.lastUsedInputConfiguration then
+          deviceAvailable = false
+          break
+        end
+      end
+
+      if deviceAvailable then
+        local success = self:claimDeviceForPlayer(player, player.lastUsedInputConfiguration)
+        if success then
+          logger.debug(string.format("BattleRoom: restored device for player %d", player.playerNumber))
+        end
+      end
     end
   end
 
   return true
 end
 
--- tries to assign unclaimed input configurations for all local players based on currently used inputs
-function BattleRoom:tryAssignInputConfigurations()
-  if self.tryLockInputs then
-    for _, player in ipairs(self.players) do
-      if player.isLocal and player.human and not player.inputConfiguration then
-        BattleRoom.updateInputConfigurationForPlayer(player, true)
-      end
+-- Gets all local human players in the battle room
+---@return Player[] localHumanPlayers
+function BattleRoom:getLocalHumanPlayers()
+  local localPlayers = {}
+  for _, player in ipairs(self.players) do
+    if player.isLocal and player.human then
+      localPlayers[#localPlayers + 1] = player
     end
-    self.tryLockInputs = tableUtils.trueForAny(self.players,
-                          function(p)
-                            return p.isLocal and p.human and not p.inputConfiguration
-                          end)
   end
+  return localPlayers
+end
+
+-- Claims an input device for a specific player
+function BattleRoom:claimDeviceForPlayer(player, device)
+  assert(player, "player is required")
+  assert(device, "device is required")
+  logger.debug(string.format("BattleRoom:claimDeviceForPlayer player=%s device=%s", tostring(player.playerNumber), tostring(device)))
+
+  if player.inputConfiguration == device then
+    logger.debug("BattleRoom:claimDeviceForPlayer device already assigned to player")
+    return true
+  end
+
+  assert(not device.claimed or device.player == player, "device already claimed by another player")
+
+  player:unrestrictInputs()
+  player:restrictInputs(device)
+
+  return true
 end
 
 function BattleRoom:update(dt)
@@ -530,7 +490,6 @@ function BattleRoom:update(dt)
 
   if self.state == BattleRoom.states.Setup then
     -- the setup phase of the room
-    self:tryAssignInputConfigurations()
     self:updateLoadingState()
     self:refreshReadyStates()
     if self:allReady() then
@@ -565,7 +524,7 @@ end
 function BattleRoom:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1
 
-  if not match.aborted then
+  if not match.engine.aborted then
     local winners = match:getWinners()
     -- apply wins and possibly statistical data up for collection
     if #winners == 1 then
@@ -581,9 +540,6 @@ function BattleRoom:onMatchEnded(match)
       GAME.netClient:reportLocalGameResult(winners)
     end
   else
-    -- match:deinit is the responsibility of the one switching out of the game scene
-    match:deinit()
-
     -- in the case of a network based abort (== opponent left / disconnected in some way),
     --  the network part of the battleRoom would unregister from the onMatchEnded signal
     --  and initialise the transition to wherever else before calling abort on the match to finalize it

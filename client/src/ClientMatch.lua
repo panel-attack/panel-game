@@ -16,6 +16,7 @@ local Telegraph = require("client.src.graphics.Telegraph")
 local MatchParticipant = require("client.src.MatchParticipant")
 local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 local NetworkProtocol = require("common.network.NetworkProtocol")
+local DebugSettings = require("client.src.debug.DebugSettings")
 ---@module "client.src.ChallengeModePlayerStack"
 
 ---@class ClientMatch
@@ -84,7 +85,7 @@ function ClientMatch.createFromGameMode(players, gameMode, panelSource, ranked, 
   clientMatch.panelSource = panelSource
   clientMatch.supportsPause = #players == 1 and players[1].isLocal
 
-  clientMatch:setup()
+  clientMatch:setupFromGameMode()
 
   return clientMatch
 end
@@ -140,10 +141,12 @@ function ClientMatch.createFromReplay(replay, players)
     clientMatch.stacks[i] = clientStack
   end
 
+  clientMatch:sharedSetup()
+
   return clientMatch
 end
 
-function ClientMatch:setup()
+function ClientMatch:setupFromGameMode()
   self.engine = Match(self.panelSource, self.matchRules)
 
   self.stacks = {}
@@ -189,7 +192,14 @@ function ClientMatch:setup()
     end
   end
 
+  self:sharedSetup()
+
   self.replay = self.engine:createNewReplay()
+end
+
+
+function ClientMatch:sharedSetup()
+  self.engine.debug.vsFramesBehind = DebugSettings.getVSFramesBehind()
 end
 
 function ClientMatch:run()
@@ -266,7 +276,7 @@ function ClientMatch:start()
       self.panicTicksPlayed[i] = false
     end
 
-    self.panicTickStartTime = (self.engine.timeLimit - 15) * 60
+    self.panicTickStartTime = self.engine.timeLimit - 15 * 60
     if self.engine.doCountdown then
       self.panicTickStartTime = self.panicTickStartTime + consts.COUNTDOWN_START + consts.COUNTDOWN_LENGTH
     end
@@ -334,7 +344,6 @@ function ClientMatch:setStage(stageId)
 end
 
 function ClientMatch:abort()
-  self.aborted = true
   self.engine:abort()
   self:handleMatchEnd()
 end
@@ -353,6 +362,9 @@ function ClientMatch:getWinningPlayerCharacter()
 end
 
 function ClientMatch:togglePause()
+  if not self.supportsPause then
+    error("Tried to pause a non-pausable match")
+  end
   self.isPaused = not self.isPaused
   self:emitSignal("pauseChanged", self)
 end
@@ -396,10 +408,10 @@ function ClientMatch:finalizeReplay()
           ---@cast player Player
           metadata.name = player.name
           metadata.publicId = player.publicId
-          if player.settings.style == GameModes.Styles.MODERN then
-            metadata.level = player.settings.level
-          else
-            metadata.difficulty = player.settings.difficulty
+          if stack.level then
+            metadata.level = stack.level
+          elseif stack.difficulty then
+            metadata.difficulty = stack.difficulty
           end
           metadata.analytics = player.stack.analytic.data
           ---@diagnostic disable-next-line: inject-field
@@ -530,8 +542,8 @@ function ClientMatch:drawTimer()
   -- Draw the timer for time attack
   local frames = 0
   local stack = self.stacks[1]
-  if stack ~= nil and stack.engine.game_stopwatch ~= nil and tonumber(stack.engine.game_stopwatch) ~= nil then
-    frames = stack.engine.game_stopwatch
+  if stack ~= nil and stack.engine.stopWatch ~= nil and tonumber(stack.engine.stopWatch) ~= nil then
+    frames = stack.engine.stopWatch
   end
 
   if self.engine.timeLimit then
@@ -560,7 +572,7 @@ end
 
 function ClientMatch:drawCommunityMessage()
   -- Draw the community message
-  if not config.debug_mode then
+  if not DebugSettings.showStackDebugInfo() then
     GraphicsUtil.printf(join_community_msg or "", 0, 668, consts.CANVAS_WIDTH, "center")
   end
 end
@@ -599,7 +611,7 @@ function ClientMatch:render()
     end
   end
 
-  if config.debug_mode then
+  if DebugSettings.showStackDebugInfo() then
     local padding = 14
     local drawX = 500
     local drawY = -4

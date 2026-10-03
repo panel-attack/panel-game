@@ -1,4 +1,5 @@
 -- A collection of table utilility functions 
+require("table.clear")
 local tableUtils = {} 
  
 -- returns a new table where the value of each pair is replaced by the return value of running it through the supplied function 
@@ -85,6 +86,14 @@ function tableUtils.trueForAll(tab, condition)
       end
     end
     return true
+  end
+end
+
+-- Clears destination and shallow copies every key of source into it, keeping destination's metatable
+function tableUtils.replaceContents(destination, source)
+  table.clear(destination)
+  for k, v in pairs(source) do
+    destination[k] = v
   end
 end
 
@@ -225,6 +234,40 @@ function tableUtils.count(tab, func)
     end
   end
   return count
+end
+
+-- A helper function to deal with artifacts from json serialization+deserialization</br>
+-- Json only allows strings as keys so the serializer will treat sparse arrays as key-value pairs and convert integer keys to strings.
+-- This makes sense because if the array is both big and sparse, we would have a huge overhead in `nil,` entries and it would be difficult to deduce an index for a value. </br>
+-- This function can be called to convert every number-like key on a table back to a number to revert this effect.
+---@generic T
+---@param tab T
+---@return T
+function tableUtils.reassignIntegerKeysAfterJsonification(tab)
+  local index, _ = next(tab)
+  if index == nil then
+    -- table is empty
+    return tab
+  elseif type(index) == "number" then
+    -- the table already uses number keys so the json used a sparse array instead of a key-value notation
+    -- this can happen if the highest index is low or there are little or no gaps
+    return tab
+  elseif type(index) == "string" then
+    local tNew = {}
+    for key, value in pairs(tab) do
+      if type(key) == "string" then
+        local numberKey = tonumber(key)
+        if numberKey then
+          tNew[numberKey] = value
+        else
+          error("Found non-number key " .. key .. " in table")
+        end
+      end
+    end
+    return tNew
+  else
+    error("Unexpected key type " .. type(index) .. " as table index")
+  end
 end
 
 return tableUtils

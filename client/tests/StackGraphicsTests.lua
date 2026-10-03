@@ -20,13 +20,13 @@ local legacyScoreY = 208
 ---@param theme table?
 ---@return ClientMatch
 local function createEndlessClientMatch(playerCount, theme)
-  local endless = GameModes.getPreset("ONE_PLAYER_ENDLESS")
+  local endless = GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS)
   local players = {}
   if playerCount == nil then
     playerCount = 1
   end
   for i = 1, playerCount do
-    local player = Player.getLocalPlayer()
+    local player = Player.createLocalPlayerFromConfig()
     player.isLocal = false
     player:setLevel(10)
     player:setLevelData(LevelPresets.getModern(10))

@@ -226,7 +226,7 @@ The default option if not specified. Also deprecated, please use per_chain style
 	x4 plays "chain2",  
 	x5 plays "chain_echo",   
 	x6+ plays "chain2_echo"  
-Due to backwards compatibility reason the classic system remains as the default.  
+Due to backwards compatibility reasons the classic system remains as the default.  
 If you wish to use classic style chain sounds, you can use the per_chain system.  
 Simply rename the classic system's  
 "chain" as "chain2",  
@@ -255,7 +255,8 @@ Available options are "classic" and "per_combo".
 ##### classic
 
 The default option if not specified.  
-For combos of any size this will play the SFX "combo" (,"combo2", "combo3", ...) [selected at random if more than one]
+For combos of any size this will play the SFX "combo1" (,"combo2", "combo3", ...) [selected at random if more than one exists]  
+Combos **need** to be numbered sequentially, you cannot skip any number. You may use "combo" instead of "combo1" (legacy support).
 
 ##### per_combo
 
@@ -331,7 +332,11 @@ You can use the Ctrl+Shift+Alt+C shortcut to reload character graphics in the ga
 
 ### Garbage assets
 
-See https://cdn.discordapp.com/attachments/417706389813592068/874106744392007680/garbage_ref.png for an arrangement overview.
+Before creating garbage, take a look at the arrangement overview for the garbage files.
+
+![Arrangement overview](./images/garbageReference.png)
+
+These 10 sprites build a unit. Using different sizes and resolutions within these 10 sprites may lead to unexpected results. It is generally recommended to provide the full set and not make use of the built-in fallback textures.
 
 #### Filler sprites
 
@@ -358,7 +363,7 @@ This will get drawn on top of the filler sprites.
 
 ##### face
 
-Sprite for the center of garbage pieces of odd-numbered height (1, 3, ...)  
+Sprite for the center of garbage pieces of odd-numbered height (1, 3, ...), or all of them if face2 is not provided  
 Aspect ratio: 1:1 (square)  
 Recommended size: 96x96px
 

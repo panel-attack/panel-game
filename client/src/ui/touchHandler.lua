@@ -10,15 +10,19 @@ local touchHandler = {
 }
 
 function touchHandler:touch(x, y)
-  local activeScene = GAME.navigationStack:getActiveScene()
-  -- if there is no active scene that implies an on-going scene switch, no interactions should be possible
-  if activeScene then
-    -- prevent multitouch
+  -- prevent multitouch
+  if not self.touchedElement then
+    self.touchedElement = GAME.uiRoot:getTouchedElement(x, y)
+
     if not self.touchedElement then
-      self.touchedElement = activeScene.uiRoot:getTouchedElement(x, y)
-      if self.touchedElement and self.touchedElement.onTouch then
-        self.touchedElement:onTouch(x, y)
+      local activeScene = GAME.navigationStack:getActiveScene()
+      if activeScene and activeScene.uiRoot then
+        self.touchedElement = activeScene.uiRoot:getTouchedElement(x, y)
       end
+    end
+
+    if self.touchedElement and self.touchedElement.onTouch then
+      self.touchedElement:onTouch(x, y)
     end
   end
 end

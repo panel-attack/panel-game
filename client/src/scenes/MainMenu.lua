@@ -5,6 +5,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local AnimationLoader = require("client.src.graphics.AnimationLoader")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
+local DebugSettings = require("client.src.debug.DebugSettings")
 local EndlessMenu = require("client.src.scenes.EndlessMenu")
 local PuzzleMenu = require("client.src.scenes.PuzzleMenu")
 local TimeAttackMenu = require("client.src.scenes.TimeAttackMenu")
@@ -13,7 +14,6 @@ local TrainingMenu = require("client.src.scenes.TrainingMenu")
 local ChallengeModeMenu = require("client.src.scenes.ChallengeModeMenu")
 local Lobby = require("client.src.scenes.Lobby")
 local LocalGameModeSelectionScene = require("client.src.scenes.LocalGameModeSelectionScene")
-local CharacterSelect2p = require("client.src.scenes.CharacterSelect2p")
 local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 local InputConfigMenu = require("client.src.scenes.InputConfigMenu")
 local SetNameMenu = require("client.src.scenes.SetNameMenu")
@@ -24,7 +24,6 @@ local system = require("client.src.system")
 local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local EndlessGame = require("client.src.scenes.EndlessGame")
 local VsSelfGame = require("client.src.scenes.VsSelfGame")
-local GameBase = require("client.src.scenes.GameBase")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 
   local SCENE_PATH = themes[config.theme].path .. "/scenes/"
@@ -45,28 +44,38 @@ local function switchToScene(scene, transition)
   GAME.navigationStack:push(scene, transition)
 end
 
+function MainMenu:refresh()
+  if self.menu then
+    self.menu:detach()
+    self.menu = nil
+  end
+
+  self.menu = self:createMainMenu()
+  self.uiRoot:addChild(self.menu)
+end
+
 function MainMenu:createMainMenu()
 
   local menuItems = {ui.MenuItem.createButtonMenuItem("mm_1_endless", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_ENDLESS"), EndlessGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS), EndlessGame)
       if GAME.battleRoom then
         switchToScene(EndlessMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_puzzle", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_PUZZLE"), PuzzleGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_PUZZLE), PuzzleGame)
       if GAME.battleRoom then
         switchToScene(PuzzleMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_time", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_TIME_ATTACK"), TimeAttackGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TIME_ATTACK), TimeAttackGame)
       if GAME.battleRoom then
         switchToScene(TimeAttackMenu({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("mm_1_vs", nil, nil, function()
-      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset("ONE_PLAYER_VS_SELF"), VsSelfGame)
+      GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF), VsSelfGame)
       if GAME.battleRoom then
         switchToScene(CharacterSelectVsSelf({battleRoom = GAME.battleRoom}))
       end
@@ -109,12 +118,12 @@ function MainMenu:createMainMenu()
                         }
 
   local function addDebugMenuItems()
-    if config.debugShowServers then
+    if DebugSettings.showDebugServers() then
       for i, menuItem in ipairs(debugMenuItems) do
         menu:addMenuItem(i + 7, menuItem)
       end
     end
-    if config.debugShowDesignHelper then
+    if DebugSettings.showDesignHelper() then
       menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
           switchToScene(DesignHelper())
         end))
@@ -153,7 +162,7 @@ function MainMenu:checkForUpdates()
 end
 
 function MainMenu:updateSelf(dt)
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(GAME.input, dt)
 
   self:checkForUpdates()
 end
@@ -190,7 +199,7 @@ function MainMenu:drawSelf()
 
 
     local showUpdaterUpdateWarning = false
-    if GAME.updater.version.major < 1 or (GAME.updater.version.major == 1 and GAME.updater.version.minor < 1) then
+    if system.meetsLoveVersionRequirement(12, 0) and GAME.updater.version.major < 2 or (GAME.updater.version.major == 2 and GAME.updater.version.minor < 0) then
       showUpdaterUpdateWarning = true
     elseif GAME.updater.version.major == 1 and GAME.updater.version.minor < 2 then
       local _, _, vendor, _ = love.graphics.getRendererInfo( )

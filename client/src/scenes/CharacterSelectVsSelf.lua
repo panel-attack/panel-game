@@ -70,6 +70,8 @@ function CharacterSelectVsSelf:loadUserInterface()
   self.ui.pageTurnButtons = self:createPageTurnButtons(self.ui.characterGrid)
 
   self.ui.leaveButton = self:createLeaveButton()
+  self.ui.changeInputButton = self:createChangeInputButton()
+  self.ui.grid:createElementAt(8, 6, 1, 1, "changeInputButton", self.ui.changeInputButton)
   self.ui.grid:createElementAt(9, 6, 1, 1, "leaveButton", self.ui.leaveButton)
 
   self.ui.cursors[1] = self:createCursor(self.ui.grid, player)
@@ -85,14 +87,13 @@ function CharacterSelectVsSelf:refresh()
   local level
   if self.battleRoom then
     level = self.battleRoom.players[1].settings.level
-  else
-    level = GAME.localPlayer.settings.level
+    self.lastScore = GAME.scores:lastVsScoreForLevel(level)
+    self.record = GAME.scores:recordVsScoreForLevel(level)
+    if self.ui.recordBox then
+      self.ui.recordBox:setLastResult(self.lastScore)
+      self.ui.recordBox:setRecord(self.record)
+    end
   end
-
-  self.lastScore = GAME.scores:lastVsScoreForLevel(level)
-  self.record = GAME.scores:recordVsScoreForLevel(level)
-  self.ui.recordBox:setLastResult(self.lastScore)
-  self.ui.recordBox:setRecord(self.record)
 end
 
 return CharacterSelectVsSelf

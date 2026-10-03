@@ -15,6 +15,7 @@ local ui = require("client.src.ui")
 local FileUtils = require("client.src.FileUtils")
 local ClientStack = require("client.src.ClientStack")
 local MatchRules = require("common.data.MatchRules")
+local DebugSettings = require("client.src.debug.DebugSettings")
 
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
@@ -289,7 +290,8 @@ function GameBase:readyToProceedToNextScene()
 end
 
 function GameBase:startNextScene()
-  GAME.navigationStack:pop()
+  -- match:deinit is the responsibility of the one switching out of the game scene
+  GAME.navigationStack:pop(nil, function() self.match:deinit() end)
 end
 
 function GameBase:runGame(dt)
@@ -444,14 +446,14 @@ function GameBase:drawHUD()
       end
 
       stack:drawLevel()
-      if stack.analytic and not config.debug_mode then
+      if stack.analytic and not DebugSettings.showStackDebugInfo() then
         --prof.push("Stack:drawAnalyticData")
         stack:drawAnalyticData()
         --prof.pop("Stack:drawAnalyticData")
       end
     end
 
-    if not config.debug_mode and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details
+    if not DebugSettings.showStackDebugInfo() and GAME.battleRoom and GAME.battleRoom.spectatorString then -- this is printed in the same space as the debug details
       GraphicsUtil.print(GAME.battleRoom.spectatorString, themes[config.theme].spectators_Pos[1], themes[config.theme].spectators_Pos[2])
     end
 
@@ -482,6 +484,7 @@ function GameBase:drawEndGameText()
   end
 end
 
+---@param match ClientMatch
 function GameBase:genericOnMatchEnded(match)
   self:setupGameOver()
   -- matches always sort players to have locals in front so if 1 isn't local, none is

@@ -167,7 +167,7 @@ function ModManagement:loadStageGrid()
     if stageId ~= consts.RANDOM_STAGE_SPECIAL_VALUE then
       local stage = allStages[stageId]
       local icon = ui.ImageContainer({drawBorders = true, image = stage.images.thumbnail, hFill = true, vFill = true, hAlign = "center", vAlign = "center"})
-      local enableSelector = ui.BoolSelector({startValue = not not stages[stage.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local enableSelector = ui.BoolSelector({startValue = not not stages[stage.id], hAlign = "center", vAlign = "center"})
       enableSelector.onValueChange = function(boolSelector, value)
         GAME.theme:playValidationSfx()
         stage:enable(boolSelector.value)
@@ -177,11 +177,9 @@ function ModManagement:loadStageGrid()
           boolSelector:setValue(not boolSelector.value)
           stage:enable(boolSelector.value)
         end
-        if not boolSelector.value and stage.id == config.stage and #visibleStages > 0 then
-          GAME.localPlayer:setStage(stages[consts.RANDOM_STAGE_SPECIAL_VALUE])
-        end
+        GAME.localPlayer:refreshDisabledSelections()
       end
-      local visibilitySelector = ui.BoolSelector({startValue = stage.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local visibilitySelector = ui.BoolSelector({startValue = stage.isVisible, hAlign = "center", vAlign = "center"})
       visibilitySelector.onValueChange = function(boolSelector, value)
       end
       local name = ui.Label({text = stage.display_name, translate = false, hAlign = "center", vAlign = "center"})
@@ -241,7 +239,7 @@ function ModManagement:loadCharacterGrid()
     if characterId ~= consts.RANDOM_CHARACTER_SPECIAL_VALUE then
       local character = allCharacters[characterId]
       local icon = ui.ImageContainer({drawBorders = true, image = character.images.icon, hFill = true, vFill = true})
-      local enableSelector = ui.BoolSelector({startValue = not not characters[character.id], hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local enableSelector = ui.BoolSelector({startValue = not not characters[character.id], hAlign = "center", vAlign = "center"})
       enableSelector.onValueChange = function(boolSelector, value)
         GAME.theme:playValidationSfx()
         character:enable(boolSelector.value)
@@ -251,11 +249,9 @@ function ModManagement:loadCharacterGrid()
           boolSelector:setValue(not boolSelector.value)
           character:enable(boolSelector.value)
         end
-        if not boolSelector.value and character.id == config.character and #visibleCharacters > 0 then
-          GAME.localPlayer:setCharacter(characters[consts.RANDOM_CHARACTER_SPECIAL_VALUE])
-        end
+        GAME.localPlayer:refreshDisabledSelections()
       end
-      local visibilitySelector = ui.BoolSelector({startValue = character.isVisible, hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+      local visibilitySelector = ui.BoolSelector({startValue = character.isVisible, hAlign = "center", vAlign = "center"})
       visibilitySelector.onValueChange = function(boolSelector, value)
       end
       local displayName = ui.Label({text = character.display_name, translate = false, hAlign = "center", vAlign = "center"})

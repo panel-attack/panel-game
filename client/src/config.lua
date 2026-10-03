@@ -3,12 +3,13 @@ json = require("common.lib.dkjson")
 local util = require("common.lib.util")
 local fileUtils = require("client.src.FileUtils")
 local consts = require("common.engine.consts")
+local DebugSettings = require("client.src.debug.DebugSettings")
 require("client.src.globals")
 
 -- Default configuration values
 ---@class UserConfig
 ---@field version string
----@field language_code string
+---@field language_code string?
 ---@field theme string
 ---@field panels string?
 ---@field character string
@@ -27,12 +28,7 @@ require("client.src.globals")
 ---@field SFX_volume number
 ---@field music_volume number
 ---@field enableMenuMusic boolean
----@field debug_mode boolean
----@field debugShowServers boolean
----@field debugShowDesignHelper boolean
----@field debugProfile boolean
----@field debugProfileThreshold integer
----@field debug_vsFramesBehind integer
+---@field debug DebugConfig?
 ---@field show_fps boolean
 ---@field show_ingame_infos boolean
 ---@field danger_music_changeback_delay boolean
@@ -55,13 +51,13 @@ require("client.src.globals")
 ---@field display integer
 ---@field windowX number?
 ---@field windowY number?
----@alias DebugConfig UserConfig
+---@field discordCommunityShown boolean
 config = {
     -- The last used engine version
     version                       = consts.ENGINE_VERSION,
 
       -- Lang used for localization
-    language_code                 = "EN",
+    language_code                 = nil,
 
     -- Last selected theme, panels, character and stage
     theme                         = consts.DEFAULT_THEME_DIRECTORY,
@@ -94,12 +90,8 @@ config = {
     SFX_volume                    = 50,
     music_volume                  = 50,
     enableMenuMusic               = true,
-    -- Debug mode flag
-    debug_mode                    = false,
-    debugShowServers              = false,
-    debugShowDesignHelper         = false,
-    debugProfile                  = false,
-    debugProfileThreshold         = 50,
+    -- Debug settings persisted separately
+    debug                         = DebugSettings.getDefaultConfigValues(),
 
     -- Show FPS in the top-left corner of the screen
     show_fps                      = false,
@@ -139,15 +131,16 @@ config = {
     display                       = 1,
     windowX                       = nil,
     windowY                       = nil,
+    discordCommunityShown         = false,
   }
 
   -- writes to the "conf.json" file
   function write_conf_file()
     pcall(
       function()
-        local encodedConfig = json.encode(config)
-        ---@cast encodedConfig string
-        love.filesystem.write("conf.json", encodedConfig)
+        local encoded = json.encode(config)
+        ---@cast encoded string
+        love.filesystem.write("conf.json", encoded)
       end
     )
   end
@@ -167,7 +160,7 @@ config = {
         if read_data then
           -- do stuff using read_data.version for retrocompatibility here
 
-          if type(read_data.theme) == "string" and love.filesystem.getInfo(THEME_DIRECTORY_PATH .. read_data.theme .. "/config.json") then
+          if type(read_data.theme) == "string" and fileUtils.exists(THEME_DIRECTORY_PATH .. read_data.theme .. "/config.json") then
             configTable.theme = read_data.theme
           end
 
@@ -229,19 +222,6 @@ config = {
           if type(read_data.music_volume) == "number" then
             configTable.music_volume = util.bound(0, read_data.music_volume, 100)
           end
-          if type(read_data.debug_mode) == "boolean" then
-            configTable.debug_mode = read_data.debug_mode
-          end
-          if type(read_data.debugShowServers) == "boolean" then
-            configTable.debugShowServers = read_data.debugShowServers
-          end
-          if type(read_data.debugShowDesignHelper) == "boolean" then
-            configTable.debugShowDesignHelper = read_data.debugShowDesignHelper
-          end
-          if type(read_data.debugProfile) == "boolean" then
-            configTable.debugProfile = read_data.debugProfile
-          end
-          -- debugProfileThreshold is not saved to prevent accidental dense profiling
           if type(read_data.show_fps) == "boolean" then
             configTable.show_fps = read_data.show_fps
           end
@@ -313,6 +293,11 @@ config = {
           if type(read_data.enableMenuMusic) == "boolean" then
             configTable.enableMenuMusic = read_data.enableMenuMusic
           end
+          if type(read_data.discordCommunityShown) == "boolean" then
+            configTable.discordCommunityShown = read_data.discordCommunityShown
+          end
+
+          configTable.debug = DebugSettings.normalizeConfigValues(read_data.debug)
         end
 
       end

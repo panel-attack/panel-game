@@ -37,6 +37,7 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.pageIndicator = self:createPageIndicator(self.ui.characterGrid)
 
   self.ui.leaveButton = self:createLeaveButton()
+  self.ui.changeInputButton = self:createChangeInputButton()
   self.ui.rankedSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
   self.ui.rankedSelection:setTitle("ss_ranked")
 
@@ -67,6 +68,7 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.grid:createElementAt(9, 2, 1, 1, "readyButton", self.ui.readyButton)
   self.ui.grid:createElementAt(1, 3, characterGridWidth, characterGridHeight, "characterSelection", self.ui.characterGrid, true)
   self.ui.grid:createElementAt(5, 6, 1, 1, "pageIndicator", self.ui.pageIndicator)
+  self.ui.grid:createElementAt(8, 6, 1, 1, "changeInputButton", self.ui.changeInputButton)
   self.ui.grid:createElementAt(9, 6, 1, 1, "leaveButton", self.ui.leaveButton)
 
   self.ui.characterIcons = {}

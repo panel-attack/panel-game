@@ -40,6 +40,7 @@ local flags = {
 ---@field main_menu_y_max number
 ---@field main_menu_max_height number
 ---@field defaultStage Stage
+---@field colors table<string, number[]> color palette where each value is an RGBA array of four numbers (0-1 range)
 Theme =
   class(
 ---@param self Theme
@@ -57,6 +58,22 @@ Theme =
     self.main_menu_screen_pos = {0, 0} -- the top center position of most menus
     self.main_menu_y_max = 0
     self.main_menu_max_height = 0
+
+    self.colors = {
+      menuDefaultBackgroundColor = {1, 1, 1, 0.15},
+      menuDefaultBorderColor = {1, 1, 1, 0.15},
+      menuSelectedBackgroundColor = {0.6, 0.6, 1, 0.15},
+      menuSelectedBorderColor = {0.6, 0.6, 1, 0.15},
+      activeBackgroundColor = {0.2, 0.3, 0.4, 0.9},
+      darkTransparentBackgroundColor = {0, 0, 0, 0.75},
+      highlightTextColor = {1, 1, 0.3, 1},
+      inputSlotDefaultBackgroundColor = {0.2, 0.2, 0.2, 0.9},
+      inputSlotDefaultBorderColor = {0.4, 0.4, 0.4, 0.9},
+      inputSlotSelectedBackgroundColor = {0.2, 0.2, 0.34, 1.0},
+      inputSlotSelectedBorderColor = {0.5, 0.5, 0.8, 1.0},
+      incompleteConfigBackgroundColor = {0.918, 0.251, 0.275, 1.0},
+      configCorrectBackgroundColor = {0.3, .3, .3, 0.7}
+    }
   end
 )
 
@@ -237,19 +254,19 @@ function Theme:loadVersion3DefaultValues()
     self.moveLabel_Scale = 1
     self.moveLabel_Pos = {312, 60}
     self.move_Scale = 1
-    self.move_Pos = {354, 86}
+    self.move_Pos = {355, 86}
     self.scoreLabel_Scale = 1
     self.scoreLabel_Pos = {316, 64}
     self.score_Scale = 0.5
-    self.score_Pos = {352, 88}
+    self.score_Pos = {355, 88}
     self.speedLabel_Scale = 1
     self.speedLabel_Pos = {316, 122}
     self.speed_Scale = 0.5
-    self.speed_Pos = {352, 146}
+    self.speed_Pos = {355, 146}
     self.ratingLabel_Scale = 1
     self.ratingLabel_Pos = {310, 180}
     self.rating_Scale = 0.5
-    self.rating_Pos = {354, 206}
+    self.rating_Pos = {355, 206}
     self.winLabel_Scale = 1
     self.winLabel_Pos = {318, -246}
     self.win_Scale = 0.75
@@ -360,6 +377,42 @@ local function loadPlayerNumberIcons(theme)
   return theme.images.IMG_players
 end
 
+local function loadInputPromptIcons(theme)
+  local icons = {}
+
+  -- Load basic device types
+  icons.controller = theme:load_theme_img("input/controller")
+  icons.keyboard = theme:load_theme_img("input/keyboard")
+  icons.touch = theme:load_theme_img("input/touch")
+  icons.mouse = theme:load_theme_img("input/mouse")
+
+  -- Load specific controller variants
+  icons.controller_variants = {}
+  icons.controller_variants.generic = theme:load_theme_img("input/controller_generic")
+  icons.controller_variants.playstation1 = theme:load_theme_img("input/controller_playstation1")
+  icons.controller_variants.playstation2 = theme:load_theme_img("input/controller_playstation2")
+  icons.controller_variants.playstation3 = theme:load_theme_img("input/controller_playstation3")
+  icons.controller_variants.playstation4 = theme:load_theme_img("input/controller_playstation4")
+  icons.controller_variants.playstation5 = theme:load_theme_img("input/controller_playstation5")
+  icons.controller_variants.xbox360 = theme:load_theme_img("input/controller_xbox360")
+  icons.controller_variants.xboxone = theme:load_theme_img("input/controller_xboxone")
+  icons.controller_variants.xboxseries = theme:load_theme_img("input/controller_xboxseries")
+  icons.controller_variants.switch_pro = theme:load_theme_img("input/controller_switch_pro")
+
+  -- Load add controller icon
+  icons.controller_add = theme:load_theme_img("input/controller_add")
+  icons.controller_error = theme:load_theme_img("input/error")
+
+  -- Load device number overlays
+  icons.device_numbers = {}
+  for i = 0, 9 do
+    icons.device_numbers[i] = theme:load_theme_img("input/device_number_" .. i)
+  end
+
+  theme.images.inputPrompts = icons
+  return theme.images.inputPrompts
+end
+
 function Theme:loadSelectionGraphics()
   self.images.flags = {}
   for _, flag in ipairs(flags) do
@@ -393,7 +446,15 @@ function Theme:loadSelectionGraphics()
   self.images.IMG_random_character = self:load_theme_img("random_character")
 
   loadPlayerNumberIcons(self)
+  loadInputPromptIcons(self)
   loadGridCursors(self)
+
+  self.images.IMG_checkBox = {}
+  self.images.IMG_checkBox[true] = self:load_theme_img("checkbox_checked")
+  self.images.IMG_checkBox[false] = self:load_theme_img("checkbox_unchecked")
+  self.images.fight = self:load_theme_img("fight")
+  self.images.stopWatch = self:load_theme_img("stopwatch")
+  self.images.endless = self:load_theme_img("endless")
 end
 
 function Theme:loadIngameGraphics()
@@ -507,15 +568,15 @@ function Theme:loadCards()
   -- Chain card loading
   -- load as many chain cards as there are available until 99
   -- we assume if the theme provided any chains, they want to control all of them so don't load backups
-  local hasChainCards = love.filesystem.getInfo(self.path .. "/chain")
-  local wantsBackupChainCards = hasChainCards == nil
+  local hasChainCards = fileUtils.exists(self.path .. "/chain")
+  local wantsBackupChainCards = not hasChainCards
   for i = 2, 13 do
     -- with backup from default theme
     self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "")
   end
-  -- load as many more chain cards as there are available until 999, we will substitute in the mystery card if a card is missing
-  self.chainCardLimit = 999
-  for i = 14, 999 do
+  -- load as many more chain cards as there are available until 9999, we will stop upon the first missing card
+  self.chainCardLimit = 9999
+  for i = 14, self.chainCardLimit do
     -- without backup from default theme
     self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "", wantsBackupChainCards)
     if self.images.IMG_cards[true][i] == nil then
@@ -822,7 +883,7 @@ end
 function Theme:loadDefaultStage()
   local stagePath = self.path .. "/default/stage"
   local defaultStage
-  if love.filesystem.getInfo(stagePath, "directory") then
+  if fileUtils.exists(stagePath) then
     defaultStage = require("client.src.mods.Stage")(stagePath, "__default")
     -- we don't want to do a full json init but we need to find out the music style of the default stage
     local read_data = fileUtils.readJsonFile(defaultStage.path .. "/config.json")
@@ -1029,6 +1090,48 @@ function Theme:getPlayerNumberIcon(index)
   return self.images.IMG_players[index]
 end
 
+---@param deviceType string
+---@return love.Texture
+function Theme:getInputPromptIcon(deviceType)
+  if not self.images.inputPrompts then
+    loadInputPromptIcons(self)
+  end
+  return self.images.inputPrompts[deviceType]
+end
+
+---@param deviceType string "controller", "keyboard", "touch", or "mouse"
+---@param controllerImageVariant string? specific controller image variant key
+---@return love.Texture
+function Theme:getSpecificInputIcon(deviceType, controllerImageVariant)
+  if not self.images.inputPrompts then
+    loadInputPromptIcons(self)
+  end
+
+  if deviceType == "controller" and controllerImageVariant and self.images.inputPrompts.controller_variants then
+    local specificIcon = self.images.inputPrompts.controller_variants[controllerImageVariant]
+    if specificIcon then
+      return specificIcon
+    end
+  end
+
+  -- Fallback to basic device type
+  return self.images.inputPrompts[deviceType]
+end
+
+---@param number integer the device number (0-9)
+---@return love.Texture?
+function Theme:getDeviceNumberIcon(number)
+  if not self.images.inputPrompts then
+    loadInputPromptIcons(self)
+  end
+
+  if self.images.inputPrompts.device_numbers and number >= 0 and number <= 9 then
+    return self.images.inputPrompts.device_numbers[number]
+  end
+
+  return nil
+end
+
 ---@param index integer?
 ---@return love.Texture
 function Theme:getHealthBarFrameAbsolute(index)
@@ -1075,6 +1178,24 @@ function Theme:getTimePixelFont()
   end
 
   return self.fontMaps.time
+end
+
+---@param checked boolean
+---@return love.Texture
+function Theme:getCheckboxImage(checked)
+  return self.images.IMG_checkBox[checked]
+end
+
+function Theme:getFightImage()
+  return self.images.fight
+end
+
+function Theme:getStopwatchImage()
+  return self.images.stopWatch
+end
+
+function Theme:getEndlessImage()
+  return self.images.endless
 end
 
 ---@param index integer

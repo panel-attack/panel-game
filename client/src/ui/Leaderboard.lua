@@ -91,7 +91,7 @@ function Leaderboard:receiveInputs(inputs)
     end
   end
 
-  if inputs.isDown["MenuEsc"] then
+  if inputs.isDown["MenuEsc"] or inputs.isDown["MenuSelect"] then
     if self.hasFocus then
       self:yieldFocus()
     end

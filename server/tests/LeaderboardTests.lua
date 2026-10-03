@@ -6,7 +6,7 @@ local GameModes = require("common.data.GameModes")
 local MockPersistence = require("server.tests.MockPersistence")
 local ServerTesting = require("server.tests.ServerTesting")
 
-local leaderboard = Leaderboard(GameModes.getPreset("TWO_PLAYER_VS"), MockPersistence)
+local leaderboard = Leaderboard(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS), MockPersistence)
 leaderboard.consts.PLACEMENT_MATCH_COUNT_REQUIREMENT = 2
 leaderboard.consts.RATING_SPREAD_MODIFIER = 400
 leaderboard.consts.ALLOWABLE_RATING_SPREAD_MULTIPLIER = .9

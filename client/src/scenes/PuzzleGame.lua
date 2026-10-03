@@ -372,7 +372,7 @@ function PuzzleGame:customGameOverSetup()
     end
   else -- puzzle failed or manually reset
     self.text = loc("pl_you_lose")
-    if (self.match.aborted == nil or self.match.aborted == false) then
+    if (self.match.engine.aborted == false) then
       self:savePuzzleRecordResult(false)
     end
   end

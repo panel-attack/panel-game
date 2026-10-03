@@ -6,6 +6,7 @@ local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
 require("client.src.BattleRoom")
 local save = require("client.src.save")
+local fileUtils = require("client.src.FileUtils")
 
 
 -- Challenge Mode is a particular play through of the challenge mode in the game, it contains all the settings for the mode.
@@ -32,14 +33,14 @@ local ChallengeMode = class(
     self.player = ChallengeModePlayer(#self.players + 1)
     self.player.settings.difficulty = difficulty
     self:addPlayer(self.player)
-    self:assignInputConfigurations()
+    self:restoreInputConfigurations()
     self:setStage(stageIndex or 1)
   end,
   BattleRoom
 )
 
 function ChallengeMode.create(difficulty, stageIndex)
-  return ChallengeMode(GameModes.getPreset("ONE_PLAYER_CHALLENGE"), Game1pChallenge, difficulty, stageIndex)
+  return ChallengeMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_CHALLENGE), Game1pChallenge, difficulty, stageIndex)
 end
 
 ChallengeMode.numDifficulties = 8
@@ -146,7 +147,7 @@ end
 function ChallengeMode:attackFilePath(difficulty, stageIndex)
   for i = stageIndex, 1, -1 do
     local path = "client/assets/default_data/training/challenge-" .. difficulty .. "-" .. i .. ".json"
-    if love.filesystem.getInfo(path) then
+    if fileUtils.exists(path) then
       return path
     end
   end
@@ -195,8 +196,8 @@ function ChallengeMode:onMatchEnded(match)
   -- so always record the result, even if it may have been an abort
   local gameTime = 0
   local stackEngine = match.stacks[1].engine
-  if stackEngine ~= nil and stackEngine.game_stopwatch then
-    gameTime = stackEngine.game_stopwatch
+  if stackEngine ~= nil and stackEngine.stopWatch then
+    gameTime = stackEngine.stopWatch
   end
   self:recordStageResult(winners, gameTime)
 
@@ -204,11 +205,7 @@ function ChallengeMode:onMatchEnded(match)
     GAME.netClient:reportLocalGameResult(winners)
   end
 
-  if match.aborted then
-    -- in challenge mode, an abort is always a manual pause and leave by the local player
-    -- match:deinit is the responsibility of the one switching out of the game scene
-    GAME.navigationStack:pop(nil, function() match:deinit() end)
-
+  if match.engine.aborted then
     -- when challenge mode becomes spectatable, there needs to be a network abort that isn't leave_room for spectators
   end
 

@@ -7,7 +7,13 @@ local logger = require("common.lib.logger")
 local function runSystemCommands()
   -- toggle debug mode
   if input.allKeys.isDown["d"] then
-    config.debug_mode = not config.debug_mode
+    if GAME.debugOverlay then
+      if GAME.debugOverlay.active then
+        GAME.debugOverlay:close()
+      else
+        GAME.debugOverlay:open()
+      end
+    end
   -- reload characters
   elseif input.allKeys.isDown["c"] then
     characters_reload_graphics()
@@ -73,7 +79,7 @@ local function handleDumpAttackPattern(playerNumber)
       if data then
         FileUtils.writeJson("training", data.extraInfo.dateGenerated .. "_" .. data.extraInfo.playerName .. "_" .. data.extraInfo.gpm .. "gpm.json", data, state)
       else
-        logger.warn("Tried to export attack patterns from a game that has not run physics yet")
+        logger.debug("Tried to export attack patterns from a stack that did not send any attacks")
       end
       return true
     end

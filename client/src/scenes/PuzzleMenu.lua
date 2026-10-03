@@ -1,4 +1,3 @@
-local Game = require("client.src.Game")
 local Scene = require("client.src.scenes.Scene")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
@@ -10,6 +9,7 @@ local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
 local PuzzleHierarchyDisplay = require("client.src.graphics.PuzzleHierarchyDisplay")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 local PuzzleEditorScene = require("client.src.scenes.PuzzleEditorScene")
+local InputDeviceOverlay = require("client.src.scenes.components.InputDeviceOverlay")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local LevelPresets      = require("common.data.LevelPresets")
@@ -27,6 +27,7 @@ local Stack = require("common.engine.Stack")
 ---@field selectedIndexStack table<integer, integer> stores selected menu index for each navigation level
 ---@field puzzlePreviewStack StackElement
 ---@field puzzleDescriptionLabel Label
+---@field inputDeviceOverlay InputDeviceOverlay
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -74,10 +75,12 @@ end
 
 function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
   assert(puzzleSetIterator)
-  GAME.localPlayer:setLevel(config.puzzle_level)
-  GAME.localPlayer:setLevelData(LevelPresets.getModern(config.puzzle_level))
 
   local player = self.battleRoom.players[1]
+  assert(player.inputConfiguration, "Player must have an input configuration assigned before starting puzzle game")
+
+  GAME.localPlayer:setLevel(config.puzzle_level)
+  GAME.localPlayer:setLevelData(LevelPresets.getModern(config.puzzle_level))
 
   -- Lock character and stage for the entire puzzle session
   -- This prevents them from changing between puzzles
@@ -216,7 +219,25 @@ function PuzzleMenu:load(sceneParams)
 
   self.uiRoot:addChild(self.containerStackPanel)
   self.uiRoot:addChild(self.puzzleHierarchyDisplay)
-  
+
+  self:createInputDeviceOverlay()
+end
+
+function PuzzleMenu:createInputDeviceOverlay()
+  self.inputDeviceOverlay = InputDeviceOverlay({
+    players = self.battleRoom.players,
+    onClose = function()
+      self:onInputDeviceOverlayClosed()
+    end,
+    onCancel = function()
+      self:exit()
+    end
+  })
+  self.uiRoot:addChild(self.inputDeviceOverlay)
+end
+
+function PuzzleMenu:onInputDeviceOverlayClosed()
+  -- Input device overlay closed, all assignments should be done
 end
 
 function PuzzleMenu:refreshMenu()
@@ -675,8 +696,15 @@ function PuzzleMenu:updateCurrentPuzzleSet()
   end
 end
 
-function PuzzleMenu:update(dt)
-  self.menu:receiveInputs()
+
+function PuzzleMenu:updateSelf(dt)
+  self.inputDeviceOverlay:openInputDeviceOverlayIfNeeded()
+
+  if self.inputDeviceOverlay:isActive() then
+    return
+  end
+
+  self.menu:receiveInputs(GAME.input, dt)
 end
 
 function PuzzleMenu:draw()

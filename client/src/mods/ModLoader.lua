@@ -173,7 +173,7 @@ local blackLists = {}
 function ModLoader.loadBlacklist(modType)
   local blackList = {}
   local path = modType.SAVE_DIR .. "/blacklist.txt"
-  if love.filesystem.getInfo(path, "file") then
+  if fileUtils.exists(path) then
     for line in love.filesystem.lines(path) do
       blackList[#blackList+1] = line
     end
@@ -241,7 +241,7 @@ function ModLoader.filterToVisible(modType, filtered, ids)
   local visible = {}
   local path = themes[config.theme].path .. "/" .. modType.SAVE_DIR .. ".txt"
 
-  if love.filesystem.getInfo(path, "file") then
+  if fileUtils.exists(path) then
     for line in love.filesystem.lines(path) do
       line = trim(line) -- remove whitespace
       -- found at least a valid mod in a $(modtype.TYPE).txt file

@@ -418,6 +418,21 @@ local function testRandomElementDict()
   logger.trace("passed test testRandomElementDict")
 end
 
+-- rollback restores reuse the live tables, so keys the source lacks must go and the metatable must stay
+local function testReplaceContentsInPlace()
+  local metatable = {}
+  local destination = setmetatable({first = 5, last = 9, [5] = "stale", [9] = "stale"}, metatable)
+  local source = {first = 1, last = 2, [1] = 443, [2] = 460}
+
+  tableUtils.replaceContents(destination, source)
+
+  assert(tableUtils.deep_content_equal(destination, source))
+  assert(destination[5] == nil and destination[9] == nil, "keys missing from the source were left behind")
+  assert(getmetatable(destination) == metatable, "the destination lost its metatable")
+
+  logger.trace("passed test testReplaceContentsInPlace")
+end
+
 testTableGetKeys()
 testTableTrueForAllList()
 testTableTrueForAllDict()
@@ -441,3 +456,4 @@ testTableMapDict()
 testRandomElementEmpty()
 testRandomElementList()
 testRandomElementDict()
+testReplaceContentsInPlace()

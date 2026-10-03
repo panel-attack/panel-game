@@ -1,24 +1,24 @@
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GarbageQueue = require("common.engine.GarbageQueue")
+local RollbackBuffer = require("common.engine.RollbackBuffer")
 local MatchRules = require("common.data.MatchRules")
 
----@class BaseStack : canRollback
+---@class BaseStack : CanRollback
 ---@field engineVersion string
 ---@field which integer identifier of the Stack within the Match
 ---@field is_local boolean effectively if the Stack is receiving its inputs via local input
 ---@field framesBehindArray integer[] Records how far behind the stack was at each match clock time
 ---@field framesBehind integer How far behind the stack is at the current Match clock time
----@field clock integer how many times run has been called
----@field game_stopwatch integer how many times the simulation has run
----@field game_stopwatch_running boolean if the stack is simulating during runs
+---@field clock integer how many times run has been called; this is equivalent to how many inputs have been processed;<br>This is the chief timer to measure synchronicity and the driver of rollback and inputs
+---@field stopWatch integer how many times the game physics have run; unlike a clock and just like a stopWatch this frame timer only runs when the simulation is running
+---@field stopWatchIsRunning boolean if the stack is running the game physics during runs
 ---@field game_over_clock integer What the clock time was when the Stack went game over
----@field do_countdown boolean if the stack is performing a countdown at the start of the match
+---@field do_countdown boolean if the stack is currently performing a countdown / will perform a countdown at the start of the match;<br> this is state, the value will change at the end of countdown
 ---@field countdown_timer boolean? ephemeral timer used for tracking countdown progress at the start of the game
 ---@field outgoingGarbage GarbageQueue
 ---@field incomingGarbage GarbageQueue
----@field rollbackCopies table
----@field rollbackCopyPool Queue
+---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
 ---@field rollbackCount integer How many times the stack has been rolled back
 ---@field lastRollbackFrame integer the clock time before the Stack was last rolled back \n
 --- -1 if it has not been rolled back yet (or should not run back to its pre-rollback frame)
@@ -61,8 +61,8 @@ function(self, args)
   self.framesBehindArray = {}
   self.framesBehind = 0
   self.clock = 0
-  self.game_stopwatch = 0
-  self.game_stopwatch_running = true
+  self.stopWatch = 0
+  self.stopWatchIsRunning = true
   self.game_over_clock = -1 -- the exact clock frame the stack lost, -1 while alive
   Signal.turnIntoEmitter(self)
   self:createSignal("gameOver")
@@ -76,9 +76,7 @@ function(self, args)
   self.incomingGarbage = GarbageQueue()
 
   -- rollback
-  -- TODO: Replace with use of the RollbackBuffer
-  self.rollbackCopies = {}
-  self.rollbackCopyPool = Queue()
+  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
   self.rollbackCount = 0
   self.lastRollbackFrame = -1 -- the last frame we had to rollback from
 end)
@@ -116,7 +114,7 @@ end
 ---@param doCountdown boolean
 function BaseStack:setCountdown(doCountdown)
   self.do_countdown = doCountdown
-  self.game_stopwatch_running = not self.do_countdown
+  self.stopWatchIsRunning = not self.do_countdown
 end
 
 ---@param maxRunsPerFrame integer
@@ -157,20 +155,46 @@ function BaseStack:supportsGameWinCondition(gameWinCondition)
   return false
 end
 
+-- Saves state in backups in case its needed for rollback
+-- NOTE: the clock time is the save state for simulating right BEFORE that clock time is simulated
 function BaseStack:saveForRollback()
-  error("did not implement saveForRollback")
+  local copy = self.rollbackBuffer:getOldest()
+  if copy == nil then
+    copy = {}
+  end
+
+  self:saveIntoRollbackCopy(copy)
+
+  self.rollbackBuffer:saveCopy(self.clock, copy)
 end
 
----@param frame integer the frame to rollback to if possible
+-- Restores the state saved for the clock frame from the rollback buffer
+---@param clock integer the clock frame to rollback/rewind to if possible
+---@param isRewind boolean whether this is a rewind operation
 ---@return boolean success if rolling back succeeded
-function BaseStack:rollbackToFrame(frame)
-  error("did not implement rollbackToFrame")
+function BaseStack:rollbackRewindToFrame(clock, isRewind)
+  local copy = self.rollbackBuffer:rollbackToFrame(clock)
+  if not copy then
+    return false
+  end
+
+  self:restoreFromRollbackCopy(copy, clock, isRewind)
+
+  return true
 end
 
----@param frame integer the frame to rewind to if possible
----@return boolean success if rewinding succeeded
-function BaseStack:rewindToFrame(frame)
-  error("did not implement rewindToFrame")
+-- Writes the stack's state into copy
+---@param copy table the table to save state into
+function BaseStack:saveIntoRollbackCopy(copy)
+  error("did not implement saveIntoRollbackCopy")
+end
+
+-- Restores the stack's state from copy
+---@param copy table the table to restore state from
+---@param clock integer the frame being restored to
+---@param isRewind boolean whether this is a rewind operation
+function BaseStack:restoreFromRollbackCopy(copy, clock, isRewind)
+  error("did not implement restoreFromRollbackCopy")
 end
 
 function BaseStack:starting_state()

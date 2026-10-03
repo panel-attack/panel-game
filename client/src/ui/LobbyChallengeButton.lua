@@ -1,0 +1,74 @@
+local import = require("common.lib.import")
+local IconTextButton = import("./IconTextButton")
+local class = require("common.lib.class")
+local GameModes = require("common.data.GameModes")
+
+---@class LobbyChallengeButtonOptions : IconTextButtonOptions
+---@field proposeImage love.Texture
+---@field acceptImage love.Texture
+---@field withdrawImage love.Texture
+---@field gameModeId GameModeID
+---@field playerId PublicPlayerID
+---@field challengeState ChallengeState?
+---@field icon nil
+
+---@class LobbyChallengeButton : IconTextButton
+---@operator call(LobbyChallengeButtonOptions): LobbyChallengeButton
+---@field proposeImage love.Texture
+---@field acceptImage love.Texture
+---@field withdrawImage love.Texture
+---@field challengeState ChallengeState
+---@field gameModeId GameModeID
+---@field playerId PublicPlayerID
+---@overload fun(options: LobbyChallengeButtonOptions): LobbyChallengeButton
+local LobbyChallengeButton = class(
+---@param self LobbyChallengeButton
+---@param options LobbyChallengeButtonOptions
+function(self, options)
+  self.proposeImage = options.proposeImage
+  self.acceptImage = options.acceptImage
+  self.withdrawImage = options.withdrawImage
+  self.playerId = options.playerId
+  self.gameModeId = options.gameModeId
+  self:setState(options.challengeState or self.challengeStates.NEUTRAL)
+end,
+IconTextButton, "LobbyChallengeButton")
+
+LobbyChallengeButton.TYPE = "LobbyChallengeButton"
+
+---@enum ChallengeState
+LobbyChallengeButton.challengeStates  = { CHALLENGED = "CHALLENGED", PROPOSING = "PROPOSING", NEUTRAL = "NEUTRAL" }
+
+---@param challengeState ChallengeState
+function LobbyChallengeButton:setState(challengeState)
+  self.challengeState = challengeState
+  if self.challengeState == LobbyChallengeButton.challengeStates.NEUTRAL then
+    self.icon = self.proposeImage
+  elseif self.challengeState == LobbyChallengeButton.challengeStates.CHALLENGED then
+    self.icon = self.acceptImage
+  elseif self.challengeState == LobbyChallengeButton.challengeStates.PROPOSING then
+    self.icon = self.withdrawImage
+  end
+end
+
+function LobbyChallengeButton:onClick()
+  if self.challengeState == LobbyChallengeButton.challengeStates.PROPOSING then
+    GAME.netClient:withdrawChallengeForId(self.playerId, self.gameModeId)
+    GAME.theme:playValidationSfx()
+  else
+    if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
+      GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
+      GAME.netClient:sendPlayerSettings(GAME.localPlayer)
+    end
+    GAME.netClient:challengePlayerById(self.playerId, self.gameModeId)
+    GAME.theme:playValidationSfx()
+  end
+end
+
+function LobbyChallengeButton:receiveInputs(input)
+  if input.isDown["MenuSelect"] then
+    self:onClick()
+  end
+end
+
+return LobbyChallengeButton

@@ -9,6 +9,7 @@ require("client.src.TimeQueue")
 local class = require("common.lib.class")
 local Request = require("client.src.network.Request")
 local ServerMessages = require("client.src.network.ServerMessages")
+local Queue = require("common.lib.Queue")
 
 ---@class TcpSocket
 
@@ -22,12 +23,18 @@ local ServerMessages = require("client.src.network.ServerMessages")
 ---@field ip string
 ---@field port integer
 ---@field socket TcpSocket
+---@field outgoingMessageQueue Queue
+---@field sendRetryCount integer
+---@field sendRetryLimit integer
 local TcpClient = class(function(tcpClient)
   -- holds data fragments
   tcpClient.data = ""
   --connectionUptime counts "E" messages, not seconds
   tcpClient.connectionUptime = 0
   tcpClient.receivedMessageQueue = ServerQueue()
+  tcpClient.outgoingMessageQueue = Queue()
+  tcpClient.sendRetryCount = 0
+  tcpClient.sendRetryLimit = 5
   tcpClient.delayedProcessing = false
   math.randomseed(os.time())
   for i = 1, 4 do
@@ -97,18 +104,46 @@ function TcpClient:resetNetwork()
     self.socket:close()
   end
   self.socket = nil
+  self.outgoingMessageQueue:clear()
+end
+
+---@return boolean # if the connection is still considered open
+function TcpClient:sendQueuedMessages()
+  while self.outgoingMessageQueue:len() > 0 do
+    local message = self.outgoingMessageQueue:peek()
+    local fullMessageSent, error, partialBytesSent = self.socket:send(message)
+    if fullMessageSent then
+      self.outgoingMessageQueue:pop()
+      if self.sendRetryCount > 0 then
+        logger.debug("TcpClient retry succeeded after " .. self.sendRetryCount)
+        self.sendRetryCount = 0
+      end
+    elseif error == "closed" then
+      return false
+    elseif error == "timeout" and partialBytesSent and partialBytesSent > 0 then
+      local remaining = message:sub(partialBytesSent + 1)
+      self.outgoingMessageQueue[self.outgoingMessageQueue.first] = remaining
+      logger.trace("TcpClient partial send: " .. partialBytesSent .. "/" .. #message .. " bytes sent. " .. #remaining .. " bytes remain in queue.")
+      break
+    else
+      self.sendRetryCount = self.sendRetryCount + 1
+      logger.trace("TcpClient send timeout with no progress (retry " .. self.sendRetryCount .. "/" .. self.sendRetryLimit .. ")")
+      break
+    end
+  end
+
+  if self.sendRetryCount >= self.sendRetryLimit then
+    logger.info("TcpClient send failed after " .. self.sendRetryLimit .. " retries were attempted")
+    return false
+  end
+
+  return true
 end
 
 function TcpClient:sendMessage(stringData)
   if self:isConnected() then
-    local fullMessageSent, error, partialBytesSent = self.socket:send(stringData)
-    if fullMessageSent then
-      --logger.trace("json bytes sent in one go: " .. tostring(fullMessageSent))
-      return true
-    else
-      logger.error("Error sending network message: " .. (error or "") .. " only sent " .. (partialBytesSent or "0") .. "bytes")
-      return false
-    end
+    self.outgoingMessageQueue:push(stringData)
+    return self:sendQueuedMessages()
   else
     return false
   end
@@ -128,6 +163,11 @@ function TcpClient:updateNetwork(dt)
     while data do
       self:queueMessage(data[1], data[2])
       data = self.receiveNetworkQueue:popIfReady()
+    end
+  else
+    -- In non-delayed mode, try to send any queued messages
+    if self:isConnected() then
+      self:sendQueuedMessages()
     end
   end
 end
