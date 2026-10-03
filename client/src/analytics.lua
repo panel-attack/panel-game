@@ -1,6 +1,9 @@
 local fileUtils = require("client.src.FileUtils")
 local class = require("common.lib.class")
+---@module "common.interface.Rollback"
 local RollbackBuffer = require("common.engine.RollbackBuffer")
+local Stack = require("common.engine.Stack")
+require("common.engine.checkMatches")
 local analytics = {}
 
 local ANALYTICS_VERSION = 3
@@ -33,8 +36,30 @@ local function create_blank_data()
   }
 end
 
+---Transfers analytics data from source to destination
+---@param destination AnalyticsData
+---@param source AnalyticsData
+local function transferAnalyticsData(destination, source)
+  table.clear(destination.used_combos)
+  table.clear(destination.reached_chains)
+
+  destination.destroyed_panels = source.destroyed_panels
+  destination.move_count = source.move_count
+  destination.swap_count = source.swap_count
+  destination.shockGarbageCount = source.shockGarbageCount
+  destination.sent_garbage_lines = source.sent_garbage_lines
+  for size, count in pairs(source.used_combos) do
+    destination.used_combos[size] = count
+  end
+  for size, count in pairs(source.reached_chains) do
+    destination.reached_chains[size] = count
+  end
+  -- lastGPM/APM don't need to be saved, they are display props that get recalculated on the fly by draw code
+  -- save_to_overall should never change over the life time of an instance
+end
+
 -- The class representing one set of analytics data
----@class AnalyticsInstance : canRollback
+---@class AnalyticsInstance : CanRollback
 ---@field save_to_overall boolean if the data collected by this instance should be added to all time stats
 ---@field data AnalyticsData
 ---@field lastGPM string formatted GPM for display
@@ -54,49 +79,47 @@ AnalyticsInstance =
   end
 )
 
+---@param frame integer
 function AnalyticsInstance:saveForRollback(frame)
   local copy = self.rollbackBuffer:getOldest()
-  if copy then
-    table.clear(copy.used_combos)
-    table.clear(copy.reached_chains)
-  else
+  if copy == nil then
     copy = create_blank_data()
   end
 
-  -- todo: Implement a less memory intensive rollback mechanism
-  -- see https://github.com/panel-attack/panel-game/issues/493
-
-  copy.destroyed_panels = self.data.destroyed_panels
-  copy.move_count = self.data.move_count
-  copy.swap_count = self.data.swap_count
-  copy.shockGarbageCount = self.data.shockGarbageCount
-  copy.sent_garbage_lines = self.data.sent_garbage_lines
-  for size, count in pairs(self.data.used_combos) do
-    copy.used_combos[size] = count
-  end
-  for size, count in pairs(self.data.reached_chains) do
-    copy.reached_chains[size] = count
-  end
-
-  -- lastGPM/APM don't need to be saved, they are display props that get recalculated on the fly by draw code
-  -- save_to_overall should never change over the life time of an instance
+  self:saveIntoRollbackCopy(copy)
 
   self.rollbackBuffer:saveCopy(frame, copy)
 end
 
-function AnalyticsInstance:rollbackToFrame(frame)
-  local copy = self.rollbackBuffer:rollbackToFrame(frame)
-
-  if not copy then
-    error("Attempted to rollback analytics to frame " .. frame .. " but no rollback copy was available")
-  else
-    ---@cast copy AnalyticsData
-    self.data = copy
-  end
+---Writes the analytics data into copy
+---@param copy AnalyticsData
+function AnalyticsInstance:saveIntoRollbackCopy(copy)
+  transferAnalyticsData(copy, self.data)
 end
 
-function AnalyticsInstance:rewindToFrame(frame)
-  self:rollbackToFrame(frame)
+---Restores the analytics data saved for the clock frame, there always has to be a copy for it
+---@param clock integer
+---@param isRewind boolean
+---@return boolean?
+function AnalyticsInstance:rollbackRewindToFrame(clock, isRewind)
+  local copy = self.rollbackBuffer:rollbackToFrame(clock)
+
+  if not copy then
+    error("Attempted to rollback analytics to frame " .. clock .. " but no rollback copy was available")
+  end
+
+  self:restoreFromRollbackCopy(copy, clock, isRewind)
+
+  return true
+end
+
+---Restores the analytics data from copy
+---@param copy table
+---@param clock integer
+---@param isRewind boolean
+function AnalyticsInstance:restoreFromRollbackCopy(copy, clock, isRewind)
+  ---@cast copy AnalyticsData
+  transferAnalyticsData(self.data, copy)
 end
 
 local analytics_data = {
@@ -115,11 +138,6 @@ local function analytic_clear(data)
   data.reached_chains = {}
   data.used_combos = {}
   data.shockGarbageCount = 0
-end
-
-local amount_of_garbages_lines_per_combo = {0, 0, 0, 0.5, 1, 1, 1, 1.5, 2, 2, 2, 2, 3, 4, [20] = 6, [27] = 8}
-for i = 1, 72 do
-  amount_of_garbages_lines_per_combo[i] = amount_of_garbages_lines_per_combo[i] or amount_of_garbages_lines_per_combo[i - 1]
 end
 
 ---@param data AnalyticsData
@@ -142,7 +160,7 @@ local function recalculateSentGarbageLinesForAnalyticsV1(data)
   local sent_garbage_lines_count = 0
   for k, v in pairs(data.used_combos) do
     if k then
-      sent_garbage_lines_count = sent_garbage_lines_count + amount_of_garbages_lines_per_combo[k] * v
+      sent_garbage_lines_count = sent_garbage_lines_count + Stack.getEstimatedGarbageLinesForCombo(k) * v
     end
   end
   for i = 2, 13 do
@@ -312,7 +330,7 @@ function AnalyticsInstance:register_destroyed_panels(amount)
       else
         analytic.used_combos[amount] = analytic.used_combos[amount] + 1
       end
-      analytic.sent_garbage_lines = analytic.sent_garbage_lines + amount_of_garbages_lines_per_combo[amount]
+      analytic.sent_garbage_lines = analytic.sent_garbage_lines + Stack.getEstimatedGarbageLinesForCombo(amount)
     end
   end
 end

@@ -9,7 +9,7 @@ local JsonSafePrecision = require("common.data.JsonSafePrecision")
 ---@field lineHeightToKill number How many "lines" need to be accumulated before we are "topped" out.
 ---@field riseSpeed integer The initial speed lines accumulate with passively
 
----@class HealthEngine
+---@class HealthEngine : CanRollbackComponent
 ---@field framesToppedOutToLose number Number of seconds currently remaining of being "topped" out before we are defeated.
 ---@field maxSecondsToppedOutToLose number Starting value of framesToppedOutToLose
 ---@field lineClearRate number How many "lines" we clear per second. Essentially how fast we recover.
@@ -19,8 +19,6 @@ local JsonSafePrecision = require("common.data.JsonSafePrecision")
 ---@field clock integer Current clock time, this should match the opponent
 ---@field initialRiseSpeed integer The initial speed lines accumulate with passively
 ---@field currentRiseSpeed integer The current speed lines accumulate with passively; speed is just like normal Stacks for now, lines are added faster the longer the match goes
----@field rollbackCopies table
----@field rollbackCopyPool Queue
 local Health = class(
   function(self, framesToppedOutToLose, lineClearGPM, height, riseSpeed)
     self.framesToppedOutToLose = framesToppedOutToLose
@@ -32,8 +30,6 @@ local Health = class(
     self.clock = 0
     self.initialRiseSpeed = riseSpeed
     self.currentRiseSpeed = riseSpeed
-    self.rollbackCopies = {}
-    self.rollbackCopyPool = Queue()
   end
 )
 
@@ -98,42 +94,32 @@ function Health:getTopOutPercentage()
   return math.max(0, self.currentLines) / self.height
 end
 
-function Health:saveRollbackCopy()
-  local copy
-
-  if self.rollbackCopyPool:len() > 0 then
-    copy = self.rollbackCopyPool:pop()
-  else
-    copy = {}
-  end
-
-  copy.currentRiseSpeed = self.currentRiseSpeed
-  copy.currentLines = self.currentLines
-  copy.framesToppedOutToLose = self.framesToppedOutToLose
-  copy.lastWasFourCombo = self.lastWasFourCombo
-
-  self.rollbackCopies[self.clock] = copy
-
-  local deleteFrame = self.clock - MAX_LAG - 1
-  if self.rollbackCopies[deleteFrame] then
-    self.rollbackCopyPool:push(self.rollbackCopies[deleteFrame])
-    self.rollbackCopies[deleteFrame] = nil
-  end
+---Transfers the health state variables from source to destination (bidirectional)
+---clock has to travel with the rest of it: run reads it for the rise speed step and the stamina
+---curve and then increments it itself, so a health engine that keeps its clock across a rollback
+---goes on counting from the frame it was on and scores the same frame differently the second time
+---@param destination table
+---@param source table
+function Health.transferHealthData(destination, source)
+  destination.clock = source.clock
+  destination.currentRiseSpeed = source.currentRiseSpeed
+  destination.currentLines = source.currentLines
+  destination.framesToppedOutToLose = source.framesToppedOutToLose
+  destination.lastWasFourCombo = source.lastWasFourCombo
 end
 
-function Health:rollbackToFrame(clock)
-  local copy = self.rollbackCopies[clock]
+---Writes the health state into copy
+---@param copy table
+function Health:saveIntoRollbackCopy(copy)
+  Health.transferHealthData(copy, self)
+end
 
-  for i = clock + 1, self.clock do
-    self.rollbackCopyPool:push(self.rollbackCopies[i])
-    self.rollbackCopies[i] = nil
-  end
-
-  self.currentRiseSpeed = copy.currentRiseSpeed
-  self.currentLines = copy.currentLines
-  self.framesToppedOutToLose = copy.framesToppedOutToLose
-  self.lastWasFourCombo = copy.lastWasFourCombo
-  self.clock = clock
+---clock and isRewind are the interface's; the saved copy carries everything this needs
+---@param copy table
+---@param clock integer
+---@param isRewind boolean
+function Health:restoreFromRollbackCopy(copy, clock, isRewind)
+  Health.transferHealthData(self, copy)
 end
 
 ---@return HealthSettings

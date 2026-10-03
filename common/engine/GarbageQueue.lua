@@ -4,7 +4,6 @@ local tableUtils = require("common.lib.tableUtils")
 local Queue = require("common.lib.Queue")
 require("table.clear")
 require("table.new")
-local RollbackBuffer = require("common.engine.RollbackBuffer")
 local Signal = require("common.lib.signal")
 
 ---@class Garbage
@@ -101,22 +100,19 @@ local function orderGarbage(garbageQueue, treatMetalAsCombo)
 end
 
 -- Holds garbage in a queue and follows a specific order for which types should be popped out first.
----@class GarbageQueue : Signal
+---@class GarbageQueue : Signal, CanRollbackComponent
 ---@field stagedGarbage Garbage[] all garbage that is in the staging stage, garbage is reordered from lowest to highest priority with every new piece of garbage
----
----holds all garbage that left staging phase in a non-continously integer indexed hash <br>
----the clock time for delivery is used as the index, meaning it has a lot of gaps
----@field garbageInTransit table<integer, Garbage[]>
----@field history Garbage[] references all garbage that was ever pushed to this queue in the order that it was pushed <br> mainly exists for easier evaluation / testcases
----
----holds the clock times for which garbageInTransit has garbage in a continuously integer indexed ordered array for easier access and order sensitive iteration <br>
----all calls to Queue functions should be done via access to the class function: Queue.func(self.transitTimers, args) <br>
----that is in order to avoid having to rollback copy the metatable along with the actual content
----@field transitTimers Queue
+---@field garbageInTransit table<integer, Garbage[]> holds all garbage that left staging phase in a non-continuously integer indexed hash <br>
+--- the clock time for delivery is used as the index, meaning it has a lot of gaps
+---@field history Garbage[] references all garbage that was ever pushed to this queue in the order that it was pushed <br>
+--- mainly exists for easier evaluation / testcases
+---@field transitTimers Queue holds the clock times for which garbageInTransit has garbage in a continuously integer indexed ordered array
+--- for easier access and order sensitive iteration <br>
+--- all calls to Queue functions should be done via access to the class function: Queue.func(self.transitTimers, args) <br>
+--- that is in order to avoid having to rollback copy the metatable along with the actual content
 ---@field currentChain ChainGarbage? the chain garbage that is currently being grown
 ---@field illegalStuffIsAllowed boolean? illegal stuff means that chains may be queued as combos instead
 ---@field treatMetalAsCombo boolean?
----@field rollbackBuffer RollbackBuffer
 ---@overload fun(allowIllegalStuff: boolean?, treatMetalAsCombo: boolean?): GarbageQueue
 GarbageQueue = class(
 ---@param self GarbageQueue
@@ -131,60 +127,26 @@ function(self, allowIllegalStuff, treatMetalAsCombo)
   self.illegalStuffIsAllowed = allowIllegalStuff
   self.treatMetalAsCombo = treatMetalAsCombo
 
-  -- seems like the rollback method of Stack counts differently
-  -- so keep one extra copy to not run out of copies when rewinding stacks in replays
-  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
-
   Signal.turnIntoEmitter(self)
   self:createSignal("garbagePushed")
   self:createSignal("newChainLink")
   self:createSignal("chainEnded")
 end)
 
----@param frame integer
-function GarbageQueue:saveForRollback(frame)
-  local copy = self.rollbackBuffer:getOldest()
-  if copy then
-    table.clear(copy.stagedGarbage)
-    copy.currentChain = nil
-    table.clear(copy.garbageInTransit)
-    Queue.clear(copy.transitTimers)
-    -- history does not need to be cleared
-  else
-    copy =
-    {
-      stagedGarbage = table.new(#self.stagedGarbage, 0),
-      --copy.currentChain = nil,
-      garbageInTransit = {},
-      --copy.transitTimers = nil,
-      history = table.new(#self.history, 0),
-    }
+-- writes the staged garbage, current chain, history and garbage in transit into copy
+---@param copy table
+function GarbageQueue:saveIntoRollbackCopy(copy)
+  if copy.stagedGarbage == nil then
+    copy.stagedGarbage = table.new(#self.stagedGarbage, 0)
+    copy.history = table.new(#self.history, 0)
+    copy.garbageInTransit = {}
+    copy.transitTimers = {}
   end
 
-  for i = 1, #self.stagedGarbage do
-    if self.stagedGarbage[i] == self.currentChain then
-      -- the current chain can actually still get modified so we need to deepcopy it
-      copy.currentChain = deepcpy(self.currentChain)
-      copy.stagedGarbage[i] = copy.currentChain
-    else
-      -- all other garbage is already immutable and can be copied by reference
-      copy.stagedGarbage[i] = self.stagedGarbage[i]
-    end
-  end
+  -- Handles chain, stagedGarbage and history
+  GarbageQueue.transferStateVariables(copy, self)
 
-  -- create a copy of the history
-  for i = 1, #self.history do
-    if self.history[i] == self.currentChain then
-      -- only need to make sure to use the deepcopied variant of the current chain as that still changes
-      copy.history[i] = copy.currentChain
-    else
-      -- everything else has already become immutable and can be kept by reference
-      copy.history[i] = self.history[i]
-    end
-  end
-
-  -- TRANSIT INFO IS ONLY KEPT FOR REPLAY REWIND
-  -- ONLINE ROLLBACK DOES NOT NEED / WANT THIS INFORMATION 
+  table.clear(copy.garbageInTransit)
 
   -- create a copy of the garbage in transit for rewind
   for i = self.transitTimers.first, self.transitTimers.last do
@@ -194,54 +156,70 @@ function GarbageQueue:saveForRollback(frame)
   end
 
   -- and the access table for transit garbage
-  copy.transitTimers = Queue.getShallowCopy(self.transitTimers, copy.transitTimers)
+  tableUtils.replaceContents(copy.transitTimers, self.transitTimers)
 
   -- these two should never change during the life time of a garbage queue
   -- copy.illegalStuffIsAllowed = self.illegalStuffIsAllowed
   -- copy.treatMetalAsCombo = self.treatMetalAsCombo
-
-  self.rollbackBuffer:saveCopy(frame, copy)
 end
 
+-- restores the garbage queue from copy
+-- only a rewind restores the garbage in transit as well, a rollback only drops the transits that are going to be sent again
+---@param copy table
 ---@param stopWatch integer
-function GarbageQueue:rollbackToFrame(stopWatch)
-  assert(self.rollbackBuffer, "Attempted to rollback garbage queue to frame " .. stopWatch .. " but no rollback buffer has been kept")
+---@param isRewind boolean
+function GarbageQueue:restoreFromRollbackCopy(copy, stopWatch, isRewind)
+  -- Handles chain, stagedGarbage and history
+  GarbageQueue.transferStateVariables(self, copy)
 
-  local copy = self.rollbackBuffer:rollbackToFrame(stopWatch)
-
-  assert(copy, "Attempted to rollback garbage queue to frame " .. stopWatch .. " but no rollback copy was available")
-
-  self.stagedGarbage = copy.stagedGarbage
-  self.currentChain = copy.currentChain
-  self.history = copy.history
-
-  -- the transit tables interact with the outside world and are consumed elsewhere
-  -- so we cannot roll them back completely as that may lead to duplicate consumption
-  -- only eliminate transits that are going to be readded with further pushes and processing
-  -- this is somewhat based on the assumption that whenever we rollback surely our consumer must be behind in time
-  -- this may not universally work for multiplayer with more than 2 players
-  for i = self.transitTimers.last, self.transitTimers.first, -1 do
-    local transitFrame = self.transitTimers[i]
-    if transitFrame >= stopWatch + GARBAGE_DELAY_LAND_TIME then
-      self.garbageInTransit[transitFrame] = nil
-      self.transitTimers.last = self.transitTimers.last - 1
+  if isRewind then
+    tableUtils.replaceContents(self.garbageInTransit, copy.garbageInTransit)
+    tableUtils.replaceContents(self.transitTimers, copy.transitTimers)
+  else
+    -- the transit tables interact with the outside world and are consumed elsewhere
+    -- so we cannot roll them back completely as that may lead to duplicate consumption
+    -- only eliminate transits that are going to be readded with further pushes and processing
+    -- this is somewhat based on the assumption that whenever we rollback surely our consumer must be behind in time
+    -- this may not universally work for multiplayer with more than 2 players
+    for i = self.transitTimers.last, self.transitTimers.first, -1 do
+      local transitFrame = self.transitTimers[i]
+      if transitFrame >= stopWatch + GARBAGE_DELAY_LAND_TIME then
+        self.garbageInTransit[transitFrame] = nil
+        self.transitTimers.last = self.transitTimers.last - 1
+      end
     end
   end
 end
 
----@param stopWatch integer
-function GarbageQueue:rewindToFrame(stopWatch)
-  assert(self.rollbackBuffer, "Attempted to rewind garbage queue to frame " .. stopWatch .. " but no rollback buffer has been kept")
+-- transfers the staged garbage, current chain and history from source to destination (bidirectional)
+---@param destination GarbageQueue|table
+---@param source GarbageQueue|table
+function GarbageQueue.transferStateVariables(destination, source)
+  destination.currentChain = nil
+  table.clear(destination.stagedGarbage)
+  table.clear(destination.history)
 
-  local copy = self.rollbackBuffer:rollbackToFrame(stopWatch)
+  for i = 1, #source.stagedGarbage do
+    if source.stagedGarbage[i] == source.currentChain then
+      -- the current chain can actually still get modified so we need to deepcopy it
+      destination.currentChain = deepcpy(source.currentChain)
+      destination.stagedGarbage[i] = destination.currentChain
+    else
+      -- all other garbage is already immutable and can be copied by reference
+      destination.stagedGarbage[i] = source.stagedGarbage[i]
+    end
+  end
 
-  assert(copy, "Attempted to rewind garbage queue to frame " .. stopWatch .. " but no rollback copy was available")
-
-  self.stagedGarbage = copy.stagedGarbage
-  self.currentChain = copy.currentChain
-  self.history = copy.history
-  self.garbageInTransit = copy.garbageInTransit
-  self.transitTimers = copy.transitTimers
+  -- create a copy of the history
+  for i = 1, #source.history do
+    if source.history[i] == source.currentChain then
+      -- only need to make sure to use the deepcopied variant of the current chain (which won't change) as the source one could change
+      destination.history[i] = destination.currentChain
+    else
+      -- everything else has already become immutable and can be kept by reference
+      destination.history[i] = source.history[i]
+    end
+  end
 end
 
 -- corrects garbage pushed as combo to be flagged as a finalized chain if it is higher than 1 row

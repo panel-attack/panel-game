@@ -1,9 +1,10 @@
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GarbageQueue = require("common.engine.GarbageQueue")
+local RollbackBuffer = require("common.engine.RollbackBuffer")
 local MatchRules = require("common.data.MatchRules")
 
----@class BaseStack : canRollback
+---@class BaseStack : CanRollback
 ---@field engineVersion string
 ---@field which integer identifier of the Stack within the Match
 ---@field is_local boolean effectively if the Stack is receiving its inputs via local input
@@ -17,8 +18,7 @@ local MatchRules = require("common.data.MatchRules")
 ---@field countdown_timer boolean? ephemeral timer used for tracking countdown progress at the start of the game
 ---@field outgoingGarbage GarbageQueue
 ---@field incomingGarbage GarbageQueue
----@field rollbackCopies table
----@field rollbackCopyPool Queue
+---@field rollbackBuffer RollbackBuffer A specialized class to manage memory for rollback data
 ---@field rollbackCount integer How many times the stack has been rolled back
 ---@field lastRollbackFrame integer the clock time before the Stack was last rolled back \n
 --- -1 if it has not been rolled back yet (or should not run back to its pre-rollback frame)
@@ -76,9 +76,7 @@ function(self, args)
   self.incomingGarbage = GarbageQueue()
 
   -- rollback
-  -- TODO: Replace with use of the RollbackBuffer
-  self.rollbackCopies = {}
-  self.rollbackCopyPool = Queue()
+  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
   self.rollbackCount = 0
   self.lastRollbackFrame = -1 -- the last frame we had to rollback from
 end)
@@ -157,20 +155,46 @@ function BaseStack:supportsGameWinCondition(gameWinCondition)
   return false
 end
 
+-- Saves state in backups in case its needed for rollback
+-- NOTE: the clock time is the save state for simulating right BEFORE that clock time is simulated
 function BaseStack:saveForRollback()
-  error("did not implement saveForRollback")
+  local copy = self.rollbackBuffer:getOldest()
+  if copy == nil then
+    copy = {}
+  end
+
+  self:saveIntoRollbackCopy(copy)
+
+  self.rollbackBuffer:saveCopy(self.clock, copy)
 end
 
----@param clock integer the frame to rollback to if possible
+-- Restores the state saved for the clock frame from the rollback buffer
+---@param clock integer the clock frame to rollback/rewind to if possible
+---@param isRewind boolean whether this is a rewind operation
 ---@return boolean success if rolling back succeeded
-function BaseStack:rollbackToFrame(clock)
-  error("did not implement rollbackToFrame")
+function BaseStack:rollbackRewindToFrame(clock, isRewind)
+  local copy = self.rollbackBuffer:rollbackToFrame(clock)
+  if not copy then
+    return false
+  end
+
+  self:restoreFromRollbackCopy(copy, clock, isRewind)
+
+  return true
 end
 
----@param clock integer the frame to rewind to if possible
----@return boolean success if rewinding succeeded
-function BaseStack:rewindToFrame(clock)
-  error("did not implement rewindToFrame")
+-- Writes the stack's state into copy
+---@param copy table the table to save state into
+function BaseStack:saveIntoRollbackCopy(copy)
+  error("did not implement saveIntoRollbackCopy")
+end
+
+-- Restores the stack's state from copy
+---@param copy table the table to restore state from
+---@param clock integer the frame being restored to
+---@param isRewind boolean whether this is a rewind operation
+function BaseStack:restoreFromRollbackCopy(copy, clock, isRewind)
+  error("did not implement restoreFromRollbackCopy")
 end
 
 function BaseStack:starting_state()

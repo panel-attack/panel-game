@@ -5,6 +5,16 @@ local StageLoader = require("client.src.mods.StageLoader")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local consts = require("common.engine.consts")
 local Stage = require("client.src.mods.Stage")
+local GameModes = require("common.data.GameModes")
+local BattleRoom = require("client.src.BattleRoom")
+
+-- setCharacter/setStage queue up mod loads, discard them so they don't leak into later tests
+local function clearModLoadQueue()
+  ModLoader.loading_queue = Queue() -- mods to load
+  ModLoader.cancellationList = {}
+  ModLoader.loading_mod = nil -- currently loading mod
+  ModLoader.wait()
+end
 
 -- caveat: this test is not as effective if you have no character bundles installed
 local function testModBundleSelection()
@@ -18,11 +28,7 @@ local function testModBundleSelection()
     "the actual stage coming out of the random bundle should never be another bundle")
   end
 
-  -- all those setCharacter queued up a load so clean up the ModLoader
-  ModLoader.loading_queue = Queue() -- mods to load
-  ModLoader.cancellationList = {}
-  ModLoader.loading_mod = nil -- currently loading mod
-  ModLoader.wait()
+  clearModLoadQueue()
 end
 
 local function addToStageGlobals(stage)
@@ -121,3 +127,90 @@ testModBundleSelection()
 
 --testSubModCrossCheck()  -- see comment on function
 testInadvertentBundleLoading()
+
+-- mirrors how BattleRoom.createLocalFromGameMode sets up 1P modes, without depending on input configurations
+local function createVsSelfRoomWithLocalPlayer()
+  local battleRoom = BattleRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF))
+  battleRoom:addPlayer(GAME.localPlayer)
+  return battleRoom
+end
+
+-- https://github.com/panel-attack/panel-game/issues/769
+-- With random selected, disabling the character/stage that random resolved to in ModManagement
+-- left GAME.localPlayer pointing at a mod that no longer exists, crashing the next BattleRoom:updateLoadingState
+local function testDisablingResolvedRandomSelectionsDoesNotCrash()
+  local player = GAME.localPlayer
+  local originalCharacterId = player.settings.selectedCharacterId
+  local originalStageId = player.settings.selectedStageId
+
+  player:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
+  player:setStage(consts.RANDOM_STAGE_SPECIAL_VALUE)
+
+  local battleRoom = createVsSelfRoomWithLocalPlayer()
+  local resolvedCharacter = characters[player.settings.characterId]
+  local resolvedStage = stages[player.settings.stageId]
+  assert(resolvedCharacter and not resolvedCharacter:isBundle(), "random should resolve to a concrete character")
+  assert(resolvedStage and not resolvedStage:isBundle(), "random should resolve to a concrete stage")
+  battleRoom:shutdown()
+
+  -- what ModManagement does when the user toggles both mods off
+  resolvedCharacter:enable(false)
+  resolvedStage:enable(false)
+  player:refreshDisabledSelections()
+
+  local success, err = pcall(function()
+    battleRoom = createVsSelfRoomWithLocalPlayer()
+    battleRoom:updateLoadingState()
+  end)
+  local newCharacterId = player.settings.characterId
+  local newStageId = player.settings.stageId
+
+  -- restore global state before asserting so a failure doesn't leak into later tests
+  if not battleRoom.hasShutdown then
+    battleRoom:shutdown()
+  end
+  resolvedCharacter:enable(true)
+  resolvedStage:enable(true)
+  player:setCharacter(originalCharacterId)
+  player:setStage(originalStageId)
+  clearModLoadQueue()
+
+  assert(success, "re-entering a mode after disabling the resolved random mods crashed: " .. tostring(err))
+  assert(newCharacterId ~= resolvedCharacter.id, "player still uses disabled character " .. resolvedCharacter.id)
+  assert(newStageId ~= resolvedStage.id, "player still uses disabled stage " .. resolvedStage.id)
+end
+
+-- disabling the explicitly selected mods should fall back to random rather than a concrete pick
+local function testDisablingSelectedModsFallsBackToRandom()
+  local player = GAME.localPlayer
+  local originalCharacterId = player.settings.selectedCharacterId
+  local originalStageId = player.settings.selectedStageId
+
+  local selectedCharacter = characters[CharacterLoader.fullyResolveCharacterSelection(nil)]
+  local selectedStage = stages[StageLoader.fullyResolveStageSelection(nil)]
+  player:setCharacter(selectedCharacter.id)
+  player:setStage(selectedStage.id)
+  assert(player.settings.selectedCharacterId == selectedCharacter.id)
+  assert(player.settings.selectedStageId == selectedStage.id)
+
+  selectedCharacter:enable(false)
+  selectedStage:enable(false)
+  player:refreshDisabledSelections()
+  local settings = shallowcpy(player.settings)
+
+  selectedCharacter:enable(true)
+  selectedStage:enable(true)
+  player:setCharacter(originalCharacterId)
+  player:setStage(originalStageId)
+  clearModLoadQueue()
+
+  assert(settings.selectedCharacterId == consts.RANDOM_CHARACTER_SPECIAL_VALUE,
+         "expected random character selection, got " .. tostring(settings.selectedCharacterId))
+  assert(settings.selectedStageId == consts.RANDOM_STAGE_SPECIAL_VALUE,
+         "expected random stage selection, got " .. tostring(settings.selectedStageId))
+  assert(settings.characterId ~= selectedCharacter.id, "player still uses disabled character " .. selectedCharacter.id)
+  assert(settings.stageId ~= selectedStage.id, "player still uses disabled stage " .. selectedStage.id)
+end
+
+testDisablingResolvedRandomSelectionsDoesNotCrash()
+testDisablingSelectedModsFallsBackToRandom()

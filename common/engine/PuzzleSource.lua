@@ -1,10 +1,8 @@
 local class = require("common.lib.class")
-local RollbackBuffer = require("common.engine.RollbackBuffer")
 
 ---@class PuzzleSource : PanelSource
 ---@field puzzleString string
 ---@field panels Panel[]
----@field rollbackBuffer RollbackBuffer
 ---@overload fun(puzzleString: string, panelBuffer: string?, garbageBuffer: string?): PuzzleSource
 local PuzzleSource = class(
 ---@param self PuzzleSource
@@ -23,7 +21,6 @@ function(self, puzzleString, panelBuffer, garbageBuffer)
   end
 
   self.panels = {}
-  self.rollbackBuffer = RollbackBuffer(MAX_LAG + 1)
 end)
 
 PuzzleSource.TYPE = "PuzzleSource"
@@ -225,37 +222,28 @@ function PuzzleSource:clone(stack)
   return source
 end
 
-function PuzzleSource:saveForRollback(clock)
-  local copy = self.rollbackBuffer:getOldest()
-
-  if not copy then
-    copy = table.new(0, 4)
-  end
-
-  copy.panelBuffer = self.panelBuffer
-  copy.garbagePanelBuffer = self.garbagePanelBuffer
-  copy.panelGenCount = self.panelGenCount
-  copy.garbageGenCount = self.garbageGenCount
-  -- self.panels is not stored under the assumption that panels always get fully consumed on the frame they got created
-
-  self.rollbackBuffer:saveCopy(clock, copy)
+-- self.panels is not transferred under the assumption that panels always get fully consumed on the frame they got created
+---@param destination PuzzleSource|table
+---@param source PuzzleSource|table
+function PuzzleSource.transferStateVariables(destination, source)
+  destination.panelBuffer = source.panelBuffer
+  destination.garbagePanelBuffer = source.garbagePanelBuffer
+  destination.panelGenCount = source.panelGenCount
+  destination.garbageGenCount = source.garbageGenCount
 end
 
-function PuzzleSource:rollbackToFrame(clock)
-  local copy = self.rollbackBuffer:rollbackToFrame(clock)
-
-  if not copy then
-    error("Could not rollback PuzzleSource")
-  end
-
-  self.panelBuffer = copy.panelBuffer
-  self.garbagePanelBuffer = copy.garbagePanelBuffer
-  self.panelGenCount = copy.panelGenCount
-  self.garbageGenCount = copy.garbageGenCount
+-- writes the panel buffers and generation counts into copy
+---@param copy table
+function PuzzleSource:saveIntoRollbackCopy(copy)
+  PuzzleSource.transferStateVariables(copy, self)
 end
 
-function PuzzleSource:rewindToFrame(clock)
-  self:rollbackToFrame(clock)
+-- restores the panel buffers and generation counts from copy
+---@param copy table
+---@param clock integer
+---@param isRewind boolean
+function PuzzleSource:restoreFromRollbackCopy(copy, clock, isRewind)
+  PuzzleSource.transferStateVariables(self, copy)
 end
 
 return PuzzleSource

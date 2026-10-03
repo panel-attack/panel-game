@@ -82,6 +82,13 @@ function GameBase:customRun() end
 -- called during setupGameOver()
 function GameBase:customGameOverSetup() end
 
+-- Game mode specific pause menu items, shown between resume and back
+-- called during load()
+---@return MenuItem[]
+function GameBase:customPauseMenuItems()
+  return {}
+end
+
 -- end abstract functions
 
 -- returns "stage" or "character" depending on which should be used according to the config.use_music_from setting
@@ -191,12 +198,13 @@ function GameBase:load()
       end
       self:initializeFrameInfo()
     end),
-    ui.MenuItem.createButtonMenuItem("back", nil, true, function()
-      GAME.theme:playCancelSfx()
-      self.match:abort()
-      self:startNextScene()
-    end),
   }
+  tableUtils.appendToList(pauseMenuItems, self:customPauseMenuItems())
+  pauseMenuItems[#pauseMenuItems + 1] = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
+    GAME.theme:playCancelSfx()
+    self.match:abort()
+    self:startNextScene()
+  end)
 
   self.pauseMenu = ui.Menu({
     x = 0,

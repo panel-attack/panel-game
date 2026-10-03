@@ -189,58 +189,48 @@ function Match:debugRollbackAndCaptureState(clockGoal)
     return
   end
 
-  self.savedStackP1 = P1.rollbackCopies[P1.clock]
-  if P2 then
-    self.savedStackP2 = P2.rollbackCopies[P2.clock]
-  end
+  -- Capture current state before rollback for divergence detection
+  self.savedStackP1 = {}
+  P1:saveIntoRollbackCopy(self.savedStackP1)
+  assert(P1:rollbackRewindToFrame(clockGoal, false))
 
-  local rollbackResult = P1:rollbackToFrame(clockGoal)
-  assert(rollbackResult)
   if P2 and P2.clock > clockGoal then
-    rollbackResult = P2:rollbackToFrame(clockGoal)
-    assert(rollbackResult)
+    self.savedStackP2 = {}
+    P2:saveIntoRollbackCopy(self.savedStackP2)
+    assert(P2:rollbackRewindToFrame(clockGoal, false))
+  else
+    self.savedStackP2 = nil
   end
 end
 
-function Match:debugAssertDivergence(stack, savedStack)
-
-  for k,v in pairs(savedStack) do
-    if type(v) ~= "table" then
-      local v2 = stack[k]
-      if v ~= v2 then
-        error("Stacks have diverged")
-      end
+-- errors if the stack caught back up to the clock of its saved copy but ended up with a different state
+---@param stack BaseStack
+---@param savedCopy table? the copy captured before the debug rollback
+---@param label string
+---@return table? savedCopy nil once the stack has been checked
+local function checkDivergence(stack, savedCopy, label)
+  if savedCopy and savedCopy.stackData.clock == stack.clock then
+    local currentStackCopy = {}
+    stack:saveIntoRollbackCopy(currentStackCopy)
+    if not tableUtils.deep_content_equal(currentStackCopy, savedCopy) then
+      error("Stack " .. label .. " has diverged after rollback")
     end
+    return nil
   end
 
-  local savedStackString = Stack.divergenceString(savedStack)
-  local localStackString = Stack.divergenceString(stack)
-
-  if savedStackString ~= localStackString then
-    error("Stacks have diverged")
-  end
+  return savedCopy
 end
 
 function Match:debugCheckDivergence()
-  if not self.savedStackP1 or self.savedStackP1.clock ~= self.stacks[1].clock then
-    return
+  self.savedStackP1 = checkDivergence(self.stacks[1], self.savedStackP1, "P1")
+  if self.stacks[2] then
+    self.savedStackP2 = checkDivergence(self.stacks[2], self.savedStackP2, "P2")
   end
-  self:debugAssertDivergence(self.stacks[1], self.savedStackP1)
-  self.savedStackP1 = nil
-
-  if not self.savedStackP2 or self.savedStackP2.clock ~= self.stacks[2].clock then
-    return
-  end
-
-  self:debugAssertDivergence(self.stacks[2], self.savedStackP2)
-  self.savedStackP2 = nil
 end
 
 ---@return integer[] runsPerStack
 function Match:run()
   local startTime = love.timer.getTime()
-
-  self:padRewindDataIfNeeded()
 
   local runs = {}
 
@@ -351,7 +341,7 @@ end
 ---@param clock integer
 ---@return boolean success
 function Match:rollbackToFrame(stack, clock)
-  if stack:rollbackToFrame(clock) then
+  if stack:rollbackRewindToFrame(clock, false) then
     return true
   end
 
@@ -368,7 +358,7 @@ function Match:rewindToFrame(clock)
   end
   local failed = false
   for i, stack in ipairs(self.stacks) do
-    if not stack:rewindToFrame(clock) then
+    if not stack:rollbackRewindToFrame(clock, true) then
       failed = true
       break
     end
@@ -727,21 +717,6 @@ function Match:addTarget(source, target)
 
   if not tableUtils.contains(self.garbageSources[target], source) then
     table.insert(self.garbageSources[target], source)
-  end
-end
-
---- this function exists to allow repeated playback and rewind
---- by default taking data out of the rollback buffer removes it because users of that data might take it verbatim and change it later
---- that means when rewinding and then running forward again, there is a gap in rollback data at the frame where the rewind stopped
---- keeping all rewind data would be very inefficient as we'd be copying a ton of panel data every frame, often when it is not necessary
---- so instead only detect when we start running forward again
-function Match:padRewindDataIfNeeded()
-  if self.alwaysSaveRollbacks then
-    for i, stack in ipairs(self.stacks) do
-      if stack.clock == stack.lastRollbackFrame then
-        stack:saveForRollback()
-      end
-    end
   end
 end
 
