@@ -349,40 +349,52 @@ function PuzzleSetTests.testAPuzzleWithAnUnknownStartTimingIsHidden()
   assert(set and #set.puzzles == 0, "a puzzle with an unknown StartTiming should not load")
 end
 
--- The buffer is what a clear puzzle asks for: give it one and it has to be revealed, leave it out
--- and the puzzle is about the board instead. Nothing about that comes from the file's version.
+-- every clear puzzle is won by running past its buffer, whether the file gives it one or not
 local function clearPuzzleData(stack, buffer)
   return {["Set Name"] = "Test Set", ["Puzzles"] = {
     {["Puzzle Type"] = "clear", ["Stack"] = stack, ["GarbagePanelBuffer"] = buffer}
   }}
 end
 
-function PuzzleSetTests.testAClearPuzzleWithoutABufferIsWonByHittingEveryBlock()
+function PuzzleSetTests.testAClearPuzzleWithoutABufferIsWonByRunningPastIt()
   local twoRowsOfGarbage = "[==========]112122"
   local set = PuzzleSet.loadV3(clearPuzzleData(twoRowsOfGarbage, nil))
   assert(set and #set.puzzles == 1, "a clear puzzle without a buffer loads")
   local rules = set.puzzles[1]:toGameMode().matchRules
-  assert(rules.stackWinConditions["MATCHABLE_GARBAGE_PANELS"] ~= nil, "it is won once every block is hit")
-  assert(rules.stackWinConditions["GARBAGE_BUFFER_EMPTY"] == nil, "there is no buffer to wait for")
+  assert(rules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0, "its first revealed row runs past the buffer")
+  assert(rules.stackWinConditions["MATCHABLE_GARBAGE_PANELS"] == nil, "hitting every block is no longer a puzzle goal")
 end
 
-function PuzzleSetTests.testAClearPuzzleWithABufferIsWonByRevealingIt()
+function PuzzleSetTests.testAClearPuzzleWithABufferIsWonByRunningPastIt()
   local twoRowsOfGarbage = "[==========]112122"
   local short = PuzzleSet.loadV3(clearPuzzleData(twoRowsOfGarbage, "1234"))
   assert(short.puzzles[1].garbageBuffer == "1234", "the buffer is kept")
   local rules = short.puzzles[1]:toGameMode().matchRules
-  assert(rules.stackWinConditions["GARBAGE_BUFFER_EMPTY"] == 0, "a buffer is what the puzzle asks for")
+  assert(rules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0, "a buffer is what the puzzle asks for")
   assert(rules.stackWinConditions["MATCHABLE_GARBAGE_PANELS"] == nil, "the board itself is not the goal")
 end
 
--- Version 2 had no garbage buffer at all, so its clear puzzles are scored the way version 3's are
-function PuzzleSetTests.testLoadV2ClearPuzzlesAreWonByHittingEveryBlock()
+-- Version 2 had no garbage buffer at all, so its clear puzzles are won on their first revealed row
+function PuzzleSetTests.testLoadV2ClearPuzzlesAreWonByRunningPastTheBuffer()
+PuzzleSetTests.testOldUUIDsAreReadAndSavedBackWithoutChangingTheUUID()
   local set = PuzzleSet.loadV2({["Set Name"] = "Test Set", ["Puzzles"] = {
     {["Puzzle Type"] = "clear", ["Stack"] = "[==========]112122", ["Moves"] = 0}
   }})
   assert(#set.puzzles == 1, "a version 2 clear puzzle still loads")
   local rules = set.puzzles[1]:toGameMode().matchRules
-  assert(rules.stackWinConditions["MATCHABLE_GARBAGE_PANELS"] ~= nil, "version 2 wins once every block is hit")
+  assert(rules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0, "version 2 clear puzzles use the same rule")
+end
+
+-- a puzzle lists the UUIDs it had before its data changed, which do not count towards its own
+function PuzzleSetTests.testOldUUIDsAreReadAndSavedBackWithoutChangingTheUUID()
+  local entry = {["Puzzle Type"] = "moves", ["Moves"] = 1, ["Stack"] = "1111111111111111"}
+  local plain = PuzzleSet.loadV3({["Set Name"] = "Test Set", ["Puzzles"] = {entry}}).puzzles[1]
+  entry["Old UUIDs"] = {"first", "second"}
+  local puzzle = PuzzleSet.loadV3({["Set Name"] = "Test Set", ["Puzzles"] = {entry}}).puzzles[1]
+
+  assert(puzzle.oldUUIDs[1] == "first" and puzzle.oldUUIDs[2] == "second", "the old UUIDs are read")
+  assert(puzzle.UUID == plain.UUID, "the old UUIDs are not part of the puzzle's own")
+  assert(puzzle:getSaveData()["Old UUIDs"] == puzzle.oldUUIDs, "the old UUIDs are saved back")
 end
 
 -- Run the tests
@@ -401,8 +413,8 @@ PuzzleSetTests.testSavingAPuzzleAfterAHiddenOneWritesTheEntryItCameFrom()
 PuzzleSetTests.testEveryBundledPuzzleValidates()
 PuzzleSetTests.testBothStartTimingSpellingsAreRead()
 PuzzleSetTests.testAPuzzleWithAnUnknownStartTimingIsHidden()
-PuzzleSetTests.testAClearPuzzleWithoutABufferIsWonByHittingEveryBlock()
-PuzzleSetTests.testAClearPuzzleWithABufferIsWonByRevealingIt()
-PuzzleSetTests.testLoadV2ClearPuzzlesAreWonByHittingEveryBlock()
+PuzzleSetTests.testAClearPuzzleWithoutABufferIsWonByRunningPastIt()
+PuzzleSetTests.testAClearPuzzleWithABufferIsWonByRunningPastIt()
+PuzzleSetTests.testLoadV2ClearPuzzlesAreWonByRunningPastTheBuffer()
 
 return PuzzleSetTests

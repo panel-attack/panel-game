@@ -291,7 +291,7 @@ Stack.supportedStackOverConditions = { MatchRules.StackOverConditions.HEALTH, Ma
 Stack.supportedStackWinConditions = {
   MatchRules.StackWinConditions.MATCHABLE_PANELS,
   MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS,
-  MatchRules.StackWinConditions.GARBAGE_BUFFER_EMPTY,
+  MatchRules.StackWinConditions.GARBAGE_BUFFER_EXCEEDED,
   MatchRules.StackWinConditions.SCORE
 }
 
@@ -1637,8 +1637,9 @@ function Stack:meetsWinCondition(stackWinCondition, value)
     return self:matchablePanelCount() <= value
   elseif stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS then
     return not self:hasMatchableGarbage()
-  elseif stackWinCondition == MatchRules.StackWinConditions.GARBAGE_BUFFER_EMPTY then
-    return self.panelSource.garbagePanelBuffer:len() <= value
+  elseif stackWinCondition == MatchRules.StackWinConditions.GARBAGE_BUFFER_EXCEEDED then
+    -- Once the garbage buffer is drained it will generate new ones, thats when we know we have exceeded the buffer and won
+    return self.panelSource.garbageGenCount > 0
   end
 
   error("Stack does not know how to check stack win condition " .. tostring(stackWinCondition))

@@ -917,7 +917,8 @@
                     "Column": 5,
                     "Row": 6
                   },
-                  "Solution": "A116Q1A5C6Q1A6C4A9E4A7E3U1A5B4R1A5"
+                  "Solution": "A116Q1A5C6Q1A6C4A9E4A7E3U1A5B4R1A5",
+                  "Old UUIDs": ["b664d190bfb4125c60b6282b327152e34178ac20ec78f331a55a3ac3561aab24", "1af870f04d6f9a042d0d36ebad1285773f10e62d6b6dc7f9dcf0b3aeff144123"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -930,7 +931,8 @@
                     "Column": 5,
                     "Row": 6
                   },
-                  "Solution": "A17Q1A2C5A4Q1A2B5A3Q1A2C5A4E4A5E6A1Q1A12"
+                  "Solution": "A17Q1A2C5A4Q1A2B5A3Q1A2C5A4E4A5E6A1Q1A12",
+                  "Old UUIDs": ["50aeaa0b8bcf490ec7aad9a50a1a146dc677a83cb5facce056e630b34373d83d", "feaa500728e7d8828d0d7164268e1e62e7584953b1f670e1843be771cd8e5aad"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -939,7 +941,8 @@
                   "Stop": 74,
                   "Shake": 0,
                   "Stack": "000000000000000000000000000000000000[====]001204104606203506542103312341",
-                  "Solution": "A49E6A5E8A1C5Q1A3B7A6B7A5E6Q1A2B10I8Q1A5E6A6E6A2E5U1A5"
+                  "Solution": "A49E6A5E8A1C5Q1A3B7A6B7A5E6Q1A2B10I8Q1A5E6A6E6A2E5U1A5",
+                  "Old UUIDs": ["3a83a1a2233c19c387620c4c7c3e1f438216a02d4e8c8aa9d9ef392b7572f526", "6c5cec78f8996a29d75e2b22a57ddbc2550fa518cf91069d21da6644f0a4297c"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -948,7 +951,9 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "000000000[=][==]00[=]000[====]000336020361010641545313512421355641223126",
-                  "Solution": "A154E6A6E5A7E6A10B7A5B7A2Q1A10C5A6C4A17I5A7B7A9B6A11Q1A11Q1A4C6A2Q1A5"
+                  "GarbagePanelBuffer": "999999999999999999",
+                  "Solution": "A154E6A6E5A7E6A10B7A5B7A2Q1A10C5A6C4A17I5A7B7A9B6A11Q1A11Q1A4C6A2Q1A5",
+                  "Old UUIDs": ["00329785e18eb1c0edaafa36cd9b5cac589671b10a4acb577b2d667a21929599", "ebcf6d9ee77051ccbaeac6e251874a004d68c03e532245c6336a3712f43490b5"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -961,7 +966,8 @@
                     "Column": 1,
                     "Row": 5
                   },
-                  "Solution": "A54Q1A4B5R1B3A7B1R1B21A1I6Q1A5C4S1C2A3"
+                  "Solution": "A54Q1A4B5R1B3A7B1R1B21A1I6Q1A5C4S1C2A3",
+                  "Old UUIDs": ["3e558ecfc6087cb06a273e52cf18bbd252e754abca8749cae71cf312fc98ee68", "24e2359bdfb066e4e73e847e30a913cd6a84b956f199ae60e81d3dddc2f1d49b"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -970,11 +976,13 @@
                   "Stop": 63,
                   "Shake": 42,
                   "Stack": "[==========][==========][==========][==========][====][======================]000005000302005203031162124314464221",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 5
                   },
-                  "Solution": "A54I6Q1A7E6A4C4A2E5U1E1A7B1R1B5"
+                  "Solution": "A54I6Q1A7E6A4C4A2E5U1E1A7B1R1B5",
+                  "Old UUIDs": ["b1489a0ca11bbe63724b899aefe8bf2210375d7793fba7bdbc4c6f2590f46fd2", "84b8226d8505d2079f9d6a7b01bd60800e24d6cb43cd8f095ac7bc3480ed3136"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -996,7 +1004,7 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[============================][======================]000400099940995499999999",
-                  "GarbagePanelBuffer": "999595999999999999",
+                  "GarbagePanelBuffer": "999595999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
@@ -1022,7 +1030,8 @@
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A23B7A5Q1A5I7A3Q1A6E8A5Q1A11Q1A4C6A6Q1A5"
+                  "Solution": "A23B7A5Q1A5I7A3Q1A6E8A5Q1A11Q1A4C6A6Q1A5",
+                  "Old UUIDs": ["9a7badb717410005422f42d45a96f4ae63b68155023d3ea27e4e5a9f798a2e8c", "4852a8efd7f6b4b096776cf3edb013cdf0bf9eaaa55253bd2b74c931642d347d"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1030,11 +1039,13 @@
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "000000000000[=][=][=][=][==========][=]000240000331500146306231404365243",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 2
                   },
-                  "Solution": "A152Q1A3B8I6J1B4A3Q1A2C4A3Q1A3C6Q1A3B7A6B7A6E4Q1A5C4S1C2A10I6A6C5A2I7A6Q1A3E7A7B6R1A5"
+                  "Solution": "A152Q1A3B8I6J1B4A3Q1A2C4A3Q1A3C6Q1A3B7A6B7A6E4Q1A5C4S1C2A10I6A6C5A2I7A6Q1A3E7A7B6R1A5",
+                  "Old UUIDs": ["0f643788a79b52965bc9cd62fe7ee6c16eea7df0e1d634157151acc528b85a2a"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1042,11 +1053,13 @@
                   "Moves": 0,
                   "Stop": 35,
                   "Stack": "000000000000000000000000000[=][==========]000006210503160306534315651246",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A51B4J2I6A1Q1A5E4A4Q1A3C4A5Q1A5"
+                  "Solution": "A51B4J2I6A1Q1A5E4A4Q1A3C4A5Q1A5",
+                  "Old UUIDs": ["d043ee95a5657906655949bfd0b0636055de9d76f05023cf1634b5bdff7faaef"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1055,11 +1068,13 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[==========][==========][==========][==========][==========][====]046030023236045141",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
                   },
-                  "Solution": "A29Q1A4C6A2E3U1E2A6B4A3Q1A3B4A3Q1A2B5A7Q1A5"
+                  "Solution": "A29Q1A4C6A2E3U1E2A6B4A3Q1A3B4A3Q1A2B5A7Q1A5",
+                  "Old UUIDs": ["8d62176fceba9387d7e87325f62c62267275319d8a3277e0ec3f44ffc64d9cba"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1067,11 +1082,13 @@
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "000000000000000000000000[====][====][=]000[====]040090334010599190411564",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 4
                   },
-                  "Solution": "A48Q1A6B4A1Q1A7B5A5B4R1B2A6E4A4C6S1C1A5E6A3C7A1E3U1E2A3"
+                  "Solution": "A48Q1A6B4A1Q1A7B5A5B4R1B2A6E4A4C6S1C1A5E6A3C7A1E3U1E2A3",
+                  "Old UUIDs": ["3846995d4bc464a818ca41fecdcafbd939dc80f21939e58321a2a4502b152d94"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1080,11 +1097,13 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[==========][==========][==========][==========][==========]000100262653543226633511",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A17Q1A6C4Q1A8C3A4E7Q1A6E5U1A7B9A5B10J3I5A1Q1A8C8A27Q1A8C3S1C2A7C2S1C1A7C4S1C2A7I3Y1I2A3"
+                  "Solution": "A17Q1A6C4Q1A8C3A4E7Q1A6E5U1A7B9A5B10J3I5A1Q1A8C8A27Q1A8C3S1C2A7C2S1C1A7C4S1C2A7I3Y1I2A3",
+                  "Old UUIDs": ["2b6975bc9be31429c16ec1a2b0db0549c11cdfde211eca65e21447404e968b7c"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1106,7 +1125,9 @@
                   "Stop": 98,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000006000001000014000021000034000033030061450112199936",
-                  "Solution": "A31B1J3I5A4B4J3I3A6Q1A3E4A6E7A1Q1A5"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A31B1J3I5A4B4J3I3A6Q1A3E4A6E7A1Q1A5",
+                  "Old UUIDs": ["d14e444ba016994a8e9115780f461513dc425d501ce9a77a45e3349b9d91803a", "2e333fa88799b66743ba8049660db78236fc2537e377a66adec0966e5ad5becc"]
                 }
               ]
             },
@@ -1121,7 +1142,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[==========================================================][======================================================================]232265641366433421",
-                  "GarbagePanelBuffer": "414631242323536161641526316431563614245352453213326145162421356212",
+                  "GarbagePanelBuffer": "414631242323536161641526316431563614245352453213326145162421",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 3
@@ -1134,7 +1155,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[==========================================================][======================================================================]354233641642641414",
-                  "GarbagePanelBuffer": "213424154341243423416161562515324146246464621616356525461236636523",
+                  "GarbagePanelBuffer": "213424154341243423416161562515324146246464621616356525461236",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 3
@@ -1462,7 +1483,8 @@
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A74E6A13E5A22B7A19E5A120Q1A3Q1A61"
+                  "Solution": "A74E6A13E5A22B7A19E5A120Q1A3Q1A61",
+                  "Old UUIDs": ["c685b5be277cf47975bc6d135a4007c7ffe9b991c106e343a9a21479e06afa06", "1fa51150a17493feb029e69d6630c19422efe800c903953db1d84259f1a88b3d"]
                 },
                 {
                   "Puzzle Type": "chain",
@@ -1473,7 +1495,8 @@
                     "Column": 4,
                     "Row": 2
                   },
-                  "Solution": "A48I6A13I6A6Q1A14E5A13E4A55Q1A63"
+                  "Solution": "A48I6A13I6A6Q1A14E5A13E4A55Q1A63",
+                  "Old UUIDs": ["d62c1f694df13a01ea0dc07405d5de2e74bce1788aec8ee532c89089c712371e", "b51e554914f7caf4cba3869f5cc9b3204a680cb3167510b260aad9c256a97f07"]
                 }
               ]
             },
@@ -1487,21 +1510,24 @@
                   "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "300001290106399303199506592303299536393",
-                  "Solution": "A22Q1A7E9A6C9A6E6A7E6A87Q1A11I3A5Q1A11E8A4C6A4E8A2Q1A17E7A6B19A3I6A6C5A5C3A4Q1A4B17Q1C7A3Q1A2C7Q1A6I7A3Q1A8E7A3C6S1A10C5A5I3Y1I2A4B7F3E4A4B8A4B4Q1A5C6S1A4E5A9C18A8Q1A8B1R1B17A3E5U1E2A85"
+                  "Solution": "A22Q1A7E9A6C9A6E6A7E6A87Q1A11I3A5Q1A11E8A4C6A4E8A2Q1A17E7A6B19A3I6A6C5A5C3A4Q1A4B17Q1C7A3Q1A2C7Q1A6I7A3Q1A8E7A3C6S1A10C5A5I3Y1I2A4B7F3E4A4B8A4B4Q1A5C6S1A4E5A9C18A8Q1A8B1R1B17A3E5U1E2A85",
+                  "Old UUIDs": ["82e6e481fdf687849105fcd4adbb494d4ece8955bdb0f0c5b0f6c5ec27c3d3d2", "ed0351c2c2418b576515777e70d228485850f0c85b83f00f49ad0631806b056b"]
                 },
                 {
                   "Puzzle Type": "chain",
                   "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "200420400199105499402599241959425299",
-                  "Solution": "A23E5A7B5A6Q1A8C4S1C2A17B6Q1A7C6A2Q1A7E7A7E4A8E5Q1A9E6A4B7A2Q1A7C5A3Q1A6C9A9C10A17I6A20I4Y1I1A7B8A5B7A1I4Y1I2A9E10A5C18A5I7Q1A7B8A6E7A5E6A5B9E6A5Q1A8C19A24Q1A3B9A1Q1A8C6Q1A90"
+                  "Solution": "A23E5A7B5A6Q1A8C4S1C2A17B6Q1A7C6A2Q1A7E7A7E4A8E5Q1A9E6A4B7A2Q1A7C5A3Q1A6C9A9C10A17I6A20I4Y1I1A7B8A5B7A1I4Y1I2A9E10A5C18A5I7Q1A7B8A6E7A5E6A5B9E6A5Q1A8C19A24Q1A3B9A1Q1A8C6Q1A90",
+                  "Old UUIDs": ["bcc92b7b59083994f7487db1c54fe5a7cf90b1de24be67a933aa56534c3bf17f", "5998c2e92b1bd46ce0e2faa591d045416d8cfcaba7b537520be6eb8556169143"]
                 },
                 {
                   "Puzzle Type": "chain",
                   "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "100040530099590095290099590931929424139",
-                  "Solution": "A23E7A8E6A15E4A7E6A9E6A3Q1A7E8A5C18Q1A6B9A1I9Q1A7B8J1I4A6I7Q1A9C7A7I6A6I7A4Q1A6B6A7B7A13C4S1A5B7A12Q1A5C6A3E6A7E6A10Q1A4E5A8C7A5E5A6E10C7A3Q1A3B7A6I7A2B7A1Q1A3B6A2Q1A77"
+                  "Solution": "A23E7A8E6A15E4A7E6A9E6A3Q1A7E8A5C18Q1A6B9A1I9Q1A7B8J1I4A6I7Q1A9C7A7I6A6I7A4Q1A6B6A7B7A13C4S1A5B7A12Q1A5C6A3E6A7E6A10Q1A4E5A8C7A5E5A6E10C7A3Q1A3B7A6I7A2B7A1Q1A3B6A2Q1A77",
+                  "Old UUIDs": ["dc03c465ec023c9fff73cb796aac900169933b440be90dd853b4dce3b1f98ca9", "5c42f7346a05495825e4ae02dd21e96ae787235fec9e2cc11273a4c558149eb5"]
                 }
               ]
             },
@@ -1516,7 +1542,9 @@
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================][====]320000310000520000360000355445",
-                  "Solution": "A22E6A7E5A3C6A1Q1A8C3S1A7B6A1Q1A6E6A6E6Q1A4C5S1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A22E6A7E5A3C6A1Q1A8C3S1A7B6A1Q1A6E6A6E6Q1A4C5S1A5",
+                  "Old UUIDs": ["8e47d724d1038a00494d66ad1560b9c30c892e3df311c505984e191b8c0c2ea7", "aa206e344c013cd831ca9932f4e05bad84b15743c28e7e5171607e6663ddb005"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1525,7 +1553,9 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "0[==]0[=][=][====][====]400000600000420000130006540506653544216616535113",
-                  "Solution": "A270C7A7C5A4Q1A2B5A2Q1A5C4A2Q1A4B6Q1A7E3A7E6Q1A6C3S1C2A1E6Q1A5"
+                  "GarbagePanelBuffer": "999999999999999999",
+                  "Solution": "A270C7A7C5A4Q1A2B5A2Q1A5C4A2Q1A4B6Q1A7E3A7E6Q1A6C3S1C2A1E6Q1A5",
+                  "Old UUIDs": ["ea56095c9eea93eb8a6322cd97e4636df0274107d332bc9fe97f1dd60d623c30", "33f5da48cd23b9d88f7ebd35d3c8c2138eb2e184a203e03dadd9740979fc8696"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1534,7 +1564,9 @@
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]045000063001243062454156114213254545626551",
-                  "Solution": "A135Q1A4C5A6C3S1C1A6E6A4E6A8Q1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A135Q1A4C5A6C3S1C1A6E6A4E6A8Q1A5",
+                  "Old UUIDs": ["7edbe71de7b4e2724106127fc1ae1814d6e9f8745843192292720d3c32eba729", "240a0d34aa5ac27f71255d75c6c5af7001729164b1d858eb5758234680382635"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1543,7 +1575,9 @@
                   "Stop": 74,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000040000062600041200061605026203056441042552254116413548515",
-                  "Solution": "A47B4A7I4A6Q1A7I5Q1A5B5A2Q1A4C6Q1A3E6F3B3R1B3A7U1E5"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A47B4A7I4A6Q1A7I5Q1A5B5A2Q1A4C6Q1A3E6F3B3R1B3A7U1E5",
+                  "Old UUIDs": ["2361cac91a416bb65c163b3a6cd740f06e93151d2e47cbd4660fbd3f08161d55", "e9929095573c85192aea7db6238bfb5d9cc5ca987bc0fe62f0071713c25d7201"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1552,7 +1586,9 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]400300102105303621204243136326",
-                  "Solution": "A195E7A6E7A3B7Q1A2C18S1C1A3E7A4B6A4B6Q1A3B6R1A6E6A5E6Q1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A195E7A6E7A3B7Q1A2C18S1C1A3E7A4B6A4B6Q1A3B6R1A6E6A5E6Q1A5",
+                  "Old UUIDs": ["cf8e20474f62b233db31b65f82f9afef93c44b4cdf88f390fc3e905ff69eed8b", "a2994992acbc9f57d9f47752797a4ceb979c98e114d501b5c3a2e1326e1c29d7"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1561,7 +1597,9 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==================================]000039000039000029300092993329",
-                  "Solution": "A104E6A5E5A4E7F3B4A5B1F3E1A4E6A9Q1A6C5A45B4A7Q1A11Q1A19I5A9I6Q1A4C3S1C2A3E7A3B7Q1A5E5A3C9E6Q1A4B4R1B1A4"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A104E6A5E5A4E7F3B4A5B1F3E1A4E6A9Q1A6C5A45B4A7Q1A11Q1A19I5A9I6Q1A4C3S1C2A3E7A3B7Q1A5E5A3C9E6Q1A4B4R1B1A4",
+                  "Old UUIDs": ["3989846a944e4e6beed5abb028f725294521716da8ab27531cb1e25930a9a436", "baef1f539f1601a850b2d3b65743f1ad4421d5ef4c01c17ebfba83df103d705d"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1570,7 +1608,9 @@
                   "Stop": 80,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]120000540106310405340346146551",
-                  "Solution": "A17E6A5C2G4A14Q1A5C6A3Q1A4B6A11Q1A6E6A4E6F2B6Q1A3C7A5Q1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A17E6A5C2G4A14Q1A5C6A3Q1A4B6A11Q1A6E6A4E6F2B6Q1A3C7A5Q1A5",
+                  "Old UUIDs": ["b471c6a0d7072ea2253251ee4f8edc62ba836716d6d1280ac58408bb774c4d02", "18cc6b841746e32f7da11f7dc9f7fa51b1266380f1acd947c065cace6ad93327"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1579,11 +1619,13 @@
                   "Stop": 41,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][====]500000400000300000400000405030103035602055443116162661",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 8
                   },
-                  "Solution": "A44I4Y1I1A7E7A3E7A4Q1A12"
+                  "Solution": "A44I4Y1I1A7E7A3E7A4Q1A12",
+                  "Old UUIDs": ["5e22e17c001d9f7ebc2d1db7d5d27996d03fb7c0b12f473a8af8b65d3837230d"]
                 }
               ]
             },
@@ -1598,11 +1640,13 @@
                   "Moves": 0,
                   "Stop": 80,
                   "Stack": "[======================]000[=][==========][====][==========][====]400250500250400434401421356112",
+                  "GarbagePanelBuffer": "999999999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 4
                   },
-                  "Solution": "A55Q1A10B6A5E9B7Q1A6B3I7A6I4A4Q1A5C4S1C2A3E9A2B6A1Q1A7E4Q1A5"
+                  "Solution": "A55Q1A10B6A5E9B7Q1A6B3I7A6I4A4Q1A5C4S1C2A3E9A2B6A1Q1A7E4Q1A5",
+                  "Old UUIDs": ["2669c8e1e85ce89e7fea17e0ab3652119ac21ea36a06771b927b212791b503c1"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1610,11 +1654,13 @@
                   "Moves": 0,
                   "Stop": 80,
                   "Stack": "[======================][======================][======================][====]000632003141454545136453658532565165",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
                   },
-                  "Solution": "A15Q1A53C6A7C6A9Q1A5B7A4I6A25E7A5Q1A7I5A14E5A7E6A1C16A3Q1A4B6A5E3A3B16A4I6A7I7A13Q1A10I5A7Q1A7C5S1A14E9A2B12Q1A9C7A6C7A4C3A2Q1A6B4A7B4A3Q1A5"
+                  "Solution": "A15Q1A53C6A7C6A9Q1A5B7A4I6A25E7A5Q1A7I5A14E5A7E6A1C16A3Q1A4B6A5E3A3B16A4I6A7I7A13Q1A10I5A7Q1A7C5S1A14E9A2B12Q1A9C7A6C7A4C3A2Q1A6B4A7B4A3Q1A5",
+                  "Old UUIDs": ["b34500d31eefd5ebeff0e072e8044ee10539f48f622d53f541dcc92784b35808"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1622,11 +1668,13 @@
                   "Moves": 0,
                   "Stop": 81,
                   "Stack": "[======================][==========]00[==]0[==]0060000020001125005543404215102552406524162234243451256",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 5
                   },
-                  "Solution": "A17Q1A6C4Q1A5E8A2B5A9E4U1E1A10Y1I3A9C4A3I7A7I6A8Q1A6B19A21Q1A12Q1A6C4A6C8A8C6A2Q1A8B4E7A6B7A8Q1A7C6Q1A5"
+                  "Solution": "A17Q1A6C4Q1A5E8A2B5A9E4U1E1A10Y1I3A9C4A3I7A7I6A8Q1A6B19A21Q1A12Q1A6C4A6C8A8C6A2Q1A8B4E7A6B7A8Q1A7C6Q1A5",
+                  "Old UUIDs": ["e03b368ce483baa691a559c4512fee6158cdb813b80235209e6b2bbc96089469"]
                 }
               ]
             },
@@ -1641,7 +1689,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[==========================================================][==================================]112122345634563456",
-                  "GarbagePanelBuffer": "163625451214636135424264342531",
+                  "GarbagePanelBuffer": "163625451214636135424264",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
@@ -1654,7 +1702,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[==========================================================][==================================]215415126651554121",
-                  "GarbagePanelBuffer": "214126561453242165323612532323",
+                  "GarbagePanelBuffer": "214126561453242165323612",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
@@ -1667,7 +1715,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[==========================================================][==================================]226215354364351154",
-                  "GarbagePanelBuffer": "654324321251632562264313656452",
+                  "GarbagePanelBuffer": "654324321251632562264313",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
@@ -1680,7 +1728,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[==========================================================][==================================]124453245364364221",
-                  "GarbagePanelBuffer": "156361421523142161234212162656",
+                  "GarbagePanelBuffer": "156361421523142161234212",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
@@ -1693,7 +1741,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[==========================================================][==================================]546325521166156242",
-                  "GarbagePanelBuffer": "242545453423514251156542621636",
+                  "GarbagePanelBuffer": "242545453423514251156542",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 1
@@ -1802,11 +1850,13 @@
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]299309299999299999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A57E10A108Q1A5"
+                  "Solution": "A57E10A108Q1A5",
+                  "Old UUIDs": ["6a8915a5930959014d0db8a8e550e621d8cc78befe285e010457f28a6fa1613d"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1815,11 +1865,13 @@
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]299039299999299999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A107E6A10E9A7Q1A26I7A41Q1A5"
+                  "Solution": "A107E6A10E9A7Q1A26I7A41Q1A5",
+                  "Old UUIDs": ["162d23390fd1b4e469d88c304de51ced26750318292cbf2c1183e885eceb751e"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1828,11 +1880,13 @@
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]299903299999299999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A136B9A5Q1A11C8A3Q1A11E7A10B7A53Q1A5"
+                  "Solution": "A136B9A5Q1A11C8A3Q1A11E7A10B7A53Q1A5",
+                  "Old UUIDs": ["dbfc0b5c7957a6e77e81b43c7da3379cf7dfafdc2d648130c5fc8c5502b3b2d2"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1841,7 +1895,9 @@
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]230999299999299999999999999999",
-                  "Solution": "A68Q1A7C4A4Q1A5B5A8B6A1Q1A6C3A6Q1A2C7A11E6A28Q1A5"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A68Q1A7C4A4Q1A5B5A8B6A1Q1A6C3A6Q1A2C7A11E6A28Q1A5",
+                  "Old UUIDs": ["53fd9bc7325d51e832e309eb114691935a8e35a0e55d94c8b318dc8e97e23fb1", "90acb972eb6ca0412ddfac2fb0a299b42192e4333582c53ef20c6311a472ed82"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1850,11 +1906,13 @@
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999993[====]200003200003209999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A64E8A19B6A81Q1A12"
+                  "Solution": "A64E8A19B6A81Q1A12",
+                  "Old UUIDs": ["e2986a52f51877c40b8a1b95cd2a170a35c16cc4a51dc137a5c97b076d289153"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1882,11 +1940,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[================][===]0061340121351[====]405365112361999399999999999999",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 7
                   },
-                  "Solution": "A197C5A10C8A5Q1A16B9A7E6A48Q1A5"
+                  "Solution": "A197C5A10C8A5Q1A16B9A7E6A48Q1A5",
+                  "Old UUIDs": ["87b046f5fe3422e94c02510ce57fc72525022c8999c186aaa5134d02b0511976"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1895,11 +1955,13 @@
                   "Stop": 40,
                   "Shake": 0,
                   "Stack": "[======================]125446[====]069004069504969999999999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 8
                   },
-                  "Solution": "A150B3A7B9A3Q1A7C5S1A8E6A6E5A5E6U1A9B7I6A7I4A10Q1A5"
+                  "Solution": "A150B3A7B9A3Q1A7C5S1A8E6A6E5A5E6U1A9B7I6A7I4A10Q1A5",
+                  "Old UUIDs": ["a17ad7abb499f7d903c2f6255bcb57b2426fdfdab0f20fde5d8d7e62e612b034"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1908,11 +1970,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[============================][====]132120[====]200062563164322464356566613131",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A96C4A7C6A4Q1A8B4R1B2A7B8A2I7A9B9A1I7Q1A9E10C6A7Q1A5"
+                  "Solution": "A96C4A7C6A4Q1A8B4R1B2A7B8A2I7A9B9A1I7Q1A9E10C6A7Q1A5",
+                  "Old UUIDs": ["707432ed13051e16ba157424afd0f1857d74e44444ed7b6218881f3988ac72e0"]
                 }
               ]
             },
@@ -1928,11 +1992,13 @@
                   "Stop": 54,
                   "Shake": 0,
                   "Stack": "[======================][======================][==]00[==========][====][=]003300004500026600065140363322614",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A120Q1A2E7A1Q1A5C6A5C5A1Q1A6C3S1C5A7C3I8A6Q1A17B5A2Q1A3C6A1Q1A5E6A6Q1A5"
+                  "Solution": "A120Q1A2E7A1Q1A5C6A5C5A1Q1A6C3S1C5A7C3I8A6Q1A17B5A2Q1A3C6A1Q1A5E6A6Q1A5",
+                  "Old UUIDs": ["b2e4d5dae2bfa380294075f898028800037450acf8d67a85f0e6303a4d66b888"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1941,11 +2007,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]500000300005460003240002360002335021115014523626",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 2
                   },
-                  "Solution": "A361C2A7C7A3Q1A5I5Q1A7E1G1C4A6E3U1A4B7A6B4Q1A9B13R1A7C3S1C3A9I5A5B2J1I6A3Q1A5C6A20Q1A4C16A9I5A4I6Q1A5I5A14I7A1Q1A9E6A5E7A2Q1A9B3"
+                  "Solution": "A361C2A7C7A3Q1A5I5Q1A7E1G1C4A6E3U1A4B7A6B4Q1A9B13R1A7C3S1C3A9I5A5B2J1I6A3Q1A5C6A20Q1A4C16A9I5A4I6Q1A5I5A14I7A1Q1A9E6A5E7A2Q1A9B3",
+                  "Old UUIDs": ["fdeef65d420f6d6ed86eb712928da2576c7a413fa6cbbb68e9a985dfd679f629"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1954,11 +2022,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][================]300000260000350000124000563101325601624264413545",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A205Q1A2C6Q1A3C6A6E5Q1A11B6A4B6A1Q1A10I5A14Q1A6E4A7E5Q1A7C5A5C6A15Q1A8B6A1Q1A6C3S1C1A9I6A16Q1A4I5A5I4A5I4A7Y1I2A10Q1A7E6A12E5A20Q1A8B7A4E6Q1A5"
+                  "Solution": "A205Q1A2C6Q1A3C6A6E5Q1A11B6A4B6A1Q1A10I5A14Q1A6E4A7E5Q1A7C5A5C6A15Q1A8B6A1Q1A6C3S1C1A9I6A16Q1A4I5A5I4A5I4A7Y1I2A10Q1A7E6A12E5A20Q1A8B7A4E6Q1A5",
+                  "Old UUIDs": ["f904db41d6fe62e308574d354d6520fd94fd3c15a6d28941b96253ded999df7d"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1966,11 +2036,13 @@
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================]100501530226640551130553531663",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 2
                   },
-                  "Solution": "A41I6A12C6A1Q1A4B4A3Q1A5C13A3I3Y1I1A8E2F2B4A4E7A7Q1A3Q1A6C7A10Q1A58Q1A4B5R1A6B3R1B10R1B5I5A6I5A1Q1A5E4G1C2A6E5U1A5B6Q1A5"
+                  "Solution": "A41I6A12C6A1Q1A4B4A3Q1A5C13A3I3Y1I1A8E2F2B4A4E7A7Q1A3Q1A6C7A10Q1A58Q1A4B5R1A6B3R1B10R1B5I5A6I5A1Q1A5E4G1C2A6E5U1A5B6Q1A5",
+                  "Old UUIDs": ["889caa49b31714f9fd5a4545f493f6251d0a32b8d3a8017634b497498b060d55"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1979,11 +2051,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][=][=]001003006005005006601005403003605006611321561248432464",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 7
                   },
-                  "Solution": "A52Q1A13Q1A5E4G2C1A8E5A2Q1A6B16A13Q1A5I5A15Q1A19I3A14Q1A6C5A5E5C4A7Q1A5E8A5E4Q1A8B5R1B1A6B3R1B2A3"
+                  "Solution": "A52Q1A13Q1A5E4G2C1A8E5A2Q1A6B16A13Q1A5I5A15Q1A19I3A14Q1A6C5A5E5C4A7Q1A5E8A5E4Q1A8B5R1B1A6B3R1B2A3",
+                  "Old UUIDs": ["bd6c7b3744bb082e75662a9c427f2d33c5b0e424ec88a302ecbaa17c64082740"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -1992,11 +2066,13 @@
                   "Stop": 54,
                   "Shake": 0,
                   "Stack": "[======================][======================][=][=][====][====]400000200001350031254635346355",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 2
                   },
-                  "Solution": "A177E5A2Q1A4B4J1I3A6I3A4I4A1Q1A7C17A2Q1A5B6A2Q1A5E6A6B4A2Q1A5C5Q1A3C5A1Q1A4E6F1B2A2Q1A5C6Q1A4E7A5Q1A5"
+                  "Solution": "A177E5A2Q1A4B4J1I3A6I3A4I4A1Q1A7C17A2Q1A5B6A2Q1A5E6A6B4A2Q1A5C5Q1A3C5A1Q1A4E6F1B2A2Q1A5C6Q1A4E7A5Q1A5",
+                  "Old UUIDs": ["942b5cd948d6e998002e567376e6c02ce7e4d8cd3e8c06dadfc9bcd930b34d64"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2005,11 +2081,13 @@
                   "Stop": 34,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]200030301624201156553241155166441231",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
                   },
-                  "Solution": "A223B4A4Q1A2C7Q1A7B5A14C6A12I4A25Q1A13I6A4Q1A5C5S1A6C4S1C1A11E5C6A11I5A5Q1A6E2F3B3A6E1F2B4A4B7A9Q1A8C3S1C2A5C3S1C1A5C5A1Q1A5"
+                  "Solution": "A223B4A4Q1A2C7Q1A7B5A14C6A12I4A25Q1A13I6A4Q1A5C5S1A6C4S1C1A11E5C6A11I5A5Q1A6E2F3B3A6E1F2B4A4B7A9Q1A8C3S1C2A5C3S1C1A5C5A1Q1A5",
+                  "Old UUIDs": ["43a4f6a72fac47beaeb0b5212bd21b1181fd2e83743f3ba80ee5ac4095d28a66"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2018,11 +2096,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][============================]200000500040401042603661402563134122613515",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 6
                   },
-                  "Solution": "A138E4A4E7A1Q1A9Q1A8B3R1A8B3R1A8B3A3Q1A5"
+                  "Solution": "A138E4A4E7A1Q1A9Q1A8B3R1A8B3R1A8B3A3Q1A5",
+                  "Old UUIDs": ["6124cb6aef9c5993c7aa5d8bff4d604e7e4e5e4b181105830096fcedf5fc05ba"]
                 }
               ]
             },
@@ -2037,11 +2117,13 @@
                   "Moves": 0,
                   "Stop": 33,
                   "Stack": "[======================][============================]430000510500621600461662252262426521516563",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
                   },
-                  "Solution": "A69Q1A6C6A13I4A12C6A4Q1A6B7A20Q1A6C4A6C5A11B4A22I3A4Q1A2C7A6I5A4I6A3Q1A3B6R1A6E7A7B2A14C5Q1A4B3A1Q1A3C13Q1A5B5Q1A5B2A1Q1A10E8G1C5A10Q1A3E9A14Q1A5"
+                  "Solution": "A69Q1A6C6A13I4A12C6A4Q1A6B7A20Q1A6C4A6C5A11B4A22I3A4Q1A2C7A6I5A4I6A3Q1A3B6R1A6E7A7B2A14C5Q1A4B3A1Q1A3C13Q1A5B5Q1A5B2A1Q1A10E8G1C5A10Q1A3E9A14Q1A5",
+                  "Old UUIDs": ["f309129571da52a5210503c30cc968087b4cd0619f19bf683976180d0589f4d5"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2050,11 +2132,13 @@
                   "Stop": 58,
                   "Shake": 0,
                   "Stack": "[======================][==================================]011253[====]061499065199069329999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 5
                   },
-                  "Solution": "A32B5A9B5A6E7Q1A8I3A6I2Y1A6C5A2Q1A8E5A6E5A5Q1A4B6I5Q1A5"
+                  "Solution": "A32B5A9B5A6E7Q1A8I3A6I2Y1A6C5A2Q1A8E5A6E5A5Q1A4B6I5Q1A5",
+                  "Old UUIDs": ["c8de58a07eb57dbceceeb7ba7e3e880be46e40d5350666c31e53f2a1108580ad"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2063,11 +2147,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]010000230000450000455001266002412063536654265316",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A38B5A1Q1A6C3S1C3A5E2F3B3A5Q1A7C16A2Q1A7B2I5A5I6A4I6A4I5A5I4A6I4Q1A8E3G1C6A6Q1A10B5Q1A10C4S1C1A5B4R1A9E5A1C7A4Q1A3B6Q1A9C6A1Q1A4B5R1A9E5A5E6A1Q1A5C5S1A5"
+                  "Solution": "A38B5A1Q1A6C3S1C3A5E2F3B3A5Q1A7C16A2Q1A7B2I5A5I6A4I6A4I5A5I4A6I4Q1A8E3G1C6A6Q1A10B5Q1A10C4S1C1A5B4R1A9E5A1C7A4Q1A3B6Q1A9C6A1Q1A4B5R1A9E5A5E6A1Q1A5C5S1A5",
+                  "Old UUIDs": ["4138c3b3de97b0cb576cee5cfb98f40a6b7b0181b73621323b37503aaa654101"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2075,11 +2161,13 @@
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================][====]060004320513420264510561425622254335",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 4
                   },
-                  "Solution": "A112Q1A6C5A6I4A4I4A1Q1A3B15Q1A6C5S1C1A6C7A4E5C5A4E5A6E6U1A5"
+                  "Solution": "A112Q1A6C5A6I4A4I4A1Q1A3B15Q1A6C5S1C1A6C7A4E5C5A4E5A6E6U1A5",
+                  "Old UUIDs": ["d471bbcb861986fd22ee40cb5f504752b8999547d84d88bd07d52d5ba2dace75"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2088,11 +2176,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]001000202000436400556400315103246102424505",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A82Q1A6B3R1A8E6A4Q1A7E4G2C21A1Q1A8B2I6A5B3A8I6A5I5A11I5A45I3A23Q1A8E8A6E6A12C5A5C5A17I5A1Q1A9E3F2B4A15Q1A7C5A37I5A9Q1A5B2A11E7A9C6A13Q1A4E6A7Q1A5"
+                  "Solution": "A82Q1A6B3R1A8E6A4Q1A7E4G2C21A1Q1A8B2I6A5B3A8I6A5I5A11I5A45I3A23Q1A8E8A6E6A12C5A5C5A17I5A1Q1A9E3F2B4A15Q1A7C5A37I5A9Q1A5B2A11E7A9C6A13Q1A4E6A7Q1A5",
+                  "Old UUIDs": ["2387cf6f6fceb14c392cf962c8047f1814b9e35c7dd9623d9e969abe9e4dc988"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2100,11 +2190,13 @@
                   "Moves": 0,
                   "Stop": 54,
                   "Stack": "[======================][============================]600200304106254633265261633622241253256162",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A66Q1A8E1G2C5A11E8Q1A25B5A67Q1A3Q1A14I6A8C5Q1A5B4A1Q1A29B7A12I6A3Q1A8E5A9Q1A3C14A8I5A5I4A4I3A3Q1A3B6R1B1A7E6A4B5A3Q1A5C5A1Q1A3C6A3Q1A7E5A10Q1A5"
+                  "Solution": "A66Q1A8E1G2C5A11E8Q1A25B5A67Q1A3Q1A14I6A8C5Q1A5B4A1Q1A29B7A12I6A3Q1A8E5A9Q1A3C14A8I5A5I4A4I3A3Q1A3B6R1B1A7E6A4B5A3Q1A5C5A1Q1A3C6A3Q1A7E5A10Q1A5",
+                  "Old UUIDs": ["b1e6d46e45ad31bb8fe338356ca795326ea3378e65a3844b87fabbf63105a94b"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2112,11 +2204,13 @@
                   "Moves": 0,
                   "Stop": 82,
                   "Stack": "[======================][======================][==========][==========]100000600000520000330000436001212005214001365132",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 1
                   },
-                  "Solution": "A50Q1A6C6Q1A9B10J2I7A4B7A3I6A1B9A8Q1A9C5A8C4A9C3A8C9A56Q1A11E9A34Q1A7I6A9I5A23E4A6E7A19Q1A7B6A7Q1A5"
+                  "Solution": "A50Q1A6C6Q1A9B10J2I7A4B7A3I6A1B9A8Q1A9C5A8C4A9C3A8C9A56Q1A11E9A34Q1A7I6A9I5A23E4A6E7A19Q1A7B6A7Q1A5",
+                  "Old UUIDs": ["d6245cb0a43d86d6981bb8a3b56652a1d7fdfc01b03cd780f35750137f2699a3"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2124,11 +2218,13 @@
                   "Moves": 0,
                   "Stop": 78,
                   "Stack": "[======================][======================][==========][==========]500000300000400200500503200152160551610435",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A26Q1A3C7A5I4Y1I1A7B1R1B2A6E5A5E5U1E1A8C5A4C16A10I5A5I6A6Q1A15I4A9Q1A24E1F2B5A4Q1A5C5Q1A5B6A5B2R1A8C12A1Q1A5B7A1E3F2B4A5E3U1E1A4C4S1C2A3"
+                  "Solution": "A26Q1A3C7A5I4Y1I1A7B1R1B2A6E5A5E5U1E1A8C5A4C16A10I5A5I6A6Q1A15I4A9Q1A24E1F2B5A4Q1A5C5Q1A5B6A5B2R1A8C12A1Q1A5B7A1E3F2B4A5E3U1E1A4C4S1C2A3",
+                  "Old UUIDs": ["8b567000c1cae333fd8e0857fc3750e9b35bc27ed1b8641333cabd9a9b47ee1b"]
                 }
               ]
             },
@@ -2144,11 +2240,13 @@
                   "Stop": 22,
                   "Shake": 70,
                   "Stack": "[======================][======================][====]000003640002462445535161414121221336",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 5
                   },
-                  "Solution": "A65Q1A7E6G1C6A3E5A2Q1A5C5Q1A6C3S1C1A7C1S1C2A10I3Y1I2A3"
+                  "Solution": "A65Q1A7E6G1C6A3E5A2Q1A5C5Q1A6C3S1C1A7C1S1C2A10I3Y1I2A3",
+                  "Old UUIDs": ["b1bb6d6fd0eb126f3353055a7efa2e468e3094d58b14cd78d0dd6045329eb139"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2157,11 +2255,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========]340001210045130015436224615252235566214243",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 2
                   },
-                  "Solution": "A55Q1A3B5R1A7B3R1B4A5B1A1I6A2I6A4B2I5A6I4A6C4S1C2A5E5C6A2E4C6A3E5A1C5A4E5A1Q1A4B6Q1A21E8A3Q1A6B2J1I5A3I5A1Q1A4C7Q1A6B5A14B7I5A4Q1A6E4C5A3E3C17A5Q1A4Q1A7B2J1I5A12C5A5Q1A7I3A4Q1A2B18A7Q1A5C6A9E5A3Q1A13Q1A7B4A1Q1A6E5A6Q1A8C13A7I5A4I4A3Q1A2B5A2Q1A8E6F1B3A7E6A2Q1A5C3S1C1A5E3G1C5A4Q1A5"
+                  "Solution": "A55Q1A3B5R1A7B3R1B4A5B1A1I6A2I6A4B2I5A6I4A6C4S1C2A5E5C6A2E4C6A3E5A1C5A4E5A1Q1A4B6Q1A21E8A3Q1A6B2J1I5A3I5A1Q1A4C7Q1A6B5A14B7I5A4Q1A6E4C5A3E3C17A5Q1A4Q1A7B2J1I5A12C5A5Q1A7I3A4Q1A2B18A7Q1A5C6A9E5A3Q1A13Q1A7B4A1Q1A6E5A6Q1A8C13A7I5A4I4A3Q1A2B5A2Q1A8E6F1B3A7E6A2Q1A5C3S1C1A5E3G1C5A4Q1A5",
+                  "Old UUIDs": ["15dd49ae29d86f0383fca33bae5978affe1738d91f0f1e0275c6b8dd23c41fa7"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2169,11 +2269,13 @@
                   "Moves": 0,
                   "Stop": 48,
                   "Stack": "[======================][======================][====]005632516364[====]200000602000616400132200483610541282244223",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 2
                   },
-                  "Solution": "A48Q1A8E5Q1A8I17A19E4A4E3U1E2A7E6A13E6A5Q1A6B6A7Q1A13I10J2B7A3I4A13E5A2B4R1B2A4E6A3C5A5E5A6E6A1C2S1C2A8B4A9I3Y1A5"
+                  "Solution": "A48Q1A8E5Q1A8I17A19E4A4E3U1E2A7E6A13E6A5Q1A6B6A7Q1A13I10J2B7A3I4A13E5A2B4R1B2A4E6A3C5A5E5A6E6A1C2S1C2A8B4A9I3Y1A5",
+                  "Old UUIDs": ["c2e820bf195243b72d93dcab6df1358b6f4c1661e1d2007ececfdc97b84e638a"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2181,11 +2283,13 @@
                   "Moves": 0,
                   "Stop": 98,
                   "Stack": "[======================][======================][======================]200000300000600000502000406000301025401156434412",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 1
                   },
-                  "Solution": "A52Q1A9I6A6I4Y1A9I5A6I6A39I6Q1A12E7A19B4A8E6A7E3A7E7Q1A10B5A6U1E3A10Q1A26I4A10R1B4A6B8A1I4A5Q1A14E6A12C15A3Y1I6A26Q1A10B5R1A6C4A1Q1A4B4A3Q1A3B4A3Q1A6E13U1E2A3"
+                  "Solution": "A52Q1A9I6A6I4Y1A9I5A6I6A39I6Q1A12E7A19B4A8E6A7E3A7E7Q1A10B5A6U1E3A10Q1A26I4A10R1B4A6B8A1I4A5Q1A14E6A12C15A3Y1I6A26Q1A10B5R1A6C4A1Q1A4B4A3Q1A3B4A3Q1A6E13U1E2A3",
+                  "Old UUIDs": ["61a38451408b64f41bcbf1d01c9f45825e5ce953ccc2b53520bb3875190c1a64"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2194,11 +2298,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][================]300000500000100006441023535021122061532045153165",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A25Q1A12Q1A11C4A6C5A4C4G2E6A16E5Q1A6B3R1B2A7E9A7Q1A9C5Q1A6B8A2I6A10C6S1A9B4I6A10Q1A9B13A3I8A31Q1A9C7A17I8B6Q1A5C5S1A7E3A7E6A7E7A9Q1A7C16A10I9Q1A43Q1A9B5R1B1A8C9Q1A7B14A5Q1A9C19A9B5Q1A7C3S1C1A6B4R1B14A3Q1A14C6A8C2A2Q1A2B5A2Q1A2B7Q1A5"
+                  "Solution": "A25Q1A12Q1A11C4A6C5A4C4G2E6A16E5Q1A6B3R1B2A7E9A7Q1A9C5Q1A6B8A2I6A10C6S1A9B4I6A10Q1A9B13A3I8A31Q1A9C7A17I8B6Q1A5C5S1A7E3A7E6A7E7A9Q1A7C16A10I9Q1A43Q1A9B5R1B1A8C9Q1A7B14A5Q1A9C19A9B5Q1A7C3S1C1A6B4R1B14A3Q1A14C6A8C2A2Q1A2B5A2Q1A2B7Q1A5",
+                  "Old UUIDs": ["f48f561495183c031c0b826d81eb4190c0646b2e62cfc412bab6af8aaa0cfc02"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2220,11 +2326,13 @@
                   "Stop": 34,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]600000410000330000650056450053216012621556516643645314",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 3
                   },
-                  "Solution": "A72Q1A9E4A7E7Q1A6C7A13I6A10B6A8B6A16C5A10I5A6I7A14Q1A9E5A8E5A2Q1A7C4Q1A8B9A2I9A1I10B9A8B4I8A3Q1A7B2J1I7A3Q1A8C4S1C3A10E7G2C15S1C4A10B5A6B3A6B5A2Q1A5"
+                  "Solution": "A72Q1A9E4A7E7Q1A6C7A13I6A10B6A8B6A16C5A10I5A6I7A14Q1A9E5A8E5A2Q1A7C4Q1A8B9A2I9A1I10B9A8B4I8A3Q1A7B2J1I7A3Q1A8C4S1C3A10E7G2C15S1C4A10B5A6B3A6B5A2Q1A5",
+                  "Old UUIDs": ["cccb1e25926d1d416079212f362cadf6538f9568ffb4ad3abb0c9bdc4fae01ce"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2233,11 +2341,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000001005036002013041654016432052363041251255312533648835215",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 9
                   },
-                  "Solution": "A163Q1A9B7A1Q1A12Q1A12C6A8E7A3C5A1E6Q1A4B5R1B2A3"
+                  "Solution": "A163Q1A9B7A1Q1A12Q1A12C6A8E7A3C5A1E6Q1A4B5R1B2A3",
+                  "Old UUIDs": ["808d04f40fb05d5cb3026a85858307ff8c103945444a44223525bfa8ff47586f"]
                 }
               ]
             },
@@ -2253,11 +2363,13 @@
                   "Stop": 56,
                   "Shake": 0,
                   "Stack": "[======================][======================][===]0000[=]000001000006000026000035500041630145161235",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 4
                   },
-                  "Solution": "A54Q1A5E1G3C5A1Q1A3B7R1A7I6A3I4A5I4A5I6Q1A4E3G2C3A7E4A7E5Q1A8E7A4E7U1A5"
+                  "Solution": "A54Q1A5E1G3C5A1Q1A3B7R1A7I6A3I4A5I4A5I6Q1A4E3G2C3A7E4A7E5Q1A8E7A4E7U1A5",
+                  "Old UUIDs": ["f131068e9ae7f041b76474ee1c8aacc604bf34f5c22f1b3254294b2e09cc331d"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2266,11 +2378,13 @@
                   "Stop": 22,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]360005450304121513413224522316364255213143",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A25Q1A11C6A5C5A20E6A3Q1A5B5A19I4A15E7A37Q1A4B7I2A6B15Q1A8C1S1C4A3C7A23Q1A6E6U1A9C3S1C2A62C4A10B2J1I6A1Q1A7C5S1A11E7A14Q1A3I7A6B2J1I6A5I6Q1A7B19A2Q1A16Q1A5E1G2C6A31E5Q1A9Q1A5E5G2C3Q1A5C3S1C2A3"
+                  "Solution": "A25Q1A11C6A5C5A20E6A3Q1A5B5A19I4A15E7A37Q1A4B7I2A6B15Q1A8C1S1C4A3C7A23Q1A6E6U1A9C3S1C2A62C4A10B2J1I6A1Q1A7C5S1A11E7A14Q1A3I7A6B2J1I6A5I6Q1A7B19A2Q1A16Q1A5E1G2C6A31E5Q1A9Q1A5E5G2C3Q1A5C3S1C2A3",
+                  "Old UUIDs": ["9e5abb1f745500b00629a5862aa439e9493606fade9f7577904ee0bbbca175bf"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2279,11 +2393,13 @@
                   "Stop": 58,
                   "Shake": 0,
                   "Stack": "[======================][======================][=]000[====][==========]512631[====]006000134050514020652033522055523032",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 3
                   },
-                  "Solution": "A120B6I5A4B5R1A12B6A1Q1A4E5G1C4A10C7A1Q1A5B6A4Q1A10C6A5C6A9B2J1I5A12Q1A2C6I5Y1A8E2F2B5A5E3F1B5A3Q1A8B4R1A7C3S1C3A4C2S1C2A3C5S1A7B4I4A14B13J2I4A4I6Q1A5C4S1A5C4S1C1A16G1E4G2C5A16Q1A5"
+                  "Solution": "A120B6I5A4B5R1A12B6A1Q1A4E5G1C4A10C7A1Q1A5B6A4Q1A10C6A5C6A9B2J1I5A12Q1A2C6I5Y1A8E2F2B5A5E3F1B5A3Q1A8B4R1A7C3S1C3A4C2S1C2A3C5S1A7B4I4A14B13J2I4A4I6Q1A5C4S1A5C4S1C1A16G1E4G2C5A16Q1A5",
+                  "Old UUIDs": ["690d93ac597ef1d51a69806526228167af124f022d7d6a5b623ce2e989858d6f"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2292,11 +2408,13 @@
                   "Stop": 75,
                   "Shake": 30,
                   "Stack": "[======================][======================][==========]600000210000550003450043313041116055",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 4
                   },
-                  "Solution": "A248I3Y1A10E4A4E7Q1A4B7A6E3F3B2A13E7Q1A3C6Q1A1B15Q1A5C5S1C1A5B3J2I4A13C6A5C4Q1A5B4R1A7C14S1C2A13Q1A5B19Q1A5"
+                  "Solution": "A248I3Y1A10E4A4E7Q1A4B7A6E3F3B2A13E7Q1A3C6Q1A1B15Q1A5C5S1C1A5B3J2I4A13C6A5C4Q1A5B4R1A7C14S1C2A13Q1A5B19Q1A5",
+                  "Old UUIDs": ["5f7eaff307b396ca2b6ad51131ada488e6aea644f841c723603a6cd5834d8c16"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2305,11 +2423,13 @@
                   "Stop": 14,
                   "Shake": 75,
                   "Stack": "[======================][====================================================]844003221204356501",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A174E7U1A3B4I5B10A1Q1A7E9A26Q1A5C5S1A5"
+                  "Solution": "A174E7U1A3B4I5B10A1Q1A7E9A26Q1A5C5S1A5",
+                  "Old UUIDs": ["501fa0c186ac4cc138a5753f5c46de8071813425c86bf3025a141790551c3581"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2318,11 +2438,13 @@
                   "Stop": 43,
                   "Shake": 42,
                   "Stack": "[======================][======================][====][================]000631564156213615344511612433515265232313",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A143Q1A3I7A1Q1A1I6A4I6A3Q1A1B5A6E7A5Q1A5"
+                  "Solution": "A143Q1A3I7A1Q1A1I6A4I6A3Q1A1B5A6E7A5Q1A5",
+                  "Old UUIDs": ["eeefc94b660860a9de1d950410d6e9ca5b378d4c2956380687c24a902056bf79"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2331,7 +2453,9 @@
                   "Stop": 52,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][====]002000205000605600206600165402141402312305551546",
-                  "Solution": "A133E3G3C3A3C7A2Q1A12B5A13C5A27Q1A7B6A7B6A9E7A34Q1A4Q1A7"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A133E3G3C3A3C7A2Q1A12B5A13C5A27Q1A7B6A7B6A9E7A34Q1A4Q1A7",
+                  "Old UUIDs": ["29455e68ae1a91b3f3f0bc11d19d530eb5f4dfbd6f395343eb06777022d49793", "e6652d460e048f6992ad258fa2c40f3db09d2d67c3c2d8f5477de3c6d1910978"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2340,11 +2464,13 @@
                   "Stop": 90,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][=]000[====]000005000003000005002006303533301422414532112624513451",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 6
                   },
-                  "Solution": "A107I3A2Q1A6I4A2Q1A6E3G1C4A5E6A5E5U1E1A4"
+                  "Solution": "A107I3A2Q1A6I4A2Q1A6E3G1C4A5E6A5E5U1E1A4",
+                  "Old UUIDs": ["9392a3c9340007fdce1989223996af127116458303c26ee4e3f82cf2d292bbd0"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2352,11 +2478,13 @@
                   "Moves": 0,
                   "Stop": 53,
                   "Stack": "[======================][============================]463000[====]320000614000235042521024252561534361",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 1
                   },
-                  "Solution": "A71Q1A5I6A6I4Y1I1A4B9A3E8A4E5A5B8Q1A8I7A10Q1A5B4R1B3A6B3J1I6A6I7A57Q1A4C16A7I4A6I6A4Q1A2B8Q1A2B6A11E3A37Q1A2E9A3B5F2E1A3B10A1Q1A5C4A2Q1A7C6A3Q1A5"
+                  "Solution": "A71Q1A5I6A6I4Y1I1A4B9A3E8A4E5A5B8Q1A8I7A10Q1A5B4R1B3A6B3J1I6A6I7A57Q1A4C16A7I4A6I6A4Q1A2B8Q1A2B6A11E3A37Q1A2E9A3B5F2E1A3B10A1Q1A5C4A2Q1A7C6A3Q1A5",
+                  "Old UUIDs": ["95d89d2876f2ca2879e0375ee1646c11f174bc45084c4445e3a340d6221295a8"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2364,11 +2492,13 @@
                   "Moves": 0,
                   "Stop": 84,
                   "Stack": "[==========][==========][==========][==========][==========][==========]060062044361135314232625614532",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
                   },
-                  "Solution": "A137B6A2Q1A8C5A6C5A1Q1A3B6Q1A2B10E7A10B7A3Q1A3C9A4C5A6I6A6I3A7I3A7I6Q1A1B19A1Q1A5C4S1C1A5C6A6E7A11Q1A7E5A5E7B8Q1A5"
+                  "Solution": "A137B6A2Q1A8C5A6C5A1Q1A3B6Q1A2B10E7A10B7A3Q1A3C9A4C5A6I6A6I3A7I3A7I6Q1A1B19A1Q1A5C4S1C1A5C6A6E7A11Q1A7E5A5E7B8Q1A5",
+                  "Old UUIDs": ["d4c1745317327f4387935a9cb163cc4c39c1c330acc793a05d0931dac1ca4bc0"]
                 }
               ]
             },
@@ -2396,11 +2526,13 @@
                   "Stop": 14,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000235451234565163[====]621252[====]303064566242212544581161",
+                  "GarbagePanelBuffer": "999999999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A43Q1A6I5A7I4A5I5A1Q1A5C4A8C2A7C6A3Q1A3B6J1I7A3B9A6I8A4B8A7Q1A5"
+                  "Solution": "A43Q1A6I5A7I4A5I5A1Q1A5C4A8C2A7C6A3Q1A3B6J1I7A3B9A6I8A4B8A7Q1A5",
+                  "Old UUIDs": ["38dd62eb240fbd19d99d2b3e6742143c39c2356ff71ad4274661dba1262f9d34"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2409,11 +2541,13 @@
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]001000001061103054303422",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
                   },
-                  "Solution": "A14C5A11Q1A5B5A2Q1A22E4U1E3A2"
+                  "Solution": "A14C5A11Q1A5B5A2Q1A22E4U1E3A2",
+                  "Old UUIDs": ["af5848eb21efbb243a90f733febf4de4b04d0b3428e93e14df203505a0ea27c6"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2422,12 +2556,13 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][==========][==========]000000000000[================]404005402043439999996999999999999999",
-                  "GarbagePanelBuffer": "999499999999999999999999",
+                  "GarbagePanelBuffer": "999499999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 6
                   },
-                  "Solution": "A31C8A22E8A23B7A5B17A5I6A6Q1A7C2S1C1A7C7A1Q1A8E8B6R1B1A33"
+                  "Solution": "A31C8A22E8A23B7A5B17A5I6A6Q1A7C2S1C1A7C7A1Q1A8E8B6R1B1A33",
+                  "Old UUIDs": ["017ff75f09787714deda3f6cdccbe641a9fd46a0e5cacbfd75ca70b8021ab1a8"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2435,11 +2570,13 @@
                   "Moves": 0,
                   "Stop": 54,
                   "Stack": "[======================][======================][==========]000352056163253252[====]000106000453460145122121",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 7
                   },
-                  "Solution": "A48C4Q1A6B3A2Q1A4B5R1A5"
+                  "Solution": "A48C4Q1A6B3A2Q1A4B5R1A5",
+                  "Old UUIDs": ["3443eaba0479034f9f4309417ea7a9f7b068e85bd5cfa43bc03a08d40650ffbc"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2447,11 +2584,13 @@
                   "Moves": 0,
                   "Stop": 56,
                   "Stack": "[======================][=]000[====][================]000[=][====]000040200311330224151452542322",
+                  "GarbagePanelBuffer": "999999999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 4
                   },
-                  "Solution": "A41Q1A4B5R1A6B7Q1A13B7A5I9A5B9Q1A10E8A10Q1A4E4A6C5G2E5Q1A4B7A1Q1A5"
+                  "Solution": "A41Q1A4B5R1A6B7Q1A13B7A5I9A5B9Q1A10E8A10Q1A4E4A6C5G2E5Q1A4B7A1Q1A5",
+                  "Old UUIDs": ["f521e889288a71e1966380270ddd9aca7689c3b19e722e61cffb2ec9446e80ea"]
                 }
               ]
             },
@@ -2467,12 +2606,13 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "995999999999999999999999999999",
+                  "GarbagePanelBuffer": "995999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A32C6Q1A6B6A10Q1A14E5A17C6A42Q1A5B9A22"
+                  "Solution": "A32C6Q1A6B6A10Q1A14E5A17C6A42Q1A5B9A22",
+                  "Old UUIDs": ["b7a725ed7e7af99c97084356fe3151a5f71303fdbdaf3d634c906a5673c4eba9"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2481,12 +2621,13 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "993939999999999999999999999999",
+                  "GarbagePanelBuffer": "993939999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A10C7A10Q1A7B6A114E6A20I6A17Q1A4B5A6Q1A3C4A3Q1A2C6A7Q1A5E8Q1A5"
+                  "Solution": "A10C7A10Q1A7B6A114E6A20I6A17Q1A4B5A6Q1A3C4A3Q1A2C6A7Q1A5E8Q1A5",
+                  "Old UUIDs": ["71c24068fc1815b22134f3c1279f76d25021a24ebac1ec99d7a83a15a4696d9c"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2495,12 +2636,13 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "994949999999999999999999999999",
+                  "GarbagePanelBuffer": "994949999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A337C6A7Q1A9B7A7E6A7B4A7B6A7E6Q1A8C5A8C3A18I7A4Q1A8B5A13E7A7Q1A5C7Q1A8I7A3B6R1A7C3S1C2A3"
+                  "Solution": "A337C6A7Q1A9B7A7E6A7B4A7B6A7E6Q1A8C5A8C3A18I7A4Q1A8B5A13E7A7Q1A5C7Q1A8I7A3B6R1A7C3S1C2A3",
+                  "Old UUIDs": ["5699f478d8297d62ba3364cd3af56783df4f735e9ed349da1cdcb2d72919a3a9"]
                 },
                 {
                   "Puzzle Type": "clear",
@@ -2509,12 +2651,13 @@
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "999449999999999999999999999999",
+                  "GarbagePanelBuffer": "999449999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A86C7Q1A76B9A9E5A2B5A1Q1A17I7A21Q1A5"
+                  "Solution": "A86C7Q1A76B9A9E5A2B5A1Q1A17I7A21Q1A5",
+                  "Old UUIDs": ["f5c46558ef11064a4b45eb264b4ff5df6dbf7612cb3613c5018b831e4bba35db"]
                 }
               ]
             },
@@ -2529,7 +2672,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[================]155266543642365621999999999999999999999999999999999999",
-                  "GarbagePanelBuffer": "213414126532435263",
+                  "GarbagePanelBuffer": "213414126532",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 7
@@ -2542,7 +2685,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[================]321315516462261345999999999999999999999999999999999999",
-                  "GarbagePanelBuffer": "162151424345152531",
+                  "GarbagePanelBuffer": "162151424345",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 7
@@ -2555,7 +2698,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[================]656464435243546325999999999999999999999999999999999999",
-                  "GarbagePanelBuffer": "216561641236456142",
+                  "GarbagePanelBuffer": "216561641236",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 7
@@ -2568,7 +2711,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[================]424154141631435324999999999999999999999999999999999999",
-                  "GarbagePanelBuffer": "464654143525451646",
+                  "GarbagePanelBuffer": "464654143525",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 7
@@ -2581,7 +2724,7 @@
                   "Moves": 0,
                   "Stop": 60,
                   "Stack": "[================]236456361313654124999999999999999999999999999999999999",
-                  "GarbagePanelBuffer": "546451235323351565",
+                  "GarbagePanelBuffer": "546451235323",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 7

@@ -18,6 +18,7 @@ local system = require("client.src.system")
 ---@field moves integer? in how many swaps the puzzle has to be solved
 ---@field solution string? compressed input string for puzzle solution
 ---@field helpDescription string? optional help text explaining the puzzle pattern
+---@field oldUUIDs string[]? the UUIDs the puzzle had before its data changed, oldest first
 
 ---@class GarbagePuzzleArgs : PuzzleArgs
 ---@field stopTime integer?
@@ -40,6 +41,7 @@ local system = require("client.src.system")
 ---@field UUID string
 ---@field solution string? compressed input string for puzzle solution
 ---@field helpDescription string? optional help text explaining the puzzle pattern
+---@field oldUUIDs string[]? the UUIDs the puzzle had before its data changed, so records saved under them can be carried to this one
 ---@field fileIndex integer? which entry of its set in the file the puzzle was read from, set by the loader; a puzzle the loader hid leaves a gap, so this is not its position in the set
 ---@field puzzleEverBeaten boolean? dynamically added field indicating if this puzzle was ever completed
 ---@field trainingDate number? dynamically added field for spaced repetition training scheduling
@@ -73,6 +75,7 @@ Puzzle = class(
     self.shakeTime = puzzleArgs.shakeTime
     self.solution = puzzleArgs.solution
     self.helpDescription = puzzleArgs.helpDescription
+    self.oldUUIDs = puzzleArgs.oldUUIDs
 
     self.UUID = Puzzle.getV2UUID(self)
     self.randomizeColors = false
@@ -183,7 +186,8 @@ Puzzle.PUZZLE_PROPERTY = {
   GARBAGE_PANEL_BUFFER = "GarbagePanelBuffer",
   CURSOR_START_LEFT = "CursorStartLeft",
   SOLUTION = "Solution",
-  HELP_DESCRIPTION = "Help Description"
+  HELP_DESCRIPTION = "Help Description",
+  OLD_UUIDS = "Old UUIDs"
 }
 
 
@@ -226,7 +230,8 @@ function Puzzle.getPuzzleKeyOrder()
     Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER,
     Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT,
     Puzzle.PUZZLE_PROPERTY.SOLUTION,
-    Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION
+    Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION,
+    Puzzle.PUZZLE_PROPERTY.OLD_UUIDS
   }
 end
 
@@ -386,7 +391,8 @@ function Puzzle:getSaveData()
     [Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER] = self.panelBuffer,
     [Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] = self.garbageBuffer,
     [Puzzle.PUZZLE_PROPERTY.SOLUTION] = self.solution,
-    [Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION] = self.helpDescription
+    [Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION] = self.helpDescription,
+    [Puzzle.PUZZLE_PROPERTY.OLD_UUIDS] = self.oldUUIDs
   }
 
   if self.cursorStartLeft then
@@ -461,13 +467,7 @@ function Puzzle:toGameMode()
 
   if self.puzzleType == Puzzle.PUZZLE_TYPES.clear then
     mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
-    if self.garbageBuffer then
-      -- the buffer says which panels the garbage reveals, so the puzzle is won once it has handed out all of them
-      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.GARBAGE_BUFFER_EMPTY] = 0
-    else
-      -- with nothing asked of the garbage, the puzzle is about the board: no block may be left unmatched
-      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS] = 0
-    end
+    mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.GARBAGE_BUFFER_EXCEEDED] = 0
     mode.matchRules.stackSetupModifications.stopTime = self.stopTime
     mode.matchRules.stackSetupModifications.shakeTime = self.shakeTime
   else
@@ -530,7 +530,8 @@ function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
     panelBuffer = originalPuzzle.panelBuffer,
     garbagePanelBuffer = originalPuzzle.garbageBuffer,
     solution = originalPuzzle.solution,
-    helpDescription = originalPuzzle.helpDescription
+    helpDescription = originalPuzzle.helpDescription,
+    oldUUIDs = originalPuzzle.oldUUIDs
   })
   -- the derived puzzle stands in for the original, so it is saved back to the entry that one came from
   puzzle.fileIndex = originalPuzzle.fileIndex

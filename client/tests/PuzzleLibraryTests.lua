@@ -2,6 +2,7 @@ local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local PuzzleSet = require("client.src.PuzzleSet")
 local Puzzle = require("common.engine.Puzzle")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
+local Scores = require("client.src.scores")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local util = require("common.lib.util")
@@ -63,7 +64,21 @@ function PuzzleLibraryTests.testCurrentTrainingPuzzleIndicesFilteringAndHistogra
   assert(foundTotalPuzzles, "Should log total puzzles count")
 end
 
+-- a puzzle whose UUID changed still counts as beaten by a win saved under its old one
+function PuzzleLibraryTests.testAWinUnderAnOldUUIDStillCounts()
+  local scores = Scores()
+  scores.puzzleRecords["old-uuid"] = {{inputs = "A", timestamp = to_UTC(os.time()), success = true}}
+  local puzzle = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 1, stack = "1111111111111111",
+                         oldUUIDs = {"old-uuid"}})
+
+  local moved = PuzzleLibrary(scores):addStatisticsToPuzzleSet(PuzzleSet("Set", "", {puzzle}))
+
+  assert(moved, "the record moved, so the scores need saving")
+  assert(puzzle.puzzleEverBeaten, "the win under the old UUID counts")
+end
+
 -- Run the tests
 PuzzleLibraryTests.testCurrentTrainingPuzzleIndicesFilteringAndHistogram()
+PuzzleLibraryTests.testAWinUnderAnOldUUIDStillCounts()
 
 return PuzzleLibraryTests

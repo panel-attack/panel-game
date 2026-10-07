@@ -320,7 +320,8 @@ function PuzzleSet.readV3Puzzle(puzzleData, puzzleSetName, fileIndex)
     panelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER],
     garbagePanelBuffer = puzzleData[Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER],
     solution = puzzleData[Puzzle.PUZZLE_PROPERTY.SOLUTION],
-    helpDescription = puzzleData[Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION]
+    helpDescription = puzzleData[Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION],
+    oldUUIDs = puzzleData[Puzzle.PUZZLE_PROPERTY.OLD_UUIDS]
   }
   if puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT] then
     args.cursorStartLeft = {row = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Row, column = puzzleData[Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT].Column}

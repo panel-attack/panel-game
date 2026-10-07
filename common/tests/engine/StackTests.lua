@@ -215,9 +215,9 @@ local function countGarbagePanels(stack)
   return count
 end
 
--- a clear puzzle with a garbage buffer is won once every row of the buffer has been revealed, however much garbage is left
-local function clearPuzzleWinsWhenTheGarbageBufferIsUsedUpTest()
-  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[================]112122", garbagePanelBuffer = "334344556566",
+-- the buffer holds the rows the player sees, so the puzzle is won by the hit that needs a row past it, however much garbage is left
+local function clearPuzzleWinsWhenARevealRunsPastTheGarbageBufferTest()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[================]112122", garbagePanelBuffer = "334344",
                          stopTime = 2000, startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
                                                                 LevelPresets.getModern(10))
@@ -232,22 +232,43 @@ local function clearPuzzleWinsWhenTheGarbageBufferIsUsedUpTest()
   assert(not stack:checkGameWin(), "one row revealed of two is not a win")
   StackReplayTestingUtils:simulateMatchUntil(match, secondSwapFrame - 1)
   assert(stack.panels[1][3].color == 4 and stack.panels[1][4].color == 3, "the revealed row has landed as 334344")
-  assert(not stack:checkGameWin(), "the second buffer row is still to be revealed")
+  assert(not stack:checkGameWin(), "every buffer row is seen, but no hit has needed another yet")
   while not match:hasEnded() and stack.clock < secondSwapFrame + 20 do
     match:run()
   end
-  assert(stack:checkGameWin(), "the second hit reveals the last buffer row, which wins")
+  assert(stack:checkGameWin(), "the second hit needs a row past the buffer, which wins")
   assert(stack.game_over_clock <= 0, "the stack should not have lost")
-  assert(countGarbagePanels(stack) > 0,"garbage is still on the board when the buffer is used up")
+  assert(countGarbagePanels(stack) > 0,"garbage is still on the board when the buffer runs out")
   StackReplayTestingUtils:cleanup(match)
 end
 
-clearPuzzleWinsWhenTheGarbageBufferIsUsedUpTest()
+clearPuzzleWinsWhenARevealRunsPastTheGarbageBufferTest()
 
--- revealing every panel of the buffer is the whole goal, a block left unhit does not matter
+-- without a buffer there is no row for the player to see, so the first revealed row wins, even with a block left unhit
+local function clearPuzzleWithoutABufferWinsOnTheFirstRevealedRowTest()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[=]000999999[================]112122", stopTime = 2000,
+                         startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
+                                                                LevelPresets.getModern(10))
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+
+  stack:receiveConfirmedInput("AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 600))
+  while not match:hasEnded() and stack.clock < 400 do
+    match:run()
+  end
+  assert(stack:checkGameWin(), "the first revealed row runs past an empty buffer, which wins")
+  assert(stack.game_over_clock <= 0, "the stack should not have lost")
+  assert(stack.panels[6][1].isGarbage and stack.panels[6][1].state == "normal", "the small block on the grey row was never hit")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+clearPuzzleWithoutABufferWinsOnTheFirstRevealedRowTest()
+
+-- running past the buffer is the whole goal, a block left unhit does not matter
 local function clearPuzzleWinsOnTheBufferWithABlockLeftUnhitTest()
   local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[================]112199999[=]",
-                         garbagePanelBuffer = "121333556566", stopTime = 3000, startTiming = Puzzle.START_TIMINGS.immediately,
+                         garbagePanelBuffer = "121333", stopTime = 3000, startTiming = Puzzle.START_TIMINGS.immediately,
                          cursorStartLeft = {row = 2, column = 3}})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
                                                                 LevelPresets.getModern(10))
@@ -259,20 +280,20 @@ local function clearPuzzleWinsOnTheBufferWithABlockLeftUnhitTest()
   while not match:hasEnded() and stack.clock < 900 do
     match:run()
   end
-  assert(stack.panelSource.garbagePanelBuffer == "", "both buffer rows should be revealed")
+  assert(stack.panelSource.garbageGenCount > 0, "the second hit should need a row past the buffer")
   assert(stack.panels[1][4].isGarbage and stack.panels[1][4].state == "normal", "the small block at the bottom was never hit")
-  assert(stack:checkGameWin(), "the buffer is revealed, so the puzzle is won")
+  assert(stack:checkGameWin(), "a hit ran past the buffer, so the puzzle is won")
   StackReplayTestingUtils:cleanup(match)
 end
 
 clearPuzzleWinsOnTheBufferWithABlockLeftUnhitTest()
 
--- A buffer longer than the board can ever reveal is a puzzle that cannot be won. The engine has no
+-- A buffer the board can reveal all of without a hit past it is a puzzle that cannot be won. The engine has no
 -- way to know that, so this records what the author gets rather than a rule: the same board that is
--- won at two rows of buffer is never won at three, which is what the buffer audit exists to catch.
+-- won at one row of buffer is never won at two, which is what the buffer audit exists to catch.
 local function clearPuzzleWithABufferTheBoardCannotRevealIsNeverWonTest()
   local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.clear, stack = "[================]112122",
-                         garbagePanelBuffer = "334344556566998899", stopTime = 2000,
+                         garbagePanelBuffer = "334344556566", stopTime = 2000,
                          startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
   local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
                                                                 LevelPresets.getModern(10))
@@ -286,10 +307,11 @@ local function clearPuzzleWithABufferTheBoardCannotRevealIsNeverWonTest()
     match:run()
   end
 
-  -- the same board wins at two rows of buffer, so the third is the one it can never spend
-  assert(stack.panelSource.garbagePanelBuffer == "998899", "the board can only spend two of the three rows, got '"
+  -- the same board wins at one row of buffer, so with two its last hit only reaches the end of the buffer
+  assert(stack.panelSource.garbagePanelBuffer == "", "the board reveals both rows, got '"
          .. stack.panelSource.garbagePanelBuffer .. "'")
-  assert(not stack:checkGameWin(), "a buffer the board cannot finish is never revealed, so the puzzle is never won")
+  assert(stack.panelSource.garbageGenCount == 0, "no hit is left to need a row past the buffer")
+  assert(not stack:checkGameWin(), "a buffer the board never runs past is a puzzle that is never won")
   StackReplayTestingUtils:cleanup(match)
 end
 

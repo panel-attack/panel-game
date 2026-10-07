@@ -106,7 +106,7 @@ function PuzzleTests.clearGameModeWaitsForTheGarbageBuffer()
   local puzzle = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "334344556566112122445455661611223233"})
   assert(puzzle:validate())
   local mode = puzzle:toGameMode()
-  assert(mode.matchRules.stackWinConditions["GARBAGE_BUFFER_EMPTY"] == 0)
+  assert(mode.matchRules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0)
   local conditions = 0
   for _ in pairs(mode.matchRules.stackWinConditions) do
     conditions = conditions + 1
@@ -115,17 +115,23 @@ function PuzzleTests.clearGameModeWaitsForTheGarbageBuffer()
   assert(mode.matchRules.stackOverConditions["HEALTH"] == 0)
 
   local partialRow = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "3343"})
-  assert(partialRow:toGameMode().matchRules.stackWinConditions["GARBAGE_BUFFER_EMPTY"] == 0)
+  assert(partialRow:toGameMode().matchRules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0)
 end
 
--- the buffer is what a clear puzzle asks for, so a puzzle without one asks for the whole board instead
-function PuzzleTests.aClearPuzzleWithoutABufferIsWonByHittingEveryBlock()
+-- the buffer holds whole rows, so a partial last row is filled with grey rather than counting as running out
+function PuzzleTests.aPartialLastGarbageRowIsFilledWithGrey()
+  local source = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "3343"}):toPanelSource()
+  assert(source.garbagePanelBuffer == "334399", "got " .. source.garbagePanelBuffer)
+end
+
+-- a clear puzzle without a buffer has no rows for the player to see, so its first revealed row runs past it
+function PuzzleTests.aClearPuzzleWithoutABufferRunsPastItOnTheFirstRevealedRow()
   local noBuffer = Puzzle({puzzleType = "clear", stack = "[====]112122"})
 
-  assert(noBuffer:validate(), "a clear puzzle without a buffer is a puzzle about the board")
+  assert(noBuffer:validate())
   local winConditions = noBuffer:toGameMode().matchRules.stackWinConditions
-  assert(winConditions["MATCHABLE_GARBAGE_PANELS"] == 0, "it is won once no block is left unhit")
-  assert(winConditions["GARBAGE_BUFFER_EMPTY"] == nil, "there is no buffer to wait for")
+  assert(winConditions["GARBAGE_BUFFER_EXCEEDED"] == 0, "every clear puzzle is won by running past its buffer")
+  assert(winConditions["MATCHABLE_GARBAGE_PANELS"] == nil, "hitting every block is no longer a puzzle goal")
 end
 
 function PuzzleTests.validationGarbageBufferColors()
@@ -155,7 +161,8 @@ end
 PuzzleTests.anEmptyGarbageBufferIsTheSameAsNone()
 PuzzleTests.validationGarbageBufferColors()
 PuzzleTests.clearGameModeWaitsForTheGarbageBuffer()
-PuzzleTests.aClearPuzzleWithoutABufferIsWonByHittingEveryBlock()
+PuzzleTests.aPartialLastGarbageRowIsFilledWithGrey()
+PuzzleTests.aClearPuzzleWithoutABufferRunsPastItOnTheFirstRevealedRow()
 PuzzleTests.validationCountdown()
 PuzzleTests.validationPuzzleType()
 PuzzleTests.validationMoves()

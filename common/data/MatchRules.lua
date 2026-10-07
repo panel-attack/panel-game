@@ -29,11 +29,12 @@ MatchRules.StackOverConditions = { HEALTH = "HEALTH", SWAPS = "SWAPS", CHAIN = "
 
 ---@enum StackWinCondition
 -- a stack wins once every condition it has holds: MATCHABLE_GARBAGE_PANELS once every block on the board is hit,
--- GARBAGE_BUFFER_EMPTY once the panel source has handed out its whole garbage buffer
+-- GARBAGE_BUFFER_EXCEEDED once a hit needs more garbage panels than the panel source's buffer holds;
+-- clear puzzles no longer use MATCHABLE_GARBAGE_PANELS, it stays for the replays recorded with it
 MatchRules.StackWinConditions = {
   MATCHABLE_PANELS = "MATCHABLE_PANELS",
   MATCHABLE_GARBAGE_PANELS = "MATCHABLE_GARBAGE_PANELS",
-  GARBAGE_BUFFER_EMPTY = "GARBAGE_BUFFER_EMPTY",
+  GARBAGE_BUFFER_EXCEEDED = "GARBAGE_BUFFER_EXCEEDED",
   SCORE = "SCORE"
 }
 
