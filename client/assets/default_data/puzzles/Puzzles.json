@@ -14,7 +14,7 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "000000000000000000000000000000000000000000000000000000000000000000010110",
               "Help Description": "Make the swap to clear all the panels",
@@ -22,63 +22,63 @@
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3000033030",
               "Solution": "A24E3A6E7A4E6A7E6A8E6A8Q1A19"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "2100001200001200",
               "Solution": "A22E7A5E6A6E6A7E5A12Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "6400006400004600006400006400",
               "Solution": "A22E6A5E7A6E6A6E6A6Q1A113"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "2000223303",
               "Solution": "A13E4A6E6A7E4A7E5A7E6A5E6A9B4A10B5A10Q1A131"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "115155",
               "Solution": "A23E6A5E6A6E5A5E7A8E6A6E6A8Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "1000001000003000001000001000003300",
               "Solution": "A33E7A6E6A7E6A11C4A10Q1A78"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "40000040055450",
               "Solution": "A32E4A7E4A8E4A7E4A7E5A15E5A8B5A7Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3000002300002230",
               "Solution": "A24E4A8E4A9E4A8E5A5E6A10C3A9Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4100001400004100001400004100",
               "Solution": "A37E5A6E6A16Q1A6E6A6E6A6E6A5E6A4Q1A12I6A6I5A3Q1A113"
@@ -92,70 +92,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "4000001000001000004000001440",
               "Solution": "A125E5A7E4A6E6A8E6A12E5A7C6A4Q1A147"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "60000026000062200",
               "Solution": "A67E19A9C3A9C5A7Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3300055350",
               "Solution": "A37E6A6E4A7E5A7E4A7E14A5B5Q1A131"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1200001212",
               "Solution": "A16E5A8E5A8E4A9E4A7E8A7E7A9B5Q1A12C6A8C4A4Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "363636",
               "Solution": "A31E18A8C6A1Q1A6B5A7B5A12B7A15C4S1A10C4A5Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "3000332000224000441000115000556000663000332000224000441600116600",
               "Solution": "A71E7A8E4A7E4A7E6A7E6A4B7Q1A327"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "600002600062200",
               "Solution": "A23E4A9E3A10E4A11E6A13E9A4Q1A6B4A2Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "5000005000001000001500005100",
               "Solution": "A104E6A9E5A15E5A13E9A250E7A2Q1A22I5A9Q1A78"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "2200004400004200",
               "Solution": "A59E4A9E4A7E5A7E6A6E6A7E6A7C6A3Q1A10B5A7B5A3Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "13000031000013110",
               "Solution": "A21E6A10E7A8E5A81E8A11C3A7Q1A9E6A8E6A4Q1A99"
@@ -169,70 +169,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "4000001000001000044000041040",
               "Solution": "A7E7A7E6A7E5A11E4A9E5A9C4A8C6A7Q1A9B6A10B4A12Q1A154"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "3000002000002000003220003230",
               "Solution": "A81E7A8E7A7E6A7E6A10E4A7E7A5Q1A10C7A11I6A5Q1A161"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "3400004300303404",
               "Solution": "A5E7A7E7A8E7A7E4A8E6A7E6A7C7A3Q1A8B8A7B5A13I7A21I7A7Q1A153"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1000006000004000004600006100014100",
               "Solution": "A19E2A10E4A10E6A10E5A11E5A10B7A1Q1A14C7A7C7A13I6A9I5A9I7A10Q1A216"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "400000650005560054465",
               "Solution": "A65E9A11E8A10E5A9E5A8E8A7E7A8B7A2Q1A15I6A11Q1A152Q1A85"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "400000100000544000411000655000366000233000422000144004411",
               "Solution": "A211Q1A31E6A9E7A7E7A9E6A9E6A11C5A8Q1A285"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "100000500000100000100000500005100005155",
               "Solution": "A33Q1A20E6A10E6A11E4A13E6A7Q1A170"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "21000012120",
               "Solution": "A11E4A13E5A8E4A10E4A10E9A7E7A4Q1A11C5A10I6A3Q1A10C6A10Q1A138"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "300000300006500003300005600065600",
               "Solution": "A15E6A16E5A9E6A8E6A11E6A9B7Q1A14C6A19I7A18Q1A168"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "500002500022600066500",
               "Solution": "A33E7A12E4A13E7A11E7A3Q1A15B4A10E7A10E6A6Q1A160"
@@ -246,70 +246,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1000004000001000061100044600016100",
               "Solution": "A28E4A13E6A11E6A13E6A10C5A9Q1A11B5A10E6A10Q1A175"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "4400006500004600065500",
               "Solution": "A31E5A11E5A9E4A10E6A8E6A10C9A5Q1A15B6A10B4A11I8A9Q1A160"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4000006000006000002000002240006440",
               "Solution": "A191E7A7E6A10E6A11E6A8E6A10B6A6Q1A8C6A1Q1A10C4A7Q1A214"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "1100002330002123",
               "Solution": "A50E8A15E4A15E3A23E5A17E6A20E7A7Q1A13C6A33Q1A205"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "300003500002500003200005200332500",
               "Solution": "A22E4A11E8A10E5A6E8A8Q1A11B5A6Q1A9E4A14C6A17Q1A183"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 1,
               "Stack": "263000514000445000513000522160616620332120335150226620",
               "Solution": "A308Q1A731"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "2000004000004000443000242233",
               "Solution": "A124E5A10E9A8E6A10E6A17E9A21E7A10C7A6Q1A10B7A7I6A4Q1A228"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4000004600001140006160",
               "Solution": "A378E8A15E6A14E6A12E6A11E8A18B5A13E8A1Q1A10C6A15I7A7I7A2Q1A9C5A26Q1A160"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "1000004100001400003300004200032200",
               "Solution": "A2E7A6E5A6E6A7E6A20C4A16E7A4Q1A21I5A17Q1A9B5A5B9A11E6A4Q1A180"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "40000040000010000140001230022440034430",
               "Solution": "A27E7A7E7A7E7A7E9A8B6A6B7A3Q1A7E9A8E8A8C4A8C4A6C8A10Q1A10B5A3Q1A248"
@@ -323,70 +323,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 2,
               "Stack": "500000200000200000100000100000200000100000200055255",
               "Solution": "A17E5A22E5A20E7A69E7A7E10A17B6A19Q1A14C8A26I3A42Q1A237"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "550001250001610066220",
               "Solution": "A410E2A15E4A9E5A13E5A15B6A152Q1A10C5A14Q1A5B7A11B6A89Q1A227"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "5000004500006400006300003600005344",
               "Solution": "A217E5A8E6A10C8A5Q1A11E6A8E4A9E3A8E6A3Q1A9B7I7A16Q1A228"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "1130001450004550005330004550",
               "Solution": "A52E7A10E7A10B7A33Q1A26E8A141C9Q1A32E4A9E6A18Q1A290"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 5,
               "Stack": "663366521425512245313343562265",
               "Solution": "A75E8A17E9A10E7A11E9A28E6A211C7A11Q1A59B8A19B8A83I8A325I6A9I7A2Q1A17E4A8Q1A331C7A11C6A101E6A81E5A9E6A7Q1A13I5A7I4A2Q1A290"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "606060401040501050402040502020461640",
               "Solution": "A944E5A6E7A7E7A10C7A5C8A5Q1A7B4A6B6A7B6A8Q1A5E8A6C7A4E8A1Q1A323"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "600000200010600021200012620",
               "Solution": "A22E4A10E4A8E5A7E4A8E4A8E5A9C5A11C6A4Q1A11B7A8B6A10B3A18I6A10I6A95C6A3Q1A7B6A9E5A8E5A4Q1A212"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "400002200001600001400046200026100",
               "Solution": "A413E9A13E6A11E4A11E8A8E9A8E12A4Q1A16B6A6I8A36Q1A87C3A4Q1A276"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "6000005000053000044000036500043600",
               "Solution": "A28E5A11E5A9E5A9E4A8E6A9E6A8B7A2Q1A8C6A13I6A6Q1A30C5A9Q1A221"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "4340334334455453",
               "Solution": "A13E4A4E8A5E7A7E7A1Q1A9E4A9E5A3Q1A11C5A17Q1A194"
@@ -400,70 +400,70 @@
           [
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "32000036000061000023110026220",
               "Solution": "A131g8A23E6A6E5A7E6A6E6A7C7A2Q1A8E7A5E8A6C11A2Q1A10B4J2I7A14Q1A235"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "25000165000636000565000623200611500553500",
               "Solution": "A11g7A95E4A110C8A12I7A4Q1A12E7A7E5A8E3A7E5A9B7A3B5A7E5A9E7A7Q1A8C7A9C5A10I4A7I6A8I4A5I6A3Q1A440"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "60000610004610002160042610024640",
               "Solution": "A28E4A7E6A7E4A10E4A8E5A10E4A33C6A8C5A20Q1A10B6A12I5A7I8A9I7A19B7A17Q1A10E6A8E6A7C7A5Q1A16B4A12B7A17I6A22Q1A302"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "50000044000015000014000033000011400035440",
               "Solution": "A48E5A9E5A8E5A12E7A11E8A45E8A33Q1A12C5A4Q1A13C4A10Q1A9B6A8I6A19Q1A296"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "35000012000011000022000035000013350",
               "Solution": "A28E7A6E7A5E9A6C10A5C12A4E4A6E7A4Q1A6B11I8A3I7A13Q1A6E4A8E5A3Q1A9C4Q1A236"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 3,
               "Stack": "30000060060040030640034530055360036640",
               "Solution": "A26E9A4E9A5E9A1B8A1Q1A8B7A7I5A1Q1A10E5A8E7A11Q1A417"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "40000054000011000044500015110",
               "Solution": "A26C8A8C8A8E4A7E4A9E2A9E5A6E9A7Q1A12B5A6B7A6Q1A9C6A25I6A108E5U1A14E7A5Q1A175"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "100022600011200031600013361",
               "Solution": "A21E5A7E6A7E6A6E8A10E6A1Q1A8B7A1I3A7I6A6Q1A9E4A7E6A13C5A46E3A14B6A10I6A4Q1A9C6A7C25A9E6A1Q1A339"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "2000005000003000056000046400065200045200053500053500",
               "Solution": "A22E6A7E6A5E8A8E6A2E8A9E8A8B6A3Q1A9C7A8I6A9I5A6I7A13Q1A40E6A7E7A9B5A5Q1A9C7A7C8A10I5A6I7A4Q1A325"
             },
             {
               "Puzzle Type": "moves",
-              "StartTiming": "immediately",
+              "StartTiming": "Immediately",
               "Moves": 4,
               "Stack": "600006400002340001430001310033160021230",
               "Solution": "A49E6A6E6A11E6A88g7A224E5A8C7A8I6A9Q1A8E6A6B7A6E6A7E9A3Q1A9B5I4A6I7A8C6A4I6Q1A10E6A6B7A8Q1A372"
@@ -497,42 +497,42 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000994999994999999499994999",
                   "Solution": "A23E6A4E7A4E7A4E6A15E7A3Q1A71"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "20922029999999999999999999",
                   "Solution": "A18E8A6E5A10B6A6Q1A78"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "992199991299999129999999999999",
                   "Solution": "A29E8A5E6A5E6A1E6A4Q1A11B7A1Q1A6C4A8I3A4I4A2Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000002000002000993200992390392990999999999999",
                   "Solution": "A30E4A9E3A8E3A9E2A16C5A11C4A9Q1A15B7A6Q1A11B5A7Q1A15C4A10Q1A12B6A13I3A10I5A12Q1A99"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999999995939999395999359999999",
                   "Solution": "A17E6A7E3A7E6A18Q1A7B7A5E2F3B3A3Q1A4C6A6I3Y1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "299999492999294999499999999999",
                   "Solution": "A24E7A6C7A6E5A8E6A2Q1A6E6Q1A6E4G2C5A2Q1A7I6A5I4Y1A85"
@@ -546,28 +546,28 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999229911912",
                   "Solution": "A15E9A7E5A4E7A4E6A6E13A5Q1A11C7A3Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "100004999009499114999",
                   "Solution": "A17E4A6E6A6E6A7Q1A5E4A4E6U1A17C7A109"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "3000599009959005999339593",
                   "Solution": "A7E6A6E7A13B4A7B7A8Q1A5C5Q1A7E5A7E4U1A9E5C4A16Q1A3E3C4A7Q1A6C7A3Q1A5B17A5Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000005000501500113303",
                   "Solution": "A46E7A7E5A7E4A6E6A6E5A16E5A9B1A6B6A7Q1A7C2A10C2A9C4A6C6A10I4A8Q1A129"
@@ -592,56 +592,56 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993299992939929993993299999999",
                   "Solution": "A21E6A8E7A5E5A9B6A3Q1A5E2F4B3A6B5A3Q1A6C4S1C1A4C5A7C5A2Q1A6B4A4Q1A20I4Q1A99"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000493999993499949399993499999999",
                   "Solution": "A39E7A6E2C4A15C6A7Q1A7B6Q1A7B4R1B1A8C4S1A10E5A5E4A2Q1A6B5R1A99"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999949499999949494999949999999",
                   "Solution": "A18E4A9E4A6E5A6C4A10C7A5Q1A9B5Q1A8B4Q1A8B4A6Q1A14E5C4A6C5A6Q1A6B6A6B5A5B4R1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "900000400000300000430000439090",
                   "Solution": "A44E8A4C8A4E9A9E6A5C7A5Q1A11E6Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "499944994999999949",
                   "Solution": "A19E7A7E5A22E7A5E5A10C7A3C6A6Q1A9B5A1Q1A10B5A6E3U1E1A7E2F1B4A4Q1A3C6A7I4A5I5A1Q1A78"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "199999919399939199939999",
                   "Solution": "A53C5A6E7A7E6A6E7A5C8A15Q1A7B3R1B3A8E2F2B5A6E5U1E1A8I3Y1I1A7C6Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "599199519999959199959999",
                   "Solution": "A66E4A8E6A8E6A6E7A7E6A10E5A2C5A6C7A4Q1A5B1J1I5A4B8A3Q1A5C4A1Q1A4C4A2Q1A5B5I4A5B4J1I3A5Q1A4C5A1Q1A6E4A7E4Q1A7C6S1A92"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999479949799997499999749",
                   "Help Description": "",
@@ -656,28 +656,28 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000100004995004959499449991599991999",
                   "Solution": "A31E5A19Q1A6E5A6E9A6C7A5E6G2C4A5C6A5Q1A6B6A2Q1A7B6A1I5A4B6A3Q1A2B9I4A3Q1A6C3A9Q1A76"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000001000209999992993933993121399",
                   "Solution": "A28E6A6E6A16E3A16C5A6C4A15Q1A8B4A5Q1A4B7A10E2A1B2A7B4A9Q1A3C6A3Q1A8E2F1B7A3Q1A6C5A3Q1A2C3A16E6A2C5A9Q1A170"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000300009992994494991192113329",
-                  "Solution": "A29E7A12E7A5B6A2Q1A5E1F3B5A4Q1A9E5A5E6Q1A6C5A9I4Q1A7C4A4C4A4Q1A5B4R1B1A7E3G2C4A5Q1A251"
+                  "Solution": "A75B7A12E6A4E7A8Q1A9B7A10E4A5Q1A9E5A7Q1A6E6A5Q1A256"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "929999999919999194442129",
                   "Solution": "A88E6A9E6A8E6G1C6A11Q1A7B3R1B3A6E3F2B4Q1A9E3F2B6A1Q1A10C6A40C1S1C1S1C2A27B5A1Q1A2C6S1A73"
@@ -691,7 +691,7 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000300000100994100994910933149999999",
                   "Help Description": "If you have three vertical panels of a color, sometimes it is better to drop one down to make a horizontal chain",
@@ -699,21 +699,21 @@
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "200000931000931000312299",
                   "Solution": "A16E8A6E7C7A7E5A6C6A3Q1A7B2R1B1A9E6A6E5A6E4Q1A10I5A6I5A52Q1A121"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "990039993099994344",
                   "Solution": "A29E8A5E6A15E7A6E6A5E7A5E6A4Q1A5B3J2I2A5I5A2Q1A6E6Q1A7C3S1C1A81"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "30990099993099994344",
                   "Solution": "A8E8A5E6A6E4A14B6A11Q1A5E5A7E4Q1A6C4S1A4E4U1E2A129"
@@ -727,63 +727,63 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993999399399994494",
                   "Solution": "A43E7A5E5A6E6A6E5A5E7A16Q1A6C2A1Q1A16E2F4B2A6B5A5B6A6Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993939999993994494",
                   "Solution": "A14E5A7E5A6E5A7E2A24Q1A4E5F1B3A12E2F3B4A17Q1A6C7A118"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "40000019999099119044999",
                   "Solution": "A18E7A7E6A1C7A6E2G3C3A12Q1A8E3F3B3R1A122"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "104991909919909994404",
                   "Solution": "A55E7A7E4A7E5A7B7A2B6A3Q1A8C6A4E7U1A121"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000001000911999992292",
                   "Solution": "A32E3A8E5A6E6A6E6A6E5A7E4A11B5A6B6A11Q1A4I4A7C5A5C5A5C5A4C5A1Q1A4B4R1B2A69"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000999339999399991911",
                   "Solution": "A40E6A6E6A6E5A8E5A7E5A14E4A9Q1A9I6A3Q1A112"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000999499999449991911",
                   "Solution": "A20E7A5E5A8E2A16E4A9E4A9E6A9Q1A5I5A5Q1A3C5A4Q1A3B5A6B3A2Q1A3C6Q1A72"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000999944999994919119",
                   "Solution": "A30E4A7E6A7E3A8E2A9E1A7E4A9C4A13Q1A4B5J1I4A10B6A6I5A3Q1A2B5R1B1A77"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000009000099000929000292303399999999",
                   "Solution": "A8E6A7E5A7E3A8E2A22E5A17C5A5C6A9Q1A6B4A5B6A4B5A10I6A1Q1A4I5Q1A73"
@@ -797,63 +797,63 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993999399399999999994494",
                   "Solution": "A41E9A3E7A6E5A4E6A6Q1A1C7A2Q1A10E5F1B2A5B6A6E6A3B4A7B5A1Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993939999993999999994494",
                   "Solution": "A14E8A6E6A6E7A32Q1A5E3F2B5A6B7A6E9A4E7A2Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "40000019999099119099999044999",
                   "Solution": "A16E5A6E5C6A7C12A7Q1A7E3F2B5Q1A123"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "104991909919909999909994404",
                   "Solution": "A24E9A8B8A9E1F2B5A15Q1A6E5G2C4A4Q1A126"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "1000911900999999992292",
                   "Solution": "A14E7A5E7A4E7A5E7A3E5A11C6A4C6K1I6A7Q1A9B9Q1A10E4F3B3A6E3F1B3A5B7A3Q1A131"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999339999399999999991911",
                   "Solution": "A30E6A5E6A4E6A5E5A5E6A5E7A4Q1A9I3A6I5Y1A107"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999499999449999999991911",
                   "Solution": "E2A6E5A6E5A5E5A2Q1A5C5Q1A10B6A5B4A3Q1A3C6Q1A5E5A5E5U1E1A130"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999944999994999999919119",
                   "Solution": "A14E7A4E5A5E4A6E7A3E5G3C4A8E9A3Q1A4I8A3B4J2I3A4I7A3B6R1B1A4B3R1B3A74"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "9000099000929000292999999393399999999",
                   "Solution": "A17E4A8E5A6E4A1C5A3E6C9A10E6A4Q1A4B2I7A3B3J1I1K4I2A2B6A2Q1A6I4Y1I2A80"
@@ -867,21 +867,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000005000005000004400003500003400022300112100",
                   "Solution": "A12E7A4E8A4E5A7E4A8E3A6E6A11Q1A7I4A6I4A8Q1A4B5A1Q1A13E4A2C1A6C6A15Q1A13B6A9B6A21Q1A7C6A48Q1A125"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000004406003101003401022306112106",
                   "Solution": "A23E6A8E3A6E4A9E4A8E4A9E1A12Q1A5B2J1I6A4B6A3Q1A6I5A10I4A8Q1A6E5C5A5E6A7Q1A16C3A31Q1A8B5A4B5A37Q1A9C5A51Q1A7C7A2Q1A108"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000001000001000006000006000005100005600004400003500003400022300112100",
                   "Solution": "A22E5A9E2A8E4A10E3A15E6A6E6A13Q1A12I6A6I5A8Q1A5B5A1Q1A12E4A13C6A5C6A3Q1A10B6A8B5A17Q1A5C5A35C4A8B4A3Q1A7C5A5Q1A21B4J1I4A15Q1A8E2F4B3A17Q1A9C8A20Q1A117"
@@ -895,7 +895,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -908,7 +908,7 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -917,11 +917,12 @@
                     "Column": 5,
                     "Row": 6
                   },
-                  "Solution": "A116Q1A5C6Q1A6C4A9E4A7E3U1A5B4R1A5"
+                  "Solution": "A116Q1A5C6Q1A6C4A9E4A7E3U1A5B4R1A5",
+                  "Old UUIDs": ["b664d190bfb4125c60b6282b327152e34178ac20ec78f331a55a3ac3561aab24", "1af870f04d6f9a042d0d36ebad1285773f10e62d6b6dc7f9dcf0b3aeff144123"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -930,29 +931,33 @@
                     "Column": 5,
                     "Row": 6
                   },
-                  "Solution": "A17Q1A2C5A4Q1A2B5A3Q1A2C5A4E4A5E6A1Q1A12"
+                  "Solution": "A17Q1A2C5A4Q1A2B5A3Q1A2C5A4E4A5E6A1Q1A12",
+                  "Old UUIDs": ["50aeaa0b8bcf490ec7aad9a50a1a146dc677a83cb5facce056e630b34373d83d", "feaa500728e7d8828d0d7164268e1e62e7584953b1f670e1843be771cd8e5aad"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 74,
                   "Shake": 0,
                   "Stack": "000000000000000000000000000000000000[====]001204104606203506542103312341",
-                  "Solution": "A49E6A5E8A1C5Q1A3B7A6B7A5E6Q1A2B10I8Q1A5E6A6E6A2E5U1A5"
+                  "Solution": "A49E6A5E8A1C5Q1A3B7A6B7A5E6Q1A2B10I8Q1A5E6A6E6A2E5U1A5",
+                  "Old UUIDs": ["3a83a1a2233c19c387620c4c7c3e1f438216a02d4e8c8aa9d9ef392b7572f526", "6c5cec78f8996a29d75e2b22a57ddbc2550fa518cf91069d21da6644f0a4297c"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "000000000[=][==]00[=]000[====]000336020361010641545313512421355641223126",
-                  "Solution": "A154E6A6E5A7E6A10B7A5B7A2Q1A10C5A6C4A17I5A7B7A9B6A11Q1A11Q1A4C6A2Q1A5"
+                  "GarbagePanelBuffer": "999999999999999999",
+                  "Solution": "A154E6A6E5A7E6A10B7A5B7A2Q1A10C5A6C4A17I5A7B7A9B6A11Q1A11Q1A4C6A2Q1A5",
+                  "Old UUIDs": ["00329785e18eb1c0edaafa36cd9b5cac589671b10a4acb577b2d667a21929599", "ebcf6d9ee77051ccbaeac6e251874a004d68c03e532245c6336a3712f43490b5"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 90,
                   "Shake": 0,
@@ -961,24 +966,27 @@
                     "Column": 1,
                     "Row": 5
                   },
-                  "Solution": "A54Q1A4B5R1B3A7B1R1B21A1I6Q1A5C4S1C2A3"
+                  "Solution": "A54Q1A4B5R1B3A7B1R1B21A1I6Q1A5C4S1C2A3",
+                  "Old UUIDs": ["3e558ecfc6087cb06a273e52cf18bbd252e754abca8749cae71cf312fc98ee68", "24e2359bdfb066e4e73e847e30a913cd6a84b956f199ae60e81d3dddc2f1d49b"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 63,
                   "Shake": 42,
                   "Stack": "[==========][==========][==========][==========][====][======================]000005000302005203031162124314464221",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 5
                   },
-                  "Solution": "A54I6Q1A7E6A4C4A2E5U1E1A7B1R1B5"
+                  "Solution": "A54I6Q1A7E6A4C4A2E5U1E1A7B1R1B5",
+                  "Old UUIDs": ["b1489a0ca11bbe63724b899aefe8bf2210375d7793fba7bdbc4c6f2590f46fd2", "84b8226d8505d2079f9d6a7b01bd60800e24d6cb43cd8f095ac7bc3480ed3136"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
@@ -990,18 +998,19 @@
                   "Solution": "A69Q1A5B4R1A10C6A3Q1A17C5A15I5Y1A6B7A8E6A51Q1A5"
                 },
                 {
-                  "Puzzle Type": "moves",
-                  "StartTiming": "firstInput",
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
-                  "Stack": "000000000000000000000000[======================]000400099490995499999999",
-                  "GarbagePanelBuffer": "999595",
+                  "Stack": "[============================][======================]000400099940995499999999",
+                  "GarbagePanelBuffer": "999595999999",
                   "CursorStartLeft": {
-                    "Column": 2,
-                    "Row": 4
+                    "Column": 4,
+                    "Row": 3
                   },
-                  "Solution": "A11E7A32B8A10B7A13Q1A8C7A2Q1A25E6A3Q1A6B10A7B10J2I5A76Q1A4C5S1A64"
+                  "Solution": "A9Q1A29C9A43Q1A9E7A2Q1A7B10A13I8A2Q1A8B6A268Q1A5C4S1C1A4",
+                  "Help Description": "When clearing chain garbage, sometimes you need to leave a panel under one of two of a pair of colors to make a clear possible."
                 }
               ]
             },
@@ -1012,7 +1021,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 5,
@@ -1021,73 +1030,84 @@
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A23B7A5Q1A5I7A3Q1A6E8A5Q1A11Q1A4C6A6Q1A5"
+                  "Solution": "A23B7A5Q1A5I7A3Q1A6E8A5Q1A11Q1A4C6A6Q1A5",
+                  "Old UUIDs": ["9a7badb717410005422f42d45a96f4ae63b68155023d3ea27e4e5a9f798a2e8c", "4852a8efd7f6b4b096776cf3edb013cdf0bf9eaaa55253bd2b74c931642d347d"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "000000000000[=][=][=][=][==========][=]000240000331500146306231404365243",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 2
                   },
-                  "Solution": "A152Q1A3B8I6J1B4A3Q1A2C4A3Q1A3C6Q1A3B7A6B7A6E4Q1A5C4S1C2A10I6A6C5A2I7A6Q1A3E7A7B6R1A5"
+                  "Solution": "A152Q1A3B8I6J1B4A3Q1A2C4A3Q1A3C6Q1A3B7A6B7A6E4Q1A5C4S1C2A10I6A6C5A2I7A6Q1A3E7A7B6R1A5",
+                  "Old UUIDs": ["0f643788a79b52965bc9cd62fe7ee6c16eea7df0e1d634157151acc528b85a2a"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 35,
                   "Stack": "000000000000000000000000000[=][==========]000006210503160306534315651246",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A51B4J2I6A1Q1A5E4A4Q1A3C4A5Q1A5"
+                  "Solution": "A51B4J2I6A1Q1A5E4A4Q1A3C4A5Q1A5",
+                  "Old UUIDs": ["d043ee95a5657906655949bfd0b0636055de9d76f05023cf1634b5bdff7faaef"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[==========][==========][==========][==========][==========][====]046030023236045141",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
                   },
-                  "Solution": "A29Q1A4C6A2E3U1E2A6B4A3Q1A3B4A3Q1A2B5A7Q1A5"
+                  "Solution": "A29Q1A4C6A2E3U1E2A6B4A3Q1A3B4A3Q1A2B5A7Q1A5",
+                  "Old UUIDs": ["8d62176fceba9387d7e87325f62c62267275319d8a3277e0ec3f44ffc64d9cba"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "000000000000000000000000[====][====][=]000[====]040090334010599190411564",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 4
                   },
-                  "Solution": "A48Q1A6B4A1Q1A7B5A5B4R1B2A6E4A4C6S1C1A5E6A3C7A1E3U1E2A3"
+                  "Solution": "A48Q1A6B4A1Q1A7B5A5B4R1B2A6E4A4C6S1C1A5E6A3C7A1E3U1E2A3",
+                  "Old UUIDs": ["3846995d4bc464a818ca41fecdcafbd939dc80f21939e58321a2a4502b152d94"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[==========][==========][==========][==========][==========]000100262653543226633511",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A17Q1A6C4Q1A8C3A4E7Q1A6E5U1A7B9A5B10J3I5A1Q1A8C8A27Q1A8C3S1C2A7C2S1C1A7C4S1C2A7I3Y1I2A3"
+                  "Solution": "A17Q1A6C4Q1A8C3A4E7Q1A6E5U1A7B9A5B10J3I5A1Q1A8C8A27Q1A8C3S1C2A7C2S1C1A7C4S1C2A7I3Y1I2A3",
+                  "Old UUIDs": ["2b6975bc9be31429c16ec1a2b0db0549c11cdfde211eca65e21447404e968b7c"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 58,
                   "Shake": 0,
@@ -1100,12 +1120,47 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 98,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000006000001000014000021000034000033030061450112199936",
-                  "Solution": "A31B1J3I5A4B4J3I3A6Q1A3E4A6E7A1Q1A5"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A31B1J3I5A4B4J3I3A6Q1A3E4A6E7A1Q1A5",
+                  "Old UUIDs": ["d14e444ba016994a8e9115780f461513dc425d501ce9a77a45e3349b9d91803a", "2e333fa88799b66743ba8049660db78236fc2537e377a66adec0966e5ad5becc"]
+                }
+              ]
+            },
+            {
+              "Set Name": "puzzle_set_name_novice_garbage_chains",
+              "Description": "puzzle_set_description_novice_garbage_chains",
+              "Puzzles":
+              [
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][======================================================================]232265641366433421",
+                  "GarbagePanelBuffer": "414631242323536161641526316431563614245352453213326145162421",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 3
+                  },
+                  "Solution": "A37Q1A120B7A6B6A24B6A6Q1A7E1U1E4A17C18A31Q1A13B4A29I7A154Q1A13B6A18B4A13B7A17I4A37Q1A9Q1C19A3Q1A8B6A8B7A5B6A6B5A3Q1A9C2S1C3A11B8A6Q1A4E8Q1A7E6C6A3E3G2C5A4Q1A2B7Q1A4B4R1A10C7A3C9A7I8A6I6A42I5A13C8A12Q1A30C6A11B5A8B7A18B7A3B6A1Q1A6C4A1Q1A4C4S1A5C5Q1A3C6A9E6Q1A5B4J1I2A6B6A5E6U1A5B3R1B1A4B4R1B2A6I5A1Q1A8E7A10C6A14I6A35C5A2Q1A4B5Q1A7C14A73I6A1Q1A5B16A2Q1A5E5U1E1A8C5A5C5A96C4A39C6A2Q1A24B4A17B7A7B5A1Q1A35I7A15C5A4C7Q1A7E3U1E2A8B4J2I4A7Q1A2B5A7B5A19Q1A16E6A2C6A4Q1A4B7A7E6U1A8I2Y1I3A10C6A59C6A7C6A9C2A10B3J2I5A35C7A1Q1A4B3A3Q1A4C5A6E5A1Q1A7B6A46B5A12B6A6B7J3I3Y1I1A12C6A49I4A9C7A3Q1A11C6A2Q1A9B3A9B6A21Q1A7C5S1A5C5A3Q1A7E5G1C5A3Q1A3B6Q1A13B4A37C6A7C6A30B2J1I6A11B4A41B5A36Q1A5C4S1A7B5A6Q1A11B3A11C3Q1A3B6Q1A7E2G1C4A3C5A5C5A2Q1A3B5Q1A5B5R1A3B5A2Q1A13C16A8I3Y1I1A6B3R1B1A6B3R1B2A16C6A12C5A38E7A1Q1A6B1J2I4A6B7A7B6A8B9A27I6A1Q1A5C4S1C1A8E4G1C7A68"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][======================================================================]354233641642641414",
+                  "GarbagePanelBuffer": "213424154341243423416161562515324146246464621616356525461236",
+                  "CursorStartLeft": {
+                    "Column": 2,
+                    "Row": 3
+                  },
+                  "Solution": "A19Q1A155B5A8B5A6Q1A11E8A1B7A3Q1A9C20A11I9A7Q1A9B9A8Q1A6B5A23Q1A8C7A6E6A3Q1A14B6A33B8A73I7A9C8A2I8A3Q1A38E8U1E1A19B13A24E8A7Q1A31I8A3Q1A11E9A13Q1A16C11A7C12A9C11I7A2Q1A21B7A128I5A8B10A12C8A6Q1A12E4A9Q1A21B10A8B8A12I7A21E6G1C6A11Q1A6B9A16I8Y1A11E7A5Q1A16C15A16C8A7I7A23I9A7Q1A7E9A14Q1A8E5A6E9A5Q1A7I8A3Q1A10B6A7B7A14I8A19B5A5Q1A13C8A33I8A30Q1A13B9A2Q1A55B7A3Q1A9E7G2C5A5Q1A12C9A6C6A9Q1A7B6A14C8A9E7A13Q1A6C8A4Q1A14B9A6I7A4B7A36Q1A8C8Q1A17C11A2I6Q1A11B9A14Q1A8B17A12I10A15Q1A9E5G3C5A7C8A5E7A2Q1A7B9A1Q1A9B10A1Q1A10C8A7C9A5C8A13I6A5B7A27B7A4Q1A9C6A3Q1A53I5A2Q1A11E7A9Q1A5C19I6Y1A13E5A6Q1A6B7A6B6A3Q1A17E8A13I7A7I8A9Q1A50I5A6Q1A9B6R1B2A17B8A23Q1A9E9A4Q1A6C10A12E8A30C8A106B6A18I6A40C8A15Q1A10C10E6A1C7A10Q1A6B8A4Q1A8C9A13I6A8B6A23C7"
                 }
               ]
             }
@@ -1127,14 +1182,14 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000941299999319999193995319449299129155",
                   "Solution": "A18E8B6A10B4A9E8A6E8A4Q1A7E4G1C3A11C5A6E6A7E6A6C5A9Q1A1B8A2Q1A10C5A5C6A9Q1A5B5A3I2A17Q1A5C7A3Q1A9B2I7A5B4J1I6A6B5A3Q1A7C7A23I5A13I7A39Q1A7E4G2C5A9I5A1Q1A6B3A17E8A5E6A5E3A1Q1A14I4A30Q1A13E3A101"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000000000000000000000000919149241224",
                   "Solution": "A10E7A9E5A8E5A9E6A6E6A9E6A7C8A6Q1A9B5A3Q1A10B5Q1A15C5A8C5A6C5A6Q1A7B6A1I7A3B6A2Q1A17B7A21Q1A3C7Q1A8E3F1B6A3Q1A5B7Q1A73"
@@ -1148,21 +1203,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000610000939996139992292691939999939",
                   "Solution": "A27E4A9E6A8E5A8E5A12B7A7B8A5Q1A36C3A21E5A75Q1A1Q1A12I5A6Q1A9E4C16A10Q1A72"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000050000619000939996139952292651939999939",
                   "Solution": "A61B7A14B5A13E5A7E5A10E5A8E5A7Q1A30C8A15E6A81Q1A2Q1A12I6A4Q1A6C5A5C5Q1A32B6A1Q1A117"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000250000619020939996139952292651932999939",
                   "Solution": "A24E6A7E5A8E6A8E4A10B8A5B7A4Q1A15E6G1C5A111Q1A3Q1A11I7A6Q1A4C6A4C5S1A22B6A13Q1A3C5A8I5A5I5A1Q1A8B8A5E1F2B6A6B4A7E6A3E6A1Q1A84"
@@ -1176,21 +1231,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000004400002200044540043520022350112130",
                   "Solution": "A38E6A7E4A8E3A6E5A16E6A9E5A6Q1A51I6A29I6A9Q1A5C5A5Q1A8E6A15B4A18C6A34Q1A8B7A10I6A2Q1A11E7A14B6A5Q1A13C7A32Q1A6B6A3Q1A109"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000001000001000006100004400062260044540043520022350112130",
                   "Solution": "A10E7A6E5A5E6A7E3A8E5A16E5A5Q1A46I7A30I5A7Q1A8C7A13E5A16Q1A67Q1A5B6A49Q1A7B6A5Q1A12C6A32Q1A6B7A1Q1A14I3A2Q1A10E4G3C5A15Q1A5B6A4Q1A42Q1A123"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "005000004600003500061460051240026120034430062260044540043520022350112130",
                   "Solution": "A50E4A6E5A7E4A6E3A7E5A9E5A5Q1A33I7A50I6A2Q1A8C5A1Q1A9E5A81Q1A6B5A3I6A4Q1A7E2F2B5A23Q1A5C6A8I4Y1A9B3A2Q1A9E7A15I4A6Q1A5C4A14E5A25Q1A5B5A3Q1A9I6Q1A12I5A2Q1A8E6A30I2J3B3A20E6A16I5A1Q1A8E3G2C5A5E5G1C3A7C6A9Q1A5B5R1A9C4A3Q1A5B7A13B3A8Q1A5B6A3Q1A9C4A8C3A25Q1A9C5A3Q1A51Q1A6B7Q1A105"
@@ -1204,14 +1259,14 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000000000200021100293300155200324405241101",
                   "Solution": "A86E6A10E2A8E6A7E7A6E5A12B4A5B6A12E6A3Q1A6C6A4C5A9I5A5I5A2Q1A13E4A9B7A5E1F2B4A5Q1A6C5A5C6A4C6A12I6A2Q1A11C4A14E4A8B8J2I1A5B6A3Q1A5C6A5C6A1Q1A4B6A8B5A12Q1A4C6A5I4Q1A5B5R1A7B3A2Q1A7C16A4E7Q1A7B5R1B1A94"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000000600060200021100293300155206324405241101",
                   "Solution": "A5E6A3E8A4E7A5E7A6E6A10B8A6E2F2B3A13Q1A5C5A4C6A10I6A5I5A3Q1A7E4F1B4A6E7A6B7A3Q1A7C4A6C4A6C6A8I7A3Q1A14B3A16B8A2I6Q1A8E6C4A17Q1A6C6A5C5Q1A5B7A12Q1A8C3A6B3J2I5A6C4Q1A5B5R1B2A6E7A18C6Q1A5B5A30Q1A3B5A6E1F2B3A6B5A3Q1A86"
@@ -1225,7 +1280,7 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "994999993999949399993449994999",
                   "Solution": "A35E6A7E5A8E2A6E7A5Q1A8C6A55Q1A3Q1A81"
@@ -1239,28 +1294,28 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000900040991940992910499194929991912194991999919999",
                   "Solution": "A24E6A9E7A6E7A5E6A7B5A5B8A4Q1A10I6A2Q1A8C1A8C4A9C10A11C8A5I7A3Q1A12B6A2Q1A5B6A5B6A2Q1A7C7Q1A9I4Q1A7I4A1Q1A8E4A7E4A8E5A5C4A3Q1A3B6R1A7E6Q1A7E5A8Q1A7E5A6C5A2Q1A6B7A2Q1A16I5A98"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000900000900009900009910999494411999919999199999999",
                   "Solution": "A16E6A8E7A9C6A5Q1A6B3A4Q1A8E4A7E6A4B6Q1A8C5A6C19A11I6Q1A145"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000900000900009900029919999494411999912992129999299",
                   "Solution": "A8E6A8E5A8E6A8C3A7C6A4Q1A5B7I6A3Q1A2B6A1Q1A3B6A7E4A6E5Q1A5I5A5I5A7I4Q1A9E4A6E4A6E7B6R1A2C7Q1A85"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "99000939099939999949999349939493999999999999999999",
                   "Solution": "A77E4A10E6A10E6A5C5A4Q1A5B4A6B5A6B6A1Q1A5C7Q1A40I6A22Q1A85"
@@ -1274,21 +1329,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "991999992199912999929999",
                   "Solution": "A40E7A8E5A8E3A7E5A9E6A7E6A8C4A1Q1A9B7A3I6A41Q1A2Q1A68"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "1000003000019300093100093900",
                   "Solution": "A12E4A7E6A7E5A9E6A6Q1A17C4A3E6A46Q1A1Q1A69"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "993999992399932939929999",
                   "Solution": "A13E6A7E5A6E6A7E8A8E22A10C6A4Q1A8B6J1I7A44Q1A2Q1A75"
@@ -1302,21 +1357,21 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "4000993999943499999399999999",
                   "Solution": "A19E6A7E6U1A9E5A3Q1A9E6A3Q1A37B4A20Q1A7Q1A71"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "200999949992492999499999999",
                   "Solution": "A32E7A7E4A8E7A8E9A1Q1A6B7Q1A7I7Q1A7E9C4S1C2A62Q1A4Q1A66"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "100999399913919999399999999",
                   "Solution": "A17E4A8E6A10E5A8E6A7B4A3Q1A7C3A2Q1A7B6A51Q1A2Q1A68"
@@ -1330,63 +1385,63 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000900000950000940099941299524919945219949999",
                   "Solution": "A23E8C5A7E6A6E3A7E6Q1A16C6A13E7A40Q1A3Q1A3B7J1I2A5B3J1I3A6Q1A4C5S1A6E2F1B5A4B5A3Q1A5C5A5I4Q1A112"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "40990520490429540954294929999999999999999999999",
                   "Solution": "A47E6A8E6A5Q1A7C4Q1A9B6A3Q1A7C5A8C6A30Q1A4Q1A9I5A6Q1A4B5A6B3R1B1A9I5Q1A8E7A4B5R1B1A7B6A7E3U1E2A92"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999999999999999999999999994929993429993949939299",
                   "Solution": "A22E5A13E5A7E6A9E4A7E6A7E7A3C6A3Q1A7B7A2I5A42Q1A4Q1A10B7A7E7A3Q1A98"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999499999199999199999929999929992999999144999199",
                   "Solution": "A43E6A11E6A7B6Q1A10E6A1Q1A8E7A6C4S1A27E6A110Q1A3Q1A67"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "000000000000000000000000000000991999931999994499991299944239994119341929",
                   "Solution": "A39E5A7E6A7E7A9E6A8E7A10E7A6C6A1Q1A19I7A41Q1A4Q1A7B8A5B7A9E6A18Q1A16I6A51Q1A2Q1A8C8A4C8A11E7A3Q1A7C6A1Q1A7B5A5I5A8I4A6I6Q1A92"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "999999999999993499993149949199931999999999999999",
                   "Solution": "A50E8A8E4A10E6A7E6A1Q1A6C6A7I6A1Q1A4B5A6B7A18Q1A2Q1A6C7A14C8A7E8Q1A84"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "95990991290993190915399193294553944992999",
                   "Solution": "A25E6A2Q1A10E4A6E6A1Q1A15E7A51Q1A5Q1A15E5A47Q1A5Q1A6B10A3I10B8A2Q1A5C4Q1A7C3A9C3A13Q1A6C10A5E6U1E1A98"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "991999992999993999992999996999936391691999929999",
                   "Solution": "A20E7A8E4A7E6A7E6A8E4A8C4A7C6A7Q1A6B7Q1A9E6A1Q1A10B9A11B6J3I7A5B10A3I6Y1I1A13C7A34Q1A8C7A6E7A30Q1A3Q1A67"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "913000925000929000542000121449925339",
                   "Solution": "A12E7A6E8A9C8A3E7A6E7Q1A74Q1A5Q1A15C6A9Q1A5B6Q1A18E4A47B4A36Q1A4B6A4Q1A107"
@@ -1400,14 +1455,14 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "199000999035129953991599329999299",
                   "Solution": "A8E7A9Q1A8E8A7E3A7E4A6E6A1Q1A6C4A7C7A2Q1A9B7A1I5A4I7A3Q1A3B8A2B9A5B7A4E5Q1A5C4A7C4A14Q1A10Q1A20B6A6E7A6E5A3Q1A84"
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "firstSwap",
+                  "StartTiming": "First Swap",
                   "Moves": 0,
                   "Stack": "3000394000934000999400",
                   "Solution": "A8E7A7E6A10E5A8E7A8E7A6E4A5Q1A9C1A9C4A7I1Y1I2A7I6Q1A2B7A6E3U1E3Q1A67"
@@ -1421,25 +1476,27 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "countdown",
+                  "StartTiming": "Countdown",
                   "Moves": 0,
                   "Stack": "100999199993339999949999149999949999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A74E6A13E5A22B7A19E5A120Q1A3Q1A61"
+                  "Solution": "A74E6A13E5A22B7A19E5A120Q1A3Q1A61",
+                  "Old UUIDs": ["c685b5be277cf47975bc6d135a4007c7ffe9b991c106e343a9a21479e06afa06", "1fa51150a17493feb029e69d6630c19422efe800c903953db1d84259f1a88b3d"]
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "200999299999199999419999149999949999299",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 2
                   },
-                  "Solution": "A48I6A13I6A6Q1A14E5A13E4A55Q1A63"
+                  "Solution": "A48I6A13I6A6Q1A14E5A13E4A55Q1A63",
+                  "Old UUIDs": ["d62c1f694df13a01ea0dc07405d5de2e74bce1788aec8ee532c89089c712371e", "b51e554914f7caf4cba3869f5cc9b3204a680cb3167510b260aad9c256a97f07"]
                 }
               ]
             },
@@ -1450,24 +1507,27 @@
               [
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "300001290106399303199506592303299536393",
-                  "Solution": "A22Q1A7E9A6C9A6E6A7E6A87Q1A11I3A5Q1A11E8A4C6A4E8A2Q1A17E7A6B19A3I6A6C5A5C3A4Q1A4B17Q1C7A3Q1A2C7Q1A6I7A3Q1A8E7A3C6S1A10C5A5I3Y1I2A4B7F3E4A4B8A4B4Q1A5C6S1A4E5A9C18A8Q1A8B1R1B17A3E5U1E2A85"
+                  "Solution": "A22Q1A7E9A6C9A6E6A7E6A87Q1A11I3A5Q1A11E8A4C6A4E8A2Q1A17E7A6B19A3I6A6C5A5C3A4Q1A4B17Q1C7A3Q1A2C7Q1A6I7A3Q1A8E7A3C6S1A10C5A5I3Y1I2A4B7F3E4A4B8A4B4Q1A5C6S1A4E5A9C18A8Q1A8B1R1B17A3E5U1E2A85",
+                  "Old UUIDs": ["82e6e481fdf687849105fcd4adbb494d4ece8955bdb0f0c5b0f6c5ec27c3d3d2", "ed0351c2c2418b576515777e70d228485850f0c85b83f00f49ad0631806b056b"]
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "200420400199105499402599241959425299",
-                  "Solution": "A23E5A7B5A6Q1A8C4S1C2A17B6Q1A7C6A2Q1A7E7A7E4A8E5Q1A9E6A4B7A2Q1A7C5A3Q1A6C9A9C10A17I6A20I4Y1I1A7B8A5B7A1I4Y1I2A9E10A5C18A5I7Q1A7B8A6E7A5E6A5B9E6A5Q1A8C19A24Q1A3B9A1Q1A8C6Q1A90"
+                  "Solution": "A23E5A7B5A6Q1A8C4S1C2A17B6Q1A7C6A2Q1A7E7A7E4A8E5Q1A9E6A4B7A2Q1A7C5A3Q1A6C9A9C10A17I6A20I4Y1I1A7B8A5B7A1I4Y1I2A9E10A5C18A5I7Q1A7B8A6E7A5E6A5B9E6A5Q1A8C19A24Q1A3B9A1Q1A8C6Q1A90",
+                  "Old UUIDs": ["bcc92b7b59083994f7487db1c54fe5a7cf90b1de24be67a933aa56534c3bf17f", "5998c2e92b1bd46ce0e2faa591d045416d8cfcaba7b537520be6eb8556169143"]
                 },
                 {
                   "Puzzle Type": "chain",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 0,
                   "Stack": "100040530099590095290099590931929424139",
-                  "Solution": "A23E7A8E6A15E4A7E6A9E6A3Q1A7E8A5C18Q1A6B9A1I9Q1A7B8J1I4A6I7Q1A9C7A7I6A6I7A4Q1A6B6A7B7A13C4S1A5B7A12Q1A5C6A3E6A7E6A10Q1A4E5A8C7A5E5A6E10C7A3Q1A3B7A6I7A2B7A1Q1A3B6A2Q1A77"
+                  "Solution": "A23E7A8E6A15E4A7E6A9E6A3Q1A7E8A5C18Q1A6B9A1I9Q1A7B8J1I4A6I7Q1A9C7A7I6A6I7A4Q1A6B6A7B7A13C4S1A5B7A12Q1A5C6A3E6A7E6A10Q1A4E5A8C7A5E5A6E10C7A3Q1A3B7A6I7A2B7A1Q1A3B6A2Q1A77",
+                  "Old UUIDs": ["dc03c465ec023c9fff73cb796aac900169933b440be90dd853b4dce3b1f98ca9", "5c42f7346a05495825e4ae02dd21e96ae787235fec9e2cc11273a4c558149eb5"]
                 }
               ]
             },
@@ -1478,78 +1538,94 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================][====]320000310000520000360000355445",
-                  "Solution": "A22E6A7E5A3C6A1Q1A8C3S1A7B6A1Q1A6E6A6E6Q1A4C5S1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A22E6A7E5A3C6A1Q1A8C3S1A7B6A1Q1A6E6A6E6Q1A4C5S1A5",
+                  "Old UUIDs": ["8e47d724d1038a00494d66ad1560b9c30c892e3df311c505984e191b8c0c2ea7", "aa206e344c013cd831ca9932f4e05bad84b15743c28e7e5171607e6663ddb005"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "0[==]0[=][=][====][====]400000600000420000130006540506653544216616535113",
-                  "Solution": "A270C7A7C5A4Q1A2B5A2Q1A5C4A2Q1A4B6Q1A7E3A7E6Q1A6C3S1C2A1E6Q1A5"
+                  "GarbagePanelBuffer": "999999999999999999",
+                  "Solution": "A270C7A7C5A4Q1A2B5A2Q1A5C4A2Q1A4B6Q1A7E3A7E6Q1A6C3S1C2A1E6Q1A5",
+                  "Old UUIDs": ["ea56095c9eea93eb8a6322cd97e4636df0274107d332bc9fe97f1dd60d623c30", "33f5da48cd23b9d88f7ebd35d3c8c2138eb2e184a203e03dadd9740979fc8696"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]045000063001243062454156114213254545626551",
-                  "Solution": "A135Q1A4C5A6C3S1C1A6E6A4E6A8Q1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A135Q1A4C5A6C3S1C1A6E6A4E6A8Q1A5",
+                  "Old UUIDs": ["7edbe71de7b4e2724106127fc1ae1814d6e9f8745843192292720d3c32eba729", "240a0d34aa5ac27f71255d75c6c5af7001729164b1d858eb5758234680382635"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 74,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000040000062600041200061605026203056441042552254116413548515",
-                  "Solution": "A47B4A7I4A6Q1A7I5Q1A5B5A2Q1A4C6Q1A3E6F3B3R1B3A7U1E5"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A47B4A7I4A6Q1A7I5Q1A5B5A2Q1A4C6Q1A3E6F3B3R1B3A7U1E5",
+                  "Old UUIDs": ["2361cac91a416bb65c163b3a6cd740f06e93151d2e47cbd4660fbd3f08161d55", "e9929095573c85192aea7db6238bfb5d9cc5ca987bc0fe62f0071713c25d7201"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]400300102105303621204243136326",
-                  "Solution": "A195E7A6E7A3B7Q1A2C18S1C1A3E7A4B6A4B6Q1A3B6R1A6E6A5E6Q1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A195E7A6E7A3B7Q1A2C18S1C1A3E7A4B6A4B6Q1A3B6R1A6E6A5E6Q1A5",
+                  "Old UUIDs": ["cf8e20474f62b233db31b65f82f9afef93c44b4cdf88f390fc3e905ff69eed8b", "a2994992acbc9f57d9f47752797a4ceb979c98e114d501b5c3a2e1326e1c29d7"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==================================]000039000039000029300092993329",
-                  "Solution": "A104E6A5E5A4E7F3B4A5B1F3E1A4E6A9Q1A6C5A45B4A7Q1A11Q1A19I5A9I6Q1A4C3S1C2A3E7A3B7Q1A5E5A3C9E6Q1A4B4R1B1A4"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A104E6A5E5A4E7F3B4A5B1F3E1A4E6A9Q1A6C5A45B4A7Q1A11Q1A19I5A9I6Q1A4C3S1C2A3E7A3B7Q1A5E5A3C9E6Q1A4B4R1B1A4",
+                  "Old UUIDs": ["3989846a944e4e6beed5abb028f725294521716da8ab27531cb1e25930a9a436", "baef1f539f1601a850b2d3b65743f1ad4421d5ef4c01c17ebfba83df103d705d"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 80,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]120000540106310405340346146551",
-                  "Solution": "A17E6A5C2G4A14Q1A5C6A3Q1A4B6A11Q1A6E6A4E6F2B6Q1A3C7A5Q1A5"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A17E6A5C2G4A14Q1A5C6A3Q1A4B6A11Q1A6E6A4E6F2B6Q1A3C7A5Q1A5",
+                  "Old UUIDs": ["b471c6a0d7072ea2253251ee4f8edc62ba836716d6d1280ac58408bb774c4d02", "18cc6b841746e32f7da11f7dc9f7fa51b1266380f1acd947c065cace6ad93327"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 41,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][====]500000400000300000400000405030103035602055443116162661",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 8
                   },
-                  "Solution": "A44I4Y1I1A7E7A3E7A4Q1A12"
+                  "Solution": "A44I4Y1I1A7E7A3E7A4Q1A12",
+                  "Old UUIDs": ["5e22e17c001d9f7ebc2d1db7d5d27996d03fb7c0b12f473a8af8b65d3837230d"]
                 }
               ]
             },
@@ -1560,39 +1636,117 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 80,
                   "Stack": "[======================]000[=][==========][====][==========][====]400250500250400434401421356112",
+                  "GarbagePanelBuffer": "999999999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 4
                   },
-                  "Solution": "A55Q1A10B6A5E9B7Q1A6B3I7A6I4A4Q1A5C4S1C2A3E9A2B6A1Q1A7E4Q1A5"
+                  "Solution": "A55Q1A10B6A5E9B7Q1A6B3I7A6I4A4Q1A5C4S1C2A3E9A2B6A1Q1A7E4Q1A5",
+                  "Old UUIDs": ["2669c8e1e85ce89e7fea17e0ab3652119ac21ea36a06771b927b212791b503c1"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 80,
                   "Stack": "[======================][======================][======================][====]000632003141454545136453658532565165",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
                   },
-                  "Solution": "A15Q1A53C6A7C6A9Q1A5B7A4I6A25E7A5Q1A7I5A14E5A7E6A1C16A3Q1A4B6A5E3A3B16A4I6A7I7A13Q1A10I5A7Q1A7C5S1A14E9A2B12Q1A9C7A6C7A4C3A2Q1A6B4A7B4A3Q1A5"
+                  "Solution": "A15Q1A53C6A7C6A9Q1A5B7A4I6A25E7A5Q1A7I5A14E5A7E6A1C16A3Q1A4B6A5E3A3B16A4I6A7I7A13Q1A10I5A7Q1A7C5S1A14E9A2B12Q1A9C7A6C7A4C3A2Q1A6B4A7B4A3Q1A5",
+                  "Old UUIDs": ["b34500d31eefd5ebeff0e072e8044ee10539f48f622d53f541dcc92784b35808"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 81,
                   "Stack": "[======================][==========]00[==]0[==]0060000020001125005543404215102552406524162234243451256",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 5
                   },
-                  "Solution": "A17Q1A6C4Q1A5E8A2B5A9E4U1E1A10Y1I3A9C4A3I7A7I6A8Q1A6B19A21Q1A12Q1A6C4A6C8A8C6A2Q1A8B4E7A6B7A8Q1A7C6Q1A5"
+                  "Solution": "A17Q1A6C4Q1A5E8A2B5A9E4U1E1A10Y1I3A9C4A3I7A7I6A8Q1A6B19A21Q1A12Q1A6C4A6C8A8C6A2Q1A8B4E7A6B7A8Q1A7C6Q1A5",
+                  "Old UUIDs": ["e03b368ce483baa691a559c4512fee6158cdb813b80235209e6b2bbc96089469"]
+                }
+              ]
+            },
+            {
+              "Set Name": "puzzle_set_name_intermediate_garbage_chains",
+              "Description": "puzzle_set_description_intermediate_garbage_chains",
+              "Puzzles":
+              [
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]112122345634563456",
+                  "GarbagePanelBuffer": "163625451214636135424264",
+                  "CursorStartLeft": {
+                    "Column": 3,
+                    "Row": 3
+                  },
+                  "Solution": "A18Q1A159E7A10Q1A5C6S1A21C5A18Q1A4B6R1B1A5B4R1A9C5A5C4A4Q1A6B7A7B4A12B6A39C5A3Q1A3B6Q1A5B5Q1A7C6A3C7Q1A5B5A1Q1A4C4S1C1A7B8A35I6A99C7A33C6A3C5A4Q1A5B7A11Q1A9E3F3B4A20I5A1Q1A8C5A6Q1A7C7A27B7A1Q1A8B7A9B6A25I8A6C6Q1A4B5R1A4E3G3C4A3Q1A5B5R1A9C6A31I7A12"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]215415126651554121",
+                  "GarbagePanelBuffer": "214126561453242165323612",
+                  "CursorStartLeft": {
+                    "Column": 5,
+                    "Row": 3
+                  },
+                  "Solution": "A72Q1A134C19A9E8Q1A11B10Q1A12B6A48I6A3Q1A9B7A23I6A150B7A24Q1A6E6A1C8A20I7A18C5A9E3G3C6A5Q1A3B6R1A7C8A7I6Q1A11B6A7E1F3B4A2Q1A43B7A5Q1A12C7A47C7A17B5J2I5A14Q1A9E2F4B5A3Q1A13C5A7C6A17E6A2Q1A5B5R1B1A10C11"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]226215354364351154",
+                  "GarbagePanelBuffer": "654324321251632562264313",
+                  "CursorStartLeft": {
+                    "Column": 3,
+                    "Row": 3
+                  },
+                  "Solution": "A38Q1A187Q1A3C5Q1A6C4S1A8E2F3B4A4B5A5B4A2Q1A6C3S1C2A4C2S1C2A5C5S1A11B7A14B6A54I5A89Q1A5B6Q1A90B4J4I2A27C5A42B6A13Q1A9C6A33B5R1B1A11E7A7Q1A6I6A5I5A5Q1A4E4G1C5A21Q1A5B7A18Q1A116C5A6C4A4C5A6Q1A3B6R1A9E1U1E3A73"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]124453245364364221",
+                  "GarbagePanelBuffer": "156361421523142161234212",
+                  "CursorStartLeft": {
+                    "Column": 2,
+                    "Row": 2
+                  },
+                  "Solution": "A103Q1A103B8A26I5A7B6A3B13A2Q1A7C3S1C2A8C5A5C6A9Q1A10E1G1C7A53I5A32Q1A6B6Q1A8B17A1Q1A4C5S1A4C4S1C2A10E6A96B6A9B6A14I7A40C7A26C9A9B4A8Q1A4B6A1Q1A8C2S1C2A10E4G2C4A2Q1A6C3S1C2A5C5S1A8B7I5A12B6A28C7A3C6A10B5J3I2A24C6A2Q1A5B4A2Q1A7C4A4E6A1Q1A7B6R1B1A16Q1A6C4S1C1A6E4U1E1A7B5"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[==========================================================][==================================]546325521166156242",
+                  "GarbagePanelBuffer": "242545453423514251156542",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 1
+                  },
+                  "Solution": "A6Q1A35B6A2I7A5B8A1I7A5Q1A11B7A47E6A10C6A11B5I6A9Q1A4C6S1C1A5E4G1C4Q1A6B9A19B8A118C6A50I9A43C4A17Q1A18Q1A9B8I4A21B5A8Q1A6E6G2C5A4E6U1A8I7A5I5A1Q1A6B6A19E7A5B6A1Q1A6C6A5C3Q1A9E6A29B5A12C3S1C2A5B6A9E8U1A6C3S1C3A5B2J2I4A5B3J1I5A4I6A4I5Q1A9C7A4C5A7Q1A4B5Q1A15E6A2Q1A4E6A9Q1A6I5Y1I2A3"
                 }
               ]
             }
@@ -1614,70 +1768,70 @@
               [
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 1,
                   "Stack": "{====}929999[====]040000224999949999",
                   "Solution": "A22E4A10E6A8E6A9E5A10E6A9C5A7Q1A173"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "[====][====]929999999999[====]922300999930999399",
                   "Solution": "A27E6A17C5A9Q1A15B4A4Q1A15E7A7E6A7E5A8E4A10B7A2Q1A173"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 4,
                   "Stack": "000100[====]001300019300999930999999",
                   "Solution": "A79E6A9E4A7E6A8E5A9E8A10B6A1Q1A10B5A6Q1A10C7A8C5A8I7A3Q1A8E7B7R1B1A78"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "30000[====]000992000929303992909999909999999999999999999999",
                   "Solution": "A33B5A8B9A7Q1A7C6A7C4A2Q1A7C6A2Q1A131"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 4,
                   "Stack": "{====}929999[====]224000949999949999",
                   "Solution": "A47E4A27E6A11C7A10Q1A6E6A7E6A9E7A7Q1A19E6Q1A34B9A17I6A10Q1A95"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 2,
                   "Stack": "000100[====]001300019300999930999399",
                   "Solution": "A35E6A10E5A8E5A9E7A7E7A7B9A1Q1A40C6A41Q1A5B7A6Q1A73"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "{====}626999[====]040000224999946999",
                   "Solution": "A35E5A33E6A6C9A7E4A6E7A5E8Q1A4C8A10I6A7I6A7I8A70Q1A6E9Q1A9B8A2E5U1E1A71"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 4,
                   "Stack": "[====]999699926999[====]040000224999946999",
                   "Solution": "A18E5A10E5A9E5A8E8A13C10A7E8A2Q1A5B7A1I8A4I7A7I5A6I5A4Q1A5C7Q1A7E6A9E4A7E4A19Q1A110"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "[====]969999696999[====]040000994999949999",
                   "Solution": "A22E5A10E6A7E6A10E6A8E8A12C9A5Q1A57Q1A17Q1A7B6Q1A82"
                 },
                 {
                   "Puzzle Type": "moves",
-                  "StartTiming": "immediately",
+                  "StartTiming": "Immediately",
                   "Moves": 3,
                   "Stack": "[====]919199199999[====]090002999992999929",
                   "Solution": "A151E7A3Q1A10E10A6C7A5E6A8E7A14C8A2Q1A9B6A5B9A7B4A7B6A7E5A7E7A7Q1A171"
@@ -1691,68 +1845,78 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]299309299999299999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A57E10A108Q1A5"
+                  "Solution": "A57E10A108Q1A5",
+                  "Old UUIDs": ["6a8915a5930959014d0db8a8e550e621d8cc78befe285e010457f28a6fa1613d"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]299039299999299999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A107E6A10E9A7Q1A26I7A41Q1A5"
+                  "Solution": "A107E6A10E9A7Q1A26I7A41Q1A5",
+                  "Old UUIDs": ["162d23390fd1b4e469d88c304de51ced26750318292cbf2c1183e885eceb751e"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]299903299999299999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A136B9A5Q1A11C8A3Q1A11E7A10B7A53Q1A5"
+                  "Solution": "A136B9A5Q1A11C8A3Q1A11E7A10B7A53Q1A5",
+                  "Old UUIDs": ["dbfc0b5c7957a6e77e81b43c7da3379cf7dfafdc2d648130c5fc8c5502b3b2d2"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999339[====]230999299999299999999999999999",
-                  "Solution": "A68Q1A7C4A4Q1A5B5A8B6A1Q1A6C3A6Q1A2C7A11E6A28Q1A5"
+                  "GarbagePanelBuffer": "999999",
+                  "Solution": "A68Q1A7C4A4Q1A5B5A8B6A1Q1A6C3A6Q1A2C7A11E6A28Q1A5",
+                  "Old UUIDs": ["53fd9bc7325d51e832e309eb114691935a8e35a0e55d94c8b318dc8e97e23fb1", "90acb972eb6ca0412ddfac2fb0a299b42192e4333582c53ef20c6311a472ed82"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 20,
                   "Shake": 0,
                   "Stack": "[======================]999993[====]200003200003209999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 7
                   },
-                  "Solution": "A64E8A19B6A81Q1A12"
+                  "Solution": "A64E8A19B6A81Q1A12",
+                  "Old UUIDs": ["e2986a52f51877c40b8a1b95cd2a170a35c16cc4a51dc137a5c97b076d289153"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 62,
                   "Stack": "000000000000000000000000000000000000[====]969699444444909091969991969991",
@@ -1771,42 +1935,48 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[================][===]0061340121351[====]405365112361999399999999999999",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 7
                   },
-                  "Solution": "A197C5A10C8A5Q1A16B9A7E6A48Q1A5"
+                  "Solution": "A197C5A10C8A5Q1A16B9A7E6A48Q1A5",
+                  "Old UUIDs": ["87b046f5fe3422e94c02510ce57fc72525022c8999c186aaa5134d02b0511976"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 40,
                   "Shake": 0,
                   "Stack": "[======================]125446[====]069004069504969999999999999999999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 8
                   },
-                  "Solution": "A150B3A7B9A3Q1A7C5S1A8E6A6E5A5E6U1A9B7I6A7I4A10Q1A5"
+                  "Solution": "A150B3A7B9A3Q1A7C5S1A8E6A6E5A5E6U1A9B7I6A7I4A10Q1A5",
+                  "Old UUIDs": ["a17ad7abb499f7d903c2f6255bcb57b2426fdfdab0f20fde5d8d7e62e612b034"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[============================][====]132120[====]200062563164322464356566613131",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A96C4A7C6A4Q1A8B4R1B2A7B8A2I7A9B9A1I7Q1A9E10C6A7Q1A5"
+                  "Solution": "A96C4A7C6A4Q1A8B4R1B2A7B8A2I7A9B9A1I7Q1A9E10C6A7Q1A5",
+                  "Old UUIDs": ["707432ed13051e16ba157424afd0f1857d74e44444ed7b6218881f3988ac72e0"]
                 }
               ]
             },
@@ -1817,106 +1987,122 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Shake": 0,
                   "Stack": "[======================][======================][==]00[==========][====][=]003300004500026600065140363322614",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A120Q1A2E7A1Q1A5C6A5C5A1Q1A6C3S1C5A7C3I8A6Q1A17B5A2Q1A3C6A1Q1A5E6A6Q1A5"
+                  "Solution": "A120Q1A2E7A1Q1A5C6A5C5A1Q1A6C3S1C5A7C3I8A6Q1A17B5A2Q1A3C6A1Q1A5E6A6Q1A5",
+                  "Old UUIDs": ["b2e4d5dae2bfa380294075f898028800037450acf8d67a85f0e6303a4d66b888"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]500000300005460003240002360002335021115014523626",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 2
                   },
-                  "Solution": "A361C2A7C7A3Q1A5I5Q1A7E1G1C4A6E3U1A4B7A6B4Q1A9B13R1A7C3S1C3A9I5A5B2J1I6A3Q1A5C6A20Q1A4C16A9I5A4I6Q1A5I5A14I7A1Q1A9E6A5E7A2Q1A9B3"
+                  "Solution": "A361C2A7C7A3Q1A5I5Q1A7E1G1C4A6E3U1A4B7A6B4Q1A9B13R1A7C3S1C3A9I5A5B2J1I6A3Q1A5C6A20Q1A4C16A9I5A4I6Q1A5I5A14I7A1Q1A9E6A5E7A2Q1A9B3",
+                  "Old UUIDs": ["fdeef65d420f6d6ed86eb712928da2576c7a413fa6cbbb68e9a985dfd679f629"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][================]300000260000350000124000563101325601624264413545",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A205Q1A2C6Q1A3C6A6E5Q1A11B6A4B6A1Q1A10I5A14Q1A6E4A7E5Q1A7C5A5C6A15Q1A8B6A1Q1A6C3S1C1A9I6A16Q1A4I5A5I4A5I4A7Y1I2A10Q1A7E6A12E5A20Q1A8B7A4E6Q1A5"
+                  "Solution": "A205Q1A2C6Q1A3C6A6E5Q1A11B6A4B6A1Q1A10I5A14Q1A6E4A7E5Q1A7C5A5C6A15Q1A8B6A1Q1A6C3S1C1A9I6A16Q1A4I5A5I4A5I4A7Y1I2A10Q1A7E6A12E5A20Q1A8B7A4E6Q1A5",
+                  "Old UUIDs": ["f904db41d6fe62e308574d354d6520fd94fd3c15a6d28941b96253ded999df7d"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================]100501530226640551130553531663",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 2
                   },
-                  "Solution": "A41I6A12C6A1Q1A4B4A3Q1A5C13A3I3Y1I1A8E2F2B4A4E7A7Q1A3Q1A6C7A10Q1A58Q1A4B5R1A6B3R1B10R1B5I5A6I5A1Q1A5E4G1C2A6E5U1A5B6Q1A5"
+                  "Solution": "A41I6A12C6A1Q1A4B4A3Q1A5C13A3I3Y1I1A8E2F2B4A4E7A7Q1A3Q1A6C7A10Q1A58Q1A4B5R1A6B3R1B10R1B5I5A6I5A1Q1A5E4G1C2A6E5U1A5B6Q1A5",
+                  "Old UUIDs": ["889caa49b31714f9fd5a4545f493f6251d0a32b8d3a8017634b497498b060d55"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][=][=]001003006005005006601005403003605006611321561248432464",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 7
                   },
-                  "Solution": "A52Q1A13Q1A5E4G2C1A8E5A2Q1A6B16A13Q1A5I5A15Q1A19I3A14Q1A6C5A5E5C4A7Q1A5E8A5E4Q1A8B5R1B1A6B3R1B2A3"
+                  "Solution": "A52Q1A13Q1A5E4G2C1A8E5A2Q1A6B16A13Q1A5I5A15Q1A19I3A14Q1A6C5A5E5C4A7Q1A5E8A5E4Q1A8B5R1B1A6B3R1B2A3",
+                  "Old UUIDs": ["bd6c7b3744bb082e75662a9c427f2d33c5b0e424ec88a302ecbaa17c64082740"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Shake": 0,
                   "Stack": "[======================][======================][=][=][====][====]400000200001350031254635346355",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 2
                   },
-                  "Solution": "A177E5A2Q1A4B4J1I3A6I3A4I4A1Q1A7C17A2Q1A5B6A2Q1A5E6A6B4A2Q1A5C5Q1A3C5A1Q1A4E6F1B2A2Q1A5C6Q1A4E7A5Q1A5"
+                  "Solution": "A177E5A2Q1A4B4J1I3A6I3A4I4A1Q1A7C17A2Q1A5B6A2Q1A5E6A6B4A2Q1A5C5Q1A3C5A1Q1A4E6F1B2A2Q1A5C6Q1A4E7A5Q1A5",
+                  "Old UUIDs": ["942b5cd948d6e998002e567376e6c02ce7e4d8cd3e8c06dadfc9bcd930b34d64"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 34,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]200030301624201156553241155166441231",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
                   },
-                  "Solution": "A223B4A4Q1A2C7Q1A7B5A14C6A12I4A25Q1A13I6A4Q1A5C5S1A6C4S1C1A11E5C6A11I5A5Q1A6E2F3B3A6E1F2B4A4B7A9Q1A8C3S1C2A5C3S1C1A5C5A1Q1A5"
+                  "Solution": "A223B4A4Q1A2C7Q1A7B5A14C6A12I4A25Q1A13I6A4Q1A5C5S1A6C4S1C1A11E5C6A11I5A5Q1A6E2F3B3A6E1F2B4A4B7A9Q1A8C3S1C2A5C3S1C1A5C5A1Q1A5",
+                  "Old UUIDs": ["43a4f6a72fac47beaeb0b5212bd21b1181fd2e83743f3ba80ee5ac4095d28a66"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][============================]200000500040401042603661402563134122613515",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 6
                   },
-                  "Solution": "A138E4A4E7A1Q1A9Q1A8B3R1A8B3R1A8B3A3Q1A5"
+                  "Solution": "A138E4A4E7A1Q1A9Q1A8B3R1A8B3R1A8B3A3Q1A5",
+                  "Old UUIDs": ["6124cb6aef9c5993c7aa5d8bff4d604e7e4e5e4b181105830096fcedf5fc05ba"]
                 }
               ]
             },
@@ -1927,102 +2113,118 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 33,
                   "Stack": "[======================][============================]430000510500621600461662252262426521516563",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 3
                   },
-                  "Solution": "A69Q1A6C6A13I4A12C6A4Q1A6B7A20Q1A6C4A6C5A11B4A22I3A4Q1A2C7A6I5A4I6A3Q1A3B6R1A6E7A7B2A14C5Q1A4B3A1Q1A3C13Q1A5B5Q1A5B2A1Q1A10E8G1C5A10Q1A3E9A14Q1A5"
+                  "Solution": "A69Q1A6C6A13I4A12C6A4Q1A6B7A20Q1A6C4A6C5A11B4A22I3A4Q1A2C7A6I5A4I6A3Q1A3B6R1A6E7A7B2A14C5Q1A4B3A1Q1A3C13Q1A5B5Q1A5B2A1Q1A10E8G1C5A10Q1A3E9A14Q1A5",
+                  "Old UUIDs": ["f309129571da52a5210503c30cc968087b4cd0619f19bf683976180d0589f4d5"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 58,
                   "Shake": 0,
                   "Stack": "[======================][==================================]011253[====]061499065199069329999999",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 5
                   },
-                  "Solution": "A32B5A9B5A6E7Q1A8I3A6I2Y1A6C5A2Q1A8E5A6E5A5Q1A4B6I5Q1A5"
+                  "Solution": "A32B5A9B5A6E7Q1A8I3A6I2Y1A6C5A2Q1A8E5A6E5A5Q1A4B6I5Q1A5",
+                  "Old UUIDs": ["c8de58a07eb57dbceceeb7ba7e3e880be46e40d5350666c31e53f2a1108580ad"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]010000230000450000455001266002412063536654265316",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A38B5A1Q1A6C3S1C3A5E2F3B3A5Q1A7C16A2Q1A7B2I5A5I6A4I6A4I5A5I4A6I4Q1A8E3G1C6A6Q1A10B5Q1A10C4S1C1A5B4R1A9E5A1C7A4Q1A3B6Q1A9C6A1Q1A4B5R1A9E5A5E6A1Q1A5C5S1A5"
+                  "Solution": "A38B5A1Q1A6C3S1C3A5E2F3B3A5Q1A7C16A2Q1A7B2I5A5I6A4I6A4I5A5I4A6I4Q1A8E3G1C6A6Q1A10B5Q1A10C4S1C1A5B4R1A9E5A1C7A4Q1A3B6Q1A9C6A1Q1A4B5R1A9E5A5E6A1Q1A5C5S1A5",
+                  "Old UUIDs": ["4138c3b3de97b0cb576cee5cfb98f40a6b7b0181b73621323b37503aaa654101"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Stack": "[======================][======================][====]060004320513420264510561425622254335",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 4
                   },
-                  "Solution": "A112Q1A6C5A6I4A4I4A1Q1A3B15Q1A6C5S1C1A6C7A4E5C5A4E5A6E6U1A5"
+                  "Solution": "A112Q1A6C5A6I4A4I4A1Q1A3B15Q1A6C5S1C1A6C7A4E5C5A4E5A6E6U1A5",
+                  "Old UUIDs": ["d471bbcb861986fd22ee40cb5f504752b8999547d84d88bd07d52d5ba2dace75"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]001000202000436400556400315103246102424505",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A82Q1A6B3R1A8E6A4Q1A7E4G2C21A1Q1A8B2I6A5B3A8I6A5I5A11I5A45I3A23Q1A8E8A6E6A12C5A5C5A17I5A1Q1A9E3F2B4A15Q1A7C5A37I5A9Q1A5B2A11E7A9C6A13Q1A4E6A7Q1A5"
+                  "Solution": "A82Q1A6B3R1A8E6A4Q1A7E4G2C21A1Q1A8B2I6A5B3A8I6A5I5A11I5A45I3A23Q1A8E8A6E6A12C5A5C5A17I5A1Q1A9E3F2B4A15Q1A7C5A37I5A9Q1A5B2A11E7A9C6A13Q1A4E6A7Q1A5",
+                  "Old UUIDs": ["2387cf6f6fceb14c392cf962c8047f1814b9e35c7dd9623d9e969abe9e4dc988"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Stack": "[======================][============================]600200304106254633265261633622241253256162",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A66Q1A8E1G2C5A11E8Q1A25B5A67Q1A3Q1A14I6A8C5Q1A5B4A1Q1A29B7A12I6A3Q1A8E5A9Q1A3C14A8I5A5I4A4I3A3Q1A3B6R1B1A7E6A4B5A3Q1A5C5A1Q1A3C6A3Q1A7E5A10Q1A5"
+                  "Solution": "A66Q1A8E1G2C5A11E8Q1A25B5A67Q1A3Q1A14I6A8C5Q1A5B4A1Q1A29B7A12I6A3Q1A8E5A9Q1A3C14A8I5A5I4A4I3A3Q1A3B6R1B1A7E6A4B5A3Q1A5C5A1Q1A3C6A3Q1A7E5A10Q1A5",
+                  "Old UUIDs": ["b1e6d46e45ad31bb8fe338356ca795326ea3378e65a3844b87fabbf63105a94b"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 82,
                   "Stack": "[======================][======================][==========][==========]100000600000520000330000436001212005214001365132",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 1
                   },
-                  "Solution": "A50Q1A6C6Q1A9B10J2I7A4B7A3I6A1B9A8Q1A9C5A8C4A9C3A8C9A56Q1A11E9A34Q1A7I6A9I5A23E4A6E7A19Q1A7B6A7Q1A5"
+                  "Solution": "A50Q1A6C6Q1A9B10J2I7A4B7A3I6A1B9A8Q1A9C5A8C4A9C3A8C9A56Q1A11E9A34Q1A7I6A9I5A23E4A6E7A19Q1A7B6A7Q1A5",
+                  "Old UUIDs": ["d6245cb0a43d86d6981bb8a3b56652a1d7fdfc01b03cd780f35750137f2699a3"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 78,
                   "Stack": "[======================][======================][==========][==========]500000300000400200500503200152160551610435",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A26Q1A3C7A5I4Y1I1A7B1R1B2A6E5A5E5U1E1A8C5A4C16A10I5A5I6A6Q1A15I4A9Q1A24E1F2B5A4Q1A5C5Q1A5B6A5B2R1A8C12A1Q1A5B7A1E3F2B4A5E3U1E1A4C4S1C2A3"
+                  "Solution": "A26Q1A3C7A5I4Y1I1A7B1R1B2A6E5A5E5U1E1A8C5A4C16A10I5A5I6A6Q1A15I4A9Q1A24E1F2B5A4Q1A5C5Q1A5B6A5B2R1A8C12A1Q1A5B7A1E3F2B4A5E3U1E1A4C4S1C2A3",
+                  "Old UUIDs": ["8b567000c1cae333fd8e0857fc3750e9b35bc27ed1b8641333cabd9a9b47ee1b"]
                 }
               ]
             },
@@ -2033,70 +2235,80 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 22,
                   "Shake": 70,
                   "Stack": "[======================][======================][====]000003640002462445535161414121221336",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 5
                   },
-                  "Solution": "A65Q1A7E6G1C6A3E5A2Q1A5C5Q1A6C3S1C1A7C1S1C2A10I3Y1I2A3"
+                  "Solution": "A65Q1A7E6G1C6A3E5A2Q1A5C5Q1A6C3S1C1A7C1S1C2A10I3Y1I2A3",
+                  "Old UUIDs": ["b1bb6d6fd0eb126f3353055a7efa2e468e3094d58b14cd78d0dd6045329eb139"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========]340001210045130015436224615252235566214243",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 2
                   },
-                  "Solution": "A55Q1A3B5R1A7B3R1B4A5B1A1I6A2I6A4B2I5A6I4A6C4S1C2A5E5C6A2E4C6A3E5A1C5A4E5A1Q1A4B6Q1A21E8A3Q1A6B2J1I5A3I5A1Q1A4C7Q1A6B5A14B7I5A4Q1A6E4C5A3E3C17A5Q1A4Q1A7B2J1I5A12C5A5Q1A7I3A4Q1A2B18A7Q1A5C6A9E5A3Q1A13Q1A7B4A1Q1A6E5A6Q1A8C13A7I5A4I4A3Q1A2B5A2Q1A8E6F1B3A7E6A2Q1A5C3S1C1A5E3G1C5A4Q1A5"
+                  "Solution": "A55Q1A3B5R1A7B3R1B4A5B1A1I6A2I6A4B2I5A6I4A6C4S1C2A5E5C6A2E4C6A3E5A1C5A4E5A1Q1A4B6Q1A21E8A3Q1A6B2J1I5A3I5A1Q1A4C7Q1A6B5A14B7I5A4Q1A6E4C5A3E3C17A5Q1A4Q1A7B2J1I5A12C5A5Q1A7I3A4Q1A2B18A7Q1A5C6A9E5A3Q1A13Q1A7B4A1Q1A6E5A6Q1A8C13A7I5A4I4A3Q1A2B5A2Q1A8E6F1B3A7E6A2Q1A5C3S1C1A5E3G1C5A4Q1A5",
+                  "Old UUIDs": ["15dd49ae29d86f0383fca33bae5978affe1738d91f0f1e0275c6b8dd23c41fa7"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 48,
                   "Stack": "[======================][======================][====]005632516364[====]200000602000616400132200483610541282244223",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 2
                   },
-                  "Solution": "A48Q1A8E5Q1A8I17A19E4A4E3U1E2A7E6A13E6A5Q1A6B6A7Q1A13I10J2B7A3I4A13E5A2B4R1B2A4E6A3C5A5E5A6E6A1C2S1C2A8B4A9I3Y1A5"
+                  "Solution": "A48Q1A8E5Q1A8I17A19E4A4E3U1E2A7E6A13E6A5Q1A6B6A7Q1A13I10J2B7A3I4A13E5A2B4R1B2A4E6A3C5A5E5A6E6A1C2S1C2A8B4A9I3Y1A5",
+                  "Old UUIDs": ["c2e820bf195243b72d93dcab6df1358b6f4c1661e1d2007ececfdc97b84e638a"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 98,
                   "Stack": "[======================][======================][======================]200000300000600000502000406000301025401156434412",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 1
                   },
-                  "Solution": "A52Q1A9I6A6I4Y1A9I5A6I6A39I6Q1A12E7A19B4A8E6A7E3A7E7Q1A10B5A6U1E3A10Q1A26I4A10R1B4A6B8A1I4A5Q1A14E6A12C15A3Y1I6A26Q1A10B5R1A6C4A1Q1A4B4A3Q1A3B4A3Q1A6E13U1E2A3"
+                  "Solution": "A52Q1A9I6A6I4Y1A9I5A6I6A39I6Q1A12E7A19B4A8E6A7E3A7E7Q1A10B5A6U1E3A10Q1A26I4A10R1B4A6B8A1I4A5Q1A14E6A12C15A3Y1I6A26Q1A10B5R1A6C4A1Q1A4B4A3Q1A3B4A3Q1A6E13U1E2A3",
+                  "Old UUIDs": ["61a38451408b64f41bcbf1d01c9f45825e5ce953ccc2b53520bb3875190c1a64"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][================]300000500000100006441023535021122061532045153165",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A25Q1A12Q1A11C4A6C5A4C4G2E6A16E5Q1A6B3R1B2A7E9A7Q1A9C5Q1A6B8A2I6A10C6S1A9B4I6A10Q1A9B13A3I8A31Q1A9C7A17I8B6Q1A5C5S1A7E3A7E6A7E7A9Q1A7C16A10I9Q1A43Q1A9B5R1B1A8C9Q1A7B14A5Q1A9C19A9B5Q1A7C3S1C1A6B4R1B14A3Q1A14C6A8C2A2Q1A2B5A2Q1A2B7Q1A5"
+                  "Solution": "A25Q1A12Q1A11C4A6C5A4C4G2E6A16E5Q1A6B3R1B2A7E9A7Q1A9C5Q1A6B8A2I6A10C6S1A9B4I6A10Q1A9B13A3I8A31Q1A9C7A17I8B6Q1A5C5S1A7E3A7E6A7E7A9Q1A7C16A10I9Q1A43Q1A9B5R1B1A8C9Q1A7B14A5Q1A9C19A9B5Q1A7C3S1C1A6B4R1B14A3Q1A14C6A8C2A2Q1A2B5A2Q1A2B7Q1A5",
+                  "Old UUIDs": ["f48f561495183c031c0b826d81eb4190c0646b2e62cfc412bab6af8aaa0cfc02"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 73,
                   "Shake": 0,
@@ -2109,29 +2321,33 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 34,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]600000410000330000650056450053216012621556516643645314",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 3
                   },
-                  "Solution": "A72Q1A9E4A7E7Q1A6C7A13I6A10B6A8B6A16C5A10I5A6I7A14Q1A9E5A8E5A2Q1A7C4Q1A8B9A2I9A1I10B9A8B4I8A3Q1A7B2J1I7A3Q1A8C4S1C3A10E7G2C15S1C4A10B5A6B3A6B5A2Q1A5"
+                  "Solution": "A72Q1A9E4A7E7Q1A6C7A13I6A10B6A8B6A16C5A10I5A6I7A14Q1A9E5A8E5A2Q1A7C4Q1A8B9A2I9A1I10B9A8B4I8A3Q1A7B2J1I7A3Q1A8C4S1C3A10E7G2C15S1C4A10B5A6B3A6B5A2Q1A5",
+                  "Old UUIDs": ["cccb1e25926d1d416079212f362cadf6538f9568ffb4ad3abb0c9bdc4fae01ce"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000001005036002013041654016432052363041251255312533648835215",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 9
                   },
-                  "Solution": "A163Q1A9B7A1Q1A12Q1A12C6A8E7A3C5A1E6Q1A4B5R1B2A3"
+                  "Solution": "A163Q1A9B7A1Q1A12Q1A12C6A8E7A3C5A1E6Q1A4B5R1B2A3",
+                  "Old UUIDs": ["808d04f40fb05d5cb3026a85858307ff8c103945444a44223525bfa8ff47586f"]
                 }
               ]
             },
@@ -2142,127 +2358,147 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 56,
                   "Shake": 0,
                   "Stack": "[======================][======================][===]0000[=]000001000006000026000035500041630145161235",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 4
                   },
-                  "Solution": "A54Q1A5E1G3C5A1Q1A3B7R1A7I6A3I4A5I4A5I6Q1A4E3G2C3A7E4A7E5Q1A8E7A4E7U1A5"
+                  "Solution": "A54Q1A5E1G3C5A1Q1A3B7R1A7I6A3I4A5I4A5I6Q1A4E3G2C3A7E4A7E5Q1A8E7A4E7U1A5",
+                  "Old UUIDs": ["f131068e9ae7f041b76474ee1c8aacc604bf34f5c22f1b3254294b2e09cc331d"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 22,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]360005450304121513413224522316364255213143",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A25Q1A11C6A5C5A20E6A3Q1A5B5A19I4A15E7A37Q1A4B7I2A6B15Q1A8C1S1C4A3C7A23Q1A6E6U1A9C3S1C2A62C4A10B2J1I6A1Q1A7C5S1A11E7A14Q1A3I7A6B2J1I6A5I6Q1A7B19A2Q1A16Q1A5E1G2C6A31E5Q1A9Q1A5E5G2C3Q1A5C3S1C2A3"
+                  "Solution": "A25Q1A11C6A5C5A20E6A3Q1A5B5A19I4A15E7A37Q1A4B7I2A6B15Q1A8C1S1C4A3C7A23Q1A6E6U1A9C3S1C2A62C4A10B2J1I6A1Q1A7C5S1A11E7A14Q1A3I7A6B2J1I6A5I6Q1A7B19A2Q1A16Q1A5E1G2C6A31E5Q1A9Q1A5E5G2C3Q1A5C3S1C2A3",
+                  "Old UUIDs": ["9e5abb1f745500b00629a5862aa439e9493606fade9f7577904ee0bbbca175bf"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 58,
                   "Shake": 0,
                   "Stack": "[======================][======================][=]000[====][==========]512631[====]006000134050514020652033522055523032",
+                  "GarbagePanelBuffer": "999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 3
                   },
-                  "Solution": "A120B6I5A4B5R1A12B6A1Q1A4E5G1C4A10C7A1Q1A5B6A4Q1A10C6A5C6A9B2J1I5A12Q1A2C6I5Y1A8E2F2B5A5E3F1B5A3Q1A8B4R1A7C3S1C3A4C2S1C2A3C5S1A7B4I4A14B13J2I4A4I6Q1A5C4S1A5C4S1C1A16G1E4G2C5A16Q1A5"
+                  "Solution": "A120B6I5A4B5R1A12B6A1Q1A4E5G1C4A10C7A1Q1A5B6A4Q1A10C6A5C6A9B2J1I5A12Q1A2C6I5Y1A8E2F2B5A5E3F1B5A3Q1A8B4R1A7C3S1C3A4C2S1C2A3C5S1A7B4I4A14B13J2I4A4I6Q1A5C4S1A5C4S1C1A16G1E4G2C5A16Q1A5",
+                  "Old UUIDs": ["690d93ac597ef1d51a69806526228167af124f022d7d6a5b623ce2e989858d6f"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 75,
                   "Shake": 30,
                   "Stack": "[======================][======================][==========]600000210000550003450043313041116055",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 4
                   },
-                  "Solution": "A248I3Y1A10E4A4E7Q1A4B7A6E3F3B2A13E7Q1A3C6Q1A1B15Q1A5C5S1C1A5B3J2I4A13C6A5C4Q1A5B4R1A7C14S1C2A13Q1A5B19Q1A5"
+                  "Solution": "A248I3Y1A10E4A4E7Q1A4B7A6E3F3B2A13E7Q1A3C6Q1A1B15Q1A5C5S1C1A5B3J2I4A13C6A5C4Q1A5B4R1A7C14S1C2A13Q1A5B19Q1A5",
+                  "Old UUIDs": ["5f7eaff307b396ca2b6ad51131ada488e6aea644f841c723603a6cd5834d8c16"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 14,
                   "Shake": 75,
                   "Stack": "[======================][====================================================]844003221204356501",
+                  "GarbagePanelBuffer": "999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 3
                   },
-                  "Solution": "A174E7U1A3B4I5B10A1Q1A7E9A26Q1A5C5S1A5"
+                  "Solution": "A174E7U1A3B4I5B10A1Q1A7E9A26Q1A5C5S1A5",
+                  "Old UUIDs": ["501fa0c186ac4cc138a5753f5c46de8071813425c86bf3025a141790551c3581"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 43,
                   "Shake": 42,
                   "Stack": "[======================][======================][====][================]000631564156213615344511612433515265232313",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 4,
                     "Row": 4
                   },
-                  "Solution": "A143Q1A3I7A1Q1A1I6A4I6A3Q1A1B5A6E7A5Q1A5"
+                  "Solution": "A143Q1A3I7A1Q1A1I6A4I6A3Q1A1B5A6E7A5Q1A5",
+                  "Old UUIDs": ["eeefc94b660860a9de1d950410d6e9ca5b378d4c2956380687c24a902056bf79"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 52,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][====]002000205000605600206600165402141402312305551546",
-                  "Solution": "A133E3G3C3A3C7A2Q1A12B5A13C5A27Q1A7B6A7B6A9E7A34Q1A4Q1A7"
+                  "GarbagePanelBuffer": "999999999999",
+                  "Solution": "A133E3G3C3A3C7A2Q1A12B5A13C5A27Q1A7B6A7B6A9E7A34Q1A4Q1A7",
+                  "Old UUIDs": ["29455e68ae1a91b3f3f0bc11d19d530eb5f4dfbd6f395343eb06777022d49793", "e6652d460e048f6992ad258fa2c40f3db09d2d67c3c2d8f5477de3c6d1910978"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 90,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][=]000[====]000005000003000005002006303533301422414532112624513451",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 6
                   },
-                  "Solution": "A107I3A2Q1A6I4A2Q1A6E3G1C4A5E6A5E5U1E1A4"
+                  "Solution": "A107I3A2Q1A6I4A2Q1A6E3G1C4A5E6A5E5U1E1A4",
+                  "Old UUIDs": ["9392a3c9340007fdce1989223996af127116458303c26ee4e3f82cf2d292bbd0"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 53,
                   "Stack": "[======================][============================]463000[====]320000614000235042521024252561534361",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 1
                   },
-                  "Solution": "A71Q1A5I6A6I4Y1I1A4B9A3E8A4E5A5B8Q1A8I7A10Q1A5B4R1B3A6B3J1I6A6I7A57Q1A4C16A7I4A6I6A4Q1A2B8Q1A2B6A11E3A37Q1A2E9A3B5F2E1A3B10A1Q1A5C4A2Q1A7C6A3Q1A5"
+                  "Solution": "A71Q1A5I6A6I4Y1I1A4B9A3E8A4E5A5B8Q1A8I7A10Q1A5B4R1B3A6B3J1I6A6I7A57Q1A4C16A7I4A6I6A4Q1A2B8Q1A2B6A11E3A37Q1A2E9A3B5F2E1A3B10A1Q1A5C4A2Q1A7C6A3Q1A5",
+                  "Old UUIDs": ["95d89d2876f2ca2879e0375ee1646c11f174bc45084c4445e3a340d6221295a8"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 84,
                   "Stack": "[==========][==========][==========][==========][==========][==========]060062044361135314232625614532",
+                  "GarbagePanelBuffer": "999999999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
                   },
-                  "Solution": "A137B6A2Q1A8C5A6C5A1Q1A3B6Q1A2B10E7A10B7A3Q1A3C9A4C5A6I6A6I3A7I3A7I6Q1A1B19A1Q1A5C4S1C1A5C6A6E7A11Q1A7E5A5E7B8Q1A5"
+                  "Solution": "A137B6A2Q1A8C5A6C5A1Q1A3B6Q1A2B10E7A10B7A3Q1A3C9A4C5A6I6A6I3A7I3A7I6Q1A1B19A1Q1A5C4S1C1A5C6A6E7A11Q1A7E5A5E7B8Q1A5",
+                  "Old UUIDs": ["d4c1745317327f4387935a9cb163cc4c39c1c330acc793a05d0931dac1ca4bc0"]
                 }
               ]
             },
@@ -2273,7 +2509,7 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 86,
                   "Stack": "[======================][========================================]000360000255000336600125450225221164",
@@ -2285,67 +2521,76 @@
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 14,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]000235451234565163[====]621252[====]303064566242212544581161",
+                  "GarbagePanelBuffer": "999999999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 5,
                     "Row": 3
                   },
-                  "Solution": "A43Q1A6I5A7I4A5I5A1Q1A5C4A8C2A7C6A3Q1A3B6J1I7A3B9A6I8A4B8A7Q1A5"
+                  "Solution": "A43Q1A6I5A7I4A5I5A1Q1A5C4A8C2A7C6A3Q1A3B6J1I7A3B9A6I8A4B8A7Q1A5",
+                  "Old UUIDs": ["38dd62eb240fbd19d99d2b3e6742143c39c2356ff71ad4274661dba1262f9d34"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 60,
                   "Shake": 0,
                   "Stack": "[======================][======================][====]001000001061103054303422",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 2,
                     "Row": 2
                   },
-                  "Solution": "A14C5A11Q1A5B5A2Q1A22E4U1E3A2"
+                  "Solution": "A14C5A11Q1A5B5A2Q1A22E4U1E3A2",
+                  "Old UUIDs": ["af5848eb21efbb243a90f733febf4de4b04d0b3428e93e14df203505a0ea27c6"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][======================][==========][==========][==========]000000000000[================]404005402043439999996999999999999999",
-                  "GarbagePanelBuffer": "999499",
+                  "GarbagePanelBuffer": "999499999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 6
                   },
-                  "Solution": "A31C8A22E8A23B7A5B17A5I6A6Q1A7C2S1C1A7C7A1Q1A8E8B6R1B1A33"
+                  "Solution": "A31C8A22E8A23B7A5B17A5I6A6Q1A7C2S1C1A7C7A1Q1A8E8B6R1B1A33",
+                  "Old UUIDs": ["017ff75f09787714deda3f6cdccbe641a9fd46a0e5cacbfd75ca70b8021ab1a8"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 54,
                   "Stack": "[======================][======================][==========]000352056163253252[====]000106000453460145122121",
+                  "GarbagePanelBuffer": "999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 7
                   },
-                  "Solution": "A48C4Q1A6B3A2Q1A4B5R1A5"
+                  "Solution": "A48C4Q1A6B3A2Q1A4B5R1A5",
+                  "Old UUIDs": ["3443eaba0479034f9f4309417ea7a9f7b068e85bd5cfa43bc03a08d40650ffbc"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 56,
                   "Stack": "[======================][=]000[====][================]000[=][====]000040200311330224151452542322",
+                  "GarbagePanelBuffer": "999999999999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 1,
                     "Row": 4
                   },
-                  "Solution": "A41Q1A4B5R1A6B7Q1A13B7A5I9A5B9Q1A10E8A10Q1A4E4A6C5G2E5Q1A4B7A1Q1A5"
+                  "Solution": "A41Q1A4B5R1A6B7Q1A13B7A5I9A5B9Q1A10E8A10Q1A4E4A6C5G2E5Q1A4B7A1Q1A5",
+                  "Old UUIDs": ["f521e889288a71e1966380270ddd9aca7689c3b19e722e61cffb2ec9446e80ea"]
                 }
               ]
             },
@@ -2356,59 +2601,135 @@
               [
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "995999",
+                  "GarbagePanelBuffer": "995999999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A32C6Q1A6B6A10Q1A14E5A17C6A42Q1A5B9A22"
+                  "Solution": "A32C6Q1A6B6A10Q1A14E5A17C6A42Q1A5B9A22",
+                  "Old UUIDs": ["b7a725ed7e7af99c97084356fe3151a5f71303fdbdaf3d634c906a5673c4eba9"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "993939",
+                  "GarbagePanelBuffer": "993939999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A10C7A10Q1A7B6A114E6A20I6A17Q1A4B5A6Q1A3C4A3Q1A2C6A7Q1A5E8Q1A5"
+                  "Solution": "A10C7A10Q1A7B6A114E6A20I6A17Q1A4B5A6Q1A3C4A3Q1A2C6A7Q1A5E8Q1A5",
+                  "Old UUIDs": ["71c24068fc1815b22134f3c1279f76d25021a24ebac1ec99d7a83a15a4696d9c"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "994949",
+                  "GarbagePanelBuffer": "994949999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A337C6A7Q1A9B7A7E6A7B4A7B6A7E6Q1A8C5A8C3A18I7A4Q1A8B5A13E7A7Q1A5C7Q1A8I7A3B6R1A7C3S1C2A3"
+                  "Solution": "A337C6A7Q1A9B7A7E6A7B4A7B6A7E6Q1A8C5A8C3A18I7A4Q1A8B5A13E7A7Q1A5C7Q1A8I7A3B6R1A7C3S1C2A3",
+                  "Old UUIDs": ["5699f478d8297d62ba3364cd3af56783df4f735e9ed349da1cdcb2d72919a3a9"]
                 },
                 {
                   "Puzzle Type": "clear",
-                  "StartTiming": "firstInput",
+                  "StartTiming": "First Input",
                   "Moves": 0,
                   "Stop": 120,
                   "Shake": 0,
                   "Stack": "[======================][==========][==========][==========][==========]000000[==========]050903950943930293999999999999",
-                  "GarbagePanelBuffer": "999449",
+                  "GarbagePanelBuffer": "999449999999999999999999",
                   "CursorStartLeft": {
                     "Column": 3,
                     "Row": 5
                   },
-                  "Solution": "A86C7Q1A76B9A9E5A2B5A1Q1A17I7A21Q1A5"
+                  "Solution": "A86C7Q1A76B9A9E5A2B5A1Q1A17I7A21Q1A5",
+                  "Old UUIDs": ["f5c46558ef11064a4b45eb264b4ff5df6dbf7612cb3613c5018b831e4bba35db"]
+                }
+              ]
+            },
+            {
+              "Set Name": "puzzle_set_name_advanced_garbage_chains",
+              "Description": "puzzle_set_description_advanced_garbage_chains",
+              "Puzzles":
+              [
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]155266543642365621999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "213414126532",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A49B6A2Q1A3C8A2I4Q1A10B6A8B5A29I6A7C6Q1A14R1B7A6E1F2B3A6B5A1Q1A7C7A7I7A56Q1A6B4R1B1A16C17A7I4Y1I1A6B7A5B6A5B7A1Q1A7C5S1C1A9E7A12C5A5E2G3C4A1Q1A6"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]321315516462261345999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "162151424345",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A76B4J3I3A3Q1A12B6A6B7A30I3A18C7A8E8U1A10B3J1I3A6B8A4B2R1B3A8E7G1C21S1A5B5R1B1A5B3R1A5B4R1B2A12C12A6B3J2I5A3I6A3Q1A7C7Q1A5B8A11Q1A9B6R1B11A12Q1A1E8C19A6B7A7B8A2I8A3B4J3I3Q1A7E5U1E2A5E4U1E2A3"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]656464435243546325999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "216561641236",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A166I5A3I4A3Q1A4E1F5B3Q1A6C3S1C3A7B6A19B6A10B9A8B8A1Q1A22I4A18C6A16C6A3E3G1C4A5C7A2Q1A4B7A3Q1A23B6A15B7A17I7A10B7J1I5A14Q1A5E5U1E1A8C6A5C5A6I5"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]424154141631435324999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "464654143525",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A54I3Y1I2A8B6A7B5A13B7A2I6A14Q1A7C6A4C7Q1A4C7A5E5A1Q1A5B5R1B1A4B8Q1A5B6R1A4B7A3E6U1A6I5Y1I2A10C8A13I7A13I6A3Q1A9C4A12B6A1Q1A5C2S1C2A5B8A9Q1A9E6A8C2"
+                },
+                {
+                  "Puzzle Type": "clear",
+                  "StartTiming": "First Input",
+                  "Moves": 0,
+                  "Stop": 60,
+                  "Stack": "[================]236456361313654124999999999999999999999999999999999999",
+                  "GarbagePanelBuffer": "546451235323",
+                  "CursorStartLeft": {
+                    "Column": 1,
+                    "Row": 7
+                  },
+                  "Solution": "A92Q1A4I8A4I5A7B4R1B2A12E2F3B4A13B7A2B8A1Q1A7C16A14I6Y1A8E8A5Q1A4B7A14E4F3B4A2Q1A6C4K2I3Y1A17B8A13C8A13I6A24B7A6B7A5B11I8A4Q1A4C5S1C1A6E6G1C4A5Q1A4B7R1A7C5S1A5C4S1C1A4C6S1A6B19A6Q1A5C5S1C1A74C7A20E6A2Q1A5C7A4I6Q1A3B5R1B3A2"
                 }
               ]
             }

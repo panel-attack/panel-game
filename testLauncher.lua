@@ -92,6 +92,7 @@ local allTests = {
   "client.tests.PuzzleSetTests",
   "client.tests.PuzzleSetIteratorTests",
   "client.tests.PuzzleLibraryTests",
+  "client.tests.ScoresTests",
   "client.tests.graphics_PuzzleHierarchyDisplayTests",
   "client.tests.ServerQueueTests",
   "client.tests.SoundGroupTests",

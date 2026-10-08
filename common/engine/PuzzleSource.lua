@@ -20,6 +20,11 @@ function(self, puzzleString, panelBuffer, garbageBuffer)
     self.panelBuffer = self.panelBuffer .. string.rep(9, 6 - self.panelBuffer:len() % 6)
   end
 
+  -- a partial last row would count as exceeding too early, so pad it with colorless panels
+  if self.garbagePanelBuffer:len() % 6 ~= 0 then
+    self.garbagePanelBuffer = self.garbagePanelBuffer .. string.rep(9, 6 - self.garbagePanelBuffer:len() % 6)
+  end
+
   self.panels = {}
 end)
 

@@ -21,21 +21,30 @@ function PuzzleLibrary:getDefaultPuzzleSet()
   local puzzleSet = self:puzzleSetFromPath(directory)
   self:addPuzzleSetDirToPuzzleSet(puzzleSet, consts.PUZZLES_SAVE_DIRECTORY)
 
-  self:addStatisticsToPuzzleSet(puzzleSet)
+  if self:addStatisticsToPuzzleSet(puzzleSet) then
+    self.puzzleResults:saveToFile()
+  end
 
   return puzzleSet
 end
 
+-- Sets each puzzle's training date and whether it was ever beaten, first carrying the records saved under its old UUIDs
+---@param puzzleSet PuzzleSet
+---@return boolean moved whether any record was carried, so the scores need saving
 function PuzzleLibrary:addStatisticsToPuzzleSet(puzzleSet)
+  local moved = false
   for _, currentPuzzleSet in ipairs(puzzleSet.puzzleSets) do
-    self:addStatisticsToPuzzleSet(currentPuzzleSet)
+    moved = self:addStatisticsToPuzzleSet(currentPuzzleSet) or moved
   end
 
   for _, currentPuzzle in ipairs(puzzleSet.puzzles) do
+    moved = self.puzzleResults:carryRecordsToPuzzle(currentPuzzle) or moved
     local trainingDate = self:getNextTrainingDateForPuzzleUUID(currentPuzzle.UUID)
     currentPuzzle.trainingDate = trainingDate
     currentPuzzle.puzzleEverBeaten = self.puzzleResults:puzzleEverBeaten(currentPuzzle.UUID)
   end
+
+  return moved
 end
 
 -- Returns all puzzles from the given path as a puzzle set.

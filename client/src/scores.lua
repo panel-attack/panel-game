@@ -284,6 +284,29 @@ function Scores:upgradeFromV4ToV5(scoreData)
   end
 end
 
+-- Moves the records saved under the puzzle's old UUIDs to its current one, in the order the UUIDs are listed;
+-- records already under the current UUID stay after the carried ones
+---@param puzzle Puzzle
+---@return boolean moved whether any record moved, so the scores need saving
+function Scores:carryRecordsToPuzzle(puzzle)
+  local carried = {}
+  for _, oldUUID in ipairs(puzzle.oldUUIDs or {}) do
+    for _, record in ipairs(self.puzzleRecords[oldUUID] or {}) do
+      carried[#carried + 1] = record
+    end
+    self.puzzleRecords[oldUUID] = nil
+  end
+  if #carried == 0 then
+    return false
+  end
+
+  for _, record in ipairs(self.puzzleRecords[puzzle.UUID] or {}) do
+    carried[#carried + 1] = record
+  end
+  self.puzzleRecords[puzzle.UUID] = carried
+  return true
+end
+
 function Scores.saveToFile(self)
   if self.version == currentVersion then
     love.filesystem.write("scores.json", json.encode(self))

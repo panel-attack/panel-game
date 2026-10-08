@@ -21,6 +21,12 @@ function PuzzleTests.validationPuzzleType()
 
   assert(not isValid)
   assert(string.match(validationMessage, "puzzle type"))
+
+  -- Make sure the warning names the valid puzzle types
+  for _, puzzleType in pairs(Puzzle.PUZZLE_TYPES) do
+    assert(string.find(validationMessage, puzzleType, 1, true),
+           "the warning message should talk about puzzle type " .. puzzleType .. ", but got: " .. validationMessage)
+  end
 end
 
 function PuzzleTests.validationMoves()
@@ -48,7 +54,9 @@ function PuzzleTests.validationStackLength()
 end
 
 function PuzzleTests.validationStackLength2()
-  local puzzle = Puzzle({puzzleType = "clear", moves = 3, stack = "[==================================]000060500014600011300024502542203135466243"})
+  local puzzle = Puzzle({puzzleType = "clear", moves = 3,
+                         stack = "[==================================]000060500014600011300024502542203135466243",
+                         garbagePanelBuffer = "999999"})
   local isValid = puzzle:validate()
 
   assert(isValid)
@@ -94,6 +102,67 @@ function PuzzleTests.validationValid()
   assert(validationMessage == "")
 end
 
+function PuzzleTests.clearGameModeWaitsForTheGarbageBuffer()
+  local puzzle = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "334344556566112122445455661611223233"})
+  assert(puzzle:validate())
+  local mode = puzzle:toGameMode()
+  assert(mode.matchRules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0)
+  local conditions = 0
+  for _ in pairs(mode.matchRules.stackWinConditions) do
+    conditions = conditions + 1
+  end
+  assert(conditions == 1, "revealing the buffer is the whole goal")
+  assert(mode.matchRules.stackOverConditions["HEALTH"] == 0)
+
+  local partialRow = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "3343"})
+  assert(partialRow:toGameMode().matchRules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0)
+end
+
+-- the buffer holds whole rows, so a partial last row is filled with grey rather than counting as running out
+function PuzzleTests.aPartialLastGarbageRowIsFilledWithGrey()
+  local source = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "3343"}):toPanelSource()
+  assert(source.garbagePanelBuffer == "334399", "got " .. source.garbagePanelBuffer)
+end
+
+-- a clear puzzle without a buffer has no rows for the player to see, so its first revealed row runs past it
+function PuzzleTests.aClearPuzzleWithoutABufferRunsPastItOnTheFirstRevealedRow()
+  local noBuffer = Puzzle({puzzleType = "clear", stack = "[====]112122"})
+
+  assert(noBuffer:validate())
+  local winConditions = noBuffer:toGameMode().matchRules.stackWinConditions
+  assert(winConditions["GARBAGE_BUFFER_EXCEEDED"] == 0, "every clear puzzle is won by running past its buffer")
+  assert(winConditions["MATCHABLE_GARBAGE_PANELS"] == nil, "hitting every block is no longer a puzzle goal")
+end
+
+function PuzzleTests.validationGarbageBufferColors()
+  local empty = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "000000334344"})
+  local isValid, validationMessage = empty:validate()
+  assert(not isValid)
+  assert(string.match(validationMessage, "GarbagePanelBuffer"))
+
+  local letters = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "33434a"})
+  assert(not letters:validate())
+
+  local colors = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "334344999599"})
+  assert(colors:validate())
+end
+
+-- a buffer is what tells a clear puzzle apart from one about its board, so a buffer of nothing has to
+-- read as no buffer rather than as a goal that is already met
+function PuzzleTests.anEmptyGarbageBufferIsTheSameAsNone()
+  local none = Puzzle({puzzleType = "moves", stack = "[====]112122", moves = 1})
+  local empty = Puzzle({puzzleType = "moves", stack = "[====]112122", moves = 1, garbagePanelBuffer = ""})
+
+  assert(empty.garbageBuffer == nil, "an empty buffer is no buffer, got " .. tostring(empty.garbageBuffer))
+  assert(empty:getSaveData()[Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER] == nil, "an empty buffer is not written to the file")
+  assert(Puzzle.getV2UUID(empty) == Puzzle.getV2UUID(none), "an empty buffer does not change the puzzle's identity")
+end
+
+PuzzleTests.anEmptyGarbageBufferIsTheSameAsNone()
+PuzzleTests.validationGarbageBufferColors()
+PuzzleTests.clearGameModeWaitsForTheGarbageBuffer()
+PuzzleTests.aPartialLastGarbageRowIsFilledWithGrey()
+PuzzleTests.aClearPuzzleWithoutABufferRunsPastItOnTheFirstRevealedRow()
 PuzzleTests.validationCountdown()
 PuzzleTests.validationPuzzleType()
 PuzzleTests.validationMoves()
