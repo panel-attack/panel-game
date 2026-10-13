@@ -51,6 +51,7 @@ function StackElement:draw()
     love.graphics.push("transform")
     love.graphics.translate(self.x, self.y)
     self.stack:render(false, x, y)
+    self.stack:renderEffects()
     love.graphics.pop()
   end
 end
