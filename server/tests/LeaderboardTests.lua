@@ -81,6 +81,62 @@ local function testSimpleGameProcessing()
   assert(leaderboard:getRating(p2) == ratingChanges[1].new)
   assert(leaderboard:getRating(p3) == ratingChanges[2].new)
 
+  -- the public id and time of the last ranked game get tracked
+  assert(leaderboard.players[p2.userId].public_player_id == p2.publicPlayerID)
+  assert(leaderboard.players[p3.userId].public_player_id == p3.publicPlayerID)
+  assert(leaderboard.players[p2.userId].last_ranked_game_time)
+  assert(math.abs(leaderboard.players[p2.userId].last_ranked_game_time - os.time()) <= 1)
+end
+
+local function testSheetData()
+  leaderboard:assignPublicIds({[p1.userId] = p1.publicPlayerID})
+  assert(leaderboard.players[p1.userId].public_player_id == p1.publicPlayerID)
+
+  leaderboard.players[p2.userId].last_ranked_game_time = 1760000000
+  local privateTable, publicTable = leaderboard:toSheetData()
+
+  local function findColumn(header, name)
+    for i, column in ipairs(header) do
+      if column == name then
+        return i
+      end
+    end
+  end
+
+  local privateIdColumn = findColumn(privateTable[1], "user_id")
+  local privatePublicIdColumn = findColumn(privateTable[1], "public_player_id")
+  local privateTimeColumn = findColumn(privateTable[1], "last_ranked_game_time")
+  assert(privatePublicIdColumn and privateTimeColumn)
+  local publicPublicIdColumn = findColumn(publicTable[1], "public_player_id")
+  local publicTimeColumn = findColumn(publicTable[1], "last_ranked_game_time")
+  assert(publicPublicIdColumn and publicTimeColumn)
+  -- the private user id must never end up in the public file
+  assert(findColumn(publicTable[1], "user_id") == nil)
+
+  local foundP2 = false
+  for row = 2, #privateTable do
+    if privateTable[row][privateIdColumn] == p2.userId then
+      foundP2 = true
+      assert(privateTable[row][privatePublicIdColumn] == p2.publicPlayerID)
+      assert(privateTable[row][privateTimeColumn] == 1760000000)
+    end
+  end
+  assert(foundP2)
+
+  foundP2 = false
+  for row = 2, #publicTable do
+    if publicTable[row][publicPublicIdColumn] == p2.publicPlayerID then
+      foundP2 = true
+      assert(publicTable[row][publicTimeColumn] == "2025-10-09T08:53:20Z")
+    end
+  end
+  assert(foundP2)
+
+  -- the private table can be imported again without losing the new columns
+  local reimported = Leaderboard(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS), MockPersistence)
+  reimported:importData(privateTable)
+  assert(reimported.players[p2.userId].public_player_id == p2.publicPlayerID)
+  assert(reimported.players[p2.userId].last_ranked_game_time == 1760000000)
 end
 
 local function testImpossibleGameProcessing()
@@ -139,3 +195,4 @@ testRankedApproved()
 testSimpleGameProcessing()
 testImpossibleGameProcessing()
 testPlacementGameProcessing()
+testSheetData()

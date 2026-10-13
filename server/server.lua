@@ -151,6 +151,9 @@ function Server:initializeLeaderboard(gameMode, filePath, data)
     if data then
       self.leaderboard:importData(data)
     end
+    if self.playerbase then
+      self.leaderboard:assignPublicIds(self.playerbase.privateIdToPublicId)
+    end
 
     logger.debug("leaderboard json:")
     logger.debug(json.encode(self.leaderboard.players))
