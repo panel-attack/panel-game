@@ -26,7 +26,8 @@ function SetUserIdMenu:load(sceneParams)
     vAlign = "top",
     width = 200,
     height = 25,
-    value =  save.read_user_id_file(self.serverIp)
+    value = save.read_user_id_file(self.serverIp),
+    filterNumeric = true,
   })
 
   self.confirmationButton = ui.TextButton({
