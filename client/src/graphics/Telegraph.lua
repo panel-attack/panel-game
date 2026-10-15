@@ -86,11 +86,20 @@ function Telegraph:attackAnimationEndFrame()
   return GARBAGE_TRANSIT_TIME + 1
 end
 
+-- how many frames the attack for a piece of garbage has been underway
+-- garbage records the stopWatch it was earned at, which lags behind the clock by countdowns and other pauses of the physics
+---@param sender ClientStack
+---@param frameEarned integer
+---@return integer
+function Telegraph:attackFrame(sender, frameEarned)
+  return sender.engine.stopWatch - frameEarned
+end
+
 Telegraph.totalTimeAfterLoopToDestination = (Telegraph:attackAnimationEndFrame() - (Telegraph:attackAnimationStartFrame() + #telegraph_attack_animation_speed))
 -- TODO:
 -- animation seems to start 1 frame early and the loopy part does not spin quite as far outwards it seems
 function Telegraph:renderAttack(sender, receiver, frameEarned, telegraphIndex, rowOrigin, colOrigin)
-  local attackFrame = sender.engine.clock - frameEarned
+  local attackFrame = self:attackFrame(sender, frameEarned)
   if attackFrame < self:attackAnimationStartFrame() or attackFrame >= self:attackAnimationEndFrame() then
     return
   end
@@ -174,7 +183,7 @@ function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIn
         -- only display the icon for how many chain links the attack already finished
         local displayHeight = 0
         for frameEarned, _ in pairs(garbage.links) do
-          if sender.engine.clock - frameEarned > self:attackAnimationEndFrame() then
+          if self:attackFrame(sender, frameEarned) > self:attackAnimationEndFrame() then
             displayHeight = displayHeight + 1
           end
         end
@@ -187,7 +196,7 @@ function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIn
           image = character.telegraph_garbage_images[displayHeight][6]
         end
       else
-        if sender.engine.clock - garbage.frameEarned < self:attackAnimationEndFrame() then
+        if self:attackFrame(sender, garbage.frameEarned) < self:attackAnimationEndFrame() then
           -- if attacks are rendered, icon display is delayed until the attack animation finished
           return
         end
@@ -200,7 +209,7 @@ function Telegraph:renderStageGarbageIcon(sender, receiver, garbage, telegraphIn
     end
   else
     if config.renderAttacks then
-      if sender.engine.clock - garbage.frameEarned < self:attackAnimationEndFrame() then
+      if self:attackFrame(sender, garbage.frameEarned) < self:attackAnimationEndFrame() then
         -- if attacks are rendered, icon display is delayed until the attack animation finished
         return
       end
