@@ -270,6 +270,11 @@ function inputManager:updateSystemKeys()
   self.isUp["Shift"] = self.allKeys.isUp["lshift"] and self.allKeys.isUp["rshift"]
   self.isPressed["Shift"] = self:mergePressedKeys("lshift", "rshift")
 
+  -- cmd on macOS, the windows key elsewhere
+  self.isDown["Gui"] = self.allKeys.isDown["lgui"] or self.allKeys.isDown["rgui"]
+  self.isUp["Gui"] = self.allKeys.isUp["lgui"] and self.allKeys.isUp["rgui"]
+  self.isPressed["Gui"] = self:mergePressedKeys("lgui", "rgui")
+
   -- systemKey
   self.isDown["SystemKey"] = self.isDown["Alt"] and self.isDown["Ctrl"] and self.isDown["Shift"]
   self.isUp["SystemKey"] = self.isUp["Alt"] and self.isUp["Ctrl"] and self.isUp["Shift"]

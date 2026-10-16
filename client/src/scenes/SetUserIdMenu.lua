@@ -60,9 +60,15 @@ function SetUserIdMenu:load(sceneParams)
 end
 
 function SetUserIdMenu:confirmId()
+  if self.idInputField.value == "" then
+    -- nothing entered, leave whatever ID is saved (if any) untouched
+    GAME.navigationStack:pop()
+    return
+  end
+
   local hasNonDigits = string.match(self.idInputField.value, "[^%d]")
-  if not hasNonDigits and self.idInputField.value:len() > 0 then
-    -- not much point in doing validation but let's stay numeric and non-empty at least
+  if not hasNonDigits then
+    -- not much point in doing validation but let's stay numeric at least
     GAME.theme:playValidationSfx()
     save.write_user_id_file(self.idInputField.value, self.serverIp)
     -- this is dirty but with how stupid nested OptionsMenu is, there is no way to get back right to where we came from
