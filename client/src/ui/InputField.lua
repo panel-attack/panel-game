@@ -7,14 +7,27 @@ local inputFieldManager = require(PATH .. ".inputFieldManager")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+-- Restricts which characters can be typed into an InputField
+---@enum InputFieldFilter
+local InputFieldFilter = {
+  NONE = "none",
+  NUMERIC = "numeric",
+  -- unlike the name, this also allows underscores
+  ALPHANUMERIC = "alphanumeric",
+}
+
+local FILTER_PATTERNS = {
+  [InputFieldFilter.NUMERIC] = "%D",
+  [InputFieldFilter.ALPHANUMERIC] = "[^_%w]",
+}
+
 local InputField = class(
   function(self, options)
     local currentFont = love.graphics.getFont()
     self.placeholderText = GraphicsUtil.newText(currentFont, options.placeholder) or GraphicsUtil.newText(currentFont, "Input Field")
     self.value = options.value or ""
     self.charLimit = options.charLimit or NAME_LENGTH_LIMIT
-    -- unlike the name, this also allows underscores
-    self.filterAlphanumeric = options.filterAlphanumeric or (options.filterAlphanumeric == nil and true)
+    self.filter = options.filter or InputFieldFilter.ALPHANUMERIC
 
     self.backgroundColor = options.backgroundColor or {.3, .3, .3, .7}
     self.outlineColor = options.outlineColor or {.5, .5, .5, .7}
@@ -69,15 +82,19 @@ function InputField:onVisibilityChanged()
   end
 end
 
+-- centered on the cursor glyph itself so an empty field without placeholder text doesn't push the cursor down
+---@return number x
+---@return number y
 function InputField:getCursorPos()
+  local y = self.y + (self.height - textCursor:getHeight()) / 2
   if self.offset == 0 then
-    return self.x + textOffset
+    return self.x + textOffset, y
   end
 
   local byteoffset = utf8.offset(self.value, self.offset)
   local text = string.sub(self.value, 1, byteoffset)
   local font = love.graphics.getFont()
-  return self.x + textOffset + GraphicsUtil.newText(font, text):getWidth()
+  return self.x + textOffset + GraphicsUtil.newText(font, text):getWidth(), y
 end
 
 function InputField:unfocus()
@@ -119,7 +136,8 @@ function InputField:onMoveCursor(dir)
 end
 
 function InputField:textInput(t)
-  if self.filterAlphanumeric and string.find(t, "[^_%w]") then
+  local filterPattern = FILTER_PATTERNS[self.filter]
+  if filterPattern and string.find(t, filterPattern) then
     return
   end
   if utf8.len(self.value) + utf8.len(t) <= self.charLimit then
@@ -156,10 +174,13 @@ function InputField:drawSelf()
     local cursorFlashPeriod = .5
     if (math.floor(love.timer.getTime() / cursorFlashPeriod)) % 2 == 0 then
       GraphicsUtil.setColor(1, 1, 1, 1)
-      GraphicsUtil.draw(textCursor, self:getCursorPos(), self.y + (self.height - textHeight) / 2, 0, 1, 1)
+      local cursorX, cursorY = self:getCursorPos()
+      GraphicsUtil.draw(textCursor, cursorX, cursorY, 0, 1, 1)
     end
   end
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
+
+InputField.Filter = InputFieldFilter
 
 return InputField
