@@ -3,11 +3,14 @@ local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
 local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
+local playerName = require("common.lib.playerName")
 
 -- Scene for setting the username
+-- sceneParams.onNameSet is called instead of returning to the previous scene once a name was confirmed
 local SetNameMenu = class(
   function (self, sceneParams)
     self.keepMusic = true
+    self.onNameSet = sceneParams and sceneParams.onNameSet
     self:load(sceneParams)
   end,
   Scene
@@ -74,21 +77,22 @@ function SetNameMenu:load()
 end
 
 function SetNameMenu:confirmName()
-  if self.nameField.value ~= "" then
+  if playerName.validate(self.nameField.value) then
     GAME.theme:playValidationSfx()
     config.name = self.nameField.value
     write_conf_file()
     GAME.localPlayer.name = config.name
     self.nameField:unfocus()
-    GAME.navigationStack:pop()
+    if self.onNameSet then
+      self.onNameSet()
+    else
+      GAME.navigationStack:pop()
+    end
   end
 end
 
 function SetNameMenu:update(dt)
   self.backgroundImg:update(dt)
-  if self.validationLabel.text ~= "" and self.nameField.value ~= "" then
-    self.validationLabel:setText("", nil, false)
-  end
 
   if input.allKeys.isDown["return"] then
     self:confirmName()
@@ -101,10 +105,16 @@ function SetNameMenu:update(dt)
 
   if self.nameField.hasFocus then
     self.nameLengthLabel:setText("(" .. self.nameField.value:len() .. "/" .. NAME_LENGTH_LIMIT .. ")")
-    if self.nameField.value == "" then
+    local isValid, invalidReason = playerName.validate(self.nameField.value)
+    if isValid then
+      self.validationLabel:setText("", nil, false)
+    elseif self.nameField.value == "" then
       self.validationLabel:setText("username_blank_warning", nil, true)
+    else
+      -- the other rules only have the server's English explanation
+      self.validationLabel:setText(invalidReason, nil, false)
     end
-    self.confirmationButton:setEnabled(self.nameField.value ~= "")
+    self.confirmationButton:setEnabled(isValid)
   end
 end
 
