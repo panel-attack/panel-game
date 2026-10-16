@@ -96,7 +96,7 @@ function ScrollMenu:select(uiElement)
   return false
 end
 
----@param inputs InputConfiguration
+---@param inputs InputConfiguration|InputManager
 ---@param dt number?
 function ScrollMenu:receiveInputs(inputs, dt)
   if not self.isEnabled or not self.selectedIndex then
