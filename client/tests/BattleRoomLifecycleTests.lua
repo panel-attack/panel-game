@@ -55,7 +55,7 @@ local function whileOnline(test)
   GAME.netClient.tcpClient.sendRequest = function(_, request)
     sent[#sent + 1] = request.messageText
   end
-  GAME.navigationStack.popToName = function(_, name)
+  GAME.navigationStack.popToName = function(_, name, transition, callback)
     poppedTo[#poppedTo + 1] = name
   end
 
