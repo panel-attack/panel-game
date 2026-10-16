@@ -26,6 +26,8 @@ end
 ---@field ranked_games_played integer?
 ---@field ranked_games_won integer?
 ---@field last_login_time integer?
+---@field public_player_id PublicPlayerID?
+---@field last_ranked_game_time integer? unix timestamp of the last ranked game the player played
 
 -- Object that represents players rankings and placement matches, along with login times
 ---@class Leaderboard : Signal
@@ -65,8 +67,9 @@ local Leaderboard =
   end
 )
 
----@param data {[1]: privateUserId, [2]: string, [3]: number, [4]: string, [5]: number?, [6]: integer, [7]: integer?, [8]: integer?}[]
---- user_id, user_name, rating, placement_done, placement_rating, ranked_games_played, ranked_games_won, last_login_time
+---@param data {[1]: privateUserId, [2]: string, [3]: number, [4]: string, [5]: number?, [6]: integer, [7]: integer?, [8]: integer?, [9]: PublicPlayerID?, [10]: integer?}[]
+--- user_id, user_name, rating, placement_done, placement_rating, ranked_games_played, ranked_games_won, last_login_time,
+--- public_player_id, last_ranked_game_time
 function Leaderboard:importData(data)
   if data then
     for row = 2, #data do
@@ -92,6 +95,16 @@ function Leaderboard:importData(data)
           self.players[data[row][1]][data[1][col]] = data[row][col]
         end
       end
+    end
+  end
+end
+
+--- Assigns the public player id to every leaderboard entry that has a known public id
+---@param privateIdToPublicId table<privateUserId, PublicPlayerID>
+function Leaderboard:assignPublicIds(privateIdToPublicId)
+  for userId, leaderboardPlayer in pairs(self.players) do
+    if privateIdToPublicId[userId] then
+      leaderboardPlayer.public_player_id = privateIdToPublicId[userId]
     end
   end
 end
@@ -398,8 +411,11 @@ function Leaderboard:processGameResult(game)
     ratings[2].difference = ratings[2].new - ratings[2].old
   end
 
+  local gameTime = os.time()
   for i, player in ipairs(game.players) do
     local leaderboardPlayer = self.players[player.userId]
+    leaderboardPlayer.public_player_id = player.publicPlayerID
+    leaderboardPlayer.last_ranked_game_time = gameTime
     if not isPlacementGame or player == placementPlayer then
       -- placement games don't count as games for ranked players until they are done at which point these stats are updated from the placement match data
       leaderboardPlayer.ranked_games_played = (leaderboardPlayer.ranked_games_played or 0) + 1
@@ -551,11 +567,24 @@ end
 function Leaderboard:toSheetData()
   local leaderboard_table = {}
   local public_leaderboard_table = {}
-  leaderboard_table[#leaderboard_table + 1] = {"user_id", "user_name", "rating", "placement_done", "placement_rating", "ranked_games_played", "ranked_games_won","last_login_time"}
-  public_leaderboard_table[#public_leaderboard_table + 1] = {"user_name", "rating", "ranked_games_played"} --excluding ranked_games_won for now because it doesn't track properly, and user_id because they are secret.
+  leaderboard_table[#leaderboard_table + 1] = {
+    "user_id", "user_name", "rating", "placement_done", "placement_rating", "ranked_games_played", "ranked_games_won", "last_login_time",
+    "public_player_id", "last_ranked_game_time"
+  }
+  --excluding ranked_games_won for now because it doesn't track properly, and user_id because they are secret.
+  public_leaderboard_table[#public_leaderboard_table + 1] = {
+    "user_name", "rating", "ranked_games_played", "public_player_id", "last_ranked_game_date"
+  }
   for user_id, v in pairs(self.players) do
-    leaderboard_table[#leaderboard_table + 1] = {user_id, v.user_name, v.rating, tostring(v.placement_done or ""), v.placement_rating, v.ranked_games_played, v.ranked_games_won, v.last_login_time}
-    public_leaderboard_table[#public_leaderboard_table + 1] = {v.user_name, v.rating, v.ranked_games_played}
+    leaderboard_table[#leaderboard_table + 1] = {
+      user_id, v.user_name, v.rating, tostring(v.placement_done or ""), v.placement_rating,
+      v.ranked_games_played, v.ranked_games_won, v.last_login_time, v.public_player_id, v.last_ranked_game_time
+    }
+    -- only the day is published so the public file does not reveal when people play
+    local lastRankedGameDate = v.last_ranked_game_time and os.date("!%Y-%m-%d", v.last_ranked_game_time)
+    public_leaderboard_table[#public_leaderboard_table + 1] = {
+      v.user_name, v.rating, v.ranked_games_played, v.public_player_id, lastRankedGameDate
+    }
   end
 
   return leaderboard_table, public_leaderboard_table
