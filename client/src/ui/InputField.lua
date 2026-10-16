@@ -7,15 +7,27 @@ local inputFieldManager = require(PATH .. ".inputFieldManager")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
+-- Restricts which characters can be typed into an InputField
+---@enum InputFieldFilter
+local InputFieldFilter = {
+  NONE = "none",
+  NUMERIC = "numeric",
+  -- unlike the name, this also allows underscores
+  ALPHANUMERIC = "alphanumeric",
+}
+
+local FILTER_PATTERNS = {
+  [InputFieldFilter.NUMERIC] = "%D",
+  [InputFieldFilter.ALPHANUMERIC] = "[^_%w]",
+}
+
 local InputField = class(
   function(self, options)
     local currentFont = love.graphics.getFont()
     self.placeholderText = GraphicsUtil.newText(currentFont, options.placeholder) or GraphicsUtil.newText(currentFont, "Input Field")
     self.value = options.value or ""
     self.charLimit = options.charLimit or NAME_LENGTH_LIMIT
-    -- unlike the name, this also allows underscores
-    self.filterAlphanumeric = options.filterAlphanumeric or (options.filterAlphanumeric == nil and true)
-    self.filterNumeric = options.filterNumeric or false
+    self.filter = options.filter or InputFieldFilter.ALPHANUMERIC
 
     self.backgroundColor = options.backgroundColor or {.3, .3, .3, .7}
     self.outlineColor = options.outlineColor or {.5, .5, .5, .7}
@@ -120,10 +132,8 @@ function InputField:onMoveCursor(dir)
 end
 
 function InputField:textInput(t)
-  if self.filterAlphanumeric and string.find(t, "[^_%w]") then
-    return
-  end
-  if self.filterNumeric and string.find(t, "%D") then
+  local filterPattern = FILTER_PATTERNS[self.filter]
+  if filterPattern and string.find(t, filterPattern) then
     return
   end
   if utf8.len(self.value) + utf8.len(t) <= self.charLimit then
@@ -165,5 +175,7 @@ function InputField:drawSelf()
   end
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
+
+InputField.Filter = InputFieldFilter
 
 return InputField
