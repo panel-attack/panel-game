@@ -34,6 +34,7 @@ jobs:
           import json
           import sys
           import os
+          from urllib.parse import unquote, urlparse
 
           # LSP severity → GitHub annotation level mapping
           SEVERITY_MAP = {
@@ -52,6 +53,16 @@ jobs:
           except json.JSONDecodeError:
               print('::error::check.json is not valid JSON')
               sys.exit(1)
+
+          # Show diagnostics inline on the PR's "Files changed" tab rather than only on the run page.
+          # lua-language-server reports absolute file:// URIs, but GitHub only attaches annotations
+          # to the diff when the file path is relative to the repo root.
+          workspace = os.environ.get('GITHUB_WORKSPACE', os.getcwd())
+          def relative_path(uri):
+              path = unquote(urlparse(uri).path) if uri.startswith('file://') else uri
+              return os.path.relpath(os.path.normpath(path), workspace)
+
+          diagnostics = {relative_path(uri): issues for uri, issues in diagnostics.items()}
 
           total_count = 0
           severity_counts = {'error': 0, 'warning': 0, 'notice': 0}

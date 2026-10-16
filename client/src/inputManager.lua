@@ -20,6 +20,9 @@ require("client.src.input.JoystickProvider")
 --   base (top level): the union of all inputConfigurations not already claimed by a player
 --   mouse: all mouse buttons and the position of the mouse
 ---@class InputManager
+---@field isDown table<string, integer>
+---@field isPressed table<string, number>
+---@field isUp table<string, integer>
 local inputManager = {
   isDown = {},
   isPressed = {},
