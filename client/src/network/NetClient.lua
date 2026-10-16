@@ -24,14 +24,14 @@ local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 
 local function resetLobbyData(self)
   ---@class PersonalizedLobbyDataV2
+  ---@field players table<PublicPlayerID, LobbyPlayerV2>
+  ---@field outgoingChallenges table<PublicPlayerID, table<GameModeID, boolean>>
+  ---@field incomingChallenges table<PublicPlayerID, table<GameModeID, boolean>>
+  ---@field rooms table<roomNumber, LobbyRoomV2>
   self.lobbyDataV2 = {
-    ---@type table<PublicPlayerID, LobbyPlayerV2>
     players = {},
-    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
     outgoingChallenges = {},
-    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
     incomingChallenges = {},
-    ---@type table<roomNumber, LobbyRoomV2>
     rooms = {}
   }
 end
