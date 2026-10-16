@@ -108,8 +108,8 @@ local function testSheetData()
   local privateTimeColumn = findColumn(privateTable[1], "last_ranked_game_time")
   assert(privatePublicIdColumn and privateTimeColumn)
   local publicPublicIdColumn = findColumn(publicTable[1], "public_player_id")
-  local publicTimeColumn = findColumn(publicTable[1], "last_ranked_game_time")
-  assert(publicPublicIdColumn and publicTimeColumn)
+  local publicDateColumn = findColumn(publicTable[1], "last_ranked_game_date")
+  assert(publicPublicIdColumn and publicDateColumn)
   -- the private user id must never end up in the public file
   assert(findColumn(publicTable[1], "user_id") == nil)
 
@@ -127,7 +127,7 @@ local function testSheetData()
   for row = 2, #publicTable do
     if publicTable[row][publicPublicIdColumn] == p2.publicPlayerID then
       foundP2 = true
-      assert(publicTable[row][publicTimeColumn] == "2025-10-09T08:53:20Z")
+      assert(publicTable[row][publicDateColumn] == "2025-10-09")
     end
   end
   assert(foundP2)

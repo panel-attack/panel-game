@@ -573,16 +573,17 @@ function Leaderboard:toSheetData()
   }
   --excluding ranked_games_won for now because it doesn't track properly, and user_id because they are secret.
   public_leaderboard_table[#public_leaderboard_table + 1] = {
-    "user_name", "rating", "ranked_games_played", "public_player_id", "last_ranked_game_time"
+    "user_name", "rating", "ranked_games_played", "public_player_id", "last_ranked_game_date"
   }
   for user_id, v in pairs(self.players) do
     leaderboard_table[#leaderboard_table + 1] = {
       user_id, v.user_name, v.rating, tostring(v.placement_done or ""), v.placement_rating,
       v.ranked_games_played, v.ranked_games_won, v.last_login_time, v.public_player_id, v.last_ranked_game_time
     }
-    local lastRankedGameTime = v.last_ranked_game_time and os.date("!%Y-%m-%dT%H:%M:%SZ", v.last_ranked_game_time)
+    -- only the day is published so the public file does not reveal when people play
+    local lastRankedGameDate = v.last_ranked_game_time and os.date("!%Y-%m-%d", v.last_ranked_game_time)
     public_leaderboard_table[#public_leaderboard_table + 1] = {
-      v.user_name, v.rating, v.ranked_games_played, v.public_player_id, lastRankedGameTime
+      v.user_name, v.rating, v.ranked_games_played, v.public_player_id, lastRankedGameDate
     }
   end
 
