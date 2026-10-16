@@ -135,10 +135,11 @@ function love.draw()
       local key = statOrder[i]
       local value = stats[key]
       if value then
+        local text = tostring(value)
         if string.find(key, "memory") then
-          value = string.format("%.2f MB", value / 1024 / 1024)
+          text = string.format("%.2f MB", value / 1024 / 1024)
         end
-        love.graphics.printf(key .. ": " .. value, 0, height - i * 16, width, "right")
+        love.graphics.printf(key .. ": " .. text, 0, height - i * 16, width, "right")
       end
     end
   end

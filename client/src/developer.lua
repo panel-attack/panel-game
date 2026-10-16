@@ -21,6 +21,8 @@ function developerTools.processArgs(args)
     elseif value == "profileFrameTimes" then
       enableProfiler()
 
+      -- LuaJIT supports "isrunning" but LuaLS only knows it for Lua 5.4
+      ---@diagnostic disable-next-line: param-type-mismatch
       if not collectgarbage("isrunning") then
         collectgarbage("restart")
       end

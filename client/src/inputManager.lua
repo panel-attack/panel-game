@@ -21,6 +21,9 @@ require("client.src.input.JoystickProvider")
 --   mouse: all mouse buttons and the position of the mouse
 --   mappedKeys: allKeys without the keys ignored until released, this is what inputConfigurations and base are built from
 ---@class InputManager
+---@field isDown table<string, integer>
+---@field isPressed table<string, number>
+---@field isUp table<string, integer>
 local inputManager = {
   isDown = {},
   isPressed = {},
