@@ -76,6 +76,7 @@ local allTests = {
   "common.tests.lib.JsonEncodingTests",
   "common.tests.lib.tableUtilsTest",
   "common.tests.lib.utf8AdditionsTests",
+  "common.tests.lib.playerNameTests",
   "common.tests.lib.utilTests",
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
@@ -103,6 +104,7 @@ local allTests = {
   "client.tests.InputConfigurationTests",
   "client.tests.DiscreteImageSliderTests",
   "client.tests.PlayerSettingsTests",
+  "client.tests.SetNameMenuTests",
 }
 
 -- Check for specific test name argument
