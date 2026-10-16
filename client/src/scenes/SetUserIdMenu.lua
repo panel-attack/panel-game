@@ -65,6 +65,7 @@ function SetUserIdMenu:confirmId()
     GAME.theme:playValidationSfx()
     save.write_user_id_file(self.idInputField.value, self.serverIp)
     -- this is dirty but with how stupid nested OptionsMenu is, there is no way to get back right to where we came from
+    self.idInputField:unfocus()
     GAME.navigationStack:pop()
   else
     GAME.theme:playCancelSfx()
@@ -75,6 +76,7 @@ function SetUserIdMenu:updateSelf(dt)
   if input.allKeys.isDown["return"] then
     self:confirmId()
   elseif input.allKeys.isDown["escape"] then
+    self.idInputField:unfocus()
     GAME.navigationStack:pop()
   end
 end
