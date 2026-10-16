@@ -103,6 +103,7 @@ local allTests = {
   "client.tests.InputConfigurationTests",
   "client.tests.DiscreteImageSliderTests",
   "client.tests.PlayerSettingsTests",
+  "client.tests.BattleRoomLifecycleTests",
 }
 
 -- Check for specific test name argument
