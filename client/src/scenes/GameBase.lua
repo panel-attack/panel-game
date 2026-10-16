@@ -294,6 +294,8 @@ function GameBase:runGameOver()
 
   if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
     GAME.theme:playValidationSfx()
+    -- the button used to leave is likely still held, so the next scene should not act on it until it is released
+    input:ignoreHeldKeysUntilReleased()
     collectgarbage("collect")
     collectgarbage("collect")
     self:startNextScene()
