@@ -339,7 +339,7 @@ local function handleGameAbort(self, gameAbortMessage)
       if gameAbortMessage.reason and gameAbortMessage.reason == "latency_error" then
         infoMessage = infoMessage .. ": " .. loc("ss_latency_error")
       end
-      transition = MessageTransition(love.timer.getTime(), 5, infoMessage, false)
+      local transition = MessageTransition(love.timer.getTime(), 5, infoMessage, false)
       GAME.navigationStack:pop(transition)
     end
   end
