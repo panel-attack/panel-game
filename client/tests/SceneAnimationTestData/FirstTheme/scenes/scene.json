@@ -1,0 +1,20 @@
+{
+  "drawables": [
+    {
+      "id": "Faded",
+      "filePath": "test_image",
+      "alpha": 1,
+      "animationTracks": [
+        {
+          "steps": [
+            {
+              "durationSeconds": 1,
+              "easeType": "linear",
+              "animateProperties": {"alpha": 0}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

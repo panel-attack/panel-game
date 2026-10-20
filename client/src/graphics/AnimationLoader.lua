@@ -416,11 +416,12 @@ local function drawSiblingsBeforeNode(parent, node)
   love.graphics.setShader()
 end
 
--- Draws a scene's drawables in order, restoring the graphics state afterwards so their colours don't leak into what draws next.
+-- Draws a scene's drawables in order, starting from the default blend mode the nodes assume and restoring the graphics state afterwards so their colours don't leak into what draws next.
 -- Each node only pushes its transform, saving and restoring the whole state once per scene instead of once per node.
 ---@param drawables table[] the drawables loadFromFile returned
 function AnimationLoader.drawDrawables(drawables)
   love.graphics.push("all")
+  love.graphics.setBlendMode("alpha", "alphamultiply")
   for _, drawable in ipairs(drawables) do
     AnimationLoader.drawNode(drawable)
   end

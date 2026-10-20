@@ -20,4 +20,17 @@ local function testActiveSceneTweensRunWhenTheSceneOverridesUpdate()
   assert(math.abs(target.value - 0.5) < 0.0001, "the active scene's tweens should advance, got " .. target.value)
 end
 
+local function testActiveSceneAnimationUpdatesWhenTheSceneOverridesUpdate()
+  local scene = SceneOverridingUpdate()
+  local updatedWith
+  scene.sceneAnimation = {update = function(_, dt) updatedWith = dt end}
+  local navigationStack = NavigationStack({})
+  navigationStack.scenes = {scene}
+
+  navigationStack:updateSelf(0.5)
+
+  assert(updatedWith == 0.5, "the active scene's animation should be updated")
+end
+
 testActiveSceneTweensRunWhenTheSceneOverridesUpdate()
+testActiveSceneAnimationUpdatesWhenTheSceneOverridesUpdate()

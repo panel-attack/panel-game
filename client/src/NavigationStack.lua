@@ -174,7 +174,7 @@ function NavigationStack:updateSelf(dt)
     if #self.scenes == 0 then
       error("There better be an active scene. We bricked.")
     end
-    self.scenes[#self.scenes].tweens:update(dt)
+    self.scenes[#self.scenes]:updateAnimations(dt)
     self.scenes[#self.scenes]:update(dt)
   end
 end

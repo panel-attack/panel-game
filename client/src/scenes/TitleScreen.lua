@@ -5,10 +5,9 @@ local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local MainMenu = require("client.src.scenes.MainMenu")
-local AnimationLoader = require("client.src.graphics.AnimationLoader")
+local SceneAnimation = require("client.src.graphics.SceneAnimation")
 
 local START_OPACITY = 0.5
-local SCENE_PATH = themes[config.theme].path .. "/scenes/"
 local SCENE_FILENAME = "TitleScreen.json"
 
 -- The title screen scene
@@ -17,7 +16,7 @@ local TitleScreen = class(
     self.backgroundImg = themes[config.theme].images.bg_main
     self.music = "title_screen"
     self.opacity = START_OPACITY
-    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME, self.tweens)
+    self.sceneAnimation = SceneAnimation(SCENE_FILENAME)
     self.direction = 1
     self:startAnimation()
   end,
@@ -63,7 +62,7 @@ function TitleScreen:draw()
   self.backgroundImg:draw()
   self:titleDrawPressStart(((math.sin(5 * love.timer.getTime()) / 2 + .5) ^ .5) / 2 + .5)
 
-  AnimationLoader.drawDrawables(self.drawables)
+  self.sceneAnimation:draw()
 end
 
 return TitleScreen

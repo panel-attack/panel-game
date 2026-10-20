@@ -19,6 +19,7 @@ local Flux = require("client.lib.flux.flux")
 ---@field fallbackMusic sceneMusic
 ---@field keepMusic boolean
 ---@field tweens table flux group of the scene's animations, the navigation stack updates it while the scene is the active one
+---@field sceneAnimation SceneAnimation? the scene's animation file, the navigation stack updates it while the scene is the active one
 ---@overload fun(sceneParams: table): Scene
 local Scene = class(
 ---@param self Scene
@@ -61,6 +62,15 @@ function Scene:applyMusic()
         SoundController:stopMusic()
       end
     end
+  end
+end
+
+-- Advances the scene's tweens and animation, the navigation stack calls it while the scene is the active one
+---@param dt number seconds since the last update
+function Scene:updateAnimations(dt)
+  self.tweens:update(dt)
+  if self.sceneAnimation then
+    self.sceneAnimation:update(dt)
   end
 end
 

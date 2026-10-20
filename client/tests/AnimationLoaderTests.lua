@@ -370,6 +370,36 @@ local function testDrawDrawablesRestoresTheColour()
   assertApproxEqual(a, 1, nil, "Alpha should be restored")
 end
 
+-- A node with the default blend mode draws with it even when the caller left a different one set
+local function testDrawDrawablesDrawsWithTheDefaultBlendMode()
+  if not love.graphics.isActive() then
+    -- without a window there is no graphics state to check
+    return
+  end
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRef.json", Flux.group())
+  local canvas = love.graphics.newCanvas(64, 64)
+  local blendModes = {}
+  local originalDraw = love.graphics.draw
+  love.graphics.draw = function(...)
+    blendModes[#blendModes + 1] = love.graphics.getBlendMode()
+    originalDraw(...)
+  end
+
+  love.graphics.push("all")
+  love.graphics.setCanvas(canvas)
+  love.graphics.setBlendMode("add")
+  local ok, err = pcall(AnimationLoader.drawDrawables, results)
+  love.graphics.pop()
+  love.graphics.draw = originalDraw
+  assert(ok, err)
+
+  assert(#blendModes > 0, "Something should have been drawn")
+  for _, blendMode in ipairs(blendModes) do
+    assertEqual(blendMode, "alpha", "Nodes with the default blend mode should draw with alpha")
+  end
+end
+
 -- Run all tests
 local function runAllTests()
   print("Running AnimationLoader tests...")
@@ -387,6 +417,7 @@ local function runAllTests()
   testNodesSharingAFileShareOneImage()
   testOneFileCannotBeBothRepeatedAndClamped()
   testDrawDrawablesRestoresTheColour()
+  testDrawDrawablesDrawsWithTheDefaultBlendMode()
   
   print("✓ All AnimationLoader tests passed!")
 end
