@@ -44,7 +44,7 @@ function ChallengeModeRecapScene:updateSelf(dt)
     GAME.theme:playValidationSfx()
     -- a direction held from here would otherwise keep scrolling the main menu
     input:ignoreHeldKeysUntilReleased()
-    GAME.navigationStack:popToTop()
+    GAME.navigationStack:popToTop(nil, function() self.challengeMode:shutdown() end)
   end
 end
 
