@@ -102,6 +102,7 @@ local allTests = {
   "client.tests.TelegraphTests",
   "client.tests.InputConfigurationTests",
   "client.tests.DiscreteImageSliderTests",
+  "client.tests.InputFieldTests",
   "client.tests.PlayerSettingsTests",
 }
 

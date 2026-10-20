@@ -42,6 +42,8 @@ function ChallengeModeRecapScene:updateSelf(dt)
 
   if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
     GAME.theme:playValidationSfx()
+    -- a direction held from here would otherwise keep scrolling the main menu
+    input:ignoreHeldKeysUntilReleased()
     GAME.navigationStack:popToTop(nil, function() self.challengeMode:shutdown() end)
   end
 end
