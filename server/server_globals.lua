@@ -1,4 +1,4 @@
-NAME_LENGTH_LIMIT = 16
+NAME_LENGTH_LIMIT = require("common.lib.playerName").LENGTH_LIMIT
 COMPRESS_REPLAYS_ENABLED = true
 COMPRESS_SPECTATOR_REPLAYS_ENABLED = true -- Send current replay inputs over the internet in a compressed format to spectators who join.
 ANY_ENGINE_VERSION_ENABLED = false -- The server will accept any engine version. Mainly to be used for debugging.

@@ -23,6 +23,7 @@ local Player = require("server.Player")
 local util = require("common.lib.util")
 local FileIO = require("server.FileIO")
 local GameModes = require("common.data.GameModes")
+local playerName = require("common.lib.playerName")
 
 local pairs = pairs
 local ipairs = ipairs
@@ -783,18 +784,11 @@ end
 ---@return string denyReason why the player cannot log in, nil if login was approved
 function Server:canLogin(userID, name, IP_logging_in, engineVersion)
   local denyReason = nil
+  local nameIsValid, invalidNameReason = playerName.validate(name)
   if engineVersion ~= ENGINE_VERSION and not ANY_ENGINE_VERSION_ENABLED then
     denyReason = "Please update your game, server expects engine version: " .. ENGINE_VERSION
-  elseif not name or name == "" then
-    denyReason = "Name cannot be blank"
-  elseif string.lower(name) == "anonymous" then
-    denyReason = 'Username cannot be "anonymous"'
-  elseif name:lower():match("d+e+f+a+u+l+t+n+a+m+e?") then
-    denyReason = 'Username cannot be "defaultname" or a variation of it'
-  elseif name:find("[^_%w]") then
-    denyReason = "Usernames are limited to alphanumeric and underscores"
-  elseif utf8.len(name) > NAME_LENGTH_LIMIT then
-    denyReason = "The name length limit is " .. NAME_LENGTH_LIMIT .. " characters"
+  elseif not nameIsValid then
+    denyReason = invalidNameReason
   elseif not userID then
     denyReason = "Client did not send a user ID in the login request"
   elseif userID == "need a new user id" then

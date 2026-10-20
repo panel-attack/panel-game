@@ -77,6 +77,7 @@ local allTests = {
   "common.tests.lib.SignalTests",
   "common.tests.lib.tableUtilsTest",
   "common.tests.lib.utf8AdditionsTests",
+  "common.tests.lib.playerNameTests",
   "common.tests.lib.utilTests",
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
@@ -105,6 +106,7 @@ local allTests = {
   "client.tests.DiscreteImageSliderTests",
   "client.tests.InputFieldTests",
   "client.tests.PlayerSettingsTests",
+  "client.tests.SetNameMenuTests",
   "client.tests.BattleRoomLifecycleTests",
 }
 
