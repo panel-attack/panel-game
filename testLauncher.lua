@@ -74,6 +74,7 @@ local allTests = {
   -- disabled for testLauncher because it needs the client love callbacks
   --"common.tests.lib.InputTests",
   "common.tests.lib.JsonEncodingTests",
+  "common.tests.lib.SignalTests",
   "common.tests.lib.tableUtilsTest",
   "common.tests.lib.utf8AdditionsTests",
   "common.tests.lib.playerNameTests",
@@ -103,8 +104,10 @@ local allTests = {
   "client.tests.TelegraphTests",
   "client.tests.InputConfigurationTests",
   "client.tests.DiscreteImageSliderTests",
+  "client.tests.InputFieldTests",
   "client.tests.PlayerSettingsTests",
   "client.tests.SetNameMenuTests",
+  "client.tests.BattleRoomLifecycleTests",
 }
 
 -- Check for specific test name argument

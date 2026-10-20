@@ -105,6 +105,15 @@ function CharacterSelect:initializeFromLocalPlayerSettings(player)
   player:setLevelData(LevelPresets.getModern(player.settings.level))
 end
 
+-- The player outlives the scene, so its callbacks must not capture the scene's UI (see Signal.connectSignal).
+-- The load icon carries the ready icon and player instead of capturing them.
+---@param loadIcon ImageContainer with readyIcon and player set
+---@param loaded boolean
+local function onLoadedChanged(loadIcon, loaded)
+  loadIcon:setVisibility(not loaded)
+  loadIcon.readyIcon:setVisibility(loaded and loadIcon.player.settings.wantsReady)
+end
+
 ---@param player Player
 ---@return UiElement playerIcon
 function CharacterSelect:createPlayerIcon(player)
@@ -187,11 +196,9 @@ function CharacterSelect:createPlayerIcon(player)
   })
   playerIcon:addChild(readyIcon)
 
-  loadIcon.onLoadedChanged = function(selfElement, loaded)
-    selfElement:setVisibility(not loaded)
-    readyIcon:setVisibility(loaded and player.settings.wantsReady)
-  end
-  player:connectSignal("hasLoadedChanged", loadIcon, loadIcon.onLoadedChanged)
+  loadIcon.readyIcon = readyIcon
+  loadIcon.player = player
+  player:connectSignal("hasLoadedChanged", loadIcon, onLoadedChanged)
   readyIcon.onReadyChanged = function(selfElement, wantsReady)
     selfElement:setVisibility(wantsReady and player.hasLoaded)
   end
@@ -228,7 +235,7 @@ end
 
 ---@return TextButton leaveButton
 function CharacterSelect:createLeaveButton()
-  leaveButton = ui.TextButton({
+  local leaveButton = ui.TextButton({
     hFill = true,
     vFill = true,
     label = ui.Label({text = "leave"}),
@@ -438,7 +445,10 @@ function CharacterSelect:getCharacterButtons()
       end
 
       player:setCharacter(selfElement.characterId)
-      player.cursor:updatePosition(9, 2, true)
+      local cursor = tableUtils.first(self.ui.cursors, function(c) return c.player == player end)
+      if cursor then
+        cursor:updatePosition(9, 2, true)
+      end
     end
 
     if characters[characterButton.characterId] and characters[characterButton.characterId]:canSuperSelect() then
@@ -770,6 +780,12 @@ function CharacterSelect:createRankedSelection(player, width)
   return container
 end
 
+---@param styleSelector BoolSelector
+---@param style Styles
+local function onStyleChanged(styleSelector, style)
+  styleSelector:setValue(style == GameModes.Styles.MODERN)
+end
+
 ---@param player Player
 ---@param width number
 ---@return StackPanel styleSelectionContainer
@@ -793,14 +809,7 @@ function CharacterSelect:createStyleSelection(player, width)
 
   ui.Focusable(styleSelector)
 
-  player:connectSignal("styleChanged", styleSelector, function(p, style)
-      if style == GameModes.Styles.MODERN then
-        styleSelector:setValue(true)
-      else
-        styleSelector:setValue(false)
-      end
-    end
-  )
+  player:connectSignal("styleChanged", styleSelector, onStyleChanged)
 
   local container = ui.StackPanel({
     alignment = "left",
@@ -1065,8 +1074,7 @@ function CharacterSelect:updateSelf(dt)
   if self.battleRoom and self.battleRoom.spectating then
     if input.isDown["MenuEsc"] then
       GAME.theme:playCancelSfx()
-      GAME.netClient:leaveRoom()
-      GAME.navigationStack:pop()
+      self:leave()
     end
   end
   if self:customUpdate() then
