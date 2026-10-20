@@ -9,7 +9,6 @@ local inputFieldManager = require("client.src.ui.inputFieldManager")
 local RunTimeGraph = require("client.src.RunTimeGraph")
 local CustomRun = require("client.src.CustomRun")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local Flux = require("client.lib.flux.flux")
 local prof = require("common.lib.zoneProfiler")
 local ReplayV3 = require("common.data.ReplayV3")
 require("common.lib.util")
@@ -88,7 +87,6 @@ function love.update(dt)
     CustomRun.runTimeGraph = nil
   end
 
-  Flux.update(dt)
   inputManager:update(dt)
   inputFieldManager.update()
   touchHandler:update(dt)

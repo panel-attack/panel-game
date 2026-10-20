@@ -1,4 +1,5 @@
 local AnimationLoader = require("client.src.graphics.AnimationLoader")
+local Flux = require("client.lib.flux.flux")
 
 -- Helper function to assert equality with detailed error messages
 local function assertEqual(actual, expected, message)
@@ -20,7 +21,7 @@ local function testBasicJSONLoading()
   print("Testing basic JSON loading...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "basic.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "basic.json", Flux.group())
   
   assertEqual(#results, 1, "Should load exactly one drawable")
   
@@ -51,7 +52,7 @@ local function testLoadingRef()
   print("Testing loading with reference...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRef.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRef.json", Flux.group())
   
   assertEqual(#results, 2, "Should load exactly two drawables")
   
@@ -75,7 +76,7 @@ local function testLoadingRefWithOverrides()
   print("Testing loading reference with overrides...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRefOverrides.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRefOverrides.json", Flux.group())
   
   assertEqual(#results, 2, "Should load exactly two drawables")
   
@@ -112,7 +113,7 @@ local function testLoadingRefToElementInDifferentFile()
   print("Testing loading reference to element in different file...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "externalRefToElement.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "externalRefToElement.json", Flux.group())
   
   assertEqual(#results, 1)
   
@@ -127,7 +128,7 @@ local function testLoadingRefToDifferentFile()
   print("Testing loading reference to different file...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withFileRef.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withFileRef.json", Flux.group())
   
   -- Should load local element + all elements from externalRef.json + overridden external element
   assertEqual(#results, 3, "Should load three drawables")
@@ -158,7 +159,7 @@ local function testLoadingNestedFileReferences()
   print("Testing loading nested file references...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "nestedFileRef.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "nestedFileRef.json", Flux.group())
   
   -- Should load nested element + all elements from withFileRef.json (which includes externalRef.json)
   assertEqual(#results, 2, "Should load two top-level drawables")
@@ -189,7 +190,7 @@ local function testTemplateOnly()
   print("Testing templateOnly property...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "templateOnly.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "templateOnly.json", Flux.group())
   
   -- Should only load 2 drawables: NormalElement and the referenced Template
   -- The Template itself should not be loaded directly because templateOnly=true
@@ -234,7 +235,7 @@ local function testAnchorPreservationWithXOverride()
   print("Testing anchor preservation with x position override...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "anchorOverrideTest.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "anchorOverrideTest.json", Flux.group())
   
   -- Should load exactly two drawables (the referenced templates with overrides)
   -- The template itself should not be loaded because templateOnly=true
@@ -288,7 +289,7 @@ local function testLoadingReferenceToReference()
   print("Testing reference to a reference...")
   
   local testPath = "client/tests/AnimationLoaderTestData/"
-  local results = AnimationLoader.loadFromFile(testPath, testPath .. "referenceToReferenceTest.json")
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "referenceToReferenceTest.json", Flux.group())
   
   -- Should load exactly two drawables (the referenced templates with overrides)
   -- The template itself should not be loaded because templateOnly=true
@@ -316,6 +317,59 @@ local function testLoadingReferenceToReference()
   print("✓ Testing reference to a reference")
 end
 
+-- Tracks animate only when the group they were loaded into is updated
+local function testTracksAnimateInTheGivenGroup()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local tweens = Flux.group()
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRefOverrides.json", tweens)
+  local drawable = results[1]
+
+  Flux.update(0.5)
+  assertApproxEqual(drawable.alpha, 0.5, nil, "The global flux group should not animate the drawable")
+
+  tweens:update(0.5)
+  assertApproxEqual(drawable.alpha, 0.75, nil, "The given group should animate the drawable")
+end
+
+-- Nodes drawing the same file share one image so LÖVE can batch their draws
+local function testNodesSharingAFileShareOneImage()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRefOverrides.json", Flux.group())
+
+  assertEqual(results[1].texture, results[2].texture, "Both nodes should draw the same image")
+end
+
+-- Wrap is set on the shared image, so one file can't be both repeated and clamped
+local function testOneFileCannotBeBothRepeatedAndClamped()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local loaded = pcall(AnimationLoader.loadFromFile, testPath, testPath .. "mixedWrap.json", Flux.group())
+
+  assertEqual(loaded, false, "Loading a file used with two wrap modes should fail")
+end
+
+-- Drawing a scene's drawables leaves the colour as it was for whatever draws next
+local function testDrawDrawablesRestoresTheColour()
+  if not love.graphics.isActive() then
+    -- without a window there is no graphics state to check
+    return
+  end
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "withRefOverrides.json", Flux.group())
+  local canvas = love.graphics.newCanvas(64, 64)
+
+  love.graphics.push("all")
+  love.graphics.setCanvas(canvas)
+  love.graphics.setColor(0.25, 0.5, 0.75, 1)
+  AnimationLoader.drawDrawables(results)
+  local r, g, b, a = love.graphics.getColor()
+  love.graphics.pop()
+
+  assertApproxEqual(r, 0.25, nil, "Red should be restored")
+  assertApproxEqual(g, 0.5, nil, "Green should be restored")
+  assertApproxEqual(b, 0.75, nil, "Blue should be restored")
+  assertApproxEqual(a, 1, nil, "Alpha should be restored")
+end
+
 -- Run all tests
 local function runAllTests()
   print("Running AnimationLoader tests...")
@@ -329,6 +383,10 @@ local function runAllTests()
   testTemplateOnly()
   testAnchorPreservationWithXOverride()
   testLoadingReferenceToReference()
+  testTracksAnimateInTheGivenGroup()
+  testNodesSharingAFileShareOneImage()
+  testOneFileCannotBeBothRepeatedAndClamped()
+  testDrawDrawablesRestoresTheColour()
   
   print("✓ All AnimationLoader tests passed!")
 end

@@ -6,7 +6,6 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local MainMenu = require("client.src.scenes.MainMenu")
 local AnimationLoader = require("client.src.graphics.AnimationLoader")
-local Flux = require("client.lib.flux.flux")
 
 local START_OPACITY = 0.5
 local SCENE_PATH = themes[config.theme].path .. "/scenes/"
@@ -18,9 +17,8 @@ local TitleScreen = class(
     self.backgroundImg = themes[config.theme].images.bg_main
     self.music = "title_screen"
     self.opacity = START_OPACITY
-    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
+    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME, self.tweens)
     self.direction = 1
-    self.animation = nil
     self:startAnimation()
   end,
   Scene
@@ -32,7 +30,7 @@ function TitleScreen:startAnimation()
     target = 1
   end
 
-  self.animation = Flux.to(self, 0.6, { opacity = target })
+  self.tweens:to(self, 0.6, { opacity = target })
       :ease("quadinout")
       :oncomplete(function()
           self.direction = -self.direction
@@ -55,7 +53,6 @@ function TitleScreen:update(dt)
   local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
   if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then
     GAME.theme:playValidationSfx()
-    self.animation:stop()
     GAME.navigationStack:replace(MainMenu())
   end
 end
@@ -64,23 +61,7 @@ function TitleScreen:draw()
   self.backgroundImg:draw()
   self:titleDrawPressStart(((math.sin(5 * love.timer.getTime()) / 2 + .5) ^ .5) / 2 + .5)
 
-  for _,d in ipairs(self.drawables) do
-    AnimationLoader.drawNode(d)
-  end
-end
-
-function TitleScreen:sceneDidDissappear()
-  for _,d in ipairs(self.drawables) do
-    AnimationLoader.stopFluxTweensOnDrawable(d)
-  end
-  self.drawables = {}
-end
-
-
-function TitleScreen:refresh()
-  if #self.drawables == 0 then
-    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
-  end
+  AnimationLoader.drawDrawables(self.drawables)
 end
 
 return TitleScreen

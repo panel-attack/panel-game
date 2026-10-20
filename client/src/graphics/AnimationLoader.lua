@@ -1,9 +1,8 @@
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local FileUtils = require("client.src.FileUtils")
-local Flux = require("client.lib.flux.flux")
 
--- A class that loads a heirarchy of images and animations from an animation file and returns the drawable objects. Animations are setup to update with the flux engine.
+-- A class that loads a heirarchy of images and animations from an animation file and returns the drawable objects. Animations are added to the flux group passed in, so they only run while its owner updates that group.
 ---@class AnimationLoader
 local AnimationLoader =
   class(
@@ -40,8 +39,9 @@ function AnimationLoader.anchorOffset(drawable, anchor)
   end
 end
 
--- Builds the flux animation for the given track step on the target
-local function buildTrackStep(target, track, currentStep, stepAmount)
+-- Builds the flux animation for the given track step on the target in the given flux group
+---@param tweens table the flux group the step's tween is added to
+local function buildTrackStep(target, track, currentStep, stepAmount, tweens)
   local step = track.steps[currentStep]
   local targetProperties
   if stepAmount > 0 then
@@ -49,9 +49,7 @@ local function buildTrackStep(target, track, currentStep, stepAmount)
   else
     targetProperties = step.reverseProperties
   end
-  local tween = Flux.to(target, step.durationSeconds,
-                          targetProperties)
-  target.fluxTweens[#target.fluxTweens+1] = tween
+  local tween = tweens:to(target, step.durationSeconds, targetProperties)
 
   -- Save off the previous properties on the track in case they are needed for looping or yoyo
   if stepAmount > 0 then
@@ -87,14 +85,40 @@ local function buildTrackStep(target, track, currentStep, stepAmount)
     end
 
     if nextStep >= 1 and nextStep <= #track.steps then
-      buildTrackStep(target, track, nextStep, stepAmount)
+      buildTrackStep(target, track, nextStep, stepAmount, tweens)
     end
   end)
 end
 
+-- Returns the image for the given path, loading it only the first time so every node drawing it shares one texture and LÖVE can batch them.
+-- Wrap is state on the image itself, so one file can't be used both repeated and clamped.
+---@param images table<string, {texture: love.Texture, wrap: string}> the images already loaded for this file by path
+---@param path string the image path without extension
+---@param wrap string "clamp" or "repeat"
+---@return love.Texture
+local function loadSharedImage(images, path, wrap)
+  local loaded = images[path]
+  if loaded then
+    if loaded.wrap ~= wrap then
+      error("The image " .. path .. " is used with both " .. loaded.wrap .. " and " .. wrap .. " wrap, use one wrap per image")
+    end
+    return loaded.texture
+  end
+
+  local texture = GraphicsUtil.loadImageFromSupportedExtensions(path)
+  assert(texture, "couldn't load image for animation filepath " .. path)
+  if wrap == "repeat" then
+    texture:setWrap("repeat", "repeat")
+  end
+  images[path] = {texture = texture, wrap = wrap}
+  return texture
+end
+
 -- Loads one drawable from the given file directory root and the given animation data.
 -- @return table the drawable or nil if it didn't need to be loaded
-local function loadDrawables(rootPath, animationData)
+---@param tweens table the flux group the node's tracks are added to
+---@param images table the images already loaded for this file, see loadSharedImage
+local function loadDrawables(rootPath, animationData, tweens, images)
   if animationData.ref == nil and animationData.templateOnly then
     -- Skip templateOnly items unless they are references
     return nil
@@ -123,27 +147,23 @@ local function loadDrawables(rootPath, animationData)
   }
   obj.children = {}
   if animationData.filePath then
-    local texture = GraphicsUtil.loadImageFromSupportedExtensions(rootPath .. animationData.filePath)
-    assert(texture, "couldn't load image for animation filepath " .. rootPath .. animationData.filePath)
-    if texture then
-      obj.texture = texture
-      local textureWidth = texture:getWidth()
-      local textureHeight = texture:getHeight()
-      if obj.width then
-        obj.xScale = obj.width / textureWidth
-      end
-      obj.width = textureWidth
-      if obj.height then
-        obj.yScale = obj.height / textureHeight
-      end
-      obj.height = textureHeight
+    local texture = loadSharedImage(images, rootPath .. animationData.filePath, animationData.wrap or "clamp")
+    obj.texture = texture
+    local textureWidth = texture:getWidth()
+    local textureHeight = texture:getHeight()
+    if obj.width then
+      obj.xScale = obj.width / textureWidth
+    end
+    obj.width = textureWidth
+    if obj.height then
+      obj.yScale = obj.height / textureHeight
+    end
+    obj.height = textureHeight
 
-      if animationData.wrap == "repeat" then
-        obj.scrollX = 0
-        obj.scrollY = 0
-        obj.texture:setWrap("repeat", "repeat")
-        obj.quad = love.graphics.newQuad(obj.scrollX, obj.scrollY, obj.width, obj.height, obj.width, obj.height)
-      end
+    if animationData.wrap == "repeat" then
+      obj.scrollX = 0
+      obj.scrollY = 0
+      obj.quad = love.graphics.newQuad(obj.scrollX, obj.scrollY, obj.width, obj.height, obj.width, obj.height)
     end
   end
 
@@ -165,12 +185,11 @@ local function loadDrawables(rootPath, animationData)
   assert(obj.anchor == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left anchor")
   assert(obj.pivot == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left pivot")
 
-  obj.fluxTweens = {}
   for _,track in ipairs(animationData.animationTracks or {}) do
-    buildTrackStep(obj, track, 1, 1)
+    buildTrackStep(obj, track, 1, 1, tweens)
   end
   for _, childData in ipairs(animationData.children or {}) do
-    local drawable = loadDrawables(rootPath, childData)
+    local drawable = loadDrawables(rootPath, childData, tweens, images)
     if drawable then
       obj.children[#obj.children+1] = drawable
     end
@@ -331,8 +350,9 @@ end
 -- Loads all drawables for a animation file.
 -- @param rootPath String the full directory to the file to load
 -- @param fillPath String just the file name part of the file to load
+---@param tweens table the flux group the animations are added to, its owner updates it
 -- @return table an array of drawables representing all the objects with flux animations setup
-function AnimationLoader.loadFromFile(rootPath, filePath)
+function AnimationLoader.loadFromFile(rootPath, filePath, tweens)
   local loadedFileTables = {}   -- filePath → parsed table
   local idLookupTable   = {}    -- "id" → node table
 
@@ -348,24 +368,16 @@ function AnimationLoader.loadFromFile(rootPath, filePath)
 
   -- Finally once the full data structure is setup, it is converted into separate drawable objects.
   local drawables = {}
+  local images = {}
   if rootData then
     for _, data in ipairs(rootData.drawables) do
-      local drawable = loadDrawables(rootPath, data)
+      local drawable = loadDrawables(rootPath, data, tweens, images)
       if drawable then
         drawables[#drawables+1] = drawable
       end
     end
   end
   return drawables
-end
-
-function AnimationLoader.stopFluxTweensOnDrawable(drawable)
-    for _, tween in ipairs(drawable.fluxTweens) do
-      tween:stop()
-    end
-    for _, child in ipairs(drawable.children) do
-      AnimationLoader.stopFluxTweensOnDrawable(child)
-    end
 end
 
 -- DRAWING CODE
@@ -404,8 +416,20 @@ local function drawSiblingsBeforeNode(parent, node)
   love.graphics.setShader()
 end
 
+-- Draws a scene's drawables in order, restoring the graphics state afterwards so their colours don't leak into what draws next.
+-- Each node only pushes its transform, saving and restoring the whole state once per scene instead of once per node.
+---@param drawables table[] the drawables loadFromFile returned
+function AnimationLoader.drawDrawables(drawables)
+  love.graphics.push("all")
+  for _, drawable in ipairs(drawables) do
+    AnimationLoader.drawNode(drawable)
+  end
+  love.graphics.pop()
+end
+
+-- Draws one node and its children, it sets its own colour and resets the blend mode and stencil it changes
 function AnimationLoader.drawNode(d, parent)
-    love.graphics.push("all")
+    love.graphics.push()
 
     local px, py = AnimationLoader.anchorOffset(d, d.pivot)
     local wx, wy, wrot, xScale, yScale = AnimationLoader.objectTransform(d)

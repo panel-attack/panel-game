@@ -34,7 +34,7 @@ local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
   self.uiRoot:addChild(self.menu)
-  self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
+  self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME, self.tweens)
 end, Scene)
 
 MainMenu.name = "MainMenu"
@@ -168,10 +168,8 @@ function MainMenu:updateSelf(dt)
 end
 
 function MainMenu:drawSelf()
-  for _,d in ipairs(self.drawables) do
-    AnimationLoader.drawNode(d)
-  end
-  
+  AnimationLoader.drawDrawables(self.drawables)
+
   self.uiRoot:draw()
 
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
@@ -214,20 +212,6 @@ function MainMenu:drawSelf()
       GraphicsUtil.printf(loc("auto_updater_version_warning") .. " https://panelattack.com", -5, infoYPosition, consts.CANVAS_WIDTH, "right")
       infoYPosition = infoYPosition - fontHeight
     end
-  end
-end
-
-function MainMenu:sceneDidDissappear()
-  for _,d in ipairs(self.drawables) do
-    AnimationLoader.stopFluxTweensOnDrawable(d)
-  end
-  self.drawables = {}
-end
-
-
-function MainMenu:refresh()
-  if #self.drawables == 0 then
-    self.drawables = AnimationLoader.loadFromFile(SCENE_PATH, SCENE_PATH .. SCENE_FILENAME)
   end
 end
 
