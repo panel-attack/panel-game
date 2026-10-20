@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local Label = require(PATH .. ".Label")
 local StackPanel = require(PATH .. ".StackPanel")
 local class = require("common.lib.class")
+local tableUtils = require("common.lib.tableUtils")
 local Focusable = require(PATH .. ".Focusable")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
@@ -20,9 +21,6 @@ StackPanel)
 function MultiPlayerSelectionWrapper:addElement(uiElement, player)
   assert(uiElement.receiveInputs)
   self.wrappedElements[player] = uiElement
-  uiElement.yieldFocus = function()
-    self.yieldFocus()
-  end
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)
   self:resize()
@@ -33,9 +31,10 @@ function MultiPlayerSelectionWrapper:insertElementAtIndex(uiElement, index, play
   self:shiftTo(index)
 end
 
--- the parent makes sure this is only called while focused
-function MultiPlayerSelectionWrapper:receiveInputs(inputs, dt, player)
-  self.wrappedElements[player]:receiveInputs(inputs, dt)
+-- Focus the player's own element rather than the shared wrapper so each cursor's focus state
+-- stays independent and one player yielding focus can't leave another player's cursor stuck.
+function MultiPlayerSelectionWrapper:getFocusTarget(selector)
+  return self.wrappedElements[selector.player]
 end
 
 local COLORS = {
@@ -43,7 +42,7 @@ local COLORS = {
   white = {1, 1, 1, 1}
 }
 function MultiPlayerSelectionWrapper:drawSelf()
-  if self.hasFocus then
+  if tableUtils.trueForAny(self.wrappedElements, "hasFocus") then
     love.graphics.setLineWidth(6)
     GraphicsUtil.setColor(COLORS.border)
     love.graphics.rectangle("line", self.x, self.y, self.width, self.height)

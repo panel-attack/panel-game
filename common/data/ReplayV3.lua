@@ -181,7 +181,7 @@ function ReplayV3:setOutcome(outcome)
     else
       self.metadata.winnerIndex = outcome
       for i, player in ipairs(self.metadata.stacks) do
-        if player.stackIndex == i and self.stacks[i].stackType == ReplayV3.stackTypes.Stack then
+        if player.stackIndex == outcome and self.stacks[i].stackType == ReplayV3.stackTypes.Stack then
           ---@cast player StackMetadata
           self.metadata.winnerId = player.publicId
         end

@@ -19,7 +19,6 @@ local GridCursor = class(function(self, options)
   self.translateSubGrids = options.translateSubGrids or false
 
   self.player = options.player
-  self.player.cursor = self
   self.frameImages = options.frameImages or themes[config.theme]:getGridCursor(self.player.playerNumber)
   self.imageWidth, self.imageHeight = self.frameImages[1]:getDimensions()
   self.quads = {}

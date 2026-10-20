@@ -23,7 +23,23 @@ In particular avoid the use of shortlived tables to not overwhelm the garbage co
 - Gameplay graphics have to be able to derive their state from the game state at any time and cannot rely on being updated  
 This is to ensure that graphics remain functional and consistent with rollback and rewind
 
-Pull requests are to be pulled against the `beta` branch.  
+## Pull requests
+
+Pull requests should typically target the `beta` branch unless they are built on another branch or a hot fix for main only.
+
+Follow the directions in the PR template and fill it out.
+
+### Reviewing PRs
+
+- **Be clear on feedback** Indicate if each change is **Required** (this has to change before merge), a **Suggestion** (take it or leave it), or **Follow-up** (worth fixing, fine in a later PR).
+- **Suggest the fix.** Give the author actionable steps on what they should do instead.
+
+## Monthly status update
+
+Once a month the maintainer calls for a status update in the development channel of the
+[Discord server](http://discord.panelattack.com). Anyone active that month posts their rough
+availability and what they intend to work on, so it's clear who is on what and roughly when.
+"Nothing this month" is a perfectly good answer.
 
 ## Annotation guidelines
 

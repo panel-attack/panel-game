@@ -22,7 +22,7 @@ The contents of each puzzle file should be formatted something like this:
       "Puzzles": [
         {
           "Puzzle Type": "chain",
-          "StartTiming": "countdown",
+          "StartTiming": "Countdown",
           "Moves": 0,
           "Stack":
             "040000
@@ -50,7 +50,7 @@ The contents of each puzzle file should be formatted something like this:
           122[=]
           245156
 		      325363",
-          "StartTiming": "firstSwap",
+          "StartTiming": "First Swap",
           "Stop": 60,
           "Shake": 0
         },
@@ -63,6 +63,8 @@ The contents of each puzzle file should be formatted something like this:
 ## Version Information
 
 Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzzle Sets" for organization purposes.
+
+A "clear" puzzle's "GarbagePanelBuffer" holds the panels the player sees, and the puzzle is won by the first revealed row that needs more panels than the buffer holds. Without a buffer, the first revealed row wins.
 
 ## Field Descriptions
 
@@ -78,7 +80,7 @@ Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzz
 **"Puzzle Type"** should be one of the following:
 - **"moves"** - all panels need to be cleared in the set number of moves
 - **"chain"** - all panels need to be cleared once the first chain ends, and there must be a chain
-- **"clear"** - all garbage on the field needs to be cleared before health runs out
+- **"clear"** - garbage must be revealed past the end of the "GarbagePanelBuffer" before health runs out
 
 #### Other Fields
 - **"Moves"** - the number of moves allowed to complete the puzzle
@@ -88,13 +90,15 @@ Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzz
 
 #### Start Timing
 **"StartTiming"** specifies when the simulation of the Stack starts:
-- **"firstSwap"** - Game physics are on hold until the first swap. The player can move normally.
-- **"firstInput"** - All game physics are on hold until the first player input.
-- **"countdown"** - The game starts after a 3 second countdown
-- **"immediately"** - Full simulation starts with no delay
+- **"First Swap"** - Game physics are on hold until the first swap. The player can move normally.
+- **"First Input"** - All game physics are on hold until the first player input.
+- **"Countdown"** - The game starts after a 3 second countdown
+- **"Immediately"** - Full simulation starts with no delay
+
+A puzzle with an invalid or unrecognized StartTiming will fail to load, and a warning will be logged.
 
 If no start timing is given, a suitable start timing is selected based on puzzle type:
-- "clear" and "chain" puzzles will use "firstInput" if a cursor start position is given and "firstSwap" if not
+- "clear" and "chain" puzzles will use "First Input" if a cursor start position is given and "First Swap" if not
 - "moves" puzzles will start immediately
 
 #### Optional Fields
@@ -110,6 +114,10 @@ If no start timing is given, a suitable start timing is selected based on puzzle
 - **"Help Description"** - optional text that explains the puzzle pattern or provides hints to the player
   - Format: String describing the puzzle mechanic or strategy
   - Displayed when the player requests help for the puzzle
+- **"Old UUIDs"** - optional list of the IDs the puzzle had before its data was changed, oldest first
+  - Format: `["<oldest id>", "<newer id>"]`
+  - A puzzle's ID is worked out from its data, so changing the data gives it a new one and the player's results saved under the old ID stop counting. Listing the old ID carries those results over to the new one.
+  - Only set it when the puzzle plays the same as before and its data changed only because the puzzle format changed. A puzzle you changed in a way that plays differently is a new puzzle, and old results shouldn't count for it.
 
 #### Panel Buffers
 **"PanelBuffer"** specifies the panels that should appear if the player is raising the stack.
@@ -118,7 +126,7 @@ If not specified these will be unmatchable grey panels. Outside of clear puzzles
 
 **"GarbagePanelBuffer"** specifies the panel that should appear from cleared garbage.
 
-For each cleared row of garbage, the first 6 colors are taken from the string and assigned to the positions in the row accordingly.
+For each cleared row of garbage, the first 6 colors are taken from the string and assigned to positions across the row. Exactly 6 colors are used for every row, even if the garbage block is not 6 wide. Only panel colors 1–9 are allowed; a revealed row cannot contain empty cells. A partial last row is filled with grey (9) panels. For a clear puzzle, the buffer is also the goal: enter only the rows the player should see, and the next row revealed after them wins. Every board row that turns into panels takes one buffer row, so a clear that reveals two blocks on different rows takes two. A puzzle won on its third revealed row has a buffer of 2 rows.
 
 If a piece of garbage did not fill out an entire row only the colors in the spots with garbage will appear, e.g.:
 
@@ -131,7 +139,7 @@ If a piece of garbage did not fill out an entire row only the colors in the spot
 
 If the garbagePanelBuffer is "123456123456", the bottom garbage will transform into 3456 and the top garbage will transform into 1234.
 
-Afterwards the garbagePanelBuffer will be empty. An empty buffer means that only grey unmatchable panels will appear from garbage.
+Afterwards the garbagePanelBuffer will be empty. In a clear puzzle the next revealed row wins; in other puzzles an empty buffer means that only grey unmatchable panels will appear from garbage.
 
 ## JSON Formatting Notes
 

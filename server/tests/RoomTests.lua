@@ -217,7 +217,64 @@ local function pauseTest()
   assert(message.type == "pauseNotification" and message.content.source == p1.publicPlayerID and message.content.paused == false)
 end
 
+--- Plays a short match in which both players report `winner` as the outcome and returns its replay.
+---@param p1Setting ("not at all" | "anonymously" | "with my name")
+---@param p2Setting ("not at all" | "anonymously" | "with my name")
+---@param winner integer
+---@return ReplayV3 replay
+---@return ServerPlayer p1
+---@return ServerPlayer p2
+local function simulateWinner(p1Setting, p2Setting, winner)
+  local room, p1, p2, gameCatcher = getRoom()
+  p1.save_replays_publicly = p1Setting
+  p2.save_replays_publicly = p2Setting
+  room:start_match()
+  for i = 1, 120 do
+    room:broadcastInput("A", p1)
+    room:broadcastInput("A", p2)
+  end
+  room:handleGameOverOutcome({outcome = winner}, p1)
+  room:handleGameOverOutcome({outcome = winner}, p2)
+  local replay = gameCatcher.game.replay
+  room:close()
+  return replay, p1, p2
+end
+
+local function replayWinnerTest()
+  local replay, p1, p2 = simulateWinner("with my name", "with my name", 1)
+  assert(replay.metadata.winnerId == p1.publicPlayerID, "Expected the replay to name player 1 as the winner")
+
+  replay, p1, p2 = simulateWinner("with my name", "with my name", 2)
+  assert(replay.metadata.winnerId == p2.publicPlayerID, "Expected the replay to name player 2 as the winner")
+end
+
+local function anonymousReplayTest()
+  -- each case: who saves anonymously, who wins, and the winnerId the public replay should carry
+  local cases = {
+    {anonymous = 2, winner = 1, winnerId = function(p1, p2) return p1.publicPlayerID end},
+    {anonymous = 2, winner = 2, winnerId = function(p1, p2) return -2 end},
+    {anonymous = 1, winner = 1, winnerId = function(p1, p2) return -1 end},
+    {anonymous = 1, winner = 2, winnerId = function(p1, p2) return p2.publicPlayerID end},
+  }
+
+  for _, case in ipairs(cases) do
+    local p1Setting = case.anonymous == 1 and "anonymously" or "with my name"
+    local p2Setting = case.anonymous == 2 and "anonymously" or "with my name"
+    local replay, p1, p2 = simulateWinner(p1Setting, p2Setting, case.winner)
+    local anonymousPlayer = case.anonymous == 1 and p1 or p2
+    local description = "player " .. case.anonymous .. " anonymous, player " .. case.winner .. " wins"
+
+    assert(replay.metadata.winnerId == case.winnerId(p1, p2),
+           description .. ": expected winnerId " .. tostring(case.winnerId(p1, p2)) .. ", got " .. tostring(replay.metadata.winnerId))
+    assert(replay.metadata.winnerId ~= anonymousPlayer.publicPlayerID, description .. ": winnerId leaks the anonymous player's publicId")
+    local metadata = replay.metadata.stacks[case.anonymous]
+    assert(metadata.name == "anonymous" and metadata.publicId == -case.anonymous, description .. ": stack metadata is not anonymized")
+  end
+end
+
 basicTest()
+replayWinnerTest()
+anonymousReplayTest()
 abortTest1()
 abortTest2()
 abortTest3()

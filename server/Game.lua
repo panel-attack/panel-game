@@ -211,11 +211,11 @@ function Game:finalizeReplay(result)
     if player.save_replays_publicly == "anonymously" then
       local playerMetadata = self.replay.metadata.stacks[i]
       ---@cast playerMetadata StackMetadata
-      playerMetadata.name = "anonymous"
-      playerMetadata.publicId = - i
       if playerMetadata.publicId == self.replay.metadata.winnerId then
         self.replay.metadata.winnerId = - i
       end
+      playerMetadata.name = "anonymous"
+      playerMetadata.publicId = - i
     end
   end
 end

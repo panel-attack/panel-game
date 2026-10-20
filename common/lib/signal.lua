@@ -35,7 +35,8 @@ function Signal.createSignal(t, signalName)
     return
   end
 
-  -- subscriptions are weakly keyed to make sure that there is no memory leaking from subscribers going out of scope but remaining subscribed somewhere
+  -- subscriptions are weakly keyed so a subscriber that goes out of scope is dropped without disconnecting,
+  -- as long as its callbacks do not reference it (see Signal.connectSignal)
   t.signalSubscriptions[signalName] = util.getWeaklyKeyedTable()
 end
 
@@ -54,9 +55,14 @@ function Signal.emitSignal(emitter, signalName, ...)
   end
 end
 
--- connects to a signal so the callback is executed with the data and arguments passed to the signal whenever the signal emits
+-- connects to a signal so the callback is executed with the subscriber and the arguments passed to the signal whenever the signal emits
 -- technically you can pass any data for the subscriber argument, but the entry will get immediately garbage collected if the data is not also referenced elsewhere
--- this is to make sure that there is no memory leaking from subscribers going out of scope but remaining subscribed somewhere, implemented via weak tables
+-- the subscriber is held weakly but the callback strongly, and LuaJIT has no ephemerons, so the callback must not capture
+-- anything that retains the subscriber, or the subscriber stays alive as long as the emitter does
+---@param emitter Signal the emitter to subscribe to
+---@param signalName string the signal to subscribe to
+---@param subscriber any held weakly; passed to the callback as its first argument
+---@param callback fun(subscriber: any, ...: any) held strongly by the emitter
 function Signal.connectSignal(emitter, signalName, subscriber, callback)
   assert(emitter.emitsSignals and emitter.signalSubscriptions, "trying to connect to a table that does not emit signals")
   assert(emitter.signalSubscriptions[signalName], "trying to connect to undefined signal " .. signalName)
@@ -70,7 +76,7 @@ function Signal.connectSignal(emitter, signalName, subscriber, callback)
 end
 
 -- normally we don't need to actively disconnect from a signal as subscriptions automatically get removed when their subscriber is garbage collected
--- but in some scenarios we may want to actively unsubscribe
+-- (provided the callback does not reference the subscriber, see Signal.connectSignal), but in some scenarios we may want to actively unsubscribe
 ---@param emitter Signal the emitter to unsubscribe from
 ---@param signalName string the signal to unsubscribe from
 ---@param subscriber table who is unsubscribing the signal
@@ -78,7 +84,10 @@ end
 function Signal.disconnectSignal(emitter, signalName, subscriber, callback)
   if callback and emitter.signalSubscriptions[signalName][subscriber] then
     local index = tableUtils.indexOf(emitter.signalSubscriptions[signalName][subscriber], callback)
-    table.remove(emitter.signalSubscriptions[signalName][subscriber], index)
+    -- table.remove without an index removes the last callback, which is not the one asked for
+    if index then
+      table.remove(emitter.signalSubscriptions[signalName][subscriber], index)
+    end
   else
     emitter.signalSubscriptions[signalName][subscriber] = nil
   end

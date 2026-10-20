@@ -19,7 +19,11 @@ require("client.src.input.JoystickProvider")
 --   inputConfigurations: raw key inputs mapped to internal aliases for that configuration
 --   base (top level): the union of all inputConfigurations not already claimed by a player
 --   mouse: all mouse buttons and the position of the mouse
+--   mappedKeys: allKeys without the keys ignored until released, this is what inputConfigurations and base are built from
 ---@class InputManager
+---@field isDown table<string, integer>
+---@field isPressed table<string, number>
+---@field isUp table<string, integer>
 local inputManager = {
   isDown = {},
   isPressed = {},
@@ -32,6 +36,9 @@ local inputManager = {
   hasUnsavedChanges = false,
   unconfiguredJoysticksCache = nil
 }
+inputManager.mappedKeys = inputManager.allKeys
+-- keys that were held when ignoreHeldKeysUntilReleased got called, mapped to true until they are released
+inputManager.ignoredKeys = {}
 
 -- Represents the state of love.run while the key in isDown/isUp is active
 -- DETECTED: set when the key state is first changed within the event handler
@@ -238,15 +245,15 @@ function inputManager:updateKeyStates(dt, keys)
 end
 
 function inputManager:aliasKey(key, keyAlias)
-  self.isDown[keyAlias] = self.isDown[keyAlias] or self.allKeys.isDown[key]
-  self.isUp[keyAlias] = self.isUp[keyAlias] or self.allKeys.isUp[key]
-  if self.allKeys.isPressed[key] and (not self.isPressed[keyAlias] or self.allKeys.isPressed[key] > self.isPressed[keyAlias]) then
-    self.isPressed[keyAlias] = self.allKeys.isPressed[key]
+  self.isDown[keyAlias] = self.isDown[keyAlias] or self.mappedKeys.isDown[key]
+  self.isUp[keyAlias] = self.isUp[keyAlias] or self.mappedKeys.isUp[key]
+  if self.mappedKeys.isPressed[key] and (not self.isPressed[keyAlias] or self.mappedKeys.isPressed[key] > self.isPressed[keyAlias]) then
+    self.isPressed[keyAlias] = self.mappedKeys.isPressed[key]
   end
 end
 
 function inputManager:mergePressedKeys(key1, key2)
-  local maxPressedTime = math.max(self.allKeys.isPressed[key1] or 0, self.allKeys.isPressed[key2] or 0)
+  local maxPressedTime = math.max(self.mappedKeys.isPressed[key1] or 0, self.mappedKeys.isPressed[key2] or 0)
   if maxPressedTime == 0 then
     return nil
   else
@@ -256,19 +263,24 @@ end
 
 function inputManager:updateSystemKeys()
   -- alt
-  self.isDown["Alt"] = self.allKeys.isDown["lalt"] or self.allKeys.isDown["ralt"]
-  self.isUp["Alt"] = self.allKeys.isUp["lalt"] and self.allKeys.isUp["ralt"]
+  self.isDown["Alt"] = self.mappedKeys.isDown["lalt"] or self.mappedKeys.isDown["ralt"]
+  self.isUp["Alt"] = self.mappedKeys.isUp["lalt"] and self.mappedKeys.isUp["ralt"]
   self.isPressed["Alt"] = self:mergePressedKeys("lalt", "ralt")
 
   -- ctrl
-  self.isDown["Ctrl"] = self.allKeys.isDown["lctrl"] or self.allKeys.isDown["rctrl"]
-  self.isUp["Ctrl"] = self.allKeys.isUp["lctrl"] and self.allKeys.isUp["rctrl"]
+  self.isDown["Ctrl"] = self.mappedKeys.isDown["lctrl"] or self.mappedKeys.isDown["rctrl"]
+  self.isUp["Ctrl"] = self.mappedKeys.isUp["lctrl"] and self.mappedKeys.isUp["rctrl"]
   self.isPressed["Ctrl"] = self:mergePressedKeys("lctrl", "rctrl")
 
   -- shift
-  self.isDown["Shift"] = self.allKeys.isDown["lshift"] or self.allKeys.isDown["rshift"]
-  self.isUp["Shift"] = self.allKeys.isUp["lshift"] and self.allKeys.isUp["rshift"]
+  self.isDown["Shift"] = self.mappedKeys.isDown["lshift"] or self.mappedKeys.isDown["rshift"]
+  self.isUp["Shift"] = self.mappedKeys.isUp["lshift"] and self.mappedKeys.isUp["rshift"]
   self.isPressed["Shift"] = self:mergePressedKeys("lshift", "rshift")
+
+  -- cmd on macOS, the windows key elsewhere
+  self.isDown["Gui"] = self.allKeys.isDown["lgui"] or self.allKeys.isDown["rgui"]
+  self.isUp["Gui"] = self.allKeys.isUp["lgui"] and self.allKeys.isUp["rgui"]
+  self.isPressed["Gui"] = self:mergePressedKeys("lgui", "rgui")
 
   -- systemKey
   self.isDown["SystemKey"] = self.isDown["Alt"] and self.isDown["Ctrl"] and self.isDown["Shift"]
@@ -295,9 +307,9 @@ function inputManager:updateKeyMaps()
     self.isPressed[keyAlias] = KEY_CHANGE.NONE
     for i = 1, #self.inputConfigurations do
       local key = self.inputConfigurations[i][keyAlias]
-      self.inputConfigurations[i].isDown[keyAlias] = self.allKeys.isDown[key]
-      self.inputConfigurations[i].isUp[keyAlias] = self.allKeys.isUp[key]
-      self.inputConfigurations[i].isPressed[keyAlias] = self.allKeys.isPressed[key]
+      self.inputConfigurations[i].isDown[keyAlias] = self.mappedKeys.isDown[key]
+      self.inputConfigurations[i].isUp[keyAlias] = self.mappedKeys.isUp[key]
+      self.inputConfigurations[i].isPressed[keyAlias] = self.mappedKeys.isPressed[key]
 
       if not self.inputConfigurations[i].claimed then
         -- the top level inputs only contain unclaimed inputs
@@ -316,11 +328,46 @@ function inputManager:updateKeyMaps()
   end
 end
 
+-- Ignores every key that is currently held for inputConfigurations and the base inputs until it is released
+-- Used when switching scenes on a held key so the next scene does not read it as held, e.g. by repeating a held direction
+function inputManager:ignoreHeldKeysUntilReleased()
+  for key, _ in pairs(self.allKeys.isPressed) do
+    self.ignoredKeys[key] = true
+  end
+  for key, _ in pairs(self.allKeys.isDown) do
+    self.ignoredKeys[key] = true
+  end
+end
+
+-- Rebuilds mappedKeys from allKeys, leaving out ignored keys and forgetting the ones that got released
+function inputManager:updateMappedKeys()
+  if next(self.ignoredKeys) == nil then
+    self.mappedKeys = self.allKeys
+    return
+  end
+
+  self.mappedKeys = {isDown = {}, isPressed = {}, isUp = {}}
+  for _, state in ipairs({"isDown", "isPressed", "isUp"}) do
+    for key, value in pairs(self.allKeys[state]) do
+      if not self.ignoredKeys[key] then
+        self.mappedKeys[state][key] = value
+      end
+    end
+  end
+
+  for key, _ in pairs(self.ignoredKeys) do
+    if not self.allKeys.isPressed[key] and not self.allKeys.isDown[key] then
+      self.ignoredKeys[key] = nil
+    end
+  end
+end
+
 function inputManager:update(dt)
   --self:joystickToButtons()
   self:dPadToButtons()
   self:updateKeyStates(dt, self.allKeys)
   self:updateKeyStates(dt, self.mouse)
+  self:updateMappedKeys()
   self:updateKeyMaps()
   self:updateSystemKeys()
 end

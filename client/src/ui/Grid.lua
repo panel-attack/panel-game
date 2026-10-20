@@ -63,7 +63,14 @@ function Grid:createElementAt(x, y, width, height, description, uiElement, noPad
     gridElement.onSelect = function(self, selector)
       if selector.setFocus and self.content.isFocusable then
         GAME.theme:playValidationSfx()
-        selector:setFocus(self.content)
+        -- some content (e.g. MultiPlayerSelectionWrapper) is shared between multiple players/cursors
+        -- getFocusTarget lets that content redirect focus to a player-specific object so that
+        -- multiple cursors focusing the same grid cell don't clobber each other's focus state
+        local focusTarget = self.content
+        if focusTarget.getFocusTarget then
+          focusTarget = focusTarget:getFocusTarget(selector)
+        end
+        selector:setFocus(focusTarget)
       else
         self.content:onSelect(selector)
       end

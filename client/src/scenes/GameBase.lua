@@ -20,11 +20,12 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 -- Scene template for running any type of game instance (endless, vs-self, replays, etc.)
 ---@class GameBase : Scene
 ---@field saveReplay boolean
----@field text string
+---@field text string?
 ---@field pauseState table
 ---@field minDisplayTime number
 ---@field maxDisplayTime number
 ---@field gameOverStartTime number?
+---@field holdToContinue boolean if the game over screen requires holding a button instead of pressing it
 ---@field fadeOutMusicOnGameOver boolean
 ---@field frameInfo table
 ---@field droppedFrameCount integer
@@ -47,6 +48,7 @@ local GameBase = class(
     self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
     self.maxDisplayTime = -1 -- the maximum amount of seconds the game over screen will be displayed for, -1 means no max time
     self.gameOverStartTime = nil -- timestamp for when game over screen was first displayed
+    self.holdToContinue = false
     self.fadeOutMusicOnGameOver = true
 
     self.frameInfo = {
@@ -63,6 +65,9 @@ local GameBase = class(
 )
 
 GameBase.name = "GameBase"
+
+-- seconds a button has to be held to leave the game over screen when holdToContinue is active
+GameBase.HOLD_TO_CONTINUE_DURATION = 0.5
 
 -- begin abstract functions
 
@@ -81,6 +86,13 @@ function GameBase:customRun() end
 -- Game mode specific state setup for a game over
 -- called during setupGameOver()
 function GameBase:customGameOverSetup() end
+
+-- Game mode specific pause menu items, shown between resume and back
+-- called during load()
+---@return MenuItem[]
+function GameBase:customPauseMenuItems()
+  return {}
+end
 
 -- end abstract functions
 
@@ -191,12 +203,13 @@ function GameBase:load()
       end
       self:initializeFrameInfo()
     end),
-    ui.MenuItem.createButtonMenuItem("back", nil, true, function()
-      GAME.theme:playCancelSfx()
-      self.match:abort()
-      self:startNextScene()
-    end),
   }
+  tableUtils.appendToList(pauseMenuItems, self:customPauseMenuItems())
+  pauseMenuItems[#pauseMenuItems + 1] = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
+    GAME.theme:playCancelSfx()
+    self.match:abort()
+    self:startNextScene()
+  end)
 
   self.pauseMenu = ui.Menu({
     x = 0,
@@ -249,6 +262,8 @@ function GameBase:setupGameOver()
   self.gameOverStartTime = love.timer.getTime()
   self.minDisplayTime = 1 -- the minimum amount of seconds the game over screen will be displayed for
   self.maxDisplayTime = -1
+  -- with multiple local players, one player mashing buttons could skip the screen before the other saw their stats
+  self.holdToContinue = tableUtils.count(self.match.players, function(p) return p.isLocal and p.human end) >= 2
 
   if self.fadeOutMusicOnGameOver then
     SoundController:fadeOutActiveTrack(3)
@@ -279,14 +294,49 @@ function GameBase:runGameOver()
 
   if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
     GAME.theme:playValidationSfx()
+    -- the button used to leave is likely still held, so the next scene should not act on it until it is released
+    input:ignoreHeldKeysUntilReleased()
     collectgarbage("collect")
     collectgarbage("collect")
     self:startNextScene()
   end
 end
 
+---@return boolean # true if the player input indicates the game over screen should be left
 function GameBase:readyToProceedToNextScene()
+  if self.holdToContinue then
+    return self:getHoldToContinueProgress() >= 1
+  end
   return (tableUtils.length(input.isDown) > 0) or (tableUtils.length(input.mouse.isDown) > 0)
+end
+
+-- Returns the longest time any of the keys has been held for, ignoring keys held for longer than maxTime
+---@param pressedKeys table<any, number>
+---@param maxTime number
+---@return number
+local function getLongestHeldTime(pressedKeys, maxTime)
+  local longestHold = 0
+  for _, heldTime in pairs(pressedKeys) do
+    if heldTime <= maxTime and heldTime > longestHold then
+      longestHold = heldTime
+    end
+  end
+  return longestHold
+end
+
+-- Returns how far the longest held button is towards leaving the game over screen
+-- Only buttons that started being held after the game over screen appeared are considered
+---@return number # progress between 0 and 1
+function GameBase:getHoldToContinueProgress()
+  if not self.gameOverStartTime then
+    return 0
+  end
+
+  local displayTime = love.timer.getTime() - self.gameOverStartTime
+  local longestHold = math.max(getLongestHeldTime(input.allKeys.isPressed, displayTime),
+                               getLongestHeldTime(input.mouse.isPressed, displayTime))
+
+  return math.min(longestHold / GameBase.HOLD_TO_CONTINUE_DURATION, 1)
 end
 
 function GameBase:startNextScene()
@@ -363,9 +413,15 @@ function GameBase:update(dt)
     if not self.match:hasLocalPlayer() then
       if input.isDown["MenuEsc"] then
         GAME.theme:playCancelSfx()
+        local room = GAME.netClient:isConnected() and GAME.battleRoom
+        if room then
+          -- the room is closing rather than going back to character select, so its matchEnded callback must not
+          -- let go of the match before shutdown deinits it
+          self.match:disconnectSignal("matchEnded", room)
+        end
         self.match:abort()
-        if GAME.netClient:isConnected() then
-          GAME.battleRoom:shutdown()
+        if room then
+          room:shutdown()
         end
         GAME.navigationStack:popToName("Lobby")
         return
@@ -472,15 +528,26 @@ function GameBase:drawEndGameText()
     local gameOverPosition = themes[config.theme].gameover_text_Pos
     local font = GraphicsUtil.getGlobalFont()
     local padding = 4
-    local maxWidth = math.max(font:getWidth(message), font:getWidth(loc("continue_button")))
+    local continueText = loc(self.holdToContinue and "hold_continue_button" or "continue_button")
+    local maxWidth = math.max(font:getWidth(message), font:getWidth(continueText))
     local height = font:getHeight() * 2 + 3*padding
     local drawY = gameOverPosition[2]
+    local continueY = drawY + padding + font:getHeight() + padding
 
     -- Background
     GraphicsUtil.drawRectangle("fill", gameOverPosition[1] - maxWidth/2 - padding, drawY, maxWidth + 2*padding, height, 0, 0, 0, 0.8)
 
+    if self.holdToContinue then
+      local progress = self:getHoldToContinueProgress()
+      if progress > 0 then
+        local barWidth = font:getWidth(continueText) * progress
+        GraphicsUtil.drawRectangle("fill", gameOverPosition[1] - font:getWidth(continueText)/2, continueY, barWidth, font:getHeight(),
+                                   1, 1, 1, 0.4)
+      end
+    end
+
     GraphicsUtil.print(message, gameOverPosition[1] - font:getWidth(message)/2, drawY + padding)
-    GraphicsUtil.print(loc("continue_button"), gameOverPosition[1] - font:getWidth(loc("continue_button"))/2, drawY + padding + font:getHeight() + padding )
+    GraphicsUtil.print(continueText, gameOverPosition[1] - font:getWidth(continueText)/2, continueY)
   end
 end
 

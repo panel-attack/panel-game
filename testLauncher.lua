@@ -76,8 +76,10 @@ local allTests = {
   -- disabled for testLauncher because it needs the client love callbacks
   --"common.tests.lib.InputTests",
   "common.tests.lib.JsonEncodingTests",
+  "common.tests.lib.SignalTests",
   "common.tests.lib.tableUtilsTest",
   "common.tests.lib.utf8AdditionsTests",
+  "common.tests.lib.playerNameTests",
   "common.tests.lib.utilTests",
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
@@ -94,15 +96,20 @@ local allTests = {
   "client.tests.PuzzleSetTests",
   "client.tests.PuzzleSetIteratorTests",
   "client.tests.PuzzleLibraryTests",
+  "client.tests.ScoresTests",
   "client.tests.graphics_PuzzleHierarchyDisplayTests",
   "client.tests.ServerQueueTests",
   "client.tests.SoundGroupTests",
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
   "client.tests.StackGraphicsTests",
+  "client.tests.TelegraphTests",
   "client.tests.InputConfigurationTests",
   "client.tests.DiscreteImageSliderTests",
+  "client.tests.InputFieldTests",
   "client.tests.PlayerSettingsTests",
+  "client.tests.SetNameMenuTests",
+  "client.tests.BattleRoomLifecycleTests",
 }
 
 -- Check for specific test name argument

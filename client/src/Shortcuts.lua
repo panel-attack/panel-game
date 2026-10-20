@@ -68,6 +68,14 @@ local function handleCopy()
   end
 end
 
+local function handlePaste()
+  local clipboard = love.system.getClipboardText()
+  if clipboard then
+    -- copying from a file or chat often drags along a trailing newline the input filters would reject
+    inputFieldManager.textInput(clipboard:match("^%s*(.-)%s*$"))
+  end
+end
+
 local function handleDumpAttackPattern(playerNumber)
   local activeScene = GAME.navigationStack:getActiveScene()
 
@@ -132,10 +140,12 @@ function handleShortcuts()
     elseif input.allKeys.isDown["2"] then
       handleDumpAttackPattern(2)
     elseif input.allKeys.isDown["v"] then
-      local clipboard = love.system.getClipboardText()
-      if clipboard then
-        inputFieldManager.textInput(clipboard)
-      end
+      handlePaste()
+    end
+  elseif input.isPressed["Gui"] then
+    -- cmd+v is the paste shortcut on macOS
+    if input.allKeys.isDown["v"] then
+      handlePaste()
     end
   elseif input.isPressed["Alt"] then
     if input.allKeys.isDown["return"] then

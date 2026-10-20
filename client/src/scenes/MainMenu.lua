@@ -20,6 +20,7 @@ local SetNameMenu = require("client.src.scenes.SetNameMenu")
 local OptionsMenu = require("client.src.scenes.OptionsMenu")
 local DesignHelper = require("client.src.scenes.DesignHelper")
 local system = require("client.src.system")
+local playerName = require("common.lib.playerName")
 
 local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local EndlessGame = require("client.src.scenes.EndlessGame")
@@ -42,6 +43,19 @@ MainMenu.name = "MainMenu"
 local function switchToScene(scene, transition)
   GAME.theme:playValidationSfx()
   GAME.navigationStack:push(scene, transition)
+end
+
+-- the server refuses names that break its rules so ask for a new one first instead of letting the login fail
+local function switchToLobby(lobbyParams)
+  if not playerName.validate(config.name) then
+    switchToScene(SetNameMenu({
+      onNameSet = function()
+        GAME.navigationStack:replace(Lobby(lobbyParams))
+      end
+    }))
+  else
+    switchToScene(Lobby(lobbyParams))
+  end
 end
 
 function MainMenu:refresh()
@@ -87,7 +101,7 @@ function MainMenu:createMainMenu()
       switchToScene(ChallengeModeMenu())
     end),
     ui.MenuItem.createButtonMenuItem("mm_2_vs_online", {""}, nil, function()
-      switchToScene(Lobby({serverIp = "panelattack.com"}))
+      switchToLobby({serverIp = "panelattack.com"})
     end),
     ui.MenuItem.createButtonMenuItem("mm_2_vs_local", nil, nil, function()
       switchToScene(LocalGameModeSelectionScene())
@@ -113,8 +127,8 @@ function MainMenu:createMainMenu()
 
   local menu = ui.Menu.createCenteredMenu(menuItems)
 
-  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end),
-                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToScene(Lobby({serverIp = "Localhost"})) end)
+  local debugMenuItems = {ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToLobby({serverIp = "betaserver.panelattack.com", serverPort = 59569}) end),
+                          ui.MenuItem.createButtonMenuItem("Localhost Server", nil, false, function() switchToLobby({serverIp = "Localhost"}) end)
                         }
 
   local function addDebugMenuItems()
