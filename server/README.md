@@ -193,6 +193,8 @@ That means instead of using `luajit` you can start `serverLauncher.lua` with a l
 
 Our repository includes compiled versions of luasocket, luafilesystem and lsqlite3 so that you can develop and test server changes without most of the steps above.
 
+These bundled libraries only cover Windows and x86_64 Linux. On other platforms, install luafilesystem and lsqlite3 with LuaRocks as described above and do the "Add luarocks 5.1 to your lua search path" step. Love reads `LUA_CPATH` too, so this also lets `love ./testLauncher.lua` load the server tests.
+
 We do strongly recommend testing on a representative linux system or the beta server before deploying to live as running with love means using a different version of LuaJIT and also that you do not run through all code paths the server will run through when loading up these libraries in code used by both server and client.
 
 
