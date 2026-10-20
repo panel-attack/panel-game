@@ -413,9 +413,15 @@ function GameBase:update(dt)
     if not self.match:hasLocalPlayer() then
       if input.isDown["MenuEsc"] then
         GAME.theme:playCancelSfx()
+        local room = GAME.netClient:isConnected() and GAME.battleRoom
+        if room then
+          -- the room is closing rather than going back to character select, so its matchEnded callback must not
+          -- let go of the match before shutdown deinits it
+          self.match:disconnectSignal("matchEnded", room)
+        end
         self.match:abort()
-        if GAME.netClient:isConnected() then
-          GAME.battleRoom:shutdown()
+        if room then
+          room:shutdown()
         end
         GAME.navigationStack:popToName("Lobby")
         return

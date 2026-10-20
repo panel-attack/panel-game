@@ -1074,8 +1074,7 @@ function CharacterSelect:updateSelf(dt)
   if self.battleRoom and self.battleRoom.spectating then
     if input.isDown["MenuEsc"] then
       GAME.theme:playCancelSfx()
-      GAME.netClient:leaveRoom()
-      GAME.navigationStack:pop()
+      self:leave()
     end
   end
   if self:customUpdate() then

@@ -84,7 +84,10 @@ end
 function Signal.disconnectSignal(emitter, signalName, subscriber, callback)
   if callback and emitter.signalSubscriptions[signalName][subscriber] then
     local index = tableUtils.indexOf(emitter.signalSubscriptions[signalName][subscriber], callback)
-    table.remove(emitter.signalSubscriptions[signalName][subscriber], index)
+    -- table.remove without an index removes the last callback, which is not the one asked for
+    if index then
+      table.remove(emitter.signalSubscriptions[signalName][subscriber], index)
+    end
   else
     emitter.signalSubscriptions[signalName][subscriber] = nil
   end

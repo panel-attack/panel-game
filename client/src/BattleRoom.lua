@@ -501,7 +501,14 @@ function BattleRoom:update(dt)
   end
 end
 
+-- Ends the room for good. Safe to call more than once: a room the client leaves is shut down right away and
+-- the server's leave_room confirming it arrives later.
 function BattleRoom:shutdown()
+  if self.hasShutdown then
+    return
+  end
+  self.hasShutdown = true
+
   for _, player in ipairs(self.players) do
     player:disconnectSubscriber(self)
     player:reset()
@@ -511,11 +518,16 @@ function BattleRoom:shutdown()
     self.match = nil
   end
   if self.online then
-    GAME.netClient:leaveRoom()
+    GAME.netClient:disconnectSignal("clientDisconnected", self)
+    GAME.netClient:unregisterPlayerUpdates(self)
+    -- a room the server already closed is no longer the net client's room and must not leave the current one
+    if GAME.netClient.room == self then
+      GAME.netClient:leaveRoom()
+    end
   end
-  self.hasShutdown = true
-  GAME.battleRoom = nil
-  self = nil
+  if GAME.battleRoom == self then
+    GAME.battleRoom = nil
+  end
 end
 
 -- a callback function that is getting registered to the ClientMatch's matchEnded signal
