@@ -1,4 +1,9 @@
 local tableUtils = require("common.lib.tableUtils")
+local logger = require("common.lib.logger")
+local system = require("client.src.system")
+
+-- Seconds between checks for a change to the system's default audio output.
+local PLAYBACK_DEVICE_CHECK_INTERVAL = 1
 
 local function stopIfPlaying(audioSource)
   if audioSource:isPlaying() then
@@ -166,7 +171,34 @@ function SoundController:pauseMusic()
   end
 end
 
+---Follows the Windows or macOS default audio output without recreating sources or restarting music.
+function SoundController:updatePlaybackDevice()
+  local osName = love.system.getOS()
+  if (osName ~= "Windows" and osName ~= "OS X") or not system.meetsLoveVersionRequirement(12, 0) then
+    return
+  end
+
+  -- Check once per second rather than enumerating audio devices every frame; failed switches retry on the next check.
+  local time = love.timer.getTime()
+  if self.nextPlaybackDeviceCheck and time < self.nextPlaybackDeviceCheck then
+    return
+  end
+  self.nextPlaybackDeviceCheck = time + PLAYBACK_DEVICE_CHECK_INTERVAL
+
+  -- OpenAL Soft's WASAPI and CoreAudio backends put the system default device first in their enumeration.
+  local defaultDevice = love.audio.getPlaybackDevices()[1]
+  if defaultDevice and defaultDevice ~= love.audio.getPlaybackDevice() then
+    local success, message = love.audio.setPlaybackDevice(defaultDevice)
+    if success then
+      logger.info("Switched audio output to " .. defaultDevice)
+    else
+      logger.warn("Failed to switch audio output to " .. defaultDevice .. ": " .. tostring(message))
+    end
+  end
+end
+
 function SoundController:update()
+  self:updatePlaybackDevice()
   if self.activeTrack then
     self.activeTrack:update()
     self:updateFadeOut()
