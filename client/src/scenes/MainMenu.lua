@@ -2,7 +2,6 @@ local Scene = require("client.src.scenes.Scene")
 local consts = require("common.engine.consts")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local SceneAnimation = require("client.src.graphics.SceneAnimation")
 local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local DebugSettings = require("client.src.debug.DebugSettings")
@@ -27,14 +26,11 @@ local EndlessGame = require("client.src.scenes.EndlessGame")
 local VsSelfGame = require("client.src.scenes.VsSelfGame")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 
-local SCENE_FILENAME = "MainMenu.json"
-
 -- Scene for the main menu
 local MainMenu = class(function(self, sceneParams)
   self.music = "main"
   self.menu = self:createMainMenu()
   self.uiRoot:addChild(self.menu)
-  self.sceneAnimation = SceneAnimation(SCENE_FILENAME)
 end, Scene)
 
 MainMenu.name = "MainMenu"
@@ -175,16 +171,14 @@ function MainMenu:checkForUpdates()
 end
 
 function MainMenu:updateSelf(dt)
+  GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs(GAME.input, dt)
 
   self:checkForUpdates()
 end
 
 function MainMenu:drawSelf()
-  self.sceneAnimation:draw()
-
-  self.uiRoot:draw()
-
+  GAME.theme.images.bg_main:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 
