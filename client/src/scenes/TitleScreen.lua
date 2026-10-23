@@ -6,17 +6,20 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local MainMenu = require("client.src.scenes.MainMenu")
 local SceneAnimation = require("client.src.graphics.SceneAnimation")
+local Theme = require("client.src.mods.Theme")
 
 local START_OPACITY = 0.5
-local SCENE_FILENAME = "TitleScreen.json"
 
--- The title screen scene
+-- The title screen scene, drawing the theme's title image and its title scene on top, each only if the theme has it
 local TitleScreen = class(
   function (self, sceneParams)
-    self.backgroundImg = themes[config.theme].images.bg_main
+    local theme = themes[config.theme]
+    self.backgroundImg = theme.images.bg_title
+    if theme:hasScene(Theme.TITLE_SCENE_FILE) then
+      self.sceneAnimation = SceneAnimation(Theme.TITLE_SCENE_FILE)
+    end
     self.music = "title_screen"
     self.opacity = START_OPACITY
-    self.sceneAnimation = SceneAnimation(SCENE_FILENAME)
     self.direction = 1
     self:startAnimation()
   end,
@@ -39,16 +42,17 @@ end
 
 TitleScreen.name = "TitleScreen"
 
-function TitleScreen:titleDrawPressStart(opacity)
-  local opacityTarget = self.opacity
+function TitleScreen:titleDrawPressStart()
   local textMaxWidth = consts.CANVAS_WIDTH - 40
   local x = (consts.CANVAS_WIDTH / 2) - (textMaxWidth / 2)
   local y = consts.CANVAS_HEIGHT * 0.75
-  GraphicsUtil.printf(loc("continue_button"), x, y, textMaxWidth, "center", {1,1,1,opacityTarget}, nil, 16)
+  GraphicsUtil.printf(loc("continue_button"), x, y, textMaxWidth, "center", {1,1,1,self.opacity}, nil, 16)
 end
 
 function TitleScreen:update(dt)
-  self.backgroundImg:update(dt)
+  if self.backgroundImg then
+    self.backgroundImg:update(dt)
+  end
   local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
   if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then
     GAME.theme:playValidationSfx()
@@ -59,10 +63,13 @@ function TitleScreen:update(dt)
 end
 
 function TitleScreen:draw()
-  self.backgroundImg:draw()
-  self:titleDrawPressStart(((math.sin(5 * love.timer.getTime()) / 2 + .5) ^ .5) / 2 + .5)
-
-  self.sceneAnimation:draw()
+  if self.backgroundImg then
+    self.backgroundImg:draw()
+  end
+  if self.sceneAnimation then
+    self.sceneAnimation:draw()
+  end
+  self:titleDrawPressStart()
 end
 
 return TitleScreen

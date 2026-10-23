@@ -2,7 +2,7 @@
   "drawables": [
     {
       "id": "Faded",
-      "filePath": "test_image",
+      "filePath": "scenes/test_image",
       "alpha": 1,
       "animationTracks": [
         {

@@ -60,9 +60,7 @@ local function handleCopy()
 
     if tableUtils.length(stacks) > 0 then
       local encodeArguments = {indent = true, keyorder = {"P1", "P2", "Player", "Stop", "Shake", "Stack"}}
-      local encodedStacks = json.encode(stacks, encodeArguments)
-      ---@cast encodedStacks string
-      love.system.setClipboardText(encodedStacks)
+      love.system.setClipboardText(json.encode(stacks, encodeArguments))
       return true
     end
   end

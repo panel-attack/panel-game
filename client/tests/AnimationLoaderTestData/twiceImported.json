@@ -1,0 +1,15 @@
+{
+  "drawables": [
+    {
+      "id": "Container",
+      "children": [
+        {
+          "ref": "trackedPart.json"
+        },
+        {
+          "ref": "trackedPart.json"
+        }
+      ]
+    }
+  ]
+}

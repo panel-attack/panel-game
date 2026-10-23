@@ -252,17 +252,18 @@ function AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTa
         return
     end
 
-    local sceneTable  = FileUtils.readJsonFile(filePath)
+    local sceneTable = FileUtils.readJsonFile(filePath)
+    if sceneTable == nil then
+      error("Couldn't read the animation file " .. filePath)
+    end
 
     sceneTable.filePath = filePath
     loadedFileTables[filePath] = sceneTable
 
-    if sceneTable then
-      if sceneTable.drawables ~= nil then
-          for _, drawableNode in ipairs(sceneTable.drawables) do
-              AnimationLoader.indexNodesRecursively(drawableNode, filePath, idLookupTable, loadedFileTables)
-          end
-      end
+    if sceneTable.drawables ~= nil then
+        for _, drawableNode in ipairs(sceneTable.drawables) do
+            AnimationLoader.indexNodesRecursively(drawableNode, filePath, idLookupTable, loadedFileTables)
+        end
     end
 end
 
@@ -313,7 +314,8 @@ function AnimationLoader.resolveNodeReference(nodeTable, idLookupTable)
     
 end
 
-function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idLookupTable, visitedTables, filePath, rootPath)
+-- Resolves the refs in the node and its children, filePath is the file the node is written in so file imports resolve relative to it
+function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idLookupTable, visitedTables, filePath)
     if type(nodeTable) ~= "table" then
         return
     end
@@ -324,6 +326,7 @@ function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idL
 
     visitedTables[nodeTable] = true
 
+    local childrenFilePath = filePath
     if nodeTable.ref ~= nil then
 
         -- Check if this is a file reference (ends with .json)
@@ -333,8 +336,9 @@ function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idL
             local referencedFileTable = loadedFileTables[referencedFilePath]
 
             nodeTable.ref = nil
-            nodeTable.children = referencedFileTable.drawables
-            -- fall through to children now
+            -- every import gets its own copy, so importing a file twice neither shares nodes nor looks circular
+            nodeTable.children = deepcpy(referencedFileTable.drawables)
+            childrenFilePath = referencedFilePath
         else
             AnimationLoader.resolveNodeReference(nodeTable, idLookupTable)
         end
@@ -342,7 +346,7 @@ function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idL
 
     if nodeTable.children ~= nil then
         for _, childNode in ipairs(nodeTable.children) do
-            AnimationLoader.resolveRefsRecursively(childNode, loadedFileTables, idLookupTable, visitedTables, filePath, rootPath)
+            AnimationLoader.resolveRefsRecursively(childNode, loadedFileTables, idLookupTable, visitedTables, childrenFilePath)
         end
     end
 end
@@ -363,18 +367,16 @@ function AnimationLoader.loadFromFile(rootPath, filePath, tweens)
 
   -- Then all references are resolved with overrides applied
   for _, drawable in ipairs(rootData.drawables) do
-    AnimationLoader.resolveRefsRecursively(drawable, loadedFileTables, idLookupTable, {}, filePath, rootPath)
+    AnimationLoader.resolveRefsRecursively(drawable, loadedFileTables, idLookupTable, {}, filePath)
   end
 
   -- Finally once the full data structure is setup, it is converted into separate drawable objects.
   local drawables = {}
   local images = {}
-  if rootData then
-    for _, data in ipairs(rootData.drawables) do
-      local drawable = loadDrawables(rootPath, data, tweens, images)
-      if drawable then
-        drawables[#drawables+1] = drawable
-      end
+  for _, data in ipairs(rootData.drawables) do
+    local drawable = loadDrawables(rootPath, data, tweens, images)
+    if drawable then
+      drawables[#drawables+1] = drawable
     end
   end
   return drawables
@@ -449,6 +451,8 @@ function AnimationLoader.drawNode(d, parent)
       if usesStencil then
         assert(parent, "To use a stencil you need siblings")
         if loveMajor >= 12 then
+          -- unlike love.graphics.stencil on 11, draw mode keeps earlier values, so clear the previous node's mask
+          love.graphics.clear(false, true, false)
           love.graphics.setStencilMode("draw", 1)
           drawSiblingsBeforeNode(parent, d)
           love.graphics.setStencilMode("test", 1)

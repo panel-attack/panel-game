@@ -221,9 +221,7 @@ function Game:writeReleaseStreamDefinition()
     }
 
     -- this will only start to be active on next startup
-    local encodedReleaseStreams = json.encode(releaseStreamDefinition)
-    ---@cast encodedReleaseStreams string
-    love.filesystem.write("releaseStreams.json", encodedReleaseStreams)
+    love.filesystem.write("releaseStreams.json", json.encode(releaseStreamDefinition))
 
     -- this is for the assumption that a release stream is being retired
     -- comment in / out as fit depending on release
@@ -234,9 +232,7 @@ function Game:writeReleaseStreamDefinition()
       {
         activeReleaseStream = releaseStreamDefinition.default
       }
-      local encodedLaunchDefinition = json.encode(launchDefinition)
-      ---@cast encodedLaunchDefinition string
-      love.filesystem.write("updater/launch.json", encodedLaunchDefinition)
+      love.filesystem.write("updater/launch.json", json.encode(launchDefinition))
     end
   end
 end

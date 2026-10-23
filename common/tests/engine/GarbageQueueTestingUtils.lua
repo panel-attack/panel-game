@@ -34,9 +34,7 @@ function GarbageQueueTestingUtils.createMatch(stackHealth, attackFile)
   stack1:receiveConfirmedInput(string.rep("A", 10000))
 
   if attackFile then
-    local attackData = save.readAttackFile(attackFile)
-    assert(type(attackData) == "table", "Expected attack data table from save.readAttackFile")
-    local stack2 = match:createSimulatedStackWithSettings(attackData)
+    local stack2 = match:createSimulatedStackWithSettings(save.readAttackFile(attackFile))
     stack2:setMaxRunsPerFrame(1)
     match:addTarget(stack2, stack1)
   else

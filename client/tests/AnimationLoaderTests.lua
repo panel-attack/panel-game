@@ -400,6 +400,90 @@ local function testDrawDrawablesDrawsWithTheDefaultBlendMode()
   end
 end
 
+-- A missing animation file fails with its path instead of a nil index
+local function testMissingFileErrorsWithItsPath()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local loaded, err = pcall(AnimationLoader.loadFromFile, testPath, testPath .. "missing.json", Flux.group())
+
+  assertEqual(loaded, false, "Loading a missing file should fail")
+  assert(tostring(err):find("missing.json", 1, true), "The error should name the file, got: " .. tostring(err))
+end
+
+-- Importing the same file twice under one parent is not a circular reference
+local function testSameFileImportedTwiceUnderOneParent()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "twiceImported.json", Flux.group())
+
+  assertEqual(#results[1].children, 2, "Both imports should load")
+  assertEqual(#results[1].children[1].children, 1, "The first import should hold the file's drawable")
+  assertEqual(#results[1].children[2].children, 1, "The second import should hold the file's drawable")
+end
+
+-- Each import of a file gets its own track data, so one instance's tween state can't leak into another
+local function testEachImportOwnsItsTracks()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "importedAtTwoRoots.json", Flux.group())
+
+  local firstTracks = results[1].children[1].animationTracks
+  local secondTracks = results[2].children[1].animationTracks
+  assert(firstTracks ~= secondTracks, "The two imports should not share their track tables")
+end
+
+-- A file imported from a subfolder resolves its own imports relative to that subfolder
+local function testImportsResolveRelativeToTheImportingFile()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local results = AnimationLoader.loadFromFile(testPath, testPath .. "subfolderImport.json", Flux.group())
+
+  local middle = results[1].children[1]
+  assertEqual(middle.children[1].id, "Leaf", "parts/middle.json should import parts/leaf.json")
+end
+
+-- Returns a drawable node drawing a solid image of the given size and colour, for drawing tests that don't need a file
+local function solidNode(width, height, colour, x, y, stencil)
+  local imageData = love.image.newImageData(width, height)
+  imageData:mapPixel(function()
+    return colour[1], colour[2], colour[3], 1
+  end)
+  return {
+    x = x, y = y, width = width, height = height, rotation = 0, xScale = 1, yScale = 1,
+    anchor = "topLeft", pivot = "topLeft", alpha = 1, tint = {1, 1, 1},
+    blendMode = "alpha", alphaMode = "alphamultiply", stencil = stencil,
+    texture = love.graphics.newImage(imageData), children = {}
+  }
+end
+
+-- Returns a container node holding the given children
+local function containerNode(children)
+  return {
+    x = 0, y = 0, width = 0, height = 0, rotation = 0, xScale = 1, yScale = 1,
+    anchor = "topLeft", pivot = "topLeft", children = children
+  }
+end
+
+-- A masked node only draws where its own earlier siblings drew, not where an earlier masked node's siblings did
+local function testStencilMasksDontLeakIntoLaterMasks()
+  if not love.graphics.isActive() then
+    -- without a window there is nothing to draw on
+    return
+  end
+  local white, red, green = {1, 1, 1}, {1, 0, 0}, {0, 1, 0}
+  local first = containerNode({solidNode(2, 2, white, 0, 0, false), solidNode(1, 1, red, 0, 0, true)})
+  local second = containerNode({solidNode(1, 1, white, 3, 3, false), solidNode(4, 4, green, 0, 0, true)})
+  local canvas = love.graphics.newCanvas(4, 4)
+
+  love.graphics.push("all")
+  love.graphics.setCanvas({canvas, stencil = true})
+  love.graphics.clear(0, 0, 0, 1)
+  AnimationLoader.drawDrawables({first, second})
+  love.graphics.pop()
+  local pixels = canvas:newImageData()
+
+  local r, g, b = pixels:getPixel(3, 3)
+  assertEqual(r .. "," .. g .. "," .. b, "0,1,0", "The second masked node should draw inside its own mask")
+  r, g, b = pixels:getPixel(1, 1)
+  assertEqual(r .. "," .. g .. "," .. b, "1,1,1", "The second masked node should not draw inside the first node's mask")
+end
+
 -- Run all tests
 local function runAllTests()
   print("Running AnimationLoader tests...")
@@ -418,6 +502,11 @@ local function runAllTests()
   testOneFileCannotBeBothRepeatedAndClamped()
   testDrawDrawablesRestoresTheColour()
   testDrawDrawablesDrawsWithTheDefaultBlendMode()
+  testMissingFileErrorsWithItsPath()
+  testSameFileImportedTwiceUnderOneParent()
+  testEachImportOwnsItsTracks()
+  testImportsResolveRelativeToTheImportingFile()
+  testStencilMasksDontLeakIntoLaterMasks()
   
   print("✓ All AnimationLoader tests passed!")
 end
