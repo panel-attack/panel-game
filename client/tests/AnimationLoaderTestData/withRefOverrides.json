@@ -1,0 +1,59 @@
+{
+  "drawables": [
+    {
+      "id": "BaseElement",
+      "filePath": "test_image",
+      "position": {
+        "x": 10,
+        "y": 20
+      },
+      "size": {
+        "width": 64,
+        "height": 64
+      },
+      "alpha": 0.5,
+      "tint": [0.5, 0.5, 0.5],
+      "rotation": 0.0,
+      "animationTracks": [
+        {
+          "loopTrack": true,
+          "steps": [
+            {
+              "animateProperties": {
+                "alpha": 1.0
+              },
+              "durationSeconds": 1.0,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ref": "BaseElement",
+      "overrides": {
+        "position": {
+          "x": 200,
+          "y": 300
+        },
+        "tint": [1.0, 0.0, 0.0],
+        "rotation": 1.57,
+        "animationTracks": [
+          {
+            "yoyo": true,
+            "steps": [
+              {
+                "animateProperties": {
+                  "alpha": 0.8,
+                  "rotation": 3.14
+                },
+                "durationSeconds": 2.0,
+                "easeType": "quadinout"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

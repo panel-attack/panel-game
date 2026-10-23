@@ -91,7 +91,8 @@ Configuration variables and default values:
 
 #### title
 
-The background shown while displaying the title screen at the start of the game.
+The background shown while displaying the title screen at the start of the game.  
+Optional, the title screen shows if the theme has this image or a title scene (see [animations](animations.md)), otherwise the game starts on the main menu.
 
 Configuration variables and default values:
 ```

@@ -17,6 +17,9 @@ assert(defaultTheme.images.IMG_cards[true][2] ~= nil)
 assert(defaultTheme.images.IMG_cards[true][13] ~= nil)
 assert(defaultTheme.images.IMG_cards[true][99] ~= nil)
 assert(defaultTheme.chainCardLimit == 99)
+-- the default theme's title scene draws its own background, so it has a title screen without a title image
+assert(defaultTheme:hasTitleScreen())
+assert(defaultTheme.images.bg_title == nil)
 
 fileUtils.recursiveCopy("client/tests/ThemeTestData/", Theme.themeDirectoryPath)
 
@@ -46,6 +49,7 @@ assert(v2Theme.version == 2)
 assert(v2Theme.images.bg_main ~= nil)
 assert(v2Theme.multibar_is_absolute == true)
 assert(v2Theme.bg_main_is_tiled == true)
+assert(not v2Theme:hasTitleScreen()) -- neither a title scene nor a title image
 recursiveRemoveDirectory(Theme.themeDirectoryPath .. v2Theme.name)
 
 local v1Theme = Theme(Theme.themeDirectoryPath .. "V1Test", "V1Test")
@@ -78,3 +82,10 @@ assert(legacyChainImages.images.IMG_cards[true][13] ~= nil)
 assert(legacyChainImages.images.IMG_cards[true][14] == nil)
 assert(legacyChainImages.chainCardLimit == 13)
 recursiveRemoveDirectory(Theme.themeDirectoryPath .. legacyChainImages.name)
+
+local titleImageOnly = Theme(Theme.themeDirectoryPath .. "TitleImageOnly", "TitleImageOnly")
+titleImageOnly:load()
+assert(not titleImageOnly:hasScene(Theme.TITLE_SCENE_FILE))
+assert(titleImageOnly:hasTitleScreen()) -- a title image without a title scene still gets a title screen
+assert(titleImageOnly.images.bg_title ~= nil)
+recursiveRemoveDirectory(Theme.themeDirectoryPath .. titleImageOnly.name)

@@ -42,7 +42,7 @@ function BootScene:updateSelf(dt)
       love.graphics.setFont(GraphicsUtil.getGlobalFont())
 
       -- we need the late require for all scenes here because localization is only initialized by the coroutine and all scenes depend on it being loaded
-      if themes[config.theme].images.bg_title then
+      if themes[config.theme]:hasTitleScreen() then
         GAME.navigationStack:replace(require("client.src.scenes.TitleScreen")())
       else
         GAME.navigationStack:replace(require("client.src.scenes.MainMenu")())

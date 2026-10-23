@@ -1,0 +1,299 @@
+{
+  "drawables": [
+    {
+      "id": "background",
+      "filePath": "background/main"
+    },
+    {
+      "id": "logoGear",
+      "templateOnly": true,
+      "children": [
+        {
+          "filePath": "scenes/Gear0",
+          "animationTracks": [
+            {
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "rotation": 6.28318
+                  },
+                  "durationSeconds": 20,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "scenes/Gear1",
+          "animationTracks": [
+            {
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "rotation": 6.28318
+                  },
+                  "durationSeconds": 20,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "scenes/Gear2",
+          "tint": [
+            1,
+            0,
+            0
+          ],
+          "animationTracks": [
+            {
+              "loopTrack": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "rotation": 6.28318
+                  },
+                  "durationSeconds": 20,
+                  "easeType": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "xScale": 1.4,
+          "yScale": 1.4
+        },
+        {
+          "filePath": "scenes/Gear3",
+          "animationTracks": [
+            {
+              "yoyo": true,
+              "steps": [
+                {
+                  "animateProperties": {
+                    "alpha": 0.8,
+                    "xScale": 1.2,
+                    "yScale": 1.2
+                  },
+                  "durationSeconds": 1,
+                  "easeType": "quadinout"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "filePath": "scenes/Gear4",
+          "stencil": true,
+          "alpha": 0.3,
+          "blendMode": "add"
+        }
+      ]
+    },
+    {
+      "id": "logoAssembly",
+      "anchor": "center",
+      "position": {
+        "x": 640,
+        "y": 290
+      },
+      "size": {
+        "width": 584,
+        "height": 416
+      },
+      "children": [
+        {
+          "id": "backgroundBottomLeftGear",
+          "ref": "logoGear",
+          "overrides": {
+            "position": {
+              "x": 98,
+              "y": 240
+            }
+          }
+        },
+        {
+          "id": "backgroundBottomRightGear",
+          "ref": "logoGear",
+          "overrides": {
+            "position": {
+              "x": 394,
+              "y": 240
+            },
+            "children": [
+              {
+                "animationTracks": [
+                  {
+                    "steps": [
+                      {
+                        "animateProperties": {
+                          "rotation": -6.28318
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "animationTracks": [
+                  {
+                    "steps": [
+                      {
+                        "animateProperties": {
+                          "rotation": -6.28318
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "animationTracks": [
+                  {
+                    "steps": [
+                      {
+                        "animateProperties": {
+                          "rotation": -6.28318
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "mainLogo",
+          "filePath": "scenes/PanelAttackLogoLayer0"
+        },
+        {
+          "id": "logoMid",
+          "filePath": "scenes/PanelAttackLogoLayer2"
+        },
+        {
+          "id": "foregroundLeftGear",
+          "ref": "logoGear",
+          "overrides": {
+            "position": {
+              "x": 208,
+              "y": 312
+            },
+            "xScale": 0.6,
+            "yScale": 0.6,
+            "children": [
+              {
+                "animationTracks": [
+                  {
+                    "steps": [
+                      {
+                        "animateProperties": {
+                          "rotation": -6.28318
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "animationTracks": [
+                  {
+                    "steps": [
+                      {
+                        "animateProperties": {
+                          "rotation": -6.28318
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "animationTracks": [
+                  {
+                    "steps": [
+                      {
+                        "animateProperties": {
+                          "rotation": -6.28318
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "tint": [
+                  0,
+                  1,
+                  0
+                ]
+              },
+              {
+                "filePath": "scenes/Circle"
+              }
+            ]
+          }
+        },
+        {
+          "id": "foregroundRightGear",
+          "ref": "logoGear",
+          "overrides": {
+            "position": {
+              "x": 320,
+              "y": 312
+            },
+            "xScale": 0.6,
+            "yScale": 0.6,
+            "children": [
+              {},
+              {},
+              {
+                "tint": [
+                  1,
+                  1,
+                  0
+                ]
+              },
+              {
+                "filePath": "scenes/X"
+              }
+            ]
+          }
+        },
+        {
+          "id": "logoTop",
+          "filePath": "scenes/PanelAttackLogoLayer4"
+        },
+        {
+          "id": "foregroundTopGear",
+          "ref": "logoGear",
+          "overrides": {
+            "position": {
+              "x": 258,
+              "y": 24
+            },
+            "xScale": 0.7,
+            "yScale": 0.7,
+            "children": [
+              {},
+              {},
+              {
+                "tint": [
+                  1,
+                  0,
+                  1
+                ]
+              },
+              {
+                "filePath": "scenes/HourGlass"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
