@@ -137,6 +137,9 @@ function Stack:checkMatches()
     if isChainLink then
       self:incrementChainCounter()
     end
+    if comboSize > 3 then
+      self.tally:addCombo(comboSize)
+    end
     -- interrupt any ongoing manual raise
     self.manual_raise = false
     self.rise_lock = true

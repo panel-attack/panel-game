@@ -1,6 +1,9 @@
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV3 = require("common.data.ReplayV3")
+local MatchRules = require("common.data.MatchRules")
+local Puzzle = require("common.engine.Puzzle")
+local json = require("common.lib.dkjson")
 
 
 local function endlessSaveTest()
@@ -30,3 +33,22 @@ local function endlessSaveTest()
 end
 
 endlessSaveTest()
+
+-- json writes a sparse table whose highest key is over 10 as an object with string keys
+local function goalSizesAboveTenSurviveASavedReplay()
+  local rules = {
+    stackWinConditions = {
+      [MatchRules.StackWinConditions.CHAINS] = {[14] = 1},
+      [MatchRules.StackWinConditions.COMBOS] = {[4] = 2, [11] = 1},
+    },
+  }
+  local saved = json.encode(ReplayV3("test", rules, {sourceType = ReplayV3.panelSourceTypes.puzzle}))
+  local loaded = ReplayV3.createFromTable(json.decode(saved), true)
+
+  local chains = loaded.rules.stackWinConditions[MatchRules.StackWinConditions.CHAINS]
+  local combos = loaded.rules.stackWinConditions[MatchRules.StackWinConditions.COMBOS]
+  assert(chains[14] == 1, "a x14 chain goal is still asked for by size 14")
+  assert(combos[4] == 2 and combos[11] == 1, "combo goals keep their sizes")
+end
+
+goalSizesAboveTenSurviveASavedReplay()

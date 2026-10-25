@@ -217,6 +217,13 @@ function PuzzleSource:getGarbagePanelRowString(stack)
   return garbagePanelRow
 end
 
+-- Whether rows the puzzle was given are still waiting to rise.
+-- The whole panel buffer is turned into panels with the starting board, once those are used up only filler rows follow
+---@return boolean
+function PuzzleSource:hasQueuedPanels()
+  return #self.panels > 0 or self.panelBuffer ~= ""
+end
+
 ---@param stack Stack
 ---@return PuzzleSource
 function PuzzleSource:clone(stack)

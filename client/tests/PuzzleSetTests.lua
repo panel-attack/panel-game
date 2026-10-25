@@ -23,12 +23,13 @@ end
 
 function PuzzleSetTests.generateSaveDataValid()
   local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 5, stack = "1254216999999952"})
-  local puzzle2 = Puzzle({puzzleType = "chain", startTiming = "countdown", moves = 3, stack = "2134567890123456", cursorStartLeft = {row = 2, column = 3}})
+  local puzzle2 = Puzzle({goals = {"x2"}, startTiming = "countdown", moves = 3, stack = "2134567890123456",
+                          cursorStartLeft = {row = 2, column = 3}})
   local puzzleSet = PuzzleSet("Test Set", "A test description", {puzzle1, puzzle2})
   
   local data = puzzleSet:generateSaveData()
   
-  assert(data.Version == 3)
+  assert(data.Version == 4)
   assert(data["Puzzle Sets"] ~= nil)
   assert(#data["Puzzle Sets"] == 1)
   
@@ -39,14 +40,14 @@ function PuzzleSetTests.generateSaveDataValid()
   assert(#puzzleSetData["Puzzles"] == 2)
   
   local puzzleData1 = puzzleSetData["Puzzles"][1]
-  assert(puzzleData1["Puzzle Type"] == "moves")
+  assert(#puzzleData1["Puzzle Type"] == 1 and puzzleData1["Puzzle Type"][1] == "Empty Board")
   assert(puzzleData1["StartTiming"] == "Immediately")
   assert(puzzleData1["Moves"] == 5)
   assert(puzzleData1["Stack"] == "1254216999999952")
   assert(puzzleData1["CursorStartLeft"] == nil)
   
   local puzzleData2 = puzzleSetData["Puzzles"][2]
-  assert(puzzleData2["Puzzle Type"] == "chain")
+  assert(#puzzleData2["Puzzle Type"] == 1 and puzzleData2["Puzzle Type"][1] == "x2")
   assert(puzzleData2["StartTiming"] == "Countdown")
   assert(puzzleData2["Moves"] == 3)
   assert(puzzleData2["Stack"] == "2134567890123456")
@@ -55,12 +56,22 @@ function PuzzleSetTests.generateSaveDataValid()
   assert(puzzleData2["CursorStartLeft"].Column == 3)
 end
 
+-- a goal list has no spelling for the chain rule of version 3 files, so a version 4 file cannot hold such a puzzle
+function PuzzleSetTests.generateSaveDataRefusesTheOldChainRule()
+  local puzzleSet = PuzzleSet("Test Set", "A test description", {Puzzle({puzzleType = "chain", stack = "011010"})})
+
+  local succeeded, message = pcall(puzzleSet.generateSaveData, puzzleSet)
+
+  assert(not succeeded, "writing it would make a puzzle that no longer loads")
+  assert(string.find(tostring(message), "chain", 1, true))
+end
+
 function PuzzleSetTests.generateSaveDataNoPuzzles()
   local puzzleSet = PuzzleSet("Test Set", "A test description", {})
   
   local data = puzzleSet:generateSaveData()
   
-  assert(data.Version == 3)
+  assert(data.Version == 4)
   assert(data["Puzzle Sets"] ~= nil)
   assert(#data["Puzzle Sets"] == 1)
   assert(data["Puzzle Sets"][1]["Set Name"] == "Test Set")
@@ -107,7 +118,7 @@ function PuzzleSetTests.testJSONValidityRequirement1()
   assert(err == nil, "JSON should not have decode errors: " .. tostring(err))
   
   -- Test that there are no duplicate keys by checking structure integrity
-  assert(decoded.Version == 3, "Version should be preserved correctly")
+  assert(decoded.Version == 4, "Version should be preserved correctly")
   assert(decoded["Puzzle Sets"] ~= nil, "Puzzle Sets should exist")
   assert(#decoded["Puzzle Sets"] == 1, "Should have exactly one puzzle set")
   assert(decoded["Puzzle Sets"][1]["Puzzles"] ~= nil, "Puzzles should exist")
@@ -119,7 +130,7 @@ function PuzzleSetTests.testUnchangedPuzzlePreservationRequirement3()
   -- This tests that when we update one puzzle in a set, the other puzzles remain exactly the same
   local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 1, stack = "2100001200001200"})
   local puzzle2 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 2, stack = "6400006400004600006400006400"})
-  local puzzle3 = Puzzle({puzzleType = "chain", startTiming = "countdown", moves = 3, stack = "1234567890123456"})
+  local puzzle3 = Puzzle({goals = {"x2"}, startTiming = "countdown", moves = 3, stack = "1234567890123456"})
   
   local originalPuzzleSet = PuzzleSet("Test Set", "Test description", {puzzle1, puzzle2, puzzle3})
   
@@ -148,13 +159,13 @@ function PuzzleSetTests.testUnchangedPuzzlePreservationRequirement3()
   -- Test that puzzle 1 (unchanged) remains exactly the same
   assert(originalPuzzle1Data["Stack"] == newPuzzle1Data["Stack"], "Puzzle 1 stack should be unchanged")
   assert(originalPuzzle1Data["Moves"] == newPuzzle1Data["Moves"], "Puzzle 1 moves should be unchanged")
-  assert(originalPuzzle1Data["Puzzle Type"] == newPuzzle1Data["Puzzle Type"], "Puzzle 1 type should be unchanged")
+  assert(originalPuzzle1Data["Puzzle Type"][1] == newPuzzle1Data["Puzzle Type"][1], "Puzzle 1 type should be unchanged")
   assert(originalPuzzle1Data["StartTiming"] == newPuzzle1Data["StartTiming"], "Puzzle 1 start timing should be unchanged")
   
   -- Test that puzzle 3 (unchanged) remains exactly the same
   assert(originalPuzzle3Data["Stack"] == newPuzzle3Data["Stack"], "Puzzle 3 stack should be unchanged")
   assert(originalPuzzle3Data["Moves"] == newPuzzle3Data["Moves"], "Puzzle 3 moves should be unchanged")
-  assert(originalPuzzle3Data["Puzzle Type"] == newPuzzle3Data["Puzzle Type"], "Puzzle 3 type should be unchanged")
+  assert(originalPuzzle3Data["Puzzle Type"][1] == newPuzzle3Data["Puzzle Type"][1], "Puzzle 3 type should be unchanged")
   assert(originalPuzzle3Data["StartTiming"] == newPuzzle3Data["StartTiming"], "Puzzle 3 start timing should be unchanged")
   
   -- Test that puzzle 2 (changed) has been updated correctly
@@ -168,7 +179,8 @@ function PuzzleSetTests.testExactJSONFormatting()
   local logger = require("common.lib.logger")
   
   -- Test exact character-for-character formatting
-  local puzzle = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 1, stack = "000000000000000000000000000000000000000000000000000000000000000000060660"})
+  local puzzle = Puzzle({goals = {"Empty Board", "x2"}, startTiming = "immediately", moves = 1,
+                         stack = string.rep("0", 66) .. "060660"})
   local puzzleSet = PuzzleSet("Test Set", "Test description", {puzzle})
   
   local data = puzzleSet:generateSaveData()
@@ -177,7 +189,7 @@ function PuzzleSetTests.testExactJSONFormatting()
   
   -- Define the exact expected format
   local expected = [[{
-  "Version": 3,
+  "Version": 4,
   "Puzzle Sets":
   [
     {
@@ -186,7 +198,11 @@ function PuzzleSetTests.testExactJSONFormatting()
       "Puzzles":
       [
         {
-          "Puzzle Type": "moves",
+          "Puzzle Type":
+          [
+            "Empty Board",
+            "x2"
+          ],
           "StartTiming": "Immediately",
           "Moves": 1,
           "Stack": "000000000000000000000000000000000000000000000000000000000000000000060660"
@@ -223,7 +239,7 @@ end
 -- in the set; saving by the set position would write over a puzzle the player never opened
 function PuzzleSetTests.testSavingAPuzzleAfterAHiddenOneWritesTheEntryItCameFrom()
   local fileData = {
-    [PuzzleSet.ROOT_PROPERTY.VERSION] = PuzzleSet.CURRENT_VERSION,
+    [PuzzleSet.ROOT_PROPERTY.VERSION] = 3,
     [PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS] = {
       {
         ["Set Name"] = "Test Set",
@@ -397,9 +413,80 @@ function PuzzleSetTests.testOldUUIDsAreReadAndSavedBackWithoutChangingTheUUID()
   assert(puzzle:getSaveData()["Old UUIDs"] == puzzle.oldUUIDs, "the old UUIDs are saved back")
 end
 
+local function goalPuzzleData(puzzleType)
+  return {["Set Name"] = "Test Set", ["Puzzles"] = {
+    {["Puzzle Type"] = puzzleType, ["Moves"] = 2, ["Stack"] = "011010"}
+  }}
+end
+
+function PuzzleSetTests.testLoadV4ReadsAGoalList()
+  local set = PuzzleSet.loadV4(goalPuzzleData({"Empty Board", "x4", "+6", "+6"}))
+  assert(set and #set.puzzles == 1)
+  assert(table.concat(set.puzzles[1]:goalsToFile(), ",") == "Empty Board,x4,+6,+6")
+end
+
+function PuzzleSetTests.testLoadV4HidesAPuzzleWithSomethingThatIsNotAGoal()
+  local unknownGoal = PuzzleSet.loadV4(goalPuzzleData({"x4", "big chain"}))
+  assert(unknownGoal and #unknownGoal.puzzles == 0)
+  local oneWordType = PuzzleSet.loadV4(goalPuzzleData("moves"))
+  assert(oneWordType and #oneWordType.puzzles == 0, "a version 4 puzzle type is a list")
+end
+
+-- a goal is written as text, so an object in the list is not a goal whatever fields it has
+function PuzzleSetTests.testLoadV4HidesAPuzzleWithAGoalWrittenAsAnObject()
+  for _, goal in ipairs({{kind = "chain"}, {}, {kind = "legacyChain"}}) do
+    local set = PuzzleSet.loadV4(goalPuzzleData({"Empty Board", goal}))
+    assert(set and #set.puzzles == 0)
+  end
+end
+
+function PuzzleSetTests.testLoadV3KeepsReadingTheOneWordType()
+  local set = PuzzleSet.loadV3(goalPuzzleData("Chain"))
+  assert(set and #set.puzzles == 1)
+  assert(set.puzzles[1].goals[1].kind == "legacyChain")
+  local goalList = PuzzleSet.loadV3(goalPuzzleData({"x4"}))
+  assert(goalList and #goalList.puzzles == 0, "a version 3 puzzle type is one word")
+end
+
+-- a version 3 file is read by games that do not know goal lists, so a puzzle saved into one keeps its one word type
+function PuzzleSetTests.testSavingIntoAVersion3FileKeepsTheOneWordType()
+  local puzzle = Puzzle({puzzleType = "chain", stack = "011010"})
+  local set = PuzzleSet("Test Set", nil, {puzzle})
+  local version3File = {["Version"] = 3, ["Puzzle Sets"] = {goalPuzzleData("chain")}}
+  local version4File = {["Version"] = 4, ["Puzzle Sets"] = {goalPuzzleData({"Empty Board"})}}
+
+  assert(set:updatePuzzleInFileData(version3File, set, 1, puzzle))
+  assert(set:updatePuzzleInFileData(version4File, set, 1, Puzzle({goals = {"x2"}, stack = "011010"})))
+
+  assert(version3File["Puzzle Sets"][1]["Puzzles"][1]["Puzzle Type"] == "chain")
+  assert(version4File["Puzzle Sets"][1]["Puzzles"][1]["Puzzle Type"][1] == "x2")
+end
+
+-- the editor rewrites the whole file, so every key a bundled puzzle carries needs a place in the order,
+-- or it lands wherever the table happens to iterate it
+function PuzzleSetTests.testSavingKeepsTheHelpSolutionAndOldUUIDsInTheOrderTheBundledFileUses()
+  local puzzleData = {
+    ["Old UUIDs"] = {"a"},
+    ["Solution"] = "A1",
+    ["Help Description"] = "help",
+    ["Stack"] = "011010",
+    ["Moves"] = 1,
+    ["StartTiming"] = "Immediately",
+    ["Puzzle Type"] = {"Empty Board"}
+  }
+  local encoded = json.encode(puzzleData, {indent = true, pretty = true, keyorder = PuzzleSet.keyOrder})
+
+  local stackAt = encoded:find('"Stack"', 1, true)
+  local helpAt = encoded:find('"Help Description"', 1, true)
+  local solutionAt = encoded:find('"Solution"', 1, true)
+  local oldUUIDsAt = encoded:find('"Old UUIDs"', 1, true)
+  assert(stackAt < helpAt and helpAt < solutionAt and solutionAt < oldUUIDsAt, encoded)
+end
+
 -- Run the tests
 PuzzleSetTests.updatePuzzleValid()
 PuzzleSetTests.generateSaveDataValid()
+PuzzleSetTests.generateSaveDataRefusesTheOldChainRule()
 PuzzleSetTests.generateSaveDataNoPuzzles()
 PuzzleSetTests.generateSaveDataWithOptionalFields()
 PuzzleSetTests.testJSONValidityRequirement1()
@@ -416,5 +503,11 @@ PuzzleSetTests.testAPuzzleWithAnUnknownStartTimingIsHidden()
 PuzzleSetTests.testAClearPuzzleWithoutABufferIsWonByRunningPastIt()
 PuzzleSetTests.testAClearPuzzleWithABufferIsWonByRunningPastIt()
 PuzzleSetTests.testLoadV2ClearPuzzlesAreWonByRunningPastTheBuffer()
+PuzzleSetTests.testLoadV4ReadsAGoalList()
+PuzzleSetTests.testLoadV4HidesAPuzzleWithSomethingThatIsNotAGoal()
+PuzzleSetTests.testLoadV4HidesAPuzzleWithAGoalWrittenAsAnObject()
+PuzzleSetTests.testLoadV3KeepsReadingTheOneWordType()
+PuzzleSetTests.testSavingIntoAVersion3FileKeepsTheOneWordType()
+PuzzleSetTests.testSavingKeepsTheHelpSolutionAndOldUUIDsInTheOrderTheBundledFileUses()
 
 return PuzzleSetTests
