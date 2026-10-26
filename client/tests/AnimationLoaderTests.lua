@@ -429,13 +429,23 @@ local function testEachImportOwnsItsTracks()
   assert(firstTracks ~= secondTracks, "The two imports should not share their track tables")
 end
 
--- A file imported from a subfolder resolves its own imports relative to that subfolder
-local function testImportsResolveRelativeToTheImportingFile()
+-- A file in a subfolder writes its imports from the root folder, like image file paths
+local function testImportsResolveFromTheRootFolder()
   local testPath = "client/tests/AnimationLoaderTestData/"
   local results = AnimationLoader.loadFromFile(testPath, testPath .. "subfolderImport.json", Flux.group())
 
   local middle = results[1].children[1]
   assertEqual(middle.children[1].id, "Leaf", "parts/middle.json should import parts/leaf.json")
+end
+
+-- A ref that steps up a folder fails naming the ref and the file it is written in
+local function testRefWithParentFolderErrors()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local loaded, err = pcall(AnimationLoader.loadFromFile, testPath, testPath .. "refWithParentFolder.json", Flux.group())
+
+  assertEqual(loaded, false, "Loading a ref with .. should fail")
+  assert(tostring(err):find("parts/../externalRef.json", 1, true), "The error should name the ref, got: " .. tostring(err))
+  assert(tostring(err):find("refWithParentFolder.json", 1, true), "The error should name the file, got: " .. tostring(err))
 end
 
 -- Returns a drawable node drawing a solid image of the given size and colour, for drawing tests that don't need a file
@@ -505,7 +515,8 @@ local function runAllTests()
   testMissingFileErrorsWithItsPath()
   testSameFileImportedTwiceUnderOneParent()
   testEachImportOwnsItsTracks()
-  testImportsResolveRelativeToTheImportingFile()
+  testRefWithParentFolderErrors()
+  testImportsResolveFromTheRootFolder()
   testStencilMasksDontLeakIntoLaterMasks()
   
   print("✓ All AnimationLoader tests passed!")

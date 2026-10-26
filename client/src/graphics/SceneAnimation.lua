@@ -3,7 +3,7 @@ local AnimationLoader = require("client.src.graphics.AnimationLoader")
 local Flux = require("client.lib.flux.flux")
 local Theme = require("client.src.mods.Theme")
 
--- An animation file from the current theme's scenes folder with its own tweens, its image paths are relative to the theme folder.
+-- An animation file from the current theme's scenes folder with its own tweens, its image paths and file refs are relative to the theme folder.
 -- It reloads itself when the theme or the canvas scale changed since it loaded, so its images come from the right theme with the right filter.
 ---@class SceneAnimation
 ---@field fileName string the animation file inside the theme's scenes folder

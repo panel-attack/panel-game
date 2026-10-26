@@ -2,7 +2,7 @@
 
 ## Scenes in a theme
 
-A theme keeps its animation files in its `scenes` folder, named after the screen that draws them, e.g. `scenes/TitleScreen.json`. Image paths in them are relative to the theme folder, so a scene can draw the theme's other images, e.g. `background/main`, as well as its own, e.g. `scenes/Gear0`.
+A theme keeps its animation files in its `scenes` folder, named after the screen that draws them, e.g. `scenes/TitleScreen.json`. Image paths and file refs in them are relative to the theme folder, so a scene can draw the theme's other images, e.g. `background/main`, as well as its own, e.g. `scenes/Gear0`.
 
 A screen draws its background image if the theme has one, then its scene on top if the theme has one. Either can be left out, so a scene that draws the whole screen can bring its own background and the theme can leave out the background image.
 
@@ -22,7 +22,7 @@ A unique identifier for the drawable. Used for referencing this drawable from ot
 Path to an image file without its extension, relative to the theme folder for theme scenes. `@2x` and `@3x` versions are picked like for other theme images. When specified, loads a texture for this drawable that will be drawn.
 
 #### `ref`
-Reference to another drawable by ID or to another JSON file. To reference an ID in this file, just use the ID. To reference an ID in another file use "file.json#id". If you want to import a whole file, you can just use "file.json". This allows reusing existing drawables or importing from external files. File references are resolved relative to the directory of the file the reference is written in. Every import is its own copy, so a file can be imported more than once.
+Reference to another drawable by ID or to another JSON file. To reference an ID in this file, just use the ID. To reference an ID in another file use "scenes/file.json#id". If you want to import a whole file, you can just use "scenes/file.json". This allows reusing existing drawables or importing from external files. File references are relative to the theme folder like `filePath`, whichever file they are written in, so a reference can be copied between files unchanged. They can't contain `..`. Every import is its own copy, so a file can be imported more than once.
 
 A reference may only have `id`, `ref`, `overrides` and `templateOnly`, anything else should go in `overrides`.
 

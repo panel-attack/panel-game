@@ -1,7 +1,7 @@
 {
   "drawables": [
     {
-      "ref": "leaf.json"
+      "ref": "parts/leaf.json"
     }
   ]
 }

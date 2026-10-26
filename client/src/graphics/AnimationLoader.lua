@@ -222,13 +222,19 @@ function AnimationLoader.cloneNodeWithOverrides(sourceNode, overridesTable)
     return clonedNode
 end
 
+-- Returns the path of the file a ref imports, refs are written from the root folder like image file paths
+local function referencedFilePath(rootPath, ref, filePath)
+    if ref:find("..", 1, true) then
+      error("The ref " .. ref .. " in " .. filePath .. " steps up a folder, refs are written from the root folder")
+    end
+    return rootPath .. ref:match("(.*%.json)")
+end
+
 -- Loads all files referenced and records a map of ID's to their nodes
-function AnimationLoader.indexNodesRecursively(nodeTable, filePath, idLookupTable, loadedFileTables)
+function AnimationLoader.indexNodesRecursively(rootPath, nodeTable, filePath, idLookupTable, loadedFileTables)
     if nodeTable.ref ~= nil and nodeTable.ref:match("(.*%.json)#?") then
-      local directoryPart = filePath:match("(.*/)") or ""
-      local referencedFile = nodeTable.ref:match("(.*%.json)#?")
-      local referencedFilePath = directoryPart .. referencedFile
-      AnimationLoader.readFileAndCollectIdsRecursively(referencedFilePath, loadedFileTables, idLookupTable)
+      local referencedPath = referencedFilePath(rootPath, nodeTable.ref, filePath)
+      AnimationLoader.readFileAndCollectIdsRecursively(rootPath, referencedPath, loadedFileTables, idLookupTable)
     end
     if nodeTable.id ~= nil then
         local qualifiedId = nodeTable.id
@@ -242,12 +248,12 @@ function AnimationLoader.indexNodesRecursively(nodeTable, filePath, idLookupTabl
 
     if nodeTable.children ~= nil then
         for _, childNode in ipairs(nodeTable.children) do
-            AnimationLoader.indexNodesRecursively(childNode, filePath, idLookupTable, loadedFileTables)
+            AnimationLoader.indexNodesRecursively(rootPath, childNode, filePath, idLookupTable, loadedFileTables)
         end
     end
 end
 
-function AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTables, idLookupTable)
+function AnimationLoader.readFileAndCollectIdsRecursively(rootPath, filePath, loadedFileTables, idLookupTable)
     if loadedFileTables[filePath] ~= nil then
         return
     end
@@ -262,7 +268,7 @@ function AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTa
 
     if sceneTable.drawables ~= nil then
         for _, drawableNode in ipairs(sceneTable.drawables) do
-            AnimationLoader.indexNodesRecursively(drawableNode, filePath, idLookupTable, loadedFileTables)
+            AnimationLoader.indexNodesRecursively(rootPath, drawableNode, filePath, idLookupTable, loadedFileTables)
         end
     end
 end
@@ -314,8 +320,8 @@ function AnimationLoader.resolveNodeReference(nodeTable, idLookupTable)
     
 end
 
--- Resolves the refs in the node and its children, filePath is the file the node is written in so file imports resolve relative to it
-function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idLookupTable, visitedTables, filePath)
+-- Resolves the refs in the node and its children
+function AnimationLoader.resolveRefsRecursively(rootPath, nodeTable, loadedFileTables, idLookupTable, visitedTables)
     if type(nodeTable) ~= "table" then
         return
     end
@@ -326,19 +332,15 @@ function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idL
 
     visitedTables[nodeTable] = true
 
-    local childrenFilePath = filePath
     if nodeTable.ref ~= nil then
 
         -- Check if this is a file reference (ends with .json)
         if nodeTable.ref:match("%.json$") then
-            local directoryPart = filePath:match("(.*/)") or ""
-            local referencedFilePath = directoryPart .. nodeTable.ref
-            local referencedFileTable = loadedFileTables[referencedFilePath]
+            local referencedFileTable = loadedFileTables[rootPath .. nodeTable.ref]
 
             nodeTable.ref = nil
             -- every import gets its own copy, so importing a file twice neither shares nodes nor looks circular
             nodeTable.children = deepcpy(referencedFileTable.drawables)
-            childrenFilePath = referencedFilePath
         else
             AnimationLoader.resolveNodeReference(nodeTable, idLookupTable)
         end
@@ -346,14 +348,14 @@ function AnimationLoader.resolveRefsRecursively(nodeTable, loadedFileTables, idL
 
     if nodeTable.children ~= nil then
         for _, childNode in ipairs(nodeTable.children) do
-            AnimationLoader.resolveRefsRecursively(childNode, loadedFileTables, idLookupTable, visitedTables, childrenFilePath)
+            AnimationLoader.resolveRefsRecursively(rootPath, childNode, loadedFileTables, idLookupTable, visitedTables)
         end
     end
 end
 
 -- Loads all drawables for a animation file.
--- @param rootPath String the full directory to the file to load
--- @param fillPath String just the file name part of the file to load
+-- @param rootPath String the folder image file paths and file refs are written from
+-- @param filePath String the full path of the file to load
 ---@param tweens table the flux group the animations are added to, its owner updates it
 -- @return table an array of drawables representing all the objects with flux animations setup
 function AnimationLoader.loadFromFile(rootPath, filePath, tweens)
@@ -361,13 +363,13 @@ function AnimationLoader.loadFromFile(rootPath, filePath, tweens)
   local idLookupTable   = {}    -- "id" → node table
 
   -- First all files are loaded from JSON and indexed
-  AnimationLoader.readFileAndCollectIdsRecursively(filePath, loadedFileTables, idLookupTable)
+  AnimationLoader.readFileAndCollectIdsRecursively(rootPath, filePath, loadedFileTables, idLookupTable)
 
   local rootData = loadedFileTables[filePath]
 
   -- Then all references are resolved with overrides applied
   for _, drawable in ipairs(rootData.drawables) do
-    AnimationLoader.resolveRefsRecursively(drawable, loadedFileTables, idLookupTable, {}, filePath)
+    AnimationLoader.resolveRefsRecursively(rootPath, drawable, loadedFileTables, idLookupTable, {})
   end
 
   -- Finally once the full data structure is setup, it is converted into separate drawable objects.
