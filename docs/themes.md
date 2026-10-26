@@ -164,7 +164,7 @@ Additionally it used ingame during the countdown.
 #### Icons
 
 `random_stage`: Thumbnail for random stage selection. See readme_stages for the recommended size.
-`random_character`: Icon for random character selection. See readme_characters for the recommended size.
+`random_character`: Icon for random character selection. Recommended size: 168x168px (2x resolution)
 
 #### Puzzle Menu Icons
 
@@ -198,7 +198,7 @@ Additionally an extra `level_cursor` image is being used for the selection proce
 #### Cards
 
 Cards are the indicators displayed during gameplay and in analytics to show the achieved combo/chain size.  
-They will be scaled to be quadratic if they aren't already, recommended size is 96x96.
+They will be scaled to be quadratic if they aren't already, recommended size is 96x96px (2x resolution).
 
 ##### Chain cards
 
@@ -222,6 +222,7 @@ The general recommendation is to provide combo cards at least up to +27, but bet
 #### Ingame cursor
 
 The ingame cursor is made from 2 different images, `cursor1` and `cursor2`, that are alternately being drawn.  
+Recommended size: 240x144px (2x resolution)
 
 #### Countdown
 
@@ -239,13 +240,15 @@ Image for the borders to left, right and top side of the stack.
 Will always get scaled to an aspect ratio of 13:28!!  
 One version needs to be provided for each player:
 `frame1P` for player 1  
-`frame2P` for player 2
+`frame2P` for player 2  
+Recommended size: 624x1224px (2x resolution)
 
 ##### wall
 
 Image for the bottom border of the stack. 
 Unlike stack, this needs to be opaque in order to obstruct panel vision when raising it to the top to "lock" the stack.  
-Width of this image always gets scaled to fit the stack width
+Width of this image always gets scaled to fit the stack width  
+Recommended width: 576px (2x resolution)
 
 #### Multibar 
 
