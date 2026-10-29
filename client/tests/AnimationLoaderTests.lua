@@ -102,7 +102,7 @@ local function testLoadingRefWithOverrides()
   
   -- Check that animation tracks were overridden
   assertEqual(#overridden.animationTracks, 1, "Should have one animation track")
-  assertEqual(overridden.animationTracks[1].yoyo, true, "Animation should be yoyo")
+  assertEqual(overridden.animationTracks[1]["repeat"], "yoyo", "Animation should be yoyo")
   assertEqual(overridden.animationTracks[1].steps[1].durationSeconds, 2.0, "Animation duration should be overridden")
   
   print("✓ Reference with overrides test passed")
@@ -495,6 +495,49 @@ local function testStencilMasksDontLeakIntoLaterMasks()
 end
 
 -- Run all tests
+-- Returns the alpha of a node whose track fades it from 0 to 1 over a second, a quarter second after the track's first pass ends
+local function alphaAfterOneTrackPass(fileName)
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local tweens = Flux.group()
+  local drawable = AnimationLoader.loadFromFile(testPath, testPath .. fileName, tweens)[1]
+  tweens:update(1)
+  tweens:update(0.25)
+  return drawable.alpha
+end
+
+-- A track without repeat plays once and stays at its end
+local function testTrackWithoutRepeatPlaysOnce()
+  assertApproxEqual(alphaAfterOneTrackPass("repeatNone.json"), 1, nil, "The track should stay at its end")
+end
+
+-- A track that repeats with loop starts over from its first step
+local function testRepeatLoopStartsOver()
+  assertApproxEqual(alphaAfterOneTrackPass("repeatLoop.json"), 0.25, nil, "The track should start over")
+end
+
+-- A track that repeats with yoyo plays its steps backwards
+local function testRepeatYoyoPlaysBackwards()
+  assertApproxEqual(alphaAfterOneTrackPass("repeatYoyo.json"), 0.75, nil, "The track should play backwards")
+end
+
+-- An unknown repeat fails naming the value
+local function testUnknownRepeatErrors()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local loaded, err = pcall(AnimationLoader.loadFromFile, testPath, testPath .. "repeatUnknown.json", Flux.group())
+
+  assertEqual(loaded, false, "Loading an unknown repeat should fail")
+  assert(tostring(err):find("bounce", 1, true), "The error should name the value, got: " .. tostring(err))
+end
+
+-- The old loopTrack and yoyo booleans fail pointing at repeat instead of silently playing once
+local function testOldRepeatBooleansError()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local loaded, err = pcall(AnimationLoader.loadFromFile, testPath, testPath .. "repeatOldLoopTrack.json", Flux.group())
+
+  assertEqual(loaded, false, "Loading loopTrack should fail")
+  assert(tostring(err):find("repeat", 1, true), "The error should point at repeat, got: " .. tostring(err))
+end
+
 local function runAllTests()
   print("Running AnimationLoader tests...")
   
@@ -518,6 +561,11 @@ local function runAllTests()
   testRefWithParentFolderErrors()
   testImportsResolveFromTheRootFolder()
   testStencilMasksDontLeakIntoLaterMasks()
+  testTrackWithoutRepeatPlaysOnce()
+  testRepeatLoopStartsOver()
+  testRepeatYoyoPlaysBackwards()
+  testUnknownRepeatErrors()
+  testOldRepeatBooleansError()
   
   print("✓ All AnimationLoader tests passed!")
 end

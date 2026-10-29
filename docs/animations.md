@@ -6,6 +6,53 @@ A theme keeps its animation files in its `scenes` folder, named after the screen
 
 A screen draws its background image if the theme has one, then its scene on top if the theme has one. Either can be left out, so a scene that draws the whole screen can bring its own background and the theme can leave out the background image.
 
+## Example
+
+This scene draws the theme's background, defines a spinning gear once and places it twice, the second one bigger and spinning the other way:
+
+```json
+{
+  "drawables": [
+    {
+      "filePath": "background/main"
+    },
+    {
+      "id": "gear",
+      "templateOnly": true,
+      "filePath": "scenes/Gear0",
+      "anchor": "center",
+      "animationTracks": [
+        {
+          "repeat": "loop",
+          "steps": [
+            {
+              "animateProperties": {"rotation": 6.28318},
+              "durationSeconds": 20,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ref": "gear",
+      "overrides": {"position": {"x": 300, "y": 200}}
+    },
+    {
+      "ref": "gear",
+      "overrides": {
+        "position": {"x": 600, "y": 200},
+        "xScale": 1.5,
+        "yScale": 1.5,
+        "animationTracks": [{"steps": [{"animateProperties": {"rotation": -6.28318}}]}]
+      }
+    }
+  ]
+}
+```
+
+For a full scene, see the [Panel Attack Modern title screen](../client/assets/themes/Panel%20Attack%20Modern/scenes/TitleScreen.json).
+
 ## Root Level Properties
 
 ### `drawables`
@@ -107,8 +154,10 @@ Array of animation track objects that define how the drawable's properties chang
 
 ##### Track Properties:
 - `steps`: Array of animation steps
-- `loopTrack`: Boolean indicating whether the animation should loop
-- `yoyo`: Boolean indicating whether the animation should reverse direction when reaching the end and repeat. Note that you only can do yoyo or loop, not both.
+- `repeat`: What the track does after its last step (default: `"none"`)
+  - `"none"` – Stops at the end of the last step.
+  - `"loop"` – Starts over from the first step.
+  - `"yoyo"` – Plays the steps backwards back to the start, then forwards again, and so on.
 
 ##### Step Properties (within each step in `steps`):
 - `durationSeconds`: How long this step takes to complete

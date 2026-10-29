@@ -4,7 +4,7 @@
       "filePath": "test_image",
       "animationTracks": [
         {
-          "yoyo": true,
+          "repeat": "yoyo",
           "steps": [
             {
               "animateProperties": {

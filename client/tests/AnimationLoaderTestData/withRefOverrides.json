@@ -16,7 +16,7 @@
       "rotation": 0.0,
       "animationTracks": [
         {
-          "loopTrack": true,
+          "repeat": "loop",
           "steps": [
             {
               "animateProperties": {
@@ -40,7 +40,7 @@
         "rotation": 1.57,
         "animationTracks": [
           {
-            "yoyo": true,
+            "repeat": "yoyo",
             "steps": [
               {
                 "animateProperties": {

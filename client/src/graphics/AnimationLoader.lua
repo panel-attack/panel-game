@@ -39,6 +39,19 @@ function AnimationLoader.anchorOffset(drawable, anchor)
   end
 end
 
+-- The ways a track can repeat once it has played all its steps
+local TRACK_REPEATS = {none = true, loop = true, yoyo = true}
+
+-- Errors if the track's repeat isn't one of TRACK_REPEATS or it still uses the old loopTrack or yoyo booleans
+local function validateTrackRepeat(track)
+  if track.loopTrack ~= nil or track.yoyo ~= nil then
+    error("Animation tracks repeat with \"repeat\": \"loop\" or \"yoyo\" instead of loopTrack or yoyo")
+  end
+  if track["repeat"] ~= nil and not TRACK_REPEATS[track["repeat"]] then
+    error("Unknown track repeat " .. tostring(track["repeat"]) .. ", use \"none\", \"loop\" or \"yoyo\"")
+  end
+end
+
 -- Builds the flux animation for the given track step on the target in the given flux group
 ---@param tweens table the flux group the step's tween is added to
 local function buildTrackStep(target, track, currentStep, stepAmount, tweens)
@@ -66,14 +79,14 @@ local function buildTrackStep(target, track, currentStep, stepAmount, tweens)
   tween:oncomplete(function()
     local nextStep = currentStep + stepAmount
     if nextStep < 1 or nextStep > #track.steps then
-      if track.yoyo then
+      if track["repeat"] == "yoyo" then
         -- start going throught the steps backwards
         stepAmount = stepAmount * -1
         nextStep = #track.steps
         if stepAmount > 0 then
           nextStep = 1
         end
-      elseif track.loopTrack then
+      elseif track["repeat"] == "loop" then
         nextStep = 1
         -- Reset to the first properties in reverse order in case some properties aren't covered by all steps
         for stepIndex = #track.steps, 1, -1 do
@@ -186,6 +199,7 @@ local function loadDrawables(rootPath, animationData, tweens, images)
   assert(obj.pivot == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left pivot")
 
   for _,track in ipairs(animationData.animationTracks or {}) do
+    validateTrackRepeat(track)
     buildTrackStep(obj, track, 1, 1, tweens)
   end
   for _, childData in ipairs(animationData.children or {}) do
