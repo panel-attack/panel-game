@@ -1,8 +1,9 @@
 local SoundController = require("client.src.music.SoundController")
 local system = require("client.src.system")
 
----@param test fun(state: {devices: string[], brokenDevice: string?, currentDevice: string, inMatch: boolean})
+---@param test fun(state: {os: string, devices: string[], brokenDevice: string?, currentDevice: string, inMatch: boolean})
 local function withMockPlaybackDevices(test)
+  local originalGetOS = love.system.getOS
   local originalGetPlaybackDevices = love.audio.getPlaybackDevices
   local originalGetPlaybackDevice = love.audio.getPlaybackDevice
   local originalSetPlaybackDevice = love.audio.setPlaybackDevice
@@ -10,8 +11,11 @@ local function withMockPlaybackDevices(test)
   local originalNextCheck = SoundController.nextPlaybackDeviceCheck
   local ownHasOngoingMatch = rawget(GAME, "hasOngoingMatch")
 
-  local state = {devices = {"Headphones", "Speakers"}, currentDevice = "Speakers", inMatch = false}
+  local state = {os = "Windows", devices = {"Headphones", "Speakers"}, currentDevice = "Speakers", inMatch = false}
 
+  love.system.getOS = function()
+    return state.os
+  end
   system.meetsLoveVersionRequirement = function()
     return true
   end
@@ -35,6 +39,7 @@ local function withMockPlaybackDevices(test)
 
   local success, message = pcall(test, state)
 
+  love.system.getOS = originalGetOS
   love.audio.getPlaybackDevices = originalGetPlaybackDevices
   love.audio.getPlaybackDevice = originalGetPlaybackDevice
   love.audio.setPlaybackDevice = originalSetPlaybackDevice
@@ -79,7 +84,23 @@ local function testFollowingTheDefaultWorksDuringAMatch()
   end)
 end
 
+local function testLinuxKeepsNativeAudioRouting()
+  withMockPlaybackDevices(function(state)
+    state.os = "Linux"
+    love.audio.getPlaybackDevice = function()
+      error("Linux should not query the playback device")
+    end
+    love.audio.getPlaybackDevices = function()
+      error("Linux should not enumerate playback devices")
+    end
+    SoundController:updatePlaybackDevice()
+    SoundController:followDefaultPlaybackDevice()
+    assert(state.currentDevice == "Speakers", "Periodic and focus checks should leave Linux audio routing unchanged")
+  end)
+end
+
 testChangesToDefaultDevice()
 testSkipsADefaultDeviceThatFailsToOpen()
 testDoesNotCheckDuringAMatch()
 testFollowingTheDefaultWorksDuringAMatch()
+testLinuxKeepsNativeAudioRouting()

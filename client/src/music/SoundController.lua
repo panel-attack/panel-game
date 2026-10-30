@@ -173,8 +173,9 @@ end
 
 ---Switches to the system's default audio output if it changed, without recreating sources or restarting music.
 ---A listed device that fails to open is skipped for the next one, up to the device already playing.
+---Linux follows output changes natively, so leave its audio routing unchanged.
 function SoundController:followDefaultPlaybackDevice()
-  if not system.meetsLoveVersionRequirement(12, 0) then
+  if love.system.getOS() == "Linux" or not system.meetsLoveVersionRequirement(12, 0) then
     return
   end
 
