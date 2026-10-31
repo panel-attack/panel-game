@@ -62,7 +62,7 @@ function(self, args)
   --self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
 
-  self.analytic = AnalyticsInstance(self.is_local)
+  self.analytic = AnalyticsInstance(self.is_local, self.engine.tally)
   self.drawsAnalytics = true
 
   -- level and difficulty only for icon display and score saving, all actual data is in levelData

@@ -181,6 +181,12 @@ function LegacyPanelSource:getGarbagePanelRowString(stack)
   return garbagePanelRow
 end
 
+-- a generator never runs out of panels
+---@return boolean
+function LegacyPanelSource:hasQueuedPanels()
+  return true
+end
+
 ---@param stack Stack
 ---@return LegacyPanelSource
 function LegacyPanelSource:clone(stack)

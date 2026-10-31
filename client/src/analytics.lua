@@ -4,6 +4,7 @@ local class = require("common.lib.class")
 local RollbackBuffer = require("common.engine.RollbackBuffer")
 local Stack = require("common.engine.Stack")
 require("common.engine.checkMatches")
+local ChainComboTally = require("common.engine.ChainComboTally")
 local analytics = {}
 
 local ANALYTICS_VERSION = 3
@@ -17,8 +18,11 @@ local ANALYTICS_VERSION = 3
 ---@field used_combos table<integer, integer>
 ---@field shockGarbageCount integer
 
+-- Analytics data with its own counts at zero, its chains and combos read from the tally when one is given
+---@param tally ChainComboTally? the tally whose tables the data shows, a fresh one if there is none
 ---@return AnalyticsData
-local function create_blank_data()
+local function create_blank_data(tally)
+  tally = tally or ChainComboTally()
   return {
     -- the amount of destroyed panels (do we need this? Stack.panels_cleared tracks the same)
     destroyed_panels = 0,
@@ -29,9 +33,9 @@ local function create_blank_data()
     -- the amount of times the panels were swapped
     swap_count = 0,
     -- sparse dictionary with a count of each chain reached, mystery chains are recorded as whatever chain they were, 1 is obviously meaningless
-    reached_chains = {},
+    reached_chains = tally.chains,
     -- sparse dictionary with a count of each combo reached, 1 to 3 being meaningless
-    used_combos = {},
+    used_combos = tally.combos,
     shockGarbageCount = 0
   }
 end
@@ -40,20 +44,12 @@ end
 ---@param destination AnalyticsData
 ---@param source AnalyticsData
 local function transferAnalyticsData(destination, source)
-  table.clear(destination.used_combos)
-  table.clear(destination.reached_chains)
-
   destination.destroyed_panels = source.destroyed_panels
   destination.move_count = source.move_count
   destination.swap_count = source.swap_count
   destination.shockGarbageCount = source.shockGarbageCount
   destination.sent_garbage_lines = source.sent_garbage_lines
-  for size, count in pairs(source.used_combos) do
-    destination.used_combos[size] = count
-  end
-  for size, count in pairs(source.reached_chains) do
-    destination.reached_chains[size] = count
-  end
+  -- combos and chains are the stack's tally, which the stack rolls back itself
   -- lastGPM/APM don't need to be saved, they are display props that get recalculated on the fly by draw code
   -- save_to_overall should never change over the life time of an instance
 end
@@ -65,11 +61,13 @@ end
 ---@field lastGPM string formatted GPM for display
 ---@field lastAPM string formatted APM for display
 ---@field rollbackBuffer RollbackBuffer
+---@field tally ChainComboTally the stack's own tally; the stack counts into it and rolls it back, this only shows it
 AnalyticsInstance =
   class(
-  function(self, save_to_overall)
+  function(self, save_to_overall, tally)
     self.save_to_overall = save_to_overall -- whether this data should count towards the overall
-    self.data = create_blank_data()
+    self.tally = tally or ChainComboTally()
+    self.data = create_blank_data(self.tally)
 
     -- temporary
     self.lastGPM = 0
@@ -83,7 +81,7 @@ AnalyticsInstance =
 function AnalyticsInstance:saveForRollback(frame)
   local copy = self.rollbackBuffer:getOldest()
   if copy == nil then
-    copy = create_blank_data()
+    copy = create_blank_data(self.tally)
   end
 
   self:saveIntoRollbackCopy(copy)
@@ -121,6 +119,8 @@ function AnalyticsInstance:restoreFromRollbackCopy(copy, clock, isRewind)
   ---@cast copy AnalyticsData
   transferAnalyticsData(self.data, copy)
 end
+
+local overall_tally = ChainComboTally()
 
 local analytics_data = {
   -- The lastly used version
@@ -320,30 +320,39 @@ function AnalyticsInstance:data_update_list()
   return data_update_list
 end
 
+-- the all-time data is only tables read from a file, so it is counted through a tally wrapped around them
+---@return ChainComboTally
+local function overallTally()
+  local overall = analytics_data.overall
+  if overall_tally.combos ~= overall.used_combos or overall_tally.chains ~= overall.reached_chains then
+    overall_tally.combos = overall.used_combos
+    overall_tally.chains = overall.reached_chains
+  end
+  return overall_tally
+end
+
+-- the game's own combos are counted by its stack, only the all time count is kept here
 function AnalyticsInstance:register_destroyed_panels(amount)
   local analytics_filters = self:data_update_list()
   for _, analytic in pairs(analytics_filters) do
     analytic.destroyed_panels = analytic.destroyed_panels + amount
     if amount > 3 then
-      if not analytic.used_combos[amount] then
-        analytic.used_combos[amount] = 1
-      else
-        analytic.used_combos[amount] = analytic.used_combos[amount] + 1
-      end
       analytic.sent_garbage_lines = analytic.sent_garbage_lines + Stack.getEstimatedGarbageLinesForCombo(amount)
     end
   end
+  if amount > 3 and self.save_to_overall then
+    overallTally():addCombo(amount)
+  end
 end
 
+-- the game's own chains are counted by its stack, only the all time count is kept here
 function AnalyticsInstance:register_chain(size)
   local analytics_filters = self:data_update_list()
   for _, analytic in pairs(analytics_filters) do
-    if not analytic.reached_chains[size] then
-      analytic.reached_chains[size] = 1
-    else
-      analytic.reached_chains[size] = analytic.reached_chains[size] + 1
-    end
     analytic.sent_garbage_lines = analytic.sent_garbage_lines + (size - 1)
+  end
+  if self.save_to_overall then
+    overallTally():addChain(size)
   end
 end
 
