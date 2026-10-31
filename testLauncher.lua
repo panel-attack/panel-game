@@ -105,6 +105,7 @@ local allTests = {
   "client.tests.SoundGroupTests",
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
+  "client.tests.ImageFilterTests",
   "client.tests.StackGraphicsTests",
   "client.tests.TelegraphTests",
   "client.tests.InputConfigurationTests",

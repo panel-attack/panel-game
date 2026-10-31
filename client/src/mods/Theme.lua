@@ -310,14 +310,16 @@ Theme.TITLE_SCENE_FILE = "TitleScreen.json"
 -- loads the image of the given name
 ---@param name string
 ---@param useBackup boolean?
+---@param expectedWidth number? the width the image is drawn at on the 1x canvas
+---@param expectedHeight number? the height the image is drawn at on the 1x canvas
 ---@return love.Texture
-function Theme:load_theme_img(name, useBackup)
+function Theme:load_theme_img(name, useBackup, expectedWidth, expectedHeight)
   if useBackup == nil then
     useBackup = true
   end
-  local img = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. name)
+  local img = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. name, expectedWidth, expectedHeight)
   if not img and useBackup then
-    img = GraphicsUtil.loadImageFromSupportedExtensions(Theme.defaultThemeDirectoryPath .. "/".. name)
+    img = GraphicsUtil.loadImageFromSupportedExtensions(Theme.defaultThemeDirectoryPath .. "/".. name, expectedWidth, expectedHeight)
     ---@cast img -nil # this is not strictly true but the default should always be able to provide a backup
   end
   return img
@@ -447,7 +449,9 @@ function Theme:loadSelectionGraphics()
   self.fontMaps.pixelFontBlue = GraphicsUtil.createPixelFontMap(pixelFontCharacters, pixelFontBlueAtlas)
 
   self.images.IMG_random_stage = self:load_theme_img("random_stage")
-  self.images.IMG_random_character = self:load_theme_img("random_character")
+  -- drawn in place of a character icon
+  local iconSize = require("client.src.mods.Character").EXPECTED_IMAGE_SIZES.icon
+  self.images.IMG_random_character = self:load_theme_img("random_character", nil, iconSize[1], iconSize[2])
 
   loadPlayerNumberIcons(self)
   loadInputPromptIcons(self)
@@ -460,6 +464,11 @@ function Theme:loadSelectionGraphics()
   self.images.stopWatch = self:load_theme_img("stopwatch")
   self.images.endless = self:load_theme_img("endless")
 end
+
+-- the size the stack frame is drawn at on the 1x canvas, the wall is drawn as wide as the stack's panels
+local FRAME_WIDTH = 312
+local FRAME_HEIGHT = 612
+local WALL_WIDTH = 288
 
 function Theme:loadIngameGraphics()
   local bgOverlay = self:load_theme_img("background/bg_overlay")
@@ -490,8 +499,8 @@ function Theme:loadIngameGraphics()
   self.images.frames = {}
   self.images.walls = {}
   for i = 1, MAX_SUPPORTED_PLAYERS do
-    self.images.frames[i] = self:load_theme_img("frame/frame" .. i .. "P")
-    self.images.walls[i] = self:load_theme_img("frame/wall" .. i .. "P")
+    self.images.frames[i] = self:load_theme_img("frame/frame" .. i .. "P", nil, FRAME_WIDTH, FRAME_HEIGHT)
+    self.images.walls[i] = self:load_theme_img("frame/wall" .. i .. "P", nil, WALL_WIDTH)
   end
 
   self.images.separator = self:load_theme_img("separator")
@@ -557,17 +566,20 @@ function Theme:loadAnalyticsIcons()
   self.images.IMG_cursorCount = self:load_theme_img("CursorCount")
 end
 
+-- the size a chain or combo card is drawn at on the 1x canvas
+local CARD_SIZE = 48
+
 function Theme:loadCards()
   self.images.IMG_cards = {}
   self.images.IMG_cards[true] = {}
   self.images.IMG_cards[false] = {}
   for i = 4, 72 do
-    self.images.IMG_cards[false][i] = self:load_theme_img("combo/combo" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "")
+    self.images.IMG_cards[false][i] = self:load_theme_img("combo/combo" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "", nil, CARD_SIZE, CARD_SIZE)
   end
   -- mystery chain
-  self.images.IMG_cards[true][0] = self:load_theme_img("chain/chain00")
+  self.images.IMG_cards[true][0] = self:load_theme_img("chain/chain00", nil, CARD_SIZE, CARD_SIZE)
   -- mystery combo
-  self.images.IMG_cards[false][0] = self:load_theme_img("combo/combo00")
+  self.images.IMG_cards[false][0] = self:load_theme_img("combo/combo00", nil, CARD_SIZE, CARD_SIZE)
 
   -- Chain card loading
   -- load as many chain cards as there are available until 99
@@ -576,13 +588,13 @@ function Theme:loadCards()
   local wantsBackupChainCards = not hasChainCards
   for i = 2, 13 do
     -- with backup from default theme
-    self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "")
+    self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "", nil, CARD_SIZE, CARD_SIZE)
   end
   -- load as many more chain cards as there are available until 9999, we will stop upon the first missing card
   self.chainCardLimit = 9999
   for i = 14, self.chainCardLimit do
     -- without backup from default theme
-    self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "", wantsBackupChainCards)
+    self.images.IMG_cards[true][i] = self:load_theme_img("chain/chain" .. tostring(math.floor(i / 10)) .. tostring(i % 10) .. "", wantsBackupChainCards, CARD_SIZE, CARD_SIZE)
     if self.images.IMG_cards[true][i] == nil then
       self.chainCardLimit = i - 1
       break
@@ -609,6 +621,10 @@ function Theme:loadLevelNumberAtlasses()
   end
 end
 
+-- the size the stack cursor is drawn at on the 1x canvas
+local CURSOR_WIDTH = 120
+local CURSOR_HEIGHT = 72
+
 function Theme:loadGameCursor()
   self.images.cursor = {}
   -- Cursor animation is 2 frames
@@ -616,13 +632,13 @@ function Theme:loadGameCursor()
     self.images.cursor[i] = {}
     -- Cursor images used to be named weird and make modders think they were for different players
     -- Load either format from the custom theme, and fallback to the built in cursor otherwise.
-    local cursorImage = self:load_theme_img("cursor" .. i, false)
-    local legacyCursorImage = self:load_theme_img("p" .. i .. "_cursor", false)
+    local cursorImage = self:load_theme_img("cursor" .. i, false, CURSOR_WIDTH, CURSOR_HEIGHT)
+    local legacyCursorImage = self:load_theme_img("p" .. i .. "_cursor", false, CURSOR_WIDTH, CURSOR_HEIGHT)
     if not cursorImage then
       if legacyCursorImage then
         cursorImage = legacyCursorImage
       else
-        cursorImage = self:load_theme_img("cursor" .. i, true)
+        cursorImage = self:load_theme_img("cursor" .. i, true, CURSOR_WIDTH, CURSOR_HEIGHT)
       end
     end
     assert(cursorImage ~= nil)
