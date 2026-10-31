@@ -1,0 +1,20 @@
+{
+  "drawables": [
+    {
+      "alpha": 0,
+      "animationTracks": [
+        {
+          "steps": [
+            {
+              "animateProperties": {
+                "alpha": 1
+              },
+              "durationSeconds": 1,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

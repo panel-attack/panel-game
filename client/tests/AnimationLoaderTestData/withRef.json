@@ -1,0 +1,21 @@
+{
+  "drawables": [
+    {
+      "id": "OriginalElement",
+      "filePath": "test_image",
+      "position": {
+        "x": 50,
+        "y": 100
+      },
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "alpha": 1.0,
+      "tint": [1.0, 1.0, 1.0]
+    },
+    {
+      "ref": "OriginalElement"
+    }
+  ]
+}

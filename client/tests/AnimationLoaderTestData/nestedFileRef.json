@@ -1,0 +1,21 @@
+{
+  "drawables": [
+    {
+      "id": "NestedElement",
+      "filePath": "test_image",
+      "position": {
+        "x": 500,
+        "y": 600
+      },
+      "size": {
+        "width": 80,
+        "height": 80
+      },
+      "alpha": 1.0,
+      "tint": [0.9, 0.7, 0.8]
+    },
+    {
+      "ref": "withFileRef.json"
+    }
+  ]
+}

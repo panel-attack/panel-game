@@ -1,0 +1,21 @@
+{
+  "drawables": [
+    {
+      "filePath": "test_image",
+      "animationTracks": [
+        {
+          "repeat": "yoyo",
+          "steps": [
+            {
+              "animateProperties": {
+                "alpha": 0
+              },
+              "durationSeconds": 1,
+              "easeType": "linear"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -302,6 +302,10 @@ end
 
 Theme.themeDirectoryPath = THEME_DIRECTORY_PATH or "themes/"
 Theme.defaultThemeDirectoryPath = "client/assets/themes/" .. consts.DEFAULT_THEME_DIRECTORY
+-- the folder inside a theme holding its animation files
+Theme.SCENES_FOLDER = "scenes"
+-- the animation file the title screen draws on top of the title image, each only if the theme has it
+Theme.TITLE_SCENE_FILE = "TitleScreen.json"
 
 -- loads the image of the given name
 ---@param name string
@@ -839,10 +843,23 @@ function Theme:applyJSONData(read_data)
   self.version = self:versionForJSONVersion(read_data.version)
 end
 
+-- Returns whether the theme has the given animation file in its scenes folder
+---@param fileName string
+---@return boolean
+function Theme:hasScene(fileName)
+  return fileUtils.exists(self.path .. "/" .. Theme.SCENES_FOLDER .. "/" .. fileName)
+end
+
+-- Returns whether the theme has a title screen, drawn from its title scene or else its title image
+---@return boolean
+function Theme:hasTitleScreen()
+  return self.images.bg_title ~= nil or self:hasScene(Theme.TITLE_SCENE_FILE)
+end
+
 function Theme:final_init()
   local menuYPadding = 10
   self.centerMenusVertically = true
-  if self.images.bg_title then
+  if self:hasTitleScreen() then
     menuYPadding = 100
     self.main_menu_screen_pos = {532, menuYPadding}
     self.main_menu_y_max = consts.CANVAS_HEIGHT - menuYPadding

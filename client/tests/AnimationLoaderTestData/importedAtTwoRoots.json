@@ -1,0 +1,10 @@
+{
+  "drawables": [
+    {
+      "ref": "trackedPart.json"
+    },
+    {
+      "ref": "trackedPart.json"
+    }
+  ]
+}

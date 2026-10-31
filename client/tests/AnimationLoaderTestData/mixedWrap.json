@@ -1,0 +1,13 @@
+{
+  "drawables": [
+    {
+      "id": "Clamped",
+      "filePath": "test_image"
+    },
+    {
+      "id": "Repeated",
+      "filePath": "test_image",
+      "wrap": "repeat"
+    }
+  ]
+}
