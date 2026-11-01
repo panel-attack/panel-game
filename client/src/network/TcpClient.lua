@@ -26,6 +26,7 @@ local Queue = require("common.lib.Queue")
 ---@field outgoingMessageQueue Queue
 ---@field sendRetryCount integer
 ---@field sendRetryLimit integer
+---@field lastReceiveTime number love.timer time when data last arrived from the server
 local TcpClient = class(function(tcpClient)
   -- holds data fragments
   tcpClient.data = ""
@@ -42,6 +43,11 @@ local TcpClient = class(function(tcpClient)
   end
 end)
 
+-- Seconds without data from the server after which the connection counts as dead.
+-- Must stay well above the server's ping interval: it pings a client that has been quiet for a second
+-- and drops one that hasn't answered within 10 seconds, so a live connection never goes quiet this long.
+TcpClient.SERVER_SILENCE_LIMIT = 15
+
 -- setup the network connection on the given IP and port
 ---@param ip string
 ---@param port integer
@@ -57,6 +63,7 @@ function TcpClient:connectToServer(ip, port)
   end
   self.socket:setoption("tcp-nodelay", true)
   self.socket:settimeout(0)
+  self.lastReceiveTime = love.timer.getTime()
   return true
 end
 
@@ -86,6 +93,7 @@ function TcpClient:readSocket()
   if data and data:len() > 0 then
     -- append data to our unprocessed data so far
     self.data = self.data .. data
+    self.lastReceiveTime = love.timer.getTime()
   end
   if error == "closed" then
     logger.warn("the connection was closed while trying to stream data")
@@ -248,12 +256,22 @@ function TcpClient:dropOldInputMessages()
   end
 end
 
+---@return boolean # if nothing has arrived from the server for longer than SERVER_SILENCE_LIMIT
+function TcpClient:serverWentSilent()
+  return love.timer.getTime() - self.lastReceiveTime > TcpClient.SERVER_SILENCE_LIMIT
+end
+
 -- Processes messages that came in from the server
 -- Returns false if the connection is broken.
 function TcpClient:processIncomingMessages()
   if not self:readSocket() then
     -- Something went wrong while receiving data.
     -- Bail out and return.
+    return false
+  end
+  if self:serverWentSilent() then
+    -- a connection that died without closing never errors on its own, see SERVER_SILENCE_LIMIT
+    logger.warn("no data from the server for over " .. TcpClient.SERVER_SILENCE_LIMIT .. " seconds, treating the connection as dead")
     return false
   end
   while true do
