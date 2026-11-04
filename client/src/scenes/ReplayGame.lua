@@ -6,6 +6,7 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local prof = require("common.lib.zoneProfiler")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local ReplayPlayback = require("client.src.ReplayPlayback")
 
 local ReplayGame = class(
   function (self, sceneParams)
@@ -14,6 +15,8 @@ local ReplayGame = class(
     self.playbackSpeedIndex = 4
     self.saveReplay = false
     self:load()
+    self.playback = ReplayPlayback(self.match)
+    self.match.replayPlayback = self.playback
   end,
   GameBase
 )
@@ -23,11 +26,11 @@ ReplayGame.name = "ReplayGame"
 function ReplayGame:togglePause()
   self.match:togglePause()
   GAME.theme:playValidationSfx()
-  if self.musicSource then
+  if self.stageTrack then
     if self.match.isPaused then
       SoundController:pauseMusic()
     else
-      SoundController:playMusic(self.musicSource.stageTrack)
+      SoundController:playMusic(self.stageTrack)
     end
   end
 end
@@ -56,26 +59,28 @@ function ReplayGame:runGame()
     self.match.winners = nil
   end
 
-  if not self.match.isPaused then
+  if self.playback.seekTarget then
+    self.playback:updateSeek()
+  elseif not self.match.isPaused then
     if playbackSpeed >= 1 then
       for i = 1, playbackSpeed do
-        self.match:run()
+        self.playback:run()
       end
     elseif playbackSpeed < 0 then
-      self.match:rewindToFrame(self.match.engine.clock + playbackSpeed)
+      self.playback:rewindToFrame(self.match.engine.clock + playbackSpeed)
     elseif playbackSpeed < 1 then
       local inverse = math.round(1 / playbackSpeed, 0)
       if tick % inverse == 0 then
-        self.match:run()
+        self.playback:run()
       end
     end
   else
     if self.frameAdvance then
       self.match:togglePause()
       if playbackSpeed > 0 then
-        self.match:run()
+        self.playback:run()
       elseif playbackSpeed < 0 then
-        self.match:rewindToFrame(self.match.engine.clock - 1)
+        self.playback:rewindToFrame(self.match.engine.clock - 1)
       end
       self.frameAdvance = false
       self.match.isPaused = true
@@ -93,7 +98,9 @@ function ReplayGame:runGame()
       if self.match.isPaused then
         SoundController:pauseMusic()
       else
-        SoundController:playMusic(self.musicSource.stageTrack)
+        if self.stageTrack then
+          SoundController:playMusic(self.stageTrack)
+        end
       end
     end
   elseif input:isPressedWithRepeat("MenuRight") then
@@ -106,7 +113,7 @@ function ReplayGame:runGame()
     if self.match.isPaused then
       GAME.theme:playCancelSfx()
       self.match:abort()
-      GAME.navigationStack:pop()
+      self:startNextScene()
     else
       self:togglePause()
     end
@@ -121,6 +128,9 @@ ReplayGame.runGameOver = ReplayGame.runGame
 function ReplayGame:customDraw()
   local textPos = themes[config.theme].gameover_text_Pos
   local playbackText = self.playbackSpeeds[self.playbackSpeedIndex] .. "x"
+  if self.playback.seekTarget then
+    playbackText = playbackText .. " ..."
+  end
   GraphicsUtil.printf(playbackText, textPos[0], textPos[1], consts.CANVAS_WIDTH, "center", nil, 1, 10)
 end
 

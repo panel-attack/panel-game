@@ -71,6 +71,23 @@ testNormalRollback()
 testStaleMarking()
 testFrameTooOld()
 testPostRollbackWrite()
+
+local function testClearingReusesAllocatedCopies()
+  local buffer = RollbackBuffer(3)
+  for frame = 1, 3 do
+    buffer:saveCopy(frame, {clock = frame})
+  end
+  local allocated = buffer.buffer[1]
+  buffer:clear()
+  assert(buffer:getStoredCopyCount() == 0, "Clear retained valid frames")
+  assert(buffer:rollbackToFrame(2) == nil, "A cleared frame was still available")
+  assert(buffer:getCopyForFrame(2) == nil, "Clear left a searchable frame")
+  assert(buffer:getOldest() == allocated, "Clear discarded allocated rollback tables")
+  buffer:saveCopy(100, allocated)
+  assert(buffer:rollbackToFrame(100) == allocated, "Could not save after clearing")
+end
+
+testClearingReusesAllocatedCopies()
 -- Looking a frame up has to be independent of where a rollback left currentIndex, because the one
 -- caller wants the frame before the one it just rolled back to and rollbackToFrame moves the index
 -- forward past the match.

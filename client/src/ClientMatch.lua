@@ -38,6 +38,7 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 ---@field winners MatchParticipant[]
 ---@field panelSource PanelSource
 ---@field gameMode GameMode
+---@field replayPlayback ReplayPlayback?
 
 --- The ClientMatch is a way to create a match that will run with graphics and sounds on a client.
 ---@class ClientMatch : Signal
@@ -299,6 +300,10 @@ end
 -- Consider recycling any memory that might leave around a lot of garbage.
 -- Note: You can just leave the variables to clear / garbage collect on their own if they aren't large.
 function ClientMatch:deinit()
+  if self.replayPlayback then
+    self.replayPlayback:close()
+    self.replayPlayback = nil
+  end
   for i = 1, #self.stacks do
     self.stacks[i]:deinit()
   end

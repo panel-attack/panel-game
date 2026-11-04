@@ -32,12 +32,19 @@ function RollbackBuffer:getOldest()
   return self.buffer[self.currentIndex]
 end
 
+---Invalidates saved frames while retaining allocated copies for reuse.
+function RollbackBuffer:clear()
+  table.clear(self.frames)
+  self.currentIndex = 1
+end
+
 -- rolls the buffer back to the specified frame and returns the data for the frame
 -- returns nil if no data for the specified frame was found
 function RollbackBuffer:rollbackToFrame(frame)
+  local newestFrame = self.frames[wrap(1, self.currentIndex - 1, self.size)]
   if frame < 0 then
     error("Cannot rollback to negative frame numbers")
-  elseif frame > self.frames[wrap(1, self.currentIndex - 1, self.size)] then
+  elseif not newestFrame or frame > newestFrame then
     -- target frame is greater than our most recent non-stale frame
     return nil
   elseif self.frames[self.currentIndex] and frame < self.frames[self.currentIndex] then

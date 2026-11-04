@@ -126,7 +126,9 @@ function PlayerStack:onEngineMatched(engine, attackGfxOrigin, isChainLink, combo
 end
 
 function PlayerStack:onGameOver(engine)
-  SoundController:playSfx(themes[config.theme].sounds.game_over)
+  if not self.isSeeking then
+    SoundController:playSfx(themes[config.theme].sounds.game_over)
+  end
 
   if self.canvas then
     local popsize = "small"
@@ -267,6 +269,10 @@ end
 
 --- callback for operations to run after each single run of the engine Stack
 function PlayerStack:onRun()
+  if self.isSeeking then
+    self.danger_music = self:shouldPlayDangerMusic()
+    return
+  end
   self:processTaunts()
 
   self:playSfx()
@@ -290,6 +296,27 @@ function PlayerStack:onRun()
     self.analytic.lastAPM = string.format("%0.0f", math.round(actionsPerMinute, 0))
     self.analytic.lastGPM = self.analytic:getRoundedGPM(self.engine.clock)
   end
+end
+
+---Drops transient presentation state when moving between distant replay frames.
+function PlayerStack:clearReplayEffects()
+  self.card_q:clear()
+  self.pop_q:clear()
+  self.sfx_land = false
+  self.sfx_garbage_thud = 0
+  self.sfxSwap = false
+  self.sfxCursorMove = false
+  self.sfxGarbageMatch = false
+  self.sfxFanfare = 0
+  self.sfxPop = false
+  self.sfxGarbagePop = 0
+  self.combo_chain_play = nil
+  self.popSizeThisFrame = "small"
+  self.danger_timer = 0
+  local clock = self.engine.clock
+  local actions = self.analytic.data.swap_count + self.analytic.data.move_count
+  self.analytic.lastAPM = string.format("%0.0f", clock > 0 and math.round(actions * 3600 / clock, 0) or 0)
+  self.analytic.lastGPM = clock > 0 and self.analytic:getRoundedGPM(clock) or 0
 end
 
 ------------------------------------------------------------------------
@@ -441,7 +468,7 @@ end
 
 -- Enqueue a card animation
 function PlayerStack.enqueue_card(self, chain, x, y, n)
-  if self.canvas == nil or self.engine.play_to_end then
+  if self.canvas == nil or self.engine.play_to_end or self.isSeeking then
     return
   end
 
@@ -534,7 +561,7 @@ end
 
 -- Enqueue a pop animation
 function PlayerStack.enqueue_popfx(self, x, y, popsize)
-  if self.canvas == nil or self.engine.play_to_end then
+  if self.canvas == nil or self.engine.play_to_end or self.isSeeking then
     return
   end
 
@@ -1457,6 +1484,9 @@ function PlayerStack:processTaunts()
 end
 
 function PlayerStack:canPlaySfx()
+  if self.isSeeking then
+    return false
+  end
   -- this should be superfluous because there is no code being run that would send signals causing SFX
   -- if self:game_ended() then
   --   return false

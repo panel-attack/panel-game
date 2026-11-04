@@ -44,7 +44,9 @@ end,
 ClientStack)
 
 function ChallengeModePlayerStack:onGameOver()
-  SoundController:playSfx(themes[config.theme].sounds.game_over)
+  if not self.isSeeking then
+    SoundController:playSfx(themes[config.theme].sounds.game_over)
+  end
 end
 
 function ChallengeModePlayerStack:onGarbagePushed(garbage)
@@ -98,18 +100,25 @@ function ChallengeModePlayerStack:onRun()
     if self.danger_music then
       if self.engine.healthEngine.currentLines < self.engine.healthEngine.height then
         self.danger_music = false
-        self:emitSignal("dangerMusicChanged", self)
+        if not self.isSeeking then
+          self:emitSignal("dangerMusicChanged", self)
+        end
       end
     else
       if self.engine.healthEngine.currentLines > self.engine.healthEngine.height then
         self.danger_music = true
-        self:emitSignal("dangerMusicChanged", self)
+        if not self.isSeeking then
+          self:emitSignal("dangerMusicChanged", self)
+        end
       end
     end
   end
 end
 
 function ChallengeModePlayerStack:canPlaySfx()
+  if self.isSeeking then
+    return false
+  end
    -- If we are still catching up from rollback don't play sounds again
    if self.engine:behindRollback() then
     return false

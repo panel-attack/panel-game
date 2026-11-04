@@ -216,6 +216,7 @@ end
 -- Intentional override
 ---@diagnostic disable-next-line: duplicate-set-field
 function love.quit()
+  require("client.src.ReplayCheckpointStore").closeAll()
   if prof.enabled then
     prof.write()
   end

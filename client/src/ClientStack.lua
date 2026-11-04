@@ -37,6 +37,7 @@ end
 ---@field assets IngameAssetPack
 ---@field renderIndex integer determines the position of the stack and how some elements are rendered
 ---@field player_number integer used for display ordering
+---@field isSeeking boolean if replay reconstruction should suppress presentation side effects
 
 ---@class ClientStack
 local ClientStack = class(
@@ -49,6 +50,7 @@ function(self, args)
   assert(args.characterId)
 
   self.engine = args.engine
+  self.isSeeking = false
   -- player number according to the multiplayer server, for game outcome reporting 
   self.player_number = args.player_number or args.engine.which
   self.is_local = args.player and args.player.isLocal or args.engine.is_local

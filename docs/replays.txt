@@ -1,5 +1,24 @@
 Replay Files
 
+Replay rewind
+
+The replay viewer keeps a short frame-by-frame rollback window in RAM. Rewinding
+beyond that window restores a checkpoint and replays inputs forward without
+sounds or transient effects. Rewind can therefore reach the start of the replay.
+The speed indicator shows "..." while reconstruction is in progress; controls
+remain responsive, although crossing a rollback-window boundary may briefly pause
+backward playback. Smooth background prefetching is not implemented.
+
+Checkpoints are generated every 10 seconds during playback and compressed into
+temporary files under replay-cache in the LOVE save directory. Only one decoded
+checkpoint is cached in RAM, and reconstruction reuses the existing rollback
+window rather than allocating another frame buffer. Disk usage grows with replay
+length; inputs and engine history also retain their existing memory costs.
+Checkpoint files are removed when the replay viewer or application closes normally. A crash may
+leave a session directory behind; replay-cache can be deleted when no replay
+viewer is running. Checkpoints are not shared across sessions, and existing
+replay files are unchanged.
+
 "in_buf" and "I" represent P1's and P2's inputs, respectively. Every character represents a frame.
 
 Inputs are mapped to binary values.
@@ -30,4 +49,3 @@ Q = Swap
 g = Raise Stack
 
 "P" and "O" represent P1's and P2's stacks, respectively.
-

@@ -96,6 +96,7 @@ local allTests = {
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",
   "client.tests.PlayerStackRollbackTests",
+  "client.tests.ReplayPlaybackTests",
   "client.tests.PuzzleSetTests",
   "client.tests.PuzzleSetIteratorTests",
   "client.tests.PuzzleLibraryTests",
