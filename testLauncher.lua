@@ -93,6 +93,7 @@ local allTests = {
   "server.tests.ServerTests",
   "server.tests.RealSocketPartialSendTest",
   "client.tests.FileUtilsTests",
+  "client.tests.ReplayFileDropTests",
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",
   "client.tests.PlayerStackRollbackTests",
