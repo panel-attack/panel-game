@@ -129,30 +129,49 @@ function fileUtils.recursiveRemoveFiles(folder, targetName)
 end
 
 -- returns the table for the deserialized json at the specified file path
----@param file string
+---@param file string|love.File a sandbox path or a dropped file
+---@param checkTrailingData boolean? reject non-whitespace after the JSON value
 ---@return table? # nil if the file could not be read or deserialization failed
-function fileUtils.readJsonFile(file)
-  if not fileUtils.exists(file) then
-    logger.debug("No file at specified path " .. file)
-    return nil
+---@return ("read"|"decode")? failure
+function fileUtils.readJsonFile(file, checkTrailingData)
+  local filename
+  local fileContent, info
+  if type(file) == "string" then
+    filename = file
+    if not fileUtils.exists(file) then
+      logger.debug("No file at specified path " .. file)
+      return nil, "read"
+    end
+    fileContent, info = love.filesystem.read(file)
   else
-    local fileContent, info = love.filesystem.read(file)
-    if type(info) == "string" then
-      -- info is the number of read bytes if successful, otherwise an error string
-      -- thus, if it is of type string, that indicates an error
-      logger.warn("Could not read file at path " .. file)
-      return nil
-    else
-      local value, _, errorMsg = json.decode(fileContent)
-      if errorMsg then
-        logger.error("Error reading " .. file .. ":\n" .. errorMsg .. ":\n" .. fileContent)
-        return nil
-      else
-        ---@cast value table
-        return value
-      end
+    filename = file:getFilename()
+    local opened, openError = file:open("r")
+    if not opened then
+      logger.warn("Could not open file " .. filename .. ": " .. tostring(openError))
+      return nil, "read"
+    end
+    fileContent, info = file:read()
+    local closed, closeError = file:close()
+    if not closed then
+      logger.warn("Could not close file " .. filename .. ": " .. tostring(closeError))
+      return nil, "read"
     end
   end
+
+  if not fileContent then
+    logger.warn("Could not read file " .. filename .. ": " .. tostring(info))
+    return nil, "read"
+  end
+  local value, position, errorMsg = json.decode(fileContent)
+  if checkTrailingData and not errorMsg and fileContent:sub(position):find("%S") then
+    errorMsg = "Unexpected data after JSON value"
+  end
+  if errorMsg then
+    logger.error("Error reading " .. filename .. ":\n" .. errorMsg .. ":\n" .. fileContent)
+    return nil, "decode"
+  end
+  ---@cast value table
+  return value
 end
 
 --returns a source, or nil if it could not find a file

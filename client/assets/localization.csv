@@ -679,3 +679,8 @@ puzzle_set_description_advanced_garbage_chains,,The hardest challenge for garbag
 puzzle_set_name_intermediate_garbage_chains,,Garbage Chains,Chaînes de déchets,Correntes de Lixo,ガーベッジチェイン,Cadenas de Escombros,Müllketten,Catene di Spazzatura,เชนขยะ
 puzzle_set_description_intermediate_garbage_chains,,Continue setting up chains from falling garbage with less time.,"Continuez à préparer des chaînes à partir des déchets qui tombent, avec moins de temps.","Continue preparando correntes a partir do lixo que cai, com menos tempo.",時間が少ない中で、落ちてくるガーベッジからのチェインを組み立て続けましょう。,"Sigue preparando cadenas a partir de los escombros que caen, con menos tiempo.","Bereite weiter Ketten aus fallendem Müll vor, mit weniger Zeit.","Continua a preparare catene dalla spazzatura che cade, con meno tempo.",เตรียมเชนจากขยะที่ตกลงมาต่อไปโดยมีเวลาน้อยลง
 hold_continue_button,Text shown on the game over screen when a button has to be held to continue,Hold Any Button,Maintenez une touche enfoncée,Mantenha qualquer botão pressionado,任意のボタンを長押しします,Mantén pulsado cualquier botón,Halte eine beliebige Taste gedrückt.,Tieni premuto qualsiasi pulsante,กดปุ่มใดก็ได้ค้างไว้
+rp_drop_error,Title of the replay file error dialog,Could not open replay,,,,,,,
+rp_drop_json_only,Unsupported dropped file type,Drop a .json replay file.,,,,,,,
+rp_drop_unavailable,Replay drop rejected while busy,Wait for loading to finish and leave any game or online session before dropping a replay.,,,,,,,
+rp_drop_read_error,Dropped replay could not be read,The replay file could not be read.,,,,,,,
+rp_drop_invalid,Malformed or non-replay JSON file,This file is not a valid Panel Attack replay.,,,,,,,
