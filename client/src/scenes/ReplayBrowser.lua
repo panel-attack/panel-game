@@ -8,6 +8,10 @@ local GameModes = require("common.data.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
 local ClientMatch = require("client.src.ClientMatch")
 local logger = require("common.lib.logger")
+local LevelData = require("common.data.LevelData")
+local Match = require("common.engine.Match")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
 
 local ReplayBrowser = class(
   function (self, sceneParams)
@@ -37,6 +41,76 @@ local menu_cursor_offset = 16
 local cursor_pos = 0
 
 local replay_id_top = 0
+
+--- Reads and validates a browser selection or dropped replay before it can replace the current scene.
+---@param file string|love.File
+---@return ReplayV3?
+function ReplayBrowser.readReplayFile(file)
+  local data, failure = fileUtils.readJsonFile(file, true)
+  local success, replay = pcall(function()
+    assert(type(data) == "table", "Expected a JSON replay object")
+    assert(data.replayVersion == nil or tonumber(data.replayVersion) == 2 or data.replayVersion == 3,
+      "Unsupported replay format")
+    local replay = ReplayV3.createFromTable(data, true)
+    assert(replay and type(replay.engineVersion) == "string", "Missing engine version")
+    assert(type(replay.rules) == "table" and type(replay.panelSource) == "table", "Missing match settings")
+    assert(type(replay.stacks) == "table" and #replay.stacks >= 1 and #replay.stacks <= 2, "Invalid stack count")
+    assert(type(replay.garbageFlows) == "table", "Missing garbage flows")
+    assert(type(replay.metadata) == "table" and type(replay.metadata.stacks) == "table", "Missing replay metadata")
+    assert(#replay.metadata.stacks == #replay.stacks, "Invalid stack metadata")
+
+    local seen = {}
+    for _, metadata in ipairs(replay.metadata.stacks) do
+      assert(type(metadata) == "table" and type(metadata.stackIndex) == "number", "Invalid stack metadata")
+      local stack = replay.stacks[metadata.stackIndex]
+      assert(type(stack) == "table" and not seen[metadata.stackIndex], "Invalid stack index")
+      seen[metadata.stackIndex] = true
+      for _, field in ipairs({"name", "characterId"}) do
+        assert(metadata[field] == nil or type(metadata[field]) == "string", "Invalid metadata field: " .. field)
+      end
+      for _, field in ipairs({"level", "difficulty", "challengeModeDifficulty", "stageIndex"}) do
+        assert(metadata[field] == nil or type(metadata[field]) == "number", "Invalid metadata field: " .. field)
+      end
+      if stack.stackType == ReplayV3.stackTypes.Stack then
+        assert(type(stack.levelData) == "table" and LevelData.validate(stack.levelData), "Invalid level settings")
+        assert(type(stack.stackBehaviours) == "table" and type(stack.inputs) == "string", "Invalid stack settings")
+        assert(stack.inputMethod == "controller" or stack.inputMethod == "touch", "Invalid input method")
+      else
+        assert(stack.stackType == ReplayV3.stackTypes.SimulatedStack and type(stack.attackSettings) == "table",
+          "Invalid simulated stack")
+      end
+    end
+
+    if ReplayV3.replayCanBeViewed(replay) then
+      local match = Match.createFromReplay(replay)
+      for i, stack in ipairs(match.stacks) do
+        if replay.stacks[i].stackType == ReplayV3.stackTypes.Stack then
+          ---@cast stack Stack
+          for _, input in ipairs(stack.confirmedInput) do
+            if stack.inputMethod == "controller" then
+              assert(KeyDataEncoding.base64decode[input], "Invalid controller input")
+            else
+              local raise, row, column = TouchDataEncoding.latinStringToTouchData(input, stack.width)
+              assert(row <= stack.height
+                and TouchDataEncoding.touchDataToLatinString(raise, row, column, stack.width) == input, "Invalid touch input")
+            end
+          end
+        end
+      end
+      match:start()
+    end
+    return replay
+  end)
+
+  if not success then
+    local filename = type(file) == "string" and file or file:getFilename()
+    logger.warn("Could not load replay " .. filename .. ": " .. tostring(replay))
+    local messageKey = failure == "read" and "rp_drop_read_error" or "rp_drop_invalid"
+    love.window.showMessageBox(loc("rp_drop_error"), loc(messageKey), "warning")
+    return nil
+  end
+  return replay
+end
 
 local function replayMenu()
   if (replay_id_top == 0) then
@@ -91,7 +165,7 @@ local function setPathToParentDir()
   updateBrowsingPath(current_path:gsub("(.*/).*/$", "%1"))
 end
 
-local function selectMenuItem()
+local function selectMenuItem(browser)
   if cursor_pos == 0 then
     setPathToParentDir()
   else
@@ -99,10 +173,9 @@ local function selectMenuItem()
     local file_info = love.filesystem.getInfo(selection)
     if file_info then
       if file_info.type == "file" then
-        filename = selection
-        local replay = ReplayV3.createFromTable(fileUtils.readJsonFile(selection), true)
+        local replay = ReplayBrowser.readReplayFile(selection)
         if replay then
-          selectedReplay = replay
+          browser:showReplay(replay, selection)
         else
           GAME.theme:playCancelSfx()
         end
@@ -179,9 +252,7 @@ function ReplayBrowser:update()
     end
     if input.isDown["MenuSelect"] then
       GAME.theme:playValidationSfx()
-      if selectMenuItem() then
-        state = "info"
-      end
+      selectMenuItem(self)
     end
     if input.isDown["MenuBack"] then
       if current_path == "/" then

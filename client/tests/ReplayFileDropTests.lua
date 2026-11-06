@@ -19,6 +19,8 @@ local originalNetState = GAME.netClient.state
 local originalMessageBox = love.window.showMessageBox
 local originalPrint = GraphicsUtil.print
 local originalInputDown = input.isDown
+local originalLastReplayPath = GAME.lastReplayPath
+local replayTestDirectory
 local messages = {}
 local displayed = {}
 local liveMatches = {}
@@ -355,11 +357,66 @@ local function testLegacyReplayFiles()
     if filename:match("%.json$") then
       resetNavigation()
       local contents = assert(love.filesystem.read(path .. filename))
+      assert(ReplayBrowser.readReplayFile(path .. filename), "Could not read browser fixture " .. filename)
       assert(handleReplayFileDrop(droppedFile(contents, filename)), "Could not open fixture " .. filename)
       finishTransition():draw()
       assertDisplayed(loc("rp_browser_info_header"))
     end
   end
+end
+
+local function testBrowserUsesSharedLoading()
+  local directory = "replays/__ReplayFileDropTests"
+  assert(not love.filesystem.getInfo(directory), "Replay test directory must not overwrite existing files")
+  assert(love.filesystem.createDirectory(directory))
+  replayTestDirectory = directory
+  GAME.lastReplayPath = directory
+  local path = directory .. "/test.json"
+
+  local function selectReplayFile(contents)
+    resetNavigation()
+    assert(love.filesystem.write(path, contents))
+    local browser = ReplayBrowser({})
+    GAME.navigationStack:push(browser)
+    finishTransition()
+    input.isDown.MenuDown = 1
+    browser:update()
+    input.isDown.MenuDown = nil
+    input.isDown.MenuSelect = 1
+    browser:update()
+    input.isDown.MenuSelect = nil
+    browser:draw()
+    return browser
+  end
+
+  local browser = selectReplayFile(json.encode(makeReplayData()))
+  assertDisplayed(loc("rp_browser_info_header"))
+  assertDisplayed(path)
+  assert(#messages == 0)
+  local scene = confirmReplay(browser)
+  scene:update(1 / 60)
+  assert(scene.match.engine.clock > 0, "A browser-selected replay should still play")
+
+  local invalidContents = {"{}", "{broken json", json.encode(makeReplayData()) .. " {}"}
+  local malformed = makeReplayData()
+  malformed.metadata.stacks[1].level = true
+  invalidContents[#invalidContents + 1] = json.encode(malformed)
+  malformed = makeReplayData()
+  malformed.stacks[1].inputs = "A300~1"
+  invalidContents[#invalidContents + 1] = json.encode(malformed)
+  for _, contents in ipairs(invalidContents) do
+    browser = selectReplayFile(contents)
+    assertDisplayed(loc("rp_browser_header"))
+    assert(not displayed[loc("rp_browser_info_header")], "Invalid browser selections should not show replay details")
+    assert(GAME.navigationStack:getActiveScene() == browser)
+    assert(#messages == 1 and messages[1] == loc("rp_drop_invalid"))
+  end
+
+  assert(love.filesystem.write(path, "{} {}"))
+  local fileUtils = require("client.src.FileUtils")
+  assert(fileUtils.readJsonFile(path), "Other JSON callers should retain their existing trailing-data behavior")
+  local value, failure = fileUtils.readJsonFile(path, true)
+  assert(value == nil and failure == "decode", "Replay files must not accept trailing JSON values")
 end
 
 local function testBrowserReportsPlaybackFailure()
@@ -393,6 +450,7 @@ local function runTests()
   testUnavailableStatesDoNotReadTheFile()
   testIncompatibleVersionUsesExistingWarning()
   testLegacyReplayFiles()
+  testBrowserUsesSharedLoading()
   testBrowserReportsPlaybackFailure()
 end
 
@@ -409,4 +467,11 @@ GAME.netClient.state = originalNetState
 love.window.showMessageBox = originalMessageBox
 GraphicsUtil.print = originalPrint
 input.isDown = originalInputDown
+if replayTestDirectory then
+  assert(love.filesystem.remove(replayTestDirectory .. "/test.json"))
+  assert(love.filesystem.remove(replayTestDirectory))
+  GAME.lastReplayPath = originalLastReplayPath or "replays"
+  ReplayBrowser({})
+end
+GAME.lastReplayPath = originalLastReplayPath
 assert(success, err)

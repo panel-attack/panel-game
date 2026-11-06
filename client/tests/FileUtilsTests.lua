@@ -100,7 +100,24 @@ local function testFileMatching4()
   testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
 end
 
+local function testJsonFileSources()
+  local path = "common/tests/data/puzzles_v2_format.json"
+  local fromPath = assert(FileUtils.readJsonFile(path, true))
+  local file = love.filesystem.newFile(path)
+  local fromFile = assert(FileUtils.readJsonFile(file, true))
+  assert(json.encode(fromFile) == json.encode(fromPath), "Paths and file objects should use the same JSON decoding")
+  assert(not file:isOpen(), "Reading JSON should close the file")
+
+  local missing = "__FileUtilsTests_missing.json"
+  assert(not FileUtils.exists(missing))
+  local value, failure = FileUtils.readJsonFile(missing)
+  assert(value == nil and failure == "read")
+  value, failure = FileUtils.readJsonFile(love.filesystem.newFile(missing))
+  assert(value == nil and failure == "read")
+end
+
 testFileMatching1()
 testFileMatching2()
 testFileMatching3()
 testFileMatching4()
+testJsonFileSources()
