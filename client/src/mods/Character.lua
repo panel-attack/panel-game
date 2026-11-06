@@ -281,6 +281,34 @@ local all_images = {
   "burst",
   "fade"
 }
+-- the size each image is drawn at on the 1x canvas, a nil dimension is stretched to fit
+Character.EXPECTED_IMAGE_SIZES = {
+  icon = {84, 84},
+  topleft = {24, 9},
+  botleft = {24, 9},
+  topright = {24, 9},
+  botright = {24, 9},
+  top = {nil, 6},
+  bot = {nil, 6},
+  left = {24, nil},
+  right = {24, nil},
+  face = {48, 48},
+  face2 = {48, 48},
+  pop = {48, 48},
+  doubleface = {48, 96},
+  filler1 = {48, 48},
+  filler2 = {48, 48},
+  flash = {48, 48},
+  portrait = {288, 576},
+  portrait2 = {288, 576},
+  -- 9 frames in a row, at a popfx scale of 1
+  burst = {9 * 48, 48},
+  fade = {9 * 96, 96},
+  ["telegraph/attack"] = {48, 48},
+  -- every N-wide, N-tall and 6-wide-metal image
+  ["telegraph/garbage"] = {72, 48},
+}
+
 local defaulted_images = {
   icon = true,
   topleft = true,
@@ -321,10 +349,25 @@ function characters_reload_graphics()
   end
 end
 
+-- returns the expected width and height of a kind of image, burst and fade are drawn bigger or smaller by the popfx scales
+---@param imageKind string
+---@return number? width
+---@return number? height
+function Character:expectedImageSize(imageKind)
+  local width, height = Character.EXPECTED_IMAGE_SIZES[imageKind][1], Character.EXPECTED_IMAGE_SIZES[imageKind][2]
+  local scale = 1
+  if imageKind == "burst" then
+    scale = self.popfx_burstScale
+  elseif imageKind == "fade" then
+    scale = self.popfx_fadeScale
+  end
+  return width and width * scale, height and height * scale
+end
+
 function Character.graphics_init(self, full, yields)
   local character_images = full and all_images or basic_images
   for _, image_name in ipairs(character_images) do
-    self.images[image_name] = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. image_name)
+    self.images[image_name] = GraphicsUtil.loadImageFromSupportedExtensions(self.path .. "/" .. image_name, self:expectedImageSize(image_name))
     if not self.images[image_name] and defaulted_images[image_name] and not self:isBundle() then
       self.images[image_name] = default_character.images[image_name]
       if not self.images[image_name] then
@@ -353,7 +396,7 @@ function Character.graphics_init(self, full, yields)
     for garbage_h=1,14 do
       self.telegraph_garbage_images[garbage_h] = {}
       logger.trace("telegraph/"..garbage_h.."-tall")
-      self.telegraph_garbage_images[garbage_h][6] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/"..garbage_h.."-tall")
+      self.telegraph_garbage_images[garbage_h][6] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/"..garbage_h.."-tall", self:expectedImageSize("telegraph/garbage"))
       if not self.telegraph_garbage_images[garbage_h][6] and default_character.telegraph_garbage_images[garbage_h][6] then
         self.telegraph_garbage_images[garbage_h][6] = default_character.telegraph_garbage_images[garbage_h][6]
         logger.trace("DEFAULT used for telegraph/"..garbage_h.."-tall")
@@ -363,7 +406,7 @@ function Character.graphics_init(self, full, yields)
     end
     for garbage_w=1,6 do
       logger.trace("telegraph/"..garbage_w.."-wide")
-      self.telegraph_garbage_images[1][garbage_w] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/"..garbage_w.."-wide")
+      self.telegraph_garbage_images[1][garbage_w] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/"..garbage_w.."-wide", self:expectedImageSize("telegraph/garbage"))
       if not self.telegraph_garbage_images[1][garbage_w] and default_character.telegraph_garbage_images[1][garbage_w] then
         self.telegraph_garbage_images[1][garbage_w] = default_character.telegraph_garbage_images[1][garbage_w]
         logger.trace("DEFAULT used for telegraph/"..garbage_w.."-wide")
@@ -372,7 +415,7 @@ function Character.graphics_init(self, full, yields)
       end
     end
     logger.trace("telegraph/6-wide-metal")
-    self.telegraph_garbage_images["metal"] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/6-wide-metal")
+    self.telegraph_garbage_images["metal"] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/6-wide-metal", self:expectedImageSize("telegraph/garbage"))
     if not self.telegraph_garbage_images["metal"] and default_character.telegraph_garbage_images["metal"] then
       self.telegraph_garbage_images["metal"] = default_character.telegraph_garbage_images["metal"]
       logger.trace("DEFAULT used for telegraph/6-wide-metal")
@@ -380,7 +423,7 @@ function Character.graphics_init(self, full, yields)
       logger.info("FAILED TO LOAD: telegraph/6-wide-metal")
     end
     logger.trace("telegraph/attack")
-    self.telegraph_garbage_images["attack"] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/attack")
+    self.telegraph_garbage_images["attack"] = GraphicsUtil.loadImageFromSupportedExtensions(self.path.."/telegraph/attack", self:expectedImageSize("telegraph/attack"))
     if not self.telegraph_garbage_images["attack"] and default_character.telegraph_garbage_images["attack"] then
       self.telegraph_garbage_images["attack"] = default_character.telegraph_garbage_images["attack"]
       logger.trace("DEFAULT used for telegraph/attack")
@@ -394,7 +437,7 @@ end
 function Character:createBundleIcon()
   local firstCharacter = allCharacters[self.subIds[1]]
   assert(firstCharacter ~= nil, "Expected a valid character in sub IDs")
-  local filterMin, filterMag = firstCharacter.images.icon:getFilter()
+  local icons = {}
   local image = GraphicsUtil.renderToTexture(
     2 * 168,
     2 * 168,
@@ -413,13 +456,16 @@ function Character:createBundleIcon()
           end
           local width, height = character.images.icon:getDimensions()
           love.graphics.draw(character.images.icon, x, y, 0, 168 / width, 168 / height)
+          icons[#icons + 1] = character.images.icon
         end
       end
     end,
     GAME:newCanvasSnappedScale(),
-    filterMin,
-    filterMag
+    "linear",
+    "linear"
   )
+  local filter = GraphicsUtil.combinedFilter(icons)
+  image:setFilter(filter, filter)
   return image
 end
 
