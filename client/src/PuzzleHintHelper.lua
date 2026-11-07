@@ -1,6 +1,8 @@
 local class = require("common.lib.class")
 local InputCompression = require("common.data.InputCompression")
-local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local Match = require("common.engine.Match")
+local LevelPresets = require("common.data.LevelPresets")
+local Puzzle = require("common.engine.Puzzle")
 
 -- Analyzes puzzle solutions to provide hints and next move suggestions to players
 ---@class PuzzleHintHelper
@@ -8,12 +10,16 @@ local KeyDataEncoding = require("common.data.KeyDataEncoding")
 ---@field solutionInputs string[]? decompressed solution input array
 ---@field currentSwapCount integer number of swaps player has made
 ---@field solutionSwapPositions table[] array of {row=number, column=number} positions for each swap in solution
-PuzzleHintHelper = class(
+---@field playerStack Stack? the stack whose queued swaps are recorded in playerSwapPositions
+---@field playerSwapPositions table[] array of {row=number, column=number} positions for each swap the player's stack queued
+---@overload fun(puzzle: Puzzle): PuzzleHintHelper
+local PuzzleHintHelper = class(
   function(self, puzzle)
     self.puzzle = puzzle
     self.solutionInputs = nil
     self.currentSwapCount = 0
     self.solutionSwapPositions = {}
+    self.playerSwapPositions = {}
     
     if puzzle.solution then
       self:parseSolution()
@@ -39,58 +45,47 @@ function PuzzleHintHelper:parseSolution()
   self:extractSwapPositions()
 end
 
----Extract the cursor positions where swaps occur in the solution
+---Append the swap the stack queued on the frame it just ran, so refused swap presses are never counted
+---@param positions table[] the swaps recorded from this stack so far
+---@param stack Stack
+local function recordQueuedSwap(positions, stack)
+  if stack.swapCount > #positions then
+    positions[#positions + 1] = {row = stack.queuedSwapRow, column = stack.queuedSwapColumn}
+  end
+end
+
+---Replay the solution through an engine stack at the level it was recorded at and record each swap it queues
+---so held directions, direction changes and refused swaps play out exactly as they do in the game
 function PuzzleHintHelper:extractSwapPositions()
-  if not self.solutionInputs then
+  if not self.solutionInputs or not self:isMovePuzzle() then
     return
   end
-  
+
   self.solutionSwapPositions = {}
-  local cursorRow = self.puzzle.cursorStartLeft and self.puzzle.cursorStartLeft.row or 7
-  local cursorColumn = self.puzzle.cursorStartLeft and self.puzzle.cursorStartLeft.column or 3
-  local lastInputIdle = false
-  for i, input in ipairs(self.solutionInputs) do
-    if input == KeyDataEncoding.idle then
-      lastInputIdle = true
-    else
-      if self:isSwapInput(input) then
-        table.insert(self.solutionSwapPositions, {row = cursorRow, column = cursorColumn})
-      elseif lastInputIdle then
-        cursorRow, cursorColumn = self:processInputForCursorPosition(input, cursorRow, cursorColumn)
-      end
-      lastInputIdle = false
-    end
+  local match = Match(self.puzzle:toPanelSource(), self.puzzle:toGameMode().matchRules)
+  local stack = match:createStackWithSettings(LevelPresets.getModern(Puzzle.SOLUTION_LEVEL), false, "controller")
+  ---@cast stack Stack
+  match:start()
+  stack:setMaxRunsPerFrame(1)
+  stack:receiveConfirmedInput(table.concat(self.solutionInputs))
+
+  while stack.clock < #self.solutionInputs and not match:hasEnded() do
+    match:run()
+    recordQueuedSwap(self.solutionSwapPositions, stack)
   end
 end
 
----Check if an input character represents a swap action
----@param input string single character input
----@return boolean
-function PuzzleHintHelper:isSwapInput(input)
-  local raise, swap, up, down, left, right = unpack(KeyDataEncoding.base64decode[input])
-  return swap
+---Record every swap the player's stack queues from now on in playerSwapPositions, the same way the solution's are
+---@param stack Stack
+function PuzzleHintHelper:followPlayerStack(stack)
+  self.playerStack = stack
+  self.playerSwapPositions = {}
+  stack:connectSignal("finishedRun", self, self.recordPlayerSwap)
 end
 
----Process input to determine new cursor position
----@param input string single character input
----@param currentRow integer current cursor row
----@param currentColumn integer current cursor column
----@return integer newRow, integer newColumn
-function PuzzleHintHelper:processInputForCursorPosition(input, currentRow, currentColumn)
-  local newRow = currentRow
-  local newColumn = currentColumn
-  
-  if input == KeyDataEncoding.left then
-    newColumn = math.max(1, currentColumn - 1)
-  elseif input == KeyDataEncoding.right then
-    newColumn = math.min(5, currentColumn + 1) -- max column is 5 (6 columns, 0-indexed becomes 1-5)
-  elseif input == KeyDataEncoding.up then
-    newRow = math.min(12, currentRow + 1)
-  elseif input == KeyDataEncoding.down then
-    newRow = math.max(1, currentRow - 1)
-  end
-  
-  return newRow, newColumn
+---Record the swap the player's stack queued on the frame it just ran
+function PuzzleHintHelper:recordPlayerSwap()
+  recordQueuedSwap(self.playerSwapPositions, self.playerStack)
 end
 
 ---Check if player is in sync with solution at current swap count

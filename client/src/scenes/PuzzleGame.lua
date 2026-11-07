@@ -10,6 +10,7 @@ local PuzzleGoalDisplay = require("client.src.graphics.PuzzleGoalDisplay")
 local PuzzleHelpDisplay = require("client.src.ui.PuzzleHelpDisplay")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
 local PuzzleSet = require("client.src.PuzzleSet")
+local Puzzle = require("common.engine.Puzzle")
 local MultibarElement = require("client.src.ui.MultibarElement")
 local ui = require("client.src.ui")
 
@@ -198,7 +199,8 @@ function PuzzleGame:customLoad()
       width = 0,
       height = 0,
       puzzle = currentPuzzle,
-      puzzleGame = self
+      puzzleGame = self,
+      stack = stack.engine
     })
     self.uiRoot:addChild(self.puzzleHelpDisplay)
 
@@ -235,11 +237,6 @@ function PuzzleGame:customRun()
       GAME.theme:playValidationSfx()
       self:resetPuzzle()
     end
-  end
-  
-  -- Track swaps for help system
-  if (self.player.inputConfiguration and (self.player.inputConfiguration.isDown["Swap1"] or self.player.inputConfiguration.isDown["Swap2"])) then
-    self:trackSwapInput()
   end
   
   -- Handle TauntDown for help system
@@ -315,8 +312,7 @@ function PuzzleGame:recordPuzzleSolution()
     return
   end
 
-  -- Only record solutions when playing at level 10
-  if GAME.localPlayer.settings.level ~= 10 then
+  if GAME.localPlayer.settings.level ~= Puzzle.SOLUTION_LEVEL then
     return
   end
 
@@ -413,17 +409,6 @@ end
 -- Disable taunt sounds in puzzle mode
 function PuzzleGame:shouldDisableTauntSounds()
   return true
-end
-
--- Track player swaps for hint system
-function PuzzleGame:trackSwapInput()
-  local playerStack = self.playerStack
-  if self.puzzleHelpDisplay and playerStack and not self.match.isPaused then
-    local stack = playerStack.engine
-    local cursorRow = stack.cur_row
-    local cursorColumn = stack.cur_col
-    self.puzzleHelpDisplay:trackPlayerSwap(cursorRow, cursorColumn)
-  end
 end
 
 function PuzzleGame:feedQueuedInput()
@@ -565,12 +550,12 @@ function PuzzleGame:playPuzzleSolution(solutionInputs)
   GAME.battleRoom.sceneParameters.queuedSolutionInputs = procat(solutionInputs)
   GAME.battleRoom.sceneParameters.hintWasUsed = true
 
-  -- For non-move puzzles, temporarily set to level 10 for faster panels
+  -- For non-move puzzles, temporarily set to the level the solution was recorded at
   -- Store the original level to restore after match is created
   if not isMovePuzzle then
     GAME.battleRoom.sceneParameters.restoreLevelAfterCreation = config.puzzle_level
-    GAME.localPlayer:setLevel(10)
-    GAME.localPlayer:setLevelData(LevelPresets.getModern(10))
+    GAME.localPlayer:setLevel(Puzzle.SOLUTION_LEVEL)
+    GAME.localPlayer:setLevelData(LevelPresets.getModern(Puzzle.SOLUTION_LEVEL))
   end
 
   -- Reset puzzle (creates new scene via resetPuzzle)
