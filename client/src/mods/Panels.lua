@@ -102,60 +102,6 @@ function Panels:json_init()
   return false
 end
 
--- Adds the panels at the given path and directory
-local function addPanelDirectory(current_path, dir)
-  local panel_set = Panels(current_path, dir)
-  local success = panel_set:json_init()
-
-  if success then
-    if panels[panel_set.id] ~= nil then
-      logger.trace(current_path .. " has been ignored since a panel set with this id has already been found")
-    else
-      panels[panel_set.id] = panel_set
-      panels_ids[#panels_ids + 1] = panel_set.id
-    end
-  end
-end
-
--- Recursively load all panel images from the given directory
-local function add_panels_from_dir_rec(path)
-  local lfs = love.filesystem
-  local raw_dir_list = fileUtils.getFilteredDirectoryItems(path)
-  for i, v in ipairs(raw_dir_list) do
-    local current_path = path .. "/" .. v
-    if lfs.getInfo(current_path, "directory") then
-      -- call recursively: facade folder
-      add_panels_from_dir_rec(current_path)
-
-      -- init stage: 'real' folder
-      addPanelDirectory(current_path, v)
-    end
-  end
-end
-
-function panels_init()
-  panels = {} -- holds all panels, all of them will be fully loaded
-  panels_ids = {} -- holds all panels ids
-
-  -- add default panel set manually because it has a "__" in it.
-  addPanelDirectory("client/assets/panels/__default", "__default")
-  add_panels_from_dir_rec("client/assets/default_data/panels")
-  add_panels_from_dir_rec("panels")
-
-  -- fix config panel set if it's missing
-  if not config.panels or not panels[config.panels] then
-    if panels["pacci"] then
-      config.panels = "pacci"
-    else
-      config.panels = tableUtils.getRandomElement(panels_ids)
-    end
-  end
-
-  for _, panel in pairs(panels) do
-    panel:load()
-  end
-end
-
 local function load_panel_img(path, name)
   local img = GraphicsUtil.loadImageFromSupportedExtensions(path .. "/" .. name)
   if not img then

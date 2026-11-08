@@ -24,6 +24,8 @@ on the class itself as luaLS only then correctly infers the return from the cons
 
 
 local ui = {
+  ---@source ArrowButton.lua
+  ArrowButton = import("./ArrowButton"),
   ---@source BoolSelector.lua
   BoolSelector = import("./BoolSelector"),
   ---@source Button.lua

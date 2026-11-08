@@ -201,11 +201,11 @@ function Character.loadDefaultMod()
   default_character:load(true)
 end
 
-local function loadRandomCharacter(visibleCharacters)
-  local randomCharacter = Character("characters/__default", consts.RANDOM_CHARACTER_SPECIAL_VALUE)
+-- Creates the "Random" entry of the character selection, a bundle whose sub characters are the visible characters.
+function Character.loadRandomMod()
+  randomCharacter = Character("characters/__default", consts.RANDOM_CHARACTER_SPECIAL_VALUE)
   randomCharacter.images["icon"] = themes[config.theme].images.IMG_random_character
   randomCharacter.display_name = "random"
-  randomCharacter.subIds = visibleCharacters
   -- we need to shadow some character functions to correct load behaviour for the random character
   randomCharacter.preload = function() end
   randomCharacter.load = function() end
@@ -213,16 +213,11 @@ local function loadRandomCharacter(visibleCharacters)
   randomCharacter.graphics_init = function(character, full, yields)
     character.images.icon = themes[config.theme].images.IMG_random_character
   end
-  return randomCharacter
 end
 
-function Character.getRandom(visibleCharacters)
-  if not randomCharacter then
-    randomCharacter = loadRandomCharacter(visibleCharacters)
-  elseif visibleCharacters then
-    randomCharacter.subIds = visibleCharacters
-  end
-
+-- Returns the "Random" entry of the character selection created by Character.loadRandomMod
+---@return Character
+function Character.getRandom()
   return randomCharacter
 end
 
@@ -234,21 +229,6 @@ function Character:getSubMods()
     end
   end
   return m
-end
-
-function Character:enable(enable)
-  if enable and not characters[self.id] then
-    characters[self.id] = self
-    visibleCharacters[#visibleCharacters+1] = self.id
-  elseif not enable and characters[self.id] then
-    local i = tableUtils.indexOf(visibleCharacters, self.id)
-    if i then
-      table.remove(visibleCharacters, i)
-    end
-    characters[self.id] = nil
-  end
-
-  require("client.src.mods.ModLoader").updateBlacklist(self, enable)
 end
 
 function Character:canSuperSelect()

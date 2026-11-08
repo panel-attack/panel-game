@@ -4,9 +4,11 @@ local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 ---@class ImageContainer : UiElement
+---@field color number[]? red, green, blue and alpha the image is tinted with, untinted if nil
 local ImageContainer = class(function(self, options)
   self.drawBorders = options.drawBorders or false
   self.outlineColor = options.outlineColor or {1, 1, 1, 1}
+  self.color = options.color
 
   self:setImage(options.image, options.width, options.height, options.scale)
 end, UiElement)
@@ -44,7 +46,13 @@ function ImageContainer:onResize()
 end
 
 function ImageContainer:drawSelf()
-  GraphicsUtil.draw(self.image, self.x, self.y, 0, self.scale, self.scale)
+  if self.color then
+    GraphicsUtil.setColor(self.color)
+    GraphicsUtil.draw(self.image, self.x, self.y, 0, self.scale, self.scale)
+    GraphicsUtil.setColor(1, 1, 1, 1)
+  else
+    GraphicsUtil.draw(self.image, self.x, self.y, 0, self.scale, self.scale)
+  end
 
   if self.drawBorders then
     -- border is just drawn on top, not around

@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
+local tableUtils = require("common.lib.tableUtils")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local StageLoader = require("client.src.mods.StageLoader")
 local ModController = require("client.src.mods.ModController")
@@ -147,8 +148,17 @@ function MatchParticipant:refreshCharacter()
   end
 end
 
+-- Returns whether the stage carousel offers the stage selection: random or a shown stage
+---@param stageId string
+---@return boolean
+local function isOfferedStage(stageId)
+  return stageId == consts.RANDOM_STAGE_SPECIAL_VALUE or tableUtils.contains(visibleStages, stageId)
+end
+
 -- Mods can be disabled while a participant still references them, either as the selection itself
--- or as the concrete mod a random/bundle selection resolved to; re-resolve so no disabled mod stays in use
+-- or as the concrete mod a random/bundle selection resolved to; re-resolve so no disabled mod stays in use.
+-- A stage selection that is hidden goes to random too, and a panel set that is hidden or off to the carousel's first
+-- entry, since the carousel no longer offers them.
 function MatchParticipant:refreshDisabledSelections()
   if not characters[self.settings.selectedCharacterId] then
     self:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
@@ -156,10 +166,14 @@ function MatchParticipant:refreshDisabledSelections()
     self:refreshCharacter()
   end
 
-  if not stages[self.settings.selectedStageId] then
+  if not stages[self.settings.selectedStageId] or not isOfferedStage(self.settings.selectedStageId) then
     self:setStage(consts.RANDOM_STAGE_SPECIAL_VALUE)
   elseif not stages[self.settings.stageId] then
     self:refreshStage()
+  end
+
+  if not tableUtils.contains(visiblePanels, self.settings.panelId) then
+    self:setPanels(visiblePanels[1])
   end
 end
 

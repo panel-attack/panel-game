@@ -128,6 +128,27 @@ testModBundleSelection()
 --testSubModCrossCheck()  -- see comment on function
 testInadvertentBundleLoading()
 
+-- sets a mod's status the way ModManagement does and returns a function that puts its settings back
+---@param loader ModTypeLoader CharacterLoader or StageLoader
+---@param status ModStatus
+local function setStatus(loader, mod, status)
+  local tree = loader.tree
+  local node = tree:getNodeOfMod(mod)
+  local previousEntry = tree.settings:copyEntry(tree.saveDir, node.key)
+  assert(ModLoader.setModStatusAndRefresh(loader, node, status), "setting " .. mod.id .. " " .. status .. " was refused")
+  return function()
+    tree.settings:restoreEntry(tree.saveDir, node.key, previousEntry)
+    tree:saveAndMirrorBlacklist()
+    loader.refresh()
+  end
+end
+
+-- turns a mod off the way ModManagement does and returns a function that puts its settings back
+---@param loader ModTypeLoader CharacterLoader or StageLoader
+local function turnOff(loader, mod)
+  return setStatus(loader, mod, "off")
+end
+
 -- mirrors how BattleRoom.createLocalFromGameMode sets up 1P modes, without depending on input configurations
 local function createVsSelfRoomWithLocalPlayer()
   local battleRoom = BattleRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_VS_SELF))
@@ -153,9 +174,9 @@ local function testDisablingResolvedRandomSelectionsDoesNotCrash()
   assert(resolvedStage and not resolvedStage:isBundle(), "random should resolve to a concrete stage")
   battleRoom:shutdown()
 
-  -- what ModManagement does when the user toggles both mods off
-  resolvedCharacter:enable(false)
-  resolvedStage:enable(false)
+  -- what ModManagement does when the user turns both mods off
+  local restoreCharacter = turnOff(CharacterLoader, resolvedCharacter)
+  local restoreStage = turnOff(StageLoader, resolvedStage)
   player:refreshDisabledSelections()
 
   local success, err = pcall(function()
@@ -169,8 +190,8 @@ local function testDisablingResolvedRandomSelectionsDoesNotCrash()
   if not battleRoom.hasShutdown then
     battleRoom:shutdown()
   end
-  resolvedCharacter:enable(true)
-  resolvedStage:enable(true)
+  restoreCharacter()
+  restoreStage()
   player:setCharacter(originalCharacterId)
   player:setStage(originalStageId)
   clearModLoadQueue()
@@ -193,13 +214,13 @@ local function testDisablingSelectedModsFallsBackToRandom()
   assert(player.settings.selectedCharacterId == selectedCharacter.id)
   assert(player.settings.selectedStageId == selectedStage.id)
 
-  selectedCharacter:enable(false)
-  selectedStage:enable(false)
+  local restoreCharacter = turnOff(CharacterLoader, selectedCharacter)
+  local restoreStage = turnOff(StageLoader, selectedStage)
   player:refreshDisabledSelections()
   local settings = shallowcpy(player.settings)
 
-  selectedCharacter:enable(true)
-  selectedStage:enable(true)
+  restoreCharacter()
+  restoreStage()
   player:setCharacter(originalCharacterId)
   player:setStage(originalStageId)
   clearModLoadQueue()
@@ -212,5 +233,24 @@ local function testDisablingSelectedModsFallsBackToRandom()
   assert(settings.stageId ~= selectedStage.id, "player still uses disabled stage " .. selectedStage.id)
 end
 
+-- hiding the selected stage takes it out of the carousel, so the selection moves to random
+local function testHidingTheSelectedStageFallsBackToRandom()
+  local player = GAME.localPlayer
+  local originalStageId = player.settings.selectedStageId
+  local selectedStage = stages[StageLoader.fullyResolveStageSelection(nil)]
+  player:setStage(selectedStage.id)
+
+  local restoreStage = setStatus(StageLoader, selectedStage, "hidden")
+  player:refreshDisabledSelections()
+  local selectedStageId = player.settings.selectedStageId
+
+  restoreStage()
+  player:setStage(originalStageId)
+  clearModLoadQueue()
+
+  assert(selectedStageId == consts.RANDOM_STAGE_SPECIAL_VALUE, "expected random stage selection, got " .. tostring(selectedStageId))
+end
+
 testDisablingResolvedRandomSelectionsDoesNotCrash()
 testDisablingSelectedModsFallsBackToRandom()
+testHidingTheSelectedStageFallsBackToRandom()

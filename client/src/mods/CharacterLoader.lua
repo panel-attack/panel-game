@@ -4,12 +4,13 @@ local tableUtils = require("common.lib.tableUtils")
 local consts = require("common.engine.consts")
 local ModLoader = require("client.src.mods.ModLoader")
 
+---@class CharacterLoader : ModTypeLoader
 local CharacterLoader = {}
 
 ---(re)Initializes the characters globals with data
 ---@return nil
 function CharacterLoader.initCharacters()
-  local all, ids, filtered, visible = ModLoader.initMods(Character)
+  local all, ids, filtered, visible, tree = ModLoader.initMods(Character)
   ---@type table<string, Character>
   ---@diagnostic disable-next-line: assign-type-mismatch
   allCharacters = all
@@ -20,8 +21,15 @@ function CharacterLoader.initCharacters()
   characters = filtered
   ---@type string[]
   visibleCharacters = visible
+  CharacterLoader.tree = tree
 
   CharacterLoader.loadBundleIcons()
+end
+
+---Rebuilds the character globals from the statuses and order in the mod settings
+---@return nil
+function CharacterLoader.refreshCharacters()
+  characterIds, characters, visibleCharacters = ModLoader.listModsWithRandomEntry(Character, CharacterLoader.tree)
 end
 
 ---Ensures all characters have an icon, generating bundle icons when required
@@ -71,5 +79,7 @@ function CharacterLoader.fullyResolveCharacterSelection(characterId)
   characterId = CharacterLoader.resolveCharacterSelection(characterId)
   return CharacterLoader.resolveBundle(characterId)
 end
+
+CharacterLoader.refresh = CharacterLoader.refreshCharacters
 
 return CharacterLoader

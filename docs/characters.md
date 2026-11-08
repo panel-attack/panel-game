@@ -287,7 +287,7 @@ Specifies how the character is displayed in character selection.
 
 Possible values are true or false.  
 If set to false, the character is hidden in character selection but it will still get used if the opponent picks it.  
-Visibility may also be controlled by the theme's characters.txt
+This is only the default: players can change it in Options > Mod Management.
 
 #### flag
 
