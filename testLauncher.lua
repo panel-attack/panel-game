@@ -57,6 +57,11 @@ end
 
 local allTests = {
   "common.tests.lib.JsonPrecisionTests",
+  "client.tests.AnimationLoaderTests",
+  "client.tests.NavigationStackTests",
+  "client.tests.SceneAnimationTests",
+  "client.tests.TitleScreenTests",
+  "client.tests.TransitionTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.GarbageQueueRollbackTests",
@@ -103,8 +108,10 @@ local allTests = {
   "client.tests.graphics_PuzzleHierarchyDisplayTests",
   "client.tests.ServerQueueTests",
   "client.tests.SoundGroupTests",
+  "client.tests.SoundControllerTests",
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
+  "client.tests.ImageFilterTests",
   "client.tests.StackGraphicsTests",
   "client.tests.TelegraphTests",
   "client.tests.InputConfigurationTests",
@@ -115,6 +122,7 @@ local allTests = {
   "client.tests.PlayerSettingsTests",
   "client.tests.SetNameMenuTests",
   "client.tests.BattleRoomLifecycleTests",
+  "client.tests.NetClientTests",
 }
 
 -- Check for specific test name argument

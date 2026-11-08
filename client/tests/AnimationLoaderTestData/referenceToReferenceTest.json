@@ -1,0 +1,29 @@
+{
+  "drawables": [
+    {
+      "id": "Element",
+      "filePath": "test_image",
+      "position": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "ref": "Element",
+      "id": "Element2",
+      "overrides": {
+        "position": {
+          "x": 200
+        }
+      }
+    },
+    {
+      "ref": "Element2",
+      "overrides": {
+        "position": {
+          "y": 200
+        }
+      }
+    }
+  ]
+}

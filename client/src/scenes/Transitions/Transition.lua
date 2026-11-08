@@ -5,6 +5,7 @@ local consts = require("common.engine.consts")
 -- A transition, or more specifically a scene transition represents an object that handles going from one scene to the next
 -- For the duration of handover, the transition is responsible for handling both update and draw calls on the scenes
 -- (the general rule of thumb however is that you never want to update the old scene once the transition started, only the draw)
+-- Both scenes keep their animations running though, as both are drawn
 ---@class Transition
 ---@field startTime number
 ---@field duration number
@@ -28,6 +29,12 @@ end)
 function Transition:update(dt)
   self.timePassed = self.timePassed + dt
   self.progress = self.timePassed / self.duration
+  if self.oldScene then
+    self.oldScene:updateAnimations(dt)
+  end
+  if self.newScene then
+    self.newScene:updateAnimations(dt)
+  end
   self:updateScenes(dt)
 end
 

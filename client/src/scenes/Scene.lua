@@ -6,6 +6,7 @@ local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
 local directsFocus = require("client.src.ui.FocusDirector")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local Flux = require("client.lib.flux.flux")
 
 ---@alias sceneMusic ("none" | "main" | "title_screen" | "select_screen")
 
@@ -17,6 +18,8 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 ---@field music sceneMusic
 ---@field fallbackMusic sceneMusic
 ---@field keepMusic boolean
+---@field tweens table flux group of the scene's animations, the navigation stack updates it while the scene is the active one
+---@field sceneAnimation SceneAnimation? the scene's animation file, the navigation stack updates it while the scene is the active one
 ---@overload fun(sceneParams: table): Scene
 local Scene = class(
 ---@param self Scene
@@ -36,6 +39,7 @@ local Scene = class(
     --  the scene can alternatively specify it wants to keep the music that is currently playing
     --  if kept at false, the music will always change at scene switch
     self.keepMusic = false
+    self.tweens = Flux.group()
   end
 )
 
@@ -61,6 +65,18 @@ function Scene:applyMusic()
   end
 end
 
+-- Advances the scene's tweens and animation, the navigation stack calls it while the scene is the active one
+---@param dt number seconds since the last update
+function Scene:updateAnimations(dt)
+  self.tweens:update(dt)
+  if self.sceneAnimation then
+    self.sceneAnimation:update(dt)
+  end
+end
+
+-- abstract functions to be implemented per scene
+
+-- Ran every frame while the scene is active
 function Scene:update(dt)
   self:updateSelf(dt)
   self.uiRoot:update(dt)

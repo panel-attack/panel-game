@@ -1,0 +1,18 @@
+{
+  "drawables": [
+    {
+      "id": "ExternalElement",
+      "filePath": "test_image",
+      "position": {
+        "x": 150,
+        "y": 250
+      },
+      "size": {
+        "width": 48,
+        "height": 48
+      },
+      "alpha": 0.9,
+      "tint": [0.8, 0.9, 1.0]
+    }
+  ]
+}
