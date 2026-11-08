@@ -1,0 +1,50 @@
+{
+  "drawables": [
+    {
+      "id": "table-set",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "chair back right",
+          "filePath": "furniture/parts/table-set/chair-back-right",
+          "position": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": "chair back left",
+          "filePath": "furniture/parts/table-set/chair-back-left",
+          "position": {
+            "x": -261,
+            "y": -9
+          }
+        },
+        {
+          "id": "table",
+          "filePath": "furniture/parts/table-set/table",
+          "position": {
+            "x": -160,
+            "y": 71
+          }
+        },
+        {
+          "id": "chair front right",
+          "filePath": "furniture/parts/table-set/chair-front-right",
+          "position": {
+            "x": 55,
+            "y": 57
+          }
+        },
+        {
+          "id": "chair front left",
+          "filePath": "furniture/parts/table-set/chair-front-left",
+          "position": {
+            "x": -277,
+            "y": 57
+          }
+        }
+      ]
+    }
+  ]
+}

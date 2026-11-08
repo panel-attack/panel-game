@@ -57,7 +57,6 @@ end
 ---@field muteSound boolean
 ---@field rich_presence table
 ---@field input InputManager
----@field backgroundImage table
 ---@field backgroundColor number[]
 ---@field updater table?
 ---@field automaticScales number[]
@@ -78,7 +77,6 @@ local Game = class(
     self.match = nil -- Match - the current match going on or nil if inbetween games
     self.battleRoom = nil -- BattleRoom - the current room being used for battles
     self.focused = true -- if the window is focused
-    self.backgroundImage = nil -- the background image for the game, should always be set to something with the proper dimensions
     self.netClient = NetClient()
     self.server_queue = ServerQueue()
     self.main_menu_screen_pos = {consts.CANVAS_WIDTH / 2 - 108 + 50, consts.CANVAS_HEIGHT / 2 - 111}
@@ -403,10 +401,6 @@ function Game:update(dt)
   prof.push("uiRoot update")
   self.uiRoot:update(dt)
   prof.pop("uiRoot update")
-
-  if self.backgroundImage then
-    self.backgroundImage:update(dt)
-  end
 
   self:updateMouseVisibility(dt)
   SoundController:update()

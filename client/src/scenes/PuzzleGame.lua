@@ -404,9 +404,7 @@ function PuzzleGame:drawHUD()
 end
 
 function PuzzleGame:drawBackground()
-  if self.backgroundImage then
-    self.backgroundImage:draw()
-  end
+  self:drawStageBackground()
   -- Skip drawing bg_overlay for puzzles
 end
 

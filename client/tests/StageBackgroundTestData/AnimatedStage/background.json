@@ -1,0 +1,20 @@
+{
+  "drawables": [
+    {
+      "id": "Glow",
+      "filePath": "glow",
+      "alpha": 1,
+      "animationTracks": [
+        {
+          "steps": [
+            {
+              "durationSeconds": 1,
+              "easeType": "linear",
+              "animateProperties": {"alpha": 0}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

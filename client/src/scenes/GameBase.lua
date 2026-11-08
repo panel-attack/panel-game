@@ -7,8 +7,10 @@ local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local consts = require("common.engine.consts")
 local StageLoader = require("client.src.mods.StageLoader")
+local Stage = require("client.src.mods.Stage")
 local ModController = require("client.src.mods.ModController")
 local SoundController = require("client.src.music.SoundController")
+local SceneAnimation = require("client.src.graphics.SceneAnimation")
 local UpdatingImage = require("client.src.graphics.UpdatingImage")
 local prof = require("common.lib.zoneProfiler")
 local ui = require("client.src.ui")
@@ -32,6 +34,7 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 ---@field match ClientMatch
 ---@field customDraw fun()?
 ---@field stage Stage
+---@field stageBackground SceneAnimation|UpdatingImage the stage's animation, or its background image when it has none
 ---@field stageTrack StageTrack?
 local GameBase = class(
 ---@param self GameBase
@@ -188,7 +191,7 @@ function GameBase:load()
   self.match:connectSignal("countdownEnded", self, self.onGameStart)
 
   self.stage = stages[self.match.stageId]
-  self.backgroundImage = UpdatingImage(self.stage.images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  self:loadStageBackground()
   self.stageTrack = self:getStageTrack()
 
   local pauseMenuItems = {
@@ -406,6 +409,22 @@ function GameBase:changeMusic(useDangerMusic)
   end
 end
 
+-- Loads the stage's animation, or its background image when it has none
+function GameBase:loadStageBackground()
+  if self.stage:hasAnimatedBackground() then
+    self.stageBackground = SceneAnimation(Stage.ANIMATED_BACKGROUND_FILE, self.stage.path)
+  else
+    self.stageBackground = UpdatingImage(self.stage.images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  end
+end
+
+-- Advances the scene's animations and the stage's background, see Scene.updateAnimations
+---@param dt number seconds since the last update
+function GameBase:updateAnimations(dt)
+  Scene.updateAnimations(self, dt)
+  self.stageBackground:update(dt)
+end
+
 function GameBase:update(dt)
   if self.match.ended then
     self:runGameOver()
@@ -463,10 +482,13 @@ function GameBase:draw()
   end
 end
 
+-- Draws the stage's animation, or its background image when it has none
+function GameBase:drawStageBackground()
+  self.stageBackground:draw()
+end
+
 function GameBase:drawBackground()
-  if self.backgroundImage then
-    self.backgroundImage:draw()
-  end
+  self:drawStageBackground()
   local backgroundOverlay = themes[config.theme].images.bg_overlay
   if backgroundOverlay then
     backgroundOverlay:draw()

@@ -1,0 +1,9 @@
+{
+  "drawables": [
+    {
+      "id": "sky-esme-terrace",
+      "filePath": "scenery/parts/sky/sky",
+      "templateOnly": true
+    }
+  ]
+}

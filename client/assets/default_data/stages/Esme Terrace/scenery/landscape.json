@@ -1,0 +1,19 @@
+{
+  "drawables": [
+    {
+      "id": "landscape-esme-terrace",
+      "filePath": "scenery/parts/landscape/background",
+      "templateOnly": true
+    },
+    {
+      "id": "lake-shimmer-a",
+      "filePath": "scenery/parts/landscape/shimmer-a",
+      "templateOnly": true
+    },
+    {
+      "id": "lake-shimmer-b",
+      "filePath": "scenery/parts/landscape/shimmer-b",
+      "templateOnly": true
+    }
+  ]
+}
