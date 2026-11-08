@@ -1,6 +1,7 @@
 local logger = require("common.lib.logger")
 local NetClient = require("client.src.network.NetClient")
 local SoundController = require("client.src.music.SoundController")
+local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 
 ---@param messageKey string
 ---@param detail string
@@ -28,7 +29,6 @@ local function handleReplayFileDrop(file)
     return rejectDrop("rp_drop_unavailable", "Game is loading, transitioning, online, or in a battle room")
   end
 
-  local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
   local replay = ReplayBrowser.readReplayFile(file)
   if not replay then
     return false

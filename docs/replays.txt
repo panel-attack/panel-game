@@ -9,6 +9,7 @@ Dropping another replay during playback stops the current replay and shows the n
 Invalid or unreadable files show an error without replacing the current screen or replay.
 Malformed display metadata and invalid controller or touch inputs are rejected before stopping an existing replay.
 The replay browser uses the same file loading and validation as drag and drop.
+Validation checks replay data directly without starting a match, and accepts legacy touch idle frames.
 Replays from incompatible engine versions show the usual version warning and cannot be played.
 Wait for startup and scene transitions to finish, and leave any battle room or online session before dropping a replay.
 No operating-system file association is needed. This does not add double-click-to-open support.

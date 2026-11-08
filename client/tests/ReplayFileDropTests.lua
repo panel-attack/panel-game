@@ -12,6 +12,9 @@ local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
+local fileUtils = require("client.src.FileUtils")
+local ClientMatch = require("client.src.ClientMatch")
+local ReplayV3 = require("common.data.ReplayV3")
 
 local originalNavigation = GAME.navigationStack
 local originalRoom = GAME.battleRoom
@@ -265,7 +268,6 @@ local function testRejectsInvalidInputSymbols()
   local invalidInputs = {
     {inputMethod = "controller", inputs = "~1"},
     {inputMethod = "controller", inputs = "A300~1"},
-    {inputMethod = "touch", inputs = "A1"},
     {inputMethod = "touch", inputs = touchIdle .. "300" .. outOfBounds .. "1"},
     {inputMethod = "invalid", inputs = "A300"}
   }
@@ -279,6 +281,7 @@ end
 
 local function testValidControllerAndTouchInputStreams()
   local touchInputs = {
+    "A",
     TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6),
     TouchDataEncoding.touchDataToLatinString(true, 0, 0, 6),
     TouchDataEncoding.touchDataToLatinString(false, 1, 1, 6),
@@ -413,22 +416,44 @@ local function testBrowserUsesSharedLoading()
   end
 
   assert(love.filesystem.write(path, "{} {}"))
-  local fileUtils = require("client.src.FileUtils")
   assert(fileUtils.readJsonFile(path), "Other JSON callers should retain their existing trailing-data behavior")
   local value, failure = fileUtils.readJsonFile(path, true)
   assert(value == nil and failure == "decode", "Replay files must not accept trailing JSON values")
 end
 
-local function testBrowserReportsPlaybackFailure()
+local function testLoadingDoesNotCreateMatch()
   resetNavigation()
   local data = makeReplayData()
-  data.panelSource.sourceType = 999
-  local browser = ReplayBrowser({replay = data, filename = "invalid-settings.json"})
-  GAME.navigationStack:push(browser)
-  finishTransition()
-  assert(not browser:playReplay())
+  local originalCreate = Match.createFromReplay
+  local creations = 0
+  Match.createFromReplay = function()
+    creations = creations + 1
+    error("Loading replay data must not construct a match")
+  end
+  local success, err = pcall(function()
+    assert(ReplayV3.validate(data))
+    assert(ReplayBrowser.readReplayFile(droppedFile(json.encode(data))))
+    assert(handleReplayFileDrop(droppedFile(json.encode(data))))
+  end)
+  Match.createFromReplay = originalCreate
+  assert(success, err)
+  assert(creations == 0)
+end
+
+local function testBrowserPropagatesPlaybackFailure()
+  resetNavigation()
+  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
+  local browser = finishTransition()
+  local originalCreate = ClientMatch.createFromReplay
+  ClientMatch.createFromReplay = function()
+    error("Unexpected replay setup bug")
+  end
+  local success, err = pcall(browser.playReplay, browser)
+  ClientMatch.createFromReplay = originalCreate
+  assert(not success and tostring(err):find("Unexpected replay setup bug", 1, true),
+    "Unexpected playback errors must propagate instead of being reported as invalid files")
   assert(GAME.navigationStack:getActiveScene() == browser)
-  assert(messages[1] == loc("rp_drop_invalid"))
+  assert(#messages == 0)
 end
 
 local function runTests()
@@ -451,7 +476,8 @@ local function runTests()
   testIncompatibleVersionUsesExistingWarning()
   testLegacyReplayFiles()
   testBrowserUsesSharedLoading()
-  testBrowserReportsPlaybackFailure()
+  testLoadingDoesNotCreateMatch()
+  testBrowserPropagatesPlaybackFailure()
 end
 
 local success, err = xpcall(runTests, debug.traceback)

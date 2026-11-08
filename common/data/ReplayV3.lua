@@ -9,6 +9,9 @@ require("common.lib.timezones")
 local tableUtils = require("common.lib.tableUtils")
 local InputCompression = require("common.data.InputCompression")
 local ReplayV2 = require("common.compatibility.ReplayV2")
+local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
+local utf8 = require("common.lib.utf8Additions")
 
 local REPLAY_VERSION = 3
 
@@ -339,6 +342,67 @@ function ReplayV3.createFromTable(t, completed)
   end
 
   return replay
+end
+
+--- Validates a completed replay's data without constructing or starting an engine match.
+--- Raises an error for malformed data so file loaders can report it before changing scenes.
+---@param replay ReplayV3
+---@return boolean valid
+function ReplayV3.validate(replay)
+  assert(replay and type(replay.engineVersion) == "string", "Missing engine version")
+  assert(type(replay.rules) == "table" and type(replay.panelSource) == "table", "Missing match settings")
+  assert(type(replay.stacks) == "table" and #replay.stacks >= 1 and #replay.stacks <= 2, "Invalid stack count")
+  assert(type(replay.garbageFlows) == "table", "Missing garbage flows")
+  assert(type(replay.metadata) == "table" and type(replay.metadata.stacks) == "table", "Missing replay metadata")
+  assert(#replay.metadata.stacks == #replay.stacks, "Invalid stack metadata")
+
+  local seen = {}
+  for _, metadata in ipairs(replay.metadata.stacks) do
+    assert(type(metadata) == "table" and type(metadata.stackIndex) == "number", "Invalid stack metadata")
+    local stack = replay.stacks[metadata.stackIndex]
+    assert(type(stack) == "table" and not seen[metadata.stackIndex], "Invalid stack index")
+    seen[metadata.stackIndex] = true
+    for _, field in ipairs({"name", "characterId"}) do
+      assert(metadata[field] == nil or type(metadata[field]) == "string", "Invalid metadata field: " .. field)
+    end
+    for _, field in ipairs({"level", "difficulty", "challengeModeDifficulty", "stageIndex"}) do
+      assert(metadata[field] == nil or type(metadata[field]) == "number", "Invalid metadata field: " .. field)
+    end
+    if stack.stackType == ReplayV3.stackTypes.Stack then
+      ---@cast stack ReplayStack
+      assert(type(stack.levelData) == "table" and LevelData.validate(stack.levelData), "Invalid level settings")
+      assert(type(stack.stackBehaviours) == "table" and type(stack.inputs) == "string", "Invalid stack settings")
+      assert(stack.inputMethod == "controller" or stack.inputMethod == "touch", "Invalid input method")
+      if ReplayV3.replayCanBeViewed(replay) then
+        local inputs = InputCompression.decompressInputString2(stack.inputs)
+        for _, codePoint in utf8.codes(inputs) do
+          local input = utf8.char(codePoint)
+          if stack.inputMethod == "controller" then
+            assert(KeyDataEncoding.base64decode[input], "Invalid controller input")
+          else
+            -- Engine stacks have a fixed 6-column, 12-row board. Older touch replays also use A for idle.
+            local _, row, column = TouchDataEncoding.latinStringToTouchData(input, 6)
+            assert(row >= 0 and row <= 12 and column >= 0 and column <= 6, "Invalid touch input")
+          end
+        end
+      end
+    else
+      ---@cast stack ReplaySimulatedStack
+      assert(stack.stackType == ReplayV3.stackTypes.SimulatedStack and type(stack.attackSettings) == "table",
+        "Invalid simulated stack")
+    end
+  end
+
+  if ReplayV3.replayCanBeViewed(replay) then
+    assert(tableUtils.contains(ReplayV3.panelSourceTypes, replay.panelSource.sourceType), "Unknown panel source")
+    for _, flow in ipairs(replay.garbageFlows) do
+      assert(type(flow) == "table" and replay.stacks[flow.source] and type(flow.recipients) == "table", "Invalid garbage flow")
+      for _, recipient in ipairs(flow.recipients) do
+        assert(replay.stacks[recipient], "Invalid garbage recipient")
+      end
+    end
+  end
+  return true
 end
 
 ---@param v2Replay ReplayV2

@@ -8,10 +8,6 @@ local GameModes = require("common.data.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
 local ClientMatch = require("client.src.ClientMatch")
 local logger = require("common.lib.logger")
-local LevelData = require("common.data.LevelData")
-local Match = require("common.engine.Match")
-local KeyDataEncoding = require("common.data.KeyDataEncoding")
-local TouchDataEncoding = require("common.data.TouchDataEncoding")
 
 local ReplayBrowser = class(
   function (self, sceneParams)
@@ -52,53 +48,7 @@ function ReplayBrowser.readReplayFile(file)
     assert(data.replayVersion == nil or tonumber(data.replayVersion) == 2 or data.replayVersion == 3,
       "Unsupported replay format")
     local replay = ReplayV3.createFromTable(data, true)
-    assert(replay and type(replay.engineVersion) == "string", "Missing engine version")
-    assert(type(replay.rules) == "table" and type(replay.panelSource) == "table", "Missing match settings")
-    assert(type(replay.stacks) == "table" and #replay.stacks >= 1 and #replay.stacks <= 2, "Invalid stack count")
-    assert(type(replay.garbageFlows) == "table", "Missing garbage flows")
-    assert(type(replay.metadata) == "table" and type(replay.metadata.stacks) == "table", "Missing replay metadata")
-    assert(#replay.metadata.stacks == #replay.stacks, "Invalid stack metadata")
-
-    local seen = {}
-    for _, metadata in ipairs(replay.metadata.stacks) do
-      assert(type(metadata) == "table" and type(metadata.stackIndex) == "number", "Invalid stack metadata")
-      local stack = replay.stacks[metadata.stackIndex]
-      assert(type(stack) == "table" and not seen[metadata.stackIndex], "Invalid stack index")
-      seen[metadata.stackIndex] = true
-      for _, field in ipairs({"name", "characterId"}) do
-        assert(metadata[field] == nil or type(metadata[field]) == "string", "Invalid metadata field: " .. field)
-      end
-      for _, field in ipairs({"level", "difficulty", "challengeModeDifficulty", "stageIndex"}) do
-        assert(metadata[field] == nil or type(metadata[field]) == "number", "Invalid metadata field: " .. field)
-      end
-      if stack.stackType == ReplayV3.stackTypes.Stack then
-        assert(type(stack.levelData) == "table" and LevelData.validate(stack.levelData), "Invalid level settings")
-        assert(type(stack.stackBehaviours) == "table" and type(stack.inputs) == "string", "Invalid stack settings")
-        assert(stack.inputMethod == "controller" or stack.inputMethod == "touch", "Invalid input method")
-      else
-        assert(stack.stackType == ReplayV3.stackTypes.SimulatedStack and type(stack.attackSettings) == "table",
-          "Invalid simulated stack")
-      end
-    end
-
-    if ReplayV3.replayCanBeViewed(replay) then
-      local match = Match.createFromReplay(replay)
-      for i, stack in ipairs(match.stacks) do
-        if replay.stacks[i].stackType == ReplayV3.stackTypes.Stack then
-          ---@cast stack Stack
-          for _, input in ipairs(stack.confirmedInput) do
-            if stack.inputMethod == "controller" then
-              assert(KeyDataEncoding.base64decode[input], "Invalid controller input")
-            else
-              local raise, row, column = TouchDataEncoding.latinStringToTouchData(input, stack.width)
-              assert(row <= stack.height
-                and TouchDataEncoding.touchDataToLatinString(raise, row, column, stack.width) == input, "Invalid touch input")
-            end
-          end
-        end
-      end
-      match:start()
-    end
+    ReplayV3.validate(replay)
     return replay
   end)
 
@@ -213,7 +163,7 @@ function ReplayBrowser:showReplay(replay, replayFilename)
   state = "info"
 end
 
---- Starts playback, reporting malformed replay data without leaving the details screen.
+--- Starts a validated replay, allowing unexpected setup errors to retain their traceback.
 ---@return boolean started
 function ReplayBrowser:playReplay()
   if not ReplayV3.replayCanBeViewed(selectedReplay) then
@@ -221,22 +171,11 @@ function ReplayBrowser:playReplay()
     return false
   end
 
-  local match
-  local success, scene = pcall(function()
-    match = ClientMatch.createFromReplay(selectedReplay)
-    match.renderDuringPause = true
-    match.supportsPause = true
-    match:start()
-    return ReplayGame({match = match})
-  end)
-  if not success then
-    if match then
-      match:deinit()
-    end
-    logger.error("Could not play replay " .. filename .. ": " .. tostring(scene))
-    love.window.showMessageBox(loc("rp_drop_error"), loc("rp_drop_invalid"), "warning")
-    return false
-  end
+  local match = ClientMatch.createFromReplay(selectedReplay)
+  match.renderDuringPause = true
+  match.supportsPause = true
+  match:start()
+  local scene = ReplayGame({match = match})
 
   GAME.theme:playValidationSfx()
   SoundController:stopMusic()
