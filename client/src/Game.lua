@@ -41,6 +41,7 @@ local DebugMenu = require("client.src.debug.DebugMenu")
 local Label = require("client.src.ui.Label")
 local UIElement = require("client.src.ui.UIElement")
 local NavigationStack = require("client.src.NavigationStack")
+local NotificationCenter = require("client.src.ui.NotificationCenter")
 
 -- Provides a scale that is on .5 boundary to make sure it renders well.
 -- Useful for creating new canvas with a solid DPI
@@ -70,6 +71,7 @@ end
 ---@field connected_server_ip string?
 ---@field connected_server_port integer?
 ---@field localPlayer Player?
+---@field notificationCenter NotificationCenter notifications shown above every scene, in uiRoot after the navigation stack
 ---@overload fun(): PanelAttack
 local Game = class(
   function(self)
@@ -120,6 +122,7 @@ local Game = class(
 
     -- Root UI element that contains all UI (scenes + overlays + debug)
     self.uiRoot = UIElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+    self.notificationCenter = NotificationCenter({})
   end
 )
 
@@ -147,8 +150,9 @@ function Game:load()
   self.navigationStack = NavigationStack({})
   self.navigationStack:push(BootScene({setupRoutine = self.setupRoutine}))
 
-  -- Add navigation stack to root UI
+  -- Add navigation stack to root UI, with the notifications drawn over every scene
   self.uiRoot:addChild(self.navigationStack)
+  self.uiRoot:addChild(self.notificationCenter)
   self.globalCanvas = love.graphics.newCanvas(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT, {dpiscale=GAME:newCanvasSnappedScale()})
 end
 

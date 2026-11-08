@@ -2,6 +2,7 @@ local Player = require("client.src.Player")
 local GameModes = require("common.data.GameModes")
 local NetClient = require("client.src.network.NetClient")
 local Signal = require("common.lib.signal")
+local NotificationCenter = require("client.src.ui.NotificationCenter")
 require("client.src.BattleRoom")
 
 -- The tables whose own fields the tests replace or the code under test changes
@@ -45,21 +46,24 @@ end
 local stateBeforeTheTests = snapshot(touchedTables())
 
 -- Runs test as if the net client were connected, recording the requests it sends instead of sending them
--- and the scenes it pops to instead of popping. Everything it replaces is put back afterwards, even if the test fails.
----@param test fun(sent: table[], poppedTo: string[])
+-- and the scenes it pops to instead of popping, with the transition each pop would have played.
+-- It also shows notifications on a fresh notification center. Everything it replaces is put back afterwards, even if the test fails.
+---@param test fun(sent: table[], poppedTo: string[], transitions: table[])
 local function whileOnline(test)
   local tables = touchedTables()
   local copies = snapshot(tables)
-  local sent, poppedTo = {}, {}
+  local sent, poppedTo, transitions = {}, {}, {}
+  GAME.notificationCenter = NotificationCenter({})
   GAME.netClient.isConnected = function() return true end
   GAME.netClient.tcpClient.sendRequest = function(_, request)
     sent[#sent + 1] = request.messageText
   end
   GAME.navigationStack.popToName = function(_, name, transition, callback)
     poppedTo[#poppedTo + 1] = name
+    transitions[#poppedTo] = transition
   end
 
-  local ok, err = pcall(test, sent, poppedTo)
+  local ok, err = pcall(test, sent, poppedTo, transitions)
 
   restore(tables, copies)
   assert(ok, err)
@@ -95,9 +99,10 @@ local function joinRoom()
   return room
 end
 
-local function receiveLeaveRoom()
+---@param reason string? why the server closed the room, sent only when a player in it left
+local function receiveLeaveRoom(reason)
   for subscriber, callback in pairs(GAME.netClient.messageListeners.leave_room.subscriptionList) do
-    callback(subscriber, {leave_room = true})
+    callback(subscriber, {leave_room = true, reason = reason})
   end
 end
 
@@ -145,6 +150,61 @@ local function testServerClosingTheRoomShutsItDown()
 end
 
 testServerClosingTheRoomShutsItDown()
+
+local function testAPlayerLeavingShowsWhyInANotification()
+  whileOnline(function(sent, poppedTo)
+    joinRoom()
+
+    receiveLeaveRoom("RemotePlayer left")
+
+    local notifications = GAME.notificationCenter.notifications
+    assert(#notifications == 1, "the server saying why the room closed should show one notification, but showed " .. #notifications)
+    assert(notifications[1].label.text == "RemotePlayer left", "the notification should give the server's reason, but said " .. notifications[1].label.text)
+    assert(notifications[1].label.translate == false, "the server's reason is not a localization key")
+  end)
+end
+
+testAPlayerLeavingShowsWhyInANotification()
+
+-- A match in progress, standing in for the ClientMatch the room would have going
+local function matchInProgress()
+  local match = {aborted = false}
+  function match:disconnectSignal() end
+  function match:abort()
+    self.aborted = true
+  end
+  function match:deinit() end
+  return match
+end
+
+local function testAPlayerLeavingMidMatchGoesStraightToTheLobby()
+  whileOnline(function(sent, poppedTo, transitions)
+    local room = joinRoom()
+    local match = matchInProgress()
+    room.match = match
+
+    receiveLeaveRoom("RemotePlayer left")
+
+    assert(match.aborted, "the match should be aborted when the room closes during it")
+    assert(#poppedTo == 1 and poppedTo[1] == "Lobby", "the room closing should return to the lobby")
+    assert(transitions[1] == nil, "the reason is shown in a notification, so returning to the lobby should not wait on a message screen")
+    assert(#GAME.notificationCenter.notifications == 1, "the reason should be shown in a notification")
+  end)
+end
+
+testAPlayerLeavingMidMatchGoesStraightToTheLobby()
+
+local function testTheServerClosingTheRoomWithoutAReasonShowsNoNotification()
+  whileOnline(function()
+    joinRoom()
+
+    receiveLeaveRoom("")
+
+    assert(#GAME.notificationCenter.notifications == 0, "a room closed without a reason should show no notification")
+  end)
+end
+
+testTheServerClosingTheRoomWithoutAReasonShowsNoNotification()
 
 ---@param player Player
 ---@return integer

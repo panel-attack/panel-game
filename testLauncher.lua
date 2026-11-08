@@ -116,6 +116,8 @@ local allTests = {
   "client.tests.SetNameMenuTests",
   "client.tests.BattleRoomLifecycleTests",
   "client.tests.NetClientTests",
+  "client.tests.NotificationCenterTests",
+  "client.tests.ShortcutsTests",
 }
 
 -- Check for specific test name argument
