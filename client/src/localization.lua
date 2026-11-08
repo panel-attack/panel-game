@@ -168,6 +168,7 @@ end
 -- Gets the localized string for a loc key
 ---@param textKey string
 ---@param ... string|number
+---@return string
 function loc(textKey, ...)
   local code = Localization.codes[Localization.lang_index]
 
@@ -219,6 +220,7 @@ function Localization:getLanguageCode(languageName)
   end
 end
 
+-- Gets a translation, falling back to English when the requested language has no text for the key
 ---@param languageCode LanguageCode
 ---@param textKey string
 ---@param ... string|number
@@ -234,13 +236,19 @@ function Localization.localize(languageCode, textKey, ...)
     ret = Localization.data[languageCode][textKey]
   end
 
+  if not ret then
+    love.filesystem.append("warnings.txt", textKey .. ",,,,,,,,," .. "\n")
+    if Localization.init and Localization.data.EN then
+      ret = Localization.data.EN[textKey]
+    end
+  end
+
   if ret then
     for i = 1, select("#", ...) do
       local tmp = select(i, ...)
       ret = ret:gsub("%%" .. i, tmp)
     end
   else
-    love.filesystem.append("warnings.txt", textKey .. ",,,,,,,,," .. "\n")
     ret = "#" .. textKey
     for i = 1, select("#", ...) do
       ret = ret .. " " .. select(i, ...)
