@@ -1,6 +1,7 @@
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local ChallengeModePlayer = require("client.src.ChallengeModePlayer")
+local ChallengeRun = require("client.src.ChallengeRun")
 local GameModes = require("common.data.GameModes")
 local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
@@ -14,18 +15,17 @@ local fileUtils = require("client.src.FileUtils")
 ---@field stages table
 ---@field difficulty integer
 ---@field difficultyName string
----@field continues integer
----@field expendedTime number
----@field challengeComplete boolean
+---@field run ChallengeRun the progress through the stages, saved whenever a stage starts or ends
+---@field save ChallengeModeSave
 ---@field player ChallengeModePlayer
 local ChallengeMode = class(
-  function(self, mode, gameScene, difficulty, stageIndex)
+  function(self, mode, gameScene, difficulty, save, run)
     self.stages = self:createStages(difficulty)
     self.difficulty = difficulty
     self.difficultyName = loc("challenge_difficulty_" .. difficulty)
-    self.continues = 0
-    self.expendedTime = 0
-    self.challengeComplete = false
+    self.run = run or ChallengeRun(difficulty, #self.stages)
+    self.save = save
+    self.sceneParameters = {leaveWarning = "challenge_leave_warning"}
 
     self:addPlayer(GAME.localPlayer)
     GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
@@ -34,13 +34,18 @@ local ChallengeMode = class(
     self.player.settings.difficulty = difficulty
     self:addPlayer(self.player)
     self:restoreInputConfigurations()
-    self:setStage(stageIndex or 1)
+    self:setStage(self.run.stageIndex)
   end,
   BattleRoom
 )
 
-function ChallengeMode.create(difficulty, stageIndex)
-  return ChallengeMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_CHALLENGE), Game1pChallenge, difficulty, stageIndex)
+-- Creates a challenge of the difficulty that continues run, or starts a new run if there is none
+---@param difficulty integer
+---@param save ChallengeModeSave
+---@param run ChallengeRun?
+---@return ChallengeMode
+function ChallengeMode.create(difficulty, save, run)
+  return ChallengeMode(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_CHALLENGE), Game1pChallenge, difficulty, save, run)
 end
 
 ChallengeMode.numDifficulties = 8
@@ -135,7 +140,6 @@ function ChallengeMode:createStages(difficulty)
       riseSpeed = levelPresets.getModern(panelLevel).startingSpeed
     }
     stage.playerLevel = panelLevel
-    stage.expendedTime = 0
     stage.index = stageIndex
 
     stages[stageIndex] = stage
@@ -161,52 +165,76 @@ function ChallengeMode:getAttackSettings(difficulty, stageIndex)
   return attackFile
 end
 
-function ChallengeMode:recordStageResult(winners, gameLength)
-  local stage = self.stages[self.stageIndex]
-  stage.expendedTime = stage.expendedTime + gameLength
-  self.expendedTime = self.expendedTime + gameLength
+---@param replay ReplayV3?
+---@return ClientMatch match
+function ChallengeMode:startMatch(replay)
+  local match = BattleRoom.startMatch(self, replay)
+  self:recordStageStart(match)
+  return match
+end
 
+-- Saves the stage as lost before it can be played, so that quitting the game during it cannot avoid the continue
+---@param match ClientMatch
+function ChallengeMode:recordStageStart(match)
+  self.run:startStage(match.panelSource.seed)
+  self.save:saveRun(self.run)
+end
+
+---@param match ClientMatch
+---@return ChallengeRunResult
+function ChallengeMode:stageResult(match)
+  local winners = match:getWinners()
   if #winners == 1 then
-    -- increment win count on winning player if there is only one
-    winners[1]:incrementWinCount()
-
     if winners[1] == self.player then
-      self.continues = self.continues + 1
+      return ChallengeRun.results.LOSS
     else
-      if self.stages[self.stageIndex + 1] then
-        self:setStage(self.stageIndex + 1)
-      else
-        self.challengeComplete = true
-      end
+      return ChallengeRun.results.WIN
     end
   elseif #winners == 2 then
-    -- tie, stay on the same stage
-    -- the player didn't lose so they get to redo the stage without increasing the continue counter
-  elseif #winners == 0 then
-    -- the game wasn't played to its conclusion which has to be considered a LOSS because only the player can prematurely end the game
-    self.continues = self.continues + 1
+    return ChallengeRun.results.TIE
+  else
+    -- only the player can end the game before its conclusion
+    return ChallengeRun.results.ABANDONED
+  end
+end
+
+---@param match ClientMatch
+---@return string? path the replay will be saved at
+local function replayPath(match)
+  if match.replay then
+    return match.replay:generatePath("/") .. "/" .. match.replay:generateFileName() .. ".json"
+  end
+end
+
+---@param match ClientMatch
+function ChallengeMode:recordStageResult(match)
+  local winners = match:getWinners()
+  if #winners == 1 then
+    winners[1]:incrementWinCount()
+  end
+
+  local gameTime = 0
+  local stackEngine = match.stacks[1].engine
+  if stackEngine ~= nil and stackEngine.stopWatch then
+    gameTime = stackEngine.stopWatch
+  end
+
+  self.run:finishStage(self:stageResult(match), gameTime, replayPath(match))
+  self.save:saveRun(self.run)
+  if not self.run.complete then
+    self:setStage(self.run.stageIndex)
   end
 end
 
 function ChallengeMode:onMatchEnded(match)
   self.matchesPlayed = self.matchesPlayed + 1
 
-  local winners = match:getWinners()
   -- an abort is always the responsibility of the local player in challenge mode
   -- so always record the result, even if it may have been an abort
-  local gameTime = 0
-  local stackEngine = match.stacks[1].engine
-  if stackEngine ~= nil and stackEngine.stopWatch then
-    gameTime = stackEngine.stopWatch
-  end
-  self:recordStageResult(winners, gameTime)
+  self:recordStageResult(match)
 
   if self.online and match:hasLocalPlayer() then
-    GAME.netClient:reportLocalGameResult(winners)
-  end
-
-  if match.engine.aborted then
-    -- when challenge mode becomes spectatable, there needs to be a network abort that isn't leave_room for spectators
+    GAME.netClient:reportLocalGameResult(match:getWinners())
   end
 
   -- nilling the match here doesn't keep the game scene from rendering it as it has its own reference

@@ -13,6 +13,7 @@ local NAVIGATION_BUTTON_WIDTH = 30
 -- It requires the passed in menu items to have valid widths and adds padding between each. The height also must be passed in
 -- and the width is the maximum of all buttons.
 ---@class Menu : UiElement
+---@field equalItemWidths boolean true if every item is stretched to the widest so their boxes line up
 local Menu = class(
   function(self, options)
     ---@class Menu
@@ -25,6 +26,7 @@ local Menu = class(
     self.menuItemYOffsets = {}
     self.allContentShowing = true
     self.sizeToFit = options.height == 0
+    self.equalItemWidths = options.equalItemWidths or false
     self.supportsBackButton = true
     if options.supportsBackButton ~= nil and options.supportsBackButton == false then
       self.supportsBackButton = false
@@ -143,6 +145,12 @@ function Menu:layout()
     self.totalHeight = self.totalHeight + menuItem.height
     if i < #self.menuItems then
       self.totalHeight = self.totalHeight + Menu.BUTTON_VERTICAL_PADDING
+    end
+  end
+
+  if self.equalItemWidths then
+    for _, menuItem in ipairs(self.menuItems) do
+      menuItem:stretchTo(self.width)
     end
   end
 

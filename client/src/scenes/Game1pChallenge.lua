@@ -24,7 +24,7 @@ end
 
 function Game1pChallenge:startNextScene()
   -- match:deinit is the responsibility of the one switching out of the game scene
-  if GAME.battleRoom.challengeComplete then
+  if GAME.battleRoom.run.complete then
     -- We passed the last level, go to the recap.
     GAME.navigationStack:replace(ChallengeModeRecapScene({challengeMode = GAME.battleRoom}), nil, function() self.match:deinit() end)
   else
@@ -94,7 +94,7 @@ end
 function Game1pChallenge:drawContinueInfo(drawX, drawY)
   local limit = 400
   GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
-  GraphicsUtil.printf(GAME.battleRoom.continues, drawX - limit / 2, drawY + 20, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(GAME.battleRoom.run.continues, drawX - limit / 2, drawY + 20, limit, "center", nil, nil, 4)
 end
 
 return Game1pChallenge

@@ -21,7 +21,7 @@ function ChallengeModeTimeSplitsUIElement:drawTimeSplits()
     if self.stageTimeQuads[i] == nil then
       self.stageTimeQuads[i] = {}
     end
-    local time = self.challengeMode.stages[i].expendedTime
+    local time = self.challengeMode.run.stages[i].expendedTime
     local currentStageTime = time
     local isCurrentStage = (self.currentStageIndex and i == self.currentStageIndex)
     if isCurrentStage and self.challengeMode.match and not self.challengeMode.match.ended then

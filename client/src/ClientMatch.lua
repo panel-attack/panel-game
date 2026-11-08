@@ -682,8 +682,10 @@ function ClientMatch:removeCanvases()
   end
 end
 
-  -- Draw the pause menu
-function ClientMatch:draw_pause()
+-- Draws the pause screen with its heading and the smaller line under it
+---@param title string localization key of the heading
+---@param subtitle string localization key of the line under the heading
+function ClientMatch:draw_pause(title, subtitle)
   if not self.renderDuringPause then
     local image = themes[config.theme].images.pause
     local scale = consts.CANVAS_WIDTH / math.max(image:getWidth(), image:getHeight()) -- keep image ratio
@@ -696,8 +698,8 @@ function ClientMatch:draw_pause()
     GraphicsUtil.draw(image, x, y, 0, scale, scale, xOffset, yOffset)
   end
   local y = 260
-  GraphicsUtil.printf(loc("pause"), 0, y, consts.CANVAS_WIDTH, "center", nil, 1, 10)
-  GraphicsUtil.printf(loc("pl_pause_help"), 0, y + 30, consts.CANVAS_WIDTH, "center", nil, 1)
+  GraphicsUtil.printf(loc(title), 0, y, consts.CANVAS_WIDTH, "center", nil, 1, 10)
+  GraphicsUtil.printf(loc(subtitle), 0, y + 30, consts.CANVAS_WIDTH, "center", nil, 1)
 end
 
 function ClientMatch:getWinners()
