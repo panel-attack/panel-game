@@ -25,6 +25,7 @@ PingStats.SMOOTHING = 1 / 8
 -- How far each sample moves the jitter
 PingStats.JITTER_SMOOTHING = 1 / 4
 
+-- Records a round trip: the first one seeds the smoothed round trip, later ones move it and the jitter towards them
 ---@param milliseconds number a round trip sample
 function PingStats:addSample(milliseconds)
   if self.smoothed == nil then
@@ -63,9 +64,10 @@ function PingStats:jitter()
   end
 end
 
+---@alias PingNumbers { current: integer, average: integer, jitter: integer }
 ---@alias PingSummary { publicId: PublicPlayerID, current: integer, average: integer, jitter: integer }
 
----@return PingSummary? # the numbers a ping update carries for this connection, nil before the first sample
+---@return PingNumbers? # the numbers a ping update carries for this connection, nil before the first sample
 function PingStats:summary()
   if self.latest then
     return {current = self:current(), average = self:recentAverage(), jitter = self:jitter()}

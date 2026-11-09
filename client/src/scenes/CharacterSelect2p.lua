@@ -112,14 +112,15 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.pageTurnButtons = self:createPageTurnButtons(self.ui.characterGrid)
 end
 
--- Adds a warning card in the bottom row's free cells, left of the page indicator, that shows while either connection
--- makes rollback likely
+-- Adds a card with both players' pings in two cells of the bottom row, that also warns while either connection makes
+-- rollback likely
 function CharacterSelect2p:addConnectionWarnings()
   local players = {}
   for i, player in ipairs(self.players) do
     players[i] = {publicId = player.publicId, name = player.name}
   end
-  self.ui.grid:createElementAt(1, 6, 4, 1, "connectionWarning", ui.ConnectionWarning({players = players}))
+  local card = ui.ConnectionWarning({players = players, alwaysShown = true, hFill = true, vFill = true})
+  self.ui.grid:createElementAt(1, 6, 2, 1, "connectionWarning", card)
 end
 
 return CharacterSelect2p

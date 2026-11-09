@@ -409,10 +409,14 @@ local pingUpdateTemplate = {
 function ServerProtocol.pingUpdate(players)
   local summaries = {}
   for _, player in ipairs(players) do
-    local summary = player.pingStats:summary()
-    if summary then
-      summary.publicId = player.publicPlayerID
-      summaries[#summaries + 1] = summary
+    local numbers = player.pingStats:summary()
+    if numbers then
+      summaries[#summaries + 1] = {
+        publicId = player.publicPlayerID,
+        current = numbers.current,
+        average = numbers.average,
+        jitter = numbers.jitter,
+      }
     end
   end
 

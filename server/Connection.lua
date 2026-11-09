@@ -3,6 +3,7 @@ local logger = require("common.lib.logger")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
 local Queue = require("common.lib.Queue")
+local PingStats = require("common.network.PingStats")
 
 local TIME_OUT = 10
 
@@ -18,7 +19,7 @@ local TIME_OUT = 10
 ---@field clock fun(): number precise time in seconds, for timing pings
 ---@field nextPingTime number? clock time the next ping is due, nil until the first ping
 ---@field pendingPingTimes Queue clock times of the pings still waiting for a reply, oldest first
----@field pingSamples Queue round trips in milliseconds measured since the server last collected them
+---@field pingStats PingStats the round trips timed on this connection, which its player reports
 ---@field incomingMessageQueue Queue
 ---@field outgoingMessageQueue Queue
 ---@field incomingInputQueue Queue
@@ -40,7 +41,7 @@ local Connection = class(
     self.clock = clock
     self.nextPingTime = nil
     self.pendingPingTimes = Queue()
-    self.pingSamples = Queue()
+    self.pingStats = PingStats()
     self.incomingMessageQueue = Queue()
     self.outgoingMessageQueue = Queue()
     self.incomingInputQueue = Queue()
@@ -83,7 +84,6 @@ function Connection:close()
   self.outgoingMessageQueue:clear()
   self.incomingInputQueue:clear()
   self.pendingPingTimes:clear()
-  self.pingSamples:clear()
   self.socket:close()
   self.socket = nil
 end
@@ -213,7 +213,7 @@ end
 function Connection:recordPingReply()
   if self.pendingPingTimes:len() > 0 then
     local sentTime = self.pendingPingTimes:pop()
-    self.pingSamples:push((self.clock() - sentTime) * 1000)
+    self.pingStats:addSample((self.clock() - sentTime) * 1000)
   end
 end
 

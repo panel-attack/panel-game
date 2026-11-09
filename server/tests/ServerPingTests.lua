@@ -16,33 +16,16 @@ local function pingUpdatesFor(player)
   return updates
 end
 
-local function testRoundTripSamplesFeedThePlayersPing()
+local function testRoundTripsOnAPlayersConnectionAreTheirPing()
   local server = ServerTesting.getTestServer()
   local bob = ServerTesting.login(server, ServerTesting.players[1])
 
-  bob.connection.pingSamples:push(80)
-  server:collectPingSamples()
+  bob.connection.pingStats:addSample(80)
 
-  assert(bob.pingStats:current() == 80, "the sample should become bob's ping, got " .. tostring(bob.pingStats:current()))
-  assert(bob.connection.pingSamples:len() == 0, "collected samples should leave the connection")
+  assert(bob.pingStats:current() == 80, "the round trip should be bob's ping, got " .. tostring(bob.pingStats:current()))
 end
 
-testRoundTripSamplesFeedThePlayersPing()
-
-local function testSamplesCountWhileModsLoad()
-  local server = ServerTesting.getTestServer()
-  local room = ServerTesting.setupRoom(server, ServerTesting.players[1], ServerTesting.players[2])
-  local bob = room.players[1]
-  -- mods load a step per frame, so the client keeps answering pings on time
-  bob.loaded = false
-
-  bob.connection.pingSamples:push(80)
-  server:collectPingSamples()
-
-  assert(bob.pingStats:current() == 80, "a sample taken while bob's mods load should count, got " .. tostring((bob.pingStats:current())))
-end
-
-testSamplesCountWhileModsLoad()
+testRoundTripsOnAPlayersConnectionAreTheirPing()
 
 -- the pings in a ping update, keyed by public id
 local function pingsIn(update)
@@ -53,16 +36,13 @@ local function pingsIn(update)
   return pings
 end
 
-local function testPlayersWhoUnderstandPingUpdatesHearTheCurrentAndAveragePingOfEveryoneOnline()
-
 local function testPlayersInAMatchHearNoPingUpdates()
   local server = ServerTesting.getTestServer()
   local alice = ServerTesting.login(server, ServerTesting.players[2], true)
   local ben = ServerTesting.login(server, ServerTesting.players[3], true)
   local room = ServerTesting.setupRoom(server, alice, ben, true)
   ServerTesting.startGame(server, room)
-  alice.connection.pingSamples:push(40)
-  server:collectPingSamples()
+  alice.connection.pingStats:addSample(40)
 
   server:broadcastPings()
 
@@ -71,6 +51,8 @@ local function testPlayersInAMatchHearNoPingUpdates()
 end
 
 testPlayersInAMatchHearNoPingUpdates()
+
+local function testPlayersWhoUnderstandPingUpdatesHearTheCurrentAndAveragePingOfEveryoneOnline()
   local server = ServerTesting.getTestServer()
   local alice = ServerTesting.login(server, ServerTesting.players[2], true)
   local ben = ServerTesting.login(server, ServerTesting.players[3], true)
@@ -78,11 +60,10 @@ testPlayersInAMatchHearNoPingUpdates()
   local bob = ServerTesting.login(server, ServerTesting.players[1], true)
   ServerTesting.addSpectator(server, room, bob)
   local carl = ServerTesting.login(server, ServerTesting.players[4])
-  alice.connection.pingSamples:push(40)
-  ben.connection.pingSamples:push(600)
-  bob.connection.pingSamples:push(70)
-  carl.connection.pingSamples:push(90)
-  server:collectPingSamples()
+  alice.connection.pingStats:addSample(40)
+  ben.connection.pingStats:addSample(600)
+  bob.connection.pingStats:addSample(70)
+  carl.connection.pingStats:addSample(90)
 
   server:broadcastPings()
 
@@ -104,8 +85,7 @@ local function testAPlayerWithoutASampleIsLeftOut()
   local server = ServerTesting.getTestServer()
   local alice = ServerTesting.login(server, ServerTesting.players[2], true)
   local bob = ServerTesting.login(server, ServerTesting.players[1])
-  alice.connection.pingSamples:push(40)
-  server:collectPingSamples()
+  alice.connection.pingStats:addSample(40)
 
   server:broadcastPings()
 
@@ -117,8 +97,7 @@ testAPlayerWithoutASampleIsLeftOut()
 local function testPlayersWhoseClientsDoNotUnderstandPingUpdatesHearNothing()
   local server = ServerTesting.getTestServer()
   local bob = ServerTesting.login(server, ServerTesting.players[1])
-  bob.connection.pingSamples:push(40)
-  server:collectPingSamples()
+  bob.connection.pingStats:addSample(40)
 
   server:broadcastPings()
 
@@ -131,12 +110,11 @@ local function testThePingUpdatesAverageFollowsTheRecentRoundTrips()
   local server = ServerTesting.getTestServer()
   local alice = ServerTesting.login(server, ServerTesting.players[2], true)
   for _ = 1, 60 do
-    alice.connection.pingSamples:push(10)
+    alice.connection.pingStats:addSample(10)
   end
   for _ = 1, 10 do
-    alice.connection.pingSamples:push(1500)
+    alice.connection.pingStats:addSample(1500)
   end
-  server:collectPingSamples()
 
   server:broadcastPings()
 

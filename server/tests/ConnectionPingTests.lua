@@ -66,7 +66,7 @@ local function testAPingReplyIsARoundTripSample()
   socket.unread = PING_REPLY
   connection:update(100, true, false)
 
-  local sample = connection.pingSamples:pop()
+  local sample = connection.pingStats.latest
   assert(sample == 62.5, "a reply 62.5 ms after the ping should be a 62.5 ms sample, got " .. tostring(sample))
 end
 
@@ -82,8 +82,9 @@ local function testRepliesAreMatchedToPingsInOrder()
   socket.unread = PING_REPLY .. PING_REPLY
   connection:update(102, true, false)
 
-  assert(connection.pingSamples:pop() == 2250, "the first reply should answer the first ping")
-  assert(connection.pingSamples:pop() == 250, "the second reply should answer the second ping")
+  local samples = connection.pingStats.recent.content
+  assert(samples[1] == 2250, "the first reply should answer the first ping, got " .. tostring(samples[1]))
+  assert(samples[2] == 250, "the second reply should answer the second ping, got " .. tostring(samples[2]))
 end
 
 testRepliesAreMatchedToPingsInOrder()
@@ -93,7 +94,7 @@ local function testAReplyWithoutAPingIsIgnored()
   socket.unread = PING_REPLY
   connection:update(100, true, false)
 
-  assert(connection.pingSamples:len() == 0, "a reply nobody asked for should not be a sample")
+  assert(connection.pingStats.latest == nil, "a reply nobody asked for should not be a sample")
 end
 
 testAReplyWithoutAPingIsIgnored()

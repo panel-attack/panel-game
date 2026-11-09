@@ -420,7 +420,6 @@ function Server:update()
   end
 
   self:updateConnections()
-  self:collectPingSamples()
   self:processMessages()
 
   -- Only check once a second to avoid over checking
@@ -674,19 +673,6 @@ function Server:flushLogs(currentTime)
       end
     )
     self.lastFlushTime = currentTime
-  end
-end
-
--- Moves the round trips each connection measured into its player's ping
-function Server:collectPingSamples()
-  for _, connection in pairs(self.connections) do
-    local player = self.connectionToPlayer[connection]
-    while connection.pingSamples:len() > 0 do
-      local sample = connection.pingSamples:pop()
-      if player then
-        player.pingStats:addSample(sample)
-      end
-    end
   end
 end
 

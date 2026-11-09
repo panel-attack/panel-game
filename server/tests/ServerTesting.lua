@@ -1,4 +1,5 @@
 ---@diagnostic disable: invisible, undefined-field, inject-field
+local PingStats = require("common.network.PingStats")
 local Server = require("server.server")
 local MockPersistence = require("server.tests.MockPersistence")
 local ClientProtocol = require("common.network.ClientProtocol")
@@ -35,6 +36,8 @@ local playerData = {}
 for i, player in ipairs(ServerTesting.players) do
   player:updateSettings({inputMethod = "controller", level = 10})
   player.connection.loggedIn = false
+  -- the mock connections stand in for a fresh connection on every login, which starts unmeasured
+  player.connection.pingStats = PingStats()
   playerData[player.userId] = player.name
 end
 
@@ -92,6 +95,8 @@ function ServerTesting.login(server, player, understandsPingUpdates)
     player.connection:restore()
   end
   player.connection.loggedIn = false
+  -- the mock connections stand in for a fresh connection on every login, which starts unmeasured
+  player.connection.pingStats = PingStats()
   server:addConnection(player.connection)
   local loginRequest = ClientProtocol.requestLogin(player.userId, player.name, 10, "controller", "pacci", nil, nil, nil, nil, true, "with my name").messageText
   loginRequest.understandsPingUpdates = understandsPingUpdates

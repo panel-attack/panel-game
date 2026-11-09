@@ -188,6 +188,41 @@ end
 
 testAPlayerTheLatestUpdateLeftOutHasNoPing()
 
+local function testAPingUpdateWithoutAPlayerListLeavesNoPings()
+  withStandInLocalPlayer(function()
+    for _, content in ipairs({{}, "garbled"}) do
+      local netClient, socket = connectedClientIn(NetClient.STATES.ONLINE)
+
+      socket.incoming = pingUpdateFromServer(content)
+      asTheGamesNetClient(netClient, function()
+        netClient:update()
+      end)
+
+      assert(netClient:pingOf(11) == nil, "an update without a player list should leave no pings")
+    end
+  end)
+end
+
+testAPingUpdateWithoutAPlayerListLeavesNoPings()
+
+local function testAPlayerEntryMissingANumberIsDropped()
+  withStandInLocalPlayer(function()
+    local netClient, socket = connectedClientIn(NetClient.STATES.ONLINE)
+
+    socket.incoming = pingUpdateFromServer({
+      players = {{publicId = 11, current = 48}, {publicId = 12, current = 90, jitter = 4, average = 85}},
+    })
+    asTheGamesNetClient(netClient, function()
+      netClient:update()
+    end)
+
+    assert(netClient:pingOf(11) == nil, "player 11's entry has no average or jitter, so it should be dropped")
+    assert(netClient:pingOf(12).average == 85, "player 12's complete entry should still count")
+  end)
+end
+
+testAPlayerEntryMissingANumberIsDropped()
+
 local function testPingOfAnUnmeasuredPlayerIsNil()
   local netClient = NetClient()
 
