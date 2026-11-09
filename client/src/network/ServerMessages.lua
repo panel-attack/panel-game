@@ -111,6 +111,22 @@ function ServerMessages.sanitizeRoomMessage(message)
   return message
 end
 
+-- The player entries of a ping update that carry every number, so a malformed update can't reach the pings
+---@param content table?
+---@return { players: PingSummary[] }
+local function sanitizePingUpdate(content)
+  local players = {}
+  if type(content) == "table" and type(content.players) == "table" then
+    for _, player in ipairs(content.players) do
+      if type(player) == "table" and type(player.publicId) == "number" and type(player.current) == "number"
+        and type(player.average) == "number" and type(player.jitter) == "number" then
+        players[#players + 1] = player
+      end
+    end
+  end
+  return {players = players}
+end
+
 function ServerMessages.sanitizeServerMessage(message)
   if message.type == "loginResponse" then
     if message.content.approved then
@@ -133,6 +149,8 @@ function ServerMessages.sanitizeServerMessage(message)
         ban_duration = message.content.banDuration,
       }
     end
+  elseif message.type == "pingUpdate" then
+    return { pingUpdate = sanitizePingUpdate(message.content) }
   elseif message.type == "lobbyStateV2" then
     ---@type LobbyStateV2
     local content = message.content

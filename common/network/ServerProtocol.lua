@@ -397,6 +397,37 @@ function ServerProtocol.gameResult(game, room)
   }
 end
 
+local pingUpdateTemplate = {
+  sender = "server",
+  type = "pingUpdate",
+  content = nil
+}
+
+-- The current and average ping and jitter of every given player that has been measured
+---@param players ServerPlayer[]
+---@return {messageType: table, messageText: ServerMessage}
+function ServerProtocol.pingUpdate(players)
+  local summaries = {}
+  for _, player in ipairs(players) do
+    local numbers = player.pingStats:summary()
+    if numbers then
+      summaries[#summaries + 1] = {
+        publicId = player.publicPlayerID,
+        current = numbers.current,
+        average = numbers.average,
+        jitter = numbers.jitter,
+      }
+    end
+  end
+
+  pingUpdateTemplate.content = {players = summaries}
+
+  return {
+    messageType = msgTypes.jsonMessage,
+    messageText = pingUpdateTemplate,
+  }
+end
+
 local spectatorUpdateTemplate = {
   sender = "room",
   senderId = nil,

@@ -34,6 +34,8 @@ local ui = {
   Carousel = import("./Carousel"),
   ---@source ChangeInputButton.lua
   ChangeInputButton = import("./ChangeInputButton"),
+  ---@source ConnectionWarning.lua
+  ConnectionWarning = import("./ConnectionWarning"),
   ---@source Focusable.lua
   Focusable = import("./Focusable"),
   ---@source FocusDirector.lua

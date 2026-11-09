@@ -86,12 +86,15 @@ local allTests = {
   "common.tests.lib.utilTests",
   "common.tests.network.NetworkProtocolTests",
   "common.tests.network.TouchDataEncodingTests",
+  "common.tests.network.PingStatsTests",
   "common.tests.data.InputCompressionTests",
   "server.tests.LoginTests",
   "server.tests.LeaderboardTests",
   "server.tests.RoomTests",
   "server.tests.ServerTests",
   "server.tests.RealSocketPartialSendTest",
+  "server.tests.ConnectionPingTests",
+  "server.tests.ServerPingTests",
   "client.tests.FileUtilsTests",
   "client.tests.ModControllerTests",
   "client.tests.QueueTests",
@@ -116,6 +119,8 @@ local allTests = {
   "client.tests.SetNameMenuTests",
   "client.tests.BattleRoomLifecycleTests",
   "client.tests.NetClientTests",
+  "client.tests.ConnectionWarningTests",
+  "client.tests.LobbyTests",
 }
 
 -- Check for specific test name argument
