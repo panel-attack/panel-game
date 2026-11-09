@@ -10,6 +10,7 @@ local MockConnection = class(function(self)
   self.outgoingInputQueue = Queue()
   self.incomingMessageQueue = Queue()
   self.incomingInputQueue = Queue()
+  self.pingSamples = Queue()
 end)
 
 function MockConnection:update(t) end

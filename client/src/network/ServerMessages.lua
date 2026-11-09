@@ -133,6 +133,8 @@ function ServerMessages.sanitizeServerMessage(message)
         ban_duration = message.content.banDuration,
       }
     end
+  elseif message.type == "pingUpdate" then
+    return { pingUpdate = message.content }
   elseif message.type == "lobbyStateV2" then
     ---@type LobbyStateV2
     local content = message.content

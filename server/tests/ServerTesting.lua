@@ -85,14 +85,17 @@ end
 
 ---@param server Server
 ---@param player ServerPlayer
+---@param understandsPingUpdates boolean? if the login says the client understands ping updates
 ---@return ServerPlayer # the new player object generated on the server; use instead of the param player going forward
-function ServerTesting.login(server, player)
+function ServerTesting.login(server, player, understandsPingUpdates)
   if not player.connection.socket then
     player.connection:restore()
   end
   player.connection.loggedIn = false
   server:addConnection(player.connection)
-  player.connection:receiveMessage(json.encode(ClientProtocol.requestLogin(player.userId, player.name, 10, "controller", "pacci", nil, nil, nil, nil, true, "with my name").messageText))
+  local loginRequest = ClientProtocol.requestLogin(player.userId, player.name, 10, "controller", "pacci", nil, nil, nil, nil, true, "with my name").messageText
+  loginRequest.understandsPingUpdates = understandsPingUpdates
+  player.connection:receiveMessage(json.encode(loginRequest))
   server:update()
   player.connection.outgoingMessageQueue:clear()
   return server.connectionToPlayer[player.connection]

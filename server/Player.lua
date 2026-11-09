@@ -5,6 +5,7 @@ local LevelPresets = require("common.data.LevelPresets")
 local tableUtils = require("common.lib.tableUtils")
 local Signal = require("common.lib.signal")
 local logger = require("common.lib.logger")
+local PingStats = require("common.network.PingStats")
 
 ---@alias PlayerState ("lobby" | "character select" | "playing" | "spectating" | "paused")
 ---@alias PublicPlayerID integer
@@ -30,6 +31,8 @@ local logger = require("common.lib.logger")
 ---@field name string
 ---@field player_number integer?
 ---@field state PlayerState
+---@field pingStats PingStats round trips measured on this player's connection
+---@field understandsPingUpdates boolean if the client said at login that it understands ping updates
 ---@overload fun(privatePlayerID: privateUserId, connection: Connection, name: string, publicId: integer): ServerPlayer
 local Player = class(
 ---@param self ServerPlayer
@@ -58,6 +61,9 @@ function(self, privatePlayerID, connection, name, publicId)
   self.stage_is_random = nil
   self.wants_ranked_match = false
   self.levelData = nil
+
+  self.pingStats = PingStats()
+  self.understandsPingUpdates = false
 
   Signal.turnIntoEmitter(self)
   self:createSignal("settingsUpdated")

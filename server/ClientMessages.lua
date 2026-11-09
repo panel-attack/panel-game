@@ -93,6 +93,7 @@ end
 ---@class ServerIncomingLoginMessage
 ---@field playerSettings ServerIncomingPlayerSettings
 ---@field login_request boolean
+---@field understandsPingUpdates boolean true from clients that understand pingUpdate; older clients leave it in their queue
 ---@field user_id privateUserId
 ---@field engine_version string
 ---@field name string
@@ -107,6 +108,7 @@ function ClientMessages.sanitizeLoginRequest(loginRequest)
   sanitized.engine_version = loginRequest.engine_version
   sanitized.name = loginRequest.name
   sanitized.save_replays_publicly = loginRequest.save_replays_publicly
+  sanitized.understandsPingUpdates = loginRequest.understandsPingUpdates == true
 
   return sanitized
 end

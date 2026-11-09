@@ -15,6 +15,9 @@ function CharacterSelect2p:customLoad(sceneParams)
   self:loadUserInterface()
   self.uiRoot.rankedStatus = self:createRankedStatusPanel()
   self.uiRoot:addChild(self.uiRoot.rankedStatus)
+  if self.battleRoom.online then
+    self:addConnectionWarnings()
+  end
 end
 
 function CharacterSelect2p:loadUserInterface()
@@ -109,5 +112,14 @@ function CharacterSelect2p:loadUserInterface()
   self.ui.pageTurnButtons = self:createPageTurnButtons(self.ui.characterGrid)
 end
 
+-- Adds a warning card in the bottom row's free cells, left of the page indicator, that shows while either connection
+-- makes rollback likely
+function CharacterSelect2p:addConnectionWarnings()
+  local players = {}
+  for i, player in ipairs(self.players) do
+    players[i] = {publicId = player.publicId, name = player.name}
+  end
+  self.ui.grid:createElementAt(1, 6, 4, 1, "connectionWarning", ui.ConnectionWarning({players = players}))
+end
 
 return CharacterSelect2p
