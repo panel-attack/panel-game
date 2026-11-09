@@ -29,14 +29,6 @@ function PuzzleTests.validationPuzzleType()
   end
 end
 
-function PuzzleTests.validationMoves()
-  local puzzle = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 0, stack = "1254216999999952"})
-  local isValid, validationMessage = puzzle:validate()
-
-  assert(not isValid)
-  assert(string.match(validationMessage, "expecting a number greater than zero"))
-end
-
 function PuzzleTests.validationStackCharacters()
   local puzzle = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 3, stack = "12542169999f9952"})
   local isValid, validationMessage = puzzle:validate()
@@ -165,7 +157,6 @@ PuzzleTests.aPartialLastGarbageRowIsFilledWithGrey()
 PuzzleTests.aClearPuzzleWithoutABufferRunsPastItOnTheFirstRevealedRow()
 PuzzleTests.validationCountdown()
 PuzzleTests.validationPuzzleType()
-PuzzleTests.validationMoves()
 PuzzleTests.validationStackLength()
 PuzzleTests.validationStackLength2()
 PuzzleTests.validationStackCharacters()
@@ -254,3 +245,136 @@ end
 
 PuzzleTests.testNewPuzzleWithPuzzleString()
 PuzzleTests.testNewPuzzleWithPuzzleStringMinimal()
+
+local function countKeys(t)
+  local count = 0
+  for _ in pairs(t) do
+    count = count + 1
+  end
+  return count
+end
+
+function PuzzleTests.goalsAreReadFromTheirFileSpelling()
+  local chain = Puzzle.parseGoal("x4")
+  assert(chain and chain.kind == "chain" and chain.size == 4)
+  local combo = Puzzle.parseGoal("+6")
+  assert(combo and combo.kind == "combo" and combo.size == 6)
+  local emptyBoard = Puzzle.parseGoal("empty board")
+  assert(emptyBoard and emptyBoard.kind == "emptyBoard")
+  local clear = Puzzle.parseGoal("CLEAR")
+  assert(clear and clear.kind == "clear")
+  assert(Puzzle.parseGoal("x") == nil)
+  assert(Puzzle.parseGoal("chain") == nil, "the old chain rule cannot be asked for by a goal list")
+  assert(Puzzle.parseGoal(4) == nil)
+end
+
+function PuzzleTests.goalsAreWrittenInTheirFileSpelling()
+  local puzzle = Puzzle({goals = {"empty board", "X4", "+6", "+6"}, stack = "011010"})
+  local written = puzzle:getSaveData()["Puzzle Type"]
+  assert(table.concat(written, ",") == "Empty Board,x4,+6,+6")
+end
+
+function PuzzleTests.aLegacyTypeBecomesItsGoals()
+  local moves = Puzzle({puzzleType = "moves", moves = 1, stack = "011010"})
+  assert(#moves.goals == 1 and moves.goals[1].kind == "emptyBoard")
+  local clear = Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "334344"})
+  assert(#clear.goals == 1 and clear.goals[1].kind == "clear")
+  local chain = Puzzle({puzzleType = "chain", stack = "011010"})
+  assert(#chain.goals == 1 and chain.goals[1].kind == "legacyChain")
+  assert(chain:getSaveData(true)["Puzzle Type"] == "chain", "a version 3 file keeps the one word type")
+end
+
+function PuzzleTests.theLegacyShapesKeepTheirUuid()
+  assert(Puzzle({puzzleType = "moves", moves = 1, stack = "011010"}).UUID
+    == "d17b0e3f0747c4a18b0398a7bcc86e556c068d873f350b85880a6f8efeaa0aba")
+  assert(Puzzle({goals = {"Empty Board"}, moves = 1, stack = "011010"}).UUID
+    == "d17b0e3f0747c4a18b0398a7bcc86e556c068d873f350b85880a6f8efeaa0aba")
+  assert(Puzzle({puzzleType = "chain", stack = "011010"}).UUID == "a4d352439dabe32af28f38653c47d50eee76a67ee30eef27929820430e394b22")
+  assert(Puzzle({puzzleType = "clear", stack = "[====]112122", garbagePanelBuffer = "334344"}).UUID
+    == "72f404eb985581584ecbbc0ebf3e915a134f1e9569d25f474ee60083f907e235")
+  assert(Puzzle({goals = {"Empty Board", "x2"}, moves = 1, stack = "011010"}).UUID
+    ~= Puzzle({goals = {"Empty Board"}, moves = 1, stack = "011010"}).UUID, "another goal makes another puzzle")
+end
+
+function PuzzleTests.chainAndComboGoalsBecomeCountedWinConditions()
+  local puzzle = Puzzle({goals = {"x2", "x2", "x4", "+6"}, moves = 3, stack = "011010"})
+  assert(puzzle:validate())
+  local rules = puzzle:toGameMode().matchRules
+  assert(rules.stackWinConditions["CHAINS"][2] == 2)
+  assert(rules.stackWinConditions["CHAINS"][4] == 1)
+  assert(rules.stackWinConditions["COMBOS"][6] == 1)
+  assert(countKeys(rules.stackWinConditions) == 2, "the board does not have to be emptied unless that is asked for")
+  assert(rules.stackOverConditions["GOALS_UNREACHABLE"] == true)
+  assert(rules.stackOverConditions["SWAPS"] == 3)
+  assert(rules.stackSetupModifications.behaviours.passiveRaise == false)
+end
+
+function PuzzleTests.emptyBoardAndClearCanBeAskedForTogether()
+  local puzzle = Puzzle({goals = {"Empty Board", "Clear"}, stack = "[====]112122", garbagePanelBuffer = "334344"})
+  assert(puzzle:validate())
+  local rules = puzzle:toGameMode().matchRules
+  assert(rules.stackWinConditions["MATCHABLE_PANELS"] == 0)
+  assert(rules.stackWinConditions["GARBAGE_BUFFER_EXCEEDED"] == 0)
+  assert(rules.stackOverConditions["HEALTH"] == 0)
+  assert(rules.stackSetupModifications.behaviours.passiveRaise == nil, "a puzzle with a clear goal rises like a clear puzzle")
+end
+
+function PuzzleTests.validationGoals()
+  local none = Puzzle({goals = {}, stack = "011010"})
+  local isValid, message = none:validate()
+  assert(not isValid and string.match(message, "at least one goal"))
+
+  local unknown = Puzzle({goals = {"x4", "big chain"}, stack = "011010"})
+  isValid, message = unknown:validate()
+  assert(not isValid and string.match(message, "big chain"))
+
+  isValid = Puzzle({goals = {"x1"}, stack = "011010"}):validate()
+  assert(not isValid, "a chain starts at x2")
+  isValid = Puzzle({goals = {"+3"}, stack = "011010"}):validate()
+  assert(not isValid, "a match of three is not a combo")
+end
+
+function PuzzleTests.anEmptyBoardPuzzleNeedsNoSwapLimit()
+  assert(Puzzle({goals = {"Empty Board"}, moves = 0, stack = "011010"}):validate())
+end
+
+function PuzzleTests.anEmptyBoardPuzzleWithoutASwapLimitCanStillBeLost()
+  local rules = Puzzle({goals = {"Empty Board"}, moves = 0, stack = "011010"}):toGameMode().matchRules
+  assert(rules.stackOverConditions["GOALS_UNREACHABLE"] == true, "stranding a color has to end the puzzle, nothing else would")
+end
+
+function PuzzleTests.aSwapLimitThatIsNotANumberIsInvalid()
+  ---@diagnostic disable-next-line: assign-type-mismatch
+  local isValid, validationMessage = Puzzle({goals = {"Empty Board"}, moves = "abc", stack = "011010"}):validate()
+  assert(not isValid, "the swap limit is compared with the swap count once the puzzle starts")
+  assert(string.match(validationMessage, "Moves"))
+end
+
+function PuzzleTests.aNegativeSwapLimitIsInvalid()
+  local isValid = Puzzle({goals = {"Empty Board"}, moves = -1, stack = "011010"}):validate()
+  assert(not isValid, "a negative limit is neither a limit nor the absence of one")
+end
+
+function PuzzleTests.aMovesPuzzleWithoutASwapLimitIsValid()
+  assert(Puzzle({puzzleType = "moves", moves = 0, stack = "011010"}):validate())
+end
+
+function PuzzleTests.goalsSurviveAnEditedBoard()
+  local original = Puzzle({goals = {"x2", "+4"}, moves = 2, stack = "011010"})
+  local edited = Puzzle.newPuzzleWithPuzzleString("022020", original)
+  assert(table.concat(edited:getSaveData()["Puzzle Type"], ",") == "x2,+4")
+end
+
+PuzzleTests.goalsAreReadFromTheirFileSpelling()
+PuzzleTests.goalsAreWrittenInTheirFileSpelling()
+PuzzleTests.aLegacyTypeBecomesItsGoals()
+PuzzleTests.theLegacyShapesKeepTheirUuid()
+PuzzleTests.chainAndComboGoalsBecomeCountedWinConditions()
+PuzzleTests.emptyBoardAndClearCanBeAskedForTogether()
+PuzzleTests.validationGoals()
+PuzzleTests.anEmptyBoardPuzzleNeedsNoSwapLimit()
+PuzzleTests.anEmptyBoardPuzzleWithoutASwapLimitCanStillBeLost()
+PuzzleTests.goalsSurviveAnEditedBoard()
+PuzzleTests.aSwapLimitThatIsNotANumberIsInvalid()
+PuzzleTests.aNegativeSwapLimitIsInvalid()
+PuzzleTests.aMovesPuzzleWithoutASwapLimitIsValid()

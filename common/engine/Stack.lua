@@ -16,6 +16,7 @@ local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local InputCompression= require("common.data.InputCompression")
 local MatchRules = require("common.data.MatchRules")
 local StackBehaviours = require("common.data.StackBehaviours")
+local ChainComboTally = require("common.engine.ChainComboTally")
 ---@module "common.interface.Rollback"
 
 local rollbackPanelBuffer = {}
@@ -70,6 +71,7 @@ local PANELS_TO_NEXT_SPEED =
 ---@field getStartingBoardHeight fun(self: PanelSource, stack: Stack): integer how many rows are to be generated at the start
 ---@field createNewRow fun(self: PanelSource, stack: Stack, row: integer) creates a new set of panels for the stack with the specified row index and writes it to the stack's panels array
 ---@field getGarbagePanelRowString fun(self: PanelSource, stack: Stack): string returns a string of color indices
+---@field hasQueuedPanels fun(self: PanelSource): boolean whether panels that could still be matched are waiting to rise
 ---@field clone fun(self: PanelSource, stack: Stack): PanelSource creates a PanelSource that is tailored to the Stack's settings based on the template that is cloned from
 ---@field panelBuffer string alphanumeric string containing a buffer of panels to rise from below; string characters indicate possible metal positions
 ---@field garbagePanelBuffer string numeric string containing a buffer of panels for garbage to turn into upon matching
@@ -123,6 +125,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 ---@field score integer points incrementing on chain, combo, match, pop and manual raise according to certain rules
 ---@field chain_counter integer Number of the current chain links starting from 2; relevant for scoring and stop_time \n
 --- resets to 0 on chain end and sends garbage according to length
+---@field tally ChainComboTally combos and finished chains counted by size
 ---@field n_active_panels integer How many panels are "active" on this frame; active panels prevent the stack from rising
 ---@field n_prev_active_panels integer How many panels were "active" on the previous frame; previous active panels prevent the stack from rising
 ---@field manual_raise boolean if true the stack is currently being manually raised; kept true until the raise has been completed
@@ -235,6 +238,7 @@ local Stack = class(
 
     s.score = 0
     s.chain_counter = 0
+    s.tally = ChainComboTally()
 
     s.n_active_panels = 0
     s.n_prev_active_panels = 0
@@ -287,11 +291,18 @@ local Stack = class(
 )
 
 Stack.TYPE = "Stack"
-Stack.supportedStackOverConditions = { MatchRules.StackOverConditions.HEALTH, MatchRules.StackOverConditions.SWAPS, MatchRules.StackOverConditions.CHAIN }
+Stack.supportedStackOverConditions = {
+  MatchRules.StackOverConditions.HEALTH,
+  MatchRules.StackOverConditions.SWAPS,
+  MatchRules.StackOverConditions.CHAIN,
+  MatchRules.StackOverConditions.GOALS_UNREACHABLE
+}
 Stack.supportedStackWinConditions = {
   MatchRules.StackWinConditions.MATCHABLE_PANELS,
   MatchRules.StackWinConditions.MATCHABLE_GARBAGE_PANELS,
   MatchRules.StackWinConditions.GARBAGE_BUFFER_EXCEEDED,
+  MatchRules.StackWinConditions.CHAINS,
+  MatchRules.StackWinConditions.COMBOS,
   MatchRules.StackWinConditions.SCORE
 }
 
@@ -362,6 +373,7 @@ local function saveStackData(stack, copy)
   end
 
   Stack.transferStateVariables(copy, stack)
+  stack.tally:copyTo(copy.tally)
 
   for garbageWidth = 1, #stack.currentGarbageDropColumnIndexes do
     copy.currentGarbageDropColumnIndexes[garbageWidth] = stack.currentGarbageDropColumnIndexes[garbageWidth]
@@ -379,6 +391,8 @@ end
 ---@param frame integer the frame being restored to
 local function restoreStackData(stack, copy, frame)
   Stack.transferStateVariables(stack, copy)
+  -- the display reads the stack's own tally tables, so they are refilled rather than replaced
+  copy.tally:copyTo(stack.tally)
 
   for garbageWidth = 1, #copy.currentGarbageDropColumnIndexes do
     stack.currentGarbageDropColumnIndexes[garbageWidth] = copy.currentGarbageDropColumnIndexes[garbageWidth]
@@ -429,7 +443,7 @@ function Stack:saveIntoRollbackCopy(copy)
   assert(copy)
 
   if copy.stackData == nil then
-    copy.stackData = {panels = {}, currentGarbageDropColumnIndexes = {}}
+    copy.stackData = {panels = {}, currentGarbageDropColumnIndexes = {}, tally = ChainComboTally()}
     copy.incomingGarbageData = {}
     copy.outgoingGarbageData = {}
     copy.panelSourceData = {}
@@ -917,6 +931,7 @@ function Stack:runPhysics()
   --prof.push("chain update")
   -- if at the end of the routine there are no chain panels, the chain ends.
   if self.chain_counter ~= 0 and not self:hasChainingPanels() then
+    self.tally:addChain(self.chain_counter)
     self.chain_counter = 0
 
     if self.outgoingGarbage then
@@ -1595,6 +1610,10 @@ function Stack:checkGameOver()
           if self.swapCount >= value then
             return true
           end
+        elseif stackOverCondition == MatchRules.StackOverConditions.GOALS_UNREACHABLE then
+          if self:goalsAreUnreachable() then
+            return true
+          end
         elseif stackOverCondition == MatchRules.StackOverConditions.CHAIN then
           if value == false then
             if tableUtils.trueForAny(self.outgoingGarbage.history, isCompletedChain) then
@@ -1629,8 +1648,21 @@ function Stack:checkGameWin()
   return conditionCount > 0
 end
 
+-- Whether at least as many of every size were made as are asked for
+---@param needed table<integer, integer> size -> how many are asked for
+---@param made table<integer, integer> size -> how many were made
+---@return boolean
+local function everySizeWasMade(needed, made)
+  for size, count in pairs(needed) do
+    if (made[size] or 0) < count then
+      return false
+    end
+  end
+  return true
+end
+
 ---@param stackWinCondition StackWinCondition
----@param value integer
+---@param value integer | table<integer, integer>
 ---@return boolean
 function Stack:meetsWinCondition(stackWinCondition, value)
   if stackWinCondition == MatchRules.StackWinConditions.MATCHABLE_PANELS then
@@ -1640,9 +1672,117 @@ function Stack:meetsWinCondition(stackWinCondition, value)
   elseif stackWinCondition == MatchRules.StackWinConditions.GARBAGE_BUFFER_EXCEEDED then
     -- Once the garbage buffer is drained it will generate new ones, thats when we know we have exceeded the buffer and won
     return self.panelSource.garbageGenCount > 0
+  elseif stackWinCondition == MatchRules.StackWinConditions.CHAINS then
+    return self:isSettled() and everySizeWasMade(value, self.tally.chains)
+  elseif stackWinCondition == MatchRules.StackWinConditions.COMBOS then
+    return self:isSettled() and everySizeWasMade(value, self.tally.combos)
   end
 
   error("Stack does not know how to check stack win condition " .. tostring(stackWinCondition))
+end
+
+-- A settled board has nothing moving and nothing queued, so a chain has ended at its final size
+-- and a win declared now does not cut off a pop the player is still watching
+---@return boolean
+function Stack:isSettled()
+  return not self:hasActivePanels() and not self:swapQueued() and self.chain_counter == 0
+end
+
+local panelsByColor = {}
+local NO_GOALS = {}
+
+-- Whether any garbage is left from the first row up, including blocks resting above the top row that a match can still reach
+---@param stack Stack
+---@param firstRow integer
+---@return boolean
+local function hasGarbage(stack, firstRow)
+  for row = firstRow, #stack.panels do
+    for col = 1, stack.width do
+      if stack.panels[row][col].isGarbage then
+        return true
+      end
+    end
+  end
+  return false
+end
+
+-- Counts the colored panels in play by color: how many matches and panels they still hold and how many can never match
+---@param stack Stack
+---@param firstRow integer
+---@return integer matchesLeft
+---@return integer matchablePanelsLeft
+---@return integer strandedPanels panels of a color with fewer than three on the board
+local function countBoardColors(stack, firstRow)
+  table.clear(panelsByColor)
+  -- above the top row nothing can match or be matched, so like checkMatches this looks no higher
+  for row = firstRow, stack.height do
+    for col = 1, stack.width do
+      local color = stack.panels[row][col].color
+      if color ~= 0 and color ~= 9 then
+        panelsByColor[color] = (panelsByColor[color] or 0) + 1
+      end
+    end
+  end
+
+  local matchesLeft = 0
+  local matchablePanelsLeft = 0
+  local strandedPanels = 0
+  for _, count in pairs(panelsByColor) do
+    if count >= 3 then
+      matchesLeft = matchesLeft + math.floor(count / 3)
+      matchablePanelsLeft = matchablePanelsLeft + count
+    else
+      strandedPanels = strandedPanels + count
+    end
+  end
+  return matchesLeft, matchablePanelsLeft, strandedPanels
+end
+
+-- How many more matches and panels the chain and combo goals the stack has yet to meet take at the least
+---@return integer matchesNeeded
+---@return integer panelsNeeded
+function Stack:remainingGoalNeeds()
+  local chainMatchesNeeded = 0
+  local combosNeeded = 0
+  local panelsBeyondThreeNeeded = 0
+  for size, needed in pairs(self.stackWinConditions[MatchRules.StackWinConditions.CHAINS] or NO_GOALS) do
+    chainMatchesNeeded = chainMatchesNeeded + math.max(0, needed - (self.tally.chains[size] or 0)) * size
+  end
+  for size, needed in pairs(self.stackWinConditions[MatchRules.StackWinConditions.COMBOS] or NO_GOALS) do
+    local missing = math.max(0, needed - (self.tally.combos[size] or 0))
+    combosNeeded = combosNeeded + missing
+    panelsBeyondThreeNeeded = panelsBeyondThreeNeeded + missing * (size - 3)
+  end
+  -- a combo can be one of a chain's links, so the two kinds of goal share matches
+  local matchesNeeded = math.max(chainMatchesNeeded, combosNeeded)
+  return matchesNeeded, matchesNeeded * 3 + panelsBeyondThreeNeeded
+end
+
+-- Whether a goal the stack still has to meet needs more panels than the board can ever match.
+-- Counts only what is certain: a match takes three panels of one color, a chain of xN takes N matches,
+-- a combo of +N takes N panels of colors that can still match and a color with fewer than three panels can never leave the board.
+-- Garbage can still reveal panels and on a stack that can rise queued rows still come into play, so such a stack is never judged.
+---@return boolean
+function Stack:goalsAreUnreachable()
+  local canRise = self.behaviours.passiveRaise or self.behaviours.allowManualRaise
+  if canRise and self.panelSource:hasQueuedPanels() then
+    return false
+  end
+
+  -- row 0 has already left the panel source but is yet to rise into play, which it only does on a stack that can rise
+  local firstRow = canRise and 0 or 1
+  if hasGarbage(self, firstRow) then
+    return false
+  end
+
+  local matchesLeft, matchablePanelsLeft, strandedPanels = countBoardColors(self, firstRow)
+  local matchablePanelsAllowed = self.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS]
+  if matchablePanelsAllowed and strandedPanels > matchablePanelsAllowed then
+    return true
+  end
+
+  local matchesNeeded, panelsNeeded = self:remainingGoalNeeds()
+  return matchesNeeded > matchesLeft or panelsNeeded > matchablePanelsLeft
 end
 
 -- counts the panels on screen that could take part in a match

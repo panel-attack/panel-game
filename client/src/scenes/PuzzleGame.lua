@@ -192,9 +192,11 @@ function PuzzleGame:customLoad()
     })
     self.uiRoot:addChild(self.puzzleGoalDisplay)
     
+    -- a goal box with cards and several rows reaches past where the help box normally sits
+    local goalDisplayBottom = self.puzzleGoalDisplay.y + self.puzzleGoalDisplay.height
     self.puzzleHelpDisplay = PuzzleHelpDisplay({
       x = stackRightEdge + 2,
-      y = 490,
+      y = math.max(490, goalDisplayBottom + 8),
       width = 0,
       height = 0,
       puzzle = currentPuzzle,

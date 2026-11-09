@@ -10,8 +10,14 @@ local system = require("client.src.system")
 ---@field row integer
 ---@field column integer
 
+---@class PuzzleGoal
+---@field kind PuzzleGoalKind
+---@field size integer? the chain or combo size asked for
+---@field text string? what the file said, kept for a goal that could not be read
+
 ---@class PuzzleArgs
----@field puzzleType PuzzleType
+---@field goals (string | PuzzleGoal)[]? everything the puzzle asks for, in the file spelling or already read
+---@field puzzleType PuzzleType? the one word type of a version 3 file, used when there are no goals
 ---@field stack string representation of the panel colors, the last character is the bottom right panel
 ---@field startTiming PuzzleStartTiming?
 ---@field cursorStartLeft GridCoordinate?
@@ -28,7 +34,8 @@ local system = require("client.src.system")
 
 -- A puzzle is a particular instance of the game, where there is a specific goal for clearing the panels
 ---@class Puzzle
----@field puzzleType PuzzleType
+---@field goals PuzzleGoal[] everything that has to be achieved to win, a goal listed twice has to be achieved twice
+---@field puzzleType PuzzleType the one word type the goals amount to, "goals" if they are no such type
 ---@field startTiming PuzzleStartTiming
 ---@field stack string string representation of the panel colors
 ---@field cursorStartLeft GridCoordinate?
@@ -50,12 +57,17 @@ Puzzle = class(
 ---@param self Puzzle
 ---@param puzzleArgs GarbagePuzzleArgs
   function(self, puzzleArgs)
-    self.puzzleType = puzzleArgs.puzzleType or Puzzle.PUZZLE_TYPES.moves
+    if puzzleArgs.goals then
+      self.goals = Puzzle.readGoals(puzzleArgs.goals)
+    else
+      self.goals = Puzzle.goalsOfLegacyType(puzzleArgs.puzzleType or Puzzle.PUZZLE_TYPES.moves)
+    end
+    self.puzzleType = Puzzle.legacyTypeOfGoals(self.goals)
     self.cursorStartLeft = puzzleArgs.cursorStartLeft
     if puzzleArgs.startTiming then
       self.startTiming = puzzleArgs.startTiming
     else
-      if self.puzzleType == Puzzle.PUZZLE_TYPES.clear or self.puzzleType == Puzzle.PUZZLE_TYPES.chain then
+      if self.puzzleType ~= Puzzle.PUZZLE_TYPES.moves then
         if self.cursorStartLeft then
           self.startTiming = Puzzle.START_TIMINGS.firstInput
         else
@@ -121,7 +133,13 @@ function Puzzle.getV2UUID(puzzle)
   if puzzle.cursorStartLeft then
     cursorString = tostring(puzzle.cursorStartLeft.row) .. "," .. tostring(puzzle.cursorStartLeft.column)
   end
-  local hashString = puzzle.stack .. puzzle.puzzleType .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime) .. tostring(puzzle.shakeTime) .. cursorString .. tostring(puzzle.panelBuffer) .. tostring(puzzle.garbageBuffer)
+  -- a puzzle that is one of the old one word types hashes that word, so the goal list did not change any puzzle's UUID
+  local typeString = puzzle.puzzleType
+  if typeString == Puzzle.GOALS_TYPE then
+    typeString = table.concat(puzzle:goalsToFile(), ",")
+  end
+  local hashString = puzzle.stack .. typeString .. tostring(puzzle.startTiming) .. tostring(puzzle.moves) .. tostring(puzzle.stopTime)
+    .. tostring(puzzle.shakeTime) .. cursorString .. tostring(puzzle.panelBuffer) .. tostring(puzzle.garbageBuffer)
   return hashAndEncode(hashString)
 end
 
@@ -163,16 +181,148 @@ function Puzzle.startTimingSpellings()
   return sortedValueList(Puzzle.START_TIMING_IN_FILE)
 end
 
----@enum PuzzleType
+---@alias PuzzleType "moves" | "chain" | "clear" | "goals"
+-- the types a version 3 file could name; a puzzle whose goals are none of them has the type "goals"
 Puzzle.PUZZLE_TYPES = { moves = "moves", chain = "chain", clear = "clear" }
 
--- The puzzle types a file may ask for, as a readable list, so a warning about a bad one can say what
+-- The puzzle types a version 3 file may name, as a readable list, so a warning about a bad one can say what
 -- would have been accepted
 ---@return string
 function Puzzle.puzzleTypeNames()
   return sortedValueList(Puzzle.PUZZLE_TYPES)
 end
 
+Puzzle.GOALS_TYPE = "goals"
+
+---@alias PuzzleGoalKind "emptyBoard" | "clear" | "legacyChain" | "chain" | "combo" | "unknown"
+-- legacyChain is the chain type of a version 3 file: empty the board without ever letting the chain end.
+-- A goal list cannot ask for it, it only exists so those files play as they always did.
+Puzzle.GOAL_KINDS = { emptyBoard = "emptyBoard", clear = "clear", legacyChain = "legacyChain", chain = "chain", combo = "combo",
+                      unknown = "unknown" }
+Puzzle.MIN_CHAIN_GOAL = 2
+Puzzle.MIN_COMBO_GOAL = 4
+
+local LEGACY_TYPE_TO_GOAL_KIND = {
+  moves = Puzzle.GOAL_KINDS.emptyBoard,
+  clear = Puzzle.GOAL_KINDS.clear,
+  chain = Puzzle.GOAL_KINDS.legacyChain
+}
+
+-- Reads one goal as a puzzle file spells it, ignoring case and spaces: Empty Board, Clear, xN or +N
+---@param value any one entry of a file's Puzzle Type list
+---@return PuzzleGoal? goal nil for anything that is not a goal
+function Puzzle.parseGoal(value)
+  if type(value) ~= "string" then
+    return nil
+  end
+  local text = string.lower(string.gsub(value, "%s+", ""))
+  if text == "emptyboard" then
+    return {kind = Puzzle.GOAL_KINDS.emptyBoard}
+  elseif text == "clear" then
+    return {kind = Puzzle.GOAL_KINDS.clear}
+  end
+  local chainSize = string.match(text, "^x(%d+)$")
+  if chainSize then
+    return {kind = Puzzle.GOAL_KINDS.chain, size = tonumber(chainSize)}
+  end
+  local comboSize = string.match(text, "^%+(%d+)$")
+  if comboSize then
+    return {kind = Puzzle.GOAL_KINDS.combo, size = tonumber(comboSize)}
+  end
+  return nil
+end
+
+-- Spells a goal the way a puzzle file writes it
+---@param goal PuzzleGoal
+---@return string # how a puzzle file spells the goal
+function Puzzle.goalToFile(goal)
+  if goal.kind == Puzzle.GOAL_KINDS.emptyBoard then
+    return "Empty Board"
+  elseif goal.kind == Puzzle.GOAL_KINDS.clear then
+    return "Clear"
+  elseif goal.kind == Puzzle.GOAL_KINDS.chain then
+    return "x" .. goal.size
+  elseif goal.kind == Puzzle.GOAL_KINDS.combo then
+    return "+" .. goal.size
+  end
+  return tostring(goal.text)
+end
+
+-- an entry that is not a goal is kept as an unknown one so validate can name it
+---@param goals (string | PuzzleGoal)[]
+---@return PuzzleGoal[]
+function Puzzle.readGoals(goals)
+  local read = {}
+  for i, goal in ipairs(goals) do
+    if type(goal) == "table" then
+      read[i] = {kind = goal.kind, size = goal.size, text = goal.text}
+    else
+      read[i] = Puzzle.parseGoal(goal) or {kind = Puzzle.GOAL_KINDS.unknown, text = tostring(goal)}
+    end
+  end
+  return read
+end
+
+-- The goal a one-word puzzle type of a version 3 file stands for, an unknown goal for a word that is not a type
+---@param puzzleType string
+---@return PuzzleGoal[]
+function Puzzle.goalsOfLegacyType(puzzleType)
+  local kind = LEGACY_TYPE_TO_GOAL_KIND[puzzleType]
+  if kind then
+    return {{kind = kind}}
+  end
+  return {{kind = Puzzle.GOAL_KINDS.unknown, text = tostring(puzzleType)}}
+end
+
+-- The one-word type a goal list is the same as, so it plays and hashes like that type; the goals type for any other list
+---@param goals PuzzleGoal[]
+---@return PuzzleType
+function Puzzle.legacyTypeOfGoals(goals)
+  if #goals == 1 then
+    for puzzleType, kind in pairs(LEGACY_TYPE_TO_GOAL_KIND) do
+      if goals[1].kind == kind then
+        return puzzleType
+      end
+    end
+  end
+  return Puzzle.GOALS_TYPE
+end
+
+-- Whether the puzzle asks for at least one goal of the kind
+---@param kind PuzzleGoalKind
+---@return boolean
+function Puzzle:hasGoal(kind)
+  for _, goal in ipairs(self.goals) do
+    if goal.kind == kind then
+      return true
+    end
+  end
+  return false
+end
+
+-- How many times each size of the given kind is asked for
+---@param kind PuzzleGoalKind chain or combo
+---@return table<integer, integer>? counts nil if the puzzle has no goal of the kind
+function Puzzle:goalCountsBySize(kind)
+  local counts
+  for _, goal in ipairs(self.goals) do
+    if goal.kind == kind then
+      counts = counts or {}
+      counts[goal.size] = (counts[goal.size] or 0) + 1
+    end
+  end
+  return counts
+end
+
+-- The goal list as a puzzle file writes it
+---@return string[]
+function Puzzle:goalsToFile()
+  local written = {}
+  for i, goal in ipairs(self.goals) do
+    written[i] = Puzzle.goalToFile(goal)
+  end
+  return written
+end
 Puzzle.LEGAL_CHARACTERS = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "[", "]", "{", "}", "=" }
 
 Puzzle.PUZZLE_PROPERTY = {
@@ -250,7 +400,7 @@ end
 function Puzzle:fillMissingPanelsInPuzzleString(width, height)
   local puzzleString = self.stack
   local boardSizeInPanels = width * height
-  if self.puzzleType == Puzzle.PUZZLE_TYPES.clear then
+  if self:hasGoal(Puzzle.GOAL_KINDS.clear) then
     -- first fill up the currently started row
     local fillUpLength = (puzzleString:len() % width)
     if fillUpLength > 0 then
@@ -281,6 +431,27 @@ function Puzzle.randomizeColorsInPuzzleString(puzzleString, panelBuffer, garbage
   garbageBuffer = garbageBuffer and garbageBuffer:gsub("%d", newColorOrder) or ""
 
   return puzzleString, panelBuffer, garbageBuffer
+end
+
+-- Checks the goal list for validate
+---@return string problems what is wrong with the goals, empty if nothing is
+function Puzzle:goalProblems()
+  local problems = ""
+  if #self.goals == 0 then
+    problems = problems .. "\nA puzzle needs at least one goal in its puzzle type"
+  end
+  for _, goal in ipairs(self.goals) do
+    if goal.kind == Puzzle.GOAL_KINDS.unknown then
+      problems = problems .. "\nInvalid puzzle type '" .. tostring(goal.text)
+        .. "' detected, a goal is one of Empty Board, Clear, a chain like x4 or a combo like +6,"
+        .. " and the one word type of a version 3 file is one of " .. Puzzle.puzzleTypeNames()
+    elseif goal.kind == Puzzle.GOAL_KINDS.chain and goal.size < Puzzle.MIN_CHAIN_GOAL then
+      problems = problems .. "\nThe smallest chain is x" .. Puzzle.MIN_CHAIN_GOAL .. ", got x" .. goal.size
+    elseif goal.kind == Puzzle.GOAL_KINDS.combo and goal.size < Puzzle.MIN_COMBO_GOAL then
+      problems = problems .. "\nThe smallest combo is +" .. Puzzle.MIN_COMBO_GOAL .. ", got +" .. goal.size
+    end
+  end
+  return problems
 end
 
 ---@return boolean isValid
@@ -357,15 +528,12 @@ function Puzzle:validate()
     "\nGarbagePanelBuffer may only contain the colors 1-9, got " .. self.garbageBuffer
   end
 
-  if not Puzzle.PUZZLE_TYPES[self.puzzleType] then
+  if type(self.moves) ~= "number" or self.moves < 0 then
     errMessage = errMessage ..
-    "\nInvalid puzzle type detected, available puzzle types are: " .. Puzzle.puzzleTypeNames()
+    "\nMoves has to be a number of swaps, or 0 for no limit, but got " .. tostring(self.moves)
   end
 
-  if self.puzzleType == Puzzle.PUZZLE_TYPES.moves and (not tonumber(self.moves) or tonumber(self.moves) < 1 ) then
-    errMessage = errMessage ..
-    "\nInvalid number of moves detected, expecting a number greater than zero but instead got " .. self.moves
-  end
+  errMessage = errMessage .. self:goalProblems()
 
   if self.cursorStartLeft then
     if not (self.cursorStartLeft.row >= 1 and self.cursorStartLeft.row <= 12) or not (self.cursorStartLeft.column >= 1 and self.cursorStartLeft.column <= 5) then
@@ -378,11 +546,16 @@ function Puzzle:validate()
 end
 
 -- Helper function to convert a single puzzle to save data format
+---@param asLegacyType boolean? for a version 3 file, which names one type instead of listing goals
 ---@return table
-function Puzzle:getSaveData()
+function Puzzle:getSaveData(asLegacyType)
+  if not asLegacyType and self:hasGoal(Puzzle.GOAL_KINDS.legacyChain) then
+    error("Cannot save the puzzle as a list of goals: the chain type of a version 3 file is not a goal")
+  end
+
   ---@type table<string, any>
   local puzzleData = {
-    [Puzzle.PUZZLE_PROPERTY.TYPE] = self.puzzleType,
+    [Puzzle.PUZZLE_PROPERTY.TYPE] = asLegacyType and self.puzzleType or self:goalsToFile(),
     [Puzzle.PUZZLE_PROPERTY.START_TIMING] = Puzzle.START_TIMING_IN_FILE[self.startTiming],
     [Puzzle.PUZZLE_PROPERTY.MOVES] = self.moves,
     [Puzzle.PUZZLE_PROPERTY.STOP] = self.stopTime,
@@ -465,9 +638,12 @@ function Puzzle:toGameMode()
     mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.SWAPS] = self.moves
   end
 
-  if self.puzzleType == Puzzle.PUZZLE_TYPES.clear then
-    mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.HEALTH] = 0
-    mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.GARBAGE_BUFFER_EXCEEDED] = 0
+  local winConditions = mode.matchRules.stackWinConditions
+  local overConditions = mode.matchRules.stackOverConditions
+
+  if self:hasGoal(Puzzle.GOAL_KINDS.clear) then
+    overConditions[MatchRules.StackOverConditions.HEALTH] = 0
+    winConditions[MatchRules.StackWinConditions.GARBAGE_BUFFER_EXCEEDED] = 0
     mode.matchRules.stackSetupModifications.stopTime = self.stopTime
     mode.matchRules.stackSetupModifications.shakeTime = self.shakeTime
   else
@@ -475,12 +651,22 @@ function Puzzle:toGameMode()
       allowManualRaise = false,
       passiveRaise = false,
     }
-    if self.puzzleType == Puzzle.PUZZLE_TYPES.chain then
-      mode.matchRules.stackOverConditions[MatchRules.StackOverConditions.CHAIN] = false
-      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
-    elseif self.puzzleType == Puzzle.PUZZLE_TYPES.moves then
-      mode.matchRules.stackWinConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
-    end
+  end
+
+  if self:hasGoal(Puzzle.GOAL_KINDS.emptyBoard) or self:hasGoal(Puzzle.GOAL_KINDS.legacyChain) then
+    winConditions[MatchRules.StackWinConditions.MATCHABLE_PANELS] = 0
+  end
+  if self:hasGoal(Puzzle.GOAL_KINDS.legacyChain) then
+    overConditions[MatchRules.StackOverConditions.CHAIN] = false
+  end
+
+  winConditions[MatchRules.StackWinConditions.CHAINS] = self:goalCountsBySize(Puzzle.GOAL_KINDS.chain)
+  winConditions[MatchRules.StackWinConditions.COMBOS] = self:goalCountsBySize(Puzzle.GOAL_KINDS.combo)
+  if winConditions[MatchRules.StackWinConditions.CHAINS] or winConditions[MatchRules.StackWinConditions.COMBOS] then
+    overConditions[MatchRules.StackOverConditions.GOALS_UNREACHABLE] = true
+  elseif self:hasGoal(Puzzle.GOAL_KINDS.emptyBoard) and self.moves == 0 then
+    -- with a swap limit the puzzle ends the way it always has, without one a stranded color is the only thing that can end it
+    overConditions[MatchRules.StackOverConditions.GOALS_UNREACHABLE] = true
   end
 
   mode.matchRules.stackSetupModifications.behaviours.swapStallingMode = 0
@@ -520,7 +706,7 @@ end
 ---@return Puzzle
 function Puzzle.newPuzzleWithPuzzleString(puzzleString, originalPuzzle)
   local puzzle = Puzzle({
-    puzzleType = originalPuzzle.puzzleType,
+    goals = originalPuzzle.goals,
     stack = puzzleString,
     moves = originalPuzzle.moves,
     startTiming = originalPuzzle.startTiming,

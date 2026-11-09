@@ -316,3 +316,283 @@ local function clearPuzzleWithABufferTheBoardCannotRevealIsNeverWonTest()
 end
 
 clearPuzzleWithABufferTheBoardCannotRevealIsNeverWonTest()
+
+---@param puzzle Puzzle
+---@return Match, Stack
+local function startPuzzleMatch(puzzle)
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "controller",
+                                                                LevelPresets.getModern(10))
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+  return match, stack
+end
+
+local function runUntilEndedOrClock(match, stack, clock)
+  while not match:hasEnded() and stack.clock < clock do
+    match:run()
+  end
+end
+
+-- one swap lines up three across and three up the same column
+local FIVE_COMBO_STACK = "001000" .. "001000" .. "112100"
+-- one swap clears the twos, the ones above drop beside the one on the floor
+local TWO_CHAIN_STACK = "011000" .. "221200"
+
+local function theStackTalliesACombo()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.moves, moves = 1, stack = FIVE_COMBO_STACK,
+                         startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
+  local match, stack = startPuzzleMatch(puzzle)
+
+  stack:receiveConfirmedInput("AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 600))
+  runUntilEndedOrClock(match, stack, 300)
+
+  assert(stack.tally.combos[5] == 1, "the swap makes one combo of five")
+  assert(next(stack.tally.chains) == nil, "no chain was made")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+theStackTalliesACombo()
+
+local function theStackTalliesAChainByTheSizeItEndsAt()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.moves, moves = 1, stack = TWO_CHAIN_STACK,
+                         startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
+  local match, stack = startPuzzleMatch(puzzle)
+
+  stack:receiveConfirmedInput("AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 600))
+  runUntilEndedOrClock(match, stack, 400)
+
+  assert(stack.tally.chains[2] == 1, "the chain ended at x2")
+  assert(next(stack.tally.combos) == nil, "matches of three are not combos")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+theStackTalliesAChainByTheSizeItEndsAt()
+
+local function theTallyFollowsARollback()
+  local puzzle = Puzzle({puzzleType = Puzzle.PUZZLE_TYPES.moves, moves = 2, stack = FIVE_COMBO_STACK,
+                         startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
+  local match, stack = startPuzzleMatch(puzzle)
+
+  stack:receiveConfirmedInput("AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 600))
+  -- a one player puzzle match keeps no rollback copies, so the stack is stepped and saved by hand
+  while next(stack.tally.combos) == nil do
+    assert(stack.clock < 60, "the combo should be counted within a second")
+    StackReplayTestingUtils:simulateStack(stack, stack.clock + 1)
+  end
+  local countingFrame = stack.clock
+
+  assert(stack:rollbackRewindToFrame(countingFrame - 1, false))
+  assert(next(stack.tally.combos) == nil, "rolling back to before the match forgets the combo")
+  StackReplayTestingUtils:simulateStack(stack, countingFrame)
+  assert(stack.tally.combos[5] == 1, "resimulating counts it once, not twice")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+theTallyFollowsARollback()
+
+---@param goals string[]
+---@param stack string
+---@param moves integer
+---@return Match, Stack
+local function startGoalPuzzle(goals, stack, moves)
+  local puzzle = Puzzle({goals = goals, moves = moves, stack = stack, startTiming = Puzzle.START_TIMINGS.immediately,
+                         cursorStartLeft = {row = 1, column = 3}})
+  assert(puzzle:validate())
+  return startPuzzleMatch(puzzle)
+end
+
+local SWAP_THEN_WAIT = "AA" .. KeyDataEncoding.swap .. string.rep(KeyDataEncoding.idle, 900)
+-- the five combo board with a lone panel that no match can ever take
+local FIVE_COMBO_WITH_A_LEFTOVER_STACK = "001000" .. "001000" .. "112103"
+-- one swap makes a x2 chain and leaves three fours and three fives, enough colors for four matches in all
+local TWO_CHAIN_WITH_MATCHABLE_LEFTOVERS_STACK = "055000" .. "011054" .. "221244"
+-- a match of three and nothing else
+local THREE_MATCH_STACK = "110100"
+
+local function aComboGoalIsWonWithPanelsLeftOver()
+  local match, stack = startGoalPuzzle({"+5"}, FIVE_COMBO_WITH_A_LEFTOVER_STACK, 1)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(match:hasEnded(), "making the combo ends the puzzle")
+  assert(stack.game_over_clock <= 0, "the puzzle is won, the leftover panel does not matter")
+  assert(not stack:hasActivePanels(), "the win waits for the board to settle so the combo is seen")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aComboGoalIsWonWithPanelsLeftOver()
+
+local function aComboOfAnotherSizeDoesNotCount()
+  local match, stack = startGoalPuzzle({"+4"}, FIVE_COMBO_WITH_A_LEFTOVER_STACK, 1)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(stack.tally.combos[5] == 1)
+  assert(stack.game_over_clock > 0, "a +5 is not the +4 that was asked for, and the only swap is used")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aComboOfAnotherSizeDoesNotCount()
+
+local function aChainGoalIsWonByTheSizeTheChainEndsAt()
+  local match, stack = startGoalPuzzle({"x2"}, TWO_CHAIN_WITH_MATCHABLE_LEFTOVERS_STACK, 1)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(match:hasEnded())
+  assert(stack.game_over_clock <= 0, "the chain ended at x2, which is the goal")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aChainGoalIsWonByTheSizeTheChainEndsAt()
+
+local function aChainOfAnotherSizeDoesNotCount()
+  local match, stack = startGoalPuzzle({"x3"}, TWO_CHAIN_WITH_MATCHABLE_LEFTOVERS_STACK, 1)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(stack.tally.chains[2] == 1)
+  assert(stack.game_over_clock > 0, "x2 is not x3")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aChainOfAnotherSizeDoesNotCount()
+
+local function aRepeatedGoalHasToBeMadeThatManyTimes()
+  local match, stack = startGoalPuzzle({"x2", "x2"}, TWO_CHAIN_WITH_MATCHABLE_LEFTOVERS_STACK, 1)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(stack.tally.chains[2] == 1)
+  assert(stack.game_over_clock > 0, "one x2 chain of the two asked for, and no swap left")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aRepeatedGoalHasToBeMadeThatManyTimes()
+
+local function everyGoalHasToBeMet()
+  -- the five combo board with three fours and three fives beside it, so the chain stays within reach by panel count
+  local match, stack = startGoalPuzzle({"+5", "x2"}, "001055" .. "001054" .. "112144", 1)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(stack.tally.combos[5] == 1)
+  assert(stack.game_over_clock > 0, "the combo was made but the chain was not")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+everyGoalHasToBeMet()
+
+local function aGoalTheBoardCanNoLongerReachIsLostWithSwapsLeft()
+  local match, stack = startGoalPuzzle({"+4"}, THREE_MATCH_STACK, 0)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(match:hasEnded(), "an empty board cannot make a combo, so the puzzle is over though it has no swap limit")
+  assert(stack.game_over_clock > 0)
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aGoalTheBoardCanNoLongerReachIsLostWithSwapsLeft()
+
+local function aReachableGoalIsNotLostBeforeTheFirstSwap()
+  local match, stack = startGoalPuzzle({"+5"}, FIVE_COMBO_WITH_A_LEFTOVER_STACK, 0)
+  stack:receiveConfirmedInput(string.rep(KeyDataEncoding.idle, 200))
+  runUntilEndedOrClock(match, stack, 100)
+
+  assert(not match:hasEnded(), "five panels of one color are on the board, the combo can still be made")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aReachableGoalIsNotLostBeforeTheFirstSwap()
+
+local function aComboThatIsAlsoAChainLinkPaysForBothGoals()
+  -- the swap makes the +5 and the twos it drops make the x2: two matches and eight panels for both goals
+  local match, stack = startGoalPuzzle({"x2", "+5"}, "002000" .. "001000" .. "021000" .. "112100", 0)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(stack.tally.combos[5] == 1 and stack.tally.chains[2] == 1)
+  assert(match:hasEnded())
+  assert(stack.game_over_clock <= 0, "the combo was the chain's first link, the board never lacked panels for the goals")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aComboThatIsAlsoAChainLinkPaysForBothGoals()
+
+local function anEmptyBoardGoalIsLostOnceAColorIsStranded()
+  -- the swap matches three ones and leaves a fourth that nothing can ever take
+  local match, stack = startGoalPuzzle({"Empty Board"}, "110110", 0)
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(match:hasEnded(), "a lone panel can never be cleared, so the puzzle is over though it has no swap limit")
+  assert(stack.game_over_clock > 0)
+  StackReplayTestingUtils:cleanup(match)
+end
+
+anEmptyBoardGoalIsLostOnceAColorIsStranded()
+
+local function aGoalIsNotLostWhileThePanelsItNeedsAreStillToRise()
+  local puzzle = Puzzle({goals = {"Clear", "+4"}, stack = "110100", garbagePanelBuffer = "334344", panelBuffer = "565656222222",
+                         startTiming = Puzzle.START_TIMINGS.immediately})
+  assert(puzzle:validate())
+  local match, stack = startPuzzleMatch(puzzle)
+  stack:receiveConfirmedInput(string.rep(KeyDataEncoding.idle, 200))
+  runUntilEndedOrClock(match, stack, 30)
+
+  assert(not match:hasEnded(), "the board holds three ones, but six twos are still queued below it")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aGoalIsNotLostWhileThePanelsItNeedsAreStillToRise()
+
+---@param goals string[]
+---@param panelBuffer string
+---@return Match, Stack
+local function startGoalPuzzleWithPanelsBelow(goals, panelBuffer)
+  local puzzle = Puzzle({goals = goals, stack = THREE_MATCH_STACK, panelBuffer = panelBuffer,
+                         startTiming = Puzzle.START_TIMINGS.immediately, cursorStartLeft = {row = 1, column = 3}})
+  assert(puzzle:validate())
+  return startPuzzleMatch(puzzle)
+end
+
+local function panelsBelowABoardThatCannotRiseDoNotStrandAColor()
+  local match, stack = startGoalPuzzleWithPanelsBelow({"Empty Board"}, "234234")
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(match:hasEnded(), "the swap empties the board")
+  assert(stack.game_over_clock <= 0, "the pairs below the board never rise, so they cannot lose the puzzle")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+panelsBelowABoardThatCannotRiseDoNotStrandAColor()
+
+local function rowsQueuedBelowABoardThatCannotRiseDoNotDelayTheLoss()
+  local match, stack = startGoalPuzzleWithPanelsBelow({"+4"}, "565656222222")
+  stack:receiveConfirmedInput(SWAP_THEN_WAIT)
+  runUntilEndedOrClock(match, stack, 600)
+
+  assert(match:hasEnded(), "the queued rows never rise, so the empty board can never make the combo")
+  assert(stack.game_over_clock > 0)
+  StackReplayTestingUtils:cleanup(match)
+end
+
+rowsQueuedBelowABoardThatCannotRiseDoNotDelayTheLoss()
+
+local function garbageAboveTheTopRowIsNotLostBeforeTheFirstSwap()
+  -- a block resting above row 12 on a full column, and a pair of fives the block can still turn into a match
+  local column = "100000200000300000400000100000200000300000400000100000200000300000"
+  local puzzle = Puzzle({goals = {"Empty Board"}, moves = 0, stack = "[====]" .. column .. "455000",
+                         garbagePanelBuffer = "555555", startTiming = Puzzle.START_TIMINGS.immediately})
+  assert(puzzle:validate())
+  local match, stack = startPuzzleMatch(puzzle)
+  stack:receiveConfirmedInput(string.rep(KeyDataEncoding.idle, 200))
+  runUntilEndedOrClock(match, stack, 100)
+
+  assert(not match:hasEnded(), "the block above the board can still turn into the fives' third panel")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+garbageAboveTheTopRowIsNotLostBeforeTheFirstSwap()
