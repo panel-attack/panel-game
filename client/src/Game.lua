@@ -41,6 +41,7 @@ local DebugMenu = require("client.src.debug.DebugMenu")
 local Label = require("client.src.ui.Label")
 local UIElement = require("client.src.ui.UIElement")
 local NavigationStack = require("client.src.NavigationStack")
+local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 
 -- Provides a scale that is on .5 boundary to make sure it renders well.
 -- Useful for creating new canvas with a solid DPI
@@ -384,6 +385,75 @@ end
 
 function Game:onJoystickRemoved(joystick)
   self.input:onJoystickRemoved(joystick)
+end
+
+--- Opens a dropped replay in the browser without interrupting live games or online sessions.
+---@param file love.File
+---@return boolean accepted
+function Game:onFileDropped(file)
+  local navigation = self.navigationStack
+  local activeScene = navigation and navigation:getActiveScene()
+  if not activeScene or activeScene.name == "BootScene" or not self.localPlayer
+    or self.netClient.state ~= NetClient.STATES.OFFLINE or self.battleRoom
+    or (activeScene.match and activeScene.name ~= "ReplayGame") then
+    logger.warn("Could not open dropped replay: Game is loading, transitioning, online, or in a battle room")
+    if self.theme then
+      self.theme:playCancelSfx()
+    end
+    return false
+  end
+
+  local replay = ReplayBrowser.createFromReplayFile(file)
+  if not replay then
+    return false
+  end
+
+  local filename = file:getFilename()
+  local displayName = filename:match("[^/\\]+$") or filename
+  local browser
+  for _, scene in ipairs(navigation.scenes) do
+    if scene.name == "ReplayBrowser" then
+      browser = scene
+      break
+    end
+  end
+  if activeScene == browser then
+    browser:showReplay(replay, displayName)
+    return true
+  end
+
+  local matches = {}
+  for i = #navigation.scenes, 2, -1 do
+    local scene = navigation.scenes[i]
+    if scene == browser then
+      break
+    end
+    if scene.name == "ReplayGame" then
+      scene.match:abort()
+      matches[#matches + 1] = scene.match
+    end
+  end
+  if #matches > 0 then
+    SoundController:stopMusic()
+  end
+  local function showReplay()
+    for _, match in ipairs(matches) do
+      match:deinit()
+    end
+    if browser then
+      browser:showReplay(replay, displayName)
+    else
+      navigation:push(ReplayBrowser({replay = replay, filename = displayName}))
+    end
+  end
+  if browser then
+    navigation:popToName("ReplayBrowser", nil, showReplay)
+  elseif #navigation.scenes > 1 then
+    navigation:popToTop(nil, showReplay)
+  else
+    showReplay()
+  end
+  return true
 end
 
 -- Called every few fractions of a second to update the game

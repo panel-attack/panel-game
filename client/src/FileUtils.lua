@@ -128,34 +128,23 @@ function fileUtils.recursiveRemoveFiles(folder, targetName)
   end
 end
 
--- returns the table for the deserialized json at the specified file path
----@param file string|love.File a sandbox path or a dropped file
+--- Reads JSON from a file object, closing it after reading.
+---@param file love.File
 ---@param checkTrailingData boolean? reject non-whitespace after the JSON value
 ---@return table? # nil if the file could not be read or deserialization failed
 ---@return ("read"|"decode")? failure
-function fileUtils.readJsonFile(file, checkTrailingData)
-  local filename
-  local fileContent, info
-  if type(file) == "string" then
-    filename = file
-    if not fileUtils.exists(file) then
-      logger.debug("No file at specified path " .. file)
-      return nil, "read"
-    end
-    fileContent, info = love.filesystem.read(file)
-  else
-    filename = file:getFilename()
-    local opened, openError = file:open("r")
-    if not opened then
-      logger.warn("Could not open file " .. filename .. ": " .. tostring(openError))
-      return nil, "read"
-    end
-    fileContent, info = file:read()
-    local closed, closeError = file:close()
-    if not closed then
-      logger.warn("Could not close file " .. filename .. ": " .. tostring(closeError))
-      return nil, "read"
-    end
+function fileUtils.readJsonFromFile(file, checkTrailingData)
+  local filename = file:getFilename()
+  local opened, openError = file:open("r")
+  if not opened then
+    logger.warn("Could not open file " .. filename .. ": " .. tostring(openError))
+    return nil, "read"
+  end
+  local fileContent, info = file:read()
+  local closed, closeError = file:close()
+  if not closed then
+    logger.warn("Could not close file " .. filename .. ": " .. tostring(closeError))
+    return nil, "read"
   end
 
   if not fileContent then
@@ -172,6 +161,19 @@ function fileUtils.readJsonFile(file, checkTrailingData)
   end
   ---@cast value table
   return value
+end
+
+--- Reads JSON at a sandbox path using the same decoder as dropped files.
+---@param path string
+---@param checkTrailingData boolean?
+---@return table?
+---@return ("read"|"decode")? failure
+function fileUtils.readJsonFile(path, checkTrailingData)
+  if not fileUtils.exists(path) then
+    logger.debug("No file at specified path " .. path)
+    return nil, "read"
+  end
+  return fileUtils.readJsonFromFile(love.filesystem.newFile(path), checkTrailingData)
 end
 
 --returns a source, or nil if it could not find a file

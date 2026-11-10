@@ -2,11 +2,13 @@ Replay Files
 
 Opening a replay by drag and drop
 
-Drop a .json replay file onto the running game window while in an offline menu.
+Drop a replay file onto the running game window while in an offline menu.
+Files are loaded as JSON replays regardless of their filename extension.
 The replay details appear first; press confirm to watch it using the usual replay controls.
 The file is read in place, not copied into the replay library or modified.
 Dropping another replay during playback stops the current replay and shows the new replay's details.
-Invalid or unreadable files show an error without replacing the current screen or replay.
+Invalid or unreadable files play the cancel sound and log a warning without replacing the current screen or replay.
+Dropping from another offline menu returns to the existing replay browser, or opens it above the main menu.
 Malformed display metadata and invalid controller or touch inputs are rejected before stopping an existing replay.
 The replay browser uses the same file loading and validation as drag and drop.
 Validation checks replay data directly without starting a match, and accepts legacy touch idle frames.

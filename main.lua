@@ -14,7 +14,6 @@ local ReplayV3 = require("common.data.ReplayV3")
 require("common.lib.util")
 local consts = require("common.engine.consts")
 local system = require("client.src.system")
-local handleReplayFileDrop = require("client.src.ReplayFileDrop")
 
 local Game = require("client.src.Game")
 local SoundController = require("client.src.music.SoundController")
@@ -84,7 +83,7 @@ end
 ---@diagnostic disable-next-line: duplicate-set-field
 ---@param file love.File
 function love.filedropped(file)
-  handleReplayFileDrop(file)
+  GAME:onFileDropped(file)
 end
 
 -- Called every few fractions of a second to update the game

@@ -1,4 +1,3 @@
-local handleReplayFileDrop = require("client.src.ReplayFileDrop")
 local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 local NavigationStack = require("client.src.NavigationStack")
 local Scene = require("client.src.scenes.Scene")
@@ -24,9 +23,16 @@ local originalPrint = GraphicsUtil.print
 local originalInputDown = input.isDown
 local originalLastReplayPath = GAME.lastReplayPath
 local replayTestDirectory
-local messages = {}
+local cancelSounds = 0
+local originalCancelSfx = GAME.theme.playCancelSfx
 local displayed = {}
 local liveMatches = {}
+
+---@param file love.File
+---@return boolean
+local function handleReplayFileDrop(file)
+  return GAME:onFileDropped(file)
+end
 
 ---@return table
 local function makeReplayData()
@@ -86,7 +92,7 @@ local function resetNavigation()
   GAME.battleRoom = nil
   GAME.netClient.state = NetClient.STATES.OFFLINE
   input.isDown = {}
-  messages = {}
+  cancelSounds = 0
   displayed = {}
   return menu
 end
@@ -121,7 +127,7 @@ local function testDropShowsDetailsBeforePlaying()
   browser:draw()
   assertDisplayed(loc("rp_browser_info_header"))
   assertDisplayed("test-replay.json")
-  assert(#messages == 0)
+  assert(cancelSounds == 0)
 
   local scene = confirmReplay(browser)
   assert(scene.match.supportsPause and scene.match.renderDuringPause)
@@ -186,6 +192,40 @@ local function testDropIntoBrowserAndBackNavigation()
   assert(finishTransition() == menu)
 end
 
+local function testDropReturnsToBrowserFromOtherMenus()
+  local menu = resetNavigation()
+  GAME.navigationStack:push(testMenu("NestedOfflineMenu"))
+  finishTransition()
+  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
+  local browser = finishTransition()
+  if not browser then
+    browser = finishTransition()
+  end
+  assert(browser.name == "ReplayBrowser")
+  assert(#GAME.navigationStack.scenes == 2 and GAME.navigationStack.scenes[1] == menu,
+    "Opening a replay from another menu should return to the main menu before pushing the browser")
+
+  local scene = confirmReplay(browser)
+  local match = scene.match
+  local deinit = match.deinit
+  local deinitializations = 0
+  match.deinit = function(self)
+    deinitializations = deinitializations + 1
+    liveMatches[self] = nil
+    deinit(self)
+  end
+  GAME.navigationStack:push(testMenu("OfflineOverlayMenu"))
+  finishTransition()
+  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()), "from-overlay.txt")))
+  assert(match.engine.aborted)
+  assert(deinitializations == 0, "Replay cleanup must wait for the transition")
+  assert(finishTransition() == browser)
+  assert(deinitializations == 1)
+  assert(#GAME.navigationStack.scenes == 2, "Returning to the browser must remove intervening menus and playback")
+  browser:draw()
+  assertDisplayed("from-overlay.txt")
+end
+
 local function testRejectedFilesKeepTheCurrentScene()
   local invalidContents = {"", "{broken json", "null", "true", "42", "[]", "{}", '{"puzzles":[]}', "{} {}"}
   local malformed = makeReplayData()
@@ -202,22 +242,24 @@ local function testRejectedFilesKeepTheCurrentScene()
     local file, calls = droppedFile(contents)
     assert(not handleReplayFileDrop(file))
     assert(GAME.navigationStack:getActiveScene() == menu)
-    assert(#messages == 1 and messages[1] == loc("rp_drop_invalid"))
+    assert(cancelSounds == 1)
     assert(calls.closes == 1, "Invalid JSON must not leave the dropped file open")
   end
 
   for _, filename in ipairs({"replay.txt", "replay.json.bak", "replay"}) do
     resetNavigation()
-    local file, calls = droppedFile("{}", filename)
-    assert(not handleReplayFileDrop(file))
-    assert(calls.opens == 0 and messages[1] == loc("rp_drop_json_only"))
+    local file, calls = droppedFile(json.encode(makeReplayData()), filename)
+    assert(handleReplayFileDrop(file), "Valid replay contents must not require a .json extension")
+    assert(calls.opens == 1 and calls.closes == 1 and cancelSounds == 0)
+    finishTransition():draw()
+    assertDisplayed(filename)
   end
 
   for _, failure in ipairs({"open", "read", "close"}) do
     local menu = resetNavigation()
     local file, calls = droppedFile("{}", nil, failure)
     assert(not handleReplayFileDrop(file))
-    assert(GAME.navigationStack:getActiveScene() == menu and messages[1] == loc("rp_drop_read_error"))
+    assert(GAME.navigationStack:getActiveScene() == menu and cancelSounds == 1)
     assert(calls.closes == (failure == "open" and 0 or 1))
   end
 end
@@ -225,11 +267,11 @@ end
 ---@param replay table
 ---@param scene Scene
 local function assertRejectedReplay(replay, scene)
-  local messageCount = #messages
+  local priorCancels = cancelSounds
   local file, calls = droppedFile(json.encode(replay))
   assert(not handleReplayFileDrop(file), "Malformed replay should be rejected before changing scenes")
   assert(calls.closes == 1)
-  assert(#messages == messageCount + 1 and messages[#messages] == loc("rp_drop_invalid"))
+  assert(cancelSounds == priorCancels + 1)
   assert(GAME.navigationStack:getActiveScene() == scene, "Invalid replay should keep the current scene")
   if scene.name == "ReplayGame" then
     assert(not scene.match.ended and not scene.match.engine.aborted, "Invalid replay should not stop existing playback")
@@ -313,7 +355,7 @@ local function testUnavailableStatesDoNotReadTheFile()
       GAME.netClient.state = state
       local file, calls = droppedFile(json.encode(makeReplayData()))
       assert(not handleReplayFileDrop(file))
-      assert(calls.opens == 0 and messages[1] == loc("rp_drop_unavailable"))
+      assert(calls.opens == 0 and cancelSounds == 1)
     end
   end
   local blockers = {
@@ -335,7 +377,7 @@ local function testUnavailableStatesDoNotReadTheFile()
     block()
     local file, calls = droppedFile(json.encode(makeReplayData()))
     assert(not handleReplayFileDrop(file))
-    assert(calls.opens == 0 and messages[1] == loc("rp_drop_unavailable"))
+    assert(calls.opens == 0 and cancelSounds == 1)
     if GAME.battleRoom then
       GAME.battleRoom:shutdown()
     end
@@ -360,7 +402,8 @@ local function testLegacyReplayFiles()
     if filename:match("%.json$") then
       resetNavigation()
       local contents = assert(love.filesystem.read(path .. filename))
-      assert(ReplayBrowser.readReplayFile(path .. filename), "Could not read browser fixture " .. filename)
+      assert(ReplayBrowser.createFromReplayFile(love.filesystem.newFile(path .. filename)),
+        "Could not read browser fixture " .. filename)
       assert(handleReplayFileDrop(droppedFile(contents, filename)), "Could not open fixture " .. filename)
       finishTransition():draw()
       assertDisplayed(loc("rp_browser_info_header"))
@@ -395,7 +438,7 @@ local function testBrowserUsesSharedLoading()
   local browser = selectReplayFile(json.encode(makeReplayData()))
   assertDisplayed(loc("rp_browser_info_header"))
   assertDisplayed(path)
-  assert(#messages == 0)
+  assert(cancelSounds == 0)
   local scene = confirmReplay(browser)
   scene:update(1 / 60)
   assert(scene.match.engine.clock > 0, "A browser-selected replay should still play")
@@ -412,7 +455,7 @@ local function testBrowserUsesSharedLoading()
     assertDisplayed(loc("rp_browser_header"))
     assert(not displayed[loc("rp_browser_info_header")], "Invalid browser selections should not show replay details")
     assert(GAME.navigationStack:getActiveScene() == browser)
-    assert(#messages == 1 and messages[1] == loc("rp_drop_invalid"))
+    assert(cancelSounds == 1)
   end
 
   assert(love.filesystem.write(path, "{} {}"))
@@ -432,7 +475,7 @@ local function testLoadingDoesNotCreateMatch()
   end
   local success, err = pcall(function()
     assert(ReplayV3.validate(data))
-    assert(ReplayBrowser.readReplayFile(droppedFile(json.encode(data))))
+    assert(ReplayBrowser.createFromReplayFile(droppedFile(json.encode(data))))
     assert(handleReplayFileDrop(droppedFile(json.encode(data))))
   end)
   Match.createFromReplay = originalCreate
@@ -453,14 +496,15 @@ local function testBrowserPropagatesPlaybackFailure()
   assert(not success and tostring(err):find("Unexpected replay setup bug", 1, true),
     "Unexpected playback errors must propagate instead of being reported as invalid files")
   assert(GAME.navigationStack:getActiveScene() == browser)
-  assert(#messages == 0)
+  assert(cancelSounds == 0)
 end
 
 local function runTests()
-  love.window.showMessageBox = function(title, message, boxType)
-    assert(title == loc("rp_drop_error") and boxType == "warning")
-    messages[#messages + 1] = message
-    return true
+  love.window.showMessageBox = function()
+    error("Replay loading must not open a modal dialog")
+  end
+  GAME.theme.playCancelSfx = function()
+    cancelSounds = cancelSounds + 1
   end
   GraphicsUtil.print = function(text)
     displayed[text] = true
@@ -468,6 +512,7 @@ local function runTests()
   testDropShowsDetailsBeforePlaying()
   testReplacingPlaybackReusesBrowserAndCleansUp()
   testDropIntoBrowserAndBackNavigation()
+  testDropReturnsToBrowserFromOtherMenus()
   testRejectedFilesKeepTheCurrentScene()
   testRejectsMalformedDisplayMetadata()
   testRejectsInvalidInputSymbols()
@@ -491,6 +536,7 @@ GAME.navigationStack = originalNavigation
 GAME.battleRoom = originalRoom
 GAME.netClient.state = originalNetState
 love.window.showMessageBox = originalMessageBox
+GAME.theme.playCancelSfx = originalCancelSfx
 GraphicsUtil.print = originalPrint
 input.isDown = originalInputDown
 if replayTestDirectory then

@@ -39,10 +39,10 @@ local cursor_pos = 0
 local replay_id_top = 0
 
 --- Reads and validates a browser selection or dropped replay before it can replace the current scene.
----@param file string|love.File
+---@param file love.File
 ---@return ReplayV3?
-function ReplayBrowser.readReplayFile(file)
-  local data, failure = fileUtils.readJsonFile(file, true)
+function ReplayBrowser.createFromReplayFile(file)
+  local data = fileUtils.readJsonFromFile(file, true)
   local success, replay = pcall(function()
     assert(type(data) == "table", "Expected a JSON replay object")
     assert(data.replayVersion == nil or tonumber(data.replayVersion) == 2 or data.replayVersion == 3,
@@ -53,10 +53,9 @@ function ReplayBrowser.readReplayFile(file)
   end)
 
   if not success then
-    local filename = type(file) == "string" and file or file:getFilename()
+    local filename = file:getFilename()
     logger.warn("Could not load replay " .. filename .. ": " .. tostring(replay))
-    local messageKey = failure == "read" and "rp_drop_read_error" or "rp_drop_invalid"
-    love.window.showMessageBox(loc("rp_drop_error"), loc(messageKey), "warning")
+    GAME.theme:playCancelSfx()
     return nil
   end
   return replay
@@ -123,11 +122,9 @@ local function selectMenuItem(browser)
     local file_info = love.filesystem.getInfo(selection)
     if file_info then
       if file_info.type == "file" then
-        local replay = ReplayBrowser.readReplayFile(selection)
+        local replay = ReplayBrowser.createFromReplayFile(love.filesystem.newFile(selection))
         if replay then
           browser:showReplay(replay, selection)
-        else
-          GAME.theme:playCancelSfx()
         end
         return not not replay
       elseif file_info.type == "directory" then
