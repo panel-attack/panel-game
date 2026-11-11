@@ -159,7 +159,8 @@ local function testAPlayerLeavingShowsWhyInANotification()
 
     local notifications = GAME.notificationCenter.notifications
     assert(#notifications == 1, "the server saying why the room closed should show one notification, but showed " .. #notifications)
-    assert(notifications[1].label.text == "RemotePlayer left", "the notification should give the server's reason, but said " .. notifications[1].label.text)
+    assert(notifications[1].label.text == "RemotePlayer left",
+           "the notification should give the server's reason, but said " .. notifications[1].label.text)
     assert(notifications[1].label.translate == false, "the server's reason is not a localization key")
   end)
 end

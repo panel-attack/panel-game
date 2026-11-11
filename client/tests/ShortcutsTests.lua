@@ -2,7 +2,8 @@ local handleShortcuts = require("client.src.Shortcuts")
 local input = require("client.src.inputManager")
 local NotificationCenter = require("client.src.ui.NotificationCenter")
 
--- Runs test with the given keys held, a fresh notification center and the given stand-ins for love and the game in place, putting all of it back afterwards
+-- Runs test with the given keys held, a fresh notification center and the given stand-ins for love and the game in place,
+-- putting all of it back afterwards
 ---@param keys {allKeys: string[]?, pressed: string[]?} keys in allKeys.isDown and menu keys in isPressed
 ---@param standIns {target: table, key: string, value: any}[] fields replaced for the test
 ---@param test fun(center: NotificationCenter)

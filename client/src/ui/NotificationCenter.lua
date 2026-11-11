@@ -94,6 +94,7 @@ function NotificationCenter:takeStartDelay()
 end
 
 -- Runs the notifications' animations and takes away the ones that left
+---@param dt number seconds since the last update
 function NotificationCenter:updateSelf(dt)
   self.clock = self.clock + dt
   self.tweens:update(dt)
@@ -116,12 +117,16 @@ function NotificationCenter:removeFinished()
 end
 
 -- Never takes a touch, so a touch on a notification reaches the scene under it
+---@param x number screen x coordinate of the touch
+---@param y number screen y coordinate of the touch
 ---@return nil
 function NotificationCenter:getTouchedElement(x, y)
   return nil
 end
 
 -- Never hands a notification input, so showing one never takes it from the scene
+---@param inputs table input state table
+---@param dt number seconds since the last update
 ---@return boolean handled always false
 function NotificationCenter:handleFocusedInput(inputs, dt)
   return false
@@ -132,6 +137,7 @@ function NotificationCenter:skipNextDraw()
   self.skippingNextDraw = true
 end
 
+-- Draws the notifications unless skipNextDraw left them out of this frame
 function NotificationCenter:draw()
   if self.skippingNextDraw then
     self.skippingNextDraw = false
