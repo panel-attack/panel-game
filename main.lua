@@ -16,6 +16,7 @@ local consts = require("common.engine.consts")
 local system = require("client.src.system")
 
 local Game = require("client.src.Game")
+local SoundController = require("client.src.music.SoundController")
 -- move to load once global dependencies have been resolved
 GAME = Game()
 
@@ -72,6 +73,10 @@ end
 ---@diagnostic disable-next-line: duplicate-set-field
 function love.focus(f)
   GAME.focused = f
+  if f then
+    -- Changing the output in the OS usually takes focus from the game, and matches skip the periodic check.
+    SoundController:followDefaultPlaybackDevice()
+  end
 end
 
 -- Called every few fractions of a second to update the game
@@ -135,10 +140,11 @@ function love.draw()
       local key = statOrder[i]
       local value = stats[key]
       if value then
+        local text = tostring(value)
         if string.find(key, "memory") then
-          value = string.format("%.2f MB", value / 1024 / 1024)
+          text = string.format("%.2f MB", value / 1024 / 1024)
         end
-        love.graphics.printf(key .. ": " .. value, 0, height - i * 16, width, "right")
+        love.graphics.printf(key .. ": " .. text, 0, height - i * 16, width, "right")
       end
     end
   end

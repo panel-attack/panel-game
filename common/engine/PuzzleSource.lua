@@ -20,6 +20,11 @@ function(self, puzzleString, panelBuffer, garbageBuffer)
     self.panelBuffer = self.panelBuffer .. string.rep(9, 6 - self.panelBuffer:len() % 6)
   end
 
+  -- a partial last row would count as exceeding too early, so pad it with colorless panels
+  if self.garbagePanelBuffer:len() % 6 ~= 0 then
+    self.garbagePanelBuffer = self.garbagePanelBuffer .. string.rep(9, 6 - self.garbagePanelBuffer:len() % 6)
+  end
+
   self.panels = {}
 end)
 
@@ -210,6 +215,13 @@ function PuzzleSource:getGarbagePanelRowString(stack)
   local garbagePanelRow = string.sub(self.garbagePanelBuffer, 1, stack.width)
   self.garbagePanelBuffer = string.sub(self.garbagePanelBuffer, stack.width + 1)
   return garbagePanelRow
+end
+
+-- Whether rows the puzzle was given are still waiting to rise.
+-- The whole panel buffer is turned into panels with the starting board, once those are used up only filler rows follow
+---@return boolean
+function PuzzleSource:hasQueuedPanels()
+  return #self.panels > 0 or self.panelBuffer ~= ""
 end
 
 ---@param stack Stack

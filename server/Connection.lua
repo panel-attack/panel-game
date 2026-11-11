@@ -3,6 +3,7 @@ local logger = require("common.lib.logger")
 local NetworkProtocol = require("common.network.NetworkProtocol")
 local time = os.time
 local Queue = require("common.lib.Queue")
+local PingStats = require("common.network.PingStats")
 
 local TIME_OUT = 10
 
@@ -15,25 +16,32 @@ local TIME_OUT = 10
 ---@field leftovers string remaining data from the socket that hasn't been processed yet
 ---@field loggedIn boolean if there exists a player owning this connection somewhere
 ---@field lastCommunicationTime integer timestamp when the last message was received; for dropping the connection if heartbeats aren't returned
----@field lastPingTime integer when the last ping was sent
+---@field clock fun(): number precise time in seconds, for timing pings
+---@field nextPingTime number? clock time the next ping is due, nil until the first ping
+---@field pendingPingTimes Queue clock times of the pings still waiting for a reply, oldest first
+---@field pingStats PingStats the round trips timed on this connection, which its player reports
 ---@field incomingMessageQueue Queue
 ---@field outgoingMessageQueue Queue
 ---@field incomingInputQueue Queue
 ---@field sendRetryCount integer
 ---@field sendRetryLimit integer
 ---@field inputProcessor InputProcessor?
----@overload fun(socket: any, index: integer) : Connection
+---@overload fun(socket: any, index: integer, clock: fun(): number) : Connection
 local Connection = class(
 ---@param self Connection
 ---@param socket TcpSocket
 ---@param index integer
-  function(self, socket, index)
+---@param clock fun(): number precise time in seconds, for timing pings
+  function(self, socket, index, clock)
     self.index = index
     self.socket = socket
     self.leftovers = ""
     self.loggedIn = false
     self.lastCommunicationTime = time()
-    self.lastPingTime = self.lastCommunicationTime
+    self.clock = clock
+    self.nextPingTime = nil
+    self.pendingPingTimes = Queue()
+    self.pingStats = PingStats()
     self.incomingMessageQueue = Queue()
     self.outgoingMessageQueue = Queue()
     self.incomingInputQueue = Queue()
@@ -41,6 +49,9 @@ local Connection = class(
     self.sendRetryLimit = 5
   end
 )
+
+-- Seconds between pings, sent whether or not the client is talking so every connection keeps measuring its round trip
+Connection.PING_INTERVAL = 2
 
 -- dedicated method for sending JSON messages
 function Connection:sendJson(messageInfo)
@@ -72,6 +83,7 @@ function Connection:close()
   self.incomingMessageQueue:clear()
   self.outgoingMessageQueue:clear()
   self.incomingInputQueue:clear()
+  self.pendingPingTimes:clear()
   self.socket:close()
   self.socket = nil
 end
@@ -177,19 +189,32 @@ function Connection:update(t, canRead, canSend)
     end
   end
 
-  if t ~= self.lastCommunicationTime then
-    if t - self.lastCommunicationTime > TIME_OUT then
-      logger.info("Closing connection for " .. self.index .. ". Connection timed out (>10 sec)")
-      return false
-    elseif t > self.lastPingTime and t - self.lastCommunicationTime > 1 then
-      -- Request a ping to make sure the connection is still active
-      self:send(NetworkProtocol.serverMessageTypes.ping.prefix)
-      -- we don't want to ping for every run we're waiting for an answer
-      self.lastPingTime = t
-    end
+  if t - self.lastCommunicationTime > TIME_OUT then
+    logger.info("Closing connection for " .. self.index .. ". Connection timed out (>10 sec)")
+    return false
   end
 
+  self:pingIfDue()
+
   return true
+end
+
+-- Sends a ping when the interval has passed and remembers when, so the reply can be timed
+function Connection:pingIfDue()
+  local now = self.clock()
+  if self.nextPingTime == nil or now >= self.nextPingTime then
+    self:send(NetworkProtocol.serverMessageTypes.ping.prefix)
+    self.pendingPingTimes:push(now)
+    self.nextPingTime = now + Connection.PING_INTERVAL
+  end
+end
+
+-- Times a ping reply against the oldest unanswered ping; TCP keeps order and clients only send it in reply
+function Connection:recordPingReply()
+  if self.pendingPingTimes:len() > 0 then
+    local sentTime = self.pendingPingTimes:pop()
+    self.pingStats:addSample((self.clock() - sentTime) * 1000)
+  end
 end
 
 function Connection:processMessage(messageType, data)
@@ -203,7 +228,7 @@ function Connection:processMessage(messageType, data)
   elseif messageType == "H" then
     H(self, data)
   elseif messageType == "E" then
-    -- Nothing to do here, the fact we got a message from the client updates the lastCommunicationTime
+    self:recordPingReply()
   end
 end
 

@@ -538,4 +538,9 @@ function ClientStack:render(matchEnded)
   error("did not implement render")
 end
 
+-- Draws what belongs above the stack and above anything flying over it, such as pop effects and cards.
+-- The match calls it after every stack and telegraph has been drawn.
+function ClientStack:renderEffects()
+end
+
 return ClientStack

@@ -8,7 +8,10 @@
         // we obviously still have a lot of those :-(
         "lowercase-global",
         // LuaCATS ---@module annotation causes a luadoc error but we don't use luadoc
-        "luadoc-miss-module-name"
+        "luadoc-miss-module-name",
+        // the LÖVE stubs define callbacks as assignments so every love callback we write is a "duplicate",
+        // and we deliberately override functions to wrap or mock them
+        "duplicate-set-field"
     ],
     "diagnostics.globals": [
         "love",
@@ -28,7 +31,6 @@
         "assign-type-mismatch": "Any",
         "cast-local-type": "Any",
         "code-after-break": "Any",
-        "duplicate-set-field": "Any",
         "empty-block": "Any",
         "inject-field": "Any",
         "need-check-nil": "None", // TODO: Remove once all warnings are fixed

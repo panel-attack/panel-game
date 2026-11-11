@@ -61,7 +61,7 @@ function Grid:createElementAt(x, y, width, height, description, uiElement, noPad
 
   if gridElement.content.onSelect or gridElement.content.isFocusable then
     gridElement.onSelect = function(self, selector, inputSource)
-      if inputSource and self.content.isFocusable then
+      if self.content.isFocusable then
         GAME.theme:playValidationSfx()
         selector:focusChild(self.content, inputSource)
       else

@@ -581,6 +581,21 @@ local function isRollbackActive(stack)
   return stack.engine.framesBehind > GARBAGE_DELAY_LAND_TIME
 end
 
+-- Draws what goes over the stacks once every stack is on screen: first every telegraph, because attack sprites fly over
+-- the receiving stack, then every stack's cards and pop effects, which stay readable over the sprites.
+-- Scenes that draw the stacks themselves call this after them.
+function ClientMatch:renderAttacksAndEffects()
+  for _, stack in ipairs(self.stacks) do
+    if stack.garbageTarget then
+      Telegraph:render(stack, stack.garbageTarget)
+    end
+  end
+
+  for _, stack in ipairs(self.stacks) do
+    stack:renderEffects()
+  end
+end
+
 function ClientMatch:render()
   if config.show_fps and #self.stacks > 1 then
     local drawY = 23
@@ -644,11 +659,9 @@ function ClientMatch:render()
       if stack.player or stack.engine.healthEngine then
         stack:render(self.engine.ended)
       end
-
-      if stack.garbageTarget then
-        Telegraph:render(stack, stack.garbageTarget)
-      end
     end
+
+    self:renderAttacksAndEffects()
 
     -- Draw VS HUD
     if self.stackInteraction == GameModes.StackInteractions.VERSUS or self.replay.metadata.gameModeName == "VS" then

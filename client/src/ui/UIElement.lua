@@ -21,7 +21,7 @@ local logger = require("common.lib.logger")
 ---@field onDrag function? touch callback for when the mouse touching the element is dragged across the screen
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
----@field isFocusable boolean true if selecting this element focuses it, so it receives the selecting input source's inputs until it yields focus; false if selecting it only runs its onSelect
+---@field isFocusable boolean true if selecting this element focuses it (see setFocusable)
 ---@field focusedChild table<InputSource, UiElement> per input source, the element this one has handed its inputs to
 ---@field focusCallbacks table<InputSource, function?> per input source, what to run when the focused child gives its focus back
 ---@field focusedBy table<InputSource, true> the input sources that currently have this element focused
@@ -291,7 +291,8 @@ function UIElement:receiveInputsChild(inputSource, dt)
   end
 end
 
----Sets whether selecting this element focuses it, so it receives the selecting input source's inputs until it yields focus, rather than only running its onSelect
+---Sets whether selecting this element focuses it, so it receives the selecting input source's inputs until it yields,
+---rather than only running its onSelect
 ---@param isFocusable boolean
 function UIElement:setFocusable(isFocusable)
   self.isFocusable = isFocusable

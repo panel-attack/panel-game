@@ -80,6 +80,8 @@ function RunTimeGraph:draw()
   love.graphics.scale(GAME.canvasXScale, GAME.canvasYScale)
 
   BarGraph.drawGraphs(self.graphs)
+  -- LuaJIT supports "isrunning" but LuaLS only knows it for Lua 5.4
+  ---@diagnostic disable-next-line: param-type-mismatch
   if not collectgarbage("isrunning") then
     self.memAllocGraph:draw()
   end

@@ -11,6 +11,7 @@ local PuzzleHelpDisplay = require("client.src.ui.PuzzleHelpDisplay")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
 local PuzzleSet = require("client.src.PuzzleSet")
 local MultibarElement = require("client.src.ui.MultibarElement")
+local ui = require("client.src.ui")
 
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
@@ -191,9 +192,11 @@ function PuzzleGame:customLoad()
     })
     self.uiRoot:addChild(self.puzzleGoalDisplay)
     
+    -- a goal box with cards and several rows reaches past where the help box normally sits
+    local goalDisplayBottom = self.puzzleGoalDisplay.y + self.puzzleGoalDisplay.height
     self.puzzleHelpDisplay = PuzzleHelpDisplay({
       x = stackRightEdge + 2,
-      y = 490,
+      y = math.max(490, goalDisplayBottom + 8),
       width = 0,
       height = 0,
       puzzle = currentPuzzle,
@@ -258,6 +261,22 @@ end
 
 function PuzzleGame:readyToProceedToNextScene()
   return tableUtils.trueForAny(self.inputConfiguration.isDown, function(key) return key end)
+end
+
+-- Adds a "Skip for now" pause menu item that moves the current puzzle to the end of the session's queue
+-- Only offered while other puzzles remain, as there is nothing to skip ahead to otherwise
+---@return MenuItem[]
+function PuzzleGame:customPauseMenuItems()
+  if not (self.puzzleSetIterator and self.puzzleSetIterator:hasPuzzlesAfterCurrent()) then
+    return {}
+  end
+
+  return {
+    ui.MenuItem.createButtonMenuItem("pause_skip_puzzle", nil, true, function()
+      GAME.theme:playValidationSfx()
+      self:skipPuzzle()
+    end),
+  }
 end
 
 function PuzzleGame:startNextScene()
@@ -440,7 +459,20 @@ end
 
 function PuzzleGame:resetPuzzle()
   self:savePuzzleRecordResult(false)
+  self:restartAtCurrentPuzzle()
+end
 
+-- Moves the current puzzle to the end of this session's queue and continues with the next one
+-- The reordering only lasts for this session, the puzzle menu builds a fresh iterator when returning to it
+function PuzzleGame:skipPuzzle()
+  local deferred = self.puzzleSetIterator:deferCurrentPuzzle()
+  assert(deferred, "Tried to skip the last remaining puzzle of the session")
+  self:restartAtCurrentPuzzle()
+end
+
+-- Aborts the running match and starts a fresh one on the iterator's current puzzle without showing the game over text
+-- Callers are responsible for recording a result and for moving the iterator beforehand if needed
+function PuzzleGame:restartAtCurrentPuzzle()
   -- Mark that we're resetting to avoid showing "you lose" text
   self.isResetting = true
 

@@ -15,14 +15,14 @@ The contents of each puzzle file should be formatted something like this:
 
 ```jsonc
 {
-  "Version": 3,
+  "Version": 4,
   "Puzzle Sets": [
     {
       "Set Name": "Name of Puzzle Set",
       "Puzzles": [
         {
-          "Puzzle Type": "chain",
-          "StartTiming": "countdown",
+          "Puzzle Type": ["x2", "+4"],
+          "StartTiming": "Countdown",
           "Moves": 0,
           "Stack":
             "040000
@@ -34,7 +34,7 @@ The contents of each puzzle file should be formatted something like this:
           }
         },
         {
-          "Puzzle Type": "clear",
+          "Puzzle Type": ["Clear"],
           "Moves": 0,
           "Stack":
            "
@@ -50,7 +50,7 @@ The contents of each puzzle file should be formatted something like this:
           122[=]
           245156
 		      325363",
-          "StartTiming": "firstSwap",
+          "StartTiming": "First Swap",
           "Stop": 60,
           "Shake": 0
         },
@@ -62,7 +62,11 @@ The contents of each puzzle file should be formatted something like this:
 
 ## Version Information
 
-Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzzle Sets" for organization purposes.
+Version 4 is the current version. "Puzzle Type" is a list of goals, which is how a puzzle asks for a chain or a combo of an exact size.
+
+In a version 3 file, "Puzzle Type" is one word ("moves", "chain", or "clear") instead of a list. A version 3 file still loads and plays by its own rules, and it keeps its version number and its one-word type when a puzzle in it is saved. Version 3 also introduced recursive "Puzzle Sets" for organization.
+
+A "clear" puzzle, or a "Clear" goal, uses its "GarbagePanelBuffer" for the panels the player sees, and is won by the first revealed row that needs more panels than the buffer holds. Without a buffer, the first revealed row wins.
 
 ## Field Descriptions
 
@@ -75,27 +79,38 @@ Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzz
 ### Puzzle Fields
 
 #### Puzzle Type
-**"Puzzle Type"** should be one of the following:
-- **"moves"** - all panels need to be cleared in the set number of moves
-- **"chain"** - all panels need to be cleared once the first chain ends, and there must be a chain
-- **"clear"** - all garbage on the field needs to be cleared before health runs out
+**"Puzzle Type"** is the list of goals the puzzle asks for. The puzzle is won once every goal in the list is met and the board has come to rest, and it is lost as soon as a goal can no longer be met. Each goal is one of:
+- **"Empty Board"** - no colored panel is left
+- **"Clear"** - garbage must be revealed past the end of the "GarbagePanelBuffer" before health runs out
+- **"x4"** - a chain that ends at exactly x4. Any size from x2 up can be asked for. A chain that ends at x3 or runs on to x5 does not count.
+- **"+6"** - a match of exactly 6 panels. Any size from +4 up can be asked for. A bigger or smaller combo does not count.
+
+Any goals can be listed together, for example `["Empty Board", "x3", "+5"]`. A goal listed twice has to be made twice: `["x2", "x2"]` asks for two separate x2 chains. In-game, the goal box shows a card for every chain and combo goal and marks each one as it is made.
+
+A puzzle with a chain or combo goal is lost once the panels left on the board cannot make it anymore, even if it has no move limit. An "Empty Board" puzzle without a move limit is lost once a color is left with fewer than three panels. Neither is judged while garbage is on the board or rows from the panel buffer are still to rise. A puzzle without "Clear" does not rise.
+
+In a version 3 file, "Puzzle Type" is one word instead:
+- **"moves"** - the same as `["Empty Board"]`
+- **"clear"** - the same as `["Clear"]`
+- **"chain"** - all panels need to be cleared once the first chain ends, and there must be a chain. A goal list has no spelling for this rule.
 
 #### Other Fields
 - **"Moves"** - the number of moves allowed to complete the puzzle
   - Set to 0 for unlimited moves (no move limit)
-  - **Important**: "moves" type puzzles must have a value greater than 0
 - **"Stack"** - the starting arrangement of the panels, see below
 
 #### Start Timing
 **"StartTiming"** specifies when the simulation of the Stack starts:
-- **"firstSwap"** - Game physics are on hold until the first swap. The player can move normally.
-- **"firstInput"** - All game physics are on hold until the first player input.
-- **"countdown"** - The game starts after a 3 second countdown
-- **"immediately"** - Full simulation starts with no delay
+- **"First Swap"** - Game physics are on hold until the first swap. The player can move normally.
+- **"First Input"** - All game physics are on hold until the first player input.
+- **"Countdown"** - The game starts after a 3 second countdown
+- **"Immediately"** - Full simulation starts with no delay
+
+A puzzle with an invalid or unrecognized StartTiming will fail to load, and a warning will be logged.
 
 If no start timing is given, a suitable start timing is selected based on puzzle type:
-- "clear" and "chain" puzzles will use "firstInput" if a cursor start position is given and "firstSwap" if not
-- "moves" puzzles will start immediately
+- a puzzle whose only goal is "Empty Board" will start immediately
+- every other puzzle will use "First Input" if a cursor start position is given and "First Swap" if not
 
 #### Optional Fields
 - **"Stop"** - specifies how many frames of stop time are initially granted to the player
@@ -110,6 +125,10 @@ If no start timing is given, a suitable start timing is selected based on puzzle
 - **"Help Description"** - optional text that explains the puzzle pattern or provides hints to the player
   - Format: String describing the puzzle mechanic or strategy
   - Displayed when the player requests help for the puzzle
+- **"Old UUIDs"** - optional list of the IDs the puzzle had before its data was changed, oldest first
+  - Format: `["<oldest id>", "<newer id>"]`
+  - A puzzle's ID is worked out from its data, so changing the data gives it a new one and the player's results saved under the old ID stop counting. Listing the old ID carries those results over to the new one.
+  - Only set it when the puzzle plays the same as before and its data changed only because the puzzle format changed. A puzzle you changed in a way that plays differently is a new puzzle, and old results shouldn't count for it.
 
 #### Panel Buffers
 **"PanelBuffer"** specifies the panels that should appear if the player is raising the stack.
@@ -118,7 +137,7 @@ If not specified these will be unmatchable grey panels. Outside of clear puzzles
 
 **"GarbagePanelBuffer"** specifies the panel that should appear from cleared garbage.
 
-For each cleared row of garbage, the first 6 colors are taken from the string and assigned to the positions in the row accordingly.
+For each cleared row of garbage, the first 6 colors are taken from the string and assigned to positions across the row. Exactly 6 colors are used for every row, even if the garbage block is not 6 wide. Only panel colors 1–9 are allowed; a revealed row cannot contain empty cells. A partial last row is filled with grey (9) panels. For a clear puzzle, the buffer is also the goal: enter only the rows the player should see, and the next row revealed after them wins. Every board row that turns into panels takes one buffer row, so a clear that reveals two blocks on different rows takes two. A puzzle won on its third revealed row has a buffer of 2 rows.
 
 If a piece of garbage did not fill out an entire row only the colors in the spots with garbage will appear, e.g.:
 
@@ -131,7 +150,7 @@ If a piece of garbage did not fill out an entire row only the colors in the spot
 
 If the garbagePanelBuffer is "123456123456", the bottom garbage will transform into 3456 and the top garbage will transform into 1234.
 
-Afterwards the garbagePanelBuffer will be empty. An empty buffer means that only grey unmatchable panels will appear from garbage.
+Afterwards the garbagePanelBuffer will be empty. In a clear puzzle the next revealed row wins; in other puzzles an empty buffer means that only grey unmatchable panels will appear from garbage.
 
 ## JSON Formatting Notes
 

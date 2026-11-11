@@ -44,6 +44,25 @@ function PuzzleSetIterator:totalPuzzleCount()
   return #self.puzzleIndicesList
 end
 
+-- Returns whether there are puzzles left to play after the current one
+---@return boolean
+function PuzzleSetIterator:hasPuzzlesAfterCurrent()
+  return self.puzzleIndicesList ~= nil and self.currentIndex >= 1 and self.currentIndex < #self.puzzleIndicesList
+end
+
+-- Moves the current puzzle to the end of the iteration so it comes up again after all other remaining puzzles
+-- Afterwards, currentPuzzle returns the puzzle that previously came next
+---@return boolean deferred false if there are no other remaining puzzles to move the current one behind
+function PuzzleSetIterator:deferCurrentPuzzle()
+  if not self:hasPuzzlesAfterCurrent() then
+    return false
+  end
+
+  local indices = table.remove(self.puzzleIndicesList, self.currentIndex)
+  self.puzzleIndicesList[#self.puzzleIndicesList + 1] = indices
+  return true
+end
+
 ---Factory method to create iterator for specific puzzle set with breadth-first ordering
 ---@param puzzleSet PuzzleSet
 ---@param puzzleSetIndices integer[]

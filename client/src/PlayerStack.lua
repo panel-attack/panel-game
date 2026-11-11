@@ -62,7 +62,7 @@ function(self, args)
   --self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
 
-  self.analytic = AnalyticsInstance(self.is_local)
+  self.analytic = AnalyticsInstance(self.is_local, self.engine.tally)
   self.drawsAnalytics = true
 
   -- level and difficulty only for icon display and score saving, all actual data is in levelData
@@ -941,13 +941,20 @@ function PlayerStack:render(matchEnded, xOffset, yOffset)
   self:render_cursor(shakeOffset, matchEnded)
   self:drawCountdown()
   self:resetDrawArea()
+  prof.pop("Stack:render")
+end
+
+-- Draws the pop effects and cards over the stack and over any attack sprite flying across it,
+-- and the debug overlay over all of that so it stays readable
+function PlayerStack:renderEffects()
+  if self.canvas == nil then
+    return
+  end
 
   self:drawPopEffects()
   self:drawCards()
-
-  self:drawDebugPanels(shakeOffset)
+  self:drawDebugPanels(self:currentShakeOffset() / self.gfxScale)
   self:drawDebug()
-  prof.pop("Stack:render")
 end
 
 function PlayerStack:drawRating()

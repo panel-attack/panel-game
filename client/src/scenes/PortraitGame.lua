@@ -1,7 +1,6 @@
 local GameBase = require("client.src.scenes.GameBase")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
-local Telegraph = require("client.src.graphics.Telegraph")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
@@ -164,11 +163,9 @@ function PortraitGame:draw()
           self:drawMultibar(stack)
         end
       end
-
-      if stack.garbageTarget then --and stack.garbageTarget.is_local and stack.garbageTarget.inputMethod == "touch" then
-        Telegraph:render(stack, stack.garbageTarget)
-      end
     end
+
+    self.match:renderAttacksAndEffects()
   end
 
   if self.match.ended then

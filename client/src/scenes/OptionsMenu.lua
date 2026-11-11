@@ -1,6 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
-local inputManager = require("client.src.inputManager")
 local save = require("client.src.save")
 local DebugMenu = require("client.src.debug.DebugMenu")
 local consts = require("common.engine.consts")
@@ -46,10 +45,6 @@ function OptionsMenu:loadScreens()
   menus.aboutPanels = self:loadInfoScreen(save.read_txt_file("docs/panels.md"))
   menus.aboutAttackFiles = self:loadInfoScreen(save.read_txt_file("docs/training.txt"))
   menus.installingMods = self:loadInfoScreen(save.read_txt_file("docs/installMods.md"))
-
-  if #menus.modifyUserIdMenu.menuItems == 1 then
-    menus.baseMenu:removeMenuItemAtIndex(7)
-  end
 
   return menus
 end
@@ -539,14 +534,22 @@ function OptionsMenu:loadAboutMenu()
   return menu
 end
 
+--- Builds the list of servers whose user ID can be modified.
+--- The main server is always listed so an existing ID can be entered before the first login on a new device.
+---@return Menu
 function OptionsMenu:loadModifyUserIdMenu()
   local modifyUserIdOptions = {}
+  local function addServerItem(serverIp)
+    modifyUserIdOptions[#modifyUserIdOptions + 1] = ui.MenuItem.createButtonMenuItem(serverIp, nil, false, function()
+        GAME.navigationStack:push(SetUserIdMenu({serverIp = serverIp}))
+      end)
+  end
+
+  addServerItem(consts.SERVER_LOCATION)
   local userIDDirectories = fileUtils.getFilteredDirectoryItems("servers")
   for i = 1, #userIDDirectories do
-    if fileUtils.exists("servers/" .. userIDDirectories[i] .. "/user_id.txt") then
-      modifyUserIdOptions[#modifyUserIdOptions + 1] = ui.MenuItem.createButtonMenuItem(userIDDirectories[i], nil, false, function()
-          GAME.navigationStack:push(SetUserIdMenu({serverIp = userIDDirectories[i]}))
-        end)
+    if userIDDirectories[i] ~= consts.SERVER_LOCATION and fileUtils.exists("servers/" .. userIDDirectories[i] .. "/user_id.txt") then
+      addServerItem(userIDDirectories[i])
     end
   end
   modifyUserIdOptions[#modifyUserIdOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()

@@ -13,6 +13,9 @@ local ANIMATION_STATES = {
   "garbagePop"
 }
 
+-- the size a panel is drawn at on the 1x canvas
+local EXPECTED_PANEL_SIZE = 48
+
 local OPTIONAL_ANIMATION_STATES = {
   "garbageBounce",
   "panic",
@@ -156,10 +159,10 @@ function panels_init()
   end
 end
 
-local function load_panel_img(path, name)
-  local img = GraphicsUtil.loadImageFromSupportedExtensions(path .. "/" .. name)
+local function load_panel_img(path, name, expectedWidth, expectedHeight)
+  local img = GraphicsUtil.loadImageFromSupportedExtensions(path .. "/" .. name, expectedWidth, expectedHeight)
   if not img then
-    img = GraphicsUtil.loadImageFromSupportedExtensions("client/assets/panels/__default/" .. name)
+    img = GraphicsUtil.loadImageFromSupportedExtensions("client/assets/panels/__default/" .. name, expectedWidth, expectedHeight)
 
     if not img then
       error("Could not find default panel image")
@@ -188,12 +191,15 @@ function Panels:loadSheets()
   end
 
   self.size = self.sheets[1]:getHeight() / maxRowUsed
+  for _, sheet in ipairs(self.sheets) do
+    GraphicsUtil.setFilterForExpectedSize(sheet, nil, EXPECTED_PANEL_SIZE * maxRowUsed)
+  end
 end
 
 --
 function Panels:convertSinglesToSheetTexture(images, animationStates)
   local dpiscale = images[1]:getDPIScale()
-  local filterMin, filterMag = images[1]:getFilter()
+  local filter = GraphicsUtil.combinedFilter(images)
 
   local image = GraphicsUtil.renderToTexture(
     self.size * 10,
@@ -215,8 +221,8 @@ function Panels:convertSinglesToSheetTexture(images, animationStates)
       end
     end,
     dpiscale,
-    filterMin,
-    filterMag
+    filter,
+    filter
   )
 
   return image
@@ -272,7 +278,7 @@ function Panels:loadSingles()
     -- and likewise there are fallbacks up to panel 7
     for i = 1, math.max(maxIndex, 7) do
       if indexToFile[i] or i <= 7 then
-        images[color][i] = load_panel_img(self.path, indexToFile[i] or ("panel" .. color .. i))
+        images[color][i] = load_panel_img(self.path, indexToFile[i] or ("panel" .. color .. i), EXPECTED_PANEL_SIZE, EXPECTED_PANEL_SIZE)
         if images[color][i] then
           self.size = math.max(images[color][i]:getWidth(), self.size) -- for scaling
         end
@@ -324,14 +330,14 @@ function Panels:load()
 
   self:validateConfig()
 
-  self.greyPanel = load_panel_img(self.path, "panel00")
+  self.greyPanel = load_panel_img(self.path, "panel00", EXPECTED_PANEL_SIZE, EXPECTED_PANEL_SIZE)
   self.size = self.greyPanel:getWidth()
 
   self.images.metals = {
-    left = load_panel_img(self.path, "metalend0"),
-    mid = load_panel_img(self.path, "metalmid"),
-    right = load_panel_img(self.path, "metalend1"),
-    flash = load_panel_img(self.path, "garbageflash")
+    left = load_panel_img(self.path, "metalend0", EXPECTED_PANEL_SIZE / 2, EXPECTED_PANEL_SIZE),
+    mid = load_panel_img(self.path, "metalmid", EXPECTED_PANEL_SIZE / 2, EXPECTED_PANEL_SIZE),
+    right = load_panel_img(self.path, "metalend1", EXPECTED_PANEL_SIZE / 2, EXPECTED_PANEL_SIZE),
+    flash = load_panel_img(self.path, "garbageflash", EXPECTED_PANEL_SIZE, EXPECTED_PANEL_SIZE)
   }
 
 

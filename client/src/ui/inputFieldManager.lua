@@ -2,7 +2,8 @@ local input = require("client.src.inputManager")
 
 -- receives love events and passes them to the correct inputField object
 local inputFieldManager = {
-  inputFields = {},
+  -- weak so a field leaving with its scene does not have to unregister first
+  inputFields = setmetatable({}, {__mode = "v"}),
   selectedInputField = nil
 }
 

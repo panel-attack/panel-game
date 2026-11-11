@@ -237,6 +237,47 @@ function PuzzleSetIteratorTests.testGetPuzzleFromIndices()
   assert(invalidDeepPuzzle == nil, "Should return nil for invalid deep indices")
 end
 
+local function createThreePuzzleIterator()
+  local puzzle1 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 1, stack = "1111111111111111"})
+  local puzzle2 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 2, stack = "2222222222222222"})
+  local puzzle3 = Puzzle({puzzleType = "moves", startTiming = "immediately", moves = 3, stack = "3333333333333333"})
+  return PuzzleSetIterator(PuzzleSet("Test Set", "Test description", {puzzle1, puzzle2, puzzle3}))
+end
+
+function PuzzleSetIteratorTests.testDeferCurrentPuzzle()
+  local iterator = createThreePuzzleIterator()
+
+  assert(not iterator:hasPuzzlesAfterCurrent(), "Nothing is current before the iteration started")
+  assert(not iterator:deferCurrentPuzzle(), "Should not defer before the iteration started")
+
+  iterator:nextPuzzle()
+  assert(iterator:hasPuzzlesAfterCurrent(), "Puzzles 2 and 3 remain after puzzle 1")
+  assert(iterator:deferCurrentPuzzle(), "Should defer puzzle 1")
+  assert(iterator:currentPuzzle()[1] == 2, "Puzzle 2 should become current after deferring puzzle 1")
+
+  assert(iterator:nextPuzzle()[1] == 3, "Puzzle 3 should still come next")
+  assert(iterator:nextPuzzle()[1] == 1, "Deferred puzzle 1 should come up again at the end")
+  assert(iterator:nextPuzzle() == nil, "Should end after the deferred puzzle")
+  assert(iterator:totalPuzzleCount() == 3, "Deferring should not change the number of puzzles")
+end
+
+function PuzzleSetIteratorTests.testDeferLastRemainingPuzzle()
+  local iterator = createThreePuzzleIterator()
+
+  iterator:nextPuzzle()
+  iterator:nextPuzzle()
+  assert(iterator:deferCurrentPuzzle(), "Should defer puzzle 2 behind puzzle 3")
+  assert(iterator:currentPuzzle()[1] == 3, "Puzzle 3 should become current")
+  assert(iterator:deferCurrentPuzzle(), "Should defer puzzle 3 behind the previously deferred puzzle 2")
+  assert(iterator:currentPuzzle()[1] == 2, "Puzzle 2 should come back around")
+
+  assert(iterator:hasPuzzlesAfterCurrent(), "Puzzle 3 remains after puzzle 2")
+  assert(iterator:nextPuzzle()[1] == 3, "Puzzle 3 should come last")
+  assert(not iterator:hasPuzzlesAfterCurrent(), "Nothing remains after the last puzzle")
+  assert(not iterator:deferCurrentPuzzle(), "Should not defer the last remaining puzzle")
+  assert(iterator:currentPuzzle()[1] == 3, "Failed defer should leave the current puzzle unchanged")
+end
+
 -- Run the tests
 PuzzleSetIteratorTests.testClassExists()
 PuzzleSetIteratorTests.testNextPuzzleMethod()
@@ -246,5 +287,7 @@ PuzzleSetIteratorTests.testMakePuzzleSetIteratorWithSpecificChildSet()
 PuzzleSetIteratorTests.testMakePuzzleSetIteratorWithDeepNesting()
 PuzzleSetIteratorTests.testMakeTrainingOrderIterator()
 PuzzleSetIteratorTests.testGetPuzzleFromIndices()
+PuzzleSetIteratorTests.testDeferCurrentPuzzle()
+PuzzleSetIteratorTests.testDeferLastRemainingPuzzle()
 
 return PuzzleSetIteratorTests

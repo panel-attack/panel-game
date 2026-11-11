@@ -24,14 +24,14 @@ local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
 
 local function resetLobbyData(self)
   ---@class PersonalizedLobbyDataV2
+  ---@field players table<PublicPlayerID, LobbyPlayerV2>
+  ---@field outgoingChallenges table<PublicPlayerID, table<GameModeID, boolean>>
+  ---@field incomingChallenges table<PublicPlayerID, table<GameModeID, boolean>>
+  ---@field rooms table<roomNumber, LobbyRoomV2>
   self.lobbyDataV2 = {
-    ---@type table<PublicPlayerID, LobbyPlayerV2>
     players = {},
-    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
     outgoingChallenges = {},
-    ---@type table<PublicPlayerID, table<GameModeID, boolean>>
     incomingChallenges = {},
-    ---@type table<roomNumber, LobbyRoomV2>
     rooms = {}
   }
 end
@@ -65,6 +65,17 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
   self.lobbyDataV2.rooms = lobbyStateV2.rooms
 
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
+end
+
+-- Replaces the pings with the latest update's, keyed by public id
+---@param self NetClient
+---@param message { pingUpdate: { players: PingSummary[] } }
+local function processPingUpdate(self, message)
+  local pings = {}
+  for _, player in ipairs(message.pingUpdate.players) do
+    pings[player.publicId] = player
+  end
+  self.pings = pings
 end
 
 ---@param room BattleRoom
@@ -127,14 +138,23 @@ local function processGameResultMessage(self, message)
 end
 
 local function processLeaveRoomMessage(self, message)
-  if self.room then
+  local room = self.room
+  if room then
+    -- the room is no longer ours from here on, so shutting it down doesn't ask the server to leave it again
+    self.room = nil
+    self.state = states.ONLINE
+
+    if room.hasShutdown then
+      -- the client left the room itself and already shut it down and left the scene, this is only the server's confirmation
+      return
+    end
+
     local transition
-    if self.room.match then
+    if room.match then
       -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
-      self.room.match:disconnectSignal("matchEnded", self.room)
+      room.match:disconnectSignal("matchEnded", room)
       -- instead we actively abort the match ourselves
-      self.room.match:abort()
-      self.room.match:deinit()
+      room.match:abort()
 
       if message.reason then
         -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
@@ -143,11 +163,9 @@ local function processLeaveRoomMessage(self, message)
       end
     end
 
-    -- and then shutdown the room
-    self.room:shutdown()
-    self.room = nil
+    -- and then shutdown the room, which deinits the match
+    room:shutdown()
 
-    self.state = states.ONLINE
     GAME.navigationStack:popToName("Lobby", transition)
   end
 end
@@ -339,7 +357,7 @@ local function handleGameAbort(self, gameAbortMessage)
       if gameAbortMessage.reason and gameAbortMessage.reason == "latency_error" then
         infoMessage = infoMessage .. ": " .. loc("ss_latency_error")
       end
-      transition = MessageTransition(love.timer.getTime(), 5, infoMessage, false)
+      local transition = MessageTransition(love.timer.getTime(), 5, infoMessage, false)
       GAME.navigationStack:pop(transition)
     end
   end
@@ -365,6 +383,7 @@ local function createListeners(self)
   messageListeners.gameResult = createListener(self, "gameResult", processGameResultMessage)
   messageListeners.spectators = createListener(self, "spectators", processSpectatorListMessage)
   messageListeners.gameAbort = createListener(self, "gameAbort", handleGameAbort)
+  messageListeners.pingUpdate = createListener(self, "pingUpdate", processPingUpdate)
 
   return messageListeners
 end
@@ -381,6 +400,7 @@ end
 ---@field room BattleRoom?
 ---@field lobbyDataV2 PersonalizedLobbyDataV2
 ---@field serverTimeDelta integer in seconds
+---@field pings table<PublicPlayerID, PingSummary>? each player's ping in the latest ping update, nil until one arrives
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
@@ -399,6 +419,7 @@ local NetClient = class(function(self)
     lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
     challengeUpdate = messageListeners.challengeUpdate,
+    pingUpdate = messageListeners.pingUpdate,
   }
 
   -- all listeners running while in a room but not in a match
@@ -408,6 +429,7 @@ local NetClient = class(function(self)
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
     gameResult = messageListeners.gameResult,
+    pingUpdate = messageListeners.pingUpdate,
   }
 
   -- all listeners running while in a match
@@ -419,6 +441,7 @@ local NetClient = class(function(self)
     spectators = messageListeners.spectators,
     gameResult = messageListeners.gameResult,
     gameAbort = messageListeners.gameAbort,
+    pingUpdate = messageListeners.pingUpdate,
   }
 
   self.messageListeners = messageListeners
@@ -528,7 +551,7 @@ function NetClient:sendMatchAbort()
   end
 end
 
-function sendPlayerSettings(player)
+local function sendPlayerSettings(player)
   GAME.netClient.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
@@ -536,30 +559,39 @@ function NetClient:sendPlayerSettings(player)
   self.tcpClient:sendRequest(ClientMessages.sendPlayerSettings(ServerMessages.toServerMenuState(player)))
 end
 
+-- the settings of a local player that the server and the other clients in the room need to hear about
+local PLAYER_SETTINGS_SIGNALS = {
+  "characterIdChanged", "selectedCharacterIdChanged", "stageIdChanged", "selectedStageIdChanged", "panelIdChanged",
+  "wantsRankedChanged", "wantsReadyChanged", "difficultyChanged", "startingSpeedChanged", "levelChanged",
+  "levelDataChanged", "inputMethodChanged", "hasLoadedChanged",
+}
+
 function NetClient:registerPlayerUpdates(room)
   local listener = MessageListener("menu_state")
   for _, player in ipairs(room.players) do
     if player.isLocal then
       -- seems a bit silly to subscribe a player to itself but it works and the player doesn't have to become part of the closure
-      player:connectSignal("characterIdChanged", player, sendPlayerSettings)
-      player:connectSignal("selectedCharacterIdChanged", player, sendPlayerSettings)
-      player:connectSignal("stageIdChanged", player, sendPlayerSettings)
-      player:connectSignal("selectedStageIdChanged", player, sendPlayerSettings)
-      player:connectSignal("panelIdChanged", player, sendPlayerSettings)
-      player:connectSignal("wantsRankedChanged", player, sendPlayerSettings)
-      player:connectSignal("wantsReadyChanged", player, sendPlayerSettings)
-      player:connectSignal("difficultyChanged", player, sendPlayerSettings)
-      player:connectSignal("startingSpeedChanged", player, sendPlayerSettings)
-      player:connectSignal("levelChanged", player, sendPlayerSettings)
-      player:connectSignal("levelDataChanged", player, sendPlayerSettings)
-      player:connectSignal("inputMethodChanged", player, sendPlayerSettings)
-      player:connectSignal("hasLoadedChanged", player, sendPlayerSettings)
+      for _, signalName in ipairs(PLAYER_SETTINGS_SIGNALS) do
+        player:connectSignal(signalName, player, sendPlayerSettings)
+      end
     else
       listener:subscribe(player, processMenuStateMessage)
     end
   end
   self.messageListeners.menu_state = listener
   self.roomListeners.menu_state = listener
+end
+
+-- Undoes registerPlayerUpdates once the room is over, so the local player sends nothing for a room it left and
+-- the next room doesn't add a second set of callbacks
+function NetClient:unregisterPlayerUpdates(room)
+  for _, player in ipairs(room.players) do
+    if player.isLocal then
+      for _, signalName in ipairs(PLAYER_SETTINGS_SIGNALS) do
+        player:disconnectSignal(signalName, player, sendPlayerSettings)
+      end
+    end
+  end
 end
 
 ---@param errorData table
@@ -680,10 +712,20 @@ function NetClient:update()
   end
 end
 
+-- A player's ping in the latest ping update, nil for a player it left out
+---@param publicId PublicPlayerID
+---@return PingSummary?
+function NetClient:pingOf(publicId)
+  return self.pings and self.pings[publicId]
+end
+
 ---@param state NetClientStates
 function NetClient:setState(state)
   logger.debug("Setting netclient state to " .. state)
   self.state = state
+  if state == states.OFFLINE then
+    self.pings = nil
+  end
 end
 
 return NetClient

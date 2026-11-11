@@ -12,7 +12,7 @@ local Signal = require("common.lib.signal")
 ---@field isMetal boolean if the garbage is shock/metal garbage - mutually exclusive with isChain = true
 ---@field isChain boolean if the piece of garbage is considered a chain <br>
 --- for attack pattern garbage this flag may be true even if the garbage has none of the ChainGarbage fields
----@field frameEarned integer the clock of the origin of this piece of garbage when it is first created
+---@field frameEarned integer the stopWatch of the origin of this piece of garbage when it is first created, which lags behind the clock by countdowns and other pauses of the physics
 ---@field rowEarned integer the row the piece of garbage was earned at
 ---@field colEarned integer the column the piece of garbage was earned at
 

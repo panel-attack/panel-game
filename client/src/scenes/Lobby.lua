@@ -13,6 +13,7 @@ local InputSource = require("client.src.input.InputSource")
 ---@class LobbyScene : Scene
 ---@field lobbyMenu ScrollMenu
 ---@field lobbyMessage Label
+---@field playerSubMenuConnectionWarning ConnectionWarning? beside the challenge menu while it is open
 local Lobby = class(
 function(self, sceneParams)
   self.music = "main"
@@ -394,15 +395,37 @@ function Lobby:openPlayerSubMenu(playerId, button)
   })
   self.subMenuLine = subMenuLine
 
+  self.playerSubMenuConnectionWarning = self:createChallengeConnectionWarning(playerId, subMenu, y)
+
   self.lobbyMenu:focusChild(subMenu, InputSource.anyPlayer, function()
     self.playerSubMenu:detach()
     self.playerSubMenu = nil
     self.subMenuLine:detach()
     self.subMenuLine = nil
+    self.playerSubMenuConnectionWarning:detach()
+    self.playerSubMenuConnectionWarning = nil
   end)
 
   self.uiRoot:addChild(subMenu)
   self.uiRoot:addChild(subMenuLine)
+  self.uiRoot:addChild(self.playerSubMenuConnectionWarning)
+end
+
+-- A warning card right of the challenge menu, its top level with the menu's, that shows while your or the challenged
+-- player's connection makes rollback likely
+---@param playerId PublicPlayerID
+---@param subMenu UiElement
+---@param y number the screen y of the challenge menu
+---@return ConnectionWarning
+function Lobby:createChallengeConnectionWarning(playerId, subMenu, y)
+  return ui.ConnectionWarning({
+    x = subMenu.x + subMenu.width + ui.ConnectionWarning.PADDING,
+    y = y,
+    players = {
+      {publicId = GAME.localPlayer.publicId, name = GAME.localPlayer.name},
+      {publicId = playerId, name = GAME.netClient.lobbyDataV2.players[playerId].name},
+    },
+  })
 end
 
 -- rebuilds the UI based on the new lobby information
@@ -524,6 +547,7 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
       self.subMenuLine.y = y + previousButton.height / 2
       self.subMenuLine:setPoints({self.subMenuLine.x, self.subMenuLine.y, self.playerSubMenu.x - 8, self.subMenuLine.y})
       self.playerSubMenu.y = y
+      self.playerSubMenuConnectionWarning.y = y
     end
   end
 

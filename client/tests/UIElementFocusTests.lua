@@ -1,8 +1,9 @@
 local UIElement = require("client.src.ui.UIElement")
 local StackPanel = require("client.src.ui.StackPanel")
 local MultiPlayerSelectionWrapper = require("client.src.ui.MultiPlayerSelectionWrapper")
+local Grid = require("client.src.ui.Grid")
+local GridCursor = require("client.src.ui.GridCursor")
 local InputField = require("client.src.ui.InputField")
-local InputSource = require("client.src.input.InputSource")
 local Player = require("client.src.Player")
 local logger = require("common.lib.logger")
 
@@ -94,7 +95,23 @@ local function testTwoSourcesFocusTheSameElementIndependently()
   logger.trace("passed test testTwoSourcesFocusTheSameElementIndependently")
 end
 
-local function testYieldClearsOnlyThatSourceAndRunsCallback()
+local function testYieldClearsOnlyThatSource()
+  local p1 = createPlayerSource("p1")
+  local p2 = createPlayerSource("p2")
+  local parent = createRecordingElement()
+  local child = createRecordingElement()
+  parent:focusChild(child, p1)
+  parent:focusChild(child, p2)
+
+  child.yieldOnNextInput[p1] = true
+  parent:receiveInputs(p1, 0)
+
+  assert(parent.focusedChild[p1] == nil, "p1's entry should be cleared")
+  assert(parent.focusedChild[p2] == child, "p2's entry should stay")
+  logger.trace("passed test testYieldClearsOnlyThatSource")
+end
+
+local function testYieldRunsOnlyThatSourcesCallback()
   local p1 = createPlayerSource("p1")
   local p2 = createPlayerSource("p2")
   local parent = createRecordingElement()
@@ -107,14 +124,25 @@ local function testYieldClearsOnlyThatSourceAndRunsCallback()
   child.yieldOnNextInput[p1] = true
   parent:receiveInputs(p1, 0)
 
-  assert(parent.focusedChild[p1] == nil, "p1's entry should be cleared")
-  assert(parent.focusedChild[p2] == child, "p2's entry should stay")
   assert(p1Yields == 1, "p1's callback should run once")
   assert(p2Yields == 0, "p2's callback should not run")
-  logger.trace("passed test testYieldClearsOnlyThatSourceAndRunsCallback")
+  logger.trace("passed test testYieldRunsOnlyThatSourcesCallback")
 end
 
-local function testUnfocusChildReleasesImmediatelyAndRunsCallback()
+local function testUnfocusChildReleasesImmediately()
+  local source = createPlayerSource("p1")
+  local parent = createRecordingElement()
+  local child = createRecordingElement()
+  parent:focusChild(child, source)
+
+  parent:unfocusChild(source)
+
+  assert(parent.focusedChild[source] == nil, "the entry should be cleared")
+  assert(not child:hasFocus(source), "the child should no longer have focus")
+  logger.trace("passed test testUnfocusChildReleasesImmediately")
+end
+
+local function testUnfocusChildRunsTheCallback()
   local source = createPlayerSource("p1")
   local parent = createRecordingElement()
   local child = createRecordingElement()
@@ -123,10 +151,8 @@ local function testUnfocusChildReleasesImmediatelyAndRunsCallback()
 
   parent:unfocusChild(source)
 
-  assert(parent.focusedChild[source] == nil, "the entry should be cleared")
-  assert(not child:hasFocus(source), "the child should no longer have focus")
   assert(yields == 1, "the callback should run")
-  logger.trace("passed test testUnfocusChildReleasesImmediatelyAndRunsCallback")
+  logger.trace("passed test testUnfocusChildRunsTheCallback")
 end
 
 local function testNestedYieldReachesTheParentThatFocusedTheContainer()
@@ -203,21 +229,31 @@ local function testFocusingAnotherChildReleasesThePreviousChain()
   logger.trace("passed test testFocusingAnotherChildReleasesThePreviousChain")
 end
 
-local function testHasFocusPerSourceAndForAnySource()
+local function testHasFocusPerSource()
   local p1 = createPlayerSource("p1")
   local p2 = createPlayerSource("p2")
   local parent = createRecordingElement()
   local child = createRecordingElement()
 
-  assert(not child:hasFocus(), "nobody has focused the child yet")
   parent:focusChild(child, p1)
   assert(child:hasFocus(p1), "p1 has focused the child")
   assert(not child:hasFocus(p2), "p2 has not focused the child")
-  assert(child:hasFocus(), "someone has focused the child")
   child:yieldFocus(p1)
   assert(not child:hasFocus(p1), "yielding should drop focus right away")
+  logger.trace("passed test testHasFocusPerSource")
+end
+
+local function testHasFocusForAnySource()
+  local p1 = createPlayerSource("p1")
+  local parent = createRecordingElement()
+  local child = createRecordingElement()
+
+  assert(not child:hasFocus(), "nobody has focused the child yet")
+  parent:focusChild(child, p1)
+  assert(child:hasFocus(), "someone has focused the child")
+  child:yieldFocus(p1)
   assert(not child:hasFocus(), "nobody has focus after the yield")
-  logger.trace("passed test testHasFocusPerSourceAndForAnySource")
+  logger.trace("passed test testHasFocusForAnySource")
 end
 
 local function testWrapperRoutesByPlayer()
@@ -242,16 +278,61 @@ local function testWrapperRoutesByPlayer()
   logger.trace("passed test testWrapperRoutesByPlayer")
 end
 
+-- local 2P character select (#606): both players' cursors enter the same selector, and one leaving it must not free the other
+local function testOneCursorLeavingASharedSelectorKeepsTheOtherInside()
+  local p1 = createPlayerSource("p1")
+  local p2 = createPlayerSource("p2")
+  local wrapper = MultiPlayerSelectionWrapper({alignment = "top"})
+  local p1Selector = createRecordingElement()
+  local p2Selector = createRecordingElement()
+  wrapper:addElement(p1Selector, p1.player)
+  wrapper:addElement(p2Selector, p2.player)
+  local grid = Grid({unitSize = 8, gridWidth = 1, gridHeight = 1})
+  grid:createElementAt(1, 1, 1, 1, "selector", wrapper)
+  local frameImages = {{getDimensions = function() return 8, 8 end}}
+  local p1Cursor = GridCursor({grid = grid, player = p1.player, frameImages = frameImages})
+  local p2Cursor = GridCursor({grid = grid, player = p2.player, frameImages = frameImages})
+  local root = UIElement({})
+  root:focusChild(p1Cursor, p1)
+  root:focusChild(p2Cursor, p2)
+
+  p1:getInputs().isDown.Swap1 = true
+  p2:getInputs().isDown.Swap1 = true
+  root:receiveInputs(p1, 0)
+  root:receiveInputs(p2, 0)
+  p1:getInputs().isDown.Swap1 = nil
+  p2:getInputs().isDown.Swap1 = nil
+  assert(p1Selector:hasFocus(p1) and p2Selector:hasFocus(p2), "selecting the shared selector should put each player in their own element")
+
+  -- p1 entered first, so p1 leaving is what a single way back shared by both cursors would route to p2's cursor
+  p1Selector.yieldOnNextInput[p1] = true
+  root:receiveInputs(p1, 0)
+  assert(p1Cursor.focusedChild[p1] == nil, "p1 leaving should free p1's cursor")
+  assert(p2Cursor.focusedChild[p2] == wrapper, "p1 leaving should not free p2's cursor")
+
+  root:receiveInputs(p2, 0)
+  assert(p2Selector.received[p2] == 1, "p2's inputs should still reach p2's element")
+  assert(p2Cursor.focusedChild[p2] == wrapper, "p2 should stay inside until p2 leaves")
+  p2Selector.yieldOnNextInput[p2] = true
+  root:receiveInputs(p2, 0)
+  assert(p2Cursor.focusedChild[p2] == nil, "p2 leaving afterwards should free p2's cursor")
+  logger.trace("passed test testOneCursorLeavingASharedSelectorKeepsTheOtherInside")
+end
+
 testSetFocusable()
 testEditingAnInputFieldKeepsHasFocusAMethod()
 testFocusedChildReceivesInputsInsteadOfParent()
 testUnfocusedParentHandlesInputsItself()
 testTwoSourcesFocusTheSameElementIndependently()
-testYieldClearsOnlyThatSourceAndRunsCallback()
-testUnfocusChildReleasesImmediatelyAndRunsCallback()
+testYieldClearsOnlyThatSource()
+testYieldRunsOnlyThatSourcesCallback()
+testUnfocusChildReleasesImmediately()
+testUnfocusChildRunsTheCallback()
 testNestedYieldReachesTheParentThatFocusedTheContainer()
 testForwardFocusRunsItsCallbackWhenTheInnerWidgetYields()
 testUnfocusChildReleasesTheWholeChain()
 testFocusingAnotherChildReleasesThePreviousChain()
-testHasFocusPerSourceAndForAnySource()
+testHasFocusPerSource()
+testHasFocusForAnySource()
 testWrapperRoutesByPlayer()
+testOneCursorLeavingASharedSelectorKeepsTheOtherInside()

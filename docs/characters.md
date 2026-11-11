@@ -345,7 +345,7 @@ Putting things too close to the edge or the middle may cause unsightly cutoffs.
 Good use of face/face2 may alleviate these issues for the center.  
 
 Aspect ratio: 1:1 (square)  
-Recommended size: 96x96px
+Recommended size: 96x96px (2x resolution)
 
 ##### filler1
 
@@ -365,13 +365,13 @@ This will get drawn on top of the filler sprites.
 
 Sprite for the center of garbage pieces of odd-numbered height (1, 3, ...), or all of them if face2 is not provided  
 Aspect ratio: 1:1 (square)  
-Recommended size: 96x96px
+Recommended size: 96x96px (2x resolution)
 
 ##### face2
 
 Optional sprite that replaces face on garbage pieces of odd-numbered width  
 Aspect ratio: 1:1 (square)  
-Recommended size: 96x96px
+Recommended size: 96x96px (2x resolution)
 
 For most mods this will be obsolete, it exists mainly to provide better support for garbage blocks with tiled backgrounds.
 
@@ -379,7 +379,7 @@ For most mods this will be obsolete, it exists mainly to provide better support 
 
 Sprite for the center of garbage pieces of even-numbered height (2, 4, ...)  
 Aspect ratio: 1:2  
-Recommended size: 96x192px
+Recommended size: 96x192px (2x resolution)
 
 
 #### Sides
@@ -390,13 +390,13 @@ These will get drawn on top of filler / center sprites.
 
 Sprites for covering the top and bottom side of the garbage.  
 They will get stretched to the (varying) width of the garbage.  
-Recommended size: 12px high
+Recommended size: 12px high (2x resolution)
 
 ##### "left", "right"
 
 Sprites for the left and right side of the garbage.  
 They will get stretched to the (varying) height of the garbage  
-Recommended size: 48px wide
+Recommended size: 48px wide (2x resolution)
 
 
 #### Corners
@@ -404,7 +404,7 @@ Recommended size: 48px wide
 These will get drawn on top of filler / side sprites  
 
 Aspect Ratio: 8:3
-Recommended size: 48x18px  
+Recommended size: 48x18px (2x resolution)  
 "topleft", "botleft", "topright", "botright"  
 The names say everything.
 
@@ -414,7 +414,7 @@ The names say everything.
 Sprites that will be on display on each individual garbage panel when garbage is getting cleared.  
 
 Aspect ratio: 1:1 (square)  
-Recommended size: 96x96px
+Recommended size: 96x96px (2x resolution)
 
 ##### pop
 
@@ -432,14 +432,14 @@ On display when the garbage gets cleared initially, rapidly alternates with pop 
 Display of the character ingame on the player 1 side.  
 
 Aspect ratio: 1:2  
-Recommended size: 576x1152px
+Recommended size: 576x1152px (2x resolution)
 
 #### portrait2
 
 Display of the character ingame on the player 2 side.  
 
 Aspect ratio: 1:2  
-Recommended size: 576x1152px
+Recommended size: 576x1152px (2x resolution)
 
 If not present, portrait will get mirrored instead.  
 This exists so that characters with unique asymmetrical features can retain them and appear correctly on both sides.
@@ -449,7 +449,7 @@ This exists so that characters with unique asymmetrical features can retain them
 Displays in character selection.  
 
 Aspect ratio: 1:1 (square)  
-Recommended size: 168x168px
+Recommended size: 168x168px (2x resolution)
 
 #### burst
 
@@ -459,7 +459,7 @@ The left of the frame will be pointing towards the center of the cards when rota
 Frames 2 to 9 are the animation used for the burst effect coming out of panels when they pop.
 
 Aspect ratio of each individual frame: 1:1 (square)
-Recommended size per frame: 96x96px (size of a 2x resolution panel)
+Recommended size per frame: 96x96px (2x resolution)
 
 #### fade
 
@@ -468,7 +468,7 @@ The image should be 9 equal sized frames in a row, the first frame is currently 
 The fade animation is centered over the panel but smaller than a panel.
 
 Aspect ratio of each individual frame: 1:1 (square)
-Recommended size per frame: 64x64px (scaled down to 32 pixels centered on panel center, so gives 2x resolution)
+Recommended size per frame: 192x192px (2x resolution)
 
 #### telegraph
 

@@ -181,7 +181,7 @@ function ReplayV3:setOutcome(outcome)
     else
       self.metadata.winnerIndex = outcome
       for i, player in ipairs(self.metadata.stacks) do
-        if player.stackIndex == i and self.stacks[i].stackType == ReplayV3.stackTypes.Stack then
+        if player.stackIndex == outcome and self.stacks[i].stackType == ReplayV3.stackTypes.Stack then
           ---@cast player StackMetadata
           self.metadata.winnerId = player.publicId
         end
@@ -306,6 +306,15 @@ function ReplayV3.createFromV3Data(replayData)
 ---@diagnostic disable-next-line: undefined-field
       if stack.stackBehaviours.startTimersWithSwapCount and stack.stackBehaviours.startTimersWithSwapCount > 0 then
         stack.stackBehaviours.delaySimulationUntil = "firstSwap"
+      end
+    end
+  end
+
+  local winConditions = replayData.rules and replayData.rules.stackWinConditions
+  if winConditions then
+    for _, bySize in ipairs({MatchRules.StackWinConditions.CHAINS, MatchRules.StackWinConditions.COMBOS}) do
+      if winConditions[bySize] then
+        winConditions[bySize] = tableUtils.reassignIntegerKeysAfterJsonification(winConditions[bySize])
       end
     end
   end
