@@ -43,11 +43,8 @@ local replay_id_top = 0
 ---@param file love.File
 ---@return ReplayV3?
 function ReplayBrowser.createFromReplayFile(file)
-  local data = fileUtils.readJsonFromFile(file, true)
+  local data = fileUtils.readJsonFromFile(file)
   local success, replay = pcall(function()
-    assert(type(data) == "table", "Expected a JSON replay object")
-    assert(data.replayVersion == nil or tonumber(data.replayVersion) == 2 or data.replayVersion == 3,
-      "Unsupported replay format")
     local replay = ReplayV3.createFromTable(data, true)
     ReplayV3.validate(replay)
     return replay

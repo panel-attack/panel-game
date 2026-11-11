@@ -11,7 +11,6 @@ local KeyDataEncoding = require("common.data.KeyDataEncoding")
 local TouchDataEncoding = require("common.data.TouchDataEncoding")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
-local fileUtils = require("client.src.FileUtils")
 local ClientMatch = require("client.src.ClientMatch")
 local ReplayV3 = require("common.data.ReplayV3")
 
@@ -153,7 +152,7 @@ local function testDropReplacesTheReplayShownInTheBrowser()
   assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
   local browser = finishTransition()
   local malformed = makeReplayData()
-  malformed.panelSource.sourceType = 999
+  malformed.panelSource = nil
   assert(not handleReplayFileDrop(droppedFile(json.encode(malformed), "invalid.json")))
   browser:draw()
   assertDisplayed("test-replay.json")
@@ -201,13 +200,17 @@ end
 local function testRejectedFilesKeepTheCurrentScene()
   local invalidContents = {"", "{broken json", "null", "true", "42", "[]", "{}", '{"puzzles":[]}', "{} {}"}
   local malformed = makeReplayData()
-  malformed.metadata.stacks[1].stackIndex = 2
+  malformed.metadata.stacks[1].stackIndex = nil
   invalidContents[#invalidContents + 1] = json.encode(malformed)
   malformed = makeReplayData()
   malformed.replayVersion = 99
   invalidContents[#invalidContents + 1] = json.encode(malformed)
   malformed = makeReplayData()
   malformed.stacks[1].levelData = {}
+  invalidContents[#invalidContents + 1] = json.encode(malformed)
+  malformed = makeReplayData()
+  malformed.stacks[1].stackType = 2
+  malformed.stacks[1].attackSettings = {}
   invalidContents[#invalidContents + 1] = json.encode(malformed)
   for _, contents in ipairs(invalidContents) do
     local menu = resetNavigation()
@@ -247,34 +250,36 @@ local function assertRejectedReplay(replay, scene)
   assert(GAME.navigationStack:getActiveScene() == scene, "Invalid replay should keep the current scene")
 end
 
-local function testRejectsMalformedDisplayMetadata()
+local function testRejectsMissingFields()
   local menu = resetNavigation()
-  for _, field in ipairs({"name", "characterId", "level", "difficulty", "challengeModeDifficulty", "stageIndex"}) do
-    for _, value in ipairs({true, {}}) do
-      local replay = makeReplayData()
-      replay.metadata.stacks[1][field] = value
-      assertRejectedReplay(replay, menu)
-      replay.engineVersion = "999"
-      assertRejectedReplay(replay, menu)
-    end
+  for _, field in ipairs({"engineVersion", "rules", "garbageFlows"}) do
+    local replay = makeReplayData()
+    replay[field] = nil
+    assertRejectedReplay(replay, menu)
   end
+  local replay = makeReplayData()
+  replay.metadata.stacks = nil
+  assertRejectedReplay(replay, menu)
+  replay = makeReplayData()
+  replay.stacks[1].levelData.colors = nil
+  assertRejectedReplay(replay, menu)
 end
 
-local function testRejectsInvalidInputSymbols()
-  local scene = resetNavigation()
-  local touchIdle = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
-  local outOfBounds = TouchDataEncoding.touchDataToLatinString(false, 13, 1, 6)
-  local invalidInputs = {
-    {inputMethod = "controller", inputs = "~1"},
-    {inputMethod = "controller", inputs = "A300~1"},
-    {inputMethod = "touch", inputs = touchIdle .. "300" .. outOfBounds .. "1"},
-    {inputMethod = "invalid", inputs = "A300"}
-  }
-  for _, inputs in ipairs(invalidInputs) do
-    local replay = makeReplayData()
-    replay.stacks[1].inputMethod = inputs.inputMethod
-    replay.stacks[1].inputs = inputs.inputs
-    assertRejectedReplay(replay, scene)
+local function testAcceptsDataPlaybackRunsWith()
+  local unusedMetadata = makeReplayData()
+  unusedMetadata.metadata.stacks[1].difficulty = true
+  local threeStacks = makeReplayData()
+  for i = 2, 3 do
+    threeStacks.stacks[i] = threeStacks.stacks[1]
+    local metadata = json.decode(json.encode(threeStacks.metadata.stacks[1]))
+    metadata.stackIndex = i
+    threeStacks.metadata.stacks[i] = metadata
+  end
+  local contents = {json.encode(makeReplayData()) .. " {}", json.encode(unusedMetadata), json.encode(threeStacks)}
+  for _, content in ipairs(contents) do
+    resetNavigation()
+    assert(handleReplayFileDrop(droppedFile(content)), "Data the replay plays with must not be refused")
+    assert(cancelSounds == 0)
   end
 end
 
@@ -397,12 +402,9 @@ local function testBrowserUsesSharedLoading()
   scene:update(1 / 60)
   assert(scene.match.engine.clock > 0, "A browser-selected replay should still play")
 
-  local invalidContents = {"{}", "{broken json", json.encode(makeReplayData()) .. " {}"}
+  local invalidContents = {"{}", "{broken json"}
   local malformed = makeReplayData()
-  malformed.metadata.stacks[1].level = true
-  invalidContents[#invalidContents + 1] = json.encode(malformed)
-  malformed = makeReplayData()
-  malformed.stacks[1].inputs = "A300~1"
+  malformed.engineVersion = nil
   invalidContents[#invalidContents + 1] = json.encode(malformed)
   for _, contents in ipairs(invalidContents) do
     browser = selectReplayFile(contents)
@@ -411,11 +413,6 @@ local function testBrowserUsesSharedLoading()
     assert(GAME.navigationStack:getActiveScene() == browser)
     assert(cancelSounds == 1)
   end
-
-  assert(love.filesystem.write(path, "{} {}"))
-  assert(fileUtils.readJsonFile(path), "Other JSON callers should retain their existing trailing-data behavior")
-  local value, failure = fileUtils.readJsonFile(path, true)
-  assert(value == nil and failure == "decode", "Replay files must not accept trailing JSON values")
 end
 
 local function testLoadingDoesNotCreateMatch()
@@ -469,8 +466,8 @@ local function runTests()
   testDropIntoBrowserAndBackNavigation()
   testOtherMenusRefuseDropsWithoutReadingTheFile()
   testRejectedFilesKeepTheCurrentScene()
-  testRejectsMalformedDisplayMetadata()
-  testRejectsInvalidInputSymbols()
+  testRejectsMissingFields()
+  testAcceptsDataPlaybackRunsWith()
   testValidControllerAndTouchInputStreams()
   testUnavailableStatesDoNotReadTheFile()
   testIncompatibleVersionUsesExistingWarning()

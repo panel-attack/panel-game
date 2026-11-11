@@ -103,9 +103,9 @@ end
 
 local function testJsonFileSources()
   local path = "common/tests/data/puzzles_v2_format.json"
-  local fromPath = assert(FileUtils.readJsonFile(path, true))
+  local fromPath = assert(FileUtils.readJsonFile(path))
   local file = love.filesystem.newFile(path)
-  local fromFile = assert(FileUtils.readJsonFromFile(file, true))
+  local fromFile = assert(FileUtils.readJsonFromFile(file))
   assert(json.encode(fromFile) == json.encode(fromPath), "Paths and file objects should use the same JSON decoding")
   assert(not file:isOpen(), "Reading JSON should close the file")
 

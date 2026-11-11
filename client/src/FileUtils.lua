@@ -132,10 +132,9 @@ end
 
 --- Reads JSON from a file object, closing it after reading.
 ---@param file love.File
----@param checkTrailingData boolean? reject non-whitespace after the JSON value
 ---@return table? # nil if the file could not be read or deserialization failed
 ---@return ("read"|"decode")? failure
-function fileUtils.readJsonFromFile(file, checkTrailingData)
+function fileUtils.readJsonFromFile(file)
   local filename = file:getFilename()
   local opened, openError = file:open("r")
   if not opened then
@@ -153,10 +152,7 @@ function fileUtils.readJsonFromFile(file, checkTrailingData)
     logger.warn("Could not read file " .. filename .. ": " .. tostring(info))
     return nil, "read"
   end
-  local value, position, errorMsg = json.decode(fileContent)
-  if checkTrailingData and not errorMsg and fileContent:sub(position):find("%S") then
-    errorMsg = "Unexpected data after JSON value"
-  end
+  local value, _, errorMsg = json.decode(fileContent)
   if errorMsg then
     logger.error("Error reading " .. filename .. ":\n" .. errorMsg .. ":\n" .. fileContent:sub(1, LOGGED_CONTENT_LENGTH))
     return nil, "decode"
@@ -167,15 +163,14 @@ end
 
 --- Reads JSON at a sandbox path using the same decoder as dropped files.
 ---@param path string
----@param checkTrailingData boolean?
 ---@return table?
 ---@return ("read"|"decode")? failure
-function fileUtils.readJsonFile(path, checkTrailingData)
+function fileUtils.readJsonFile(path)
   if not fileUtils.exists(path) then
     logger.debug("No file at specified path " .. path)
     return nil, "read"
   end
-  return fileUtils.readJsonFromFile(love.filesystem.newFile(path), checkTrailingData)
+  return fileUtils.readJsonFromFile(love.filesystem.newFile(path))
 end
 
 --returns a source, or nil if it could not find a file
