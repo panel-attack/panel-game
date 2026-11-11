@@ -131,7 +131,7 @@ local DIRECTION_ROW = {up = 1, down = -1, left = 0, right = 0}
 --- conversely if the rise_lock happened from the start and the manual_raise never achieved a single tick of displacement of raise, this being false leads to manual_raise being set to false again, effectively cancelling the raise
 ---@field prevent_manual_raise boolean if set to true it prevents raises initiating another raise; mostly to prevent manual_raise_yet from being overwritten so it can do its cryptic work \n
 --- this set of fields can really do with a rework
----@field swapThisFrame boolean if there was an attempt to initiate a swap on this frame
+---@field swapThisFrame boolean if there was an attempt to initiate a swap on this frame; for touch, if a swap was queued on this frame
 ---@field cur_wait_time integer DAS delay: number of ticks a movement key has to be held before the cursor begins to move at 1 movement per frame
 ---@field cur_timer integer number of ticks the current movement key has been held
 ---@field cursorDirection CursorDirection? direction of the current movement key
@@ -280,6 +280,7 @@ local Stack = class(
     s:createSignal("cursorMoved")
     s:createSignal("panelsSwapped")
     s:createSignal("swapDenied")
+    s:createSignal("swapAccepted")
     s:createSignal("garbageMatched")
     s:createSignal("newRow")
   end,
@@ -591,6 +592,7 @@ function Stack:controls()
   if self.inputMethod == "touch" then
     local cursorColumn, cursorRow
     raise, cursorRow, cursorColumn = TouchDataEncoding.latinStringToTouchData(sdata, self.width)
+    self.swapThisFrame = false
     local canSetCursor = true
     if self.do_countdown then
       if self.animatingCursorDuringCountdown then
@@ -604,7 +606,7 @@ function Stack:controls()
         if self.cur_col ~= 0 and self.cur_row ~= 0 and cursorColumn ~= self.cur_col and cursorRow ~= 0 then
           local panel1 = self.panels[cursorRow][cursorColumn]
           local panel2 = self.panels[self.cur_row][self.cur_col]
-          self:tryQueueSwap(panel1, panel2)
+          self.swapThisFrame = self:tryQueueSwap(panel1, panel2)
         end
         self.cur_col = cursorColumn
         self.cur_row = cursorRow
@@ -1165,6 +1167,7 @@ function Stack:tryQueueSwap(panel1, panel2)
     -- by convention, swap column is the left panel
     self.queuedSwapColumn = math.min(panel1.column, panel2.column)
     self.queuedSwapRow = panel1.row
+    self:emitSignal("swapAccepted", self.queuedSwapRow, self.queuedSwapColumn)
     return true
   else
     self:emitSignal("swapDenied")

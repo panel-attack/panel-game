@@ -3,6 +3,8 @@ local PuzzleSet = require("client.src.PuzzleSet")
 local Puzzle = require("common.engine.Puzzle")
 local InputCompression = require("common.data.InputCompression")
 local KeyDataEncoding = require("common.data.KeyDataEncoding")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
+local PlayerStack = require("client.src.PlayerStack")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 local LevelPresets = require("common.data.LevelPresets")
 
@@ -183,11 +185,14 @@ function PuzzleHintHelperTests.testIsPlayerInSync()
                                    KeyDataEncoding.left, KeyDataEncoding.swap)
   local helper = PuzzleHintHelper(movesPuzzleWithSolution(solutionInputs, {row = 1, column = 1}))
 
-  assert(helper:isPlayerInSync({}), "Empty player swaps should be in sync")
-  assert(helper:isPlayerInSync({{row = 1, column = 3}}), "Correct first swap should be in sync")
-  assert(not helper:isPlayerInSync({{row = 1, column = 2}}), "Incorrect first swap should not be in sync")
-  assert(not helper:isPlayerInSync({{row = 1, column = 3}, {row = 1, column = 2}, {row = 1, column = 1}}),
-         "Too many swaps should not be in sync")
+  helper.playerSwapPositions = {}
+  assert(helper:isPlayerInSync(), "Empty player swaps should be in sync")
+  helper.playerSwapPositions = {{row = 1, column = 3}}
+  assert(helper:isPlayerInSync(), "Correct first swap should be in sync")
+  helper.playerSwapPositions = {{row = 1, column = 2}}
+  assert(not helper:isPlayerInSync(), "Incorrect first swap should not be in sync")
+  helper.playerSwapPositions = {{row = 1, column = 3}, {row = 1, column = 2}, {row = 1, column = 1}}
+  assert(not helper:isPlayerInSync(), "Too many swaps should not be in sync")
 end
 
 function PuzzleHintHelperTests.testGetNextHint()
@@ -195,15 +200,18 @@ function PuzzleHintHelperTests.testGetNextHint()
                                    KeyDataEncoding.left, KeyDataEncoding.swap)
   local helper = PuzzleHintHelper(movesPuzzleWithSolution(solutionInputs, {row = 1, column = 1}))
 
-  local hint1 = helper:getNextHint(0)
+  helper.playerSwapPositions = {}
+  local hint1 = helper:getNextHint()
   assert(hint1 ~= nil, "Should get first hint")
   assert(hint1.row == 1 and hint1.column == 3, "First hint should be (1,3)")
 
-  local hint2 = helper:getNextHint(1)
+  helper.playerSwapPositions = {{row = 1, column = 3}}
+  local hint2 = helper:getNextHint()
   assert(hint2 ~= nil, "Should get second hint")
   assert(hint2.row == 1 and hint2.column == 2, "Second hint should be (1,2)")
 
-  assert(helper:getNextHint(2) == nil, "Should get nil when no more swaps")
+  helper.playerSwapPositions = {{row = 1, column = 3}, {row = 1, column = 2}}
+  assert(helper:getNextHint() == nil, "Should get nil when no more swaps")
 end
 
 function PuzzleHintHelperTests.testIsMovePuzzle()
@@ -266,7 +274,7 @@ function PuzzleHintHelperTests.testClassicSet2Puzzle2FirstHintIsOnTheBottomRow()
   local puzzle = findBundledPuzzle("puzzle_set_name_classic_set_2", 2)
   assert(puzzle, "Classic Set 2 #2 should be bundled")
 
-  local hint = PuzzleHintHelper(puzzle):getNextHint(0)
+  local hint = PuzzleHintHelper(puzzle):getNextHint()
 
   assert(hint and hint.row == 1 and hint.column == 1, "The solution swaps at (1,1), the hint went to " .. positionsText({hint}))
 end
@@ -276,7 +284,9 @@ function PuzzleHintHelperTests.testHintsReplayTheSolutionAtTheLevelItWasRecorded
   local puzzle = findBundledPuzzle("puzzle_set_name_advanced_shoguns", 6)
   assert(puzzle, "Advanced Shoguns #6 should be bundled")
 
-  local hint = PuzzleHintHelper(puzzle):getNextHint(1)
+  local helper = PuzzleHintHelper(puzzle)
+  helper.playerSwapPositions = {{row = 2, column = 4}}
+  local hint = helper:getNextHint()
 
   assert(hint and hint.row == 2 and hint.column == 3, "At level 10 the second swap is at (2,3), the hint went to " .. positionsText({hint}))
 end
@@ -322,6 +332,45 @@ function PuzzleHintHelperTests.testRefusedSwapIsNotTrackedAsAPlayerSwap()
          "Only the swap the stack queued should be tracked, got " .. positionsText(helper.playerSwapPositions))
 end
 
+-- a touch swap is queued and begun in the same frame, so it has to be recorded where it is queued
+function PuzzleHintHelperTests.testTouchSwapIsTrackedAtTheDraggedCell()
+  local puzzle = Puzzle({
+    puzzleType = "moves",
+    startTiming = Puzzle.START_TIMINGS.immediately,
+    stack = "123412341234",
+    moves = 3
+  })
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "touch")
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+  local helper = PuzzleHintHelper(puzzle)
+  helper:followPlayerStack(stack)
+  local function touch(row, column, frames)
+    return string.rep(TouchDataEncoding.touchDataToLatinString(false, row, column, stack.width), frames)
+  end
+  -- drag the panel at (1,1) right, then the panel at (2,5) left
+  stack:receiveConfirmedInput(touch(0, 0, 10) .. touch(1, 1, 3) .. touch(1, 2, 3) .. touch(0, 0, 30)
+    .. touch(2, 5, 3) .. touch(2, 4, 3) .. touch(0, 0, 30))
+
+  while stack.clock < #stack.confirmedInput and not match:hasEnded() do
+    match:run()
+  end
+
+  assert(positionsText(helper.playerSwapPositions) == "(1,1) (2,4)",
+         "Touch swaps should be tracked at the swapped pair's left cell, got " .. positionsText(helper.playerSwapPositions))
+end
+
+function PuzzleHintHelperTests.testTouchSwapHintLastsUntilTheNextSwap()
+  local playerStack = {engine = {swapCount = 2}}
+  PlayerStack.showSwapHint(playerStack, 3, 4)
+
+  local hint = PlayerStack.currentSwapHint(playerStack)
+  assert(hint and hint.row == 3 and hint.column == 4, "The hint should show until the player swaps")
+
+  playerStack.engine.swapCount = 3
+  assert(PlayerStack.currentSwapHint(playerStack) == nil, "The hint should clear once the player swaps")
+end
+
 function PuzzleHintHelperTests.testNonMovesPuzzleHasNoSwapHints()
   local puzzle = Puzzle({
     puzzleType = "chain",
@@ -348,6 +397,8 @@ PuzzleHintHelperTests.testClassicSet2Puzzle2FirstHintIsOnTheBottomRow()
 PuzzleHintHelperTests.testHintsReplayTheSolutionAtTheLevelItWasRecordedAt()
 PuzzleHintHelperTests.testEveryBundledMovesPuzzleSolutionWinsAtTheSolutionLevel()
 PuzzleHintHelperTests.testRefusedSwapIsNotTrackedAsAPlayerSwap()
+PuzzleHintHelperTests.testTouchSwapIsTrackedAtTheDraggedCell()
+PuzzleHintHelperTests.testTouchSwapHintLastsUntilTheNextSwap()
 PuzzleHintHelperTests.testNonMovesPuzzleHasNoSwapHints()
 
 return PuzzleHintHelperTests

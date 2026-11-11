@@ -30,6 +30,7 @@ local floor, min, max = math.floor, math.min, math.max
 ---@field danger_col boolean[] Tracks for each column if it is considered in danger for the danger animation. Danger means high rows being filled in that column.
 ---@field analytic table
 ---@field player Player
+---@field swapHint {row: integer, column: integer, swapCount: integer}? the pair a puzzle hint asks a touch player to swap, until their next swap
 
 -- A client side stack that wraps an engine Stack
 -- engine functionality is masked by wrapping the relevant functions and fields Match interfaces with
@@ -939,6 +940,7 @@ function PlayerStack:render(matchEnded, xOffset, yOffset)
   self:drawFrame()
   self:drawWall(shakeOffset, self.engine.height)
   self:render_cursor(shakeOffset, matchEnded)
+  self:drawSwapHint(shakeOffset)
   self:drawCountdown()
   self:resetDrawArea()
   prof.pop("Stack:render")
@@ -1000,13 +1002,52 @@ function PlayerStack:render_cursor(shake, matchEnded)
   end
 
   if self.inputMethod == "touch" then
-    drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[1], xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
-    drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[2], xPosition + 12, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
+    self:drawTouchCursor(engine.cur_row, engine.cur_col, shake)
   else
     drawGfxScaled(self, cursor.image, xPosition, (11 - (engine.cur_row)) * panelWidth + engine.displacement - shake, 0, scale_x, scale_y)
   end
 
   GraphicsUtil.setColor(1, 1, 1, 1)
+end
+
+-- Draw the one panel wide touch cursor on the panel at row and column
+---@param row integer
+---@param column integer
+---@param shake number
+function PlayerStack:drawTouchCursor(row, column, shake)
+  local cursor = self.theme.images.cursor[(floor(self.engine.clock / 16) % 2) + 1]
+  local panelWidth = 16
+  local scale_x = 40 / cursor.image:getWidth()
+  local scale_y = 24 / cursor.image:getHeight()
+  local xPosition = (column - 1) * panelWidth
+  local yPosition = (11 - row) * panelWidth + self.engine.displacement - shake
+  drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[1], xPosition, yPosition, 0, scale_x, scale_y)
+  drawQuadGfxScaled(self, cursor.image, cursor.touchQuads[2], xPosition + 12, yPosition, 0, scale_x, scale_y)
+end
+
+---Mark the pair of panels starting at row and column for the player to swap, for touch players who have no cursor a hint can move
+---@param row integer
+---@param column integer the left panel's column
+function PlayerStack:showSwapHint(row, column)
+  self.swapHint = {row = row, column = column, swapCount = self.engine.swapCount}
+end
+
+---@return {row: integer, column: integer}? swapHint the pair to swap, nil once the player swapped after the hint was given
+function PlayerStack:currentSwapHint()
+  if self.swapHint and self.swapHint.swapCount ~= self.engine.swapCount then
+    self.swapHint = nil
+  end
+  return self.swapHint
+end
+
+-- Draw the touch cursor on both panels of the pair a puzzle hint asks to swap
+---@param shake number
+function PlayerStack:drawSwapHint(shake)
+  local swapHint = self:currentSwapHint()
+  if swapHint then
+    self:drawTouchCursor(swapHint.row, swapHint.column, shake)
+    self:drawTouchCursor(swapHint.row, swapHint.column + 1, shake)
+  end
 end
 
 -- Draw the stop time and healthbars

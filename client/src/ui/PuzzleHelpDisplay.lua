@@ -113,6 +113,11 @@ function PuzzleHelpDisplay:onTauntDown()
   end
   
   self.tauntDownPressed = true
+  self:requestHint()
+end
+
+-- Show the help and give the next hint, for the hint key or the touch hint button
+function PuzzleHelpDisplay:requestHint()
   if (self.state == PuzzleHelpState.HIDDEN or self.state == PuzzleHelpState.HINT_SHOWN) then
     self:transitionToState(PuzzleHelpState.SHOW_HELP)
   end
@@ -216,12 +221,11 @@ function PuzzleHelpDisplay:executeHint()
     return self:playSolution()
   end
 
-  local playerSwapPositions = self.hintHelper.playerSwapPositions
-  if self.hintHelper:isPlayerInSync(playerSwapPositions) == false then
+  if self.hintHelper:isPlayerInSync() == false then
     self.puzzleGame:resetPuzzle()
   end
-  
-  local nextHint = self.hintHelper:getNextHint(#playerSwapPositions)
+
+  local nextHint = self.hintHelper:getNextHint()
   if nextHint == nil then
     return false
   end

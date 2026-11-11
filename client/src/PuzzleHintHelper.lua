@@ -8,16 +8,13 @@ local Puzzle = require("common.engine.Puzzle")
 ---@class PuzzleHintHelper
 ---@field puzzle Puzzle
 ---@field solutionInputs string[]? decompressed solution input array
----@field currentSwapCount integer number of swaps player has made
 ---@field solutionSwapPositions table[] array of {row=number, column=number} positions for each swap in solution
----@field playerStack Stack? the stack whose queued swaps are recorded in playerSwapPositions
 ---@field playerSwapPositions table[] array of {row=number, column=number} positions for each swap the player's stack queued
 ---@overload fun(puzzle: Puzzle): PuzzleHintHelper
 local PuzzleHintHelper = class(
   function(self, puzzle)
     self.puzzle = puzzle
     self.solutionInputs = nil
-    self.currentSwapCount = 0
     self.solutionSwapPositions = {}
     self.playerSwapPositions = {}
     
@@ -45,13 +42,13 @@ function PuzzleHintHelper:parseSolution()
   self:extractSwapPositions()
 end
 
----Append the swap the stack queued on the frame it just ran, so refused swap presses are never counted
----@param positions table[] the swaps recorded from this stack so far
+---Append every swap the stack queues to positions; refused swap presses never queue, so they are never counted
 ---@param stack Stack
-local function recordQueuedSwap(positions, stack)
-  if stack.swapCount > #positions then
-    positions[#positions + 1] = {row = stack.queuedSwapRow, column = stack.queuedSwapColumn}
-  end
+---@param positions table[]
+local function recordQueuedSwaps(stack, positions)
+  stack:connectSignal("swapAccepted", positions, function(_, row, column)
+    positions[#positions + 1] = {row = row, column = column}
+  end)
 end
 
 ---Replay the solution through an engine stack at the level it was recorded at and record each swap it queues
@@ -63,35 +60,27 @@ function PuzzleHintHelper:extractSwapPositions()
 
   self.solutionSwapPositions = {}
   local match = Match(self.puzzle:toPanelSource(), self.puzzle:toGameMode().matchRules)
-  local stack = match:createStackWithSettings(LevelPresets.getModern(Puzzle.SOLUTION_LEVEL), false, "controller")
-  ---@cast stack Stack
+  local stack = match:createStackWithSettings(LevelPresets.getModern(Puzzle.SOLUTION_LEVEL), false, "controller", self.puzzle.solution)
   match:start()
   stack:setMaxRunsPerFrame(1)
-  stack:receiveConfirmedInput(table.concat(self.solutionInputs))
+  recordQueuedSwaps(stack, self.solutionSwapPositions)
 
   while stack.clock < #self.solutionInputs and not match:hasEnded() do
     match:run()
-    recordQueuedSwap(self.solutionSwapPositions, stack)
   end
 end
 
 ---Record every swap the player's stack queues from now on in playerSwapPositions, the same way the solution's are
 ---@param stack Stack
 function PuzzleHintHelper:followPlayerStack(stack)
-  self.playerStack = stack
   self.playerSwapPositions = {}
-  stack:connectSignal("finishedRun", self, self.recordPlayerSwap)
+  recordQueuedSwaps(stack, self.playerSwapPositions)
 end
 
----Record the swap the player's stack queued on the frame it just ran
-function PuzzleHintHelper:recordPlayerSwap()
-  recordQueuedSwap(self.playerSwapPositions, self.playerStack)
-end
-
----Check if player is in sync with solution at current swap count
----@param playerSwapPositions table[] array of {row=number, column=number} where player made swaps
+---Check if the swaps the player made so far match the solution's
 ---@return boolean isInSync
-function PuzzleHintHelper:isPlayerInSync(playerSwapPositions)
+function PuzzleHintHelper:isPlayerInSync()
+  local playerSwapPositions = self.playerSwapPositions
   if not self.solutionSwapPositions or #playerSwapPositions == #self.solutionSwapPositions then
     return false
   end
@@ -113,15 +102,14 @@ function PuzzleHintHelper:isPlayerInSync(playerSwapPositions)
   return true
 end
 
----Get the next hint (cursor position for next swap)
----@param currentSwapCount integer number of swaps player has made so far
+---Get the next hint, the solution's swap after the ones the player made so far
 ---@return table? nextSwapPosition {row=number, column=number} or nil if no more swaps
-function PuzzleHintHelper:getNextHint(currentSwapCount)
+function PuzzleHintHelper:getNextHint()
   if not self.solutionSwapPositions then
     return nil
   end
-  
-  local nextSwapIndex = currentSwapCount + 1
+
+  local nextSwapIndex = #self.playerSwapPositions + 1
   if nextSwapIndex > #self.solutionSwapPositions then
     return nil -- no more swaps in solution
   end
