@@ -2,6 +2,8 @@ local Queue = require("common.lib.Queue")
 local tableUtils = require("common.lib.tableUtils")
 local logger = require("common.lib.logger")
 local fileUtils = require("client.src.FileUtils")
+local ModSettings = require("client.src.mods.ModSettings")
+local ModFolderTree = require("client.src.mods.ModFolderTree")
 
 local ModLoader = {}
 
@@ -13,6 +15,8 @@ ModLoader.cancellationList = {}
 ModLoader.loading_mod = nil -- currently loading mod
 ---@type table<Mod, string>
 ModLoader.invalidMods = {}
+---@type ModSettings? the player's mod settings, see ModLoader.getModSettings
+ModLoader.settings = nil
 
 -- loads the mod of the specified id
 ---@param mod Mod
@@ -167,35 +171,6 @@ function ModLoader.validateBundle(modsById, mod)
   return #mod.subIds >= 2
 end
 
-local blackLists = {}
-
--- all mods are default enabled until they're actively disabled upon which they are added to this blacklist
-function ModLoader.loadBlacklist(modType)
-  local blackList = {}
-  local path = modType.SAVE_DIR .. "/blacklist.txt"
-  if fileUtils.exists(path) then
-    for line in love.filesystem.lines(path) do
-      blackList[#blackList+1] = line
-    end
-  end
-  blackLists[modType.TYPE] = blackList
-  return blackList
-end
-
--- updates an items blacklist status and writes to disk
-function ModLoader.updateBlacklist(mod, enable)
-  local blackList = blackLists[mod.TYPE]
-  local i = tableUtils.indexOf(blackList, mod.id)
-
-  if enable and i then
-    table.remove(blackList, i)
-  elseif not enable and not i then
-    blackList[#blackList+1] = mod.id
-  end
-
-  love.filesystem.write(mod.SAVE_DIR .. "/blacklist.txt", table.concat(blackList, "\n"))
-end
-
 function ModLoader.loadAllMods(modType)
   local all = {}
 
@@ -207,62 +182,79 @@ function ModLoader.loadAllMods(modType)
   return all
 end
 
--- returns a shallow copy of the unfiltered mod list that had all blacklisted mods removed
--- bundles that became invalid by virtue of their submods being blacklisted are removed too
-function ModLoader.disableBlacklisted(modType, unfiltered)
-  local filtered = shallowcpy(unfiltered)
-  local blackList = ModLoader.loadBlacklist(modType)
-  for _, modId in ipairs(blackList) do
-    -- blacklisted mods are removed from the filtered output
-    logger.debug("Removing blacklisted " .. modType.TYPE .. " " .. modId .. " from the " .. modType.TYPE .. " selection")
-    filtered[modId] = nil
+-- Returns the player's mod settings, reading them on first use
+---@return ModSettings
+function ModLoader.getModSettings()
+  if not ModLoader.settings then
+    ModLoader.settings = ModSettings()
+    ModLoader.settings:load()
   end
-
-  -- if any bundles became invalid by having all of its submods disabled, we need to remove those too
-  for modId, mod in pairs(filtered) do
-    if mod:isBundle() then
-      if tableUtils.trueForAll(mod.subIds, function(subId) return (filtered[subId] == nil) end) then
-        logger.info("Disabling " .. modId .. " because all its sub mods have been disabled")
-        filtered[modId] = nil
-      end
-    end
-  end
-
-  if tableUtils.length(filtered) == 0 then
-    -- fallback for configurations in which all mods have been disabled
-    filtered = shallowcpy(unfiltered)
-  end
-
-  return filtered
+  return ModLoader.settings
 end
 
-function ModLoader.filterToVisible(modType, filtered, ids)
-  -- holds mod ids for the current theme, those mods will appear in the selection
-  local visible = {}
-  local path = themes[config.theme].path .. "/" .. modType.SAVE_DIR .. ".txt"
-
-  if fileUtils.exists(path) then
-    for line in love.filesystem.lines(path) do
-      line = trim(line) -- remove whitespace
-      -- found at least a valid mod in a $(modtype.TYPE).txt file
-      if filtered[line] then
-        visible[#visible + 1] = line
-      end
-    end
-  else
-    for _, id in ipairs(ids) do
-      if filtered[id] and filtered[id].isVisible then
-        visible[#visible + 1] = id
-      end
-    end
+-- Builds the folder tree of the valid mods with the player's settings, importing blacklist.txt if there are none yet
+---@param modType table the class table of the mod type
+---@param modsById table<string, table>
+---@param ids string[] ids of the valid mods in default order
+---@return ModFolderTree
+function ModLoader.buildFolderTree(modType, modsById, ids)
+  local settings = ModLoader.getModSettings()
+  local mods = {}
+  local keysById = {}
+  for _, id in ipairs(ids) do
+    mods[#mods + 1] = modsById[id]
+    keysById[id] = ModFolderTree.settingsKeyForPath(modsById[id].path, modType.SAVE_DIR)
   end
+  settings:importBlacklist(modType.SAVE_DIR, keysById)
+  return ModFolderTree.fromMods(mods, modType.SAVE_DIR, settings)
+end
 
-  if #visible == 0 then
-    -- fallback in case there were no visible mods left
-    visible = shallowcpy(ids)
+-- Returns the lists of a mod type that has a random mod, with the random mod last in the ids and enabled, choosing
+-- from the visible mods
+---@param modType table the class table of the mod type
+---@param tree ModFolderTree
+---@return string[] ids
+---@return table<string, table> enabled
+---@return string[] visible
+function ModLoader.listModsWithRandomEntry(modType, tree)
+  local ids, enabled, visible = tree:listModsByStatusWithFallbacks()
+
+  local random = modType.getRandom()
+  ids[#ids + 1] = random.id
+  enabled[random.id] = random
+  random.subIds = visible
+
+  return ids, enabled, visible
+end
+
+---@class ModTypeLoader
+---@field tree ModFolderTree the folders of the mod type with the player's settings
+---@field refresh fun() rebuilds the mod type's globals from the tree
+
+-- Sets the status of one of the loader's folders or mods and rebuilds its globals, see ModFolderTree:setStatusAndSave
+---@param loader ModTypeLoader
+---@param node ModFolderNode
+---@param status ModStatus
+---@return boolean changed
+function ModLoader.setModStatusAndRefresh(loader, node, status)
+  local changed = loader.tree:setStatusAndSave(node, status)
+  if changed then
+    loader.refresh()
   end
+  return changed
+end
 
-  return visible
+-- Moves one of the loader's folders or mods within its folder and rebuilds its globals, see ModFolderTree:moveWithinFolderAndSave
+---@param loader ModTypeLoader
+---@param node ModFolderNode
+---@param offset integer
+---@return boolean moved
+function ModLoader.moveModInDisplayOrder(loader, node, offset)
+  local moved = loader.tree:moveWithinFolderAndSave(node, offset)
+  if moved then
+    loader.refresh()
+  end
+  return moved
 end
 
 -- fix config if it's missing or does not exist
@@ -288,18 +280,16 @@ function ModLoader.removeInvalid(unfiltered)
 end
 
 -- locally initializes mod tables for the Mod type and preloads all of its mods
--- returns 4 mod tables:
 ---@param modType any the class table of the mod type
 ---@return table<string, Mod> all all valid mods of that type
----@return table<integer, string> ids all ids of valid mods
----@return table<string, Mod> filtered all mods that made it through the blacklist filter
----@return table<integer, string> visible all mods that are supposed to be visible
+---@return string[] ids ids of all valid mods in the player's order, the random mod last
+---@return table<string, Mod> filtered all mods that are not off
+---@return string[] visible ids of the mods shown in selection menus
+---@return ModFolderTree tree the folders of the mods with the player's settings
 function ModLoader.initMods(modType)
   local all = ModLoader.loadAllMods(modType)
   local invalid = ModLoader.removeInvalid(all)
-  local ids = ModLoader.fillModIdList(modType, all)
-  local filtered = ModLoader.disableBlacklisted(modType, all)
-  local visible = ModLoader.filterToVisible(modType, filtered, ids)
+  local validIds = ModLoader.fillModIdList(modType, all)
 
   -- in case of a previous init, we should make sure to have cleared old entries for this mod type
   for _, mod in pairs(all) do
@@ -311,10 +301,10 @@ function ModLoader.initMods(modType)
   end
 
   modType.loadDefaultMod()
+  modType.loadRandomMod()
 
-  local random = modType.getRandom(visible)
-  ids[#ids+1] = random.id
-  filtered[random.id] = random
+  local tree = ModLoader.buildFolderTree(modType, all, validIds)
+  local ids, filtered, visible = ModLoader.listModsWithRandomEntry(modType, tree)
 
   ModLoader.fixConfigMod(modType, filtered, visible)
 
@@ -322,9 +312,7 @@ function ModLoader.initMods(modType)
     mod:preload()
   end
 
-  return all, ids, filtered, visible
+  return all, ids, filtered, visible, tree
 end
-
-
 
 return ModLoader

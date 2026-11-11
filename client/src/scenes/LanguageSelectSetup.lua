@@ -5,6 +5,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 local save = require("client.src.save")
 local logger = require("common.lib.logger")
+local InputSource = require("client.src.input.InputSource")
 
 local LanguageSelectSetup = class(function(self, sceneParams)
   self.music = "main"
@@ -92,7 +93,7 @@ function LanguageSelectSetup:update(dt)
     end
   end
   
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
 end
 
 function LanguageSelectSetup:draw()

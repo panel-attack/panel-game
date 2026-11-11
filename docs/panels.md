@@ -7,6 +7,7 @@ Adding/modding panels: step by step instructions (Windows example):
 4. Place assets and json file in that folder with the proper names to add your data. Exhaustive list below.
 
 Note: all panels will be loaded on game start.  
+Players can hide panel sets from the panel selection or turn them off in Options > Mod Management. When an opponent uses a panel set you turned off, you see their panels drawn with yours.  
 While working on a panel set you can use the Ctrl+Shift+Alt+P shortcut to reload all panel graphics in the game.
 
 # config.json
@@ -231,32 +232,38 @@ If possible, reference existing panel sets using sheets as it's a lot easier to 
 ## metalend0
 
 Image representing the left edge of shock garbage.  
-Should be half a panel wide and an entire panel tall.
+Should be half a panel wide and an entire panel tall.  
+Recommended size: 48x96px (2x resolution)
 
 ## metalend1
 
 Image representing the right edge of shock garbage.  
-Should be half a panel wide and an entire panel tall.
+Should be half a panel wide and an entire panel tall.  
+Recommended size: 48x96px (2x resolution)
 
 ## metalmid
 
 Image representing the center part of shock garbage.  
-Should be half a panel wide and an entire panel tall.
+Should be half a panel wide and an entire panel tall.  
+Recommended size: 48x96px (2x resolution)
 
 ## garbageflash
 
 Image representing during the flash animation when shock garbage matches.
-Should be a full panel tall and wide.
+Should be a full panel tall and wide.  
+Recommended size: 96x96px (2x resolution)
 
 # Panel Images
 
 ## panel00
 
-Used in puzzle mode, represents a panel that can be swapped but not matched with other panels
+Used in puzzle mode, represents a panel that can be swapped but not matched with other panels  
+Recommended size: 96x96px (2x resolution)
 
 ## "single" panel images
 
-All panel images should use the same size and have equal width and height.
+All panel images should use the same size and have equal width and height.  
+Recommended size: 96x96px (2x resolution)
 
 - "panel11", ...,  "panel17", "panel21", ...,  "panel27", ... , "panel51", ...,  "panel57"
 - "panel61", ...,  "panel67": sixth panel used above level 8
@@ -292,4 +299,5 @@ One sheet for each panel color:
 - panel-8.png for metal/shock panels
 
 All sheets have to be the same size, feature the same amount of rows and should have the same amount of frames in each row.  
+Recommended size per frame: 96x96px (2x resolution)  
 The bottom most row of the sheet **must** be used in the configuration, otherwise the panels will render incorrectly.

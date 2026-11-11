@@ -483,6 +483,9 @@ ss_touch,"Type of input method – touch, as in “touch screen”",Touch,Tactil
 ss_winrate,,Winrate:,Taux de victoire :,Taxa de vitórias:,勝率：,Tasa de victorias:,Gewinnrate:,Rateo delle vittorie:,อัตราการชนะ:
 ss_wins,,Wins:,Victoires :,Vitórias:,勝ち：,Victorias:,Siege:,Vittorie:,จำนวนเกมที่ชนะ:
 ss_ex_mode,,EX Mode,Mode EX,Modo EX,EXモード,Modo EX,EX,Modalità EX,โหมด EX 
+ss_network_latency,Title of the card in character select that lists each player's ping,Network Latency,Latence réseau,Latência de rede,ネットワーク遅延,Latencia de red,Netzwerklatenz,Latenza di rete,ความหน่วงของเครือข่าย
+ss_ping_average,"A player's recent average ping on the Network Latency card, %1 in milliseconds",%1 ms,%1 ms,%1 ms,%1 ms,%1 ms,%1 ms,%1 ms,%1 ms
+ss_rollback_likely,Warning at the bottom of the Network Latency card while a player's connection is slow enough to cause rollback,Rollback likely,Rollback probable,Rollback provável,ロールバックの恐れ,Rollback probable,Rollback wahrscheinlich,Rollback probabile,อาจเกิดการย้อนเฟรม
 rp_browser_header,,~ Replay Browser ~,~ Bibliothèque des replays ~,~ Navegador de Replays ~,～リプレイブラウザ～,~ Navegador de repeticiones ~,~ Replay Browser ~,~ Navigatore Replay ~,- คลัง replay -
 rp_browser_info_header,,~ Replay Information ~,~ Informations du replay ~,~ Informações de Replays ~,～リプレイ情報～,~ Información de la repetición ~,~ Replay Informationen ~,~ Informazioni Replay ~,- ข้อมูล replay -
 rp_browser_current_dir,,Current directory: %1,Dossier actuel : %1,Pasta atual: %1,現在のディレクトリ：%1,Directorio actual: %1,Aktuelles Verzeichnis: %1,Elenco corrente: %1,ไดเรคทอรี่ปัจจุบัน: %1
@@ -635,11 +638,21 @@ op_about_attack_files,Information about attack files and mod installation,About 
 op_system_info,Button for showing system information,System Info,Informations système,Informações do sistema,システム情報,Información del sistema,Systeminformationen,Informazioni di sistema,ข้อมูลระบบ
 op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,Performance/Consommation de la batterie,Desempenho/Dreno de bateria,パフォーマンス/バッテリー消費,Rendimiento/Consumo de batería,Performance/Stromverbrauch,Prestazioni/Consumo batteria,ประสิทธิภาพ/การใช้แบตเตอรี่
 op_about_installing_mods,Information about installing mods,Installing Mods,Installation de mods,Instalando mods,MODのインストール,Cómo instalar mods,Mods installieren,Installazione mod,การติดตั้งม็อด
-mod_manage_icon,Label for icon in mod management,Icon,Icône,Ícone,アイコン,Icono,Symbol,Icona,ไอคอน
 mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Name,Nome,ชื่อ
 mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
 mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submods,サブMOD,Submods,Submods,Submod,ซับม็อด
-mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
+mod_manage_status,Label for the status column in mod management,Status,Statut,Status,状態,Estado,Status,Stato,สถานะ
+mod_manage_order,Label for the order column in mod management,Order,Ordre,Ordem,順番,Orden,Reihenfolge,Ordine,ลำดับ
+mod_manage_off,Status of a mod that is not loaded,Off,Désactivé,Desligado,オフ,Apagado,Aus,Disattivato,ปิด
+mod_manage_hidden,Status of a mod that is loaded but not offered for selection,Hidden,Caché,Oculto,非表示,Oculto,Versteckt,Nascosto,ซ่อน
+mod_manage_shown,Status of a mod that is offered for selection,Shown,Affiché,Visível,表示,Visible,Sichtbar,Visibile,แสดง
+mod_manage_builtin,Name of the folder holding the mods that come with the game,Built-in,Intégré,Embutido,内蔵,Integrado,Mitgeliefert,Integrato,ในตัว
+mod_manage_mod_count,Number of mods inside a folder in mod management,%1 mods,%1 mods,%1 mods,%1個のMOD,%1 mods,%1 Mods,%1 mod,%1 ม็อด
+mod_manage_mod_count_one,Text for a folder holding a single mod in mod management,%1 mod,%1 mod,%1 mod,%1個のMOD,%1 mod,%1 Mod,%1 mod,%1 ม็อด
+mod_manage_title,Title of the mod management screen and its options menu entry,Mod Management,Gestion des mods,Gerenciamento de mods,MOD管理,Gestión de mods,Mod-Verwaltung,Gestione mod,การจัดการม็อด
+mod_manage_characters,Tab for characters in mod management,Characters,Personnages,Personagens,キャラクター,Personajes,Charaktere,Personaggi,ตัวละคร
+mod_manage_stages,Tab for stages in mod management,Stages,Terrains,Cenários,ステージ,Escenarios,Arenen,Scenario,ด่าน
+mod_manage_panels,Tab for panel sets in mod management,Panel Sets,Jeux de blocs,Conjuntos de painéis,パネルセット,Juegos de paneles,Panel-Sets,Set di tessere,ชุดพาเนล
 mm_2_time,,2P time attack,2J contre la montre,2J contra o tempo,2P スコアアタック,2J Contrarreloj,2P Time Attack,2P a tempo,2P time attack
 op_about_puzzles,,About custom puzzles,À propos des puzzles personnalisés,Sobre quebra-cabeças personalizados,カスタムパズルについて,Acerca de los puzles personalizados,How to: Eigene Puzzles erstellen,A proposito dei puzzle personalizzabili,เกี่ยวกับ custom puzzles
 discord_welcome_title,Title for Discord community welcome screen,Welcome to Panel Attack!,Bienvenue dans Panel Attack!,Bem-vindo ao Panel Attack!,パネルアタックへようこそ！,¡Bienvenido a Panel Attack!,Willkommen bei Panel Attack!,Benvenuti in Panel Attack!,ยินดีต้อนรับสู่ Panel Attack!
@@ -679,3 +692,15 @@ puzzle_set_description_advanced_garbage_chains,,The hardest challenge for garbag
 puzzle_set_name_intermediate_garbage_chains,,Garbage Chains,Chaînes de déchets,Correntes de Lixo,ガーベッジチェイン,Cadenas de Escombros,Müllketten,Catene di Spazzatura,เชนขยะ
 puzzle_set_description_intermediate_garbage_chains,,Continue setting up chains from falling garbage with less time.,"Continuez à préparer des chaînes à partir des déchets qui tombent, avec moins de temps.","Continue preparando correntes a partir do lixo que cai, com menos tempo.",時間が少ない中で、落ちてくるガーベッジからのチェインを組み立て続けましょう。,"Sigue preparando cadenas a partir de los escombros que caen, con menos tiempo.","Bereite weiter Ketten aus fallendem Müll vor, mit weniger Zeit.","Continua a preparare catene dalla spazzatura che cade, con meno tempo.",เตรียมเชนจากขยะที่ตกลงมาต่อไปโดยมีเวลาน้อยลง
 hold_continue_button,Text shown on the game over screen when a button has to be held to continue,Hold Any Button,Maintenez une touche enfoncée,Mantenha qualquer botão pressionado,任意のボタンを長押しします,Mantén pulsado cualquier botón,Halte eine beliebige Taste gedrückt.,Tieni premuto qualsiasi pulsante,กดปุ่มใดก็ได้ค้างไว้
+puzzle_help_hint_button,Button a touch player taps for a puzzle hint,Hint,Indice,Dica,ヒント,Pista,Hinweis,Suggerimento,คำใบ้
+puzzle_help_solution_button,Button a touch player taps to watch a puzzle's solution,Solution,Solution,Solução,解答,Solución,Lösung,Soluzione,เฉลย
+notification_screenshot_saved,Notification shown when a screenshot was saved,Screenshot saved,Capture d'écran enregistrée,Captura de tela salva,スクリーンショットを保存しました,Captura de pantalla guardada,Screenshot gespeichert,Screenshot salvato,บันทึกภาพหน้าจอแล้ว
+notification_stack_copied,Notification shown when the stack info of a match was copied to the clipboard,Stack info copied,Infos de la pile copiées,Informações da pilha copiadas,スタック情報をコピーしました,Información del stack copiada,Stapel-Info kopiert,Info dello stack copiate,คัดลอกข้อมูลสแต็กแล้ว
+puzzle_goal_combo_heading,Heading for puzzles that ask for a combo,COMBO,COMBO,COMBO,コンボ,COMBO,KOMBO,COMBO,คอมโบ
+puzzle_goal_combo_chain_heading,Heading for puzzles that ask for a combo and a chain,COMBO + CHAIN,COMBO + CHAÎNE,COMBO + CORRENTE,コンボ + チェイン,COMBO + CADENA,KOMBO + KETTE,COMBO + CATENA,คอมโบ + เชน
+puzzle_goal_chain_target_objective,Objective for a chain of an exact size; %1 is the chain size,Make an x%1 chain,Faites une chaîne x%1,Faça uma corrente x%1,x%1チェインを作る,Haz una cadena x%1,Baue eine x%1 Kette,Fai una catena x%1,ทำเชน x%1
+puzzle_goal_chain_target_repeated_objective,Objective for several chains of an exact size; %1 is the chain size and %2 how many,Make %2 x%1 chains,Faites %2 chaînes x%1,Faça %2 correntes x%1,x%1チェインを%2回作る,Haz %2 cadenas x%1,Baue %2 x%1 Ketten,Fai %2 catene x%1,ทำเชน x%1 จำนวน %2 ครั้ง
+puzzle_goal_combo_target_objective,Objective for a combo of an exact size; %1 is the combo size,Make a +%1 combo,Faites un combo +%1,Faça um combo +%1,+%1コンボを作る,Haz un combo +%1,Baue eine +%1 Kombo,Fai una combo +%1,ทำคอมโบ +%1
+puzzle_goal_combo_target_repeated_objective,Objective for several combos of an exact size; %1 is the combo size and %2 how many,Make %2 +%1 combos,Faites %2 combos +%1,Faça %2 combos +%1,+%1コンボを%2回作る,Haz %2 combos +%1,Baue %2 +%1 Kombos,Fai %2 combo +%1,ทำคอมโบ +%1 จำนวน %2 ครั้ง
+puzzle_goal_empty_board_objective,Objective for emptying the board when it is one of several goals,Clear all colored panels,Éliminez tous les blocs colorés,Limpe todos os painéis coloridos,色付きパネルを全て消去,Elimina todos los paneles de color,Löse alle farbigen Panels auf,Elimina tutti i pannelli colorati,เคลียร์แผงสีทั้งหมด
+puzzle_goal_swaps_left,How many swaps the player has left; %1 is the number,Swaps left: %1,Échanges restants : %1,Trocas restantes: %1,残り交換回数: %1,Intercambios restantes: %1,Verbleibende Züge: %1,Scambi rimasti: %1,สลับได้อีก %1 ครั้ง

@@ -3,6 +3,7 @@ local tableUtils = require("common.lib.tableUtils")
 local inputFieldManager = require("client.src.ui.inputFieldManager")
 local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
+local PanelLoader = require("client.src.mods.PanelLoader")
 
 local function runSystemCommands()
   -- toggle debug mode
@@ -19,7 +20,7 @@ local function runSystemCommands()
     characters_reload_graphics()
   -- reload panels
   elseif input.allKeys.isDown["p"] then
-    panels_init()
+    PanelLoader.initPanels()
   -- reload stages
   elseif input.allKeys.isDown["s"] then
     stages_reload_graphics()
@@ -34,6 +35,9 @@ local function takeScreenshot()
   local filename = "screenshot_" .. "v" .. config.version .. "-" .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec) .. ".png"
   love.filesystem.createDirectory("screenshots")
   love.graphics.captureScreenshot("screenshots/" .. filename)
+  -- the screenshot is taken at the end of this frame, which shouldn't show the notifications confirming earlier ones
+  GAME.notificationCenter:skipNextDraw()
+  GAME.notificationCenter:show("notification_screenshot_saved")
   return true
 end
 
@@ -61,6 +65,7 @@ local function handleCopy()
     if tableUtils.length(stacks) > 0 then
       local encodeArguments = {indent = true, keyorder = {"P1", "P2", "Player", "Stop", "Shake", "Stack"}}
       love.system.setClipboardText(json.encode(stacks, encodeArguments))
+      GAME.notificationCenter:show("notification_stack_copied")
       return true
     end
   end

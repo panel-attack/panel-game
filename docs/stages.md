@@ -128,7 +128,7 @@ Values can be between 0 and 1.
 
 Possible values are true or false.  
 If set to false, the stage is hidden in character selection but may still get used if the opponent picks it.  
-Visibility may also be controlled by the theme's stages.txt
+This is only the default: players can change it in Options > Mod Management.
 
 -----------------------------------------------------------
 

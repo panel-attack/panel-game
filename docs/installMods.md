@@ -90,6 +90,13 @@ Directories and files that start with two underscores (__) will be ignored.
 So all you need to do to disable a character or stage is to rename its folder.  
 You can also hide single replay, puzzle and training files by renaming them and adding __ in front.
 
-Alternatively, Panel Attack offers an option to disable characters or stages via an options menu.  
-This will add them to a blacklist that keeps them from being loaded but you can enable them again later on.  
+Alternatively, Options > Mod Management lets you set every character, stage and panel set, and every folder holding them, to one of three statuses:
+  - **Shown**: offered in selection and used for random picks.
+  - **Hidden**: not offered in selection, but still used when an opponent picks it.
+  - **Off**: not loaded; an opponent's character or stage you turned off is replaced with a random one, and their panel set with yours.
+
+A folder's status caps everything inside it, so a hidden folder hides all its mods, and an off folder turns them all off. The mods inside keep their own status, so raising the folder again brings them back as they were.  
+The arrows next to each row change the order mods are listed in, within their folder. Mods installed later go at the end of a folder you reordered.
+
+Your choices are saved in modSettings.json in the user data folder. The characters and stages that are off are also written to characters/blacklist.txt and stages/blacklist.txt so older versions of Panel Attack leave them off too.  
 Directories prefixed with __ do not show up in this menu

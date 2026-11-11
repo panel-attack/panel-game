@@ -17,6 +17,7 @@ local COLORS = {
 ---@class PuzzleHelpDisplayOptions : UiElementOptions
 ---@field puzzle Puzzle The puzzle instance to provide help for
 ---@field puzzleGame table The puzzle game scene for interactions
+---@field stack Stack The engine stack the puzzle is played on
 
 ---@enum PuzzleHelpState
 local PuzzleHelpState = {
@@ -35,7 +36,6 @@ local PuzzleHelpState = {
 ---@field contentLabel Label The main content text label
 ---@field buttonLabel Label The button instruction label
 ---@field helpContent table Database of help content for different puzzle patterns
----@field playerSwapPositions table[] Tracked positions where player made swaps
 ---@field tauntDownPressed boolean Whether taunt down button is currently pressed
 ---@overload fun(options: PuzzleHelpDisplayOptions): PuzzleHelpDisplay
 local PuzzleHelpDisplay = class(
@@ -44,9 +44,9 @@ local PuzzleHelpDisplay = class(
     assert(options.puzzleGame)
     self.puzzleGame = options.puzzleGame
     self.hintHelper = PuzzleHintHelper(self.puzzle)
+    self.hintHelper:followPlayerStack(options.stack)
     self.state = PuzzleHelpState.HIDDEN
     self.idleTimer = 0.0
-    self.playerSwapPositions = {}
     self.tauntDownPressed = false
     
     self:createLabels()
@@ -103,10 +103,6 @@ function PuzzleHelpDisplay:resetIdleTimer()
   self.idleTimer = 0.0
 end
 
-function PuzzleHelpDisplay:trackPlayerSwap(row, column)
-  table.insert(self.playerSwapPositions, {row = row, column = column})
-end
-
 function PuzzleHelpDisplay:onTauntUp()
   self.tauntDownPressed = false
 end
@@ -117,6 +113,11 @@ function PuzzleHelpDisplay:onTauntDown()
   end
   
   self.tauntDownPressed = true
+  self:requestHint()
+end
+
+-- Show the help and give the next hint, for the hint key or the touch hint button
+function PuzzleHelpDisplay:requestHint()
   if (self.state == PuzzleHelpState.HIDDEN or self.state == PuzzleHelpState.HINT_SHOWN) then
     self:transitionToState(PuzzleHelpState.SHOW_HELP)
   end
@@ -220,11 +221,11 @@ function PuzzleHelpDisplay:executeHint()
     return self:playSolution()
   end
 
-  if self.hintHelper:isPlayerInSync(self.playerSwapPositions) == false then
+  if self.hintHelper:isPlayerInSync() == false then
     self.puzzleGame:resetPuzzle()
   end
-  
-  local nextHint = self.hintHelper:getNextHint(#self.playerSwapPositions)
+
+  local nextHint = self.hintHelper:getNextHint()
   if nextHint == nil then
     return false
   end

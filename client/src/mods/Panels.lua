@@ -13,6 +13,9 @@ local ANIMATION_STATES = {
   "garbagePop"
 }
 
+-- the size a panel is drawn at on the 1x canvas
+local EXPECTED_PANEL_SIZE = 48
+
 local OPTIONAL_ANIMATION_STATES = {
   "garbageBounce",
   "panic",
@@ -102,64 +105,10 @@ function Panels:json_init()
   return false
 end
 
--- Adds the panels at the given path and directory
-local function addPanelDirectory(current_path, dir)
-  local panel_set = Panels(current_path, dir)
-  local success = panel_set:json_init()
-
-  if success then
-    if panels[panel_set.id] ~= nil then
-      logger.trace(current_path .. " has been ignored since a panel set with this id has already been found")
-    else
-      panels[panel_set.id] = panel_set
-      panels_ids[#panels_ids + 1] = panel_set.id
-    end
-  end
-end
-
--- Recursively load all panel images from the given directory
-local function add_panels_from_dir_rec(path)
-  local lfs = love.filesystem
-  local raw_dir_list = fileUtils.getFilteredDirectoryItems(path)
-  for i, v in ipairs(raw_dir_list) do
-    local current_path = path .. "/" .. v
-    if lfs.getInfo(current_path, "directory") then
-      -- call recursively: facade folder
-      add_panels_from_dir_rec(current_path)
-
-      -- init stage: 'real' folder
-      addPanelDirectory(current_path, v)
-    end
-  end
-end
-
-function panels_init()
-  panels = {} -- holds all panels, all of them will be fully loaded
-  panels_ids = {} -- holds all panels ids
-
-  -- add default panel set manually because it has a "__" in it.
-  addPanelDirectory("client/assets/panels/__default", "__default")
-  add_panels_from_dir_rec("client/assets/default_data/panels")
-  add_panels_from_dir_rec("panels")
-
-  -- fix config panel set if it's missing
-  if not config.panels or not panels[config.panels] then
-    if panels["pacci"] then
-      config.panels = "pacci"
-    else
-      config.panels = tableUtils.getRandomElement(panels_ids)
-    end
-  end
-
-  for _, panel in pairs(panels) do
-    panel:load()
-  end
-end
-
-local function load_panel_img(path, name)
-  local img = GraphicsUtil.loadImageFromSupportedExtensions(path .. "/" .. name)
+local function load_panel_img(path, name, expectedWidth, expectedHeight)
+  local img = GraphicsUtil.loadImageFromSupportedExtensions(path .. "/" .. name, expectedWidth, expectedHeight)
   if not img then
-    img = GraphicsUtil.loadImageFromSupportedExtensions("client/assets/panels/__default/" .. name)
+    img = GraphicsUtil.loadImageFromSupportedExtensions("client/assets/panels/__default/" .. name, expectedWidth, expectedHeight)
 
     if not img then
       error("Could not find default panel image")
@@ -188,12 +137,15 @@ function Panels:loadSheets()
   end
 
   self.size = self.sheets[1]:getHeight() / maxRowUsed
+  for _, sheet in ipairs(self.sheets) do
+    GraphicsUtil.setFilterForExpectedSize(sheet, nil, EXPECTED_PANEL_SIZE * maxRowUsed)
+  end
 end
 
 --
 function Panels:convertSinglesToSheetTexture(images, animationStates)
   local dpiscale = images[1]:getDPIScale()
-  local filterMin, filterMag = images[1]:getFilter()
+  local filter = GraphicsUtil.combinedFilter(images)
 
   local image = GraphicsUtil.renderToTexture(
     self.size * 10,
@@ -215,8 +167,8 @@ function Panels:convertSinglesToSheetTexture(images, animationStates)
       end
     end,
     dpiscale,
-    filterMin,
-    filterMag
+    filter,
+    filter
   )
 
   return image
@@ -272,7 +224,7 @@ function Panels:loadSingles()
     -- and likewise there are fallbacks up to panel 7
     for i = 1, math.max(maxIndex, 7) do
       if indexToFile[i] or i <= 7 then
-        images[color][i] = load_panel_img(self.path, indexToFile[i] or ("panel" .. color .. i))
+        images[color][i] = load_panel_img(self.path, indexToFile[i] or ("panel" .. color .. i), EXPECTED_PANEL_SIZE, EXPECTED_PANEL_SIZE)
         if images[color][i] then
           self.size = math.max(images[color][i]:getWidth(), self.size) -- for scaling
         end
@@ -324,14 +276,14 @@ function Panels:load()
 
   self:validateConfig()
 
-  self.greyPanel = load_panel_img(self.path, "panel00")
+  self.greyPanel = load_panel_img(self.path, "panel00", EXPECTED_PANEL_SIZE, EXPECTED_PANEL_SIZE)
   self.size = self.greyPanel:getWidth()
 
   self.images.metals = {
-    left = load_panel_img(self.path, "metalend0"),
-    mid = load_panel_img(self.path, "metalmid"),
-    right = load_panel_img(self.path, "metalend1"),
-    flash = load_panel_img(self.path, "garbageflash")
+    left = load_panel_img(self.path, "metalend0", EXPECTED_PANEL_SIZE / 2, EXPECTED_PANEL_SIZE),
+    mid = load_panel_img(self.path, "metalmid", EXPECTED_PANEL_SIZE / 2, EXPECTED_PANEL_SIZE),
+    right = load_panel_img(self.path, "metalend1", EXPECTED_PANEL_SIZE / 2, EXPECTED_PANEL_SIZE),
+    flash = load_panel_img(self.path, "garbageflash", EXPECTED_PANEL_SIZE, EXPECTED_PANEL_SIZE)
   }
 
 
