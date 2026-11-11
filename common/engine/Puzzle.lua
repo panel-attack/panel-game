@@ -181,6 +181,9 @@ function Puzzle.startTimingSpellings()
   return sortedValueList(Puzzle.START_TIMING_IN_FILE)
 end
 
+-- solutions are only recorded at this level, so they only replay faithfully with its panel timing
+Puzzle.SOLUTION_LEVEL = 10
+
 ---@alias PuzzleType "moves" | "chain" | "clear" | "goals"
 -- the types a version 3 file could name; a puzzle whose goals are none of them has the type "goals"
 Puzzle.PUZZLE_TYPES = { moves = "moves", chain = "chain", clear = "clear" }

@@ -2,6 +2,8 @@ local consts = require("common.engine.consts")
 local tableUtils = require("common.lib.tableUtils")
 local StackReplayTestingUtils = require("common.tests.engine.StackReplayTestingUtils")
 local LevelPresets = require("common.data.LevelPresets")
+local Puzzle = require("common.engine.Puzzle")
+local TouchDataEncoding = require("common.data.TouchDataEncoding")
 
 local testReplayFolder = "common/tests/engine/replays/"
 
@@ -66,4 +68,29 @@ local function simpleTouchTest()
   StackReplayTestingUtils:cleanup(match)
 end
 
+-- A puzzle that waits for the first swap to start must start on a touch swap too, or the swap never happens
+local function touchSwapStartsFirstSwapPuzzleTest()
+  local puzzle = Puzzle({
+    puzzleType = "chain",
+    startTiming = Puzzle.START_TIMINGS.firstSwap,
+    stack = "994494"
+  })
+  local match = StackReplayTestingUtils.createSinglePlayerMatch(puzzle:toGameMode(), puzzle:toPanelSource(), "touch")
+  local stack = match.stacks[1]
+  local function touch(row, column, frames)
+    return string.rep(TouchDataEncoding.touchDataToLatinString(false, row, column, stack.width), frames)
+  end
+  -- drag the panel at row 1 column 6 one column to the left
+  stack:receiveConfirmedInput(touch(0, 0, 10) .. touch(1, 6, 3) .. touch(1, 5, 3) .. touch(0, 0, 10))
+
+  while stack.clock < #stack.confirmedInput and not match:hasEnded() do
+    match:run()
+  end
+
+  assert(stack.stopWatchIsRunning, "The touch swap should start the puzzle")
+  assert(stack.panels[1][5].color == 4 and stack.panels[1][6].color == 9, "The dragged panel should have swapped left")
+  StackReplayTestingUtils:cleanup(match)
+end
+
 simpleTouchTest()
+touchSwapStartsFirstSwapPuzzleTest()

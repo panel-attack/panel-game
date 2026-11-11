@@ -10,8 +10,14 @@ local PuzzleGoalDisplay = require("client.src.graphics.PuzzleGoalDisplay")
 local PuzzleHelpDisplay = require("client.src.ui.PuzzleHelpDisplay")
 local PuzzleSetIterator = require("client.src.PuzzleSetIterator")
 local PuzzleSet = require("client.src.PuzzleSet")
+local Puzzle = require("common.engine.Puzzle")
 local MultibarElement = require("client.src.ui.MultibarElement")
 local ui = require("client.src.ui")
+
+-- below the goal and help displays, which grow downwards from 358 and 490
+local HINT_BUTTON_Y = 640
+local HINT_BUTTON_WIDTH = 120
+local HINT_BUTTON_HEIGHT = 48
 
 -- Scene for a puzzle mode instance of the game
 ---@class PuzzleGame : GameBase
@@ -24,6 +30,7 @@ local ui = require("client.src.ui")
 ---@field currentPuzzleIndices integer[]?
 ---@field puzzleGoalDisplay PuzzleGoalDisplay?
 ---@field puzzleHelpDisplay PuzzleHelpDisplay?
+---@field hintButton TextButton? the button a touch player taps for a hint, as they have no hint key
 ---@field queuedInputs string[] Queue of inputs to be fed one per frame
 ---@field inputQueueIndex integer Current position in the input queue
 ---@field hintUsed boolean Whether a hint has been used for this puzzle
@@ -125,6 +132,12 @@ function PuzzleGame:customLoad()
     GAME.battleRoom.sceneParameters.restoreLevelAfterCreation = nil
   end
 
+  -- Restore the touch input method if the solution playback match was created as a controller stack
+  if GAME.battleRoom.sceneParameters.restoreInputMethodAfterCreation then
+    GAME.localPlayer:setInputMethod(GAME.battleRoom.sceneParameters.restoreInputMethodAfterCreation)
+    GAME.battleRoom.sceneParameters.restoreInputMethodAfterCreation = nil
+  end
+
   -- Override drawTimer to prevent elapsed time display in puzzles
   ---@diagnostic disable-next-line: duplicate-set-field
   self.match.drawTimer = function() end
@@ -200,15 +213,42 @@ function PuzzleGame:customLoad()
       width = 0,
       height = 0,
       puzzle = currentPuzzle,
-      puzzleGame = self
+      puzzleGame = self,
+      stack = stack.engine
     })
     self.uiRoot:addChild(self.puzzleHelpDisplay)
+
+    -- a touch player has no hint key; a solution's playback match is a controller stack and gets no button
+    if stack.engine.inputMethod == "touch" and currentPuzzle.solution then
+      local isMovePuzzle = currentPuzzle.puzzleType == Puzzle.PUZZLE_TYPES.moves
+      self:createHintButton(stackRightEdge + 2, HINT_BUTTON_Y, isMovePuzzle and "puzzle_help_hint_button" or "puzzle_help_solution_button")
+    end
 
     -- If solution is playing (non-move puzzle with hint used), show the hint state
     if self.hintUsed and currentPuzzle.puzzleType ~= "moves" then
       self.puzzleHelpDisplay:transitionToState("hint_shown")
     end
   end
+end
+
+-- Add the button a touch player taps for a hint, or for the solution of a puzzle that has no swap hints
+---@param x number
+---@param y number
+---@param labelKey string localization key of the button's text
+function PuzzleGame:createHintButton(x, y, labelKey)
+  self.hintButton = ui.TextButton({
+    x = x,
+    y = y,
+    width = HINT_BUTTON_WIDTH,
+    height = HINT_BUTTON_HEIGHT,
+    label = ui.Label({text = labelKey, fontSize = 20}),
+    onClick = function()
+      if self.puzzleHelpDisplay and not self.match.ended and not self.match.isPaused then
+        self.puzzleHelpDisplay:requestHint()
+      end
+    end
+  })
+  self.uiRoot:addChild(self.hintButton)
 end
 
 function PuzzleGame:runGame(dt)
@@ -237,11 +277,6 @@ function PuzzleGame:customRun()
       GAME.theme:playValidationSfx()
       self:resetPuzzle()
     end
-  end
-  
-  -- Track swaps for help system
-  if (self.player.inputConfiguration and (self.player.inputConfiguration.isDown["Swap1"] or self.player.inputConfiguration.isDown["Swap2"])) then
-    self:trackSwapInput()
   end
   
   -- Handle TauntDown for help system
@@ -317,8 +352,7 @@ function PuzzleGame:recordPuzzleSolution()
     return
   end
 
-  -- Only record solutions when playing at level 10
-  if GAME.localPlayer.settings.level ~= 10 then
+  if GAME.localPlayer.settings.level ~= Puzzle.SOLUTION_LEVEL then
     return
   end
 
@@ -417,17 +451,6 @@ function PuzzleGame:shouldDisableTauntSounds()
   return true
 end
 
--- Track player swaps for hint system
-function PuzzleGame:trackSwapInput()
-  local playerStack = self.playerStack
-  if self.puzzleHelpDisplay and playerStack and not self.match.isPaused then
-    local stack = playerStack.engine
-    local cursorRow = stack.cur_row
-    local cursorColumn = stack.cur_col
-    self.puzzleHelpDisplay:trackPlayerSwap(cursorRow, cursorColumn)
-  end
-end
-
 function PuzzleGame:feedQueuedInput()
   if #self.queuedInputs > 0 and self.inputQueueIndex <= #self.queuedInputs then
     local playerStack = self.playerStack
@@ -503,7 +526,14 @@ function PuzzleGame:executePuzzleHint(targetRow, targetColumn)
   end
   
   local stack = playerStack.engine
-  
+
+  -- a touch stack reads its inputs as touches, so instead of moving a cursor the pair to swap is marked
+  if stack.inputMethod == "touch" then
+    playerStack:showSwapHint(targetRow, targetColumn)
+    self.hintUsed = true
+    return true
+  end
+
   -- Calculate movement needed from current cursor position
   local currentRow = stack.cur_row 
   local currentColumn = stack.cur_col
@@ -567,12 +597,18 @@ function PuzzleGame:playPuzzleSolution(solutionInputs)
   GAME.battleRoom.sceneParameters.queuedSolutionInputs = procat(solutionInputs)
   GAME.battleRoom.sceneParameters.hintWasUsed = true
 
-  -- For non-move puzzles, temporarily set to level 10 for faster panels
+  -- For non-move puzzles, temporarily set to the level the solution was recorded at
   -- Store the original level to restore after match is created
   if not isMovePuzzle then
     GAME.battleRoom.sceneParameters.restoreLevelAfterCreation = config.puzzle_level
-    GAME.localPlayer:setLevel(10)
-    GAME.localPlayer:setLevelData(LevelPresets.getModern(10))
+    GAME.localPlayer:setLevel(Puzzle.SOLUTION_LEVEL)
+    GAME.localPlayer:setLevelData(LevelPresets.getModern(Puzzle.SOLUTION_LEVEL))
+  end
+
+  -- The solution is recorded as controller inputs, so a touch player's playback match is a controller stack
+  if GAME.localPlayer.settings.inputMethod == "touch" then
+    GAME.battleRoom.sceneParameters.restoreInputMethodAfterCreation = "touch"
+    GAME.localPlayer:setInputMethod("controller")
   end
 
   -- Reset puzzle (creates new scene via resetPuzzle)
