@@ -3,6 +3,10 @@
     {
       "id": "sky-esme-terrace",
       "filePath": "scenery/parts/sky/sky",
+      "size": {
+        "width": 1280
+      },
+      "pivot": "topLeft",
       "templateOnly": true
     }
   ]
