@@ -7,6 +7,7 @@ local NetClient = require("client.src.network.NetClient")
 local MessageTransition = require("client.src.scenes.Transitions.MessageTransition")
 local GameModes = require("common.data.GameModes")
 local tableUtils = require("common.lib.tableUtils")
+local InputSource = require("client.src.input.InputSource")
 
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
 ---@class LobbyScene : Scene
@@ -95,8 +96,8 @@ function Lobby:initLobbyMenu()
     label = self.leaderboardToggleLabel,
     width = self.lobbyMenuWidth,
     onClick = function()
-      if self.leaderboard.hasFocus then
-        self.leaderboard:yieldFocus()
+      if self.leaderboard:hasFocus(InputSource.anyPlayer) then
+        self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
       else
         self:toggleLeaderboard()
       end
@@ -152,7 +153,7 @@ function Lobby:toggleLeaderboard()
   if not self.leaderboard.isVisible then
     self.leaderboardToggleLabel:setText("lb_hide_board")
     GAME.netClient:requestLeaderboard(GameModes.IDs.TWO_PLAYER_VS)
-    self.lobbyMenu:setFocus(self.leaderboard, function() self:toggleLeaderboard() end)
+    self.lobbyMenu:focusChild(self.leaderboard, InputSource.anyPlayer, function() self:toggleLeaderboard() end)
   else
     self.leaderboardToggleLabel:setText("lb_show_board")
   end
@@ -311,7 +312,7 @@ end
 ---@param button Button the button the click that opens this submenu originated from
 function Lobby:openPlayerSubMenu(playerId, button)
   if self.playerSubMenu then
-    self.playerSubMenu:yieldFocus()
+    self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
   end
 
   local lobbyDataV2 = GAME.netClient.lobbyDataV2
@@ -379,7 +380,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
     width = 120,
     onClick = function()
       GAME.theme:playCancelSfx()
-      subMenu:yieldFocus()
+      self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
     end})
 
   subMenu:addChild(backButton)
@@ -396,7 +397,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
 
   self.playerSubMenuConnectionWarning = self:createChallengeConnectionWarning(playerId, subMenu, y)
 
-  self.lobbyMenu:setFocus(subMenu, function()
+  self.lobbyMenu:focusChild(subMenu, InputSource.anyPlayer, function()
     self.playerSubMenu:detach()
     self.playerSubMenu = nil
     self.subMenuLine:detach()
@@ -481,7 +482,7 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
         if not found then
           if self.playerSubMenu and previousButton.player.publicId == self.playerSubMenu.playerId then
             -- the player left or started to spectate so if there's still a playerSubMenu
-            self.playerSubMenu:yieldFocus()
+            self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
           end
         end
       elseif previousButton.lobbyType == "room" then
@@ -525,7 +526,7 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
 
   if self.playerSubMenu then
     if not lobbyDataV2.players[self.playerSubMenu.playerId] or not found then
-      self.playerSubMenu:yieldFocus()
+      self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
     else
       for _, button in ipairs(self.playerSubMenu.children) do
         if button.gameModeId then
@@ -572,7 +573,7 @@ function Lobby:updateSelf(dt)
         self.lobbyMessage:setText("lb_select_player", nil, true)
       end
     end
-    self.lobbyMenu:receiveInputs(GAME.input)
+    self.lobbyMenu:receiveInputs(InputSource.anyPlayer, dt)
   end
 end
 

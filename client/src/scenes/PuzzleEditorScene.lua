@@ -7,8 +7,6 @@ local ui = require("client.src.ui")
 local TouchInputDetector = require("client.src.TouchInputDetector")
 local GameBase = require("client.src.scenes.GameBase")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local focusable = require("client.src.ui.Focusable")
-local directsFocus = require("client.src.ui.FocusDirector")
 local PuzzleEditorStackOverlay = require("client.src.ui.PuzzleEditorStackOverlay")
 
 ---@class PuzzleEditorScene : GameBase
@@ -71,7 +69,6 @@ function PuzzleEditorScene:customLoad()
   end
 
   self:createUI()
-  self:setupFocusManagement()
 
   logger.debug("PuzzleEditorScene loaded successfully")
 end
@@ -281,14 +278,6 @@ function PuzzleEditorScene:createEditorControls()
   controls[#controls + 1] = self.statusLabel
 
   return controls
-end
-
-function PuzzleEditorScene:setupFocusManagement()
-  focusable(self.editorPanel)
-  directsFocus(self)
-
-  ---@diagnostic disable-next-line: undefined-field
-  self:setFocus(self.palettePanel)
 end
 
 function PuzzleEditorScene:createPanelButton(color)

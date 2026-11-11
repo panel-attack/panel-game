@@ -124,6 +124,8 @@ local allTests = {
   "client.tests.NetClientTests",
   "client.tests.ConnectionWarningTests",
   "client.tests.LobbyTests",
+  "client.tests.InputSourceTests",
+  "client.tests.UIElementFocusTests",
 }
 
 -- Check for specific test name argument

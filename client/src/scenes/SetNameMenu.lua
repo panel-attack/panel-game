@@ -72,7 +72,7 @@ function SetNameMenu:load()
 
   self.backgroundImg = themes[config.theme].images.bg_main
 
-  self.nameField:setFocus(0, 0)
+  self.nameField:startEditing()
   self.nameField.offset = utf8.len(self.nameField.value)
 end
 
@@ -82,7 +82,7 @@ function SetNameMenu:confirmName()
     config.name = self.nameField.value
     write_conf_file()
     GAME.localPlayer.name = config.name
-    self.nameField:unfocus()
+    self.nameField:stopEditing()
     if self.onNameSet then
       self.onNameSet()
     else
@@ -99,11 +99,11 @@ function SetNameMenu:update(dt)
   end
   if input.allKeys.isDown["escape"] then
     GAME.theme:playCancelSfx()
-    self.nameField:unfocus()
+    self.nameField:stopEditing()
     GAME.navigationStack:pop()
   end
 
-  if self.nameField.hasFocus then
+  if self.nameField.isEditing then
     self.nameLengthLabel:setText("(" .. self.nameField.value:len() .. "/" .. NAME_LENGTH_LIMIT .. ")")
     local isValid, invalidReason = playerName.validate(self.nameField.value)
     if isValid then

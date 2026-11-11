@@ -6,6 +6,7 @@ local inputManager = require("client.src.inputManager")
 local class = require("common.lib.class")
 local InputConfigSlider = require("client.src.ui.InputConfigSlider")
 local KeyBindingMenuItem = require("client.src.ui.KeyBindingMenuItem")
+local InputSource = require("client.src.input.InputSource")
 
 -- Sometimes controllers register buttons as "pressed" even though they aren't. If they have been pressed longer than this they don't count.
 local MAX_PRESS_DURATION = 0.5
@@ -347,7 +348,7 @@ function InputConfigMenu:update(dt)
 
   -- Only allow menu navigation when not setting a key
   if self.menu and not self.settingKey then
-    self.menu:receiveInputs()
+    self.menu:receiveInputs(InputSource.anyPlayer, dt)
   end
 
   local noKeysHeld = (tableUtils.first(inputManager.allKeys.isPressed, function (value)
