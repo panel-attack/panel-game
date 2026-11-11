@@ -67,6 +67,17 @@ local function updateLobbyStateV2(self, lobbyStateV2Message)
   self:emitSignal("lobbyStateV2Update", self.lobbyDataV2)
 end
 
+-- Replaces the pings with the latest update's, keyed by public id
+---@param self NetClient
+---@param message { pingUpdate: { players: PingSummary[] } }
+local function processPingUpdate(self, message)
+  local pings = {}
+  for _, player in ipairs(message.pingUpdate.players) do
+    pings[player.publicId] = player
+  end
+  self.pings = pings
+end
+
 ---@param room BattleRoom
 local function getSceneFromRoom(room)
   -- this is so hacky oh my god
@@ -138,24 +149,23 @@ local function processLeaveRoomMessage(self, message)
       return
     end
 
-    local transition
     if room.match then
       -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
       room.match:disconnectSignal("matchEnded", room)
       -- instead we actively abort the match ourselves
       room.match:abort()
-
-      if message.reason then
-        -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
-        -- the other player and spectators should be informed why the room is being closed
-        transition = MessageTransition(love.timer.getTime(), 5, message.reason, false)
-      end
     end
 
     -- and then shutdown the room, which deinits the match
     room:shutdown()
 
-    GAME.navigationStack:popToName("Lobby", transition)
+    GAME.navigationStack:popToName("Lobby")
+
+    if message.reason and message.reason ~= "" then
+      -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
+      -- the other player and spectators are told why in a notification, which doesn't hold them up on their way to the next match
+      GAME.notificationCenter:show(message.reason, false)
+    end
   end
 end
 
@@ -372,6 +382,7 @@ local function createListeners(self)
   messageListeners.gameResult = createListener(self, "gameResult", processGameResultMessage)
   messageListeners.spectators = createListener(self, "spectators", processSpectatorListMessage)
   messageListeners.gameAbort = createListener(self, "gameAbort", handleGameAbort)
+  messageListeners.pingUpdate = createListener(self, "pingUpdate", processPingUpdate)
 
   return messageListeners
 end
@@ -388,6 +399,7 @@ end
 ---@field room BattleRoom?
 ---@field lobbyDataV2 PersonalizedLobbyDataV2
 ---@field serverTimeDelta integer in seconds
+---@field pings table<PublicPlayerID, PingSummary>? each player's ping in the latest ping update, nil until one arrives
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
@@ -406,6 +418,7 @@ local NetClient = class(function(self)
     lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
     challengeUpdate = messageListeners.challengeUpdate,
+    pingUpdate = messageListeners.pingUpdate,
   }
 
   -- all listeners running while in a room but not in a match
@@ -415,6 +428,7 @@ local NetClient = class(function(self)
     match_start = messageListeners.match_start,
     spectators = messageListeners.spectators,
     gameResult = messageListeners.gameResult,
+    pingUpdate = messageListeners.pingUpdate,
   }
 
   -- all listeners running while in a match
@@ -426,6 +440,7 @@ local NetClient = class(function(self)
     spectators = messageListeners.spectators,
     gameResult = messageListeners.gameResult,
     gameAbort = messageListeners.gameAbort,
+    pingUpdate = messageListeners.pingUpdate,
   }
 
   self.messageListeners = messageListeners
@@ -696,10 +711,20 @@ function NetClient:update()
   end
 end
 
+-- A player's ping in the latest ping update, nil for a player it left out
+---@param publicId PublicPlayerID
+---@return PingSummary?
+function NetClient:pingOf(publicId)
+  return self.pings and self.pings[publicId]
+end
+
 ---@param state NetClientStates
 function NetClient:setState(state)
   logger.debug("Setting netclient state to " .. state)
   self.state = state
+  if state == states.OFFLINE then
+    self.pings = nil
+  end
 end
 
 return NetClient

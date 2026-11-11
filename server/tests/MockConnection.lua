@@ -1,4 +1,5 @@
 local Queue = require("common.lib.Queue")
+local PingStats = require("common.network.PingStats")
 local class = require("common.lib.class")
 
 local index = 0
@@ -10,6 +11,7 @@ local MockConnection = class(function(self)
   self.outgoingInputQueue = Queue()
   self.incomingMessageQueue = Queue()
   self.incomingInputQueue = Queue()
+  self.pingStats = PingStats()
 end)
 
 function MockConnection:update(t) end

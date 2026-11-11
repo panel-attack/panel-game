@@ -62,9 +62,6 @@ function StackPanel:addElement(uiElement)
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)
   self:resize()
-  uiElement.yieldFocus = function()
-    self.yieldFocus()
-  end
 end
 
 ---Inserts a UI element at a specific index in the StackPanel
@@ -135,15 +132,31 @@ function StackPanel:remove(uiElement)
   uiElement:detach()
 end
 
----Processes user input and forwards it to child elements
----@param input table Input state
----@param dt number Delta time since last frame
-function StackPanel:receiveInputs(input, dt)
+---@return UiElement? # the first child that interprets inputs
+function StackPanel:getInputChild()
   for _, child in ipairs(self.children) do
-    if child.receiveInputs then
-      child:receiveInputs(input, dt)
-      return
+    if child:handlesInputs() then
+      return child
     end
+  end
+end
+
+---Hands the inputs to the first child that interprets inputs
+---@param inputSource InputSource
+---@param dt number Delta time since last frame
+function StackPanel:receiveInputsSelf(inputSource, dt)
+  local child = self:getInputChild()
+  if child then
+    child:receiveInputs(inputSource, dt)
+  end
+end
+
+---Passes focus on to the first child that interprets inputs
+---@param inputSource InputSource
+function StackPanel:onFocus(inputSource)
+  local child = self:getInputChild()
+  if child then
+    self:forwardFocus(child, inputSource)
   end
 end
 

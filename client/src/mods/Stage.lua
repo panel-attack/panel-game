@@ -21,6 +21,7 @@ local defaulted_images = {thumbnail = true, background = true} -- those images w
 local basic_musics = {}
 local other_musics = {"normal_music", "danger_music"}
 
+---@type Stage
 local randomStage = nil -- acts as the bundle stage for all theme stages
 
 ---@class Stage : Mod
@@ -143,21 +144,6 @@ function Stage:getSubMods()
     end
   end
   return m
-end
-
-function Stage:enable(enable)
-  if enable and not stages[self.id] then
-    stages[self.id] = self
-    visibleStages[#visibleStages+1] = self.id
-  elseif not enable and stages[self.id] then
-    local i = tableUtils.indexOf(visibleStages, self.id)
-    if i then
-      table.remove(visibleStages, i)
-    end
-    stages[self.id] = nil
-  end
-
-  require("client.src.mods.ModLoader").updateBlacklist(self, enable)
 end
 
 function Stage.loadDefaultMod()
@@ -297,11 +283,14 @@ function Stage:validate()
   return true
 end
 
-local function loadRandomStage(visibleStages)
-  local randomStage = Stage("stages/__default", consts.RANDOM_STAGE_SPECIAL_VALUE)
+-- Creates the "Random" entry of the stage selection, a bundle whose sub stages are the visible stages.
+-- One instance is shared by all players because it holds no player state: each player resolves it to their own
+-- stage with StageLoader.resolveBundle. Needs the theme loaded for its thumbnail; its sub stages are assigned
+-- wherever the visible stages are rebuilt.
+function Stage.loadRandomMod()
+  randomStage = Stage("stages/__default", consts.RANDOM_STAGE_SPECIAL_VALUE)
   randomStage.images.thumbnail = themes[config.theme].images.IMG_random_stage
   randomStage.display_name = "random"
-  randomStage.subIds = visibleStages
   -- we need to shadow some stage functions to correct load behaviour for the random stage
   randomStage.preload = function() end
   randomStage.load = function() end
@@ -309,16 +298,11 @@ local function loadRandomStage(visibleStages)
   randomStage.graphics_init = function(stage, full, yields)
     stage.images.thumbnail = themes[config.theme].images.IMG_random_stage
   end
-  return randomStage
 end
 
-function Stage.getRandom(visibleStages)
-  if not randomStage then
-    randomStage = loadRandomStage(visibleStages)
-  elseif visibleStages then
-    randomStage.subIds = visibleStages
-  end
-
+-- Returns the "Random" entry of the stage selection created by Stage.loadRandomMod
+---@return Stage
+function Stage.getRandom()
   return randomStage
 end
 

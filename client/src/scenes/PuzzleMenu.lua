@@ -14,6 +14,7 @@ local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local LevelPresets      = require("common.data.LevelPresets")
 local Stack = require("common.engine.Stack")
+local InputSource = require("client.src.input.InputSource")
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
@@ -704,7 +705,7 @@ function PuzzleMenu:updateSelf(dt)
     return
   end
 
-  self.menu:receiveInputs(GAME.input, dt)
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
 end
 
 function PuzzleMenu:draw()

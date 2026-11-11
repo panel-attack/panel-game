@@ -196,6 +196,12 @@ function GeneratorSource:getGarbagePanelRowString(stack)
   return garbagePanelRow
 end
 
+-- a generator never runs out of panels
+---@return boolean
+function GeneratorSource:hasQueuedPanels()
+  return true
+end
+
 -- creates a standalone clone that uses the Stack's level data settings
 ---@param stack Stack
 ---@return GeneratorSource

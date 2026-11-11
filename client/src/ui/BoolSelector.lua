@@ -46,7 +46,8 @@ function BoolSelector:onSelect(boolSelector, selector)
   self:setValue(not self.value)
 end
 
-function BoolSelector:receiveInputs(input)
+function BoolSelector:receiveInputsSelf(inputSource, dt)
+  local input = inputSource:getInputs()
   if self.isFocusable then
     if (input:isPressedWithRepeat("Right") and self.vertical == false) or
         (input:isPressedWithRepeat("Up") and self.vertical) then
@@ -56,10 +57,10 @@ function BoolSelector:receiveInputs(input)
       self:setValue(false)
     elseif input.isDown["Swap1"] then
       GAME.theme:playValidationSfx()
-      self:yieldFocus()
+      self:yieldFocus(inputSource)
     elseif input.isDown["Swap2"] then
       GAME.theme:playCancelSfx()
-      self:yieldFocus()
+      self:yieldFocus(inputSource)
     end
   else 
     if input.isDown["Swap1"] then

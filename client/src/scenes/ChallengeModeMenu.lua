@@ -3,6 +3,7 @@ local class = require("common.lib.class")
 local ChallengeMode = require("client.src.ChallengeMode")
 local ui = require("client.src.ui")
 local CharacterSelectChallenge = require("client.src.scenes.CharacterSelectChallenge")
+local InputSource = require("client.src.input.InputSource")
 
 local ChallengeModeMenu = class(
   function (self, sceneParams)
@@ -62,7 +63,7 @@ end
 
 function ChallengeModeMenu:updateSelf(dt)
   self.backgroundImg:update(dt)
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
   self.uiRoot:update(dt)
 end
 

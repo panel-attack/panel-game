@@ -183,6 +183,12 @@ end
 
 -- Intentional override
 ---@diagnostic disable-next-line: duplicate-set-field
+function love.wheelmoved(dx, dy)
+  touchHandler:scroll(inputManager.mouse.x, inputManager.mouse.y, dx, dy)
+end
+
+-- Intentional override
+---@diagnostic disable-next-line: duplicate-set-field
 function love.joystickpressed(joystick, button)
   inputManager:joystickPressed(joystick, button)
 end

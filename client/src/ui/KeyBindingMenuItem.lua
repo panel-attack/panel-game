@@ -116,9 +116,9 @@ function KeyBindingMenuItem:drawSelf()
   end
 end
 
-function KeyBindingMenuItem:receiveInputs(inputs)
+function KeyBindingMenuItem:receiveInputsSelf(inputSource, dt)
   if self.bindingButton then
-    self.bindingButton:receiveInputs(inputs)
+    self.bindingButton:receiveInputs(inputSource, dt)
   end
 end
 

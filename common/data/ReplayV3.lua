@@ -309,6 +309,15 @@ function ReplayV3.createFromV3Data(replayData)
       end
     end
   end
+
+  local winConditions = replayData.rules and replayData.rules.stackWinConditions
+  if winConditions then
+    for _, bySize in ipairs({MatchRules.StackWinConditions.CHAINS, MatchRules.StackWinConditions.COMBOS}) do
+      if winConditions[bySize] then
+        winConditions[bySize] = tableUtils.reassignIntegerKeysAfterJsonification(winConditions[bySize])
+      end
+    end
+  end
   return replayData
 end
 
