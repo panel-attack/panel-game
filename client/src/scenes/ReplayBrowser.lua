@@ -9,6 +9,7 @@ local ReplayGame = require("client.src.scenes.ReplayGame")
 local ClientMatch = require("client.src.ClientMatch")
 local logger = require("common.lib.logger")
 
+---@class ReplayBrowser : Scene
 local ReplayBrowser = class(
   function (self, sceneParams)
     self.keepMusic = true

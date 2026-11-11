@@ -387,32 +387,14 @@ function Game:onJoystickRemoved(joystick)
   self.input:onJoystickRemoved(joystick)
 end
 
--- Scenes a dropped replay may replace: popping a scene runs none of its own exit steps,
--- such as Sound Test restoring the menu sound or the input config menu saving its bindings
-local SCENES_A_DROP_MAY_REPLACE = {ReplayBrowser = true, ReplayGame = true}
-
---- Whether a scene above the bottom one would skip its own exit steps if a drop popped it.
----@param navigation NavigationStack
----@return boolean
-local function hasSceneThatMustBeLeftNormally(navigation)
-  for i = #navigation.scenes, 2, -1 do
-    if not SCENES_A_DROP_MAY_REPLACE[navigation.scenes[i].name] then
-      return true
-    end
-  end
-  return false
-end
-
---- Opens a dropped replay in the browser without interrupting live games or online sessions.
+--- Opens a dropped replay in the replay browser, from the main menu or the browser itself.
 ---@param file love.File
 ---@return boolean accepted
 function Game:onFileDropped(file)
-  local navigation = self.navigationStack
-  local activeScene = navigation and navigation:getActiveScene()
-  if not activeScene or activeScene.name == "BootScene" or not self.localPlayer
-    or self.netClient.state ~= NetClient.STATES.OFFLINE or self.battleRoom
-    or (activeScene.match and activeScene.name ~= "ReplayGame") or hasSceneThatMustBeLeftNormally(navigation) then
-    logger.warn("Could not open dropped replay: Game is loading, transitioning, online, in a battle room, or in a menu")
+  local activeScene = self.navigationStack and self.navigationStack:getActiveScene()
+  if not activeScene or (activeScene.name ~= "MainMenu" and activeScene.name ~= "ReplayBrowser")
+    or self.netClient.state ~= NetClient.STATES.OFFLINE or self.battleRoom then
+    logger.warn("Could not open dropped replay: replays can only be dropped on the main menu or the replay browser while offline")
     if self.theme then
       self.theme:playCancelSfx()
     end
@@ -426,46 +408,11 @@ function Game:onFileDropped(file)
 
   local filename = file:getFilename()
   local displayName = filename:match("[^/\\]+$") or filename
-  local browser
-  for _, scene in ipairs(navigation.scenes) do
-    if scene.name == "ReplayBrowser" then
-      browser = scene
-      break
-    end
-  end
-  if activeScene == browser then
-    browser:showReplay(replay, displayName)
-    return true
-  end
-
-  local matches = {}
-  for i = #navigation.scenes, 2, -1 do
-    local scene = navigation.scenes[i]
-    if scene == browser then
-      break
-    end
-    if scene.name == "ReplayGame" then
-      scene.match:abort()
-      matches[#matches + 1] = scene.match
-    end
-  end
-  if #matches > 0 then
-    SoundController:stopMusic()
-  end
-  local function showReplay()
-    for _, match in ipairs(matches) do
-      match:deinit()
-    end
-    if browser then
-      browser:showReplay(replay, displayName)
-    else
-      navigation:push(ReplayBrowser({replay = replay, filename = displayName}))
-    end
-  end
-  if browser then
-    navigation:popToName("ReplayBrowser", nil, showReplay)
+  if activeScene.name == "ReplayBrowser" then
+    ---@cast activeScene ReplayBrowser
+    activeScene:showReplay(replay, displayName)
   else
-    showReplay()
+    self.navigationStack:push(ReplayBrowser({replay = replay, filename = displayName}))
   end
   return true
 end

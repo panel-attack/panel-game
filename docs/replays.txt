@@ -2,18 +2,17 @@ Replay Files
 
 Opening a replay by drag and drop
 
-Drop a replay file onto the running game window while in an offline menu.
+Drop a replay file onto the running game window while on the main menu or in the replay browser.
 Files are loaded as JSON replays regardless of their filename extension.
 The replay details appear first; press confirm to watch it using the usual replay controls.
 The file is read in place, not copied into the replay library or modified.
-Dropping another replay during playback stops the current replay and shows the new replay's details.
-Invalid or unreadable files play the cancel sound and log a warning without replacing the current screen or replay.
-Drops are accepted on the main menu, in the replay browser and during replay playback. Other menus refuse them with the cancel sound, so they still run their own steps when left.
-Malformed display metadata and invalid controller or touch inputs are rejected before stopping an existing replay.
+Invalid or unreadable files play the cancel sound and log a warning without replacing the current screen.
+Dropping onto the replay browser replaces the replay it shows. Other screens, including replay playback, refuse drops with the cancel sound.
+Malformed display metadata and invalid controller or touch inputs are rejected before the replay details are shown.
 The replay browser uses the same file loading and validation as drag and drop.
 Validation checks replay data directly without starting a match, and accepts legacy touch idle frames.
 Replays from incompatible engine versions show the usual version warning and cannot be played.
-Wait for startup and scene transitions to finish, and leave any battle room or online session before dropping a replay.
+Wait for scene transitions to finish, and leave any online session before dropping a replay.
 No operating-system file association is needed. This does not add double-click-to-open support.
 
 "in_buf" and "I" represent P1's and P2's inputs, respectively. Every character represents a frame.

@@ -86,7 +86,7 @@ end
 
 local function resetNavigation()
   GAME.navigationStack = NavigationStack({})
-  local menu = testMenu("ReplayDropTestMenu")
+  local menu = testMenu("MainMenu")
   GAME.navigationStack:push(menu)
   GAME.navigationStack:updateSelf(1 / 60)
   GAME.battleRoom = nil
@@ -137,35 +137,30 @@ local function testDropShowsDetailsBeforePlaying()
   assert(scene.saveReplay == false, "Watching should not save or overwrite the replay")
 end
 
-local function testReplacingPlaybackReusesBrowserAndCleansUp()
+local function testPlaybackRefusesDropsWithoutReadingTheFile()
+  resetNavigation()
+  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
+  local scene = confirmReplay(finishTransition())
+  local file, calls = droppedFile(json.encode(makeReplayData()), "replacement.json")
+  assert(not handleReplayFileDrop(file), "A drop during playback must be refused")
+  assert(calls.opens == 0 and cancelSounds == 1)
+  assert(GAME.navigationStack:getActiveScene() == scene and not scene.match.engine.aborted,
+    "A refused drop must leave the replay playing")
+end
+
+local function testDropReplacesTheReplayShownInTheBrowser()
   resetNavigation()
   assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
   local browser = finishTransition()
-  local scene = confirmReplay(browser)
-  local oldMatch = scene.match
-  local originalDeinit = oldMatch.deinit
-  local deinitializations = 0
-  oldMatch.deinit = function(self)
-    deinitializations = deinitializations + 1
-    liveMatches[self] = nil
-    originalDeinit(self)
-  end
-
-  assert(not handleReplayFileDrop(droppedFile("{}", "invalid.json")))
-  assert(GAME.navigationStack:getActiveScene() == scene and not oldMatch.ended,
-    "An invalid drop must not stop the current replay")
-  assert(deinitializations == 0)
   local malformed = makeReplayData()
   malformed.panelSource.sourceType = 999
-  assert(not handleReplayFileDrop(droppedFile(json.encode(malformed))))
-  assert(GAME.navigationStack:getActiveScene() == scene and not oldMatch.ended,
-    "Invalid engine settings must not stop the current replay")
+  assert(not handleReplayFileDrop(droppedFile(json.encode(malformed), "invalid.json")))
+  browser:draw()
+  assertDisplayed("test-replay.json")
 
   assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()), "replacement.JSON")))
-  assert(oldMatch.engine.aborted)
-  assert(finishTransition() == browser, "Replacing a replay should reuse its browser")
-  assert(deinitializations == 1)
-  assert(#GAME.navigationStack.scenes == 2, "Replacing should not accumulate scenes")
+  assert(GAME.navigationStack:getActiveScene() == browser and #GAME.navigationStack.scenes == 2)
+  displayed = {}
   browser:draw()
   assertDisplayed("replacement.JSON")
   confirmReplay(browser)
@@ -198,22 +193,9 @@ local function testOtherMenusRefuseDropsWithoutReadingTheFile()
   GAME.navigationStack:push(nested)
   finishTransition()
   local file, calls = droppedFile(json.encode(makeReplayData()))
-  assert(not handleReplayFileDrop(file), "A menu that cleans up when left normally must refuse a drop")
+  assert(not handleReplayFileDrop(file), "Only the main menu and the replay browser accept drops")
   assert(calls.opens == 0 and cancelSounds == 1)
   assert(GAME.navigationStack:getActiveScene() == nested and #GAME.navigationStack.scenes == 2)
-
-  resetNavigation()
-  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
-  local browser = finishTransition()
-  local scene = confirmReplay(browser)
-  local overlay = testMenu("InputConfigMenu")
-  GAME.navigationStack:push(overlay)
-  finishTransition()
-  file, calls = droppedFile(json.encode(makeReplayData()), "from-overlay.json")
-  assert(not handleReplayFileDrop(file), "A menu over playback must refuse a drop")
-  assert(calls.opens == 0 and cancelSounds == 1)
-  assert(not scene.match.engine.aborted, "A refused drop must leave the replay underneath alone")
-  assert(GAME.navigationStack:getActiveScene() == overlay and #GAME.navigationStack.scenes == 4)
 end
 
 local function testRejectedFilesKeepTheCurrentScene()
@@ -263,38 +245,23 @@ local function assertRejectedReplay(replay, scene)
   assert(calls.closes == 1)
   assert(cancelSounds == priorCancels + 1)
   assert(GAME.navigationStack:getActiveScene() == scene, "Invalid replay should keep the current scene")
-  if scene.name == "ReplayGame" then
-    assert(not scene.match.ended and not scene.match.engine.aborted, "Invalid replay should not stop existing playback")
-    local clock = scene.match.engine.clock
-    scene:update(1 / 60)
-    assert(scene.match.engine.clock > clock, "Existing playback should still advance after an invalid drop")
-  end
 end
 
 local function testRejectsMalformedDisplayMetadata()
   local menu = resetNavigation()
-  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
-  local scene = confirmReplay(finishTransition())
   for _, field in ipairs({"name", "characterId", "level", "difficulty", "challengeModeDifficulty", "stageIndex"}) do
     for _, value in ipairs({true, {}}) do
       local replay = makeReplayData()
       replay.metadata.stacks[1][field] = value
-      assertRejectedReplay(replay, scene)
-      replay.engineVersion = "999"
-      GAME.navigationStack = NavigationStack({})
-      GAME.navigationStack:push(menu)
-      finishTransition()
       assertRejectedReplay(replay, menu)
-      GAME.navigationStack:push(scene)
-      finishTransition()
+      replay.engineVersion = "999"
+      assertRejectedReplay(replay, menu)
     end
   end
 end
 
 local function testRejectsInvalidInputSymbols()
-  resetNavigation()
-  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
-  local scene = confirmReplay(finishTransition())
+  local scene = resetNavigation()
   local touchIdle = TouchDataEncoding.touchDataToLatinString(false, 0, 0, 6)
   local outOfBounds = TouchDataEncoding.touchDataToLatinString(false, 13, 1, 6)
   local invalidInputs = {
@@ -351,9 +318,6 @@ local function testUnavailableStatesDoNotReadTheFile()
   local blockers = {
     function()
       GAME.battleRoom = BattleRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS))
-    end,
-    function()
-      GAME.navigationStack:getActiveScene().match = {}
     end,
     function()
       GAME.navigationStack:getActiveScene().name = "BootScene"
@@ -500,7 +464,8 @@ local function runTests()
     displayed[text] = true
   end
   testDropShowsDetailsBeforePlaying()
-  testReplacingPlaybackReusesBrowserAndCleansUp()
+  testPlaybackRefusesDropsWithoutReadingTheFile()
+  testDropReplacesTheReplayShownInTheBrowser()
   testDropIntoBrowserAndBackNavigation()
   testOtherMenusRefuseDropsWithoutReadingTheFile()
   testRejectedFilesKeepTheCurrentScene()
