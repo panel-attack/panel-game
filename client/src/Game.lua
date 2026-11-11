@@ -387,6 +387,22 @@ function Game:onJoystickRemoved(joystick)
   self.input:onJoystickRemoved(joystick)
 end
 
+-- Scenes a dropped replay may replace: popping a scene runs none of its own exit steps,
+-- such as Sound Test restoring the menu sound or the input config menu saving its bindings
+local SCENES_A_DROP_MAY_REPLACE = {ReplayBrowser = true, ReplayGame = true}
+
+--- Whether a scene above the bottom one would skip its own exit steps if a drop popped it.
+---@param navigation NavigationStack
+---@return boolean
+local function hasSceneThatMustBeLeftNormally(navigation)
+  for i = #navigation.scenes, 2, -1 do
+    if not SCENES_A_DROP_MAY_REPLACE[navigation.scenes[i].name] then
+      return true
+    end
+  end
+  return false
+end
+
 --- Opens a dropped replay in the browser without interrupting live games or online sessions.
 ---@param file love.File
 ---@return boolean accepted
@@ -395,8 +411,8 @@ function Game:onFileDropped(file)
   local activeScene = navigation and navigation:getActiveScene()
   if not activeScene or activeScene.name == "BootScene" or not self.localPlayer
     or self.netClient.state ~= NetClient.STATES.OFFLINE or self.battleRoom
-    or (activeScene.match and activeScene.name ~= "ReplayGame") then
-    logger.warn("Could not open dropped replay: Game is loading, transitioning, online, or in a battle room")
+    or (activeScene.match and activeScene.name ~= "ReplayGame") or hasSceneThatMustBeLeftNormally(navigation) then
+    logger.warn("Could not open dropped replay: Game is loading, transitioning, online, in a battle room, or in a menu")
     if self.theme then
       self.theme:playCancelSfx()
     end
@@ -448,8 +464,6 @@ function Game:onFileDropped(file)
   end
   if browser then
     navigation:popToName("ReplayBrowser", nil, showReplay)
-  elseif #navigation.scenes > 1 then
-    navigation:popToTop(nil, showReplay)
   else
     showReplay()
   end

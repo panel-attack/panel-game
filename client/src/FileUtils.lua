@@ -4,6 +4,8 @@ local system = require("client.src.system")
 local json = require("common.lib.dkjson")
 
 local PREFIX_OF_IGNORED_DIRECTORIES = "__"
+-- how much of an undecodable file is logged, enough to recognise it without copying a large file into the log
+local LOGGED_CONTENT_LENGTH = 200
 
 -- Collection of functions for file operations
 local fileUtils = {}
@@ -156,7 +158,7 @@ function fileUtils.readJsonFromFile(file, checkTrailingData)
     errorMsg = "Unexpected data after JSON value"
   end
   if errorMsg then
-    logger.error("Error reading " .. filename .. ":\n" .. errorMsg .. ":\n" .. fileContent)
+    logger.error("Error reading " .. filename .. ":\n" .. errorMsg .. ":\n" .. fileContent:sub(1, LOGGED_CONTENT_LENGTH))
     return nil, "decode"
   end
   ---@cast value table

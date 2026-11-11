@@ -1,5 +1,6 @@
 local FileUtils = require("client.src.FileUtils")
 local tableUtils = require("common.lib.tableUtils")
+local logger = require("common.lib.logger")
 
 local files = {
   "chain2.ogg",
@@ -116,8 +117,39 @@ local function testJsonFileSources()
   assert(value == nil and failure == "read")
 end
 
+local function testDecodeFailureLogsOnlyTheStartOfTheFile()
+  local contents = string.rep("not json ", 100000)
+  local file = {}
+  function file:getFilename()
+    return "large-video.mp4"
+  end
+  function file:open()
+    return true
+  end
+  function file:read()
+    return contents, #contents
+  end
+  function file:close()
+    return true
+  end
+
+  local logged = {}
+  local originalError, originalWarn = logger.error, logger.warn
+  logger.error = function(message)
+    logged[#logged + 1] = message
+  end
+  logger.warn = logger.error
+  local value, failure = FileUtils.readJsonFromFile(file)
+  logger.error, logger.warn = originalError, originalWarn
+
+  assert(value == nil and failure == "decode")
+  assert(#logged == 1 and logged[1]:find("large-video.mp4", 1, true), "A decode failure should be logged once with the filename")
+  assert(#logged[1] < 1000, "A decode failure must not log the whole file, logged " .. #logged[1] .. " characters")
+end
+
 testFileMatching1()
 testFileMatching2()
 testFileMatching3()
 testFileMatching4()
 testJsonFileSources()
+testDecodeFailureLogsOnlyTheStartOfTheFile()

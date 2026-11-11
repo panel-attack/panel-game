@@ -192,38 +192,28 @@ local function testDropIntoBrowserAndBackNavigation()
   assert(finishTransition() == menu)
 end
 
-local function testDropReturnsToBrowserFromOtherMenus()
-  local menu = resetNavigation()
-  GAME.navigationStack:push(testMenu("NestedOfflineMenu"))
+local function testOtherMenusRefuseDropsWithoutReadingTheFile()
+  resetNavigation()
+  local nested = testMenu("SoundTest")
+  GAME.navigationStack:push(nested)
   finishTransition()
+  local file, calls = droppedFile(json.encode(makeReplayData()))
+  assert(not handleReplayFileDrop(file), "A menu that cleans up when left normally must refuse a drop")
+  assert(calls.opens == 0 and cancelSounds == 1)
+  assert(GAME.navigationStack:getActiveScene() == nested and #GAME.navigationStack.scenes == 2)
+
+  resetNavigation()
   assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()))))
   local browser = finishTransition()
-  if not browser then
-    browser = finishTransition()
-  end
-  assert(browser.name == "ReplayBrowser")
-  assert(#GAME.navigationStack.scenes == 2 and GAME.navigationStack.scenes[1] == menu,
-    "Opening a replay from another menu should return to the main menu before pushing the browser")
-
   local scene = confirmReplay(browser)
-  local match = scene.match
-  local deinit = match.deinit
-  local deinitializations = 0
-  match.deinit = function(self)
-    deinitializations = deinitializations + 1
-    liveMatches[self] = nil
-    deinit(self)
-  end
-  GAME.navigationStack:push(testMenu("OfflineOverlayMenu"))
+  local overlay = testMenu("InputConfigMenu")
+  GAME.navigationStack:push(overlay)
   finishTransition()
-  assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()), "from-overlay.txt")))
-  assert(match.engine.aborted)
-  assert(deinitializations == 0, "Replay cleanup must wait for the transition")
-  assert(finishTransition() == browser)
-  assert(deinitializations == 1)
-  assert(#GAME.navigationStack.scenes == 2, "Returning to the browser must remove intervening menus and playback")
-  browser:draw()
-  assertDisplayed("from-overlay.txt")
+  file, calls = droppedFile(json.encode(makeReplayData()), "from-overlay.json")
+  assert(not handleReplayFileDrop(file), "A menu over playback must refuse a drop")
+  assert(calls.opens == 0 and cancelSounds == 1)
+  assert(not scene.match.engine.aborted, "A refused drop must leave the replay underneath alone")
+  assert(GAME.navigationStack:getActiveScene() == overlay and #GAME.navigationStack.scenes == 4)
 end
 
 local function testRejectedFilesKeepTheCurrentScene()
@@ -512,7 +502,7 @@ local function runTests()
   testDropShowsDetailsBeforePlaying()
   testReplacingPlaybackReusesBrowserAndCleansUp()
   testDropIntoBrowserAndBackNavigation()
-  testDropReturnsToBrowserFromOtherMenus()
+  testOtherMenusRefuseDropsWithoutReadingTheFile()
   testRejectedFilesKeepTheCurrentScene()
   testRejectsMalformedDisplayMetadata()
   testRejectsInvalidInputSymbols()
