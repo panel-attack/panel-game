@@ -149,24 +149,23 @@ local function processLeaveRoomMessage(self, message)
       return
     end
 
-    local transition
     if room.match then
       -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
       room.match:disconnectSignal("matchEnded", room)
       -- instead we actively abort the match ourselves
       room.match:abort()
-
-      if message.reason then
-        -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
-        -- the other player and spectators should be informed why the room is being closed
-        transition = MessageTransition(love.timer.getTime(), 5, message.reason, false)
-      end
     end
 
     -- and then shutdown the room, which deinits the match
     room:shutdown()
 
-    GAME.navigationStack:popToName("Lobby", transition)
+    GAME.navigationStack:popToName("Lobby")
+
+    if message.reason and message.reason ~= "" then
+      -- the server sends a reason for leaveRoom only if a player (not a spectator) in the room leaves/crashes/disconnects
+      -- the other player and spectators are told why in a notification, which doesn't hold them up on their way to the next match
+      GAME.notificationCenter:show(message.reason, false)
+    end
   end
 end
 
