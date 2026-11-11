@@ -51,7 +51,7 @@ local function aSavedRunLoadsBack()
     local run = ChallengeModeSave.load(SAVE_NAME):getRun(3)
 
     assert(run ~= nil, "the run was saved")
-    assert(run.difficulty == 3 and run.stageIndex == 2 and run.expendedTime == 600)
+    assert(run.difficulty == 3 and run.stageIndex == 2 and run:getTime() == 600)
   end)
 end
 
@@ -89,7 +89,8 @@ local function aCompletedRunBecomesARecord()
     assert(save:getRun(2) == nil, "a completed run is no longer unfinished")
     assert(save:getBestContinues(2) == 3)
     local records = save:getCompletedRuns(2)
-    assert(#records == 1 and records[1].stages[1].attempts[4].result == ChallengeRun.results.WIN)
+    assert(#records == 1 and records[1]:getContinues() == 3)
+    assert(records[1].stages[1].attempts[4].result == ChallengeRun.results.WIN)
   end)
 end
 
@@ -155,7 +156,48 @@ local function theSaveFileIsNotPlainText()
   end)
 end
 
+-- a damaged save loads as an empty one instead of keeping the game from starting
+---@param contents string what the save file holds
+local function aDamagedSaveLoadsEmpty(contents)
+  withEmptySave(function()
+    love.filesystem.write(ChallengeModeSave.path(SAVE_NAME), contents)
+
+    local save = ChallengeModeSave.load(SAVE_NAME)
+
+    assert(save:getRun(1) == nil)
+    assert(save:getBestContinues(1) == nil)
+    assert(save:getLastDifficulty() == nil)
+  end)
+end
+
+local function aSaveThatIsNotCompressedLoadsEmpty()
+  aDamagedSaveLoadsEmpty("not a save")
+end
+
+local function aCutOffSaveLoadsEmpty()
+  local whole = love.data.compress("string", "zlib", json.encode({version = 1, runs = {}, completedRuns = {}}))
+  ---@cast whole string
+  aDamagedSaveLoadsEmpty(whole:sub(1, math.floor(#whole / 2)))
+end
+
+local function aSaveThatIsNotJsonLoadsEmpty()
+  aDamagedSaveLoadsEmpty(love.data.compress("string", "zlib", "{runs:") --[[@as string]])
+end
+
+local function aSaveWithABrokenRunLoadsEmpty()
+  aDamagedSaveLoadsEmpty(love.data.compress("string", "zlib", json.encode({runs = {["1"] = {difficulty = 1}}})) --[[@as string]])
+end
+
+local function anEmptySaveFileLoadsEmpty()
+  aDamagedSaveLoadsEmpty("")
+end
+
 withoutASaveThereIsNoRun()
+aSaveThatIsNotCompressedLoadsEmpty()
+aCutOffSaveLoadsEmpty()
+aSaveThatIsNotJsonLoadsEmpty()
+aSaveWithABrokenRunLoadsEmpty()
+anEmptySaveFileLoadsEmpty()
 aSavedRunLoadsBack()
 eachDifficultyKeepsItsOwnRun()
 aDiscardedRunIsGone()

@@ -5,7 +5,7 @@ local function startingAStageRecordsTheAttemptInProgress()
 
   run:startStage(123)
 
-  assert(run.continues == 0 and run.stages[1].continues == 0, "the stage has not been lost yet")
+  assert(run:getContinues() == 0, "the stage has not been lost yet")
   local attempt = run.stages[1].attempts[1]
   assert(attempt.seed == 123, "the attempt keeps its seed")
   assert(attempt.result == ChallengeRun.results.IN_PROGRESS)
@@ -18,7 +18,7 @@ local function anAttemptInProgressIsAbandonedWhenTheRunIsLoaded()
 
   local loaded = ChallengeRun.fromSaveData(run:toSaveData())
 
-  assert(loaded.continues == 1 and loaded.stages[1].continues == 1)
+  assert(loaded:getContinues() == 1)
   assert(loaded.stages[1].attempts[1].result == ChallengeRun.results.ABANDONED)
   assert(loaded.stageIndex == 1)
 end
@@ -29,7 +29,7 @@ local function abandoningAStageCostsAContinue()
 
   run:finishStage(ChallengeRun.results.ABANDONED, 300)
 
-  assert(run.continues == 1 and run.stages[1].continues == 1)
+  assert(run:getContinues() == 1)
   assert(run.stageIndex == 1)
 end
 
@@ -39,7 +39,7 @@ local function winningAStageCostsNoContinue()
 
   run:finishStage(ChallengeRun.results.WIN, 600)
 
-  assert(run.continues == 0 and run.stages[1].continues == 0)
+  assert(run:getContinues() == 0)
   assert(run.stages[1].attempts[1].result == ChallengeRun.results.WIN)
 end
 
@@ -59,7 +59,7 @@ local function aTieCostsNoContinueAndStaysOnTheStage()
 
   run:finishStage(ChallengeRun.results.TIE, 600)
 
-  assert(run.continues == 0 and run.stages[1].continues == 0)
+  assert(run:getContinues() == 0)
   assert(run.stageIndex == 1)
 end
 
@@ -69,7 +69,7 @@ local function aLossKeepsTheContinueAndStaysOnTheStage()
 
   run:finishStage(ChallengeRun.results.LOSS, 600)
 
-  assert(run.continues == 1 and run.stages[1].continues == 1)
+  assert(run:getContinues() == 1)
   assert(run.stageIndex == 1)
   assert(run.stages[1].attempts[1].result == ChallengeRun.results.LOSS)
 end
@@ -82,8 +82,8 @@ local function finishingAStageAddsItsTime()
 
   run:finishStage(ChallengeRun.results.WIN, 400, "replays/stage1.json")
 
-  assert(run.stages[1].expendedTime == 1000, "both attempts count towards the stage's time")
-  assert(run.expendedTime == 1000)
+  assert(run:getStageTime(1) == 1000, "both attempts count towards the stage's time")
+  assert(run:getTime() == 1000)
   local attempts = run.stages[1].attempts
   assert(attempts[1].frames == 600 and attempts[2].frames == 400, "each attempt keeps its own time")
   assert(attempts[2].replay == "replays/stage1.json", "the attempt links its replay")
@@ -110,13 +110,27 @@ local function aRunComesBackFromItsSaveData()
 
   local loaded = ChallengeRun.fromSaveData(run:toSaveData())
 
-  assert(loaded.difficulty == 4 and loaded.stageIndex == 2 and loaded.continues == 2 and loaded.expendedTime == 1000)
+  assert(loaded.difficulty == 4 and loaded.stageIndex == 2 and loaded:getContinues() == 2 and loaded:getTime() == 1000)
   assert(#loaded.stages == 3)
-  assert(loaded.stages[1].continues == 1 and loaded.stages[1].expendedTime == 900)
+  assert(loaded:getStageTime(1) == 900)
   assert(loaded.stages[2].attempts[1].seed == 13)
 end
 
+-- the continues and times are counted from the attempts, so the save keeps only those
+local function theSaveDataHoldsOnlyTheAttempts()
+  local run = ChallengeRun(2, 3)
+  run:startStage(11)
+  run:finishStage(ChallengeRun.results.LOSS, 600)
+
+  local data = run:toSaveData()
+
+  assert(data.continues == nil and data.expendedTime == nil)
+  assert(data.stages[1].continues == nil and data.stages[1].expendedTime == nil)
+  assert(data.stages[1].attempts[1].frames == 600)
+end
+
 startingAStageRecordsTheAttemptInProgress()
+theSaveDataHoldsOnlyTheAttempts()
 anAttemptInProgressIsAbandonedWhenTheRunIsLoaded()
 abandoningAStageCostsAContinue()
 winningAStageCostsNoContinue()

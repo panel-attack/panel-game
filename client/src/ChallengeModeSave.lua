@@ -9,14 +9,14 @@ local CURRENT_VERSION = 1
 ---@class ChallengeModeSave
 ---@field name string the save file's name without extension
 ---@field runs table<string, ChallengeRun> the unfinished run of each difficulty, keyed by the difficulty as a string
----@field records table<string, {bestContinues: integer, bestTime: integer, completedRuns: table[]}> keyed by the difficulty as a string
+---@field completedRuns table<string, ChallengeRun[]> the runs that beat each difficulty, oldest first, keyed by the difficulty as a string
 ---@field lastDifficulty integer? the difficulty of the run saved last
 ---@overload fun(name: string): ChallengeModeSave
 local ChallengeModeSave = class(
   function(self, name)
     self.name = name
     self.runs = {}
-    self.records = {}
+    self.completedRuns = {}
   end
 )
 
@@ -27,23 +27,41 @@ function ChallengeModeSave.path(name)
   return name .. ".sav"
 end
 
--- Loads the save named name, or an empty save if there is none
+-- Fills the save from the compressed contents of its file, raising an error if they are damaged
+---@param contents string
+function ChallengeModeSave:readContents(contents)
+  local data = json.decode(love.data.decompress("string", "zlib", contents))
+  self.lastDifficulty = data.lastDifficulty
+  for difficulty, runData in pairs(data.runs or {}) do
+    self.runs[difficulty] = ChallengeRun.fromSaveData(runData)
+  end
+  for difficulty, runsData in pairs(data.completedRuns or {}) do
+    local completedRuns = {}
+    for i, runData in ipairs(runsData) do
+      completedRuns[i] = ChallengeRun.fromSaveData(runData)
+    end
+    self.completedRuns[difficulty] = completedRuns
+  end
+end
+
+-- Loads the save named name, or an empty save if there is none or it is damaged
 ---@param name string
 ---@return ChallengeModeSave
 function ChallengeModeSave.load(name)
   local save = ChallengeModeSave(name)
   local contents = love.filesystem.read(ChallengeModeSave.path(name))
-  if contents then
-    local data = json.decode(love.data.decompress("string", "zlib", contents))
-    save.records = data.records or {}
-    save.lastDifficulty = data.lastDifficulty
-    for difficulty, runData in pairs(data.runs or {}) do
-      save.runs[difficulty] = ChallengeRun.fromSaveData(runData)
+  -- love.data.decompress never returns for empty input, so an empty file is skipped before it
+  if contents and #contents > 0 then
+    local ok, err = pcall(save.readContents, save, contents)
+    if not ok then
+      logger.error("Could not read the challenge mode save, starting from an empty one: " .. tostring(err))
+      save = ChallengeModeSave(name)
     end
   end
   return save
 end
 
+-- Returns the difficulty's unfinished run, nil if it has none
 ---@param difficulty integer
 ---@return ChallengeRun?
 function ChallengeModeSave:getRun(difficulty)
@@ -54,57 +72,57 @@ end
 ---@param difficulty integer
 ---@return integer?
 function ChallengeModeSave:getBestContinues(difficulty)
-  local record = self.records[tostring(difficulty)]
-  return record and record.bestContinues
+  local best
+  for _, run in ipairs(self:getCompletedRuns(difficulty)) do
+    local continues = run:getContinues()
+    if best == nil or continues < best then
+      best = continues
+    end
+  end
+  return best
 end
 
 -- Returns the fewest frames any completed run of the difficulty took, nil if it was never beaten
 ---@param difficulty integer
 ---@return integer?
 function ChallengeModeSave:getBestTime(difficulty)
-  local record = self.records[tostring(difficulty)]
-  return record and record.bestTime
+  local best
+  for _, run in ipairs(self:getCompletedRuns(difficulty)) do
+    local frames = run:getTime()
+    if best == nil or frames < best then
+      best = frames
+    end
+  end
+  return best
 end
 
+-- Returns the difficulty of the run saved last, nil if no run was saved yet
 ---@return integer?
 function ChallengeModeSave:getLastDifficulty()
   return self.lastDifficulty
 end
 
--- Returns the save data of every completed run of the difficulty, oldest first
+-- Returns every run that beat the difficulty, oldest first
 ---@param difficulty integer
----@return table[]
+---@return ChallengeRun[]
 function ChallengeModeSave:getCompletedRuns(difficulty)
-  local record = self.records[tostring(difficulty)]
-  return record and record.completedRuns or {}
+  return self.completedRuns[tostring(difficulty)] or {}
 end
 
--- Writes the run to disk; a completed run is moved into its difficulty's records
+-- Writes the run to disk; a completed run is moved to its difficulty's completed runs
 ---@param run ChallengeRun
 function ChallengeModeSave:saveRun(run)
   local key = tostring(run.difficulty)
   self.lastDifficulty = run.difficulty
   if run.complete then
     self.runs[key] = nil
-    self:addRecord(key, run)
+    local completedRuns = self.completedRuns[key] or {}
+    completedRuns[#completedRuns + 1] = run
+    self.completedRuns[key] = completedRuns
   else
     self.runs[key] = run
   end
   self:write()
-end
-
----@param key string
----@param run ChallengeRun
-function ChallengeModeSave:addRecord(key, run)
-  local record = self.records[key] or {completedRuns = {}}
-  record.completedRuns[#record.completedRuns + 1] = run:toSaveData()
-  if record.bestContinues == nil or run.continues < record.bestContinues then
-    record.bestContinues = run.continues
-  end
-  if record.bestTime == nil or run.expendedTime < record.bestTime then
-    record.bestTime = run.expendedTime
-  end
-  self.records[key] = record
 end
 
 -- Removes the difficulty's unfinished run from disk
@@ -114,12 +132,20 @@ function ChallengeModeSave:discardRun(difficulty)
   self:write()
 end
 
+-- Writes the unfinished runs, the completed runs and the last played difficulty to the save file
 function ChallengeModeSave:write()
   local runs = {}
   for key, run in pairs(self.runs) do
     runs[key] = run:toSaveData()
   end
-  local data = {version = CURRENT_VERSION, runs = runs, records = self.records, lastDifficulty = self.lastDifficulty}
+  local completedRuns = {}
+  for key, difficultyRuns in pairs(self.completedRuns) do
+    completedRuns[key] = {}
+    for i, run in ipairs(difficultyRuns) do
+      completedRuns[key][i] = run:toSaveData()
+    end
+  end
+  local data = {version = CURRENT_VERSION, runs = runs, completedRuns = completedRuns, lastDifficulty = self.lastDifficulty}
   local compressed = love.data.compress("string", "zlib", json.encode(data))
   ---@cast compressed string
   local ok, err = love.filesystem.write(ChallengeModeSave.path(self.name), compressed)

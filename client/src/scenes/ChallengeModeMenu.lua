@@ -7,11 +7,14 @@ local ChallengeRunRecords = require("client.src.scenes.components.ChallengeRunRe
 
 -- how far the menu and the records beside it sit from the middle of the screen
 local COLUMN_OFFSET = 150
+-- how far above the middle of the screen the discard warning sits, clear of the two answers below it
+local WARNING_OFFSET = -60
 
 -- Picks the difficulty of a challenge and whether to continue its unfinished run or start a new one
 ---@class ChallengeModeMenu : Scene
 ---@field save ChallengeModeSave
 ---@field runRecords ChallengeRunRecords
+---@field discardWarning Label shown above the menu while it asks whether to throw away the unfinished run
 ---@field menu Menu
 local ChallengeModeMenu = class(
   function (self, sceneParams)
@@ -66,6 +69,12 @@ function ChallengeModeMenu:load(sceneParams)
   self.runRecords = ChallengeRunRecords({alignment = "top", hAlign = "center", vAlign = "center", x = COLUMN_OFFSET})
   self.uiRoot:addChild(self.runRecords)
 
+  self.discardWarning = ui.Label({
+    text = "challenge_discard_run_warning", hAlign = "center", vAlign = "center", x = -COLUMN_OFFSET, y = WARNING_OFFSET
+  })
+  self.discardWarning:setVisibility(false)
+  self.uiRoot:addChild(self.discardWarning)
+
   self.menu = ui.Menu.createCenteredMenu({self.difficultyMenuItem}, nil, {x = -COLUMN_OFFSET, equalItemWidths = true})
   self.uiRoot:addChild(self.menu)
   self:showDifficulty(self.difficultyStepper.value)
@@ -75,6 +84,7 @@ end
 ---@param difficulty integer
 function ChallengeModeMenu:showDifficulty(difficulty)
   local run = self.save:getRun(difficulty)
+  self.discardWarning:setVisibility(false)
   self.runRecords:show(run, self.save:getBestContinues(difficulty), self.save:getBestTime(difficulty))
 
   local menuItems = {self.difficultyMenuItem}
@@ -98,8 +108,8 @@ end
 ---@param difficulty integer
 function ChallengeModeMenu:warnBeforeDiscarding(difficulty)
   GAME.theme:playValidationSfx()
+  self.discardWarning:setVisibility(true)
   self.menu:setMenuItems({
-    ui.MenuItem.createMenuItem(ui.Label({text = "challenge_discard_run_warning", hAlign = "center"})),
     ui.MenuItem.createButtonMenuItem("challenge_discard_run_confirm", nil, nil, function()
       self.save:discardRun(difficulty)
       self:goToCharacterSelect(difficulty)
@@ -109,7 +119,7 @@ function ChallengeModeMenu:warnBeforeDiscarding(difficulty)
       self:showDifficulty(difficulty)
     end),
   })
-  self.menu:setSelectedIndex(3)
+  self.menu:setSelectedIndex(2)
 end
 
 function ChallengeModeMenu:updateSelf(dt)

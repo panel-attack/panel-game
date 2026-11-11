@@ -180,6 +180,7 @@ function ChallengeMode:recordStageStart(match)
   self.save:saveRun(self.run)
 end
 
+-- Returns how the stage's match ended for the player taking the challenge
 ---@param match ClientMatch
 ---@return ChallengeRunResult
 function ChallengeMode:stageResult(match)
@@ -198,14 +199,7 @@ function ChallengeMode:stageResult(match)
   end
 end
 
----@param match ClientMatch
----@return string? path the replay will be saved at
-local function replayPath(match)
-  if match.replay then
-    return match.replay:generatePath("/") .. "/" .. match.replay:generateFileName() .. ".json"
-  end
-end
-
+-- Records how the stage's match ended in the run, saves the run and sets up the stage the run is on next
 ---@param match ClientMatch
 function ChallengeMode:recordStageResult(match)
   local winners = match:getWinners()
@@ -219,7 +213,8 @@ function ChallengeMode:recordStageResult(match)
     gameTime = stackEngine.stopWatch
   end
 
-  self.run:finishStage(self:stageResult(match), gameTime, replayPath(match))
+  local replayPath = match.replay and fileUtils.getReplayPath(match.replay)
+  self.run:finishStage(self:stageResult(match), gameTime, replayPath)
   self.save:saveRun(self.run)
   if not self.run.complete then
     self:setStage(self.run.stageIndex)
@@ -244,18 +239,17 @@ end
 
 function ChallengeMode:setStage(index)
   logger.debug("Setting stage to index " .. index)
-  self.stageIndex = index
   GAME.localPlayer:setLevel(self.stages[index].playerLevel)
   GAME.localPlayer:setLevelData(levelPresets.getModern(GAME.localPlayer.settings.level))
 
-  local stageSettings = self.stages[self.stageIndex]
+  local stageSettings = self.stages[index]
   self.player:setAttackEngineSettings(stageSettings.attackSettings)
   self.player.settings.healthSettings = stageSettings.healthSettings
   self.player.settings.level = index
   if stageSettings.characterId then
     self.player:setCharacter(stageSettings.characterId)
   else
-    self.player:setCharacterForStage(self.stageIndex)
+    self.player:setCharacterForStage(index)
   end
   self.player:setStage("")
 end

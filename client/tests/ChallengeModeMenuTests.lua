@@ -113,8 +113,18 @@ local function aNewGameAsksBeforeThrowingAwayTheUnfinishedRun()
     press(menu, "challenge_new_game")
 
     assert(#started == 0, "nothing starts before the player confirms")
-    assert(tableUtils.contains(itemTexts(menu), "challenge_discard_run_warning"))
+    assert(menu.discardWarning.isVisible and menu.discardWarning.text == "challenge_discard_run_warning")
     assert(save:getRun(1) ~= nil)
+  end)
+end
+
+-- the warning is read, not chosen, so the cursor only moves between the answers
+local function theDiscardWarningIsNotAMenuItem()
+  withMenu(function(save) save:saveRun(runOnStageTwo(1)) end, function(menu)
+    press(menu, "challenge_new_game")
+
+    local texts = itemTexts(menu)
+    assert(#texts == 2 and texts[1] == "challenge_discard_run_confirm" and texts[2] == "back", table.concat(texts, ", "))
   end)
 end
 
@@ -137,6 +147,7 @@ local function backingOutOfTheNewGameKeepsTheRun()
 
     assert(save:getRun(1) ~= nil and #started == 0)
     assert(tableUtils.contains(itemTexts(menu), "challenge_continue"), "the menu is back to the run")
+    assert(not menu.discardWarning.isVisible)
   end)
 end
 
@@ -237,6 +248,7 @@ changingTheDifficultyShowsThatDifficultysRun()
 theMenuOpensOnTheLastPlayedDifficulty()
 withoutAPlayedDifficultyTheMenuOpensOnTheEasiest()
 aNewGameAsksBeforeThrowingAwayTheUnfinishedRun()
+theDiscardWarningIsNotAMenuItem()
 confirmingTheNewGameThrowsAwayTheUnfinishedRun()
 backingOutOfTheNewGameKeepsTheRun()
 theButtonsLineUpWithTheDifficultyWithoutARun()

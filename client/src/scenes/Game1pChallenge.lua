@@ -8,8 +8,8 @@ local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapSce
 -- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
   self.totalTimeQuads = {}
-  self.stageIndex = GAME.battleRoom.stageIndex
-  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 280}, GAME.battleRoom, GAME.battleRoom.stageIndex)
+  self.stageIndex = GAME.battleRoom.run.stageIndex
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 280}, GAME.battleRoom, self.stageIndex)
   self.uiRoot:addChild(self.timeSplitElement)
 
 end, GameBase)
@@ -94,7 +94,7 @@ end
 function Game1pChallenge:drawContinueInfo(drawX, drawY)
   local limit = 400
   GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
-  GraphicsUtil.printf(GAME.battleRoom.run.continues, drawX - limit / 2, drawY + 20, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(GAME.battleRoom.run:getContinues(), drawX - limit / 2, drawY + 20, limit, "center", nil, nil, 4)
 end
 
 return Game1pChallenge

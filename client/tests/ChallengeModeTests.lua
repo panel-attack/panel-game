@@ -52,10 +52,10 @@ local function aStartedStageIsOnDiskAsALoss()
   withChallenge(nil, function(challengeMode)
     challengeMode:recordStageStart(fakeMatch({}, 0, 77))
 
-    assert(challengeMode.run.continues == 0, "the stage is not lost while it is played")
+    assert(challengeMode.run:getContinues() == 0, "the stage is not lost while it is played")
     local run = savedRun()
     assert(run ~= nil, "the run was saved when the stage started")
-    assert(run.continues == 1, "quitting the game now would count as a loss")
+    assert(run:getContinues() == 1, "quitting the game now would count as a loss")
     assert(run.stages[1].attempts[1].seed == 77)
   end)
 end
@@ -68,9 +68,9 @@ local function aWonStageIsSavedOnTheNextStage()
     challengeMode:onMatchEnded(match)
 
     local run = savedRun()
-    assert(run.stageIndex == 2 and run.continues == 0)
+    assert(run.stageIndex == 2 and run:getContinues() == 0)
     assert(run.stages[1].attempts[1].frames == 600)
-    assert(challengeMode.stageIndex == 2, "the challenge moved on too")
+    assert(challengeMode.player.settings.level == 2, "the challenge moved on to the next opponent too")
   end)
 end
 
@@ -82,7 +82,7 @@ local function aLostStageKeepsItsContinue()
     challengeMode:onMatchEnded(match)
 
     local run = savedRun()
-    assert(run.stageIndex == 1 and run.continues == 1)
+    assert(run.stageIndex == 1 and run:getContinues() == 1)
     assert(run.stages[1].attempts[1].result == ChallengeRun.results.LOSS)
   end)
 end
@@ -95,7 +95,7 @@ local function leavingAStageKeepsItsContinue()
     challengeMode:onMatchEnded(match)
 
     local run = savedRun()
-    assert(run.stageIndex == 1 and run.continues == 1)
+    assert(run.stageIndex == 1 and run:getContinues() == 1)
     assert(run.stages[1].attempts[1].result == ChallengeRun.results.ABANDONED)
     assert(run.stages[1].attempts[1].frames == 300)
   end)
@@ -103,7 +103,7 @@ end
 
 local function aContinuedRunStartsOnItsSavedStage()
   withChallenge(runOnStage(3), function(challengeMode)
-    assert(challengeMode.stageIndex == 3)
+    assert(challengeMode.run.stageIndex == 3)
     assert(challengeMode.player.settings.level == 3, "the opponent is the one of the saved stage")
   end)
 end

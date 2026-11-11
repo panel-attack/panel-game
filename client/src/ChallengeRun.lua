@@ -9,17 +9,14 @@ local class = require("common.lib.class")
 ---@field replay string? path of the attempt's replay in the save directory
 
 ---@class ChallengeRunStage
----@field expendedTime integer frames spent on the stage over all attempts
----@field continues integer attempts on the stage that ended in a loss or were abandoned
 ---@field attempts ChallengeRunAttempt[]
 
 -- The progress of one play through a Challenge Mode difficulty, from its first stage until it is beaten.
+-- Its continues and time are counted from the attempts, which are all it keeps of each stage.
 -- A run saved while a stage is in progress was left by quitting the game, so loading it counts that stage as abandoned.
 ---@class ChallengeRun
 ---@field difficulty integer
 ---@field stageIndex integer the stage being played or about to be played
----@field continues integer
----@field expendedTime integer frames spent on all stages
 ---@field complete boolean true once the last stage was won
 ---@field stages ChallengeRunStage[]
 ---@overload fun(difficulty: integer, stageCount: integer): ChallengeRun
@@ -27,12 +24,10 @@ local ChallengeRun = class(
   function(self, difficulty, stageCount)
     self.difficulty = difficulty
     self.stageIndex = 1
-    self.continues = 0
-    self.expendedTime = 0
     self.complete = false
     self.stages = {}
     for i = 1, stageCount do
-      self.stages[i] = {expendedTime = 0, continues = 0, attempts = {}}
+      self.stages[i] = {attempts = {}}
     end
   end
 )
@@ -56,13 +51,6 @@ function ChallengeRun:finishStage(result, frames, replayPath)
   attempt.result = result
   attempt.frames = frames
   attempt.replay = replayPath
-  stage.expendedTime = stage.expendedTime + frames
-  self.expendedTime = self.expendedTime + frames
-
-  if result == ChallengeRun.results.LOSS or result == ChallengeRun.results.ABANDONED then
-    stage.continues = stage.continues + 1
-    self.continues = self.continues + 1
-  end
 
   if result == ChallengeRun.results.WIN then
     if self.stageIndex < #self.stages then
@@ -73,14 +61,47 @@ function ChallengeRun:finishStage(result, frames, replayPath)
   end
 end
 
+-- Returns how many attempts ended in a loss or were abandoned
+---@return integer
+function ChallengeRun:getContinues()
+  local continues = 0
+  for _, stage in ipairs(self.stages) do
+    for _, attempt in ipairs(stage.attempts) do
+      if attempt.result == ChallengeRun.results.LOSS or attempt.result == ChallengeRun.results.ABANDONED then
+        continues = continues + 1
+      end
+    end
+  end
+  return continues
+end
+
+-- Returns the frames the finished attempts on the stage lasted
+---@param stageIndex integer
+---@return integer
+function ChallengeRun:getStageTime(stageIndex)
+  local frames = 0
+  for _, attempt in ipairs(self.stages[stageIndex].attempts) do
+    frames = frames + (attempt.frames or 0)
+  end
+  return frames
+end
+
+-- Returns the frames the finished attempts on all stages lasted
+---@return integer
+function ChallengeRun:getTime()
+  local frames = 0
+  for stageIndex = 1, #self.stages do
+    frames = frames + self:getStageTime(stageIndex)
+  end
+  return frames
+end
+
 -- Returns the run as plain data for saving
 ---@return table
 function ChallengeRun:toSaveData()
   return {
     difficulty = self.difficulty,
     stageIndex = self.stageIndex,
-    continues = self.continues,
-    expendedTime = self.expendedTime,
     complete = self.complete,
     stages = self.stages,
   }
@@ -92,8 +113,6 @@ end
 function ChallengeRun.fromSaveData(data)
   local run = ChallengeRun(data.difficulty, 0)
   run.stageIndex = data.stageIndex
-  run.continues = data.continues
-  run.expendedTime = data.expendedTime
   run.complete = data.complete
   run.stages = data.stages
   local attempts = run.stages[run.stageIndex].attempts
