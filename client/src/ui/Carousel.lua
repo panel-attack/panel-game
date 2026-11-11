@@ -72,8 +72,15 @@ function Carousel.getSelectedPassenger(self)
   return self.passengers[self.selectedId]
 end
 
+-- Returns the passenger with the id, nil if the carousel has none
+---@param passengerId string
+---@return table?
+function Carousel:getPassengerById(passengerId)
+  return tableUtils.first(self.passengers, function(passenger) return passenger.id == passengerId end)
+end
+
 function Carousel.setPassengerById(self, passengerId)
-  local passenger = tableUtils.first(self.passengers, function(passenger) return passenger.id == passengerId end)
+  local passenger = self:getPassengerById(passengerId)
   if passenger then
     self:setPassengerByIndex(tableUtils.indexOf(self.passengers, passenger))
   end

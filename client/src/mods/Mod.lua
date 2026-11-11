@@ -58,7 +58,7 @@ function Mod:getSubMods()
   end
 end
 
-function Mod.getRandom(visible)
+function Mod.getRandom()
   error("All mods need to implement a getRandom function")
 end
 
@@ -66,8 +66,8 @@ function Mod.loadDefaultMod()
   error("All mods need to implement a loadDefaultMod function")
 end
 
-function Mod:enable(enable)
-  error("All mods need to implement a disable function")
+function Mod.loadRandomMod()
+  error("All mods need to implement a loadRandomMod function")
 end
 
 function Mod:validate()

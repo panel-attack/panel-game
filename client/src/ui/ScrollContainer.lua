@@ -17,12 +17,14 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ScrollContainer = class(
 ---@param self ScrollContainer
 function(self, options)
-  self.scrollOrientation = "vertical" or options.scrollOrientation
+  self.scrollOrientation = options.scrollOrientation or "vertical"
   self.scrollOffset = 0
   self.maxScrollOffset = 0
 end,
 UiElement)
 ScrollContainer.TYPE = "ScrollContainer"
+-- pixels one notch of the mouse wheel scrolls
+ScrollContainer.SCROLL_STEP = 40
 
 -- bounds the scrollOffset of the container to the desired value between 0 and -maxScrollOffset
 ---@param value number desired scrollOffset value
@@ -46,6 +48,17 @@ function ScrollContainer:keepVisible(offset, size)
     self:setScrollOffset(offset - size + refSize)
   elseif offset > self.scrollOffset then
     self:setScrollOffset(offset)
+  end
+end
+
+-- scrolls by the mouse wheel's movement, a positive y moving the content down to reveal what is above
+---@param dx number
+---@param dy number
+function ScrollContainer:onScroll(dx, dy)
+  if self.scrollOrientation == "vertical" then
+    self:setScrollOffset(self.scrollOffset + dy * ScrollContainer.SCROLL_STEP)
+  else
+    self:setScrollOffset(self.scrollOffset + dx * ScrollContainer.SCROLL_STEP)
   end
 end
 
@@ -178,6 +191,17 @@ function ScrollContainer:getTouchedChildElement(x, y)
       return touchedElement
     end
   end
+end
+
+-- Replaces the children with the element and recomputes how far it scrolls, keeping the scroll offset within it
+---@param uiElement UiElement
+function ScrollContainer:setContent(uiElement)
+  while #self.children > 0 do
+    self.children[1]:detach()
+  end
+  self.maxScrollOffset = 0
+  self:addChild(uiElement)
+  self:setScrollOffset(self.scrollOffset)
 end
 
 -- adds the uiElement and updates the maxScrollOffset if the addition extends the sensible scroll area 

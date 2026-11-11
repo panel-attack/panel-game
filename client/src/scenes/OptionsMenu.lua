@@ -191,7 +191,7 @@ function OptionsMenu:loadBaseMenu()
           GAME.theme:playValidationSfx()
           self:switchToScreen("modifyUserIdMenu")
         end),
-      ui.MenuItem.createButtonMenuItem("Manage Mods", nil, false, function()
+      ui.MenuItem.createButtonMenuItem("mod_manage_title", nil, nil, function()
         GAME.theme:playValidationSfx()
         GAME.navigationStack:push(ModManagement())
       end),

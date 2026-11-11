@@ -638,11 +638,21 @@ op_about_attack_files,Information about attack files and mod installation,About 
 op_system_info,Button for showing system information,System Info,Informations système,Informações do sistema,システム情報,Información del sistema,Systeminformationen,Informazioni di sistema,ข้อมูลระบบ
 op_performance_drain,Label for the option to configure the amount of active garbage collection in favor of sleeping,Performance/Battery Drain,Performance/Consommation de la batterie,Desempenho/Dreno de bateria,パフォーマンス/バッテリー消費,Rendimiento/Consumo de batería,Performance/Stromverbrauch,Prestazioni/Consumo batteria,ประสิทธิภาพ/การใช้แบตเตอรี่
 op_about_installing_mods,Information about installing mods,Installing Mods,Installation de mods,Instalando mods,MODのインストール,Cómo instalar mods,Mods installieren,Installazione mod,การติดตั้งม็อด
-mod_manage_icon,Label for icon in mod management,Icon,Icône,Ícone,アイコン,Icono,Symbol,Icona,ไอคอน
 mod_manage_name,Label for name in mod management,Name,Nom,Nome,名前,Nombre,Name,Nome,ชื่อ
 mod_manage_music,Label for music in mod management,Music,Musique,Música,音楽,Música,Musik,Musica,เพลง
 mod_manage_submods,Label for submods in mod management,Sub Mods,Sous-mods,Submods,サブMOD,Submods,Submods,Submod,ซับม็อด
-mod_manage_enabled,Label for enabled in mod management,Enabled,Activé,Ativado,有効,Activado,Aktiviert,Abilitato,เปิดใช้งาน
+mod_manage_status,Label for the status column in mod management,Status,Statut,Status,状態,Estado,Status,Stato,สถานะ
+mod_manage_order,Label for the order column in mod management,Order,Ordre,Ordem,順番,Orden,Reihenfolge,Ordine,ลำดับ
+mod_manage_off,Status of a mod that is not loaded,Off,Désactivé,Desligado,オフ,Apagado,Aus,Disattivato,ปิด
+mod_manage_hidden,Status of a mod that is loaded but not offered for selection,Hidden,Caché,Oculto,非表示,Oculto,Versteckt,Nascosto,ซ่อน
+mod_manage_shown,Status of a mod that is offered for selection,Shown,Affiché,Visível,表示,Visible,Sichtbar,Visibile,แสดง
+mod_manage_builtin,Name of the folder holding the mods that come with the game,Built-in,Intégré,Embutido,内蔵,Integrado,Mitgeliefert,Integrato,ในตัว
+mod_manage_mod_count,Number of mods inside a folder in mod management,%1 mods,%1 mods,%1 mods,%1個のMOD,%1 mods,%1 Mods,%1 mod,%1 ม็อด
+mod_manage_mod_count_one,Text for a folder holding a single mod in mod management,%1 mod,%1 mod,%1 mod,%1個のMOD,%1 mod,%1 Mod,%1 mod,%1 ม็อด
+mod_manage_title,Title of the mod management screen and its options menu entry,Mod Management,Gestion des mods,Gerenciamento de mods,MOD管理,Gestión de mods,Mod-Verwaltung,Gestione mod,การจัดการม็อด
+mod_manage_characters,Tab for characters in mod management,Characters,Personnages,Personagens,キャラクター,Personajes,Charaktere,Personaggi,ตัวละคร
+mod_manage_stages,Tab for stages in mod management,Stages,Terrains,Cenários,ステージ,Escenarios,Arenen,Scenario,ด่าน
+mod_manage_panels,Tab for panel sets in mod management,Panel Sets,Jeux de blocs,Conjuntos de painéis,パネルセット,Juegos de paneles,Panel-Sets,Set di tessere,ชุดพาเนล
 mm_2_time,,2P time attack,2J contre la montre,2J contra o tempo,2P スコアアタック,2J Contrarreloj,2P Time Attack,2P a tempo,2P time attack
 op_about_puzzles,,About custom puzzles,À propos des puzzles personnalisés,Sobre quebra-cabeças personalizados,カスタムパズルについて,Acerca de los puzles personalizados,How to: Eigene Puzzles erstellen,A proposito dei puzzle personalizzabili,เกี่ยวกับ custom puzzles
 discord_welcome_title,Title for Discord community welcome screen,Welcome to Panel Attack!,Bienvenue dans Panel Attack!,Bem-vindo ao Panel Attack!,パネルアタックへようこそ！,¡Bienvenido a Panel Attack!,Willkommen bei Panel Attack!,Benvenuti in Panel Attack!,ยินดีต้อนรับสู่ Panel Attack!
