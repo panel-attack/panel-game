@@ -165,14 +165,16 @@ local function testFolderCountsTheModsAtAnyDepthInside()
   assertEqual(tree:countModsInsideEachFolder()[tree:getNodeByKey("PPL")], 3, "the mods in PPL")
 end
 
-local function testPositionIsAmongTheOrderedSiblings()
+local function testRowPositionIsAmongTheOrderedSiblings()
   local settings = ModSettings("unused")
   settings:setOrder("characters", "PPL/Gym Leaders", {"Misty"}, "shown")
   local tree = buildFolderTree(installedCharacters(), settings)
 
-  local position, count = tree:getPositionInFolder(tree:getNodeByKey("PPL/Gym Leaders/Brock"))
+  local rows = tree:getDisplayRows({})
+  local brock = rows[5]
 
-  assertEqual(position .. "/" .. count, "2/2", "brock's position")
+  assertEqual(brock.node.key, "PPL/Gym Leaders/Brock", "the fifth row")
+  assertEqual(tostring(brock.position) .. "/" .. tostring(brock.siblingCount), "2/2", "brock's position")
 end
 
 local function testStatusLimitIsTheFoldersEffectiveStatus()
@@ -252,7 +254,7 @@ testNodeIsFoundByItsMod()
 testRowsListEveryFolderAndModWithItsDepth()
 testCollapsedFolderHidesWhatIsInside()
 testFolderCountsTheModsAtAnyDepthInside()
-testPositionIsAmongTheOrderedSiblings()
+testRowPositionIsAmongTheOrderedSiblings()
 testStatusLimitIsTheFoldersEffectiveStatus()
 testBundleListsItsSubModsFromOtherFoldersAfterItsChildren()
 testCollapsedBundleHidesItsSubMods()

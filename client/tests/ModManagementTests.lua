@@ -103,6 +103,34 @@ local function testDownFromTheLastRowFocusesTheBackButton()
   assert(not scene.cursor.isVisible, "the row cursor is hidden while the back button has the focus")
 end
 
+-- Down from the lowest button of a column reaches the back button, even when the last row has nothing in that column
+local function testDownFromTheLowestButtonOfEveryColumnFocusesTheBackButton()
+  local probe = ModManagement()
+  probe:openTab(ModManagement.TABS[1])
+  local grid = probe.cursor.target
+  local checkedLowerThanLastRow = false
+  for x = 1, grid.gridWidth do
+    local lowestY
+    for y = 1, grid.gridHeight do
+      if grid:getElementAt(y, x).onSelect then
+        lowestY = y
+      end
+    end
+    if lowestY then
+      local scene = ModManagement()
+      scene:openTab(ModManagement.TABS[1])
+      scene.cursor:updatePosition(x, lowestY)
+
+      scene.cursor:move(GridCursor.directions.down)
+
+      assert(scene.receiveMode == "Back", "down from row " .. lowestY .. " of column " .. x .. " stayed on the rows, at row "
+        .. scene.cursor.selectedGridPos.y)
+      checkedLowerThanLastRow = checkedLowerThanLastRow or lowestY < grid.gridHeight
+    end
+  end
+  assert(checkedLowerThanLastRow, "no column ends above the last row, so the test checked nothing new")
+end
+
 local function testConfirmingTheFocusedBackButtonReturnsToTheMenu()
   local scene = sceneOnLastRow()
   scene.cursor:move(GridCursor.directions.down)
@@ -132,5 +160,6 @@ testOpenTabReplacesTheMenuWithACenteredTab()
 testOpenTabShowsACenteredBackButtonBelowTheList()
 testClickingTheBackButtonReturnsToTheMenu()
 testDownFromTheLastRowFocusesTheBackButton()
+testDownFromTheLowestButtonOfEveryColumnFocusesTheBackButton()
 testConfirmingTheFocusedBackButtonReturnsToTheMenu()
 testUpFromTheBackButtonReturnsToTheLastRow()

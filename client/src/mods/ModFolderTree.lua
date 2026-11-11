@@ -140,14 +140,17 @@ function ModFolderTree:getOrderedChildren(node)
     return node.children
   end
 
+  local childrenByName = {}
+  for _, child in ipairs(node.children) do
+    childrenByName[child.name] = child
+  end
   local ordered = {}
   local placed = {}
   for _, name in ipairs(entry.order) do
-    for _, child in ipairs(node.children) do
-      if child.name == name and not placed[child] then
-        ordered[#ordered + 1] = child
-        placed[child] = true
-      end
+    local child = childrenByName[name]
+    if child and not placed[child] then
+      ordered[#ordered + 1] = child
+      placed[child] = true
     end
   end
   for _, child in ipairs(node.children) do
@@ -210,6 +213,8 @@ end
 ---@field depth integer 0 for the top level
 ---@field linkedFrom ModFolderNode? the bundle a sub mod from another folder is listed under
 ---@field modCount integer mods listed under the row: those inside it and, for a bundle, its sub mods from other folders
+---@field position integer? where the node is among its folder's children in the player's order, nil for a linked row
+---@field siblingCount integer? how many children the node's folder has, nil for a linked row
 
 -- Returns a row for every folder and mod in the player's order, leaving out what is inside a collapsed folder.
 -- A bundle's sub mods from other folders follow its children, listed again under it.
@@ -219,9 +224,16 @@ function ModFolderTree:getDisplayRows(collapsedKeys)
   local rows = {}
   local modCounts = self:countModsInsideEachFolder()
   local function visit(node, depth)
-    for _, child in ipairs(self:getOrderedChildren(node)) do
+    local children = self:getOrderedChildren(node)
+    for position, child in ipairs(children) do
       local linkedNodes = self:getSubModNodesOutsideFolder(child)
-      rows[#rows + 1] = {node = child, depth = depth, modCount = modCounts[child] + #linkedNodes}
+      rows[#rows + 1] = {
+        node = child,
+        depth = depth,
+        modCount = modCounts[child] + #linkedNodes,
+        position = position,
+        siblingCount = #children,
+      }
       if not collapsedKeys[child.key] then
         visit(child, depth + 1)
         for _, linkedNode in ipairs(linkedNodes) do
@@ -248,20 +260,6 @@ function ModFolderTree:countModsInsideEachFolder()
   end
   visit(self.root)
   return counts
-end
-
--- Returns where the node is among its folder's children in the player's order
----@param node ModFolderNode
----@return integer position
----@return integer count of children in the folder
-function ModFolderTree:getPositionInFolder(node)
-  local siblings = self:getOrderedChildren(node.parent)
-  for position, sibling in ipairs(siblings) do
-    if sibling == node then
-      return position, #siblings
-    end
-  end
-  error("node " .. node.key .. " is missing from its folder")
 end
 
 -- Returns the highest status the node can have in game, the effective status of its folder

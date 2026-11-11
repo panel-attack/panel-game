@@ -148,6 +148,13 @@ function MatchParticipant:refreshCharacter()
   end
 end
 
+-- Returns whether character select offers the character selection: random or a shown character
+---@param characterId string
+---@return boolean
+local function isOfferedCharacter(characterId)
+  return characterId == consts.RANDOM_CHARACTER_SPECIAL_VALUE or tableUtils.contains(visibleCharacters, characterId)
+end
+
 -- Returns whether the stage carousel offers the stage selection: random or a shown stage
 ---@param stageId string
 ---@return boolean
@@ -157,10 +164,10 @@ end
 
 -- Mods can be disabled while a participant still references them, either as the selection itself
 -- or as the concrete mod a random/bundle selection resolved to; re-resolve so no disabled mod stays in use.
--- A stage selection that is hidden goes to random too, and a panel set that is hidden or off to the carousel's first
--- entry, since the carousel no longer offers them.
+-- A character or stage selection that is hidden goes to random too, and a panel set that is hidden or off to the carousel's
+-- first entry, since they are no longer offered.
 function MatchParticipant:refreshDisabledSelections()
-  if not characters[self.settings.selectedCharacterId] then
+  if not characters[self.settings.selectedCharacterId] or not isOfferedCharacter(self.settings.selectedCharacterId) then
     self:setCharacter(consts.RANDOM_CHARACTER_SPECIAL_VALUE)
   elseif not characters[self.settings.characterId] then
     self:refreshCharacter()

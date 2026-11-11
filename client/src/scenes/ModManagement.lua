@@ -128,10 +128,10 @@ function ModManagement:load()
   self.cursor.escapeCallback = function(cursor)
     self:pressBackButton()
   end
-  -- down from the last row goes to the back button below the list instead of wrapping to the first row
+  -- down from the lowest button of a column goes to the back button below the list instead of wrapping to the first row
   local move = self.cursor.move
   self.cursor.move = function(cursor, direction)
-    if direction == ui.GridCursor.directions.down and cursor.selectedGridPos.y == cursor.target.gridHeight then
+    if direction == ui.GridCursor.directions.down and not ModManagement.hasSelectableBelow(cursor) then
       self:focusBackButton()
     else
       move(cursor, direction)
@@ -269,6 +269,20 @@ function ModManagement:rebuildRows(focusNode, cursorX, focusLinkedFrom)
   self.cursor:onMove()
 end
 
+-- Returns whether a row below the cursor holds something the cursor can press in its column
+---@param cursor table
+---@return boolean
+function ModManagement.hasSelectableBelow(cursor)
+  local grid = cursor.target
+  local x = cursor.selectedGridPos.x
+  for y = cursor.selectedGridPos.y + 1, grid.gridHeight do
+    if grid:getElementAt(y, x).onSelect then
+      return true
+    end
+  end
+  return false
+end
+
 -- Returns the column on the row closest to x that holds something the cursor can press, preferring the right
 ---@param grid table
 ---@param y integer
@@ -315,7 +329,7 @@ function ModManagement:addRow(grid, tree, row, y)
 
   self:addStatusButtons(grid, tree, row, status, y)
   if not row.linkedFrom then
-    self:addOrderButtons(grid, tree, node, y)
+    self:addOrderButtons(grid, row, y)
   end
   if node.mod and self.tab.getAllMods then
     self:addMusicAndSubModColumns(grid, node.mod, status, y)
@@ -436,11 +450,10 @@ end
 
 -- Adds the up and down arrows that move the node within its folder
 ---@param grid table
----@param tree ModFolderTree
----@param node ModFolderNode
+---@param row ModFolderRow
 ---@param y integer
-function ModManagement:addOrderButtons(grid, tree, node, y)
-  local position, count = tree:getPositionInFolder(node)
+function ModManagement:addOrderButtons(grid, row, y)
+  local node = row.node
   local function addMoveButton(x, direction, offset)
     local button = ui.ArrowButton({direction = direction, hFill = true, vFill = true})
     local function move()
@@ -450,10 +463,10 @@ function ModManagement:addOrderButtons(grid, tree, node, y)
     button.onSelect = move
     grid:createElementAt(x, y, 1, 1, direction, button)
   end
-  if position > 1 then
+  if row.position > 1 then
     addMoveButton(UP_X, "up", -1)
   end
-  if position < count then
+  if row.position < row.siblingCount then
     addMoveButton(DOWN_X, "down", 1)
   end
 end

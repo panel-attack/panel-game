@@ -251,6 +251,26 @@ local function testHidingTheSelectedStageFallsBackToRandom()
   assert(selectedStageId == consts.RANDOM_STAGE_SPECIAL_VALUE, "expected random stage selection, got " .. tostring(selectedStageId))
 end
 
+-- hiding the selected character takes it out of the character grid, so the selection moves to random
+local function testHidingTheSelectedCharacterFallsBackToRandom()
+  local player = GAME.localPlayer
+  local originalCharacterId = player.settings.selectedCharacterId
+  local selectedCharacter = characters[CharacterLoader.fullyResolveCharacterSelection(nil)]
+  player:setCharacter(selectedCharacter.id)
+
+  local restoreCharacter = setStatus(CharacterLoader, selectedCharacter, "hidden")
+  player:refreshDisabledSelections()
+  local selectedCharacterId = player.settings.selectedCharacterId
+
+  restoreCharacter()
+  player:setCharacter(originalCharacterId)
+  clearModLoadQueue()
+
+  assert(selectedCharacterId == consts.RANDOM_CHARACTER_SPECIAL_VALUE,
+         "expected random character selection, got " .. tostring(selectedCharacterId))
+end
+
 testDisablingResolvedRandomSelectionsDoesNotCrash()
 testDisablingSelectedModsFallsBackToRandom()
 testHidingTheSelectedStageFallsBackToRandom()
+testHidingTheSelectedCharacterFallsBackToRandom()
