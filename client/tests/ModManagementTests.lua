@@ -52,13 +52,18 @@ local function testOpenTabReplacesTheMenuWithACenteredTab()
   assert(loc(scene.titleLabel.text) == "Mod Management", "the title is back once the tab closes")
 end
 
--- Returns inputs where only the named menu inputs are pressed, for driving the scene without a keyboard
+-- Returns an input source where only the named menu inputs are pressed, for driving the scene without a keyboard
 ---@param pressed table<string, boolean>
-local function fakeInputs(pressed)
-  return {
+local function fakeInputSource(pressed)
+  local inputs = {
     isDown = pressed,
     isPressedWithRepeat = function(_, key)
       return pressed[key] == true
+    end,
+  }
+  return {
+    getInputs = function()
+      return inputs
     end,
   }
 end
@@ -135,7 +140,7 @@ local function testConfirmingTheFocusedBackButtonReturnsToTheMenu()
   local scene = sceneOnLastRow()
   scene.cursor:move(GridCursor.directions.down)
 
-  scene:receiveBackButtonInputs(fakeInputs({Swap1 = true}))
+  scene:receiveBackButtonInputs(fakeInputSource({Swap1 = true}))
 
   assert(scene.tab == nil and scene.menu.isVisible, "confirming back returns to the menu")
 end
@@ -145,7 +150,7 @@ local function testUpFromTheBackButtonReturnsToTheLastRow()
   local lastRow = scene.cursor.target.gridHeight
   scene.cursor:move(GridCursor.directions.down)
 
-  scene:receiveBackButtonInputs(fakeInputs({Up = true}))
+  scene:receiveBackButtonInputs(fakeInputSource({Up = true}))
 
   assert(scene.receiveMode == "Grid" and scene.cursor.isVisible, "up gives the focus back to the rows")
   assert(scene.cursor.selectedGridPos.y == lastRow, "the cursor is back on the last row")

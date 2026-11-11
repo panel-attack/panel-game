@@ -1,6 +1,5 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
-local inputManager = require("client.src.inputManager")
 local save = require("client.src.save")
 local DebugMenu = require("client.src.debug.DebugMenu")
 local consts = require("common.engine.consts")
@@ -16,6 +15,7 @@ local ModManagement = require("client.src.scenes.ModManagement")
 local system = require("client.src.system")
 local JsonSafePrecision = require("common.data.JsonSafePrecision")
 local logger = require("common.lib.logger")
+local InputSource = require("client.src.input.InputSource")
 
 -- Scene for the options menu
 local OptionsMenu = class(function(self, sceneParams)
@@ -139,7 +139,6 @@ function OptionsMenu:loadInfoScreen(text)
     self.backgroundImage = themes[config.theme].images.bg_main
     self:switchToScreen("aboutMenu")
   end
-  infoScreen.yieldFocus = function() end
 
   return infoScreen
 end
@@ -570,7 +569,7 @@ end
 
 function OptionsMenu:updateSelf(dt)
   self.backgroundImage:update(dt)
-  self.menus[self.activeMenuName]:receiveInputs(inputManager)
+  self.menus[self.activeMenuName]:receiveInputs(InputSource.anyPlayer, dt)
 end
 
 function OptionsMenu:drawSelf()

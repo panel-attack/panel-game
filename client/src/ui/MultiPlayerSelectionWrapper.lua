@@ -2,15 +2,13 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local Label = require(PATH .. ".Label")
 local StackPanel = require(PATH .. ".StackPanel")
 local class = require("common.lib.class")
-local tableUtils = require("common.lib.tableUtils")
-local Focusable = require(PATH .. ".Focusable")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 -- forms a layer of abstraction between a player specific selector (e.g. GridCursor) and UiElements that exist per player
 -- the MultiPlayerSelectionWrapper displays the UiElements of all players but upon selection only redirects inputs to the 
 -- player that owns the input method
 local MultiPlayerSelectionWrapper = class(function(wrapper, options)
-  Focusable(wrapper)
+  wrapper:setFocusable(true)
   wrapper.activeElement = nil
   wrapper.wrappedElements = {}
 
@@ -19,7 +17,6 @@ end,
 StackPanel)
 
 function MultiPlayerSelectionWrapper:addElement(uiElement, player)
-  assert(uiElement.receiveInputs)
   self.wrappedElements[player] = uiElement
   self:applyStackPanelSettings(uiElement)
   self:addChild(uiElement)
@@ -31,10 +28,10 @@ function MultiPlayerSelectionWrapper:insertElementAtIndex(uiElement, index, play
   self:shiftTo(index)
 end
 
--- Focus the player's own element rather than the shared wrapper so each cursor's focus state
--- stays independent and one player yielding focus can't leave another player's cursor stuck.
-function MultiPlayerSelectionWrapper:getFocusTarget(selector)
-  return self.wrappedElements[selector.player]
+---Passes focus on to the element of the player the input source belongs to
+---@param inputSource InputSource
+function MultiPlayerSelectionWrapper:onFocus(inputSource)
+  self:forwardFocus(self.wrappedElements[inputSource.player], inputSource)
 end
 
 local COLORS = {
@@ -42,7 +39,7 @@ local COLORS = {
   white = {1, 1, 1, 1}
 }
 function MultiPlayerSelectionWrapper:drawSelf()
-  if tableUtils.trueForAny(self.wrappedElements, "hasFocus") then
+  if self:hasFocus() then
     love.graphics.setLineWidth(6)
     GraphicsUtil.setColor(COLORS.border)
     love.graphics.rectangle("line", self.x, self.y, self.width, self.height)

@@ -1,7 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
-local inputs = require("client.src.inputManager")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local StageLoader = require("client.src.mods.StageLoader")
 local PanelLoader = require("client.src.mods.PanelLoader")
@@ -10,6 +9,7 @@ local ModLoader = require("client.src.mods.ModLoader")
 local ModFolderTree = require("client.src.mods.ModFolderTree")
 local system = require("client.src.system")
 local consts = require("common.engine.consts")
+local InputSource = require("client.src.input.InputSource")
 
 local UNIT_SIZE = 40
 local UNIT_MARGIN = 4
@@ -236,8 +236,9 @@ end
 
 -- Takes the menu inputs while the back button has the focus: confirm or back closes the tab, up and down return to
 -- the last and the first row
----@param inputs table
-function ModManagement:receiveBackButtonInputs(inputs)
+---@param inputSource InputSource
+function ModManagement:receiveBackButtonInputs(inputSource)
+  local inputs = inputSource:getInputs()
   if inputs.isDown.Swap1 or inputs.isDown.Start or inputs.isDown.Swap2 then
     self:pressBackButton()
   elseif inputs:isPressedWithRepeat("Up", consts.KEY_DELAY, consts.KEY_REPEAT_PERIOD) then
@@ -526,11 +527,11 @@ end
 function ModManagement:update(dt)
   themes[config.theme].images.bg_main:update(dt)
   if self.receiveMode == "Menu" then
-    self.menu:receiveInputs(inputs, dt)
+    self.menu:receiveInputs(InputSource.anyPlayer, dt)
   elseif self.receiveMode == "Back" then
-    self:receiveBackButtonInputs(inputs)
+    self:receiveBackButtonInputs(InputSource.anyPlayer)
   else
-    self.cursor:receiveInputs(inputs, dt)
+    self.cursor:receiveInputs(InputSource.anyPlayer, dt)
   end
 end
 

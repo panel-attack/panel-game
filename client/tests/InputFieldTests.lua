@@ -33,7 +33,7 @@ end
 -- an empty field without a placeholder has zero text height, which used to push the cursor down
 local function testCursorHeightDoesNotDependOnText()
   local field = InputField({charLimit = 20, width = 200, height = 25})
-  field:setFocus()
+  field:startEditing()
   local _, emptyY = field:getCursorPos()
   assert(type(emptyY) == "number", "Cursor position should include a y coordinate")
   field:textInput("1")
@@ -45,7 +45,7 @@ end
 -- the cursor is drawn where getCursorPos says, on the blink phase where it is visible, even in an empty field
 local function testCursorIsDrawnAtCursorPos()
   local field = InputField({charLimit = 20, width = 200, height = 25})
-  field:setFocus()
+  field:startEditing()
   local expectedX, expectedY = field:getCursorPos()
 
   local originalDraw = GraphicsUtil.draw
