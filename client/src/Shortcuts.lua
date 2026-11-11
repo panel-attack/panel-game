@@ -3,6 +3,7 @@ local tableUtils = require("common.lib.tableUtils")
 local inputFieldManager = require("client.src.ui.inputFieldManager")
 local FileUtils = require("client.src.FileUtils")
 local logger = require("common.lib.logger")
+local PanelLoader = require("client.src.mods.PanelLoader")
 
 local function runSystemCommands()
   -- toggle debug mode
@@ -19,7 +20,7 @@ local function runSystemCommands()
     characters_reload_graphics()
   -- reload panels
   elseif input.allKeys.isDown["p"] then
-    panels_init()
+    PanelLoader.initPanels()
   -- reload stages
   elseif input.allKeys.isDown["s"] then
     stages_reload_graphics()

@@ -65,7 +65,8 @@ function LobbyChallengeButton:onClick()
   end
 end
 
-function LobbyChallengeButton:receiveInputs(input)
+function LobbyChallengeButton:receiveInputsSelf(inputSource, dt)
+  local input = inputSource:getInputs()
   if input.isDown["MenuSelect"] then
     self:onClick()
   end

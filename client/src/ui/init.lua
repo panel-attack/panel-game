@@ -24,6 +24,8 @@ on the class itself as luaLS only then correctly infers the return from the cons
 
 
 local ui = {
+  ---@source ArrowButton.lua
+  ArrowButton = import("./ArrowButton"),
   ---@source BoolSelector.lua
   BoolSelector = import("./BoolSelector"),
   ---@source Button.lua
@@ -34,10 +36,8 @@ local ui = {
   Carousel = import("./Carousel"),
   ---@source ChangeInputButton.lua
   ChangeInputButton = import("./ChangeInputButton"),
-  ---@source Focusable.lua
-  Focusable = import("./Focusable"),
-  ---@source FocusDirector.lua
-  FocusDirector = import("./FocusDirector"),
+  ---@source ConnectionWarning.lua
+  ConnectionWarning = import("./ConnectionWarning"),
   ---@source Grid.lua
   Grid = import("./Grid"),
   ---@source GridCursor.lua

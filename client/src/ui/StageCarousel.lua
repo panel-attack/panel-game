@@ -23,6 +23,16 @@ function StageCarousel:createPassenger(id, image, text)
   return passenger
 end
 
+-- Selects the stage, adding it first if it is in use but hidden so the carousel always shows the one in use
+---@param id string
+function StageCarousel:setPassengerById(id)
+  local stage = stages[id]
+  if stage and not self:getPassengerById(id) then
+    self:addPassenger(self:createPassenger(id, stage.images.thumbnail, stage.display_name))
+  end
+  Carousel.setPassengerById(self, id)
+end
+
 function StageCarousel:loadCurrentStages()
   for i = 0, #visibleStages do
     local stage

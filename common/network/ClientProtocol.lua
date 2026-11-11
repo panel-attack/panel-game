@@ -23,7 +23,8 @@ function ClientProtocol.requestLogin(userId, name, level, inputMethod, panels, b
     stage_is_random = bundleStage,
     stage = stage,
     ranked = wantsRanked,
-    save_replays_publicly = saveReplaysPublicly
+    save_replays_publicly = saveReplaysPublicly,
+    understandsPingUpdates = true,
   }
 
   return {

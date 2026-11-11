@@ -125,11 +125,9 @@ function NotificationCenter:getTouchedElement(x, y)
 end
 
 -- Never hands a notification input, so showing one never takes it from the scene
----@param inputs table input state table
+---@param inputSource InputSource
 ---@param dt number seconds since the last update
----@return boolean handled always false
-function NotificationCenter:handleFocusedInput(inputs, dt)
-  return false
+function NotificationCenter:receiveInputs(inputSource, dt)
 end
 
 -- Leaves the notifications out of the next frame, so a screenshot taken at its end doesn't show them

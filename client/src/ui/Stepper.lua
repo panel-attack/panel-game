@@ -93,13 +93,14 @@ local Stepper = class(
 Stepper.setLabels = setLabels
 Stepper.setState = setState
 
-function Stepper:receiveInputs(input)
+function Stepper:receiveInputsSelf(inputSource, dt)
+  local input = inputSource:getInputs()
   if input:isPressedWithRepeat("Left") then
     self:setState(self.selectedIndex - 1)
   elseif input:isPressedWithRepeat("Right") then
     self:setState(self.selectedIndex + 1)
   elseif input.isDown["Swap2"] and self.isFocusable then
-    self:yieldFocus()
+    self:yieldFocus(inputSource)
   end
 end
 

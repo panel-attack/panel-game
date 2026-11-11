@@ -4,7 +4,7 @@ require("common.lib.Queue")
 require("client.src.server_queue")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local StageLoader = require("client.src.mods.StageLoader")
-local Panels = require("client.src.mods.Panels")
+local PanelLoader = require("client.src.mods.PanelLoader")
 require("client.src.mods.Theme")
 
 -- The main game object for tracking everything in Panel Attack.
@@ -256,7 +256,7 @@ function Game:setupRoutine()
   StageLoader.initStages()
 
   coroutine.yield(loc("ld_panels"))
-  panels_init()
+  PanelLoader.initPanels()
 
   coroutine.yield(loc("ld_characters"))
   CharacterLoader.initCharacters()
@@ -655,7 +655,7 @@ function Game:refreshCanvasAndImagesForNewScale()
   -- Reload stages to get the new resolution assets
   stages_reload_graphics()
   -- Reload panels to get the new resolution assets
-  panels_init()
+  PanelLoader.initPanels()
   -- Reload characters to get the new resolution assets
   characters_reload_graphics()
 

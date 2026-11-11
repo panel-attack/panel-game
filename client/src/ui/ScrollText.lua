@@ -1,6 +1,5 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
-local Focusable = require(PATH .. ".Focusable")
 local class = require("common.lib.class")
 
 -- technically this value should be derived from the font size set for the label
@@ -12,11 +11,12 @@ local ScrollText = class(function(self, options)
   self.label = options.label
   self:addChild(self.label)
 
-  Focusable(self)
+  self:setFocusable(true)
 end,
 UiElement)
 
-function ScrollText:receiveInputs(inputs)
+function ScrollText:receiveInputsSelf(inputSource, dt)
+  local inputs = inputSource:getInputs()
   if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
     GAME.theme:playMoveSfx()
     if self.label.height > self.height - (SCROLL_STEP + 1) then
@@ -43,7 +43,7 @@ function ScrollText:receiveInputs(inputs)
   end
   if inputs.isDown["MenuEsc"] then
     GAME.theme:playCancelSfx()
-    self:onBack()
+    self:onBack(inputSource)
   end
 end
 
@@ -68,11 +68,12 @@ function ScrollText:onRelease(x, y)
 end
 
 -- this should/may be overwritten by the parent
-function ScrollText:onBack()
+---@param inputSource InputSource
+function ScrollText:onBack(inputSource)
   if self.onBackCallback then
     self.onBackCallback()
   end
-  self:yieldFocus()
+  self:yieldFocus(inputSource)
 end
 
 return ScrollText

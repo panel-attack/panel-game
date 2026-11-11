@@ -5,6 +5,7 @@ local socket = require("common.lib.socket")
 local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local ServerProtocol = require("common.network.ServerProtocol")
+local NetworkProtocol = require("common.network.NetworkProtocol")
 json = require("common.lib.dkjson")
 require("common.lib.mathExtensions")
 require("common.lib.util")
@@ -49,6 +50,7 @@ local time = os.time
 ---@field spectatorToRoom table<ServerPlayer, Room>
 ---@field nameToPlayer table<string, ServerPlayer>
 ---@field lastProcessTime integer
+---@field lastPingBroadcastTime integer
 ---@field lastFlushTime integer timestamp for when logs were last flushed to file
 ---@field lobbyChanged boolean if new lobby data should be sent out on the next loop
 ---@field playerbase table
@@ -76,6 +78,7 @@ local Server = class(
     self.persistence = persistence
     self.lastProcessTime = time()
     self.lastFlushTime = self.lastProcessTime
+    self.lastPingBroadcastTime = self.lastProcessTime
     self.lobbyChanged = false
     self._shuttingDown = false
 
@@ -425,6 +428,10 @@ function Server:update()
   if currentTime ~= self.lastProcessTime then
     self:flushLogs(currentTime)
     self.lastProcessTime = currentTime
+    if currentTime - self.lastPingBroadcastTime >= Connection.PING_INTERVAL then
+      self:broadcastPings()
+      self.lastPingBroadcastTime = currentTime
+    end
   end
 
   -- If the lobby changed tell everyone
@@ -437,7 +444,7 @@ function Server:acceptNewConnections()
   if newConnectionSocket then
     newConnectionSocket:settimeout(0)
     logger.debug("Accepted connection " .. self.connectionNumberIndex)
-    local connection = Connection(newConnectionSocket, self.connectionNumberIndex)
+    local connection = Connection(newConnectionSocket, self.connectionNumberIndex, socket.gettime)
     self.socketToConnectionIndex[newConnectionSocket] = self.connectionNumberIndex
     self:addConnection(connection)
   end
@@ -669,6 +676,26 @@ function Server:flushLogs(currentTime)
   end
 end
 
+-- Tells each player whose client understands ping updates the current and average ping of every player online,
+-- except players in a match, where nothing shows pings
+function Server:broadcastPings()
+  local players = {}
+  for _, player in pairs(self.publicIdToPlayer) do
+    players[#players + 1] = player
+  end
+  table.sort(players, function(a, b)
+    return a.publicPlayerID < b.publicPlayerID
+  end)
+  local update = ServerProtocol.pingUpdate(players)
+  local encoded = NetworkProtocol.markedMessageForTypeAndBody(update.messageType.prefix, json.encode(update.messageText))
+
+  for _, player in ipairs(players) do
+    if player.understandsPingUpdates and player.state ~= "playing" then
+      player:send(encoded)
+    end
+  end
+end
+
 function Server:broadCastLobbyIfChanged()
   if self.lobbyChanged then
     local lobbyStateV2 = self:lobbyStateV2()
@@ -744,6 +771,9 @@ function Server:login(connection, userId, name, ipAddress, port, engineVersion, 
 
     local player = Player(userId, connection, name, self.playerbase.privateIdToPublicId[userId])
     player.save_replays_publicly = loginMessage.save_replays_publicly
+    -- clients from before ping updates never take a message type they don't know out of their queue, which also stops
+    -- their dropOldInputMessages at it, so only clients that say they understand it get pingUpdate
+    player.understandsPingUpdates = loginMessage.understandsPingUpdates
     player:setState("lobby")
     assert(player.publicPlayerID ~= nil)
     player:updateSettings(loginMessage.playerSettings)

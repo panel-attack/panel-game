@@ -9,7 +9,7 @@ local inputManager = require("client.src.inputManager")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
-local directsFocus = require("client.src.ui.FocusDirector")
+local InputSource = require("client.src.input.InputSource")
 
 local HOLD_THRESHOLD = 0.25
 local AUTO_CLOSE_DELAY = 0.25
@@ -68,7 +68,6 @@ function(self, options)
   self.height = consts.CANVAS_HEIGHT
   self:setVisibility(false)
 
-  directsFocus(self)
   self:buildUi()
 end, UiElement, "InputDeviceOverlay")
 
@@ -457,7 +456,7 @@ function InputDeviceOverlay:updateSelf(dt)
 
   self:updateTouchHold(dt)
 
-  self:receiveInputs(GAME.input, dt)
+  self:receiveInputs(InputSource.anyPlayer, dt)
 
   -- Handle auto-close timer
   if self.autoCloseTimer > 0 and not self:isAnyButtonCurrentlyPressed() then
@@ -513,7 +512,6 @@ function InputDeviceOverlay:close()
   self:setVisibility(false)
   self:clearTouchTarget()
   self.autoCloseTimer = 0
-  self:setFocus(nil)
 
   if self.onClose then
     self.onClose()
@@ -548,7 +546,8 @@ function InputDeviceOverlay:onRelease()
   end
 end
 
-function InputDeviceOverlay:receiveInputs(input, dt)
+function InputDeviceOverlay:receiveInputsSelf(inputSource, dt)
+  local input = inputSource:getInputs()
   if input.isDown["MenuEsc"] then
     self.escapeHoldTime = self.escapeHoldTime + dt
   elseif input.isPressed["MenuEsc"] and self.escapeHoldTime > 0 then

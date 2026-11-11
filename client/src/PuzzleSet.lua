@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local FileUtils = require("client.src.FileUtils")
 local Puzzle = require("common.engine.Puzzle")
 local logger = require("common.lib.logger")
+local tableUtils = require("common.lib.tableUtils")
 
 -- A puzzle set is a set of puzzles, typically they have a common difficulty or theme.
 ---@class PuzzleSet
@@ -35,7 +36,7 @@ PuzzleSet.ROOT_PROPERTY = {
   PUZZLE_SETS = "Puzzle Sets"
 }
 
-PuzzleSet.CURRENT_VERSION = 3
+PuzzleSet.CURRENT_VERSION = 4
 
 local validPuzzleSetProperties = {}
 for _, property in pairs(PuzzleSet.PUZZLE_SET_PROPERTY) do
@@ -114,7 +115,10 @@ PuzzleSet.keyOrder = {
   Puzzle.PUZZLE_PROPERTY.PANEL_BUFFER,
   Puzzle.PUZZLE_PROPERTY.GARBAGE_PANEL_BUFFER,
   Puzzle.PUZZLE_PROPERTY.CURSOR_START_LEFT,
-  
+  Puzzle.PUZZLE_PROPERTY.HELP_DESCRIPTION,
+  Puzzle.PUZZLE_PROPERTY.SOLUTION,
+  Puzzle.PUZZLE_PROPERTY.OLD_UUIDS,
+
   Puzzle.CURSOR_PROPERTY.COLUMN,
   Puzzle.CURSOR_PROPERTY.ROW
 }
@@ -126,9 +130,11 @@ function PuzzleSet.loadFromFile(filePath)
   local puzzleSets = {}
 
   if data then
-    if data[PuzzleSet.ROOT_PROPERTY.VERSION] == PuzzleSet.CURRENT_VERSION then
+    local loaders = {[4] = PuzzleSet.loadV4, [3] = PuzzleSet.loadV3}
+    local loader = loaders[data[PuzzleSet.ROOT_PROPERTY.VERSION]]
+    if loader then
       for _, puzzleSetData in pairs(data[PuzzleSet.ROOT_PROPERTY.PUZZLE_SETS]) do
-        local loadedSet = PuzzleSet.loadV3(puzzleSetData)
+        local loadedSet = loader(puzzleSetData)
         if loadedSet then
           puzzleSets[#puzzleSets + 1] = loadedSet
         end
@@ -224,24 +230,52 @@ local function warnPuzzleHidden(puzzleSetName, fileIndex, reason)
   logger.warn("Hiding puzzle " .. fileIndex .. " of set " .. tostring(puzzleSetName) .. " because " .. reason)
 end
 
--- the properties a puzzle cannot be built without; the loader works on their text right away, so an
--- entry missing one has to be hidden before it is read rather than after
-local requiredPuzzleProperties = {Puzzle.PUZZLE_PROPERTY.TYPE, Puzzle.PUZZLE_PROPERTY.STACK}
+-- Whether the value is a string, for checking every entry of a goal list
+---@param value any
+---@return boolean
+local function isString(value)
+  return type(value) == "string"
+end
 
--- Checks that an entry says enough to build a puzzle from, warning about and hiding one that does not
+-- The puzzle type as the Puzzle takes it: the goal list of a version 4 file, or the one-word type of a version 3 file
+---@param puzzleTypeValue any
+---@param version integer
+---@return {goals: string[]?, puzzleType: string?}? typeArgs nil if the value is not what the version writes
+local function puzzleTypeArgs(puzzleTypeValue, version)
+  if version >= 4 then
+    -- a file spells every goal as text, so a list holding anything else is not one it could have written
+    local isGoalList = type(puzzleTypeValue) == "table" and tableUtils.trueForAll(puzzleTypeValue, isString)
+    return isGoalList and {goals = puzzleTypeValue} or nil
+  end
+  return type(puzzleTypeValue) == "string" and {puzzleType = string.lower(puzzleTypeValue)} or nil
+end
+
+-- Checks that an entry says enough to build a puzzle from, warning about and hiding one that does not;
+-- the loader works on its stack and type right away, so an entry missing one has to be hidden before it is read
 ---@param puzzleData table
 ---@param puzzleSetName string
 ---@param fileIndex integer where the puzzle sits in the file
----@return boolean readable
-local function puzzleEntryIsReadable(puzzleData, puzzleSetName, fileIndex)
-  for _, property in ipairs(requiredPuzzleProperties) do
-    if type(puzzleData[property]) ~= "string" then
+---@param version integer the file version, which says how the Puzzle Type is written
+---@return {goals: string[]?, puzzleType: string?}? typeArgs the puzzle type as the Puzzle takes it, nil for an entry that was hidden
+local function readableEntryTypeArgs(puzzleData, puzzleSetName, fileIndex, version)
+  for _, property in ipairs({Puzzle.PUZZLE_PROPERTY.TYPE, Puzzle.PUZZLE_PROPERTY.STACK}) do
+    if puzzleData[property] == nil then
       warnPuzzleHidden(puzzleSetName, fileIndex, "it has no " .. property)
-      return false
+      return nil
     end
   end
+  if type(puzzleData[Puzzle.PUZZLE_PROPERTY.STACK]) ~= "string" then
+    warnPuzzleHidden(puzzleSetName, fileIndex, "its " .. Puzzle.PUZZLE_PROPERTY.STACK .. " is not text")
+    return nil
+  end
 
-  return true
+  local typeArgs = puzzleTypeArgs(puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE], version)
+  if not typeArgs then
+    warnPuzzleHidden(puzzleSetName, fileIndex, "its " .. Puzzle.PUZZLE_PROPERTY.TYPE .. " is not "
+      .. (version >= 4 and "a list of goals" or "one of " .. Puzzle.puzzleTypeNames()))
+  end
+
+  return typeArgs
 end
 
 -- Validates a puzzle read from a file, warning about and hiding one that fails so the rest of the set still loads
@@ -298,21 +332,22 @@ function PuzzleSet.validateV3Properties(puzzleSetData)
   return true
 end
 
--- Reads one puzzle entry of a version 3 file, warning about and skipping one the game cannot load so
+-- Reads one puzzle entry of a version 3 or 4 file, warning about and skipping one the game cannot load so
 -- that the rest of the set still comes in
 ---@param puzzleData table
 ---@param puzzleSetName string
 ---@param fileIndex integer which entry of the set in the file this is, so a warning names the one to go and fix
+---@param version integer the file version: 4 lists goals, 3 names one type
 ---@return Puzzle? puzzle nil for an entry that was hidden
-function PuzzleSet.readV3Puzzle(puzzleData, puzzleSetName, fileIndex)
-  if not puzzleEntryIsReadable(puzzleData, puzzleSetName, fileIndex) then
+function PuzzleSet.readPuzzle(puzzleData, puzzleSetName, fileIndex, version)
+  local typeArgs = readableEntryTypeArgs(puzzleData, puzzleSetName, fileIndex, version)
+  if not typeArgs then
     return nil
   end
 
-  ---@type string
-  local puzzleTypeValue = puzzleData[Puzzle.PUZZLE_PROPERTY.TYPE]
   local args = {
-    puzzleType = string.lower(puzzleTypeValue),
+    goals = typeArgs.goals,
+    puzzleType = typeArgs.puzzleType,
     moves = puzzleData[Puzzle.PUZZLE_PROPERTY.MOVES],
     stack = puzzleData[Puzzle.PUZZLE_PROPERTY.STACK],
     stopTime = puzzleData[Puzzle.PUZZLE_PROPERTY.STOP],
@@ -346,10 +381,25 @@ function PuzzleSet.readV3Puzzle(puzzleData, puzzleSetName, fileIndex)
   return puzzle
 end
 
--- Reads a version 3 set
+-- Reads a version 3 set: a puzzle's type is one word
 ---@param puzzleSetData table
 ---@return PuzzleSet?
 function PuzzleSet.loadV3(puzzleSetData)
+  return PuzzleSet.loadSet(puzzleSetData, 3)
+end
+
+-- Reads a version 4 set: a puzzle's type is the list of goals it asks for
+---@param puzzleSetData table
+---@return PuzzleSet?
+function PuzzleSet.loadV4(puzzleSetData)
+  return PuzzleSet.loadSet(puzzleSetData, 4)
+end
+
+-- Reads a set of the given file version, hiding the puzzles that cannot be read
+---@param puzzleSetData table
+---@param version integer the file version, 3 or 4
+---@return PuzzleSet?
+function PuzzleSet.loadSet(puzzleSetData, version)
   if not PuzzleSet.validateV3Properties(puzzleSetData) then
     return nil
   end
@@ -359,13 +409,13 @@ function PuzzleSet.loadV3(puzzleSetData)
   local puzzleSet = PuzzleSet(puzzleSetName, puzzleSetDescription, {}, {})
 
   for fileIndex, puzzleData in ipairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLES] or {}) do
-    local puzzle = PuzzleSet.readV3Puzzle(puzzleData, puzzleSetName, fileIndex)
+    local puzzle = PuzzleSet.readPuzzle(puzzleData, puzzleSetName, fileIndex, version)
     if puzzle then
       puzzleSet.puzzles[#puzzleSet.puzzles + 1] = puzzle
     end
   end
   for _, currentPuzzleSet in pairs(puzzleSetData[PuzzleSet.PUZZLE_SET_PROPERTY.PUZZLE_SETS] or {}) do
-    local loadedSet = PuzzleSet.loadV3(currentPuzzleSet)
+    local loadedSet = PuzzleSet.loadSet(currentPuzzleSet, version)
     if loadedSet then
       puzzleSet.puzzleSets[#puzzleSet.puzzleSets + 1] = loadedSet
     end
@@ -596,8 +646,9 @@ function PuzzleSet:updatePuzzleInFileData(fileData, targetPuzzleSet, puzzleIndex
     return false
   end
   
-  -- Convert target puzzle to save data format
-  local puzzleData = updatedPuzzle:getSaveData()
+  -- a version 3 file names one type, and keeps doing so
+  local fileVersion = tonumber(fileData[PuzzleSet.ROOT_PROPERTY.VERSION]) or PuzzleSet.CURRENT_VERSION
+  local puzzleData = updatedPuzzle:getSaveData(fileVersion < 4)
 
   -- a puzzle the loader hid is still in the file, so the entry to write is the one the puzzle was
   -- read from rather than its position in the set

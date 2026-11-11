@@ -3,6 +3,7 @@ local NotificationCenter = require("client.src.ui.NotificationCenter")
 local Notification = require("client.src.ui.Notification")
 local consts = require("common.engine.consts")
 local Scene = require("client.src.scenes.Scene")
+local InputSource = require("client.src.input.InputSource")
 
 local FRAME = 1 / 60
 
@@ -331,16 +332,17 @@ end
 testNotificationsNeverTakeTouches()
 
 local function testNotificationsNeverTakeInput()
-  withGameNotification(function(_, notification)
+  withGameNotification(function(center, notification)
     local received = false
-    notification.hasFocus = true
-    notification.receiveInputs = function()
+    notification.receiveInputsSelf = function()
       received = true
     end
+    center:focusChild(notification, InputSource.anyPlayer)
 
-    GAME.uiRoot:handleFocusedInput({}, FRAME)
+    center:receiveInputs(InputSource.anyPlayer, FRAME)
+    center:unfocusChild(InputSource.anyPlayer)
 
-    assert(not received, "a notification should never be handed input, even one that claims focus")
+    assert(not received, "a notification should never be handed input, even one focused for an input source")
   end)
 end
 
