@@ -7,7 +7,8 @@ local consts = require("common.engine.consts")
 
 -- An animation file with its own tweens, from the given folder, such as a stage's, or else from the current theme's scenes folder.
 -- Its image paths and file refs are relative to the given folder, or else to the theme folder.
--- It reloads itself when the canvas scale changed since it loaded, so its images have the right filter, and one from the theme also when the theme changed.
+-- It reloads itself when the density the canvas draws at changed since it loaded, as its still parts are baked at that density, and one from
+-- the theme also when the theme changed, freeing the images it replaces.
 -- Without the file it draws its fallback image in the file's place, if it was given one, or else nothing.
 -- The file's one top-level drawable is a container the canvas's size at its origin, unscaled, so the scene is laid out in canvas units.
 ---@class SceneAnimation
@@ -16,7 +17,7 @@ local consts = require("common.engine.consts")
 ---@field drawables table[] the drawables loaded from the file
 ---@field tweens table the flux group running the drawables' tracks
 ---@field themePath string? the path of the theme the drawables were loaded from, nil when it has its own folder
----@field canvasScale number the canvas scale the drawables were loaded for
+---@field drawScale number the canvas's snapped scale the drawables were loaded for, see GAME:newCanvasSnappedScale
 ---@field fallbackImage UpdatingImage? the image drawn in place of a missing file
 ---@overload fun(fileName: string, folder: string?, fallbackImage: UpdatingImage?): SceneAnimation
 local SceneAnimation = class(
@@ -46,9 +47,13 @@ local function assertCanvasContainer(drawables, filePath)
   end
 end
 
--- Loads the drawables for the current canvas scale, from the current theme if it has no folder, dropping any running tracks
+-- Loads the drawables for the canvas's current snapped scale, from the current theme if it has no folder, dropping any running tracks
+-- and freeing the images of the drawables it replaces
 function SceneAnimation:load()
-  self.canvasScale = GAME.canvasXScale
+  if self.drawables then
+    AnimationLoader.releaseImages(self.drawables)
+  end
+  self.drawScale = GAME:newCanvasSnappedScale()
   self.tweens = Flux.group()
   local rootFolder, filePath
   if self.folder then
@@ -60,20 +65,20 @@ function SceneAnimation:load()
     filePath = rootFolder .. Theme.SCENES_FOLDER .. "/" .. self.fileName
   end
   if fileUtils.exists(filePath) then
-    self.drawables = AnimationLoader.loadFromFile(rootFolder, filePath, self.tweens)
+    self.drawables = AnimationLoader.loadFromFile(rootFolder, filePath, self.tweens, self.drawScale)
     assertCanvasContainer(self.drawables, filePath)
   else
     self.drawables = {}
   end
 end
 
--- Returns whether the canvas scale, or the theme it was loaded from, changed since the drawables were loaded
+-- Returns whether the canvas's snapped scale, or the theme it was loaded from, changed since the drawables were loaded
 ---@return boolean
 function SceneAnimation:isStale()
   if self.folder == nil and self.themePath ~= themes[config.theme].path then
     return true
   end
-  return self.canvasScale ~= GAME.canvasXScale
+  return self.drawScale ~= GAME:newCanvasSnappedScale()
 end
 
 -- Returns the fallback image while the file is missing, nil when the file was found or it has no fallback image

@@ -1,6 +1,8 @@
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local FileUtils = require("client.src.FileUtils")
+local TextureAtlas = require("client.src.graphics.TextureAtlas")
+local AnimationBaker = require("client.src.graphics.AnimationBaker")
 
 -- A class that loads a heirarchy of images and animations from an animation file and returns the drawable objects. Animations are added to the flux group passed in, so they only run while its owner updates that group.
 ---@class AnimationLoader
@@ -187,6 +189,7 @@ local function loadDrawables(rootPath, animationData, tweens, images)
       -- a repeated image tiles over its size instead of stretching to it
       obj.width = obj.width or textureWidth
       obj.height = obj.height or textureHeight
+      obj.isRepeated = true
       obj.scrollX = 0
       obj.scrollY = 0
       obj.quad = love.graphics.newQuad(obj.scrollX, obj.scrollY, obj.width, obj.height, textureWidth, textureHeight)
@@ -389,12 +392,101 @@ function AnimationLoader.resolveRefsRecursively(rootPath, nodeTable, loadedFileT
     end
 end
 
+-- Calls fn with each node under the nodes and its parent, each before its children, in draw order
+---@param nodes table[]
+---@param fn fun(node: table, parent: table?)
+---@param parent table? the node the nodes are children of
+local function forEachNode(nodes, fn, parent)
+  for _, node in ipairs(nodes) do
+    fn(node, parent)
+    forEachNode(node.children, fn, node)
+  end
+end
+
+-- Returns each node's transform from the scene's origin, as it is when the data loads
+---@param drawables table[]
+---@return table<table, love.Transform>
+local function worldTransforms(drawables)
+  local worlds = {}
+  local identity = love.math.newTransform()
+  local nodeTransform = love.math.newTransform()
+  forEachNode(drawables, function(node, parent)
+    worlds[node] = (worlds[parent] or identity):clone():apply(AnimationLoader.setNodeTransform(nodeTransform, node))
+  end)
+  return worlds
+end
+
+-- Returns each image the nodes draw once, in draw order
+---@param drawables table[]
+---@return love.Texture[]
+local function drawnImages(drawables)
+  local textures = {}
+  local seen = {}
+  forEachNode(drawables, function(node)
+    if node.texture and not seen[node.texture] then
+      seen[node.texture] = true
+      textures[#textures + 1] = node.texture
+    end
+  end)
+  return textures
+end
+
+-- Packs the images the nodes draw into atlas pages so their draws batch, each node drawing its region
+---@param drawables table[] drawables built from a file, whose images only they draw
+local function moveOntoAtlas(drawables)
+  local regions = TextureAtlas.build(drawnImages(drawables))
+  forEachNode(drawables, function(node)
+    local region = regions[node.texture]
+    if region then
+      node.texture = region.texture
+      node.quad = region.quad
+    end
+  end)
+end
+
+-- Frees the images the file loaded that no node draws any more, as baking and the atlas took them off their nodes
+---@param drawables table[]
+---@param images table the images loaded for the file, see loadSharedImage
+local function releaseUndrawnImages(drawables, images)
+  local drawn = {}
+  for _, texture in ipairs(drawnImages(drawables)) do
+    drawn[texture] = true
+  end
+  for _, loaded in pairs(images) do
+    if not drawn[loaded.texture] then
+      loaded.texture:release()
+    end
+  end
+end
+
+-- Builds the drawables of animation data that has no refs left to resolve
+---@param rootPath string the folder image file paths are written from
+---@param rootData table the animation data, with its nodes in drawables
+---@param tweens table the flux group the animations are added to, its owner updates it
+---@return table[] drawables
+---@return table images the images loaded for the data's file paths, see loadSharedImage
+local function buildDrawables(rootPath, rootData, tweens)
+  local drawables = {}
+  local images = {}
+  for _, data in ipairs(rootData.drawables) do
+    local drawable = loadDrawables(rootPath, data, tweens, images)
+    if drawable then
+      drawables[#drawables+1] = drawable
+    end
+  end
+  return drawables, images
+end
+
 -- Loads all drawables for a animation file.
+-- When a window can draw them, the parts that never change are baked into one image per run at the given density, as far as the
+-- longer side of the canvas either way it is turned, and the images left are packed into atlas pages, so the caller reloads the file
+-- when the density it draws at changes. Only the file's drawables draw its images, so releaseImages can free them.
 -- @param rootPath String the folder image file paths and file refs are written from
 -- @param filePath String the full path of the file to load
 ---@param tweens table the flux group the animations are added to, its owner updates it
+---@param drawScale number the pixel density the drawables are drawn at, GAME:newCanvasSnappedScale() for the canvas
 -- @return table an array of drawables representing all the objects with flux animations setup
-function AnimationLoader.loadFromFile(rootPath, filePath, tweens)
+function AnimationLoader.loadFromFile(rootPath, filePath, tweens, drawScale)
   local loadedFileTables = {}   -- filePath → parsed table
   local idLookupTable   = {}    -- "id" → node table
 
@@ -409,25 +501,38 @@ function AnimationLoader.loadFromFile(rootPath, filePath, tweens)
   end
 
   -- Finally once the full data structure is setup, it is converted into separate drawable objects.
-  return AnimationLoader.loadFromData(rootPath, rootData, tweens)
+  local drawables, images = buildDrawables(rootPath, rootData, tweens)
+  -- without a window there is nothing to draw run images or pages with
+  if love.graphics.isActive() then
+    AnimationBaker.bake(drawables, worldTransforms(drawables), drawScale)
+    moveOntoAtlas(drawables)
+    releaseUndrawnImages(drawables, images)
+  end
+  return drawables
 end
 
--- Loads the drawables of animation data that has no refs left to resolve, such as a resolved file or data made in code.
+-- Frees the images the drawables loadFromFile returned draw, their run images included, once nothing draws them any more.
+-- An image holds memory the garbage collector doesn't see, so a caller replacing its drawables frees the old ones at once.
+---@param drawables table[] the drawables loadFromFile returned
+function AnimationLoader.releaseImages(drawables)
+  for _, texture in ipairs(drawnImages(drawables)) do
+    texture:release()
+  end
+  forEachNode(drawables, function(node)
+    if node.bakedRun then
+      node.bakedRun.texture:release()
+    end
+  end)
+end
+
+-- Loads the drawables of animation data that has no refs left to resolve, such as data made in code, drawing each part on its own.
 -- Data made in code can give a node a texture, an image that's already loaded, in place of its filePath.
 ---@param rootPath string the folder image file paths are written from
 ---@param rootData table the animation data, with its nodes in drawables
 ---@param tweens table the flux group the animations are added to, its owner updates it
 ---@return table[] drawables
 function AnimationLoader.loadFromData(rootPath, rootData, tweens)
-  local drawables = {}
-  local images = {}
-  for _, data in ipairs(rootData.drawables) do
-    local drawable = loadDrawables(rootPath, data, tweens, images)
-    if drawable then
-      drawables[#drawables+1] = drawable
-    end
-  end
-  return drawables
+  return (buildDrawables(rootPath, rootData, tweens))
 end
 
 -- DRAWING CODE
@@ -454,6 +559,20 @@ function AnimationLoader.objectTransform(obj)
   return obj.x - ax, obj.y - ay, obj.rotation, obj.xScale, obj.yScale
 end
 
+-- Sets the transform to the node's position, anchor, rotation and scale about its pivot, from its parent's space into its own.
+-- LÖVE builds it in one call, where translating, rotating and scaling one step at a time would take five.
+---@param transform love.Transform
+---@param node table
+---@return love.Transform transform
+function AnimationLoader.setNodeTransform(transform, node)
+  local px, py = AnimationLoader.anchorOffset(node, node.pivot)
+  local wx, wy, wrot, xScale, yScale = AnimationLoader.objectTransform(node)
+  return transform:setTransformation(wx + px, wy + py, wrot, xScale, yScale, px, py)
+end
+
+-- Reused by every node drawn, as applying it copies it onto the graphics transform
+local nodeTransform = love.math.newTransform()
+
 
 local function drawSiblingsBeforeNode(parent, node)
   love.graphics.setShader(alphaDiscardShader)
@@ -466,7 +585,7 @@ local function drawSiblingsBeforeNode(parent, node)
   love.graphics.setShader()
 end
 
--- Draws a scene's drawables in order, starting from the default blend mode the nodes assume and restoring the graphics state afterwards so their colours don't leak into what draws next.
+-- Draws a scene's drawables in order, starting from the default blend mode the nodes assume and restoring the graphics state afterwards so their colors don't leak into what draws next.
 -- Each node only pushes its transform, saving and restoring the whole state once per scene instead of once per node.
 ---@param drawables table[] the drawables loadFromFile returned
 function AnimationLoader.drawDrawables(drawables)
@@ -478,23 +597,26 @@ function AnimationLoader.drawDrawables(drawables)
   love.graphics.pop()
 end
 
--- Draws one node and its children, it sets its own colour and resets the blend mode and stencil it changes
+-- Draws one node and its children, it sets its own color and resets the blend mode and stencil it changes.
+-- A node holding a baked run draws the run's image first, and one whose subtree draws no image of its own draws nothing else.
 function AnimationLoader.drawNode(d, parent)
+    if d.bakedRun then
+      -- the run's image holds its parts' color already multiplied by their alpha
+      love.graphics.setBlendMode("alpha", "premultiplied")
+      love.graphics.setColor(1, 1, 1, 1)
+      love.graphics.draw(d.bakedRun.texture, d.bakedRun.transform)
+      love.graphics.setBlendMode("alpha", "alphamultiply")
+    end
+    if d.drawsNothing then
+      return
+    end
+
     love.graphics.push()
-
-    local px, py = AnimationLoader.anchorOffset(d, d.pivot)
-    local wx, wy, wrot, xScale, yScale = AnimationLoader.objectTransform(d)
-
-    love.graphics.translate(wx, wy)
-
-    love.graphics.translate(px, py)
-    love.graphics.rotate(wrot)
-    love.graphics.scale(xScale, yScale)
-    love.graphics.translate(-px, -py)
+    love.graphics.applyTransform(AnimationLoader.setNodeTransform(nodeTransform, d))
 
     if d.texture then
       local usesStencil = d.stencil
-      local usesBlendAlphaMode = d.blendMode ~= "alpha" or  d.alphaMode ~= "alphamultiply"
+      local usesBlendAlphaMode = not GraphicsUtil.isDefaultBlendMode(d.blendMode, d.alphaMode)
 
       if usesStencil then
         assert(parent, "To use a stencil you need siblings")
@@ -518,8 +640,10 @@ function AnimationLoader.drawNode(d, parent)
 
       love.graphics.setColor(d.tint[1], d.tint[2], d.tint[3], d.alpha)
       if d.quad then
-        -- whole pixels, so the scrolling image's edges stay sharp
-        d.quad:setViewport(math.floor(d.scrollX), math.floor(d.scrollY), d.width, d.height)
+        if d.isRepeated then
+          -- whole pixels, so the scrolling image's edges stay sharp
+          d.quad:setViewport(math.floor(d.scrollX), math.floor(d.scrollY), d.width, d.height)
+        end
         love.graphics.draw(d.texture, d.quad, 0, 0)
       else
         love.graphics.draw(d.texture, 0, 0)

@@ -72,6 +72,33 @@ local function testReloadsAfterTheScaleChanged()
   assert(animation.drawables ~= drawables, "The drawables should be reloaded for the new scale")
 end
 
+-- A scene is drawn at the canvas's snapped scale, so a scale change that snaps to the same one leaves it as it is
+local function testKeepsItsDrawablesWhileTheSnappedScaleIsTheSame()
+  GAME.canvasXScale = 1.5
+  local animation = SceneAnimation("scene.json")
+  local drawables = animation.drawables
+
+  GAME.canvasXScale = 1.75
+  animation:update(0)
+
+  assert(animation.drawables == drawables, "The drawables should not be reloaded for a scale that snaps to the same one")
+end
+
+-- The images a reload replaces are freed at once, as the garbage collector doesn't see how much memory they hold
+local function testReloadFreesTheImagesItReplaces()
+  if not love.graphics.isActive() then
+    -- without a window there are no run images
+    return
+  end
+  local animation = SceneAnimation("stillParts.json")
+  local runImage = animation.drawables[1].bakedRun.texture
+
+  GAME.canvasXScale = GAME.canvasXScale + 1
+  animation:update(0)
+
+  assert(not pcall(runImage.getWidth, runImage), "The old run image should be freed")
+end
+
 local function testReloadedTracksStartOver()
   local animation = SceneAnimation("scene.json")
   animation:update(0.5)
@@ -80,6 +107,17 @@ local function testReloadedTracksStartOver()
   animation:update(0)
 
   assertApproxEqual(animation.drawables[1].children[1].alpha, 1, "The reloaded track should start from the beginning")
+end
+
+-- A scene's still parts are drawn as one image, so drawing it costs less
+local function testStillPartsAreBaked()
+  if not love.graphics.isActive() then
+    -- without a window there is nothing to bake into
+    return
+  end
+  local animation = SceneAnimation("stillParts.json")
+
+  assert(animation.drawables[1].bakedRun ~= nil, "The two still parts should be baked into one image")
 end
 
 -- An animation given its folder reads the file and its image paths from that folder
@@ -195,7 +233,10 @@ withTestThemes(testTracksAnimateWhenUpdated)
 withTestThemes(testKeepsItsDrawablesWhileNothingChanged)
 withTestThemes(testReloadsFromTheNewThemeAfterTheThemeChanged)
 withTestThemes(testReloadsAfterTheScaleChanged)
+withTestThemes(testKeepsItsDrawablesWhileTheSnappedScaleIsTheSame)
+withTestThemes(testReloadFreesTheImagesItReplaces)
 withTestThemes(testReloadedTracksStartOver)
+withTestThemes(testStillPartsAreBaked)
 withTestThemes(testLoadsFromTheGivenFolder)
 withTestThemes(testAnAnimationFromAFolderKeepsItsDrawablesAfterAThemeChange)
 withTestThemes(testAnAnimationFromAFolderReloadsAfterTheScaleChanged)
