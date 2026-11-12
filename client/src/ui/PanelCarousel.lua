@@ -42,9 +42,18 @@ function PanelCarousel:setColorCount(count)
   end
 end
 
+-- Selects the panel set, adding it first if it is in use but hidden so the carousel always shows the one in use
+---@param id string
+function PanelCarousel:setPassengerById(id)
+  if panels[id] and not self:getPassengerById(id) then
+    self:addPassenger(self:createPassenger(id))
+  end
+  Carousel.setPassengerById(self, id)
+end
+
 function PanelCarousel:loadPanels()
-  for i = 1, #panels_ids do
-    local passenger = self:createPassenger(panels_ids[i])
+  for i = 1, #visiblePanels do
+    local passenger = self:createPassenger(visiblePanels[i])
     self:addPassenger(passenger)
   end
 

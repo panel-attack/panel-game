@@ -7,6 +7,7 @@ Adding/modding panels: step by step instructions (Windows example):
 4. Place assets and json file in that folder with the proper names to add your data. Exhaustive list below.
 
 Note: all panels will be loaded on game start.  
+Players can hide panel sets from the panel selection or turn them off in Options > Mod Management. When an opponent uses a panel set you turned off, you see their panels drawn with yours.  
 While working on a panel set you can use the Ctrl+Shift+Alt+P shortcut to reload all panel graphics in the game.
 
 # config.json

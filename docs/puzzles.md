@@ -15,13 +15,13 @@ The contents of each puzzle file should be formatted something like this:
 
 ```jsonc
 {
-  "Version": 3,
+  "Version": 4,
   "Puzzle Sets": [
     {
       "Set Name": "Name of Puzzle Set",
       "Puzzles": [
         {
-          "Puzzle Type": "chain",
+          "Puzzle Type": ["x2", "+4"],
           "StartTiming": "Countdown",
           "Moves": 0,
           "Stack":
@@ -34,7 +34,7 @@ The contents of each puzzle file should be formatted something like this:
           }
         },
         {
-          "Puzzle Type": "clear",
+          "Puzzle Type": ["Clear"],
           "Moves": 0,
           "Stack":
            "
@@ -62,9 +62,11 @@ The contents of each puzzle file should be formatted something like this:
 
 ## Version Information
 
-Version 3 is the current version it allows "Puzzle Sets" to have recursive "Puzzle Sets" for organization purposes.
+Version 4 is the current version. "Puzzle Type" is a list of goals, which is how a puzzle asks for a chain or a combo of an exact size.
 
-A "clear" puzzle's "GarbagePanelBuffer" holds the panels the player sees, and the puzzle is won by the first revealed row that needs more panels than the buffer holds. Without a buffer, the first revealed row wins.
+In a version 3 file, "Puzzle Type" is one word ("moves", "chain", or "clear") instead of a list. A version 3 file still loads and plays by its own rules, and it keeps its version number and its one-word type when a puzzle in it is saved. Version 3 also introduced recursive "Puzzle Sets" for organization.
+
+A "clear" puzzle, or a "Clear" goal, uses its "GarbagePanelBuffer" for the panels the player sees, and is won by the first revealed row that needs more panels than the buffer holds. Without a buffer, the first revealed row wins.
 
 ## Field Descriptions
 
@@ -77,15 +79,24 @@ A "clear" puzzle's "GarbagePanelBuffer" holds the panels the player sees, and th
 ### Puzzle Fields
 
 #### Puzzle Type
-**"Puzzle Type"** should be one of the following:
-- **"moves"** - all panels need to be cleared in the set number of moves
-- **"chain"** - all panels need to be cleared once the first chain ends, and there must be a chain
-- **"clear"** - garbage must be revealed past the end of the "GarbagePanelBuffer" before health runs out
+**"Puzzle Type"** is the list of goals the puzzle asks for. The puzzle is won once every goal in the list is met and the board has come to rest, and it is lost as soon as a goal can no longer be met. Each goal is one of:
+- **"Empty Board"** - no colored panel is left
+- **"Clear"** - garbage must be revealed past the end of the "GarbagePanelBuffer" before health runs out
+- **"x4"** - a chain that ends at exactly x4. Any size from x2 up can be asked for. A chain that ends at x3 or runs on to x5 does not count.
+- **"+6"** - a match of exactly 6 panels. Any size from +4 up can be asked for. A bigger or smaller combo does not count.
+
+Any goals can be listed together, for example `["Empty Board", "x3", "+5"]`. A goal listed twice has to be made twice: `["x2", "x2"]` asks for two separate x2 chains. In-game, the goal box shows a card for every chain and combo goal and marks each one as it is made.
+
+A puzzle with a chain or combo goal is lost once the panels left on the board cannot make it anymore, even if it has no move limit. An "Empty Board" puzzle without a move limit is lost once a color is left with fewer than three panels. Neither is judged while garbage is on the board or rows from the panel buffer are still to rise. A puzzle without "Clear" does not rise.
+
+In a version 3 file, "Puzzle Type" is one word instead:
+- **"moves"** - the same as `["Empty Board"]`
+- **"clear"** - the same as `["Clear"]`
+- **"chain"** - all panels need to be cleared once the first chain ends, and there must be a chain. A goal list has no spelling for this rule.
 
 #### Other Fields
 - **"Moves"** - the number of moves allowed to complete the puzzle
   - Set to 0 for unlimited moves (no move limit)
-  - **Important**: "moves" type puzzles must have a value greater than 0
 - **"Stack"** - the starting arrangement of the panels, see below
 
 #### Start Timing
@@ -98,8 +109,8 @@ A "clear" puzzle's "GarbagePanelBuffer" holds the panels the player sees, and th
 A puzzle with an invalid or unrecognized StartTiming will fail to load, and a warning will be logged.
 
 If no start timing is given, a suitable start timing is selected based on puzzle type:
-- "clear" and "chain" puzzles will use "First Input" if a cursor start position is given and "First Swap" if not
-- "moves" puzzles will start immediately
+- a puzzle whose only goal is "Empty Board" will start immediately
+- every other puzzle will use "First Input" if a cursor start position is given and "First Swap" if not
 
 #### Optional Fields
 - **"Stop"** - specifies how many frames of stop time are initially granted to the player

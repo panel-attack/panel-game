@@ -4,11 +4,12 @@ local tableUtils = require("common.lib.tableUtils")
 local logger = require("common.lib.logger")
 local ModLoader = require("client.src.mods.ModLoader")
 
+---@class StageLoader : ModTypeLoader
 local StageLoader = {}
 
 -- initializes the stage class
 function StageLoader.initStages()
-  local all, ids, filtered, visible = ModLoader.initMods(Stage)
+  local all, ids, filtered, visible, tree = ModLoader.initMods(Stage)
   ---@type table<string, Stage>
   ---@diagnostic disable-next-line: assign-type-mismatch
   allStages = all
@@ -19,8 +20,15 @@ function StageLoader.initStages()
   stages = filtered
   ---@type string[]
   visibleStages = visible
+  StageLoader.tree = tree
 
   StageLoader.loadBundleThumbnails()
+end
+
+---Rebuilds the stage globals from the statuses and order in the mod settings
+---@return nil
+function StageLoader.refreshStages()
+  stageIds, stages, visibleStages = ModLoader.listModsWithRandomEntry(Stage, StageLoader.tree)
 end
 
 function StageLoader.loadBundleThumbnails()
@@ -62,5 +70,7 @@ function StageLoader.fullyResolveStageSelection(stageId)
   logger.debug("Resolved stageId to " .. stageId)
   return stageId
 end
+
+StageLoader.refresh = StageLoader.refreshStages
 
 return StageLoader

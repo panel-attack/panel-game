@@ -44,8 +44,8 @@ local TcpClient = class(function(tcpClient)
 end)
 
 -- Seconds without data from the server after which the connection counts as dead.
--- Must stay well above the server's ping interval: it pings a client that has been quiet for a second
--- and drops one that hasn't answered within 10 seconds, so a live connection never goes quiet this long.
+-- Must stay well above PING_INTERVAL and TIME_OUT in the server's Connection: it pings every client on that interval
+-- and drops one that hasn't answered within that time out, so a live connection never goes quiet this long.
 TcpClient.SERVER_SILENCE_LIMIT = 15
 
 -- setup the network connection on the given IP and port

@@ -4,6 +4,7 @@ local ChallengeMode = require("client.src.ChallengeMode")
 local ui = require("client.src.ui")
 local CharacterSelectChallenge = require("client.src.scenes.CharacterSelectChallenge")
 local ChallengeRunRecords = require("client.src.scenes.components.ChallengeRunRecords")
+local InputSource = require("client.src.input.InputSource")
 
 -- how far the menu and the records beside it sit from the middle of the screen
 local COLUMN_OFFSET = 150
@@ -124,7 +125,7 @@ end
 
 function ChallengeModeMenu:updateSelf(dt)
   self.backgroundImg:update(dt)
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
   self.uiRoot:update(dt)
 end
 

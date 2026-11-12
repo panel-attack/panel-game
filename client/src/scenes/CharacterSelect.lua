@@ -514,15 +514,16 @@ function CharacterSelect.applySuperSelectInteraction(characterButton)
 
   -- keyboard / controller interaction
   -- by applying focusable we can turn it into an "on release" interaction rather than on press by taking control of input interpretation
-  ui.Focusable(characterButton)
+  characterButton:setFocusable(true)
   characterButton.holdTime = 0
   ---@diagnostic disable-next-line: duplicate-set-field
-  characterButton.receiveInputs = function(self, inputs, dt)
+  characterButton.receiveInputsSelf = function(self, inputSource, dt)
+    local inputs = inputSource:getInputs()
     if inputs.isPressed["Swap1"] then
       -- measure the time the press is held for
       self.holdTime = self.holdTime + dt
     else
-      self:yieldFocus()
+      self:yieldFocus(inputSource)
       -- apply the actual click on release with the held time and reset it afterwards
       self:onClick(inputs, self.holdTime)
       self.holdTime = 0
@@ -594,6 +595,7 @@ function CharacterSelect:createCursor(grid, player)
   player:connectSignal("wantsReadyChanged", cursor, cursor.trap)
 
   grid:addChild(cursor)
+  self.uiRoot:focusChild(cursor, player.inputSource)
 
   return cursor
 end
@@ -662,9 +664,10 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
     vAlign = "center",
   })
 
-  ui.Focusable(levelSlider)
+  levelSlider:setFocusable(true)
   ---@diagnostic disable-next-line: duplicate-set-field
-  levelSlider.receiveInputs = function(self, inputs)
+  levelSlider.receiveInputsSelf = function(self, inputSource, dt)
+    local inputs = inputSource:getInputs()
     if inputs:isPressedWithRepeat("Left") then
       self:setValue(self.value - 1)
     end
@@ -678,7 +681,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
         self:onBackCallback()
       end
       GAME.theme:playCancelSfx()
-      self:yieldFocus()
+      self:yieldFocus(inputSource)
     end
 
     if inputs.isDown["Swap1"] or inputs.isDown["Start"] then
@@ -686,7 +689,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
         self:onSelectCallback()
       end
       GAME.theme:playValidationSfx()
-      self:yieldFocus()
+      self:yieldFocus(inputSource)
     end
   end
 
@@ -710,14 +713,10 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
 
   -- wrap in an extra element so we can offset properly as levelslider is fixed height + width
   local uiElement = ui.UiElement({height = height, hFill = true})
-  ui.Focusable(uiElement)
   uiElement.levelSlider = levelSlider
-  uiElement.levelSlider.yieldFocus = function()
-    uiElement:yieldFocus()
-  end
   uiElement:addChild(levelSlider)
-  uiElement.receiveInputs = function(self, inputs)
-    self.levelSlider:receiveInputs(inputs)
+  uiElement.onFocus = function(self, inputSource)
+    self:forwardFocus(self.levelSlider, inputSource)
   end
 
   -- to update the UI if code gets changed from the backend (e.g. network messages)
@@ -758,7 +757,7 @@ function CharacterSelect:createRankedSelection(player, width)
     player:setWantsRanked(value)
   end
 
-  ui.Focusable(rankedSelector)
+  rankedSelector:setFocusable(true)
 
   player:connectSignal("wantsRankedChanged", rankedSelector, rankedSelector.setValue)
 
@@ -807,7 +806,7 @@ function CharacterSelect:createStyleSelection(player, width)
   -- onValueChange should get implemented by the caller
   -- as likely the UI needs to be altered to accomodate the style choice
 
-  ui.Focusable(styleSelector)
+  styleSelector:setFocusable(true)
 
   player:connectSignal("styleChanged", styleSelector, onStyleChanged)
 
@@ -996,21 +995,18 @@ function CharacterSelect:createSpeedSlider(player, height, min)
     hAlign = "center",
     vAlign = "center",
   })
-  ui.Focusable(speedSlider)
+  speedSlider:setFocusable(true)
 
   player:connectSignal("startingSpeedChanged", speedSlider, speedSlider.setValue)
 
   -- wrap in an extra element so we can offset properly as speedSlider is fixed height + width
   local uiElement = ui.UiElement({height = height, hFill = true})
-  ui.Focusable(uiElement)
   uiElement.speedSlider = speedSlider
-  uiElement.speedSlider.yieldFocus = function()
-    GAME.theme:playValidationSfx()
-    uiElement:yieldFocus()
-  end
   uiElement:addChild(speedSlider)
-  uiElement.receiveInputs = function(self, inputs)
-    self.speedSlider:receiveInputs(inputs)
+  uiElement.onFocus = function(self, inputSource)
+    self:forwardFocus(self.speedSlider, inputSource, function()
+      GAME.theme:playValidationSfx()
+    end)
   end
 
   return uiElement
@@ -1063,12 +1059,10 @@ function CharacterSelect:updateSelf(dt)
   end
 
   for _, cursor in ipairs(self.ui.cursors) do
-    if cursor.player.isLocal and cursor.player.human then
-      if not cursor.player.inputConfiguration then
-        cursor:receiveInputs(input, dt)
-      elseif cursor.player.settings.inputMethod == "controller" then
-        cursor:receiveInputs(cursor.player.inputConfiguration, dt)
-      end
+    local player = cursor.player
+    -- an earlier cursor this frame can release every local device (change input device), so skip players left without one
+    if player.isLocal and player.human and player.inputConfiguration and player.settings.inputMethod == "controller" then
+      self.uiRoot:receiveInputs(player.inputSource, dt)
     end
   end
   if self.battleRoom and self.battleRoom.spectating then

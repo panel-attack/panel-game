@@ -5,6 +5,7 @@ local GameModes = require("common.data.GameModes")
 local CharacterSelect2p = require("client.src.scenes.CharacterSelect2p")
 local TimeAttackGame = require("client.src.scenes.TimeAttackGame")
 local GameBase = require("client.src.scenes.GameBase")
+local InputSource = require("client.src.input.InputSource")
 
 local LocalGameModeSelectionScene = class(
   function (self, sceneParams)
@@ -42,7 +43,7 @@ end
 
 function LocalGameModeSelectionScene:updateSelf(dt)
   self.backgroundImg:update(dt)
-  self.menu:receiveInputs()
+  self.menu:receiveInputs(InputSource.anyPlayer, dt)
   self.uiRoot:update(dt)
 end
 

@@ -82,9 +82,9 @@ function SliderMenuItem:drawSelf()
   end
 end
 
-function SliderMenuItem:receiveInputs(inputs)
+function SliderMenuItem:receiveInputsSelf(inputSource, dt)
   if self.slider then
-    self.slider:receiveInputs(inputs)
+    self.slider:receiveInputs(inputSource, dt)
   end
 end
 

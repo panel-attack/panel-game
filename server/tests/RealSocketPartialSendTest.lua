@@ -110,7 +110,7 @@ local function testRealSocketPartialSend()
     error("Failed to accept connection: " .. (err or "unknown error"))
   end
   serverClientSocket:settimeout(0)
-  local connection = Connection(serverClientSocket, 1)
+  local connection = Connection(serverClientSocket, 1, socket.gettime)
 
   -- Create and queue large messages
   local paddingData = createLargeMessage()

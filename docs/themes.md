@@ -528,16 +528,5 @@ The value given should be a whole number.
 
 ### Character selection filters
 
-You may override the visible state configured in each character's/stage's configuration by providing respective files that explicitly state the visible mods.
-
-#### characters.txt
-
-If present, only characters listed in this file will show up in character selection.  
-Only characters listed in this file will be eligible for random selection.  
-Separate the IDs by new lines.
-
-#### stages.txt
-
-If present, only stages listed in this file will show up in stage selection.  
-Only stages listed in this file will be eligible for random selection.  
-Separate the IDs by new lines.
+Older versions read a characters.txt and a stages.txt from the theme to choose which characters and stages show up in selection.  
+These files are no longer read: players choose what shows up in Options > Mod Management instead.
