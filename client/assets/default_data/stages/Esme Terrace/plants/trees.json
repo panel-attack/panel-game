@@ -1,0 +1,88 @@
+{
+  "drawables": [
+    {
+      "id": "cypress-stout",
+      "filePath": "plants/parts/trees/cypress-stout",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "cypress",
+      "filePath": "plants/parts/trees/cypress",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "cypress-broad-far",
+      "filePath": "plants/parts/trees/cypress-broad-far",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "cypress-broad-farthest",
+      "filePath": "plants/parts/trees/cypress-broad-farthest",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "cypress-full-far",
+      "filePath": "plants/parts/trees/cypress-full-far",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "cypress-full-farthest",
+      "filePath": "plants/parts/trees/cypress-full-farthest",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "cypress-narrow-far",
+      "filePath": "plants/parts/trees/cypress-narrow-far",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "cypress-narrow-farthest",
+      "filePath": "plants/parts/trees/cypress-narrow-farthest",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "far-clump",
+      "filePath": "plants/parts/trees/far-clump",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "far-clump-round",
+      "filePath": "plants/parts/trees/far-clump-round",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "far-clump-wide",
+      "filePath": "plants/parts/trees/far-clump-wide",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "far-shrub",
+      "filePath": "plants/parts/trees/far-shrub",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    }
+  ]
+}

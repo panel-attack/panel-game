@@ -1,0 +1,144 @@
+{
+  "drawables": [
+    {
+      "id": "leaf-broad-lit-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-lit-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-lit-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-lit-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-lit-gloss-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-lit-gloss-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-lit-gloss-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-lit-gloss-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-mid-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-mid-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-mid-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-mid-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-shade-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-shade-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-shade-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-shade-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-lit-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-small-lit-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-lit-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-small-lit-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-lit-gloss-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-small-lit-gloss-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-lit-gloss-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-small-lit-gloss-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-mid-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-small-mid-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-mid-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-small-mid-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-shade-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-small-shade-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-shade-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-small-shade-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-sun-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-small-sun-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-sun-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-small-sun-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-sun-gloss-arch",
+      "filePath": "plants/parts/leaves/leaf-broad-small-sun-gloss-arch",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "leaf-broad-small-sun-gloss-bow",
+      "filePath": "plants/parts/leaves/leaf-broad-small-sun-gloss-bow",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    }
+  ]
+}

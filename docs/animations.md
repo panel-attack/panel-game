@@ -6,6 +6,10 @@ A theme keeps its animation files in its `scenes` folder, named after the screen
 
 A screen draws its background image if the theme has one, then its scene on top if the theme has one. Either can be left out, so a scene that draws the whole screen can bring its own background and the theme can leave out the background image.
 
+## Stage backgrounds
+
+A stage can have an animated background in the same format, a `background.json` in its folder with image paths and file refs written from the stage folder. See [the stage documentation](stages.md#backgroundjson).
+
 ## Example
 
 This scene draws the theme's background, defines a spinning gear once and places it twice, the second one bigger and spinning the other way:
@@ -87,7 +91,7 @@ Object containing `x` and `y` coordinates for the drawable's position.
 - `y`: Vertical position (default: 0)
 
 #### `size`
-Object containing dimensions for the drawable. Use this to automaticaly change the xScale or yScale to be appropriate to match the given width or height
+Object containing dimensions for the drawable. Use this to automatically change the xScale or yScale to be appropriate to match the given width or height, or for a repeated texture the area it tiles over, see `wrap`
 - `width`: Width the drawable should be drawn
 - `height`: Height the drawable should be drawn
 
@@ -139,13 +143,13 @@ Boolean indicating whether this drawable should only draw in the spots all its p
 ### Texture Properties
 
 #### `wrap`
-When set to `"repeat"`, enables texture wrapping and adds scrolling capabilities. Sets up the texture to repeat and enables `scrollX`/`scrollY` properties.
+When set to `"repeat"`, enables texture wrapping and adds scrolling capabilities. Sets up the texture to repeat and enables `scrollX`/`scrollY` properties. A repeated texture tiles over its `size` at its own size instead of stretching to it, so a small texture can cover the whole screen.
 
 #### `scrollX`
-Horizontal scroll offset for repeating textures (only available when `wrap` is `"repeat"`).
+Horizontal scroll offset for repeating textures (only available when `wrap` is `"repeat"`). It's drawn at whole pixels, so the texture's edges stay sharp while it scrolls.
 
 #### `scrollY`
-Vertical scroll offset for repeating textures (only available when `wrap` is `"repeat"`).
+Vertical scroll offset for repeating textures (only available when `wrap` is `"repeat"`), drawn at whole pixels like `scrollX`.
 
 ### Animation Properties
 

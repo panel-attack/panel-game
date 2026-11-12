@@ -347,6 +347,47 @@ local function testOneFileCannotBeBothRepeatedAndClamped()
   assertEqual(loaded, false, "Loading a file used with two wrap modes should fail")
 end
 
+-- A repeated image tiles over its size instead of stretching to it
+local function testRepeatedImageTilesOverItsSize()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local drawable = AnimationLoader.loadFromFile(testPath, testPath .. "repeatTiled.json", Flux.group())[1]
+
+  assertEqual(drawable.width, 128, "The tiled image should be as wide as its size")
+  assertEqual(drawable.height, 96, "The tiled image should be as tall as its size")
+  assertEqual(drawable.xScale, 1, "The tiled image should not be stretched across")
+  assertEqual(drawable.yScale, 1, "The tiled image should not be stretched down")
+end
+
+-- A repeated image scrolls by whole pixels so its edges stay sharp
+local function testRepeatedImageScrollsByWholePixels()
+  if not love.graphics.isActive() then
+    -- without a window nothing is drawn
+    return
+  end
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local drawables = AnimationLoader.loadFromFile(testPath, testPath .. "repeatTiled.json", Flux.group())
+  drawables[1].scrollX = 10.7
+  drawables[1].scrollY = -3.2
+
+  AnimationLoader.drawDrawables(drawables)
+
+  local x, y = drawables[1].quad:getViewport()
+  assertEqual(x, 10, "The image should scroll across by whole pixels")
+  assertEqual(y, -4, "The image should scroll down by whole pixels")
+end
+
+-- Animation data made in code can give an image that's already loaded instead of a file path
+local function testLoadsDataWithALoadedImage()
+  local image = love.graphics.newImage("client/tests/AnimationLoaderTestData/test_image.png")
+  local data = {drawables = {{texture = image, size = {width = 128, height = 32}}}}
+
+  local drawable = AnimationLoader.loadFromData("", data, Flux.group())[1]
+
+  assertEqual(drawable.texture, image, "The drawable should draw the given image")
+  assertEqual(drawable.xScale, 2, "The image should be stretched across to its size")
+  assertEqual(drawable.yScale, 0.5, "The image should be squashed down to its size")
+end
+
 -- Drawing a scene's drawables leaves the colour as it was for whatever draws next
 local function testDrawDrawablesRestoresTheColour()
   if not love.graphics.isActive() then
@@ -520,6 +561,57 @@ local function testRepeatYoyoPlaysBackwards()
   assertApproxEqual(alphaAfterOneTrackPass("repeatYoyo.json"), 0.75, nil, "The track should play backwards")
 end
 
+-- Returns the alpha of a node fading from 0 to 1 over a second, after an update that ends half a second past the track's first pass
+-- and a quarter second more
+local function alphaAfterAnUpdatePastTheTrackEnd(fileName)
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local tweens = Flux.group()
+  local drawable = AnimationLoader.loadFromFile(testPath, testPath .. fileName, tweens)[1]
+  tweens:update(0.5)
+  tweens:update(1)
+  tweens:update(0.25)
+  return drawable.alpha
+end
+
+-- A loop keeps the time an update ran past its end, so a looping track doesn't fall behind
+local function testRepeatLoopKeepsTheTimePastItsEnd()
+  assertApproxEqual(alphaAfterAnUpdatePastTheTrackEnd("repeatLoop.json"), 0.75, nil, "The loop should be three quarters through")
+end
+
+-- A yoyo keeps the time an update ran past its end, so it turns back on time
+local function testRepeatYoyoKeepsTheTimePastItsEnd()
+  assertApproxEqual(alphaAfterAnUpdatePastTheTrackEnd("repeatYoyo.json"), 0.25, nil, "The yoyo should be three quarters back")
+end
+
+-- The update that runs past a loop's end already shows the loop that far into its next pass
+local function testRepeatLoopShowsTheTimePastItsEndOnTheSameUpdate()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local tweens = Flux.group()
+  local drawable = AnimationLoader.loadFromFile(testPath, testPath .. "repeatLoop.json", tweens)[1]
+  tweens:update(0.5)
+  tweens:update(0.75)
+  assertApproxEqual(drawable.alpha, 0.25, nil, "The loop should be a quarter into its next pass")
+end
+
+-- A step keeps the time an update ran past its delay, so a delayed step starts on time
+local function testDelayKeepsTheTimePastIt()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local tweens = Flux.group()
+  local drawable = AnimationLoader.loadFromFile(testPath, testPath .. "repeatLoopDelayed.json", tweens)[1]
+  tweens:update(0.25)
+  tweens:update(0.5)
+  assertApproxEqual(drawable.alpha, 0.25, nil, "The step should be a quarter in after its delay")
+end
+
+-- A repeating track that takes no time would start over forever within one update, so it fails instead
+local function testRepeatingTrackWithoutLengthErrors()
+  local testPath = "client/tests/AnimationLoaderTestData/"
+  local loaded, err = pcall(AnimationLoader.loadFromFile, testPath, testPath .. "repeatLoopWithoutLength.json", Flux.group())
+
+  assertEqual(loaded, false, "Loading a repeating track that takes no time should fail")
+  assert(tostring(err):find("takes no time", 1, true), "The error should say why, got: " .. tostring(err))
+end
+
 -- An unknown repeat fails naming the value
 local function testUnknownRepeatErrors()
   local testPath = "client/tests/AnimationLoaderTestData/"
@@ -553,6 +645,9 @@ local function runAllTests()
   testTracksAnimateInTheGivenGroup()
   testNodesSharingAFileShareOneImage()
   testOneFileCannotBeBothRepeatedAndClamped()
+  testRepeatedImageTilesOverItsSize()
+  testRepeatedImageScrollsByWholePixels()
+  testLoadsDataWithALoadedImage()
   testDrawDrawablesRestoresTheColour()
   testDrawDrawablesDrawsWithTheDefaultBlendMode()
   testMissingFileErrorsWithItsPath()
@@ -564,6 +659,11 @@ local function runAllTests()
   testTrackWithoutRepeatPlaysOnce()
   testRepeatLoopStartsOver()
   testRepeatYoyoPlaysBackwards()
+  testRepeatLoopKeepsTheTimePastItsEnd()
+  testRepeatYoyoKeepsTheTimePastItsEnd()
+  testRepeatLoopShowsTheTimePastItsEndOnTheSameUpdate()
+  testDelayKeepsTheTimePastIt()
+  testRepeatingTrackWithoutLengthErrors()
   testUnknownRepeatErrors()
   testOldRepeatBooleansError()
   

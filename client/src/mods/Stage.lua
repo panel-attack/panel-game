@@ -8,7 +8,6 @@ local DynamicStageTrack = require("client.src.music.DynamicStageTrack")
 local RelayStageTrack = require("client.src.music.RelayStageTrack")
 local class = require("common.lib.class")
 local Mod = require("client.src.mods.Mod")
-local UpdatingImage = require("client.src.graphics.UpdatingImage")
 local SoundController = require("client.src.music.SoundController")
 local Music = require("client.src.music.Music")
 
@@ -128,9 +127,6 @@ function stages_reload_graphics()
     if match and match.stageId then
       if stages[match.stageId] then
         stages[match.stageId]:graphics_init(true, false)
-        -- for reasons, this is not drawn directly from the stage but from background image
-        -- so override this while in a match
-        GAME.backgroundImage = UpdatingImage(stages[match.stageId].images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
       end
     end
   end
@@ -148,6 +144,15 @@ end
 
 function Stage.loadDefaultMod()
   themes[config.theme]:loadDefaultStage()
+end
+
+-- the animation file a stage draws in place of its background image, if the stage has it
+Stage.ANIMATED_BACKGROUND_FILE = "background.json"
+
+-- Returns whether the stage has an animation to draw in place of its background image
+---@return boolean
+function Stage:hasAnimatedBackground()
+  return fileUtils.exists(self.path .. "/" .. Stage.ANIMATED_BACKGROUND_FILE)
 end
 
 -- initalizes stage graphics

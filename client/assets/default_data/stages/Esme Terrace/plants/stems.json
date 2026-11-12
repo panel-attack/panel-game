@@ -1,0 +1,32 @@
+{
+  "drawables": [
+    {
+      "id": "stem-long-thick",
+      "filePath": "plants/parts/stems/stem-long-thick",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "stem-long-thin",
+      "filePath": "plants/parts/stems/stem-long-thin",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "stem-short-thick",
+      "filePath": "plants/parts/stems/stem-short-thick",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "stem-short-thin",
+      "filePath": "plants/parts/stems/stem-short-thin",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    }
+  ]
+}
