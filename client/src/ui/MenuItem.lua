@@ -205,6 +205,15 @@ function MenuItem.createBoolSelectorMenuItem(text, replacements, translate, bool
   return menuItem
 end
 
+---Widens the menu item to width, stretching its button with it so the label stays centered
+---@param width number
+function MenuItem:stretchTo(width)
+  self.width = width
+  if self.textButton then
+    self.textButton.width = width - 2 * MenuItem.PADDING
+  end
+end
+
 ---Sets the selected state of this menu item
 ---@param selected boolean whether the item should be selected
 function MenuItem:setSelected(selected)

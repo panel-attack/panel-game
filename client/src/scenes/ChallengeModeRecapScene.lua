@@ -63,7 +63,7 @@ function ChallengeModeRecapScene:drawSelf()
   drawY = drawY + 120
   GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
   drawY = drawY + 20
-  GraphicsUtil.printf(self.challengeMode.continues, drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(self.challengeMode.run:getContinues(), drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
 
   local font = GraphicsUtil.getGlobalFont()
   GraphicsUtil.print(loc("continue_button"), (consts.CANVAS_WIDTH - font:getWidth(loc("continue_button"))) / 2, consts.CANVAS_HEIGHT - 60)

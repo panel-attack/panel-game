@@ -100,7 +100,28 @@ local function testFileMatching4()
   testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
 end
 
+-- a replay is written where getReplayPath says, so a path recorded before the replay is saved finds it
+local function aReplayIsSavedAtItsReplayPath()
+  local folder = "fileUtilsTestsReplays"
+  local replay = setmetatable({frames = 1}, {__index = {
+    generatePath = function(_, separator) return folder .. separator .. "day" end,
+    generateFileName = function() return "replay" end,
+  }})
+  local lastReplayPath = GAME.lastReplayPath
+
+  FileUtils.saveReplay(replay)
+
+  local path = FileUtils.getReplayPath(replay)
+  GAME.lastReplayPath = lastReplayPath
+  local saved = love.filesystem.getInfo(path) ~= nil
+  love.filesystem.remove(folder .. "/day/replay.json")
+  love.filesystem.remove(folder .. "/day")
+  love.filesystem.remove(folder)
+  assert(saved, "the replay is at " .. path)
+end
+
 testFileMatching1()
 testFileMatching2()
 testFileMatching3()
 testFileMatching4()
+aReplayIsSavedAtItsReplayPath()

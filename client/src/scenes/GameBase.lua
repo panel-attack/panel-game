@@ -37,6 +37,11 @@ local InputSource = require("client.src.input.InputSource")
 ---@field stage Stage
 ---@field stageBackground SceneAnimation|UpdatingImage the stage's animation, or its background image when it has none
 ---@field stageTrack StageTrack?
+---@field leaveWarning string? localization key of a warning the pause menu shows before leaving the game
+---@field pauseTitle string localization key of the heading drawn while paused
+---@field pauseSubtitle string localization key of the smaller line under the pause heading
+---@field pauseMenu Menu
+---@field pauseMenuItems MenuItem[]
 local GameBase = class(
 ---@param self GameBase
   function (self, sceneParams)
@@ -64,6 +69,9 @@ local GameBase = class(
     self.droppedFrameCount = 0
 
     self.match = sceneParams.match
+    self.leaveWarning = sceneParams.leaveWarning
+    self.pauseTitle = "pause"
+    self.pauseSubtitle = "pl_pause_help"
   end,
   Scene
 )
@@ -195,7 +203,18 @@ function GameBase:load()
   self:loadStageBackground()
   self.stageTrack = self:getStageTrack()
 
-  local pauseMenuItems = {
+  self:createPauseMenu()
+
+  leftover_time = 1 / 120
+
+  self:initializeFrameInfo()
+
+  self:customLoad()
+end
+
+-- Creates the pause menu, hidden until the game is paused
+function GameBase:createPauseMenu()
+  self.pauseMenuItems = {
     ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
       GAME.theme:playValidationSfx()
       self.pauseMenu:setVisibility(false)
@@ -207,29 +226,54 @@ function GameBase:load()
       self:initializeFrameInfo()
     end),
   }
-  tableUtils.appendToList(pauseMenuItems, self:customPauseMenuItems())
-  pauseMenuItems[#pauseMenuItems + 1] = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
-    GAME.theme:playCancelSfx()
-    self.match:abort()
-    self:startNextScene()
-  end)
+  tableUtils.appendToList(self.pauseMenuItems, self:customPauseMenuItems())
+  if self.leaveWarning then
+    self.pauseMenuItems[#self.pauseMenuItems + 1] = ui.MenuItem.createButtonMenuItem("leave", nil, true, function()
+      self:showLeaveWarning()
+    end)
+  else
+    self.pauseMenuItems[#self.pauseMenuItems + 1] = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
+      self:leaveGame()
+    end)
+  end
 
   self.pauseMenu = ui.Menu({
     x = 0,
     y = 0,
     hAlign = "center",
     vAlign = "center",
-    menuItems = pauseMenuItems,
+    menuItems = self.pauseMenuItems,
     height = 200
   })
   self.pauseMenu:setVisibility(false)
   self.uiRoot:addChild(self.pauseMenu)
+end
 
-  leftover_time = 1 / 120
+-- Aborts the match and leaves the game scene
+function GameBase:leaveGame()
+  GAME.theme:playCancelSfx()
+  self.match:abort()
+  self:startNextScene()
+end
 
-  self:initializeFrameInfo()
-
-  self:customLoad()
+-- Replaces the pause heading with the leave warning and the pause menu with a choice between leaving and going back to it
+function GameBase:showLeaveWarning()
+  GAME.theme:playValidationSfx()
+  self.pauseTitle = "warning"
+  self.pauseSubtitle = self.leaveWarning
+  self.pauseMenu:setMenuItems({
+    ui.MenuItem.createButtonMenuItem("leave", nil, true, function()
+      self:leaveGame()
+    end),
+    ui.MenuItem.createButtonMenuItem("back", nil, true, function()
+      GAME.theme:playCancelSfx()
+      self.pauseTitle = "pause"
+      self.pauseSubtitle = "pl_pause_help"
+      self.pauseMenu:setMenuItems(self.pauseMenuItems)
+      self.pauseMenu:setSelectedIndex(#self.pauseMenuItems)
+    end),
+  })
+  self.pauseMenu:setSelectedIndex(2)
 end
 
 local function playerPressingStart(match)
@@ -472,7 +516,7 @@ function GameBase:draw()
   end
 
   if self.match.isPaused then
-    self.match:draw_pause()
+    self.match:draw_pause(self.pauseTitle, self.pauseSubtitle)
   end
   
   self.uiRoot:draw()

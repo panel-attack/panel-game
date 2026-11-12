@@ -179,7 +179,7 @@ function PortraitGame:draw()
   end
 
   if self.match.isPaused then
-    self.match:draw_pause()
+    self.match:draw_pause(self.pauseTitle, self.pauseSubtitle)
   end
   self.uiRoot:draw()
 end

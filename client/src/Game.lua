@@ -20,6 +20,7 @@ local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local save = require("client.src.save")
 local fileUtils = require("client.src.FileUtils")
 local Scores = require("client.src.scores")
+local ChallengeModeSave = require("client.src.ChallengeModeSave")
 local handleShortcuts = require("client.src.Shortcuts")
 local Player = require("client.src.Player")
 local GameModes = require("common.data.GameModes")
@@ -52,6 +53,7 @@ end
 
 ---@class PanelAttack
 ---@field scores Scores
+---@field challengeModeSave ChallengeModeSave
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
 ---@field globalCanvas love.graphics.Texture
@@ -75,6 +77,7 @@ end
 local Game = class(
   function(self)
     self.scores = Scores.createFromScoreFile()
+    self.challengeModeSave = ChallengeModeSave.load("challengeMode")
     self.input = inputManager
     self.match = nil -- Match - the current match going on or nil if inbetween games
     self.battleRoom = nil -- BattleRoom - the current room being used for battles
