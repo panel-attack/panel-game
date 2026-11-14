@@ -42,7 +42,8 @@ end
 -- The ways a track can repeat once it has played all its steps
 local TRACK_REPEATS = {none = true, loop = true, yoyo = true}
 
--- Errors if the track's repeat isn't one of TRACK_REPEATS or it still uses the old loopTrack or yoyo booleans
+-- Errors if the track's repeat isn't one of TRACK_REPEATS, it still uses the old loopTrack or yoyo booleans,
+-- or it repeats without taking any time, which would start it over forever within one update
 local function validateTrackRepeat(track)
   if track.loopTrack ~= nil or track.yoyo ~= nil then
     error("Animation tracks repeat with \"repeat\": \"loop\" or \"yoyo\" instead of loopTrack or yoyo")
@@ -50,11 +51,21 @@ local function validateTrackRepeat(track)
   if track["repeat"] ~= nil and not TRACK_REPEATS[track["repeat"]] then
     error("Unknown track repeat " .. tostring(track["repeat"]) .. ", use \"none\", \"loop\" or \"yoyo\"")
   end
+  if track["repeat"] == "loop" or track["repeat"] == "yoyo" then
+    local seconds = 0
+    for _, step in ipairs(track.steps) do
+      seconds = seconds + (step.durationSeconds or 0) + (step.delaySeconds or 0)
+    end
+    if seconds <= 0 then
+      error("A repeating animation track takes no time, give one of its steps a duration")
+    end
+  end
 end
 
 -- Builds the flux animation for the given track step on the target in the given flux group
 ---@param tweens table the flux group the step's tween is added to
-local function buildTrackStep(target, track, currentStep, stepAmount, tweens)
+---@param carriedSeconds number? the time the previous step's last update ran past its end, which this step spends on that same update
+local function buildTrackStep(target, track, currentStep, stepAmount, tweens, carriedSeconds)
   local step = track.steps[currentStep]
   local targetProperties
   if stepAmount > 0 then
@@ -98,9 +109,13 @@ local function buildTrackStep(target, track, currentStep, stepAmount, tweens)
     end
 
     if nextStep >= 1 and nextStep <= #track.steps then
-      buildTrackStep(target, track, nextStep, stepAmount, tweens)
+      buildTrackStep(target, track, nextStep, stepAmount, tweens, tween.overshoot)
     end
   end)
+
+  if carriedSeconds then
+    tweens:advance(tween, carriedSeconds)
+  end
 end
 
 -- Returns the image for the given path, loading it only the first time so every node drawing it shares one texture and LÖVE can batch them.
@@ -159,24 +174,31 @@ local function loadDrawables(rootPath, animationData, tweens, images)
     originalRef = animationData.originalRef
   }
   obj.children = {}
+  local texture = animationData.texture
   if animationData.filePath then
-    local texture = loadSharedImage(images, rootPath .. animationData.filePath, animationData.wrap or "clamp")
+    texture = loadSharedImage(images, rootPath .. animationData.filePath, animationData.wrap or "clamp")
+  elseif texture and animationData.wrap == "repeat" then
+    texture:setWrap("repeat", "repeat")
+  end
+  if texture then
     obj.texture = texture
-    local textureWidth = texture:getWidth()
-    local textureHeight = texture:getHeight()
-    if obj.width then
-      obj.xScale = obj.width / textureWidth
-    end
-    obj.width = textureWidth
-    if obj.height then
-      obj.yScale = obj.height / textureHeight
-    end
-    obj.height = textureHeight
-
+    local textureWidth, textureHeight = texture:getDimensions()
     if animationData.wrap == "repeat" then
+      -- a repeated image tiles over its size instead of stretching to it
+      obj.width = obj.width or textureWidth
+      obj.height = obj.height or textureHeight
       obj.scrollX = 0
       obj.scrollY = 0
-      obj.quad = love.graphics.newQuad(obj.scrollX, obj.scrollY, obj.width, obj.height, obj.width, obj.height)
+      obj.quad = love.graphics.newQuad(obj.scrollX, obj.scrollY, obj.width, obj.height, textureWidth, textureHeight)
+    else
+      if obj.width then
+        obj.xScale = obj.width / textureWidth
+      end
+      obj.width = textureWidth
+      if obj.height then
+        obj.yScale = obj.height / textureHeight
+      end
+      obj.height = textureHeight
     end
   end
 
@@ -387,6 +409,16 @@ function AnimationLoader.loadFromFile(rootPath, filePath, tweens)
   end
 
   -- Finally once the full data structure is setup, it is converted into separate drawable objects.
+  return AnimationLoader.loadFromData(rootPath, rootData, tweens)
+end
+
+-- Loads the drawables of animation data that has no refs left to resolve, such as a resolved file or data made in code.
+-- Data made in code can give a node a texture, an image that's already loaded, in place of its filePath.
+---@param rootPath string the folder image file paths are written from
+---@param rootData table the animation data, with its nodes in drawables
+---@param tweens table the flux group the animations are added to, its owner updates it
+---@return table[] drawables
+function AnimationLoader.loadFromData(rootPath, rootData, tweens)
   local drawables = {}
   local images = {}
   for _, data in ipairs(rootData.drawables) do
@@ -486,7 +518,8 @@ function AnimationLoader.drawNode(d, parent)
 
       love.graphics.setColor(d.tint[1], d.tint[2], d.tint[3], d.alpha)
       if d.quad then
-        d.quad:setViewport(d.scrollX, d.scrollY, d.width, d.height)
+        -- whole pixels, so the scrolling image's edges stay sharp
+        d.quad:setViewport(math.floor(d.scrollX), math.floor(d.scrollY), d.width, d.height)
         love.graphics.draw(d.texture, d.quad, 0, 0)
       else
         love.graphics.draw(d.texture, 0, 0)

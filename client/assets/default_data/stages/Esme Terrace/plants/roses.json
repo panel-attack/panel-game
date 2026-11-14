@@ -1,0 +1,11 @@
+{
+  "drawables": [
+    {
+      "id": "rose-34-163",
+      "filePath": "plants/parts/roses/rose-34-163",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    }
+  ]
+}

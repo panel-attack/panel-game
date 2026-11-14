@@ -1,0 +1,116 @@
+{
+  "drawables": [
+    {
+      "id": "daisy-12-0",
+      "filePath": "plants/parts/flowers/daisy-12-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "daisy-12-36",
+      "filePath": "plants/parts/flowers/daisy-12-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "daisy-round-31-0",
+      "filePath": "plants/parts/flowers/daisy-round-31-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "daisy-round-31-36",
+      "filePath": "plants/parts/flowers/daisy-round-31-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-12-0",
+      "filePath": "plants/parts/flowers/flower-12-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-12-36",
+      "filePath": "plants/parts/flowers/flower-12-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-16-0",
+      "filePath": "plants/parts/flowers/flower-16-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-16-36",
+      "filePath": "plants/parts/flowers/flower-16-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-23-0",
+      "filePath": "plants/parts/flowers/flower-23-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-23-36",
+      "filePath": "plants/parts/flowers/flower-23-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-32-0",
+      "filePath": "plants/parts/flowers/flower-32-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-32-36",
+      "filePath": "plants/parts/flowers/flower-32-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-round-22-0",
+      "filePath": "plants/parts/flowers/flower-round-22-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-round-22-36",
+      "filePath": "plants/parts/flowers/flower-round-22-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-round-30-0",
+      "filePath": "plants/parts/flowers/flower-round-30-0",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-round-30-36",
+      "filePath": "plants/parts/flowers/flower-round-30-36",
+      "anchor": "center",
+      "pivot": "center",
+      "templateOnly": true
+    }
+  ]
+}

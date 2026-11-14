@@ -292,12 +292,27 @@ function fileUtils.saveTextureToFile(texture, filePath, format)
   love.filesystem.write(filePath .. "." .. format, data)
 end
 
+-- Returns the folder and the file name saveReplay writes the replay to
+---@param replay ReplayV3
+---@return string folder
+---@return string fileName
+local function replayLocation(replay)
+  return replay:generatePath("/"), replay:generateFileName() .. ".json"
+end
+
+-- Returns the path of the file saveReplay writes the replay to
+---@param replay ReplayV3
+---@return string
+function fileUtils.getReplayPath(replay)
+  local folder, fileName = replayLocation(replay)
+  return folder .. "/" .. fileName
+end
+
 ---@param replay ReplayV3
 function fileUtils.saveReplay(replay)
-  local path = replay:generatePath("/")
-  local filename = replay:generateFileName()
-  GAME.lastReplayPath = path
-  fileUtils.writeJson(path, filename .. ".json", replay, replay.keyOrder)
+  local folder, fileName = replayLocation(replay)
+  GAME.lastReplayPath = folder
+  fileUtils.writeJson(folder, fileName, replay, replay.keyOrder)
 end
 
 ---@param files string[]

@@ -151,9 +151,7 @@ function PortraitGame:drawMultibar(stack)
 end
 
 function PortraitGame:draw()
-  if self.backgroundImage then
-    self.backgroundImage:draw()
-  end
+  self:drawStageBackground()
   if not self.match.isPaused or self.match.renderDuringPause then
     for _, stack in ipairs(self.match.stacks) do
       if stack.player then
@@ -181,7 +179,7 @@ function PortraitGame:draw()
   end
 
   if self.match.isPaused then
-    self.match:draw_pause()
+    self.match:draw_pause(self.pauseTitle, self.pauseSubtitle)
   end
   self.uiRoot:draw()
 end

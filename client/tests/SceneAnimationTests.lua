@@ -1,6 +1,8 @@
 local SceneAnimation = require("client.src.graphics.SceneAnimation")
 
 local TEST_DATA = "client/tests/SceneAnimationTestData/"
+-- a stage folder holding an animation, read from its own folder instead of the theme's
+local ANIMATED_FOLDER = "client/tests/StageBackgroundTestData/AnimatedStage"
 
 local function assertApproxEqual(actual, expected, message)
   if math.abs(actual - expected) > 0.001 then
@@ -71,8 +73,39 @@ local function testReloadedTracksStartOver()
   assertApproxEqual(animation.drawables[1].alpha, 1, "The reloaded track should start from the beginning")
 end
 
+-- An animation given its folder reads the file and its image paths from that folder
+local function testLoadsFromTheGivenFolder()
+  local animation = SceneAnimation("background.json", ANIMATED_FOLDER)
+
+  assert(#animation.drawables == 1, "The animation should have the folder's one drawable")
+end
+
+-- Its folder doesn't depend on the theme, so a theme change keeps it
+local function testAnAnimationFromAFolderKeepsItsDrawablesAfterAThemeChange()
+  local animation = SceneAnimation("background.json", ANIMATED_FOLDER)
+  local drawables = animation.drawables
+
+  config.theme = "SceneAnimationOtherTheme"
+  animation:update(0)
+
+  assert(animation.drawables == drawables, "The drawables should not be reloaded")
+end
+
+local function testAnAnimationFromAFolderReloadsAfterTheScaleChanged()
+  local animation = SceneAnimation("background.json", ANIMATED_FOLDER)
+  local drawables = animation.drawables
+
+  GAME.canvasXScale = GAME.canvasXScale + 1
+  animation:update(0)
+
+  assert(animation.drawables ~= drawables, "The drawables should be reloaded for the new scale")
+end
+
 withTestThemes(testTracksAnimateWhenUpdated)
 withTestThemes(testKeepsItsDrawablesWhileNothingChanged)
 withTestThemes(testReloadsFromTheNewThemeAfterTheThemeChanged)
 withTestThemes(testReloadsAfterTheScaleChanged)
 withTestThemes(testReloadedTracksStartOver)
+withTestThemes(testLoadsFromTheGivenFolder)
+withTestThemes(testAnAnimationFromAFolderKeepsItsDrawablesAfterAThemeChange)
+withTestThemes(testAnAnimationFromAFolderReloadsAfterTheScaleChanged)

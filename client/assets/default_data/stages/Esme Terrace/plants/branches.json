@@ -1,0 +1,2543 @@
+{
+  "drawables": [
+    {
+      "id": "rosette-small-sparse-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-small-sparse-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 1.5,
+              "y": 2
+            },
+            "rotation": 2.3928,
+            "xScale": 0.5447,
+            "yScale": 0.616
+          }
+        },
+        {
+          "id": "rosette-small-sparse-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -0.5
+            },
+            "rotation": -1.2177,
+            "xScale": -0.5519,
+            "yScale": 0.5889
+          }
+        },
+        {
+          "id": "rosette-small-sparse-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": -0.5
+            },
+            "rotation": 1.2155,
+            "xScale": 0.4838,
+            "yScale": 0.4641
+          }
+        },
+        {
+          "id": "rosette-small-sparse-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-bow",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": 2
+            },
+            "rotation": -2.5473,
+            "xScale": -0.3893,
+            "yScale": 0.3161
+          }
+        },
+        {
+          "id": "rosette-small-sparse-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-arch",
+          "overrides": {
+            "rotation": 0.0051,
+            "xScale": 0.4479,
+            "yScale": 0.3085
+          }
+        },
+        {
+          "id": "rosette-small-sparse-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": -3.0753,
+            "xScale": -0.3367,
+            "yScale": 0.232
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-small-2",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-small-2 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": -1
+            },
+            "rotation": 1.0432,
+            "xScale": 0.5517,
+            "yScale": 0.6238
+          }
+        },
+        {
+          "id": "rosette-small-2 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -1.5,
+              "y": 2
+            },
+            "rotation": -2.4844,
+            "xScale": -0.5059,
+            "yScale": 0.55
+          }
+        },
+        {
+          "id": "rosette-small-2 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-arch",
+          "overrides": {
+            "position": {
+              "y": -2.5
+            },
+            "rotation": -0.0683,
+            "xScale": 0.5415,
+            "yScale": 0.5515
+          }
+        },
+        {
+          "id": "rosette-small-2 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 1,
+              "y": 2
+            },
+            "rotation": 2.6745,
+            "xScale": 0.4717,
+            "yScale": 0.4367
+          }
+        },
+        {
+          "id": "rosette-small-2 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -0.5
+            },
+            "rotation": -1.495,
+            "xScale": -0.4617,
+            "yScale": 0.3748
+          }
+        },
+        {
+          "id": "rosette-small-2 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "rotation": 1.3224,
+            "xScale": 0.2945,
+            "yScale": 0.2029
+          }
+        },
+        {
+          "id": "rosette-small-2 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": -2.0664,
+            "xScale": -0.3043,
+            "yScale": 0.2097
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-small-dense-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-small-dense-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 1.5,
+              "y": 2
+            },
+            "rotation": 2.3928,
+            "xScale": 0.5447,
+            "yScale": 0.616
+          }
+        },
+        {
+          "id": "rosette-small-dense-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -0.5
+            },
+            "rotation": -1.3312,
+            "xScale": -0.5677,
+            "yScale": 0.6233
+          }
+        },
+        {
+          "id": "rosette-small-dense-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": -1
+            },
+            "rotation": 0.9886,
+            "xScale": 0.4494,
+            "yScale": 0.4713
+          }
+        },
+        {
+          "id": "rosette-small-dense-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -0.5,
+              "y": 2
+            },
+            "rotation": -2.9934,
+            "xScale": -0.4551,
+            "yScale": 0.4479
+          }
+        },
+        {
+          "id": "rosette-small-dense-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-arch",
+          "overrides": {
+            "position": {
+              "x": -1.5,
+              "y": -2
+            },
+            "rotation": -0.8303,
+            "xScale": -0.5265,
+            "yScale": 0.4764
+          }
+        },
+        {
+          "id": "rosette-small-dense-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": 0.5
+            },
+            "rotation": 1.7526,
+            "xScale": 0.4102,
+            "yScale": 0.333
+          }
+        },
+        {
+          "id": "rosette-small-dense-1 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": -2.204,
+            "xScale": -0.3419,
+            "yScale": 0.2355
+          }
+        },
+        {
+          "id": "rosette-small-dense-1 leaf 8",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "rotation": 0.9304,
+            "xScale": 0.3757,
+            "yScale": 0.2588
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-medium-sparse-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-medium-sparse-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": 2.5
+            },
+            "rotation": 2.3928,
+            "xScale": 0.4874,
+            "yScale": 0.5511
+          }
+        },
+        {
+          "id": "rosette-medium-sparse-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": -0.5
+            },
+            "rotation": -1.2177,
+            "xScale": -0.4398,
+            "yScale": 0.4781
+          }
+        },
+        {
+          "id": "rosette-medium-sparse-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": 3,
+              "y": -1
+            },
+            "rotation": 1.2155,
+            "xScale": 0.6502,
+            "yScale": 0.6621
+          }
+        },
+        {
+          "id": "rosette-medium-sparse-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-bow",
+          "overrides": {
+            "position": {
+              "x": -1.5,
+              "y": 2.5
+            },
+            "rotation": -2.5473,
+            "xScale": -0.5353,
+            "yScale": 0.4956
+          }
+        },
+        {
+          "id": "rosette-medium-sparse-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "position": {
+              "y": -3
+            },
+            "rotation": -0.1658,
+            "xScale": -0.5709,
+            "yScale": 0.4635
+          }
+        },
+        {
+          "id": "rosette-medium-sparse-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+          "overrides": {
+            "rotation": 2.5796,
+            "xScale": 0.3813,
+            "yScale": 0.2627
+          }
+        },
+        {
+          "id": "rosette-medium-sparse-1 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-bow",
+          "overrides": {
+            "rotation": -1.0308,
+            "xScale": -0.5839,
+            "yScale": 0.4022
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-medium-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-medium-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": 2.5
+            },
+            "rotation": 2.3928,
+            "xScale": 0.4874,
+            "yScale": 0.5511
+          }
+        },
+        {
+          "id": "rosette-medium-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": -0.5
+            },
+            "rotation": -1.3312,
+            "xScale": -0.4444,
+            "yScale": 0.4879
+          }
+        },
+        {
+          "id": "rosette-medium-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": 2.5,
+              "y": -1.5
+            },
+            "rotation": 0.9886,
+            "xScale": 0.5815,
+            "yScale": 0.61
+          }
+        },
+        {
+          "id": "rosette-medium-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -0.5,
+              "y": 3
+            },
+            "rotation": -2.9934,
+            "xScale": -0.5889,
+            "yScale": 0.5796
+          }
+        },
+        {
+          "id": "rosette-medium-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-arch",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -2.5
+            },
+            "rotation": -0.8303,
+            "xScale": -0.6814,
+            "yScale": 0.6165
+          }
+        },
+        {
+          "id": "rosette-medium-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+          "overrides": {
+            "position": {
+              "x": 3,
+              "y": 0.5
+            },
+            "rotation": 1.7526,
+            "xScale": 0.5308,
+            "yScale": 0.4309
+          }
+        },
+        {
+          "id": "rosette-medium-1 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": -2.204,
+            "xScale": -0.4424,
+            "yScale": 0.3048
+          }
+        },
+        {
+          "id": "rosette-medium-1 leaf 8",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "rotation": 0.9304,
+            "xScale": 0.4862,
+            "yScale": 0.3349
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-medium-2",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-medium-2 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-lit-bow",
+          "overrides": {
+            "position": {
+              "x": 2.5,
+              "y": -1
+            },
+            "rotation": 1.0432,
+            "xScale": 0.4936,
+            "yScale": 0.5581
+          }
+        },
+        {
+          "id": "rosette-medium-2 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -1.5,
+              "y": 2.5
+            },
+            "rotation": -2.5979,
+            "xScale": -0.4574,
+            "yScale": 0.5022
+          }
+        },
+        {
+          "id": "rosette-medium-2 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-lit-bow",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": -3
+            },
+            "rotation": -0.2952,
+            "xScale": -0.4333,
+            "yScale": 0.4545
+          }
+        },
+        {
+          "id": "rosette-medium-2 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": 2
+            },
+            "rotation": 2.3341,
+            "xScale": 0.6319,
+            "yScale": 0.6219
+          }
+        },
+        {
+          "id": "rosette-medium-2 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-bow",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": 0.5
+            },
+            "rotation": -1.9488,
+            "xScale": -0.5489,
+            "yScale": 0.4966
+          }
+        },
+        {
+          "id": "rosette-medium-2 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": -2
+            },
+            "rotation": 0.8353,
+            "xScale": 0.5263,
+            "yScale": 0.4273
+          }
+        },
+        {
+          "id": "rosette-medium-2 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+          "overrides": {
+            "rotation": 2.9078,
+            "xScale": 0.3446,
+            "yScale": 0.2374
+          }
+        },
+        {
+          "id": "rosette-medium-2 leaf 8",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-arch",
+          "overrides": {
+            "rotation": 0.0526,
+            "xScale": 0.5929,
+            "yScale": 0.4084
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-medium-dense-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-medium-dense-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": 2.5
+            },
+            "rotation": 2.3928,
+            "xScale": 0.4874,
+            "yScale": 0.5511
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": -0.5
+            },
+            "rotation": -1.3312,
+            "xScale": -0.4475,
+            "yScale": 0.4943
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": 2.5,
+              "y": -1.5
+            },
+            "rotation": 0.9886,
+            "xScale": 0.59,
+            "yScale": 0.6295
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -0.5,
+              "y": 3
+            },
+            "rotation": -2.9934,
+            "xScale": -0.6023,
+            "yScale": 0.6134
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-arch",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -2.5
+            },
+            "rotation": -0.8303,
+            "xScale": -0.703,
+            "yScale": 0.6744
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+          "overrides": {
+            "position": {
+              "x": 3,
+              "y": 0.5
+            },
+            "rotation": 1.7526,
+            "xScale": 0.5529,
+            "yScale": 0.4922
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-bow",
+          "overrides": {
+            "position": {
+              "x": -2.5,
+              "y": 1.5
+            },
+            "rotation": -2.0519,
+            "xScale": -0.5194,
+            "yScale": 0.4217
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 8",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "rotation": 0.1887,
+            "xScale": 0.4862,
+            "yScale": 0.3349
+          }
+        },
+        {
+          "id": "rosette-medium-dense-1 leaf 9",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": -2.5251,
+            "xScale": -0.4563,
+            "yScale": 0.3144
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-large-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-large-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": 2.5
+            },
+            "rotation": 2.3928,
+            "xScale": 0.576,
+            "yScale": 0.6513
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -3.5,
+              "y": -0.5
+            },
+            "rotation": -1.3312,
+            "xScale": -0.5314,
+            "yScale": 0.5894
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-lit-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": 3,
+              "y": -2
+            },
+            "rotation": 0.9886,
+            "xScale": 0.5843,
+            "yScale": 0.6305
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": 3.5
+            },
+            "rotation": -2.9934,
+            "xScale": -0.4999,
+            "yScale": 0.5202
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-lit-arch",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -2.5
+            },
+            "rotation": -0.8303,
+            "xScale": -0.6164,
+            "yScale": 0.6129
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+          "overrides": {
+            "position": {
+              "x": 3.5,
+              "y": 0.5
+            },
+            "rotation": 1.7526,
+            "xScale": 0.6721,
+            "yScale": 0.6321
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-bow",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": 1.5
+            },
+            "rotation": -2.0519,
+            "xScale": -0.6358,
+            "yScale": 0.5592
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 8",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": 1,
+              "y": -3.5
+            },
+            "rotation": 0.2827,
+            "xScale": 0.6147,
+            "yScale": 0.499
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 9",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": 3.0163,
+            "xScale": -0.5393,
+            "yScale": 0.3715
+          }
+        },
+        {
+          "id": "rosette-large-1 leaf 10",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+          "overrides": {
+            "rotation": -0.2143,
+            "xScale": -0.5814,
+            "yScale": 0.4005
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-large-2",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-large-2 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-lit-bow",
+          "overrides": {
+            "position": {
+              "x": 3,
+              "y": -1.5
+            },
+            "rotation": 1.0432,
+            "xScale": 0.5833,
+            "yScale": 0.6595
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -1.5,
+              "y": 3
+            },
+            "rotation": -2.5979,
+            "xScale": -0.547,
+            "yScale": 0.6066
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-lit-bow",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": -3.5
+            },
+            "rotation": -0.2952,
+            "xScale": -0.5249,
+            "yScale": 0.5663
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 2.5,
+              "y": 2.5
+            },
+            "rotation": 2.3341,
+            "xScale": 0.5364,
+            "yScale": 0.5582
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-shade-bow",
+          "overrides": {
+            "position": {
+              "x": -3.5,
+              "y": 0.5
+            },
+            "rotation": -1.9488,
+            "xScale": -0.5675,
+            "yScale": 0.5643
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": -2.5
+            },
+            "rotation": 0.8353,
+            "xScale": 0.6665,
+            "yScale": 0.6268
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 0.5,
+              "y": 3.5
+            },
+            "rotation": 2.9518,
+            "xScale": 0.6371,
+            "yScale": 0.5603
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 8",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -3
+            },
+            "rotation": -0.5756,
+            "xScale": -0.6382,
+            "yScale": 0.5181
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 9",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": 1.9636,
+            "xScale": 0.564,
+            "yScale": 0.3885
+          }
+        },
+        {
+          "id": "rosette-large-2 leaf 10",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "rotation": -1.1562,
+            "xScale": -0.5964,
+            "yScale": 0.4108
+          }
+        }
+      ]
+    },
+    {
+      "id": "rosette-large-dense-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "rosette-large-dense-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 2,
+              "y": 2.5
+            },
+            "rotation": 2.3928,
+            "xScale": 0.576,
+            "yScale": 0.6513
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -3.5,
+              "y": -0.5
+            },
+            "rotation": -1.3312,
+            "xScale": -0.5334,
+            "yScale": 0.5933
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-lit-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": 3,
+              "y": -2
+            },
+            "rotation": 0.9886,
+            "xScale": 0.5888,
+            "yScale": 0.6401
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-shade-arch",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": 3.5
+            },
+            "rotation": -2.9934,
+            "xScale": -0.5058,
+            "yScale": 0.5341
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-lit-arch",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -2.5
+            },
+            "rotation": -0.8303,
+            "xScale": -0.6263,
+            "yScale": 0.6379
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-mid-arch",
+          "overrides": {
+            "position": {
+              "x": 3.5,
+              "y": 0.5
+            },
+            "rotation": 1.7526,
+            "xScale": 0.5692,
+            "yScale": 0.555
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 7",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-bow",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": 1.5
+            },
+            "rotation": -2.0519,
+            "xScale": -0.6523,
+            "yScale": 0.6039
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 8",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": 1,
+              "y": -3.5
+            },
+            "rotation": 0.2827,
+            "xScale": 0.6339,
+            "yScale": 0.5524
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 9",
+          "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+          "overrides": {
+            "position": {
+              "x": 1,
+              "y": 3
+            },
+            "rotation": 2.8273,
+            "xScale": 0.6657,
+            "yScale": 0.5404
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 10",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+          "overrides": {
+            "rotation": -0.9561,
+            "xScale": -0.5814,
+            "yScale": 0.4005
+          }
+        },
+        {
+          "id": "rosette-large-dense-1 leaf 11",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "rotation": 2.1219,
+            "xScale": 0.592,
+            "yScale": 0.4078
+          }
+        }
+      ]
+    },
+    {
+      "id": "branch-small-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "branch-small-1 shoot 1",
+          "position": {
+            "x": 24.5,
+            "y": -30.5
+          },
+          "children": [
+            {
+              "id": "branch-small-1 shoot 1 leaf 1",
+              "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+              "overrides": {
+                "rotation": 1.157,
+                "xScale": 0.3179,
+                "yScale": 0.2687
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 stem 1",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -24.5,
+                  "y": 23
+                },
+                "rotation": 0.8534,
+                "xScale": 0.5714,
+                "yScale": 0.51
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 stem 2",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -8.5,
+                  "y": 9.5
+                },
+                "rotation": 0.739,
+                "xScale": 0.5286,
+                "yScale": 0.3166
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 stem 3",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "rotation": 0.6551,
+                "xScale": 0.4857,
+                "yScale": 0.2896
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 stem 4",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 7,
+                  "y": -9.5
+                },
+                "rotation": 0.5787,
+                "xScale": 0.4429,
+                "yScale": 0.2625
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 stem 5",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 13,
+                  "y": -18.5
+                },
+                "rotation": 0.5078,
+                "xScale": 0.4,
+                "yScale": 0.25
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 leaf 2",
+              "ref": "plants/leaves.json#leaf-broad-small-lit-arch",
+              "overrides": {
+                "position": {
+                  "x": -8.5,
+                  "y": 9.5
+                },
+                "rotation": 0.5409,
+                "xScale": 0.5442,
+                "yScale": 0.6248
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 leaf 3",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-bow",
+              "overrides": {
+                "position": {
+                  "x": 7,
+                  "y": -9.5
+                },
+                "rotation": 0.1095,
+                "xScale": 0.4643,
+                "yScale": 0.5331
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 leaf 4",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+              "overrides": {
+                "position": {
+                  "x": 13,
+                  "y": -18.5
+                },
+                "rotation": 0.8951,
+                "xScale": 0.3437,
+                "yScale": 0.3946
+              }
+            },
+            {
+              "id": "branch-small-1 shoot 1 leaf 5",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+              "overrides": {
+                "position": {
+                  "x": 18,
+                  "y": -27.5
+                },
+                "rotation": 0.3558,
+                "xScale": 0.2413,
+                "yScale": 0.2771
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch-small-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "y": -23
+            },
+            "rotation": -1.1231,
+            "xScale": -0.5438,
+            "yScale": 0.5583
+          }
+        },
+        {
+          "id": "branch-small-1 stem 1",
+          "ref": "plants/stems.json#stem-short-thick",
+          "overrides": {
+            "rotation": 0.0281,
+            "xScale": 0.6667,
+            "yScale": 0.5
+          }
+        },
+        {
+          "id": "branch-small-1 stem 2",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "y": -7.5
+            },
+            "rotation": -0.0102,
+            "xScale": 0.6267,
+            "yScale": 0.4436
+          }
+        },
+        {
+          "id": "branch-small-1 stem 3",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "y": -23
+            },
+            "rotation": -0.0602,
+            "xScale": 0.5867,
+            "yScale": 0.4157
+          }
+        },
+        {
+          "id": "branch-small-1 stem 4",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": -37.5
+            },
+            "rotation": -0.1069,
+            "xScale": 0.5467,
+            "yScale": 0.3879
+          }
+        },
+        {
+          "id": "branch-small-1 stem 5",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -2.5,
+              "y": -51
+            },
+            "rotation": -0.1504,
+            "xScale": 0.6949,
+            "yScale": 0.3086
+          }
+        },
+        {
+          "id": "branch-small-1 stem 6",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -4,
+              "y": -63.5
+            },
+            "rotation": -0.1913,
+            "xScale": 0.64,
+            "yScale": 0.2939
+          }
+        },
+        {
+          "id": "branch-small-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": -37.5
+            },
+            "rotation": 0.4667,
+            "xScale": 0.4025,
+            "yScale": 0.4621
+          }
+        },
+        {
+          "id": "branch-small-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": -2.5,
+              "y": -51
+            },
+            "rotation": -0.679,
+            "xScale": -0.5022,
+            "yScale": 0.5766
+          }
+        },
+        {
+          "id": "branch-small-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+          "overrides": {
+            "position": {
+              "x": -4,
+              "y": -63.5
+            },
+            "rotation": 0.2289,
+            "xScale": 0.399,
+            "yScale": 0.4581
+          }
+        },
+        {
+          "id": "branch-small-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": -6.5,
+              "y": -75.5
+            },
+            "rotation": -0.285,
+            "xScale": -0.3404,
+            "yScale": 0.3909
+          }
+        }
+      ]
+    },
+    {
+      "id": "branch-small-2",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "branch-small-2 shoot 1",
+          "position": {
+            "x": -27,
+            "y": -30
+          },
+          "children": [
+            {
+              "id": "branch-small-2 shoot 1 leaf 1",
+              "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+              "overrides": {
+                "rotation": -1.3227,
+                "xScale": -0.3338,
+                "yScale": 0.278
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 stem 1",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 25.5,
+                  "y": 22.5
+                },
+                "rotation": -0.8944,
+                "xScale": 0.5714,
+                "yScale": 0.5154
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 stem 2",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 9,
+                  "y": 9.5
+                },
+                "rotation": -0.775,
+                "xScale": 0.5286,
+                "yScale": 0.3236
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 stem 3",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "rotation": -0.6868,
+                "xScale": 0.4857,
+                "yScale": 0.296
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 stem 4",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -7.5,
+                  "y": -9.5
+                },
+                "rotation": -0.6066,
+                "xScale": 0.4429,
+                "yScale": 0.2683
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 stem 5",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -14,
+                  "y": -18.5
+                },
+                "rotation": -0.532,
+                "xScale": 0.4,
+                "yScale": 0.2555
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 leaf 2",
+              "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-bow",
+              "overrides": {
+                "position": {
+                  "x": 9,
+                  "y": 9.5
+                },
+                "rotation": -0.3651,
+                "xScale": -0.4924,
+                "yScale": 0.5654
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 leaf 3",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-arch",
+              "overrides": {
+                "position": {
+                  "x": -7.5,
+                  "y": -9.5
+                },
+                "rotation": -0.2341,
+                "xScale": -0.3505,
+                "yScale": 0.4025
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 leaf 4",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+              "overrides": {
+                "position": {
+                  "x": -14,
+                  "y": -18.5
+                },
+                "rotation": -0.8238,
+                "xScale": -0.4095,
+                "yScale": 0.4702
+              }
+            },
+            {
+              "id": "branch-small-2 shoot 1 leaf 5",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-arch",
+              "overrides": {
+                "position": {
+                  "x": -19,
+                  "y": -27.5
+                },
+                "rotation": -0.6754,
+                "xScale": -0.2467,
+                "yScale": 0.2832
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch-small-2 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": -23
+            },
+            "rotation": 0.7884,
+            "xScale": 0.5645,
+            "yScale": 0.5475
+          }
+        },
+        {
+          "id": "branch-small-2 stem 1",
+          "ref": "plants/stems.json#stem-short-thick",
+          "overrides": {
+            "rotation": -0.1635,
+            "xScale": 0.6667,
+            "yScale": 0.5
+          }
+        },
+        {
+          "id": "branch-small-2 stem 2",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": -7.5
+            },
+            "rotation": -0.1252,
+            "xScale": 0.6267,
+            "yScale": 0.4436
+          }
+        },
+        {
+          "id": "branch-small-2 stem 3",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -3,
+              "y": -23
+            },
+            "rotation": -0.0752,
+            "xScale": 0.5867,
+            "yScale": 0.4157
+          }
+        },
+        {
+          "id": "branch-small-2 stem 4",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -4.5,
+              "y": -37.5
+            },
+            "rotation": -0.0284,
+            "xScale": 0.5467,
+            "yScale": 0.3879
+          }
+        },
+        {
+          "id": "branch-small-2 stem 5",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -4.5,
+              "y": -51
+            },
+            "rotation": 0.0151,
+            "xScale": 0.6949,
+            "yScale": 0.3086
+          }
+        },
+        {
+          "id": "branch-small-2 stem 6",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -4.5,
+              "y": -63.5
+            },
+            "rotation": 0.056,
+            "xScale": 0.64,
+            "yScale": 0.2939
+          }
+        },
+        {
+          "id": "branch-small-2 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "position": {
+              "x": -4.5,
+              "y": -37.5
+            },
+            "rotation": -0.7417,
+            "xScale": -0.3796,
+            "yScale": 0.4358
+          }
+        },
+        {
+          "id": "branch-small-2 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+          "overrides": {
+            "position": {
+              "x": -4.5,
+              "y": -51
+            },
+            "rotation": 0.2157,
+            "xScale": 0.325,
+            "yScale": 0.3732
+          }
+        },
+        {
+          "id": "branch-small-2 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": -4.5,
+              "y": -63.5
+            },
+            "rotation": -0.4446,
+            "xScale": -0.5439,
+            "yScale": 0.6245
+          }
+        },
+        {
+          "id": "branch-small-2 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+          "overrides": {
+            "position": {
+              "x": -4,
+              "y": -75.5
+            },
+            "rotation": -0.0811,
+            "xScale": 0.2432,
+            "yScale": 0.2792
+          }
+        }
+      ]
+    },
+    {
+      "id": "branch-small-dense-1",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "branch-small-dense-1 shoot 1",
+          "position": {
+            "x": 18.5,
+            "y": -31.5
+          },
+          "children": [
+            {
+              "id": "branch-small-dense-1 shoot 1 leaf 1",
+              "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+              "overrides": {
+                "rotation": 1.5131,
+                "xScale": 0.4399,
+                "yScale": 0.4051
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 stem 1",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -18.5,
+                  "y": 24
+                },
+                "rotation": 0.6811,
+                "xScale": 0.5714,
+                "yScale": 0.4569
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 stem 2",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -6.5,
+                  "y": 9.5
+                },
+                "rotation": 0.605,
+                "xScale": 0.5371,
+                "yScale": 0.2805
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 stem 3",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "rotation": 0.5489,
+                "xScale": 0.5029,
+                "yScale": 0.2629
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 stem 4",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 5.5,
+                  "y": -9
+                },
+                "rotation": 0.4964,
+                "xScale": 0.4686,
+                "yScale": 0.2453
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 stem 5",
+              "ref": "plants/stems.json#stem-short-thin",
+              "overrides": {
+                "position": {
+                  "x": 10.5,
+                  "y": -18
+                },
+                "rotation": 0.4476,
+                "xScale": 0.76,
+                "yScale": 0.9297
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 stem 6",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 14.5,
+                  "y": -26.5
+                },
+                "rotation": 0.3977,
+                "xScale": 0.4,
+                "yScale": 0.2551
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 leaf 2",
+              "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+              "overrides": {
+                "position": {
+                  "x": -6.5,
+                  "y": 9.5
+                },
+                "rotation": 0.4308,
+                "xScale": 0.5354,
+                "yScale": 0.6147
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 leaf 3",
+              "ref": "plants/leaves.json#leaf-broad-small-lit-arch",
+              "overrides": {
+                "position": {
+                  "x": 5.5,
+                  "y": -9
+                },
+                "rotation": 0.4684,
+                "xScale": 0.4033,
+                "yScale": 0.4631
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 leaf 4",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+              "overrides": {
+                "position": {
+                  "x": 10.5,
+                  "y": -18
+                },
+                "rotation": 0.877,
+                "xScale": 0.3362,
+                "yScale": 0.3861
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 leaf 5",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+              "overrides": {
+                "position": {
+                  "x": 14.5,
+                  "y": -26.5
+                },
+                "rotation": -0.0316,
+                "xScale": 0.3282,
+                "yScale": 0.3768
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 1 leaf 6",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+              "overrides": {
+                "position": {
+                  "x": 18.5,
+                  "y": -36
+                },
+                "rotation": 0.3943,
+                "xScale": 0.2111,
+                "yScale": 0.2424
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch-small-dense-1 shoot 2",
+          "position": {
+            "x": -25.5,
+            "y": -41.5
+          },
+          "children": [
+            {
+              "id": "branch-small-dense-1 shoot 2 leaf 1",
+              "ref": "plants/leaves.json#leaf-broad-small-mid-arch",
+              "overrides": {
+                "rotation": -0.6275,
+                "xScale": -0.3656,
+                "yScale": 0.2986
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 stem 1",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 25.5,
+                  "y": 20.5
+                },
+                "rotation": -0.9453,
+                "xScale": 0.5714,
+                "yScale": 0.5011
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 stem 2",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 9,
+                  "y": 8.5
+                },
+                "rotation": -0.8203,
+                "xScale": 0.5286,
+                "yScale": 0.2996
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 stem 3",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "rotation": -0.7308,
+                "xScale": 0.4857,
+                "yScale": 0.274
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 stem 4",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -7.5,
+                  "y": -8.5
+                },
+                "rotation": -0.6493,
+                "xScale": 0.4429,
+                "yScale": 0.2483
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 stem 5",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -13.5,
+                  "y": -16.5
+                },
+                "rotation": -0.5671,
+                "xScale": 0.4,
+                "yScale": 0.2783
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 leaf 2",
+              "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+              "overrides": {
+                "position": {
+                  "x": 9,
+                  "y": 8.5
+                },
+                "rotation": -2.1941,
+                "xScale": -0.5476,
+                "yScale": 0.6288
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 leaf 3",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-bow",
+              "overrides": {
+                "position": {
+                  "x": -7.5,
+                  "y": -8.5
+                },
+                "rotation": -1.1085,
+                "xScale": -0.5434,
+                "yScale": 0.6239
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 leaf 4",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-arch",
+              "overrides": {
+                "position": {
+                  "x": -13.5,
+                  "y": -16.5
+                },
+                "rotation": -0.1541,
+                "xScale": 0.449,
+                "yScale": 0.5155
+              }
+            },
+            {
+              "id": "branch-small-dense-1 shoot 2 leaf 5",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-arch",
+              "overrides": {
+                "position": {
+                  "x": -19.5,
+                  "y": -26
+                },
+                "rotation": -0.5777,
+                "xScale": -0.2686,
+                "yScale": 0.3084
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch-small-dense-1 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": -46
+            },
+            "rotation": -0.9429,
+            "xScale": -0.4991,
+            "yScale": 0.425
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 1",
+          "ref": "plants/stems.json#stem-short-thick",
+          "overrides": {
+            "rotation": 0.0299,
+            "xScale": 0.6667,
+            "yScale": 0.5
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 2",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "y": -7.5
+            },
+            "rotation": 0.0001,
+            "xScale": 0.6381,
+            "yScale": 0.3849
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 3",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "y": -21
+            },
+            "rotation": -0.0373,
+            "xScale": 0.6095,
+            "yScale": 0.3691
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 4",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -0.5,
+              "y": -34
+            },
+            "rotation": -0.0732,
+            "xScale": 0.5809,
+            "yScale": 0.3534
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 5",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -1,
+              "y": -46
+            },
+            "rotation": -0.1076,
+            "xScale": 0.5524,
+            "yScale": 0.3376
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 6",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -2.5,
+              "y": -58
+            },
+            "rotation": -0.1403,
+            "xScale": 0.7184,
+            "yScale": 0.2758
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 7",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -4,
+              "y": -69
+            },
+            "rotation": -0.1715,
+            "xScale": 0.6792,
+            "yScale": 0.2623
+          }
+        },
+        {
+          "id": "branch-small-dense-1 stem 8",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -6,
+              "y": -79.5
+            },
+            "rotation": -0.2038,
+            "xScale": 0.64,
+            "yScale": 0.2939
+          }
+        },
+        {
+          "id": "branch-small-dense-1 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": -0.5,
+              "y": -34
+            },
+            "rotation": 0.6874,
+            "xScale": 0.5031,
+            "yScale": 0.5777
+          }
+        },
+        {
+          "id": "branch-small-dense-1 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-bow",
+          "overrides": {
+            "position": {
+              "x": -2.5,
+              "y": -58
+            },
+            "rotation": 0.5416,
+            "xScale": 0.4046,
+            "yScale": 0.4646
+          }
+        },
+        {
+          "id": "branch-small-dense-1 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+          "overrides": {
+            "position": {
+              "x": -4,
+              "y": -69
+            },
+            "rotation": -0.58,
+            "xScale": -0.3564,
+            "yScale": 0.4091
+          }
+        },
+        {
+          "id": "branch-small-dense-1 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": -6,
+              "y": -79.5
+            },
+            "rotation": 0.141,
+            "xScale": 0.4252,
+            "yScale": 0.4882
+          }
+        },
+        {
+          "id": "branch-small-dense-1 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": -8.5,
+              "y": -91.5
+            },
+            "rotation": -0.3307,
+            "xScale": -0.2837,
+            "yScale": 0.3257
+          }
+        }
+      ]
+    },
+    {
+      "id": "branch-medium-2",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "branch-medium-2 shoot 1",
+          "position": {
+            "x": -33.5,
+            "y": -40
+          },
+          "children": [
+            {
+              "id": "branch-medium-2 shoot 1 leaf 1",
+              "ref": "plants/leaves.json#leaf-broad-small-shade-arch",
+              "overrides": {
+                "rotation": -1.4747,
+                "xScale": -0.4285,
+                "yScale": 0.4117
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 stem 1",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 31.5,
+                  "y": 29
+                },
+                "rotation": -0.8705,
+                "xScale": 0.5714,
+                "yScale": 0.3307
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 stem 2",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 21.5,
+                  "y": 20.5
+                },
+                "rotation": -0.8705,
+                "xScale": 0.5714,
+                "yScale": 0.3307
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 stem 3",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 11,
+                  "y": 11.5
+                },
+                "rotation": -0.7519,
+                "xScale": 0.5286,
+                "yScale": 0.3925
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 stem 4",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "rotation": -0.6673,
+                "xScale": 0.4857,
+                "yScale": 0.359
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 stem 5",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -9,
+                  "y": -11.5
+                },
+                "rotation": -0.5902,
+                "xScale": 0.4429,
+                "yScale": 0.3254
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 stem 6",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": -16.5,
+                  "y": -22.5
+                },
+                "rotation": -0.5187,
+                "xScale": 0.4,
+                "yScale": 0.3099
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 leaf 2",
+              "ref": "plants/leaves.json#leaf-broad-lit-gloss-arch",
+              "overrides": {
+                "position": {
+                  "x": 11,
+                  "y": 11.5
+                },
+                "rotation": -0.458,
+                "xScale": -0.5215,
+                "yScale": 0.5987
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 leaf 3",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-bow",
+              "overrides": {
+                "position": {
+                  "x": -9,
+                  "y": -11.5
+                },
+                "rotation": -0.144,
+                "xScale": 0.43,
+                "yScale": 0.4937
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 leaf 4",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+              "overrides": {
+                "position": {
+                  "x": -16.5,
+                  "y": -22.5
+                },
+                "rotation": -0.8255,
+                "xScale": -0.4407,
+                "yScale": 0.506
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 1 leaf 5",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+              "overrides": {
+                "position": {
+                  "x": -22.5,
+                  "y": -33.5
+                },
+                "rotation": -0.4871,
+                "xScale": -0.2992,
+                "yScale": 0.3435
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch-medium-2 shoot 2",
+          "position": {
+            "x": -4.5,
+            "y": -30
+          },
+          "children": [
+            {
+              "id": "branch-medium-2 shoot 2 stem 1",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "rotation": 0.595,
+                "xScale": 0.5714,
+                "yScale": 0.3856
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 stem 2",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 9,
+                  "y": -13
+                },
+                "rotation": 0.595,
+                "xScale": 0.5714,
+                "yScale": 0.3856
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 stem 3",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 17.5,
+                  "y": -26
+                },
+                "rotation": 0.493,
+                "xScale": 0.5143,
+                "yScale": 0.4
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 stem 4",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 25.5,
+                  "y": -40.5
+                },
+                "rotation": 0.428,
+                "xScale": 0.4571,
+                "yScale": 0.3464
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 stem 5",
+              "ref": "plants/stems.json#stem-long-thin",
+              "overrides": {
+                "position": {
+                  "x": 31,
+                  "y": -53.5
+                },
+                "rotation": 0.3691,
+                "xScale": 0.4,
+                "yScale": 0.3299
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 leaf 1",
+              "ref": "plants/leaves.json#leaf-broad-lit-gloss-bow",
+              "overrides": {
+                "position": {
+                  "x": 17.5,
+                  "y": -26
+                },
+                "rotation": 0.097,
+                "xScale": 0.5306,
+                "yScale": 0.6092
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 leaf 2",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+              "overrides": {
+                "position": {
+                  "x": 25.5,
+                  "y": -40.5
+                },
+                "rotation": 0.727,
+                "xScale": 0.4859,
+                "yScale": 0.5578
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 leaf 3",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+              "overrides": {
+                "position": {
+                  "x": 31,
+                  "y": -53.5
+                },
+                "rotation": -0.1136,
+                "xScale": 0.5166,
+                "yScale": 0.5931
+              }
+            },
+            {
+              "id": "branch-medium-2 shoot 2 leaf 4",
+              "ref": "plants/leaves.json#leaf-broad-small-sun-arch",
+              "overrides": {
+                "position": {
+                  "x": 36,
+                  "y": -66
+                },
+                "rotation": 0.4087,
+                "xScale": 0.3185,
+                "yScale": 0.3656
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch-medium-2 leaf 1",
+          "ref": "plants/leaves.json#leaf-broad-small-mid-bow",
+          "overrides": {
+            "position": {
+              "x": -7.5,
+              "y": -66.5
+            },
+            "rotation": 0.6747,
+            "xScale": 0.5884,
+            "yScale": 0.4977
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 1",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "rotation": -0.1651,
+            "xScale": 0.6667,
+            "yScale": 0.3143
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 2",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -2,
+              "y": -11
+            },
+            "rotation": -0.1351,
+            "xScale": 0.6381,
+            "yScale": 0.5535
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 3",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -4.5,
+              "y": -30
+            },
+            "rotation": -0.0977,
+            "xScale": 0.6095,
+            "yScale": 0.5308
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 4",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -6,
+              "y": -48.5
+            },
+            "rotation": -0.0619,
+            "xScale": 0.5809,
+            "yScale": 0.5081
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 5",
+          "ref": "plants/stems.json#stem-long-thick",
+          "overrides": {
+            "position": {
+              "x": -7.5,
+              "y": -66.5
+            },
+            "rotation": -0.0276,
+            "xScale": 0.5524,
+            "yScale": 0.4854
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 6",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -8,
+              "y": -83.5
+            },
+            "rotation": 0.0051,
+            "xScale": 0.7184,
+            "yScale": 0.3966
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 7",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -7.5,
+              "y": -99.5
+            },
+            "rotation": 0.0363,
+            "xScale": 0.6792,
+            "yScale": 0.3771
+          }
+        },
+        {
+          "id": "branch-medium-2 stem 8",
+          "ref": "plants/stems.json#stem-long-thin",
+          "overrides": {
+            "position": {
+              "x": -7,
+              "y": -115
+            },
+            "rotation": 0.0659,
+            "xScale": 0.64,
+            "yScale": 0.3592
+          }
+        },
+        {
+          "id": "branch-medium-2 leaf 2",
+          "ref": "plants/leaves.json#leaf-broad-lit-bow",
+          "overrides": {
+            "position": {
+              "x": -6,
+              "y": -48.5
+            },
+            "rotation": -0.9621,
+            "xScale": -0.4009,
+            "yScale": 0.4603
+          }
+        },
+        {
+          "id": "branch-medium-2 leaf 3",
+          "ref": "plants/leaves.json#leaf-broad-small-lit-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": -8,
+              "y": -83.5
+            },
+            "rotation": -0.7825,
+            "xScale": -0.4893,
+            "yScale": 0.5618
+          }
+        },
+        {
+          "id": "branch-medium-2 leaf 4",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-bow",
+          "overrides": {
+            "position": {
+              "x": -7.5,
+              "y": -99.5
+            },
+            "rotation": 0.4743,
+            "xScale": 0.5587,
+            "yScale": 0.6415
+          }
+        },
+        {
+          "id": "branch-medium-2 leaf 5",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": -7,
+              "y": -115
+            },
+            "rotation": -0.2675,
+            "xScale": -0.5147,
+            "yScale": 0.591
+          }
+        },
+        {
+          "id": "branch-medium-2 leaf 6",
+          "ref": "plants/leaves.json#leaf-broad-small-sun-gloss-arch",
+          "overrides": {
+            "position": {
+              "x": -6,
+              "y": -129.5
+            },
+            "rotation": 0.1241,
+            "xScale": 0.3467,
+            "yScale": 0.3981
+          }
+        }
+      ]
+    }
+  ]
+}

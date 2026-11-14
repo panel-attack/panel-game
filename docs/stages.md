@@ -136,7 +136,7 @@ This is only the default: players can change it in Options > Mod Management.
 
 You may use .png or .jpg for these.
 .gif files are not supported by the framework Panel Attack uses so please refrain from asking devs to support that.  
-Support for animated backgrounds is on the table but not available yet.  
+For an animated background, see [background.json](#backgroundjson) below.  
 
 Assets will get scaled and stretched if they don't match the recommended size or aspect ratio.  
 The per-file recommendations below are given for a resolution of 2560x1440. Using 1.5x/2x the size may look better at higher resolutions while 0.5x the size may look better on lower resolutions.  
@@ -156,6 +156,50 @@ The background of your stage that is displayed during gameplay.
     
 Aspect ratio: 16:9  
 Recommended size: 2560x1440px
+
+### background.json
+
+An animated background, drawn during gameplay in place of the background image.  
+It is an animation file in the format described in [the animation documentation](animations.md), placed in the stage folder.  
+Image paths and file refs in it are written from the stage folder, so `"filePath": "background"` draws the stage's background image and `"filePath": "star"` draws `star.png` next to it.  
+Positions are on the game's 1280x720 canvas, so a full screen image is given `"size": {"width": 1280, "height": 720}`.
+
+Keep the background image as well: versions of Panel Attack from before animated backgrounds draw it instead. A stage without one gets the theme's default stage background there, as Esme's Terrace does, which ships with the game. The animation is loaded like a theme's scenes, so a broken file stops with an error naming it.  
+A simple animation can start with the background image and draw a few moving parts on top of it:
+
+```json
+{
+  "drawables": [
+    {
+      "filePath": "background",
+      "size": {"width": 1280, "height": 720}
+    },
+    {
+      "filePath": "star",
+      "anchor": "center",
+      "position": {"x": 900, "y": 60},
+      "size": {"width": 24, "height": 24},
+      "animationTracks": [
+        {
+          "repeat": "yoyo",
+          "steps": [
+            {
+              "animateProperties": {"alpha": 0.2},
+              "durationSeconds": 1.5,
+              "easeType": "sineinout"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+For a full scene built from many parts in subfolders, see the [Esme's Terrace stage](../client/assets/default_data/stages/Esme%20Terrace/background.json).
+
+The animation plays in real time and has no effect on the game, so it keeps going while the game is paused.  
+It is drawn every frame of a match, so keep it light: a full screen image and a few dozen small parts cost little, while a scene of a thousand parts across a hundred images, like Esme's Terrace, costs about a millisecond a frame on a fast computer.
 
 -----------------------------------------------------------
 

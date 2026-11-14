@@ -20,6 +20,7 @@ local PuzzleLibrary = require("client.src.PuzzleLibrary")
 local save = require("client.src.save")
 local fileUtils = require("client.src.FileUtils")
 local Scores = require("client.src.scores")
+local ChallengeModeSave = require("client.src.ChallengeModeSave")
 local handleShortcuts = require("client.src.Shortcuts")
 local Player = require("client.src.Player")
 local GameModes = require("common.data.GameModes")
@@ -53,13 +54,13 @@ end
 
 ---@class PanelAttack
 ---@field scores Scores
+---@field challengeModeSave ChallengeModeSave
 ---@field netClient NetClient
 ---@field battleRoom BattleRoom?
 ---@field globalCanvas love.graphics.Texture
 ---@field muteSound boolean
 ---@field rich_presence table
 ---@field input InputManager
----@field backgroundImage table
 ---@field backgroundColor number[]
 ---@field updater table?
 ---@field automaticScales number[]
@@ -77,11 +78,11 @@ end
 local Game = class(
   function(self)
     self.scores = Scores.createFromScoreFile()
+    self.challengeModeSave = ChallengeModeSave.load("challengeMode")
     self.input = inputManager
     self.match = nil -- Match - the current match going on or nil if inbetween games
     self.battleRoom = nil -- BattleRoom - the current room being used for battles
     self.focused = true -- if the window is focused
-    self.backgroundImage = nil -- the background image for the game, should always be set to something with the proper dimensions
     self.netClient = NetClient()
     self.server_queue = ServerQueue()
     self.main_menu_screen_pos = {consts.CANVAS_WIDTH / 2 - 108 + 50, consts.CANVAS_HEIGHT / 2 - 111}
@@ -438,10 +439,6 @@ function Game:update(dt)
   prof.push("uiRoot update")
   self.uiRoot:update(dt)
   prof.pop("uiRoot update")
-
-  if self.backgroundImage then
-    self.backgroundImage:update(dt)
-  end
 
   self:updateMouseVisibility(dt)
   SoundController:update()

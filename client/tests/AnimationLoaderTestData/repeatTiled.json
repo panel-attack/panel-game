@@ -1,0 +1,10 @@
+{
+  "drawables": [
+    {
+      "id": "Tiled",
+      "filePath": "test_image",
+      "wrap": "repeat",
+      "size": {"width": 128, "height": 96}
+    }
+  ]
+}

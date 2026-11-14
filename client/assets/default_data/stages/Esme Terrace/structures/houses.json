@@ -1,0 +1,24 @@
+{
+  "drawables": [
+    {
+      "id": "house-tall-tower",
+      "filePath": "structures/parts/houses/house-tall-tower",
+      "templateOnly": true
+    },
+    {
+      "id": "house-small-tower",
+      "filePath": "structures/parts/houses/house-small-tower",
+      "templateOnly": true
+    },
+    {
+      "id": "house-orange-wing",
+      "filePath": "structures/parts/houses/house-orange-wing",
+      "templateOnly": true
+    },
+    {
+      "id": "house-manor",
+      "filePath": "structures/parts/houses/house-manor",
+      "templateOnly": true
+    }
+  ]
+}
