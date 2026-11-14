@@ -4,6 +4,8 @@ local system = require("client.src.system")
 local json = require("common.lib.dkjson")
 
 local PREFIX_OF_IGNORED_DIRECTORIES = "__"
+-- how much of an undecodable file is logged, enough to recognise it without copying a large file into the log
+local LOGGED_CONTENT_LENGTH = 200
 
 -- Collection of functions for file operations
 local fileUtils = {}
@@ -128,31 +130,47 @@ function fileUtils.recursiveRemoveFiles(folder, targetName)
   end
 end
 
--- returns the table for the deserialized json at the specified file path
----@param file string
+--- Reads JSON from a file object, closing it after reading.
+---@param file love.File
 ---@return table? # nil if the file could not be read or deserialization failed
-function fileUtils.readJsonFile(file)
-  if not fileUtils.exists(file) then
-    logger.debug("No file at specified path " .. file)
-    return nil
-  else
-    local fileContent, info = love.filesystem.read(file)
-    if type(info) == "string" then
-      -- info is the number of read bytes if successful, otherwise an error string
-      -- thus, if it is of type string, that indicates an error
-      logger.warn("Could not read file at path " .. file)
-      return nil
-    else
-      local value, _, errorMsg = json.decode(fileContent)
-      if errorMsg then
-        logger.error("Error reading " .. file .. ":\n" .. errorMsg .. ":\n" .. fileContent)
-        return nil
-      else
-        ---@cast value table
-        return value
-      end
-    end
+---@return ("read"|"decode")? failure
+function fileUtils.readJsonFromFile(file)
+  local filename = file:getFilename()
+  local opened, openError = file:open("r")
+  if not opened then
+    logger.warn("Could not open file " .. filename .. ": " .. tostring(openError))
+    return nil, "read"
   end
+  local fileContent, info = file:read()
+  local closed, closeError = file:close()
+  if not closed then
+    logger.warn("Could not close file " .. filename .. ": " .. tostring(closeError))
+    return nil, "read"
+  end
+
+  if not fileContent then
+    logger.warn("Could not read file " .. filename .. ": " .. tostring(info))
+    return nil, "read"
+  end
+  local value, _, errorMsg = json.decode(fileContent)
+  if errorMsg then
+    logger.error("Error reading " .. filename .. ":\n" .. errorMsg .. ":\n" .. fileContent:sub(1, LOGGED_CONTENT_LENGTH))
+    return nil, "decode"
+  end
+  ---@cast value table
+  return value
+end
+
+--- Reads JSON at a sandbox path using the same decoder as dropped files.
+---@param path string
+---@return table?
+---@return ("read"|"decode")? failure
+function fileUtils.readJsonFile(path)
+  if not fileUtils.exists(path) then
+    logger.debug("No file at specified path " .. path)
+    return nil, "read"
+  end
+  return fileUtils.readJsonFromFile(love.filesystem.newFile(path))
 end
 
 --returns a source, or nil if it could not find a file

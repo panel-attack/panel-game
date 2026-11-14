@@ -350,6 +350,34 @@ function ReplayV3.createFromTable(t, completed)
   return replay
 end
 
+--- Checks that a replay has the fields the replay details and playback read, so a file saved incompletely or by an
+--- older version is refused before changing scenes instead of crashing them. Raises an error naming the missing field.
+---@param replay ReplayV3
+---@return boolean valid
+function ReplayV3.validate(replay)
+  assert(replay.engineVersion, "Missing engine version")
+  assert(replay.metadata.stacks, "Missing stack metadata")
+  for _, metadata in ipairs(replay.metadata.stacks) do
+    assert(replay.stacks[metadata.stackIndex], "Missing stack index")
+  end
+
+  if ReplayV3.replayCanBeViewed(replay) then
+    assert(replay.rules, "Missing match rules")
+    assert(replay.panelSource, "Missing panel source")
+    assert(replay.garbageFlows, "Missing garbage flows")
+    for _, stack in ipairs(replay.stacks) do
+      if stack.stackType == ReplayV3.stackTypes.Stack then
+        ---@cast stack ReplayStack
+        assert(LevelData.validate(stack.levelData), "Missing level settings")
+      elseif stack.stackType == ReplayV3.stackTypes.SimulatedStack then
+        ---@cast stack ReplaySimulatedStack
+        assert(stack.attackSettings and stack.attackSettings.attackPatterns, "Missing attack settings")
+      end
+    end
+  end
+  return true
+end
+
 ---@param v2Replay ReplayV2
 ---@return ReplayV3
 function ReplayV3.loadFromV2Replay(v2Replay)
