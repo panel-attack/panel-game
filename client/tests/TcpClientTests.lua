@@ -1,59 +1,58 @@
 local TcpClient = require("client.src.network.TcpClient")
-local consts = require("common.engine.consts")
 local ClientMessages = require("common.network.ClientProtocol")
 local NetworkProtocol = require("common.network.NetworkProtocol")
+local socket = require("socket")
 
--- all of these tests assume that there is a socket listening on the respective port
-local testServerIp = consts.SERVER_LOCATION
--- this is also the internal default although it probably should not be
-local testServerPort = 49569
+-- a listener on a free port on localhost stands in for the server, so the tests need no network
+local function createLocalServer()
+  local server = socket.tcp()
+  assert(server:bind("127.0.0.1", 0))
+  assert(server:listen(1))
+  server:settimeout(5)
+  local ip, port = server:getsockname()
+  return server, ip, port
+end
 
-local function testConnectDisconnect()
+local function connectClient()
+  local server, ip, port = createLocalServer()
   local tcpClient = TcpClient()
-  local success = tcpClient:connectToServer(testServerIp, testServerPort)
+  local success = tcpClient:connectToServer(ip, port)
   assert(success)
   assert(tcpClient:isConnected())
+  local serverSideSocket, err = server:accept()
+  assert(serverSideSocket, err)
+  serverSideSocket:settimeout(5)
+  return tcpClient, server, serverSideSocket
+end
+
+local function testConnectDisconnect()
+  local tcpClient, server, serverSideSocket = connectClient()
   tcpClient:resetNetwork()
   assert(not tcpClient:isConnected())
+  serverSideSocket:close()
+  server:close()
 end
 
 testConnectDisconnect()
 
 local function testSendData()
-  local tcpClient = TcpClient()
-  local success = tcpClient:connectToServer(testServerIp, testServerPort)
-  assert(success)
-  assert(tcpClient:isConnected())
+  local tcpClient, server, serverSideSocket = connectClient()
   local message = NetworkProtocol.clientMessageTypes.versionCheck.prefix .. NetworkProtocol.NETWORK_VERSION
   assert(tcpClient:send(message))
+
+  local received, err = serverSideSocket:receive(#message)
+  assert(received, err)
+  assert(received == message, "expected " .. message .. " but the server received " .. received)
+  local messageType, messageText = NetworkProtocol.getMessageFromString(received, false)
+  assert(messageType == NetworkProtocol.clientMessageTypes.versionCheck.prefix)
+  assert(messageText == NetworkProtocol.NETWORK_VERSION)
+
   tcpClient:sendRequest(ClientMessages.logout())
   assert(tcpClient:isConnected())
   tcpClient:resetNetwork()
   assert(not tcpClient:isConnected())
+  serverSideSocket:close()
+  server:close()
 end
 
 testSendData()
-
--- local function testReceiveData()
---   local tcpClient = TcpClient()
---   local success = tcpClient:connectToServer(testServerIp, testServerPort)
---   assert(success)
---   assert(tcpClient:isConnected())
---   tcpClient:sendRequest(ClientMessages.requestLogin("-"))
---   -- there is a max character limit of 16 for names
---   -- the server should deny the login
---   local startTime = love.timer.getTime()
---   while tcpClient.receivedMessageQueue:size() == 0 and love.timer.getTime() < startTime + 5 do
---     tcpClient:processIncomingMessages()
---   end
-
---   assert(tcpClient.receivedMessageQueue:size() > 0)
---   tcpClient:sendRequest(ClientMessages.logout())
---   assert(tcpClient:isConnected())
---   tcpClient:resetNetwork()
---   assert(not tcpClient:isConnected())
--- end
-
--- testReceiveData()
-
--- not really feasible to test more without also spinning up a server locally with test data
