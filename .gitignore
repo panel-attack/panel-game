@@ -17,8 +17,5 @@ reports
 # for developing and debugging updater related features you may want to drop these in
 updater
 releaseStreams.json
-# add files and directories you wish to ignore here
-
-
-# your gitignore is personal
-.gitignore
+# backups left by editors and tools, at any depth
+.backup/
