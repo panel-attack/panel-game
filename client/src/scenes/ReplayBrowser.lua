@@ -7,7 +7,9 @@ local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local ReplayGame = require("client.src.scenes.ReplayGame")
 local ClientMatch = require("client.src.ClientMatch")
+local logger = require("common.lib.logger")
 
+---@class ReplayBrowser : Scene
 local ReplayBrowser = class(
   function (self, sceneParams)
     self.keepMusic = true
@@ -36,6 +38,26 @@ local menu_cursor_offset = 16
 local cursor_pos = 0
 
 local replay_id_top = 0
+
+--- Reads and validates a browser selection or dropped replay before it can replace the current scene.
+---@param file love.File
+---@return ReplayV3?
+function ReplayBrowser.createFromReplayFile(file)
+  local data = fileUtils.readJsonFromFile(file)
+  local success, replay = pcall(function()
+    local replay = ReplayV3.createFromTable(data, true)
+    ReplayV3.validate(replay)
+    return replay
+  end)
+
+  if not success then
+    local filename = file:getFilename()
+    logger.warn("Could not load replay " .. filename .. ": " .. tostring(replay))
+    GAME.theme:playCancelSfx()
+    return nil
+  end
+  return replay
+end
 
 local function replayMenu()
   if (replay_id_top == 0) then
@@ -90,7 +112,7 @@ local function setPathToParentDir()
   updateBrowsingPath(current_path:gsub("(.*/).*/$", "%1"))
 end
 
-local function selectMenuItem()
+local function selectMenuItem(browser)
   if cursor_pos == 0 then
     setPathToParentDir()
   else
@@ -98,12 +120,9 @@ local function selectMenuItem()
     local file_info = love.filesystem.getInfo(selection)
     if file_info then
       if file_info.type == "file" then
-        filename = selection
-        local replay = ReplayV3.createFromTable(fileUtils.readJsonFile(selection), true)
+        local replay = ReplayBrowser.createFromReplayFile(love.filesystem.newFile(selection))
         if replay then
-          selectedReplay = replay
-        else
-          GAME.theme:playCancelSfx()
+          browser:showReplay(replay, selection)
         end
         return not not replay
       elseif file_info.type == "directory" then
@@ -117,13 +136,46 @@ local function selectMenuItem()
   end
 end
 
-function ReplayBrowser:load()
+---@param sceneParams table?
+function ReplayBrowser:load(sceneParams)
   if GAME.lastReplayPath then
     current_path = string.sub(GAME.lastReplayPath, (string.len(base_path) + 1)) .. "/"
   end
 
   state = "browser"
   updateBrowsingPath(current_path)
+  if sceneParams and sceneParams.replay then
+    self:showReplay(sceneParams.replay, sceneParams.filename)
+  end
+end
+
+--- Shows the same replay details for browser selections and externally dropped files.
+---@param replay ReplayV3
+---@param replayFilename string
+function ReplayBrowser:showReplay(replay, replayFilename)
+  selectedReplay = replay
+  filename = replayFilename
+  state = "info"
+end
+
+--- Starts a validated replay, allowing unexpected setup errors to retain their traceback.
+---@return boolean started
+function ReplayBrowser:playReplay()
+  if not ReplayV3.replayCanBeViewed(selectedReplay) then
+    GAME.theme:playCancelSfx()
+    return false
+  end
+
+  local match = ClientMatch.createFromReplay(selectedReplay)
+  match.renderDuringPause = true
+  match.supportsPause = true
+  match:start()
+  local scene = ReplayGame({match = match})
+
+  GAME.theme:playValidationSfx()
+  SoundController:stopMusic()
+  GAME.navigationStack:push(scene)
+  return true
 end
 
 function ReplayBrowser:update()
@@ -134,9 +186,7 @@ function ReplayBrowser:update()
     end
     if input.isDown["MenuSelect"] then
       GAME.theme:playValidationSfx()
-      if selectMenuItem() then
-        state = "info"
-      end
+      selectMenuItem(self)
     end
     if input.isDown["MenuBack"] then
       if current_path == "/" then
@@ -160,17 +210,7 @@ function ReplayBrowser:update()
       state = "browser"
     end
     if input.isDown["MenuSelect"] then
-      if ReplayV3.replayCanBeViewed(selectedReplay) then
-        GAME.theme:playValidationSfx()
-        SoundController:stopMusic()
-        local match = ClientMatch.createFromReplay(selectedReplay)
-        match.renderDuringPause = true
-        match.supportsPause = true
-        match:start()
-        GAME.navigationStack:push(ReplayGame({match = match}))
-      else
-        GAME.theme:playCancelSfx()
-      end
+      self:playReplay()
     end
   end
 end

@@ -79,6 +79,13 @@ function love.focus(f)
   end
 end
 
+-- Intentional override
+---@diagnostic disable-next-line: duplicate-set-field
+---@param file love.File
+function love.filedropped(file)
+  GAME:onFileDropped(file)
+end
+
 -- Called every few fractions of a second to update the game
 -- dt is the amount of time in seconds that has passed.
 -- Intentional override

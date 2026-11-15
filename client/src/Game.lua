@@ -42,6 +42,7 @@ local DebugMenu = require("client.src.debug.DebugMenu")
 local Label = require("client.src.ui.Label")
 local UIElement = require("client.src.ui.UIElement")
 local NavigationStack = require("client.src.NavigationStack")
+local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 local NotificationCenter = require("client.src.ui.NotificationCenter")
 
 -- Provides a scale that is on .5 boundary to make sure it renders well.
@@ -389,6 +390,36 @@ end
 
 function Game:onJoystickRemoved(joystick)
   self.input:onJoystickRemoved(joystick)
+end
+
+--- Opens a dropped replay in the replay browser, from the main menu or the browser itself.
+---@param file love.File
+---@return boolean accepted
+function Game:onFileDropped(file)
+  local activeScene = self.navigationStack and self.navigationStack:getActiveScene()
+  if not activeScene or (activeScene.name ~= "MainMenu" and activeScene.name ~= "ReplayBrowser")
+    or self.netClient.state ~= NetClient.STATES.OFFLINE or self.battleRoom then
+    logger.warn("Could not open dropped replay: replays can only be dropped on the main menu or the replay browser while offline")
+    if self.theme then
+      self.theme:playCancelSfx()
+    end
+    return false
+  end
+
+  local replay = ReplayBrowser.createFromReplayFile(file)
+  if not replay then
+    return false
+  end
+
+  local filename = file:getFilename()
+  local displayName = filename:match("[^/\\]+$") or filename
+  if activeScene.name == "ReplayBrowser" then
+    ---@cast activeScene ReplayBrowser
+    activeScene:showReplay(replay, displayName)
+  else
+    self.navigationStack:push(ReplayBrowser({replay = replay, filename = displayName}))
+  end
+  return true
 end
 
 -- Called every few fractions of a second to update the game

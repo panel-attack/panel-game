@@ -82,8 +82,7 @@ local Server = class(
     self.lobbyChanged = false
     self._shuttingDown = false
 
-    FileIO.read_csprng_seed_file()
-    initialize_mt_generator(csprng_seed)
+    initialize_mt_generator(self.persistence.getCsprngSeed())
     seed_from_mt(extract_mt())
     -- local server_start_time = os.time()
     -- print("current local time: "..server_start_time)

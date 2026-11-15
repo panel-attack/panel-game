@@ -1,23 +1,77 @@
 name: PR Checks
 
+# Both jobs are required checks on beta, so they run on every pull request and pass straight away when it changes nothing
+# they check. A path filter on the trigger would leave them never reporting, and the pull request blocked.
 on:
   pull_request:
-    paths:
-      - '**.lua'
-      - '.luarc.json'
-      - '.github/workflows/pr-checks.yml'
   push:
     branches: [beta]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  # One extended regex per line. A pull request runs the diagnostics when it changes a file matching one of these...
+  DIAGNOSTICS_PATHS: |
+    \.lua$
+    ^\.luarc\.json$
+    ^\.github/workflows/pr-checks\.yml$
+  # ...and skips the tests only when every file it changes matches one of these, since the tests also read data and assets.
+  TESTS_SKIP_PATHS: |
+    \.md$
+    ^docs/
+    ^\.gitignore$
+    ^COPYING
+    ^\.vscode/
+    ^VsCodeStyleConfig\.lua-format$
+    ^\.luarc\.json$
+    ^build\.sh$
+    ^\.github/workflows/(canary-release|create-love-archive)\.yml$
 
 jobs:
   lua-diagnostics:
     name: Lua Language Server Diagnostics
     runs-on: ubuntu-latest
     steps:
+      # shared with the test job below, and run before checkout so a skip doesn't download the repository
+      - &findChecks
+        name: Find what to check
+        id: changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # a blank line would be an empty pattern, which matches every file
+          patterns() { printf '%s\n' "$1" | grep -v -e '^[[:space:]]*$'; }
+          diagnostics=true
+          tests=true
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            files="$RUNNER_TEMP/changed-files.txt"
+            # a renamed file lists its old path too, so moving a Lua file to another name still counts as changing it
+            gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
+              --jq '.[] | .filename, (.previous_filename // empty)' > "$files"
+            cat "$files"
+            # the API lists at most 3000 files, so a pull request that large is checked in full
+            if [ "$(wc -l < "$files")" -lt 3000 ]; then
+              if ! grep -q -E -f <(patterns "$DIAGNOSTICS_PATHS") "$files"; then
+                diagnostics=false
+              fi
+              if ! grep -q -v -E -f <(patterns "$TESTS_SKIP_PATHS") "$files"; then
+                tests=false
+              fi
+            fi
+          fi
+          echo "diagnostics=$diagnostics tests=$tests"
+          echo "diagnostics=$diagnostics" >> "$GITHUB_OUTPUT"
+          echo "tests=$tests" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
+        if: steps.changes.outputs.diagnostics == 'true'
 
       - name: Type Check and Lint
         id: typecheck
+        if: steps.changes.outputs.diagnostics == 'true'
         uses: mrcjkb/lua-typecheck-action@v0
         with:
           directories: .
@@ -125,22 +179,27 @@ jobs:
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
+      - *findChecks
+
       - uses: actions/checkout@v4
+        if: steps.changes.outputs.tests == 'true'
 
       - name: Install dependencies
+        if: steps.changes.outputs.tests == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2 xvfb
 
       - name: Cache Love2D binary
         id: cache-love
+        if: steps.changes.outputs.tests == 'true'
         uses: actions/cache@v4
         with:
           path: ~/love2d
           key: love2d-12.0-${{ hashFiles('.github/love-version.txt') }}
 
       - name: Download Love2D
-        if: steps.cache-love.outputs.cache-hit != 'true'
+        if: steps.changes.outputs.tests == 'true' && steps.cache-love.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/love2d
           curl -fL "https://github.com/panel-attack/panel-game/releases/download/love2d-12.0/love-12.0-linux-x86_64.tar.gz" \
@@ -150,10 +209,12 @@ jobs:
           mv ~/love2d/*.AppImage ~/love2d/love.AppImage
 
       - name: Make Love2D executable
+        if: steps.changes.outputs.tests == 'true'
         run: chmod +x ~/love2d/love.AppImage
 
       - name: Run Tests
         id: tests
+        if: steps.changes.outputs.tests == 'true'
         run: |
           set -o pipefail
           xvfb-run --auto-servernum ~/love2d/love.AppImage ./testLauncher.lua 2>&1 | tee test-output.log
