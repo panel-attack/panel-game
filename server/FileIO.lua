@@ -227,7 +227,9 @@ function FileIO.write_replay_file(replay, path, filename)
   end
 end
 
+---@return number seed
 function FileIO.read_csprng_seed_file()
+  local csprng_seed
   pcall(
     function()
       local f = io.open("csprng_seed.txt", "r")
@@ -253,6 +255,7 @@ function FileIO.read_csprng_seed_file()
       end
     end
   )
+  return csprng_seed
 end
 
 ---@param game ServerGame

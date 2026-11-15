@@ -1,5 +1,6 @@
 local FileUtils = require("client.src.FileUtils")
 local tableUtils = require("common.lib.tableUtils")
+local logger = require("common.lib.logger")
 
 local files = {
   "chain2.ogg",
@@ -100,6 +101,52 @@ local function testFileMatching4()
   testFileMatching(pattern, FileUtils.SUPPORTED_SOUND_FORMATS, separator, expected)
 end
 
+local function testJsonFileSources()
+  local path = "common/tests/data/puzzles_v2_format.json"
+  local fromPath = assert(FileUtils.readJsonFile(path))
+  local file = love.filesystem.newFile(path)
+  local fromFile = assert(FileUtils.readJsonFromFile(file))
+  assert(json.encode(fromFile) == json.encode(fromPath), "Paths and file objects should use the same JSON decoding")
+  assert(not file:isOpen(), "Reading JSON should close the file")
+
+  local missing = "__FileUtilsTests_missing.json"
+  assert(not FileUtils.exists(missing))
+  local value, failure = FileUtils.readJsonFile(missing)
+  assert(value == nil and failure == "read")
+  value, failure = FileUtils.readJsonFromFile(love.filesystem.newFile(missing))
+  assert(value == nil and failure == "read")
+end
+
+local function testDecodeFailureLogsOnlyTheStartOfTheFile()
+  local contents = string.rep("not json ", 100000)
+  local file = {}
+  function file:getFilename()
+    return "large-video.mp4"
+  end
+  function file:open()
+    return true
+  end
+  function file:read()
+    return contents, #contents
+  end
+  function file:close()
+    return true
+  end
+
+  local logged = {}
+  local originalError, originalWarn = logger.error, logger.warn
+  logger.error = function(message)
+    logged[#logged + 1] = message
+  end
+  logger.warn = logger.error
+  local value, failure = FileUtils.readJsonFromFile(file)
+  logger.error, logger.warn = originalError, originalWarn
+
+  assert(value == nil and failure == "decode")
+  assert(#logged == 1 and logged[1]:find("large-video.mp4", 1, true), "A decode failure should be logged once with the filename")
+  assert(#logged[1] < 1000, "A decode failure must not log the whole file, logged " .. #logged[1] .. " characters")
+end
+
 -- a replay is written where getReplayPath says, so a path recorded before the replay is saved finds it
 local function aReplayIsSavedAtItsReplayPath()
   local folder = "fileUtilsTestsReplays"
@@ -124,4 +171,6 @@ testFileMatching1()
 testFileMatching2()
 testFileMatching3()
 testFileMatching4()
+testJsonFileSources()
+testDecodeFailureLogsOnlyTheStartOfTheFile()
 aReplayIsSavedAtItsReplayPath()
