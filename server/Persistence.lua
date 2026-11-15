@@ -124,4 +124,9 @@ function Persistence.getPlayerInfo(privateUserId)
   return PADatabase:getPlayerFromPrivateID(privateUserId)
 end
 
+---@return number seed
+function Persistence.getCsprngSeed()
+  return FileIO.read_csprng_seed_file()
+end
+
 return Persistence
