@@ -40,37 +40,6 @@ function fileUtils.openFile(path, mode)
   end
 end
 
--- Copies a texture's pixels from the GPU into a new ImageData at the texture's pixel size
--- LÖVE 12 replaced Canvas:newImageData with love.graphics.readbackTexture, which also reads Images
--- LÖVE 11 can only read a Canvas, so an Image is first copied into a canvas of its own pixel size and format
----@param texture love.Texture
----@return love.ImageData
-function fileUtils.readbackTexture(texture)
-  if system.meetsLoveVersionRequirement(12, 0) then
-    return love.graphics.readbackTexture(texture)
-  elseif texture:typeOf("Canvas") then
-    return texture:newImageData()
-  else
-    local width, height = texture:getDimensions()
-    local format = texture:getFormat()
-    -- a canvas defaults to the screen's dpi scale and rgba8, either of which would resample or truncate the image
-    local settings = {dpiscale = texture:getDPIScale()}
-    if love.graphics.getCanvasFormats(true)[format] then
-      settings.format = format
-    end
-    local canvas = love.graphics.newCanvas(width, height, settings)
-    love.graphics.push("all")
-    -- the caller's colour, transform, shader and scissor would change the copy
-    love.graphics.reset()
-    love.graphics.setCanvas(canvas)
-    -- any other blend mode, or alphamultiply, multiplies the colour by its alpha
-    love.graphics.setBlendMode("replace", "premultiplied")
-    love.graphics.draw(texture)
-    love.graphics.pop()
-    return canvas:newImageData()
-  end
-end
-
 -- returns the directory items with a default filter and an optional filetype filter
 -- by default, filters out everything starting with __ and Mac's .DS_Store file
 -- optionally the result can be filtered to return only "file" or "directory" items
@@ -316,15 +285,6 @@ function fileUtils.getSoundFileName(soundName, path)
       return soundName .. extension
     end
   end
-end
-
-function fileUtils.saveTextureToFile(texture, filePath, format)
-  local imageData = fileUtils.readbackTexture(texture)
-
-  local data = imageData:encode(format)
-  --- Not sure if this is right, revisit
-  ---@diagnostic disable-next-line: param-type-mismatch
-  love.filesystem.write(filePath .. "." .. format, data)
 end
 
 -- Returns the folder and the file name saveReplay writes the replay to
