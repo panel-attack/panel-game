@@ -442,8 +442,7 @@ function GraphicsUtil.renderToTexture(width, height, drawFunc, dpiscale, filterM
     -- in love 11.5 Image and Canvas are distinct types inheriting from the Texture type that behave differently in a number of things
     -- a main difference is that love.window.updateMode and love.window.setMode cause all Canvas objects to be cleared so that they need to be redrawn
     -- to avoid this, immediately use the canvas's ImageData to create an Image type object that does not get cleared by window updates
-    local imageData
-    imageData = canvas:newImageData()
+    local imageData = FileUtils.readbackTexture(canvas)
 
     local image = love.graphics.newImage(imageData, {dpiscale = dpiscale})
 

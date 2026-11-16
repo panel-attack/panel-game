@@ -13,6 +13,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
 local ClientMatch = require("client.src.ClientMatch")
 local ReplayV3 = require("common.data.ReplayV3")
+local FileUtils = require("client.src.FileUtils")
 
 local originalNavigation = GAME.navigationStack
 local originalRoom = GAME.battleRoom
@@ -56,6 +57,9 @@ local function droppedFile(contents, filename, failure)
   local file = {}
   function file:getFilename()
     return filename or "C:\\external folder\\test-replay.json"
+  end
+  function file:isOpen()
+    return false
   end
   function file:open(mode)
     assert(mode == "r", "Dropped files must only be opened for reading")
@@ -361,7 +365,7 @@ local function testLegacyReplayFiles()
     if filename:match("%.json$") then
       resetNavigation()
       local contents = assert(love.filesystem.read(path .. filename))
-      assert(ReplayBrowser.createFromReplayFile(love.filesystem.newFile(path .. filename)),
+      assert(ReplayBrowser.createFromReplayFile(FileUtils.openFile(path .. filename, "r")),
         "Could not read browser fixture " .. filename)
       assert(handleReplayFileDrop(droppedFile(contents, filename)), "Could not open fixture " .. filename)
       finishTransition():draw()

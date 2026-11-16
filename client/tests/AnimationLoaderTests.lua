@@ -1,4 +1,5 @@
 local AnimationLoader = require("client.src.graphics.AnimationLoader")
+local FileUtils = require("client.src.FileUtils")
 local Flux = require("client.lib.flux.flux")
 
 -- Helper function to assert equality with detailed error messages
@@ -527,7 +528,7 @@ local function testStencilMasksDontLeakIntoLaterMasks()
   love.graphics.clear(0, 0, 0, 1)
   AnimationLoader.drawDrawables({first, second})
   love.graphics.pop()
-  local pixels = canvas:newImageData()
+  local pixels = FileUtils.readbackTexture(canvas)
 
   local r, g, b = pixels:getPixel(3, 3)
   assertEqual(r .. "," .. g .. "," .. b, "0,1,0", "The second masked node should draw inside its own mask")

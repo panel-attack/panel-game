@@ -26,6 +26,51 @@ function fileUtils.exists(path)
   end
 end
 
+-- Opens the file at a sandbox path in the given mode
+-- LÖVE 12 renamed love.filesystem.newFile to openFile and made the mode required
+---@param path string
+---@param mode love.FileMode
+---@return love.File?
+---@return string? errorMessage
+function fileUtils.openFile(path, mode)
+  if system.meetsLoveVersionRequirement(12, 0) then
+    return love.filesystem.openFile(path, mode)
+  else
+    return love.filesystem.newFile(path, mode)
+  end
+end
+
+-- Copies a texture's pixels from the GPU into a new ImageData at the texture's pixel size
+-- LÖVE 12 replaced Canvas:newImageData with love.graphics.readbackTexture, which also reads Images
+-- LÖVE 11 can only read a Canvas, so an Image is first copied into a canvas of its own pixel size and format
+---@param texture love.Texture
+---@return love.ImageData
+function fileUtils.readbackTexture(texture)
+  if system.meetsLoveVersionRequirement(12, 0) then
+    return love.graphics.readbackTexture(texture)
+  elseif texture:typeOf("Canvas") then
+    return texture:newImageData()
+  else
+    local width, height = texture:getDimensions()
+    local format = texture:getFormat()
+    -- a canvas defaults to the screen's dpi scale and rgba8, either of which would resample or truncate the image
+    local settings = {dpiscale = texture:getDPIScale()}
+    if love.graphics.getCanvasFormats(true)[format] then
+      settings.format = format
+    end
+    local canvas = love.graphics.newCanvas(width, height, settings)
+    love.graphics.push("all")
+    -- the caller's colour, transform, shader and scissor would change the copy
+    love.graphics.reset()
+    love.graphics.setCanvas(canvas)
+    -- any other blend mode, or alphamultiply, multiplies the colour by its alpha
+    love.graphics.setBlendMode("replace", "premultiplied")
+    love.graphics.draw(texture)
+    love.graphics.pop()
+    return canvas:newImageData()
+  end
+end
+
 -- returns the directory items with a default filter and an optional filetype filter
 -- by default, filters out everything starting with __ and Mac's .DS_Store file
 -- optionally the result can be filtered to return only "file" or "directory" items
@@ -130,16 +175,18 @@ function fileUtils.recursiveRemoveFiles(folder, targetName)
   end
 end
 
---- Reads JSON from a file object, closing it after reading.
+--- Reads JSON from a file object, opening it for reading unless it is already open, and closing it after reading.
 ---@param file love.File
 ---@return table? # nil if the file could not be read or deserialization failed
 ---@return ("read"|"decode")? failure
 function fileUtils.readJsonFromFile(file)
   local filename = file:getFilename()
-  local opened, openError = file:open("r")
-  if not opened then
-    logger.warn("Could not open file " .. filename .. ": " .. tostring(openError))
-    return nil, "read"
+  if not file:isOpen() then
+    local opened, openError = file:open("r")
+    if not opened then
+      logger.warn("Could not open file " .. filename .. ": " .. tostring(openError))
+      return nil, "read"
+    end
   end
   local fileContent, info = file:read()
   local closed, closeError = file:close()
@@ -170,7 +217,12 @@ function fileUtils.readJsonFile(path)
     logger.debug("No file at specified path " .. path)
     return nil, "read"
   end
-  return fileUtils.readJsonFromFile(love.filesystem.newFile(path))
+  local file, openError = fileUtils.openFile(path, "r")
+  if not file then
+    logger.warn("Could not open file " .. path .. ": " .. tostring(openError))
+    return nil, "read"
+  end
+  return fileUtils.readJsonFromFile(file)
 end
 
 --returns a source, or nil if it could not find a file
@@ -267,24 +319,7 @@ function fileUtils.getSoundFileName(soundName, path)
 end
 
 function fileUtils.saveTextureToFile(texture, filePath, format)
-  local loveMajor = love.getVersion()
-
-  local imageData
-  if loveMajor >= 12 then
-    imageData = love.graphics.readbackTexture(texture)
-  else
-    -- this code branch is untested but the function is also not used in production at the moment
-    if texture:typeOf("Canvas") then
-      imageData = texture:newImageData()
-    else
-      local canvas = love.graphics.newCanvas(texture:getDimensions())
-      local currentCanvas = love.graphics.getCanvas()
-      love.graphics.setCanvas(canvas)
-      love.graphics.draw(texture)
-      love.graphics.setCanvas(currentCanvas)
-      imageData = canvas:newImageData()
-    end
-  end
+  local imageData = fileUtils.readbackTexture(texture)
 
   local data = imageData:encode(format)
   --- Not sure if this is right, revisit

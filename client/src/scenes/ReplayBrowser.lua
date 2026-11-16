@@ -120,7 +120,13 @@ local function selectMenuItem(browser)
     local file_info = love.filesystem.getInfo(selection)
     if file_info then
       if file_info.type == "file" then
-        local replay = ReplayBrowser.createFromReplayFile(love.filesystem.newFile(selection))
+        local file, openError = fileUtils.openFile(selection, "r")
+        if not file then
+          logger.warn("Could not open replay " .. selection .. ": " .. tostring(openError))
+          GAME.theme:playCancelSfx()
+          return false
+        end
+        local replay = ReplayBrowser.createFromReplayFile(file)
         if replay then
           browser:showReplay(replay, selection)
         end
