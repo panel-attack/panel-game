@@ -104,7 +104,7 @@ end
 local function testJsonFileSources()
   local path = "common/tests/data/puzzles_v2_format.json"
   local fromPath = assert(FileUtils.readJsonFile(path))
-  local file = love.filesystem.newFile(path)
+  local file = assert(FileUtils.openFile(path, "r"))
   local fromFile = assert(FileUtils.readJsonFromFile(file))
   assert(json.encode(fromFile) == json.encode(fromPath), "Paths and file objects should use the same JSON decoding")
   assert(not file:isOpen(), "Reading JSON should close the file")
@@ -113,8 +113,8 @@ local function testJsonFileSources()
   assert(not FileUtils.exists(missing))
   local value, failure = FileUtils.readJsonFile(missing)
   assert(value == nil and failure == "read")
-  value, failure = FileUtils.readJsonFromFile(love.filesystem.newFile(missing))
-  assert(value == nil and failure == "read")
+  local missingFile, openError = FileUtils.openFile(missing, "r")
+  assert(missingFile == nil and openError, "opening a missing file for reading should fail with a message")
 end
 
 local function testDecodeFailureLogsOnlyTheStartOfTheFile()
@@ -122,6 +122,9 @@ local function testDecodeFailureLogsOnlyTheStartOfTheFile()
   local file = {}
   function file:getFilename()
     return "large-video.mp4"
+  end
+  function file:isOpen()
+    return false
   end
   function file:open()
     return true
@@ -145,6 +148,15 @@ local function testDecodeFailureLogsOnlyTheStartOfTheFile()
   assert(value == nil and failure == "decode")
   assert(#logged == 1 and logged[1]:find("large-video.mp4", 1, true), "A decode failure should be logged once with the filename")
   assert(#logged[1] < 1000, "A decode failure must not log the whole file, logged " .. #logged[1] .. " characters")
+end
+
+-- openFile opens the file in the mode it is given
+local function openFileOpensInTheGivenMode()
+  local path = "common/tests/data/puzzles_v2_format.json"
+  local opened = assert(FileUtils.openFile(path, "r"))
+  assert(opened:isOpen() and opened:getMode() == "r", "openFile in mode r should open the file for reading")
+  assert(opened:read() == love.filesystem.read(path), "the opened file should read the file's contents")
+  opened:close()
 end
 
 -- a replay is written where getReplayPath says, so a path recorded before the replay is saved finds it
@@ -173,4 +185,5 @@ testFileMatching3()
 testFileMatching4()
 testJsonFileSources()
 testDecodeFailureLogsOnlyTheStartOfTheFile()
+openFileOpensInTheGivenMode()
 aReplayIsSavedAtItsReplayPath()

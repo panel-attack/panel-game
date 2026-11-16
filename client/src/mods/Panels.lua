@@ -316,7 +316,7 @@ function Panels:load()
       filterMin,
       filterMag
     )
-    --fileUtils.saveTextureToFile(self.sheets[color], self.path .. "/panel-" .. color, "png")
+    --GraphicsUtil.readbackTexture(self.sheets[color]):encode("png", self.path .. "/panel-" .. color .. ".png")
     self.batches[color] = love.graphics.newSpriteBatch(self.sheets[color], 100, "stream")
   end
 end
