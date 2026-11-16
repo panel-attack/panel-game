@@ -193,6 +193,10 @@ themes/Panel Attack Modern/random_stage
 themes/Panel Attack Modern/ranked
 themes/Panel Attack Modern/rating_#P
 themes/Panel Attack Modern/ready
+themes/Panel Attack Modern/scenes/TrainMeadow/
+themes/Panel Attack Modern/scenes/plants/
+themes/Panel Attack Modern/scenes/scenery/
+themes/Panel Attack Modern/scenes/structures/
 themes/Panel Attack Modern/score_#P
 themes/Panel Attack Modern/speed_#P
 themes/Panel Attack Modern/super
@@ -200,7 +204,7 @@ themes/Panel Attack Modern/swap
 themes/Panel Attack Modern/time
 themes/Panel Attack Modern/time_numbers
 themes/Panel Attack Modern/wins
-  Copyright (C) 2022-24 JamBox
+  Copyright (C) 2022-26 JamBox
   License: CC BY-SA 4.0
 
 themes/Panel Attack Modern/connectionWarning

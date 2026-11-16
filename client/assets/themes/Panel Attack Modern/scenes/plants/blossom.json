@@ -1,0 +1,40 @@
+{
+  "drawables": [
+    {
+      "id": "blossom-trunk",
+      "filePath": "scenes/plants/parts/blossom/trunk",
+      "templateOnly": true
+    },
+    {
+      "id": "blossom-crown-left",
+      "filePath": "scenes/plants/parts/blossom/crown-left",
+      "templateOnly": true
+    },
+    {
+      "id": "blossom-crown-right",
+      "filePath": "scenes/plants/parts/blossom/crown-right",
+      "templateOnly": true
+    },
+    {
+      "id": "blossom-cluster-branch",
+      "filePath": "scenes/plants/parts/blossom/cluster-branch",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "blossom-cluster-top",
+      "filePath": "scenes/plants/parts/blossom/cluster-top",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "blossom-cluster-edge",
+      "filePath": "scenes/plants/parts/blossom/cluster-edge",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    }
+  ]
+}

@@ -35,7 +35,7 @@ local InputSource = require("client.src.input.InputSource")
 ---@field match ClientMatch
 ---@field customDraw fun()?
 ---@field stage Stage
----@field stageBackground SceneAnimation|UpdatingImage the stage's animation, or its background image when it has none
+---@field stageBackground SceneAnimation the stage's animation, drawing its background image when it has none
 ---@field stageTrack StageTrack?
 ---@field leaveWarning string? localization key of a warning the pause menu shows before leaving the game
 ---@field pauseTitle string localization key of the heading drawn while paused
@@ -455,11 +455,8 @@ end
 
 -- Loads the stage's animation, or its background image when it has none
 function GameBase:loadStageBackground()
-  if self.stage:hasAnimatedBackground() then
-    self.stageBackground = SceneAnimation(Stage.ANIMATED_BACKGROUND_FILE, self.stage.path)
-  else
-    self.stageBackground = UpdatingImage(self.stage.images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
-  end
+  local image = UpdatingImage(self.stage.images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
+  self.stageBackground = SceneAnimation(Stage.ANIMATED_BACKGROUND_FILE, self.stage.path, image)
 end
 
 -- Advances the scene's animations and the stage's background, see Scene.updateAnimations

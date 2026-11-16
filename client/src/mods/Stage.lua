@@ -149,12 +149,6 @@ end
 -- the animation file a stage draws in place of its background image, if the stage has it
 Stage.ANIMATED_BACKGROUND_FILE = "background.json"
 
--- Returns whether the stage has an animation to draw in place of its background image
----@return boolean
-function Stage:hasAnimatedBackground()
-  return fileUtils.exists(self.path .. "/" .. Stage.ANIMATED_BACKGROUND_FILE)
-end
-
 -- initalizes stage graphics
 function Stage.graphics_init(self, full, yields)
   local stage_images = full and allImages or basic_images

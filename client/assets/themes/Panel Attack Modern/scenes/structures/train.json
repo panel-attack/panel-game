@@ -1,0 +1,1164 @@
+{
+  "drawables": [
+    {
+      "id": "train-loco",
+      "filePath": "scenes/structures/parts/train/loco",
+      "templateOnly": true
+    },
+    {
+      "id": "train-carriage-1",
+      "filePath": "scenes/structures/parts/train/carriage-1",
+      "templateOnly": true
+    },
+    {
+      "id": "train-carriage-2",
+      "filePath": "scenes/structures/parts/train/carriage-2",
+      "templateOnly": true
+    },
+    {
+      "id": "train-carriage-3",
+      "filePath": "scenes/structures/parts/train/carriage-3",
+      "templateOnly": true
+    },
+    {
+      "id": "train-drive-wheel",
+      "filePath": "scenes/structures/parts/train/drive-wheel",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-carriage-wheel",
+      "filePath": "scenes/structures/parts/train/carriage-wheel",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-cab-gear",
+      "filePath": "scenes/structures/parts/train/cab-gear",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-carriage-gear",
+      "filePath": "scenes/structures/parts/train/carriage-gear",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-rod",
+      "filePath": "scenes/structures/parts/train/rod",
+      "templateOnly": true
+    },
+    {
+      "id": "train-flag",
+      "filePath": "scenes/structures/parts/train/flag",
+      "templateOnly": true,
+      "anchor": "centerRight",
+      "pivot": "centerRight"
+    },
+    {
+      "id": "train-smoke-1",
+      "filePath": "scenes/structures/parts/train/smoke-1",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-smoke-2",
+      "filePath": "scenes/structures/parts/train/smoke-2",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-smoke-3",
+      "filePath": "scenes/structures/parts/train/smoke-3",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-smoke-4",
+      "filePath": "scenes/structures/parts/train/smoke-4",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-smoke-5",
+      "filePath": "scenes/structures/parts/train/smoke-5",
+      "templateOnly": true,
+      "anchor": "center",
+      "pivot": "center"
+    },
+    {
+      "id": "train-shadow",
+      "filePath": "scenes/structures/parts/train/shadow",
+      "templateOnly": true
+    },
+    {
+      "id": "train",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "train shadow",
+          "ref": "scenes/structures/train.json#train-shadow",
+          "overrides": {
+            "position": {
+              "x": -10,
+              "y": -4
+            }
+          }
+        },
+        {
+          "id": "train drive wheel 1",
+          "ref": "scenes/structures/train.json#train-drive-wheel",
+          "overrides": {
+            "position": {
+              "x": 333.5,
+              "y": -11.5
+            },
+            "rotation": 1.5708,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.1574,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 7.854
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train drive wheel 2",
+          "ref": "scenes/structures/train.json#train-drive-wheel",
+          "overrides": {
+            "position": {
+              "x": 360.5,
+              "y": -11.5
+            },
+            "rotation": 1.5708,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.1574,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 7.854
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train drive wheel 3",
+          "ref": "scenes/structures/train.json#train-drive-wheel",
+          "overrides": {
+            "position": {
+              "x": 388.5,
+              "y": -11.5
+            },
+            "rotation": 1.5708,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.1574,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 7.854
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train drive wheel 4",
+          "ref": "scenes/structures/train.json#train-drive-wheel",
+          "overrides": {
+            "position": {
+              "x": 415.5,
+              "y": -11.5
+            },
+            "rotation": 1.5708,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.1574,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 7.854
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage wheel 1",
+          "ref": "scenes/structures/train.json#train-carriage-wheel",
+          "overrides": {
+            "position": {
+              "x": 23,
+              "y": -7.5
+            },
+            "rotation": 0.62,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.7441,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.9032
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage wheel 2",
+          "ref": "scenes/structures/train.json#train-carriage-wheel",
+          "overrides": {
+            "position": {
+              "x": 78,
+              "y": -7.5
+            },
+            "rotation": 0.95,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.7441,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 7.2332
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage wheel 3",
+          "ref": "scenes/structures/train.json#train-carriage-wheel",
+          "overrides": {
+            "position": {
+              "x": 126,
+              "y": -7.5
+            },
+            "rotation": 0.5,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.7441,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.7832
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage wheel 4",
+          "ref": "scenes/structures/train.json#train-carriage-wheel",
+          "overrides": {
+            "position": {
+              "x": 181,
+              "y": -7.5
+            },
+            "rotation": 0,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.7441,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.2832
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage wheel 5",
+          "ref": "scenes/structures/train.json#train-carriage-wheel",
+          "overrides": {
+            "position": {
+              "x": 229.5,
+              "y": -7.5
+            },
+            "rotation": 0.35,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.7441,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.6332
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage wheel 6",
+          "ref": "scenes/structures/train.json#train-carriage-wheel",
+          "overrides": {
+            "position": {
+              "x": 284.5,
+              "y": -7.5
+            },
+            "rotation": 0.8,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.7441,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 7.0832
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage wheel 7",
+          "ref": "scenes/structures/train.json#train-carriage-wheel",
+          "overrides": {
+            "position": {
+              "x": 473.5,
+              "y": -7.5
+            },
+            "rotation": 0.17,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.7441,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.4532
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage 3",
+          "ref": "scenes/structures/train.json#train-carriage-3",
+          "overrides": {
+            "position": {
+              "x": -8,
+              "y": -68
+            }
+          }
+        },
+        {
+          "id": "train carriage 2",
+          "ref": "scenes/structures/train.json#train-carriage-2",
+          "overrides": {
+            "position": {
+              "x": 95,
+              "y": -68
+            }
+          }
+        },
+        {
+          "id": "train carriage 1",
+          "ref": "scenes/structures/train.json#train-carriage-1",
+          "overrides": {
+            "position": {
+              "x": 199,
+              "y": -68
+            }
+          }
+        },
+        {
+          "id": "train loco",
+          "ref": "scenes/structures/train.json#train-loco",
+          "overrides": {
+            "position": {
+              "x": 303,
+              "y": -116
+            }
+          }
+        },
+        {
+          "id": "train cab gear",
+          "ref": "scenes/structures/train.json#train-cab-gear",
+          "overrides": {
+            "position": {
+              "x": 340.5,
+              "y": -34
+            },
+            "rotation": 0,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 4.4644,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.2832
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage gear 1",
+          "ref": "scenes/structures/train.json#train-carriage-gear",
+          "overrides": {
+            "position": {
+              "x": 50.5,
+              "y": -15.5
+            },
+            "rotation": 0.2,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 2.2322,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.4832
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage gear 2",
+          "ref": "scenes/structures/train.json#train-carriage-gear",
+          "overrides": {
+            "position": {
+              "x": 153.5,
+              "y": -15.5
+            },
+            "rotation": 0.39,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 2.2322,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.6732
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train carriage gear 3",
+          "ref": "scenes/structures/train.json#train-carriage-gear",
+          "overrides": {
+            "position": {
+              "x": 257,
+              "y": -15.5
+            },
+            "rotation": 0.1,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 2.2322,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "rotation": 6.3832
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train rod 1",
+          "ref": "scenes/structures/train.json#train-rod",
+          "overrides": {
+            "position": {
+              "x": 325.833,
+              "y": -13.833
+            },
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sineout",
+                    "animateProperties": {
+                      "x": 321.667
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sinein",
+                    "animateProperties": {
+                      "x": 325.833
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sineout",
+                    "animateProperties": {
+                      "x": 330
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sinein",
+                    "animateProperties": {
+                      "x": 325.833
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sinein",
+                    "animateProperties": {
+                      "y": -18
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sineout",
+                    "animateProperties": {
+                      "y": -22.167
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sinein",
+                    "animateProperties": {
+                      "y": -18
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.2894,
+                    "easeType": "sineout",
+                    "animateProperties": {
+                      "y": -13.833
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train flag",
+          "ref": "scenes/structures/train.json#train-flag",
+          "overrides": {
+            "position": {
+              "x": 325.5,
+              "y": -94
+            },
+            "rotation": -0.06,
+            "xScale": 1,
+            "animationTracks": [
+              {
+                "repeat": "yoyo",
+                "steps": [
+                  {
+                    "durationSeconds": 1.4,
+                    "easeType": "sineinout",
+                    "animateProperties": {
+                      "rotation": 0.06
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "yoyo",
+                "steps": [
+                  {
+                    "durationSeconds": 0.9,
+                    "easeType": "sineinout",
+                    "animateProperties": {
+                      "xScale": 0.95
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train smoke 1",
+          "ref": "scenes/structures/train.json#train-smoke-1",
+          "overrides": {
+            "position": {
+              "x": 437.667,
+              "y": -124.111
+            },
+            "rotation": 0.0292,
+            "alpha": 0.895,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 2.9333,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 401,
+                      "y": -218.833,
+                      "xScale": 3.4091,
+                      "yScale": 3.4091,
+                      "rotation": 0.35
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 441,
+                      "y": -115.5,
+                      "xScale": 0.7812,
+                      "yScale": 0.7812,
+                      "rotation": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.2667,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 437.667,
+                      "y": -124.111,
+                      "xScale": 1,
+                      "yScale": 1,
+                      "rotation": 0.0292
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 2.9333,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.25,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.9
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.0167,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.895
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train smoke 2",
+          "ref": "scenes/structures/train.json#train-smoke-2",
+          "overrides": {
+            "position": {
+              "x": 428.917,
+              "y": -140.083
+            },
+            "xScale": -0.4409,
+            "yScale": 0.4409,
+            "rotation": 0.6125,
+            "alpha": 0.732,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 2.4,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 392.667,
+                      "y": -213.833,
+                      "xScale": -1.045,
+                      "yScale": 1.045,
+                      "rotation": 0.35
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 441,
+                      "y": -115.5,
+                      "xScale": -0.2395,
+                      "yScale": 0.2395,
+                      "rotation": 0.7
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.8,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 428.917,
+                      "y": -140.083,
+                      "xScale": -0.4409,
+                      "yScale": 0.4409,
+                      "rotation": 0.6125
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 2.4,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.25,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.9
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.55,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.732
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train smoke 3",
+          "ref": "scenes/structures/train.json#train-smoke-3",
+          "overrides": {
+            "position": {
+              "x": 427.111,
+              "y": -161.333
+            },
+            "rotation": -0.4042,
+            "alpha": 0.569,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.8667,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 407.667,
+                      "y": -225.5,
+                      "xScale": 1.8169,
+                      "yScale": 1.8169,
+                      "rotation": -0.2
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 441,
+                      "y": -115.5,
+                      "xScale": 0.4164,
+                      "yScale": 0.4164,
+                      "rotation": -0.55
+                    }
+                  },
+                  {
+                    "durationSeconds": 1.3333,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 427.111,
+                      "y": -161.333,
+                      "xScale": 1,
+                      "yScale": 1,
+                      "rotation": -0.4042
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.8667,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.25,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.9
+                    }
+                  },
+                  {
+                    "durationSeconds": 1.0833,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.569
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train smoke 4",
+          "ref": "scenes/structures/train.json#train-smoke-4",
+          "overrides": {
+            "position": {
+              "x": 415.722,
+              "y": -173.833
+            },
+            "rotation": 1.1458,
+            "alpha": 0.407,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.3333,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 397.667,
+                      "y": -215.5,
+                      "xScale": 1.4729,
+                      "yScale": 1.4729,
+                      "rotation": 1
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 441,
+                      "y": -115.5,
+                      "xScale": 0.3372,
+                      "yScale": 0.3372,
+                      "rotation": 1.35
+                    }
+                  },
+                  {
+                    "durationSeconds": 1.8667,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 415.722,
+                      "y": -173.833,
+                      "xScale": 1,
+                      "yScale": 1,
+                      "rotation": 1.1458
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 1.3333,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.25,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.9
+                    }
+                  },
+                  {
+                    "durationSeconds": 1.6167,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.407
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train smoke 5",
+          "ref": "scenes/structures/train.json#train-smoke-5",
+          "overrides": {
+            "position": {
+              "x": 413.5,
+              "y": -195.5
+            },
+            "xScale": -1,
+            "rotation": 0.5125,
+            "alpha": 0.244,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.8,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 404.333,
+                      "y": -222.167,
+                      "xScale": -1.2384,
+                      "yScale": 1.2384,
+                      "rotation": 0.6
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 441,
+                      "y": -115.5,
+                      "xScale": -0.2838,
+                      "yScale": 0.2838,
+                      "rotation": 0.25
+                    }
+                  },
+                  {
+                    "durationSeconds": 2.4,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 413.5,
+                      "y": -195.5,
+                      "xScale": -1,
+                      "yScale": 1,
+                      "rotation": 0.5125
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.8,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.25,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.9
+                    }
+                  },
+                  {
+                    "durationSeconds": 2.15,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.244
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "train smoke 6",
+          "ref": "scenes/structures/train.json#train-smoke-2",
+          "overrides": {
+            "position": {
+              "x": 398.222,
+              "y": -204.111
+            },
+            "rotation": -1.4208,
+            "alpha": 0.081,
+            "animationTracks": [
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.2667,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 394.333,
+                      "y": -212.167,
+                      "xScale": 1.0688,
+                      "yScale": 1.0688,
+                      "rotation": -1.45
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 441,
+                      "y": -115.5,
+                      "xScale": 0.2449,
+                      "yScale": 0.2449,
+                      "rotation": -1.1
+                    }
+                  },
+                  {
+                    "durationSeconds": 2.9333,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "x": 398.222,
+                      "y": -204.111,
+                      "xScale": 1,
+                      "yScale": 1,
+                      "rotation": -1.4208
+                    }
+                  }
+                ]
+              },
+              {
+                "repeat": "loop",
+                "steps": [
+                  {
+                    "durationSeconds": 0.2667,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.02,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0
+                    }
+                  },
+                  {
+                    "durationSeconds": 0.25,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.9
+                    }
+                  },
+                  {
+                    "durationSeconds": 2.6833,
+                    "easeType": "linear",
+                    "animateProperties": {
+                      "alpha": 0.081
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

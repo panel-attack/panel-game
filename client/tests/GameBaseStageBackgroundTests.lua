@@ -1,8 +1,6 @@
 local GameBase = require("client.src.scenes.GameBase")
 local Flux = require("client.lib.flux.flux")
 local Stage = require("client.src.mods.Stage")
-local SceneAnimation = require("client.src.graphics.SceneAnimation")
-local UpdatingImage = require("client.src.graphics.UpdatingImage")
 
 local TEST_DATA = "client/tests/StageBackgroundTestData/"
 
@@ -16,16 +14,25 @@ local function gameOnStage(folderName)
   return game
 end
 
-local function testStaticStageGetsItsImage()
-  local game = gameOnStage("StaticStage")
-
-  assert(getmetatable(game.stageBackground) == UpdatingImage, "The stage's background should be its image")
+-- Returns whether drawing the stage background draws the stage's background image
+local function drawsTheStageImage(game)
+  local drawn = false
+  game.stageBackground.fallbackImage.draw = function()
+    drawn = true
+  end
+  game:drawStageBackground()
+  return drawn
 end
 
-local function testAnimatedStageGetsItsAnimation()
+local function testStaticStageDrawsItsImage()
+  assert(drawsTheStageImage(gameOnStage("StaticStage")), "The stage's background should be its image")
+end
+
+local function testAnimatedStageDrawsItsAnimationInsteadOfItsImage()
   local game = gameOnStage("AnimatedStage")
 
-  assert(getmetatable(game.stageBackground) == SceneAnimation, "The stage's background should be its animation")
+  assert(#game.stageBackground.drawables > 0, "The stage's background should be its animation")
+  assert(not drawsTheStageImage(game), "The stage's image should not be drawn under its animation")
 end
 
 local function testDrawsTheStageBackground()
@@ -46,11 +53,11 @@ local function testUpdatingTheAnimationsAdvancesTheStageBackground()
 
   game:updateAnimations(0.5)
 
-  local alpha = game.stageBackground.drawables[1].alpha
+  local alpha = game.stageBackground.drawables[1].children[1].alpha
   assert(math.abs(alpha - 0.5) < 0.001, "The stage animation's track should be half way, got " .. alpha)
 end
 
-testStaticStageGetsItsImage()
-testAnimatedStageGetsItsAnimation()
+testStaticStageDrawsItsImage()
+testAnimatedStageDrawsItsAnimationInsteadOfItsImage()
 testDrawsTheStageBackground()
 testUpdatingTheAnimationsAdvancesTheStageBackground()

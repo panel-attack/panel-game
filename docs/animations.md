@@ -4,7 +4,11 @@
 
 A theme keeps its animation files in its `scenes` folder, named after the screen that draws them, e.g. `scenes/TitleScreen.json`. Image paths and file refs in them are relative to the theme folder, so a scene can draw the theme's other images, e.g. `background/main`, as well as its own, e.g. `scenes/Gear0`.
 
-A screen draws its background image if the theme has one, then its scene on top if the theme has one. Either can be left out, so a scene that draws the whole screen can bring its own background and the theme can leave out the background image.
+The title screen draws its title image if the theme has one, then `scenes/TitleScreen.json` on top if the theme has it. Either can be left out, so a title scene that draws the whole screen can bring its own background and the theme can leave out the title image.
+
+The main menu draws `scenes/MainMenu.json` in place of the main menu background image (`background/main`) if the theme has it, and the image otherwise, as a stage draws its `background.json` in place of its background image. The other menus still draw the image, so keep it.
+
+A scene is laid out in the game's own 1280x720 canvas units, never laid out smaller and scaled up, so its art lands on the canvas's pixels. Its file draws exactly one top-level drawable: a container with `"size": {"width": 1280, "height": 720}`, at 0,0 and with no `xScale` or `yScale`, holding everything the scene draws. Templates (`templateOnly`) may sit beside it, since they aren't drawn. A scene file without that container stops with an error naming the file. Files a scene imports with `ref` don't need one.
 
 ## Stage backgrounds
 
@@ -12,14 +16,11 @@ A stage can have an animated background in the same format, a `background.json` 
 
 ## Example
 
-This scene draws the theme's background, defines a spinning gear once and places it twice, the second one bigger and spinning the other way:
+This scene defines a spinning gear once, then in its canvas container draws the theme's background and places the gear twice, the second one bigger and spinning the other way:
 
 ```json
 {
   "drawables": [
-    {
-      "filePath": "background/main"
-    },
     {
       "id": "gear",
       "templateOnly": true,
@@ -39,17 +40,26 @@ This scene draws the theme's background, defines a spinning gear once and places
       ]
     },
     {
-      "ref": "gear",
-      "overrides": {"position": {"x": 300, "y": 200}}
-    },
-    {
-      "ref": "gear",
-      "overrides": {
-        "position": {"x": 600, "y": 200},
-        "xScale": 1.5,
-        "yScale": 1.5,
-        "animationTracks": [{"steps": [{"animateProperties": {"rotation": -6.28318}}]}]
-      }
+      "id": "canvas",
+      "size": {"width": 1280, "height": 720},
+      "children": [
+        {
+          "filePath": "background/main"
+        },
+        {
+          "ref": "gear",
+          "overrides": {"position": {"x": 300, "y": 200}}
+        },
+        {
+          "ref": "gear",
+          "overrides": {
+            "position": {"x": 600, "y": 200},
+            "xScale": 1.5,
+            "yScale": 1.5,
+            "animationTracks": [{"steps": [{"animateProperties": {"rotation": -6.28318}}]}]
+          }
+        }
+      ]
     }
   ]
 }
