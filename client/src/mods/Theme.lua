@@ -306,6 +306,8 @@ Theme.defaultThemeDirectoryPath = "client/assets/themes/" .. consts.DEFAULT_THEM
 Theme.SCENES_FOLDER = "scenes"
 -- the animation file the title screen draws on top of the title image, each only if the theme has it
 Theme.TITLE_SCENE_FILE = "TitleScreen.json"
+-- the animation file the main menu draws in place of the main menu image, if the theme has it
+Theme.MAIN_MENU_SCENE_FILE = "MainMenu.json"
 
 -- loads the image of the given name
 ---@param name string

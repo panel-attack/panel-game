@@ -162,7 +162,7 @@ Recommended size: 2560x1440px
 An animated background, drawn during gameplay in place of the background image.  
 It is an animation file in the format described in [the animation documentation](animations.md), placed in the stage folder.  
 Image paths and file refs in it are written from the stage folder, so `"filePath": "background"` draws the stage's background image and `"filePath": "star"` draws `star.png` next to it.  
-Positions are on the game's 1280x720 canvas, so a full screen image is given `"size": {"width": 1280, "height": 720}`.
+Positions are on the game's 1280x720 canvas, so a full screen image is given `"size": {"width": 1280, "height": 720}`. Like a theme's scenes, its one top-level drawable is a container the canvas's size, at 0,0 and unscaled, holding everything it draws; see [scenes in a theme](animations.md#scenes-in-a-theme).
 
 Keep the background image as well: versions of Panel Attack from before animated backgrounds draw it instead. A stage without one gets the theme's default stage background there, as Esme's Terrace does, which ships with the game. The animation is loaded like a theme's scenes, so a broken file stops with an error naming it.  
 A simple animation can start with the background image and draw a few moving parts on top of it:
@@ -171,22 +171,28 @@ A simple animation can start with the background image and draw a few moving par
 {
   "drawables": [
     {
-      "filePath": "background",
-      "size": {"width": 1280, "height": 720}
-    },
-    {
-      "filePath": "star",
-      "anchor": "center",
-      "position": {"x": 900, "y": 60},
-      "size": {"width": 24, "height": 24},
-      "animationTracks": [
+      "id": "canvas",
+      "size": {"width": 1280, "height": 720},
+      "children": [
         {
-          "repeat": "yoyo",
-          "steps": [
+          "filePath": "background",
+          "size": {"width": 1280, "height": 720}
+        },
+        {
+          "filePath": "star",
+          "anchor": "center",
+          "position": {"x": 900, "y": 60},
+          "size": {"width": 24, "height": 24},
+          "animationTracks": [
             {
-              "animateProperties": {"alpha": 0.2},
-              "durationSeconds": 1.5,
-              "easeType": "sineinout"
+              "repeat": "yoyo",
+              "steps": [
+                {
+                  "animateProperties": {"alpha": 0.2},
+                  "durationSeconds": 1.5,
+                  "easeType": "sineinout"
+                }
+              ]
             }
           ]
         }

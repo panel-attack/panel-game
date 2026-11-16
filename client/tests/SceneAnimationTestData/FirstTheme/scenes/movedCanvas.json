@@ -1,0 +1,21 @@
+{
+  "drawables": [
+    {
+      "id": "Canvas",
+      "size": {
+        "width": 1280,
+        "height": 720
+      },
+      "children": [
+        {
+          "id": "Image",
+          "filePath": "scenes/test_image"
+        }
+      ],
+      "position": {
+        "x": 0,
+        "y": -66.6667
+      }
+    }
+  ]
+}

@@ -1,16 +1,27 @@
 {
   "drawables": [
     {
-      "id": "Faded",
-      "filePath": "scenes/test_image",
-      "alpha": 1,
-      "animationTracks": [
+      "id": "canvas",
+      "size": {
+        "width": 1280,
+        "height": 720
+      },
+      "children": [
         {
-          "steps": [
+          "id": "Faded",
+          "filePath": "scenes/test_image",
+          "alpha": 1,
+          "animationTracks": [
             {
-              "durationSeconds": 1,
-              "easeType": "linear",
-              "animateProperties": {"alpha": 0}
+              "steps": [
+                {
+                  "durationSeconds": 1,
+                  "easeType": "linear",
+                  "animateProperties": {
+                    "alpha": 0
+                  }
+                }
+              ]
             }
           ]
         }

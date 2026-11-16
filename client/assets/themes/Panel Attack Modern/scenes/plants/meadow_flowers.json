@@ -1,0 +1,102 @@
+{
+  "drawables": [
+    {
+      "id": "flower-pink-mid",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-pink-mid",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-daisy-near",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-daisy-near",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-daisy-mid",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-daisy-mid",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-buttercup-near",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-buttercup-near",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-violet-near",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-violet-near",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-violet-mid",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-violet-mid",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-lilac-near",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-lilac-near",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-lilac-mid",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-lilac-mid",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-lupin-near",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-lupin-near",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-lupin-mid",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-lupin-mid",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "rock-wide",
+      "filePath": "scenes/plants/parts/meadow-flowers/rock-wide",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "rock-small",
+      "filePath": "scenes/plants/parts/meadow-flowers/rock-small",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "rock-tall",
+      "filePath": "scenes/plants/parts/meadow-flowers/rock-tall",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    },
+    {
+      "id": "flower-pink-corner",
+      "filePath": "scenes/plants/parts/meadow-flowers/flower-pink-corner",
+      "anchor": "bottomCenter",
+      "pivot": "bottomCenter",
+      "templateOnly": true
+    }
+  ]
+}

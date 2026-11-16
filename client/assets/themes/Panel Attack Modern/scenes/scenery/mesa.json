@@ -1,0 +1,397 @@
+{
+  "drawables": [
+    {
+      "id": "mesa",
+      "filePath": "scenes/scenery/parts/mesa/mesa",
+      "templateOnly": true
+    },
+    {
+      "id": "mesa-falls",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "falls-shape",
+          "filePath": "scenes/scenery/parts/mesa/falls-shape"
+        },
+        {
+          "id": "falls-back",
+          "filePath": "scenes/scenery/parts/mesa/falls-back",
+          "stencil": true,
+          "wrap": "repeat",
+          "animationTracks": [
+            {
+              "repeat": "loop",
+              "steps": [
+                {
+                  "durationSeconds": 5.3333,
+                  "easeType": "linear",
+                  "animateProperties": {
+                    "scrollY": -80
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "falls-front-layer",
+          "children": [
+            {
+              "id": "falls-front-mask",
+              "filePath": "scenes/scenery/parts/mesa/falls-mask",
+              "blendMode": "add"
+            },
+            {
+              "id": "falls-front",
+              "filePath": "scenes/scenery/parts/mesa/falls-front",
+              "stencil": true,
+              "wrap": "repeat",
+              "animationTracks": [
+                {
+                  "repeat": "loop",
+                  "steps": [
+                    {
+                      "durationSeconds": 3.5,
+                      "easeType": "linear",
+                      "animateProperties": {
+                        "scrollY": -105
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mesa-falls-lip",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "lip",
+          "filePath": "scenes/scenery/parts/mesa/falls-lip"
+        },
+        {
+          "id": "lip-sheets",
+          "filePath": "scenes/scenery/parts/mesa/lip-sheets",
+          "stencil": true,
+          "wrap": "repeat",
+          "animationTracks": [
+            {
+              "repeat": "loop",
+              "steps": [
+                {
+                  "durationSeconds": 5.3333,
+                  "easeType": "linear",
+                  "animateProperties": {
+                    "scrollY": -80
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "lip-front-layer",
+          "children": [
+            {
+              "id": "lip-mask",
+              "filePath": "scenes/scenery/parts/mesa/lip-mask",
+              "blendMode": "add"
+            },
+            {
+              "id": "lip-front",
+              "filePath": "scenes/scenery/parts/mesa/lip-front",
+              "stencil": true,
+              "wrap": "repeat",
+              "animationTracks": [
+                {
+                  "repeat": "loop",
+                  "steps": [
+                    {
+                      "durationSeconds": 3.5,
+                      "easeType": "linear",
+                      "animateProperties": {
+                        "scrollY": -105
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "crest",
+          "filePath": "scenes/scenery/parts/mesa/falls-crest"
+        },
+        {
+          "id": "crest-glow",
+          "filePath": "scenes/scenery/parts/mesa/falls-crest-glow",
+          "alpha": 0.4,
+          "animationTracks": [
+            {
+              "repeat": "yoyo",
+              "steps": [
+                {
+                  "durationSeconds": 1.75,
+                  "easeType": "sineinout",
+                  "animateProperties": {
+                    "alpha": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mesa-spray",
+      "templateOnly": true,
+      "children": [
+        {
+          "id": "spray-shade",
+          "filePath": "scenes/scenery/parts/mesa/spray"
+        },
+        {
+          "id": "spray-bed",
+          "filePath": "scenes/scenery/parts/mesa/spray-bed"
+        },
+        {
+          "id": "mesa-spray-churn-left",
+          "children": [
+            {
+              "id": "churn-mask-left",
+              "filePath": "scenes/scenery/parts/mesa/spray-churn-mask-left",
+              "blendMode": "add"
+            },
+            {
+              "id": "churn-left",
+              "filePath": "scenes/scenery/parts/mesa/spray-churn",
+              "stencil": true,
+              "wrap": "repeat",
+              "position": {
+                "x": 5,
+                "y": 5
+              },
+              "animationTracks": [
+                {
+                  "repeat": "loop",
+                  "steps": [
+                    {
+                      "durationSeconds": 0.6667,
+                      "easeType": "linear",
+                      "animateProperties": {
+                        "scrollX": 20
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mesa-spray-churn-right",
+          "children": [
+            {
+              "id": "churn-mask-right",
+              "filePath": "scenes/scenery/parts/mesa/spray-churn-mask-right",
+              "blendMode": "add"
+            },
+            {
+              "id": "churn-right",
+              "filePath": "scenes/scenery/parts/mesa/spray-churn",
+              "stencil": true,
+              "wrap": "repeat",
+              "position": {
+                "x": 25,
+                "y": 5
+              },
+              "animationTracks": [
+                {
+                  "repeat": "loop",
+                  "steps": [
+                    {
+                      "durationSeconds": 0.6667,
+                      "easeType": "linear",
+                      "animateProperties": {
+                        "scrollX": -20
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mesa-spray-mist",
+          "filePath": "scenes/scenery/parts/mesa/spray-mist",
+          "alpha": 0.55,
+          "animationTracks": [
+            {
+              "repeat": "yoyo",
+              "steps": [
+                {
+                  "durationSeconds": 1.5,
+                  "easeType": "sineinout",
+                  "animateProperties": {
+                    "alpha": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mesa-spray-rise-a",
+          "filePath": "scenes/scenery/parts/mesa/spray-rise-a",
+          "alpha": 0,
+          "animationTracks": [
+            {
+              "repeat": "loop",
+              "steps": [
+                {
+                  "durationSeconds": 0.4,
+                  "easeType": "quadout",
+                  "animateProperties": {
+                    "alpha": 1,
+                    "y": -2
+                  },
+                  "delaySeconds": 0.045
+                },
+                {
+                  "durationSeconds": 0.7,
+                  "easeType": "quadin",
+                  "animateProperties": {
+                    "alpha": 0,
+                    "y": -4
+                  }
+                },
+                {
+                  "durationSeconds": 2.355,
+                  "easeType": "linear",
+                  "animateProperties": {
+                    "alpha": 0
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mesa-spray-rise-b",
+          "filePath": "scenes/scenery/parts/mesa/spray-rise-b",
+          "alpha": 0,
+          "animationTracks": [
+            {
+              "repeat": "loop",
+              "steps": [
+                {
+                  "durationSeconds": 0.4,
+                  "easeType": "quadout",
+                  "animateProperties": {
+                    "alpha": 1,
+                    "y": -2
+                  },
+                  "delaySeconds": 2.2315
+                },
+                {
+                  "durationSeconds": 0.7,
+                  "easeType": "quadin",
+                  "animateProperties": {
+                    "alpha": 0,
+                    "y": -4
+                  }
+                },
+                {
+                  "durationSeconds": 0.1685,
+                  "easeType": "linear",
+                  "animateProperties": {
+                    "alpha": 0
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mesa-thrown-water-a",
+          "filePath": "scenes/scenery/parts/mesa/thrown-water-a",
+          "alpha": 0,
+          "animationTracks": [
+            {
+              "repeat": "loop",
+              "steps": [
+                {
+                  "durationSeconds": 0.25,
+                  "easeType": "quadout",
+                  "animateProperties": {
+                    "alpha": 1,
+                    "y": -2.5
+                  },
+                  "delaySeconds": 0.045
+                },
+                {
+                  "durationSeconds": 0.55,
+                  "easeType": "quadin",
+                  "animateProperties": {
+                    "alpha": 0,
+                    "y": -4.5
+                  }
+                },
+                {
+                  "durationSeconds": 2.655,
+                  "easeType": "linear",
+                  "animateProperties": {
+                    "alpha": 0
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mesa-thrown-water-b",
+          "filePath": "scenes/scenery/parts/mesa/thrown-water-b",
+          "alpha": 0,
+          "animationTracks": [
+            {
+              "repeat": "loop",
+              "steps": [
+                {
+                  "durationSeconds": 0.25,
+                  "easeType": "quadout",
+                  "animateProperties": {
+                    "alpha": 1,
+                    "y": -2.5
+                  },
+                  "delaySeconds": 2.2315
+                },
+                {
+                  "durationSeconds": 0.55,
+                  "easeType": "quadin",
+                  "animateProperties": {
+                    "alpha": 0,
+                    "y": -4.5
+                  }
+                },
+                {
+                  "durationSeconds": 0.4685,
+                  "easeType": "linear",
+                  "animateProperties": {
+                    "alpha": 0
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

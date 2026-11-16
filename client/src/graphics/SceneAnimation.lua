@@ -2,10 +2,14 @@ local class = require("common.lib.class")
 local AnimationLoader = require("client.src.graphics.AnimationLoader")
 local Flux = require("client.lib.flux.flux")
 local Theme = require("client.src.mods.Theme")
+local fileUtils = require("client.src.FileUtils")
+local consts = require("common.engine.consts")
 
 -- An animation file with its own tweens, from the given folder, such as a stage's, or else from the current theme's scenes folder.
 -- Its image paths and file refs are relative to the given folder, or else to the theme folder.
 -- It reloads itself when the canvas scale changed since it loaded, so its images have the right filter, and one from the theme also when the theme changed.
+-- Without the file it draws its fallback image in the file's place, if it was given one, or else nothing.
+-- The file's one top-level drawable is a container the canvas's size at its origin, unscaled, so the scene is laid out in canvas units.
 ---@class SceneAnimation
 ---@field fileName string the animation file inside its folder
 ---@field folder string? the folder holding the file, nil for the current theme's scenes folder
@@ -13,16 +17,34 @@ local Theme = require("client.src.mods.Theme")
 ---@field tweens table the flux group running the drawables' tracks
 ---@field themePath string? the path of the theme the drawables were loaded from, nil when it has its own folder
 ---@field canvasScale number the canvas scale the drawables were loaded for
----@overload fun(fileName: string, folder: string?): SceneAnimation
+---@field fallbackImage UpdatingImage? the image drawn in place of a missing file
+---@overload fun(fileName: string, folder: string?, fallbackImage: UpdatingImage?): SceneAnimation
 local SceneAnimation = class(
 ---@param self SceneAnimation
 ---@param fileName string
 ---@param folder string? the folder holding the file, nil for the current theme's scenes folder
-function(self, fileName, folder)
+---@param fallbackImage UpdatingImage? the image drawn in place of a missing file
+function(self, fileName, folder, fallbackImage)
   self.fileName = fileName
   self.folder = folder
+  self.fallbackImage = fallbackImage
   self:load()
 end)
+
+-- Errors naming the file unless its drawables are one container the canvas's size at the canvas's origin, unscaled and unrotated
+---@param drawables table[]
+---@param filePath string
+local function assertCanvasContainer(drawables, filePath)
+  local container = drawables[1]
+  local isCanvas = #drawables == 1 and container.texture == nil
+    and container.width == consts.CANVAS_WIDTH and container.height == consts.CANVAS_HEIGHT
+    and container.x == 0 and container.y == 0 and container.anchor == "topLeft"
+    and container.xScale == 1 and container.yScale == 1 and container.rotation == 0
+  if not isCanvas then
+    error(filePath .. " must have one top-level drawable: a container sized "
+      .. consts.CANVAS_WIDTH .. "x" .. consts.CANVAS_HEIGHT .. " at 0,0, anchored at its top left, with no scale or rotation, holding the scene")
+  end
+end
 
 -- Loads the drawables for the current canvas scale, from the current theme if it has no folder, dropping any running tracks
 function SceneAnimation:load()
@@ -37,7 +59,12 @@ function SceneAnimation:load()
     rootFolder = self.themePath .. "/"
     filePath = rootFolder .. Theme.SCENES_FOLDER .. "/" .. self.fileName
   end
-  self.drawables = AnimationLoader.loadFromFile(rootFolder, filePath, self.tweens)
+  if fileUtils.exists(filePath) then
+    self.drawables = AnimationLoader.loadFromFile(rootFolder, filePath, self.tweens)
+    assertCanvasContainer(self.drawables, filePath)
+  else
+    self.drawables = {}
+  end
 end
 
 -- Returns whether the canvas scale, or the theme it was loaded from, changed since the drawables were loaded
@@ -49,18 +76,35 @@ function SceneAnimation:isStale()
   return self.canvasScale ~= GAME.canvasXScale
 end
 
--- Reloads the drawables if they are stale and advances their tracks
+-- Returns the fallback image while the file is missing, nil when the file was found or it has no fallback image
+---@return UpdatingImage?
+function SceneAnimation:getFallbackImage()
+  if #self.drawables == 0 then
+    return self.fallbackImage
+  end
+end
+
+-- Updates the scene
 ---@param dt number seconds since the last update
 function SceneAnimation:update(dt)
   if self:isStale() then
     self:load()
   end
   self.tweens:update(dt)
+  local fallbackImage = self:getFallbackImage()
+  if fallbackImage then
+    fallbackImage:update(dt)
+  end
 end
 
--- Draws the drawables, see AnimationLoader.drawDrawables
+-- Draws the scene
 function SceneAnimation:draw()
-  AnimationLoader.drawDrawables(self.drawables)
+  local fallbackImage = self:getFallbackImage()
+  if fallbackImage then
+    fallbackImage:draw()
+  else
+    AnimationLoader.drawDrawables(self.drawables)
+  end
 end
 
 return SceneAnimation

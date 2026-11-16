@@ -1,0 +1,33 @@
+{
+  "drawables": [
+    {
+      "id": "lantern-tree-crown-back",
+      "filePath": "scenes/plants/parts/lantern-tree/crown-back",
+      "templateOnly": true
+    },
+    {
+      "id": "lantern-tree-trunk",
+      "filePath": "scenes/plants/parts/lantern-tree/trunk",
+      "templateOnly": true
+    },
+    {
+      "id": "lantern-tree-crown",
+      "filePath": "scenes/plants/parts/lantern-tree/crown",
+      "templateOnly": true
+    },
+    {
+      "id": "lantern-tree-lantern-left",
+      "filePath": "scenes/plants/parts/lantern-tree/lantern-left",
+      "templateOnly": true,
+      "anchor": "topCenter",
+      "pivot": "topCenter"
+    },
+    {
+      "id": "lantern-tree-banner",
+      "filePath": "scenes/plants/parts/lantern-tree/banner",
+      "templateOnly": true,
+      "anchor": "topCenter",
+      "pivot": "topCenter"
+    }
+  ]
+}

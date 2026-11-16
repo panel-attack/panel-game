@@ -1,0 +1,29 @@
+{
+  "drawables": [
+    {
+      "id": "spring-peaks-far-ranges",
+      "filePath": "scenes/scenery/parts/spring-peaks/far-ranges",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-peaks-left-peaks",
+      "filePath": "scenes/scenery/parts/spring-peaks/left-peaks",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-peaks-massif",
+      "filePath": "scenes/scenery/parts/spring-peaks/massif",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-peaks-right-peak",
+      "filePath": "scenes/scenery/parts/spring-peaks/right-peak",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-peaks-foothills",
+      "filePath": "scenes/scenery/parts/spring-peaks/foothills",
+      "templateOnly": true
+    }
+  ]
+}

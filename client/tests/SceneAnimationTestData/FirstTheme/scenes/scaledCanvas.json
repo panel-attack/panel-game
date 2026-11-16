@@ -1,0 +1,15 @@
+{
+  "drawables": [
+    {
+      "id": "Canvas",
+      "xScale": 1.6667,
+      "yScale": 1.6667,
+      "children": [
+        {
+          "id": "Image",
+          "filePath": "scenes/test_image"
+        }
+      ]
+    }
+  ]
+}

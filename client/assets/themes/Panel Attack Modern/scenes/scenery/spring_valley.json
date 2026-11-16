@@ -1,0 +1,54 @@
+{
+  "drawables": [
+    {
+      "id": "spring-valley-hills-far",
+      "filePath": "scenes/scenery/parts/spring-valley/hills-far",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-hills-far-left",
+      "filePath": "scenes/scenery/parts/spring-valley/hills-far-left",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-hills-far-centre",
+      "filePath": "scenes/scenery/parts/spring-valley/hills-far-centre",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-hills-far-right",
+      "filePath": "scenes/scenery/parts/spring-valley/hills-far-right",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-woods",
+      "filePath": "scenes/scenery/parts/spring-valley/woods",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-hills-middle",
+      "filePath": "scenes/scenery/parts/spring-valley/hills-middle",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-bushes-far",
+      "filePath": "scenes/scenery/parts/spring-valley/bushes-far",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-track",
+      "filePath": "scenes/scenery/parts/spring-valley/track",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-bushes",
+      "filePath": "scenes/scenery/parts/spring-valley/bushes",
+      "templateOnly": true
+    },
+    {
+      "id": "spring-valley-meadow",
+      "filePath": "scenes/scenery/parts/spring-valley/meadow",
+      "templateOnly": true
+    }
+  ]
+}

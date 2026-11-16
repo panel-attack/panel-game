@@ -1,0 +1,17 @@
+{
+  "drawables": [
+    {
+      "id": "canvas",
+      "size": {
+        "width": 1280,
+        "height": 720
+      },
+      "children": [
+        {
+          "id": "TrainMeadow scene",
+          "ref": "scenes/TrainMeadow/TrainMeadow.json"
+        }
+      ]
+    }
+  ]
+}

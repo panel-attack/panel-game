@@ -1,38 +1,18 @@
 {
   "drawables": [
     {
-      "id": "cloud-left-edge",
-      "filePath": "scenery/parts/clouds/cloud-left-edge",
-      "templateOnly": true
-    },
-    {
-      "id": "cloud-centre-right",
-      "filePath": "scenery/parts/clouds/cloud-centre-right",
-      "templateOnly": true
-    },
-    {
-      "id": "cloud-mid",
-      "filePath": "scenery/parts/clouds/cloud-mid",
-      "templateOnly": true
-    },
-    {
-      "id": "cloud-behind-lamp",
-      "filePath": "scenery/parts/clouds/cloud-behind-lamp",
-      "templateOnly": true
-    },
-    {
-      "id": "cloud-right-small",
-      "filePath": "scenery/parts/clouds/cloud-right-small",
-      "templateOnly": true
-    },
-    {
       "id": "cloud-right",
       "filePath": "scenery/parts/clouds/cloud-right",
       "templateOnly": true
     },
     {
-      "id": "cloud-r4-26",
-      "filePath": "scenery/parts/clouds/cloud-r4-26",
+      "id": "cloud-r4-25",
+      "filePath": "scenery/parts/clouds/cloud-r4-25",
+      "templateOnly": true
+    },
+    {
+      "id": "cloud-left-edge",
+      "filePath": "scenery/parts/clouds/cloud-left-edge",
       "templateOnly": true
     },
     {
@@ -46,13 +26,13 @@
       "templateOnly": true
     },
     {
-      "id": "cloud-r4-23",
-      "filePath": "scenery/parts/clouds/cloud-r4-23",
+      "id": "cloud-r4-26",
+      "filePath": "scenery/parts/clouds/cloud-r4-26",
       "templateOnly": true
     },
     {
-      "id": "cloud-r4-25",
-      "filePath": "scenery/parts/clouds/cloud-r4-25",
+      "id": "cloud-right-small",
+      "filePath": "scenery/parts/clouds/cloud-right-small",
       "templateOnly": true
     },
     {
@@ -61,13 +41,33 @@
       "templateOnly": true
     },
     {
-      "id": "cloud-r4-09",
-      "filePath": "scenery/parts/clouds/cloud-r4-09",
+      "id": "cloud-r4-23",
+      "filePath": "scenery/parts/clouds/cloud-r4-23",
+      "templateOnly": true
+    },
+    {
+      "id": "cloud-behind-lamp",
+      "filePath": "scenery/parts/clouds/cloud-behind-lamp",
+      "templateOnly": true
+    },
+    {
+      "id": "cloud-mid",
+      "filePath": "scenery/parts/clouds/cloud-mid",
       "templateOnly": true
     },
     {
       "id": "cloud-r4-34",
       "filePath": "scenery/parts/clouds/cloud-r4-34",
+      "templateOnly": true
+    },
+    {
+      "id": "cloud-r4-14",
+      "filePath": "scenery/parts/clouds/cloud-r4-14",
+      "templateOnly": true
+    },
+    {
+      "id": "cloud-r4-09",
+      "filePath": "scenery/parts/clouds/cloud-r4-09",
       "templateOnly": true
     },
     {
@@ -81,13 +81,13 @@
       "templateOnly": true
     },
     {
-      "id": "cloud-r4-33",
-      "filePath": "scenery/parts/clouds/cloud-r4-33",
+      "id": "cloud-centre-right",
+      "filePath": "scenery/parts/clouds/cloud-centre-right",
       "templateOnly": true
     },
     {
-      "id": "cloud-r4-14",
-      "filePath": "scenery/parts/clouds/cloud-r4-14",
+      "id": "cloud-r4-33",
+      "filePath": "scenery/parts/clouds/cloud-r4-33",
       "templateOnly": true
     }
   ]

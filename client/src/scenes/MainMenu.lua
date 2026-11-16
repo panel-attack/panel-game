@@ -3,6 +3,8 @@ local consts = require("common.engine.consts")
 local ui = require("client.src.ui")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
+local SceneAnimation = require("client.src.graphics.SceneAnimation")
+local Theme = require("client.src.mods.Theme")
 local GameModes = require("common.data.GameModes")
 local DebugSettings = require("client.src.debug.DebugSettings")
 local EndlessMenu = require("client.src.scenes.EndlessMenu")
@@ -27,8 +29,9 @@ local VsSelfGame = require("client.src.scenes.VsSelfGame")
 local PuzzleGame = require("client.src.scenes.PuzzleGame")
 local InputSource = require("client.src.input.InputSource")
 
--- Scene for the main menu
+-- Scene for the main menu, drawing the theme's main menu scene, or its main menu image when it has none
 local MainMenu = class(function(self, sceneParams)
+  self.sceneAnimation = SceneAnimation(Theme.MAIN_MENU_SCENE_FILE, nil, themes[config.theme].images.bg_main)
   self.music = "main"
   self.menu = self:createMainMenu()
   self.uiRoot:addChild(self.menu)
@@ -54,7 +57,12 @@ local function switchToLobby(lobbyParams)
   end
 end
 
+-- The options may have switched the theme while the main menu waited under them, so it draws the new theme's scene or image
 function MainMenu:refresh()
+  self.sceneAnimation.fallbackImage = themes[config.theme].images.bg_main
+  if self.sceneAnimation:isStale() then
+    self.sceneAnimation:load()
+  end
   if self.menu then
     self.menu:detach()
     self.menu = nil
@@ -172,14 +180,13 @@ function MainMenu:checkForUpdates()
 end
 
 function MainMenu:updateSelf(dt)
-  GAME.theme.images.bg_main:update(dt)
   self.menu:receiveInputs(InputSource.anyPlayer, dt)
 
   self:checkForUpdates()
 end
 
 function MainMenu:drawSelf()
-  GAME.theme.images.bg_main:draw()
+  self.sceneAnimation:draw()
   local fontHeight = GraphicsUtil.getGlobalFont():getHeight()
   local infoYPosition = 705 - fontHeight / 2
 
