@@ -1,9 +1,12 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local input = require("client.src.inputManager")
 local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
 local playerName = require("common.lib.playerName")
+
+local NAME_FIELD_WIDTH = 200
 
 -- Scene for setting the username
 -- sceneParams.onNameSet is called instead of returning to the previous scene once a name was confirmed
@@ -22,38 +25,27 @@ function SetNameMenu:load()
   local x, y = unpack(themes[config.theme].main_menu_screen_pos)
   self.promptLabel = ui.Label({
     text = "op_enter_name",
-    vAlign = "top",
-    hAlign = "center",
-    y = y
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, y)}
   })
   self.uiRoot:addChild(self.promptLabel)
 
   self.validationLabel = ui.Label({
     text = "",
-    vAlign = "top",
-    hAlign = "center",
-    y = y + 20,
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, y + 20)},
     translate = false
   })
   self.uiRoot:addChild(self.validationLabel)
 
   self.nameField = ui.InputField({
-    y = y + 50,
-    width = 200,
-    height = 25,
     placeholder = "username",
     value = config.name,
-    hAlign = "center",
-    vAlign = "top",
+    layoutRules = {sizing = Layout.fixedSize(NAME_FIELD_WIDTH, 25), floating = Layout.floatAt("centerTop", 0, y + 50)},
     charLimit = NAME_LENGTH_LIMIT
   })
   self.uiRoot:addChild(self.nameField)
 
   self.nameLengthLabel = ui.Label({
-    x = self.nameField.width / 2 + 30,
-    y = y + 50 + 5.5,
-    vAlign = "top",
-    hAlign = "center",
+    layoutRules = {floating = Layout.floatAt("centerTop", NAME_FIELD_WIDTH / 2 + 30, y + 50 + 5.5)},
     translate = false,
     text = "(" .. self.nameField.value:len() .. "/" .. NAME_LENGTH_LIMIT .. ")"
   })
@@ -61,9 +53,7 @@ function SetNameMenu:load()
 
   self.confirmationButton = ui.TextButton({
     label = ui.Label({text = "mm_set_name"}),
-    y = y + 100,
-    vAlign = "top",
-    hAlign = "center",
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, y + 100)},
     onClick = function(selfElement, inputSource, holdTime)
       self:confirmName()
     end

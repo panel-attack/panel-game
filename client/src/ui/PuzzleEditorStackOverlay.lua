@@ -111,8 +111,12 @@ local function disablePreviewMode()
   end
 end
 
+-- Draws the garbage preview in the parent's space, which the stack's panel origin is measured in, rather than the overlay's own
 function PuzzleEditorStackOverlay:drawSelf()
+  love.graphics.push("transform")
+  love.graphics.translate(-self.layoutRect.x, -self.layoutRect.y)
   self:drawGarbagePreview()
+  love.graphics.pop()
 end
 
 function PuzzleEditorStackOverlay:drawGarbagePreview()

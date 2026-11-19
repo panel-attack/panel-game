@@ -65,14 +65,6 @@ local MultibarElement = class(
     self.multiBarFrameCount = self.stack.multiBarFrameCount
     self.multiBarMaxHeight = 589 * (self.stack.gfxScale / 3) * self.barScale
     self.leftoverTimeDecimals = self.overtimeDecimals
-    
-    -- Might need to autosize the width and height better later
-    if not options.width then
-      options.width = 100
-    end
-    if not options.height then
-      options.height = self.multiBarMaxHeight + 50
-    end
   end,
   UIElement
 )
@@ -95,10 +87,8 @@ function MultibarElement:drawBar(image, quad, relativeBarPos, height, yOffset, r
     quadY = imageHeight - height
   end
   
-  local elementX = self.x or 0
-  local elementY = self.y or 0
-  local x = elementX + relativeBarPos[1]
-  local y = elementY + relativeBarPos[2]
+  local x = relativeBarPos[1]
+  local y = relativeBarPos[2]
   
   quad:setViewport(0, quadY, imageWidth, imageHeight - quadY)
   
@@ -110,10 +100,8 @@ end
 ---@param relativePos {[1]: number, [2]: number} Position relative to the element
 ---@param scale number Scale factor
 function MultibarElement:drawLabel(drawable, relativePos, scale)
-  local elementX = self.x or 0
-  local elementY = self.y or 0
-  local x = elementX + relativePos[1]
-  local y = elementY + relativePos[2]
+  local x = relativePos[1]
+  local y = relativePos[2]
   GraphicsUtil.draw(drawable, x, y, 0, scale, scale)
 end
 
@@ -122,16 +110,16 @@ end
 ---@param relativePos {[1]: number, [2]: number} Position relative to the element
 ---@param fontSize number Font size
 function MultibarElement:drawString(text, relativePos, fontSize)
-  local elementX = self.x or 0
-  local elementY = self.y or 0
-  local x = elementX + relativePos[1]
-  local y = elementY + relativePos[2]
+  local x = relativePos[1]
+  local y = relativePos[2]
   
   if fontSize == nil then
     fontSize = GraphicsUtil.fontSize
   end
   local fontDelta = fontSize - GraphicsUtil.fontSize
-  local limit = consts.CANVAS_WIDTH - x
+  -- wraps at the canvas's right edge
+  local screenX = self:getScreenPos()
+  local limit = consts.CANVAS_WIDTH - (screenX + x)
   local alignment = "left"
   
   GraphicsUtil.printf(text, x, y, limit, alignment, nil, nil, fontDelta)

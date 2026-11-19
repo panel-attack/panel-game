@@ -1,5 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
@@ -16,40 +17,39 @@ function LanguageSelectSetup:load(sceneParams)
   -- Create a centered vertical stack panel for all content
   local contentStack = ui.StackPanel({
     alignment = "top",
-    width = consts.CANVAS_WIDTH,
-    hAlign = "center",
-    vAlign = "center"
+    layoutRules = {
+      sizing = {horizontal = Layout.fixed(consts.CANVAS_WIDTH)},
+      childAlignment = {x = "center"},
+      floating = Layout.floatAt("centerCenter")
+    }
   })
   self.uiRoot:addChild(contentStack)
 
   -- Title
   local titleLabel = ui.Label({
     text = "Select your language",
-    translate = false,
-    hAlign = "center",
-    vAlign = "center"
+    translate = false
   })
   contentStack:addElement(titleLabel)
 
   -- Spacer for gap between title and menu
   local spacer = ui.UiElement({
-    width = 1,
-    height = 30
+    layoutRules = {sizing = Layout.fixedSize(1, 30)}
   })
   contentStack:addElement(spacer)
 
   -- Language selection menu
   self.menu = self:createLanguageMenu()
+  -- the menu takes its place in the stack rather than centering itself on the screen
+  self.menu:setLayoutRule("floating", nil)
   contentStack:addElement(self.menu)
 
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 60
+    layoutRules = {sizing = Layout.fixedSize(1, 60)}
   }))
 
   self.disclaimerLabel = ui.Label({
-    text = "translation_disclaimer",
-    hAlign = "center"
+    text = "translation_disclaimer"
   })
 
   contentStack:addElement(self.disclaimerLabel)

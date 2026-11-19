@@ -1,5 +1,6 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -11,8 +12,8 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 -- selectedGridPos: the starting position for the cursor on the grid
 local GridCursor = class(function(self, options)
   self.target = options.grid
-  self.hAlign = "top"
-  self.vAlign = "left"
+  -- at the grid's top left, taking no room, drawing itself at the selected element's place in the grid
+  self:setLayoutRule("floating", Layout.OUT_OF_FLOW)
   self.translateSubGrids = options.translateSubGrids or false
 
   self.player = options.player
@@ -170,7 +171,7 @@ function GridCursor:drawSelf()
     end
     if drawThisFrame then
       GraphicsUtil.drawQuad(image, self.quads.left, x, y, 0, self.imageScale, self.imageScale)
-      GraphicsUtil.drawQuad(image, self.quads.right, x + element.width + self.target.unitMargin * 2 - self.imageWidth * self.imageScale / 2, y, 0, self.imageScale, self.imageScale)
+      GraphicsUtil.drawQuad(image, self.quads.right, x + element.layoutRect.width + self.target.unitMargin * 2 - self.imageWidth * self.imageScale / 2, y, 0, self.imageScale, self.imageScale)
     end
   end
 end

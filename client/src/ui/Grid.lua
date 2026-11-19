@@ -1,6 +1,7 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local GridElement = require(PATH .. ".GridElement")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local DebugSettings = require("client.src.debug.DebugSettings")
@@ -10,8 +11,7 @@ local Grid = class(function(self, options)
   self.unitMargin = options.unitMargin or 0
   self.gridHeight = options.gridHeight
   self.gridWidth = options.gridWidth
-  self.width = self.gridWidth * self.unitSize
-  self.height = self.gridHeight * self.unitSize
+  self:setLayoutRule("sizing", Layout.fixedSize(self.gridWidth * self.unitSize, self.gridHeight * self.unitSize))
   self.grid = {}
   self.cursors = {}
   for row = 1, options.gridHeight do
@@ -27,15 +27,7 @@ end, UiElement)
 -- id is a string identificator to indiate what kind of uiElement resides here
 -- uiElement is the actual element on display that will perform user interaction when selected
 function Grid:createElementAt(x, y, width, height, description, uiElement, noPadding, drawBorders)
-  local unitMargin = self.unitMargin
-  if noPadding then
-    unitMargin = 0
-  end
   local gridElement = GridElement({
-    x = (x - 1) * self.unitSize + unitMargin,
-    y = (y - 1) * self.unitSize + unitMargin,
-    width = width * self.unitSize - unitMargin * 2,
-    height = height * self.unitSize - unitMargin * 2,
     gridOriginX = x,
     gridOriginY = y,
     gridWidth = width,
@@ -44,6 +36,9 @@ function Grid:createElementAt(x, y, width, height, description, uiElement, noPad
     content = uiElement,
     drawBorders = drawBorders,
   })
+  local margin = noPadding and 0 or self.unitMargin
+  gridElement:setLayoutRule("sizing", Layout.fixedSize(width * self.unitSize - margin * 2, height * self.unitSize - margin * 2))
+  gridElement:setLayoutRule("floating", Layout.floatAt("leftTop", (x - 1) * self.unitSize + margin, (y - 1) * self.unitSize + margin))
   self:addChild(gridElement)
 
   for row = y, y + (height - 1) do
@@ -76,18 +71,18 @@ end
 function Grid:drawSelf()
   if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(1, 1, 1, 0.5)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    local right = self.layoutRect.width
+    local bottom = self.layoutRect.height
+    GraphicsUtil.drawRectangle("line", 0, 0, right, bottom)
     GraphicsUtil.setColor(1, 1, 1, 1)
     -- draw all units
-    local right = self.x + self.width
-    local bottom = self.y + self.height
     for i = 1, self.gridHeight - 1 do
-      local y = self.y + self.unitSize * i
-      GraphicsUtil.drawStraightLine(self.x, y, right, y, 1, 1, 1, 0.5)
+      local y = self.unitSize * i
+      GraphicsUtil.drawStraightLine(0, y, right, y, 1, 1, 1, 0.5)
     end
     for i = 1, self.gridWidth - 1 do
-      local x = self.x + self.unitSize * i
-      GraphicsUtil.drawStraightLine(x, self.y, x, bottom, 1, 1, 1, 0.5)
+      local x = self.unitSize * i
+      GraphicsUtil.drawStraightLine(x, 0, x, bottom, 1, 1, 1, 0.5)
     end
   end
 end
@@ -123,19 +118,21 @@ function Grid:getElementAt(row, column)
     -- return a placeholder element that represents where the element *would* be
     local placeholder =
     {
-      width = self.unitSize - self.unitMargin * 2,
-      height = self.unitSize - self.unitMargin * 2,
+      layoutRect = {
+        x = (column - 1) * self.unitSize + self.unitMargin,
+        y = (row - 1) * self.unitSize + self.unitMargin,
+        width = self.unitSize - self.unitMargin * 2,
+        height = self.unitSize - self.unitMargin * 2,
+      },
       gridOriginX = column,
       gridOriginY = row,
       gridWidth = 1,
       gridHeight = 1,
-      x = (column - 1) * self.unitSize + self.unitMargin,
-      y = (row - 1) * self.unitSize + self.unitMargin,
       content = { TYPE = "GridPlaceholder"}
     }
     placeholder.getScreenPos = function ()
       local cX, cY = self:getScreenPos()
-      return cX + placeholder.x, cY + placeholder.y
+      return cX + placeholder.layoutRect.x, cY + placeholder.layoutRect.y
     end
     return placeholder
   end

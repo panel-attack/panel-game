@@ -1,5 +1,6 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
+local Layout = require("client.src.ui.Layout")
 local consts = require("common.engine.consts")
 
 -- A transition, or more specifically a scene transition represents an object that handles going from one scene to the next
@@ -22,7 +23,7 @@ local Transition = class(function(transition, startTime, duration)
   -- these are set by the navigationStack
   transition.oldScene = nil
   transition.newScene = nil
-  transition.uiRoot = UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+  transition.uiRoot = UiElement({layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)}})
 
 end)
 
@@ -40,6 +41,17 @@ end
 
 function Transition:updateScenes(dt)
   -- error("A transition should probably implement an updateScenes function")
+end
+
+-- Lays out the transition's ui and both scenes', once a frame between the update and the draw, as it draws them all
+function Transition:layOut()
+  self.uiRoot:layOut()
+  if self.oldScene then
+    self.oldScene:layOut()
+  end
+  if self.newScene then
+    self.newScene:layOut()
+  end
 end
 
 function Transition:draw()

@@ -1,5 +1,6 @@
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
@@ -24,7 +25,7 @@ local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
     sceneParams = sceneParams or {}
-    self.uiRoot = ui.UiElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+    self.uiRoot = ui.UiElement({layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)}})
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main
@@ -80,7 +81,14 @@ function Scene:update(dt)
   self.uiRoot:update(dt)
 end
 
+-- Lays out the scene's ui, once a frame between the update and the draw while the scene is shown
+function Scene:layOut()
+  self.uiRoot:layOut()
+end
+
+-- Draws the scene, whose ui whatever shows the scene laid out first
 function Scene:draw()
+  assert(not self.uiRoot.layoutDirty, "a scene is drawn before its ui is laid out")
   self:drawSelf()
   self.uiRoot:draw()
 end

@@ -1,5 +1,6 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
@@ -7,6 +8,18 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 
 local function calculateFontSize(height)
   return math.floor(height / 2) + 1
+end
+
+-- Adds the passenger's element to the carousel, hidden, floating on it so the passengers overlap
+---@param carousel table the Carousel
+---@param uiElement UiElement
+local function board(carousel, uiElement)
+  -- passengers overlap at the carousel's top left unless they float somewhere else
+  if not uiElement.layoutRules.floating then
+    uiElement:setLayoutRule("floating", Layout.floatAt("leftTop"))
+  end
+  carousel:addChild(uiElement)
+  uiElement:setVisibility(false)
 end
 
 -- A carousel with arrow touch buttons that allows to spin a selection of elements around in both directions
@@ -19,8 +32,7 @@ local Carousel = class(function(carousel, options)
   else
     carousel.passengers = options.passengers
     for i, passenger in ipairs(carousel.passengers) do
-      carousel:addChild(passenger.uiElement)
-      passenger.uiElement:setVisibility(false)
+      board(carousel, passenger.uiElement)
     end
   end
   carousel.selectedId = nil
@@ -49,8 +61,7 @@ end
 
 function Carousel.addPassenger(self, passenger)
   self.passengers[#self.passengers + 1] = passenger
-  self:addChild(passenger.uiElement)
-  passenger.uiElement:setVisibility(false)
+  board(self, passenger.uiElement)
 end
 
 function Carousel.removeSelectedPassenger(self)
@@ -95,7 +106,7 @@ end
 
 function Carousel:drawSelf()
   if DebugSettings.showUIElementBorders() then
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
   end
 end
 

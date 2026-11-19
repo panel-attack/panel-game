@@ -2,9 +2,13 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local DiscreteImageSlider = require(PATH .. ".DiscreteImageSlider")
 local Label = require(PATH .. ".Label")
 local ImageContainer = require(PATH .. ".ImageContainer")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local input = require("client.src.inputManager")
+
+-- the gap between the top of the device icons and the device label's top is the icon size and this
+local LABEL_GAP = 6
 
 ---@class InputConfigSliderOptions : DiscreteImageSliderOptions
 ---@field onValueChange fun(slider:InputConfigSlider)? callback for whenever the value is changed
@@ -35,8 +39,9 @@ local InputConfigSlider = class(
     self.deviceLabel = Label({
       text = labelText,
       translate = false,
-      hAlign = "center",
-      y = iconSize + 6
+      layoutRules = {
+        floating = Layout.floatAt("centerTop", 0, iconSize + LABEL_GAP)
+      }
     })
 
     -- Add label as child
@@ -147,18 +152,32 @@ function InputConfigSlider:rebuildLayout()
         -- Create error indicator as child with red tint
         local errorIndicator = ImageContainer({
           image = errorIcon,
-          scale = 0.18
+          scale = 0.18,
+          -- centered at the bottom of its device icon, 2 up
+          layoutRules = {floating = Layout.floatAt("centerBottom", 0, -2)}
         })
-
-        -- Position in bottom-right corner of the device icon
-        errorIndicator.x = imageContainer.width / 2 - (errorIndicator.width / 2)
-        errorIndicator.y = imageContainer.height - (errorIndicator.height) - 2
 
         -- Add as child of the image container
         imageContainer:addChild(errorIndicator)
       end
     end
   end
+
+  self:reserveRoomForDeviceLabel()
+end
+
+-- Pads the slider's bottom so it reaches down to the device label's bottom, which floats below the device icons
+function InputConfigSlider:reserveRoomForDeviceLabel()
+  if not self.deviceLabel then
+    -- the slider's own constructor lays it out before the label exists
+    return
+  end
+  local iconsHeight = 0
+  for _, imageContainer in ipairs(self.imageContainers) do
+    iconsHeight = math.max(iconsHeight, Layout.fixedLength(imageContainer.layoutRules, "vertical") or 0)
+  end
+  local labelBottom = self.iconSize + LABEL_GAP + self.deviceLabel.contentHeight
+  self:setLayoutRule("padding", {bottom = math.max(0, labelBottom - iconsHeight)})
 end
 
 return InputConfigSlider

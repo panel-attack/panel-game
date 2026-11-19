@@ -41,6 +41,7 @@ local OverlayContainer = require("client.src.ui.OverlayContainer")
 local DebugMenu = require("client.src.debug.DebugMenu")
 local Label = require("client.src.ui.Label")
 local UIElement = require("client.src.ui.UIElement")
+local Layout = require("client.src.ui.Layout")
 local NavigationStack = require("client.src.NavigationStack")
 local ReplayBrowser = require("client.src.scenes.ReplayBrowser")
 local NotificationCenter = require("client.src.ui.NotificationCenter")
@@ -123,7 +124,7 @@ local Game = class(
     self.debugButton = nil
 
     -- Root UI element that contains all UI (scenes + overlays + debug)
-    self.uiRoot = UIElement({x = 0, y = 0, width = consts.CANVAS_WIDTH, height = consts.CANVAS_HEIGHT})
+    self.uiRoot = UIElement({layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)}})
     self.notificationCenter = NotificationCenter({})
   end
 )
@@ -443,6 +444,12 @@ function Game:update(dt)
   self:updateMouseVisibility(dt)
   SoundController:update()
   self.rich_presence:runCallbacks()
+
+  -- the ui is laid out once before it is drawn, the scenes' trees as well as the tree the navigation stack is in
+  prof.push("layout")
+  self.uiRoot:layOut()
+  self.navigationStack:layOutScenes()
+  prof.pop("layout")
 end
 
 function Game:draw()
@@ -735,16 +742,14 @@ function Game:initializeDebugOverlay()
   end
 
   self.debugButton = TextButton({
-    x = consts.CANVAS_WIDTH - 50,
-    y = consts.CANVAS_HEIGHT - 50,
     label = Label({
       text = "Debug",
       translate = false,
-      hAlign = "center",
-      vAlign = "center"
     }),
-    width = 40,
-    height = 40,
+    layoutRules = {
+      sizing = Layout.fixedSize(40, 40),
+      floating = Layout.floatAt("rightBottom", -10, -10),
+    },
     onClick = function()
       if self.debugOverlay then
         if not self.debugOverlay:isActive() then
@@ -754,9 +759,10 @@ function Game:initializeDebugOverlay()
     end
   })
 
-  local debugMenu = DebugMenu.makeDebugMenu({height = consts.CANVAS_HEIGHT - 40})
+  local debugMenu = DebugMenu.makeDebugMenu({layoutRules = {sizing = {vertical = Layout.fixed(consts.CANVAS_HEIGHT - 40)}}})
   self.debugOverlay = OverlayContainer({
-    content = debugMenu
+    content = debugMenu,
+    layoutRules = {floating = Layout.floatAt("leftTop")},
   })
 
   -- Add debug UI to root

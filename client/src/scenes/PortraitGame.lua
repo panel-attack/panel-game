@@ -6,6 +6,7 @@ local ui = require("client.src.ui")
 local input = require("client.src.inputManager")
 local system = require("client.src.system")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local Layout = require("client.src.ui.Layout")
 
 local PortraitGame = class(function(self, sceneParams)
 end,
@@ -32,16 +33,13 @@ local function getTimer(match)
 end
 
 function PortraitGame:customLoad()
-  self.uiRoot.width = consts.CANVAS_HEIGHT
-  self.uiRoot.height = consts.CANVAS_WIDTH
+  self.uiRoot:setFixedSize(consts.CANVAS_HEIGHT, consts.CANVAS_WIDTH)
 
   local communityMessage = ui.Label({
     text = "join_community",
     replacements = {"\ndiscord." .. consts.SERVER_LOCATION},
     translate = true,
-    hAlign = "center",
-    vAlign = "top",
-    y = 10,
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, 10)},
   })
   self.uiRoot.communityMessage = communityMessage
   self.uiRoot:addChild(self.uiRoot.communityMessage)
@@ -50,8 +48,7 @@ function PortraitGame:customLoad()
   self.uiRoot.timer = ui.PixelFontLabel({
     text = getTimer(self.match),
     fontMap = themes[config.theme].fontMaps.time,
-    hAlign = "center",
-    y = 60,
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, 60)},
     xScale = timerScale,
     yScale = timerScale,
   })
@@ -208,7 +205,13 @@ function PortraitGame:flipToPortrait()
       stack:moveToPosition(frameX, frameY)
 
       -- create a raise button that interacts with the touch controller
-      local raiseButton = ui.TextButton({label = ui.Label({text = "raise", fontSize = 20}), hAlign = "right", vAlign = "bottom", height = player.stack:canvasHeight() / 2})
+      local raiseButton = ui.TextButton({
+        label = ui.Label({text = "raise", fontSize = 20}),
+        layoutRules = {
+          sizing = Layout.fixedSize(70, player.stack:canvasHeight() / 2),
+          floating = Layout.floatAt("rightBottom")
+        }
+      })
       ---@diagnostic disable-next-line: duplicate-set-field
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
@@ -222,7 +225,6 @@ function PortraitGame:flipToPortrait()
         button.backgroundColor[4] = 0.7
         stack.touchInputDetector.touchingRaise = false
       end
-      raiseButton.width = 70
       self.uiRoot.raiseButton = raiseButton
       self.uiRoot:addChild(raiseButton)
     else

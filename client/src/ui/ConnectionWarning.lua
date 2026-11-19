@@ -5,6 +5,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 local utf8 = require("common.lib.utf8Additions")
 local ImageContainer = import("./ImageContainer")
+local Layout = require("client.src.ui.Layout")
 
 -- a 2x1 element of the character select grid: two 100 units wide and one tall, less its 8 margins
 local WIDTH = 184
@@ -59,6 +60,7 @@ local WARNING_COLOR = {1, .85, .3, 1}
 ---@field pingColumnWidth number the widest ping
 ---@field layoutInfo ConnectionWarningLayout reused on every layout
 ---@field shownPings (PingSummary|false)[] each player's ping the rows were last built from, false for an unmeasured one
+---@field iconOffsetY number? how far above the card's bottom the icon was last pinned, nil before it is
 local ConnectionWarning = class(
 function(self, options)
   self.players = options.players
@@ -66,8 +68,12 @@ function(self, options)
     return GAME.netClient:pingOf(publicId)
   end
   self.alwaysShown = options.alwaysShown == true
-  self.width = options.hFill and self.width or WIDTH
-  self.height = options.vFill and self.height or HEIGHT
+  -- a 2x1 grid element in size unless it is told to grow to fill what it is in
+  local sizing = (options.layoutRules or {}).sizing or {}
+  self:setLayoutRule("sizing", {
+    horizontal = sizing.horizontal and sizing.horizontal.type == "grow" and sizing.horizontal or Layout.fixed(WIDTH),
+    vertical = sizing.vertical and sizing.vertical.type == "grow" and sizing.vertical or Layout.fixed(HEIGHT),
+  })
   self.rows = {}
   self.pingColumnWidth = 0
   self.layoutInfo = {rowTops = {}}
@@ -75,11 +81,10 @@ function(self, options)
 
   self.icon = ImageContainer({
     image = GAME.theme.images.IMG_connectionWarning,
-    width = ICON_SIZE,
-    height = ICON_SIZE,
-    x = PADDING,
+    layoutRules = {sizing = Layout.fixedSize(ICON_SIZE, ICON_SIZE)},
   })
   self:addChild(self.icon)
+  self:placeIcon()
   self:refresh()
 end,
 UiElement)
@@ -153,9 +158,9 @@ local function shortened(font, text, room)
   return ELLIPSIS
 end
 
----@return number # how wide a name can be beside the ping column
+---@return number # how wide a name can be beside the ping column in the card's width from the last layout
 function ConnectionWarning:nameRoom()
-  return self.width - PADDING * 2 - self.pingColumnWidth - PING_GAP
+  return self.layoutRect.width - PADDING * 2 - self.pingColumnWidth - PING_GAP
 end
 
 ---@param row ConnectionWarningRow
@@ -164,7 +169,8 @@ function ConnectionWarning.pingColor(row)
   return row.slow and WARNING_COLOR or NAME_COLOR
 end
 
--- Fills a row per player with their average ping, sizes the ping column to them, then fits the names beside it
+-- Fills a row per player with their average ping, sizes the ping column to them, then fits the names beside it in the
+-- card's width from the last layout
 ---@return ConnectionWarningRow[] # the same table on every call
 function ConnectionWarning:buildRows()
   local rows = self.rows
@@ -187,17 +193,33 @@ function ConnectionWarning:buildRows()
   return rows
 end
 
--- Spreads the title, the players' rows and the warning evenly down the card, the warning ending a padding above the
--- card's bottom
+---@return number # the height of the warning row: the taller of its icon and its text
+local function warningHeight()
+  return math.max(ICON_SIZE, fontOfDelta(SMALL_FONT_DELTA):getHeight())
+end
+
+-- Pins the icon at the left of the warning row, which ends a padding above the card's bottom, changing its rule only when
+-- the font's height moved it
+function ConnectionWarning:placeIcon()
+  local offsetY = -(PADDING / 2 + (warningHeight() - ICON_SIZE) / 2)
+  if offsetY ~= self.iconOffsetY then
+    self.iconOffsetY = offsetY
+    self.icon:setLayoutRule("floating", Layout.floatAt("leftBottom", PADDING, offsetY))
+  end
+end
+
+-- Spreads the title, the players' rows and the warning evenly down the card's height from the last layout, the warning
+-- ending a padding above the card's bottom
 ---@return ConnectionWarningLayout # the same table on every call
 function ConnectionWarning:layout()
   local layout = self.layoutInfo
+  local height = self.layoutRect.height
   local titleHeight = fontOfDelta(SMALL_FONT_DELTA):getHeight()
   layout.rowHeight = fontOfDelta(ROW_FONT_DELTA):getHeight()
-  layout.warningHeight = math.max(ICON_SIZE, fontOfDelta(SMALL_FONT_DELTA):getHeight())
+  layout.warningHeight = warningHeight()
   local playerCount = #self.players
   local contentHeight = titleHeight + playerCount * layout.rowHeight + layout.warningHeight
-  local gap = math.max(0, (self.height - PADDING - contentHeight - PADDING / 2) / (playerCount + 1))
+  local gap = math.max(0, (height - PADDING - contentHeight - PADDING / 2) / (playerCount + 1))
   layout.titleTop = PADDING / 2
   for i = #layout.rowTops, playerCount + 1, -1 do
     layout.rowTops[i] = nil
@@ -205,8 +227,7 @@ function ConnectionWarning:layout()
   for i = 1, playerCount do
     layout.rowTops[i] = layout.titleTop + titleHeight + gap + (i - 1) * (layout.rowHeight + gap)
   end
-  layout.warningTop = self.height - PADDING / 2 - layout.warningHeight
-  self.icon.y = layout.warningTop + (layout.warningHeight - ICON_SIZE) / 2
+  layout.warningTop = height - PADDING / 2 - layout.warningHeight
   return layout
 end
 
@@ -243,9 +264,10 @@ function ConnectionWarning:isShown()
   return self.alwaysShown or self.icon.isVisible
 end
 
--- Shows the icon while warning and rebuilds the rows when a ping changed
+-- Shows the icon while warning, keeps it in the warning row and rebuilds the rows when a ping changed
 function ConnectionWarning:refresh()
   self.icon:setVisibility(self:isWarning())
+  self:placeIcon()
   if self:isShown() and self:pingsChanged() then
     self:measure()
   end
@@ -268,8 +290,8 @@ end
 ---@param rowHeight number
 function ConnectionWarning:drawRow(row, top, rowHeight)
   local font = fontOfDelta(ROW_FONT_DELTA)
-  printInRow(row.name, font, self.x + PADDING, top, rowHeight, NAME_COLOR)
-  printInRow(row.ping, font, self.x + self.width - PADDING - font:getWidth(row.ping), top, rowHeight, ConnectionWarning.pingColor(row))
+  printInRow(row.name, font, PADDING, top, rowHeight, NAME_COLOR)
+  printInRow(row.ping, font, self.layoutRect.width - PADDING - font:getWidth(row.ping), top, rowHeight, ConnectionWarning.pingColor(row))
 end
 
 -- Refreshes from the latest pings, then draws the card, its title, its rows and, while warning, the warning
@@ -279,17 +301,18 @@ function ConnectionWarning:drawSelf()
     return
   end
   local layout = self.layoutInfo
-  GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, unpack(BACKGROUND_COLOR))
-  GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, unpack(OUTLINE_COLOR))
+  local width, height = self.layoutRect.width, self.layoutRect.height
+  GraphicsUtil.drawRectangle("fill", 0, 0, width, height, unpack(BACKGROUND_COLOR))
+  GraphicsUtil.drawRectangle("line", 0, 0, width, height, unpack(OUTLINE_COLOR))
   local smallFont = fontOfDelta(SMALL_FONT_DELTA)
   GraphicsUtil.setFont(smallFont)
-  GraphicsUtil.print(ConnectionWarning.title(), self.x + PADDING, self.y + layout.titleTop, TITLE_COLOR)
+  GraphicsUtil.print(ConnectionWarning.title(), PADDING, layout.titleTop, TITLE_COLOR)
   for i, row in ipairs(self.rows) do
-    self:drawRow(row, self.y + layout.rowTops[i], layout.rowHeight)
+    self:drawRow(row, layout.rowTops[i], layout.rowHeight)
   end
   if self.icon.isVisible then
-    printInRow(ConnectionWarning.warningText(), smallFont, self.x + PADDING + ICON_SIZE + ICON_GAP,
-      self.y + layout.warningTop, layout.warningHeight - (layout.warningHeight - smallFont:getHeight()) / 2, WARNING_COLOR)
+    printInRow(ConnectionWarning.warningText(), smallFont, PADDING + ICON_SIZE + ICON_GAP,
+      layout.warningTop, layout.warningHeight - (layout.warningHeight - smallFont:getHeight()) / 2, WARNING_COLOR)
   end
   GraphicsUtil.setFont(GraphicsUtil.getGlobalFont())
 end

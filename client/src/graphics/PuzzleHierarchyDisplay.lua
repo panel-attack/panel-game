@@ -123,13 +123,13 @@ function PuzzleHierarchyDisplay:calculateContentWidth()
   return totalWidth
 end
 
+-- Sizes the box to fit the hierarchy's text and separators
 function PuzzleHierarchyDisplay:updateDimensions()
   local contentWidth = self:calculateContentWidth()
   ---@type love.Font
   local font = love.graphics.getFont() ---@diagnostic disable-line: assign-type-mismatch
 
-  self.width = contentWidth + (BACKGROUND_PADDING * 2)
-  self.height = font:getHeight() + (BACKGROUND_PADDING * 2)
+  self:setFixedSize(contentWidth + (BACKGROUND_PADDING * 2), font:getHeight() + (BACKGROUND_PADDING * 2))
 end
 
 function PuzzleHierarchyDisplay:drawSteampunkSeparator(x, y)
@@ -162,15 +162,16 @@ function PuzzleHierarchyDisplay:drawHierarchyWithStyling()
 
   -- Draw background with auto-sized dimensions
   GraphicsUtil.setColor(COLORS.background)
-  love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+  local width, height = self.layoutRect.width, self.layoutRect.height
+  love.graphics.rectangle("fill", 0, 0, width, height)
 
   GraphicsUtil.setColor(COLORS.border)
-  love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
+  love.graphics.rectangle("line", 0, 0, width, height)
 
   -- Center content within the component
   local contentWidth = self:calculateContentWidth()
-  local startX = self.x + (self.width - contentWidth) / 2
-  local drawY = self.y + BACKGROUND_PADDING
+  local startX = (width - contentWidth) / 2
+  local drawY = BACKGROUND_PADDING
   local xOffset = 0
 
   -- Draw each part with progressive gold colors

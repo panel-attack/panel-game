@@ -14,6 +14,7 @@ local SceneAnimation = require("client.src.graphics.SceneAnimation")
 local UpdatingImage = require("client.src.graphics.UpdatingImage")
 local prof = require("common.lib.zoneProfiler")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local FileUtils = require("client.src.FileUtils")
 local ClientStack = require("client.src.ClientStack")
 local MatchRules = require("common.data.MatchRules")
@@ -238,12 +239,11 @@ function GameBase:createPauseMenu()
   end
 
   self.pauseMenu = ui.Menu({
-    x = 0,
-    y = 0,
-    hAlign = "center",
-    vAlign = "center",
     menuItems = self.pauseMenuItems,
-    height = 200
+    layoutRules = {
+      sizing = {vertical = Layout.fixed(200)},
+      floating = Layout.floatAt("centerCenter")
+    }
   })
   self.pauseMenu:setVisibility(false)
   self.uiRoot:addChild(self.pauseMenu)

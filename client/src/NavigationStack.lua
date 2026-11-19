@@ -1,6 +1,7 @@
 local DirectTransition = require("client.src.scenes.Transitions.DirectTransition")
 local logger = require("common.lib.logger")
 local UIElement = require("client.src.ui.UIElement")
+local Layout = require("client.src.ui.Layout")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 
@@ -13,8 +14,7 @@ local NavigationStack = class(
     self.scenes = {}
     self.transition = nil
     self.callback = nil
-    self.width = consts.CANVAS_WIDTH
-    self.height = consts.CANVAS_HEIGHT
+    self:setLayoutRule("sizing", Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT))
   end,
   UIElement
 )
@@ -173,6 +173,16 @@ function NavigationStack:updateSelf(dt)
     end
     self.scenes[#self.scenes]:updateAnimations(dt)
     self.scenes[#self.scenes]:update(dt)
+  end
+end
+
+-- Lays out what the next draw shows: the transition while one runs, the scene on top otherwise. Each scene's ui is a
+-- tree of its own, not a child of the navigation stack.
+function NavigationStack:layOutScenes()
+  if self.transition then
+    self.transition:layOut()
+  elseif #self.scenes > 0 then
+    self.scenes[#self.scenes]:layOut()
   end
 end
 

@@ -13,9 +13,14 @@ local PuzzleSet = require("client.src.PuzzleSet")
 local Puzzle = require("common.engine.Puzzle")
 local MultibarElement = require("client.src.ui.MultibarElement")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 
 -- below the goal and help displays, which grow downwards from 358 and 490
 local HINT_BUTTON_Y = 640
+local GOAL_DISPLAY_Y = 358
+-- the help display sits here, or this far under a goal display reaching past it
+local HELP_DISPLAY_Y = 490
+local GOAL_HELP_GAP = 8
 local HINT_BUTTON_WIDTH = 120
 local HINT_BUTTON_HEIGHT = 48
 
@@ -66,12 +71,7 @@ local PuzzleGame = class(
       puzzleSet = self.puzzleSet,
       puzzleSetIndices = indices,
       puzzleIndex = index,
-      width = 0,
-      height = 0,
-      x = 0,
-      y = 18,
-      hAlign = "center",
-      vAlign = "top"
+      layoutRules = {floating = Layout.floatAt("centerTop", 0, 18)}
     })
     self.uiRoot:addChild(self.puzzleHierarchyDisplay)
   end,
@@ -163,14 +163,17 @@ function PuzzleGame:customLoad()
   local overtimeAbsoluteX = stack:elementOriginXWithOffset(overtimePos, false)
   local overtimeAbsoluteY = stack:elementOriginYWithOffset(overtimePos, false)
   
-  local relativeBarPos = {barAbsoluteX - baseX, barAbsoluteY - baseY}
-  local relativeOvertimePos = {overtimeAbsoluteX - baseX, overtimeAbsoluteY - baseY}
+  -- layout places elements on even points, so the element sits on the even point at or before the frame and the
+  -- frame is drawn the remainder in, keeping it on the stack's own pixels
+  local elementX = 2 * math.floor(baseX / 2)
+  local elementY = 2 * math.floor(baseY / 2)
+  local relativeBarPos = {barAbsoluteX - elementX, barAbsoluteY - elementY}
+  local relativeOvertimePos = {overtimeAbsoluteX - elementX, overtimeAbsoluteY - elementY}
   
   self.multibarElement = MultibarElement({
-    x = baseX,
-    y = baseY,
+    layoutRules = {floating = Layout.floatAt("leftTop", elementX, elementY)},
     stack = stack,
-    framePos = {0, 0}, -- Frame is at element origin
+    framePos = {baseX - elementX, baseY - elementY},
     barPos = relativeBarPos,
     overtimePos = relativeOvertimePos,
     frameScale = themes[config.theme].healthbar_frame_Scale,
@@ -195,28 +198,33 @@ function PuzzleGame:customLoad()
     local stackWidth = stack.baseWidth + stack.panelOriginXOffset
     local stackRightEdge = stack.frameOriginX * stack.gfxScale + (stackWidth * stack.gfxScale)
     
+    -- the goal display over the help display, right of the stack
+    local displays = ui.UiElement({
+      layoutRules = {
+        layoutDirection = "topToBottom",
+        childGap = GOAL_HELP_GAP,
+        floating = Layout.floatAt("leftTop", stackRightEdge + 2, GOAL_DISPLAY_Y)
+      }
+    })
+    self.uiRoot:addChild(displays)
+
     self.puzzleGoalDisplay = PuzzleGoalDisplay({
-      x = stackRightEdge + 2,
-      y = 358,
-      width = 0,
-      height = 0,
       puzzle = currentPuzzle,
       stack = stack.engine
     })
-    self.uiRoot:addChild(self.puzzleGoalDisplay)
-    
-    -- a goal box with cards and several rows reaches past where the help box normally sits
-    local goalDisplayBottom = self.puzzleGoalDisplay.y + self.puzzleGoalDisplay.height
+    -- a goal box with cards and several rows reaches past where the help box normally sits, pushing it down
+    local goalSpace = ui.UiElement({
+      layoutRules = {sizing = {vertical = Layout.fit(HELP_DISPLAY_Y - GOAL_DISPLAY_Y - GOAL_HELP_GAP)}}
+    })
+    goalSpace:addChild(self.puzzleGoalDisplay)
+    displays:addChild(goalSpace)
+
     self.puzzleHelpDisplay = PuzzleHelpDisplay({
-      x = stackRightEdge + 2,
-      y = math.max(490, goalDisplayBottom + 8),
-      width = 0,
-      height = 0,
       puzzle = currentPuzzle,
       puzzleGame = self,
       stack = stack.engine
     })
-    self.uiRoot:addChild(self.puzzleHelpDisplay)
+    displays:addChild(self.puzzleHelpDisplay)
 
     -- a touch player has no hint key; a solution's playback match is a controller stack and gets no button
     if stack.engine.inputMethod == "touch" and currentPuzzle.solution then
@@ -237,10 +245,10 @@ end
 ---@param labelKey string localization key of the button's text
 function PuzzleGame:createHintButton(x, y, labelKey)
   self.hintButton = ui.TextButton({
-    x = x,
-    y = y,
-    width = HINT_BUTTON_WIDTH,
-    height = HINT_BUTTON_HEIGHT,
+    layoutRules = {
+      sizing = Layout.fixedSize(HINT_BUTTON_WIDTH, HINT_BUTTON_HEIGHT),
+      floating = Layout.floatAt("leftTop", x, y)
+    },
     label = ui.Label({text = labelKey, fontSize = 20}),
     onClick = function()
       if self.puzzleHelpDisplay and not self.match.ended and not self.match.isPaused then

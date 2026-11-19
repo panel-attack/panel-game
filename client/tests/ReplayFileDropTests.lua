@@ -102,6 +102,7 @@ end
 
 local function finishTransition()
   GAME.navigationStack:updateSelf(1 / 60)
+  GAME.navigationStack:layOutScenes()
   return GAME.navigationStack:getActiveScene()
 end
 
@@ -127,6 +128,7 @@ local function testDropShowsDetailsBeforePlaying()
   local browser = finishTransition()
   assert(browser.name == "ReplayBrowser", "A drop should show details, not immediately play")
   assert(#GAME.navigationStack.scenes == 2 and GAME.navigationStack.scenes[1] == menu)
+  browser:layOut()
   browser:draw()
   assertDisplayed(loc("rp_browser_info_header"))
   assertDisplayed("test-replay.json")
@@ -158,12 +160,14 @@ local function testDropReplacesTheReplayShownInTheBrowser()
   local malformed = makeReplayData()
   malformed.panelSource = nil
   assert(not handleReplayFileDrop(droppedFile(json.encode(malformed), "invalid.json")))
+  browser:layOut()
   browser:draw()
   assertDisplayed("test-replay.json")
 
   assert(handleReplayFileDrop(droppedFile(json.encode(makeReplayData()), "replacement.JSON")))
   assert(GAME.navigationStack:getActiveScene() == browser and #GAME.navigationStack.scenes == 2)
   displayed = {}
+  browser:layOut()
   browser:draw()
   assertDisplayed("replacement.JSON")
   confirmReplay(browser)
@@ -182,6 +186,7 @@ local function testDropIntoBrowserAndBackNavigation()
   input.isDown.MenuBack = 1
   browser:update()
   input.isDown.MenuBack = nil
+  browser:layOut()
   browser:draw()
   assertDisplayed(loc("rp_browser_header"))
   input.isDown.MenuEsc = 1
@@ -305,6 +310,7 @@ local function testValidControllerAndTouchInputStreams()
     replay.stacks[1].inputs = InputCompression.compressInputTable(example.inputs)
     assert(handleReplayFileDrop(droppedFile(json.encode(replay))))
     local browser = finishTransition()
+    browser:layOut()
     browser:draw()
     local scene = confirmReplay(browser)
     for _ = 1, #example.inputs do
@@ -353,6 +359,7 @@ local function testIncompatibleVersionUsesExistingWarning()
   data.engineVersion = "999"
   assert(handleReplayFileDrop(droppedFile(json.encode(data))))
   local browser = finishTransition()
+  browser:layOut()
   browser:draw()
   assertDisplayed(loc("rp_browser_wrong_version"))
   assert(not browser:playReplay())
@@ -394,6 +401,7 @@ local function testBrowserUsesSharedLoading()
     input.isDown.MenuSelect = 1
     browser:update()
     input.isDown.MenuSelect = nil
+    browser:layOut()
     browser:draw()
     return browser
   end

@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local MenuItem = require(PATH .. ".MenuItem")
 local Label = require(PATH .. ".Label")
 local TextButton = require(PATH .. ".TextButton")
+local Layout = require(PATH .. ".Layout")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
@@ -13,8 +14,6 @@ local KeyBindingMenuItem = class(function(self, options)
   self.TYPE = "KeyBindingMenuItem"
   self.keyName = options and options.keyName or nil
   self.onActivate = options and options.onActivate or nil
-  self.x = 0
-  self.y = 0
 end, MenuItem)
 
 --- Creates a KeyBindingMenuItem with key name label and binding button
@@ -32,9 +31,8 @@ function KeyBindingMenuItem.create(options)
   -- Create key name label (left side)
   local keyLabel = Label({
     text = string.lower(options.keyName),
-    vAlign = "center",
     fontSize = 12,
-    width = 224
+    layoutRules = {sizing = {horizontal = Layout.fixed(224)}}
   })
 
   -- Create binding button (right side)
@@ -42,23 +40,19 @@ function KeyBindingMenuItem.create(options)
     label = Label({
       text = options.bindingText,
       translate = false,
-      hAlign = "center",
-      vAlign = "center",
       fontSize = 12
     }),
     onClick = options.onActivate,
-    width = BUTTON_WIDTH
+    layoutRules = {sizing = {horizontal = Layout.fixed(BUTTON_WIDTH)}}
   })
-  bindingButton.x = keyLabel.width + SPACE_BETWEEN
-  bindingButton.vAlign = "center"
 
   -- Store references
   menuItem.keyLabel = keyLabel
   menuItem.bindingButton = bindingButton
 
-  -- Calculate dimensions
-  menuItem.width = keyLabel.width + MenuItem.PADDING + bindingButton.width
-  menuItem.height = math.max(keyLabel.height, bindingButton.height)
+  -- the label and the button in a row, centered on each other
+  menuItem:setLayoutRule("childGap", SPACE_BETWEEN)
+  menuItem:setLayoutRule("childAlignment", {y = "center"})
 
   -- Add children
   menuItem:addChild(keyLabel)
@@ -85,8 +79,9 @@ function KeyBindingMenuItem:drawSelf()
   local baseOpacity = 0.15
 
   -- Draw subtle glow on button area
-  local buttonX = self.x + self.bindingButton.x
-  local buttonY = self.y + self.bindingButton.y
+  local buttonRect = self.bindingButton.layoutRect
+  local buttonX = buttonRect.x
+  local buttonY = buttonRect.y
   if self.settingKey then
     -- Active key setting: strong glow on button area with pulse (regardless of selection state)
     local selectedAdditionalOpacity = 0.5
@@ -95,9 +90,9 @@ function KeyBindingMenuItem:drawSelf()
 
     local bgColor = GAME.theme.colors.menuSelectedBackgroundColor
     local borderColor = GAME.theme.colors.menuSelectedBorderColor
-    GraphicsUtil.drawRectangle("fill", buttonX, buttonY, self.bindingButton.width, self.bindingButton.height,
+    GraphicsUtil.drawRectangle("fill", buttonX, buttonY, buttonRect.width, buttonRect.height,
       bgColor[1], bgColor[2], bgColor[3], fillOpacity)
-    GraphicsUtil.drawRectangle("line", buttonX, buttonY, self.bindingButton.width, self.bindingButton.height,
+    GraphicsUtil.drawRectangle("line", buttonX, buttonY, buttonRect.width, buttonRect.height,
       borderColor[1], borderColor[2], borderColor[3], borderOpacity)
   elseif self.selected then
     -- Normal selection: subtle pulse on button area
@@ -107,9 +102,9 @@ function KeyBindingMenuItem:drawSelf()
 
     local bgColor = GAME.theme.colors.menuSelectedBackgroundColor
     local borderColor = GAME.theme.colors.menuSelectedBorderColor
-    GraphicsUtil.drawRectangle("fill", buttonX, buttonY, self.bindingButton.width, self.bindingButton.height,
+    GraphicsUtil.drawRectangle("fill", buttonX, buttonY, buttonRect.width, buttonRect.height,
       bgColor[1], bgColor[2], bgColor[3], fillOpacity)
-    GraphicsUtil.drawRectangle("line", buttonX, buttonY, self.bindingButton.width, self.bindingButton.height,
+    GraphicsUtil.drawRectangle("line", buttonX, buttonY, buttonRect.width, buttonRect.height,
       borderColor[1], borderColor[2], borderColor[3], borderOpacity)
   else
     -- no special drawing for base case for now, just the elements

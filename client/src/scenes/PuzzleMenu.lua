@@ -15,6 +15,18 @@ local tableUtils = require("common.lib.tableUtils")
 local LevelPresets      = require("common.data.LevelPresets")
 local Stack = require("common.engine.Stack")
 local InputSource = require("client.src.input.InputSource")
+local Layout = require("client.src.ui.Layout")
+
+-- a menu button's label sits 8 from the button's left
+local LEFT_LABEL_PADDING = {left = 8, right = ui.Button.WIDTH_PADDING, top = ui.Button.HEIGHT_PADDING, bottom = ui.Button.HEIGHT_PADDING}
+local LEFT_LABEL_ALIGNMENT = {x = "left", y = "center"}
+
+-- Puts a menu button's label 8 from the button's left instead of centering it
+---@param textButton TextButton
+local function alignLabelLeft(textButton)
+  textButton:setLayoutRule("padding", LEFT_LABEL_PADDING)
+  textButton:setLayoutRule("childAlignment", LEFT_LABEL_ALIGNMENT)
+end
 
 -- Scene for the puzzle selection menu
 ---@class PuzzleMenu : Scene
@@ -29,6 +41,7 @@ local InputSource = require("client.src.input.InputSource")
 ---@field puzzlePreviewStack StackElement
 ---@field puzzleDescriptionLabel Label
 ---@field inputDeviceOverlay InputDeviceOverlay
+---@field menuButtonWidth number the least width of the menu's buttons, the level slider item's
 local PuzzleMenu = class(
   function (self, sceneParams)
     self.music = "select_screen"
@@ -145,8 +158,8 @@ function PuzzleMenu:load(sceneParams)
   self.randomColorsButtons = ui.ButtonGroup(
     {
       buttons = {
-        ui.TextButton({label = ui.Label({text = "op_off"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
-        ui.TextButton({label = ui.Label({text = "op_on"}), width = BUTTON_WIDTH, height = BUTTON_HEIGHT}),
+        ui.TextButton({label = ui.Label({text = "op_off"}), layoutRules = {sizing = Layout.fixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)}}),
+        ui.TextButton({label = ui.Label({text = "op_on"}), layoutRules = {sizing = Layout.fixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)}}),
       },
       values = {false, true},
       selectedIndex = config.puzzle_randomColors and 2 or 1,
@@ -157,10 +170,10 @@ function PuzzleMenu:load(sceneParams)
     }
   )
 
-  self.puzzlePreviewStack = ui.StackElement({vAlign = "top", hAlign = "center", x = 0, y = 0, scale=2})
+  self.puzzlePreviewStack = ui.StackElement({scale=2})
 
-  self.puzzleDescriptionLabel = ui.Label({text = "", x = 0, y = 0, width = 400, height = 100, fontSize = 20, translate = false,
-      paddingTop = 8, paddingBottom = 8, paddingLeft = 16, paddingRight = 16})
+  self.puzzleDescriptionLabel = ui.Label({text = "", fontSize = 20, translate = false,
+      paddingTop = 8, paddingBottom = 8, paddingLeft = 16, paddingRight = 16, layoutRules = {sizing = Layout.fixedSize(400, 100)}})
   self.puzzleDescriptionLabel:setFillColors(.2, .2, .2, .8)
   self.puzzleDescriptionLabel:setStrokeColors(1, 1, 1, 1)
   self.puzzleDescriptionLabel:setWrap(400, "left")
@@ -172,12 +185,7 @@ function PuzzleMenu:load(sceneParams)
   self.puzzleHierarchyDisplay = PuzzleHierarchyDisplay({
     puzzleSet = self.rootPuzzleSet,
     puzzleSetIndices = self.currentPuzzleSetIndices,
-    width = 0,
-    height = 0,
-    x = 0,
-    y = 56,
-    hAlign = "center",
-    vAlign = "top"
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, 56)}
   })
 
   self:loadMenu()
@@ -185,17 +193,14 @@ function PuzzleMenu:load(sceneParams)
   self.previewStackPanel = ui.StackPanel(
     {
       alignment = "top",
-      width = 400, -- ideally this is determined by children
-      hAlign = "left",
-      vAlign = "center",
-      x = 0,
-      y = 0,
+      -- ideally the width is determined by children
+      layoutRules = {sizing = {horizontal = Layout.fixed(400)}, childAlignment = {x = "center"}},
     }
   )
 
   self.previewStackPanel:addElement(self.puzzlePreviewStack)
 
-  local verticalSpacer = ui.UiElement({width = 1, height = 10})
+  local verticalSpacer = ui.UiElement({layoutRules = {sizing = Layout.fixedSize(1, 10)}})
   self.previewStackPanel:addElement(verticalSpacer)
 
   self.previewStackPanel:addElement(self.puzzleDescriptionLabel)
@@ -203,17 +208,17 @@ function PuzzleMenu:load(sceneParams)
   self.containerStackPanel = ui.StackPanel(
     {
       alignment = "left",
-      height = self.menu.height,
-      hAlign = "center",
-      vAlign = "center",
-      x = 0,
-      y = 0,
+      layoutRules = {
+        sizing = {vertical = Layout.fixed(themes[config.theme].main_menu_max_height)},
+        childAlignment = {y = "center"},
+        floating = Layout.floatAt("centerCenter")
+      },
     }
   )
 
   self.containerStackPanel:addElement(self.menu)
 
-  local horizontalSpacer = ui.UiElement({width = 20, height = 1})
+  local horizontalSpacer = ui.UiElement({layoutRules = {sizing = Layout.fixedSize(20, 1)}})
   self.containerStackPanel:addElement(horizontalSpacer)
 
   self.containerStackPanel:addElement(self.previewStackPanel)
@@ -257,6 +262,9 @@ function PuzzleMenu:loadMenu()
   local menuOptions = {}
 
   self.levelSliderMenuItem = ui.MenuItem.createSliderMenuItem("level", nil, nil, self.levelSlider)
+  -- every button is at least as wide as the level slider's item, measured by laying the item out on its own
+  self.levelSliderMenuItem:layOut()
+  self.menuButtonWidth = self.levelSliderMenuItem.layoutRect.width
 
   if self:currentlyAtRootLevel() == false then
     menuOptions[#menuOptions+1] = self.levelSliderMenuItem
@@ -294,8 +302,6 @@ function PuzzleMenu:loadMenu()
     label = ui.Label({
       text = "back",
       translate = true,
-      hAlign = "center",
-      vAlign = "center"
     }),
     onClick = function()
       GAME.theme:playCancelSfx()
@@ -313,11 +319,10 @@ function PuzzleMenu:loadMenu()
         end
       end
     end,
-    width = self.levelSliderMenuItem.width
+    layoutRules = {sizing = {horizontal = Layout.fixed(self.menuButtonWidth)}}
   })
   
-  backTextButton.label.hAlign = "left"
-  backTextButton.label.x = 8 
+  alignLabelLeft(backTextButton)
 
   local backMenuItem = ui.MenuItem.createMenuItem(backTextButton)
   backMenuItem.textButton = backTextButton
@@ -325,12 +330,8 @@ function PuzzleMenu:loadMenu()
   menuOptions[#menuOptions + 1] = backMenuItem
 
   self.menu = ui.Menu({
-    x = 400,
-    y = 0,
-    hAlign = "center",
-    vAlign = "center",
     menuItems = menuOptions,
-    height = themes[config.theme].main_menu_max_height
+    layoutRules = {sizing = {vertical = Layout.fixed(themes[config.theme].main_menu_max_height)}}
   })
 end
 
@@ -414,12 +415,10 @@ function PuzzleMenu:createEditPuzzleButton(puzzleSet, index)
   -- Position it in the right corner of the preview stack
   self.editPuzzleButton = ui.ImageButton({
     image = editImage,
-    width = 40,
-    height = 40,
-    hAlign = "center",
-    vAlign = "center", 
-    x = 256,
-    y = -236,
+    layoutRules = {
+      sizing = Layout.fixedSize(40, 40),
+      floating = Layout.floatAt("centerCenter", 256, -236)
+    },
     backgroundColor = {0, 0, 0, 0},
     outlineColor = {0, 0, 0, 0},
     onClick = function()
@@ -509,17 +508,14 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     label = ui.Label({
       text = textString,
       translate = false,
-      hAlign = "center",
-      vAlign = "center"
     }),
     onClick = function()
       self:startGame(puzzleSet, puzzleSetIterator)
     end,
-    width = self.levelSliderMenuItem.width
+    layoutRules = {sizing = {horizontal = Layout.fixed(self.menuButtonWidth)}}
   })
   
-  textButton.label.hAlign = "left"
-  textButton.label.x = 8 
+  alignLabelLeft(textButton)
 
   -- If puzzle has been beaten, overlay completion icon on the right side (to the left of hint)
   if puzzle and puzzle.puzzleEverBeaten then
@@ -531,12 +527,7 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     
     local completeImageContainer = ui.ImageContainer({
       image = completeImage,
-      width = 16,
-      height = 16,
-      hAlign = "right",
-      vAlign = "center",
-      x = xOffset,
-      y = 0
+      layoutRules = {sizing = Layout.fixedSize(16, 16), floating = Layout.floatAt("rightCenter", xOffset)}
     })
     
     textButton:addChild(completeImageContainer)
@@ -549,12 +540,7 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     
     local hintImageContainer = ui.ImageContainer({
       image = hintImage,
-      width = 16,
-      height = 16,
-      hAlign = "right",
-      vAlign = "center",
-      x = -8, -- 8 pixels from right edge
-      y = 0
+      layoutRules = {sizing = Layout.fixedSize(16, 16), floating = Layout.floatAt("rightCenter", -8)} -- 8 pixels from right edge
     })
     
     textButton:addChild(hintImageContainer)
@@ -576,8 +562,6 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
     label = ui.Label({
       text = currentPuzzleSet.localizedSetName,
       translate = false,
-      hAlign = "center",
-      vAlign = "center"
     }),
     onClick = function() 
       GAME.theme:playValidationSfx()
@@ -589,11 +573,10 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
       self:updateCurrentPuzzleSet()
       self:refreshMenu()
     end,
-    width = self.levelSliderMenuItem.width
+    layoutRules = {sizing = {horizontal = Layout.fixed(self.menuButtonWidth)}}
   })
   
-  textButton.label.hAlign = "left"
-  textButton.label.x = 8 
+  alignLabelLeft(textButton)
 
   -- If puzzle set is fully completed, overlay completion icon on the right side
   if currentPuzzleSet:isCompleted() then
@@ -602,12 +585,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
     
     local completeImageContainer = ui.ImageContainer({
       image = completeImage,
-      width = 16,
-      height = 16,
-      hAlign = "right",
-      vAlign = "center",
-      x = -8, -- 8 pixels from right edge
-      y = 0
+      layoutRules = {sizing = Layout.fixedSize(16, 16), floating = Layout.floatAt("rightCenter", -8)} -- 8 pixels from right edge
     })
     
     textButton:addChild(completeImageContainer)
@@ -617,12 +595,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
     
     local partialImageContainer = ui.ImageContainer({
       image = partialImage,
-      width = 16,
-      height = 16,
-      hAlign = "right",
-      vAlign = "center",
-      x = -8, -- 8 pixels from right edge
-      y = 0
+      layoutRules = {sizing = Layout.fixedSize(16, 16), floating = Layout.floatAt("rightCenter", -8)} -- 8 pixels from right edge
     })
     
     textButton:addChild(partialImageContainer)
@@ -650,17 +623,14 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
     label = ui.Label({
       text = trainingSetName,
       translate = false,
-      hAlign = "center",
-      vAlign = "center"
     }),
     onClick = function() 
       self:startGame(self.rootPuzzleSet, trainingPuzzleSetIterator)
     end,
-    width = self.levelSliderMenuItem.width
+    layoutRules = {sizing = {horizontal = Layout.fixed(self.menuButtonWidth)}}
   })
   
-  trainingTextButton.label.hAlign = "left"
-  trainingTextButton.label.x = 8 
+  alignLabelLeft(trainingTextButton)
 
   local result = ui.MenuItem.createMenuItem(trainingTextButton)
   result.textButton = trainingTextButton

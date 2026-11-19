@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local ModLoader = require("client.src.mods.ModLoader")
 local inputs = require("client.src.inputManager")
 local system = require("client.src.system")
@@ -9,7 +10,10 @@ local SCROLL_STEP = 14
 
 local ModValidationScene = class(
 function(self, sceneParams)
-  self.scrollContainer = ui.ScrollContainer({hFill = true, vFill = true, scrollOrientation = "vertical"})
+  self.scrollContainer = ui.ScrollContainer({
+    scrollOrientation = "vertical",
+    layoutRules = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}, padding = {left = 10}}
+  })
   local text = "\n"
   for mod, reason in pairs(ModLoader.invalidMods) do
     text = text .. "Failed to validate mod " .. mod.id .. " at path " .. mod.path .. " for the following reason:\n" .. reason .. "\n"
@@ -22,7 +26,7 @@ function(self, sceneParams)
     text = text .. "\nPress Escape to continue"
   end
 
-  local modWarningLabel = ui.Label({text = text, translate = false, x = 10})
+  local modWarningLabel = ui.Label({text = text, translate = false})
   self.scrollContainer:addChild(modWarningLabel)
   self.uiRoot:addChild(self.scrollContainer)
 
@@ -43,11 +47,11 @@ function ModValidationScene:updateSelf(dt)
   end
   if inputs.isDown.MenuLeft then
     GAME.theme:playMoveSfx()
-    self.offset = self.offset + self.scrollContainer.height - SCROLL_STEP
+    self.offset = self.offset + self.scrollContainer.layoutRect.height - SCROLL_STEP
   end
   if inputs.isDown.MenuRight then
     GAME.theme:playMoveSfx()
-    self.offset = self.offset - self.scrollContainer.height + SCROLL_STEP
+    self.offset = self.offset - self.scrollContainer.layoutRect.height + SCROLL_STEP
   end
   if inputs.isDown["MenuEsc"] then
     GAME.theme:playValidationSfx()

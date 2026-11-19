@@ -49,13 +49,22 @@ local function testTheChallengeWarningFollowsTheMenuWhenThePlayerMovesUp()
   assert(button, "the lobby should list player 9003")
   lobby.lobbyMenu:select(button)
   lobby:openPlayerSubMenu(9003, button)
+  lobby.uiRoot:layOut()
+  local _, menuYBefore = lobby.playerSubMenu:getScreenPos()
 
   updateLobby(lobby, lobbyDataWith({9002, 9003}))
+  lobby.uiRoot:layOut()
 
   local warning = challengeWarning(lobby)
   assert(warning, "the challenge menu should still have its connection warning")
-  assert(warning.y == lobby.playerSubMenu.y,
-    "the warning should move up a row with the challenge menu, at " .. lobby.playerSubMenu.y .. " but is at " .. warning.y)
+  local movedButton = playerButton(lobby, 9003)
+  assert(movedButton, "the lobby should still list player 9003")
+  local _, buttonY = movedButton:getScreenPos()
+  local _, menuY = lobby.playerSubMenu:getScreenPos()
+  local _, warningY = warning:getScreenPos()
+  assert(menuY < menuYBefore, "the challenge menu should move up a row, from " .. menuYBefore .. " but is at " .. menuY)
+  assert(menuY == buttonY, "the challenge menu should stay level with the player's button at " .. buttonY .. " but is at " .. menuY)
+  assert(warningY == menuY, "the warning should move up a row with the challenge menu, at " .. menuY .. " but is at " .. warningY)
 
   GAME.netClient:disconnectSubscriber(lobby)
   GAME.netClient.lobbyDataV2 = savedLobbyData
@@ -71,13 +80,14 @@ local function testTheChallengeWarningsCardStartsAPaddingRightOfTheMenuAtItsTop(
   assert(button, "the lobby should list player 9002")
   lobby.lobbyMenu:select(button)
   lobby:openPlayerSubMenu(9002, button)
+  lobby.uiRoot:layOut()
 
   local warning = challengeWarning(lobby)
   assert(warning, "the challenge menu should have a connection warning")
   local menuX, menuY = lobby.playerSubMenu:getScreenPos()
   local x, y = warning:getScreenPos()
-  assert(x == menuX + lobby.playerSubMenu.width + ConnectionWarning.PADDING,
-    "the card should start a padding right of the menu, at x " .. menuX + lobby.playerSubMenu.width + ConnectionWarning.PADDING .. " but is at " .. x)
+  local expectedX = menuX + lobby.playerSubMenu.layoutRect.width + ConnectionWarning.PADDING
+  assert(x == expectedX, "the card should start a padding right of the menu, at x " .. expectedX .. " but is at " .. x)
   assert(y == menuY, "the card's top should line up with the menu's top, at y " .. menuY .. " but is at " .. y)
 
   GAME.netClient:disconnectSubscriber(lobby)

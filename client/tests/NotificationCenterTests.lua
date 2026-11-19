@@ -7,31 +7,56 @@ local InputSource = require("client.src.input.InputSource")
 
 local FRAME = 1 / 60
 
--- Runs the center frame by frame for the given number of seconds, the way Game:update does
+-- Runs the center frame by frame for the given number of seconds, the way Game:update does, laying it out after each frame
 ---@param center NotificationCenter
 ---@param seconds number
 local function runFor(center, seconds)
   for _ = 1, math.ceil(seconds / FRAME) do
     center:update(FRAME)
+    center:getRoot():layOut()
   end
 end
 
 -- Seconds a lone notification takes from being shown until it has faded away
 local LIFETIME = Notification.ENTER_SECONDS + Notification.HOLD_SECONDS + Notification.LEAVE_SECONDS
 
+-- Where the layout put the notification's left edge in the center, laying its tree out first
+---@param notification Notification
+---@return number
+local function leftOf(notification)
+  notification:getRoot():layOut()
+  return notification.layoutRect.x
+end
+
+-- Where the layout put the notification's top edge in the center, laying its tree out first
+---@param notification Notification
+---@return number
+local function topOf(notification)
+  notification:getRoot():layOut()
+  return notification.layoutRect.y
+end
+
+-- How far right of its place the notification is drawn, laying its tree out first so a new notification's slide has started
+---@param notification Notification
+---@return number
+local function slideOffsetOf(notification)
+  notification:getRoot():layOut()
+  return notification.slideOffset
+end
+
 local function testANotificationSlidesInFromTheRight()
   local center = NotificationCenter({})
   center:show("Screenshot saved", false)
   local notification = center.notifications[1]
 
-  assert(notification.x + notification.slideOffset >= consts.CANVAS_WIDTH,
+  assert(leftOf(notification) + slideOffsetOf(notification) >= consts.CANVAS_WIDTH,
          "a new notification should start past the right edge, but its left edge was drawn at "
-           .. notification.x + notification.slideOffset)
+           .. leftOf(notification) + slideOffsetOf(notification))
 
   runFor(center, Notification.ENTER_SECONDS + 0.1)
 
-  assert(notification.slideOffset == 0,
-         "a notification should sit in its place once it has slid in, but was " .. notification.slideOffset .. " pixels off")
+  assert(slideOffsetOf(notification) == 0,
+         "a notification should sit in its place once it has slid in, but was " .. slideOffsetOf(notification) .. " pixels off")
 end
 
 testANotificationSlidesInFromTheRight()
@@ -44,8 +69,8 @@ local function testANotificationStaysForItsHold()
   runFor(center, Notification.ENTER_SECONDS + Notification.HOLD_SECONDS - 0.1)
 
   assert(center.notifications[1] == notification, "a notification should still be shown before its hold is over")
-  assert(notification.slideOffset == 0,
-         "a notification should stay in its place during its hold, but was " .. notification.slideOffset .. " pixels off")
+  assert(slideOffsetOf(notification) == 0,
+         "a notification should stay in its place during its hold, but was " .. slideOffsetOf(notification) .. " pixels off")
 end
 
 testANotificationStaysForItsHold()
@@ -70,13 +95,15 @@ local function testALeavingNotificationSlidesOutTheRightSide()
   local notification = center.notifications[1]
 
   runFor(center, Notification.ENTER_SECONDS + Notification.HOLD_SECONDS + Notification.LEAVE_SECONDS / 2)
-  assert(notification.slideOffset > 0,
-         "a leaving notification should slide toward the right edge, but was " .. notification.slideOffset .. " pixels off")
+  assert(slideOffsetOf(notification) > 0,
+         "a leaving notification should slide toward the right edge, but was " .. slideOffsetOf(notification) .. " pixels off")
+  local left = leftOf(notification)
 
+  -- it is taken out of the center once it left, so its last layout in the center says where it was last drawn
   runFor(center, Notification.LEAVE_SECONDS)
-  assert(notification.x + notification.slideOffset >= consts.CANVAS_WIDTH,
+  assert(left + notification.slideOffset >= consts.CANVAS_WIDTH,
          "a notification should have left past the right edge, but its left edge was last drawn at "
-           .. notification.x + notification.slideOffset)
+           .. left + notification.slideOffset)
 end
 
 testALeavingNotificationSlidesOutTheRightSide()
@@ -86,12 +113,12 @@ local function testANotificationSitsAtTheTopRight()
   center:show("Screenshot saved", false)
   local notification = center.notifications[1]
 
-  assert(notification.x + notification.width == consts.CANVAS_WIDTH - NotificationCenter.RIGHT_MARGIN,
+  assert(leftOf(notification) + notification.layoutRect.width == consts.CANVAS_WIDTH - NotificationCenter.RIGHT_MARGIN,
          "a notification should end " .. NotificationCenter.RIGHT_MARGIN .. " pixels from the right edge, but ended at "
-           .. notification.x + notification.width)
-  assert(notification.y == NotificationCenter.TOP_MARGIN,
+           .. leftOf(notification) + notification.layoutRect.width)
+  assert(topOf(notification) == NotificationCenter.TOP_MARGIN,
          "a lone notification should start below the match HUD at " .. NotificationCenter.TOP_MARGIN .. ", but started at "
-           .. notification.y)
+           .. topOf(notification))
 end
 
 testANotificationSitsAtTheTopRight()
@@ -102,18 +129,20 @@ local function testNotificationsStackDownward()
   center:show("second", false)
   local first, second = center.notifications[1], center.notifications[2]
 
-  assert(second.y == first.y + first.height + NotificationCenter.GAP,
-         "a second notification should sit one gap below the first, but started at " .. second.y .. " with the first ending at "
-           .. first.y + first.height)
+  assert(topOf(second) == topOf(first) + first.layoutRect.height + NotificationCenter.GAP,
+         "a second notification should sit one gap below the first, but started at " .. topOf(second) .. " with the first ending at "
+           .. topOf(first) + first.layoutRect.height)
 end
 
 testNotificationsStackDownward()
 
 local function testShortNotificationsAreTheStandardWidth()
   local notification = Notification({text = "Saved", translate = false})
+  notification:layOut()
 
-  assert(Notification.MIN_WIDTH and notification.width == Notification.MIN_WIDTH,
-         "a short notification should be the standard width so stacked notifications line up, but was " .. notification.width .. " wide")
+  assert(Notification.MIN_WIDTH and notification.layoutRect.width == Notification.MIN_WIDTH,
+         "a short notification should be the standard width so stacked notifications line up, but was "
+           .. notification.layoutRect.width .. " wide")
 end
 
 testShortNotificationsAreTheStandardWidth()
@@ -126,14 +155,14 @@ local function testNotificationsShownTogetherSlideInOneAfterAnother()
 
   runFor(center, Notification.ENTER_SECONDS + 0.1)
 
-  assert(first.slideOffset == 0, "the first notification should have slid in, but was " .. first.slideOffset .. " pixels off")
-  assert(second.slideOffset > 0,
+  assert(slideOffsetOf(first) == 0, "the first notification should have slid in, but was " .. slideOffsetOf(first) .. " pixels off")
+  assert(slideOffsetOf(second) > 0,
          "the second notification should wait " .. NotificationCenter.STAGGER_SECONDS .. " seconds before sliding in")
 
   runFor(center, NotificationCenter.STAGGER_SECONDS)
 
-  assert(second.slideOffset == 0,
-         "the second notification should have slid in after its wait, but was " .. second.slideOffset .. " pixels off")
+  assert(slideOffsetOf(second) == 0,
+         "the second notification should have slid in after its wait, but was " .. slideOffsetOf(second) .. " pixels off")
 end
 
 testNotificationsShownTogetherSlideInOneAfterAnother()
@@ -144,7 +173,7 @@ local function testNotificationsKeepTheirPlaceWhenOneAboveLeaves()
   runFor(center, 1)
   center:show("second", false)
   local second = center.notifications[2]
-  local secondY = second.y
+  local secondY = topOf(second)
 
   runFor(center, LIFETIME - 1 + 0.1)
   assert(#center.notifications == 1 and center.notifications[1] == second,
@@ -152,7 +181,7 @@ local function testNotificationsKeepTheirPlaceWhenOneAboveLeaves()
 
   runFor(center, Notification.ENTER_SECONDS + 0.1)
 
-  assert(second.y == secondY, "the second notification should stay in its place at " .. secondY .. ", but moved to " .. second.y)
+  assert(topOf(second) == secondY, "the second notification should stay in its place at " .. secondY .. ", but moved to " .. topOf(second))
 end
 
 testNotificationsKeepTheirPlaceWhenOneAboveLeaves()
@@ -160,7 +189,7 @@ testNotificationsKeepTheirPlaceWhenOneAboveLeaves()
 local function testANewNotificationTakesTheTopmostFreePlace()
   local center = NotificationCenter({})
   center:show("first", false)
-  local topY = center.notifications[1].y
+  local topY = topOf(center.notifications[1])
   runFor(center, 1)
   center:show("second", false)
   runFor(center, LIFETIME - 1 + 0.1)
@@ -168,7 +197,7 @@ local function testANewNotificationTakesTheTopmostFreePlace()
   center:show("third", false)
   local third = center.notifications[#center.notifications]
 
-  assert(third.y == topY, "a new notification should take the free place at the top at " .. topY .. ", but went to " .. third.y)
+  assert(topOf(third) == topY, "a new notification should take the free place at the top at " .. topY .. ", but went to " .. topOf(third))
 end
 
 testANewNotificationTakesTheTopmostFreePlace()
@@ -192,7 +221,7 @@ local function testAWaitingNotificationComesInWhenOneLeaves()
   for i = 1, NotificationCenter.MAX_SHOWN + 1 do
     center:show("notification " .. i, false)
   end
-  local topY = center.notifications[1].y
+  local topY = topOf(center.notifications[1])
 
   runFor(center, LIFETIME - 0.05)
   assert(#center.children == NotificationCenter.MAX_SHOWN, "the waiting notification should wait until the first one has fully left")
@@ -202,11 +231,12 @@ local function testAWaitingNotificationComesInWhenOneLeaves()
   local waiting = center.notifications[#center.notifications]
   assert(waiting.label.text == "notification " .. NotificationCenter.MAX_SHOWN + 1,
          "the waiting notification should be shown once the first one left")
-  assert(waiting.y == topY, "the waiting notification should take the first one's place at " .. topY .. ", but is at " .. waiting.y)
+  assert(topOf(waiting) == topY,
+         "the waiting notification should take the first one's place at " .. topY .. ", but is at " .. topOf(waiting))
 
   runFor(center, Notification.ENTER_SECONDS + 0.1)
 
-  assert(waiting.slideOffset == 0, "the waiting notification should slide in, but was " .. waiting.slideOffset .. " pixels off")
+  assert(slideOffsetOf(waiting) == 0, "the waiting notification should slide in, but was " .. slideOffsetOf(waiting) .. " pixels off")
 end
 
 testAWaitingNotificationComesInWhenOneLeaves()
@@ -221,7 +251,7 @@ local function testAWaitingNotificationGetsItsWholeHold()
   local waiting = center.notifications[NotificationCenter.MAX_SHOWN]
   runFor(center, Notification.ENTER_SECONDS + Notification.HOLD_SECONDS - 0.2)
 
-  assert(waiting.parent == center and waiting.slideOffset == 0, "a notification that waited should still hold for its whole hold")
+  assert(waiting.parent == center and slideOffsetOf(waiting) == 0, "a notification that waited should still hold for its whole hold")
 end
 
 testAWaitingNotificationGetsItsWholeHold()
@@ -321,9 +351,10 @@ testNotificationsLastAcrossSceneChanges()
 local function testNotificationsNeverTakeTouches()
   withGameNotification(function(_, notification)
     notification.onTouch = function() end
+    GAME.uiRoot:layOut()
     local x, y = notification:getScreenPos()
 
-    local touched = GAME.uiRoot:getTouchedElement(x + notification.width / 2, y + notification.height / 2)
+    local touched = GAME.uiRoot:getTouchedElement(x + notification.layoutRect.width / 2, y + notification.layoutRect.height / 2)
 
     assert(touched ~= notification, "a touch on a notification should go to the scene under it")
   end)

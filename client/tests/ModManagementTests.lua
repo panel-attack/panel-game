@@ -17,7 +17,16 @@ end
 ---@return number
 local function screenCenterX(element)
   local x = element:getScreenPos()
-  return x + element.width / 2
+  return x + element.layoutRect.width / 2
+end
+
+-- Fails unless the element is centered on the screen within a point: layout positions are even points, so an element of
+-- odd or fractional width, such as text, sits up to a point off
+---@param element UiElement
+---@param name string
+local function assertCenteredOnScreen(element, name)
+  local centerX = screenCenterX(element)
+  assert(math.abs(centerX - consts.CANVAS_WIDTH / 2) <= 1, name .. " is centered at " .. centerX .. ", not " .. consts.CANVAS_WIDTH / 2)
 end
 
 local function testTitleReadsModManagement()
@@ -34,17 +43,18 @@ end
 
 local function testTopLevelMenuIsCentered()
   local scene = ModManagement()
-  local centerX = screenCenterX(scene.menu)
-  assert(centerX == consts.CANVAS_WIDTH / 2, "the menu is centered at " .. centerX .. ", not " .. consts.CANVAS_WIDTH / 2)
-  assert(screenCenterX(scene.titleLabel) == consts.CANVAS_WIDTH / 2, "the title is centered")
+  scene.uiRoot:layOut()
+  assertCenteredOnScreen(scene.menu, "the menu")
+  assertCenteredOnScreen(scene.titleLabel, "the title")
 end
 
 local function testOpenTabReplacesTheMenuWithACenteredTab()
   local scene = ModManagement()
   scene:openTab(ModManagement.TABS[1])
+  scene.uiRoot:layOut()
 
   assert(not scene.menu.isVisible, "the menu is hidden while a tab is open, since the centered tab would cover it")
-  assert(screenCenterX(scene.panel) == consts.CANVAS_WIDTH / 2, "the tab is centered at " .. screenCenterX(scene.panel))
+  assertCenteredOnScreen(scene.panel, "the tab")
   assert(loc(scene.titleLabel.text) == "Characters", "the title names the open tab")
 
   scene:closeTab()
@@ -80,14 +90,15 @@ end
 local function testOpenTabShowsACenteredBackButtonBelowTheList()
   local scene = ModManagement()
   scene:openTab(ModManagement.TABS[1])
+  scene.uiRoot:layOut()
 
   local button = scene.backButton
   local _, buttonY = button:getScreenPos()
   local _, listY = scene.scrollContainer:getScreenPos()
   assert(button.parent ~= nil and button.isVisible, "the back button is on screen while a tab is open")
-  assert(screenCenterX(button) == consts.CANVAS_WIDTH / 2, "the back button is centered at " .. screenCenterX(button))
-  assert(buttonY >= listY + scene.scrollContainer.height, "the back button overlaps the list")
-  assert(buttonY + button.height <= consts.CANVAS_HEIGHT, "the back button runs off the bottom of the screen")
+  assertCenteredOnScreen(button, "the back button")
+  assert(buttonY >= listY + scene.scrollContainer.layoutRect.height, "the back button overlaps the list")
+  assert(buttonY + button.layoutRect.height <= consts.CANVAS_HEIGHT, "the back button runs off the bottom of the screen")
 end
 
 local function testClickingTheBackButtonReturnsToTheMenu()

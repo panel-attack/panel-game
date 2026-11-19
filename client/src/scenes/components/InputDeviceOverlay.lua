@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local UiElement = require("client.src.ui.UIElement")
+local Layout = require("client.src.ui.Layout")
 local Label = require("client.src.ui.Label")
 local TextButton = require("client.src.ui.TextButton")
 local StackPanel = require("client.src.ui.StackPanel")
@@ -64,8 +65,9 @@ function(self, options)
   self.touchTargetSlot = nil
   self.autoCloseTimer = 0
   self.escapeHoldTime = 0
-  self.width = consts.CANVAS_WIDTH
-  self.height = consts.CANVAS_HEIGHT
+  -- lies over the whole screen of the scene it is added to
+  self:setLayoutRule("sizing", Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT))
+  self:setLayoutRule("floating", Layout.floatAt("leftTop"))
   self:setVisibility(false)
 
   self:buildUi()
@@ -92,9 +94,7 @@ function InputDeviceOverlay:buildUi()
   -- Title
   self.titleLabel = Label({
     text = "hold_button_device",
-    hAlign = "center",
-    vAlign = "top",
-    y = 60,
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, 60)},
     fontSize = GraphicsUtil.fontSize + 4
   })
   self:addChild(self.titleLabel)
@@ -102,9 +102,7 @@ function InputDeviceOverlay:buildUi()
   -- Subtitle
   self.subtitleLabel = Label({
     text = "or_touch_player_slot",
-    hAlign = "center",
-    vAlign = "top",
-    y = 100,
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, 100)},
     fontSize = GraphicsUtil.fontSize
   })
   self:addChild(self.subtitleLabel)
@@ -112,9 +110,10 @@ function InputDeviceOverlay:buildUi()
   -- Player slots container
   self.slotsContainer = StackPanel({
     alignment = "left",
-    hAlign = "center",
-    vAlign = "center",
-    height = PLAYER_SLOT_SIZE
+    layoutRules = {
+      sizing = {vertical = Layout.fixed(PLAYER_SLOT_SIZE)},
+      floating = Layout.floatAt("centerCenter")
+    }
   })
   self:addChild(self.slotsContainer)
 
@@ -122,9 +121,9 @@ function InputDeviceOverlay:buildUi()
     label = Label({
       text = "leave"
     }),
-    hAlign = "center",
-    vAlign = "bottom",
-    y = -10,
+    layoutRules = {
+      floating = Layout.floatAt("centerBottom", 0, -10)
+    },
     onClick = function()
       self:onBackPressed()
     end
@@ -172,10 +171,7 @@ function InputDeviceOverlay:buildPlayerSlots()
 
     -- Add spacing after each slot except the last
     if i < #players then
-      local spacer = UiElement({
-        width = 20,
-        height = PLAYER_SLOT_SIZE
-      })
+      local spacer = UiElement({layoutRules = {sizing = Layout.fixedSize(20, PLAYER_SLOT_SIZE)}})
       self.slotsContainer:addElement(spacer)
     end
 
@@ -509,7 +505,7 @@ function InputDeviceOverlay:drawSelf()
 
   local bgColor = GAME.theme.colors.darkTransparentBackgroundColor
   GraphicsUtil.setColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
-  GraphicsUtil.drawRectangle("fill", 0, 0, self.width, self.height)
+  GraphicsUtil.drawRectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 

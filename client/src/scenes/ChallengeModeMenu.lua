@@ -2,6 +2,7 @@ local Scene = require("client.src.scenes.Scene")
 local class = require("common.lib.class")
 local ChallengeMode = require("client.src.ChallengeMode")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local CharacterSelectChallenge = require("client.src.scenes.CharacterSelectChallenge")
 local ChallengeRunRecords = require("client.src.scenes.components.ChallengeRunRecords")
 local InputSource = require("client.src.input.InputSource")
@@ -57,8 +58,7 @@ function ChallengeModeMenu:load(sceneParams)
       labels = difficultyLabels,
       values = challengeModes,
       selectedIndex = self.save:getLastDifficulty() or 1,
-      width = 70,
-      height = 25,
+      layoutRules = {sizing = Layout.fixedSize(70, 25)},
       onChange = function(value)
         GAME.theme:playMoveSfx()
         self:showDifficulty(value)
@@ -67,16 +67,19 @@ function ChallengeModeMenu:load(sceneParams)
   )
   self.difficultyMenuItem = ui.MenuItem.createStepperMenuItem("difficulty", nil, nil, self.difficultyStepper)
 
-  self.runRecords = ChallengeRunRecords({alignment = "top", hAlign = "center", vAlign = "center", x = COLUMN_OFFSET})
+  self.runRecords = ChallengeRunRecords({alignment = "top", layoutRules = {floating = Layout.floatAt("centerCenter", COLUMN_OFFSET)}})
   self.uiRoot:addChild(self.runRecords)
 
   self.discardWarning = ui.Label({
-    text = "challenge_discard_run_warning", hAlign = "center", vAlign = "center", x = -COLUMN_OFFSET, y = WARNING_OFFSET
+    text = "challenge_discard_run_warning", layoutRules = {floating = Layout.floatAt("centerCenter", -COLUMN_OFFSET, WARNING_OFFSET)}
   })
   self.discardWarning:setVisibility(false)
   self.uiRoot:addChild(self.discardWarning)
 
-  self.menu = ui.Menu.createCenteredMenu({self.difficultyMenuItem}, nil, {x = -COLUMN_OFFSET, equalItemWidths = true})
+  self.menu = ui.Menu.createCenteredMenu({self.difficultyMenuItem}, nil, {
+    equalItemWidths = true,
+    layoutRules = {floating = Layout.floatAt("centerCenter", -COLUMN_OFFSET)}
+  })
   self.uiRoot:addChild(self.menu)
   self:showDifficulty(self.difficultyStepper.value)
 end

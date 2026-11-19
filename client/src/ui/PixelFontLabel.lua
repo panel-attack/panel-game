@@ -36,8 +36,7 @@ function(self, options)
   -- effectively we'll draw a quad for each character this much apart
   self.charDistanceScaled = (self.fontMap.charWidth + self.charSpacing) * self.xScale
 
-  self.width = self.text:len() * self.charDistanceScaled
-  self.height = self.fontMap.charHeight * self.yScale
+  self:setFixedSize(self.text:len() * self.charDistanceScaled, self.fontMap.charHeight * self.yScale)
 end,
 UiElement)
 
@@ -49,7 +48,7 @@ function PixelFontLabel:setText(text)
   end
 
   self.text = text
-  self.width = text:len() * self.charDistanceScaled
+  self:setFixedSize(text:len() * self.charDistanceScaled, self.fontMap.charHeight * self.yScale)
 end
 
 
@@ -57,10 +56,10 @@ function PixelFontLabel:drawSelf()
   for i = 1, self.text:len(), 1 do
     local char = self.text:sub(i, i)
     if char ~= " " then
-      local characterX = self.x + ((i - 1) * self.charDistanceScaled)
+      local characterX = ((i - 1) * self.charDistanceScaled)
 
       -- Render it at the proper digit location
-      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap.charToQuad[char], characterX, self.y, 0, self.xScale, self.yScale)
+      GraphicsUtil.drawQuad(self.fontMap.atlas, self.fontMap.charToQuad[char], characterX, 0, 0, self.xScale, self.yScale)
     end
   end
 end

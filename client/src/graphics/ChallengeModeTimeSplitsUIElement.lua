@@ -31,7 +31,7 @@ function ChallengeModeTimeSplitsUIElement:drawTimeSplits()
     if isCurrentStage then
       GraphicsUtil.setColor(0.8, 0.8, 1, 1)
     end
-    GraphicsUtil.draw_time(frames_to_time_string(currentStageTime, true), self.x, self.y + yOffset * row,
+    GraphicsUtil.draw_time(frames_to_time_string(currentStageTime, true), 0, yOffset * row,
                            themes[config.theme].time_Scale)
 
     row = row + 1
@@ -43,7 +43,7 @@ function ChallengeModeTimeSplitsUIElement:drawTimeSplits()
   end
 
   GraphicsUtil.setColor(1, 1, 0.8, 1)
-  GraphicsUtil.draw_time(frames_to_time_string(totalTime, true), self.x, self.y + yOffset * row,
+  GraphicsUtil.draw_time(frames_to_time_string(totalTime, true), 0, yOffset * row,
                          themes[config.theme].time_Scale)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end

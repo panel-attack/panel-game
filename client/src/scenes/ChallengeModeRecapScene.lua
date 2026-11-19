@@ -7,6 +7,7 @@ local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
 local util = require("common.lib.util")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
+local Layout = require("client.src.ui.Layout")
 
 -- Gives a summary of the recently completed challenge mode game
 ---@class ChallengeModeRecapScene : Scene
@@ -20,7 +21,10 @@ local ChallengeModeRecapScene = class(
 function(self, sceneParams)
   self.backgroundImg = GAME.theme.images.bg_main
   self.challengeMode = sceneParams.challengeMode
-  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 200}, self.challengeMode)
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement(
+    {layoutRules = {floating = Layout.floatAt("leftTop", consts.CANVAS_WIDTH / 2, 200)}},
+    self.challengeMode
+  )
   self.uiRoot:addChild(self.timeSplitElement)
   self.recapStartTime = love.timer.getTime()
   self.minDisplayTime = 2 -- the minimum amount of seconds the scene will be displayed for

@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UiElement = require(PATH .. ".UIElement")
 local Label = require(PATH .. ".Label")
 local TextButton = require(PATH .. ".TextButton")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local system = require("client.src.system")
@@ -25,6 +26,30 @@ end,
 UiElement)
 
 MenuItem.PADDING = 2
+-- from the item's left edge to the element after the label is the label's width and this
+local SPACE_BETWEEN = 16
+-- the height a touch screen gives every part, a finger's
+local TOUCH_HEIGHT = 30
+
+-- Returns the sizing raised to at least the size, of the same type
+---@param sizing LayoutSizing?
+---@param size number
+---@return LayoutSizing
+local function atLeast(sizing, size)
+  sizing = sizing or Layout.FIT
+  local min = math.max(sizing.min or 0, size)
+  if sizing.type == "fixed" then
+    return Layout.fixed(min)
+  end
+  return {type = sizing.type, min = min, max = sizing.max and math.max(sizing.max, min)}
+end
+
+-- Raises the element's height to a finger's, keeping its width rule
+---@param element UiElement
+local function raiseToTouchHeight(element)
+  local sizing = element.layoutRules.sizing or {}
+  element:setLayoutRule("sizing", {horizontal = sizing.horizontal, vertical = atLeast(sizing.vertical, TOUCH_HEIGHT)})
+end
 
 ---Takes a label and an optional extra element and makes and combines them into a menu item which is suitable for inserting into a menu
 ---@param label UiElement the label or left element to display
@@ -33,32 +58,27 @@ MenuItem.PADDING = 2
 function MenuItem.createMenuItem(label, item)
   assert(label ~= nil)
 
-  label.vAlign = "center"
-  label.x = MenuItem.PADDING
+  local mobile = system.isMobileOS() or DebugSettings.simulateMobileOS()
+  -- a touch screen gives every part a finger's height instead of the padding
+  local verticalPadding = mobile and 0 or MenuItem.PADDING
+  local menuItem = MenuItem({
+    layoutRules = {
+      padding = {left = MenuItem.PADDING, right = MenuItem.PADDING, top = verticalPadding, bottom = verticalPadding},
+      childGap = SPACE_BETWEEN - MenuItem.PADDING,
+      childAlignment = Layout.CENTER_VERTICALLY,
+    }
+  })
 
-  local menuItem = MenuItem({x = 0, y = 0})
-
-  menuItem.width = label.width + (2 * MenuItem.PADDING)
-
-  if system.isMobileOS() or DebugSettings.simulateMobileOS() then
-    label.height = math.max(30, label.height + (2 * MenuItem.PADDING))
-    menuItem.height = math.max(30, label.height, item and item.height or 0)
-  else
-    menuItem.height = math.max(menuItem.height, math.max(label.height, item and item.height or 0) + (2 * MenuItem.PADDING))
-  end
-
-  if item ~= nil then
-    local spaceBetween = 16
-    item.x = label.width + spaceBetween
-    item.vAlign = "center"
-    if system.isMobileOS() or DebugSettings.simulateMobileOS() then
-      item.height = math.max(30, item.height)
-    end
-    menuItem.width = item.x + item.width + MenuItem.PADDING
-    menuItem:addChild(item)
+  if mobile then
+    raiseToTouchHeight(label)
   end
   menuItem:addChild(label)
-
+  if item ~= nil then
+    if mobile then
+      raiseToTouchHeight(item)
+    end
+    menuItem:addChild(item)
+  end
 
   return menuItem
 end
@@ -71,13 +91,11 @@ end
 function MenuItem.createButtonMenuItemWithLabel(label, onClick, width)
   assert(label ~= nil)
   local BUTTON_WIDTH = width or 140
-  label.hAlign = "center"
-  label.vAlign = "center"
 
   local textButton = TextButton({
     label = label,
     onClick = onClick,
-    width = BUTTON_WIDTH
+    layoutRules = {sizing = {horizontal = Layout.fixed(BUTTON_WIDTH)}}
   })
 
   local menuItem = MenuItem.createMenuItem(textButton)
@@ -130,8 +148,12 @@ function MenuItem.createLabeledButtonMenuItem(labelText, labelTextReplacements, 
     buttonTextTranslate = true
   end
 
-  local label = Label({text = labelText, replacements = labelTextReplacements, translate = labelTextTranslate, vAlign = "center"})
-  local textButton = TextButton({label = Label({text = buttonText, replacements = buttonTextReplacements, translate = buttonTextTranslate, hAlign = "center", vAlign = "center"}), onClick = buttonOnClick, width = BUTTON_WIDTH})
+  local label = Label({text = labelText, replacements = labelTextReplacements, translate = labelTextTranslate})
+  local textButton = TextButton({
+    label = Label({text = buttonText, replacements = buttonTextReplacements, translate = buttonTextTranslate}),
+    onClick = buttonOnClick,
+    layoutRules = {sizing = {horizontal = Layout.fixed(BUTTON_WIDTH)}}
+  })
 
   local menuItem = MenuItem.createMenuItem(label, textButton)
   menuItem.textButton = textButton
@@ -151,7 +173,7 @@ function MenuItem.createStepperMenuItem(text, replacements, translate, stepper)
   if translate == nil then
     translate = true
   end
-  local label = Label({text = text, replacements = replacements, translate = translate, vAlign = "center"})
+  local label = Label({text = text, replacements = replacements, translate = translate})
   local menuItem = MenuItem.createMenuItem(label, stepper)
   
   return menuItem
@@ -169,7 +191,7 @@ function MenuItem.createToggleButtonGroupMenuItem(text, replacements, translate,
   if translate == nil then
     translate = true
   end
-  local label = Label({text = text, replacements = replacements, translate = translate, vAlign = "center"})
+  local label = Label({text = text, replacements = replacements, translate = translate})
   local menuItem = MenuItem.createMenuItem(label, toggleButtonGroup)
   
   return menuItem
@@ -187,7 +209,7 @@ function MenuItem.createSliderMenuItem(text, replacements, translate, slider)
   if translate == nil then
     translate = true
   end
-  local label = Label({text = text, replacements = replacements, translate = translate, vAlign = "center"})
+  local label = Label({text = text, replacements = replacements, translate = translate})
   local menuItem = MenuItem.createMenuItem(label, slider)
 
   return menuItem
@@ -199,18 +221,20 @@ function MenuItem.createBoolSelectorMenuItem(text, replacements, translate, bool
   if translate == nil then
     translate = true
   end
-  local label = Label({text = text, replacements = replacements, translate = translate, vAlign = "center"})
+  local label = Label({text = text, replacements = replacements, translate = translate})
   local menuItem = MenuItem.createMenuItem(label, boolSelector)
 
   return menuItem
 end
 
----Widens the menu item to width, stretching its button with it so the label stays centered
----@param width number
-function MenuItem:stretchTo(width)
-  self.width = width
+---Widens the menu item to the menu's width, stretching its button with it so the label stays centered
+function MenuItem:fillMenuWidth()
+  local sizing = self.layoutRules.sizing or {}
+  self:setLayoutRule("sizing", {horizontal = Layout.GROW, vertical = sizing.vertical})
   if self.textButton then
-    self.textButton.width = width - 2 * MenuItem.PADDING
+    local buttonSizing = self.textButton.layoutRules.sizing or {}
+    local buttonWidth = buttonSizing.horizontal
+    self.textButton:setLayoutRule("sizing", {horizontal = Layout.grow(buttonWidth and buttonWidth.min), vertical = buttonSizing.vertical})
   end
 end
 
@@ -233,13 +257,13 @@ function MenuItem:drawSelf()
     local borderOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 4 + baseOpacity + selectedAdditionalOpacity
     local bgColor = GAME.theme.colors.menuSelectedBackgroundColor
     local borderColor = GAME.theme.colors.menuSelectedBorderColor
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], fillOpacity)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, borderColor[1], borderColor[2], borderColor[3], borderOpacity)
+    GraphicsUtil.drawRectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height, bgColor[1], bgColor[2], bgColor[3], fillOpacity)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height, borderColor[1], borderColor[2], borderColor[3], borderOpacity)
   else
     local bgColor = GAME.theme.colors.menuDefaultBackgroundColor
     local borderColor = GAME.theme.colors.menuDefaultBorderColor
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, bgColor[1], bgColor[2], bgColor[3], baseOpacity)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, borderColor[1], borderColor[2], borderColor[3], baseOpacity)
+    GraphicsUtil.drawRectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height, bgColor[1], bgColor[2], bgColor[3], baseOpacity)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height, borderColor[1], borderColor[2], borderColor[3], baseOpacity)
   end
 end
 

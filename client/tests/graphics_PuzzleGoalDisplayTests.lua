@@ -19,7 +19,7 @@ end
 
 local function goalDisplay(goals, stack)
   local puzzle = Puzzle({goals = goals, moves = 2, stack = "011010"})
-  return PuzzleGoalDisplay({puzzle = puzzle, stack = stack, x = 0, y = 0, width = 0, height = 0})
+  return PuzzleGoalDisplay({puzzle = puzzle, stack = stack})
 end
 
 local function aCardIsShownForEveryChainAndComboGoal()
@@ -62,7 +62,7 @@ end
 
 local function aPuzzleOfAnOldTypeHasNoCards()
   local puzzle = Puzzle({puzzleType = "moves", moves = 2, stack = "011010"})
-  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3), x = 0, y = 0, width = 0, height = 0})
+  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3)})
 
   assert(#display.cards == 0)
   assert(display:getHeadingKey() == "puzzle_goal_move_heading")
@@ -83,7 +83,7 @@ end
 
 local function aClearPuzzleWithASwapLimitShowsTheSwapsLeft()
   local puzzle = Puzzle({goals = {"Clear"}, moves = 2, stack = "[====]011010"})
-  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3), x = 0, y = 0, width = 0, height = 0})
+  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3)})
 
   local hasSwapsRow = false
   for _, row in ipairs(display.rows) do
@@ -101,7 +101,7 @@ anEmptyBoardRowCompletesOnceNoPanelIsLeft()
 
 local function anEmptyBoardPuzzleWithoutASwapLimitNamesNoSwapCount()
   local puzzle = Puzzle({goals = {"Empty Board"}, moves = 0, stack = "011010"})
-  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3), x = 0, y = 0, width = 0, height = 0})
+  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3)})
 
   assert(#display.rows == 1)
   assert(display.rows[1].key == "puzzle_goal_empty_board_objective", "there is no limit to count down from")
@@ -109,7 +109,7 @@ end
 
 local function emptyBoardWithClearIsHeadedAsAClearPuzzle()
   local puzzle = Puzzle({goals = {"Empty Board", "Clear"}, stack = "[====]011010", garbagePanelBuffer = "334344"})
-  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3), x = 0, y = 0, width = 0, height = 0})
+  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = fakeStack(3)})
 
   assert(display:getHeadingKey() == "puzzle_goal_clear_heading")
 end
@@ -130,7 +130,7 @@ end
 local function aClearRowWaitsForARowPastItsBuffer()
   local stack = fakeStack(3)
   local puzzle = Puzzle({goals = {"Clear", "x2"}, stack = "[====]011010", garbagePanelBuffer = "334344"})
-  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = stack, x = 0, y = 0, width = 0, height = 0})
+  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = stack})
   display:update(0.016)
 
   assert(not clearRow(display).complete, "revealing the buffer's last row does not clear the puzzle, the row after it does")
@@ -140,7 +140,7 @@ local function aClearRowCompletesOnceARowIsRevealedPastItsBuffer()
   local stack = fakeStack(3)
   stack.panelSource.garbageGenCount = 1
   local puzzle = Puzzle({goals = {"Clear", "x2"}, stack = "[====]011010"})
-  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = stack, x = 0, y = 0, width = 0, height = 0})
+  local display = PuzzleGoalDisplay({puzzle = puzzle, stack = stack})
   display:update(0.016)
 
   assert(clearRow(display).complete, "without a buffer the first revealed row is already past it")
