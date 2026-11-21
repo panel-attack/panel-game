@@ -8,13 +8,13 @@ local UiElement = require(PATH .. ".UIElement")
 
 ---@class ChangeInputButtonOptions : ButtonOptions
 ---@field players Player[]
----@field openInputDeviceOverlay fun()
+---@field openInputDeviceOverlay fun() releases every local player's input device and opens the overlay to pick them again
 
 -- Button that displays current player input assignments and allows changing them
 ---@class ChangeInputButton : Button
 ---@field players Player[] The players we query assignments for
 ---@field localHumanPlayers Player[]
----@field openInputDeviceOverlay fun() Callback invoked when button is clicked to change inputs
+---@field openInputDeviceOverlay fun() Callback invoked when button is clicked to change inputs, releases the assignments and opens the overlay
 ---@field titleLabel Label Title text label
 ---@field iconContainer StackPanel Container for player assignment icons
 ---@field signalConnections table[] Array of signal subscriptions for live updates
@@ -64,15 +64,15 @@ function ChangeInputButton:onClick()
     GAME.theme:playCancelSfx()
     return
   else
-    local released = false
-    for i, player in ipairs(self.localHumanPlayers) do
+    local hasAssignment = false
+    for _, player in ipairs(self.localHumanPlayers) do
       if player.inputConfiguration then
-        player:unrestrictInputs()
-        released = true
+        hasAssignment = true
+        break
       end
     end
 
-    if released then
+    if hasAssignment then
       GAME.theme:playCancelSfx()
       self.openInputDeviceOverlay()
     else

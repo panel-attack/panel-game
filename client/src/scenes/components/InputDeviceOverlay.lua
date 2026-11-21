@@ -482,6 +482,26 @@ function InputDeviceOverlay:openInputDeviceOverlayIfNeeded()
   end
 end
 
+-- Opens the overlay with every assignment released when a device no local player has is used,
+-- for scenes where only a player's own device does anything
+function InputDeviceOverlay:openIfUnassignedDeviceUsed()
+  if self.active then
+    return
+  end
+
+  if inputManager:checkForUnassignedConfigurationInputs(self.players) then
+    self:openWithAssignmentsReleased()
+  end
+end
+
+-- Releases every local player's input device and opens the overlay to pick them again
+function InputDeviceOverlay:openWithAssignmentsReleased()
+  for _, player in ipairs(self.players) do
+    player:unrestrictInputs()
+  end
+  self:open()
+end
+
 function InputDeviceOverlay:drawSelf()
   if not self.active then
     return
