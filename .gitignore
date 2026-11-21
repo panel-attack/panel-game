@@ -20,3 +20,6 @@ updater
 releaseStreams.json
 # backups left by editors and tools, at any depth
 .backup/
+# left by running Python scripts and picking a local Python version, at any depth
+__pycache__/
+.python-version
