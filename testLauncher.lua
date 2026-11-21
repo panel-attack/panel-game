@@ -132,6 +132,7 @@ local allTests = {
   "client.tests.StackGraphicsTests",
   "client.tests.TelegraphTests",
   "client.tests.InputConfigurationTests",
+  "client.tests.InputDeviceOverlayTests",
   "client.tests.DiscreteImageSliderTests",
   "client.tests.ImageContainerTests",
   "client.tests.ScrollContainerTests",

@@ -337,7 +337,7 @@ function CharacterSelect:createChangeInputButton()
     vFill = true,
     players = self.battleRoom.players,
     openInputDeviceOverlay = function ()
-      self.inputDeviceOverlay:open()
+      self.inputDeviceOverlay:openWithAssignmentsReleased()
     end
   })
 end
@@ -1053,6 +1053,8 @@ end
 
 function CharacterSelect:updateSelf(dt)
   self.inputDeviceOverlay:openInputDeviceOverlayIfNeeded()
+  -- a cursor only reads its player's own device, so a device no player has asks for the devices again
+  self.inputDeviceOverlay:openIfUnassignedDeviceUsed()
 
   if self.inputDeviceOverlay:isActive() then
     return
