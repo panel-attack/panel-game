@@ -89,3 +89,24 @@ assert(not titleImageOnly:hasScene(Theme.TITLE_SCENE_FILE))
 assert(titleImageOnly:hasTitleScreen()) -- a title image without a title scene still gets a title screen
 assert(titleImageOnly.images.bg_title ~= nil)
 recursiveRemoveDirectory(Theme.themeDirectoryPath .. titleImageOnly.name)
+-- the default theme's analytics icons are found on a filesystem that tells "apm" from "APM", as Linux and Android do
+local function theAnalyticsIconsLoadOnACaseSensitiveFilesystem()
+  local exists = fileUtils.exists
+  fileUtils.exists = function(path)
+    local directory, name = path:match("^(.*)/([^/]*)$")
+    for _, item in ipairs(love.filesystem.getDirectoryItems(directory)) do
+      if item == name then
+        return true
+      end
+    end
+    return false
+  end
+
+  defaultTheme:loadAnalyticsIcons()
+
+  fileUtils.exists = exists
+  local images = defaultTheme.images
+  assert(images.IMG_swap and images.IMG_apm and images.IMG_gpm and images.IMG_cursorCount)
+end
+
+theAnalyticsIconsLoadOnACaseSensitiveFilesystem()

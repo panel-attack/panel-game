@@ -564,7 +564,7 @@ end
 
 function Theme:loadAnalyticsIcons()
   self.images.IMG_swap = self:load_theme_img("swap")
-  self.images.IMG_apm = self:load_theme_img("apm")
+  self.images.IMG_apm = self:load_theme_img("APM")
   self.images.IMG_gpm = self:load_theme_img("GPM")
   self.images.IMG_cursorCount = self:load_theme_img("CursorCount")
 end
