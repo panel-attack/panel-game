@@ -806,7 +806,7 @@ function Stack:pushGarbage(coordinate, isChain, comboSize, metalCount)
       -- If we did a combo also, we need to enqueue the attack graphic one row higher cause thats where the chain card will be.
       rowOffset = 1
     end
-    self.outgoingGarbage:addChainLink(self.stopWatch, coordinate.column, coordinate.row +  rowOffset)
+    self.outgoingGarbage:addChainLink(self.stopWatch, coordinate.row + rowOffset, coordinate.column)
   end
 end
 
