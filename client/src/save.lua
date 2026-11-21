@@ -1,4 +1,5 @@
 local FileUtils = require("client.src.FileUtils")
+local json = require("common.lib.dkjson")
 local logger = require("common.lib.logger")
 
 -- the save.lua file contains the read/write functions
@@ -36,20 +37,14 @@ function save.read_user_id_file(serverIP)
   return userID
 end
 
--- I think this is unnecessary as we use the path with love.filesystem.read which assumes / as the separator
--- But testing attack file generation seemed a bit out of scope for the intended changes, so leaving it for another time
-local sep = package.config:sub(1, 1) --determines os directory separator (i.e. "/" or "\")
-
 function save.readAttackFile(path)
   if FileUtils.exists(path) then
     local jsonData = love.filesystem.read(path)
     local trainingConf, position, errorMsg = json.decode(jsonData)
     if trainingConf then
       if not trainingConf.name or type(trainingConf.name) ~= "string" then
-        local filenameOnly = path:match('%' .. sep .. '?(.*)$')
-        if filenameOnly ~= nil then
-          trainingConf.name = FileUtils.getFileNameWithoutExtension(filenameOnly)
-        end
+        -- love.filesystem paths always use / whatever the OS
+        trainingConf.name = FileUtils.getFileNameWithoutExtension(path:match("[^/]*$"))
       end
       return trainingConf
     else
@@ -66,7 +61,9 @@ function save.readAttackFiles(path)
     local current_path = path .. "/" .. v
     if lfs.getInfo(current_path) then
       if lfs.getInfo(current_path).type == "directory" then
-        save.readAttackFiles(current_path)
+        for _, training_conf in ipairs(save.readAttackFiles(current_path)) do
+          results[#results+1] = training_conf
+        end
       else
         local training_conf = save.readAttackFile(current_path)
         if training_conf ~= nil and training_conf.attackPatterns and #training_conf.attackPatterns > 0 then

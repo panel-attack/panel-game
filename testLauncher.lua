@@ -100,6 +100,7 @@ local allTests = {
   "server.tests.ConnectionPingTests",
   "server.tests.ServerPingTests",
   "client.tests.FileUtilsTests",
+  "client.tests.SaveTests",
   "client.tests.GraphicsUtilTests",
   "client.tests.ReplayFileDropTests",
   "client.tests.ModControllerTests",
