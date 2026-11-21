@@ -1,7 +1,7 @@
 # Debug Settings System Documentation
 
 ## Overview
-The Debug Settings system provides runtime-configurable debug features through a UI overlay. Settings are persisted to `config.debug` and can be accessed anywhere via the `DebugSettings` singleton.
+The Debug Settings system provides runtime-configurable debug features through the Options > Debug menu and, in debug builds, a UI overlay. Settings are persisted to `config.debug` and can be accessed anywhere via the `DebugSettings` singleton.
 
 ## Architecture
 
@@ -15,15 +15,15 @@ The Debug Settings system provides runtime-configurable debug features through a
 Settings can be marked as `debugBuildOnly = true` to control their availability:
 
 ### Debug Builds (`DEBUG_ENABLED = true`)
-- Setting appears in the UI overlay
+- Setting appears in the UI overlay and under Options > Debug
 - Can be toggled on/off by the user
 - Value persists to config file
 - Returns actual user-configured value
 
 ### Release Builds (`DEBUG_ENABLED = false`)
-- Setting is hidden from the UI overlay
+- The UI overlay is not created; the setting is hidden from Options > Debug
 - Always returns the default value (typically `false`)
-- Persisted value is ignored
+- Persisted value is ignored, and replaced by the default the next time any debug setting is saved
 - Cannot be changed at runtime
 
 This is implemented through two mechanisms:
