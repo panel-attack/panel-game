@@ -262,7 +262,7 @@ jobs:
           exit 1
 
       - name: Upload Test Logs on Failure
-        if: steps.tests.outcome == 'failure'
+        if: always() && steps.tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: test-logs
