@@ -1,7 +1,6 @@
-This README consists of 3 parts.  
+This README consists of 2 parts.  
 In part 1 some general thoughts on stage creation are discussed.  
 In part 2 you can find an exhaustive list of all assets used for stages.  
-In part 3 you can learn how to make your mod support different resolutions.
 
 # How to approach stage creation
 
@@ -13,7 +12,7 @@ Rather than trying to read through all of this and trying to understand it, it o
 
 Well, yes and no.  
 Over the years, many things have changed and a mod created five, two, one or half a year ago may not use all features available or not use the available features optimally.  
-Chain cards for example can go up to x99, combo SFX can be assigned per combo size if you wish so and high resolution assets actually look good on high resolution monitors now (unlike in the past).  
+Chain cards for example can go up to x9999, combo SFX can be assigned per combo size if you wish so and high resolution assets actually look good on high resolution monitors now (unlike in the past).  
 All of the mentioned changes happened in late 2022 and who knows what the future brings? (aside from updates for this doc)
 
 Referencing existing mods is generally a fantastic idea (especially for garbage).  
@@ -69,7 +68,7 @@ Every config.json should specify the stage's id and its name.
 
 #### id
 
-The unique identifier of the stage. IF MISSING THE STAGE MAY BE IGNORED!  
+The unique identifier of the stage. IF MISSING THE STAGE WILL BE IGNORED!  
 The id should be long and unique so that the game can properly distinguish between different stage mods of potentially the same music/background.  
 It is generally recommended to add your username to the id to ensure its uniqueness.  
 For example "endaris_umineko_dir" for a stage mod of the song "dir" by user Endaris based on the Umineko no Naku Koro Ni games.
