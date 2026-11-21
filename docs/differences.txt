@@ -30,6 +30,6 @@ This grace period comes in the form of literal stop time, and it will not be gra
 Panel Attack instead implements this in the form of health.
 Health only drains when the player is topped out and has run out of stop/shake time.
 Health is separate from stop/shake time.
-Health is restored when you are no longer topped out.
+Health is restored when you are no longer topped out and no garbage is falling.
 
 Panel Attack uses modified frame data for level 9.

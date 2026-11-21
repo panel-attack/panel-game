@@ -134,8 +134,8 @@ It does not have to be blue but the name is kept for backwards compatibility wit
 #### Flags
 
 Flags are saved in the flags subdirectory.  
-Flags will be displayed during character selection on characters that specify a flag in their config.json that has an image of the same name in the flags directory.
-It is generally recommended to at least supply the flags already provided by the default theme to tell apart language specific versions of mods.  
+Flags will be displayed during character selection on characters that specify a flag in their config.json.
+Only these flags are loaded: cn, de, es, fr, gb, in, it, jp, pt and us. A flag your theme does not provide falls back to the default theme's.  
 
 #### Character Selection Cursor
 
@@ -157,7 +157,7 @@ The image used for this is called p1 or p2 respectively for each player number.
 
 #### Button Overlays
 
-`load` will be displayed on top of the player tile if the selected character of the player is still being loaded.
+`loading` will be displayed on top of the player tile if the selected character of the player is still being loaded.
 `ready` will be displayed on top of the player tile when the player has loaded all assets and readied up.  
 Additionally it used ingame during the countdown.
 `super` will be displayed on top of a character tile when holding the selection key and the character is super selectable.
@@ -175,10 +175,9 @@ Additionally it used ingame during the countdown.
 #### Level display
 
 Level icons have to be provided inside its own `level` subdirectory.  
-Each level has to provide a focused and unfocused version for the level slider:  
+Each level has to provide a focused and unfocused version for the level slider, except level 1 which has no unfocused version:  
 ```
 level1
-level1unfocus
 level2
 level2unfocus
 etc...
@@ -205,8 +204,9 @@ They will be scaled to be quadratic if they aren't already, recommended size is 
 
 Chain cards are saved in the chain subdirectory.  
 They are displayed upon achieving a chain during gameplay and also shown in analytics.  
-Panel Attack supports up to 999 numbered chain cards plus one for a mystery chain.  
-Chain cards have to be named chain, followed by 2 digits for the chain index, e.g. chain02.png for a x2 chain.
+Panel Attack supports up to 9999 numbered chain cards plus one for a mystery chain.  
+Chain cards have to be named chain, followed by at least 2 digits for the chain index, e.g. chain02.png for a x2 chain and chain100.png for a x100 chain.
+Above x13, cards are loaded until the first missing number. A theme without a chain folder uses the default theme's chain cards.  
 chain00.png is used as the mystery chain card and displayed for any chain index that does not have its own chain card.  
 The general recommendation is to provide chain cards up to x13, but better x19.
 
@@ -216,8 +216,8 @@ Combo cards are saved in the combo subdirectory.
 They are displayed upon achieving a combo during gameplay and also shown in analytics.  
 Combos are naturally limited to +66 due to the stack size.
 Combo cards have to be named combo, followed by 2 digits for the combo size, e.g. `combo04.png` for a +4 combo.
-If a combo does not have a card, the +30 combo card will get displayed.  
-If that one isn't available either, the game falls back to the mystery chain card.  
+If a combo does not have a card, the default theme's card for that combo is displayed.  
+If that one isn't available either, the game falls back to the mystery combo card `combo00`.  
 The general recommendation is to provide combo cards at least up to +27, but better all combo sizes.
 
 #### Ingame cursor
@@ -238,7 +238,7 @@ They need to be saved in the frame subdirectory.
 ##### frame
 
 Image for the borders to left, right and top side of the stack.  
-Will always get scaled to an aspect ratio of 13:28!!  
+Will always get scaled to an aspect ratio of 26:51!!  
 One version needs to be provided for each player:
 `frame1P` for player 1  
 `frame2P` for player 2  
@@ -280,7 +280,7 @@ This expects separate compartments for health and invincibility frames.
 
 Position and scale have to be configured separately in the config.json:
 ```
-"multibar_Pos": [-13, 96],
+"multibar_Pos": [-12, 589],
 "multibar_Scale": 1,
 ```
 
@@ -288,7 +288,7 @@ For absolute multibars, the y-offset refers to the bottom of the multibar, not t
 
 For a relative multibar, the compartment for health bar needs to be specified separately:
 ```
-"healthbar_frame_Pos": [-17, -4],
+"healthbar_frame_Pos": [-51, -12],
 "healthbar_frame_Scale": 1,
 ```
 
@@ -354,7 +354,7 @@ The position and font size of the player names are configurable:
 
 The position of the "game over" text.
 ```
-"gameover_text_Pos": [640, 620],
+"gameover_text_Pos": [640, 60],
 ```
 
 ##### Score
@@ -366,7 +366,7 @@ Configuration:
 "scoreLabel_Scale": 1,
 "scoreLabel_Pos": [316, 64],
 "score_Scale": 0.5,
-"score_Pos": [352, 88],
+"score_Pos": [355, 88],
 ```
 
 ##### Speed
@@ -378,7 +378,7 @@ Configuration:
 "speedLabel_Scale": 1,
 "speedLabel_Pos": [316, 122],
 "speed_Scale": 0.5,
-"speed_Pos": [352, 146],
+"speed_Pos": [355, 146],
 ```
 
 ##### Level
@@ -402,7 +402,7 @@ Configuration:
 "ratingLabel_Scale": 1,
 "ratingLabel_Pos": [310, 180],
 "rating_Scale": 0.5,
-"rating_Pos": [354, 206],
+"rating_Pos": [355, 206],
 ```
 
 ##### Wins
@@ -428,12 +428,8 @@ Configuration:
 "moveLabel_Scale": 1,
 "moveLabel_Pos": [312, 60],
 "move_Scale": 1,
-"move_Pos": [354, 86],
+"move_Pos": [355, 86],
 ```
-
-#### Fallback PopFX
-
-A theme should provide a fallback for the `burst` and `fade` PopFX tile maps for display in case the selected character does not provide them.  
 
 #### Analytics
 
@@ -451,7 +447,7 @@ All icons get scaled for quadratic display
 
 ## SFX assets
 
-You may use .mp3, .ogg, .wav, .it or .flac for these.  
+You may use .mp3, .ogg, .wav, .flac or the tracker formats listed in [modplug.md](modplug.md) for these.  
 .midi files are not supported by the framework Panel Attack uses so please refrain from asking devs to support that.  
 All file names are case sensitive and the extension *always* has to be lowercase!  
 While an incorrectly cased file may load on Windows, it will not on other operating systems!  
@@ -519,7 +515,7 @@ If `main` exists but `select_screen` does not, `main` will play in character sel
 
 ### Font
 
-You may provide a font by simply dropping a .ttf font file in the theme folder.  
+You may provide a font by simply dropping a .ttf or .otf font file in the theme folder.  
 
 #### config
 
