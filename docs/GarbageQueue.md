@@ -18,7 +18,7 @@ Upon achieving a chain or combo during the check for matches, a stack will push 
 The staging area is the area in which garbage, specifically chain garbage, may still get modified and in which garbage orders and delays itself according to some rules.  
 
 The cardinal rules are the following:  
-1. When a piece of garbage enters staging, it is scheduled to stay inside of staging for a minimum of 90 frames.
+1. When a piece of garbage enters staging, it is scheduled to stay inside of staging for a minimum of 91 frames.
 2. Combo garbage cannot leave the staging phase while chain garbage remains in it.
 3. Metal garbage cannot leave the staging phase while chain or combo garbage remains in it.
 
@@ -48,7 +48,7 @@ Only one piece of garbage may be dropped per frame.
 #### Priority rules 
 
 1. Chain garbage drops before combo garbage.  
-2. Chain garbage drops in order of creation.  
+2. Chain garbage drops in order of when its last chain link was earned, earliest first. This is usually the order the chains ended, but not always, since a chain ends some frames after its last link.  
 3. Combo garbage drops before metal garbage.  
 4. Combo garbage drops in order by width from small to big.  
 

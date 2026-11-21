@@ -93,7 +93,7 @@ function myClass.someFunction(someArg)
 end
 ```
 
-You can find a `settings.json.template` with suggested workspace settings that help with annotations and filtering out some files and "problems" LuaLS would flag otherwise.
+`.luarc.json` holds the LuaLS settings that help with annotations and filtering out some files and "problems" LuaLS would flag otherwise. `.vscode/launch.json.template` holds suggested launch configurations.
 
 ## Formatting Guidelines
 

@@ -113,8 +113,8 @@ If no start timing is given, a suitable start timing is selected based on puzzle
 - every other puzzle will use "First Input" if a cursor start position is given and "First Swap" if not
 
 #### Optional Fields
-- **"Stop"** - specifies how many frames of stop time are initially granted to the player
-- **"Shake"** - specifies how many frames of shake time are initially granted to the player
+- **"Stop"** - specifies how many frames of stop time are initially granted to the player; only used by puzzles with a Clear goal
+- **"Shake"** - specifies how many frames of shake time are initially granted to the player; only used by puzzles with a Clear goal
 - **"CursorStartLeft"** - specifies where the left part of the cursor should start the puzzle
   - Format: `{ "Row": 1, "Column": 1 }`
   - Valid ranges: Row must be 1-12, Column must be 1-5
