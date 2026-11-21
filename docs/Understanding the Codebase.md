@@ -2,15 +2,15 @@
 This version seeks to be more brief and on-point for people familiar with lua/love and the game itself (as a player).  
 
 The codebase combines code used for the client and the server. Code used by both or that is anticipated to be used by both is located in the `common` folder.  
-Files in the common folder should have no references to files in the server/client folders. The only exception to this are tests that may use I/O living in the client to load replays, puzzles and configurations as test data.
+Files in the common folder should have no references to files in the server/client folders.
 
 The server has a separate documentation so this document mainly deals with the client architecture.
 
 A `Scene` is the overarching concept of a thing that manages what you see on a screen, what you hear on a screen and how you can interact with that screen.  
-`Scene`s are managed by a `NavigationStack` via pop, push and pull operations with only the top-most `Scene` being active.
+`Scene`s are managed by a `NavigationStack` via push, pop, popToTop, popToName and replace operations with only the top-most `Scene` being active.
 
 To play games, a `BattleRoom` is created in which a number of `Player`s can modify their settings and eventually all ready up.
-Based on the settings of the `BattleRoom` itself, a `ClientMatch` is created which in turn creates `PlayerStack`s based on the settings of the `Player`s, forming a hierarchic architecture in which the components further down the bottom know nothing of the elements above.  
+Based on the settings of the `BattleRoom` itself, a `ClientMatch` is created which in turn creates `PlayerStack`s based on the settings of the `Player`s, forming a mostly hierarchic architecture: `ClientMatch` can be created from a `BattleRoom` and each client stack keeps a reference to its `MatchParticipant`.  
 `BattleRoom`, `Player`, `ClientMatch` and `PlayerStack` are the key points with `Player` and `PlayerStack` both having base classes `MatchPartipant` and `ClientStack` that define the interface for `BattleRoom` and `ClientMatch` to use them.  
 
 # Understanding the Panel Attack Codebase (the long version)
@@ -131,7 +131,7 @@ As they are mainly managed by the `ChallengeMode` itself they only implement the
 
 ### Ingame
 All actual ingame happening are operated on a `ClientMatch` that runs a certain number of `ClientStack`s belonging to `MatchParticipant`s.  
-`PlayerStack`, `ChallengeModePlayerStack` and `ClientMatch` are oblivious to the existence of `BattleRoom` and for every single game a new `ClientMatch` and new `ClientStack`s are being created - the `ClientMatch` based on the game mode and the `ClientStack`s based on the settings of the `MatchParticipant`s.
+For every single game a new `ClientMatch` and new `ClientStack`s are being created - the `ClientMatch` based on the game mode and the `ClientStack`s based on the settings of the `MatchParticipant`s.
 
 ## The engine
 
@@ -142,10 +142,10 @@ The bulk of the game physics lives inside the `Stack` class which is defined in 
 The client wraps engine classes like `Stack` and `Match` with its own `PlayerStack` and `ClientMatch` classes and registers callbacks to a set of predefined signals to add graphics and sound functionality to the raw physics as well as the actual input mechanism.
 
 The goal is for the engine to be entirely pure and not using love so that the server can run the engine as well, e.g. for validating online Time Attack scores for a leaderboard.
-At the time of writing, the remaining dependencies on love are related to the PRNG and the timer only.
+At the time of writing, the remaining dependencies on love are `love.timer`, `love.math` and, in `Puzzle.lua`, `love.data`.
 
 ### Stack.lua
-`Stack.lua` contains the code for construction of `Stack`s, running them, performing rollback, creating new rows, various puzzle stuff and most of the physics that is not directly related to the behaviour of an individual `Panel`.  
+`Stack.lua` contains the code for construction of `Stack`s, running them, performing rollback, creating new rows and most of the physics that is not directly related to the behaviour of an individual `Panel`.  
 
 ### Panel.lua
 The behaviour of individual `Panel`s is recorded in `Panel.lua`. Each panel on its own represents somewhat of a finite state machine that changes state based on its own state and the state of the panel below.  
@@ -156,7 +156,7 @@ Via player interaction there are 2 more transformations possible that are handle
 
 ### checkMatches.lua
 This file contains the entire routine for checking if there are any matches on the board.  
-As a natural extension of that, it is also responsible for transforming garbage panels into regular panels and fetch new colors for that purpose from the `PanelGenerator`.  
+As a natural extension of that, it is also responsible for transforming garbage panels into regular panels and fetch new colors for that purpose from the stack's `panelSource`.  
 Effectively it is just a small collection of `Stack` functions, isolated for better orientation within the repository.
 
 ### PanelGenerator.lua
@@ -173,20 +173,20 @@ Ideally the input and network parts should get separated at some point.
 The garbage queue defines the how garbage is treated when being sent from a stack as well as when being sent to a stack.  
 Garbage queues act as the primary mechanism for Stacks to indirectly interact with other Stacks by having the governing Match transfer garbage from one Stack's outgoing garbage queue to another Stack's incoming garbage queue.
 
-There is a dedicated document for explaining the workings of the garbage queue in the engine folder.
+The workings of the garbage queue are explained in [GarbageQueue.md](GarbageQueue.md).
 
 ### client/src/graphics/Telegraph.lua
 The telegraph is the visual representation of a Stack's outgoing garbage queue. It is only present if the Stack also has a target for its garbage.
 
 ### SimulatedStack.lua
 A fake stack based on `BaseStack` that can sport an AttackEngine and/or a HealthEngine to mimic a player without actually dealing with any of the complexity a fully fledged CPU player would require.  
-Includes graphics functions.
+Its graphics are provided by the client's `ChallengeModePlayerStack`.
 
 ### Match.lua
 A match creates and runs the stacks, holding and applying the concrete game settings that aren't on `Stack`.  
 As the controlling entity, the match is supposed to control all behaviours that involve more than one stack, such as determining whether a stack needs to save rollback copies or determining a winner.  
 There are still some interactions inside of `Stack` that I would rather see on `Match`, such as determining if shock panels should be in the game via a different avenue than levelData itself.
-The match will continue running stacks until either only one is left or until or done, depending on the given conditions for winning the match (see section below about GameModes).
+The match will continue running stacks until one of its match end conditions is met (see section below about GameModes).
 
 ### client/src/ClientMatch.lua
 The client-side wrapper for the engine `Match`, providing graphics and sfx related functions on top of the raw physics work done by match.
@@ -195,8 +195,8 @@ Some parts of rendering are instead taken care of by the scene running the Match
 ### GameModes.lua
 
 This effectively holds presets for existing game modes in the game.  
-In addition to game mode defining settings, they also contain which scene to use for setup and game.
-In the current iteration GameModes are thought to be mainly defined by a set of 5 settings:  
+In addition to game mode defining settings, they also name the scene to use for the game in `gameScene`.
+A `GameMode` is mainly defined by its `stackInteraction` and its `matchRules`, the latter defined in `common/data/MatchRules.lua`:  
 
 #### Stack Interactions
 Defining how the stacks interact with each other.  
@@ -206,63 +206,76 @@ The currently possible settings are
 - SELF, if garbage is sent to yourself
 - ATTACK_ENGINE, if garbage is sent by an attack engine
 
-#### Game Win Conditions
-These define a set of zero or more conditions that cause a `Stack` to stop running as soon as one is met.  
-The currently possible settings are  
-- NO_MATCHABLE_PANELS, if there are no remaining panels of color 1-8
-- NO_MATCHABLE_GARBAGE, if there is no unmatched garbage left on the board
+#### Match end conditions (`matchEndConditions`)
+These define when the match stops running its stacks.  
+- STACKS_ACTIVE, the match ends once at most the given number of stacks is still running
+- TIME_LIMIT, the match ends once the given time is up
 
-#### Game Over Conditions
+#### Stack win conditions (`stackWinConditions`)
+These define a set of zero or more conditions that cause a `Stack` to stop running once all of them are met.  
+The currently possible settings are  
+- MATCHABLE_PANELS, if there are no remaining panels of color 1-8
+- MATCHABLE_GARBAGE_PANELS, if every garbage block on the board was hit; clear puzzles no longer use it, it stays for replays recorded with it
+- GARBAGE_BUFFER_EXCEEDED, if a hit needs more garbage panels than the panel source's buffer holds
+- CHAINS and COMBOS, if the given number of chains or combos of each given size were made
+- SCORE
+
+#### Stack over conditions (`stackOverConditions`)
 These define a set of zero or more conditions that cause a `Stack` to go game over as soon as one is met.  
 The currently possible settings are  
-- NEGATIVE_HEALTH, results in game over if `health` reaches 0
-- NO_MOVES_LEFT, results in game over if the amount of available moves for a puzzle has been met
-- CHAIN_DROPPED, results in game over if the active chain was dropped
+- HEALTH, results in game over if `health` reaches the given value
+- SWAPS, results in game over if the amount of available swaps for a puzzle has been used up
+- CHAIN, results in game over if the active chain was dropped
+- GOALS_UNREACHABLE, results in game over if the board no longer holds the panels a remaining goal would need
 
-#### Match Win Conditions
-These define a set of zero or more conditions to determine a winner between multiple Stacks inside a Match.  
-The currently possible settings are  
-- LAST_ALIVE, the last stack alive wins, typically used with no conditions for game win on the Stack level
+#### Match win ruleset (`matchWinRuleset`)
+This is an ordered list of criteria that determine a winner between multiple Stacks inside a Match. Each entry pairs a criterion with an order (`LOWEST` or `HIGHEST`).  
+The currently possible criteria are  
+- GAME_OVER_CLOCK, the stack that stayed alive longest wins
 - SCORE, the stack with the highest score wins
-- TIME, the stack with the lowest clock time wins
+- TIME, the stack with the fewest confirmed inputs wins
 
-Match win conditions are order sensitive and are evaluated until the last one while a tie is present.  
+The ruleset is evaluated in order until a single winner is left or no entries remain, which may result in a tie.  
 Example:  
-In a hypothetical 99999 point race capped to 10 minutes with the match win condition { SCORE, LAST_ALIVE, TIME }, player 1 and player 2 manage to reach 99999 points before time is up, player 3 self destructs at 72000 points before time is up while player 4 only manages to reach 43000 points when time is up.
+In a hypothetical 99999 point race capped to 10 minutes with the ruleset { SCORE, GAME_OVER_CLOCK, TIME }, player 1 and player 2 manage to reach 99999 points before time is up, player 3 self destructs at 72000 points before time is up while player 4 only manages to reach 43000 points when time is up.
 First SCORE is evaluated. Player 3 and player 4 are both eliminated as potential winners because player 1 and 2 beat them in points.  
-Second LAST_ALIVE is evaluated. Both player 1 and 2 finished in a winning state so they aren't game over, they are still tied.  
-Finally TIME is evaluated, player 2 has a lower clock time than player 1 so they are determined winner.  
+Second GAME_OVER_CLOCK is evaluated. Both player 1 and 2 finished in a winning state so they aren't game over, they are still tied.  
+Finally TIME is evaluated, player 2 has fewer confirmed inputs than player 1 so they are determined winner.  
 In the future each condition should also act as a tiebreaker so that player 3 would be determined to beat player 4 because they win in the score win condition.
 
-Besides the LAST_ALIVE they're not in use so the existing implementations may actually not work.
+All three criteria are used by the presets in `GameModes.lua`.
 
 #### Stack behaviours
-Stack possesses certain behaviour flags under its `behaviours` table that can toggle major functions.  
+Stack possesses certain behaviour flags under its `behaviours` table that can toggle major functions, defined in `common/data/StackBehaviours.lua`.  
 Currently available toggles are  
 - passiveRaise, controls if the Stack will passively rise from the bottom
 If disabled, the player cannot lose health from being topped out.  
-The NEGATIVE_HEALTH condition may still be met by manually raising while topped out.
+The HEALTH condition may still be met by manually raising while topped out.
 - allowManualRaise, controls if Raise input can be used to manually raise the stack
+- swapStallingMode, controls how swaps are treated with respect to stalling passive raise
+- swapStallingPunish, controls how much health is deducted for stalling swaps
+- delaySimulationUntil, delays the simulation until the first swap, the first input or the end of the countdown
 
-At the moment Stack behaviours are only applied by way of setting a puzzle.  
-As different puzzle types may have different needs for these (e.g. clear puzzles needing death), this is currently not preset for any GameMode preset and they're always assumed until toggled off by setting a puzzle.
+Stacks start with `StackBehaviours.getDefault()`, overridden by `matchRules.stackSetupModifications.behaviours`.  
+At the moment that table is only filled by `Puzzle:toGameMode`, as different puzzle types have different needs for these (e.g. clear puzzles needing death).
 
 ### Summary
 
 As a short version for understanding "roughly" what is going on as part of a single player match:  
 Inside of a `BattleRoom`, after the `Player` has readied up a `ClientMatch` is being created and started.  
-In the start process, a `PlayerStack` is being constructed via the constructor `PlayerStack = class(... etc)` based on the `Player`'s settings.  
+In the start process, the `Match` creates the engine `Stack` based on the `Player`'s settings and `Player:createClientStack` wraps it in a `PlayerStack`.  
 Every frame, `ClientMatch:run()` is called on the game scene which in turn runs the engine match and the `Stack`s.  
-Via `inputManager.lua`, there are inputs injected to the `Stack`'s `confirmedInput` via `receiveConfirmedInput`.
-`Stack.run` applies the inputs as part of `Stack.simulate` and advances its state by one frame.  
-If you read the comments for `Stack.simulate`, you may notice a suspicious absence of phase 1 and 2, mostly because they already got extracted into separate functions.
+`PlayerStack:send_controls` encodes the player's input configuration (kept up to date by `inputManager.lua`) and injects it into the `Stack`'s `confirmedInput` via `receiveConfirmedInput`.
+`Stack:run` applies the inputs as part of `Stack:runPhysics` and advances its state by one frame.  
+If you read the comments for `Stack:runPhysics`, you may notice a suspicious absence of phase 1 and 2, mostly because they already got extracted into separate functions.
 
 ### Replays and Interoperability
 
 common/data defines some classes and functions that serve as interop between server and client.
 
 Currently these are:
-Replay, ReplayPlayer, LevelData, LevelPresets and TouchDataEncoding and (yet to be moved there) GameModes.
+GameModes, InputCompression, JsonSafePrecision, KeyDataEncoding, LevelData, LevelPresets, MatchRules, ReplayV3, StackBehaviours and TouchDataEncoding.  
+The older ReplayV2 and ReplayV2Player live in common/compatibility.
 
 If client or server have further needs than these classes provide, they should generally aim to create their own components that do not inherit from these to guarantee that client and server internals can be edited and refactored without impacting networking.
 
@@ -283,7 +296,7 @@ Effectively there are two big new things in the new user interface that comes wi
 
 Touch is implemented via the pair of `ui/touchHandler.lua` and `ui/UIElement.lua`.  
 UiElements that should support touch are automatically considered touchable by implementing at least one of the functions `onTouch`, `onDrag`, `onHold` and `onRelease`.
-All scenes have an `uiRoot` that is traversed by the touch handler through `UIElement:getTouchedElement` and only children of the active scene's uiRoot are active for touch.  
+All scenes have an `uiRoot` that is traversed by the touch handler through `UIElement:getTouchedElement` which checks `GAME.uiRoot` first and then the active scene's uiRoot.  
 
 ### UIElement composite
 
@@ -320,8 +333,8 @@ If you add new localization entries please make sure to **always** add them at t
 ## Mods and Assets
 The default assets can be found in the `client/assets folder`.  
 `client/assets/default_data` contains mods that ship with the game while the other directories contain fallbacks for user mods that don't provide certain assets.
-Each graphic asset type has its own file for managing the loading process in `client/src/mods`:  
-`Character.lua`, `Panels.lua`, `Stages.lua` and `Theme.lua`.
+Each graphic asset type has its own class in `client/src/mods`: `Character.lua`, `Panels.lua`, `Stage.lua` and `Theme.lua`, based on `Mod.lua`.  
+Loading is handled by `CharacterLoader.lua`, `PanelLoader.lua`, `StageLoader.lua` and `ModLoader.lua`.
 Loading of characters and stages is described in the next section. Panels always get loaded fully due to their small size and only a single theme can be fully loaded at a time.  
 For characters, panels and stages, a table with id by index and a table with the actual mod by id is created for global access.  
 
@@ -348,7 +361,7 @@ Provides various helper functions around I/O access using the love.filesystem mo
 
 #### BarGraph.lua
 
-Draws a bar graph used for per frame value display in debug mode with FPS counter activated (see RunTimeGraph.lua)
+Draws a bar graph used for per frame value display when the "Show Runtime Graph" debug setting is enabled (see RunTimeGraph.lua)
 
 ### [batteries](https://github.com/1bardesign/batteries)
 
@@ -385,17 +398,17 @@ Additionally we can create class functions like this:
 `function Sample.someFunction() end`  
 Note that class functions innately cannot be local because they are defined on the table and therefore have their scope defined by the table itself.  
 
-Classes support inheritance for their constructor but child classes have no direct access to the functions of their parent classes if they overwrote their functions (e.g. no `super:print()`).
+Classes support inheritance for their constructor. A child class that overwrote a parent function can still call it as `Parent.someFunction(self)` or `Class.super.someFunction(self)`.
 
-#### queue.lua and by extension server_queue.lua and TimeQueue.lua
+#### Queue.lua and by extension server_queue.lua and TimeQueue.lua
 
 A queue is a numerically indexed table that works via the first-in-first-out principle.  
 Other than a regularly indexed table it cannot be iterated with ipairs as it does not shift queue entries down by an index after removing an element. This is mainly a performance concern as `table.remove(t, 1)` is quite expensive performancewise on bigger tables.  
-On any persistent table within engine that has entries removed from the front, `queue.lua` should be used.  
+On any persistent table within engine that has entries removed from the front, `common/lib/Queue.lua` should be used.  
 
-`server_queue.lua` uses a similar approach albeit under the premise that elements may get removed from anywhere in the queue, not just the front. The name is misleading and mostly owed to the original creation for queueing incoming server messages.
+`client/src/server_queue.lua` uses a similar approach albeit under the premise that elements may get removed from anywhere in the queue, not just the front. The name is misleading and mostly owed to the original creation for queueing incoming server messages.
 
-`TimeQueue.lua` does not queue by index but instead by time. Its primary objective is to schedule or delay events pushed to it for later usage. At the moment it is only being used with its delay function for behaviour testing with delayed message processing of the `TcpClient`.
+`client/src/TimeQueue.lua` does not queue by index but instead by time. Its primary objective is to schedule or delay events pushed to it for later usage. At the moment it is only being used with its delay function for behaviour testing with delayed message processing of the `TcpClient`.
 
 ## Libraries
 
@@ -428,7 +441,7 @@ This may include network components of classes that are not primarily network or
 ### ServerMessages.lua
 
 Provides sanitization in format for messages the server may send to the client.  
-Along with ClientProtocol.lua this serves as an extra level of abstraction so that the client internals don't have to match whatever the server sends.
+Along with ServerProtocol.lua this serves as an extra level of abstraction so that the client internals don't have to match whatever the server sends.
 
 ### LoginRoutine.lua
 

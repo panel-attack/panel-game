@@ -93,7 +93,7 @@ You can also hide single replay, puzzle and training files by renaming them and 
 Alternatively, Options > Mod Management lets you set every character, stage and panel set, and every folder holding them, to one of three statuses:
   - **Shown**: offered in selection and used for random picks.
   - **Hidden**: not offered in selection, but still used when an opponent picks it.
-  - **Off**: not loaded; an opponent's character or stage you turned off is replaced with a random one, and their panel set with yours.
+  - **Off**: not offered in selection or used for random picks; an opponent's character or stage you turned off is replaced with a random one, and their panel set with yours.
 
 A folder's status caps everything inside it, so a hidden folder hides all its mods, and an off folder turns them all off. The mods inside keep their own status, so raising the folder again brings them back as they were.  
 The arrows next to each row change the order mods are listed in, within their folder. Mods installed later go at the end of a folder you reordered.

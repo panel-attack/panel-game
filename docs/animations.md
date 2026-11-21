@@ -129,7 +129,7 @@ Determines which point of the drawable is positioned at the x,y coordinates. Opt
 Drawables with non-`"topLeft"` anchor must have width and height greater than 0 set or a texture
 
 #### `pivot`
-Determines the point around which rotation and scaling occur. Same options as `anchor` (default: `"center"`).
+Determines the point around which rotation and scaling occur. Same options as `anchor` (default: `"center"` for drawables with a texture, `"topLeft"` for containers).
 
 Drawables with non-`"topLeft"` pivot must have width and height greater than 0 set or a texture
 
@@ -174,9 +174,9 @@ Array of animation track objects that define how the drawable's properties chang
   - `"yoyo"` – Plays the steps backwards back to the start, then forwards again, and so on.
 
 ##### Step Properties (within each step in `steps`):
-- `durationSeconds`: How long this step takes to complete
+- `durationSeconds`: How long this step takes to complete (required)
 - `delaySeconds`: Delay before starting this step (optional)
-- `easeType`: Easing function to use for the animation
+- `easeType`: Easing function to use for the animation (required)
   - `linear` – Constant speed.
   - `quadin` / `quadout` / `quadinout` – Ease using t² (slow > fast, fast > slow, or both).
   - `cubicin` / `cubicout` / `cubicinout` – Steeper cubic curve (t³).
@@ -186,7 +186,6 @@ Array of animation track objects that define how the drawable's properties chang
   - `expoin` / `expoout` / `expoinout` – Exponential acceleration/deceleration.
   - `circin` / `circout` / `circinout` – Circular motion effect.
   - `backin` / `backout` / `backinout` – Overshoots slightly before settling.
-  - `bouncein` / `bounceout` / `bounceinout` – Bounce effect on entry/exit.
   - `elasticin` / `elasticout` / `elasticinout` – Springy, elastic motion.
 - `animateProperties`: Object containing the target values for properties to animate to
 
