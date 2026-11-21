@@ -26,7 +26,8 @@ AttackPattern =
 ---@field delayBeforeStart integer How many frame the AttackEngine waits before running. \n
 --- Note if this is changed after attack patterns are added their times won't be updated.
 ---@field delayBeforeRepeat integer How many frames the AttackEngine waits after a full run before starting over
----@field disableQueueLimit boolean Attack patterns that put out a crazy amount of garbage can slow down the game, so by default we don't queue more than 72 attacks \n
+---@field disableQueueLimit boolean Attack patterns that put out a crazy amount of garbage can slow down the game, \n
+--- so by default no new attacks start while more than 6 deliveries are in transit in the outgoing garbage queue. \n
 --- This flag can be optionally set to disable that.
 ---@field treatMetalAsCombo boolean whether the metal garbage is treated the same as combo garbage (aka they can mix)
 ---@field attackPatterns AttackPattern[] The array of AttackPattern objects this engine will run through.
