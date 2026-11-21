@@ -1,5 +1,7 @@
 # Running a Panel Attack Server
 
+This covers running the server from this repository, for development or your own hosting. The live servers are documented in the [panel-game-server](https://github.com/panel-attack/panel-game-server) repository, which is private to maintainers.
+
 The Panel Attack server runs with LuaJIT and can thus be run on any platform where LuaJIT runs.
 
 [LuaJIT](https://luajit.org/luajit.html) is a Just-In-Time compiler for Lua, based on Lua 5.1.
@@ -200,7 +202,7 @@ We do strongly recommend testing on a representative linux system or the beta se
 
 ### Debugging
 
-You should be able to debug the server the same way you debug the game using a `debug` flag. See the launch.json.template for more information.
+You should be able to debug the server the same way you debug the game using a `debug` flag. See `.vscode/launch.json.template` for more information.
 
 The server only writes logs once per minute to reduce the amount of I/O so if you're trying to start the server and login, be prepared to initially not see anything beyond the server tests.
 
@@ -219,7 +221,7 @@ If you want to access your server from an IP you need to add your ip to the clie
 Change MainMenu.lua, around where it says something like
 
 ```Lua
-MenuItem.createButtonMenuItem("Beta Server", nil, nil, function() switchToScene(Lobby({serverIp = "betaserver.panelattack.com", serverPort = 59569})) end)
+ui.MenuItem.createButtonMenuItem("Beta Server", nil, false, function() switchToLobby({serverIp = "betaserver.panelattack.com", serverPort = 59569}) end)
 ```
 
 to something that makes sense for your server. Replace "Beta Server" the URL and the port number. The port number is optional, by default the game will try to connect to the server's standard port 49569. This can be changed in `server/server_globals.lua` alongside a few other options.

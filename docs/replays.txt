@@ -15,9 +15,11 @@ Replays from incompatible engine versions show the usual version warning and can
 Wait for scene transitions to finish, and leave any online session before dropping a replay.
 No operating-system file association is needed. This does not add double-click-to-open support.
 
-"in_buf" and "I" represent P1's and P2's inputs, respectively. Every character represents a frame.
+Replay format
 
-Inputs are mapped to binary values.
+Replays use the ReplayV3 format (common/data/ReplayV3.lua). Each entry in "stacks" holds its stack's inputs in "inputs", one character per frame, run-length compressed by common/data/InputCompression.lua: a character followed by how many frames it repeats, with digit characters wrapped in parentheses.
+
+Controller inputs are mapped to binary values. Touch inputs use a different encoding (common/data/TouchDataEncoding.lua).
 0 - (do nothing)
 1 - Right
 2 - Left
@@ -43,5 +45,3 @@ E = Move Down
 I = Move Up
 Q = Swap
 g = Raise Stack
-
-"P" and "O" represent P1's and P2's stacks, respectively.

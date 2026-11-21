@@ -1,7 +1,7 @@
 Adding/modding panels: step by step instructions (Windows example):
 
 1. Press the Windows key then type "%appdata%" without quotes and hit enter.
-2. Look at the example folders located in: %appdata%\Panel Attack\panels\ for a reference of where your files should go and how they should be named. 
+2. Your panel sets go in %appdata%\Panel Attack\panels\. For a reference of how files should be named, look at the panel sets bundled in the game's `client/assets/default_data/panels` folder. 
    Folders starting with "__" will be ignored upon loading.
 3. Create a folder with your panels. The name of this folder is different from your panels id and is kinda meaningless (see config.json below).
 4. Place assets and json file in that folder with the proper names to add your data. Exhaustive list below.
@@ -51,7 +51,7 @@ would constitute 10 images for color 1:
 - the first digit is for the color
 - the remaining digits are for the numbering of the panels
 - you may use leading 0s, e.g. panel101.png instead of panel11.png
-- you may not have any gaps in your numbering
+- you may leave gaps in your numbering, as long as every image your animation configuration references exists; missing images 1-7 fall back to the default panel set
 
 ### sheet
 
@@ -103,7 +103,7 @@ The face state can be animated but it will not loop.
 #### popping
 
 Right before a matched panel disappears it plays the popping animation.  
-The popping animation is at maximum 6 frames long and does not loop.
+The popping animation is at maximum 6 frames long and does not loop. With only 1 frame configured, the last face frame is shown instead.
 
 #### hovering
 
@@ -186,11 +186,11 @@ If no animation configuration is set, the following is used:
    "flash": {"frames":[5, 1]},
    "face": {"frames":[6]},
    "popping": {"frames":[6]},
-   "hovering": {"frames":[7]},
+   "hovering": {"frames":[1]},
    "falling": {"frames":[1]},
    "dimmed": {"frames":[7]},
    "dead": {"frames":[6]},
-   "danger": {"durationPerFrame": 3, "frames":[1, 2, 3, 2, 1, 4]},
+   "danger": {"durationPerFrame": 3, "frames":[4, 1, 2, 3, 2, 1]},
    "garbagePop": {"frames": [1]},
    "garbageBounce": {"durationPerFrame": 3, "frames": [1, 4, 3, 2]}
 }
@@ -202,7 +202,8 @@ As an example, for the flash state, the game will alternate between image 5 and 
 ### Animation configuration with type "sheet"
 
 If using the type "sheet" it is assumed that the image has multiple rows where each row has one or more panels from left to right.  
-In the case of animations, the frames will be picked from left to right (with the exception of danger where they get picked right to left).  
+In the case of animations, the frames will be picked from left to right.  
+A custom animation configuration has to define every state except garbageBounce.  
 You can use the same row for more than one panel state.  
 
 Example:  
@@ -221,6 +222,7 @@ Example:
    "dimmed": {"row": 9, "frames": 1},
    "dead": {"row": 10, "frames": 1},
    "danger": {"durationPerFrame": 3, "row": 5, "frames": 6},
+   "garbagePop": {"row": 1, "frames": 1},
    "garbageBounce": {"durationPerFrame": 2, "row": 8, "frames": 3}
 }
 ```
