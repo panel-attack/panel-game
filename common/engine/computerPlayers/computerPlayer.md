@@ -2,7 +2,7 @@ This document describes the interface for computer players and the mechanism thr
 
 # Mechanism
 
-The computer player interacts with the game as an alternative form of an "input device". If a match has a computer player, the computer player runs as part of the `Match:run()` routine and queues up an input for the computer player's stack.
+The computer player interacts with the game as an alternative form of an "input device". No computer player is currently wired into matches: the hook in `ClientMatch:run()` that would run it and queue up an input for its stack is commented out.
 
 The class `ComputerPlayer` in `computerPlayer.lua` acts as en entry point and enables the usage of different implementations of a computer player by defining a pseudo-interface that implementations need to fulfill in order to work.
 

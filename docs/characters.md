@@ -1,7 +1,6 @@
-This README consists of 3 parts.  
+This README consists of 2 parts.  
 In part 1 some general thoughts on character creation are discussed.  
 In part 2 you can find an exhaustive list of all assets used for characters.  
-In part 3 you can learn how to make your mod support different resolutions.
 
 # How to approach character creation
 
@@ -13,7 +12,7 @@ Rather than trying to read through all of this and trying to understand it, it o
 
 Well, yes and no.  
 Over the years, many things have changed and a mod created five, two, one or half a year ago may not use all features available or not use the available features optimally.  
-Chain cards for example can go up to x999, combo SFX can be assigned per combo size if you wish so and high resolution assets actually look good on high resolution monitors now (unlike in the past).  
+Chain cards for example can go up to x9999, combo SFX can be assigned per combo size if you wish so and high resolution assets actually look good on high resolution monitors now (unlike in the past).  
 All of the mentioned changes happened in late 2022 and who knows what the future brings? (aside from updates for this doc)
 
 Referencing existing mods is generally a fantastic idea (especially for garbage).  
@@ -138,7 +137,7 @@ Every config.json should specify the character's id and its name.
 
 #### id
 
-The unique identifier of the character. IF MISSING THE CHARACTER MAY BE IGNORED!  
+The unique identifier of the character. IF MISSING THE CHARACTER WILL BE IGNORED!  
 The id should be long and unique so that the game can properly distinguish between different character mods of potentially the same character.  
 It is generally recommended to add your username to the id to ensure its uniqueness, e.g. "Sil_Paper_Mario" for a character mod of Mario by user Sil based on the Paper Mario games.  
 
@@ -244,7 +243,7 @@ Example:
 	x3 plays "chain3"(, "chain3_2", "chain3_3"...),  
 	...,  
 	x13 plays "chain13"(, "chain13_2", ...),  
-	x13+ plays "chain0"(, ...) 
+	chains longer than your highest numbered chain file play that file
 
 
 #### combo_style
@@ -292,7 +291,7 @@ This is only the default: players can change it in Options > Mod Management.
 #### flag
 
 Originally intended to display flags for language specific versions of the same mod.  
-An icon will be display next to the character's name in character select if a file with the same name as the value of this field is found in the flags folder of your active theme.
+An icon will be displayed in the bottom right corner of the character's button in character select if the value of this field is one of the flags your active theme provides: cn, de, es, fr, gb, in, it, jp, pt or us.
 
 
 ### Pop Effects configuration (PopFX)
@@ -503,7 +502,7 @@ Recommended size: 144x96px (2x resolution)
 
 ## Sound Effects (SFX)
 
-Allowed formats are .mp3, .ogg, .wav, .it, .flac.
+Allowed formats are .mp3, .ogg, .wav, .flac and the tracker formats listed in [modplug.md](modplug.md).
 
 Most SFX allow you to provide multiple variations. If multiple files are present for the same SFX, selection between the available files is random.  
 
@@ -556,7 +555,7 @@ Played when garbage lands on the character's side.
 
 #### selection
 
-Played when selecting the character in character selection.
+Played when selecting the character in character selection. Falls back to the theme's menu_validate sound.
 
 #### win
 
