@@ -91,6 +91,12 @@ function GraphicsUtil.combinedFilter(textures)
   return "nearest"
 end
 
+-- A one pixel transparent image, standing in for an image file that is there but cannot be loaded
+---@return love.Texture
+local function newTransparentImage()
+  return love.graphics.newImage(love.image.newImageData(1, 1))
+end
+
 function GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extension, scale, expectedWidth, expectedHeight)
   local scaleSuffixString = "@" .. scale .. "x"
   if scale == 1 then
@@ -108,9 +114,7 @@ function GraphicsUtil.privateLoadImageWithExtensionAndScale(pathAndName, extensi
     end
 
     logger.error("Error loading image: " .. fileName .. " Check it is valid and try resaving it in an image editor. If you are not the owner please get them to update it or download the latest version.")
-    result = GraphicsUtil.privateLoadImageWithExtensionAndScale("themes/Panel Attack/transparent", ".png", 1)
-    assert(result ~= next)
-    return result
+    return newTransparentImage()
   end
 
   return nil

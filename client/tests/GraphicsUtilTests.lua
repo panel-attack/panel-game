@@ -1,4 +1,5 @@
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local logger = require("common.lib.logger")
 
 -- readbackTexture reads a Canvas's pixels
 local function readbackTextureReadsACanvas()
@@ -49,3 +50,25 @@ end
 
 readbackTextureReadsACanvas()
 readbackTextureReadsAnImageAsItWasMade()
+
+-- a file that is there but is not an image loads as a transparent stand in, so whatever draws it draws nothing
+local function anImageThatCannotBeLoadedIsTransparent()
+  local folder = "graphicsUtilTestsImages"
+  love.filesystem.createDirectory(folder)
+  love.filesystem.write(folder .. "/broken.png", "not a png")
+  local logged
+  local originalError = logger.error
+  logger.error = function(message)
+    logged = message
+  end
+
+  local image = GraphicsUtil.loadImageFromSupportedExtensions(folder .. "/broken")
+
+  logger.error = originalError
+  love.filesystem.remove(folder .. "/broken.png")
+  love.filesystem.remove(folder)
+  assert(logged and logged:find("broken.png", 1, true), "the broken file is reported")
+  assert(image and image:getWidth() == 1 and image:getHeight() == 1, "the broken file loads as a transparent pixel")
+end
+
+anImageThatCannotBeLoadedIsTransparent()
