@@ -596,3 +596,17 @@ local function garbageAboveTheTopRowIsNotLostBeforeTheFirstSwap()
 end
 
 garbageAboveTheTopRowIsNotLostBeforeTheFirstSwap()
+
+local function aChainLinkRecordsTheRowAndColumnItWasMadeAt()
+  local match = StackReplayTestingUtils.createEndlessMatch(nil, nil, 10)
+  local stack = match.stacks[1]
+  ---@cast stack Stack
+
+  stack:pushGarbage({row = 3, column = 2}, true, 3, 0)
+  local link = stack.outgoingGarbage.currentChain.links[stack.stopWatch]
+
+  assert(link.rowEarned == 3 and link.colEarned == 2, "the attack has to fly from the panel that made the link")
+  StackReplayTestingUtils:cleanup(match)
+end
+
+aChainLinkRecordsTheRowAndColumnItWasMadeAt()
