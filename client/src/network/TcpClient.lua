@@ -241,21 +241,6 @@ function TcpClient:queueMessage(type, data)
   end
 end
 
-function TcpClient:dropOldInputMessages()
-  while true do
-    local message = self.receivedMessageQueue:top()
-    if not message then
-      break
-    end
-
-    if not message[NetworkProtocol.serverMessageTypes.opponentInput.prefix] and not message[NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix] then
-      break -- Found a non user input message. Stop. Future data is for next game
-    else
-      self.receivedMessageQueue:pop() -- old data, drop it
-    end
-  end
-end
-
 ---@return boolean # if nothing has arrived from the server for longer than SERVER_SILENCE_LIMIT
 function TcpClient:serverWentSilent()
   return love.timer.getTime() - self.lastReceiveTime > TcpClient.SERVER_SILENCE_LIMIT
