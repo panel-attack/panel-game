@@ -97,6 +97,7 @@ function ServerMessages.sanitizeRoomMessage(message)
     {
       replay = replay,
       match_start = true,
+      roomNumber = message.senderId,
     }
   elseif message.type == "spectatorUpdate" then
     return { spectators = message.content }
@@ -181,6 +182,7 @@ function ServerMessages.sanitizeServerMessage(message)
     return
     {
       spectate_request_granted = true,
+      roomNumber = message.content.roomNumber,
       stageId = message.content.stage,
       ranked = message.content.ranked,
       winCounts = winCounts,

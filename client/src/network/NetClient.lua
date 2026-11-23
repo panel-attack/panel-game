@@ -181,9 +181,15 @@ local function processTauntMessage(self, message)
 end
 
 ---@param self NetClient
----@param message { replay: ReplayV3, [string]: any }
+---@param message { replay: ReplayV3, roomNumber: integer }
 local function processMatchStartMessage(self, message)
-  if not self.room then
+  if not self.room or self.room.hasShutdown then
+    return
+  end
+
+  if message.roomNumber ~= self.room.roomNumber then
+    logger.debug("Ignoring match start for room " .. tostring(message.roomNumber) ..
+      " while in room " .. tostring(self.room.roomNumber))
     return
   end
 
