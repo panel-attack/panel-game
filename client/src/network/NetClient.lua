@@ -470,6 +470,7 @@ end
 ---@field lobbyDataV2 PersonalizedLobbyDataV2
 ---@field serverTimeDelta integer in seconds
 ---@field pings table<PublicPlayerID, PingSummary>? each player's ping in the latest ping update, nil until one arrives
+---@field hasSentErrorReport boolean if this run already sent the server an error report
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
@@ -477,6 +478,7 @@ local NetClient = class(function(self)
   self.pendingResponses = {}
   self.state = states.OFFLINE
   self.serverTimeDelta = 0
+  self.hasSentErrorReport = false
 
   resetLobbyData(self)
 
@@ -678,10 +680,16 @@ function NetClient:unregisterPlayerUpdates(room)
   end
 end
 
+-- Sends the server a report of the error that stopped the game; only the first one per run, because an error screen
+-- that fails again would otherwise report every frame
 ---@param errorData table
 ---@param server string
 ---@param port integer
 function NetClient:sendErrorReport(errorData, server, port)
+  if self.hasSentErrorReport then
+    return
+  end
+  self.hasSentErrorReport = true
   if not self:isConnected() then
     self.tcpClient:connectToServer(server, port)
   end

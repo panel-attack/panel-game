@@ -230,3 +230,23 @@ local function testPingOfAnUnmeasuredPlayerIsNil()
 end
 
 testPingOfAnUnmeasuredPlayerIsNil()
+
+local function testOnlyTheFirstErrorReportIsSent()
+  local netClient = NetClient()
+  local socket = fakeSocket()
+  local connections = 0
+  netClient.tcpClient.connectToServer = function(tcpClient)
+    connections = connections + 1
+    tcpClient.socket = socket
+    return true
+  end
+
+  netClient:sendErrorReport({error = "first"}, "127.0.0.1", 49569)
+  netClient:sendErrorReport({error = "second"}, "127.0.0.1", 49569)
+
+  assert(connections == 1, "only the first error report should connect to the server, but it connected " .. connections .. " times")
+  assert(#socket.sent == 1, "only the first error report should be sent, but " .. #socket.sent .. " were sent")
+  assert(socket.sent[1]:find("first"), "the report sent should be the first one")
+end
+
+testOnlyTheFirstErrorReportIsSent()
