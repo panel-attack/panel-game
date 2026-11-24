@@ -321,6 +321,20 @@ function Panels:load()
   end
 end
 
+-- Frees the sprite sheets and the sprite batches drawing them right away instead of whenever the garbage collector gets to them.
+-- Only this panel set holds them; everything else draws through it, so it can't draw after this.
+-- The display icons and single images stay, UI elements keep those.
+function Panels:releaseSheets()
+  for color, batch in pairs(self.batches) do
+    batch:release()
+    self.batches[color] = nil
+  end
+  for color, sheet in pairs(self.sheets) do
+    sheet:release()
+    self.sheets[color] = nil
+  end
+end
+
 
 ------------------------------------------
 --[[

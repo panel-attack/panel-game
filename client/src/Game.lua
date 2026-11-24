@@ -665,7 +665,7 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
   return positionChanged, scaleChanged
 end
 
--- Reloads the canvas and all images / fonts for the new game scale
+-- Reloads the canvas and all images / fonts for the new game scale, freeing the old ones first where nothing else holds them
 function Game:refreshCanvasAndImagesForNewScale()
   if themes == nil or themes[config.theme] == nil then
     return -- EARLY RETURN, assets haven't loaded the first time yet
@@ -674,7 +674,11 @@ function Game:refreshCanvasAndImagesForNewScale()
 
   self:drawLoadingString(loc("ld_characters"))
 
-  self.globalCanvas = love.graphics.newCanvas(GAME.globalCanvas:getWidth(), GAME.globalCanvas:getHeight(), {dpiscale=self:newCanvasSnappedScale()})
+  -- frees what the last reload left behind so the new images fit in graphics memory
+  collectgarbage("collect")
+  local previousCanvas = self.globalCanvas
+  self.globalCanvas = love.graphics.newCanvas(previousCanvas:getWidth(), previousCanvas:getHeight(), {dpiscale=self:newCanvasSnappedScale()})
+  previousCanvas:release()
   -- We need to reload all assets and fonts to get the new scaling info and filters
 
   -- Reload theme to get the new resolution assets
@@ -682,6 +686,8 @@ function Game:refreshCanvasAndImagesForNewScale()
   themes[config.theme]:final_init()
   -- Reload stages to get the new resolution assets
   stages_reload_graphics()
+  -- frees the theme and stage images just replaced before the panel sheets are drawn
+  collectgarbage("collect")
   -- Reload panels to get the new resolution assets
   PanelLoader.initPanels()
   -- Reload characters to get the new resolution assets

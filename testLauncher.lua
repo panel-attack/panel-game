@@ -133,6 +133,7 @@ local allTests = {
   "client.tests.TcpClientTests",
   "client.tests.ThemeTests",
   "client.tests.ImageFilterTests",
+  "client.tests.CanvasScaleTests",
   "client.tests.GameScaleTests",
   "client.tests.StackGraphicsTests",
   "client.tests.TelegraphTests",
