@@ -104,6 +104,7 @@ local allTests = {
   "client.tests.SaveTests",
   "client.tests.GraphicsUtilTests",
   "client.tests.ReplayFileDropTests",
+  "client.tests.ModLoaderTests",
   "client.tests.ModControllerTests",
   "client.tests.ModSettingsTests",
   "client.tests.ModFolderTreeTests",
