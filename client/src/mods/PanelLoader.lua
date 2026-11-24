@@ -38,6 +38,20 @@ local function addPanelDirectoriesRecursively(path, ids)
   end
 end
 
+-- Loads the panel set's images, or takes it out of allPanels and records why it can't in invalid
+---@param panelSet Panels
+---@param invalid table<Panels, string>
+---@return boolean loaded
+local function loadPanelSetOrDrop(panelSet, invalid)
+  local loaded, err = pcall(panelSet.load, panelSet)
+  if not loaded then
+    logger.error("Skipping panel set " .. panelSet.id .. " at " .. panelSet.path .. " because it failed to load: " .. tostring(err))
+    allPanels[panelSet.id] = nil
+    invalid[panelSet] = tostring(err)
+  end
+  return loaded
+end
+
 -- (Re)loads every panel set and fills the panel globals from the player's mod settings
 function PanelLoader.initPanels()
   if allPanels then
@@ -54,9 +68,12 @@ function PanelLoader.initPanels()
   addPanelDirectoriesRecursively("client/assets/default_data/panels", ids)
   addPanelDirectoriesRecursively("panels", ids)
 
-  for _, panelSet in pairs(allPanels) do
-    panelSet:load()
-  end
+  -- one broken set in the save directory must not stop the game from starting
+  local invalid = {}
+  ids = tableUtils.filter(ids, function(id)
+    return loadPanelSetOrDrop(allPanels[id], invalid)
+  end)
+  ModLoader.setInvalidMods(Panels, invalid)
 
   PanelLoader.tree = ModLoader.buildFolderTree(Panels, allPanels, ids)
   PanelLoader.refreshPanels()

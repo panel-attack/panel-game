@@ -111,7 +111,7 @@ local function load_panel_img(path, name, expectedWidth, expectedHeight)
     img = GraphicsUtil.loadImageFromSupportedExtensions("client/assets/panels/__default/" .. name, expectedWidth, expectedHeight)
 
     if not img then
-      error("Could not find default panel image")
+      error("Could not find panel image " .. path .. "/" .. name .. " or a default for it")
     end
   end
 
