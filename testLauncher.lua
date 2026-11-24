@@ -152,6 +152,7 @@ local allTests = {
   "client.tests.SetNameMenuTests",
   "client.tests.BattleRoomLifecycleTests",
   "client.tests.NetClientTests",
+  "client.tests.LoginRoutineTests",
   "client.tests.NotificationCenterTests",
   "client.tests.ShortcutsTests",
   "client.tests.GameTests",
