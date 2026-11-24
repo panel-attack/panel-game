@@ -408,6 +408,7 @@ function Game:onFileDropped(file)
 
   local replay = ReplayBrowser.createFromReplayFile(file)
   if not replay then
+    self.theme:playCancelSfx()
     return false
   end
 

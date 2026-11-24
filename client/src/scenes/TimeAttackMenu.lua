@@ -80,7 +80,7 @@ function TimeAttackMenu:loadUserInterface()
   self.ui.levelSelection:addElement(levelSlider, player)
 
   styleSelector.onValueChange = function(boolSelector, value)
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     if value and player.settings.style ~= GameModes.Styles.MODERN then
       -- Set levelData for modern style - this will trigger levelDataChanged signal which updates UI
       player:setLevelData(LevelPresets.getModern(player.settings.level))

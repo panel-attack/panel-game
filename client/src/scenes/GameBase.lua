@@ -216,7 +216,7 @@ end
 function GameBase:createPauseMenu()
   self.pauseMenuItems = {
     ui.MenuItem.createButtonMenuItem("pause_resume", nil, true, function()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       self.pauseMenu:setVisibility(false)
       self.uiRoot:unfocusChild(InputSource.anyPlayer)
       self.match:togglePause()
@@ -251,14 +251,14 @@ end
 
 -- Aborts the match and leaves the game scene
 function GameBase:leaveGame()
-  GAME.theme:playCancelSfx()
+  self:playCancelSfx()
   self.match:abort()
   self:startNextScene()
 end
 
 -- Replaces the pause heading with the leave warning and the pause menu with a choice between leaving and going back to it
 function GameBase:showLeaveWarning()
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   self.pauseTitle = "warning"
   self.pauseSubtitle = self.leaveWarning
   self.pauseMenu:setMenuItems({
@@ -266,7 +266,7 @@ function GameBase:showLeaveWarning()
       self:leaveGame()
     end),
     ui.MenuItem.createButtonMenuItem("back", nil, true, function()
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       self.pauseTitle = "pause"
       self.pauseSubtitle = "pl_pause_help"
       self.pauseMenu:setMenuItems(self.pauseMenuItems)
@@ -295,7 +295,7 @@ function GameBase:handlePause()
         self.pauseState.musicWasPlaying = self.stageTrack:isPlaying()
         SoundController:pauseMusic()
       end
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   else
     if not self.pauseMenu:hasFocus(InputSource.anyPlayer) and playerPressingStart(self.match) == false then
@@ -340,7 +340,7 @@ function GameBase:runGameOver()
   local keyPressed = self:readyToProceedToNextScene()
 
   if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     -- the button used to leave is likely still held, so the next scene should not act on it until it is released
     input:ignoreHeldKeysUntilReleased()
     collectgarbage("collect")
@@ -472,7 +472,7 @@ function GameBase:update(dt)
   else
     if not self.match:hasLocalPlayer() then
       if input.isDown["MenuEsc"] then
-        GAME.theme:playCancelSfx()
+        self:playCancelSfx()
         local room = GAME.netClient:isConnected() and GAME.battleRoom
         if room then
           -- the room is closing rather than going back to character select, so its matchEnded callback must not

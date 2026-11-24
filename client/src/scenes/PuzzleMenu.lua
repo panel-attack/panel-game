@@ -99,11 +99,11 @@ function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
 
   self:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
   player:setWantsReady(true)
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
 end
 
 function PuzzleMenu:exit()
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   self.battleRoom:shutdown()
   GAME.navigationStack:pop()
 end
@@ -137,7 +137,7 @@ function PuzzleMenu:load(sceneParams)
       tickLength = tickLength,
       value = config.puzzle_level or 5,
       onValueChange = function(s)
-        GAME.theme:playMoveSfx()
+        self:playMoveSfx()
         config.puzzle_level = s.value
       end
     })
@@ -151,7 +151,7 @@ function PuzzleMenu:load(sceneParams)
       values = {false, true},
       selectedIndex = config.puzzle_randomColors and 2 or 1,
       onChange = function(group, value)
-        GAME.theme:playMoveSfx()
+        self:playMoveSfx()
         config.puzzle_randomColors = value
       end
     }
@@ -298,7 +298,7 @@ function PuzzleMenu:loadMenu()
       vAlign = "center"
     }),
     onClick = function()
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       if self:currentlyAtRootLevel() then
         self:exit()
       else
@@ -424,7 +424,7 @@ function PuzzleMenu:createEditPuzzleButton(puzzleSet, index)
     outlineColor = {0, 0, 0, 0},
     onClick = function()
       self:openPuzzleEditor(puzzleSet, index)
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
   
@@ -580,7 +580,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
       vAlign = "center"
     }),
     onClick = function() 
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       -- Save current selected index before navigating
       if self.menu and self.menu.selectedIndex <= #self.menu.menuItems then
         self.selectedIndexStack[#self.selectedIndexStack+1] = self.menu.selectedIndex

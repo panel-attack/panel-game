@@ -141,6 +141,7 @@ local allTests = {
   "client.tests.ScrollContainerTests",
   "client.tests.InputFieldTests",
   "client.tests.PlayerSettingsTests",
+  "client.tests.CharacterSelectSoundTests",
   "client.tests.SetNameMenuTests",
   "client.tests.BattleRoomLifecycleTests",
   "client.tests.NetClientTests",

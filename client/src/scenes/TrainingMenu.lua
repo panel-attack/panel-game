@@ -20,8 +20,8 @@ local TrainingMenu = class(
 
 TrainingMenu.name = "TrainingMenu"
 
-local function exitMenu()
-  GAME.theme:playCancelSfx()
+local function exitMenu(backButton)
+  backButton:playCancelSfx()
   GAME.navigationStack:pop()
 end
 
@@ -79,7 +79,7 @@ function TrainingMenu:load(sceneParams)
       values = garbagePatternValues,
       selectedIndex = 1,
       onChange = function(value)
-        GAME.theme:playMoveSfx()
+        self:playMoveSfx()
       end
     }
   )

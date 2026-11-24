@@ -124,8 +124,9 @@ function Scene:playCancelSfx()
   self.uiRoot:playCancelSfx()
 end
 
-function Scene.pop()
-  GAME.theme:playCancelSfx()
+-- Goes back to the previous scene with the cancel sound
+function Scene:pop()
+  self:playCancelSfx()
   GAME.navigationStack:pop()
 end
 

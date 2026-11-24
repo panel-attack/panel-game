@@ -59,9 +59,9 @@ function GridCursor:updatePosition(x, y, silent)
   self.selectedGridPos.y = y
   if not silent then
     if moved then
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
     else
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
     end
   end
   self:onMove(moved)
@@ -195,7 +195,7 @@ function GridCursor:receiveInputsSelf(inputSource, dt)
       if element.onSelect then
         element:onSelect(self, inputSource)
       else
-        GAME.theme:playCancelSfx()
+        self:playCancelSfx()
       end
     elseif inputs.isDown.Raise1 then
       if self.raise1Callback then

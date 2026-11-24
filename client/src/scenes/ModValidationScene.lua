@@ -34,23 +34,23 @@ ModValidationScene.name = "ModValidationScene"
 
 function ModValidationScene:updateSelf(dt)
   if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     self.offset = self.offset + SCROLL_STEP
   end
   if inputs:isPressedWithRepeat("MenuDown", .25, 0.03) then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     self.offset = self.offset - SCROLL_STEP
   end
   if inputs.isDown.MenuLeft then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     self.offset = self.offset + self.scrollContainer.height - SCROLL_STEP
   end
   if inputs.isDown.MenuRight then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     self.offset = self.offset - self.scrollContainer.height + SCROLL_STEP
   end
   if inputs.isDown["MenuEsc"] then
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     GAME.navigationStack:pop()
   end
 

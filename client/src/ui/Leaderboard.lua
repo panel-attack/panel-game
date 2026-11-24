@@ -69,22 +69,22 @@ function Leaderboard:receiveInputsSelf(inputSource, dt)
   local inputs = inputSource:getInputs()
   if self.data then
     if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       self.firstVisibleIndex = util.bound(1, self.firstVisibleIndex - 1, #self.data)
       self.lastVisibleIndex = util.bound(1, self.firstVisibleIndex + self.visibleEntries, #self.data)
       self:refreshView()
     elseif inputs:isPressedWithRepeat("MenuDown", .25, 0.03) then
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       self.lastVisibleIndex = util.bound(1, self.lastVisibleIndex + 1, #self.data)
       self.firstVisibleIndex = util.bound(1, self.lastVisibleIndex - self.visibleEntries, #self.data)
       self:refreshView()
     elseif inputs.isDown["MenuLeft"] then
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       self.firstVisibleIndex = util.bound(1, self.firstVisibleIndex - self.visibleEntries, #self.data)
       self.lastVisibleIndex = util.bound(1, self.firstVisibleIndex + self.visibleEntries, #self.data)
       self:refreshView()
     elseif inputs.isDown["MenuRight"] then
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       self.lastVisibleIndex = util.bound(1, self.lastVisibleIndex + self.visibleEntries, #self.data)
       self.firstVisibleIndex = util.bound(1, self.lastVisibleIndex - self.visibleEntries, #self.data)
       self:refreshView()

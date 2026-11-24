@@ -86,12 +86,12 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
   contentStack:addElement(messageLine3)
 
   local discordLinkButton = ui.MenuItem.createButtonMenuItem("discord_join_link", nil, nil, function()
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     love.system.openURL("https://discord.panelattack.com")
   end)
   
   local continueButton = ui.MenuItem.createButtonMenuItem("next_button", nil, nil, function()
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     config.discordCommunityShown = true
     write_conf_file()
     GAME.navigationStack:pop()
