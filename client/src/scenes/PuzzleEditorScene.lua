@@ -250,21 +250,21 @@ function PuzzleEditorScene:createEditorControls()
   controls[#controls + 1] = self.palettePanel
 
   controls[#controls + 1] = ui.TextButton({
-    label = ui.Label({text = "Clear Solution"}),
+    label = ui.Label({text = "pz_editor_clear_solution"}),
     width = 100,
     height = 25,
     onClick = function() self:clearSolution() end
   })
 
   controls[#controls + 1] = ui.TextButton({
-    label = ui.Label({text = "Save Puzzle"}),
+    label = ui.Label({text = "pz_editor_save_puzzle"}),
     width = 100,
     height = 25,
     onClick = function() self:savePuzzle() end
   })
 
   controls[#controls + 1] = ui.TextButton({
-    label = ui.Label({text = "Exit Editor"}),
+    label = ui.Label({text = "pz_editor_exit"}),
     width = 100,
     height = 25,
     onClick = function() self:exitEditor() end
