@@ -150,6 +150,7 @@ local allTests = {
   "client.tests.LobbyTests",
   "client.tests.InputSourceTests",
   "client.tests.UIElementFocusTests",
+  "client.tests.UIElementOnScreenTests",
 }
 
 -- Check for specific test name argument

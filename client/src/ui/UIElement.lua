@@ -12,7 +12,8 @@ local logger = require("common.lib.logger")
 ---@field vAlign ("top" | "center" | "bottom") determines the vertical alignment relative to the parent
 ---@field hFill boolean if the element's width should fill out the entire parent's width
 ---@field vFill boolean if the element's height should fill out the entire parent's height
----@field isVisible boolean if the element is currently visible for rendering (also disables touch interaction)
+---@field isVisible boolean the element's own switch for being drawn, updated and touched; it stays true while a parent is
+--- hidden, such as the root of a scene the navigation stack does not draw, so ask isOnScreen whether the element is shown
 ---@field isEnabled boolean if the element is currently eligible for touch interaction
 ---@field parent UiElement the element's parent it is getting position relative to via its properties
 ---@field children UiElement[] the element's children that get positioned relative to it
@@ -149,6 +150,49 @@ function UIElement:getScreenPos()
   return x + self.x + xOffset, y + self.y + yOffset
 end
 
+---@return UiElement # the element at the top of this element's tree
+function UIElement:getRoot()
+  local root = self
+  while root.parent do
+    root = root.parent
+  end
+  return root
+end
+
+-- Returns whether the element is shown right now: it and every parent up to its root are visible. The navigation stack
+-- hides the root of every scene it does not draw, so an element of a scene under another one is not on screen.
+-- Worked out on every call from isVisible, so it never goes stale.
+---@return boolean
+function UIElement:isOnScreen()
+  local element = self
+  while element do
+    if not element.isVisible then
+      return false
+    end
+    element = element.parent
+  end
+  return true
+end
+
+-- The element's menu sounds, played only while it is on screen so a scene under another one stays silent
+function UIElement:playMoveSfx()
+  if self:isOnScreen() then
+    GAME.theme:playMoveSfx()
+  end
+end
+
+function UIElement:playValidationSfx()
+  if self:isOnScreen() then
+    GAME.theme:playValidationSfx()
+  end
+end
+
+function UIElement:playCancelSfx()
+  if self:isOnScreen() then
+    GAME.theme:playCancelSfx()
+  end
+end
+
 -- passes a retranslation request through the tree to reach all Labels
 function UIElement:refreshLocalization()
   for _, uiElement in ipairs(self.children) do
@@ -211,8 +255,9 @@ function UIElement:drawChildren()
   end
 end
 
--- setVisibility is to used on children that are temporarily "offscreen", e.g. as part of a scrolling UiElement
--- if you want to stop drawing an element, e.g. due to changing a subscreen, 
+-- Switches the element itself on or off for drawing, updating and touch, as for children that are temporarily
+-- "offscreen", e.g. as part of a scrolling UiElement; whether it is shown also depends on its parents and scene (isOnScreen)
+-- if you want to stop drawing an element, e.g. due to changing a subscreen,
 --  the more opportune method is to simply remove it from the ui tree via detach()
 function UIElement:setVisibility(isVisible)
   self.isVisible = isVisible
