@@ -40,6 +40,11 @@ end
 
 -- (Re)loads every panel set and fills the panel globals from the player's mod settings
 function PanelLoader.initPanels()
+  if allPanels then
+    for _, panelSet in pairs(allPanels) do
+      panelSet:releaseSheets()
+    end
+  end
   ---@type table<string, Panels> every panel set, all of them fully loaded
   allPanels = {}
   local ids = {}
