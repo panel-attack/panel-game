@@ -63,6 +63,7 @@ local allTests = {
   "client.tests.NavigationStackTests",
   "client.tests.SceneAnimationTests",
   "client.tests.TitleScreenTests",
+  "client.tests.LanguageSelectSetupTests",
   "client.tests.MainMenuTests",
   "client.tests.TransitionTests",
   "common.tests.engine.PanelGenTests",
