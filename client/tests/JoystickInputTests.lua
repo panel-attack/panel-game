@@ -22,15 +22,15 @@ end
 ---@param joystick table
 ---@param test fun()
 local function withJoystick(joystick, test)
-  local allKeys = input.allKeys
-  input.allKeys = {isDown = {}, isPressed = {}, isUp = {}}
+  local isDown, isPressed, isUp = input.allKeys.isDown, input.allKeys.isPressed, input.allKeys.isUp
+  input.allKeys.isDown, input.allKeys.isPressed, input.allKeys.isUp = {}, {}, {}
 
   local ok, err = pcall(test)
 
   if joystickManager:isRegistered(joystick) then
     joystickManager:unregisterJoystick(joystick)
   end
-  input.allKeys = allKeys
+  input.allKeys.isDown, input.allKeys.isPressed, input.allKeys.isUp = isDown, isPressed, isUp
   assert(ok, err)
 end
 
