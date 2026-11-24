@@ -182,8 +182,8 @@ function Game:cleanupOldVersions()
         if not tableUtils.first(activeReleaseStream.availableVersions, function(availableVersionInfo)
           return availableVersionInfo.version == installedVersionInfo.version
         end) then
-          -- double check we're not trying to remove the very file that is mounted right now
-          if not string.find(love.filesystem.getRequirePath(), installedVersionInfo.path, 1, true) then
+          -- never remove the version that is running right now, the game still reads its files
+          if installedVersionInfo.version ~= self.updater.activeVersion.version then
             toBeCleared[#toBeCleared+1] = installedVersionInfo
           end
         end
