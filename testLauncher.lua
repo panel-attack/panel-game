@@ -101,6 +101,7 @@ local allTests = {
   "server.tests.RealSocketPartialSendTest",
   "server.tests.ConnectionPingTests",
   "server.tests.ServerPingTests",
+  "server.tests.ErrorReportTests",
   "client.tests.FileUtilsTests",
   "client.tests.SaveTests",
   "client.tests.GraphicsUtilTests",
