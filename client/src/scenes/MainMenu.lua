@@ -142,7 +142,7 @@ function MainMenu:createMainMenu()
       end
     end
     if DebugSettings.showDesignHelper() then
-      menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, nil, function()
+      menu:addMenuItem(#menu.menuItems, ui.MenuItem.createButtonMenuItem("Design Helper", nil, false, function()
           self:switchToScene(DesignHelper())
         end))
     end
