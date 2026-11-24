@@ -84,6 +84,7 @@ local allTests = {
   -- disabled for testLauncher because it needs the client love callbacks
   --"common.tests.lib.InputTests",
   "common.tests.lib.JsonEncodingTests",
+  "common.tests.lib.joystickManagerTests",
   "common.tests.lib.SignalTests",
   "common.tests.lib.tableUtilsTest",
   "common.tests.lib.utf8AdditionsTests",
