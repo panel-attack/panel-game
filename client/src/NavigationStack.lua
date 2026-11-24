@@ -39,6 +39,7 @@ function NavigationStack:push(newScene, transition)
     logger.debug("Pushing scene " .. newScene.name .. " on top of stack")
     self.scenes[#self.scenes+1] = newScene
   end
+  self:showOnlyDrawnScene()
 end
 
 -- transitions to the previous scene optionally using a specified transition
@@ -59,6 +60,7 @@ function NavigationStack:pop(transition, callback)
     self.transition = transition
     self.callback = callback
     table.remove(self.scenes)
+    self:showOnlyDrawnScene()
   end
 end
 
@@ -85,6 +87,7 @@ function NavigationStack:popToTop(transition, callback)
     for i = #self.scenes, 2, -1 do
       self.scenes[i] = nil
     end
+    self:showOnlyDrawnScene()
   end
 end
 
@@ -121,6 +124,7 @@ function NavigationStack:popToName(name, transition, callback)
     for i = #self.scenes, targetIndex + 1, -1 do
       self.scenes[i] = nil
     end
+    self:showOnlyDrawnScene()
   end
 end
 
@@ -141,6 +145,7 @@ function NavigationStack:replace(newScene, transition, callback)
     self.transition = transition
     self.callback = callback
     self.scenes[#self.scenes] = newScene
+    self:showOnlyDrawnScene()
   else
     self:push(newScene, transition)
   end
@@ -154,18 +159,56 @@ function NavigationStack:getActiveScene()
   end
 end
 
+-- Returns the scene drawn right now: the one the running transition draws, or else the scene on top
+---@return Scene?
+function NavigationStack:getDrawnScene()
+  if self.transition then
+    return self.transition:getDrawnScene()
+  else
+    return self.scenes[#self.scenes]
+  end
+end
+
+---@param scene Scene?
+---@param drawnScene Scene?
+local function showIfDrawn(scene, drawnScene)
+  if scene then
+    scene.uiRoot:setVisibility(scene == drawnScene)
+  end
+end
+
+-- Shows the ui tree of the scene drawn right now and hides those of the other scenes on the stack or in the transition,
+-- so that UIElement:isOnScreen tells whether an element is drawn
+function NavigationStack:showOnlyDrawnScene()
+  local drawnScene = self:getDrawnScene()
+  for _, scene in ipairs(self.scenes) do
+    showIfDrawn(scene, drawnScene)
+  end
+  if self.transition then
+    showIfDrawn(self.transition.oldScene, drawnScene)
+    showIfDrawn(self.transition.newScene, drawnScene)
+  end
+end
+
 function NavigationStack:updateSelf(dt)
   if self.transition then
     self.transition:update(dt)
 
     if self.transition.progress >= 1 then
+      -- a popped scene is in neither the stack nor a transition once this one ends
+      if self.transition.oldScene then
+        self.transition.oldScene.uiRoot:setVisibility(false)
+      end
       self.transition = nil
+      self:showOnlyDrawnScene()
       self.scenes[#self.scenes]:applyMusic()
       if self.callback then
         self.callback()
         self.callback = nil
       end
       self.scenes[#self.scenes]:refresh()
+    else
+      self:showOnlyDrawnScene()
     end
   else
     if #self.scenes == 0 then

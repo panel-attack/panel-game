@@ -49,7 +49,7 @@ function WindowSizeTester:load()
     values = {false, true},
     selectedIndex = flags.fullscreen and 2 or 1,
     onChange = function(group, value)
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       love.window.setFullscreen(value)
     end
   })

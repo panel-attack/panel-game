@@ -301,7 +301,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
         self.garbageMode = false
         self.shockGarbageMode = false
         self:updatePaletteSelection()
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
       end
     })
   elseif color == 9 then
@@ -319,7 +319,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
         self.garbageMode = false
         self.shockGarbageMode = false
         self:updatePaletteSelection()
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
       end
     })
   else
@@ -338,7 +338,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
         self.garbageMode = false
         self.shockGarbageMode = false
         self:updatePaletteSelection()
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
       end
     })
   end
@@ -356,7 +356,7 @@ function PuzzleEditorScene:createCursorButton(size)
       self.garbageMode = false
       self.shockGarbageMode = false
       self:updatePaletteSelection()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
 end
@@ -374,7 +374,7 @@ function PuzzleEditorScene:createGarbageButton(size)
       self.shockGarbageMode = false
       self.cursorMode = false
       self:updatePaletteSelection()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
 end
@@ -423,7 +423,7 @@ function PuzzleEditorScene:createShockGarbageButton(size)
       self.garbageMode = false
       self.cursorMode = false
       self:updatePaletteSelection()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
 end

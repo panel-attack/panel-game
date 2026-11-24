@@ -274,7 +274,7 @@ function PuzzleGame:customRun()
   -- reset level
   if (self.player.inputConfiguration and self.player.inputConfiguration.isDown["TauntUp"]) then
     if not self.match.ended and not self.match.isPaused then
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       self:resetPuzzle()
     end
   end
@@ -308,7 +308,7 @@ function PuzzleGame:customPauseMenuItems()
 
   return {
     ui.MenuItem.createButtonMenuItem("pause_skip_puzzle", nil, true, function()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       self:skipPuzzle()
     end),
   }

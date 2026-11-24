@@ -78,7 +78,7 @@ end
 
 function SetNameMenu:confirmName()
   if playerName.validate(self.nameField.value) then
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     config.name = self.nameField.value
     write_conf_file()
     GAME.localPlayer.name = config.name
@@ -98,7 +98,7 @@ function SetNameMenu:update(dt)
     self:confirmName()
   end
   if input.allKeys.isDown["escape"] then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     self.nameField:stopEditing()
     GAME.navigationStack:pop()
   end

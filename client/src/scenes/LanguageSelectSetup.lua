@@ -78,7 +78,7 @@ function LanguageSelectSetup:createLanguageMenu()
 
   for i, language in ipairs(languageData) do
     table.insert(languageMenuItems, ui.MenuItem.createButtonMenuItemWithLabel(languageLabels[i], function()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       config.language_code = language.code
       GAME:setLanguage(language.code)
       write_conf_file()

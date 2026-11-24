@@ -228,7 +228,7 @@ function InputDeviceOverlay:assignDevice(inputConfig, targetPlayer)
     targetPlayer:restrictInputs(inputConfig)
   end
 
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   self:updatePlayerSlots()
 
   -- Trigger pop animation on the slot that was just assigned
@@ -545,7 +545,7 @@ end
 
 -- Handles back button press - closes overlay and invokes cancel callback
 function InputDeviceOverlay:onBackPressed()
-  GAME.theme:playCancelSfx()
+  self:playCancelSfx()
   self:close()
   if self.onCancel then
     self.onCancel()

@@ -61,7 +61,7 @@ local ChangeInputButton = class(
 
 function ChangeInputButton:onClick()
   if #self.localHumanPlayers == 0 then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     return
   else
     local hasAssignment = false
@@ -73,10 +73,10 @@ function ChangeInputButton:onClick()
     end
 
     if hasAssignment then
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       self.openInputDeviceOverlay()
     else
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
     end
   end
 end

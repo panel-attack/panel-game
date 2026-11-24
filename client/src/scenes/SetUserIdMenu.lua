@@ -69,13 +69,13 @@ function SetUserIdMenu:confirmId()
   local hasNonDigits = string.match(self.idInputField.value, "[^%d]")
   if not hasNonDigits then
     -- not much point in doing validation but let's stay numeric at least
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     save.write_user_id_file(self.idInputField.value, self.serverIp)
     -- this is dirty but with how stupid nested OptionsMenu is, there is no way to get back right to where we came from
     self.idInputField:stopEditing()
     GAME.navigationStack:pop()
   else
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
   end
 end
 

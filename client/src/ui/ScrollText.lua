@@ -18,31 +18,31 @@ UiElement)
 function ScrollText:receiveInputsSelf(inputSource, dt)
   local inputs = inputSource:getInputs()
   if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if self.label.height > self.height - (SCROLL_STEP + 1) then
       self.label.y = math.min((SCROLL_STEP + 1), self.label.y + SCROLL_STEP)
     end
   end
   if inputs:isPressedWithRepeat("MenuDown", .25, 0.03) then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if self.label.height > self.height - (SCROLL_STEP + 1) then
       self.label.y = math.max(self.label.y - SCROLL_STEP, (self.height - (SCROLL_STEP + 1)) - self.label.height)
     end
   end
   if inputs.isDown.MenuLeft then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if self.label.height > self.height - (SCROLL_STEP + 1) then
       self.label.y = math.min((SCROLL_STEP + 1), self.label.y + (self.height - (SCROLL_STEP + 1)))
     end
   end
   if inputs.isDown.MenuRight then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if self.label.height > self.height - (SCROLL_STEP + 1) then
       self.label.y = math.max(self.label.y - (self.height - (SCROLL_STEP + 1)), (self.height - (SCROLL_STEP + 1)) - self.label.height)
     end
   end
   if inputs.isDown["MenuEsc"] then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     self:onBack(inputSource)
   end
 end
