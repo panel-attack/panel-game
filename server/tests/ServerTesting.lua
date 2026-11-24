@@ -113,6 +113,35 @@ function ServerTesting.clearOutgoingMessages(p)
   end
 end
 
+-- Hands the server a json message as if player's client had sent it, for the next server update
+---@param player ServerPlayer
+---@param messageText table
+function ServerTesting.receiveMessage(player, messageText)
+  player.connection:receiveMessage(json.encode(messageText))
+end
+
+-- Hands the server an input as if player's client had sent it, for the next server update
+---@param player ServerPlayer
+---@param input string
+function ServerTesting.receiveInput(player, input)
+  player.connection:receiveInput(input)
+end
+
+-- Takes what the server sent player out of their connection, which keeps the json messages and the inputs apart
+---@param player ServerPlayer
+---@return table[] messages the json message texts, oldest first
+---@return string[] inputs the marked input messages, oldest first
+function ServerTesting.takeSentMessages(player)
+  local messages, inputs = {}, {}
+  while player.connection.outgoingMessageQueue:len() > 0 do
+    messages[#messages + 1] = player.connection.outgoingMessageQueue:pop().messageText
+  end
+  while player.connection.outgoingInputQueue:len() > 0 do
+    inputs[#inputs + 1] = player.connection.outgoingInputQueue:pop()
+  end
+  return messages, inputs
+end
+
 function ServerTesting.setupRoom(server, player1, player2, alreadyLoggedIn)
   if not alreadyLoggedIn then
     player1 = ServerTesting.login(server, player1)
