@@ -111,26 +111,21 @@ function inputManager:onJoystickRemoved(joystick)
 end
 
 function inputManager:joystickPressed(joystick, button)
-  if not joystickManager:isRegistered(joystick) then
-    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
-    joystickManager:registerJoystick(joystick)
-  end
+  joystickManager:registerJoystickIfMissing(joystick)
 
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isDown[key] = KEY_CHANGE.DETECTED
 end
 
 function inputManager:joystickReleased(joystick, button)
-  if not joystickManager:isRegistered(joystick) then
-    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
-    joystickManager:registerJoystick(joystick)
-  end
+  joystickManager:registerJoystickIfMissing(joystick)
 
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isUp[key] = KEY_CHANGE.DETECTED
 end
 
 function inputManager:joystickaxis(joystick, axisIndex, value)
+  joystickManager:registerJoystickIfMissing(joystick)
   local device = joystickManager.devices[joystick:getID()]
   if not device.defaultAxisPositions[axisIndex] then
     logger.info("Detected input from previously unrecorded axis " .. axisIndex .. " for stick with guid " .. joystick:getGUID())
@@ -197,6 +192,7 @@ end
 -- maps joysticks' dpad to the appropriate input maps
 function inputManager:dPadToButtons()
   for _, joystick in ipairs(love.joystick.getJoysticks()) do
+    joystickManager:registerJoystickIfMissing(joystick)
     for hatIndex = 1, joystick:getHatCount() do
       local dpadState = joystickManager:getDPadState(joystick, hatIndex)
       for key, isPressed in pairs(dpadState) do

@@ -136,6 +136,7 @@ local allTests = {
   "client.tests.TelegraphTests",
   "client.tests.InputConfigurationTests",
   "client.tests.InputDeviceOverlayTests",
+  "client.tests.JoystickInputTests",
   "client.tests.DiscreteImageSliderTests",
   "client.tests.ImageContainerTests",
   "client.tests.ScrollContainerTests",
