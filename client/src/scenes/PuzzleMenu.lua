@@ -74,10 +74,17 @@ function PuzzleMenu:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
   end
 end
 
+-- Starts a puzzle session playing the puzzles puzzleSetIterator gives, unless a start is already waiting for the match to load
+---@param puzzleSet PuzzleSet
+---@param puzzleSetIterator PuzzleSetIterator a new iterator that has not given a puzzle yet
 function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
   assert(puzzleSetIterator)
 
   local player = self.battleRoom.players[1]
+  -- the menu keeps taking input while the match loads, so a second press lands here before the first one's match starts
+  if player.settings.wantsReady then
+    return
+  end
   assert(player.inputConfiguration, "Player must have an input configuration assigned before starting puzzle game")
 
   GAME.localPlayer:setLevel(config.puzzle_level)
@@ -500,10 +507,8 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     assert(puzzle)
   end
   
-  -- Create a puzzle set iterator for the current puzzle set
-  local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)
-  assert(puzzleSetIterator:totalPuzzleCount() > 0)
-  
+  assert(PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index):totalPuzzleCount() > 0)
+
   -- Create the main text button
   local textButton = ui.TextButton({
     label = ui.Label({
@@ -513,7 +518,7 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
       vAlign = "center"
     }),
     onClick = function()
-      self:startGame(puzzleSet, puzzleSetIterator)
+      self:startGame(puzzleSet, PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index))
     end,
     width = self.levelSliderMenuItem.width
   })
@@ -636,9 +641,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
 end
 
 function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
-  -- Get the training puzzle count by temporarily getting the first puzzle
-  local trainingPuzzleSetIterator = PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary)
-  local puzzleCount = trainingPuzzleSetIterator:totalPuzzleCount()
+  local puzzleCount = PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary):totalPuzzleCount()
   
   if puzzleCount == 0 then
     return nil
@@ -653,8 +656,8 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
       hAlign = "center",
       vAlign = "center"
     }),
-    onClick = function() 
-      self:startGame(self.rootPuzzleSet, trainingPuzzleSetIterator)
+    onClick = function()
+      self:startGame(self.rootPuzzleSet, PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary))
     end,
     width = self.levelSliderMenuItem.width
   })

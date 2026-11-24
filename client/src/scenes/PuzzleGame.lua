@@ -105,8 +105,8 @@ function PuzzleGame.setupNextPuzzle(battleRoom, puzzleSetIterator, puzzleSet, ad
   if puzzleIndices then
     local puzzle = PuzzleSetIterator.getPuzzleFromIndices(puzzleSet, puzzleIndices)
     if puzzle then
-      GAME.battleRoom:setGameMode(puzzle:toGameMode())
-      GAME.battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
+      battleRoom:setGameMode(puzzle:toGameMode())
+      battleRoom.panelSource = puzzle:toPanelSource(config.puzzle_randomColors)
     end
   end
   return puzzleIndices

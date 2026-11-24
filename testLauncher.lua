@@ -116,6 +116,7 @@ local allTests = {
   "client.tests.PuzzleSetTests",
   "client.tests.PuzzleSetIteratorTests",
   "client.tests.PuzzleLibraryTests",
+  "client.tests.PuzzleMenuTests",
   "client.tests.ScoresTests",
   "client.tests.ChallengeRunTests",
   "client.tests.ChallengeModeSaveTests",
