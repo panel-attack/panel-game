@@ -151,6 +151,7 @@ local allTests = {
   "client.tests.NetClientTests",
   "client.tests.NotificationCenterTests",
   "client.tests.ShortcutsTests",
+  "client.tests.GameTests",
   "client.tests.ConnectionWarningTests",
   "client.tests.LobbyTests",
   "client.tests.InputSourceTests",
