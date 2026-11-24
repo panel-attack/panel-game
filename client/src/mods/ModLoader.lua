@@ -18,13 +18,22 @@ ModLoader.invalidMods = {}
 ---@type ModSettings? the player's mod settings, see ModLoader.getModSettings
 ModLoader.settings = nil
 
--- loads the mod of the specified id
+-- queues the mod for loading unless it is loaded, loading or queued already
 ---@param mod Mod
 function ModLoader.load(mod)
   logger.debug("Queueing mod " .. mod.id .. ", fullyLoaded: " .. tostring(mod.fullyLoaded))
-  if not mod.fullyLoaded then
+  if ModLoader.cancellationList[mod] then
+    -- a cancelled mod still waits in the queue, so it loads there once it is off the list
+    ModLoader.cancellationList[mod] = nil
+  elseif not mod.fullyLoaded and not ModLoader.isLoadingOrQueued(mod) then
     ModLoader.loading_queue:push(mod)
   end
+end
+
+---@param mod Mod
+---@return boolean
+function ModLoader.isLoadingOrQueued(mod)
+  return (ModLoader.loading_mod and ModLoader.loading_mod[1] == mod) or ModLoader.loading_queue:contains(mod)
 end
 
 ---@return boolean # if there is still data to load
@@ -81,7 +90,7 @@ function ModLoader.cancelLoad(mod)
     elseif ModLoader.loading_queue:peek() == mod then
       ModLoader.loading_queue:pop()
       logger.debug("Mod was next in queue and got removed")
-    elseif tableUtils.contains(ModLoader.loading_queue, mod) then
+    elseif ModLoader.loading_queue:contains(mod) then
       logger.debug("Mod is somewhere in the loading queue, adding to cancellationList")
       ModLoader.cancellationList[mod] = true
     else
