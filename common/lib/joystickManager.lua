@@ -198,6 +198,15 @@ function joystickManager:registerJoystick(joystick)
   joystickManager.devices[id] = device
 end
 
+-- Registers a joystick that no joystickadded event has registered yet; in rare cases that event is not sent,
+-- or arrives after the joystick's first input
+---@param joystick love.Joystick
+function joystickManager:registerJoystickIfMissing(joystick)
+  if not joystickManager:isRegistered(joystick) then
+    joystickManager:registerJoystick(joystick)
+  end
+end
+
 ---@param joystick love.Joystick
 function joystickManager:unregisterJoystick(joystick)
 -- GUID identifies the device type, 2 controllers of the same type will have a matching GUID
