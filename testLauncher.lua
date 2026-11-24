@@ -103,6 +103,7 @@ local allTests = {
   "client.tests.FileUtilsTests",
   "client.tests.SaveTests",
   "client.tests.GraphicsUtilTests",
+  "client.tests.RendererSettingTests",
   "client.tests.ReplayFileDropTests",
   "client.tests.ModControllerTests",
   "client.tests.ModSettingsTests",

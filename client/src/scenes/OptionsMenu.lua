@@ -10,6 +10,7 @@ local tableUtils = require("common.lib.tableUtils")
 local SoundTest = require("client.src.scenes.SoundTest")
 local SetUserIdMenu = require("client.src.scenes.SetUserIdMenu")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local RendererSetting = require("client.src.graphics.RendererSetting")
 local util = require("common.lib.util")
 local ModManagement = require("client.src.scenes.ModManagement")
 local system = require("client.src.system")
@@ -416,6 +417,20 @@ function OptionsMenu:loadGraphicsMenu()
     return slider
   end
 
+  -- the renderer is chosen in love.conf, so a change only applies on the next launch
+  local rendererButtonGroup = ui.ButtonGroup({
+    buttons = {
+      ui.TextButton({label = ui.Label({text = "op_renderer_auto"})}),
+      ui.TextButton({label = ui.Label({text = "OpenGL", translate = false})})
+    },
+    values = RendererSetting.VALUES,
+    selectedIndex = tableUtils.indexOf(RendererSetting.VALUES, config.renderer),
+    onChange = function(group, value)
+      GAME.theme:playMoveSfx()
+      config.renderer = value
+    end
+  })
+
   local graphicsMenuOptions = {
     ui.MenuItem.createStepperMenuItem("op_theme", nil, nil, themeStepper),
     ui.MenuItem.createToggleButtonGroupMenuItem("op_scale", nil, nil, scaleButtonGroup),
@@ -424,12 +439,16 @@ function OptionsMenu:loadGraphicsMenu()
     ui.MenuItem.createToggleButtonGroupMenuItem("op_renderTelegraph", nil, nil, createToggleButtonGroup("renderTelegraph")),
     ui.MenuItem.createToggleButtonGroupMenuItem("op_renderAttacks", nil, nil, createToggleButtonGroup("renderAttacks")),
     ui.MenuItem.createSliderMenuItem("op_shakeIntensity", nil, nil, getShakeIntensitySlider()),
-    ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-          GAME.showGameScaleUntil = GAME.timer
-          GAME.theme:playCancelSfx()
-          self:switchToScreen("baseMenu")
-        end)
   }
+  -- LÖVE 11 has only OpenGL
+  if love.getVersion() >= 12 then
+    graphicsMenuOptions[#graphicsMenuOptions + 1] = ui.MenuItem.createToggleButtonGroupMenuItem("op_renderer", nil, nil, rendererButtonGroup)
+  end
+  graphicsMenuOptions[#graphicsMenuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
+    GAME.showGameScaleUntil = GAME.timer
+    GAME.theme:playCancelSfx()
+    self:switchToScreen("baseMenu")
+  end)
 
   local menu = ui.Menu.createCenteredMenu(graphicsMenuOptions)
   if config.gameScaleType == "fixed" then

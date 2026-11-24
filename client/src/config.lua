@@ -4,6 +4,7 @@ local util = require("common.lib.util")
 local fileUtils = require("client.src.FileUtils")
 local consts = require("common.engine.consts")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local RendererSetting = require("client.src.graphics.RendererSetting")
 require("client.src.globals")
 
 -- Default configuration values
@@ -44,6 +45,7 @@ require("client.src.globals")
 ---@field maximizeOnStartup boolean
 ---@field gameScaleType ("auto" | "fit" | "fixed")
 ---@field gameScaleFixedValue number
+---@field renderer ("auto" | "opengl")
 ---@field windowWidth number
 ---@field windowHeight number
 ---@field borderless boolean
@@ -122,6 +124,8 @@ config = {
     maximizeOnStartup             = true,
     gameScaleType                 = "auto",
     gameScaleFixedValue           = 2,
+    -- Graphics backend LÖVE starts with, applied on the next launch
+    renderer                      = RendererSetting.AUTO,
 
     -- Love configuration variables
     windowWidth                   = consts.CANVAS_WIDTH,
@@ -267,6 +271,9 @@ config = {
           end
           if type(read_data.gameScaleFixedValue) == "number" then
             configTable.gameScaleFixedValue = JsonSafePrecision.toSafePrecision(read_data.gameScaleFixedValue)
+          end
+          if RendererSetting.isValid(read_data.renderer) then
+            configTable.renderer = read_data.renderer
           end
 
           if type(read_data.windowWidth) == "number" then
