@@ -110,6 +110,7 @@ local allTests = {
   "client.tests.ModStatusTests",
   "client.tests.ModManagementTests",
   "client.tests.PanelStatusTests",
+  "client.tests.PanelLoaderTests",
   "client.tests.QueueTests",
   "client.tests.PlayerStackRollbackTests",
   "client.tests.AnalyticsTests",

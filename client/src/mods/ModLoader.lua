@@ -13,7 +13,7 @@ ModLoader.loading_queue = Queue() -- mods to load
 ModLoader.cancellationList = {}
 ---@type { mod: Mod, loadFunc: fun() }?
 ModLoader.loading_mod = nil -- currently loading mod
----@type table<Mod, string>
+---@type table<Mod|Panels, string> the mods that could not be used and why, shown to the player at boot
 ModLoader.invalidMods = {}
 ---@type ModSettings? the player's mod settings, see ModLoader.getModSettings
 ModLoader.settings = nil
@@ -279,6 +279,21 @@ function ModLoader.removeInvalid(unfiltered)
   return invalid
 end
 
+-- Replaces the mods of the type listed in ModLoader.invalidMods, which the player is shown at boot
+---@param modType any the class table of the mod type
+---@param invalid table<Mod|Panels, string> the reason each mod could not be used
+function ModLoader.setInvalidMods(modType, invalid)
+  for mod, _ in pairs(ModLoader.invalidMods) do
+    if mod.TYPE == modType.TYPE then
+      ModLoader.invalidMods[mod] = nil
+    end
+  end
+
+  for mod, reason in pairs(invalid) do
+    ModLoader.invalidMods[mod] = reason
+  end
+end
+
 -- locally initializes mod tables for the Mod type and preloads all of its mods
 ---@param modType any the class table of the mod type
 ---@return table<string, Mod> all all valid mods of that type
@@ -291,14 +306,7 @@ function ModLoader.initMods(modType)
   local invalid = ModLoader.removeInvalid(all)
   local validIds = ModLoader.fillModIdList(modType, all)
 
-  -- in case of a previous init, we should make sure to have cleared old entries for this mod type
-  for _, mod in pairs(all) do
-    ModLoader.invalidMods[mod] = nil
-  end
-
-  for mod, reason in pairs(invalid) do
-    ModLoader.invalidMods[mod] = reason
-  end
+  ModLoader.setInvalidMods(modType, invalid)
 
   modType.loadDefaultMod()
   modType.loadRandomMod()
