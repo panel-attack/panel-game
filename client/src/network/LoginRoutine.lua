@@ -81,7 +81,7 @@ local function login(tcpClient, ip, port)
               result.message = loc("lb_welcome_back", config.name)
             end
             if value.server_notice then
-              result.message = result.message .. "\n" value.server_notice:gsub("\\n", "\n")
+              result.message = result.message .. "\n" .. (value.server_notice:gsub("\\n", "\n"))
             end
             if value.publicId then
               GAME.localPlayer.publicId = value.publicId
